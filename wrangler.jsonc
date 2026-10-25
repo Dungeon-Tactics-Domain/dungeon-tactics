@@ -1,0 +1,8 @@
+{
+  // Só arquivos estáticos (o dist do Vite): a batalha roda inteira no navegador, sem Worker nem Durable Objects (25/10)
+  "name": "dungeon-tactics",
+  "workers_dev": false,
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "dist", "not_found_handling": "single-page-application" },
+  "routes": [{ "pattern": "dungeon-tactics.fernandorffdev.com", "custom_domain": true }]
+}
