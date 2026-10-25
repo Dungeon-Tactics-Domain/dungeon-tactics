@@ -1,0 +1,1614 @@
+// Cena Three.js da batalha: mapa em blocos, unidades, marcações de casa, números flutuantes e câmera ortográfica com
+// RenderPixelatedPass (o pixel art SNES da spec). Só desenha: não conhece regras, recebe estado, destaques e eventos.
+import * as THREE from 'three';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { ABILITIES } from '../shared/battle/abilities.ts';
+import { FACING, dist, inBounds, neighbors, posKey, samePos, standH, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
+import { footprint } from '../shared/battle/pathing.ts';
+import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
+import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { t } from './i18n.ts';
+import { el } from './icons.ts';
+import { chargeDanger, type Highlights, type TileKind } from './interaction.ts';
+import { MARKER, barYOf, modelOf, unitHeight } from './markers.ts';
+import type { PixelSettings } from './pixel-settings.ts';
+import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
+import { chargeAura, lookOf, playFx } from './fx.ts';
+import { Water } from './water.ts';
+import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
+import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
+import { addDetail } from './detail.ts';
+import { buildBridges } from './bridge.ts';
+import { boxOf as pieceBox, loadPaint, variant } from './painted.ts';
+import { DEBRIS, LITTER, swapProps } from './props.ts';
+import { swapTrees } from './trees.ts';
+import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
+
+const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
+const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
+// Câmeras de ação para comparar (13/11, pedido do Fernando: "as action cams teste várias opções como por cima do ombro,
+// pelas costas do inimigo, etc"): `?camera=<nome>` escolhe uma; sem o parâmetro vale a `heroi` (escolha dele em 13/11,
+// depois de ver os prints de todas), que alterna `ombro` e `costas` para ficar sempre do lado dos heróis.
+// turn: giro em volta do alvo a partir da linha do golpe (0 = atrás de quem ataca, π = atrás do alvo); pitch: inclinação
+// em graus (32 = a do jogo; baixa = câmera perto do chão); zoom: altura da vista, base + por casa de distância; aim: onde
+// a câmera mira entre quem ataca (0) e o alvo (1); lift: quanto o foco sobe do chão, para o boneco não ficar na beira;
+// clip: com a câmera baixa, o que fica entre ela e os bonecos (mata de fora, barranco, árvore) taparia o golpe, então tudo
+// a mais de `clip` casas na frente do foco deixa de ser desenhado (o plano de corte da câmera) enquanto ela dura
+interface ActionCam { turn: number; pitch: number; zoom: [base: number, perTile: number]; aim: number; lift: number; clip?: number }
+const ACTION_CAMS: Record<string, ActionCam | null> = {
+  xcom: { turn: 0.35, pitch: 32, zoom: [4, 0.9], aim: 0.5, lift: 0 },
+  ombro: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // por cima do ombro de quem ataca
+  costas: { turn: Math.PI - 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.4, lift: 0.45, clip: 3.2 }, // pelas costas do inimigo
+  lado: { turn: Math.PI / 2, pitch: 16, zoom: [2.6, 0.95], aim: 0.5, lift: 0.4, clip: 3 }, // os dois de perfil
+  alto: { turn: 0.35, pitch: 60, zoom: [4.2, 0.9], aim: 0.5, lift: 0 }, // de cima, tática
+  nenhuma: null, // sem câmera de ação
+}; // e `heroi`, que alterna entre `ombro` e `costas` (actionCam)
+const CAM_DIST = 30; // distância da câmera ao foco (ortográfica: só decide o que fica na frente do plano de corte)
+const camAsked = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('camera') : null;
+const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'heroi';
+const ZOOM = { min: 4, max: 16 };
+const ZOOM_START = 1.5;
+// celular em pé: no máximo ~9,5 casas de largura ao abrir. No 20x20 o mapa inteiro deixava a casa com ~20 px, pequena
+// para o dedo (alvo de toque ≥ 44 px); a câmera segue o herói da vez e o botão de recentralizar mostra tudo
+const PORTRAIT_START = 8.3;
+// PC: abre com ~10 de altura de vista (antes até 16, o mapa quase inteiro e o boneco com ~30 px a 1280x720). O FFT mostra
+// poucas casas e bonecos grandes; a câmera segue o cursor e quem age, e F ainda mostra o mapa inteiro (12/11)
+const PC_START = 10;
+
+
+// cores das marcações; o significado também vai em texto no HUD (nunca só a cor)
+// roxo do Véu: a área de uma magia carregando fica acesa até ela sair (o texto vai na casa sob o cursor, hud.ts)
+const DANGER: [string, number] = ['#9b4dff', 0.4];
+// Marca estilizada (13/11, pedido do Fernando: "tá muito branco esse preview… algo mais estilizado e menos brancão"; o
+// quadrado branco chapado virava um tapete no Bosque): moldura fina na cor do tipo com um fio escuro por fora (lê na
+// grama, na terra e na água: o azul de 12/11 sumia na água por ser um quadrado cheio), miolo fraco e um desenho por
+// tipo, porque cor nunca é o único sinal: liso (andar), cheio (casa escolhida, quem age, área do golpe), listras
+// (alcance do golpe, ameaça) e xis (tiro barrado)
+type MarkPattern = 'frame' | 'solid' | 'hatch' | 'cross';
+const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?: MarkPattern]> = {
+  actor: ['#ffd479', 0.95, 'solid'], move: ['#6fc0ff', 0.95, 'frame'], range: ['#ff7a3c', 0.95, 'hatch'], blocked: ['#b07ae0', 0.95, 'cross'],
+  threat: ['#ff2d55', 0.6, 'hatch'], area: ['#ffb020', 1, 'solid'], target: ['#fff2a0', 1, 'solid'], path: ['#1e6fff', 0.95],
+};
+const markTextures = new Map<MarkPattern, THREE.CanvasTexture>();
+// textura branca (a cor vem do material) com o desenho da marca; uma por desenho, feita na primeira vez
+function markTexture(p: MarkPattern): THREE.CanvasTexture {
+  let t = markTextures.get(p);
+  if (t) return t;
+  const S = 64, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d')!;
+  g.fillStyle = `rgba(255,255,255,${p === 'solid' ? 0.42 : 0.08})`; // miolo
+  g.fillRect(4, 4, S - 8, S - 8);
+  if (p === 'hatch' || p === 'cross') {
+    g.save();
+    g.beginPath();
+    g.rect(7, 7, S - 14, S - 14);
+    g.clip();
+    g.strokeStyle = 'rgba(255,255,255,0.6)';
+    g.lineWidth = 4;
+    g.beginPath();
+    if (p === 'hatch') for (let k = -S; k < S; k += 16) { g.moveTo(k, S); g.lineTo(k + S, 0); }
+    else { g.moveTo(10, 10); g.lineTo(S - 10, S - 10); g.moveTo(S - 10, 10); g.lineTo(10, S - 10); }
+    g.stroke();
+    g.restore();
+  }
+  g.strokeStyle = 'rgba(0,0,0,0.6)'; // fio escuro por fora
+  g.lineWidth = 2;
+  g.strokeRect(1, 1, S - 2, S - 2);
+  g.strokeStyle = '#ffffff'; // moldura
+  g.lineWidth = 5;
+  g.strokeRect(4.5, 4.5, S - 9, S - 9);
+  t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  // sem mipmap: a casa aparece deitada (metade da altura) e o mipmap borrava a moldura para dentro, deixando o miolo leitoso
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
+  markTextures.set(p, t);
+  return t;
+}
+const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
+// Peças de cada aparência de casa (Tile.look), em public/models: cubo do topo e cubo da coluna embaixo. Ponte não tem
+// coluna (fica a água por baixo); árvore põe o modelo da floresta em cima. Mapeamento do orquestrador em 12/11 (montagem
+// de Gariland a partir do surface_type do arquivo do mapa), aprovado pelo Fernando para entrar no jogo.
+// `canopy`: a altura da casa no mapa é a da copa (árvore de Gariland), e o chão sai do vizinho mais baixo.
+// `stairs`: na casa de rampa o topo fica plano e a escada da masmorra (STAIRS) sobe por cima (criptas, 13/11)
+const LOOK: Record<string, { top: string; side: string | null; prop?: string; propH?: number; propW?: number; canopy?: true; stairs?: true }> = {
+  grass: { top: 'blocos/grass', side: 'blocos/dirt' },
+  stone: { top: 'blocos/gravel', side: 'blocos/stone' },
+  // água: a peça de cima é o leito de cascalho (onde o boneco pisa), visto através da superfície de water.ts (13/11)
+  water: { top: 'blocos/gravel', side: 'blocos/stone_dark' },
+  roof: { top: 'blocos/bricks_B', side: 'blocos/bricks_A' },
+  chimney: { top: 'blocos/stone_dark', side: 'blocos/bricks_A' },
+  wood: { top: 'blocos/wood', side: 'blocos/wood' },
+  bridge: { top: 'blocos/wood', side: null },
+  box: { top: 'masmorra/box_large', side: 'blocos/stone' },
+  tree: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_1_A_Color1', canopy: true },
+  // Colina do Farol (12/11, proposta aprovada pelo Fernando): rocha na colina, areia e ouro no morro do Farol, muros de
+  // tijolo, quatro árvores variadas e o lado dos inimigos na neve (ler de longe de que lado cada time começa)
+  rock: { top: 'blocos/stone', side: 'blocos/stone' },
+  summit: { top: 'blocos/stone_dark', side: 'blocos/stone' },
+  sand: { top: 'blocos/sand_with_grass', side: 'blocos/dirt' },
+  gold: { top: 'blocos/stone_with_gold', side: 'blocos/stone' },
+  brick: { top: 'blocos/bricks_B', side: 'blocos/bricks_A' },
+  snow: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt' },
+  snow_rock: { top: 'blocos/snow', side: 'blocos/stone' },
+  tree2: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_2_A_Color1' },
+  tree3: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_3_A_Color1' },
+  tree4: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_4_A_Color1' },
+  bare1: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt', prop: 'floresta/Tree_Bare_1_A_Color1' },
+  bare2: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt', prop: 'floresta/Tree_Bare_2_A_Color1' },
+  // Cripta Alagada (12/11, mapa fechado com as peças da masmorra): piso de cascalho, altar escuro, e casas que bloqueiam
+  // com coluna, caixotes, barril ou baú em cima; o entulho é cobertura pisável. propH = altura da peça em casas.
+  crypt: { top: 'blocos/gravel', side: 'blocos/stone_dark', stairs: true },
+  altar: { top: 'blocos/stone_dark', side: 'blocos/stone_dark', stairs: true },
+  pillar: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/pillar', propH: 2 },
+  crates: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/crates_stacked', propH: 1 },
+  barrel: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/barrel_large', propH: 0.8 },
+  chest: { top: 'blocos/stone_dark', side: 'blocos/stone_dark', prop: 'masmorra/chest_gold', propH: 0.6 },
+  rubble: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/rubble_half', propH: 0.4 },
+  spikes: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/floor_tile_big_spikes', propW: 0.95 },
+  // corpo caído: o chão é o do terreno e o corpo é um boneco no fim da animação de morte (buildCorpses)
+  corpse: { top: 'blocos/dirt', side: 'blocos/dirt' },
+};
+// bonecos dos corpos da caravana (cavaleiro e ladino, os que guardavam a carga)
+const CORPSE_MODELS = ['knight', 'rogue'];
+// escada da masmorra: 2 de largura, 4 de fundo e 4 de altura, sobe para -z (conferido nos vértices do arquivo)
+const STAIRS = 'masmorra/stairs_modular_center';
+// Rampa e a casa de cima para onde ela sobe: o passo entre as duas é andando, não pulo (13/11, pedido do Fernando: "na
+// hora de descer a rampa os bonecos estão descendo pulando; as rampas devem descer andando"). walkY segue o chão inclinado
+export function rampLink(grid: Grid, a: Pos, b: Pos): boolean {
+  const up = (r: Pos, top: Pos) => { const t = tileAt(grid, r).ramp; return !!t && r.x + FACING[t[0]].x === top.x && r.y + FACING[t[0]].y === top.y; };
+  return up(a, b) || up(b, a);
+}
+const PLAIN_UNITS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'liso';
+// muros sem peça que o terreno liso desenha como morro de pedra (o tijolo continua em blocos: é construção)
+const MOUND = new Set(['rock', 'snow_rock', 'summit', 'snow']);
+const UNDER = 'blocos/stone_dark'; // coluna embaixo da água da ponte e da saia do mapa
+
+// Base do mapa como um bloco (pedidos do Fernando, 12/11, olhando o tabuleiro do FFT): todas as colunas terminam no mesmo
+// chão (y = 0), e as laterais da borda, do piso de cada casa para baixo, são uma cor lisa puxada do piso de cima que
+// escurece até sumir no fundo ("os chaos das bordas do mapa ficam sem textura e fica melhor assim"). Os topos seguem com textura.
+const BASE_DEPTH = 2; // em casas, abaixo do chão; com 1 o degradê acabava antes de escurecer de todo
+const BACKGROUND = '#1b1626'; // o fundo da cena: o degradê termina nele
+// cor da lateral pelo piso de cima (Tile.look) ou pelo terreno nos mapas sem aparência por casa
+const WALL_COLOR: Record<string, string> = {
+  grass: '#4f8f3a', tree: '#4f8f3a', floor: '#4f8f3a', forest: '#3f7a34', stone: '#7a7d86', box: '#7a7d86', wall: '#7a7d86',
+  water: '#2f6fae', bridge: '#2f6fae', roof: '#8a4b32', chimney: '#4a4a52', wood: '#8a6238',
+  rock: '#7a7d86', summit: '#4a4a52', sand: '#b8a06a', gold: '#7a7d86', brick: '#8a4b32', snow: '#c9d2dc', snow_rock: '#c9d2dc',
+  tree2: '#4f8f3a', tree3: '#4f8f3a', tree4: '#4f8f3a', bare1: '#c9d2dc', bare2: '#c9d2dc',
+  crypt: '#5a5d66', altar: '#4a4a52', pillar: '#5a5d66', crates: '#5a5d66', barrel: '#5a5d66', chest: '#4a4a52', rubble: '#5a5d66', spikes: '#5a5d66',
+};
+const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
+const TINT_GLOW = 0.45; // força do brilho próprio (UnitDef.tint): visível no boneco escuro sem apagar a textura
+// Árvores (13/11, pedido do Fernando: "árvores maiores… algumas podem até ocupar mais de 1 tile"): altura e largura
+// máximas, em casas, da árvore de 1 casa (o boneco tem 0,85: a copa passa da casa) e da que cobre 2 ou 4 casas de árvore
+// juntas na mesma altura. Cada modelo cabe no menor dos dois limites, para a copa redonda não ficar larga demais.
+const TREE_SIZE: Record<number, { h: number; w: number }> = { 1: { h: 2.4, w: 1.9 }, 2: { h: 2.8, w: 2.3 }, 4: { h: 3.4, w: 2.9 } };
+// Recorte da copa (mesmo pedido: a copa não pode esconder boneco, cursor nem casa marcada): cada um abre um furo na
+// árvore que está na frente dele. Teto de pontos por quadro (9 bonecos, o cursor e as casas marcadas)
+const CUT_MAX = 64;
+// Detalhes que quebram a grade (13/11, "não é Minecraft"): pedras no pé dos barrancos, tufos e pedrinhas nos cantos das
+// casas, longe do aro do boneco (0,44 do centro). Peças do pacote da floresta do KayKit (mesma textura das árvores)
+const DETAIL = { rock: 'floresta/Rock_1_A_Color1', boulder: 'floresta/Rock_3_A_Color1', pebble: 'floresta/Rock_2_A_Color1', tuft: 'floresta/Grass_1_A_Color1' };
+const GREEN = new Set(['grass', 'sand', 'tree', 'tree2', 'tree3', 'tree4']); // chão que ganha tufo de grama
+const ROCKY = new Set(['rock', 'summit', 'snow', 'snow_rock', 'bare1', 'bare2']); // chão que ganha pedrinha
+// sorteio fixo pela posição (o mesmo mapa sempre desenha igual), de 0 a 1
+const hash = (x: number, y: number, k = 0) => {
+  const s = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+const UP = new THREE.Vector3(0, 1, 0);
+const TMP = new THREE.Vector3(); // contas por quadro sem criar objeto
+
+// Paleta reduzida: cada canal em poucos degraus, depois da conversão para sRGB (degraus iguais ao olho). 6 níveis
+// lembram os 15 bits do SNES sem virar pôster; a opção existe para o Fernando comparar.
+const PALETTE_SHADER = {
+  uniforms: { tDiffuse: { value: null }, levels: { value: 6 } },
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: 'uniform sampler2D tDiffuse; uniform float levels; varying vec2 vUv; void main() { vec4 c = texture2D(tDiffuse, vUv); gl_FragColor = vec4(floor(c.rgb * levels + 0.5) / levels, c.a); }',
+};
+
+interface UnitView {
+  holder: THREE.Group;
+  mixer: THREE.AnimationMixer | null;
+  clips: THREE.AnimationClip[];
+  current: THREE.AnimationAction | null;
+  bar: THREE.Mesh; // parte cheia da barra de vida
+  hp: number;
+  def: string;
+  aura: THREE.Mesh | null; // brilho no chão enquanto carrega uma habilidade
+  body: THREE.Object3D | null;
+  mats: THREE.MeshStandardMaterial[]; // materiais só deste boneco (cópias): piscar um não pisca os outros do mesmo modelo
+  flash: number; // conta as piscadas: só a última devolve o brilho (golpe e espinho seguidos não cortam a segunda)
+  ground: THREE.Group; // aro e seta de frente, deitados na rampa (tiltGround)
+}
+
+interface Anim {
+  start: number;
+  dur: number;
+  step: (k: number) => void;
+  done: () => void;
+}
+
+
+// As texturas KayKit são paletas: com mipmap o render em baixa resolução mistura cores vizinhas (aprendido na POC)
+function prepare(o: THREE.Object3D) {
+  o.traverse((m) => {
+    const mesh = m as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    mesh.castShadow = mesh.receiveShadow = true;
+    const mat = mesh.material as THREE.MeshStandardMaterial, map = mat.map;
+    if (map && map.generateMipmaps && !mat.userData.procedural) Object.assign(map, { generateMipmaps: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, needsUpdate: true });
+  });
+  return o;
+}
+
+export class BattleScene {
+  private readonly renderer = new THREE.WebGLRenderer({ antialias: false });
+  private readonly scene = new THREE.Scene();
+  private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+  private readonly composer = new EffectComposer(this.renderer);
+  private readonly renderPass: RenderPass; // sem pixel art
+  private readonly pixelPass: RenderPixelatedPass;
+  private readonly palettePass = new ShaderPass(PALETTE_SHADER);
+  private pixel: PixelSettings;
+  private readonly focus = new THREE.Vector3();
+  private focusGoal: THREE.Vector3 | null = null; // para onde a câmera desliza (herói da vez, recentralizar)
+  private readonly tileTops: THREE.Object3D[] = [];
+  private readonly marks = new Map<string, THREE.Mesh>();
+  private readonly pathDots = new Map<string, THREE.Mesh>();
+  private readonly danger = new Map<string, THREE.Mesh>(); // casas onde uma carga vai cair (chargeDanger)
+  // cursor do teclado: moldura na altura da casa e seta flutuando em cima, para ler o nível mesmo atrás de um boneco
+  private readonly cursor = new THREE.Group();
+  private readonly units = new Map<string, UnitView>();
+  private readonly anims: Anim[] = [];
+  private readonly floats: HTMLElement;
+  private readonly clock = new THREE.Clock();
+  private t = 0; // relógio da batalha em ms (acelera com speed())
+  private frozenUntil = 0; // hit-stop: os bonecos ficam parados até aqui
+  private shakeUntil = 0; // golpe forte: a câmera treme até aqui
+  private readonly cursorGoal = new THREE.Vector3();
+  private readonly onResize = () => this.resize();
+  private viewH: number;
+  private readonly fitView: number; // zoom em que o mapa inteiro cabe na largura
+  private readonly step: number; // altura de um nível neste mapa
+  private insets = { top: 0, bottom: 0 }; // px cobertos pelo HUD em cima e embaixo
+  private yaw = Math.PI / 4;
+  private pitch = PITCH; // só a câmera de ação muda (ACTION_CAMS)
+  private pitchTarget = PITCH;
+  private yawTarget = Math.PI / 4;
+  private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
+  private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
+  private water: Water | null = null; // só nos mapas com água
+  private stream: { meshes: THREE.Mesh[]; time: { value: number } } | null = null;
+  private readonly fallen = new Map<string, THREE.Group>(); // corpos de quem morreu, no chão até o fim da batalha
+  private raised?: Set<string>; // trechos fundos na altura da rasa (water-levels.ts raisedDeep)
+  // casa desenhada pelo terreno liso (terrain.ts) em vez de blocos: aparência pintável, fora muro sem peça (pedra, tijolo)
+  // paredão de pedra ou neve (muro sem peça) também vira terreno: um morro de pedra dois níveis acima (rock(t))
+  private ground = (t: Tile): boolean => !!this.terrainTex && !!t.look && t.look in PAINT && (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look) || t.look === 'corpse');
+  private rock = (t: Tile) => t.terrain === 'wall' && !LOOK[t.look ?? '']?.prop && MOUND.has(t.look ?? '');
+  private ambience: Ambience | null = null; // arredores, neblina, raios de luz e partículas (ambience.ts)
+
+  private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[], private readonly terrainTex: TerrainTextures | null = null) {
+    this.pixel = pixel;
+    this.step = grid.levelHeight ?? STEP;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.info.autoReset = false; // zerado à mão no começo de cada quadro (contador de desempenho)
+    // o pixel art desenha a cena duas vezes por quadro (cor e normais); a sombra só precisa da primeira (pedida no frame)
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.domElement.className = 'board';
+    host.append(this.renderer.domElement);
+    this.floats = el('div', { class: 'floats', 'aria-hidden': 'true' });
+    host.append(this.floats);
+    // fitView: a diagonal do mapa (ele aparece em losango) mais meia casa de cada lado cabe na largura do celular em pé.
+    // Começa 1,5x mais perto: com o mapa todo a casa tinha ~45x24 px, pequena para o dedo (auditoria mobile de 25/10);
+    // a câmera vai até o herói da vez, e o botão de recentralizar volta ao mapa inteiro
+    this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
+    this.viewH = innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, PC_START);
+    this.renderPass = new RenderPass(this.scene, this.camera);
+    this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
+    // a paleta vem depois da saída em sRGB; liga e desliga sem refazer a cadeia
+    for (const pass of [this.renderPass, this.pixelPass, new OutputPass(), this.palettePass]) this.composer.addPass(pass);
+    this.scene.background = new THREE.Color('#1b1626');
+    this.scene.add(this.sky);
+    const sun = this.sun;
+    sun.position.set(-6, 12, 4);
+    sun.castShadow = true;
+    Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10 });
+    sun.shadow.mapSize.set(1024, 1024);
+    this.scene.add(sun);
+    this.buildBoard(pieces);
+    addEventListener('resize', this.onResize);
+    this.setPixel(pixel);
+    this.renderer.setAnimationLoop(() => this.frame());
+  }
+
+  // `all`: fichas de todo o cenário, não só das vivas no save (13/11, revisão): sem isto, reabrir um save em que um modelo
+  // já tinha morrido e apertar "Jogar de novo" trazia a unidade como o cristal do Farol
+  static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings, all: string[] = []): Promise<BattleScene> {
+    const ambience = loadAmbience(grid); // baixa junto com as peças do mapa
+    // terreno liso nos mapas abertos (terrain.ts); as criptas seguem em blocos
+    const terrainTex = grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt' ? loadTerrainTextures() : null;
+    // bonecos comprimidos com meshopt (13/11, pedido do Fernando: o jogo baixava 11 MB para abrir); decodificador do Three
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const corpses = grid.tiles.some((t) => t.look === 'corpse') ? CORPSE_MODELS : [];
+    const defs = [...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean))];
+    const [top, side, stone, tree, ...loaded] = await Promise.all([
+      ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/quadrado/${n}.gltf`)),
+      loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // a árvore do pack de blocos é um cubo de folhas
+      ...defs.map((d) => loader.loadAsync(`/models/${d}.glb`)),
+    ]);
+    const models = new Map(defs.map((d, i) => [d, loaded[i]]));
+    // só o mapa que traz aparência por casa baixa essas peças (~630 KB com as texturas)
+    const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? LOOK.water.top, LOOK[t.look].prop ?? '', UNDER, t.ramp && LOOK[t.look].stairs ? STAIRS : '', ...Object.values(DETAIL)] : [])))].filter(Boolean);
+    const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
+    // mapas abertos: árvores pintadas feitas por código (trees.ts), com variações, no lugar das do KayKit
+    if (terrainTex) { await loadPaint(); swapTrees(looks); swapProps(looks, true); } // e os objetos pintados (props.ts)
+    // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
+    const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
+    const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack, await terrainTex);
+    s.ambience = (await ambience).mount(s.scene);
+    s.sync(state);
+    return s;
+  }
+
+  // casa (x, y) da batalha → mundo: x no eixo X, y no eixo Z, mapa centrado na origem
+  private world(p: Pos): THREE.Vector3 {
+    const t = tileAt(this.grid, p);
+    // na rampa a unidade fica no meio da subida; na água funda, rebaixada como o desenho (cursor e marcas não flutuam)
+    const drop = (t.depth ?? 0) >= 2 && !(this.raised ??= raisedDeep(this.grid)).has(posKey(p)) ? DEEP_DROP : 0;
+    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step, p.y - this.grid.height / 2 + 0.5);
+  }
+
+  // onde o boneco fica de pé: a casa, mais baixo na água rasa e nadando na funda (marcas e cursor seguem em world(), na superfície)
+  private stand(p: Pos): THREE.Vector3 {
+    const w = this.world(p), d = tileAt(this.grid, p).depth ?? 0;
+    return d ? w.setY(w.y - (d >= 2 ? SWIM : WADE) * this.step) : w;
+  }
+
+  // Rampa (Tile.ramp): quanto o chão sobe, em metros, por casa andada em x e em z; null na casa plana. A mesma conta
+  // serve o topo da casa, o boneco, as marcas, o cursor e os detalhes, para nada ficar enterrado ou flutuando na subida
+  private slope(p: Pos): { x: number; z: number } | null {
+    const r = tileAt(this.grid, p).ramp;
+    return r ? { x: FACING[r[0]].x * r[1] * this.step, z: FACING[r[0]].y * r[1] * this.step } : null;
+  }
+
+  // altura do chão desenhado no ponto (x, z) do mundo, dentro da casa p
+  private surfaceY(p: Pos, x: number, z: number) {
+    const w = this.world(p), s = this.slope(p);
+    return s ? w.y + s.x * (x - w.x) + s.z * (z - w.z) : w.y;
+  }
+
+  // deita na rampa uma peça plana (marca, perigo, ponto do caminho, moldura do cursor) e a estica no sentido da subida
+  // para cobrir a casa inteira vista de cima
+  private lay(o: THREE.Object3D, p: Pos) {
+    const s = this.slope(p) ?? { x: 0, z: 0 };
+    o.rotation.set(-Math.atan(s.z), 0, Math.atan(s.x));
+    o.scale.set(Math.hypot(1, s.x), 1, Math.hypot(1, s.z));
+  }
+
+  // Altura do boneco andando entre duas casas quando uma delas é rampa: segue o chão quando ele é contínuo (subir pela
+  // rampa); na lateral da rampa há meio nível de quina, e o passo faz um arco por cima dela em vez de atravessá-la.
+  // A duração é a do passo plano (a regra diz que é andar, e o som dos passos conta com isso)
+  private walkY(from: Pos, to: Pos, k: number) {
+    const a = this.stand(from), b = this.stand(to);
+    const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+    const ea = this.surfaceY(from, mx, mz), eb = this.surfaceY(to, mx, mz);
+    if (Math.abs(ea - eb) < 0.01) return this.surfaceY(k < 0.5 ? from : to, a.x + (b.x - a.x) * k, a.z + (b.z - a.z) * k);
+    const lift = Math.max(0, Math.max(ea, eb) - (a.y + b.y) / 2);
+    return a.y + (b.y - a.y) * k + 4 * lift * k * (1 - k);
+  }
+
+  private buildBoard(pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>) {
+    // normaliza a peça para 1 casa de largura e STEP de altura, com o topo em y = 0
+    const norm = (src: THREE.Object3D) => {
+      const o = src.clone();
+      const box = new THREE.Box3().setFromObject(o);
+      const size = box.getSize(new THREE.Vector3());
+      o.scale.set(1 / size.x, this.step / size.y, 1 / size.z);
+      o.position.y = -box.max.y * (this.step / size.y);
+      return prepare(new THREE.Group().add(o));
+    };
+    const top = norm(pieces.top), side = norm(pieces.side), stone = norm(pieces.stone);
+    const list = () => ({ at: [] as THREE.Vector3[], tiles: [] as Pos[] });
+    const batch = { top: list(), stoneTop: list(), side: list(), stone: list() };
+    const walls: { x: number; z: number; top: number; color: string }[] = []; // laterais lisas da borda
+    const edge = (p: Pos) => NEIGHBORS.some(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) < 0);
+    // nível mais alto ocupado pela coluna da casa (-1 fora do mapa: a borda fica à mostra)
+    const columnTop = (p: Pos) => {
+      if (p.x < 0 || p.y < 0 || p.x >= this.grid.width || p.y >= this.grid.height) return -1;
+      const t = tileAt(this.grid, p);
+      return t.h + (t.terrain === 'wall' ? 2 : 0);
+    };
+    const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
+    const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
+    const levels = waterLevels(this.grid, this.step);
+    this.levels = levels;
+    const smooth = !!this.terrainTex;
+    const river = smooth ? riverOf(this.grid, levels) : null;
+    const outside = smooth && EXTEND === 'textura' ? riverOutside(this.grid, this.step, levels, river) : new Map<string, WaterLevel>();
+    const looks = this.lookBatches(edge, walls, levels);
+    for (const [i, tile] of this.grid.tiles.entries()) {
+      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
+      const w = this.world(p);
+      const wall = tile.terrain === 'wall';
+      if (tile.look) looks.add(p);
+      // muro: pedra empilhada dois níveis acima da casa, para ler que bloqueia passagem e visão
+      for (let k = 0; !tile.look && k <= tile.h + (wall ? 2 : 0); k++) {
+        const at = new THREE.Vector3(w.x, (k + 1) * this.step, w.z);
+        if (k === tile.h) {
+          const b = wall ? batch.stoneTop : batch.top;
+          b.at.push(at);
+          b.tiles.push(p);
+        } else if (wall) batch.stone.at.push(at);
+        // bloco de terra cercado pelos quatro lados nunca aparece: fora da cena (eram a maior parte dos triângulos no 20x20);
+        // na borda, a lateral lisa toma o lugar da terra
+        else if (!edge(p) && !NEIGHBORS.every(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) >= k)) batch.side.at.push(at);
+      }
+      if (!tile.look && edge(p)) walls.push({ x: w.x, z: w.z, top: tile.h * this.step, color: WALL_COLOR[tile.terrain] });
+      const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: markTexture('frame') }));
+      mark.position.set(w.x, w.y + 0.02, w.z);
+      mark.visible = false;
+      this.scene.add(mark);
+      this.marks.set(posKey(p), mark);
+      // perigo da carga: camada própria, por baixo das marcas da vez (a escolha do jogador continua por cima)
+      const danger = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: DANGER[0], transparent: true, opacity: DANGER[1], depthWrite: false }));
+      danger.position.set(w.x, w.y + 0.015, w.z);
+      danger.visible = false;
+      this.scene.add(danger);
+      this.danger.set(posKey(p), danger);
+      const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: MARK.path[0], transparent: true, opacity: MARK.path[1], depthWrite: false }));
+      dot.position.set(w.x, w.y + 0.03, w.z);
+      dot.visible = false;
+      this.scene.add(dot);
+      this.pathDots.set(posKey(p), dot);
+    }
+    this.instanced(top, batch.top.at, batch.top.tiles);
+    this.instanced(stone, batch.stoneTop.at, batch.stoneTop.tiles);
+    this.instanced(side, batch.side.at);
+    this.instanced(stone, batch.stone.at);
+    looks.build();
+    if (smooth) {
+      const inner = (p: Pos, x: number, z: number) => {
+        const lv = levels.get(posKey(p)), t = tileAt(this.grid, p);
+        return lv ? lv.bed : this.rock(t) ? (t.h + 3) * this.step : this.ground(t) ? this.surfaceY(p, x, z) : (t.h + 1) * this.step;
+      };
+      this.scene.add(buildTerrain(this.grid, { step: this.step, inner, outside, levels, river, extend: EXTEND === 'textura', tex: this.terrainTex! }));
+      const picks = this.grid.tiles.flatMap((t, i) => {
+        const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
+        if (t.look === 'bridge') return [{ p, at: this.world(p) }];
+        return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.rock(t) ? this.world(p).setY((t.h + 3) * this.step) : this.world(p) }] : [];
+      });
+      this.scene.add(buildBridges(this.grid, this.step, this.terrainTex!.wood, this.terrainTex!.bark));
+      this.buildBorder(levels);
+      const pick = pickTiles(picks);
+      this.scene.add(pick);
+      this.tileTops.push(pick);
+    }
+    if (levels.size) {
+      this.water = new Water(this.scene, this.grid, levels, this.step, river);
+      // o rio de fora é uma faixa contínua com correnteza (terrain.ts buildStream), não casas de água em degrau
+      if (outside.size) { this.stream = buildStream(this.grid, this.step, levels, river); this.scene.add(...this.stream.meshes); }
+      this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
+    }
+    this.buildCorpses();
+    this.buildTrees(pieces.tree);
+    this.buildStairs();
+    this.buildDetails();
+    // marcas da casa deitadas na rampa: planas, a metade de cima ficava enterrada na subida
+    for (const [i, tile] of this.grid.tiles.entries()) {
+      if (!tile.ramp) continue;
+      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
+      for (const layer of [this.marks, this.danger, this.pathDots]) this.lay(layer.get(posKey(p))!, p);
+    }
+    this.buildWalls(walls);
+    this.focus.set(0, STEP, 0);
+    // transparent só para entrar na fila das transparentes, depois da água (renderOrder -1): sem isso a água tingia a moldura
+    const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: MARKER.frameDepthTest, depthWrite: false, transparent: true }));
+    frame.position.y = MARKER.frameY;
+    frame.name = 'frame';
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 4).rotateX(Math.PI), new THREE.MeshBasicMaterial({ color: '#ffcf4a', depthTest: false }));
+    arrow.name = 'arrow';
+    arrow.renderOrder = 11; // a seta fica acima de tudo (até atrás de um muro mostra onde está o cursor); a moldura não
+    this.cursor.add(frame, arrow);
+    this.cursor.visible = false;
+    this.scene.add(this.cursor);
+  }
+
+  // Casas com aparência (Tile.look): coluna de cubos inteiros de 1 casa, do topo da casa para baixo, com a peça do topo
+  // e a da coluna de cada aparência. Cubo inteiro porque o cubo achatado na altura de um nível (0,25 em Gariland) espremia a
+  // textura em listras. A rampa inclina o cubo do topo (cisalhamento) e o estica para baixo, para não abrir fresta.
+  // Laterais lisas da borda num desenho só (uma chamada de desenho): cor do piso no alto, já escurecida, até o fundo
+  private buildWalls(walls: { x: number; z: number; top: number; color: string }[]) {
+    if (!walls.length) return;
+    const bottom = -BASE_DEPTH;
+    const deep = new THREE.Color(BACKGROUND);
+    const parts = walls.map(({ x, z, top, color }) => {
+      const g = new THREE.BoxGeometry(1, top - bottom, 1).translate(x, (top + bottom) / 2, z);
+      const high = new THREE.Color(color).multiplyScalar(0.55); // a lateral é mais escura que o topo, como sombra
+      const pos = g.getAttribute('position');
+      const colors = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) (pos.getY(i) > bottom + 0.001 ? high : deep).toArray(colors, i * 3);
+      g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return g;
+    });
+    const mesh = new THREE.Mesh(mergeGeometries(parts), new THREE.MeshBasicMaterial({ vertexColors: true }));
+    for (const g of parts) g.dispose();
+    this.scene.add(mesh);
+  }
+
+  private lookBatches(edge: (p: Pos) => boolean, walls: { x: number; z: number; top: number; color: string }[], water: Map<string, WaterLevel>) {
+    const norm = (name: string, height: number) => {
+      const o = this.lookPieces.get(name)!.clone();
+      const size = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
+      const box = new THREE.Box3().setFromObject(o);
+      o.scale.set(1 / size.x, height / size.y, 1 / size.z);
+      o.position.set(-(box.min.x + box.max.x) / 2 / size.x, -box.max.y * (height / size.y), -(box.min.z + box.max.z) / 2 / size.z);
+      return prepare(new THREE.Group().add(o));
+    };
+    const batches = new Map<string, { piece: THREE.Object3D; at: THREE.Matrix4[]; tiles?: Pos[] }>();
+    const put = (name: string, height: number, m: THREE.Matrix4, tile?: Pos) => {
+      const key = `${name}@${height}${tile ? '#' : ''}`;
+      let b = batches.get(key);
+      // altura 0: peça como veio (a escala já vai na matriz)
+      if (!b) batches.set(key, (b = { piece: height ? norm(name, height) : prepare(this.lookPieces.get(name)!.clone()), at: [], tiles: tile && [] }));
+      b.at.push(m);
+      if (tile) b.tiles!.push(tile);
+    };
+    const add = (p: Pos) => {
+      const tile = tileAt(this.grid, p);
+      const look = LOOK[tile.look!];
+      const w = this.world(p);
+      // árvore de Gariland (casa não pisável, a altura do arquivo é a da copa): o chão é o do vizinho mais baixo. Nos nossos
+      // mapas a altura já é a do chão. Muro sem peça em cima: dois níveis acima da casa, como sem aparência; com peça
+      // (coluna, caixote, barril), a peça é que bloqueia e a casa fica no nível do chão.
+      const wall = tile.terrain === 'wall';
+      const h = look.canopy && wall ? Math.min(...neighbors(this.grid, p).map((n) => tileAt(this.grid, n).h)) : tile.h + (wall && !look.prop ? 2 : 0);
+      // água: o bloco de cima é o leito (waterLevels: na rasa onde os pés pisam, na funda bem abaixo); a superfície, mais
+      // baixa na funda que na rasa (o degrau na margem diz "aqui é fundo"), é desenhada em water.ts
+      const top = tile.look === 'water' ? water.get(posKey(p))!.bed : (h + 1) * this.step;
+      // a ponte é uma tábua de um nível sobre a água; casa baixa (topo abaixo de 1) tem o cubo achatado até a base; na borda
+      // o topo é uma fatia de um nível e a lateral lisa começa logo abaixo dela
+      const onEdge = edge(p);
+      const slab = look.side && !onEdge ? Math.min(1, top) : this.step;
+      const m = new THREE.Matrix4().makeTranslation(w.x, top, w.z);
+      if (tile.ramp && !look.stairs) { // escada: topo plano, a peça vai em buildStairs
+        const rise = tile.ramp[1] * this.step, f = FACING[tile.ramp[0]];
+        // y' = y * (altura + subida) / altura + subida * (meio passo na direção da rampa + 1/2)
+        m.set(1, 0, 0, w.x, f.x * rise, (slab + rise) / slab, f.y * rise, top + rise / 2, 0, 0, 1, w.z, 0, 0, 0, 1);
+      }
+      const painted = this.ground(tile);
+      // a ponte dos mapas abertos é a de bridge.ts (tábuas, cordas e escadinha); o bloco de madeira fica só nas criptas
+      if (!painted && !(this.terrainTex && tile.look === 'bridge')) put(look.top, slab, m, p);
+      // coluna até a base reta (y = 0): cubos inteiros e o último achatado no que falta, para o fundo não ficar em degraus
+      const column = look.side ?? UNDER;
+      let y = top - slab;
+      if (!look.side) {
+        // ponte: o leito embaixo, se a água passa por baixo da tábua (a superfície vem de water.ts)
+        const under = water.get(posKey(p));
+        if (under && !this.terrainTex) put(LOOK.water.top, 1, new THREE.Matrix4().makeTranslation(w.x, under.bed, w.z).scale(new THREE.Vector3(1, under.bed, 1)));
+        y = 0;
+      }
+      if (painted) { /* chão do terreno liso */ } else if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
+      else for (; y > 0; y -= 1) if (!this.buried(p, y)) put(column, 1, new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)));
+      if (look.prop && tile.terrain !== 'forest') { // árvore de casa de floresta: buildTrees
+        // objeto pintado (props.ts): a variação sai da posição, como nas árvores
+        const prop = variant(this.lookPieces, look.prop, hash(p.x, p.y, 6)), box = pieceBox(this.lookPieces.get(prop)!);
+        // propW: peça de chão (espinhos) medida pela largura, para caber na casa; as outras pela altura (1,1 = a árvore)
+        const k = look.propW ? look.propW / Math.max(box.max.x - box.min.x, box.max.z - box.min.z) : (look.propH ?? 1.1) / (box.max.y - box.min.y);
+        put(prop, 0, new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)));
+      }
+      // entulho em cima da ponte (cobertura pisável): os restos da caravana sobre as tábuas (props.ts), só nos mapas abertos
+      if (tile.terrain === 'rubble' && tile.look === 'bridge' && this.lookPieces.has(DEBRIS)) put(variant(this.lookPieces, DEBRIS, hash(p.x, p.y, 6)), 0, new THREE.Matrix4().makeTranslation(w.x, top, w.z));
+    };
+    const build = () => {
+      for (const b of batches.values()) this.instanced(b.piece, b.at, b.tiles);
+    };
+    return { add, build };
+  }
+
+  // Um InstancedMesh por malha da peça em vez de um objeto por bloco: o 20x20 fazia 2 321 draw calls por quadro e caía
+  // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
+  // peças dos mapas abertos (caixotes, barris, ponte, muros, árvores de Gariland) com a textura e o sombreado de detail.ts;
+  // um material por material de origem, para não multiplicar os programas do shader
+  private readonly texturedMats = new Map<THREE.Material, THREE.Material>();
+  // boneco e corpo: só o sombreado de detail.ts, sem o granulado (13/11, o Fernando achou a textura em cima deles "zoada")
+  private shaded<M extends THREE.Material>(m: M): M {
+    const tex = this.terrainTex;
+    if (tex && !PLAIN_UNITS) m.onBeforeCompile = (sh) => addDetail(sh, tex, 2.5, 0);
+    return m;
+  }
+
+  private textured(m: THREE.Material): THREE.Material {
+    const tex = this.terrainTex;
+    if (!tex || !(m as THREE.MeshStandardMaterial).isMeshStandardMaterial || m.userData.procedural) return m; // peça pintada (painted.ts): sem granulado
+    let out = this.texturedMats.get(m);
+    if (!out) {
+      out = m.clone();
+      out.onBeforeCompile = (sh) => addDetail(sh, tex, 1.5);
+      this.texturedMats.set(m, out);
+    }
+    return out;
+  }
+
+  // Corpos da caravana: cavaleiro e ladino alternados, parados no último quadro da animação de morte, escurecidos, com uma
+  // mancha escura no chão; giro sorteado pela casa
+  private buildCorpses() {
+    const stain = new THREE.MeshBasicMaterial({ color: '#2a0f0a', transparent: true, opacity: 0.55, depthWrite: false });
+    this.grid.tiles.forEach((t, i) => {
+      if (t.look !== 'corpse') return;
+      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
+      const gltf = this.models.get(CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length]);
+      if (!gltf) return;
+      const body = prepare(cloneSkinned(gltf.scene));
+      body.traverse((m) => {
+        const mesh = m as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+        mat.color.multiplyScalar(0.55); // sem vida: mais escuro e apagado que os bonecos da batalha
+        mesh.material = this.shaded(mat);
+      });
+      const b = new THREE.Box3().setFromObject(body);
+      body.scale.setScalar(unitHeight('soldier') / (b.max.y - b.min.y));
+      const clip = [...gltf.animations, ...this.packClips].find((c) => c.name === 'Death_A');
+      if (clip) {
+        const mixer = new THREE.AnimationMixer(body);
+        const act = mixer.clipAction(clip);
+        act.setLoop(THREE.LoopOnce, 1);
+        act.clampWhenFinished = true;
+        act.play();
+        mixer.update(clip.duration);
+      }
+      const w = this.world(p);
+      body.position.copy(w);
+      body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
+      this.scene.add(body);
+      // mancha de borda irregular (pincelada), não um disco
+      const blot = new THREE.CircleGeometry(0.42, 14).rotateX(-Math.PI / 2), bp = blot.getAttribute('position');
+      for (let k = 1; k < bp.count; k++) { const r = 0.7 + 0.5 * hash(p.x + (k % 14) * 0.37, p.y, 9); bp.setXYZ(k, bp.getX(k) * r, 0, bp.getZ(k) * r); }
+      const spot = new THREE.Mesh(blot, stain);
+      spot.position.set(w.x + 0.08, w.y + 0.012, w.z - 0.05);
+      spot.scale.set(1, 1, 0.7);
+      // restos da caravana ao lado do corpo: garrafas, saco, tábua (props.ts), só nos mapas abertos
+      const litter = this.lookPieces.get(variant(this.lookPieces, LITTER, hash(p.x, p.y, 8)))?.clone();
+      if (litter) {
+        const a = hash(p.x, p.y, 10) * Math.PI * 2;
+        litter.position.set(w.x + Math.cos(a) * 0.3, w.y, w.z + Math.sin(a) * 0.3);
+        litter.rotation.y = a * 3;
+        this.scene.add(litter);
+      }
+      spot.renderOrder = -2;
+      this.scene.add(spot);
+    });
+  }
+
+  // Linha pontilhada discreta na borda do campo de batalha (13/11, pedido do Fernando): segue a altura do chão de cada
+  // casa da borda (na água, a superfície), com degrau onde a altura muda
+  private buildBorder(levels: Map<string, WaterLevel>) {
+    const { width: W, height: H } = this.grid, pts: THREE.Vector3[] = [];
+    const yAt = (p: Pos, x: number, z: number) => (levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.04;
+    const side = (cells: Pos[], edge: (p: Pos, k: number) => [number, number]) => {
+      const line: THREE.Vector3[] = [];
+      for (const p of cells) for (let k = 0; k <= 4; k++) { const [x, z] = edge(p, k / 4); line.push(new THREE.Vector3(x, yAt(p, x, z), z)); }
+      for (let i = 1; i < line.length; i++) pts.push(line[i - 1], line[i]);
+    };
+    const X = (x: number) => x - W / 2, Z = (z: number) => z - H / 2;
+    const row = (y: number) => Array.from({ length: W }, (_, x) => ({ x, y }));
+    const col = (x: number) => Array.from({ length: H }, (_, y) => ({ x, y }));
+    side(row(0), (p, k) => [X(p.x + k), Z(0) + 0.01]);
+    side(row(H - 1), (p, k) => [X(p.x + k), Z(H) - 0.01]);
+    side(col(0), (p, k) => [X(0) + 0.01, Z(p.y + k)]);
+    side(col(W - 1), (p, k) => [X(W) - 0.01, Z(p.y + k)]);
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.LineSegments(g, new THREE.LineDashedMaterial({ color: '#f4ecd8', dashSize: 0.14, gapSize: 0.11, transparent: true, opacity: 0.45, depthWrite: false }));
+    line.computeLineDistances();
+    line.renderOrder = 2;
+    this.scene.add(line);
+  }
+
+  private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
+    const out: THREE.InstancedMesh[] = [];
+    if (!at.length) return out;
+    piece.updateMatrixWorld(true);
+    const m = new THREE.Matrix4();
+    piece.traverse((o) => {
+      const src = o as THREE.Mesh;
+      if (!src.isMesh) return;
+      const inst = new THREE.InstancedMesh(src.geometry, this.textured(src.material as THREE.Material), at.length);
+      at.forEach((p, i) => inst.setMatrixAt(i, (p instanceof THREE.Matrix4 ? m.copy(p) : m.makeTranslation(p.x, p.y, p.z)).multiply(src.matrixWorld)));
+      inst.castShadow = inst.receiveShadow = true;
+      if (tiles) {
+        inst.userData.tiles = tiles;
+        this.tileTops.push(inst);
+      }
+      this.scene.add(inst);
+      out.push(inst);
+    });
+    return out;
+  }
+
+  // Árvores das casas de floresta, maiores que a casa (TREE_SIZE). Casas de árvore vizinhas na mesma altura viram uma
+  // árvore só (2x2 primeiro, depois 2x1): só desenho, cada casa continua sendo árvore na regra. O grupo usa o modelo mais
+  // largo entre os das casas dele; giro e tamanho variam pela posição. A copa recebe o recorte (cutMaterial).
+  private buildTrees(legacy: THREE.Object3D) {
+    const g = this.grid, taken = new Set<string>();
+    const free = (x: number, y: number, h: number) => inBounds(g, { x, y }) && !taken.has(posKey({ x, y })) && tileAt(g, { x, y }).terrain === 'forest' && tileAt(g, { x, y }).h === h;
+    // mapa sem aparência por casa (Escaramuça) usa a árvore da POC; o resto, a peça do look
+    const modelOf = (p: Pos) => {
+      const look = tileAt(g, p).look;
+      return look ? (LOOK[look].prop ?? null) : '';
+    };
+    const pieceOf = (name: string) => (name ? this.lookPieces.get(name)! : legacy);
+    const boxOf = (name: string) => pieceBox(pieceOf(name));
+    const width = (b: THREE.Box3) => Math.max(b.max.x - b.min.x, b.max.z - b.min.z);
+    const batches = new Map<string, THREE.Matrix4[]>();
+    for (let y = 0; y < g.height; y++) {
+      for (let x = 0; x < g.width; x++) {
+        const t = tileAt(g, { x, y });
+        // árvore grande da meia casa (half.ts): uma árvore só, do tamanho do quadrado dela
+        if (t.tree && !taken.has(posKey({ x, y })) && modelOf({ x, y })) {
+          const n = t.tree, name = modelOf({ x, y })!;
+          for (let dy = 0; dy < n; dy++) for (let dx = 0; dx < n; dx++) taken.add(posKey({ x: x + dx, y: y + dy }));
+          const box = boxOf(name);
+          const k = Math.min((n * (1 + 0.5 * hash(x, y, 4))) / (box.max.y - box.min.y), (n * 0.95) / width(box));
+          const c = this.world({ x, y }).add(new THREE.Vector3((n - 1) / 2, 0, (n - 1) / 2));
+          const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
+          if (!batches.has(name)) batches.set(name, []);
+          batches.get(name)!.push(m);
+          continue;
+        }
+        if (!free(x, y, t.h)) continue;
+        const group = free(x + 1, y, t.h) && free(x, y + 1, t.h) && free(x + 1, y + 1, t.h) ? [[0, 0], [1, 0], [0, 1], [1, 1]]
+          : free(x + 1, y, t.h) ? [[0, 0], [1, 0]] : free(x, y + 1, t.h) ? [[0, 0], [0, 1]] : [[0, 0]];
+        const tiles = group.map(([dx, dy]) => ({ x: x + dx, y: y + dy }));
+        for (const p of tiles) taken.add(posKey(p));
+        const names = tiles.map(modelOf).filter((n): n is string => n !== null);
+        if (!names.length) continue;
+        // a variação da árvore sai da posição (painted.ts variant): espécies e portes diferentes lado a lado. O sorteio 16
+        // foi escolhido olhando o Bosque: 2 pinheiros altos, 4 de saias e 2 árvores velhas entre as 14 (com 5 saía 1 pinheiro)
+        const name = variant(this.lookPieces, names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)), hash(x, y, 16));
+        const box = boxOf(name), size = TREE_SIZE[tiles.length], tall = (pieceOf(name).userData.tall as number | undefined) ?? 1; // pinheiro: mais alto que o teto da casa
+        // tamanho mais variado (13/11, "árvores de diferentes tamanhos"): de 75% a 135% do tamanho da casa
+        // o pé da árvore pintada (saia e raízes, userData.foot) fica no miolo plano da casa dela: na encosta da borda
+        // (terrain.ts, 1/6 da casa) a raiz ficava no ar
+        const foot = (0.4 * Math.sqrt(tiles.length)) / ((pieceOf(name).userData.foot as number | undefined) ?? 0.01);
+        const k = Math.min(Math.min((size.h * tall) / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1)), foot);
+        const c = tiles.reduce((s: THREE.Vector3, p) => s.add(this.world(p)), new THREE.Vector3()).divideScalar(tiles.length);
+        const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
+        if (!batches.has(name)) batches.set(name, []);
+        batches.get(name)!.push(m);
+      }
+    }
+    for (const [name, at] of batches) {
+      for (const inst of this.instanced(prepare(pieceOf(name).clone()), at)) {
+        inst.material = this.cutMaterial(inst.material as THREE.MeshStandardMaterial);
+        // o passe de normais do pixel art troca o material de tudo; a árvore usa o próprio, com o mesmo recorte, e só
+        // devolve a normal (sem isso o contorno da copa recortada aparecia por cima do boneco)
+        inst.onBeforeRender = (_r, scene) => void (this.cuts.normals.value = (scene as THREE.Scene).overrideMaterial ? 1 : 0);
+        this.hasTrees = true;
+      }
+    }
+  }
+
+  // Recorte da copa: descarta o pedaço da árvore que está na frente (mais perto da câmera) de um ponto protegido e a
+  // menos de `w` dele na tela; a borda do furo sai em xadrez, no jeito dos 16 bits. Pontos em coordenadas da câmera,
+  // atualizados a cada quadro (updateCuts). Com `cutNormals`, devolve a normal como o MeshNormalMaterial do pixel art.
+  private readonly cuts = { points: { value: Array.from({ length: CUT_MAX }, () => new THREE.Vector4()) }, count: { value: 0 }, normals: { value: 0 } };
+  private hasTrees = false;
+  private cutMaterial(src: THREE.MeshStandardMaterial) {
+    const m = src.clone();
+    m.allowOverride = false;
+    m.customProgramCacheKey = () => `copa${CUT_MAX}`;
+    m.onBeforeCompile = (s) => {
+      Object.assign(s.uniforms, { cutPoints: this.cuts.points, cutCount: this.cuts.count, cutNormals: this.cuts.normals });
+      s.fragmentShader = s.fragmentShader
+        .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`)
+        .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+          vec3 viewPos = -vViewPosition;
+          for (int i = 0; i < ${CUT_MAX}; i++) {
+            if (i >= cutCount) break;
+            vec4 c = cutPoints[i];
+            float d = distance(viewPos.xy, c.xy);
+            if (viewPos.z > c.z + 0.3 && d < c.w && (d < c.w * 0.7 || mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0)) discard;
+          }`)
+        .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n  if (cutNormals > 0.5) gl_FragColor = vec4(normalize(normal) * 0.5 + 0.5, 1.0);');
+    };
+    return m;
+  }
+
+  // pontos protegidos do recorte: o corpo de cada boneco, o cursor e as casas marcadas (as do Mover e do Agir)
+  private marked: THREE.Vector3[] = [];
+  private updateCuts() {
+    const pts = this.cuts.points.value, view = this.camera.matrixWorldInverse;
+    let n = 0;
+    const add = (x: number, y: number, z: number, r: number) => {
+      if (n >= CUT_MAX) return;
+      TMP.set(x, y, z).applyMatrix4(view);
+      pts[n++].set(TMP.x, TMP.y, TMP.z, r);
+    };
+    for (const v of this.units.values()) {
+      const h = unitHeight(v.def), p = v.holder.position;
+      if (v.holder.visible) add(p.x, p.y + h * 0.6, p.z, Math.max(0.75, h * 0.75));
+    }
+    if (this.cursor.visible) add(this.cursor.position.x, this.cursor.position.y + 0.3, this.cursor.position.z, 0.8);
+    for (const w of this.marked) add(w.x, w.y + 0.05, w.z, 0.55);
+    this.cuts.count.value = n;
+  }
+
+  // Cubo da coluna que nunca aparece: as 4 vizinhas são chão firme (sem água, ponte nem copa de Gariland) que chega até o
+  // topo dele, e a casa também. Eram a maior parte dos triângulos dos mapas com aparência por casa (1,2 milhão na Colina);
+  // cortá-los paga as árvores maiores e os detalhes (13/11). Água fica de fora: a outra frente pode deixá-la transparente
+  private buried(p: Pos, y: number) {
+    const solid = (t: Tile) => !t.depth && !!t.look && t.look !== 'water' && t.look !== 'bridge' && !LOOK[t.look].canopy;
+    if (!solid(tileAt(this.grid, p))) return false;
+    return NEIGHBORS.every(([dx, dy]) => {
+      const q = { x: p.x + dx, y: p.y + dy };
+      if (!inBounds(this.grid, q)) return false;
+      const t = tileAt(this.grid, q);
+      return solid(t) && (t.h + 1 + (t.terrain === 'wall' && !LOOK[t.look!].prop ? 2 : 0)) * this.step >= y - 1e-6;
+    });
+  }
+
+  // Escadas das criptas: na casa de rampa com piso de masmorra (LOOK.stairs) a escada sai do topo plano e sobe a rampa
+  // inteira na direção dela, ocupando a casa (1 de largura e de fundo); o boneco fica no meio, como na rampa (world)
+  private buildStairs() {
+    const at: THREE.Matrix4[] = [];
+    for (const [i, t] of this.grid.tiles.entries()) {
+      if (!t.ramp || !t.look || !LOOK[t.look].stairs) continue;
+      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) }, w = this.world(p), f = FACING[t.ramp[0]];
+      const rise = t.ramp[1] * this.step;
+      // a peça sobe para -z: o giro leva -z para a direção da rampa; o centro dela (z = 2) vai ao centro da casa. Afundada
+      // 1 dos 8 degraus: a quina de cada degrau fica no plano da rampa ou abaixo, e a marca, o aro e o cursor (deitados
+      // nesse plano) não somem atrás dos degraus
+      at.push(new THREE.Matrix4().makeRotationY(Math.atan2(-f.x, -f.y)).setPosition(w.x, w.y - rise / 2 - rise / 8, w.z)
+        .multiply(new THREE.Matrix4().makeScale(0.5, rise / 4, 0.25)).multiply(new THREE.Matrix4().makeTranslation(0, 0, -2)));
+    }
+    if (at.length) this.instanced(prepare(this.lookPieces.get(STAIRS)!.clone()), at);
+  }
+
+  // Pedras no pé dos barrancos (a lateral deixa de ser uma parede lisa de cubos), tufos de grama e pedrinhas no canto de
+  // algumas casas. Fora do aro do boneco e da água; nada disso entra no toque (pick) nem na regra.
+  private buildDetails() {
+    if (!this.lookPieces.has(DETAIL.rock)) return; // mapa sem aparência por casa: sem peças de detalhe
+    const g = this.grid;
+    const at: Record<keyof typeof DETAIL, THREE.Matrix4[]> = { rock: [], boulder: [], pebble: [], tuft: [] };
+    const put = (kind: keyof typeof DETAIL, x: number, y: number, z: number, size: number, turn: number) => {
+      const box = pieceBox(this.lookPieces.get(DETAIL[kind])!);
+      const k = size / Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
+      // base no chão, afundada 15% da altura da peça: pedra assentada, não pousada
+      at[kind].push(new THREE.Matrix4().makeRotationY(turn * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(x, y - (box.min.y + 0.15 * (box.max.y - box.min.y)) * k, z));
+    };
+    const natural = (t: { look?: string; depth?: number }) => !t.depth && (GREEN.has(t.look ?? '') || ROCKY.has(t.look ?? ''));
+    for (const [i, t] of g.tiles.entries()) {
+      const p = { x: i % g.width, y: Math.floor(i / g.width) }, w = this.world(p);
+      if (!natural(t) || t.terrain === 'wall') continue;
+      // barranco: a vizinha é mais alta 1 nível ou mais na quina entre as duas. A pedra fica encostada na parede, perto
+      // de um dos cantos (a 0,45 ou mais do centro, fora do aro do boneco), e a mais alta ganha outra no meio da parede
+      for (const [d, f] of FACING.entries()) {
+        const q = { x: p.x + f.x, y: p.y + f.y };
+        if (!inBounds(g, q) || hash(p.x, p.y, 3 + d) > 0.55) continue;
+        const u = tileAt(g, q);
+        if (!natural(u) && !(u.terrain === 'wall' && ROCKY.has(u.look ?? ''))) continue;
+        const ex = w.x + f.x / 2, ez = w.z + f.y / 2;
+        const low = this.surfaceY(p, ex, ez), high = u.terrain === 'wall' ? (u.h + 3) * this.step : this.surfaceY(q, ex, ez);
+        if (high - low < this.step * 0.9) continue;
+        const side = (hash(p.x, p.y, 7 + d) < 0.5 ? -1 : 1) * (0.26 + 0.14 * hash(p.x, p.y, 11 + d));
+        const x = ex + f.y * side, z = ez + f.x * side;
+        put('rock', x, this.surfaceY(p, x, z), z, 0.2 + 0.08 * hash(p.x, p.y, 13 + d), hash(p.x, p.y, 17 + d));
+        if (high - low >= this.step * 1.9) put('boulder', ex - f.y * side * 0.5, low + (high - low) * 0.4, ez - f.x * side * 0.5, 0.26 + 0.08 * hash(p.x, p.y, 19 + d), hash(p.x, p.y, 23 + d));
+      }
+      // tufo ou pedrinha num canto da casa (a ~0,5 do centro): quebra o carimbo do topo sem parecer obstáculo
+      if (t.terrain !== 'floor' || hash(p.x, p.y, 29) > 0.4) continue;
+      const cx = w.x + (hash(p.x, p.y, 31) < 0.5 ? -0.36 : 0.36), cz = w.z + (hash(p.x, p.y, 37) < 0.5 ? -0.36 : 0.36);
+      const green = GREEN.has(t.look ?? '');
+      // tufo de grama só nos mapas em bloco: no terreno liso ele não combinava com a foto do chão (13/11, pedido do Fernando)
+      if (!(green && this.terrainTex)) put(green ? 'tuft' : 'pebble', cx, this.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
+    }
+    for (const kind of Object.keys(at) as (keyof typeof DETAIL)[]) this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
+  }
+
+  // Pontilhado do maior alcance (13/11, pedido do Fernando: "ao redor do personagem deve aparecer pontilhado o range da
+  // sua skill que bate mais longe, e enquanto ele vê a prévia do movimento também"): contorno das casas a até `range`
+  // passos de `center` (a mesma distância da regra), na altura do chão de cada casa. Só refaz quando muda
+  private levels = new Map<string, WaterLevel>();
+  private ring: { key: string; mesh: THREE.Mesh } | null = null;
+  setRangeRing(r: { center: Pos; range: number } | null) {
+    const key = r ? `${posKey(r.center)}:${r.range}` : '';
+    if (this.ring?.key === key) return;
+    if (this.ring) { this.scene.remove(this.ring.mesh); this.ring.mesh.geometry.dispose(); (this.ring.mesh.material as THREE.Material).dispose(); this.ring = null; }
+    if (!r || r.range < 1) return;
+    const { width: W, height: H } = this.grid, pos: number[] = [];
+    const inside = (p: Pos) => inBounds(this.grid, p) && dist(p, r.center) <= r.range;
+    const yAt = (p: Pos, x: number, z: number) => (this.levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.05;
+    // tracinho chato deitado no chão (linha de 1 px do WebGL quase não aparecia): 2 triângulos de `a` até `b`, 0,07 de largura
+    const dash = (p: Pos, ax: number, az: number, bx: number, bz: number) => {
+      const nx = -(bz - az), nz = bx - ax, k = 0.035 / Math.hypot(nx, nz);
+      const v = (x: number, z: number, side: number) => [x + nx * k * side, yAt(p, x, z), z + nz * k * side];
+      const a1 = v(ax, az, 1), a2 = v(ax, az, -1), b1 = v(bx, bz, 1), b2 = v(bx, bz, -1);
+      pos.push(...a1, ...a2, ...b1, ...b1, ...a2, ...b2);
+    };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const p = { x, y };
+      if (!inside(p)) continue;
+      // cada lado da casa que encosta numa casa de fora vira 3 tracinhos (seguem rampa e degrau)
+      for (const [dx, dy, ax, az, bx, bz] of [[0, -1, 0, 0, 1, 0], [0, 1, 0, 1, 1, 1], [-1, 0, 0, 0, 0, 1], [1, 0, 1, 0, 1, 1]] as const) {
+        if (inside({ x: x + dx, y: y + dy })) continue;
+        for (let k = 0; k < 3; k++) {
+          const t0 = (k + 0.2) / 3, t1 = (k + 0.8) / 3;
+          const at = (t: number) => [x + ax + (bx - ax) * t - W / 2, y + az + (bz - az) * t - H / 2];
+          const [x0, z0] = at(t0), [x1, z1] = at(t1);
+          dash(p, x0, z0, x1, z1);
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+    mesh.renderOrder = 11;
+    this.scene.add(mesh);
+    this.ring = { key, mesh };
+  }
+
+  // Prévia da trajetória: faixa fina do olho de quem atira até a mira do alvo, azul onde passa e vermelha depois do ponto
+  // em que bate (a casa que barra, sightBlock). Refeita a cada mudança do cursor; poucos vértices
+  private trajectory: THREE.Group | null = null;
+  setTrajectory(t: { from: Pos; to: Pos; block: Pos | null } | null) {
+    if (this.trajectory) { this.scene.remove(this.trajectory); this.trajectory.traverse((o) => (o as THREE.Mesh).geometry?.dispose()); this.trajectory = null; }
+    if (!t) return;
+    const eye = (p: Pos) => this.stand(p).add(new THREE.Vector3(0, unitHeight('soldier') * 0.7, 0));
+    const a = eye(t.from), b = eye(t.to);
+    const cut = t.block ? (() => { const w = this.world(t.block); const k = Math.hypot(w.x - a.x, w.z - a.z) / Math.max(1e-3, Math.hypot(b.x - a.x, b.z - a.z)); return a.clone().lerp(b, k); })() : b;
+    const seg = (p: THREE.Vector3, q: THREE.Vector3, color: string) => {
+      const len = p.distanceTo(q);
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, len, 6).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthTest: false }));
+      m.position.copy(p).lerp(q, 0.5);
+      m.lookAt(q);
+      m.renderOrder = 12;
+      return m;
+    };
+    this.trajectory = new THREE.Group();
+    this.trajectory.add(seg(a, cut, '#5fd6ff'));
+    if (t.block) {
+      this.trajectory.add(seg(cut, b, '#ff4d4d'));
+      // X vermelho onde o tiro bate (13/11, pedido do Fernando: "deve ficar com um X onde for bater")
+      const mat = new THREE.MeshBasicMaterial({ color: '#ff3b3b', depthTest: false });
+      for (const turn of [Math.PI / 4, -Math.PI / 4]) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.07), mat);
+        bar.position.copy(cut);
+        bar.quaternion.copy(this.camera.quaternion);
+        bar.rotateZ(turn);
+        bar.renderOrder = 13;
+        this.trajectory.add(bar);
+      }
+    }
+    this.scene.add(this.trajectory);
+  }
+
+  setCursor(p: Pos | null) {
+    // aparece já no lugar; depois desliza de casa em casa (frame), em vez de pular
+    if (p && !this.cursor.visible) this.cursor.position.copy(this.world(p));
+    this.cursor.visible = !!p;
+    if (p) {
+      this.cursorGoal.copy(this.world(p));
+      this.lay(this.cursor.getObjectByName('frame')!, p);
+    }
+  }
+
+  // aro e seta do boneco deitados na rampa da casa em que ele está; o holder gira com a direção do boneco, então a
+  // inclinação entra no giro dele. Unidade grande (2x2) não para em rampa
+  private tiltGround(v: UnitView) {
+    const ground = v.ground;
+    const s = (UNIT_DEFS[v.def].size ?? 1) === 1 ? this.slope(this.posOf(v)) : null;
+    if (!s) return void ground.quaternion.identity();
+    TMP.set(-s.x, 1, -s.z).normalize().applyAxisAngle(UP, -v.holder.rotation.y);
+    ground.quaternion.setFromUnitVectors(UP, TMP);
+  }
+
+  // giro para onde a câmera vai (não o do meio da animação): o WASD já anda certo logo depois do R
+  get heading(): number {
+    return this.yawTarget;
+  }
+
+  private makeUnit(u: UnitState): UnitView {
+    const holder = new THREE.Group();
+    let mixer: THREE.AnimationMixer | null = null;
+    let clips: THREE.AnimationClip[] = [];
+    let body: THREE.Object3D | null = null;
+    const mats: THREE.MeshStandardMaterial[] = [];
+    const gltf = this.models.get(modelOf(u.def));
+    if (gltf) {
+      body = prepare(cloneSkinned(gltf.scene));
+      body.traverse((m) => {
+        const mesh = m as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+        // brilho de fábrica (olhos amarelos dos esqueletos): o piscar de golpe e cura mexe no emissivo e precisa voltar a ele
+        mat.userData.glow = { color: mat.emissive.clone(), intensity: mat.emissiveIntensity };
+        mesh.material = this.shaded(mat); // ?bonecos=liso compara sem o sombreado
+        mats.push(mat);
+      });
+      this.glowBack(mats, u.def);
+      const b = new THREE.Box3().setFromObject(body);
+      body.scale.setScalar(unitHeight(u.def) / (b.max.y - b.min.y));
+      holder.add(body);
+      mixer = new THREE.AnimationMixer(body);
+      // os clipes do pacote só com as faixas dos ossos que este boneco tem (sem isso o Three avisa a cada quadro)
+      const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
+      clips = [...gltf.animations, ...this.packClips.map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has)))];
+    } else {
+      // o Farol não tem modelo: um cristal que brilha, para ler de longe qual é o alvo a proteger
+      const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.32), new THREE.MeshStandardMaterial({ color: '#7ff3ff', emissive: '#2bb8d6', emissiveIntensity: 1.2 }));
+      crystal.position.y = 0.55;
+      crystal.castShadow = true;
+      holder.add(crystal, new THREE.PointLight('#7ff3ff', 2, 3));
+    }
+    // aro e seta de frente juntos, para deitarem na rampa onde o boneco está (tiltGround)
+    const ground = new THREE.Group();
+    // seta branca no chão para a frente da unidade (branca: a cor do time sumia nas casas marcadas), só nos mapas em que a direção conta: de cima o rosto do boneco quase não se lê
+    if (u.facing !== undefined) {
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 3).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff' }));
+      arrow.position.set(0, 0.05, 0.5);
+      arrow.scale.y = 0.3;
+      ground.add(arrow);
+    }
+    // aro da cor do time no chão: o lado se lê mesmo quando o modelo é parecido
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthWrite: false, transparent: true, opacity: 0.9 }));
+    ring.position.y = 0.04;
+    ring.scale.setScalar(UNIT_DEFS[u.def].size ?? 1); // unidade grande: o anel cerca o quadrado inteiro
+    // barra de 0,12 de altura (cheia 0,08): com 0,06 ela sumia em parte no pixel art de 2 px
+    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(0.7, MARKER.barHalf * 2), new THREE.MeshBasicMaterial({ color: '#1a1020', depthTest: false }));
+    const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.08), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthTest: false }));
+    bar.position.z = 0.001;
+    const barHolder = new THREE.Group().add(barBg, bar);
+    barHolder.position.y = barYOf(u.def);
+    barHolder.name = 'bar';
+    barBg.renderOrder = bar.renderOrder = 10;
+    ground.add(ring);
+    holder.add(ground, barHolder);
+    // chefe da fase: coroa dourada acima da barra, para o objetivo "derrube o chefe" se ver no mapa
+    if (UNIT_DEFS[u.def].boss) {
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.2, 5), new THREE.MeshBasicMaterial({ color: '#f2c14e' }));
+      crown.position.y = barYOf(u.def) + 0.22;
+      holder.add(crown);
+    }
+    this.scene.add(holder);
+    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null, body, mats, flash: 0, ground };
+    this.play(view, 'Idle');
+    return view;
+  }
+
+  // Pulo de um degrau, como o salto do FFT: agacha parado, voa em arco até a casa e aterrissa. O topo do arco passa 0,4
+  // nível acima da casa mais alta, para subir parecer impulso e descer parecer queda; `levels` alonga o voo
+  private async jump(v: UnitView, a: THREE.Vector3, b: THREE.Vector3, levels: number) {
+    this.play(v, 'Jump_Start', true, 0.6 / (TIMING.jumpCrouch / 1000));
+    await this.wait(TIMING.jumpCrouch);
+    this.play(v, 'Jump_Idle');
+    const c = Math.max(a.y, b.y) + 0.4 * this.step - (a.y + b.y) / 2;
+    await this.animate(jumpAirMs(levels), (k) => v.holder.position.lerpVectors(a, b, k).setY(a.y + (b.y - a.y) * k + 4 * c * k * (1 - k)));
+    this.play(v, 'Jump_Land', true, 0.67 / (TIMING.jumpLand / 1000));
+    await this.wait(TIMING.jumpLand);
+  }
+
+  private play(v: UnitView, name: string, once = false, rate = 1) {
+    const clip = v.clips.find((c) => c.name === name);
+    if (!v.mixer || !clip) return;
+    const action = v.mixer.clipAction(clip);
+    action.reset();
+    action.setEffectiveTimeScale(rate);
+    action.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+    action.clampWhenFinished = once;
+    if (v.current && v.current !== action) action.crossFadeFrom(v.current, 0.15, false);
+    action.play();
+    v.current = action;
+  }
+
+  // ms > 0: a barra desce (ou sobe) aos poucos, como no FFT, sem segurar a sequência
+  private setBar(v: UnitView, ms = 0) {
+    const k = Math.max(0, v.hp / UNIT_DEFS[v.def].hp);
+    const apply = (x: number) => {
+      v.bar.scale.x = Math.max(0.001, x);
+      v.bar.position.x = -0.33 * (1 - x);
+    };
+    if (!ms) return apply(k);
+    const from = v.bar.scale.x;
+    void this.animate(ms, (s) => apply(from + (k - from) * s));
+  }
+
+  // centro das casas que a unidade ocupa, na altura da mais alta (unidade grande: o meio do quadrado 2x2)
+  private unitWorld(u: UnitState): THREE.Vector3 {
+    const tiles = footprint(u).map((p) => this.stand(p));
+    const c = tiles.reduce((a, b) => a.add(b), new THREE.Vector3()).divideScalar(tiles.length);
+    return c.setY(Math.max(...tiles.map((w) => w.y)));
+  }
+
+  private face(v: UnitView, to: Pos) {
+    const d = this.world(to).sub(v.holder.position);
+    if (d.lengthSq() > 0.001) v.holder.rotation.y = Math.atan2(d.x, d.z);
+  }
+
+  // Põe cada unidade onde o estado diz (cria quem falta, tira quem morreu). Chamado ao abrir, depois de cada animação e no desfazer.
+  sync(state: BattleState) {
+    const hot = chargeDanger(state, this.grid.width, this.grid.height);
+    for (const [k, m] of this.danger) m.visible = hot.has(k);
+    const alive = new Set(state.units.map((u) => u.id));
+    // quem morreu vira corpo no chão: sem barra, sem aro, mais escuro; o desfazer que traz a unidade de volta tira o corpo
+    for (const [id, v] of this.units) {
+      if (alive.has(id)) continue;
+      this.units.delete(id);
+      v.mixer?.update(10); // fecha a animação de morte no último quadro
+      v.holder.getObjectByName('bar')?.removeFromParent();
+      v.ground.visible = false;
+      if (v.aura) v.aura.visible = false;
+      for (const m of v.mats) { m.color.multiplyScalar(0.55); m.emissive.setScalar(0); }
+      this.fallen.set(id, v.holder);
+    }
+    for (const [id, h] of this.fallen) if (alive.has(id)) { this.scene.remove(h); this.fallen.delete(id); }
+    const enemies = state.units.filter((u) => u.team === 'enemy');
+    for (const u of state.units) {
+      let v = this.units.get(u.id);
+      if (!v) {
+        v = this.makeUnit(u);
+        this.units.set(u.id, v);
+        // nasce olhando para o lado de lá
+        const foe = u.team === 'hero' ? enemies[0] : state.units.find((x) => x.team === 'hero');
+        if (foe) { v.holder.position.copy(this.unitWorld(u)); this.face(v, foe.pos); }
+      }
+      v.holder.position.copy(this.unitWorld(u));
+      // mapa com direção (estudo do FFT): o modelo olha para onde o estado diz, depois de cada animação e do desfazer
+      if (u.facing !== undefined) v.holder.rotation.y = (u.facing * Math.PI) / 2;
+      v.hp = u.hp;
+      this.setBar(v);
+      // aura e gesto em laço enquanto a carga está na fila; somem quando ela sai ou é desfeita
+      const charge = state.charges.find((c) => c.unit === u.id);
+      if (charge && !v.aura) {
+        v.aura = chargeAura(!!ABILITIES[charge.ability].magic);
+        v.holder.add(v.aura);
+        const loop = lookOf(charge.ability).charge;
+        if (loop) this.play(v, loop);
+      } else if (!charge && v.aura) {
+        v.holder.remove(v.aura);
+        v.aura = null;
+        this.play(v, 'Idle');
+      }
+    }
+  }
+
+  setHighlights(h: Highlights | null) {
+    for (const m of this.marks.values()) m.visible = false;
+    for (const d of this.pathDots.values()) d.visible = false;
+    this.marked = h && this.hasTrees ? h.tiles.map(({ pos }) => this.world(pos)) : [];
+    if (!h) return;
+    for (const { pos, kind } of h.tiles) {
+      const m = this.marks.get(posKey(pos))!;
+      const mat = m.material as THREE.MeshBasicMaterial;
+      m.userData.base = MARK[kind][1]; // opacidade de partida do pulso (frame)
+      mat.color.set(MARK[kind][0]);
+      mat.opacity = MARK[kind][1];
+      mat.map = markTexture(MARK[kind][2] ?? 'frame');
+      m.visible = true;
+    }
+    for (const p of h.path ?? []) this.pathDots.get(posKey(p))!.visible = true;
+  }
+
+  // Tudo da batalha corre no relógio da batalha (`t`), que anda 3 vezes mais rápido com o botão de acelerar seguro
+  // Brilho próprio da unidade (UnitDef.tint, o Acólito sobre o mago): emissivo, porque a cor do material multiplica a
+  // textura e num boneco escuro não aparecia (testado em 13/11). Golpe e cura usam o mesmo emissivo para piscar, então
+  // voltam a ele no fim; sem tint, ao brilho de fábrica do material (antes zerava e apagava os olhos dos esqueletos)
+  private glowBack(mats: THREE.MeshStandardMaterial[], def: string) {
+    const tint = UNIT_DEFS[def]?.tint;
+    for (const m of mats) {
+      const glow = m.userData.glow as { color: THREE.Color; intensity: number } | undefined;
+      if (tint) m.emissive.set(tint);
+      else if (glow) m.emissive.copy(glow.color);
+      m.emissiveIntensity = tint ? TINT_GLOW : glow?.intensity ?? 0;
+    }
+  }
+
+  private animate(dur: number, step: (k: number) => void): Promise<void> {
+    return new Promise((done) => this.anims.push({ start: this.t, dur, step, done }));
+  }
+
+  // começo da vez: o boneco dá um pulinho (sobe e estica um pouco), para o olho achar quem joga
+  pop(unitId: string) {
+    const v = this.units.get(unitId);
+    if (!v?.body) return;
+    const body = v.body, base = body.scale.y;
+    void this.animate(TIMING.pop, (k) => {
+      const s = Math.sin(Math.PI * k);
+      body.position.y = s * 0.18;
+      body.scale.y = base * (1 + s * 0.08);
+    });
+  }
+
+  wait(ms: number): Promise<void> {
+    return this.animate(ms, () => {});
+  }
+
+  // Impacto: tudo para um instante (hit-stop), o alvo pisca branco e depois treme, com o tremor sumindo
+  private async impact(v: UnitView) {
+    this.frozenUntil = this.t + TIMING.hitStop;
+    for (const m of v.mats) m.emissive.set('#ffffff');
+    const flash = ++v.flash;
+    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k))).then(() => flash === v.flash && this.glowBack(v.mats, v.def));
+    await this.wait(TIMING.hitStop);
+    if (v.body) void this.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * 0.07 * (1 - k)));
+  }
+
+  private float(unitId: string, text: string, cls: string) {
+    const v = this.units.get(unitId);
+    if (!v) return;
+    const p = v.holder.position.clone().setY(v.holder.position.y + 1.3).project(this.camera);
+    const node = el('div', { class: `float ${cls}`, style: `left:${((p.x + 1) / 2) * 100}%;top:${((1 - p.y) / 2) * 100}%` }, text);
+    this.floats.append(node);
+    setTimeout(() => node.remove(), TIMING.float);
+  }
+
+  // Toca os eventos em sequência; a regra já está aplicada no estado, aqui é só a leitura do que aconteceu.
+  // `before` roda antes de cada evento (o jogo usa para a faixa com o nome da habilidade e o destino do inimigo).
+  async playEvents(events: BattleEvent[], state: BattleState, before?: (e: BattleEvent) => Promise<void>) {
+    for (const e of events) {
+      const v = this.units.get(e.unit);
+      if (!v) continue;
+      await before?.(e);
+      if (e.k === 'move') {
+        // a passo (13/11, pedido do Fernando: andar lento e pulo realista). Walking_A tem 2 passadas em 1,07 s: 1,25x dá
+        // ~1,4 passada por casa de 0,6 s, o pé quase não escorrega
+        this.play(v, 'Walking_A', false, 1.25);
+        const n = e.path.length - 1;
+        for (let i = 1; i <= n; i++) {
+          const a = this.stand(e.path[i - 1]), b = this.stand(e.path[i]);
+          this.face(v, e.path[i]);
+          // pula quando a altura de pé muda ou voa um vão (a mesma conta do Salto e do som dos passos, stepMs); rampa do estudo é plano
+          const dh = rampLink(this.grid, e.path[i - 1], e.path[i]) ? 0 : standH(tileAt(this.grid, e.path[i])) - standH(tileAt(this.grid, e.path[i - 1]));
+          const tiles = dist(e.path[i - 1], e.path[i]);
+          if (isJump(dh, tiles)) {
+            await this.jump(v, a, b, Math.max(Math.abs(dh), tiles));
+            if (i < n) this.play(v, 'Walking_A', false, 1.25);
+            continue;
+          }
+          // arranca na 1ª casa e freia na última (curva seno), passo constante no meio: sai do jeito de boneco em trilho
+          const ease = (k: number) => (n === 1 ? (1 - Math.cos(Math.PI * k)) / 2 : i === 1 ? 1 - Math.cos((Math.PI / 2) * k) : i === n ? Math.sin((Math.PI / 2) * k) : k);
+          const from = e.path[i - 1], to = e.path[i];
+          const ramp = !!(tileAt(this.grid, from).ramp || tileAt(this.grid, to).ramp);
+          await this.animate(TIMING.step, (k) => {
+            v.holder.position.lerpVectors(a, b, ease(k));
+            if (ramp) v.holder.position.y = this.walkY(from, to, ease(k));
+          });
+        }
+        this.play(v, 'Idle');
+      } else if (e.k === 'attack') {
+        const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
+        if (!samePos(this.posOf(v), e.target)) await this.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
+        if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
+        const look = lookOf(e.ability);
+        this.play(v, look.clip, true);
+        await this.wait(TIMING.windup);
+        const from = v.holder.position.clone().setY(v.holder.position.y + 0.55);
+        const to = this.world(e.target).setY(this.world(e.target).y + 0.4);
+        if (look.fx === 'dash') {
+          // investida: avança meia casa e volta, como o avanço rápido do FFT
+          const a = v.holder.position.clone(), b = a.clone().lerp(this.world(e.target), 0.5);
+          await this.animate(TIMING.lunge, (k) => v.holder.position.lerpVectors(a, b, Math.sin(Math.PI * k)));
+        }
+        await playFx(this.scene, (ms, step) => this.animate(ms, step), look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
+        this.play(v, 'Idle'); // o gesto toca uma vez e travava no último quadro até o boneco agir de novo (revisão de 13/11)
+      } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall' || e.k === 'spike') {
+        v.hp -= e.dmg;
+        // golpe forte (25% da vida ou mais): a tela treme e o número sai maior. Com 30%, nenhum de 10 golpes de uma
+        // Escaramuça passou (medido 12/11): o efeito tem de aparecer de vez em quando, não nunca
+        const big = e.dmg >= UNIT_DEFS[v.def].hp * 0.25;
+        if (big) this.shakeUntil = this.t + TIMING.hitStop + TIMING.shake;
+        await this.impact(v);
+        this.setBar(v, TIMING.hpDrain);
+        this.float(e.unit, `-${e.dmg}`, big ? 'dmg big' : 'dmg');
+        if (v.hp > 0) this.play(v, 'Hit_A', true);
+        await this.wait(e.k === 'hit' ? TIMING.hit : TIMING.crash);
+        if (v.hp > 0) this.play(v, 'Idle');
+      } else if (e.k === 'miss') {
+        this.float(e.unit, t('Errou', 'Miss'), 'miss');
+        // desvio: o alvo dá um passinho para trás e volta, para o erro se ver no boneco e não só no texto
+        if (v.body) void this.animate(TIMING.hit * 0.8, (k) => (v.body!.position.z = -Math.sin(Math.PI * k) * 0.25));
+        await this.wait(TIMING.hit);
+      } else if (e.k === 'heal') {
+        v.hp += e.amount;
+        // cura pisca verde, sem a pausa nem a tremida do golpe: o mesmo sinal, com outro sentido
+        for (const m of v.mats) m.emissive.set('#5dff8a');
+        const flash = ++v.flash;
+        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k)))).then(() => flash === v.flash && this.glowBack(v.mats, v.def));
+        this.setBar(v, TIMING.hpDrain);
+        this.float(e.unit, `+${e.amount}`, 'heal');
+        await this.wait(TIMING.hit);
+      } else if (e.k === 'push') {
+        const a = v.holder.position.clone(), b = this.stand(e.to);
+        await this.animate(TIMING.push, (k) => v.holder.position.lerpVectors(a, b, k));
+      } else if (e.k === 'charge') {
+        // começa a carregar: o gesto longo de magia (efeito próprio de cada habilidade vem no bloco das animações)
+        this.face(v, e.target);
+        this.play(v, lookOf(e.ability).charge ?? 'Spellcast_Long');
+        this.float(e.unit, t('Carregando', 'Charging'), 'miss');
+        await this.wait(TIMING.hit);
+      } else if (e.k === 'fizzle') {
+        this.float(e.unit, t('Sem alvo', 'No target'), 'miss');
+        await this.wait(TIMING.hit);
+      } else if (e.k === 'die') {
+        // cai e fica caído (13/11, pedido do Fernando: "os corpos dos inimigos devem continuar no chão e não sumir"); o
+        // sync tira a barra, o aro e escurece o corpo (fallen)
+        this.play(v, 'Death_A', true);
+        await this.wait(TIMING.die);
+      }
+    }
+    await this.endActionCam();
+    this.sync(state);
+  }
+
+  celebrate(team: 'hero' | 'enemy', state: BattleState) {
+    for (const u of state.units) if (u.team === team) this.play(this.units.get(u.id)!, 'Cheer');
+  }
+
+  // Casa sob o dedo. O corpo da unidade vale antes do chão: o boneco desenhado cobre a casa de trás, e quem toca nele
+  // quer a unidade (auditoria mobile de 25/10: tocar no inimigo escolhia a casa atrás dele)
+  pick(clientX: number, clientY: number): Pos | null {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1), this.camera);
+    const holders = [...this.units.values()];
+    for (const hit of ray.intersectObjects(holders.map((v) => v.holder), true)) {
+      for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) {
+        const unit = holders.find((v) => v.holder === o);
+        if (unit) return this.posOf(unit);
+      }
+    }
+    const hit = ray.intersectObjects(this.tileTops, false)[0];
+    return hit ? (hit.object.userData.tiles as Pos[])[hit.instanceId!] : null;
+  }
+
+  // Meio do corpo da unidade na tela (px do canvas, que ocupa o host inteiro) e meia largura dela em px: o HUD põe o menu
+  // de comandos ao lado do boneco, como no FFT. Câmera ortográfica: px por unidade do mundo = altura do canvas / altura da vista
+  screenOf(unitId: string): { x: number; y: number; r: number } | null {
+    const v = this.units.get(unitId);
+    if (!v) return null;
+    const c = this.renderer.domElement;
+    const p = v.holder.position.clone().setY(v.holder.position.y + unitHeight(v.def) / 2).project(this.camera);
+    // 0,5 casa por casa ocupada: cobre o aro do time no chão (raio 0,44) e o corpo de qualquer ângulo
+    const r = (0.5 * (UNIT_DEFS[v.def].size ?? 1) * c.clientHeight) / (this.camera.top - this.camera.bottom);
+    return { x: ((p.x + 1) / 2) * c.clientWidth, y: ((1 - p.y) / 2) * c.clientHeight, r };
+  }
+
+  // desliza a câmera até a casa (o herói da vez), sem mudar o zoom
+  focusOn(p: Pos, also?: Pos) {
+    // com `also`, centra entre os dois (quem ataca e o alvo): o golpe nunca acontece fora da tela ou atrás do HUD
+    const w = also ? this.world(p).lerp(this.world(also), 0.5) : this.world(p);
+    this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
+  }
+
+  // Câmera de ação (13/11, pedido do Fernando: "quando um personagem for atacar, uma action cam tipo XCOM"): gira para
+  // ficar atrás de quem ataca, chega perto e enquadra o atacante e o alvo; volta ao que era depois da sequência
+  private camSaved: { viewH: number; yaw: number; pair: string } | null = null;
+  async actionCam(from: Pos, to: Pos, enemy = false) {
+    // contra-ataque (o alvo devolve o golpe na mesma sequência): a câmera fica onde está, sem dar meia-volta no meio do golpe
+    if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
+    // `heroi`: a câmera fica sempre do lado dos heróis (no ombro de quem ataca; quando é o inimigo que ataca, nas costas do herói)
+    const cam = ACTION_CAMS[CAM_NAME === 'heroi' ? (enemy ? 'costas' : 'ombro') : CAM_NAME];
+    if (!cam) return;
+    this.camSaved = { viewH: this.camSaved?.viewH ?? this.viewH, yaw: this.camSaved?.yaw ?? this.yawTarget, pair: `${posKey(from)}>${posKey(to)}` };
+    const a = this.world(from), b = this.world(to);
+    // a câmera gira em volta do golpe pelo `turn` da opção, sempre um pouco para o lado, para o boneco de perto não tapar o outro
+    let goal = Math.atan2(a.x - b.x, a.z - b.z) + cam.turn;
+    while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
+    while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
+    this.yawTarget = goal;
+    this.pitchTarget = THREE.MathUtils.degToRad(cam.pitch);
+    // o boneco de perto fica a meia distância na frente do foco: o corte recua junto, senão ele sumia no tiro longo
+    this.camera.near = cam.clip ? CAM_DIST - cam.clip - 0.5 * a.distanceTo(b) : 0.1;
+    // a `xcom` mira o meio dos dois na altura de sempre; as de câmera baixa miram na altura dos bonecos, senão a casa
+    // mais alta saía do quadro
+    this.focusGoal = cam.lift ? a.clone().lerp(b, cam.aim).setY(Math.max(a.y, b.y) + cam.lift) : this.focusGoal;
+    if (!cam.lift) this.focusOn(from, to);
+    const h0 = this.viewH, h1 = Math.max(Math.min(ZOOM.min, cam.zoom[0]), Math.min(h0, cam.zoom[0] + a.distanceTo(b) * cam.zoom[1]));
+    await this.animate(420, (k) => { this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k); this.frameView(); });
+  }
+  private async endActionCam() {
+    const s = this.camSaved;
+    if (!s) return;
+    this.camSaved = null;
+    this.yawTarget = s.yaw;
+    this.pitchTarget = PITCH;
+    this.camera.near = 0.1;
+    if (this.focusGoal) this.focusGoal.y = STEP;
+    const h0 = this.viewH;
+    await this.animate(380, (k) => { this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k); this.frameView(); });
+  }
+
+  // volta ao enquadramento do mapa inteiro
+  resetView() {
+    this.viewH = this.fitView;
+    this.focusGoal = new THREE.Vector3(0, STEP, 0);
+    this.resize();
+  }
+
+  private posOf(v: UnitView): Pos {
+    const p = v.holder.position;
+    return { x: Math.round(p.x + this.grid.width / 2 - 0.5), y: Math.round(p.z + this.grid.height / 2 - 0.5) };
+  }
+
+  // arrastar move o foco no chão, no sentido do dedo (o mapa acompanha o dedo)
+  pan(dx: number, dy: number) {
+    const k = (this.camera.top - this.camera.bottom) / this.renderer.domElement.clientHeight;
+    const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+    const fwd = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    this.focusGoal = null; // o dedo manda: para o deslize automático
+    this.focus.addScaledVector(right, -dx * k).addScaledVector(fwd, (dy * k) / Math.sin(this.pitch));
+    const lim = Math.max(this.grid.width, this.grid.height) / 2;
+    this.focus.x = THREE.MathUtils.clamp(this.focus.x, -lim, lim);
+    this.focus.z = THREE.MathUtils.clamp(this.focus.z, -lim, lim);
+  }
+
+  zoom(factor: number) {
+    // o teto acompanha o mapa: no 20x20 o mapa inteiro pede mais que os 16 do 8x8
+    this.viewH = THREE.MathUtils.clamp(this.viewH * factor, ZOOM.min, Math.max(ZOOM.max, this.fitView));
+    this.resize();
+  }
+
+  // Aplica as opções do pixel art na hora, sem recarregar a página
+  setPixel(p: PixelSettings) {
+    this.pixel = p;
+    const on = p.size > 0;
+    this.renderPass.enabled = !on;
+    this.pixelPass.enabled = on;
+    if (on) this.pixelPass.setPixelSize(p.size);
+    this.pixelPass.depthEdgeStrength = p.outline ? EDGES.depthEdgeStrength : 0;
+    this.pixelPass.normalEdgeStrength = p.outline ? EDGES.normalEdgeStrength : 0;
+    this.palettePass.enabled = p.palette;
+    // pixel art desenha em 1x mesmo em tela 3x (os blocos já são maiores que o pixel do aparelho e o celular agradece);
+    // sem ele, nitidez da tela até 2x
+    const ratio = on ? 1 : Math.min(devicePixelRatio, 2);
+    this.renderer.setPixelRatio(ratio);
+    this.composer.setPixelRatio(ratio);
+    this.resize();
+  }
+
+  setInsets(top: number, bottom: number) {
+    if (top === this.insets.top && bottom === this.insets.bottom) return;
+    this.insets = { top, bottom };
+    this.resize();
+  }
+
+  // 8 ângulos, de 45° em 45° (13/11, pedido do Fernando: "a câmera deve ter 8 ângulos"); gridStep acha o eixo mais
+  // perto de cada tecla em qualquer giro, então as setas seguem andando na grade
+  rotate(dir: 1 | -1) {
+    this.yawTarget += (dir * Math.PI) / 4;
+  }
+
+  // Luz do modo Até o amanhecer (survival.ts): k = 0 é noite de lua (azul e fraca), k = 1 é o sol nascendo (quente, na
+  // força normal). O jogador vê o fim chegando sem ler o número; os outros mapas nunca chamam e ficam na luz de sempre.
+  setDaylight(k: number) {
+    const mix = (night: string, day: string) => new THREE.Color(night).lerp(new THREE.Color(day), k);
+    this.sky.color.copy(mix('#7d8fd8', '#ffe2c0'));
+    this.sky.groundColor.copy(mix('#141226', '#3a3050'));
+    this.sky.intensity = 0.55 + 0.6 * k;
+    this.sun.color.copy(mix('#a9bcff', '#ffcf9a'));
+    this.sun.intensity = 0.45 + 1.15 * k;
+    (this.scene.background as THREE.Color).copy(mix('#0a0c1c', '#3b2638'));
+    this.ambience?.setDaylight(k); // por último: a neblina dos arredores manda na cor do fundo
+  }
+
+  // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao oitavo de volta mais perto
+  // (um dos 8 ângulos do rotate).
+  private spinning = false;
+  setSpin(on: boolean) {
+    if (this.spinning && !on) this.yawTarget = Math.round(this.yawTarget / (Math.PI / 4)) * (Math.PI / 4);
+    this.spinning = on;
+  }
+
+  private resize() {
+    const w = this.host.clientWidth, h = this.host.clientHeight;
+    this.renderer.setSize(w, h, false);
+    this.composer.setSize(w, h);
+    this.frameView();
+  }
+
+  // quadro da câmera pela altura da vista (viewH), sem refazer os alvos de desenho: é o que o zoom da câmera de ação
+  // chama a cada quadro (ela mudava viewH e nada acontecia, porque só o resize aplicava)
+  private frameView() {
+    const w = this.host.clientWidth, h = this.host.clientHeight;
+    const a = w / h;
+    // celular em pé: abre o quadro até a largura mostrar o mapa todo (pinça para ajustar)
+    const viewH = a < 1 ? (this.viewH * 1.15) / a : this.viewH;
+    // centra o mapa no espaço livre entre o HUD de cima e o de baixo, não no meio da tela
+    const off = ((this.insets.bottom - this.insets.top) / 2) * (viewH / h);
+    Object.assign(this.camera, { left: (-viewH * a) / 2, right: (viewH * a) / 2, top: viewH / 2 - off, bottom: -viewH / 2 - off });
+    this.camera.updateProjectionMatrix();
+  }
+
+  private placeCamera() {
+    const off = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)).multiplyScalar(CAM_DIST);
+    this.camera.position.copy(this.focus).add(off);
+    this.camera.lookAt(this.focus);
+    this.camera.updateMatrixWorld();
+    // trava a câmera na grade de pixels: sem isso o chão "ferve" quando a câmera anda (mesma ideia do Warlock)
+    if (!this.pixel.snap || !this.pixel.size) return;
+    const block = ((this.camera.top - this.camera.bottom) / this.renderer.domElement.height) * this.pixel.size;
+    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+    const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
+    const px = this.camera.position.dot(right), py = this.camera.position.dot(up);
+    this.camera.position.addScaledVector(right, Math.round(px / block) * block - px).addScaledVector(up, Math.round(py / block) * block - py);
+    this.camera.updateMatrixWorld();
+  }
+
+  // Números do contador de desempenho (pedido do Fernando, 12/11): quadros e tempo médio desde a última leitura, e os
+  // recursos do Three. O pixel art desenha a cena mais de uma vez por quadro: o info soma tudo e zera só no começo do quadro.
+  private perf = { frames: 0, since: performance.now() };
+  stats() {
+    const now = performance.now(), ms = now - this.perf.since, frames = this.perf.frames;
+    this.perf = { frames: 0, since: now };
+    const info = this.renderer.info;
+    return { fps: (frames * 1000) / ms, ms: frames ? ms / frames : 0, calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures };
+  }
+
+  private frame() {
+    this.perf.frames++;
+    this.renderer.info.reset();
+    const dt = this.clock.getDelta();
+    const fast = speed();
+    this.t += dt * 1000 * fast;
+    for (const a of [...this.anims]) {
+      const k = Math.min(1, (this.t - a.start) / a.dur);
+      a.step(k);
+      if (k < 1) continue;
+      this.anims.splice(this.anims.indexOf(a), 1);
+      a.done();
+    }
+    if (this.spinning) this.yawTarget += dt * 0.15; // ~42 s por volta: dá para ver o mapa sem enjoar
+    this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
+    this.pitch += (this.pitchTarget - this.pitch) * Math.min(1, dt * 10);
+    if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
+    // dt*30: chega em ~0,1 s, rápido para não atrasar quem segura a seta, macio para o olho seguir
+    this.cursor.position.lerp(this.cursorGoal, Math.min(1, dt * 30));
+    this.cursor.getObjectByName('arrow')!.position.y = MARKER.arrowY + Math.sin(performance.now() / 250) * MARKER.arrowBob;
+    // casas marcadas respiram (±20% da opacidade, ciclo de ~1,9 s): o mapa parece vivo e a área se lê sem piscar forte
+    const breath = 0.8 + 0.2 * Math.sin(performance.now() / 300);
+    for (const m of this.marks.values()) if (m.visible) (m.material as THREE.MeshBasicMaterial).opacity = m.userData.base * breath;
+    // tremor do golpe forte: desloca o foco só neste quadro, some sozinho (nada acumula no foco de verdade)
+    const s = this.t < this.shakeUntil ? 0.12 * ((this.shakeUntil - this.t) / TIMING.shake) : 0;
+    const jitter = new THREE.Vector3(Math.sin(this.t * 0.09) * s, 0, Math.cos(this.t * 0.13) * s);
+    this.focus.add(jitter);
+    this.placeCamera();
+    this.focus.sub(jitter);
+    if (this.hasTrees) this.updateCuts();
+    for (const v of this.units.values()) {
+      if (this.t >= this.frozenUntil) v.mixer?.update(dt * fast);
+      this.tiltGround(v);
+      // barra de vida sempre de frente para a câmera
+      v.holder.getObjectByName('bar')!.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
+    }
+    this.water?.update(this.t, this.units.values());
+    if (this.stream) this.stream.time.value = this.t / 1000;
+    this.ambience?.update(this.t, this.camera);
+    this.renderer.shadowMap.needsUpdate = true;
+    this.composer.render();
+  }
+
+  dispose() {
+    this.renderer.setAnimationLoop(null);
+    removeEventListener('resize', this.onResize);
+    this.ambience?.dispose();
+    this.scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      m.geometry?.dispose();
+      for (const mat of [m.material].flat()) (mat as THREE.Material | undefined)?.dispose();
+    });
+    this.composer.dispose();
+    this.renderer.dispose();
+    this.renderer.domElement.remove();
+    this.floats.remove();
+  }
+}
