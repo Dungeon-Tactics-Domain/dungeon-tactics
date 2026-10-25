@@ -15,6 +15,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import type { Highlights, TileKind } from './interaction.ts';
+import { MARKER, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -201,11 +202,11 @@ export class BattleScene {
       this.pathDots.set(posKey(p), dot);
     }
     this.focus.set(0, STEP, 0);
-    const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: false }));
-    frame.position.y = 0.04;
+    const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: MARKER.frameDepthTest, depthWrite: false }));
+    frame.position.y = MARKER.frameY;
     const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 4).rotateX(Math.PI), new THREE.MeshBasicMaterial({ color: '#ffcf4a', depthTest: false }));
     arrow.name = 'arrow';
-    frame.renderOrder = arrow.renderOrder = 11;
+    arrow.renderOrder = 11; // a seta fica acima de tudo (até atrás de um muro mostra onde está o cursor); a moldura não
     this.cursor.add(frame, arrow);
     this.cursor.visible = false;
     this.scene.add(this.cursor);
@@ -229,7 +230,7 @@ export class BattleScene {
     if (gltf) {
       const body = prepare(cloneSkinned(gltf.scene));
       const b = new THREE.Box3().setFromObject(body);
-      body.scale.setScalar((u.def === 'brute' ? 1.05 : 0.85) / (b.max.y - b.min.y));
+      body.scale.setScalar(unitHeight(u.def) / (b.max.y - b.min.y));
       holder.add(body);
       mixer = new THREE.AnimationMixer(body);
       clips = gltf.animations;
@@ -243,11 +244,12 @@ export class BattleScene {
     // aro da cor do time no chão: o lado se lê mesmo quando o modelo é parecido
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthWrite: false, transparent: true, opacity: 0.9 }));
     ring.position.y = 0.04;
-    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.1), new THREE.MeshBasicMaterial({ color: '#1a1020', depthTest: false }));
-    const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.06), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthTest: false }));
+    // barra de 0,12 de altura (cheia 0,08): com 0,06 ela sumia em parte no pixel art de 2 px
+    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(0.7, MARKER.barHalf * 2), new THREE.MeshBasicMaterial({ color: '#1a1020', depthTest: false }));
+    const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.08), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthTest: false }));
     bar.position.z = 0.001;
     const barHolder = new THREE.Group().add(barBg, bar);
-    barHolder.position.y = 1.15;
+    barHolder.position.y = MARKER.barY;
     barHolder.name = 'bar';
     barBg.renderOrder = bar.renderOrder = 10;
     holder.add(ring, barHolder);
@@ -498,7 +500,7 @@ export class BattleScene {
     }
     this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
     if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
-    this.cursor.getObjectByName('arrow')!.position.y = 1.05 + Math.sin(performance.now() / 250) * 0.08;
+    this.cursor.getObjectByName('arrow')!.position.y = MARKER.arrowY + Math.sin(performance.now() / 250) * MARKER.arrowBob;
     this.placeCamera();
     for (const v of this.units.values()) {
       v.mixer?.update(dt);
