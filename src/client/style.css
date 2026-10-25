@@ -1,0 +1,452 @@
+:root {
+  /* fantasia sombria em cores vivas o bastante para o pixel art (spec: tom). Toda cor e tamanho do jogo sai daqui */
+  --bg: #16111f; --fg: #f4ecff; --muted: #c9bddf; --accent: #ffcf4a; --on-accent: #1a1020;
+  --hero: #3d9bff; --enemy: #ff4d4d; --heal: #6fdc8c; --overlay: rgba(10, 6, 16, .8);
+  /* moldura de painel de RPG (25/10, pedido do Fernando: botão com cara de jogo, não de página):
+     pedra em degradê, contorno escuro, filete dourado e bisel claro em cima/escuro embaixo, cantos quase retos.
+     O filete dourado dá 5,9:1 sobre a pedra (mínimo de 3:1 para contorno de controle) */
+  --stone: #2c2342; --stone-lo: #1d1630; --edge: #07050c; --trim: #b8923f; --trim-hi: #ffdd7a;
+  --bevel-hi: rgba(255, 255, 255, .16); --bevel-lo: rgba(0, 0, 0, .5); --well: #110c1b;
+  --gold-btn: linear-gradient(#ffd75e, #e2a62b); --gold-trim: #7a5513; --star: #f2c14e; --star-ink: #9a6a0c; /* estrela sobre o pergaminho: 3,7:1 (texto grande) */
+  --r: 3px; /* canto quase reto: pixel art não tem canto redondo */
+  --frame: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), 0 3px 0 var(--edge);
+  --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
+  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, .55);
+  /* mesmas cores das marcações da cena (MARK em scene.ts), para a legenda bater com o mapa */
+  --mark-move: #ffffff; --mark-range: #ff6a3c; --mark-blocked: #6b3a8c; --mark-threat: #ff2d55;
+  /* pergaminho do HUD (12/11, no espírito do FFT, cores nossas): tinta escura dá 11:1 sobre o papel */
+  --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #655134; --focus: #9e2c0c; /* um tom mais escuros (13/11, revisão): 4,7:1 também sobre --paper-lo, no pé dos painéis */
+  --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;
+  --heal-ink: #1f7a3a; /* cura prevista em número grande sobre o pergaminho: 4,2:1 no papel, 3,3:1 no pé do degradê */
+  /* faixa translúcida da prévia do golpe (13/11, jeito do Tactics Ogre): escura o bastante para o rosa do dano passar
+     de 4,5:1 mesmo sobre o céu claro (a faixa a 80% sobre branco fica perto de #3e3846) */
+  --strike: rgba(18, 10, 26, .8); --strike-dmg: #ffb8cf;
+  --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
+  --gap: 8px;
+  --slot-w: 440px; /* painéis de unidade de baixo; as faixas da prévia ficam no vão entre os dois */
+  --font: 'Alegreya Sans', system-ui, sans-serif; /* texto corrido: legível em tamanho pequeno */
+  /* títulos, opções, Confirmar e fila: Cinzel (OFL), serifada de inscrição (13/11, o Fernando achou a fonte pixel
+     Tiny5 "meio tosca" e pediu "uma fonte mais legal serifada nas opções com um sombreamento"); o nome da variável ficou para não mexer em todo o CSS */
+  --font-px: 'Cinzel', var(--font);
+  --fs-sm: 14px; --fs: 16px; --fs-lg: 20px; --fs-xl: 32px; /* xl: a chance de acerto da prévia do golpe */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: var(--fs)/1.3 var(--font); font-variant-ligatures: none; }
+/* jogo em tela cheia: nada de rolagem, seleção de texto nem zoom do navegador por toque duplo */
+body { overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
+#app { position: fixed; inset: 0; }
+.board { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.gi { width: 1.4em; height: 1.4em; fill: currentColor; flex: none; }
+
+/* janelas no pergaminho do HUD (13/11, escolha do Fernando: "tudo em pergaminho", antes pedra roxa escura). Um tom mais
+   claro que o painel da batalha (paper-hi → paper) para o texto apagado (ink-muted) passar de 4,5:1 até embaixo */
+.dialog { border: 2px solid var(--paper-edge); border-radius: var(--r); color: var(--ink); background: linear-gradient(var(--paper-hi), var(--paper));
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+/* botões dentro da janela: papel claro com contorno de tinta (o dourado do principal fica); escolhido = borda vermelha */
+.dialog button:not(.primary) { color: var(--ink); background: linear-gradient(var(--paper-hi), var(--paper-lo)); border-color: var(--paper-edge);
+  box-shadow: inset 0 0 0 1px var(--paper-hi), 0 2px 0 rgba(0, 0, 0, .3); }
+.dialog button:not(.primary):not(:disabled):active { box-shadow: inset 0 2px 0 rgba(0, 0, 0, .2); }
+.dialog button[aria-pressed='true']:not(.primary) { box-shadow: inset 0 0 0 3px var(--focus); font-weight: 800; }
+.dialog button:focus-visible { outline-color: var(--focus); }
+
+/* rótulos pequenos na fonte de texto (a pixel em 12 px não se lia); a pixel fica em títulos, Confirmar e fila */
+button { font: 700 var(--fs-sm)/1.1 var(--font); color: var(--fg); min-height: var(--tap); min-width: var(--tap); border-radius: var(--r);
+  border: 2px solid var(--edge); background: linear-gradient(var(--stone), var(--stone-lo)); box-shadow: var(--frame);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; touch-action: manipulation; }
+@media (hover: hover) { button:not(:disabled):hover { filter: brightness(1.18); } }
+/* apertado: bisel invertido e o botão desce 2 px, como uma tecla */
+button:not(:disabled):active { box-shadow: var(--frame-pressed); transform: translateY(2px); }
+button:disabled { filter: grayscale(.85) brightness(.65); cursor: default; }
+button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; } /* vermelho de tinta: o dourado sumia no pergaminho (1,2:1) */
+button[aria-pressed='true'] { box-shadow: var(--frame), var(--glow); }
+button.primary { background: var(--gold-btn); color: var(--on-accent); font: 400 var(--fs-lg)/1 var(--font-px); flex: 1;
+  box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(255, 255, 255, .35), inset -4px -4px 0 0 rgba(0, 0, 0, .25), 0 3px 0 var(--edge); }
+button.primary:not(:disabled):active { box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(0, 0, 0, .25), inset -4px -4px 0 0 rgba(255, 255, 255, .35); }
+button.secondary { padding: 0 14px; }
+button.icon { padding: 0; font-size: var(--fs-lg); }
+/* o display do botão vencia o atributo hidden: o ↻ de virar aparecia nos mapas sem direção (12/11) */
+button[hidden] { display: none; }
+
+/* HUD no jeito da tela de batalha do FFT (pedido do Fernando, 12/11): só a disposição e o fluxo vêm de lá. Painel de
+   pergaminho claro com tinta escura e moldura marrom, feito aqui em CSS (nada da arte do original). Posições fixas na
+   tela de 1920x1080 do PC, menos o menu de comandos, que anda ao lado do boneco (hud.ts place); o celular tem etapa
+   própria depois. */
+.hud { position: absolute; inset: 0; pointer-events: none; font-size: var(--fs); }
+.panel { position: absolute; pointer-events: auto; margin: 0; padding: 8px 12px; color: var(--ink); border-radius: var(--r);
+  background: linear-gradient(var(--paper), var(--paper-lo)); border: 2px solid var(--paper-edge);
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+.panel[hidden] { display: none; }
+/* casa sob o cursor e lista de turnos: canto de cima à esquerda, como no FFT */
+.tile-info { top: 12px; left: 12px; font-size: var(--fs-sm); }
+.queue { top: 56px; left: 12px; width: 230px; list-style: none; padding: 6px; display: grid; gap: 3px; }
+.queue.short li:nth-child(n + 6) { display: none; } /* título + 4 linhas; L mostra tudo */
+/* carga em prévia no "Executar?" (hud.ts queueRows): a lista mostra até a linha dela, que fica marcada; os alvos levam ◎ */
+.queue.preview li:nth-child(n) { display: flex; }
+.queue-target { margin-left: auto; font-weight: 700; color: var(--focus); }
+.queue-title { font: 400 var(--fs-sm)/1 var(--font-px); color: var(--ink-muted); padding: 2px 4px 4px; }
+.queue-row { display: flex; align-items: center; gap: 8px; padding: 2px 6px; font-size: var(--fs-sm); border-left: 5px solid var(--side); }
+.queue-row.hero { --side: var(--hero); }
+.queue-row.enemy { --side: var(--enemy); }
+.queue-row.now { background: rgba(255, 255, 255, .45); font-weight: 700; }
+.queue-row.charge { font-style: italic; color: var(--ink-muted); }
+/* depois de .charge, que ganhava por vir depois e deixava a linha "sai aqui" em itálico apagado (revisão de 13/11) */
+.queue-row.pending { box-shadow: inset 0 0 0 2px var(--focus); font-weight: 700; font-style: normal; color: var(--ink); }
+.queue-row .portrait { width: 24px; height: 32px; }
+/* ajuda do que fazer agora e faixa do nome da habilidade: no alto, no meio */
+.help { top: 12px; left: 50%; transform: translateX(-50%); max-width: 760px; text-align: center; font-size: var(--fs-sm); }
+.help:empty { display: none; }
+.banner { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 28px; font: 400 var(--fs-lg)/1 var(--font-px); }
+/* ferramentas da câmera e o menu: canto de cima à direita; o contador de desempenho logo abaixo */
+.tools { position: absolute; top: 12px; right: 12px; pointer-events: auto; z-index: 2; } /* a lista aberta passa por cima do contador e do menu de comandos */
+/* botão de menu no mesmo pergaminho dos painéis, com 3 traços de tinta; aberto, fica afundado */
+.tools .burger { background: linear-gradient(var(--paper), var(--paper-lo)); border-color: var(--paper-edge); color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+.tools .burger[aria-expanded='true'] { box-shadow: inset 0 0 0 2px var(--paper-hi), inset 0 3px 0 rgba(0, 0, 0, .2); transform: translateY(2px); }
+.burger-bars, .burger-bars::before, .burger-bars::after { display: block; width: 22px; height: 3px; background: currentColor; border-radius: 1px; }
+.burger-bars { position: relative; }
+.burger-bars::before, .burger-bars::after { content: ''; position: absolute; left: 0; }
+.burger-bars::before { top: -7px; }
+.burger-bars::after { top: 7px; }
+/* a lista abre embaixo do botão, alinhada à direita, com as mesmas linhas do menu de comandos */
+.tools-menu { top: calc(var(--tap) + 8px); right: 0; width: 320px; padding: 6px; animation: menu-in 90ms ease-out; transform-origin: top; }
+.tools-menu .item { font: 400 var(--fs)/1 var(--font-px); min-height: 38px; }
+@media (hover: hover) { .tools-menu .item:hover { background: rgba(255, 255, 255, .5); filter: none; } }
+.tool-label { display: flex; align-items: center; gap: 10px; white-space: nowrap; margin-right: 16px; }
+.tool-glyph { width: 22px; display: inline-flex; justify-content: center; color: var(--ink-muted); font-size: var(--fs-lg); }
+/* batalha rápida ligada: marca ✓ e o texto "ligada", não só cor */
+.tools-menu [aria-checked='true'] .tool-label::after { content: '✓'; color: var(--focus); font-weight: 700; }
+.fps { position: absolute; top: 72px; right: 12px; pointer-events: none; white-space: pre; text-align: right;
+  font: 12px/1.35 ui-monospace, Consolas, monospace; color: var(--fg); background: rgba(10, 6, 16, .55); padding: 4px 8px; border-radius: var(--r); }
+.fps[hidden] { display: none; }
+/* menu de comandos, submenu das habilidades e o "Executar?": ao lado do boneco da vez, como no FFT (13/11); left e top
+   vêm do hud.ts (place), que segue a câmera a cada quadro. Por isso nada de transform aqui: as animações de abrir usam ele */
+.commands { display: grid; min-width: 220px; padding: 6px; } /* largura pelo item mais longo: "Desfazer movimento" numa linha */
+.commands .item { white-space: nowrap; }
+.abilities { width: 300px; padding: 6px; }
+.confirm { width: 420px; }
+.confirm strong { font: 400 var(--fs-lg)/1.2 var(--font-px); }
+.confirm p { margin: 6px 0 0; font-size: var(--fs-sm); }
+.yes-no { display: flex; gap: 6px; margin-top: 10px; }
+.panel .item { width: 100%; min-height: 40px; justify-content: space-between; position: relative; padding: 4px 10px 4px 28px;
+  background: transparent; border: none; box-shadow: none; color: var(--ink); font: 700 var(--fs-lg)/1 var(--font-px);
+  text-shadow: 0 1px 0 rgba(255, 248, 225, .9), 0 2px 3px rgba(60, 40, 15, .35); } /* gravado no pergaminho: luz embaixo, sombra leve */
+.panel .item.focus { background: rgba(255, 255, 255, .5); }
+/* mão do FFT trocada por uma seta nossa marcando o item com o foco */
+.panel .item.focus::before { content: '▶'; position: absolute; left: 8px; color: var(--focus); animation: nudge .6s steps(1, end) infinite; }
+/* menus abrem em vez de surgir (12/11, game feel): 90 ms, rápido o bastante para não atrasar quem já sabe o que quer;
+   o submenu vem do lado do menu de onde saiu (hud.ts liga .from-right quando ele abre à esquerda do menu); a faixa do
+   nome da habilidade abre do meio */
+.commands:not([hidden]), .confirm:not([hidden]) { animation: menu-in 90ms ease-out; }
+.abilities { --slide: -24px; }
+.abilities.from-right { --slide: 24px; }
+.abilities:not([hidden]) { animation: menu-in-side 110ms ease-out; }
+.banner:not([hidden]) { animation: banner-in 120ms ease-out; }
+@keyframes menu-in { from { opacity: 0; transform: scaleY(.8); } }
+@keyframes menu-in-side { from { opacity: 0; transform: translateX(var(--slide)); } }
+@keyframes banner-in { from { transform: translateX(-50%) scaleX(.2); opacity: 0; } }
+@keyframes nudge { 50% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) { .commands, .confirm, .abilities, .banner, .tools-menu, .panel .item.focus::before { animation: none !important; } }
+.panel .item:disabled { filter: none; opacity: .45; }
+.panel .item:not(:disabled):active { transform: none; box-shadow: none; }
+.item-cost { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
+/* painéis de unidade: a da vez embaixo à esquerda, a sob o cursor embaixo à direita */
+.active-slot, .target-slot { position: absolute; bottom: 12px; width: var(--slot-w); pointer-events: none; }
+.active-slot { left: 12px; }
+.target-slot { right: 12px; }
+.unit-panel { position: relative; display: flex; gap: 12px; border-left: 8px solid var(--side); }
+.unit-panel.hero { --side: var(--hero); }
+.unit-panel.enemy { --side: var(--enemy); }
+.portrait { width: 72px; height: 96px; object-fit: cover; flex: none; background: var(--paper-hi); border: 2px solid var(--paper-edge); }
+.portrait.tinted { filter: sepia(.4) hue-rotate(220deg) saturate(2) brightness(1.1); } /* Acólito: o retrato do mago com o brilho violeta do boneco (UnitDef.tint) */
+.portrait.gem { background: radial-gradient(circle, #bff7ff, #2bb8d6 60%, #0c4a5a); }
+.unit-body { flex: 1; display: grid; gap: 4px; align-content: start; }
+.unit-name { font: 400 var(--fs-lg)/1.1 var(--font-px); display: flex; align-items: baseline; gap: 8px; }
+.unit-side { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
+.unit-note { margin: 0; font-size: var(--fs-sm); color: var(--ink-muted); }
+.gauge { display: grid; grid-template-columns: 40px 1fr 64px; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.gauge-label { font-weight: 700; }
+.gauge-bar { position: relative; height: 10px; background: var(--well); border: 1px solid var(--paper-edge); }
+.gauge-bar i { display: block; height: 100%; }
+/* prévia do golpe na barra do alvo (hud.ts gauge): o trecho que sai em listras vermelhas piscando, o que a cura põe em
+   listras verdes, como no Tactics Ogre. Listra e o número "vida 25 → 13–16" ao lado: nunca só a cor */
+.gauge-change { position: absolute; top: 0; bottom: 0; }
+.gauge-change.loss { background: repeating-linear-gradient(135deg, var(--enemy) 0 3px, var(--well) 3px 6px); animation: loss-blink 1s steps(2, jump-none) infinite; }
+.gauge-change.gain { background: repeating-linear-gradient(135deg, var(--heal) 0 3px, var(--well) 3px 6px); }
+@keyframes loss-blink { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .gauge-change { animation: none; } }
+/* painel do alvo espelhado (retrato à direita), como a barra de status do Tactics Ogre: atacante e alvo se olham */
+.target-slot .unit-panel { flex-direction: row-reverse; border-left: 2px solid var(--paper-edge); border-right: 8px solid var(--side); }
+/* faixas da prévia do golpe (hud.ts strikes, 13/11, no jeito do Tactics Ogre, desenho nosso): no vão entre os dois
+   painéis de baixo, presas embaixo e em seta apontando para o painel do alvo. Ficam dentro da altura dos painéis (até 3
+   faixas) para não cobrir o mapa; sem clique (o mouse passa para as casas de baixo) */
+.strikes { position: absolute; bottom: 12px; left: calc(var(--slot-w) + 24px); right: calc(var(--slot-w) + 24px); display: grid; justify-items: end; align-content: end; gap: 4px; pointer-events: none; }
+.strike { max-width: 100%; padding: 4px 30px 5px 14px; color: var(--fg); background: var(--strike); border-left: 4px solid var(--strike-dmg);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%); }
+.strike.gain { border-left-color: var(--heal); }
+.strike.ally { border-left-color: var(--accent); }
+.strike-main { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+.strike-hp { font: 700 var(--fs-sm)/1 var(--font); color: var(--muted); }
+.strike-pts { font: 400 var(--fs-xl)/1 var(--font-px); color: var(--strike-dmg); font-variant-numeric: tabular-nums; }
+.strike.gain .strike-pts { color: var(--heal); }
+.strike-pts small { margin-left: 4px; font: 700 var(--fs-sm)/1 var(--font); }
+.strike-hit { margin-left: auto; font: 400 var(--fs-lg)/1 var(--font-px); }
+.strike-info { font-size: var(--fs-sm); color: var(--muted); }
+.strike.ally .strike-info { color: var(--accent); font-weight: 700; }
+.strike-more { margin: 0; padding: 2px 10px; font-size: var(--fs-sm); color: var(--fg); background: var(--strike); }
+.gauge.hp i { background: var(--hp); }
+.gauge.mp i { background: var(--mp); }
+.gauge.ct i { background: var(--ct); }
+.gauge-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.floats { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+/* número de dano no ritmo do FFT (12/11): pula, fica parado para ler e some; 1,5 s = TIMING.float em timing.ts */
+.float { position: absolute; transform: translate(-50%, -50%); font: 400 26px/1 var(--font-px); text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; animation: pop 1.5s linear forwards; }
+.float.dmg { color: #ffd0c4; }
+.float.big { font-size: 38px; color: #ffb199; } /* golpe de 25% da vida ou mais (scene.ts): maior e mais quente */
+.float.miss { color: var(--muted); }
+.float.heal { color: var(--heal); }
+@keyframes pop {
+  0% { transform: translate(-50%, -50%) scale(.6); opacity: 0; }
+  8% { transform: translate(-50%, -140%) scale(1.15); opacity: 1; }
+  16% { transform: translate(-50%, -90%) scale(1); }
+  22% { transform: translate(-50%, -110%); }
+  28%, 75% { transform: translate(-50%, -100%); opacity: 1; }
+  100% { transform: translate(-50%, -130%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .float { animation-duration: 1.6s; animation-timing-function: steps(1, end); } }
+
+.overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.dialog { padding: 14px 18px 18px; width: min(460px, 100%); max-height: 90dvh; overflow: auto; }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
+.dialog h2, .dialog h3 { font-family: var(--font-px); margin: 0; }
+.dialog h2 { font-size: 24px; }
+.dialog h3 { font-size: var(--fs); margin: 16px 0 8px; color: var(--focus); }
+.dialog p, .dialog .keys dd, .dialog .choice-label, .dialog .title-sub, .dialog .party-class, .dialog .party-more, .dialog .party-bench, .dialog .dev-num { color: var(--ink-muted); }
+.dialog .sw { border-color: var(--ink); }
+.kbd .dialog .hint, .dialog .hint { color: var(--ink-muted); border-color: var(--ink-muted); }
+.dialog .primary { width: 100%; }
+.legend { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.sw { width: 20px; height: 20px; flex: none; border: 1px solid var(--fg); }
+.sw.move { background: var(--mark-move); }
+.sw.range { background: var(--mark-range); }
+.sw.blocked { background: var(--mark-blocked); }
+.sw.threat { background: var(--mark-threat); }
+.menu-actions { display: flex; flex-wrap: wrap; gap: var(--gap); margin-top: 16px; }
+.menu-actions button { flex: 1 1 40%; } /* 2 por linha: em 5 numa linha, "Desenvolvedor" saía cortado (revisão de 13/11) */
+/* menus ao lado do boneco por cima do contador de fps, que cobria o submenu */
+.commands, .abilities, .confirm { z-index: 1; }
+.choice { margin: 0 0 10px; }
+.choice-label { display: block; font-size: var(--fs-sm); color: var(--muted); margin-bottom: 4px; }
+.choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice-row button { flex: 1; min-width: 64px; }
+
+/* dica de tecla nos botões, só no PC com mouse (.hud.kbd) */
+.hint { display: none; }
+.kbd .hint { display: inline-block; font: 700 11px/1 system-ui, sans-serif; /* a fonte do jogo não tem o ⇧ */ color: var(--muted); border: 1px solid var(--muted); border-radius: 2px; padding: 2px 4px; }
+.kbd .primary .hint { color: var(--on-accent); border-color: var(--on-accent); }
+.kbd .panel .hint { color: var(--ink-muted); border-color: var(--ink-muted); margin-left: 8px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: var(--fs-sm); }
+.keys dt { font-weight: 800; white-space: nowrap; }
+.keys dd { margin: 0; color: var(--muted); }
+/* barra de volume (slider em dialog.ts): trilho na cor de destaque da tinta, número em % ao lado */
+.slider { display: block; margin: 0 0 14px; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider input { flex: 1; min-height: var(--tap); margin: 0; accent-color: var(--focus); cursor: pointer; }
+.slider input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.slider-value { min-width: 4ch; text-align: right; font: 400 var(--fs-lg)/1 var(--font-px); color: var(--ink); }
+
+/* Opções (13/11, pedido do Fernando: "algo que ocupa mais a largura da tela, com subseções"): seções numa coluna à
+   esquerda e uma por vez à direita; altura fixa para a janela não pular ao trocar de seção. No estreito, seções em cima */
+.dialog.menu { width: min(1400px, 92vw); height: min(760px, 90dvh); display: grid; grid-template-rows: auto 1fr auto; }
+.menu-layout { display: grid; grid-template-columns: 240px 1fr; gap: 24px; min-height: 0; margin-top: 12px; }
+.menu-nav { margin: 0; padding-right: 24px; border-right: 2px solid var(--paper-lo); }
+.menu-nav .choice-label { display: none; } /* o nome do grupo fica no aria-label: na tela, as próprias seções bastam */
+.menu-nav .choice-row { flex-direction: column; flex-wrap: nowrap; }
+.menu-nav .choice-row button { flex: none; justify-content: flex-start; padding: 0 16px; font: 400 var(--fs)/1 var(--font-px); }
+.menu-body { overflow: auto; min-height: 0; padding-right: 8px; }
+.menu-section h3 { margin-top: 0; font-size: var(--fs-lg); }
+.menu-section .legend { margin-bottom: 20px; }
+.menu-section .choice, .menu-section .slider { max-width: 560px; }
+.dialog.menu .menu-actions button { flex: 1 1 20%; } /* na janela larga os 4 cabem numa linha */
+@media (max-width: 600px) {
+  .menu-layout { grid-template-columns: 1fr; }
+  .menu-nav { padding: 0 0 8px; border-right: none; border-bottom: 2px solid var(--paper-lo); }
+  .menu-nav .choice-row { flex-direction: row; flex-wrap: wrap; }
+}
+
+
+/* Menu de desenvolvedor (12/11): largo para os dois times lado a lado no PC; no estreito, um embaixo do outro */
+.dialog.dev { width: min(980px, 100%); }
+.dev-teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--gap); }
+.dev-list { list-style: none; margin: 0 0 var(--gap); padding: 0; display: grid; gap: var(--gap); }
+.dev-unit { border: 1px solid var(--paper-edge); border-radius: var(--r); background: var(--paper-hi); padding: var(--gap); display: grid; gap: 6px; }
+.dev-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; }
+.dev-line select, .dev-line input[type=text] { flex: 1; min-width: 0; min-height: 36px; font: inherit; background: #fff; color: var(--ink); border: 1px solid var(--paper-edge); border-radius: var(--r); padding: 0 8px; }
+.dev-num { display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--muted); }
+.dev-num input { width: 84px; min-height: 32px; font: inherit; background: #fff; color: var(--ink); border: 1px solid var(--paper-edge); border-radius: var(--r); padding: 0 6px; }
+.dev-skills summary { cursor: pointer; color: var(--focus); font-size: var(--fs-sm); }
+.dev-skills { font-size: var(--fs-sm); }
+.dev-check { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--ink); }
+.dialog .dev-issues { color: var(--focus); margin: var(--gap) 0; }
+.dialog .dev-msg { color: var(--focus); min-height: 1em; }
+
+/* caixa de fala da campanha (talk.ts): embaixo, larga, pergaminho como o resto do HUD; o ▼ pisca quando a frase acabou */
+.talk-overlay { place-items: end center; background: rgba(10, 6, 20, .35); padding-bottom: 24px; gap: 12px; align-content: end; }
+.talk-title { position: static; padding: 8px 28px; font: 400 var(--fs-lg)/1 var(--font-px); color: var(--ink); justify-self: center; animation: banner-in 160ms ease-out; }
+.panel.talk { position: relative; display: flex; gap: 16px; align-items: flex-start; text-align: left; width: min(860px, 100%); min-height: 132px; padding: 14px 40px 14px 14px; color: var(--ink); animation: menu-in 120ms ease-out; }
+.talk-face .portrait { width: 72px; height: 96px; }
+.talk-body { display: grid; gap: 6px; flex: 1; }
+.talk-name { font: 400 var(--fs-lg)/1 var(--font-px); color: var(--focus); }
+.talk-text { margin: 0; font: 400 var(--fs-lg)/1.35 var(--font); min-height: 3.6em; }
+.talk-next { position: absolute; right: 16px; bottom: 10px; color: var(--focus); visibility: hidden; }
+.talk.done .talk-next { visibility: visible; animation: nudge .6s steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) { .talk-title, .panel.talk, .talk.done .talk-next { animation: none; } }
+.camp-list { flex-direction: column; } /* lista de fases da campanha: uma por linha, nome inteiro */
+.camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
+.dialog .mvp { font-weight: 700; color: var(--gold-trim); margin: 2px 0 10px; } /* destaque da batalha (tally.ts), no fim da fase e da batalha avulsa */
+.dialog .learned { font-weight: 700; color: var(--focus); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha); .dialog na frente para vencer o .dialog p */
+/* tela de título (main.ts, titleScreen): nome grande e as três portas do jogo */
+.dialog.title { width: min(460px, 100%); text-align: center; }
+.dialog.title h2 { font-size: 38px; letter-spacing: 1px; }
+.title-sub { margin: 4px 0 14px; }
+.continue-where { font: 400 var(--fs) var(--font); opacity: .8; margin-left: 8px; } /* onde o Continuar leva, na mesma linha */
+.dialog.title .legend { text-align: left; }
+/* tela de título (13/11, "quero uma tela de título mesmo"): sem janela, o nome grande sobre o mapa girando, o menu em
+   pergaminho embaixo; não fecha (dialog fixed) */
+.main-title .dialog.title { background: none; border: none; box-shadow: none; width: min(520px, 100%); overflow: visible; }
+.main-title .dialog-head { justify-content: center; }
+.main-title .dialog.title h2 { font-size: 64px; line-height: 1.05; color: var(--paper-hi); letter-spacing: 2px; margin: 0 0 4px;
+  text-shadow: 0 4px 0 var(--edge), 0 0 28px rgba(255, 207, 74, .55); animation: title-in 600ms ease-out; }
+.main-title .title-sub, .main-title .title-foot { color: var(--paper-hi); text-shadow: 0 2px 0 var(--edge), 0 0 8px var(--edge); }
+.main-title .title-foot { font-size: var(--fs-sm); margin: 14px 0 0; opacity: .85; }
+.main-title .title-lang { min-height: 32px; padding: 0 12px; font-size: var(--fs-sm); vertical-align: middle; }
+/* menu de desenvolvedor: os botões de começar e exportar presos embaixo da janela, sempre à vista (revisão de 13/11: o
+   Começar ficava abaixo da dobra) */
+.dialog.dev > .menu-actions, .dialog.dev .menu-actions:last-child { position: sticky; bottom: -18px; background: var(--paper); padding: 8px 0; border-top: 2px solid var(--paper-edge); }
+.main-title .menu-actions { background: linear-gradient(var(--paper-hi), var(--paper)); border: 2px solid var(--paper-edge); border-radius: var(--r);
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); padding: 12px; }
+@keyframes title-in { from { opacity: 0; transform: translateY(-12px) scale(.96); } }
+@media (prefers-reduced-motion: reduce) { .main-title .dialog.title h2 { animation: none; } } /* Créditos: lista alinhada à esquerda mesmo no diálogo centrado do título */
+.dialog a { color: var(--focus); } /* link na cor de destaque da tinta, sublinhado: não só pela cor */
+/* o mapa girando atrás é a arte do título: sem o HUD da batalha por cima e só com as bordas escurecidas */
+.title-overlay { background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%); }
+body:has(.title-overlay) .hud, body:has(.title-overlay) .fps { visibility: hidden; }
+/* nas conversas da batalha também (como no FFT): o menu e os painéis atrás da caixa de fala só disputavam o olho */
+body:has(.talk-overlay) .hud, body:has(.talk-overlay) .fps { visibility: hidden; }
+/* e no resultado: a lista de turnos vazia e a linha de ajuda atrás do diálogo de fim não diziam nada */
+body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hidden; }
+/* papel picado da vitória (main.ts, confetti): por cima de tudo, sem pegar clique */
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9; overflow: hidden; } /* atrás da janela de vitória (10): cobria o texto */
+.confetti i { position: absolute; top: -12px; width: 8px; height: 12px; animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(105vh) rotate(540deg); } }
+
+/* Mapa mundial (world-ui.ts): pergaminho em tela cheia, pontos em losango (batalha) e círculo (história), estrada
+   tracejada, retrato do grupo andando. Painéis com o mesmo pergaminho do HUD da batalha. */
+.world { position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 40%, var(--paper-hi), var(--paper) 55%, var(--paper-lo)); overflow: hidden; }
+.world-map { position: absolute; inset: 64px 4% 120px; }
+.world-svg, .world-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* mapa ilustrado (13/11): mar com textura, costa irregular, matas, montanhas e neve; cores só do desenho, fora do texto */
+.world-map { border: 4px double var(--paper-edge); box-shadow: 0 0 0 3px var(--paper-lo), 0 6px 18px rgba(0, 0, 0, .35); overflow: hidden; }
+.world-art .sea { fill: #24505f; }
+.world-art .grain { fill: #000; opacity: .22; }
+.world-art .shallow { fill: none; stroke: #4d8a95; stroke-width: 22; vector-effect: non-scaling-stroke; opacity: .75; }
+.world-art .land { fill: #b8b483; stroke: #3d3423; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.world-art .plain { fill: #cdbf7c; opacity: .8; }
+.world-art .wood { fill: #5d7a3c; opacity: .55; }
+.world-art .ash { fill: #8f877b; opacity: .75; }
+.world-art .highland { fill: #9c8460; opacity: .65; }
+.world-art .snowfield { fill: #eef1ee; opacity: .7; }
+.world-art .river { fill: none; stroke: #3f7d97; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.world-art .lake { fill: #2f6478; stroke: #3d3423; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.world-art .pine { fill: #2f5a2c; stroke: #1e3519; stroke-width: .6; vector-effect: non-scaling-stroke; }
+.world-art .leaf { fill: #4c7a34; stroke: #1e3519; stroke-width: .6; vector-effect: non-scaling-stroke; }
+.world-art .trunk { stroke: #4a3520; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.world-art .rock { fill: #8a6f4d; stroke: #3d3423; stroke-width: .8; vector-effect: non-scaling-stroke; }
+.world-art .shade { fill: #5e4a33; }
+.world-art .snow { fill: #f4f6f4; }
+.world-compass { position: absolute; left: 1.5%; bottom: 2%; /* à esquerda: o painel do ponto cobre o canto de baixo à direita */ width: 84px; height: 84px; pointer-events: none; }
+.world-icon { position: absolute; width: 30px; height: 30px; transform: translate(10px, -110%); pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .35)); } /* à direita e acima do ponto: em cima fica o retrato do grupo */
+.world-icon path { stroke: #3d3423; stroke-width: 1.6; stroke-linejoin: round; fill: none; }
+.world-icon .wall { fill: #e6d6a8; }
+.world-icon .roof { stroke: #8e3b24; stroke-width: 3; }
+.world-icon .stone { fill: #a39c8e; }
+.world-icon .door { fill: #2c2418; }
+.world-icon .flame { fill: #e8a33a; }
+.world-compass circle { fill: none; stroke: #e9dcae; stroke-width: 1.5; opacity: .8; }
+.world-compass .star { fill: #e9dcae; stroke: #3d3423; stroke-width: 1.5; }
+.world-compass .star-shade { fill: #9c8a5c; }
+.world-compass text { fill: #e9dcae; font: 700 12px var(--font); }
+.world-title { position: absolute; left: 2%; top: 3%; padding: 6px 16px; background: var(--paper); color: var(--ink); border: 3px double var(--paper-edge); font: 400 clamp(16px, 2.2vw, 28px) var(--font-px); letter-spacing: .12em; box-shadow: 0 3px 0 rgba(0, 0, 0, .3); pointer-events: none; }
+.world-art .road { fill: none; stroke: var(--paper-edge); stroke-width: 3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.world-art .road.walked { stroke: #8e3b24; /* vermelho-tinta: o dourado sumia na terra do mapa ilustrado */ stroke-dasharray: none; stroke-linejoin: round; }
+.world-node { position: absolute; width: 22px; height: 22px; min-width: 0; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 3px solid var(--paper-edge); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }
+.world-node.battle { background: #c0412b; transform: translate(-50%, -50%) rotate(45deg); border-radius: 3px; }
+.world-node.story { background: #3d6fb0; border-radius: 50%; }
+.world-node.done { border-color: #e2b23a; }
+.world-node:disabled { background: #6f6656; border-color: #4a4235; /* escuro: o bege antigo era da cor da terra */ filter: none; cursor: default; }
+.world-node.here { outline: 3px solid var(--focus); outline-offset: 4px; }
+.world-token { position: absolute; transform: translate(-50%, -110%); transition: left var(--walk-ms) ease-in-out, top var(--walk-ms) ease-in-out; pointer-events: none; animation: bob 1s ease-in-out infinite; }
+.world-token .portrait { width: 44px; height: 58px; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+@keyframes bob { 50% { margin-top: -4px; } }
+.world-head { position: absolute; top: 12px; left: 12px; padding: 8px 14px; color: var(--ink); font: 400 var(--fs-lg)/1 var(--font-px); }
+.world-panel { position: absolute; right: 24px; bottom: 24px; width: min(360px, calc(100% - 48px)); padding: 12px 14px; color: var(--ink); display: grid; gap: 6px; }
+.world-place { font: 400 var(--fs-lg)/1.2 var(--font-px); }
+.world-kind { margin: 0; color: var(--ink-muted); font-size: var(--fs-sm); }
+.world-actions { display: flex; flex-wrap: wrap; gap: 8px; } /* na cidade são 5 botões (Entrar, Grupo, Cidade, Loja, Título): numa linha só o Loja e o Título saíam cortados */
+.world-actions .item { flex: 1 1 28%; justify-content: center; padding-left: 28px; }
+.world-help { position: absolute; left: 12px; bottom: 24px; margin: 0; padding: 8px 12px; color: var(--ink-muted); font-size: var(--fs-sm); }
+@media (prefers-reduced-motion: reduce) { .world-token { transition: none; animation: none; } }
+
+/* Criação do protagonista (create-ui.ts): um pergaminho central; 4 cartas de classe com retrato e a ficha da escolhida */
+.talk-overlay.dark { background: radial-gradient(circle at 50% 30%, rgba(90, 170, 255, .28), transparent 40%), rgba(8, 5, 14, .96); place-items: center; align-content: center; animation: beacon 4s ease-in-out infinite; }
+/* abertura (jogo novo): narração grande no centro, sem moldura, com o brilho azul do Farol pulsando atrás */
+.talk-overlay.dark .panel.talk { background: none; border: none; box-shadow: none; color: var(--paper); text-align: center; min-height: 0; padding: 0 24px; }
+.talk-overlay.dark .talk-text { font-size: 24px; line-height: 1.5; max-width: 34em; margin: 0 auto; }
+.talk-overlay.dark .talk-next { color: var(--paper); }
+@keyframes beacon { 50% { background-color: rgba(8, 5, 14, .9); } }
+.overlay.create { background: rgba(8, 5, 14, .7); }
+.create-panel { position: relative; width: min(720px, 100%); max-height: 92dvh; overflow: auto; padding: 18px 22px; color: var(--ink); display: grid; gap: 10px; }
+.create-panel h2 { margin: 0; font: 400 28px/1.1 var(--font-px); }
+.create-name { font-weight: 700; }
+.create-panel input { font: 400 var(--fs-lg)/1.2 var(--font); padding: 8px 10px; border: 2px solid var(--paper-edge); background: var(--paper-hi); color: var(--ink); border-radius: 4px; }
+.create-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.create-card { display: grid; justify-items: center; gap: 6px; padding: 10px 6px; background: var(--paper-hi); color: var(--ink); border: 2px solid var(--paper-edge); box-shadow: none; }
+.create-card[aria-pressed="true"] { outline: 3px solid var(--focus); outline-offset: 2px; background: #fff; }
+.create-card .portrait { width: 72px; height: 96px; }
+.create-sheet { display: grid; gap: 4px; min-height: 9em; }
+.create-role { margin: 0; font-weight: 700; }
+.create-stats { margin: 0; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.create-skills { margin: 0; padding-left: 18px; font-size: var(--fs-sm); display: grid; gap: 2px; }
+.create-warn { margin: 0; color: var(--focus); min-height: 1.2em; }
+@media (max-width: 600px) { .create-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .talk-overlay.dark { animation: none; } }
+.talk-overlay.dark .panel.talk:focus-visible { outline: none; } /* a cena inteira é o botão; o ▼ piscando já mostra que dá para seguir */
+/* faixa do objetivo no começo da fase (main.ts, announce): entra esticando, segura para ler, some; não pega clique */
+.announce { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 15; pointer-events: none; padding: 14px 36px;
+  font: 400 30px/1.2 var(--font-px); color: var(--paper-hi); text-align: center; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
+  background: linear-gradient(90deg, transparent, rgba(20, 12, 30, .88) 15%, rgba(20, 12, 30, .88) 85%, transparent);
+  text-shadow: 0 2px 0 #000; animation: announce 2.2s ease-out forwards; }
+@keyframes announce { 0% { opacity: 0; transform: translate(-50%, -50%) scaleX(.3); } 12% { opacity: 1; transform: translate(-50%, -50%) scaleX(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .announce { animation: none; } }
+.tile-info:empty { display: none; } /* fim de batalha: sem casa sob o cursor, a caixa vazia sumia de sentido */
+
+/* Tela Grupo do mapa (world-ui.ts, openParty): uma linha por herói, retrato à esquerda */
+.dialog.party { width: min(560px, 100%); }
+.party-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.party-card { display: flex; gap: 12px; align-items: center; }
+.party-list .party-card { cursor: pointer; padding: 4px; border-radius: var(--r); }
+.party-list .party-card:hover, .party-list .party-card:focus-visible { background: rgba(255, 255, 255, .55); outline: 2px solid var(--focus); }
+.party-card .portrait { width: 48px; height: 64px; }
+
+.party-stats, .party-skills { margin: 2px 0 0; font-size: var(--fs-sm); }
+.party-stats { font-variant-numeric: tabular-nums; }
+.world-tag { position: absolute; left: 50%; top: calc(100% + 26px); transform: translateX(-50%); white-space: nowrap; padding: 2px 8px; font: 400 var(--fs-sm)/1.2 var(--font-px); color: var(--paper-hi); background: rgba(20, 12, 30, .8); border-radius: 3px; } /* nome do lugar sob o grupo no mapa */
+/* retrato de quem fala dá um pulinho ao trocar a voz (talk.ts) e o escurecer ao entrar num ponto do mapa (world-ui.ts, FADE_MS) */
+.talk-face.pop { animation: face-pop 220ms ease-out; }
+@keyframes face-pop { 0% { transform: translateY(6px) scale(.92); opacity: .4; } }
+.fade-out { position: fixed; inset: 0; background: #08050e; z-index: 9; pointer-events: none; animation: fade-in 300ms ease-in forwards; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .talk-face.pop, .fade-out { animation: none; } }
+.talk-keys { position: absolute; right: 40px; bottom: 8px; font-size: var(--fs-sm); color: var(--ink-muted); } .talk-overlay.dark .talk-keys { color: var(--paper-lo); right: 50%; transform: translateX(50%); bottom: -28px; } /* dica de teclas da conversa (talk.ts) */
