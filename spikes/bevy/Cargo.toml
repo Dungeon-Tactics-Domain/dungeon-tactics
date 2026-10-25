@@ -1,0 +1,21 @@
+# POC descartável: Bevy x Three.js (pedido do Fernando, 11/11). Fora do build do jogo.
+[package]
+name = "dt-bevy-poc"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+# só o que a cena usa: 3D e UI (sem 2D nem áudio). Com tudo ligado o .wasm tinha 34 MB (medido em 11/11)
+bevy = { version = "0.20", default-features = false, features = ["3d", "ui"] }
+
+[features]
+gpu = ["bevy/webgpu"] # WebGPU no lugar do WebGL2
+
+[profile.release]
+opt-level = 3     # velocidade primeiro, para dar a melhor chance ao Bevy; com "s" ficou 34 MB e 125 fps
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-sys = { version = "0.3", features = ["Window", "Location"] }
