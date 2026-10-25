@@ -1,0 +1,27 @@
+{
+  "name": "dungeon-tactics",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.scripts.json",
+    "build": "vite build",
+    "dev": "vite",
+    "sim": "node scripts/battle-sim.ts"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "@types/node": "^24.19.2",
+    "@types/three": "0.186.0",
+    "playwright-core": "^1.61.1",
+    "typescript": "7.0.2",
+    "vite": "8.1.4",
+    "vitest": "5.0.3",
+    "wrangler": "4.146.0"
+  }
+}

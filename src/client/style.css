@@ -1,0 +1,148 @@
+:root {
+  /* fantasia sombria em cores vivas o bastante para o pixel art (spec: tom). Toda cor e tamanho do jogo sai daqui */
+  --bg: #16111f; --fg: #f4ecff; --muted: #c9bddf; --accent: #ffcf4a; --on-accent: #1a1020;
+  --hero: #3d9bff; --enemy: #ff4d4d; --heal: #6fdc8c; --overlay: rgba(10, 6, 16, .8);
+  /* moldura de painel de RPG (25/10, pedido do Fernando: botão com cara de jogo, não de página):
+     pedra em degradê, contorno escuro, filete dourado e bisel claro em cima/escuro embaixo, cantos quase retos.
+     O filete dourado dá 5,9:1 sobre a pedra (mínimo de 3:1 para contorno de controle) */
+  --stone: #2c2342; --stone-lo: #1d1630; --edge: #07050c; --trim: #b8923f; --trim-hi: #ffdd7a;
+  --bevel-hi: rgba(255, 255, 255, .16); --bevel-lo: rgba(0, 0, 0, .5); --well: #110c1b;
+  --gold-btn: linear-gradient(#ffd75e, #e2a62b); --gold-trim: #7a5513;
+  --r: 3px; /* canto quase reto: pixel art não tem canto redondo */
+  --frame: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), 0 3px 0 var(--edge);
+  --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
+  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, .55);
+  /* mesmas cores das marcações da cena (MARK em scene.ts), para a legenda bater com o mapa */
+  --mark-move: #3d9bff; --mark-range: #ff6a3c; --mark-blocked: #6b3a8c; --mark-threat: #ff2d55;
+  --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
+  --gap: 8px;
+  --font: 'Alegreya Sans', system-ui, sans-serif; /* texto corrido: legível em tamanho pequeno */
+  /* títulos, Confirmar e fila: a fonte pixel dá a cara de jogo. Tiny5 (OFL) porque a Pixelify Sans fazia o "2" parecer "8"
+     e a ligadura "fi" virava "A" ("ConArmar"); comparadas também VT323, Silkscreen, Jersey 10, Micro 5, Handjet e DotGothic16 */
+  --font-px: 'Tiny5', var(--font);
+  --fs-sm: 14px; --fs: 16px; --fs-lg: 20px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: var(--fs)/1.3 var(--font); font-variant-ligatures: none; }
+/* jogo em tela cheia: nada de rolagem, seleção de texto nem zoom do navegador por toque duplo */
+body { overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
+#app { position: fixed; inset: 0; }
+.board { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.gi { width: 1.4em; height: 1.4em; fill: currentColor; flex: none; }
+
+/* painel: cartão, fichas da fila e diálogo usam a mesma moldura dos botões */
+.card, .chip, .dialog { border: 2px solid var(--edge); border-radius: var(--r); background: linear-gradient(var(--stone), var(--stone-lo)); box-shadow: var(--frame); }
+
+/* rótulos pequenos na fonte de texto (a pixel em 12 px não se lia); a pixel fica em títulos, Confirmar e fila */
+button { font: 700 var(--fs-sm)/1.1 var(--font); color: var(--fg); min-height: var(--tap); min-width: var(--tap); border-radius: var(--r);
+  border: 2px solid var(--edge); background: linear-gradient(var(--stone), var(--stone-lo)); box-shadow: var(--frame);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; touch-action: manipulation; }
+@media (hover: hover) { button:not(:disabled):hover { filter: brightness(1.18); } }
+/* apertado: bisel invertido e o botão desce 2 px, como uma tecla */
+button:not(:disabled):active { box-shadow: var(--frame-pressed); transform: translateY(2px); }
+button:disabled { filter: grayscale(.85) brightness(.65); cursor: default; }
+button:focus-visible { outline: 3px solid var(--trim-hi); outline-offset: 3px; }
+button[aria-pressed='true'] { box-shadow: var(--frame), var(--glow); }
+button.primary { background: var(--gold-btn); color: var(--on-accent); font: 400 var(--fs-lg)/1 var(--font-px); flex: 1;
+  box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(255, 255, 255, .35), inset -4px -4px 0 0 rgba(0, 0, 0, .25), 0 3px 0 var(--edge); }
+button.primary:not(:disabled):active { box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(0, 0, 0, .25), inset -4px -4px 0 0 rgba(255, 255, 255, .35); }
+button.secondary { padding: 0 14px; }
+button.icon { padding: 0; font-size: var(--fs-lg); }
+
+.hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
+  padding: max(var(--gap), env(safe-area-inset-top)) max(var(--gap), env(safe-area-inset-right)) max(var(--gap), env(safe-area-inset-bottom)) max(var(--gap), env(safe-area-inset-left)); }
+.hud > * > *, .cam > * { pointer-events: auto; }
+.cam { pointer-events: none; }
+
+.top { display: flex; gap: var(--gap); align-items: flex-start; }
+.queue { list-style: none; margin: 0; padding: 0 0 4px; display: flex; gap: 3px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.chip { flex: none; width: 36px; height: var(--tap); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font: 400 var(--fs-sm)/1 var(--font-px); }
+/* lado pelo filete: azul herói, vermelho inimigo (a --frame do :root já vem resolvida com o dourado, então a ficha monta a sua) */
+.chip { box-shadow: inset 0 0 0 2px var(--side), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), 0 3px 0 var(--edge); }
+.chip.hero { --side: var(--hero); }
+.chip.enemy { --side: var(--enemy); }
+/* quem age agora: maior e com brilho, para não depender só da cor */
+.chip.now { width: 44px; box-shadow: inset 0 0 0 2px var(--side), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), var(--glow); }
+.chip-hp { width: 26px; height: 4px; background: #000; overflow: hidden; }
+.chip-hp i { display: block; height: 100%; }
+.chip.hero .chip-hp i { background: var(--hero); }
+.chip.enemy .chip-hp i { background: var(--enemy); }
+.menu-btn { flex: none; }
+
+.bottom { display: flex; flex-direction: column; gap: var(--gap); }
+/* altura fixa de 3 linhas: o cartão crescendo empurrava os botões e o mapa entre um toque e outro (auditoria mobile) */
+.card { padding: 10px 14px; min-height: 112px; }
+.card strong { font: 400 var(--fs-lg)/1.2 var(--font-px); }
+.card p { margin: 2px 0 0; color: var(--muted); }
+.bar { display: flex; gap: var(--gap); justify-content: center; }
+.slot { position: relative; flex: 1; max-width: 76px; min-height: 72px; flex-direction: column; gap: 3px; padding: 6px 3px; font-size: 13px; line-height: 1.1; }
+/* ícone num poço escuro, como o quadro de habilidade dos tactics */
+.slot .gi { width: 30px; height: 30px; padding: 4px; background: var(--well); box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .7), inset -2px -2px 0 rgba(255, 255, 255, .08); }
+.slot[aria-pressed='true'] .gi { color: var(--trim-hi); }
+/* nome em até 2 linhas, sem reticências ("Faca arrem…" não se lia) */
+.slot span { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: center; hyphens: auto; overflow-wrap: anywhere; }
+.actions { display: flex; gap: var(--gap); } /* 8 px entre botões: com 2 a 6 px o polegar pegava o vizinho */
+.actions .wait { line-height: 1.1; max-width: 120px; }
+.actions .wait.armed { box-shadow: var(--frame), var(--glow); }
+.cam { display: flex; gap: var(--gap); justify-content: flex-end; }
+.undo span { font-weight: 700; }
+
+.floats { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.float { position: absolute; transform: translate(-50%, -50%); font: 400 22px/1 var(--font-px); text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; animation: rise 1.1s ease-out forwards; }
+.float.dmg { color: #ffd0c4; }
+.float.miss { color: var(--muted); }
+.float.heal { color: var(--heal); }
+@keyframes rise { to { transform: translate(-50%, -150%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .float { animation-duration: 1.6s; animation-timing-function: steps(1, end); } }
+
+.overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.dialog { padding: 14px 18px 18px; width: min(460px, 100%); max-height: 90dvh; overflow: auto; }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
+.dialog h2, .dialog h3 { font-family: var(--font-px); margin: 0; }
+.dialog h2 { font-size: 24px; }
+.dialog h3 { font-size: var(--fs); margin: 16px 0 8px; color: var(--trim-hi); }
+.dialog p { color: var(--muted); }
+.dialog .primary { width: 100%; }
+.legend { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.sw { width: 20px; height: 20px; flex: none; border: 1px solid var(--fg); }
+.sw.move { background: var(--mark-move); }
+.sw.range { background: var(--mark-range); }
+.sw.blocked { background: var(--mark-blocked); }
+.sw.threat { background: var(--mark-threat); }
+.menu-actions { display: flex; flex-wrap: wrap; gap: var(--gap); margin-top: 16px; }
+.menu-actions button { flex: 1; }
+.choice { margin: 0 0 10px; }
+.choice-label { display: block; font-size: var(--fs-sm); color: var(--muted); margin-bottom: 4px; }
+.choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice-row button { flex: 1; min-width: 64px; }
+
+/* dica de tecla nos botões, só no PC com mouse (.hud.kbd) */
+.hint { display: none; }
+.kbd .hint { display: inline-block; font: 700 11px/1 system-ui, sans-serif; /* a fonte do jogo não tem o ⇧ */ color: var(--muted); border: 1px solid var(--muted); border-radius: 2px; padding: 2px 4px; }
+.kbd .primary .hint { color: var(--on-accent); border-color: var(--on-accent); }
+.kbd .slot .hint { position: absolute; top: 3px; right: 4px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: var(--fs-sm); }
+.keys dt { font-weight: 800; white-space: nowrap; }
+.keys dd { margin: 0; color: var(--muted); }
+
+/* tela média (tablet deitado): o painel de baixo numa coluna central, sem cobrir o mapa de ponta a ponta */
+@media (min-width: 700px) { .bottom { width: 560px; align-self: center; } }
+
+/* PC (pedido do Fernando, 25/10: nada de barra de uma ponta à outra, nem em ultrawide): fila centrada no topo, menu
+   no canto, e embaixo uma janela de comando central de ~730 px como a do FFT: cartão do herói à esquerda, barra e ações
+   à direita, Confirmar do tamanho do texto */
+@media (min-width: 1100px) {
+  .top { justify-content: center; }
+  .queue { flex: none; }
+  .menu-btn { position: absolute; top: max(var(--gap), env(safe-area-inset-top)); right: max(var(--gap), env(safe-area-inset-right)); }
+  .bottom { width: auto; display: grid; grid-template-columns: 300px auto; grid-template-areas: '. cam' 'card bar' 'card actions'; gap: var(--gap); }
+  .cam { grid-area: cam; }
+  .card { grid-area: card; min-height: 0; }
+  .bar { grid-area: bar; justify-content: flex-start; }
+  .slot { width: 76px; flex: none; }
+  .actions { grid-area: actions; justify-content: flex-end; }
+  .actions .primary { flex: none; padding: 0 28px; }
+}
