@@ -41,7 +41,7 @@ jobs:
         run: |
           node -e '
             const fs = require("fs");
-            const c = JSON.parse(fs.readFileSync("wrangler.jsonc", "utf8"));
+            const c = JSON.parse(fs.readFileSync("wrangler.jsonc", "utf8").replace(/^\s*\/\/.*$/gm, ""));
             c.name = process.env.NOME;
             c.routes = [{ pattern: process.env.HOST, custom_domain: true }];
             fs.writeFileSync("wrangler.pr.json", JSON.stringify(c, null, 2));
