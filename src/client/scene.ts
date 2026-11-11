@@ -38,6 +38,7 @@ const MARK: Record<TileKind | 'path', [color: string, opacity: number]> = {
   threat: ['#ff2d55', 0.32], area: ['#ffb020', 0.6], target: ['#fff2a0', 0.85], path: ['#cfe8ff', 0.9],
 };
 const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
+const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
 
 // Paleta reduzida: cada canal em poucos degraus, depois da conversão para sRGB (degraus iguais ao olho). 6 níveis
@@ -109,6 +110,8 @@ export class BattleScene {
   private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings) {
     this.pixel = pixel;
     this.renderer.shadowMap.enabled = true;
+    // o pixel art desenha a cena duas vezes por quadro (cor e normais); a sombra só precisa da primeira (pedida no frame)
+    this.renderer.shadowMap.autoUpdate = false;
     this.renderer.domElement.className = 'board';
     host.append(this.renderer.domElement);
     this.floats = el('div', { class: 'floats', 'aria-hidden': 'true' });
@@ -166,6 +169,19 @@ export class BattleScene {
       return prepare(new THREE.Group().add(o));
     };
     const top = norm(pieces.top), side = norm(pieces.side), stone = norm(pieces.stone);
+    const treeBox = new THREE.Box3().setFromObject(pieces.tree);
+    const treeScale = 1.1 / (treeBox.max.y - treeBox.min.y);
+    const tree = prepare(pieces.tree.clone());
+    tree.scale.setScalar(treeScale);
+    tree.position.y = -treeBox.min.y * treeScale;
+    const list = () => ({ at: [] as THREE.Vector3[], tiles: [] as Pos[] });
+    const batch = { top: list(), stoneTop: list(), side: list(), stone: list(), tree: list() };
+    // nível mais alto ocupado pela coluna da casa (-1 fora do mapa: a borda fica à mostra)
+    const columnTop = (p: Pos) => {
+      if (p.x < 0 || p.y < 0 || p.x >= this.grid.width || p.y >= this.grid.height) return -1;
+      const t = tileAt(this.grid, p);
+      return t.h + (t.terrain === 'wall' ? 2 : 0);
+    };
     const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
     for (const [i, tile] of this.grid.tiles.entries()) {
@@ -174,22 +190,16 @@ export class BattleScene {
       const wall = tile.terrain === 'wall';
       // muro: pedra empilhada dois níveis acima da casa, para ler que bloqueia passagem e visão
       for (let k = 0; k <= tile.h + (wall ? 2 : 0); k++) {
-        const piece = (wall ? stone : k === tile.h ? top : side).clone();
-        piece.position.set(w.x, (k + 1) * STEP, w.z);
-        this.scene.add(piece);
+        const at = new THREE.Vector3(w.x, (k + 1) * STEP, w.z);
         if (k === tile.h) {
-          piece.userData.pos = p;
-          this.tileTops.push(piece);
-        }
+          const b = wall ? batch.stoneTop : batch.top;
+          b.at.push(at);
+          b.tiles.push(p);
+        } else if (wall) batch.stone.at.push(at);
+        // bloco de terra cercado pelos quatro lados nunca aparece: fora da cena (eram a maior parte dos triângulos no 20x20)
+        else if (!NEIGHBORS.every(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) >= k)) batch.side.at.push(at);
       }
-      if (tile.terrain === 'forest') {
-        const tr = prepare(pieces.tree.clone());
-        const b = new THREE.Box3().setFromObject(tr);
-        const s = 1.1 / (b.max.y - b.min.y);
-        tr.scale.setScalar(s);
-        tr.position.set(w.x, w.y - b.min.y * s, w.z);
-        this.scene.add(tr);
-      }
+      if (tile.terrain === 'forest') batch.tree.at.push(w);
       const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
       mark.position.set(w.x, w.y + 0.02, w.z);
       mark.visible = false;
@@ -201,6 +211,11 @@ export class BattleScene {
       this.scene.add(dot);
       this.pathDots.set(posKey(p), dot);
     }
+    this.instanced(top, batch.top.at, batch.top.tiles);
+    this.instanced(stone, batch.stoneTop.at, batch.stoneTop.tiles);
+    this.instanced(side, batch.side.at);
+    this.instanced(stone, batch.stone.at);
+    this.instanced(new THREE.Group().add(tree), batch.tree.at);
     this.focus.set(0, STEP, 0);
     const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: MARKER.frameDepthTest, depthWrite: false }));
     frame.position.y = MARKER.frameY;
@@ -210,6 +225,26 @@ export class BattleScene {
     this.cursor.add(frame, arrow);
     this.cursor.visible = false;
     this.scene.add(this.cursor);
+  }
+
+  // Um InstancedMesh por malha da peça em vez de um objeto por bloco: o 20x20 fazia 2 321 draw calls por quadro e caía
+  // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
+  private instanced(piece: THREE.Object3D, at: THREE.Vector3[], tiles?: Pos[]) {
+    if (!at.length) return;
+    piece.updateMatrixWorld(true);
+    const m = new THREE.Matrix4();
+    piece.traverse((o) => {
+      const src = o as THREE.Mesh;
+      if (!src.isMesh) return;
+      const inst = new THREE.InstancedMesh(src.geometry, src.material, at.length);
+      at.forEach((p, i) => inst.setMatrixAt(i, m.makeTranslation(p.x, p.y, p.z).multiply(src.matrixWorld)));
+      inst.castShadow = inst.receiveShadow = true;
+      if (tiles) {
+        inst.userData.tiles = tiles;
+        this.tileTops.push(inst);
+      }
+      this.scene.add(inst);
+    });
   }
 
   setCursor(p: Pos | null) {
@@ -391,10 +426,8 @@ export class BattleScene {
         if (unit) return this.posOf(unit);
       }
     }
-    for (const hit of ray.intersectObjects(this.tileTops, true)) {
-      for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) if (o.userData.pos) return o.userData.pos;
-    }
-    return null;
+    const hit = ray.intersectObjects(this.tileTops, false)[0];
+    return hit ? (hit.object.userData.tiles as Pos[])[hit.instanceId!] : null;
   }
 
   // desliza a câmera até a casa (o herói da vez), sem mudar o zoom
@@ -507,6 +540,7 @@ export class BattleScene {
       // barra de vida sempre de frente para a câmera
       v.holder.getObjectByName('bar')!.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
     }
+    this.renderer.shadowMap.needsUpdate = true;
     this.composer.render();
   }
 
