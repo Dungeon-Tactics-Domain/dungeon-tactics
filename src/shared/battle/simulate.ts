@@ -6,6 +6,7 @@ import type { BattleEvent, Outcome } from './types.ts';
 export interface SimResult {
   outcome: Outcome | 'timeout';
   turns: number;
+  heroTurns: number; // só os dos heróis: é o que o jogador gasta pensando (base da estimativa de minutos)
   heroesAlive: number;
   enemiesAlive: number;
   events: BattleEvent[];
@@ -16,11 +17,16 @@ export interface SimResult {
 export function simulate(scenario: Scenario, seed: number, maxTurns = 400): SimResult {
   const battle = Battle.start(scenario, seed);
   const events: BattleEvent[] = [];
-  while (!battle.over && battle.state.turnsPlayed < maxTurns) events.push(...playAiTurn(battle));
+  let heroTurns = 0;
+  while (!battle.over && battle.state.turnsPlayed < maxTurns) {
+    if (battle.actor.team === 'hero') heroTurns++;
+    events.push(...playAiTurn(battle));
+  }
   const alive = (team: string) => battle.state.units.filter((u) => u.team === team && u.def !== 'beacon').length;
   return {
     outcome: battle.over ? battle.state.outcome : 'timeout',
     turns: battle.state.turnsPlayed,
+    heroTurns,
     heroesAlive: alive('hero'),
     enemiesAlive: alive('enemy'),
     events,

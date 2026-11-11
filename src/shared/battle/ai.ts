@@ -18,7 +18,13 @@ const W = {
   APPROACH: 0.35, // por casa de distância do alvo mais interessante
   OBJECTIVE_PULL: 3, // quanto o alvo a proteger "puxa" os inimigos (como se estivesse mais perto)
   THREAT: 0.25, // por ponto de dano médio de quem alcança a casa
+  ADVANCE: 1.2, // por casa de distância quando não há em quem bater neste turno
+  GUARD: 2, // por casa que o herói se afasta do alvo a proteger além do raio de guarda
 };
+// Até onde o herói da IA sai de perto do alvo a proteger para ir ao encontro do inimigo. Medido em 11/11 no 20x20
+// (1 000 sementes): com 10 os heróis seguram a colina do meio e vencem 53,3%; com 7 ficam no descampado (29%) e sem
+// limite se espalham (41%). O resultado é sensível a este número: mudou o mapa, meça de novo.
+export const GUARD_RADIUS = 10;
 
 export interface Plan {
   moveTo: Pos | null;
@@ -61,19 +67,25 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
   return [...out.values()];
 }
 
-function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos): number {
+// Valor da casa. Atacando, pesa a ameaça (bater de um lugar seguro). Sem ninguém ao alcance, a ameaça não conta e a
+// distância pesa mais: no mapa 20x20 o inimigo fugia do alcance dos heróis em vez de avançar e a batalha não andava
+// (medido em 11/11: 28 dos 40 turnos inimigos sem atacar). O herói avança só até o raio de guarda do alvo a proteger.
+function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos, attacking: boolean): number {
   const tile = tileAt(grid, at);
   let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * tile.h;
   let nearest = Infinity;
   for (const o of state.units) {
-    if (o.team === actor.team) continue;
+    if (o.team === actor.team) {
+      if (!attacking && o.def === OBJECTIVE_DEF) score -= W.GUARD * Math.max(0, dist(at, o.pos) - GUARD_RADIUS);
+      continue;
+    }
     nearest = Math.min(nearest, dist(at, o.pos) - (o.def === OBJECTIVE_DEF ? W.OBJECTIVE_PULL : 0));
     const def = UNIT_DEFS[o.def];
-    if (def.speed === 0 || !def.abilities.length) continue;
+    if (!attacking || def.speed === 0 || !def.abilities.length) continue;
     const reach = def.move + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
     if (dist(at, o.pos) <= reach) score -= W.THREAT * Math.max(...def.abilities.map((a) => avg(ABILITIES[a].damage)));
   }
-  return score - W.APPROACH * (Number.isFinite(nearest) ? nearest : 0);
+  return score - (attacking ? W.APPROACH : W.ADVANCE) * (Number.isFinite(nearest) ? nearest : 0);
 }
 
 // Melhor jogada do turno: testa cada casa alcançável (e ficar parado) com cada habilidade e cada alvo, e escolhe a de
@@ -93,7 +105,7 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
         if (s > attackBest) { attackBest = s; attack = { id, target }; }
       }
     }
-    const score = attackBest + positionScore(grid, moved, me, spot);
+    const score = attackBest + positionScore(grid, moved, me, spot, !!attack);
     if (score > best.score) best = { moveTo: spot === actor.pos ? null : spot, ability: attack, score };
   }
   return best;

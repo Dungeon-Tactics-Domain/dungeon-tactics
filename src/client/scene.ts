@@ -22,6 +22,9 @@ const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o me
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
 const ZOOM = { min: 4, max: 16 };
 const ZOOM_START = 1.5;
+// celular em pé: no máximo ~9,5 casas de largura ao abrir. No 20x20 o mapa inteiro deixava a casa com ~20 px, pequena
+// para o dedo (alvo de toque ≥ 44 px); a câmera segue o herói da vez e o botão de recentralizar mostra tudo
+const PORTRAIT_START = 8.3;
 
 // modelos KayKit que já estão em public/models; o Bruto usa o bárbaro (não há esqueleto grande)
 const MODEL: Record<string, string> = {
@@ -120,7 +123,7 @@ export class BattleScene {
     // Começa 1,5x mais perto: com o mapa todo a casa tinha ~45x24 px, pequena para o dedo (auditoria mobile de 25/10);
     // a câmera vai até o herói da vez, e o botão de recentralizar volta ao mapa inteiro
     this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
-    this.viewH = innerWidth < innerHeight ? this.fitView / ZOOM_START : this.fitView; // deitado (PC) o mapa inteiro já tem casas grandes
+    this.viewH = innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, ZOOM.max); // deitado (PC): mapa inteiro até o 8x8; no 20x20 abre mais perto e segue o herói
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
     // a paleta vem depois da saída em sRGB; liga e desliga sem refazer a cadeia
@@ -461,7 +464,8 @@ export class BattleScene {
   }
 
   zoom(factor: number) {
-    this.viewH = THREE.MathUtils.clamp(this.viewH * factor, ZOOM.min, ZOOM.max);
+    // o teto acompanha o mapa: no 20x20 o mapa inteiro pede mais que os 16 do 8x8
+    this.viewH = THREE.MathUtils.clamp(this.viewH * factor, ZOOM.min, Math.max(ZOOM.max, this.fitView));
     this.resize();
   }
 

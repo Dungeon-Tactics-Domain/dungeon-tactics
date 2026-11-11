@@ -18,7 +18,8 @@ const LIST: UnitDef[] = [
   { id: 'skeleton_archer', name: 'Arqueiro esqueleto', en: 'Skeleton archer', hp: 33, speed: 10, move: 4, abilities: ['shot', 'dagger'] },
   { id: 'dark_mage', name: 'Mago sombrio', en: 'Dark mage', hp: 30, speed: 7, move: 3, abilities: ['firebolt', 'blast'] },
   { id: 'brute', name: 'Bruto', en: 'Brute', hp: 82, speed: 5, move: 3, abilities: ['cleave', 'slam'] },
-  { id: 'beacon', name: 'Farol', en: 'Beacon', hp: 35, speed: 0, move: 0, abilities: [] },
+  // 50 de vida (era 35): com a IA inimiga avançando de verdade (11/11) o farol caía cedo; 8x8 em 1 000 sementes: 33,7% → 62,8%
+  { id: 'beacon', name: 'Farol', en: 'Beacon', hp: 50, speed: 0, move: 0, abilities: [] },
 ];
 
 export const UNIT_DEFS: Record<string, UnitDef> = Object.fromEntries(LIST.map((u) => [u.id, u]));

@@ -31,7 +31,7 @@ npm run dev                         # cliente em http://localhost:5173 (ou o lau
 npm run typecheck                   # cliente e scripts
 npx vitest run                      # testes
 npx vite build                      # build do cliente (dist/)
-npm run sim -- skirmish 1000        # IA contra IA: vitória dos heróis, turnos, sobreviventes
+npm run sim -- beacon_hill 1000     # IA contra IA: vitória dos heróis, turnos, minutos estimados (skirmish = 8x8)
 ```
 
 **Gates antes de qualquer commit:** `npm run typecheck`, `vitest run` e `vite build`, todos limpos.

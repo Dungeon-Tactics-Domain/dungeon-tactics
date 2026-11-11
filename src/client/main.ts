@@ -2,7 +2,7 @@
 // pelo HUD; na vez do inimigo a IA joga sozinha, uma unidade por vez, com pausa para dar para ler.
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { SCENARIOS } from '../shared/battle/scenarios.ts';
+import { FIRST_BATTLE } from '../shared/battle/scenarios.ts';
 import { inBounds } from '../shared/battle/grid.ts';
 import type { BattleEvent, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -22,7 +22,7 @@ const ENEMY_PAUSE_MS = 700; // tempo para ler de quem é a vez antes do inimigo 
 const ENEMY_AFTER_MS = 600; // e para ler o resultado antes do próximo (com 450 e nada depois, o turno passava em <0,6 s)
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-const newBattle = () => Battle.start(SCENARIOS.skirmish, (Math.random() * 2 ** 31) | 0);
+const newBattle = () => Battle.start(FIRST_BATTLE, (Math.random() * 2 ** 31) | 0);
 
 class Game {
   private ui: Ui;
