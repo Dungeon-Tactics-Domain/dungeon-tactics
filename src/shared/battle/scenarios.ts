@@ -1,4 +1,5 @@
 import { parseGrid, type Grid } from './grid.ts';
+import type { Rules } from './rules.ts';
 import type { BattleState, Team } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
@@ -17,6 +18,7 @@ export interface Scenario {
   en: string;
   grid: Grid;
   spawns: Spawn[];
+  rules?: Rules; // só o cenário de estudo troca regra; os do jogo não têm
 }
 
 // Escaramuça 8x8 para testes e simulação rápida: um morro com floresta no centro, um muro e o farol no fundo.

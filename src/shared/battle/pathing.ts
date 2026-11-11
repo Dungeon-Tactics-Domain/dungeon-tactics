@@ -1,5 +1,6 @@
 import type { AbilityDef } from './abilities.ts';
 import { TERRAIN, dist, neighbors, posKey, samePos, tileAt, type Grid } from './grid.ts';
+import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
@@ -21,6 +22,7 @@ export interface Step {
 export function reachable(grid: Grid, state: BattleState, unitId: string): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
   const budget = UNIT_DEFS[unit.def].move;
+  const jump = rulesOf(state).jump?.(unit.def) ?? MAX_JUMP;
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
   const queue: Pos[] = [unit.pos];
   for (let i = 0; i < queue.length; i++) {
@@ -31,7 +33,7 @@ export function reachable(grid: Grid, state: BattleState, unitId: string): Map<s
       const k = posKey(n);
       if (seen.has(k)) continue;
       const to = tileAt(grid, n);
-      if (!TERRAIN[to.terrain].walkable || Math.abs(to.h - tileAt(grid, cur).h) > MAX_JUMP) continue;
+      if (!TERRAIN[to.terrain].walkable || Math.abs(to.h - tileAt(grid, cur).h) > jump) continue;
       const other = unitAt(state, n);
       if (other && other.team !== unit.team) continue;
       seen.set(k, { pos: n, cost: cost + 1, from: posKey(cur) });

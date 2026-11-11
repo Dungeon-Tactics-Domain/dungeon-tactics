@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
@@ -191,5 +192,21 @@ describe('fim da batalha', () => {
     expect(checkOutcome(stateOf(base.filter((u) => u.id !== 'e')))).toBe('victory');
     expect(checkOutcome(stateOf(base.filter((u) => u.id !== 'b')))).toBe('defeat');
     expect(checkOutcome(stateOf(base.filter((u) => u.id !== 'h')))).toBe('defeat');
+  });
+});
+
+// Estudo do FFT (11/11): Arremessar pedra e Investida empurram em ~50% das vezes
+describe('empurrão com chance', () => {
+  it('pushChance 0 nunca empurra e 100 sempre empurra; sem o campo, empurra sempre', () => {
+    const grid = flat(6, 1);
+    const pushed = (pushChance?: number) => {
+      ABILITIES.test_push = { ...ABILITIES.shield_bash, id: 'test_push', pushChance };
+      UNIT_DEFS.test_pusher = { ...UNIT_DEFS.warrior, id: 'test_pusher', abilities: ['test_push'] };
+      const state = stateOf([{ id: 'a', def: 'test_pusher', team: 'hero', x: 0, y: 0 }, { id: 'b', def: 'soldier', team: 'enemy', x: 1, y: 0 }, { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 0 }], HIT_SEED);
+      return resolveAbility(grid, state, 'a', 'test_push', { x: 1, y: 0 }).some((e) => e.k === 'push');
+    };
+    expect(pushed(0)).toBe(false);
+    expect(pushed(100)).toBe(true);
+    expect(pushed()).toBe(true);
   });
 });

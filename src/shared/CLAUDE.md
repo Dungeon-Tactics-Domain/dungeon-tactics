@@ -9,3 +9,4 @@ Vale junto com o `CLAUDE.md` da raiz.
 - **Número de unidade ou habilidade só muda depois de medido** com `npm run sim` (registre antes/depois no comentário ou no PR).
 - **Fronteira de confiança:** o save vem do navegador; `Battle.load`/`parseBattleState` reconstroem só campos conhecidos e devolvem `null` em qualquer dúvida.
 - Scripts rodam com o Node removendo tipos: nada de sintaxe que gera código (propriedade de parâmetro no construtor, `enum`).
+- **`battle/fft/` é estudo de referência, não jogo** (11/11): fórmulas e dados do Final Fantasy Tactics com fonte em `docs/game-design/referencia-fft.md`. Só existe para quem chama `registerFftStudy()` (cliente com `?cenario=fft-gariland`, simulador, testes). Regra que só o estudo precisa entra como campo opcional em `rules.ts`; cenário do jogo não usa `rules`.

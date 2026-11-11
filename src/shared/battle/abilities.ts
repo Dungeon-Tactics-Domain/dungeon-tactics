@@ -13,6 +13,7 @@ export interface AbilityDef {
   accuracy: number; // % base antes de distância, altura e cobertura
   push: number; // casas de empurrão, afastando do centro da habilidade
   delay: number; // CT a mais no custo do turno (habilidade forte atrasa o próximo turno)
+  pushChance?: number; // % de vezes em que o empurrão acontece; sem o campo, sempre (só o estudo do FFT usa: ~50%)
 }
 
 type Spec = Pick<AbilityDef, 'id' | 'name' | 'en' | 'range' | 'accuracy'> & Partial<AbilityDef>;

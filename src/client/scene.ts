@@ -31,6 +31,8 @@ const MODEL: Record<string, string> = {
   warrior: 'knight', archer: 'rogue', mage: 'mage', rogue: 'rogue_hooded',
   soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
 };
+// a unidade do jogo está no mapa acima; a do cenário de estudo traz o modelo na própria ficha
+const modelOf = (def: string) => MODEL[def] ?? UNIT_DEFS[def].model;
 // gesto de cada habilidade, entre os clipes que todo boneco KayKit carrega
 const CAST_CLIP = (id: string) => (ABILITIES[id].heal[1] > 0 || ['firebolt', 'blast', 'gust'].includes(id) ? 'Spellcast_Shoot'
   : ABILITIES[id].range[1] > 1 ? 'Throw' : '2H_Melee_Attack_Spin');
@@ -106,12 +108,14 @@ export class BattleScene {
   private readonly onResize = () => this.resize();
   private viewH: number;
   private readonly fitView: number; // zoom em que o mapa inteiro cabe na largura
+  private readonly step: number; // altura de um nível neste mapa
   private insets = { top: 0, bottom: 0 }; // px cobertos pelo HUD em cima e embaixo
   private yaw = Math.PI / 4;
   private yawTarget = Math.PI / 4;
 
   private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings) {
     this.pixel = pixel;
+    this.step = grid.levelHeight ?? STEP;
     this.renderer.shadowMap.enabled = true;
     // o pixel art desenha a cena duas vezes por quadro (cor e normais); a sombra só precisa da primeira (pedida no frame)
     this.renderer.shadowMap.autoUpdate = false;
@@ -144,7 +148,7 @@ export class BattleScene {
 
   static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings): Promise<BattleScene> {
     const loader = new GLTFLoader();
-    const defs = [...new Set(state.units.map((u) => MODEL[u.def]).filter(Boolean))];
+    const defs = [...new Set(state.units.map((u) => modelOf(u.def)).filter(Boolean))];
     const [top, side, stone, tree, ...loaded] = await Promise.all([
       ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/quadrado/${n}.gltf`)),
       loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // a árvore do pack de blocos é um cubo de folhas
@@ -158,7 +162,7 @@ export class BattleScene {
 
   // casa (x, y) da batalha → mundo: x no eixo X, y no eixo Z, mapa centrado na origem
   private world(p: Pos): THREE.Vector3 {
-    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (tileAt(this.grid, p).h + 1) * STEP, p.y - this.grid.height / 2 + 0.5);
+    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (tileAt(this.grid, p).h + 1) * this.step, p.y - this.grid.height / 2 + 0.5);
   }
 
   private buildBoard(pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>) {
@@ -167,8 +171,8 @@ export class BattleScene {
       const o = src.clone();
       const box = new THREE.Box3().setFromObject(o);
       const size = box.getSize(new THREE.Vector3());
-      o.scale.set(1 / size.x, STEP / size.y, 1 / size.z);
-      o.position.y = -box.max.y * (STEP / size.y);
+      o.scale.set(1 / size.x, this.step / size.y, 1 / size.z);
+      o.position.y = -box.max.y * (this.step / size.y);
       return prepare(new THREE.Group().add(o));
     };
     const top = norm(pieces.top), side = norm(pieces.side), stone = norm(pieces.stone);
@@ -193,7 +197,7 @@ export class BattleScene {
       const wall = tile.terrain === 'wall';
       // muro: pedra empilhada dois níveis acima da casa, para ler que bloqueia passagem e visão
       for (let k = 0; k <= tile.h + (wall ? 2 : 0); k++) {
-        const at = new THREE.Vector3(w.x, (k + 1) * STEP, w.z);
+        const at = new THREE.Vector3(w.x, (k + 1) * this.step, w.z);
         if (k === tile.h) {
           const b = wall ? batch.stoneTop : batch.top;
           b.at.push(at);
@@ -264,7 +268,7 @@ export class BattleScene {
     const holder = new THREE.Group();
     let mixer: THREE.AnimationMixer | null = null;
     let clips: THREE.AnimationClip[] = [];
-    const gltf = this.models.get(MODEL[u.def]);
+    const gltf = this.models.get(modelOf(u.def));
     if (gltf) {
       const body = prepare(cloneSkinned(gltf.scene));
       const b = new THREE.Box3().setFromObject(body);

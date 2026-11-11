@@ -2,6 +2,7 @@ import { ABILITIES, type AbilityDef } from './abilities.ts';
 import { TERRAIN, dist, inBounds, samePos, tileAt, type Grid } from './grid.ts';
 import { MAX_JUMP, inAbilityRange, lineOfSight, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
+import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
 
@@ -67,7 +68,7 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   if (!hit.length) return fail('no-target');
   const targets = hit.map((u) => ({
     unit: u.id,
-    chance: hitChance(grid, ability, actor.pos, u.pos),
+    chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? hitChance(grid, ability, actor.pos, u.pos),
     dmgMin: ability.damage[0],
     dmgMax: ability.damage[1],
     healMin: ability.heal[0],
@@ -101,10 +102,16 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
       continue;
     }
     let dmg: number;
-    [dmg, state.rng] = rollInt(state.rng, ability.damage[0], ability.damage[1]);
+    [dmg, state.rng] = rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ability.damage[0], ability.damage[1]);
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
-    if (ability.push > 0) push(grid, state, unit, preview.center, actor.pos, ability.push, events);
+    if (ability.push === 0) continue;
+    // empurrão com chance sorteia depois do dano; sem `pushChance` não há sorteio (a ordem dos sorteios do jogo não muda)
+    if (ability.pushChance !== undefined) {
+      [roll, state.rng] = nextRng(state.rng);
+      if (roll * 100 >= ability.pushChance) continue;
+    }
+    push(grid, state, unit, preview.center, actor.pos, ability.push, events);
   }
   state.outcome = checkOutcome(state);
   return events;
@@ -150,8 +157,8 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
     const levels = tileAt(grid, cur).h - tileAt(grid, next).h;
     result.to = next;
     result.events.push({ k: 'push', unit: unit.id, to: next });
-    if (levels > COMBAT.FALL_FREE) {
-      const dmg = (levels - COMBAT.FALL_FREE) * COMBAT.FALL_DAMAGE;
+    const dmg = levels <= 0 ? 0 : rulesOf(state).fallDamage?.(levels, unit.def) ?? Math.max(0, levels - COMBAT.FALL_FREE) * COMBAT.FALL_DAMAGE;
+    if (dmg > 0) {
       result.events.push({ k: 'fall', unit: unit.id, levels, dmg });
       result.dmg += dmg;
     }
@@ -168,6 +175,8 @@ function push(grid: Grid, state: BattleState, unit: UnitState, center: Pos, orig
 
 // Vitória: sem inimigos. Derrota: o alvo a proteger caiu ou todos os heróis morreram.
 export function checkOutcome(state: BattleState): Outcome {
+  const custom = rulesOf(state).outcome;
+  if (custom) return custom(state);
   const heroes = state.units.filter((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF);
   const objective = state.units.some((u) => u.def === OBJECTIVE_DEF);
   if (!objective || heroes.length === 0) return 'defeat';

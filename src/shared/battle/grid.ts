@@ -20,6 +20,7 @@ export interface Grid {
   width: number;
   height: number;
   tiles: Tile[];
+  levelHeight?: number; // altura de um nível no desenho, em casas; só o mapa de estudo do FFT informa (níveis mais finos)
 }
 
 const SYMBOL: Record<string, TerrainKind> = { '.': 'floor', T: 'forest', '#': 'wall' };

@@ -17,12 +17,14 @@ import { store } from './store.ts';
 import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
 
-const SAVE_KEY = 'dt:battle';
+// a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
+let scenario = FIRST_BATTLE;
+let SAVE_KEY = 'dt:battle';
 const ENEMY_PAUSE_MS = 700; // tempo para ler de quem é a vez antes do inimigo agir
 const ENEMY_AFTER_MS = 600; // e para ler o resultado antes do próximo (com 450 e nada depois, o turno passava em <0,6 s)
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-const newBattle = () => Battle.start(FIRST_BATTLE, (Math.random() * 2 ** 31) | 0);
+const newBattle = () => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
 
 class Game {
   private ui: Ui;
@@ -249,6 +251,14 @@ class Game {
 
 async function boot() {
   const host = document.getElementById('app')!;
+  // Estudo de referência do FFT (11/11): não é conteúdo do jogo. Só abre com o parâmetro e vem num pedaço separado do
+  // build (import dinâmico), então nada dele vai no pacote que o jogador baixa.
+  if (new URLSearchParams(location.search).get('cenario') === 'fft-gariland') {
+    const fft = await import('../shared/battle/fft/gariland.ts');
+    fft.registerFftStudy();
+    scenario = fft.GARILAND;
+    SAVE_KEY = 'dt:battle:fft-gariland';
+  }
   const saved = store.get(SAVE_KEY);
   const battle = (saved && Battle.load(saved)) || newBattle();
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);

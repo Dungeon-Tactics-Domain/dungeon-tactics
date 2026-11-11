@@ -1,4 +1,5 @@
 import { ABILITIES } from './abilities.ts';
+import { rulesOf } from './rules.ts';
 import type { BattleState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
@@ -37,7 +38,9 @@ export function finishTurn(state: BattleState): void {
   const actor = state.units.find((u) => u.id === state.turn.actor);
   if (actor) {
     const used = state.turn.usedAbility;
-    actor.ct -= used ? ACT_COST + ABILITIES[used].delay : REST_COST;
+    const custom = rulesOf(state).turnCt;
+    if (custom) actor.ct = custom(actor.ct, state.turn.moved, !!used);
+    else actor.ct -= used ? ACT_COST + ABILITIES[used].delay : REST_COST;
   }
   state.turnsPlayed++;
 }
