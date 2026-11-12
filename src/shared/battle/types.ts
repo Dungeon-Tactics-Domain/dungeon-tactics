@@ -13,6 +13,9 @@ export interface UnitState {
   pos: Pos;
   hp: number;
   ct: number; // carga do turno estilo FFT; age ao chegar em TURN_THRESHOLD
+  // Os dois campos abaixo só existem em cenário que pede (o estudo do FFT); nos mapas do jogo ficam ausentes e o save não muda.
+  facing?: number; // para onde olha: índice em FACING (grid.ts)
+  vars?: Record<string, number>; // contadores da unidade (estoque, MP, bônus de atributo); as chaves vêm de UnitDef.vars
 }
 
 // o que o ator da vez já fez: mover uma vez e agir uma vez, em qualquer ordem
@@ -24,11 +27,22 @@ export interface TurnState {
 
 export type Outcome = 'ongoing' | 'victory' | 'defeat';
 
+// Ação com carga (ação lenta do FFT, BMG 1.1 e A.2): declarada no turno, sai quando `ticks` chega a 0. Mira a casa
+// (`follow` null) ou segue a unidade que estava nela.
+export interface Charge {
+  unit: string;
+  ability: string;
+  target: Pos;
+  follow: string | null;
+  ticks: number;
+}
+
 export interface BattleState {
   scenario: string;
   units: UnitState[]; // morto sai da lista
   rng: number; // estado do sorteio; NÃO volta ao desfazer
   turn: TurnState;
+  charges: Charge[]; // em ordem de declaração
   outcome: Outcome;
   turnsPlayed: number;
 }
@@ -37,6 +51,8 @@ export interface BattleState {
 export type BattleEvent =
   | { k: 'move'; unit: string; path: Pos[] }
   | { k: 'attack'; unit: string; ability: string; target: Pos }
+  | { k: 'charge'; unit: string; ability: string; target: Pos } // começou a carregar; sai depois
+  | { k: 'fizzle'; unit: string; ability: string } // a carga saiu e não achou alvo (ele saiu da casa ou do alcance)
   | { k: 'hit'; unit: string; dmg: number; chance: number }
   | { k: 'miss'; unit: string; chance: number }
   | { k: 'heal'; unit: string; amount: number }

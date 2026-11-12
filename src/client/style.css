@@ -13,7 +13,10 @@
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
   --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, .55);
   /* mesmas cores das marcações da cena (MARK em scene.ts), para a legenda bater com o mapa */
-  --mark-move: #3d9bff; --mark-range: #ff6a3c; --mark-blocked: #6b3a8c; --mark-threat: #ff2d55;
+  --mark-move: #ffffff; --mark-range: #ff6a3c; --mark-blocked: #6b3a8c; --mark-threat: #ff2d55;
+  /* pergaminho do HUD (12/11, no espírito do FFT, cores nossas): tinta escura dá 11:1 sobre o papel */
+  --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #6b5638; --focus: #b2320f;
+  --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;
   --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
   --gap: 8px;
   --font: 'Alegreya Sans', system-ui, sans-serif; /* texto corrido: legível em tamanho pequeno */
@@ -32,7 +35,7 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-t
 .gi { width: 1.4em; height: 1.4em; fill: currentColor; flex: none; }
 
 /* painel: cartão, fichas da fila e diálogo usam a mesma moldura dos botões */
-.card, .chip, .dialog { border: 2px solid var(--edge); border-radius: var(--r); background: linear-gradient(var(--stone), var(--stone-lo)); box-shadow: var(--frame); }
+.dialog { border: 2px solid var(--edge); border-radius: var(--r); background: linear-gradient(var(--stone), var(--stone-lo)); box-shadow: var(--frame); }
 
 /* rótulos pequenos na fonte de texto (a pixel em 12 px não se lia); a pixel fica em títulos, Confirmar e fila */
 button { font: 700 var(--fs-sm)/1.1 var(--font); color: var(--fg); min-height: var(--tap); min-width: var(--tap); border-radius: var(--r);
@@ -49,52 +52,87 @@ button.primary { background: var(--gold-btn); color: var(--on-accent); font: 400
 button.primary:not(:disabled):active { box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(0, 0, 0, .25), inset -4px -4px 0 0 rgba(255, 255, 255, .35); }
 button.secondary { padding: 0 14px; }
 button.icon { padding: 0; font-size: var(--fs-lg); }
+/* o display do botão vencia o atributo hidden: o ↻ de virar aparecia nos mapas sem direção (12/11) */
+button[hidden] { display: none; }
 
-.hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
-  padding: max(var(--gap), env(safe-area-inset-top)) max(var(--gap), env(safe-area-inset-right)) max(var(--gap), env(safe-area-inset-bottom)) max(var(--gap), env(safe-area-inset-left)); }
-.hud > * > *, .cam > * { pointer-events: auto; }
-.cam { pointer-events: none; }
-
-.top { display: flex; gap: var(--gap); align-items: flex-start; }
-.queue { list-style: none; margin: 0; padding: 0 0 4px; display: flex; gap: 3px; flex: 1; overflow-x: auto; scrollbar-width: none; }
-.chip { flex: none; width: 36px; height: var(--tap); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  font: 400 var(--fs-sm)/1 var(--font-px); }
-/* lado pelo filete: azul herói, vermelho inimigo (a --frame do :root já vem resolvida com o dourado, então a ficha monta a sua) */
-.chip { box-shadow: inset 0 0 0 2px var(--side), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), 0 3px 0 var(--edge); }
-.chip.hero { --side: var(--hero); }
-.chip.enemy { --side: var(--enemy); }
-/* quem age agora: maior e com brilho, para não depender só da cor */
-.chip.now { width: 44px; box-shadow: inset 0 0 0 2px var(--side), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), var(--glow); }
-.chip-hp { width: 26px; height: 4px; background: #000; overflow: hidden; }
-.chip-hp i { display: block; height: 100%; }
-.chip.hero .chip-hp i { background: var(--hero); }
-.chip.enemy .chip-hp i { background: var(--enemy); }
-.menu-btn { flex: none; }
-
-.bottom { display: flex; flex-direction: column; gap: var(--gap); }
-/* altura fixa de 3 linhas: o cartão crescendo empurrava os botões e o mapa entre um toque e outro (auditoria mobile) */
-.card { padding: 10px 14px; min-height: 112px; }
-.card strong { font: 400 var(--fs-lg)/1.2 var(--font-px); }
-.card p { margin: 2px 0 0; color: var(--muted); }
-.bar { display: flex; gap: var(--gap); justify-content: center; }
-.slot { position: relative; flex: 1; max-width: 76px; min-height: 72px; flex-direction: column; gap: 3px; padding: 6px 3px; font-size: 13px; line-height: 1.1; }
-/* ícone num poço escuro, como o quadro de habilidade dos tactics */
-.slot .gi { width: 30px; height: 30px; padding: 4px; background: var(--well); box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .7), inset -2px -2px 0 rgba(255, 255, 255, .08); }
-.slot[aria-pressed='true'] .gi { color: var(--trim-hi); }
-/* nome em até 2 linhas, sem reticências ("Faca arrem…" não se lia) */
-.slot span { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: center; hyphens: auto; overflow-wrap: anywhere; }
-.actions { display: flex; gap: var(--gap); } /* 8 px entre botões: com 2 a 6 px o polegar pegava o vizinho */
-.actions .wait { line-height: 1.1; max-width: 120px; }
-.actions .wait.armed { box-shadow: var(--frame), var(--glow); }
-.cam { display: flex; gap: var(--gap); justify-content: flex-end; }
-.undo span { font-weight: 700; }
+/* HUD no jeito da tela de batalha do FFT (pedido do Fernando, 12/11): só a disposição e o fluxo vêm de lá. Painel de
+   pergaminho claro com tinta escura e moldura marrom, feito aqui em CSS (nada da arte do original). Posições fixas na
+   tela de 1920x1080 do PC; o celular tem etapa própria depois. */
+.hud { position: absolute; inset: 0; pointer-events: none; font-size: var(--fs); }
+.panel { position: absolute; pointer-events: auto; margin: 0; padding: 8px 12px; color: var(--ink); border-radius: var(--r);
+  background: linear-gradient(var(--paper), var(--paper-lo)); border: 2px solid var(--paper-edge);
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+.panel[hidden] { display: none; }
+/* casa sob o cursor e lista de turnos: canto de cima à esquerda, como no FFT */
+.tile-info { top: 12px; left: 12px; font-size: var(--fs-sm); }
+.queue { top: 56px; left: 12px; width: 230px; list-style: none; padding: 6px; display: grid; gap: 3px; }
+.queue-title { font: 400 var(--fs-sm)/1 var(--font-px); color: var(--ink-muted); padding: 2px 4px 4px; }
+.queue-row { display: flex; align-items: center; gap: 8px; padding: 2px 6px; font-size: var(--fs-sm); border-left: 5px solid var(--side); }
+.queue-row.hero { --side: var(--hero); }
+.queue-row.enemy { --side: var(--enemy); }
+.queue-row.now { background: rgba(255, 255, 255, .45); font-weight: 700; }
+.queue-row.charge { font-style: italic; color: var(--ink-muted); }
+.queue-row .portrait { width: 24px; height: 32px; }
+/* ajuda do que fazer agora e faixa do nome da habilidade: no alto, no meio */
+.help { top: 12px; left: 50%; transform: translateX(-50%); max-width: 760px; text-align: center; font-size: var(--fs-sm); }
+.help:empty { display: none; }
+.banner { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 28px; font: 400 var(--fs-lg)/1 var(--font-px); }
+/* ferramentas da câmera e o menu: canto de cima à direita; o contador de desempenho logo abaixo */
+.tools { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; pointer-events: auto; }
+.fps { position: absolute; top: 72px; right: 12px; pointer-events: none; white-space: pre; text-align: right;
+  font: 12px/1.35 ui-monospace, Consolas, monospace; color: var(--fg); background: rgba(10, 6, 16, .55); padding: 4px 8px; border-radius: var(--r); }
+.fps[hidden] { display: none; }
+/* menu de comandos, submenu das habilidades e o "Executar?": à direita, no meio da altura */
+.commands { right: 24px; top: 34%; width: 220px; padding: 6px; }
+.abilities { right: 256px; top: 34%; width: 300px; padding: 6px; }
+.confirm { right: 24px; top: 34%; width: 420px; }
+.confirm strong { font: 400 var(--fs-lg)/1.2 var(--font-px); }
+.confirm p { margin: 6px 0 0; font-size: var(--fs-sm); }
+.yes-no { display: flex; gap: 6px; margin-top: 10px; }
+.panel .item { width: 100%; min-height: 40px; justify-content: space-between; position: relative; padding: 4px 10px 4px 28px;
+  background: transparent; border: none; box-shadow: none; color: var(--ink); font: 400 var(--fs-lg)/1 var(--font-px); }
+.panel .item.focus { background: rgba(255, 255, 255, .5); }
+/* mão do FFT trocada por uma seta nossa marcando o item com o foco */
+.panel .item.focus::before { content: '▶'; position: absolute; left: 8px; color: var(--focus); }
+.panel .item:disabled { filter: none; opacity: .45; }
+.panel .item:not(:disabled):active { transform: none; box-shadow: none; }
+.item-cost { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
+/* painéis de unidade: a da vez embaixo à esquerda, a sob o cursor embaixo à direita */
+.active-slot, .target-slot { position: absolute; bottom: 12px; width: 440px; pointer-events: none; }
+.active-slot { left: 12px; }
+.target-slot { right: 12px; }
+.unit-panel { position: relative; display: flex; gap: 12px; border-left: 8px solid var(--side); }
+.unit-panel.hero { --side: var(--hero); }
+.unit-panel.enemy { --side: var(--enemy); }
+.portrait { width: 72px; height: 96px; object-fit: cover; flex: none; background: var(--paper-hi); border: 2px solid var(--paper-edge); }
+.portrait.gem { background: radial-gradient(circle, #bff7ff, #2bb8d6 60%, #0c4a5a); }
+.unit-body { flex: 1; display: grid; gap: 4px; align-content: start; }
+.unit-name { font: 400 var(--fs-lg)/1.1 var(--font-px); display: flex; align-items: baseline; gap: 8px; }
+.unit-side { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
+.unit-note { margin: 0; font-size: var(--fs-sm); color: var(--ink-muted); }
+.gauge { display: grid; grid-template-columns: 40px 1fr 64px; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.gauge-label { font-weight: 700; }
+.gauge-bar { height: 10px; background: var(--well); border: 1px solid var(--paper-edge); }
+.gauge-bar i { display: block; height: 100%; }
+.gauge.hp i { background: var(--hp); }
+.gauge.mp i { background: var(--mp); }
+.gauge.ct i { background: var(--ct); }
+.gauge-num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .floats { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.float { position: absolute; transform: translate(-50%, -50%); font: 400 22px/1 var(--font-px); text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; animation: rise 1.1s ease-out forwards; }
+/* número de dano no ritmo do FFT (12/11): pula, fica parado para ler e some; 1,2 s = TIMING.float em timing.ts */
+.float { position: absolute; transform: translate(-50%, -50%); font: 400 26px/1 var(--font-px); text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; animation: pop 1.2s linear forwards; }
 .float.dmg { color: #ffd0c4; }
 .float.miss { color: var(--muted); }
 .float.heal { color: var(--heal); }
-@keyframes rise { to { transform: translate(-50%, -150%); opacity: 0; } }
+@keyframes pop {
+  0% { transform: translate(-50%, -50%) scale(.6); opacity: 0; }
+  8% { transform: translate(-50%, -140%) scale(1.15); opacity: 1; }
+  16% { transform: translate(-50%, -90%) scale(1); }
+  22% { transform: translate(-50%, -110%); }
+  28%, 75% { transform: translate(-50%, -100%); opacity: 1; }
+  100% { transform: translate(-50%, -130%); opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) { .float { animation-duration: 1.6s; animation-timing-function: steps(1, end); } }
 
 .overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: 16px; z-index: 10; }
@@ -104,6 +142,9 @@ button.icon { padding: 0; font-size: var(--fs-lg); }
 .dialog h2 { font-size: 24px; }
 .dialog h3 { font-size: var(--fs); margin: 16px 0 8px; color: var(--trim-hi); }
 .dialog p { color: var(--muted); }
+/* janela de status no pergaminho do HUD (como a do FFT, cores nossas) */
+.dialog.status { color: var(--ink); background: linear-gradient(var(--paper), var(--paper-lo)); border-color: var(--paper-edge); box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+.dialog.status .keys dd { color: var(--ink-muted); }
 .dialog .primary { width: 100%; }
 .legend { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
 .legend li { display: flex; align-items: center; gap: 8px; }
@@ -123,26 +164,8 @@ button.icon { padding: 0; font-size: var(--fs-lg); }
 .hint { display: none; }
 .kbd .hint { display: inline-block; font: 700 11px/1 system-ui, sans-serif; /* a fonte do jogo não tem o ⇧ */ color: var(--muted); border: 1px solid var(--muted); border-radius: 2px; padding: 2px 4px; }
 .kbd .primary .hint { color: var(--on-accent); border-color: var(--on-accent); }
-.kbd .slot .hint { position: absolute; top: 3px; right: 4px; }
+.kbd .panel .hint { color: var(--ink-muted); border-color: var(--ink-muted); margin-left: 8px; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: var(--fs-sm); }
 .keys dt { font-weight: 800; white-space: nowrap; }
 .keys dd { margin: 0; color: var(--muted); }
 
-/* tela média (tablet deitado): o painel de baixo numa coluna central, sem cobrir o mapa de ponta a ponta */
-@media (min-width: 700px) { .bottom { width: 560px; align-self: center; } }
-
-/* PC (pedido do Fernando, 25/10: nada de barra de uma ponta à outra, nem em ultrawide): fila centrada no topo, menu
-   no canto, e embaixo uma janela de comando central de ~730 px como a do FFT: cartão do herói à esquerda, barra e ações
-   à direita, Confirmar do tamanho do texto */
-@media (min-width: 1100px) {
-  .top { justify-content: center; }
-  .queue { flex: none; }
-  .menu-btn { position: absolute; top: max(var(--gap), env(safe-area-inset-top)); right: max(var(--gap), env(safe-area-inset-right)); }
-  .bottom { width: auto; display: grid; grid-template-columns: 300px auto; grid-template-areas: '. cam' 'card bar' 'card actions'; gap: var(--gap); }
-  .cam { grid-area: cam; }
-  .card { grid-area: card; min-height: 0; }
-  .bar { grid-area: bar; justify-content: flex-start; }
-  .slot { width: 76px; flex: none; }
-  .actions { grid-area: actions; justify-content: flex-end; }
-  .actions .primary { flex: none; padding: 0 28px; }
-}

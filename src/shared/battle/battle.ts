@@ -1,16 +1,17 @@
 import { ABILITIES } from './abilities.ts';
 import { checkOutcome, previewAbility, resolveAbility, type Preview } from './combat.ts';
-import { TERRAIN, inBounds, tileAt, type Grid } from './grid.ts';
+import { FACING, canStand, facingTo, inBounds, samePos, tileAt, type Grid } from './grid.ts';
 import { pathTo, reachable, type Step } from './pathing.ts';
 import { SCENARIOS, initialState, type Scenario } from './scenarios.ts';
+import { unitAt } from './pathing.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
-import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
+import type { BattleEvent, BattleState, Charge, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
 // Desfazer por batalha (spec: valor inicial 3, a medir). Só vale dentro do turno atual: depois de terminar o turno o
 // inimigo já agiu e a informação nova não volta.
 export const UNDO_LIMIT = 3;
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2; // 2 (12/11): cargas no estado; save antigo começa do zero
 const MAX_UNITS = 64;
 
 // O que o desfazer restaura: tudo menos o sorteio. Se o rng voltasse, atacar de novo repetiria o mesmo dado
@@ -39,7 +40,7 @@ export class Battle {
 
   static start(scenario: Scenario, seed: number): Battle {
     const state = initialState(scenario, seed);
-    startNextTurn(state);
+    startNextTurn(scenario.grid, state);
     return new Battle(scenario.grid, state);
   }
 
@@ -54,8 +55,10 @@ export class Battle {
     return !!last && (!last.paid || this.undosLeft > 0);
   }
 
+  // quem acabou de declarar uma carga não anda neste turno: andar a desfaria (andar num turno seguinte desfaz, sim)
   reach(): Map<string, Step> {
-    return this.over || this.state.turn.moved ? new Map() : reachable(this.grid, this.state, this.actor.id);
+    const charging = !!this.state.turn.usedAbility && this.state.charges.some((c) => c.unit === this.actor.id);
+    return this.over || this.state.turn.moved || charging ? new Map() : reachable(this.grid, this.state, this.actor.id);
   }
 
   preview(abilityId: string, target: Pos): Preview {
@@ -66,7 +69,11 @@ export class Battle {
     const path = pathTo(this.reach(), to);
     if (!path) return [];
     this.remember(false);
+    // com direção, quem anda termina olhando para onde ia
+    if (this.actor.facing !== undefined) this.actor.facing = facingTo(path.at(-2) ?? this.actor.pos, to);
     this.actor.pos = to;
+    // andar desfaz a própria carga (como a Carga do Arqueiro, BMG 2.2; para as outras, suposição)
+    this.state.charges = this.state.charges.filter((c) => c.unit !== this.actor.id);
     this.state.turn.moved = true;
     return [{ k: 'move', unit: this.actor.id, path }];
   }
@@ -74,17 +81,32 @@ export class Battle {
   act(abilityId: string, target: Pos): BattleEvent[] {
     if (this.over || this.state.turn.usedAbility || !this.preview(abilityId, target).ok) return [];
     this.remember(true);
-    const events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
+    if (this.actor.facing !== undefined && !samePos(target, this.actor.pos)) this.actor.facing = facingTo(this.actor.pos, target); // vira para o alvo
+    const ability = ABILITIES[abilityId];
+    let events: BattleEvent[];
+    if (ability.charge > 0) {
+      // ação lenta: paga o custo agora e entra na fila; uma carga nova troca a anterior da mesma unidade
+      if (ability.cost) this.actor.vars![ability.cost[0]] -= ability.cost[1];
+      const follow = ability.panel ? null : unitAt(this.state, target)?.id ?? null;
+      this.state.charges = [...this.state.charges.filter((c) => c.unit !== this.actor.id), { unit: this.actor.id, ability: abilityId, target, follow, ticks: ability.charge }];
+      events = [{ k: 'charge', unit: this.actor.id, ability: abilityId, target }];
+    } else events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
     this.state.turn.usedAbility = abilityId;
     return events;
   }
 
-  endTurn(): void {
+  // Escolhe para onde a unidade da vez olha (só em cenário com direção). De graça e sem desfazer: não revela nada.
+  face(dir: number): void {
+    if (!this.over && this.actor.facing !== undefined && FACING[dir]) this.actor.facing = dir;
+  }
+
+  // devolve os eventos das cargas que saíram antes do próximo turno
+  endTurn(): BattleEvent[] {
     this.history = [];
-    if (this.over) return;
+    if (this.over) return [];
     finishTurn(this.state);
     this.state.outcome = checkOutcome(this.state);
-    if (!this.over) startNextTurn(this.state);
+    return this.over ? [] : startNextTurn(this.grid, this.state);
   }
 
   undo(): boolean {
@@ -150,12 +172,26 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (u.team !== 'hero' && u.team !== 'enemy') return null;
     if (!isObj(u.pos) || !isInt(u.pos.x) || !isInt(u.pos.y)) return null;
     const pos = { x: u.pos.x, y: u.pos.y };
-    if (!inBounds(grid, pos) || !TERRAIN[tileAt(grid, pos).terrain].walkable) return null;
+    if (!inBounds(grid, pos) || !canStand(tileAt(grid, pos))) return null;
     if (!isInt(u.hp) || u.hp < 1 || u.hp > UNIT_DEFS[u.def].hp || !isInt(u.ct) || Math.abs(u.ct) > 10000) return null;
     if (ids.has(u.id) || cells.has(`${pos.x},${pos.y}`)) return null;
     ids.add(u.id);
     cells.add(`${pos.x},${pos.y}`);
-    units.push({ id: u.id, def: u.def, team: u.team, pos, hp: u.hp, ct: u.ct });
+    // direção e contadores: presentes só quando o cenário e a ficha pedem, e só com as chaves da ficha
+    const wantsFacing = !!SCENARIOS[raw.scenario].rules?.facing;
+    if (wantsFacing ? !isInt(u.facing) || !FACING[u.facing] : u.facing !== undefined) return null;
+    const defVars = UNIT_DEFS[u.def].vars;
+    let vars: Record<string, number> | undefined;
+    if (defVars) {
+      if (!isObj(u.vars)) return null;
+      vars = {};
+      for (const k of Object.keys(defVars)) {
+        const v = u.vars[k];
+        if (!isInt(v) || Math.abs(v) > 9999) return null;
+        vars[k] = v;
+      }
+    } else if (u.vars !== undefined) return null;
+    units.push({ id: u.id, def: u.def, team: u.team, pos, hp: u.hp, ct: u.ct, ...(wantsFacing && { facing: u.facing as number }), ...(vars && { vars }) });
   }
   const t = raw.turn;
   if (!isObj(t) || typeof t.actor !== 'string' || typeof t.moved !== 'boolean') return null;
@@ -166,5 +202,15 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (typeof t.usedAbility !== 'string' || !Object.hasOwn(ABILITIES, t.usedAbility) || !UNIT_DEFS[actor.def].abilities.includes(t.usedAbility)) return null;
     usedAbility = t.usedAbility;
   }
-  return { scenario: raw.scenario, units, rng: raw.rng, turn: { actor: actor.id, moved: t.moved, usedAbility }, outcome: raw.outcome, turnsPlayed: raw.turnsPlayed };
+  if (!Array.isArray(raw.charges) || raw.charges.length > MAX_UNITS) return null;
+  const charges: Charge[] = [];
+  for (const c of raw.charges) {
+    if (!isObj(c) || typeof c.unit !== 'string' || typeof c.ability !== 'string' || !isInt(c.ticks) || c.ticks < 1 || c.ticks > 99) return null;
+    const caster = units.find((u) => u.id === c.unit);
+    if (!caster || !UNIT_DEFS[caster.def].abilities.includes(c.ability) || charges.some((x) => x.unit === c.unit)) return null;
+    if (!isObj(c.target) || !isInt(c.target.x) || !isInt(c.target.y) || !inBounds(grid, { x: c.target.x, y: c.target.y })) return null;
+    if (c.follow !== null && (typeof c.follow !== 'string' || !units.some((u) => u.id === c.follow))) return null;
+    charges.push({ unit: c.unit, ability: c.ability, target: { x: c.target.x, y: c.target.y }, follow: c.follow, ticks: c.ticks });
+  }
+  return { scenario: raw.scenario, units, rng: raw.rng, turn: { actor: actor.id, moved: t.moved, usedAbility }, charges, outcome: raw.outcome, turnsPlayed: raw.turnsPlayed };
 }

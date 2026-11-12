@@ -56,8 +56,30 @@ export function hitPercent(base: number, ev: Evasion, side: Side): number {
   return side === 'side' ? trunc((base * rest) / 1e6) : trunc((base * (100 - ev.c) * rest) / 1e8);
 }
 
-// CT ao fim do turno (BMG 1.1): mover e agir 100, só um dos dois 80, nenhum 60; o que sobra nunca passa de 60
-export const turnCt = (ct: number, moved: boolean, acted: boolean) => Math.min(60, ct - (moved && acted ? 100 : moved || acted ? 80 : 60));
+// De onde o ataque vem (BMG 1.4, diagrama): vale a maior entre as distâncias à frente, de lado e atrás do alvo; no empate
+// ganha a mais à frente (frente sobre lado, lado sobre costas). A altura das casas não conta.
+export function sideOf(target: { x: number; y: number }, facing: { x: number; y: number }, attacker: { x: number; y: number }): Side {
+  const dx = attacker.x - target.x, dy = attacker.y - target.y;
+  const ahead = dx * facing.x + dy * facing.y;
+  const lateral = Math.abs(dx * facing.y - dy * facing.x);
+  if (ahead > 0 && ahead >= lateral) return 'front';
+  return ahead < 0 && -ahead > lateral ? 'back' : 'side';
+}
+
+// Acerto de magia em % (BMG 1.4): só escudo e acessório mágicos contam, de qualquer lado
+export const magicHitPercent = (base: number, shield: number, accessory: number) => trunc((base * (100 - shield) * (100 - accessory)) / 10000);
+
+// Magia de dano ou cura pela fé (BMG 3.4): [(MA * fé de quem lança * fé do alvo * Q) / 10000]
+export const faithMagic = (ma: number, casterFaith: number, targetFaith: number, q: number) => trunc((ma * casterFaith * targetFaith * q) / 10000);
+
+// Desejo (BMG 3.3, Wish): cura RU{MaxHP de quem usa * 2/5} no alvo e tira RU{MaxHP * 1/5} de quem usa
+export const wish = (casterMaxHp: number): [heal: number, cost: number] => [roundUp(casterMaxHp * 2, 5), roundUp(casterMaxHp, 5)];
+
+// Quebras de atributo do Cavaleiro (BMG 3.6): acerto base = PA + 50, antes da evasão
+export const statBreakBase = (pa: number) => pa + 50;
+
+// CT ao fim do turno (BMG 1.1): desde 12/11 é a regra de todos os mapas e mora na fila de turnos
+export { turnCt } from '../turn-queue.ts';
 
 // Queda por empurrão: só machuca o que passa do Jump, RU{(queda - Jump) * MaxHP / 10} (BMG 6.5)
 export const fallDamage = (fall: number, jump: number, maxHp: number) => (fall > jump ? roundUp((fall - jump) * maxHp, 10) : 0);

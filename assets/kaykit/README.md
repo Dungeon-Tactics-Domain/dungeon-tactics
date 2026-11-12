@@ -35,6 +35,7 @@ Copiado de cada pack só o glTF (as pastas `gltf`, sem alteração), as texturas
 | `recursos` | Resource Bits 1.0 FREE | [itch.io](https://kaylousberg.itch.io/resource-bits) | CC0 |
 | `blocos` | Block Bits 1.0 FREE | [itch.io](https://kaylousberg.itch.io/block-bits) | CC0 |
 | `sortido` | Mixed Bag 1 FREE | [itch.io](https://kaylousberg.itch.io/mixed-bag-1) | CC0 |
+| `sortido-2` | Mixed Bag 2 FREE (baixado em 12/11/2026) | [itch.io](https://kaylousberg.itch.io/mixed-bag-2) | CC0 |
 | `legado-construtor-medieval` | (Legacy) Medieval Builder Pack 1.0 | [itch.io](https://kaylousberg.itch.io/kaykit-medieval-builder-pack) | CC0 |
 | `legado-minigames` | (Legacy) Mini-Game Variety Pack 1.2 | [itch.io](https://kaylousberg.itch.io/kay-kit-mini-game-variety-pack) | CC0 |
 | `legado-spooktober` | (Legacy) Spooktober Seasonal Pack 1.1 | [itch.io](https://kaylousberg.itch.io/kaykit-spooktober) | CC0 |

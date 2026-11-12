@@ -7,16 +7,19 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { FACING, neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import type { Highlights, TileKind } from './interaction.ts';
-import { MARKER, unitHeight } from './markers.ts';
+import { MARKER, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
+import { TIMING } from './timing.ts';
+import { chargeAura, lookOf, playFx } from './fx.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -26,23 +29,68 @@ const ZOOM_START = 1.5;
 // para o dedo (alvo de toque ≥ 44 px); a câmera segue o herói da vez e o botão de recentralizar mostra tudo
 const PORTRAIT_START = 8.3;
 
-// modelos KayKit que já estão em public/models; o Bruto usa o bárbaro (não há esqueleto grande)
-const MODEL: Record<string, string> = {
-  warrior: 'knight', archer: 'rogue', mage: 'mage', rogue: 'rogue_hooded',
-  soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
-};
-// a unidade do jogo está no mapa acima; a do cenário de estudo traz o modelo na própria ficha
-const modelOf = (def: string) => MODEL[def] ?? UNIT_DEFS[def].model;
-// gesto de cada habilidade, entre os clipes que todo boneco KayKit carrega
-const CAST_CLIP = (id: string) => (ABILITIES[id].heal[1] > 0 || ['firebolt', 'blast', 'gust'].includes(id) ? 'Spellcast_Shoot'
-  : ABILITIES[id].range[1] > 1 ? 'Throw' : '2H_Melee_Attack_Spin');
 
 // cores das marcações; o significado também vai em texto no HUD (nunca só a cor)
 const MARK: Record<TileKind | 'path', [color: string, opacity: number]> = {
-  actor: ['#ffd479', 0.75], move: ['#3d9bff', 0.55], range: ['#ff6a3c', 0.5], blocked: ['#6b3a8c', 0.6],
-  threat: ['#ff2d55', 0.32], area: ['#ffb020', 0.6], target: ['#fff2a0', 0.85], path: ['#cfe8ff', 0.9],
+  // movimento branco (12/11): o azul de antes sumia na água azul dos mapas novos
+  actor: ['#ffd479', 0.75], move: ['#ffffff', 0.5], range: ['#ff6a3c', 0.5], blocked: ['#6b3a8c', 0.6],
+  threat: ['#ff2d55', 0.32], area: ['#ffb020', 0.6], target: ['#fff2a0', 0.85], path: ['#1e6fff', 0.95],
 };
 const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
+// Peças de cada aparência de casa (Tile.look), em public/models: cubo do topo e cubo da coluna embaixo. Ponte não tem
+// coluna (fica a água por baixo); árvore põe o modelo da floresta em cima. Mapeamento do orquestrador em 12/11 (montagem
+// de Gariland a partir do surface_type do arquivo do mapa), aprovado pelo Fernando para entrar no jogo.
+// `canopy`: a altura da casa no mapa é a da copa (árvore de Gariland), e o chão sai do vizinho mais baixo.
+const LOOK: Record<string, { top: string; side: string | null; prop?: string; propH?: number; canopy?: true }> = {
+  grass: { top: 'blocos/grass', side: 'blocos/dirt' },
+  stone: { top: 'blocos/gravel', side: 'blocos/stone' },
+  water: { top: 'blocos/water', side: 'blocos/stone_dark' },
+  roof: { top: 'blocos/bricks_B', side: 'blocos/bricks_A' },
+  chimney: { top: 'blocos/stone_dark', side: 'blocos/bricks_A' },
+  wood: { top: 'blocos/wood', side: 'blocos/wood' },
+  bridge: { top: 'blocos/wood', side: null },
+  box: { top: 'masmorra/box_large', side: 'blocos/stone' },
+  tree: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_1_A_Color1', canopy: true },
+  // Colina do Farol (12/11, proposta aprovada pelo Fernando): rocha na colina, areia e ouro no morro do Farol, muros de
+  // tijolo, quatro árvores variadas e o lado dos inimigos na neve (ler de longe de que lado cada time começa)
+  rock: { top: 'blocos/stone', side: 'blocos/stone' },
+  summit: { top: 'blocos/stone_dark', side: 'blocos/stone' },
+  sand: { top: 'blocos/sand_with_grass', side: 'blocos/dirt' },
+  gold: { top: 'blocos/stone_with_gold', side: 'blocos/stone' },
+  brick: { top: 'blocos/bricks_B', side: 'blocos/bricks_A' },
+  snow: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt' },
+  snow_rock: { top: 'blocos/snow', side: 'blocos/stone' },
+  tree2: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_2_A_Color1' },
+  tree3: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_3_A_Color1' },
+  tree4: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_4_A_Color1' },
+  bare1: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt', prop: 'floresta/Tree_Bare_1_A_Color1' },
+  bare2: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt', prop: 'floresta/Tree_Bare_2_A_Color1' },
+  // Cripta Alagada (12/11, mapa fechado com as peças da masmorra): piso de cascalho, altar escuro, e casas que bloqueiam
+  // com coluna, caixotes, barril ou baú em cima; o entulho é cobertura pisável. propH = altura da peça em casas.
+  crypt: { top: 'blocos/gravel', side: 'blocos/stone_dark' },
+  altar: { top: 'blocos/stone_dark', side: 'blocos/stone_dark' },
+  pillar: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/pillar', propH: 2 },
+  crates: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/crates_stacked', propH: 1 },
+  barrel: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/barrel_large', propH: 0.8 },
+  chest: { top: 'blocos/stone_dark', side: 'blocos/stone_dark', prop: 'masmorra/chest_gold', propH: 0.6 },
+  rubble: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/rubble_half', propH: 0.4 },
+};
+const WATER = 'blocos/water';
+const UNDER = 'blocos/stone_dark'; // coluna embaixo da água da ponte e da saia do mapa
+
+// Base do mapa como um bloco (pedidos do Fernando, 12/11, olhando o tabuleiro do FFT): todas as colunas terminam no mesmo
+// chão (y = 0), e as laterais da borda, do piso de cada casa para baixo, são uma cor lisa puxada do piso de cima que
+// escurece até sumir no fundo ("os chaos das bordas do mapa ficam sem textura e fica melhor assim"). Os topos seguem com textura.
+const BASE_DEPTH = 2; // em casas, abaixo do chão; com 1 o degradê acabava antes de escurecer de todo
+const BACKGROUND = '#1b1626'; // o fundo da cena: o degradê termina nele
+// cor da lateral pelo piso de cima (Tile.look) ou pelo terreno nos mapas sem aparência por casa
+const WALL_COLOR: Record<string, string> = {
+  grass: '#4f8f3a', tree: '#4f8f3a', floor: '#4f8f3a', forest: '#3f7a34', stone: '#7a7d86', box: '#7a7d86', wall: '#7a7d86',
+  water: '#2f6fae', bridge: '#2f6fae', roof: '#8a4b32', chimney: '#4a4a52', wood: '#8a6238',
+  rock: '#7a7d86', summit: '#4a4a52', sand: '#b8a06a', gold: '#7a7d86', brick: '#8a4b32', snow: '#c9d2dc', snow_rock: '#c9d2dc',
+  tree2: '#4f8f3a', tree3: '#4f8f3a', tree4: '#4f8f3a', bare1: '#c9d2dc', bare2: '#c9d2dc',
+  crypt: '#5a5d66', altar: '#4a4a52', pillar: '#5a5d66', crates: '#5a5d66', barrel: '#5a5d66', chest: '#4a4a52', rubble: '#5a5d66',
+};
 const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
 
@@ -62,6 +110,7 @@ interface UnitView {
   bar: THREE.Mesh; // parte cheia da barra de vida
   hp: number;
   def: string;
+  aura: THREE.Mesh | null; // brilho no chão enquanto carrega uma habilidade
 }
 
 interface Anim {
@@ -113,10 +162,11 @@ export class BattleScene {
   private yaw = Math.PI / 4;
   private yawTarget = Math.PI / 4;
 
-  private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings) {
+  private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[]) {
     this.pixel = pixel;
     this.step = grid.levelHeight ?? STEP;
     this.renderer.shadowMap.enabled = true;
+    this.renderer.info.autoReset = false; // zerado à mão no começo de cada quadro (contador de desempenho)
     // o pixel art desenha a cena duas vezes por quadro (cor e normais); a sombra só precisa da primeira (pedida no frame)
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.domElement.className = 'board';
@@ -155,14 +205,21 @@ export class BattleScene {
       ...defs.map((d) => loader.loadAsync(`/models/${d}.glb`)),
     ]);
     const models = new Map(defs.map((d, i) => [d, loaded[i]]));
-    const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel);
+    // só o mapa que traz aparência por casa baixa essas peças (~630 KB com as texturas)
+    const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? WATER, LOOK[t.look].prop ?? '', UNDER] : [])))].filter(Boolean);
+    const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
+    // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
+    const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
+    const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack);
     s.sync(state);
     return s;
   }
 
   // casa (x, y) da batalha → mundo: x no eixo X, y no eixo Z, mapa centrado na origem
   private world(p: Pos): THREE.Vector3 {
-    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (tileAt(this.grid, p).h + 1) * this.step, p.y - this.grid.height / 2 + 0.5);
+    const t = tileAt(this.grid, p);
+    // na rampa a unidade fica no meio da subida
+    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0)) * this.step, p.y - this.grid.height / 2 + 0.5);
   }
 
   private buildBoard(pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>) {
@@ -183,6 +240,8 @@ export class BattleScene {
     tree.position.y = -treeBox.min.y * treeScale;
     const list = () => ({ at: [] as THREE.Vector3[], tiles: [] as Pos[] });
     const batch = { top: list(), stoneTop: list(), side: list(), stone: list(), tree: list() };
+    const walls: { x: number; z: number; top: number; color: string }[] = []; // laterais lisas da borda
+    const edge = (p: Pos) => NEIGHBORS.some(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) < 0);
     // nível mais alto ocupado pela coluna da casa (-1 fora do mapa: a borda fica à mostra)
     const columnTop = (p: Pos) => {
       if (p.x < 0 || p.y < 0 || p.x >= this.grid.width || p.y >= this.grid.height) return -1;
@@ -191,22 +250,26 @@ export class BattleScene {
     };
     const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
+    const looks = this.lookBatches(edge, walls);
     for (const [i, tile] of this.grid.tiles.entries()) {
       const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
       const w = this.world(p);
       const wall = tile.terrain === 'wall';
+      if (tile.look) looks.add(p);
       // muro: pedra empilhada dois níveis acima da casa, para ler que bloqueia passagem e visão
-      for (let k = 0; k <= tile.h + (wall ? 2 : 0); k++) {
+      for (let k = 0; !tile.look && k <= tile.h + (wall ? 2 : 0); k++) {
         const at = new THREE.Vector3(w.x, (k + 1) * this.step, w.z);
         if (k === tile.h) {
           const b = wall ? batch.stoneTop : batch.top;
           b.at.push(at);
           b.tiles.push(p);
         } else if (wall) batch.stone.at.push(at);
-        // bloco de terra cercado pelos quatro lados nunca aparece: fora da cena (eram a maior parte dos triângulos no 20x20)
-        else if (!NEIGHBORS.every(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) >= k)) batch.side.at.push(at);
+        // bloco de terra cercado pelos quatro lados nunca aparece: fora da cena (eram a maior parte dos triângulos no 20x20);
+        // na borda, a lateral lisa toma o lugar da terra
+        else if (!edge(p) && !NEIGHBORS.every(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) >= k)) batch.side.at.push(at);
       }
-      if (tile.terrain === 'forest') batch.tree.at.push(w);
+      if (tile.terrain === 'forest' && !tile.look) batch.tree.at.push(w);
+      if (!tile.look && edge(p)) walls.push({ x: w.x, z: w.z, top: tile.h * this.step, color: WALL_COLOR[tile.terrain] });
       const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
       mark.position.set(w.x, w.y + 0.02, w.z);
       mark.visible = false;
@@ -223,6 +286,8 @@ export class BattleScene {
     this.instanced(side, batch.side.at);
     this.instanced(stone, batch.stone.at);
     this.instanced(new THREE.Group().add(tree), batch.tree.at);
+    looks.build();
+    this.buildWalls(walls);
     this.focus.set(0, STEP, 0);
     const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: MARKER.frameDepthTest, depthWrite: false }));
     frame.position.y = MARKER.frameY;
@@ -234,9 +299,91 @@ export class BattleScene {
     this.scene.add(this.cursor);
   }
 
+  // Casas com aparência (Tile.look): coluna de cubos inteiros de 1 casa, do topo da casa para baixo, com a peça do topo
+  // e a da coluna de cada aparência. Cubo inteiro porque o cubo achatado na altura de um nível (0,25 em Gariland) espremia a
+  // textura em listras. A rampa inclina o cubo do topo (cisalhamento) e o estica para baixo, para não abrir fresta.
+  // Laterais lisas da borda num desenho só (uma chamada de desenho): cor do piso no alto, já escurecida, até o fundo
+  private buildWalls(walls: { x: number; z: number; top: number; color: string }[]) {
+    if (!walls.length) return;
+    const bottom = -BASE_DEPTH;
+    const deep = new THREE.Color(BACKGROUND);
+    const parts = walls.map(({ x, z, top, color }) => {
+      const g = new THREE.BoxGeometry(1, top - bottom, 1).translate(x, (top + bottom) / 2, z);
+      const high = new THREE.Color(color).multiplyScalar(0.55); // a lateral é mais escura que o topo, como sombra
+      const pos = g.getAttribute('position');
+      const colors = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) (pos.getY(i) > bottom + 0.001 ? high : deep).toArray(colors, i * 3);
+      g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return g;
+    });
+    const mesh = new THREE.Mesh(mergeGeometries(parts), new THREE.MeshBasicMaterial({ vertexColors: true }));
+    for (const g of parts) g.dispose();
+    this.scene.add(mesh);
+  }
+
+  private lookBatches(edge: (p: Pos) => boolean, walls: { x: number; z: number; top: number; color: string }[]) {
+    const norm = (name: string, height: number) => {
+      const o = this.lookPieces.get(name)!.clone();
+      const size = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
+      const box = new THREE.Box3().setFromObject(o);
+      o.scale.set(1 / size.x, height / size.y, 1 / size.z);
+      o.position.set(-(box.min.x + box.max.x) / 2 / size.x, -box.max.y * (height / size.y), -(box.min.z + box.max.z) / 2 / size.z);
+      return prepare(new THREE.Group().add(o));
+    };
+    const batches = new Map<string, { piece: THREE.Object3D; at: THREE.Matrix4[]; tiles?: Pos[] }>();
+    const put = (name: string, height: number, m: THREE.Matrix4, tile?: Pos) => {
+      const key = `${name}@${height}${tile ? '#' : ''}`;
+      let b = batches.get(key);
+      // altura 0: peça como veio (a escala já vai na matriz)
+      if (!b) batches.set(key, (b = { piece: height ? norm(name, height) : prepare(this.lookPieces.get(name)!.clone()), at: [], tiles: tile && [] }));
+      b.at.push(m);
+      if (tile) b.tiles!.push(tile);
+    };
+    const add = (p: Pos) => {
+      const tile = tileAt(this.grid, p);
+      const look = LOOK[tile.look!];
+      const w = this.world(p);
+      // árvore de Gariland (casa não pisável, a altura do arquivo é a da copa): o chão é o do vizinho mais baixo. Nos nossos
+      // mapas a altura já é a do chão. Muro sem peça em cima: dois níveis acima da casa, como sem aparência; com peça
+      // (coluna, caixote, barril), a peça é que bloqueia e a casa fica no nível do chão.
+      const wall = tile.terrain === 'wall';
+      const h = look.canopy && wall ? Math.min(...neighbors(this.grid, p).map((n) => tileAt(this.grid, n).h)) : tile.h + (wall && !look.prop ? 2 : 0);
+      const top = (h + 1) * this.step;
+      // a ponte é uma tábua de um nível sobre a água; casa baixa (topo abaixo de 1) tem o cubo achatado até a base; na borda
+      // o topo é uma fatia de um nível e a lateral lisa começa logo abaixo dela
+      const onEdge = edge(p);
+      const slab = look.side && !onEdge ? Math.min(1, top) : this.step;
+      const m = new THREE.Matrix4().makeTranslation(w.x, top, w.z);
+      if (tile.ramp) {
+        const rise = tile.ramp[1] * this.step, f = FACING[tile.ramp[0]];
+        // y' = y * (altura + subida) / altura + subida * (meio passo na direção da rampa + 1/2)
+        m.set(1, 0, 0, w.x, f.x * rise, (slab + rise) / slab, f.y * rise, top + rise / 2, 0, 0, 1, w.z, 0, 0, 0, 1);
+      }
+      put(look.top, slab, m, p);
+      // coluna até a base reta (y = 0): cubos inteiros e o último achatado no que falta, para o fundo não ficar em degraus
+      const column = look.side ?? UNDER;
+      let y = top - slab;
+      if (!look.side) {
+        put(WATER, 1, new THREE.Matrix4().makeTranslation(w.x, this.step, w.z).scale(new THREE.Vector3(1, this.step, 1)));
+        y = 0;
+      }
+      if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
+      else for (; y > 0; y -= 1) put(column, 1, new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)));
+      if (look.prop) {
+        const box = new THREE.Box3().setFromObject(this.lookPieces.get(look.prop)!);
+        const k = (look.propH ?? 1.1) / (box.max.y - box.min.y); // 1,1: mesma altura da árvore dos outros mapas
+        put(look.prop, 0, new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)));
+      }
+    };
+    const build = () => {
+      for (const b of batches.values()) this.instanced(b.piece, b.at, b.tiles);
+    };
+    return { add, build };
+  }
+
   // Um InstancedMesh por malha da peça em vez de um objeto por bloco: o 20x20 fazia 2 321 draw calls por quadro e caía
   // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
-  private instanced(piece: THREE.Object3D, at: THREE.Vector3[], tiles?: Pos[]) {
+  private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]) {
     if (!at.length) return;
     piece.updateMatrixWorld(true);
     const m = new THREE.Matrix4();
@@ -244,7 +391,7 @@ export class BattleScene {
       const src = o as THREE.Mesh;
       if (!src.isMesh) return;
       const inst = new THREE.InstancedMesh(src.geometry, src.material, at.length);
-      at.forEach((p, i) => inst.setMatrixAt(i, m.makeTranslation(p.x, p.y, p.z).multiply(src.matrixWorld)));
+      at.forEach((p, i) => inst.setMatrixAt(i, (p instanceof THREE.Matrix4 ? m.copy(p) : m.makeTranslation(p.x, p.y, p.z)).multiply(src.matrixWorld)));
       inst.castShadow = inst.receiveShadow = true;
       if (tiles) {
         inst.userData.tiles = tiles;
@@ -275,13 +422,22 @@ export class BattleScene {
       body.scale.setScalar(unitHeight(u.def) / (b.max.y - b.min.y));
       holder.add(body);
       mixer = new THREE.AnimationMixer(body);
-      clips = gltf.animations;
+      // os clipes do pacote só com as faixas dos ossos que este boneco tem (sem isso o Three avisa a cada quadro)
+      const has = (track: THREE.KeyframeTrack) => !!body.getObjectByName(track.name.split('.')[0]);
+      clips = [...gltf.animations, ...this.packClips.map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has)))];
     } else {
       // o Farol não tem modelo: um cristal que brilha, para ler de longe qual é o alvo a proteger
       const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.32), new THREE.MeshStandardMaterial({ color: '#7ff3ff', emissive: '#2bb8d6', emissiveIntensity: 1.2 }));
       crystal.position.y = 0.55;
       crystal.castShadow = true;
       holder.add(crystal, new THREE.PointLight('#7ff3ff', 2, 3));
+    }
+    // seta branca no chão para a frente da unidade (branca: a cor do time sumia nas casas marcadas), só nos mapas em que a direção conta: de cima o rosto do boneco quase não se lê
+    if (u.facing !== undefined) {
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 3).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff' }));
+      arrow.position.set(0, 0.05, 0.5);
+      arrow.scale.y = 0.3;
+      holder.add(arrow);
     }
     // aro da cor do time no chão: o lado se lê mesmo quando o modelo é parecido
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthWrite: false, transparent: true, opacity: 0.9 }));
@@ -296,7 +452,7 @@ export class BattleScene {
     barBg.renderOrder = bar.renderOrder = 10;
     holder.add(ring, barHolder);
     this.scene.add(holder);
-    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def };
+    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null };
     this.play(view, 'Idle');
     return view;
   }
@@ -313,10 +469,16 @@ export class BattleScene {
     v.current = action;
   }
 
-  private setBar(v: UnitView) {
+  // ms > 0: a barra desce (ou sobe) aos poucos, como no FFT, sem segurar a sequência
+  private setBar(v: UnitView, ms = 0) {
     const k = Math.max(0, v.hp / UNIT_DEFS[v.def].hp);
-    v.bar.scale.x = Math.max(0.001, k);
-    v.bar.position.x = -0.33 * (1 - k);
+    const apply = (x: number) => {
+      v.bar.scale.x = Math.max(0.001, x);
+      v.bar.position.x = -0.33 * (1 - x);
+    };
+    if (!ms) return apply(k);
+    const from = v.bar.scale.x;
+    void this.animate(ms, (s) => apply(from + (k - from) * s));
   }
 
   private face(v: UnitView, to: Pos) {
@@ -339,8 +501,22 @@ export class BattleScene {
         if (foe) { v.holder.position.copy(this.world(u.pos)); this.face(v, foe.pos); }
       }
       v.holder.position.copy(this.world(u.pos));
+      // mapa com direção (estudo do FFT): o modelo olha para onde o estado diz, depois de cada animação e do desfazer
+      if (u.facing !== undefined) v.holder.rotation.y = (u.facing * Math.PI) / 2;
       v.hp = u.hp;
       this.setBar(v);
+      // aura e gesto em laço enquanto a carga está na fila; somem quando ela sai ou é desfeita
+      const charge = state.charges.find((c) => c.unit === u.id);
+      if (charge && !v.aura) {
+        v.aura = chargeAura(!!ABILITIES[charge.ability].magic);
+        v.holder.add(v.aura);
+        const loop = lookOf(charge.ability).charge;
+        if (loop) this.play(v, loop);
+      } else if (!charge && v.aura) {
+        v.holder.remove(v.aura);
+        v.aura = null;
+        this.play(v, 'Idle');
+      }
     }
   }
 
@@ -368,49 +544,69 @@ export class BattleScene {
     const p = v.holder.position.clone().setY(v.holder.position.y + 1.3).project(this.camera);
     const node = el('div', { class: `float ${cls}`, style: `left:${((p.x + 1) / 2) * 100}%;top:${((1 - p.y) / 2) * 100}%` }, text);
     this.floats.append(node);
-    setTimeout(() => node.remove(), 1100);
+    setTimeout(() => node.remove(), TIMING.float);
   }
 
   // Toca os eventos em sequência; a regra já está aplicada no estado, aqui é só a leitura do que aconteceu.
-  async playEvents(events: BattleEvent[], state: BattleState) {
+  // `before` roda antes de cada evento (o jogo usa para a faixa com o nome da habilidade e o destino do inimigo).
+  async playEvents(events: BattleEvent[], state: BattleState, before?: (e: BattleEvent) => Promise<void>) {
     for (const e of events) {
       const v = this.units.get(e.unit);
       if (!v) continue;
+      await before?.(e);
       if (e.k === 'move') {
         this.play(v, 'Running_A');
         for (let i = 1; i < e.path.length; i++) {
           const a = this.world(e.path[i - 1]), b = this.world(e.path[i]);
           this.face(v, e.path[i]);
           const hop = Math.abs(b.y - a.y) > 0.01 ? 0.25 : 0; // degrau: pulinho para ler a altura
-          await this.animate(150, (k) => v.holder.position.lerpVectors(a, b, k).setY(a.y + (b.y - a.y) * k + Math.sin(Math.PI * k) * hop));
+          await this.animate(TIMING.step, (k) => v.holder.position.lerpVectors(a, b, k).setY(a.y + (b.y - a.y) * k + Math.sin(Math.PI * k) * hop));
         }
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
         if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
-        this.play(v, CAST_CLIP(e.ability), true);
-        await wait(380);
+        const look = lookOf(e.ability);
+        this.play(v, look.clip, true);
+        await wait(TIMING.windup);
+        const from = v.holder.position.clone().setY(v.holder.position.y + 0.55);
+        const to = this.world(e.target).setY(this.world(e.target).y + 0.4);
+        if (look.fx === 'dash') {
+          // investida: avança meia casa e volta, como o avanço rápido do FFT
+          const a = v.holder.position.clone(), b = a.clone().lerp(this.world(e.target), 0.5);
+          await this.animate(TIMING.lunge, (k) => v.holder.position.lerpVectors(a, b, Math.sin(Math.PI * k)));
+        }
+        await playFx(this.scene, (ms, step) => this.animate(ms, step), look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
       } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall') {
         v.hp -= e.dmg;
-        this.setBar(v);
+        this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `-${e.dmg}`, 'dmg');
         if (v.hp > 0) this.play(v, 'Hit_A', true);
-        await wait(e.k === 'hit' ? 320 : 220);
+        await wait(e.k === 'hit' ? TIMING.hit : TIMING.crash);
         if (v.hp > 0) this.play(v, 'Idle');
       } else if (e.k === 'miss') {
         this.float(e.unit, t('Errou', 'Miss'), 'miss');
-        await wait(320);
+        await wait(TIMING.hit);
       } else if (e.k === 'heal') {
         v.hp += e.amount;
-        this.setBar(v);
+        this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `+${e.amount}`, 'heal');
-        await wait(320);
+        await wait(TIMING.hit);
       } else if (e.k === 'push') {
         const a = v.holder.position.clone(), b = this.world(e.to);
-        await this.animate(140, (k) => v.holder.position.lerpVectors(a, b, k));
+        await this.animate(TIMING.push, (k) => v.holder.position.lerpVectors(a, b, k));
+      } else if (e.k === 'charge') {
+        // começa a carregar: o gesto longo de magia (efeito próprio de cada habilidade vem no bloco das animações)
+        this.face(v, e.target);
+        this.play(v, lookOf(e.ability).charge ?? 'Spellcast_Long');
+        this.float(e.unit, t('Carregando', 'Charging'), 'miss');
+        await wait(TIMING.hit);
+      } else if (e.k === 'fizzle') {
+        this.float(e.unit, t('Sem alvo', 'No target'), 'miss');
+        await wait(TIMING.hit);
       } else if (e.k === 'die') {
         this.play(v, 'Death_A', true);
-        await wait(700);
+        await wait(TIMING.die);
       }
     }
     this.sync(state);
@@ -529,7 +725,19 @@ export class BattleScene {
     this.camera.updateMatrixWorld();
   }
 
+  // Números do contador de desempenho (pedido do Fernando, 12/11): quadros e tempo médio desde a última leitura, e os
+  // recursos do Three. O pixel art desenha a cena mais de uma vez por quadro: o info soma tudo e zera só no começo do quadro.
+  private perf = { frames: 0, since: performance.now() };
+  stats() {
+    const now = performance.now(), ms = now - this.perf.since, frames = this.perf.frames;
+    this.perf = { frames: 0, since: now };
+    const info = this.renderer.info;
+    return { fps: (frames * 1000) / ms, ms: frames ? ms / frames : 0, calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures };
+  }
+
   private frame() {
+    this.perf.frames++;
+    this.renderer.info.reset();
     const dt = this.clock.getDelta();
     const now = performance.now();
     for (const a of [...this.anims]) {

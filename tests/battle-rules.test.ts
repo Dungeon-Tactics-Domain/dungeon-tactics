@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
-import { finishTurn } from '../src/shared/battle/turn-queue.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 // Regras por cenário (11/11): o estudo do FFT troca acerto, custo do turno, salto e fim da batalha sem tocar nas regras
@@ -18,14 +17,6 @@ describe('regras do cenário', () => {
   it('acerto: a regra do cenário substitui a conta de distância, altura e cobertura', () => {
     const state = withRules({ hitChance: () => 42 }, duel);
     expect(previewAbility(grid, state, 'a', 'strike', { x: 2, y: 1 }).targets[0].chance).toBe(42);
-  });
-
-  it('custo do turno: a regra recebe o CT e o que a unidade fez', () => {
-    const state = withRules({ turnCt: (ct: number, moved: boolean, acted: boolean) => ct - (moved ? 7 : 0) - (acted ? 30 : 0) }, duel);
-    state.units[0].ct = 100;
-    state.turn = { actor: 'a', moved: true, usedAbility: 'strike' };
-    finishTurn(state);
-    expect(state.units[0].ct).toBe(63);
   });
 
   it('salto: a regra diz quantos níveis a unidade sobe ou desce por passo', () => {

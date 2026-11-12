@@ -1,8 +1,9 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
 import { previewAbility, simulatePush } from './combat.ts';
-import { TERRAIN, dist, neighbors, posKey, tileAt, type Grid } from './grid.ts';
-import { reachable } from './pathing.ts';
+import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
+import { MAX_JUMP, reachable } from './pathing.ts';
+import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
 
@@ -12,7 +13,7 @@ const W = {
   KILL: 8, // bônus por matar (vezes a chance)
   OBJECTIVE: 1.5, // multiplica o valor de bater no alvo a proteger
   FRIENDLY: 1.5, // multiplica o prejuízo de ferir aliado
-  DELAY: 0.05, // por ponto de atraso da habilidade
+  CHARGE: 0.5, // por tique de carga (o alvo pode sair da casa); era 0,05 por ponto de atraso, 10 de atraso = 1 tique
   COVER: 1,
   HEIGHT: 0.4, // por nível da casa
   APPROACH: 0.35, // por casa de distância do alvo mais interessante
@@ -38,16 +39,18 @@ function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId
   const ability = ABILITIES[abilityId];
   const p = previewAbility(grid, state, actor.id, abilityId, target);
   if (!p.ok) return -Infinity;
-  let total = -W.DELAY * ability.delay;
+  let total = -W.CHARGE * ability.charge;
   for (const t of p.targets) {
     const u = state.units.find((x) => x.id === t.unit)!;
     const chance = t.chance / 100;
     if (ability.heal[1] > 0) {
-      total += chance * Math.min(avg(ability.heal), UNIT_DEFS[u.def].hp - u.hp);
+      // cura em área pega quem estiver nela: curar inimigo conta contra (nos mapas do jogo a cura só pega aliado)
+      const healed = chance * Math.min(avg(ability.heal), UNIT_DEFS[u.def].hp - u.hp);
+      total += u.team === actor.team ? healed : -healed * W.FRIENDLY;
       continue;
     }
     const pushDmg = ability.push > 0 ? simulatePush(grid, state, u, p.center, actor.pos, ability.push).dmg : 0;
-    const dmg = avg(ability.damage);
+    const dmg = (t.dmgMin + t.dmgMax) / 2; // da prévia: é a mesma faixa que o sorteio usa
     const expected = chance * (Math.min(dmg + pushDmg, u.hp) + (dmg + pushDmg >= u.hp ? W.KILL : 0));
     const foe = u.team !== actor.team;
     total += foe ? expected * (u.def === OBJECTIVE_DEF ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY;
@@ -70,9 +73,39 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
 // Valor da casa. Atacando, pesa a ameaça (bater de um lugar seguro). Sem ninguém ao alcance, a ameaça não conta e a
 // distância pesa mais: no mapa 20x20 o inimigo fugia do alcance dos heróis em vez de avançar e a batalha não andava
 // (medido em 11/11: 28 dos 40 turnos inimigos sem atacar). O herói avança só até o raio de guarda do alvo a proteger.
-function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos, attacking: boolean): number {
+// Distância a pé de cada casa até o inimigo mais perto, em pontos de movimento: água rasa custa 2 e o salto é o de quem
+// anda (unidades no caminho não contam). Antes era a distância em linha reta: em Gariland, duas unidades em telhados
+// vizinhos se achavam "a 2 casas" e ninguém descia para dar a volta; com a água rasa (12/11) eram 35 batalhas travadas
+// em 1 000 no estudo das classes. Busca a partir dos inimigos: o custo de cada passo é o de entrar na casa de onde se vem.
+function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, number> {
+  const jump = rulesOf(state).jump?.(actor.def) ?? MAX_JUMP;
+  const best = new Map<string, number>();
+  const queue: { p: Pos; cost: number }[] = [];
+  for (const o of state.units) {
+    if (o.team === actor.team) continue;
+    const cost = o.def === OBJECTIVE_DEF ? -W.OBJECTIVE_PULL : 0;
+    if ((best.get(posKey(o.pos)) ?? Infinity) <= cost) continue;
+    best.set(posKey(o.pos), cost);
+    queue.push({ p: o.pos, cost });
+  }
+  for (let i = 0; i < queue.length; i++) {
+    const { p, cost } = queue[i];
+    if (cost > (best.get(posKey(p)) ?? Infinity)) continue;
+    const here = tileAt(grid, p);
+    for (const n of neighbors(grid, p)) {
+      const t = tileAt(grid, n);
+      const next = cost + stepCost(here);
+      if (!canStand(t) || Math.abs(standH(t) - standH(here)) > jump || (best.get(posKey(n)) ?? Infinity) <= next) continue;
+      best.set(posKey(n), next);
+      queue.push({ p: n, cost: next });
+    }
+  }
+  return best;
+}
+
+function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos, attacking: boolean, walk: Map<string, number>): number {
   const tile = tileAt(grid, at);
-  let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * tile.h;
+  let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * standH(tile);
   let nearest = Infinity;
   for (const o of state.units) {
     if (o.team === actor.team) {
@@ -85,6 +118,9 @@ function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos
     const reach = def.move + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
     if (dist(at, o.pos) <= reach) score -= W.THREAT * Math.max(...def.abilities.map((a) => avg(ABILITIES[a].damage)));
   }
+  // a pé quando há caminho; em linha reta só se nenhum inimigo é alcançável andando
+  const walked = walk.get(posKey(at));
+  if (walked !== undefined) nearest = walked;
   return score - (attacking ? W.APPROACH : W.ADVANCE) * (Number.isFinite(nearest) ? nearest : 0);
 }
 
@@ -93,6 +129,7 @@ function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos
 export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan {
   const actor = state.units.find((u) => u.id === unitId)!;
   const spots = [actor.pos, ...[...reachable(grid, state, unitId).values()].map((s) => s.pos)];
+  const walk = walkMap(grid, state, actor);
   let best: Plan = { moveTo: null, ability: null, score: -Infinity };
   for (const spot of spots) {
     const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: spot } : u)) };
@@ -105,7 +142,7 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
         if (s > attackBest) { attackBest = s; attack = { id, target }; }
       }
     }
-    const score = attackBest + positionScore(grid, moved, me, spot, !!attack);
+    const score = attackBest + positionScore(grid, moved, me, spot, !!attack, walk);
     if (score > best.score) best = { moveTo: spot === actor.pos ? null : spot, ability: attack, score };
   }
   return best;
@@ -117,6 +154,12 @@ export function playAiTurn(battle: Battle): BattleEvent[] {
   const events: BattleEvent[] = [];
   if (plan.moveTo) events.push(...battle.move(plan.moveTo));
   if (plan.ability) events.push(...battle.act(plan.ability.id, plan.ability.target));
-  battle.endTurn();
+  // com direção: termina o turno de frente para o inimigo mais próximo (escolha nossa; a IA do FFT não tem fonte)
+  if (!battle.over && battle.actor.facing !== undefined) {
+    const me = battle.actor;
+    const foes = battle.state.units.filter((u) => u.team !== me.team);
+    if (foes.length) battle.face(facingTo(me.pos, foes.reduce((a, b) => (dist(me.pos, b.pos) < dist(me.pos, a.pos) ? b : a)).pos));
+  }
+  events.push(...battle.endTurn());
   return events;
 }

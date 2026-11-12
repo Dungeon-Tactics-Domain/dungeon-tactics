@@ -38,13 +38,13 @@ function hasTarget(b: Battle, id: string): boolean {
 // longe de todo mundo só pedia um toque impossível)
 export function defaultMode(b: Battle): Mode {
   if (b.over) return { k: 'idle' };
-  if (!b.state.turn.moved) return { k: 'move' };
+  if (b.reach().size) return { k: 'move' }; // sem casa para andar (já andou, ou acabou de declarar uma carga)
   const id = !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.find((a) => hasTarget(b, a));
   return id ? { k: 'ability', id } : { k: 'idle' };
 }
 
 const allowed = (b: Battle, m: Mode) =>
-  m.k === 'idle' || (m.k === 'move' ? !b.state.turn.moved : !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.includes(m.id));
+  m.k === 'idle' || (m.k === 'move' ? b.reach().size > 0 : !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.includes(m.id));
 
 // habilidade centrada em quem usa já nasce com o alvo marcado: não há casa para escolher
 const withMode = (b: Battle, mode: Mode): Ui => ({ mode, pending: mode.k === 'ability' && selfCentered(mode.id) ? b.actor.pos : null, inspect: null, invalid: false });

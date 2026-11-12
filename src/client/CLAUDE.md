@@ -1,12 +1,26 @@
-# src/client — navegador (mobile primeiro)
+# src/client — navegador
 
-Vale junto com o `CLAUDE.md` da raiz. A regra "celular fora de foco" do Warlock NÃO vale aqui: alvo é 393x852 em pé.
+Vale junto com o `CLAUDE.md` da raiz. **Web no PC primeiro** (pedido do Fernando, 12/11): a adaptação para celular é uma etapa própria depois; até lá o celular só precisa abrir sem erro (não apague as media queries nem o toque).
 
-- **Quem é dono do quê:** `main.ts` (`Game`) liga tudo e é dono do laço de turno; `interaction.ts` decide o que o toque faz (puro, testado); `scene.ts` (`BattleScene`) só desenha; `hud.ts` (`BattleHud`) só mostra e repassa cliques; `touch-input.ts` (`TouchInput`) só traduz gestos. Classe com recurso (WebGL, ouvintes) tem `dispose()`.
-- **Toque em duas etapas:** tocar escolhe, só o botão Confirmar executa. Confirmar nunca troca de lugar com outro botão.
-- **Texto que o jogador vê:** `t('pt', 'en')` de `i18n.ts`; nomes por `unitName`/`abilityName`. Resultado de ação também em texto (`eventLog`), não só no número flutuante.
-- **DOM pelas peças de `icons.ts`** (`el`, `icon`, `iconButton`) e `dialog.ts`; cores e tamanhos só pelas variáveis do `:root` em `style.css`. Alvo de toque ≥ 44 px (`--tap`). Cor nunca é o único sinal (legenda no menu, texto no cartão).
-- **Teclado no estilo do FFT** (pedido do Fernando, 25/10): toda ação do toque tem tecla. `keyboard.ts` traduz tecla em ação e direção da tela em passo na grade (puro, testado); só o `Game.onKey` executa. Tecla nova entra em `keyAction`, na lista `keyHelp` (tela de ajuda) e como `hint()` no botão do HUD. Nada de `if` de teclado na cena ou no HUD.
-- **Cara de jogo, não de página** (pedido do Fernando, 25/10): todo botão, cartão, ficha e diálogo usa a moldura do `:root` (`--frame`, `--trim`, bisel, `--glow` no escolhido); fonte pixel (`--font-px`, Tiny5) só em título, Confirmar, fila e número flutuante; texto pequeno na `--font`. No PC (≥ 1100 px) a HUD fica numa janela de comando central (cartão à esquerda, barra e ações à direita), nunca de ponta a ponta.
-- **Pixel art configurável** (pedido do Fernando, 25/10): `pixel-settings.ts` (puro) guarda tamanho, contorno, paleta e câmera presa em `dt:pixel`; a `BattleScene.setPixel` aplica na hora. Atalho V e o botão de TV na barra da câmera; opções no menu com `choice()` (`dialog.ts`).
+- **Quem é dono do quê:** `main.ts` (`Game`) liga tudo e é dono do laço de turno e da tela do turno; `command.ts` diz o que o menu mostra e o que vem depois (puro, testado); `interaction.ts` decide o que a casa escolhida faz (puro, testado); `scene.ts` (`BattleScene`) só desenha; `hud.ts` (`BattleHud`) só mostra e repassa cliques; `touch-input.ts` (`TouchInput`) só traduz gestos e mouse; `gamepad.ts` traduz o controle em ações de teclado (puro, testado). Classe com recurso (WebGL, ouvintes) tem `dispose()`.
+- **Interface no jeito da tela de batalha do FFT** (decisão do Fernando, 12/11: "descarte as interfaces atuais e recrie a interface do mesmo jeito da do final fantasy tactics original"; a regra herdada "interface só com as peças que já existem" não prende esta reescrita):
+  - **Telas do turno** (`Screen` em `command.ts`): menu de comandos → submenu de habilidades → mapa (escolher a casa) → "Executar?" → menu. Esperar leva à escolha de direção nos mapas com direção.
+  - **Peças do `BattleHud`:**
+    - canto de cima à esquerda: casa sob o cursor (`tileInfo`) e lista dos próximos turnos com retratos;
+    - alto, no meio: linha de ajuda e, abaixo, a faixa do nome da habilidade;
+    - direita: menu Mover · Agir · Esperar · Status, submenu e janela "Executar?" com acerto, efeito e vida antes → depois;
+    - embaixo: painel da unidade da vez (esquerda) e da unidade sob o cursor (direita), com retrato e barras de vida, MP e CT;
+    - canto de cima à direita: ferramentas da câmera, menu e contador de desempenho.
+  - **O que não se copia:** arte, fonte, ícones, retratos, molduras, sons e textos do original. Moldura de pergaminho feita em CSS (`--paper*`, `--ink*`, `--focus` no `:root`), retratos dos nossos bonecos KayKit (`public/chars`, `scripts/portraits.mjs`), e seta ▶ nossa no lugar da mão do menu.
+  - **Peça nova de HUD:** `.panel` (pergaminho) com `.item` (linha de menu, `.focus` marca o foco), `gauge()` (barra com rótulo e número) e `unitPanel()` em `hud.ts`. Cores e tamanhos só pelas variáveis do `:root`.
+- **Entrada:** teclado, mouse e controle andam o mesmo cursor e passam pelo mesmo `Game.runKey`.
+  - Teclado: `keyboard.ts` (WASD e setas sobem e descem no menu e andam o cursor no mapa; Enter confirma; Esc volta; P Esperar; C Status; F3 contador; Z desfaz).
+  - Mouse: passar por cima escolhe, clique confirma, botão direito volta.
+  - Controle (Gamepad API, mapeamento padrão Xbox e PlayStation): direcional e analógico andam; A ou × confirma; B ou ○ volta; X ou □ Status; ombros giram a câmera; gatilhos dão zoom; Back desfaz; Start abre o menu. Com um diálogo aberto, o controle anda entre os botões dele.
+  - Tecla ou botão novo entra em `keyAction`, na lista `keyHelp` (tela de ajuda) e como `hint()` no HUD. Nada de `if` de teclado na cena ou no HUD.
+- **Texto que o jogador vê:** `t('pt', 'en')` de `i18n.ts`; nomes por `unitName`/`abilityName`. Resultado de ação também em texto (`eventLog`, na linha de ajuda), não só no número flutuante.
+- **DOM pelas peças de `icons.ts`** (`el`, `icon`, `iconButton`) e `dialog.ts`. Cor nunca é o único sinal.
+- **Contador de desempenho** (pedido do Fernando, 12/11): fps, tempo do quadro e recursos do Three (`BattleScene.stats`), mais a memória do JS quando o navegador mostra. Ligado por padrão, F3 liga e desliga (`dt:fps`), texto atualizado 2 vezes por segundo.
+- **Tempos do fluxo** em `timing.ts`; gesto e efeito de cada habilidade em `fx.ts`; som em `sound.ts`.
+- **Pixel art configurável** (pedido do Fernando, 25/10): `pixel-settings.ts` (puro) guarda tamanho, contorno, paleta e câmera presa em `dt:pixel`; a `BattleScene.setPixel` aplica na hora. Atalho V e o botão de TV nas ferramentas; opções no menu com `choice()` (`dialog.ts`).
 - Preferências e save em `store.ts` com prefixo `dt:`.

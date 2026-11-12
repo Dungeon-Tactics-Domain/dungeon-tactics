@@ -41,4 +41,10 @@ export const ABILITY_ICON: Record<string, string> = {
   stab: 'knife-thrust', throwing_knife: 'split-arrows', trip: 'snail', deathblow: 'skull-crossed-bones',
   cleave: 'flail', slam: 'knockout',
 };
+// habilidades do estudo do FFT (ids `fft_<unidade>_<habilidade>`): o desenho sai do nome da habilidade, sem ícone novo
+const STUDY_ICON: Record<string, string> = {
+  attack: 'knife-thrust', stone: 'ricochet', dash: 'checked-shield', accumulate: 'cycle', wish: 'chalice-drops', yell: 'wind-slap',
+  potion: 'chalice-drops', speed_break: 'snail', power_break: 'knockout', charge1: 'on-target', charge2: 'archery-target', fire: 'fire-ray', cure: 'chalice-drops',
+};
+export const abilityIcon = (id: string) => ABILITY_ICON[id] ?? STUDY_ICON[id.split('_').slice(2).join('_')];
 export const UI_ICON = { move: 'run', undo: 'anticlockwise-rotation', wait: 'pocket-watch', menu: 'cog', recenter: 'on-target', pixel: 'tv' };

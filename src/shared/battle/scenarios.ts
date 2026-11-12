@@ -1,4 +1,4 @@
-import { parseGrid, type Grid } from './grid.ts';
+import { parseGrid, type Grid, type Tile } from './grid.ts';
 import type { Rules } from './rules.ts';
 import type { BattleState, Team } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -43,6 +43,29 @@ const SKIRMISH: Scenario = {
   ],
 };
 
+// Aparência por casa da Colina do Farol (só desenho, as regras não leem; 12/11, proposta aprovada pelo Fernando): o lado
+// dos inimigos (canto de cima à direita, x - y >= 7) fica na neve para ler de longe de que lado cada time começa; a colina
+// do meio é rocha, com o topo escuro; areia em volta do Farol e ouro embaixo dele; muro de tijolo; 4 árvores sorteadas
+// pela posição (fixo: o mesmo mapa sempre desenha igual).
+function dressBeaconHill(grid: Grid, beacon: { x: number; y: number }): Grid {
+  const tiles = grid.tiles.map((t, i) => {
+    const x = i % grid.width, y = Math.floor(i / grid.width);
+    const cold = x - y >= 7;
+    const near = Math.abs(x - beacon.x) + Math.abs(y - beacon.y);
+    const look =
+      t.terrain === 'wall' ? 'brick'
+      : t.terrain === 'forest' ? (cold ? ((x + y) % 2 ? 'bare1' : 'bare2') : ['tree', 'tree2', 'tree3', 'tree4'][(x * 7 + y * 3) % 4])
+      : near === 0 ? 'gold'
+      : near <= 2 ? 'sand'
+      : cold ? (t.h >= 2 ? 'snow_rock' : 'snow')
+      : t.h >= 3 ? 'summit'
+      : t.h >= 2 ? 'rock'
+      : 'grass';
+    return { ...t, look };
+  });
+  return { ...grid, tiles };
+}
+
 // A 1ª batalha (marco 3, liberado pelo Fernando em 11/11): mapa 20x20. Os heróis e o farol nascem no morro do canto de
 // baixo, os inimigos no platô do canto de cima; no meio, uma colina de 3 níveis com muros e floresta dá posição alta
 // e cobertura para disputar. Só rampas de 1 nível: todo canto se alcança a pé.
@@ -50,51 +73,54 @@ export const FIRST_BATTLE: Scenario = {
   id: 'beacon_hill',
   name: 'Colina do Farol',
   en: 'Beacon Hill',
-  grid: parseGrid(
-    [
-      '....................',
-      '..............T.....',
-      '....T......#........',
-      '...........#...T....',
-      '.......T............',
-      '..#.........T.......',
-      '..#....TT......##...',
-      '........T...........',
-      '.....T......#.......',
-      '............#...T...',
-      '...T................',
-      '......##......T.....',
-      '..........T.........',
-      '.T.......TT....#....',
-      '...............#....',
-      '......T.............',
-      '..T.........T.......',
-      '........#...........',
-      '....T...#......T....',
-      '....................',
-    ],
-    [
-      '00000000001111100000',
-      '00000000011222110000',
-      '00000000012232110000',
-      '00001100012222100000',
-      '00011110001111000000',
-      '00012210000000000000',
-      '00011100001110000000',
-      '00000000012221000000',
-      '00000000123321000000',
-      '00000001233321000000',
-      '00000001223221000000',
-      '00000000122210001100',
-      '00000000011100012210',
-      '00110000000000012210',
-      '01221000000000001100',
-      '01221000000000000000',
-      '00110000001110000000',
-      '00000000012210000000',
-      '00000000011100000000',
-      '00000000000000000000',
-    ],
+  grid: dressBeaconHill(
+    parseGrid(
+      [
+        '....................',
+        '..............T.....',
+        '....T......#........',
+        '...........#...T....',
+        '.......T............',
+        '..#.........T.......',
+        '..#....TT......##...',
+        '........T...........',
+        '.....T......#.......',
+        '............#...T...',
+        '...T................',
+        '......##......T.....',
+        '..........T.........',
+        '.T.......TT....#....',
+        '...............#....',
+        '......T.............',
+        '..T.........T.......',
+        '........#...........',
+        '....T...#......T....',
+        '....................',
+      ],
+      [
+        '00000000001111100000',
+        '00000000011222110000',
+        '00000000012232110000',
+        '00001100012222100000',
+        '00011110001111000000',
+        '00012210000000000000',
+        '00011100001110000000',
+        '00000000012221000000',
+        '00000000123321000000',
+        '00000001233321000000',
+        '00000001223221000000',
+        '00000000122210001100',
+        '00000000011100012210',
+        '00110000000000012210',
+        '01221000000000001100',
+        '01221000000000000000',
+        '00110000001110000000',
+        '00000000012210000000',
+        '00000000011100000000',
+        '00000000000000000000',
+      ],
+    ),
+    { x: 2, y: 15 }, // casa do Farol (spawn "beacon")
   ),
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 2, y: 15 },
@@ -109,15 +135,76 @@ export const FIRST_BATTLE: Scenario = {
   ],
 };
 
-export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE].map((s) => [s.id, s]));
+// Cripta Alagada (12/11, pedido do Fernando: um mapa de masmorra com as peças KayKit): 14x14 fechado. Os inimigos
+// guardam um altar elevado (nível 2) no fundo; no meio, um canal de água rasa (BMG 6.5: entrar custa 2 de movimento) com
+// duas pontes; colunas, caixotes, barris e o baú bloqueiam; entulho é cobertura pisável; muros de tijolo fecham passagens.
+// Uma letra por casa diz terreno, altura e aparência (só desenho, as regras leem o terreno, a altura e a profundidade):
+const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number }> = {
+  f: { terrain: 'floor', h: 1, look: 'crypt' },
+  d: { terrain: 'floor', h: 2, look: 'altar' },
+  w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
+  b: { terrain: 'floor', h: 1, look: 'bridge' },
+  B: { terrain: 'wall', h: 1, look: 'brick' },
+  p: { terrain: 'wall', h: 1, look: 'pillar' },
+  P: { terrain: 'wall', h: 2, look: 'pillar' },
+  c: { terrain: 'wall', h: 1, look: 'crates' },
+  r: { terrain: 'wall', h: 1, look: 'barrel' },
+  x: { terrain: 'wall', h: 2, look: 'chest' },
+  u: { terrain: 'forest', h: 1, look: 'rubble' },
+};
+const CRYPT_MAP = [
+  'ddddddxddddddd',
+  'dPdddddddddddP',
+  'dddddddddddddd',
+  'BBffffffffffBB',
+  'ffcfffffffffrf',
+  'fffuffffffufff',
+  'wwwbbwwwwbbwww',
+  'wwwbbwwwwbbwww',
+  'ffffuffffuffff',
+  'fpffffffffffpf',
+  'ffBBBffffBBBff',
+  'ffffffffffffff',
+  'rfffffffffffcf',
+  'ffffffffffffff',
+];
+const CRYPT: Scenario = {
+  id: 'flooded_crypt',
+  name: 'Cripta Alagada',
+  en: 'Flooded Crypt',
+  grid: {
+    width: CRYPT_MAP[0].length,
+    height: CRYPT_MAP.length,
+    tiles: CRYPT_MAP.flatMap((row) => [...row].map((c) => ({ ...CRYPT_KEY[c] }))),
+  },
+  spawns: [
+    { id: 'beacon', def: 'beacon', team: 'hero', x: 6, y: 13 },
+    { id: 'h-warrior', def: 'warrior', team: 'hero', x: 5, y: 11 },
+    { id: 'h-archer', def: 'archer', team: 'hero', x: 8, y: 12 },
+    { id: 'h-mage', def: 'mage', team: 'hero', x: 7, y: 13 },
+    { id: 'h-rogue', def: 'rogue', team: 'hero', x: 9, y: 11 },
+    { id: 'e-soldier', def: 'soldier', team: 'enemy', x: 5, y: 2 },
+    { id: 'e-archer', def: 'skeleton_archer', team: 'enemy', x: 8, y: 1 },
+    { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 10, y: 2 },
+    { id: 'e-brute', def: 'brute', team: 'enemy', x: 3, y: 2 },
+  ],
+};
+
+export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT].map((s) => [s.id, s]));
 
 // ct inicial 0 para todos: a ordem do começo sai só das velocidades
 export function initialState(scenario: Scenario, seed: number): BattleState {
   return {
     scenario: scenario.id,
-    units: scenario.spawns.map((s) => ({ id: s.id, def: s.def, team: s.team, pos: { x: s.x, y: s.y }, hp: UNIT_DEFS[s.def].hp, ct: 0 })),
+    units: scenario.spawns.map((s) => ({
+      id: s.id, def: s.def, team: s.team, pos: { x: s.x, y: s.y }, hp: UNIT_DEFS[s.def].hp, ct: 0,
+      // direção e contadores só nascem em cenário que pede: o estado dos mapas do jogo fica igual
+      ...(scenario.rules?.facing && { facing: s.team === 'hero' ? 0 : 2 }),
+      ...(UNIT_DEFS[s.def].vars && { vars: { ...UNIT_DEFS[s.def].vars } }),
+    })),
     rng: seed | 0,
     turn: { actor: '', moved: false, usedAbility: null },
+    charges: [],
     outcome: 'ongoing',
     turnsPlayed: 0,
   };

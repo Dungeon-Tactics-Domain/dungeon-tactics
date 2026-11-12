@@ -31,6 +31,22 @@ assets/kaykit/ (fora de public/, não vai para o jogo no ar; biblioteca para que
   Todos os packs grátis do KayKit, por Kay Lousberg (www.kaylousberg.com), CC0 - https://github.com/KayKit-Game-Assets e https://kaylousberg.itch.io (versões FREE)
   Só os glTF, sem alteração; lista e links em assets/kaykit/README.md. Licença lida no LICENSE.txt de cada pack: "License: (Creative Commons Zero, CC0)"
   (Holiday Bits sem licença no zip: lida na página, "Creative Commons Zero v1.0 Universal").
+models/poc/quadrado/ (dirt_with_grass, dirt, stone, tree .gltf + .bin e block_bits_texture.png), chão, terra e muro dos mapas do Dungeon Tactics
+models/blocos/ (grass, dirt, gravel, stone, stone_dark, water, wood, bricks_A, bricks_B, snow, dirt_with_snow, stone_with_gold, sand_with_grass .gltf + .bin, block_bits_texture.png e LICENSE.txt), peças dos mapas de Gariland e da Colina do Farol
+  KayKit Block Bits 1.0 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/block-bits (arquivos copiados sem alteração)
+  Licença lida no LICENSE.txt do pacote (cópia em models/blocos/LICENSE.txt): "Creative Commons Zero, CC0".
+models/poc/hex/ (tree_single_A, rock_single_A, hex_grass, hex_grass_bottom .gltf + .bin e hexagons_medieval.png), árvore da floresta nos mapas do Dungeon Tactics
+  KayKit Medieval Hexagon Pack 1.0, por Kay Lousberg (www.kaylousberg.com), CC0
+  https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0 (arquivos copiados sem alteração)
+models/floresta/ (Tree_1_A_Color1 a Tree_4_A_Color1, Tree_Bare_1_A_Color1, Tree_Bare_2_A_Color1 .gltf + .bin, forest_texture.png e LICENSE.txt), árvores dos mapas de Gariland e da Colina do Farol
+  KayKit Forest Nature Pack 1.0 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-forest
+  Licença lida no LICENSE.txt do pacote (cópia em models/floresta/LICENSE.txt): "Creative Commons Zero, CC0".
+models/animacoes.glb (12 clipes: golpes de uma e duas mãos, arco, magia, usar item), gestos das habilidades
+  KayKit Character Animations 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
+  Clipes do Rig_Medium juntos e sem malha por scripts/assets/anim-pack.mjs. Licença lida no LICENSE.txt do pacote (assets/kaykit/animacoes): "License: (Creative Commons Zero, CC0)".
+models/masmorra/ (box_large .gltf + .bin, dungeon_texture.png e LICENSE.txt), caixas do mapa de Gariland
+  KayKit Dungeon Pack 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
+  Licença lida no LICENSE.txt do pacote (cópia em models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
 
 == Texturas ==
 tex/lava_emit.jpg
@@ -70,6 +86,25 @@ sfx/teleport.mp3 (teleport.ogg), sfx/lightning.mp3 (electricspell2.ogg)
 sfx/homing.mp3 (magical_7.ogg)
   JaggedStone, "Magic Spell SFX" - https://opengameart.org/content/magic-spell-sfx
   Licença lida na página: CC0 ("Copyright/Attribution Notice: None needed").
+sfx/cancel.mp3 (back_001)
+  Kenney, "Interface Sounds" - https://kenney.nl/assets/interface-sounds
+  Licença lida no License.txt do zip: "License: (Creative Commons Zero, CC0)".
+sfx/step.mp3 (footstep_grass_001, cortado em 0,3 s)
+  Kenney, "Impact Sounds" - https://kenney.nl/assets/impact-sounds
+  Licença lida no License.txt do zip: "License: (Creative Commons Zero, CC0)".
+sfx/swing.mp3 (battle/swing.wav), sfx/charge.mp3 (battle/magic1.wav), sfx/spell.mp3 (battle/spell.wav, cortado em 1,4 s)
+  artisticdude, "RPG Sound Pack" - https://opengameart.org/content/rpg-sound-pack
+  Licença lida na página em 12/11/2026: CC0.
+sfx/miss.mp3 (swish-3.wav), sfx/throw.mp3 (swish-7.wav)
+  "Swishes Sound Pack" - https://opengameart.org/content/swishes-sound-pack
+  Licença lida na página em 12/11/2026: CC0.
+sfx/heal.mp3 (magical_3.ogg, cortado em 1,2 s)
+  JaggedStone, "Magic Spell SFX" - https://opengameart.org/content/magic-spell-sfx
+  Licença lida na página: CC0 ("Copyright/Attribution Notice: None needed").
+sfx/die.mp3 (creature_die_01.ogg)
+  "80 CC0 RPG SFX" - https://opengameart.org/content/80-cc0-rpg-sfx
+  Licença lida na página em 12/11/2026: CC0.
+Fanfarras de vitória e derrota: notas geradas no navegador (src/client/sound.ts, jingle), sem arquivo; criação do projeto.
 sfx/lava_loop.mp3 (fire-1.ogg, com crossfade para laço)
   AntumDeluge, "Fire Crackling" - https://opengameart.org/content/fire-crackling
   Licença lida na página: "Licensing: Creative Commons Zero (CC0)".

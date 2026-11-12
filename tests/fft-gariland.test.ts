@@ -22,6 +22,14 @@ describe('FFT Gariland: mapa (fft-map-json, MAP022)', () => {
     expect(tileAt(g, { x: 6, y: 0 }).h).toBe(0); // o rio
   });
 
+  it('piso de cada casa com as contagens do arquivo (surface_type) e 23 rampas; só desenho (12/11)', () => {
+    const count: Record<string, number> = {};
+    for (const t of g.tiles) count[t.look!] = (count[t.look!] ?? 0) + 1;
+    expect(count).toEqual({ grass: 25, stone: 42, water: 38, roof: 23, wood: 7, bridge: 5, box: 5, chimney: 3, tree: 2 });
+    expect(g.tiles.filter((t) => t.ramp).length).toBe(23);
+    expect(tileAt(g, { x: 4, y: 2 }).ramp).toEqual([0, 2]); // telhado sobe para +y até a cumeeira de altura 8
+  });
+
   it('só as duas árvores não são pisáveis', () => {
     const blocked = g.tiles.flatMap((t, i) => (TERRAIN[t.terrain].walkable ? [] : [`${i % g.width},${Math.floor(i / g.width)}`]));
     expect(blocked).toEqual(['2,0', '8,3']);
@@ -68,6 +76,9 @@ describe('FFT Gariland: regras no motor', () => {
     put(battle, 'ramza', 2, 5);
     put(battle, 'e-squire-1', 3, 5);
     battle.state.turn.actor = 'ramza';
+    // um de frente para o outro (12/11: o estudo ganhou direção; antes o acerto era sempre o de frente)
+    battle.state.units.find((u) => u.id === 'ramza')!.facing = 1;
+    battle.state.units.find((u) => u.id === 'e-squire-1')!.facing = 3;
     expect(previewAbility(battle.grid, battle.state, 'ramza', 'fft_ramza_attack', { x: 3, y: 5 }).targets[0].chance).toBe(95);
     expect(previewAbility(battle.grid, battle.state, 'ramza', 'fft_ramza_dash', { x: 3, y: 5 }).targets[0].chance).toBe(100);
     expect(previewAbility(battle.grid, battle.state, 'e-squire-1', 'fft_squire_attack', { x: 2, y: 5 }).targets[0].chance).toBe(90);

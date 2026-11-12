@@ -15,19 +15,20 @@ Gerado por `node scripts/assets/kaykit-index.mjs`; não edite à mão. O que é 
 | [`ferramentas-rpg`](#ferramentas-rpg) | 49 | 103 | 1,2 MB |
 | [`floresta`](#floresta) | 105 | 212 | 1,5 MB |
 | [`halloween`](#halloween) | 63 | 128 | 1,3 MB |
-| [`hexagonos-medievais`](#hexagonos-medievais) | 221 | 456 | 12,1 MB |
-| [`jogo-de-tabuleiro`](#jogo-de-tabuleiro) | 162 | 350 | 9,3 MB |
+| [`hexagonos-medievais`](#hexagonos-medievais) | 221 | 456 | 12,2 MB |
+| [`jogo-de-tabuleiro`](#jogo-de-tabuleiro) | 162 | 350 | 9,4 MB |
 | [`legado-construtor-medieval`](#legado-construtor-medieval) | 226 | 227 | 3,8 MB |
 | [`legado-minigames`](#legado-minigames) | 134 | 135 | 3,7 MB |
 | [`legado-spooktober`](#legado-spooktober) | 48 | 49 | 1,4 MB |
-| [`masmorra`](#masmorra) | 211 | 424 | 5,6 MB |
+| [`masmorra`](#masmorra) | 211 | 424 | 5,7 MB |
 | [`moveis`](#moveis) | 53 | 108 | 0,8 MB |
 | [`plataforma`](#plataforma) | 370 | 746 | 5,3 MB |
 | [`prototipo`](#prototipo) | 72 | 146 | 1,0 MB |
 | [`recursos`](#recursos) | 76 | 154 | 3,5 MB |
 | [`restaurante`](#restaurante) | 144 | 290 | 3,4 MB |
 | [`sortido`](#sortido) | 41 | 85 | 1,5 MB |
-| **Total** | **2307** | **4275** | **114,5 MB** |
+| [`sortido-2`](#sortido-2) | 30 | 64 | 1,5 MB |
+| **Total** | **2337** | **4339** | **116,3 MB** |
 
 ## animacoes
 
@@ -147,3 +148,7 @@ Gerado por `node scripts/assets/kaykit-index.mjs`; não edite à mão. O que é 
 ## sortido
 
 - `Assets/gltf/` (41): chain_anchor, chain_hanging_A, chain_hanging_B, chain_shackle, chainlink, chainlinks, chicken_plushie_A, chicken_plushie_B, circus_tent, comicbook_A, comicbooks_stacked, comicbox_closed, comicbox_filled, comicbox_open, comicbox_open_B, fire_hydrant, flax_flower_A, flax_flower_B, guitar_A, guitar_B, idol_A, idol_B, instantcamera, instantcamera_green, instantcamera_picture_A, instantcamera_picture_B, mining_helmet, puzzlecube_center, puzzlecube_complete, puzzlecube_incomplete, rollerskate_A, rollerskate_B, rollerskate_pair, taco, umbrella_blue, umbrella_green, umbrella_pink, umbrella_yellow, waterbottle_A, waterbottle_B, woodstove
+
+## sortido-2
+
+- `Assets/gltf/` (30): autumn_wreath, beartrap_A, beartrap_B, bicycle_helmet, book_mimic, cat_headphones_A, cat_headphones_B, cat_headphones_C, cat_headphones_D, cobweb_A, cobweb_B, cobweb_C, cobweb_D, frame_A, frame_A_large, frame_B, frame_B_large, frame_C, gamer_chair_A, gamer_chair_B, ghost_tote, guitarcase, handheld_console, haunted_manor, ornate_mirror, ornate_mirror_broken, ouija_board, pickle, pickle_jar, sled

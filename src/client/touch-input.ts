@@ -1,6 +1,7 @@
 // Toque e mouse no mapa: toque curto escolhe a casa, arrastar com um dedo move a câmera, dois dedos (ou a roda) dão zoom.
 export interface TouchHandlers {
-  tap(x: number, y: number): void;
+  tap(x: number, y: number, mouse: boolean): void;
+  hover?(x: number, y: number): void; // só o mouse, sem botão apertado: o PC usa como o cursor do teclado
   pan(dx: number, dy: number): void;
   zoom(factor: number): void;
 }
@@ -31,7 +32,10 @@ export class TouchInput {
     }, opts);
     target.addEventListener('pointermove', (e) => {
       const prev = this.pointers.get(e.pointerId);
-      if (!prev) return;
+      if (!prev) {
+        if (e.pointerType === 'mouse') h.hover?.(e.clientX, e.clientY);
+        return;
+      }
       this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (this.pointers.size === 2) {
         const [a, b] = [...this.pointers.values()];
@@ -46,7 +50,7 @@ export class TouchInput {
     const up = (e: PointerEvent) => {
       if (!this.pointers.delete(e.pointerId)) return;
       if (this.pointers.size) return;
-      if (this.downAt && !this.dragged && e.type === 'pointerup') h.tap(e.clientX, e.clientY);
+      if (this.downAt && !this.dragged && e.type === 'pointerup') h.tap(e.clientX, e.clientY, e.pointerType === 'mouse');
       this.downAt = null;
       this.pinch = 0;
     };

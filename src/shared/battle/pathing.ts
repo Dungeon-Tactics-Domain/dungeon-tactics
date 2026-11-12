@@ -1,5 +1,5 @@
 import type { AbilityDef } from './abilities.ts';
-import { TERRAIN, dist, neighbors, posKey, samePos, tileAt, type Grid } from './grid.ts';
+import { TERRAIN, canStand, dist, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -17,7 +17,7 @@ export interface Step {
   from: string | null; // chave da casa anterior
 }
 
-// Busca em largura (custo 1 por passo) até def.move casas. Passa por aliado, nunca por inimigo; o resultado não inclui
+// Busca pelo custo de cada passo (1, ou 2 na água rasa) até def.move pontos. Passa por aliado, nunca por inimigo; o resultado não inclui
 // a casa de saída nem casas ocupadas, para o cliente poder pintar só onde dá para parar.
 export function reachable(grid: Grid, state: BattleState, unitId: string): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
@@ -28,15 +28,16 @@ export function reachable(grid: Grid, state: BattleState, unitId: string): Map<s
   for (let i = 0; i < queue.length; i++) {
     const cur = queue[i];
     const cost = seen.get(posKey(cur))!.cost;
-    if (cost === budget) continue;
     for (const n of neighbors(grid, cur)) {
       const k = posKey(n);
-      if (seen.has(k)) continue;
       const to = tileAt(grid, n);
-      if (!TERRAIN[to.terrain].walkable || Math.abs(to.h - tileAt(grid, cur).h) > jump) continue;
+      // água rasa custa 2: o caminho mais barato pode chegar depois, então a casa é revista quando sai mais barata
+      const next = cost + stepCost(to);
+      if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
+      if (!canStand(to) || Math.abs(standH(to) - standH(tileAt(grid, cur))) > jump) continue;
       const other = unitAt(state, n);
       if (other && other.team !== unit.team) continue;
-      seen.set(k, { pos: n, cost: cost + 1, from: posKey(cur) });
+      seen.set(k, { pos: n, cost: next, from: posKey(cur) });
       queue.push(n);
     }
   }
@@ -64,8 +65,8 @@ export function pathTo(reach: Map<string, Step>, target: Pos): Pos[] | null {
 export function lineOfSight(grid: Grid, a: Pos, b: Pos): boolean {
   const total = dist(a, b);
   if (total <= 1) return true;
-  const eye = tileAt(grid, a).h + EYE;
-  const aim = tileAt(grid, b).h + EYE;
+  const eye = standH(tileAt(grid, a)) + EYE;
+  const aim = standH(tileAt(grid, b)) + EYE;
   let x = a.x, y = a.y;
   const dx = Math.abs(b.x - a.x), dy = -Math.abs(b.y - a.y);
   const sx = a.x < b.x ? 1 : -1, sy = a.y < b.y ? 1 : -1;
@@ -84,7 +85,7 @@ export function lineOfSight(grid: Grid, a: Pos, b: Pos): boolean {
 
 // alcance máximo contra uma casa: +1 por nível acima do alvo para quem tem heightRange
 export function maxRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): number {
-  const up = ability.heightRange ? Math.max(0, tileAt(grid, from).h - tileAt(grid, to).h) : 0;
+  const up = ability.heightRange ? Math.max(0, standH(tileAt(grid, from)) - standH(tileAt(grid, to))) : 0;
   return ability.range[1] + up;
 }
 

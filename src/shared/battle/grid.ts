@@ -13,6 +13,13 @@ export const TERRAIN: Record<TerrainKind, { walkable: boolean; blocks: number; c
 export interface Tile {
   terrain: TerrainKind;
   h: number;
+  // Só desenho (12/11, mapa de Gariland com as peças KayKit): as regras não leem. `look` escolhe as peças da casa na cena;
+  // `ramp` inclina o topo, subindo `rise` níveis na direção FACING[dir]. Mapa sem os dois é desenhado como antes.
+  look?: string;
+  ramp?: [dir: number, rise: number];
+  // Água (BMG 6.5; decisão do Fernando de 12/11): profundidade em níveis. 1 = rasa (andar custa 2), 2 ou mais = funda
+  // (não dá para entrar nem parar). Quem está na água fica mais baixo: altura da casa menos a profundidade.
+  depth?: number;
 }
 
 // Mapa imutável durante a batalha: fica fora do BattleState (o estado guarda só o id do cenário).
@@ -45,12 +52,27 @@ export function parseGrid(terrain: string[], heights: string[]): Grid {
   return { width, height, tiles };
 }
 
+// altura de quem está na casa (na água, a casa menos a profundidade, BMG 6.5)
+export const standH = (t: Tile) => t.h - (t.depth ?? 0);
+// dá para parar na casa: pisável e sem água funda (BMG 6.5: água de 2h ou mais não deixa andar nem agir)
+export const canStand = (t: Tile) => TERRAIN[t.terrain].walkable && (t.depth ?? 0) < 2;
+// pontos de movimento para entrar na casa: água rasa custa 2 (BMG 6.5, "flowing water")
+export const stepCost = (t: Tile) => ((t.depth ?? 0) === 1 ? 2 : 1);
+
 export const inBounds = (g: Grid, p: Pos) => p.x >= 0 && p.y >= 0 && p.x < g.width && p.y < g.height;
 export const tileAt = (g: Grid, p: Pos): Tile => g.tiles[p.y * g.width + p.x];
 export const samePos = (a: Pos, b: Pos) => a.x === b.x && a.y === b.y;
 export const posKey = (p: Pos) => `${p.x},${p.y}`;
 // distância em passos de grade (4 direções), a mesma do movimento
 export const dist = (a: Pos, b: Pos) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+// Direções de `UnitState.facing`, na ordem de um giro: +y, +x, -y, -x
+export const FACING: Pos[] = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }];
+// direção de `from` para `to` pelo eixo de maior diferença (empate: o eixo x, como no empurrão)
+export function facingTo(from: Pos, to: Pos): number {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  return Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 1 : 3) : dy > 0 ? 0 : 2;
+}
 
 const DIRS: Pos[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
 export function neighbors(g: Grid, p: Pos): Pos[] {

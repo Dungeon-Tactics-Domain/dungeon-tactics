@@ -23,6 +23,7 @@ export function stateOf(units: Spec[], rng = 1): BattleState {
     units: units.map((u) => ({ id: u.id, def: u.def, team: u.team, pos: { x: u.x, y: u.y }, hp: u.hp ?? UNIT_DEFS[u.def].hp, ct: 0 })),
     rng,
     turn: { actor: units[0].id, moved: false, usedAbility: null },
+    charges: [],
     outcome: 'ongoing',
     turnsPlayed: 0,
   };

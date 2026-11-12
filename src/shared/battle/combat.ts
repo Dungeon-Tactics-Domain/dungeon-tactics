@@ -1,5 +1,5 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
-import { TERRAIN, dist, inBounds, samePos, tileAt, type Grid } from './grid.ts';
+import { TERRAIN, canStand, dist, inBounds, samePos, standH, tileAt, type Grid } from './grid.ts';
 import { MAX_JUMP, inAbilityRange, lineOfSight, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
@@ -27,7 +27,7 @@ export interface TargetPreview {
   healMax: number;
 }
 
-export type PreviewReason = 'unknown' | 'range' | 'sight' | 'no-target';
+export type PreviewReason = 'unknown' | 'range' | 'sight' | 'no-target' | 'spent';
 export interface Preview {
   ok: boolean;
   reason?: PreviewReason;
@@ -35,12 +35,13 @@ export interface Preview {
   targets: TargetPreview[];
 }
 
-const isHeal = (a: AbilityDef) => a.heal[1] > 0;
+// cura e habilidade de apoio miram aliado e não erram
+const isHeal = (a: AbilityDef) => a.heal[1] > 0 || !!a.ally;
 
 export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): number {
   if (isHeal(ability)) return 100;
   const d = dist(from, to);
-  const dh = tileAt(grid, from).h - tileAt(grid, to).h;
+  const dh = standH(tileAt(grid, from)) - standH(tileAt(grid, to));
   // cobertura só vale contra quem ataca de longe: o corpo a corpo enxerga o alvo por inteiro
   const cover = d > 1 && TERRAIN[tileAt(grid, to).terrain].cover ? COMBAT.COVER_PENALTY : 0;
   const raw = ability.accuracy - COMBAT.DIST_PENALTY * Math.max(0, d - 1) + COMBAT.HEIGHT_BONUS * dh - cover;
@@ -51,26 +52,36 @@ function affected(state: BattleState, actor: UnitState, ability: AbilityDef, cen
   const inArea = state.units.filter((u) => u.id !== actor.id && dist(u.pos, center) <= ability.radius);
   if (ability.radius > 0) return inArea; // área atinge todo mundo, aliado inclusive
   const u = unitAt(state, center);
-  const wanted = u && u.id !== actor.id && (isHeal(ability) ? u.team === actor.team : u.team !== actor.team);
+  // quem usa só é alvo de habilidade de apoio cujo alcance começa em 0
+  const self = u?.id === actor.id;
+  const wanted = u && (isHeal(ability) ? u.team === actor.team && (!self || (!!ability.ally && ability.range[0] === 0)) : !self && u.team !== actor.team);
   return wanted ? [u] : [];
 }
 
 // O que a habilidade faria se confirmada, sem mexer no estado: a interface mostra isto antes do Confirmar (pilar "sorte com leitura").
-export function previewAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos): Preview {
+// Quem está carregando leva 50% a mais de ataque físico (BMG 6, estado Charging: PA * 3/2). Nosso dano não sai do PA:
+// o bônus vai no dano inteiro (adaptação).
+const chargingBonus = (state: BattleState, ability: AbilityDef, target: UnitState) =>
+  !ability.magic && state.charges.some((c) => c.unit === target.id) ? 1.5 : 1;
+
+// `charged`: é a carga saindo agora; o custo (MP, estoque) já foi pago quando ela começou
+export function previewAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos, charged = false): Preview {
   const actor = state.units.find((u) => u.id === actorId);
   const ability = ABILITIES[abilityId];
   const center = ability && ability.range[1] === 0 && actor ? actor.pos : target;
   const fail = (reason: PreviewReason): Preview => ({ ok: false, reason, center, targets: [] });
   if (!actor || !ability || !UNIT_DEFS[actor.def].abilities.includes(abilityId) || !inBounds(grid, center)) return fail('unknown');
+  if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
   if (!inAbilityRange(grid, ability, actor.pos, center)) return fail('range');
   if (ability.needsSight && !lineOfSight(grid, actor.pos, center)) return fail('sight');
   const hit = affected(state, actor, ability, center);
   if (!hit.length) return fail('no-target');
+  const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? ability.damage;
   const targets = hit.map((u) => ({
     unit: u.id,
     chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? hitChance(grid, ability, actor.pos, u.pos),
-    dmgMin: ability.damage[0],
-    dmgMax: ability.damage[1],
+    dmgMin: Math.floor(dmgMin * chargingBonus(state, ability, u)),
+    dmgMax: Math.floor(dmgMax * chargingBonus(state, ability, u)),
     healMin: ability.heal[0],
     healMax: ability.heal[1],
   }));
@@ -79,20 +90,24 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
 
 // Aplica a habilidade no estado (muda units e rng) e devolve os eventos para o cliente animar.
 // Ordem dos sorteios, por unidade atingida na ordem da lista: acerto, depois dano. Mudar a ordem muda o hash dos testes.
-export function resolveAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos): BattleEvent[] {
-  const preview = previewAbility(grid, state, actorId, abilityId, target);
+export function resolveAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos, charged = false): BattleEvent[] {
+  const preview = previewAbility(grid, state, actorId, abilityId, target, charged);
   if (!preview.ok) return [];
   const actor = state.units.find((u) => u.id === actorId)!;
   const ability = ABILITIES[abilityId];
   const events: BattleEvent[] = [{ k: 'attack', unit: actorId, ability: abilityId, target: preview.center }];
+  const after = rulesOf(state).after;
+  if (ability.cost && !charged) actor.vars![ability.cost[0]] -= ability.cost[1];
   for (const t of preview.targets) {
     const unit = state.units.find((u) => u.id === t.unit)!;
     if (isHeal(ability)) {
+      if (ability.heal[1] === 0) { after?.(state, actor, ability, unit, events); continue; } // apoio sem cura: só o efeito
       let amount: number;
       [amount, state.rng] = rollInt(state.rng, ability.heal[0], ability.heal[1]);
       const healed = Math.min(amount, UNIT_DEFS[unit.def].hp - unit.hp);
       unit.hp += healed;
       events.push({ k: 'heal', unit: unit.id, amount: healed });
+      after?.(state, actor, ability, unit, events);
       continue;
     }
     let roll: number;
@@ -103,8 +118,10 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
     }
     let dmg: number;
     [dmg, state.rng] = rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ability.damage[0], ability.damage[1]);
+    dmg = Math.floor(dmg * chargingBonus(state, ability, unit));
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
+    after?.(state, actor, ability, unit, events);
     if (ability.push === 0) continue;
     // empurrão com chance sorteia depois do dano; sem `pushChance` não há sorteio (a ordem dos sorteios do jogo não muda)
     if (ability.pushChance !== undefined) {
@@ -122,6 +139,8 @@ function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEv
   unit.hp -= dmg;
   if (unit.hp > 0) return true;
   state.units = state.units.filter((u) => u !== unit);
+  // a carga de quem morre não sai mais; a que seguia quem morreu passa a mirar a casa onde ele estava
+  state.charges = state.charges.filter((c) => c.unit !== unit.id).map((c) => (c.follow === unit.id ? { ...c, follow: null, target: unit.pos } : c));
   events.push({ k: 'die', unit: unit.id });
   return false;
 }
@@ -147,14 +166,15 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
   for (let i = 0; i < steps; i++) {
     const cur = result.to;
     const next = { x: cur.x + dx, y: cur.y + dy };
-    const blocked = !inBounds(grid, next) || !TERRAIN[tileAt(grid, next).terrain].walkable || !!unitAt(state, next)
-      || tileAt(grid, next).h - tileAt(grid, cur).h > MAX_JUMP;
+    // água funda segura o empurrão como uma parede (suposição nossa: o guia não diz o que acontece)
+    const blocked = !inBounds(grid, next) || !canStand(tileAt(grid, next)) || !!unitAt(state, next)
+      || standH(tileAt(grid, next)) - standH(tileAt(grid, cur)) > MAX_JUMP;
     if (blocked) {
       result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });
       result.dmg += COMBAT.BUMP_DAMAGE;
       return result;
     }
-    const levels = tileAt(grid, cur).h - tileAt(grid, next).h;
+    const levels = standH(tileAt(grid, cur)) - standH(tileAt(grid, next));
     result.to = next;
     result.events.push({ k: 'push', unit: unit.id, to: next });
     const dmg = levels <= 0 ? 0 : rulesOf(state).fallDamage?.(levels, unit.def) ?? Math.max(0, levels - COMBAT.FALL_FREE) * COMBAT.FALL_DAMAGE;

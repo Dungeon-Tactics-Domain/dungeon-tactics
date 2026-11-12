@@ -7,6 +7,8 @@ export interface UnitDef {
   speed: number; // CT ganho por tique; mais veloz age antes e mais vezes
   move: number; // casas por turno
   abilities: string[]; // o primeiro é o ataque básico
+  info?: Record<string, string | number>; // ficha extra para a janela de status (arma, Brave, Fé…); só o cenário de estudo tem
+  vars?: Record<string, number>; // contadores com que a unidade nasce (ver UnitState.vars); só o cenário de estudo usa
   model?: string; // modelo em public/models; só o cenário de estudo informa, as unidades do jogo estão no mapa da cena
 }
 

@@ -17,17 +17,20 @@ export type KeyAction =
   | { k: 'pixel' }
   | { k: 'zoom'; factor: number }
   | { k: 'recenter' }
+  | { k: 'face' }
+  | { k: 'status' }
+  | { k: 'fps' }
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
-const SLOTS = 5; // Mover + 4 habilidades: a barra mais longa de hoje
+const SLOTS = 7; // Mover + 6 habilidades: a barra mais longa de hoje (o Ramza do estudo do FFT)
 
 const DIRS: Record<string, ScreenDir> = {
   w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right',
 };
 const SIMPLE: Record<string, KeyAction> = {
   enter: { k: 'confirm' }, ' ': { k: 'confirm' }, escape: { k: 'cancel' }, backspace: { k: 'cancel' },
-  z: { k: 'undo' }, p: { k: 'wait' }, f: { k: 'recenter' }, h: { k: 'help' }, '?': { k: 'help' }, i: { k: 'info' }, v: { k: 'pixel' },
+  z: { k: 'undo' }, t: { k: 'face' }, c: { k: 'status' }, f3: { k: 'fps' }, p: { k: 'wait' }, f: { k: 'recenter' }, h: { k: 'help' }, '?': { k: 'help' }, i: { k: 'info' }, v: { k: 'pixel' },
   // Q afasta e E aproxima: mesma mão do WASD
   q: { k: 'zoom', factor: ZOOM_STEP }, e: { k: 'zoom', factor: 1 / ZOOM_STEP },
 };
@@ -70,17 +73,20 @@ export function cycleUnit(state: BattleState, from: Pos, dir: 1 | -1): Pos {
 
 // Lista da tela de ajuda: [teclas, o que fazem]
 export const keyHelp = (): [string, string][] => [
-  ['W A S D · ← ↑ → ↓', t('mover o cursor de casa em casa (segue a câmera)', 'move the cursor tile by tile (follows the camera)')],
-  [t('Enter · Espaço', 'Enter · Space'), t('confirmar a casa ou o alvo sob o cursor', 'confirm the tile or target under the cursor')],
+  ['W A S D · ← ↑ → ↓', t('no menu, sobe e desce; no mapa, anda o cursor de casa em casa (segue a câmera)', 'in the menu, up and down; on the map, move the cursor tile by tile (follows the camera)')],
+  [t('Enter · Espaço', 'Enter · Space'), t('andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º Enter age; no fim do turno, confirma a direção', 'move to the tile under the cursor; on a target, asks "Execute?" and the 2nd Enter acts; at turn end, confirms the facing')],
   ['Esc · Backspace', t('cancelar a escolha; de novo, volta para Mover', 'cancel the choice; again, back to Move')],
-  ['1 – 5', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
+  ['1 – 7', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
   ['I', t('ficha da habilidade escolhida', 'details of the chosen ability')],
+  ['C', t('Status: ficha da unidade sob o cursor (ou de quem joga)', 'Status: sheet of the unit under the cursor (or the active one)')],
   ['Tab · Shift+Tab', t('pular de unidade em unidade (vida e alcance)', 'jump between units (HP and reach)')],
   ['Z', t('desfazer', 'undo')],
-  ['P', t('passar a vez (sem ter agido, pede P de novo)', 'end turn (without acting, asks for P again)')],
+  ['T', t('virar a unidade da vez (só nos mapas com direção)', 'turn the active unit (only on maps with facing)')],
+  ['P', t('Esperar: termina o turno; quem fez menos joga antes de novo (sem ter agido, pede P de novo)', 'Wait: ends the turn; doing less brings the next turn sooner (without acting, asks for P again)')],
   ['R · Shift+R', t('girar a câmera 90°', 'rotate the camera 90°')],
   ['Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
   ['F', t('ver o mapa inteiro', 'show the whole map')],
   ['V', t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)')],
+  ['F3', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
   ['H · ?', t('esta ajuda e o menu', 'this help and the menu')],
 ];

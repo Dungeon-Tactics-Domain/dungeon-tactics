@@ -6,11 +6,75 @@ Pedido do Fernando (11/11): replicar mapa, classes básicas, cálculo de dano e 
 
 Fontes, fórmulas e o que é suposição: [`docs/game-design/referencia-fft.md`](../game-design/referencia-fft.md).
 
+## Gariland com as peças KayKit (12/11)
+
+Pedido do Fernando (12/11): usar as peças novas do KayKit e deixar Gariland mais perto do original, com o lado a lado. Só desenho: as regras não mudaram (simulador com as mesmas linhas antes e depois, nos 4 cenários).
+
+- **Tipo de piso de cada casa** vem do `surface_type` do próprio arquivo do mapa (MAP022), com as contagens do arquivo: grama 25, piso de pedra 42, canal 38, telhado 23, madeira 7, ponte 5, caixa 5, chaminé 3, árvore 2 (teste em `tests/fft-gariland.test.ts`).
+- **Peças por tipo** (mapeamento do orquestrador, `LOOK` em `src/client/scene.ts`): grama sobre terra; cascalho sobre pedra; água sobre pedra escura; telhado de tijolo; chaminé de pedra escura sobre tijolo; madeira; ponte de tábua com água por baixo; caixa da masmorra sobre pedra; árvore da floresta sobre grama.
+- **Rampas:** os 23 telhados, a ponte e as encostas de grama inclinam pelo `slope_type`/`slope_height` do arquivo; as 2 rampas de canto (Convex) ficam planas. Na regra a casa continua com a altura da borda de baixo.
+- **Cubos de uma casa inteira** em vez de fatias de um nível: a fatia de 0,25 espremia a textura em listras.
+- Peso novo no download: ~600 KB, baixados só quando o mapa tem aparência por casa (hoje só os estudos).
+- Lado a lado (antes, agora no jogo e a montagem de referência): `docs/medicoes/estudo-fft/pecas-kaykit/lado-a-lado-gariland.png`; prints em PC e celular na mesma pasta. Sem print do FFT original: não baixo imagem do jogo.
+- **Achado de leitura:** no celular, as casas azuis de "onde dá para andar" se confundem com a água azul do canal. A cor da marcação de movimento pode precisar mudar nos mapas com água.
+
+## Complementos de 12/11: direção, habilidades, classes e batalhas travadas
+
+Pedido do Fernando em 11/11, depois do commit `302f3f4`, em múltipla escolha: "Direção e ataque pelas costas", "Habilidades que faltam", "Mais classes básicas". Mais a correção das batalhas que não terminavam.
+
+**Simulador antes e depois** (1 000 sementes cada, IA contra IA, medido em 12/11):
+
+| Cenário | Antes | Depois |
+|---|---|---|
+| Colina do Farol | 53,3% · 64,3 turnos · 0 travadas | 53,3% · 64,3 turnos · 0 travadas (igual: o jogo não mudou) |
+| Escaramuça | 62,8% · 43,8 turnos · 0 travadas | 62,8% · 43,8 turnos · 0 travadas (igual) |
+| FFT Gariland | 73,2% · 89,7 turnos (50,1 de herói) · ~14,2 min · 13,3 por golpe · 22 travadas | 80,5% · 76,2 turnos (41,5 de herói) · ~11,8 min · 11,4 por golpe · 4 travadas |
+| FFT classes básicas (novo) | | 78,6% · 40,7 turnos (24,4 de herói) · ~6,8 min · 26,4 por golpe · 0 travadas |
+
+**Por que travava (medido em 12/11, nos últimos 100 turnos de cada uma das 22 batalhas travadas):**
+- Em 21 das 22 sobravam o Químico inimigo e um Escudeiro inimigo, e a cura empatava com o dano: por exemplo, 47 poções (792 de cura) contra 48 golpes (808 de dano) no mesmo trecho.
+- Na outra (semente 268), ninguém agia nem andava havia 100 turnos.
+- Em 14 das 22, um Escudeiro herói estava parado no telhado (4,4), fora da luta.
+- **Correção: 4 poções por Químico** (suposição do estudo; o estoque do original não tem fonte). Medido sozinho: 22 → 4 travadas.
+- Testei também diminuir o peso da altura na IA em mapa de níveis finos (o telhado prendia o Escudeiro): sozinho, 22 → 4; junto com as poções, 2. **Não entrou**: mexe na IA do jogo para ganhar 2 batalhas em 1 000.
+- **As 4 que sobram:** ninguém age nem anda nos últimos 100 turnos; as unidades que restam estão em casas que a outra não alcança atacando (por exemplo, os dois Químicos em (5,3) e (2,3), ou em (3,6) e (3,4), as duas de altura 6 com uma de altura 2 no meio). É limite da nossa IA, que sem alvo prefere ficar no alto; o teto de 400 turnos encerra a batalha.
+
+**O que mudou no estudo:**
+- **Direção:** frente, lado e costas pelo diagrama do BMG 1.4; quem anda vira para onde foi, quem age vira para o alvo, e o jogador escolhe ao fim do turno (botão ↻ ou tecla T). Seta branca no chão mostra a frente de cada unidade. Em Gariland quase não muda o acerto (sem escudo: 95% de frente, 100% de lado e costas).
+- **Habilidades:** Acumular (Escudeiros e Ramza), Desejo e Grito (Ramza). Ficaram de fora Heal e Cheer Up (o motor não tem os estados que elas tiram nem reação que use Brave).
+- **Classes básicas** (`?cenario=fft-classes`): Cavaleiro, Arqueiro, Mago Branco e Mago Negro, um de cada por lado. Fichas e contas na referência.
+- **Dano maior com bônus:** a prévia e a IA agora usam a mesma faixa de dano do sorteio (o PA muda com Acumular e Quebra de força).
+- **IA: curar inimigo conta contra.** A Cura do Mago Branco é em área, e a IA somava a cura de todo mundo na área: medido em 1 000 batalhas, 4 701 curas em inimigos (67 730 de vida) contra 2 062 em aliados. Corrigido em `ai.ts`; depois, 24 curas em inimigos de vida cheia (0 de vida) contra 4 482 em aliados. Nos mapas do jogo a cura só pega aliado, e a Colina do Farol e a escaramuça deram os mesmos números.
+
+**Uso de cada habilidade pela IA** (1 000 batalhas, medido em 12/11):
+
+| Cenário | Usos |
+|---|---|
+| Gariland | Atacar 21 363 · Arremessar pedra 19 390 · Poção 7 279 · Desejo 1 941 · Investida 1 448 |
+| Classes básicas | Carga +2 6 696 · Atacar 6 098 · Cura 3 491 · Fogo 3 063 · Carga +1 31 |
+
+- **A IA nunca usa habilidade sem dano nem cura** (Acumular, Grito, Quebra de velocidade, Quebra de força): ela só conta dano e cura esperados. Essas quatro são do jogador; os números do simulador não as incluem.
+- **Desejo:** a IA o usa como cura e não conta o custo de vida de quem usa.
+- **Carga +2** substitui quase todo ataque do Arqueiro porque aqui resolve na hora; no FFT ela espera 5 tiques e o alvo pode sair da casa.
+
+**Achados dos números das classes (dedução, para conversar):**
+- O Fogo de nível 1 tira 30 em área com 60 de fé: mais que o golpe de espada do Cavaleiro (24) e pega até 5 casas. Só tem 2 usos (17 de MP, 6 por magia).
+- Os heróis vencem 78,6% com as mesmas classes dos dois lados. Hipótese, não medida: o mapa não é simétrico, e as casas de partida dão vantagem a um lado.
+- As vitórias do `fft-classes` dependem de duas simplificações grandes (magia e Carga sem espera, e as quebras fora da IA): servem para comparar ordem de grandeza de dano, não para dizer qual classe é forte.
+
+**Mudou fora do estudo (só o que se vê, sem mudar regra):**
+- Corrigido em 12/11: o botão ↻ de virar aparecia também nos mapas do jogo (o CSS do botão vencia o atributo `hidden`); agora some fora dos estudos (conferido na Colina do Farol).
+- A tela de ajuda do jogo agora lista "1 – 7" e a tecla T ("só nos mapas com direção"). As teclas 6 e 7 não fazem nada quando a barra é menor.
+- `tests/keyboard.test.ts`: a tecla 8 passou a ser a primeira sem ação (antes a 6).
+- Não existe `tests/style.test.ts` neste repositório; a prova de que o jogo não mudou são as linhas iguais do simulador na Colina do Farol e na escaramuça.
+
+**Sem conferir no navegador:** usar cada habilidade nova jogando. Conferido só nos testes do motor. Esperado na tela: Acumular e Grito não escrevem nada no resumo da ação; as quebras mostram "−0" (acertam com 0 de dano e o efeito vem depois).
+
 ## Como jogar e medir
 
-- No navegador: abrir o jogo com `?cenario=fft-gariland`. O save do estudo fica separado do save do jogo.
-- No simulador: `npm run sim -- fft-gariland 1000`.
-- O código do estudo fica em `src/shared/battle/fft/` e sai num pedaço separado do build (4,3 KB, carregado só com o parâmetro). Conferido em 11/11: o pacote principal não contém "Ramza", "Delita" nem "Gariland".
+- No navegador: abrir o jogo com `?cenario=fft-gariland` ou `?cenario=fft-classes`. O save de cada estudo fica separado do save do jogo.
+- No simulador: `npm run sim -- fft-gariland 1000` e `npm run sim -- fft-classes 1000`.
+- O código do estudo fica em `src/shared/battle/fft/` e sai num pedaço separado do build (8,0 KB em 12/11, carregado só com o parâmetro). Conferido em 11/11 e de novo em 12/11: o pacote principal não contém "Ramza", "Delita" nem "Gariland".
 
 ## Lado a lado: unidades
 
@@ -35,7 +99,7 @@ Origem: FFT calculado pelas fórmulas do BMG (nível 1, homem, HP bruto no meio 
 
 Golpes para matar não contam erro nem crítico.
 
-## Lado a lado: a batalha (simulador, IA contra IA, 1 000 sementes, medido em 11/11)
+## Lado a lado: a batalha (simulador, IA contra IA, 1 000 sementes, medido em 11/11, antes dos complementos)
 
 | Medida | FFT Gariland (estudo) | Colina do Farol 20x20 | Escaramuça 8x8 |
 |---|---|---|---|

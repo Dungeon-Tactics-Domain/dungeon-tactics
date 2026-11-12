@@ -53,10 +53,23 @@ Notação do BMG: `[x]` descarta o resto da divisão; `(a..b)` é um inteiro sor
 
 ## Dano mágico (BMG 3.2, 3.4 e 3.5)
 
-Lido por subagente, não reabri; nenhuma unidade do estudo usa magia.
+Reaberto no guia em 12/11 para o cenário `fft-classes`.
 
-- Dano: `[(MA × Faith do conjurador × Faith do alvo × Q) / 10000]`, com Q fixo por magia (Fire, Ice e Bolt 14; Fire 2 18; Fire 3 24; Cure 14).
-- Acerto de magia de status: `[Faith/100 × Faith/100 × (MA + Y)]`, com Y fixo por magia.
+- Dano: `[(MA × Faith do conjurador × Faith do alvo × Q) / 10000]`, com Q fixo por magia (BMG 3.4: Fire, Ice e Bolt 14; Fire 2 18; Fire 3 24; Cure 14, Cure 2 20, Cure 3 30).
+- **Fire** (BMG 3.3): dano com Q 14, alcance 4, área 2 (o alvo e as casas vizinhas), 6 de MP, carga de 4 tiques, pode ser evitada pela evasão mágica. **Cure:** a mesma conta para curar, mesmo alcance, área, MP e carga; não é evitada.
+- Acerto de magia (BMG 1.4): `[base × (100 − escudo mágico) × (100 − acessório mágico) / 10000]`, de qualquer lado. Exemplo do guia: Flare contra escudo mágico de 15% e manto de 30% acerta 59%.
+- Acerto de magia de status: `[Faith/100 × Faith/100 × (MA + Y)]`, com Y fixo por magia (lido por subagente, não reabri).
+- **Ação lenta** (BMG 1.1 e A.1): magia e Carga só resolvem depois de N tiques ("CTR"); quem é alvo pode sair da casa nesse meio-tempo, e quem carrega leva mais dano (`XA × 3/2`, BMG 3.2).
+
+## Carga do Arqueiro (BMG 2.2)
+
+- Charge +K soma K ao PA e ao Speed na conta da arma. Arco longo: `[((PA + K) + (Speed + K)) / 2] × WP`.
+- Tiques de carga: +1 em 4, +2 em 5, +3 em 6, +4 em 8, +5 em 10, +7 em 14, +10 em 20, +20 em 35. A carga mira a casa, não a unidade.
+
+## Battle Skill do Cavaleiro (BMG 3.6)
+
+- Quebra de atributo: acerto `(PA + 50)%` antes da evasão física (frente, lado, costas). Speed Break tira 2 de Speed; Power Break, 3 de PA; Mind Break, 3 de MA; Magic Break, metade do MP.
+- Quebra de equipamento: acerto `(PA + WP + K)%`, com K 45 (elmo), 40 (armadura), 55 (escudo) e 30 (arma). Se o alvo não tem a peça, vira um ATTACK.
 
 ## Acerto e evasão (BMG 1.4)
 
@@ -69,8 +82,10 @@ Acerto base do ataque físico: 100%. A posição do atacante decide quais evasõ
 | Pelas costas | `[base × (100 − acessório) / 100]` |
 
 - A evasão da arma só conta com a reação Weapon Guard.
-- Frente, lado ou costas sai da maior distância entre atacante e alvo; no empate, frente vence lado e lado vence costas (lido por subagente, não reabri).
-- Escudeiro e Químico: evasão de classe 5%. Ramza: 10%. Sem escudo nem acessório no começo, o acerto é 95% de frente e 100% de lado ou pelas costas.
+- Frente, lado ou costas: vale a maior entre a distância à frente, de lado e atrás do alvo; no empate, frente vence lado e lado vence costas; a altura das casas não conta. Reaberto em 12/11 e fixado no teste com o diagrama 5x5 do guia (`tests/fft-complementos.test.ts`).
+- Escudeiro e Químico: evasão de classe 5%. Ramza: 10%. Sem escudo nem acessório no começo, o acerto é 95% de frente e 100% de lado ou pelas costas: **em Gariland a direção quase não muda o acerto**; ela pesa com escudo (o Cavaleiro: 81% de frente, 90% de lado, 100% pelas costas, contas deste estudo).
+- Exemplo do guia: de lado, escudo de 40% e manto de 40% deixam 36% de acerto.
+- **Para onde a unidade vira ao andar e ao atacar, e como a IA escolhe a direção ao fim do turno: não confirmado** (o guia não trata).
 
 ## Altura e movimento (BMG 6.5, 6.9 e 7.4)
 
@@ -108,8 +123,12 @@ Lido por subagente, não reabri; o estudo não usa.
 | Escudeiro genérico | 4 | 3 | 5% | 100 | 75 | 100 | 90 | 80 |
 | Químico | 3 | 3 | 5% | 80 | 75 | 100 | 75 | 80 |
 | Escudeiro do Ramza (capítulo 1) | 4 | 3 | 10% | 125 | 105 | 107 | 111 | 102 |
+| Cavaleiro | 3 | 3 | 10% | 120 | 80 | 100 | 120 | 80 |
+| Arqueiro | 3 | 3 | 10% | 100 | 65 | 100 | 110 | 80 |
+| Mago Branco (Priest) | 3 | 3 | 5% | 80 | 120 | 110 | 90 | 110 |
+| Mago Negro (Wizard) | 3 | 3 | 5% | 75 | 120 | 100 | 60 | 150 |
 
-As cinco últimas colunas são os multiplicadores da classe. Equipamento: o Escudeiro usa faca, espada, machado e mangual; o Químico, faca e arma de fogo; os dois usam chapéu, roupa e acessório, sem escudo.
+As cinco últimas colunas são os multiplicadores da classe. Equipamento: o Escudeiro usa faca, espada, machado e mangual; o Químico, faca e arma de fogo; os dois usam chapéu, roupa e acessório, sem escudo. O Cavaleiro usa espada, escudo, elmo e armadura; o Arqueiro, besta, arco e escudo; o Mago Branco, cajado; o Mago Negro, vara.
 
 ### Nível 1 calculado (homem, HP bruto no meio da faixa)
 
@@ -120,6 +139,12 @@ Cálculo deste estudo com a fórmula acima; o guia só mostra o da Escudeira.
 | Escudeiro | 43 | 4 | 6 | Broad Sword (WP 4) | 16 |
 | Químico | 37 | 3 | 6 | Dagger (WP 3) | 12 |
 | Ramza | 51 | 5 | 6 | Broad Sword (WP 4) | 20 |
+| Cavaleiro | 57 (37 + elmo e armadura de couro, 10 cada) | 6 | 6 | Broad Sword (WP 4) e Escutcheon | 24 |
+| Arqueiro | 43 | 5 | 6 | Long Bow (WP 4), alcance 3 a 5 | 20; Carga +1 24, +2 28 |
+| Mago Branco | 37 | 4 | 6 | Oak Staff (WP 3), MA 4 | 12; Cura 20 (Faith 60) |
+| Mago Negro | 36 | 3 | 6 | Rod (WP 3), MA 6 | 9; Fogo 30 (Faith 60) |
+
+Nas quatro classes novas, o equipamento (a arma e a armadura mais baratas que cada uma usa) e a Faith 60 são **suposição do estudo**. MP no nível 1: 17 nos dois magos (dá 2 magias de 6).
 
 ## Armas do começo (BMG B.1 e B.2)
 
@@ -130,6 +155,10 @@ Cálculo deste estudo com a fórmula acima; o guia só mostra o da Escudeira.
 | Broad Sword | 4 | 5 | 200 |
 | Long Sword | 5 | 10 | 500 |
 | Escutcheon (escudo) | evasão 10 | mágica 3 | 400 |
+| Long Bow | 4 | 0 | 800 |
+| Oak Staff | 3 | 15 | 120 |
+| Rod | 3 | 20 | 200 |
+| Leather Helmet, Leather Armor | HP +10 cada | | 200 cada |
 
 Outra fonte (FAQ do Overated, lida por subagente) dá 5% de evasão para a Dagger; fica como divergência.
 
@@ -142,7 +171,16 @@ Outra fonte (FAQ do Overated, lida por subagente) dá 5% de evasão para a Dagge
 | Throw Stone | 4 casas | Dano `PA × (1..2)`, empurra em ~50%, pode ser evitada | 90 JP |
 | Heal | 1 casa, 2 de altura | Cura Darkness, Silence e Poison | 150 JP |
 
-As do Ramza (Yell: Speed +1 a 3 casas; Wish; Cheer Up; Scream) foram lidas por subagente, não reabri. **Quais habilidades cada unidade já tem aprendidas na 1ª batalha: não confirmado.**
+As do Ramza (Guts, BMG 3.3, reabertas em 12/11):
+
+| Habilidade | Alcance | Efeito | Custo |
+|---|---|---|---|
+| Yell | 3 casas | Speed +1 no alvo, sempre acerta | 200 JP |
+| Cheer Up | 3 casas | Brave +5 no alvo | 200 JP |
+| Wish | 1 casa, 3 de altura | Cura `RU{HP máximo de quem usa × 2/5}` no alvo e tira `RU{HP máximo × 1/5}` de quem usa | 0 JP |
+| Scream | | Brave +10, PA +1, MA +1, Speed +1 | 500 JP |
+
+**Quais habilidades cada unidade já tem aprendidas na 1ª batalha: não confirmado.** **O que o Wish faz quando o custo passa da vida de quem usa: não confirmado.**
 
 ## Itens do Químico (BMG 2.5)
 
@@ -195,34 +233,42 @@ As do Ramza (Yell: Speed +1 a 3 casas; Wish; Cheer Up; Scream) foram lidas por s
 ```
 
 - Não pisáveis: só duas casas, as árvores em (2,0) e (8,3).
-- Água (profundidade 1) nas casas de altura 0 do canal; o arquivo as marca como pisáveis. Se a água muda movimento ou ação: **não confirmado**.
+- Água (profundidade 1) nas casas de altura 0 do canal; o arquivo as marca como pisáveis. A regra de movimento vem do BMG 6.5 (ver a linha Água em "Fidelidade do cenário de estudo").
 - Casas de partida no arquivo, 4 por lado: (7,1), (8,1), (5,1), (3,1) de um lado e (8,12), (7,12), (4,12), (3,12) do outro. O arquivo chama os lados de "Player 1" e "Player 2" e não diz quem ocupa cada casa; **se são as casas da batalha da história: não confirmado.**
 
 ## Fidelidade do cenário de estudo
 
-O que o cenário `fft-gariland` reproduz e o que ele simplifica.
+O que os cenários `fft-gariland` e `fft-classes` reproduzem e o que simplificam (atualizado em 12/11).
 
 | Item | No estudo | Fidelidade |
 |---|---|---|
 | Alturas e casas não pisáveis | Iguais ao arquivo | Alta |
-| Rampas | Viram degraus | Média |
-| Água | Casa comum de altura 0 | Baixa |
-| Telhados, pontes, chaminés | Desenhados como grama e terra (os nossos blocos) | Só o relevo |
+| Rampas | Na regra viram degraus (vale a borda de baixo); no desenho, desde 12/11, o topo inclina pelo slope_type e slope_height do arquivo (as 2 rampas de canto ficam planas) | Média |
+| Água | Desde 12/11, água corrente rasa (`depth: 1`) pela regra do BMG 6.5: andar custa 2, quem está nela fica 1 nível mais baixo; água de 2 ou mais bloqueia (não há no mapa). Empurrão para na água funda: suposição nossa. Relatório em `docs/medicoes/agua-2026-11-12.md` | Média: a regra é a do guia, o empurrão não tem fonte |
+| Telhados, pontes, chaminés, caixas, piso de pedra e de madeira | Desde 12/11, peça KayKit por casa pelo surface_type do arquivo (contagens iguais às do arquivo, fixadas em teste) | Média: o tipo de cada casa é fiel, as peças são as nossas |
 | Altura de um nível no desenho | 0,25 de casa, escolha visual | Sem fonte |
 | Stats, vida, dano, Move, Jump, CT | Pelas fórmulas e tabelas do BMG | Alta |
-| Acerto | Sempre "de frente" (o motor não tem direção): 95% contra Escudeiro e Químico, 90% contra Ramza | Média |
+| Acerto | Frente, lado e costas pelo diagrama do BMG, com evasão de classe e de escudo | Alta |
+| Direção | Nasce olhando para o outro lado; vira ao andar (para onde foi) e ao agir (para o alvo); o jogador escolhe ao fim do turno (botão ↻ ou tecla T); a IA termina olhando para o inimigo mais próximo | Regra de virar sem fonte |
 | Crítico | 5%, dano pela fórmula; sem o empurrão do crítico | Média |
 | Empurrão de Dash e Throw Stone | 50%, 1 casa | Alta |
 | Queda | Fórmula do BMG | Alta |
 | Batida ao ser empurrado contra obstáculo | 3 de dano, regra do nosso motor | Sem fonte no FFT |
 | Unidade caída | Sai da batalha (no FFT fica caída e pode ser revivida) | Baixa |
-| Phoenix Down, Accumulate, Heal, estados | Fora | Não reproduzido |
-| Poções | Sem limite | Suposição |
+| Accumulate, Yell, Wish | Pelas fórmulas do BMG; bônus de PA e Speed duram a batalha | Alta |
+| Wish com pouca vida | Quem usa fica com 1 de vida | Suposição |
+| Phoenix Down, Heal, Cheer Up, Scream, estados | Fora | Não reproduzido |
+| Poções | 4 por Químico | Suposição |
+| Magia e Carga | Desde 12/11, ação com carga de verdade: Fogo e Cura 4 tiques, Carga +1 e +2 4 e 5 (BMG 3.3, 2.2 e A.2); quem carrega fica sem evasão e leva +50% (BMG 6). Fogo e Cura seguem a unidade (não confirmado); a Carga mira a casa | Alta |
+| Quebras do Cavaleiro | Só Speed Break e Power Break (as de equipamento pedem equipamento no motor) | Média |
+| Arco longo | Alcance 3 a 5, sem o ganho por altura do BMG 6.9 | Média |
+| Faith e Brave | 60 para todos | Suposição |
 | Linha de visão de pedra e poção | Não exigida | Suposição |
 | Alcance vertical do corpo a corpo | Sem limite | Não reproduzido |
 | Elenco do jogador | Ramza, Delita, 2 Escudeiros e 1 Químico, todos controlados por quem joga | Suposição |
 | Ficha do Delita | Escudeiro genérico | Suposição |
 | Inimigos | Nível 1, homens, Escudeiros com Broad Sword e Químico com Dagger | Suposição |
-| Habilidades | Todo Escudeiro tem Throw Stone e Dash; Químico tem Potion | Suposição |
+| Habilidades | Todo Escudeiro tem Throw Stone, Dash e Accumulate; o Ramza também Wish e Yell; Químico tem Potion | Suposição |
+| `fft-classes` | Uma unidade de cada classe por lado, no mapa de Gariland e nas casas de partida do arquivo | Bancada, não é batalha do FFT |
 | Casas de partida | As 4 do arquivo por lado; a 5ª de cada lado foi escolhida por perto | Suposição |
 | Derrota | Todos os heróis caídos | Suposição |

@@ -1,21 +1,32 @@
-// HUD da batalha no DOM: fila de turnos no topo; embaixo o cartão do que está acontecendo, a barra de habilidades
-// (Mover + até 5) e os botões Desfazer, girar câmera e Confirmar/Passar a vez. Redesenha tudo a cada mudança (é pouco DOM).
+// HUD da batalha no jeito da tela de batalha do FFT (pedido do Fernando, 12/11: "descarte as interfaces atuais e recrie
+// a interface do mesmo jeito da do final fantasy tactics original"). Só a disposição e o fluxo vêm de lá; molduras,
+// cores e retratos são nossos (CSS e bonecos KayKit). Peças, de cima para baixo:
+//   canto de cima à esquerda: a casa sob o cursor (altura e piso) e, embaixo, a lista dos próximos turnos (AT);
+//   alto, no meio: a linha de ajuda do que fazer agora e, abaixo, a faixa com o nome da habilidade;
+//   direita: o menu de comandos (Mover · Agir · Esperar · Status), o submenu das habilidades e o "Executar?";
+//   embaixo à esquerda: a unidade da vez (retrato, vida, MP e CT em barras); embaixo à direita: a unidade sob o cursor.
+// Redesenha tudo a cada mudança (é pouco DOM).
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
-import { previewOrder } from '../shared/battle/turn-queue.ts';
+import { TERRAIN, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { MAX_JUMP } from '../shared/battle/pathing.ts';
+import { rulesOf } from '../shared/battle/rules.ts';
+import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
-import type { BattleEvent, BattleState, UnitState } from '../shared/battle/types.ts';
+import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { COMMANDS, abilitiesOf, abilityEnabled, commandEnabled, type Command, type Screen } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { ABILITY_ICON, UI_ICON, el, icon, iconButton } from './icons.ts';
-import { selectMode, type Highlights, type Mode, type Ui } from './interaction.ts';
+import { UI_ICON, el, icon, iconButton } from './icons.ts';
+import type { Highlights } from './interaction.ts';
+import { modelOf } from './markers.ts';
 
 export interface HudActions {
-  mode(m: Mode): void;
-  confirm(): void;
-  endTurn(): void;
-  undo(): void;
+  command(index: number): void; // clique num item do menu de comandos
+  ability(index: number): void; // clique numa habilidade do submenu
+  answer(yes: boolean): void; // "Executar?" Sim ou Não
+  cancel(): void;
   rotate(dir: 1 | -1): void;
   recenter(): void;
   pixel(): void;
@@ -23,24 +34,21 @@ export interface HudActions {
 }
 export interface HudView {
   battle: Battle;
-  ui: Ui;
+  screen: Screen;
   hl: Highlights | null;
   busy: boolean; // animação ou vez do inimigo: nada responde
   log: string; // resumo da última ação (eventLog)
   acting: string | null; // def do inimigo que está jogando agora (o estado já passou a vez quando a animação toca)
+  cursor: Pos; // casa sob o cursor (teclado, mouse ou controle)
 }
 
 const QUEUE_SIZE = 8;
-// PC com mouse: mostra a tecla de cada botão (no celular a dica só ocupava espaço)
 const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
-const HOLD_MS = 450; // segurar o ícone mostra os detalhes (spec); menos que isso é toque
-
-const sameMode = (a: Mode, b: Mode) => a.k === b.k && (a.k !== 'ability' || (b.k === 'ability' && a.id === b.id));
 const hpText = (u: UnitState) => `${u.hp}/${UNIT_DEFS[u.def].hp}`;
 const range = (r: [number, number]) => (r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`);
 
-// ficha de uma habilidade, para o toque longo
+// ficha de uma habilidade (submenu e janela de status)
 export function abilityDetail(id: string): string {
   const a = ABILITIES[id];
   const parts = [a.range[1] === 0 ? t('em volta de você', 'around you') : t(`alcance ${range(a.range)}`, `range ${range(a.range)}`)];
@@ -50,7 +58,9 @@ export function abilityDetail(id: string): string {
   if (a.push) parts.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
   if (a.needsSight) parts.push(t('precisa de visão', 'needs sight'));
   if (a.heightRange) parts.push(t('+1 de alcance por nível acima', '+1 range per level above'));
-  if (a.delay) parts.push(t(`atrasa seu próximo turno (+${a.delay})`, `delays your next turn (+${a.delay})`));
+  if (a.cost) parts.push(t(`gasta ${a.cost[1]} de ${a.cost[0] === 'mp' ? 'MP' : 'estoque'}`, `costs ${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : 'stock'}`));
+  if (a.charge) parts.push(a.panel ? t(`carrega ${a.charge} tiques; mira a casa e erra se o alvo sair dela`, `charges ${a.charge} ticks; aims at the tile and misses if the target leaves`)
+    : t(`carrega ${a.charge} tiques e segue o alvo`, `charges ${a.charge} ticks and follows the target`));
   return parts.join(' · ');
 }
 
@@ -58,18 +68,85 @@ export function abilityDetail(id: string): string {
 // Quem morreu já saiu do estado; o nome vem do cenário.
 export function eventLog(events: BattleEvent[], state: BattleState): string {
   const name = (id: string) => unitName((state.units.find((u) => u.id === id) ?? SCENARIOS[state.scenario].spawns.find((s) => s.id === id))!.def);
+  // uma frase por ação: cargas que saem no mesmo intervalo trazem várias ações numa lista só
+  const out: string[] = [];
   let head = '';
-  const parts: string[] = [];
+  let parts: string[] = [];
+  // ação sem resultado em alvo (Acumular, Grito): só quem usou o quê
+  const flush = () => {
+    if (parts.length) out.push(head + parts.join(' · '));
+    else if (head) out.push(head.slice(0, -3));
+    head = '';
+    parts = [];
+  };
   for (const e of events) {
-    if (e.k === 'attack') head = `${name(e.unit)}: ${abilityName(e.ability)} → `;
-    else if (e.k === 'hit') parts.push(`${name(e.unit)} −${e.dmg}`);
+    if (e.k === 'attack') {
+      flush();
+      head = `${name(e.unit)}: ${abilityName(e.ability)} → `;
+    } else if (e.k === 'charge') {
+      flush();
+      out.push(t(`${name(e.unit)} carrega ${abilityName(e.ability)}`, `${name(e.unit)} charges ${abilityName(e.ability)}`));
+    } else if (e.k === 'fizzle') {
+      flush();
+      out.push(t(`${name(e.unit)}: ${abilityName(e.ability)} não achou o alvo`, `${name(e.unit)}: ${abilityName(e.ability)} found no target`));
+    } else if (e.k === 'hit') parts.push(`${name(e.unit)} −${e.dmg}`);
     else if (e.k === 'miss') parts.push(t(`${name(e.unit)} errou (${e.chance}%)`, `missed ${name(e.unit)} (${e.chance}%)`));
     else if (e.k === 'heal') parts.push(`${name(e.unit)} +${e.amount}`);
     else if (e.k === 'bump') parts.push(t(`${name(e.unit)} bateu −${e.dmg}`, `${name(e.unit)} crashed −${e.dmg}`));
     else if (e.k === 'fall') parts.push(t(`${name(e.unit)} caiu de altura −${e.dmg}`, `${name(e.unit)} fell −${e.dmg}`));
     else if (e.k === 'die') parts.push(t(`${name(e.unit)} caiu`, `${name(e.unit)} is down`));
   }
-  return parts.length ? head + parts.join(' · ') : '';
+  flush();
+  return out.join(' | ');
+}
+
+// Ficha da janela de status (como a do FFT): o que a unidade é agora. Linhas [rótulo, valor]; puro para o teste.
+const INFO_LABEL: Record<string, () => string> = {
+  pa: () => t('Força (PA)', 'Physical attack (PA)'), ma: () => t('Magia (MA)', 'Magic attack (MA)'), brave: () => 'Brave',
+  faith: () => t('Fé', 'Faith'), weapon: () => t('Arma', 'Weapon'), shield: () => t('Escudo', 'Shield'),
+};
+export function unitStatus(state: BattleState, unitId: string): [string, string][] {
+  const u = state.units.find((x) => x.id === unitId)!;
+  const def = UNIT_DEFS[u.def];
+  const bonus = (k: string) => (u.vars?.[k] ? ` (${u.vars[k] > 0 ? '+' : ''}${u.vars[k]})` : '');
+  const rows: [string, string][] = [
+    [t('Lado', 'Side'), u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy')],
+    [t('Vida', 'HP'), hpText(u)],
+  ];
+  if (u.vars?.mp !== undefined) rows.push(['MP', String(u.vars.mp)]);
+  if (u.vars?.potions !== undefined) rows.push([t('Poções', 'Potions'), String(u.vars.potions)]);
+  rows.push(
+    ['CT', `${Math.max(0, u.ct)}/${TURN_THRESHOLD}`],
+    [t('Velocidade', 'Speed'), `${rulesOf(state).speed?.(u) ?? def.speed}${bonus('sp')}`],
+    [t('Movimento', 'Move'), String(def.move)],
+    [t('Salto', 'Jump'), String(rulesOf(state).jump?.(u.def) ?? MAX_JUMP)],
+  );
+  for (const [k, v] of Object.entries(def.info ?? {})) rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);
+  const c = state.charges.find((x) => x.unit === u.id);
+  if (c) rows.push([t('Carregando', 'Charging'), t(`${abilityName(c.ability)}, sai em ${c.ticks} tiques`, `${abilityName(c.ability)}, goes off in ${c.ticks} ticks`)]);
+  // pontos cardeais do mapa (convenção nossa: a linha 0 da grade é o norte)
+  if (u.facing !== undefined) rows.push([t('Olhando para', 'Facing'), [t('sul', 'south'), t('leste', 'east'), t('norte', 'north'), t('oeste', 'west')][u.facing]]);
+  rows.push([t('Habilidades', 'Abilities'), def.abilities.map(abilityName).join(', ') || '—']);
+  return rows;
+}
+
+// Informação da casa sob o cursor (canto do FFT): posição, altura e o tipo de piso
+const LOOK_NAME: Record<string, () => string> = {
+  grass: () => t('grama', 'grass'), stone: () => t('pedra', 'stone'), water: () => t('água', 'water'), roof: () => t('telhado', 'roof'),
+  chimney: () => t('chaminé', 'chimney'), wood: () => t('madeira', 'wood'), bridge: () => t('ponte', 'bridge'), box: () => t('caixa', 'crate'), tree: () => t('árvore', 'tree'),
+  // Colina do Farol e Cripta Alagada (12/11)
+  rock: () => t('rocha', 'rock'), summit: () => t('topo de rocha', 'rock top'), sand: () => t('areia', 'sand'), gold: () => t('veio de ouro', 'gold vein'),
+  brick: () => t('muro de tijolo', 'brick wall'), snow: () => t('neve', 'snow'), snow_rock: () => t('rocha com neve', 'snowy rock'),
+  tree2: () => t('árvore', 'tree'), tree3: () => t('árvore', 'tree'), tree4: () => t('árvore', 'tree'), bare1: () => t('árvore seca', 'bare tree'), bare2: () => t('árvore seca', 'bare tree'),
+  crypt: () => t('piso de pedra', 'stone floor'), altar: () => t('altar', 'altar'), pillar: () => t('coluna', 'pillar'), crates: () => t('caixotes', 'crates'),
+  barrel: () => t('barril', 'barrel'), chest: () => t('baú', 'chest'), rubble: () => t('entulho', 'rubble'),
+};
+const TERRAIN_NAME: Record<string, () => string> = { floor: () => t('chão', 'ground'), forest: () => t('floresta (cobertura)', 'forest (cover)'), wall: () => t('muro', 'wall') };
+export function tileInfo(grid: Grid, p: Pos): string {
+  const tile = tileAt(grid, p);
+  const kind = tile.look ? LOOK_NAME[tile.look]?.() ?? tile.look : TERRAIN_NAME[tile.terrain]();
+  const blocked = TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable');
+  return t(`Casa ${p.x},${p.y} · altura ${tile.h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`, `Tile ${p.x},${p.y} · height ${tile.h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`);
 }
 
 const REASON: Record<string, () => string> = {
@@ -77,180 +154,175 @@ const REASON: Record<string, () => string> = {
   sight: () => t('Sem linha de visão', 'No line of sight'),
   'no-target': () => t('Nenhum alvo nesta casa', 'No target on this tile'),
   unknown: () => t('Não dá para usar aqui', 'Cannot use here'),
+  spent: () => t('Acabou o estoque ou o MP', 'Out of stock or MP'),
+};
+const COMMAND_NAME: Record<Command, () => string> = {
+  move: () => t('Mover', 'Move'), act: () => t('Agir', 'Act'), wait: () => t('Esperar', 'Wait'), status: () => 'Status',
 };
 
+// barra com rótulo e número (vida, MP, CT), como as do painel de unidade do FFT
+function gauge(cls: string, label: string, value: number, max: number) {
+  const k = Math.max(0, Math.min(1, value / max));
+  return el('div', { class: `gauge ${cls}` }, el('span', { class: 'gauge-label' }, label),
+    el('span', { class: 'gauge-bar' }, el('i', { style: `width:${Math.round(k * 100)}%` })), el('span', { class: 'gauge-num' }, `${Math.max(0, value)}/${max}`));
+}
+
+// retrato do boneco KayKit renderizado (public/chars, scripts/portraits.mjs); o Farol não tem boneco: um cristal em CSS
+function portrait(def: string) {
+  const model = modelOf(def);
+  return model ? el('img', { class: 'portrait', src: `/chars/${model}.webp`, alt: '' }) : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
+}
+
+// painel de unidade (o da vez embaixo à esquerda, o do alvo embaixo à direita)
+function unitPanel(state: BattleState, u: UnitState, extra: HTMLElement[] = []) {
+  const def = UNIT_DEFS[u.def];
+  const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp)];
+  if (u.vars?.mp !== undefined) rows.push(gauge('mp', 'MP', u.vars.mp, def.vars?.mp ?? u.vars.mp));
+  if (def.speed > 0) rows.push(gauge('ct', 'CT', Math.min(u.ct, TURN_THRESHOLD), TURN_THRESHOLD));
+  const charge = state.charges.find((c) => c.unit === u.id);
+  return el('div', { class: `panel unit-panel ${u.team}` }, portrait(u.def),
+    el('div', { class: 'unit-body' },
+      el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy'))),
+      ...rows,
+      charge ? el('p', { class: 'unit-note' }, t(`Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`, `Charging ${abilityName(charge.ability)} (${charge.ticks} ticks)`)) : null,
+      ...extra));
+}
+
 export class BattleHud {
-  private readonly queue = el('ol', { class: 'queue', 'aria-label': t('Ordem dos turnos', 'Turn order') });
-  private readonly card = el('div', { class: 'card', 'aria-live': 'polite' });
-  private readonly bar = el('div', { class: 'bar', role: 'toolbar', 'aria-label': t('Ações do herói', 'Hero actions') });
-  private readonly actions = el('div', { class: 'actions' });
+  private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
+  private readonly queue = el('ol', { class: 'panel queue', 'aria-label': t('Ordem dos turnos', 'Turn order') });
+  private readonly help = el('div', { class: 'panel help', 'aria-live': 'polite' });
+  private readonly bannerEl = el('div', { class: 'panel banner', role: 'status', hidden: true });
+  private readonly commands = el('div', { class: 'panel commands', role: 'menu' });
+  private readonly abilities = el('div', { class: 'panel abilities', role: 'menu' });
+  private readonly confirmBox = el('div', { class: 'panel confirm', role: 'dialog' });
+  private readonly active = el('div', { class: 'active-slot' });
+  private readonly target = el('div', { class: 'target-slot' });
   private readonly root: HTMLElement;
-  private detail: string | null = null; // habilidade com a ficha aberta pelo toque longo
-  private held = false;
-  private view: HudView | null = null;
-  private waitArmed = false; // primeiro toque em Passar a vez sem ter feito nada só pergunta
 
   constructor(host: HTMLElement, private readonly act: HudActions) {
     this.root = el('div', { class: `hud${KEYS ? ' kbd' : ''}` },
-      el('header', { class: 'top' }, this.queue, iconButton([icon(UI_ICON.menu), hint('H')], t('Menu e ajuda (H)', 'Menu and help (H)'), () => act.menu(), { class: 'icon menu-btn' })),
-      el('section', { class: 'bottom' },
-        el('div', { class: 'cam' },
-          iconButton(['⟲', hint('⇧R')], t('Girar câmera para a esquerda (Shift+R)', 'Rotate camera left (Shift+R)'), () => act.rotate(-1)),
-          iconButton(['⟳', hint('R')], t('Girar câmera para a direita (R)', 'Rotate camera right (R)'), () => act.rotate(1)),
-          iconButton([icon(UI_ICON.recenter), hint('F')], t('Ver o mapa inteiro (F)', 'Show the whole map (F)'), () => act.recenter()),
-          iconButton([icon(UI_ICON.pixel), hint('V')], t('Trocar o tamanho do pixel art (V)', 'Change the pixel art size (V)'), () => act.pixel())),
-        this.card, this.bar, this.actions));
+      this.tile, this.queue, this.help, this.bannerEl,
+      el('div', { class: 'tools' },
+        iconButton(['⟲', hint('⇧R')], t('Girar câmera para a esquerda (Shift+R)', 'Rotate camera left (Shift+R)'), () => act.rotate(-1)),
+        iconButton(['⟳', hint('R')], t('Girar câmera para a direita (R)', 'Rotate camera right (R)'), () => act.rotate(1)),
+        iconButton([icon(UI_ICON.recenter), hint('F')], t('Ver o mapa inteiro (F)', 'Show the whole map (F)'), () => act.recenter()),
+        iconButton([icon(UI_ICON.pixel), hint('V')], t('Trocar o tamanho do pixel art (V)', 'Change the pixel art size (V)'), () => act.pixel()),
+        iconButton([icon(UI_ICON.menu), hint('H')], t('Menu e ajuda (H)', 'Menu and help (H)'), () => act.menu())),
+      this.commands, this.abilities, this.confirmBox, this.active, this.target);
     host.append(this.root);
   }
 
   render(v: HudView) {
-    this.view = v;
-    this.waitArmed = false; // qualquer outra ação desarma o "Passar sem agir?"
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
-    const lock = v.busy || !heroTurn;
+    const open = heroTurn && !v.busy;
+    this.tile.textContent = b.over ? '' : tileInfo(b.grid, v.cursor);
     this.renderQueue(b);
-    this.renderCard(v, heroTurn);
-    this.renderBar(v, lock);
-    this.renderActions(v, lock);
+    this.help.textContent = this.helpText(v, heroTurn);
+    this.renderCommands(v, open);
+    this.renderAbilities(v, open);
+    this.renderConfirm(v, open);
+    // unidade da vez: o inimigo que está jogando (o estado já pode ter passado a vez durante a animação)
+    const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
+    const me = b.over ? undefined : actingUnit ?? b.actor;
+    this.active.replaceChildren(...(me ? [unitPanel(b.state, me)] : []));
+    // unidade sob o cursor (ou o alvo do "Executar?")
+    const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
+    const other = b.state.units.find((u) => u.pos.x === at.x && u.pos.y === at.y && u.id !== me?.id);
+    this.target.replaceChildren(...(other ? [unitPanel(b.state, other)] : []));
+  }
+
+  // linha do alto: o que fazer agora (como a ajuda do FFT), e o resumo da última ação
+  private helpText(v: HudView, heroTurn: boolean): string {
+    const b = v.battle;
+    if (b.over) return b.state.outcome === 'victory' ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat');
+    if (v.busy || !heroTurn) return v.log || (v.acting ? t(`Vez do inimigo: ${unitName(v.acting)}`, `Enemy turn: ${unitName(v.acting)}`) : '');
+    const s = v.screen;
+    const say = (pt: string, en: string) => (v.log ? `${v.log} — ` : '') + t(pt, en);
+    if (s.k === 'menu') return say(`${unitName(b.actor.def)}: escolha um comando.`, `${unitName(b.actor.def)}: pick a command.`);
+    if (s.k === 'abilities') {
+      const id = abilitiesOf(b)[s.index];
+      return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
+    }
+    if (s.k === 'map' && s.command === 'move') return t('Mover: escolha uma casa clara.', 'Move: pick a highlighted tile.');
+    if (s.k === 'map') {
+      const p = v.hl?.preview;
+      return p && !p.ok ? REASON[p.reason ?? 'unknown']() : t('Escolha o alvo na área laranja (roxo = sem visão).', 'Pick the target in the orange area (purple = no sight).');
+    }
+    if (s.k === 'confirm') return t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`);
+    return t('Para onde olhar? Setas escolhem; confirmar passa a vez.', 'Which way to face? Arrows choose; confirm ends the turn.');
   }
 
   private renderQueue(b: Battle) {
     const order = b.over ? [] : previewOrder(b.state, QUEUE_SIZE);
-    this.queue.replaceChildren(...order.map((id, i) => {
-      const u = b.state.units.find((x) => x.id === id)!;
-      const k = u.hp / UNIT_DEFS[u.def].hp;
-      const who = `${unitName(u.def)} (${u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy')}), ${t('vida', 'HP')} ${hpText(u)}`;
-      return el('li', { class: `chip ${u.team}${i === 0 ? ' now' : ''}`, title: who, 'aria-label': i === 0 ? t(`Agora: ${who}`, `Now: ${who}`) : who },
-        el('span', { class: 'chip-name', 'aria-hidden': 'true' }, unitName(u.def).slice(0, 2)),
-        el('span', { class: 'chip-hp', 'aria-hidden': 'true' }, el('i', { style: `width:${Math.round(k * 100)}%` })));
+    this.queue.replaceChildren(el('li', { class: 'queue-title', 'aria-hidden': 'true' }, t('Turnos', 'Turns')), ...order.map(({ unit, charge }, i) => {
+      const u = b.state.units.find((x) => x.id === unit)!;
+      const label = charge ? `${unitName(u.def)}: ${abilityName(charge)}` : unitName(u.def);
+      return el('li', { class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}` }, portrait(u.def), el('span', {}, label));
     }));
   }
 
-  private previewLines(p: Preview, b: Battle): string[] {
-    if (!p.ok) return [REASON[p.reason ?? 'unknown']()];
-    return p.targets.map((tg) => {
+  private renderCommands(v: HudView, open: boolean) {
+    const s = v.screen;
+    this.commands.hidden = !open || !(s.k === 'menu' || s.k === 'abilities');
+    if (this.commands.hidden) return;
+    const b = v.battle;
+    const current = s.k === 'menu' ? s.index : 1;
+    this.commands.replaceChildren(...COMMANDS.map((c, i) => el('button', {
+      type: 'button', class: `item${i === current ? ' focus' : ''}`, role: 'menuitem', disabled: !commandEnabled(b, c),
+      onclick: () => this.act.command(i),
+    }, COMMAND_NAME[c](), c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null)));
+  }
+
+  private renderAbilities(v: HudView, open: boolean) {
+    const s = v.screen;
+    this.abilities.hidden = !open || s.k !== 'abilities';
+    if (s.k !== 'abilities' || this.abilities.hidden) return;
+    const b = v.battle;
+    this.abilities.replaceChildren(...abilitiesOf(b).map((id, i) => {
+      const a = ABILITIES[id];
+      const cost = a.cost ? `${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : t('un.', 'pcs')}` : a.charge ? t(`${a.charge} tiq.`, `${a.charge} tk`) : '';
+      return el('button', { type: 'button', class: `item${i === s.index ? ' focus' : ''}`, role: 'menuitem', disabled: !abilityEnabled(b, id), onclick: () => this.act.ability(i) },
+        el('span', {}, abilityName(id)), el('span', { class: 'item-cost' }, cost));
+    }));
+  }
+
+  // janela do "Executar?": acerto e efeito em cada alvo, vida antes → depois, e Sim/Não
+  private renderConfirm(v: HudView, open: boolean) {
+    const s = v.screen;
+    this.confirmBox.hidden = !open || s.k !== 'confirm';
+    if (s.k !== 'confirm' || this.confirmBox.hidden) return;
+    const b = v.battle;
+    const p: Preview = b.preview(s.ability, s.target);
+    const a = ABILITIES[s.ability];
+    const rows = p.targets.map((tg) => {
       const u = b.state.units.find((x) => x.id === tg.unit)!;
-      const ally = u.team === b.actor.team;
-      if (tg.healMax) return t(`Cura ${range([tg.healMin, tg.healMax])} em ${unitName(u.def)} (${hpText(u)})`, `Heals ${range([tg.healMin, tg.healMax])} on ${unitName(u.def)} (${hpText(u)})`);
-      const warn = ally ? t(' · ALIADO!', ' · ALLY!') : '';
-      return t(`Acerto ${tg.chance}% · dano ${range([tg.dmgMin, tg.dmgMax])} em ${unitName(u.def)} (${hpText(u)})${warn}`,
-        `Hit ${tg.chance}% · damage ${range([tg.dmgMin, tg.dmgMax])} on ${unitName(u.def)} (${hpText(u)})${warn}`);
+      const max = UNIT_DEFS[u.def].hp;
+      if (a.ally && !tg.healMax) return el('p', {}, `${unitName(u.def)}: ${abilityDetail(s.ability)}`);
+      const after = tg.healMax ? range([Math.min(max, u.hp + tg.healMin), Math.min(max, u.hp + tg.healMax)]) : range([Math.max(0, u.hp - tg.dmgMax), Math.max(0, u.hp - tg.dmgMin)]);
+      const warn = u.team === b.actor.team && !tg.healMax ? t(' · ALIADO!', ' · ALLY!') : '';
+      return el('p', {}, el('strong', {}, unitName(u.def)), ' ',
+        tg.healMax ? t(`cura ${range([tg.healMin, tg.healMax])}`, `heals ${range([tg.healMin, tg.healMax])}`)
+          : t(`acerto ${tg.chance}% · dano ${range([tg.dmgMin, tg.dmgMax])}`, `hit ${tg.chance}% · damage ${range([tg.dmgMin, tg.dmgMax])}`),
+        ` · ${t('vida', 'HP')} ${u.hp} → ${after}${warn}`);
     });
+    if (a.charge) rows.push(el('p', { class: 'unit-note' }, a.panel ? t(`Sai em ${a.charge} tiques; se o alvo sair da casa, erra.`, `Goes off in ${a.charge} ticks; misses if the target leaves the tile.`)
+      : t(`Sai em ${a.charge} tiques e segue o alvo.`, `Goes off in ${a.charge} ticks and follows the target.`)));
+    this.confirmBox.replaceChildren(el('strong', {}, t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`)), ...rows,
+      el('div', { class: 'yes-no' },
+        el('button', { type: 'button', class: `item${s.yes ? ' focus' : ''}`, onclick: () => this.act.answer(true) }, t('Sim', 'Yes'), hint('Enter')),
+        el('button', { type: 'button', class: `item${s.yes ? '' : ' focus'}`, onclick: () => this.act.answer(false) }, t('Não', 'No'), hint('Esc'))));
   }
 
-  private renderCard(v: HudView, heroTurn: boolean) {
-    const b = v.battle;
-    const lines: string[] = [];
-    let title: string;
-    if (b.over) title = b.state.outcome === 'victory' ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat');
-    else if (v.acting || !heroTurn) {
-      const def = v.acting ?? b.actor.def;
-      title = t(`Vez do inimigo: ${unitName(def)}`, `Enemy turn: ${unitName(def)}`);
-    }
-    else title = `${unitName(b.actor.def)} · ${t('vida', 'HP')} ${hpText(b.actor)}`;
-    const inspected = v.ui.inspect ? b.state.units.find((u) => u.id === v.ui.inspect) : undefined;
-    if (v.log) lines.push(v.log);
-    if (v.ui.invalid) lines.push(t('Essa casa não serve: fora do alcance ou ocupada.', 'That tile does not work: out of range or taken.'));
-    if (this.detail) {
-      lines.push(`${abilityName(this.detail)}: ${abilityDetail(this.detail)}`);
-    } else if (heroTurn && !v.busy && !v.ui.invalid) {
-      const m = v.ui.mode;
-      if (m.k === 'move') lines.push(v.ui.pending ? t('Andar até a casa marcada? Confirmar.', 'Move to the marked tile? Confirm.') : t('Mover: escolha uma casa azul.', 'Move: pick a blue tile.'));
-      else if (m.k === 'ability') {
-        if (v.hl?.preview && v.ui.pending) lines.push(...this.previewLines(v.hl.preview, b));
-        else lines.push(t(`${abilityName(m.id)}: escolha um alvo na área laranja (roxo = sem visão).`, `${abilityName(m.id)}: pick a target in the orange area (purple = no sight).`));
-      } else if (b.state.turn.usedAbility) lines.push(t('Turno feito: Passar a vez.', 'Turn done: End turn.'));
-      else lines.push(t('Nenhum alvo ao alcance daqui: Passar a vez.', 'No target in reach from here: End turn.'));
-    }
-    if (inspected) {
-      const side = inspected.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy');
-      lines.push(t(`${unitName(inspected.def)} (${side}) · vida ${hpText(inspected)} · vermelho = onde alcança no próximo turno.`,
-        `${unitName(inspected.def)} (${side}) · HP ${hpText(inspected)} · red = what it reaches next turn.`));
-    }
-    this.card.replaceChildren(el('strong', {}, title), ...lines.map((l) => el('p', {}, l)));
+  banner(text: string | null) {
+    this.bannerEl.hidden = !text;
+    this.bannerEl.textContent = text ?? '';
   }
 
-  private renderBar(v: HudView, lock: boolean) {
-    const b = v.battle;
-    if (b.over) return this.bar.replaceChildren();
-    const actorDef = UNIT_DEFS[b.actor.def];
-    const modes: Mode[] = b.actor.team === 'hero' ? [{ k: 'move' }, ...actorDef.abilities.map((id) => ({ k: 'ability' as const, id }))] : [];
-    this.bar.replaceChildren(...modes.map((m, i) => {
-      const id = m.k === 'ability' ? m.id : null;
-      const label = id ? abilityName(id) : t('Mover', 'Move');
-      // o modo que não muda ao ser escolhido já foi gasto neste turno
-      const spent = !sameMode(selectMode(b, { ...v.ui, mode: { k: 'idle' } }, m).mode, m);
-      const btn = el('button', {
-        type: 'button', class: 'slot', 'aria-pressed': String(sameMode(m, v.ui.mode)), disabled: lock || spent,
-        'aria-label': id ? `${label}: ${abilityDetail(id)}` : label,
-      }, icon(id ? ABILITY_ICON[id] : UI_ICON.move), el('span', {}, label), hint(String(i + 1)));
-      if (id) this.holdForDetail(btn, id);
-      btn.addEventListener('click', () => {
-        if (this.held) return void (this.held = false); // soltar depois do toque longo não troca o modo
-        this.detail = null;
-        this.act.mode(m);
-      });
-      return btn;
-    }));
-  }
-
-  private holdForDetail(btn: HTMLButtonElement, id: string) {
-    let timer = 0;
-    const cancel = () => clearTimeout(timer);
-    btn.addEventListener('pointerdown', () => {
-      this.held = false;
-      timer = window.setTimeout(() => {
-        this.held = true;
-        this.detail = id;
-        if (this.view) this.render(this.view);
-      }, HOLD_MS);
-    });
-    btn.addEventListener('pointerup', cancel);
-    btn.addEventListener('pointerleave', cancel);
-    btn.addEventListener('pointercancel', cancel);
-    // no celular o toque longo abre o menu do navegador; o detalhe já vai no cartão
-    btn.addEventListener('contextmenu', (e) => e.preventDefault());
-  }
-
-  private renderActions(v: HudView, lock: boolean) {
-    const b = v.battle;
-    const canConfirm = !!v.ui.pending && v.ui.mode.k !== 'idle' && (v.ui.mode.k === 'move' || !!v.hl?.preview?.ok);
-    const undo = el('button', { type: 'button', class: 'secondary undo', disabled: lock || !b.canUndo, onclick: () => this.act.undo(),
-      'aria-label': t(`Desfazer (restam ${b.undosLeft})`, `Undo (${b.undosLeft} left)`) }, icon(UI_ICON.undo), el('span', {}, String(b.undosLeft)), hint('Z'));
-    // Confirmar nunca troca de lugar com Passar a vez: um toque que falhou no mapa seguido de "Confirmar" passava a vez sem querer
-    // sem ter andado nem agido, o 1º toque só pergunta: passar a vez não tem desfazer (auditoria mobile de 25/10)
-    const idle = !b.state.turn.moved && !b.state.turn.usedAbility;
-    const wait = el('button', { type: 'button', class: `secondary wait${this.waitArmed ? ' armed' : ''}`, disabled: lock, onclick: () => {
-      this.detail = null;
-      if (idle && !this.waitArmed) {
-        this.waitArmed = true;
-        return this.renderActions(v, lock);
-      }
-      this.act.endTurn();
-    } }, icon(UI_ICON.wait), this.waitArmed ? t('Passar sem agir?', 'Skip without acting?') : t('Passar a vez', 'End turn'), hint('P'));
-    const ok = el('button', { type: 'button', class: 'primary', disabled: lock || !canConfirm, onclick: () => { this.detail = null; this.act.confirm(); } },
-      t('Confirmar', 'Confirm'), hint('Enter'));
-    this.actions.replaceChildren(undo, wait, ok);
-  }
-
-  // P no teclado: o mesmo botão, para valer a mesma pergunta de "Passar sem agir?"
-  pressWait() {
-    this.actions.querySelector<HTMLButtonElement>('.wait')?.click();
-  }
-
-  // I no teclado: a ficha da habilidade escolhida, como o toque longo no ícone
-  toggleDetail() {
-    const m = this.view?.ui.mode;
-    this.detail = this.detail || m?.k !== 'ability' ? null : m.id;
-    if (this.view) this.render(this.view);
-  }
-
-  // altura que o HUD cobre em cima e embaixo, para a cena centrar o mapa no que sobra
+  // altura que o HUD cobre embaixo (painéis de unidade), para a cena centrar o mapa no que sobra
   insets() {
-    const top = this.root.querySelector('.top')!.getBoundingClientRect();
-    const bottom = this.root.querySelector('.bottom')!.getBoundingClientRect();
-    return { top: top.bottom, bottom: innerHeight - bottom.top };
+    return { top: 0, bottom: Math.max(this.active.getBoundingClientRect().height, this.target.getBoundingClientRect().height) };
   }
 
   dispose() {

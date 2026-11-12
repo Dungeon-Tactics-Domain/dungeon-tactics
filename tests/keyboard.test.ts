@@ -39,7 +39,7 @@ describe('teclas do jogo', () => {
     expect(key('r', { ctrlKey: true })).toBeNull();
     expect(key('w', { metaKey: true })).toBeNull();
     expect(key('x')).toBeNull();
-    expect(key('6')).toBeNull();
+    expect(key('8')).toBeNull();
   });
 });
 

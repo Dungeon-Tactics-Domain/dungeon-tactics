@@ -1,3 +1,5 @@
+import { UNIT_DEFS } from '../shared/battle/units.ts';
+
 // Altura dos marcadores em volta de cada unidade, em metros a partir do topo da casa. Puro para o teste conferir a
 // ordem (chão < boneco < barra de vida < seta do cursor), que a cena só aplica.
 export const UNIT_HEIGHT = { default: 0.85, brute: 1.05 }; // o Bruto é maior para ler de longe que ele bate forte
@@ -13,3 +15,11 @@ export const MARKER = {
   arrowBob: 0.08, // balanço da seta para cima e para baixo
   arrowHalf: 0.15, // meia altura do cone (0,3)
 };
+
+// modelo KayKit de cada unidade (public/models/<id>.glb e o retrato public/chars/<id>.webp); o Bruto usa o bárbaro (não há
+// esqueleto grande). A unidade do estudo traz o modelo na própria ficha. A cena e o HUD (retratos) usam o mesmo mapa.
+const MODEL: Record<string, string> = {
+  warrior: 'knight', archer: 'rogue', mage: 'mage', rogue: 'rogue_hooded',
+  soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
+};
+export const modelOf = (def: string): string => MODEL[def] ?? UNIT_DEFS[def].model ?? ''; // '' = sem modelo (o Farol)
