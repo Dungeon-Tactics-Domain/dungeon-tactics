@@ -20,6 +20,7 @@ export type KeyAction =
   | { k: 'face' }
   | { k: 'status' }
   | { k: 'fps' }
+  | { k: 'turns' }
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
@@ -30,7 +31,7 @@ const DIRS: Record<string, ScreenDir> = {
 };
 const SIMPLE: Record<string, KeyAction> = {
   enter: { k: 'confirm' }, ' ': { k: 'confirm' }, escape: { k: 'cancel' }, backspace: { k: 'cancel' },
-  z: { k: 'undo' }, t: { k: 'face' }, c: { k: 'status' }, f3: { k: 'fps' }, p: { k: 'wait' }, f: { k: 'recenter' }, h: { k: 'help' }, '?': { k: 'help' }, i: { k: 'info' }, v: { k: 'pixel' },
+  z: { k: 'undo' }, t: { k: 'face' }, c: { k: 'status' }, f3: { k: 'fps' }, p: { k: 'wait' }, f: { k: 'recenter' }, h: { k: 'help' }, '?': { k: 'help' }, i: { k: 'info' }, v: { k: 'pixel' }, l: { k: 'turns' },
   // Q afasta e E aproxima: mesma mão do WASD
   q: { k: 'zoom', factor: ZOOM_STEP }, e: { k: 'zoom', factor: 1 / ZOOM_STEP },
 };
@@ -74,7 +75,7 @@ export function cycleUnit(state: BattleState, from: Pos, dir: 1 | -1): Pos {
 // Lista da tela de ajuda: [teclas, o que fazem]
 export const keyHelp = (): [string, string][] => [
   ['W A S D · ← ↑ → ↓', t('no menu, sobe e desce; no mapa, anda o cursor de casa em casa (segue a câmera)', 'in the menu, up and down; on the map, move the cursor tile by tile (follows the camera)')],
-  [t('Enter · Espaço', 'Enter · Space'), t('andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º Enter age; no fim do turno, confirma a direção', 'move to the tile under the cursor; on a target, asks "Execute?" and the 2nd Enter acts; at turn end, confirms the facing')],
+  [t('Enter · Espaço', 'Enter · Space'), t('andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º Enter age; no fim do turno, confirma a direção; seguro, acelera a batalha 3 vezes', 'move to the tile under the cursor; on a target, asks "Execute?" and the 2nd Enter acts; at turn end, confirms the facing; held, speeds the battle up 3 times')],
   ['Esc · Backspace', t('cancelar a escolha; de novo, volta para Mover', 'cancel the choice; again, back to Move')],
   ['1 – 7', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
   ['I', t('ficha da habilidade escolhida', 'details of the chosen ability')],
@@ -87,6 +88,7 @@ export const keyHelp = (): [string, string][] => [
   ['Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
   ['F', t('ver o mapa inteiro', 'show the whole map')],
   ['V', t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)')],
+  ['L', t('lista de turnos inteira ou só os próximos 4', 'full turn list or only the next 4')],
   ['F3', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
   ['H · ?', t('esta ajuda e o menu', 'this help and the menu')],
 ];

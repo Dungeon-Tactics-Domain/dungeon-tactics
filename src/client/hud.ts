@@ -30,6 +30,7 @@ export interface HudActions {
   rotate(dir: 1 | -1): void;
   recenter(): void;
   pixel(): void;
+  fast(): void; // liga e desliga a batalha 3 vezes mais rápida (o jeito do toque; no teclado, segurar Enter)
   menu(): void;
 }
 export interface HudView {
@@ -190,7 +191,17 @@ function unitPanel(state: BattleState, u: UnitState, extra: HTMLElement[] = []) 
 
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
-  private readonly queue = el('ol', { class: 'panel queue', 'aria-label': t('Ordem dos turnos', 'Turn order') });
+  private readonly queue = el('ol', { class: 'panel queue short', 'aria-label': t('Ordem dos turnos', 'Turn order') });
+  private fastBtn!: HTMLElement;
+  setFast(on: boolean) {
+    this.fastBtn.setAttribute('aria-pressed', String(on));
+  }
+  get queueFull() {
+    return !this.queue.classList.contains('short');
+  }
+  setQueueFull(full: boolean) {
+    this.queue.classList.toggle('short', !full);
+  }
   private readonly help = el('div', { class: 'panel help', 'aria-live': 'polite' });
   private readonly bannerEl = el('div', { class: 'panel banner', role: 'status', hidden: true });
   private readonly commands = el('div', { class: 'panel commands', role: 'menu' });
@@ -208,6 +219,7 @@ export class BattleHud {
         iconButton(['⟳', hint('R')], t('Girar câmera para a direita (R)', 'Rotate camera right (R)'), () => act.rotate(1)),
         iconButton([icon(UI_ICON.recenter), hint('F')], t('Ver o mapa inteiro (F)', 'Show the whole map (F)'), () => act.recenter()),
         iconButton([icon(UI_ICON.pixel), hint('V')], t('Trocar o tamanho do pixel art (V)', 'Change the pixel art size (V)'), () => act.pixel()),
+        this.fastBtn = iconButton(['⏩'], t('Batalha 3 vezes mais rápida (ou segure Enter)', 'Battle 3 times faster (or hold Enter)'), () => act.fast()),
         iconButton([icon(UI_ICON.menu), hint('H')], t('Menu e ajuda (H)', 'Menu and help (H)'), () => act.menu())),
       this.commands, this.abilities, this.confirmBox, this.active, this.target);
     host.append(this.root);

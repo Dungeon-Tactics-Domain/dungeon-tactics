@@ -18,7 +18,7 @@ import { el } from './icons.ts';
 import type { Highlights, TileKind } from './interaction.ts';
 import { MARKER, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
-import { TIMING } from './timing.ts';
+import { TIMING, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -28,6 +28,9 @@ const ZOOM_START = 1.5;
 // celular em pé: no máximo ~9,5 casas de largura ao abrir. No 20x20 o mapa inteiro deixava a casa com ~20 px, pequena
 // para o dedo (alvo de toque ≥ 44 px); a câmera segue o herói da vez e o botão de recentralizar mostra tudo
 const PORTRAIT_START = 8.3;
+// PC: abre com ~10 de altura de vista (antes até 16, o mapa quase inteiro e o boneco com ~30 px a 1280x720). O FFT mostra
+// poucas casas e bonecos grandes; a câmera segue o cursor e quem age, e F ainda mostra o mapa inteiro (12/11)
+const PC_START = 10;
 
 
 // cores das marcações; o significado também vai em texto no HUD (nunca só a cor)
@@ -111,6 +114,8 @@ interface UnitView {
   hp: number;
   def: string;
   aura: THREE.Mesh | null; // brilho no chão enquanto carrega uma habilidade
+  body: THREE.Object3D | null;
+  mats: THREE.MeshStandardMaterial[]; // materiais só deste boneco (cópias): piscar um não pisca os outros do mesmo modelo
 }
 
 interface Anim {
@@ -120,7 +125,6 @@ interface Anim {
   done: () => void;
 }
 
-const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // As texturas KayKit são paletas: com mipmap o render em baixa resolução mistura cores vizinhas (aprendido na POC)
 function prepare(o: THREE.Object3D) {
@@ -154,6 +158,8 @@ export class BattleScene {
   private readonly anims: Anim[] = [];
   private readonly floats: HTMLElement;
   private readonly clock = new THREE.Clock();
+  private t = 0; // relógio da batalha em ms (acelera com speed())
+  private frozenUntil = 0; // hit-stop: os bonecos ficam parados até aqui
   private readonly onResize = () => this.resize();
   private viewH: number;
   private readonly fitView: number; // zoom em que o mapa inteiro cabe na largura
@@ -177,7 +183,7 @@ export class BattleScene {
     // Começa 1,5x mais perto: com o mapa todo a casa tinha ~45x24 px, pequena para o dedo (auditoria mobile de 25/10);
     // a câmera vai até o herói da vez, e o botão de recentralizar volta ao mapa inteiro
     this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
-    this.viewH = innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, ZOOM.max); // deitado (PC): mapa inteiro até o 8x8; no 20x20 abre mais perto e segue o herói
+    this.viewH = innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, PC_START);
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
     // a paleta vem depois da saída em sRGB; liga e desliga sem refazer a cadeia
@@ -415,15 +421,23 @@ export class BattleScene {
     const holder = new THREE.Group();
     let mixer: THREE.AnimationMixer | null = null;
     let clips: THREE.AnimationClip[] = [];
+    let body: THREE.Object3D | null = null;
+    const mats: THREE.MeshStandardMaterial[] = [];
     const gltf = this.models.get(modelOf(u.def));
     if (gltf) {
-      const body = prepare(cloneSkinned(gltf.scene));
+      body = prepare(cloneSkinned(gltf.scene));
+      body.traverse((m) => {
+        const mesh = m as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        mesh.material = (mesh.material as THREE.MeshStandardMaterial).clone();
+        mats.push(mesh.material as THREE.MeshStandardMaterial);
+      });
       const b = new THREE.Box3().setFromObject(body);
       body.scale.setScalar(unitHeight(u.def) / (b.max.y - b.min.y));
       holder.add(body);
       mixer = new THREE.AnimationMixer(body);
       // os clipes do pacote só com as faixas dos ossos que este boneco tem (sem isso o Three avisa a cada quadro)
-      const has = (track: THREE.KeyframeTrack) => !!body.getObjectByName(track.name.split('.')[0]);
+      const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
       clips = [...gltf.animations, ...this.packClips.map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has)))];
     } else {
       // o Farol não tem modelo: um cristal que brilha, para ler de longe qual é o alvo a proteger
@@ -452,7 +466,7 @@ export class BattleScene {
     barBg.renderOrder = bar.renderOrder = 10;
     holder.add(ring, barHolder);
     this.scene.add(holder);
-    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null };
+    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null, body, mats };
     this.play(view, 'Idle');
     return view;
   }
@@ -534,8 +548,22 @@ export class BattleScene {
     for (const p of h.path ?? []) this.pathDots.get(posKey(p))!.visible = true;
   }
 
+  // Tudo da batalha corre no relógio da batalha (`t`), que anda 3 vezes mais rápido com o botão de acelerar seguro
   private animate(dur: number, step: (k: number) => void): Promise<void> {
-    return new Promise((done) => this.anims.push({ start: performance.now(), dur, step, done }));
+    return new Promise((done) => this.anims.push({ start: this.t, dur, step, done }));
+  }
+
+  wait(ms: number): Promise<void> {
+    return this.animate(ms, () => {});
+  }
+
+  // Impacto: tudo para um instante (hit-stop), o alvo pisca branco e depois treme, com o tremor sumindo
+  private async impact(v: UnitView) {
+    this.frozenUntil = this.t + TIMING.hitStop;
+    for (const m of v.mats) m.emissive.set('#ffffff');
+    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k)));
+    await this.wait(TIMING.hitStop);
+    if (v.body) void this.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * 0.07 * (1 - k)));
   }
 
   private float(unitId: string, text: string, cls: string) {
@@ -560,7 +588,13 @@ export class BattleScene {
           const a = this.world(e.path[i - 1]), b = this.world(e.path[i]);
           this.face(v, e.path[i]);
           const hop = Math.abs(b.y - a.y) > 0.01 ? 0.25 : 0; // degrau: pulinho para ler a altura
-          await this.animate(TIMING.step, (k) => v.holder.position.lerpVectors(a, b, k).setY(a.y + (b.y - a.y) * k + Math.sin(Math.PI * k) * hop));
+          // arranca na 1ª casa e freia na última (curva seno), passo constante no meio: sai do jeito de boneco em trilho
+          const n = e.path.length - 1;
+          const ease = (k: number) => (n === 1 ? (1 - Math.cos(Math.PI * k)) / 2 : i === 1 ? 1 - Math.cos((Math.PI / 2) * k) : i === n ? Math.sin((Math.PI / 2) * k) : k);
+          await this.animate(TIMING.step, (k) => {
+            const s = ease(k);
+            v.holder.position.lerpVectors(a, b, s).setY(a.y + (b.y - a.y) * s + Math.sin(Math.PI * k) * hop);
+          });
         }
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {
@@ -568,7 +602,7 @@ export class BattleScene {
         if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
         const look = lookOf(e.ability);
         this.play(v, look.clip, true);
-        await wait(TIMING.windup);
+        await this.wait(TIMING.windup);
         const from = v.holder.position.clone().setY(v.holder.position.y + 0.55);
         const to = this.world(e.target).setY(this.world(e.target).y + 0.4);
         if (look.fx === 'dash') {
@@ -579,19 +613,20 @@ export class BattleScene {
         await playFx(this.scene, (ms, step) => this.animate(ms, step), look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
       } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall') {
         v.hp -= e.dmg;
+        await this.impact(v);
         this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `-${e.dmg}`, 'dmg');
         if (v.hp > 0) this.play(v, 'Hit_A', true);
-        await wait(e.k === 'hit' ? TIMING.hit : TIMING.crash);
+        await this.wait(e.k === 'hit' ? TIMING.hit : TIMING.crash);
         if (v.hp > 0) this.play(v, 'Idle');
       } else if (e.k === 'miss') {
         this.float(e.unit, t('Errou', 'Miss'), 'miss');
-        await wait(TIMING.hit);
+        await this.wait(TIMING.hit);
       } else if (e.k === 'heal') {
         v.hp += e.amount;
         this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `+${e.amount}`, 'heal');
-        await wait(TIMING.hit);
+        await this.wait(TIMING.hit);
       } else if (e.k === 'push') {
         const a = v.holder.position.clone(), b = this.world(e.to);
         await this.animate(TIMING.push, (k) => v.holder.position.lerpVectors(a, b, k));
@@ -600,13 +635,13 @@ export class BattleScene {
         this.face(v, e.target);
         this.play(v, lookOf(e.ability).charge ?? 'Spellcast_Long');
         this.float(e.unit, t('Carregando', 'Charging'), 'miss');
-        await wait(TIMING.hit);
+        await this.wait(TIMING.hit);
       } else if (e.k === 'fizzle') {
         this.float(e.unit, t('Sem alvo', 'No target'), 'miss');
-        await wait(TIMING.hit);
+        await this.wait(TIMING.hit);
       } else if (e.k === 'die') {
         this.play(v, 'Death_A', true);
-        await wait(TIMING.die);
+        await this.wait(TIMING.die);
       }
     }
     this.sync(state);
@@ -634,8 +669,9 @@ export class BattleScene {
   }
 
   // desliza a câmera até a casa (o herói da vez), sem mudar o zoom
-  focusOn(p: Pos) {
-    const w = this.world(p);
+  focusOn(p: Pos, also?: Pos) {
+    // com `also`, centra entre os dois (quem ataca e o alvo): o golpe nunca acontece fora da tela ou atrás do HUD
+    const w = also ? this.world(p).lerp(this.world(also), 0.5) : this.world(p);
     this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
   }
 
@@ -739,9 +775,10 @@ export class BattleScene {
     this.perf.frames++;
     this.renderer.info.reset();
     const dt = this.clock.getDelta();
-    const now = performance.now();
+    const fast = speed();
+    this.t += dt * 1000 * fast;
     for (const a of [...this.anims]) {
-      const k = Math.min(1, (now - a.start) / a.dur);
+      const k = Math.min(1, (this.t - a.start) / a.dur);
       a.step(k);
       if (k < 1) continue;
       this.anims.splice(this.anims.indexOf(a), 1);
@@ -752,7 +789,7 @@ export class BattleScene {
     this.cursor.getObjectByName('arrow')!.position.y = MARKER.arrowY + Math.sin(performance.now() / 250) * MARKER.arrowBob;
     this.placeCamera();
     for (const v of this.units.values()) {
-      v.mixer?.update(dt);
+      if (this.t >= this.frozenUntil) v.mixer?.update(dt * fast);
       // barra de vida sempre de frente para a câmera
       v.holder.getObjectByName('bar')!.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
     }

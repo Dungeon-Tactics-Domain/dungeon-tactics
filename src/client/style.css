@@ -66,6 +66,7 @@ button[hidden] { display: none; }
 /* casa sob o cursor e lista de turnos: canto de cima à esquerda, como no FFT */
 .tile-info { top: 12px; left: 12px; font-size: var(--fs-sm); }
 .queue { top: 56px; left: 12px; width: 230px; list-style: none; padding: 6px; display: grid; gap: 3px; }
+.queue.short li:nth-child(n + 6) { display: none; } /* título + 4 linhas; L mostra tudo */
 .queue-title { font: 400 var(--fs-sm)/1 var(--font-px); color: var(--ink-muted); padding: 2px 4px 4px; }
 .queue-row { display: flex; align-items: center; gap: 8px; padding: 2px 6px; font-size: var(--fs-sm); border-left: 5px solid var(--side); }
 .queue-row.hero { --side: var(--hero); }
@@ -93,7 +94,18 @@ button[hidden] { display: none; }
   background: transparent; border: none; box-shadow: none; color: var(--ink); font: 400 var(--fs-lg)/1 var(--font-px); }
 .panel .item.focus { background: rgba(255, 255, 255, .5); }
 /* mão do FFT trocada por uma seta nossa marcando o item com o foco */
-.panel .item.focus::before { content: '▶'; position: absolute; left: 8px; color: var(--focus); }
+.panel .item.focus::before { content: '▶'; position: absolute; left: 8px; color: var(--focus); animation: nudge .6s steps(1, end) infinite; }
+/* menus abrem em vez de surgir (12/11, game feel): 90 ms, rápido o bastante para não atrasar quem já sabe o que quer;
+   o submenu vem da direita, de onde saiu o comando; a faixa do nome da habilidade abre do meio */
+.commands:not([hidden]), .confirm:not([hidden]) { animation: menu-in 90ms ease-out; }
+.abilities:not([hidden]) { animation: menu-in-side 110ms ease-out; }
+.banner:not([hidden]) { animation: banner-in 120ms ease-out; }
+@keyframes menu-in { from { opacity: 0; transform: scaleY(.8); } }
+@keyframes menu-in-side { from { opacity: 0; transform: translateX(24px); } }
+@keyframes banner-in { from { transform: translateX(-50%) scaleX(.2); opacity: 0; } }
+.tools [aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--focus); } /* ⏩ ligado: borda e não só cor do ícone */
+@keyframes nudge { 50% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) { .commands, .confirm, .abilities, .banner, .panel .item.focus::before { animation: none !important; } }
 .panel .item:disabled { filter: none; opacity: .45; }
 .panel .item:not(:disabled):active { transform: none; box-shadow: none; }
 .item-cost { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }

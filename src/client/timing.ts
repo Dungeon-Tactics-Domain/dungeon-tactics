@@ -2,7 +2,7 @@
 // tempos parecidos com o Final Fantasy Tactics). Não há fonte de tempo de animação do FFT: os novos são estimativa.
 // Especificação e valores anteriores: docs/medicoes/fluxo-fft-2026-11-12.md.
 export const TIMING = {
-  enemyStart: 600, // antes 700: o inimigo da vez aparece e a câmera chega nele antes de ele agir
+  enemyStart: 450, // antes 600 (12/11, game feel): a câmera já chega em ~0,5 s; somado ao enemyAfter dava 1 s parado entre inimigos
   enemyDestination: 500, // novo: cursor e caminho no destino do inimigo antes de ele andar, para ler para onde vai
   step: 200, // antes 150: uma casa andada; o FFT anda mais devagar e cada passo se lê
   banner: 700, // novo: faixa com o nome da habilidade e a área marcada antes do golpe, nos dois lados
@@ -15,5 +15,14 @@ export const TIMING = {
   push: 140, // uma casa empurrada (igual a antes)
   die: 700, // queda de quem morre (igual a antes)
   float: 1200, // antes 1100: número de dano pula, fica parado para ler e some (o mesmo valor vai no CSS, --float-ms)
-  enemyAfter: 400, // antes 600: a faixa e o número já seguram a leitura; mais que isso arrastava a vez do inimigo
+  enemyAfter: 250, // antes 400 (12/11): a linha de ajuda já resume o que o inimigo fez
+  hitStop: 90, // novo (12/11): tudo para no impacto, o alvo pisca branco; é o que dá peso ao golpe
+  shake: 220, // novo: o alvo treme depois da pausa e o tremor vai sumindo
 };
+
+// Segurar Enter, Espaço ou A (controle) acelera tudo da batalha (passos, golpes, esperas) 3 vezes; soltar volta ao ritmo
+// do FFT. Pedido do Fernando (12/11): batalha mais responsiva sem perder o ritmo de leitura de quem não tem pressa.
+// No celular (sem tecla para segurar) o botão ⏩ liga e desliga (`toggle`, escolha do Fernando em 12/11).
+export const pace = { key: false, pad: false, toggle: false };
+export const FAST = 3;
+export const speed = () => (pace.key || pace.pad || pace.toggle ? FAST : 1);

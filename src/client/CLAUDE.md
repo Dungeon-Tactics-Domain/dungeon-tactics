@@ -23,5 +23,12 @@ Vale junto com o `CLAUDE.md` da raiz. **Web no PC primeiro** (pedido do Fernando
 - **Contador de desempenho** (pedido do Fernando, 12/11): fps, tempo do quadro e recursos do Three (`BattleScene.stats`), mais a memória do JS quando o navegador mostra. Ligado por padrão, F3 liga e desliga (`dt:fps`), texto atualizado 2 vezes por segundo.
 - **Menu de desenvolvedor** (pedido do Fernando, 12/11): menu (H) → Desenvolvedor. Escolhe o mapa (Colina, Escaramuça, Cripta e o relevo de Gariland), monta heróis e inimigos (classe, nome, vida, velocidade, movimento e habilidades), salva em `dt:dev`, exporta e importa JSON e abre a batalha em `?cenario=dev`. Regras puras em `dev-roster.ts` (`buildDevScenario` cria fichas `dev-h0`, `dev-e0`… com o boneco da classe; `parseSetup` é a fronteira do JSON), tela em `dev-menu.ts`. As unidades ocupam as casas de partida do mapa; sem Farol no mapa, vence quem sobrar.
 - **Tempos do fluxo** em `timing.ts`; gesto e efeito de cada habilidade em `fx.ts`; som em `sound.ts`.
+- **Game feel** (pedido do Fernando, 12/11: "mais responsivos e gostosos de jogar"):
+  - Toda espera e animação da batalha usa `BattleScene.wait`/`animate`, que correm no relógio da batalha. Segurar Enter, Espaço ou A acelera 3 vezes; no toque, o botão ⏩ nas ferramentas liga e desliga (`dt:rapido`) (`pace`/`speed()` em `timing.ts`). Nada de `setTimeout` para tempo de batalha.
+  - Golpe com pausa no impacto (`hitStop`), alvo piscando branco e tremendo (`shake`). Cada boneco tem cópia própria dos materiais.
+  - Confirmar só no aperto (sem repetição de tecla).
+  - Câmera abre perto (`PC_START`) e enquadra quem ataca e o alvo.
+  - Lista de turnos curta (4) por padrão, L mostra tudo (`dt:turnos`).
+  - Menus abrem em 90–120 ms e o ▶ pulsa; com movimento reduzido, nada anima.
 - **Pixel art configurável** (pedido do Fernando, 25/10): `pixel-settings.ts` (puro) guarda tamanho, contorno, paleta e câmera presa em `dt:pixel`; a `BattleScene.setPixel` aplica na hora. Atalho V e o botão de TV nas ferramentas; opções no menu com `choice()` (`dialog.ts`).
 - Preferências e save em `store.ts` com prefixo `dt:`.

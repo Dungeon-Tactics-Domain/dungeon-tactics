@@ -18,7 +18,7 @@ import { BattleScene } from './scene.ts';
 import { store } from './store.ts';
 import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
-import { TIMING } from './timing.ts';
+import { TIMING, pace } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
@@ -28,9 +28,11 @@ import { openDevMenu } from './dev-menu.ts';
 let scenario = FIRST_BATTLE;
 let SAVE_KEY = 'dt:battle';
 
-const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const FPS_KEY = 'dt:fps'; // contador de desempenho ligado (1) ou não (0); começa ligado (pedido do Fernando, 12/11)
-const newBattle = () => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
+// lista de turnos curta (os próximos 4) por padrão: o FFT não deixa a ordem inteira na tela e a lista cobria o mapa (12/11)
+const QUEUE_KEY = 'dt:turnos';
+const FAST_KEY = 'dt:rapido'; // botão ⏩ ligado fica ligado na próxima batalha
+const newBattle =() => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
 
 class Game {
   private ui: Ui;
@@ -57,6 +59,11 @@ class Game {
       rotate: (dir) => scene.rotate(dir),
       recenter: () => scene.resetView(),
       pixel: () => this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) }),
+      fast: () => {
+        pace.toggle = !pace.toggle;
+        store.set(FAST_KEY, pace.toggle ? '1' : '');
+        this.hud.setFast(pace.toggle);
+      },
       menu: () => this.menu(),
     });
     const canvas = host.querySelector('canvas')!;
@@ -86,8 +93,16 @@ class Game {
       this.runKey({ k: 'cancel' });
     });
     addEventListener('keydown', (e) => this.onKey(e));
+    // Enter ou Espaço seguro acelera a batalha (timing.ts); trocar de aba solta, senão ficava acelerado sem tecla
+    const hold = (on: boolean) => (e: KeyboardEvent) => e.key === 'Enter' || e.key === ' ' ? (pace.key = on) : undefined;
+    addEventListener('keydown', hold(true));
+    addEventListener('keyup', hold(false));
+    addEventListener('blur', () => (pace.key = false));
     host.append(this.fps);
     this.fps.hidden = store.get(FPS_KEY) === '0';
+    this.hud.setQueueFull(store.get(QUEUE_KEY) === 'all');
+    pace.toggle = store.get(FAST_KEY) === '1';
+    this.hud.setFast(pace.toggle);
     // contador de desempenho: o texto muda 2 vezes por segundo, não a cada quadro (custo quase zero)
     setInterval(() => this.showFps(), 500);
     requestAnimationFrame(() => this.pollPad());
@@ -101,6 +116,8 @@ class Game {
     if (document.querySelector('.overlay')) return;
     const a = keyAction(e);
     if (!a) return;
+    // confirmar só no aperto: quem segura Enter para acelerar o inimigo não escolhe o 1º comando do herói sem querer
+    if (e.repeat && a.k === 'confirm') return void e.preventDefault();
     e.preventDefault(); // Tab não pula de botão, Espaço não rola, F3 não abre a busca do navegador
     (document.activeElement as HTMLElement | null)?.blur();
     this.runKey(a);
@@ -111,6 +128,7 @@ class Game {
   private pollPad() {
     requestAnimationFrame(() => this.pollPad());
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
+    pace.pad = !!gp?.buttons[0]?.pressed; // A (ou ×) seguro acelera a batalha
     if (!gp) return;
     const actions = padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, this.pad, performance.now());
     for (const a of actions) {
@@ -148,6 +166,11 @@ class Game {
     if (a.k === 'help') return this.menu();
     if (a.k === 'pixel') return this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) });
     if (a.k === 'status') return this.status();
+    if (a.k === 'turns') {
+      const full = !this.hud.queueFull;
+      store.set(QUEUE_KEY, full ? 'all' : '');
+      return this.hud.setQueueFull(full);
+    }
     if (a.k === 'fps') {
       this.fps.hidden = !this.fps.hidden;
       store.set(FPS_KEY, this.fps.hidden ? '0' : '1');
@@ -341,7 +364,7 @@ class Game {
   private sound(e: BattleEvent) {
     const MELEE = new Set(['slash', 'heavy', 'stab', 'impact', 'spin', 'dash', 'debuff']);
     const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = { hit: 'hit', bump: 'hit', fall: 'hit', miss: 'miss', heal: 'heal', charge: 'charge', fizzle: 'miss', die: 'die' };
-    if (e.k === 'move') for (let i = 1; i < e.path.length; i++) setTimeout(() => sfx('step'), (i - 1) * TIMING.step);
+    if (e.k === 'move') for (let i = 1; i < e.path.length; i++) void this.scene.wait((i - 1) * TIMING.step).then(() => sfx('step'));
     else if (e.k === 'attack') {
       const fx = lookOf(e.ability).fx;
       sfx(MELEE.has(fx) ? 'swing' : fx === 'fire' || fx === 'blast' ? 'fire' : ['heal', 'buff', 'wind'].includes(fx) ? 'spell' : 'throw');
@@ -353,7 +376,7 @@ class Game {
     if (!(e.k === 'move' && enemy)) this.sound(e);
     const show = async (hl: Highlights, ms: number) => {
       this.scene.setHighlights(hl);
-      await wait(ms);
+      await this.scene.wait(ms);
       this.scene.setHighlights(null);
     };
     if (e.k === 'move' && enemy) {
@@ -364,7 +387,9 @@ class Game {
       this.sound(e);
     } else if (e.k === 'attack') {
       const a = ABILITIES[e.ability];
-      const area = [e.target, ...this.allTiles().filter((p) => a.radius > 0 && dist(p, e.target) <= a.radius && !samePos(p, e.target))];
+      const me = this.battle.state.units.find((u) => u.id === e.unit);
+      if (me) this.scene.focusOn(me.pos, e.target);
+      const area =[e.target, ...this.allTiles().filter((p) => a.radius > 0 && dist(p, e.target) <= a.radius && !samePos(p, e.target))];
       this.hud.banner(abilityName(e.ability));
       await show({ tiles: area.map((pos, i) => ({ pos, kind: i ? 'area' : 'target' })), path: null, preview: null }, TIMING.banner);
     }
@@ -424,13 +449,13 @@ class Game {
       this.acting = this.battle.actor.def;
       this.scene.focusOn(this.battle.actor.pos);
       this.update(this.ui);
-      await wait(TIMING.enemyStart);
+      await this.scene.wait(TIMING.enemyStart);
       await this.animate(playAiTurn(this.battle), true);
       // o estado já passou a vez (talvez para um herói): segue travado durante a pausa, senão o toque ou a tecla dessa
       // janela valia e era apagado logo depois pelo freshUi (achado pelo teste só de teclado, 25/10)
       this.busy = true;
       this.update(this.ui); // mostra o resumo ainda com o nome de quem agiu
-      await wait(TIMING.enemyAfter);
+      await this.scene.wait(TIMING.enemyAfter);
       this.save();
     }
     this.acting = null;
