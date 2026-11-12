@@ -21,6 +21,8 @@ import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } f
 import { TIMING } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
+import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
+import { openDevMenu } from './dev-menu.ts';
 
 // a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
 let scenario = FIRST_BATTLE;
@@ -517,9 +519,20 @@ class Game {
           d.close();
           this.restart();
         } }, t('Reiniciar batalha', 'Restart battle')),
-        el('button', { type: 'button', class: 'secondary', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português')),
+        el('button', { type: 'button', class: 'secondary', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português'),
+        el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); void devMenu(); } }, t('Desenvolvedor', 'Developer'))),
     ]);
   }
+}
+
+// Menu de desenvolvedor (12/11): carrega o estudo do FFT à parte só para oferecer o relevo de Gariland como mapa. Começar
+// salva o elenco, apaga a batalha de desenvolvedor anterior e reabre o jogo nela (o boot monta o cenário).
+async function devMenu() {
+  (await import('../shared/battle/fft/gariland.ts')).registerFftStudy();
+  openDevMenu(() => {
+    store.set(`dt:battle:${DEV_SCENARIO}`, '');
+    location.search = `?cenario=${DEV_SCENARIO}`;
+  });
 }
 
 async function boot() {
@@ -532,6 +545,14 @@ async function boot() {
     fft.registerFftStudy();
     scenario = SCENARIOS[study];
     SAVE_KEY = `dt:battle:${study}`;
+  } else if (study === DEV_SCENARIO) {
+    // batalha do menu de desenvolvedor: o elenco salvo vira o cenário (sem elenco válido, volta para a batalha padrão)
+    const setup = parseSetup(store.json(DEV_KEY));
+    if (setup) {
+      if (setup.map.startsWith('fft-')) (await import('../shared/battle/fft/gariland.ts')).registerFftStudy();
+      scenario = buildDevScenario(setup);
+      SAVE_KEY = `dt:battle:${DEV_SCENARIO}`;
+    }
   } else if (study && SCENARIOS[study]) {
     // outros mapas do jogo pelo mesmo parâmetro (ex.: ?cenario=flooded_crypt), com save próprio
     scenario = SCENARIOS[study];

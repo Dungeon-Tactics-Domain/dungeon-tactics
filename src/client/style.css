@@ -169,3 +169,18 @@ button[hidden] { display: none; }
 .keys dt { font-weight: 800; white-space: nowrap; }
 .keys dd { margin: 0; color: var(--muted); }
 
+
+/* Menu de desenvolvedor (12/11): largo para os dois times lado a lado no PC; no estreito, um embaixo do outro */
+.dialog.dev { width: min(980px, 100%); }
+.dev-teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--gap); }
+.dev-list { list-style: none; margin: 0 0 var(--gap); padding: 0; display: grid; gap: var(--gap); }
+.dev-unit { border: 1px solid var(--edge); border-radius: var(--r); background: var(--well); padding: var(--gap); display: grid; gap: 6px; }
+.dev-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; }
+.dev-line select, .dev-line input[type=text] { flex: 1; min-width: 0; min-height: 36px; font: inherit; background: var(--stone-lo); color: var(--fg); border: 1px solid var(--trim); border-radius: var(--r); padding: 0 8px; }
+.dev-num { display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--muted); }
+.dev-num input { width: 84px; min-height: 32px; font: inherit; background: var(--stone-lo); color: var(--fg); border: 1px solid var(--trim); border-radius: var(--r); padding: 0 6px; }
+.dev-skills summary { cursor: pointer; color: var(--trim-hi); font-size: var(--fs-sm); }
+.dev-skills { font-size: var(--fs-sm); }
+.dev-check { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--fg); }
+.dev-issues { color: var(--accent); margin: var(--gap) 0; }
+.dev-msg { color: var(--accent); min-height: 1em; }
