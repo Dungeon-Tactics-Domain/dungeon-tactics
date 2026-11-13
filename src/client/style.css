@@ -232,6 +232,7 @@ button[hidden] { display: none; }
 .world-art .forest circle { fill: #5b8a4a; opacity: .55; }
 .world-art .mountains path { fill: #8a8378; opacity: .6; }
 .world-art .road { fill: none; stroke: var(--paper-edge); stroke-width: 3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.world-art .road.walked { stroke: #e2b23a; stroke-dasharray: none; stroke-linejoin: round; }
 .world-node { position: absolute; width: 22px; height: 22px; min-width: 0; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 3px solid var(--paper-edge); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }
 .world-node.battle { background: #c0412b; transform: translate(-50%, -50%) rotate(45deg); border-radius: 3px; }
 .world-node.story { background: #3d6fb0; border-radius: 50%; }

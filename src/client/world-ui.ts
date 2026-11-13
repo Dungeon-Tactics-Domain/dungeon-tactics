@@ -17,12 +17,14 @@ const FADE_MS = 300; // escurecer antes de entrar no ponto; o CSS usa o mesmo va
 
 // Fundo desenhado em SVG (viewBox 0–100, esticado na tela): rio, lago, floresta e montanhas, só para dar lugar aos pontos.
 // A estrada não chega ao último ponto (o epílogo, de volta à vila): a linha atravessaria o mapa inteiro.
-const TERRAIN = `<svg class="world-art" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+// O trecho já andado (até o ponto aberto) vai cheio por cima do tracejado: a jornada feita se lê de longe.
+const terrain = (done: number) => `<svg class="world-art" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
   <path class="river" d="M0 48 C 18 44, 30 56, 46 50 S 70 40, 100 44" />
   <ellipse class="lake" cx="58" cy="56" rx="9" ry="6" />
   <g class="forest">${[[8, 60], [12, 66], [18, 58], [22, 70], [33, 76], [36, 58], [6, 72]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.6" />`).join('')}</g>
   <g class="mountains">${[[66, 22], [76, 16], [86, 10], [93, 22], [80, 28]].map(([x, y]) => `<path d="M${x - 6} ${y + 8} L${x} ${y - 6} L${x + 6} ${y + 8} Z" />`).join('')}</g>
   <polyline class="road" points="${WORLD.slice(0, -1).map((w) => `${w.x},${w.y}`).join(' ')}" />
+  <polyline class="road walked" points="${WORLD.slice(0, Math.min(done, WORLD.length - 2) + 1).map((w) => `${w.x},${w.y}`).join(' ')}" />
 </svg>`;
 
 // Tela Grupo (como a formação do FFT): retrato, classe, números e as habilidades já aprendidas de quem vai à próxima
@@ -83,7 +85,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     el('div', { class: 'panel world-head' }, el('strong', {}, t('Mapa do Vale', 'Valley Map')), ` · ${t(`${Math.min(done, WORLD.length)} de ${WORLD.length}`, `${Math.min(done, WORLD.length)} of ${WORLD.length}`)}`),
     panel,
     el('p', { class: 'panel world-help' }, t('Setas andam · Enter entra · G grupo · Esc volta', 'Arrows walk · Enter enters · G party · Esc goes back')));
-  (root.querySelector('.world-svg') as HTMLElement).innerHTML = TERRAIN;
+  (root.querySelector('.world-svg') as HTMLElement).innerHTML = terrain(done);
   host.append(root);
 
   const show = () => {
