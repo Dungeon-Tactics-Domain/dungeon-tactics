@@ -2,6 +2,7 @@
 // ponto em ponto. Setas (ou A D W S) andam, Enter entra, Esc volta ao título; clique num ponto aberto anda até ele.
 // Painel do lugar no canto de baixo à direita, como o nome do lugar no mapa do FFT; arte e texto nossos.
 import { foesText, starText } from './campaign.ts';
+import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import type { DevUnit } from './dev-roster.ts';
 import { dialog } from './dialog.ts';
@@ -36,7 +37,7 @@ export function openParty(units: DevUnit[], benched: string | null) {
     el('ul', { class: 'party-list' }, ...units.map((u) => el('li', { class: 'party-card' }, portrait(u.base),
       el('div', {},
         el('strong', {}, u.name), el('span', { class: 'party-class' }, ` · ${unitName(u.base)}`),
-        el('p', { class: 'party-stats' }, t(`Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move}`, `HP ${u.hp} · Speed ${u.speed} · Move ${u.move}`)),
+        el('p', { class: 'party-stats' }, t(`Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move} · Salto ${UNIT_DEFS[u.base].jump ?? MAX_JUMP}`, `HP ${u.hp} · Speed ${u.speed} · Move ${u.move} · Jump ${UNIT_DEFS[u.base].jump ?? MAX_JUMP}`)),
         el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · '),
           ...(UNIT_DEFS[u.base].abilities.length > u.abilities.length ? [el('span', { class: 'party-more' }, t(` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} na jornada)`, ` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} on the journey)`))] : [])))))),
     ...(benched ? [el('p', { class: 'party-bench' }, t(`${benched} fica no acampamento e segue nas conversas.`, `${benched} stays at camp and keeps talking in the story.`))] : []),

@@ -7,7 +7,7 @@
      O filete dourado dá 5,9:1 sobre a pedra (mínimo de 3:1 para contorno de controle) */
   --stone: #2c2342; --stone-lo: #1d1630; --edge: #07050c; --trim: #b8923f; --trim-hi: #ffdd7a;
   --bevel-hi: rgba(255, 255, 255, .16); --bevel-lo: rgba(0, 0, 0, .5); --well: #110c1b;
-  --gold-btn: linear-gradient(#ffd75e, #e2a62b); --gold-trim: #7a5513; --star: #f2c14e;
+  --gold-btn: linear-gradient(#ffd75e, #e2a62b); --gold-trim: #7a5513; --star: #f2c14e; --star-ink: #9a6a0c; /* estrela sobre o pergaminho: 3,7:1 (texto grande) */
   --r: 3px; /* canto quase reto: pixel art não tem canto redondo */
   --frame: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), 0 3px 0 var(--edge);
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
@@ -34,8 +34,16 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-t
 .board { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
 .gi { width: 1.4em; height: 1.4em; fill: currentColor; flex: none; }
 
-/* painel: cartão, fichas da fila e diálogo usam a mesma moldura dos botões */
-.dialog { border: 2px solid var(--edge); border-radius: var(--r); background: linear-gradient(var(--stone), var(--stone-lo)); box-shadow: var(--frame); }
+/* janelas no pergaminho do HUD (13/11, escolha do Fernando: "tudo em pergaminho", antes pedra roxa escura). Um tom mais
+   claro que o painel da batalha (paper-hi → paper) para o texto apagado (ink-muted) passar de 4,5:1 até embaixo */
+.dialog { border: 2px solid var(--paper-edge); border-radius: var(--r); color: var(--ink); background: linear-gradient(var(--paper-hi), var(--paper));
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+/* botões dentro da janela: papel claro com contorno de tinta (o dourado do principal fica); escolhido = borda vermelha */
+.dialog button:not(.primary) { color: var(--ink); background: linear-gradient(var(--paper-hi), var(--paper-lo)); border-color: var(--paper-edge);
+  box-shadow: inset 0 0 0 1px var(--paper-hi), 0 2px 0 rgba(0, 0, 0, .3); }
+.dialog button:not(.primary):not(:disabled):active { box-shadow: inset 0 2px 0 rgba(0, 0, 0, .2); }
+.dialog button[aria-pressed='true']:not(.primary) { box-shadow: inset 0 0 0 3px var(--focus); font-weight: 800; }
+.dialog button:focus-visible { outline-color: var(--focus); }
 
 /* rótulos pequenos na fonte de texto (a pixel em 12 px não se lia); a pixel fica em títulos, Confirmar e fila */
 button { font: 700 var(--fs-sm)/1.1 var(--font); color: var(--fg); min-height: var(--tap); min-width: var(--tap); border-radius: var(--r);
@@ -170,11 +178,10 @@ button[hidden] { display: none; }
 .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
 .dialog h2, .dialog h3 { font-family: var(--font-px); margin: 0; }
 .dialog h2 { font-size: 24px; }
-.dialog h3 { font-size: var(--fs); margin: 16px 0 8px; color: var(--trim-hi); }
-.dialog p { color: var(--muted); }
-/* janela de status no pergaminho do HUD (como a do FFT, cores nossas) */
-.dialog.status { color: var(--ink); background: linear-gradient(var(--paper), var(--paper-lo)); border-color: var(--paper-edge); box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
-.dialog.status .keys dd { color: var(--ink-muted); }
+.dialog h3 { font-size: var(--fs); margin: 16px 0 8px; color: var(--focus); }
+.dialog p, .dialog .keys dd, .dialog .choice-label, .dialog .title-sub, .dialog .party-class, .dialog .party-more, .dialog .party-bench, .dialog .dev-num { color: var(--ink-muted); }
+.dialog .sw { border-color: var(--ink); }
+.kbd .dialog .hint, .dialog .hint { color: var(--ink-muted); border-color: var(--ink-muted); }
 .dialog .primary { width: 100%; }
 .legend { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
 .legend li { display: flex; align-items: center; gap: 8px; }
@@ -204,16 +211,16 @@ button[hidden] { display: none; }
 .dialog.dev { width: min(980px, 100%); }
 .dev-teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--gap); }
 .dev-list { list-style: none; margin: 0 0 var(--gap); padding: 0; display: grid; gap: var(--gap); }
-.dev-unit { border: 1px solid var(--edge); border-radius: var(--r); background: var(--well); padding: var(--gap); display: grid; gap: 6px; }
+.dev-unit { border: 1px solid var(--paper-edge); border-radius: var(--r); background: var(--paper-hi); padding: var(--gap); display: grid; gap: 6px; }
 .dev-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; }
-.dev-line select, .dev-line input[type=text] { flex: 1; min-width: 0; min-height: 36px; font: inherit; background: var(--stone-lo); color: var(--fg); border: 1px solid var(--trim); border-radius: var(--r); padding: 0 8px; }
+.dev-line select, .dev-line input[type=text] { flex: 1; min-width: 0; min-height: 36px; font: inherit; background: #fff; color: var(--ink); border: 1px solid var(--paper-edge); border-radius: var(--r); padding: 0 8px; }
 .dev-num { display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--muted); }
-.dev-num input { width: 84px; min-height: 32px; font: inherit; background: var(--stone-lo); color: var(--fg); border: 1px solid var(--trim); border-radius: var(--r); padding: 0 6px; }
-.dev-skills summary { cursor: pointer; color: var(--trim-hi); font-size: var(--fs-sm); }
+.dev-num input { width: 84px; min-height: 32px; font: inherit; background: #fff; color: var(--ink); border: 1px solid var(--paper-edge); border-radius: var(--r); padding: 0 6px; }
+.dev-skills summary { cursor: pointer; color: var(--focus); font-size: var(--fs-sm); }
 .dev-skills { font-size: var(--fs-sm); }
-.dev-check { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--fg); }
-.dev-issues { color: var(--accent); margin: var(--gap) 0; }
-.dev-msg { color: var(--accent); min-height: 1em; }
+.dev-check { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--ink); }
+.dev-issues { color: var(--focus); margin: var(--gap) 0; }
+.dev-msg { color: var(--focus); min-height: 1em; }
 
 /* caixa de fala da campanha (talk.ts): embaixo, larga, pergaminho como o resto do HUD; o ▼ pisca quando a frase acabou */
 .talk-overlay { place-items: end center; background: rgba(10, 6, 20, .35); padding-bottom: 24px; gap: 12px; align-content: end; }
@@ -228,16 +235,16 @@ button[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .talk-title, .panel.talk, .talk.done .talk-next { animation: none; } }
 .camp-list { flex-direction: column; } /* lista de fases da campanha: uma por linha, nome inteiro */
 .camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
-.dialog .stars { font: 400 40px/1 var(--font-px); color: var(--star); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
-.dialog .mvp { font-weight: 700; color: var(--star); margin: 2px 0 10px; } /* destaque da batalha (tally.ts), no fim da fase e da batalha avulsa */
-.learned { font-weight: 700; color: var(--trim-hi); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha) */
+.dialog .stars { font: 400 40px/1 var(--font-px); color: var(--star-ink); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
+.dialog .mvp { font-weight: 700; color: var(--gold-trim); margin: 2px 0 10px; } /* destaque da batalha (tally.ts), no fim da fase e da batalha avulsa */
+.learned { font-weight: 700; color: var(--focus); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha) */
 /* tela de título (main.ts, titleScreen): nome grande e as três portas do jogo */
 .dialog.title { width: min(460px, 100%); text-align: center; }
 .dialog.title h2 { font-size: 38px; letter-spacing: 1px; }
-.title-sub { color: var(--muted); margin: 4px 0 14px; }
+.title-sub { margin: 4px 0 14px; }
 .continue-where { font: 400 var(--fs) var(--font); opacity: .8; margin-left: 8px; } /* onde o Continuar leva, na mesma linha */
 .dialog.title .legend { text-align: left; } /* Créditos: lista alinhada à esquerda mesmo no diálogo centrado do título */
-.dialog a { color: var(--trim-hi); } /* o azul padrão do navegador quase some no fundo escuro do diálogo */
+.dialog a { color: var(--focus); } /* link na cor de destaque da tinta, sublinhado: não só pela cor */
 /* o mapa girando atrás é a arte do título: sem o HUD da batalha por cima e só com as bordas escurecidas */
 .title-overlay { background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%); }
 body:has(.title-overlay) .hud, body:has(.title-overlay) .fps { visibility: hidden; }
@@ -318,7 +325,7 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .party-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .party-card { display: flex; gap: 12px; align-items: center; }
 .party-card .portrait { width: 48px; height: 64px; }
-.party-class, .party-more, .party-bench { color: var(--muted); }
+
 .party-stats, .party-skills { margin: 2px 0 0; font-size: var(--fs-sm); }
 .party-stats { font-variant-numeric: tabular-nums; }
 .world-tag { position: absolute; left: 50%; top: calc(100% + 26px); transform: translateX(-50%); white-space: nowrap; padding: 2px 8px; font: 400 var(--fs-sm)/1.2 var(--font-px); color: var(--paper-hi); background: rgba(20, 12, 30, .8); border-radius: 3px; } /* nome do lugar sob o grupo no mapa */
