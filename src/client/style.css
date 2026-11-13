@@ -341,12 +341,12 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world-compass text { fill: #e9dcae; font: 700 12px var(--font); }
 .world-title { position: absolute; left: 2%; top: 3%; padding: 6px 16px; background: var(--paper); color: var(--ink); border: 3px double var(--paper-edge); font: 400 clamp(16px, 2.2vw, 28px) var(--font-px); letter-spacing: .12em; box-shadow: 0 3px 0 rgba(0, 0, 0, .3); pointer-events: none; }
 .world-art .road { fill: none; stroke: var(--paper-edge); stroke-width: 3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; stroke-linecap: round; }
-.world-art .road.walked { stroke: #e2b23a; stroke-dasharray: none; stroke-linejoin: round; }
+.world-art .road.walked { stroke: #8e3b24; /* vermelho-tinta: o dourado sumia na terra do mapa ilustrado */ stroke-dasharray: none; stroke-linejoin: round; }
 .world-node { position: absolute; width: 22px; height: 22px; min-width: 0; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 3px solid var(--paper-edge); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }
 .world-node.battle { background: #c0412b; transform: translate(-50%, -50%) rotate(45deg); border-radius: 3px; }
 .world-node.story { background: #3d6fb0; border-radius: 50%; }
 .world-node.done { border-color: #e2b23a; }
-.world-node:disabled { background: #b9ad97; border-color: #9a8f7c; filter: none; cursor: default; }
+.world-node:disabled { background: #6f6656; border-color: #4a4235; /* escuro: o bege antigo era da cor da terra */ filter: none; cursor: default; }
 .world-stars { position: absolute; transform: translate(-50%, 16px); font: 400 14px/1 var(--font); color: var(--gold-trim); letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
 .world-node.here { outline: 3px solid var(--focus); outline-offset: 4px; }
 .world-token { position: absolute; transform: translate(-50%, -110%); transition: left var(--walk-ms) ease-in-out, top var(--walk-ms) ease-in-out; pointer-events: none; animation: bob 1s ease-in-out infinite; }

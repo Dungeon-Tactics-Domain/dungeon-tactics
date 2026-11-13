@@ -119,8 +119,11 @@ export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
   const [a, b] = from.y * grid.width + from.x <= to.y * grid.width + to.x ? [from, to] : [to, from];
   const total = dist(a, b);
   if (total <= 1) return true;
-  const eye = standH(tileAt(grid, a)) + EYE;
-  const aim = standH(tileAt(grid, b)) + EYE;
+  // quem nada na funda mira e é mirado da superfície (revisão de 13/11): com a altura do fundo, a linha passava por baixo do
+  // chão vizinho e quem estava na água ficava invisível a 3 casas ou mais; o acerto continua pior pela altura (standH)
+  const sight = (p: Pos) => { const t = tileAt(grid, p); return isDeep(t) ? t.h : standH(t); };
+  const eye = sight(a) + EYE;
+  const aim = sight(b) + EYE;
   let x = a.x, y = a.y;
   const dx = Math.abs(b.x - a.x), dy = -Math.abs(b.y - a.y);
   const sx = a.x < b.x ? 1 : -1, sy = a.y < b.y ? 1 : -1;

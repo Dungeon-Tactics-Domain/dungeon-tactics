@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { Ambience, LIMIT, MOODS, kindOf } from '../src/client/ambience.ts';
+import { Ambience, LIMIT, MOODS, extH, kindOf } from '../src/client/ambience.ts';
 import { chapterScenario } from '../src/client/campaign.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
@@ -33,9 +33,10 @@ describe('arredores do tabuleiro', () => {
           for (let i = 0; i < ext.count; i++) {
             ext.getMatrixAt(i, m);
             v.setFromMatrixPosition(m);
-            const tx = Math.min(Math.max(Math.floor(v.x + grid.width / 2), 0), grid.width - 1), ty = Math.min(Math.max(Math.floor(v.z + grid.height / 2), 0), grid.height - 1);
+            const ci = Math.floor(v.x + grid.width / 2), cj = Math.floor(v.z + grid.height / 2);
+            const ring = Math.max(-ci, -cj, ci - grid.width + 1, cj - grid.height + 1);
             const top = v.y + new THREE.Vector3().setFromMatrixScale(m).y / 2;
-            expect(top).toBeLessThanOrEqual((grid.tiles[ty * grid.width + tx].h + 1) * step + 1e-6);
+            expect(top).toBeLessThanOrEqual((extH(grid, ci, cj, ring) + 1) * step + 1e-6); // a menor casa por perto: a câmera olha na diagonal
           }
           return;
         }

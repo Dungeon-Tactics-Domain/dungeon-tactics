@@ -3,7 +3,7 @@ import { chooseTurn } from '../src/shared/battle/ai.ts';
 import { hitChance, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { type Grid } from '../src/shared/battle/grid.ts';
-import { reachable } from '../src/shared/battle/pathing.ts';
+import { lineOfSight, reachable } from '../src/shared/battle/pathing.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // Água rasa e funda (decisão do Fernando de 12/11, "como no FFT", BMG 6.5): rasa custa 2 de movimento, 2h ou mais não
@@ -46,6 +46,11 @@ describe('água', () => {
     expect(reachable(g, s, 'a').has('3,0')).toBe(true);
     const strike = ABILITIES.strike;
     expect(hitChance(g, strike, { x: 1, y: 0 }, { x: 2, y: 0 })).toBe(Math.min(95, strike.accuracy)); // mesmo nível
+  });
+
+  it('quem nada na funda é visto de longe pela superfície (revisão de 13/11: a 3 casas ou mais ficava invisível)', () => {
+    const g = withWater(flat(8, 1), [[6, 0, 2]]);
+    for (let x = 0; x <= 4; x++) expect(lineOfSight(g, { x, y: 0 }, { x: 6, y: 0 })).toBe(true);
   });
 
   it('empurrão para na água funda, como numa parede (suposição nossa)', () => {

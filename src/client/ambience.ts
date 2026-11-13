@@ -110,6 +110,14 @@ const DARK_TONE: Record<string, string> = {
   grass: '#3f8a35', tree: '#3f8a35', tree2: '#3f8a35', tree3: '#3f8a35', tree4: '#3f8a35', sand: '#b39a5e', wood: '#8a6a44', brick: '#8a5a44',
   rock: '#7a7d86', gold: '#7a7d86', summit: '#5a5a62', stone: '#8a8c92', snow: '#dfe6ee', snow_rock: '#9aa3ad', bare1: '#dfe6ee', bare2: '#dfe6ee',
 };
+// altura (h) da casa mais baixa do tabuleiro a até `ring` casas de (i, j): a extensão nunca passa dela
+export const extH = (g: Grid, i: number, j: number, ring: number) => {
+  let h = Infinity;
+  for (let b = j - ring; b <= j + ring; b++) for (let a = i - ring; a <= i + ring; a++) {
+    if (a >= 0 && b >= 0 && a < g.width && b < g.height) h = Math.min(h, tileAt(g, { x: a, y: b }).h);
+  }
+  return h;
+};
 const DARK_FALLBACK = '#6b6f7a'; // pisos de cripta, altar e o resto: pedra
 
 // sorteio com semente: o mesmo mapa monta sempre os mesmos arredores
@@ -180,7 +188,8 @@ export class Ambience {
     Object.assign(u, { ambNear: { value: mood.near }, ambFar: { value: mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
     this.buildGround();
-    if (EXTEND !== 'nenhuma') this.buildExtension(rand);
+    // na cripta não: as paredes, tochas e cristais ficam nessa faixa e sumiam dentro das colunas (revisão de 13/11)
+    if (EXTEND !== 'nenhuma' && !mood.walls) this.buildExtension(rand);
     for (const p of mood.props) this.scatter(p, models.get(p.model)!, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
@@ -252,7 +261,9 @@ export class Ambience {
       const t = tileAt(this.grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
       if (t.look === 'water' || t.look === 'bridge') continue; // o rio segue no chão dos arredores
       const ring = Math.max(-i, -j, i - W + 1, j - H + 1);
-      const top = (t.h + 1 - (rand() < 0.15 + 0.12 * ring ? 1 : 0)) * step;
+      // altura = a menor casa do tabuleiro a até `ring` casas (revisão de 13/11): a câmera olha na diagonal, e copiar só a casa
+      // em linha reta deixava uma coluna alta na frente de um boneco numa casa baixa ao lado (tapava meio boneco na Colina)
+      const top = (extH(this.grid, i, j, ring) + 1 - (rand() < 0.15 + 0.12 * ring ? 1 : 0)) * step;
       if (top <= BOTTOM + 0.1) continue;
       const x = i - this.hw + 0.5, z = j - this.hh + 0.5;
       at.push(new THREE.Matrix4().makeScale(0.96, top - BOTTOM, 0.96).setPosition(x, (top + BOTTOM) / 2, z));
