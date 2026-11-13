@@ -3,7 +3,7 @@ import { neighbors, posKey, type Grid } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 
 export const DEEP_DROP = 0.45; // quanto a superfície da água funda fica abaixo da rasa, em níveis (só desenho; a regra lê depth)
-export const WADE = 0.3; // quanto o boneco afunda na água rasa, em níveis: anda com a água nas canelas (a regra o põe 1 abaixo da margem)
+export const WADE = 0.45; // quanto o boneco afunda na água rasa, em níveis: água pela cintura (13/11: com 0,3 as pernas quase não apareciam na água transparente; a regra o põe 1 abaixo da margem)
 const DEEP_BED = 1; // leito da funda, em níveis abaixo da superfície: some na cor escura, só não pode ficar à vista
 
 export interface WaterLevel { surface: number; bed: number; deep: boolean; under?: true }
