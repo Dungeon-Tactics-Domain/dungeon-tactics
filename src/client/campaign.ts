@@ -31,7 +31,8 @@ export const SPEAKERS = {
   lia: { name: 'Lia', def: 'rogue', pitch: 420 },
   vesper: { name: 'Vesper', def: 'dark_mage', pitch: 110 },
   shade: { name: 'A Sombra', en: 'The Shade', def: 'dark_mage', pitch: 80 },
-  merc: { name: 'Mercenário', en: 'Mercenary', def: 'soldier', pitch: 180 },
+  // os inimigos da fase 1 são esqueletos na tela (o Soldado usa o boneco de esqueleto): quem fala é o capitão deles
+  merc: { name: 'Capitão de ossos', en: 'Bone captain', def: 'soldier', pitch: 180 },
   narr: { name: '', def: 'beacon', pitch: 220 },
   // o protagonista criado pelo jogador: nome e boneco trocados na hora (talk.ts recebe o herói salvo)
   hero: { name: 'Você', en: 'You', def: 'warrior', pitch: 240 },
@@ -67,9 +68,9 @@ export const CHAPTERS: Chapter[] = [
     intro: [
       L('narr', 'Os Faróis protegem os vilarejos do Véu, a névoa onde os mortos não descansam. Um a um, eles estão se apagando.', 'The Beacons keep the villages safe from the Veil, the mist where the dead never rest. One by one, they are going dark.'),
       L('bran', 'Caravana parada no meio da estrada. Isso não é acidente.', 'A caravan stopped in the middle of the road. That is no accident.'),
-      L('lia', 'Mercenários. E esse arqueiro de ossos... só um homem paga com mortos.', 'Mercenaries. And that bone archer... only one man pays with the dead.'),
-      L('merc', 'Nada pessoal. O mago sombrio paga bem pelos cristais que vocês levam.', 'Nothing personal. The dark mage pays well for the crystals you\'re carrying.'),
-      L('tess', 'Então que ele pague o enterro. Formação!', 'Then let him pay for the burial. Formation!'),
+      L('lia', 'Soldados de ossos, e de armadura. Só um homem põe os mortos para trabalhar.', 'Bone soldiers, in armor. Only one man puts the dead to work.'),
+      L('merc', 'Nada pessoal. O mago sombrio quer os cristais que vocês levam.', 'Nothing personal. The dark mage wants the crystals you\'re carrying.'),
+      L('tess', 'Então ele que venha buscar. Formação!', 'Then let him come and take them. Formation!'),
       L('hero', 'Ninguém encosta na caravana. Comigo!', 'No one touches the caravan. With me!'),
       // dicas da 1ª fase: o jogo ainda não tem tutorial; quem abre a campanha aprende o básico aqui
       L('narr', 'Dica: na sua vez, Mover anda até uma casa clara e Agir usa uma habilidade. Dá para fazer os dois, em qualquer ordem.', 'Tip: on your turn, Move walks to a lit tile and Act uses an ability. You can do both, in any order.'),
