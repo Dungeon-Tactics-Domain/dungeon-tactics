@@ -25,8 +25,8 @@ import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roste
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { talk } from './talk.ts';
-import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld } from './world.ts';
-import { openWorld } from './world-ui.ts';
+import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
+import { openParty, openWorld } from './world-ui.ts';
 import { HERO_KEY, parseHero } from './hero.ts';
 import { createHero } from './create-ui.ts';
 
@@ -719,7 +719,8 @@ async function worldScreen(host: HTMLElement) {
     store.set(WORLD_KEY, String(done));
     view.refresh(done);
   };
-  const view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; } });
+  const view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
+    party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); } });
 }
 
 void boot();

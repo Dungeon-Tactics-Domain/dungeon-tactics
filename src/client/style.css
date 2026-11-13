@@ -282,3 +282,12 @@ button[hidden] { display: none; }
 @keyframes announce { 0% { opacity: 0; transform: translate(-50%, -50%) scaleX(.3); } 12% { opacity: 1; transform: translate(-50%, -50%) scaleX(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .announce { animation: none; } }
 .tile-info:empty { display: none; } /* fim de batalha: sem casa sob o cursor, a caixa vazia sumia de sentido */
+
+/* Tela Grupo do mapa (world-ui.ts, openParty): uma linha por herói, retrato à esquerda */
+.dialog.party { width: min(560px, 100%); }
+.party-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.party-card { display: flex; gap: 12px; align-items: center; }
+.party-card .portrait { width: 48px; height: 64px; }
+.party-class, .party-more, .party-bench { color: var(--muted); }
+.party-stats, .party-skills { margin: 2px 0 0; font-size: var(--fs-sm); }
+.party-stats { font-variant-numeric: tabular-nums; }

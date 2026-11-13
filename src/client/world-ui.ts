@@ -2,9 +2,12 @@
 // ponto em ponto. Setas (ou A D W S) andam, Enter entra, Esc volta ao título; clique num ponto aberto anda até ele.
 // Painel do lugar no canto de baixo à direita, como o nome do lugar no mapa do FFT; arte e texto nossos.
 import { starText } from './campaign.ts';
+import { UNIT_DEFS } from '../shared/battle/units.ts';
+import type { DevUnit } from './dev-roster.ts';
+import { dialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { portrait } from './hud.ts';
-import { t } from './i18n.ts';
+import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { sfx } from './sound.ts';
 import { WORLD, isOpen, step } from './world.ts';
@@ -21,12 +24,27 @@ const TERRAIN = `<svg class="world-art" viewBox="0 0 100 100" preserveAspectRati
   <polyline class="road" points="${WORLD.slice(0, -1).map((w) => `${w.x},${w.y}`).join(' ')}" />
 </svg>`;
 
+// Tela Grupo (como a formação do FFT): retrato, classe, números e as habilidades já aprendidas de quem vai à próxima
+// batalha; diz quem fica no acampamento para o protagonista entrar. Usa o dialog() de sempre.
+export function openParty(units: DevUnit[], benched: string | null) {
+  dialog('party', t('Grupo', 'Party'), [
+    el('ul', { class: 'party-list' }, ...units.map((u) => el('li', { class: 'party-card' }, portrait(u.base),
+      el('div', {},
+        el('strong', {}, u.name), el('span', { class: 'party-class' }, ` · ${unitName(u.base)}`),
+        el('p', { class: 'party-stats' }, t(`Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move}`, `HP ${u.hp} · Speed ${u.speed} · Move ${u.move}`)),
+        el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · '),
+          ...(UNIT_DEFS[u.base].abilities.length > u.abilities.length ? [el('span', { class: 'party-more' }, t(` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} na jornada)`, ` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} on the journey)`))] : [])))))),
+    ...(benched ? [el('p', { class: 'party-bench' }, t(`${benched} fica no acampamento e segue nas conversas.`, `${benched} stays at camp and keeps talking in the story.`))] : []),
+  ]);
+}
+
 export interface WorldOptions {
   done: number; // pontos já passados (world.ts)
   hero: string; // ficha do retrato que anda no mapa
   stars: number[]; // melhor nota de cada fase (campaign.ts)
   enter: (i: number) => void;
   back: () => void;
+  party: () => void; // tela do grupo (main.ts), como a formação do FFT
 }
 
 export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLElement; refresh: (done: number) => void } {
@@ -46,12 +64,13 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLEl
   const kindText = el('p', { class: 'world-kind' });
   const enterBtn = el('button', { type: 'button', class: 'item focus', onclick: () => go() }, t('Entrar', 'Enter'));
   const panel = el('div', { class: 'panel world-panel', 'aria-live': 'polite' }, place, kindText, el('div', { class: 'world-actions' }, enterBtn,
+    el('button', { type: 'button', class: 'item', onclick: () => opts.party() }, t('Grupo', 'Party')),
     el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title'))));
   const root = el('div', { class: 'world' },
     el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, token),
     el('div', { class: 'panel world-head' }, el('strong', {}, t('Mapa do Vale', 'Valley Map')), ` · ${t(`${Math.min(done, WORLD.length)} de ${WORLD.length}`, `${Math.min(done, WORLD.length)} of ${WORLD.length}`)}`),
     panel,
-    el('p', { class: 'panel world-help' }, t('Setas andam · Enter entra · Esc volta', 'Arrows walk · Enter enters · Esc goes back')));
+    el('p', { class: 'panel world-help' }, t('Setas andam · Enter entra · G grupo · Esc volta', 'Arrows walk · Enter enters · G party · Esc goes back')));
   (root.querySelector('.world-svg') as HTMLElement).innerHTML = TERRAIN;
   host.append(root);
 
@@ -95,6 +114,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLEl
       e.preventDefault();
       if (!e.repeat) go();
     } else if (k === 'escape') back();
+    else if (k === 'g') opts.party();
   });
   // controle: o mesmo tradutor da batalha (gamepad.ts). Direcional anda, A entra, B volta; com uma conversa aberta,
   // A aperta o botão em foco (a caixa de fala), como na batalha

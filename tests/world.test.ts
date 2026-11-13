@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SPEAKERS } from '../src/client/campaign.ts';
-import { ALL_CHAPTERS, WORLD, afterNode, chaptersOnMap, isOpen, nodeOfChapter, parseWorld, step } from '../src/client/world.ts';
+import { ALL_CHAPTERS, WORLD, afterNode, chaptersOnMap, isOpen, nodeOfChapter, parseWorld, partyFor, step } from '../src/client/world.ts';
 
 describe('mapa mundial', () => {
   it('toda fase tem um ponto, uma vez só, na ordem da campanha; o resto é história com fala', () => {
@@ -31,6 +31,15 @@ describe('mapa mundial', () => {
     expect(step(2, 1, 3)).toBe(3);
     expect(step(3, 1, 3)).toBe(3);
     expect(step(3, -1, 3)).toBe(2);
+  });
+
+  it('o Grupo mostra quem vai à próxima batalha, com as habilidades dela, e quem fica no acampamento', () => {
+    const start = partyFor(0, { name: 'Aria', cls: 'mage' });
+    expect(start.units.map((u) => u.name)).toEqual(['Bran', 'Tess', 'Aria', 'Lia']);
+    expect(start.units.every((u) => u.abilities.length === 2)).toBe(true);
+    expect(start.benched).toBe('Odo');
+    expect(partyFor(WORLD.length, null)).toMatchObject({ benched: null });
+    expect(partyFor(WORLD.length, null).units[0].abilities).toHaveLength(4);
   });
 
   it('o progresso salvo só aceita um número válido', () => {

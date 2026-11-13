@@ -3,6 +3,8 @@
 // de ponto em ponto e entra no escolhido. Puro e testado; a tela fica em world-ui.ts.
 // Os pontos vêm em ordem: vencer (batalha) ou ver (história) um ponto libera o seguinte. Rejogar o que já passou vale.
 import { CHAPTERS, type Line } from './campaign.ts';
+import type { DevUnit } from './dev-roster.ts';
+import { withHero, type Hero } from './hero.ts';
 
 export interface WorldNode {
   id: string;
@@ -91,6 +93,13 @@ export const nodeOfChapter = (n: number) => WORLD.findIndex((w) => w.chapter ===
 export function step(i: number, dir: 1 | -1, done: number): number {
   const j = i + dir;
   return j >= 0 && j < WORLD.length && isOpen(j, done) ? j : i;
+}
+
+// Grupo da próxima batalha (tela Grupo do mapa): as habilidades já liberadas e quem fica de fora para o protagonista entrar
+export function partyFor(done: number, hero: Hero | null): { units: DevUnit[]; benched: string | null } {
+  const next = WORLD.slice(done).find((w) => w.chapter !== undefined)?.chapter ?? CHAPTERS.length - 1;
+  const base = CHAPTERS[next].setup;
+  return { units: withHero(base, hero).heroes, benched: hero ? base.heroes.find((u) => u.base === hero.cls)?.name ?? null : null };
 }
 
 // toda fase da campanha tem um ponto no mapa, uma vez só (o teste confere)
