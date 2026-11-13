@@ -549,7 +549,7 @@ class Game {
       el('p', {}, won ? t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.') : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
       // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
       el('div', { class: 'menu-actions' },
-        won ? el('button', { type: 'button', class: 'primary', onclick: toWorld }, t('Voltar ao mapa', 'Back to the map'))
+        won ? el('button', { type: 'button', class: 'primary', onclick: () => { location.search = `?mundo&de=${nodeOfChapter(n)}`; } }, t('Voltar ao mapa', 'Back to the map'))
           : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Tentar de novo', 'Try again')),
         ...(won ? [] : [el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa', 'Map'))])),
     ]);
@@ -789,7 +789,8 @@ async function worldScreen(host: HTMLElement) {
     view = view.refresh(done);
   };
   let view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
-    party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); } });
+    party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); },
+    from: Number(new URLSearchParams(location.search).get('de') ?? -1) });
 }
 
 void boot();

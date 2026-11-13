@@ -46,6 +46,7 @@ export interface WorldOptions {
   enter: (i: number) => void;
   back: () => void;
   party: () => void; // tela do grupo (main.ts), como a formação do FFT
+  from?: number; // ponto de onde o grupo vem (fase recém-vencida): abre ali e anda sozinho até o próximo aberto
 }
 
 export interface WorldView {
@@ -56,7 +57,8 @@ export interface WorldView {
 export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   const { done, hero, stars, enter, back } = opts;
   // começa no ponto mais avançado aberto (o próximo a fazer)
-  let at = Math.min(done, WORLD.length - 1);
+  const goal = Math.min(done, WORLD.length - 1);
+  let at = opts.from !== undefined && opts.from >= 0 && opts.from < goal ? opts.from : goal;
   let walking = false;
   const tag = el('span', { class: 'world-tag' });
   // nome do lugar logo abaixo do retrato: o olho não precisa ir ao painel do canto para saber onde o grupo está
@@ -160,5 +162,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   root.style.setProperty('--walk-ms', `${WALK_MS}ms`);
   show();
   enterBtn.focus();
+  // volta de uma vitória: o grupo anda até o ponto que acabou de abrir (o avanço na jornada fica visível)
+  if (at !== goal) setTimeout(() => void walkTo(goal), 500);
   return { root, refresh: (newDone: number) => { root.remove(); return openWorld(host, { ...opts, done: newDone }); } };
 }
