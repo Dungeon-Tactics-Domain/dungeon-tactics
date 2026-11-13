@@ -11,7 +11,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { FACING, neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { FACING, neighbors, posKey, standH, tileAt, type Grid } from '../shared/battle/grid.ts';
 import { footprint } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -102,6 +102,7 @@ const WALL_COLOR: Record<string, string> = {
 const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
 const DEEP_DROP = 0.45; // quanto a superfície da água funda fica abaixo da rasa, em níveis (só desenho; a regra lê depth)
+const WADE = 0.3; // quanto o boneco afunda na água rasa, em níveis: anda com a água nas canelas (a regra o põe 1 abaixo da margem)
 const TINT_GLOW = 0.45; // força do brilho próprio (UnitDef.tint): visível no boneco escuro sem apagar a textura
 
 // Paleta reduzida: cada canal em poucos degraus, depois da conversão para sRGB (degraus iguais ao olho). 6 níveis
@@ -241,6 +242,12 @@ export class BattleScene {
     // na rampa a unidade fica no meio da subida; na água funda, rebaixada como o desenho (cursor e marcas não flutuam)
     const drop = (t.depth ?? 0) >= 2 ? DEEP_DROP : 0;
     return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step, p.y - this.grid.height / 2 + 0.5);
+  }
+
+  // onde o boneco fica de pé: a casa, mais baixo na água rasa (marcas e cursor seguem em world(), na superfície)
+  private stand(p: Pos): THREE.Vector3 {
+    const w = this.world(p);
+    return tileAt(this.grid, p).depth === 1 ? w.setY(w.y - WADE * this.step) : w;
   }
 
   private buildBoard(pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>) {
@@ -546,7 +553,7 @@ export class BattleScene {
 
   // centro das casas que a unidade ocupa, na altura da mais alta (unidade grande: o meio do quadrado 2x2)
   private unitWorld(u: UnitState): THREE.Vector3 {
-    const tiles = footprint(u).map((p) => this.world(p));
+    const tiles = footprint(u).map((p) => this.stand(p));
     const c = tiles.reduce((a, b) => a.add(b), new THREE.Vector3()).divideScalar(tiles.length);
     return c.setY(Math.max(...tiles.map((w) => w.y)));
   }
@@ -673,10 +680,12 @@ export class BattleScene {
         this.play(v, 'Walking_A', false, 1.25);
         const n = e.path.length - 1;
         for (let i = 1; i <= n; i++) {
-          const a = this.world(e.path[i - 1]), b = this.world(e.path[i]);
+          const a = this.stand(e.path[i - 1]), b = this.stand(e.path[i]);
           this.face(v, e.path[i]);
-          if (Math.abs(b.y - a.y) > 0.01) {
-            await this.jump(v, a, b, Math.max(1, Math.round(Math.abs(b.y - a.y) / this.step)));
+          // pula quando a altura de pé muda (a mesma conta do Salto e do som dos passos, stepMs); rampa do estudo é plano
+          const dh = standH(tileAt(this.grid, e.path[i])) - standH(tileAt(this.grid, e.path[i - 1]));
+          if (dh !== 0) {
+            await this.jump(v, a, b, Math.abs(dh));
             if (i < n) this.play(v, 'Walking_A', false, 1.25);
             continue;
           }
@@ -726,7 +735,7 @@ export class BattleScene {
         this.float(e.unit, `+${e.amount}`, 'heal');
         await this.wait(TIMING.hit);
       } else if (e.k === 'push') {
-        const a = v.holder.position.clone(), b = this.world(e.to);
+        const a = v.holder.position.clone(), b = this.stand(e.to);
         await this.animate(TIMING.push, (k) => v.holder.position.lerpVectors(a, b, k));
       } else if (e.k === 'charge') {
         // começa a carregar: o gesto longo de magia (efeito próprio de cada habilidade vem no bloco das animações)

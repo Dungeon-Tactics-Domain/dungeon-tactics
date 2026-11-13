@@ -157,7 +157,7 @@ button[hidden] { display: none; }
 .gauge-num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .floats { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-/* número de dano no ritmo do FFT (12/11): pula, fica parado para ler e some; 1,2 s = TIMING.float em timing.ts */
+/* número de dano no ritmo do FFT (12/11): pula, fica parado para ler e some; 1,5 s = TIMING.float em timing.ts */
 .float { position: absolute; transform: translate(-50%, -50%); font: 400 26px/1 var(--font-px); text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; animation: pop 1.5s linear forwards; }
 .float.dmg { color: #ffd0c4; }
 .float.big { font-size: 38px; color: #ffb199; } /* golpe de 25% da vida ou mais (scene.ts): maior e mais quente */
@@ -219,8 +219,8 @@ button[hidden] { display: none; }
 .dev-skills summary { cursor: pointer; color: var(--focus); font-size: var(--fs-sm); }
 .dev-skills { font-size: var(--fs-sm); }
 .dev-check { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--ink); }
-.dev-issues { color: var(--focus); margin: var(--gap) 0; }
-.dev-msg { color: var(--focus); min-height: 1em; }
+.dialog .dev-issues { color: var(--focus); margin: var(--gap) 0; }
+.dialog .dev-msg { color: var(--focus); min-height: 1em; }
 
 /* caixa de fala da campanha (talk.ts): embaixo, larga, pergaminho como o resto do HUD; o ▼ pisca quando a frase acabou */
 .talk-overlay { place-items: end center; background: rgba(10, 6, 20, .35); padding-bottom: 24px; gap: 12px; align-content: end; }
@@ -237,7 +237,7 @@ button[hidden] { display: none; }
 .camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
 .dialog .stars { font: 400 40px/1 var(--font-px); color: var(--star-ink); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
 .dialog .mvp { font-weight: 700; color: var(--gold-trim); margin: 2px 0 10px; } /* destaque da batalha (tally.ts), no fim da fase e da batalha avulsa */
-.learned { font-weight: 700; color: var(--focus); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha) */
+.dialog .learned { font-weight: 700; color: var(--focus); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha); .dialog na frente para vencer o .dialog p */
 /* tela de título (main.ts, titleScreen): nome grande e as três portas do jogo */
 .dialog.title { width: min(460px, 100%); text-align: center; }
 .dialog.title h2 { font-size: 38px; letter-spacing: 1px; }

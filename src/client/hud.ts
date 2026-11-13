@@ -232,9 +232,10 @@ export class BattleHud {
   private readonly toolsMenu = el('div', { class: 'panel tools-menu', role: 'menu', hidden: true });
   private readonly burger = iconButton(el('span', { class: 'burger-bars', 'aria-hidden': 'true' }), t('Menu', 'Menu'),
     () => this.showTools(!!this.toolsMenu.hidden), { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' });
-  // fecha ao clicar fora ou ao apertar qualquer tecla (Esc também volta no jogo; a tecla da ação continua agindo)
+  // fecha ao clicar fora ou ao apertar qualquer tecla (Esc também volta no jogo; a tecla da ação continua agindo). A
+  // tecla fecha mesmo com o foco no botão do menu, que fica com ele depois do clique
   private readonly closeOutside = (e: Event) => {
-    if (!(e.target instanceof Node && this.toolsMenu.parentElement?.contains(e.target))) this.showTools(false);
+    if (e.type === 'keydown' || !(e.target instanceof Node && this.toolsMenu.parentElement?.contains(e.target))) this.showTools(false);
   };
   private showTools(open: boolean) {
     this.toolsMenu.hidden = !open;
