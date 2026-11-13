@@ -260,11 +260,28 @@ const WOOD_MAP = [
   'gTsgggggggyg',
   'ggsggggTgggg',
 ];
+const WOOD_H = [
+  '443333333344',
+  '443333333344',
+  '222122221222',
+  '221100001122',
+  '000000000000',
+  '000000000000',
+  '000000000000',
+  '100000000001',
+  '210000000012',
+  '211000000112',
+  '221100001122',
+  '321110011123',
+];
 const ASH_WOOD: Scenario = {
   id: 'ash_wood',
   name: 'Bosque das Cinzas',
   en: 'Ash Wood',
-  grid: { width: 12, height: 12, tiles: WOOD_MAP.flatMap((row) => [...row].map((c) => ({ ...WOOD_KEY[c] }))) },
+  // altura de cada casa num mapa à parte (13/11, pedido do Fernando: "fases muito retas"; referência de relevo: Gariland
+  // tem 47% de vizinhos com queda de 2+, o Bosque tinha 0%): o acampamento inimigo num planalto 4 níveis acima do rio,
+  // degraus de 1 que fazem rampas e quedas de 2 que obrigam a contornar. A água e a ponte mantêm a própria altura.
+  grid: { width: 12, height: 12, tiles: WOOD_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('Wwb'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) }))) },
   spawns: [
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 3, y: 11 },
     { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 10 },
