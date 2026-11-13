@@ -22,7 +22,7 @@ import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } f
 import { TIMING, pace } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
-import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
+import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, slotsOf } from './dev-roster.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
@@ -580,10 +580,14 @@ class Game {
     }
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
       ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
-        el('p', {}, t('★ vencer · ★ ninguém caiu · ★ Farol inteiro (sem Farol: todos acima da metade da vida)', '★ win · ★ nobody fell · ★ Beacon untouched (no Beacon: everyone above half HP)')),
+        // só o critério da 3ª estrela que vale nesta fase (com Farol ou sem), sem o parêntese que explicava os dois
+        el('p', {}, slotsOf(CHAPTERS[n].setup.map).objective.length
+          ? t('★ vencer · ★ ninguém caiu · ★ Farol inteiro', '★ win · ★ nobody fell · ★ Beacon untouched')
+          : t('★ vencer · ★ ninguém caiu · ★ todos acima da metade da vida', '★ win · ★ nobody fell · ★ everyone above half HP')),
         ...this.mvpLine(),
         ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
-      el('p', {}, won ? t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.') : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
+      // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair
+      el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
       // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
       el('div', { class: 'menu-actions' },
         won ? el('button', { type: 'button', class: 'primary', onclick: () => { location.search = `?mundo&de=${nodeOfChapter(n)}`; } }, t('Voltar ao mapa', 'Back to the map'))
