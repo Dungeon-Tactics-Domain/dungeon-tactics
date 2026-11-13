@@ -101,11 +101,14 @@ const SUN = new THREE.Vector3(6, -12, -4).normalize(); // o raio de luz vem de o
 // Tetos de 8 (modelos) e 5,5 (chão): mais alto que isso, longe, chega perto do plano da frente da câmera e pouco se veria
 export const LIMIT = (d: number) => Math.min(0.5 + 0.55 * d, 8);
 const GROUND_MAX = 5.5;
+// versão de teste ?fade=preto (13/11, pedido do Fernando: "fade para preto ao redor do mapa"): a neblina dos arredores
+// vira preto e fecha em 7 casas da borda; o tabuleiro não recebe essa neblina e fica igual
+const FADE = typeof location !== 'undefined' && new URLSearchParams(location.search).get('fade') === 'preto';
 const EXT_RING = 5; // casas de extensão cinza em cada lado na versão de teste (?extensao)
 // Extensão do mapa: casas de fora na cor do piso da borda, bem escuras, com sombra das copas. Padrão em todos os mapas desde
 // 13/11 (o Fernando gostou da versão de teste e escolheu "padrão em todos os mapas"); ?extensao=cinza mostra a 1ª versão
 // de teste e ?extensao=nenhuma tira
-const EXTEND = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('extensao') : null) || 'escuro';
+export const EXTEND = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('extensao') : null) || 'escuro';
 const DARK_TONE: Record<string, string> = {
   grass: '#3f8a35', tree: '#3f8a35', tree2: '#3f8a35', tree3: '#3f8a35', tree4: '#3f8a35', sand: '#b39a5e', wood: '#8a6a44', brick: '#8a5a44',
   rock: '#7a7d86', gold: '#7a7d86', summit: '#5a5a62', stone: '#8a8c92', snow: '#dfe6ee', snow_rock: '#9aa3ad', bare1: '#dfe6ee', bare2: '#dfe6ee',
@@ -185,11 +188,11 @@ export class Ambience {
     this.hh = grid.height / 2;
     const u = this.u;
     u.ambHalf.value.set(this.hw, this.hh);
-    Object.assign(u, { ambNear: { value: mood.near }, ambFar: { value: mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
+    Object.assign(u, { ambNear: { value: FADE ? 0.5 : mood.near }, ambFar: { value: FADE ? 7 : mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
     this.buildGround();
     // na cripta não: as paredes, tochas e cristais ficam nessa faixa e sumiam dentro das colunas (revisão de 13/11)
-    if (EXTEND !== 'nenhuma' && !mood.walls) this.buildExtension(rand);
+    if (EXTEND !== 'nenhuma' && EXTEND !== 'textura' && !mood.walls) this.buildExtension(rand); // textura: a cena desenha (scene.ts)
     for (const p of mood.props) this.scatter(p, models.get(p.model)!, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
@@ -516,6 +519,7 @@ export class Ambience {
     const mix = ([night, day]: Pair, out: THREE.Color) => out.set(night).lerp(new THREE.Color(day), k * k);
     mix(m.low, this.u.ambLow.value);
     mix(m.high, this.u.ambHigh.value);
+    if (FADE) { this.u.ambLow.value.set(0); this.u.ambHigh.value.set(0); } // ?fade=preto: os arredores somem no preto
     mix(m.beams.color, this.beamU.uColor.value);
     mix(m.motes.color, this.moteU.uColor.value);
     this.beamU.uPower.value = THREE.MathUtils.lerp(m.beams.power[0], m.beams.power[1], k * k);

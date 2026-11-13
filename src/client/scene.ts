@@ -24,7 +24,7 @@ import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 import { Water } from './water.ts';
 import { DEEP_DROP, SWIM, WADE, waterLevels, type WaterLevel } from './water-levels.ts';
-import { loadAmbience, type Ambience } from './ambience.ts';
+import { EXTEND, extH, loadAmbience, type Ambience } from './ambience.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -378,6 +378,7 @@ export class BattleScene {
     this.instanced(side, batch.side.at);
     this.instanced(stone, batch.stone.at);
     looks.build();
+    if (EXTEND === 'textura') this.buildTexturedExtension();
     if (levels.size) {
       this.water = new Water(this.scene, this.grid, levels, this.step);
       this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
@@ -494,6 +495,42 @@ export class BattleScene {
 
   // Um InstancedMesh por malha da peça em vez de um objeto por bloco: o 20x20 fazia 2 321 draw calls por quadro e caía
   // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
+  // Versão de teste ?extensao=textura (13/11, pedido do Fernando: "os blocos de fora podem ter a textura, só mais escuros;
+  // os primeiros com fade para escuro"): EXT casas em volta com a peça do topo da casa da borda mais perto, escurecendo anel
+  // a anel (0,75 no 1º até 0,15 no 5º), e coluna lisa escura até o chão dos arredores. Sem regra nem clique. A altura segue
+  // extH (a casa mais baixa por perto), a mesma conta que impede a extensão de tapar boneco na diagonal
+  private buildTexturedExtension() {
+    const { width: W, height: H } = this.grid, RING = 5, BOTTOM = -3;
+    const tops = new Map<string, { at: THREE.Matrix4[]; tone: number[] }>();
+    const cols: THREE.Matrix4[] = [], colTone: number[] = [];
+    for (let j = -RING; j < H + RING; j++) for (let i = -RING; i < W + RING; i++) {
+      if (i >= 0 && j >= 0 && i < W && j < H) continue;
+      const t = tileAt(this.grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
+      if (t.look === 'water' || t.look === 'bridge') continue;
+      const ring = Math.max(-i, -j, i - W + 1, j - H + 1);
+      const name = LOOK[t.look ?? 'grass']?.top ?? LOOK.grass.top;
+      if (!this.lookPieces.has(name)) continue;
+      const top = (extH(this.grid, i, j, ring) + 1) * this.step, x = i - W / 2 + 0.5, z = j - H / 2 + 0.5;
+      const tone = 0.75 - 0.15 * (ring - 1);
+      let b = tops.get(name);
+      if (!b) tops.set(name, (b = { at: [], tone: [] }));
+      b.at.push(new THREE.Matrix4().makeTranslation(x, top, z));
+      b.tone.push(tone);
+      cols.push(new THREE.Matrix4().makeScale(1, top - this.step - BOTTOM, 1).setPosition(x, (top - this.step + BOTTOM) / 2, z));
+      colTone.push(tone * 0.5);
+    }
+    for (const [name, b] of tops) {
+      const o = this.lookPieces.get(name)!.clone();
+      const box = new THREE.Box3().setFromObject(o), size = box.getSize(new THREE.Vector3());
+      o.scale.set(1 / size.x, this.step / size.y, 1 / size.z);
+      o.position.set(-(box.min.x + box.max.x) / 2 / size.x, -box.max.y * (this.step / size.y), -(box.min.z + box.max.z) / 2 / size.z);
+      for (const inst of this.instanced(prepare(new THREE.Group().add(o)), b.at)) b.tone.forEach((k, n) => inst.setColorAt(n, new THREE.Color().setScalar(k)));
+    }
+    const col = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: '#2a3a22' }), cols.length);
+    cols.forEach((m, n) => { col.setMatrixAt(n, m); col.setColorAt(n, new THREE.Color().setScalar(colTone[n])); });
+    this.scene.add(col);
+  }
+
   private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
     const out: THREE.InstancedMesh[] = [];
     if (!at.length) return out;
