@@ -26,10 +26,11 @@ describe('grade', () => {
     expect(inBounds(grid, { x: -1, y: 0 })).toBe(false);
   });
 
-  it('só parede não anda; floresta e parede bloqueiam visão, floresta dá cobertura', () => {
+  it('parede e árvore não andam (13/11); entulho anda e dá cobertura; árvore e parede bloqueiam visão', () => {
     expect(TERRAIN.wall.walkable).toBe(false);
-    expect(TERRAIN.forest.walkable).toBe(true);
-    expect(TERRAIN.forest.cover).toBe(true);
+    expect(TERRAIN.forest.walkable).toBe(false);
+    expect(TERRAIN.rubble.walkable).toBe(true);
+    expect(TERRAIN.rubble.cover).toBe(true);
     expect(TERRAIN.floor.blocks).toBe(0);
     expect(TERRAIN.forest.blocks).toBeGreaterThan(0);
     expect(TERRAIN.wall.blocks).toBeGreaterThan(TERRAIN.forest.blocks);

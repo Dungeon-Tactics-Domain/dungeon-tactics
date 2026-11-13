@@ -1,4 +1,4 @@
-import { parseGrid, type Grid, type Tile } from './grid.ts';
+import { faceNearest, parseGrid, type Grid, type Tile } from './grid.ts';
 import type { Rules } from './rules.ts';
 import type { BattleState, Team } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -156,7 +156,7 @@ const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: str
   c: { terrain: 'wall', h: 1, look: 'crates' },
   r: { terrain: 'wall', h: 1, look: 'barrel' },
   x: { terrain: 'wall', h: 2, look: 'chest' },
-  u: { terrain: 'forest', h: 1, look: 'rubble' },
+  u: { terrain: 'rubble', h: 1, look: 'rubble' },
   s: { terrain: 'floor', h: 1, look: 'spikes', spikes: true }, // noite de 12/11: empurrar alguém para cá fere
 };
 const CRYPT_MAP = [
@@ -295,10 +295,11 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
   c: { terrain: 'wall', h: 0, look: 'crates' }, // no chão: a carga da caravana caída na estrada, não em cima de bloco
   x: { terrain: 'wall', h: 0, look: 'barrel' },
 };
+// sem as árvores em 1,0, 11,1 e 10,2 (13/11): com árvore sem passagem, os dois cantos de cima viravam bolsas fechadas
 const WOOD_MAP = [
-  'gtgggGGgggtg',
-  'tgGGgGGgTggt',
-  'ggGGrgggggTg',
+  'gggggGGgggtg',
+  'tgGGgGGgTggg',
+  'ggGGrggggggg',
   'gtgggggrggtg',
   'WWWbbWWWWwwW',
   'WWWbbWWWWwwW',
@@ -418,8 +419,10 @@ export function initialState(scenario: Scenario, seed: number): BattleState {
     scenario: scenario.id,
     units: scenario.spawns.map((s) => ({
       id: s.id, def: s.def, team: s.team, pos: { x: s.x, y: s.y }, hp: UNIT_DEFS[s.def].hp, ct: 0,
-      // direção e contadores só nascem em cenário que pede: o estado dos mapas do jogo fica igual
-      ...(scenario.rules?.facing && { facing: s.team === 'hero' ? 0 : 2 }),
+      // direção em todo mapa desde 13/11 (pedido do Fernando: "direção que o personagem vai olhar no fim de cada turno e
+      // as mecânicas ao redor"): nasce virado para o inimigo mais perto; o estudo do FFT mantém a dele. Contadores, só na ficha que pede
+      // (o Farol, que não joga, não tem frente nem costas)
+      ...(UNIT_DEFS[s.def].speed > 0 && { facing: scenario.rules?.facing ? (s.team === 'hero' ? 0 : 2) : faceNearest(s, scenario.spawns.filter((o) => o.team !== s.team)) }),
       ...(UNIT_DEFS[s.def].vars && { vars: { ...UNIT_DEFS[s.def].vars } }),
     })),
     rng: seed | 0,

@@ -1,12 +1,15 @@
 import type { Pos } from './types.ts';
 
-export type TerrainKind = 'floor' | 'forest' | 'wall';
+export type TerrainKind = 'floor' | 'forest' | 'rubble' | 'wall';
 
 // Poucos terrenos de propósito (spec, 25/10). `blocks` é quanto o terreno sobe acima da altura da casa para a linha de
 // visão: floresta tapa quem está no mesmo nível, mas quem está no alto enxerga por cima (é o que valoriza arqueiro e ladino).
 export const TERRAIN: Record<TerrainKind, { walkable: boolean; blocks: number; cover: boolean }> = {
   floor: { walkable: true, blocks: 0, cover: false },
-  forest: { walkable: true, blocks: 2, cover: true },
+  // árvore não se atravessa nem se pisa (13/11, pedido do Fernando: "árvores não devem ser passáveis"); continua tapando
+  // a visão. O entulho da cripta, que era "floresta" para ser cobertura pisável, virou terreno próprio
+  forest: { walkable: false, blocks: 2, cover: true },
+  rubble: { walkable: true, blocks: 2, cover: true },
   wall: { walkable: false, blocks: 4, cover: false },
 };
 
@@ -71,6 +74,20 @@ export const dist = (a: Pos, b: Pos) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y
 
 // Direções de `UnitState.facing`, na ordem de um giro: +y, +x, -y, -x
 export const FACING: Pos[] = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }];
+
+// De onde o ataque vem (BMG 1.4, diagrama): vale a maior entre as distâncias à frente, de lado e atrás do alvo; no empate
+// ganha a mais à frente (frente sobre lado, lado sobre costas). A altura das casas não conta. Era do estudo do FFT; desde
+// 13/11 vale no jogo (combat.ts, acerto pelo lado e pelas costas)
+export type Side = 'front' | 'side' | 'back';
+// direção de quem nasce (ou de save antigo sem direção): para o inimigo mais perto; sem inimigo, a primeira
+export const faceNearest = (from: Pos, foes: Pos[]) => (foes.length ? facingTo(from, foes.reduce((a, b) => (dist(from, b) < dist(from, a) ? b : a))) : 0);
+export function sideOf(target: Pos, facing: Pos, attacker: Pos): Side {
+  const dx = attacker.x - target.x, dy = attacker.y - target.y;
+  const ahead = dx * facing.x + dy * facing.y;
+  const lateral = Math.abs(dx * facing.y - dy * facing.x);
+  if (ahead > 0 && ahead >= lateral) return 'front';
+  return ahead < 0 && -ahead > lateral ? 'back' : 'side';
+}
 // direção de `from` para `to` pelo eixo de maior diferença (empate: o eixo x, como no empurrão)
 export function facingTo(from: Pos, to: Pos): number {
   const dx = to.x - from.x, dy = to.y - from.y;

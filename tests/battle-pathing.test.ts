@@ -45,14 +45,14 @@ describe('movimento', () => {
     expect(leaps(high, { x: 0, y: 0 }, 2)).toEqual([]); // pousar 3 acima passa do salto
   });
 
-  it('parede bloqueia o caminho, floresta não', () => {
+  it('parede e árvore bloqueiam o caminho (árvore desde 13/11)', () => {
     const g = gridOf(['.#...', '.....']);
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]); // move 4
     const r = reachable(g, s, 'a');
     expect(r.has('1,0')).toBe(false);
     expect(r.get('2,0')?.cost).toBe(4); // dá a volta por baixo
     const f = gridOf(['.T..']);
-    expect(reachable(f, stateOf([{ id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 }]), 'a').has('1,0')).toBe(true);
+    expect(reachable(f, stateOf([{ id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 }]), 'a').size).toBe(0);
   });
 
   it('inimigo bloqueia, aliado só deixa passar (não dá para parar em cima)', () => {

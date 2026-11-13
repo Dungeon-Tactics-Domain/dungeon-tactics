@@ -1,5 +1,5 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
-import { TERRAIN, canStand, dist, inBounds, samePos, standH, tileAt, type Grid } from './grid.ts';
+import { FACING, TERRAIN, canStand, dist, inBounds, samePos, sideOf, standH, tileAt, type Grid, type Side } from './grid.ts';
 import { MAX_JUMP, distTo, inAbilityRange, lineOfSight, nearestTile, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
@@ -17,11 +17,16 @@ export const COMBAT = {
   FALL_FREE: 1, // queda de até 1 nível é só um degrau
   FALL_DAMAGE: 5, // por nível além do degrau livre
   SPIKE_DAMAGE: 6, // casa de espinhos (grid.ts): o mesmo que um golpe fraco; número inicial, medido na fase que usa
+  // golpe físico pelo lado e pelas costas (13/11, direção no jogo, como o FFT: lá o lado tira a evasão de classe e as
+  // costas tiram também a do escudo). Nosso acerto não tem evasão: vira bônus. Números iniciais, medidos na campanha
+  SIDE_BONUS: 15,
+  BACK_BONUS: 30,
 };
 
 export interface TargetPreview {
   unit: string;
   chance: number; // % de acerto; cura sempre 100
+  side: Side; // de onde o golpe pega o alvo (frente sem direção); a interface diz "pelas costas" / "de lado"
   dmgMin: number;
   dmgMax: number;
   healMin: number;
@@ -39,13 +44,15 @@ export interface Preview {
 // cura e habilidade de apoio miram aliado e não erram
 const isHeal = (a: AbilityDef) => a.heal[1] > 0 || !!a.ally;
 
-export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): number {
+// `side`: de onde o golpe pega o alvo (sideOf); magia não olha a direção (no FFT ela só passa pelo escudo mágico)
+export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, side: Side = 'front'): number {
   if (isHeal(ability)) return 100;
   const d = dist(from, to);
   const dh = standH(tileAt(grid, from)) - standH(tileAt(grid, to));
   // cobertura só vale contra quem ataca de longe: o corpo a corpo enxerga o alvo por inteiro
   const cover = d > 1 && TERRAIN[tileAt(grid, to).terrain].cover ? COMBAT.COVER_PENALTY : 0;
-  const raw = ability.accuracy - COMBAT.DIST_PENALTY * Math.max(0, d - 1) + COMBAT.HEIGHT_BONUS * dh - cover;
+  const flank = ability.magic ? 0 : side === 'back' ? COMBAT.BACK_BONUS : side === 'side' ? COMBAT.SIDE_BONUS : 0;
+  const raw = ability.accuracy - COMBAT.DIST_PENALTY * Math.max(0, d - 1) + COMBAT.HEIGHT_BONUS * dh - cover + flank;
   return Math.max(COMBAT.MIN_CHANCE, Math.min(COMBAT.MAX_CHANCE, raw));
 }
 
@@ -80,15 +87,20 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   const hit = affected(state, actor, ability, center);
   if (!hit.length) return fail('no-target');
   const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? ability.damage;
-  const targets = hit.map((u) => ({
-    unit: u.id,
+  const targets = hit.map((u) => {
     // contra unidade grande, a casa dela mais perto de quem ataca (distância e altura)
-    chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? hitChance(grid, ability, nearestTile(actor, nearestTile(u, actor.pos)), nearestTile(u, actor.pos)),
-    dmgMin: Math.floor(dmgMin * chargingBonus(state, ability, u)),
-    dmgMax: Math.floor(dmgMax * chargingBonus(state, ability, u)),
-    healMin: ability.heal[0],
-    healMax: ability.heal[1],
-  }));
+    const at = nearestTile(u, actor.pos), from = nearestTile(actor, at);
+    const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
+    return {
+      unit: u.id,
+      side,
+      chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? hitChance(grid, ability, from, at, side),
+      dmgMin: Math.floor(dmgMin * chargingBonus(state, ability, u)),
+      dmgMax: Math.floor(dmgMax * chargingBonus(state, ability, u)),
+      healMin: ability.heal[0],
+      healMax: ability.heal[1],
+    };
+  });
   return { ok: true, center, targets };
 }
 

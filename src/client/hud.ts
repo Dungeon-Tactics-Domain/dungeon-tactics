@@ -147,7 +147,7 @@ const LOOK_NAME: Record<string, () => string> = {
   barrel: () => t('barril', 'barrel'), chest: () => t('baú', 'chest'), rubble: () => t('entulho', 'rubble'),
   spikes: () => t('armadilha de espinhos', 'spike trap'),
 };
-const TERRAIN_NAME: Record<string, () => string> = { floor: () => t('chão', 'ground'), forest: () => t('floresta (cobertura)', 'forest (cover)'), wall: () => t('muro', 'wall') };
+const TERRAIN_NAME: Record<string, () => string> = { floor: () => t('chão', 'ground'), forest: () => t('árvore', 'tree'), rubble: () => t('entulho (cobertura)', 'rubble (cover)'), wall: () => t('muro', 'wall') };
 export function tileInfo(grid: Grid, p: Pos): string {
   const tile = tileAt(grid, p);
   const kind = tile.look ? LOOK_NAME[tile.look]?.() ?? tile.look : TERRAIN_NAME[tile.terrain]();

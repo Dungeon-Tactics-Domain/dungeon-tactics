@@ -1,6 +1,6 @@
 import { ABILITIES } from './abilities.ts';
 import { checkOutcome, previewAbility, resolveAbility, spikeAtTurnEnd, type Preview } from './combat.ts';
-import { FACING, canStand, facingTo, inBounds, samePos, tileAt, type Grid } from './grid.ts';
+import { FACING, canStand, faceNearest, facingTo, inBounds, samePos, tileAt, type Grid } from './grid.ts';
 import { pathTo, reachable, type Step } from './pathing.ts';
 import { SCENARIOS, initialState, type Scenario } from './scenarios.ts';
 import { unitAt } from './pathing.ts';
@@ -180,9 +180,9 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (ids.has(u.id) || cells.has(`${pos.x},${pos.y}`)) return null;
     ids.add(u.id);
     cells.add(`${pos.x},${pos.y}`);
-    // direção e contadores: presentes só quando o cenário e a ficha pedem, e só com as chaves da ficha
-    const wantsFacing = !!SCENARIOS[raw.scenario].rules?.facing;
-    if (wantsFacing ? !isInt(u.facing) || !FACING[u.facing] : u.facing !== undefined) return null;
+    // direção: todo mapa tem desde 13/11; save de antes (sem ela) abre virado para o inimigo mais perto (preenchido
+    // depois do laço). Contadores só com as chaves da ficha
+    if (u.facing !== undefined && (!isInt(u.facing) || !FACING[u.facing])) return null;
     const defVars = UNIT_DEFS[u.def].vars;
     let vars: Record<string, number> | undefined;
     if (defVars) {
@@ -194,8 +194,9 @@ export function parseBattleState(raw: unknown): BattleState | null {
         vars[k] = v;
       }
     } else if (u.vars !== undefined) return null;
-    units.push({ id: u.id, def: u.def, team: u.team, pos, hp: u.hp, ct: u.ct, ...(wantsFacing && { facing: u.facing as number }), ...(vars && { vars }) });
+    units.push({ id: u.id, def: u.def, team: u.team, pos, hp: u.hp, ct: u.ct, ...(u.facing !== undefined && { facing: u.facing as number }), ...(vars && { vars }) });
   }
+  for (const u of units) if (UNIT_DEFS[u.def].speed > 0) u.facing ??= faceNearest(u.pos, units.filter((o) => o.team !== u.team).map((o) => o.pos));
   const t = raw.turn;
   if (!isObj(t) || typeof t.actor !== 'string' || typeof t.moved !== 'boolean') return null;
   const actor = units.find((u) => u.id === t.actor);

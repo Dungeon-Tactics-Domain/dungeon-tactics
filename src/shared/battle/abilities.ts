@@ -30,31 +30,31 @@ const A = (a: Spec): AbilityDef => ({
 
 const LIST: AbilityDef[] = [
   // Guerreiro e corpo a corpo
-  A({ id: 'strike', name: 'Golpe', en: 'Strike', range: [1, 1], damage: [6, 9], accuracy: 90 }),
-  A({ id: 'heavy_strike', name: 'Golpe pesado', en: 'Heavy strike', range: [1, 1], damage: [11, 15], accuracy: 75 }),
-  A({ id: 'shield_bash', name: 'Escudada', en: 'Shield bash', range: [1, 1], damage: [2, 3], accuracy: 95, push: 2 }),
-  A({ id: 'spin', name: 'Giro', en: 'Spin', range: [0, 0], radius: 1, damage: [4, 6], accuracy: 85 }),
+  A({ id: 'strike', name: 'Golpe', en: 'Strike', range: [1, 1], damage: [10, 16], accuracy: 90 }),
+  A({ id: 'heavy_strike', name: 'Golpe pesado', en: 'Heavy strike', range: [1, 1], damage: [19, 26], accuracy: 75 }),
+  A({ id: 'shield_bash', name: 'Escudada', en: 'Shield bash', range: [1, 1], damage: [4, 5], accuracy: 95, push: 2 }),
+  A({ id: 'spin', name: 'Giro', en: 'Spin', range: [0, 0], radius: 1, damage: [7, 10], accuracy: 85 }),
   // Arqueiro
-  A({ id: 'shot', name: 'Tiro', en: 'Shot', range: [2, 6], heightRange: true, needsSight: true, damage: [5, 8], accuracy: 85 }),
-  A({ id: 'aimed_shot', name: 'Tiro mirado', en: 'Aimed shot', range: [2, 6], heightRange: true, needsSight: true, damage: [9, 12], accuracy: 90, charge: 4, panel: true }), // Carga +1
-  A({ id: 'knock_shot', name: 'Tiro de recuo', en: 'Knockback shot', range: [2, 4], heightRange: true, needsSight: true, damage: [3, 4], accuracy: 85, push: 1 }),
-  A({ id: 'dagger', name: 'Adaga', en: 'Dagger', range: [1, 1], damage: [3, 4], accuracy: 90 }),
+  A({ id: 'shot', name: 'Tiro', en: 'Shot', range: [2, 6], heightRange: true, needsSight: true, damage: [9, 14], accuracy: 85 }),
+  A({ id: 'aimed_shot', name: 'Tiro mirado', en: 'Aimed shot', range: [2, 6], heightRange: true, needsSight: true, damage: [16, 21], accuracy: 90, charge: 4, panel: true }), // Carga +1
+  A({ id: 'knock_shot', name: 'Tiro de recuo', en: 'Knockback shot', range: [2, 4], heightRange: true, needsSight: true, damage: [5, 7], accuracy: 85, push: 1 }),
+  A({ id: 'dagger', name: 'Adaga', en: 'Dagger', range: [1, 1], damage: [5, 7], accuracy: 90 }),
   // Mago
-  A({ id: 'firebolt', name: 'Raio de fogo', en: 'Firebolt', range: [2, 5], heightRange: true, needsSight: true, damage: [6, 9], accuracy: 90, magic: true }),
-  A({ id: 'blast', name: 'Explosão', en: 'Blast', range: [2, 5], heightRange: true, needsSight: true, radius: 1, damage: [5, 8], accuracy: 85, charge: 4, magic: true }), // como o Fogo
-  A({ id: 'gust', name: 'Rajada', en: 'Gust', range: [1, 4], needsSight: true, damage: [1, 2], accuracy: 85, push: 2, charge: 4, magic: true }), // magia de dano: como o Fogo
-  A({ id: 'heal', name: 'Cura', en: 'Heal', range: [1, 4], needsSight: true, heal: [7, 10], accuracy: 100, charge: 4, magic: true }), // como a Cura
+  A({ id: 'firebolt', name: 'Raio de fogo', en: 'Firebolt', range: [2, 5], heightRange: true, needsSight: true, damage: [10, 16], accuracy: 90, magic: true }),
+  A({ id: 'blast', name: 'Explosão', en: 'Blast', range: [2, 5], heightRange: true, needsSight: true, radius: 1, damage: [9, 14], accuracy: 85, charge: 4, magic: true }), // como o Fogo
+  A({ id: 'gust', name: 'Rajada', en: 'Gust', range: [1, 4], needsSight: true, damage: [2, 4], accuracy: 85, push: 2, charge: 4, magic: true }), // magia de dano: como o Fogo
+  A({ id: 'heal', name: 'Cura', en: 'Heal', range: [1, 4], needsSight: true, heal: [12, 18], accuracy: 100, charge: 4, magic: true }), // como a Cura
   // Ladino
-  A({ id: 'stab', name: 'Facada', en: 'Stab', range: [1, 1], damage: [5, 7], accuracy: 95 }),
-  A({ id: 'throwing_knife', name: 'Faca arremessada', en: 'Throwing knife', range: [2, 4], heightRange: true, needsSight: true, damage: [4, 6], accuracy: 85 }),
-  A({ id: 'trip', name: 'Rasteira', en: 'Trip', range: [1, 1], damage: [2, 3], accuracy: 90, push: 1 }),
-  A({ id: 'deathblow', name: 'Golpe mortal', en: 'Deathblow', range: [1, 1], damage: [12, 16], accuracy: 70 }),
+  A({ id: 'stab', name: 'Facada', en: 'Stab', range: [1, 1], damage: [9, 12], accuracy: 95 }),
+  A({ id: 'throwing_knife', name: 'Faca arremessada', en: 'Throwing knife', range: [2, 4], heightRange: true, needsSight: true, damage: [7, 10], accuracy: 85 }),
+  A({ id: 'trip', name: 'Rasteira', en: 'Trip', range: [1, 1], damage: [4, 5], accuracy: 90, push: 1 }),
+  A({ id: 'deathblow', name: 'Golpe mortal', en: 'Deathblow', range: [1, 1], damage: [21, 28], accuracy: 70 }),
   // Bruto
   // Onda sombria (12/11, magia de chefe do Vesper na fase final da campanha): área de raio 2 e carga longa (6 tiques),
   // para os heróis verem a área marcada e terem tempo de sair dela; números iniciais, medidos na fase 5
-  A({ id: 'shadow_wave', name: 'Onda sombria', en: 'Shadow wave', range: [2, 5], heightRange: true, needsSight: true, radius: 2, damage: [6, 9], accuracy: 85, charge: 6, magic: true }),
-  A({ id: 'cleave', name: 'Machadada', en: 'Cleave', range: [1, 1], damage: [10, 14], accuracy: 80 }),
-  A({ id: 'slam', name: 'Pancada', en: 'Slam', range: [1, 1], damage: [4, 6], accuracy: 85, push: 2 }),
+  A({ id: 'shadow_wave', name: 'Onda sombria', en: 'Shadow wave', range: [2, 5], heightRange: true, needsSight: true, radius: 2, damage: [10, 16], accuracy: 85, charge: 6, magic: true }),
+  A({ id: 'cleave', name: 'Machadada', en: 'Cleave', range: [1, 1], damage: [18, 24], accuracy: 80 }),
+  A({ id: 'slam', name: 'Pancada', en: 'Slam', range: [1, 1], damage: [7, 10], accuracy: 85, push: 2 }),
 ];
 
 export const ABILITIES: Record<string, AbilityDef> = Object.fromEntries(LIST.map((a) => [a.id, a]));

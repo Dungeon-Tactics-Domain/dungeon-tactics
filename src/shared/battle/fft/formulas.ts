@@ -2,6 +2,9 @@
 // Fonte de todas: Battle Mechanics Handbook v6.1, de Aerostar; a seção vai em cada função e o link em
 // docs/game-design/referencia-fft.md. Funções puras, sem estado: o jogo não usa nada daqui fora do cenário de estudo.
 
+import type { Side } from '../grid.ts';
+export { sideOf, type Side } from '../grid.ts'; // a conta de lado mora em grid.ts desde que o jogo usa direção (13/11)
+
 // [x]: o guia sempre descarta o resto da divisão (BMG 1.2)
 const trunc = Math.trunc;
 // RU{x / y}: divisão arredondada para cima (BMG 1.2)
@@ -47,7 +50,6 @@ export interface Evasion {
   a: number; // acessório (manto)
   w: number; // arma, só com a reação Weapon Guard
 }
-export type Side = 'front' | 'side' | 'back';
 
 // Acerto de ataque físico em % (BMG 1.4): de frente contam as quatro evasões, de lado sai a de classe, pelas costas só o acessório
 export function hitPercent(base: number, ev: Evasion, side: Side): number {
@@ -56,15 +58,6 @@ export function hitPercent(base: number, ev: Evasion, side: Side): number {
   return side === 'side' ? trunc((base * rest) / 1e6) : trunc((base * (100 - ev.c) * rest) / 1e8);
 }
 
-// De onde o ataque vem (BMG 1.4, diagrama): vale a maior entre as distâncias à frente, de lado e atrás do alvo; no empate
-// ganha a mais à frente (frente sobre lado, lado sobre costas). A altura das casas não conta.
-export function sideOf(target: { x: number; y: number }, facing: { x: number; y: number }, attacker: { x: number; y: number }): Side {
-  const dx = attacker.x - target.x, dy = attacker.y - target.y;
-  const ahead = dx * facing.x + dy * facing.y;
-  const lateral = Math.abs(dx * facing.y - dy * facing.x);
-  if (ahead > 0 && ahead >= lateral) return 'front';
-  return ahead < 0 && -ahead > lateral ? 'back' : 'side';
-}
 
 // Acerto de magia em % (BMG 1.4): só escudo e acessório mágicos contam, de qualquer lado
 export const magicHitPercent = (base: number, shield: number, accessory: number) => trunc((base * (100 - shield) * (100 - accessory)) / 10000);

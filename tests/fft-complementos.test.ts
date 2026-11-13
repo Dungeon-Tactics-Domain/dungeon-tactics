@@ -68,12 +68,14 @@ describe('FFT Gariland: direção', () => {
     return b;
   };
 
-  it('heróis nascem olhando para +y e inimigos para -y; nos mapas do jogo ninguém tem direção nem contadores', () => {
+  it('heróis nascem olhando para +y e inimigos para -y; nos mapas do jogo cada um olha o inimigo mais perto (13/11), sem contadores', () => {
     const b = start();
     expect(at(b, 'ramza').facing).toBe(0);
     expect(at(b, 'e-squire-1').facing).toBe(2);
     const game = Battle.start(FIRST_BATTLE, 1).state.units;
-    expect(game.every((u) => u.facing === undefined && u.vars === undefined)).toBe(true);
+    expect(game.every((u) => u.vars === undefined)).toBe(true);
+    expect(game.filter((u) => u.def !== 'beacon').every((u) => u.facing !== undefined)).toBe(true);
+    expect(game.find((u) => u.def === 'beacon')!.facing).toBeUndefined(); // o Farol não tem frente nem costas
   });
 
   it('Escudeiro (evasão de classe 5, sem escudo): 95% de frente, 100% de lado e pelas costas', () => {
@@ -110,14 +112,16 @@ describe('FFT Gariland: direção', () => {
     expect(sideOf(me.pos, [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }][me.facing!], foe.pos)).toBe('front');
   });
 
-  it('salvar e carregar guarda direção e contadores; save sem eles é recusado', () => {
+  it('salvar e carregar guarda direção e contadores; direção inválida é recusada, ausente (save antigo) é preenchida', () => {
     const b = start();
     b.face(3);
     at(b, 'ramza').vars!.pa = 2;
     expect(Battle.load(b.save())?.state).toEqual(b.state);
     const raw = JSON.parse(b.save());
-    delete raw.state.units[0].facing;
+    raw.state.units[0].facing = 9;
     expect(Battle.load(JSON.stringify(raw))).toBeNull();
+    delete raw.state.units[0].facing;
+    expect(Battle.load(JSON.stringify(raw))?.state.units[0].facing).toBeTypeOf('number');
   });
 });
 

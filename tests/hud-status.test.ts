@@ -35,7 +35,7 @@ describe('informação da casa', () => {
   it('posição, altura, rampa e piso do mapa', () => {
     expect(tileInfo(GARILAND.grid, { x: 4, y: 2 })).toBe('Casa 4,2 · altura 6 (rampa) · telhado');
     expect(tileInfo(GARILAND.grid, { x: 2, y: 0 })).toBe('Casa 2,0 · altura 5 · árvore · não dá para pisar');
-    expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 })).toBe('Casa 2,1 · altura 0 · floresta (cobertura)');
+    expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 })).toBe('Casa 2,1 · altura 0 · árvore · não dá para pisar');
   });
 
   it('água funda e rasa (mesmo desenho) se distinguem pelo texto', () => {
