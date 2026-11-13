@@ -60,6 +60,9 @@ export function createHero(host: HTMLElement): Promise<Hero> {
       const typing = e.isTrusted && document.activeElement === name;
       if (e.key === 'Enter') {
         e.preventDefault();
+        // o mesmo aperto não pode chegar ao mapa, que registra o ouvinte dele assim que a criação termina (revisão de 13/11:
+        // um Enter começava a jornada e já entrava em Vauclair)
+        e.stopPropagation();
         // Enter numa carta de classe escolhe a classe dela antes de começar (revisão de 13/11: começava com a anterior)
         const f = document.activeElement;
         if (f instanceof HTMLElement && f.dataset.cls) pick(f.dataset.cls as HeroClass);

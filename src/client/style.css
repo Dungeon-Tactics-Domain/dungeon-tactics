@@ -219,7 +219,9 @@ button[hidden] { display: none; }
 .sw.blocked { background: var(--mark-blocked); }
 .sw.threat { background: var(--mark-threat); }
 .menu-actions { display: flex; flex-wrap: wrap; gap: var(--gap); margin-top: 16px; }
-.menu-actions button { flex: 1; }
+.menu-actions button { flex: 1 1 40%; } /* 2 por linha: em 5 numa linha, "Desenvolvedor" saía cortado (revisão de 13/11) */
+/* menus ao lado do boneco por cima do contador de fps, que cobria o submenu */
+.commands, .abilities, .confirm { z-index: 1; }
 .choice { margin: 0 0 10px; }
 .choice-label { display: block; font-size: var(--fs-sm); color: var(--muted); margin-bottom: 4px; }
 .choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -293,7 +295,7 @@ body:has(.talk-overlay) .hud, body:has(.talk-overlay) .fps { visibility: hidden;
 /* e no resultado: a lista de turnos vazia e a linha de ajuda atrás do diálogo de fim não diziam nada */
 body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hidden; }
 /* papel picado da vitória (main.ts, confetti): por cima de tudo, sem pegar clique */
-.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9; overflow: hidden; } /* atrás da janela de vitória (10): cobria o texto */
 .confetti i { position: absolute; top: -12px; width: 8px; height: 12px; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(540deg); } }
 

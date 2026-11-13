@@ -223,13 +223,15 @@ export function chapterScenario(n: number, hero: Hero | null = null): Scenario {
 // Estrelas da fase (0 a 3), para ter motivo de rejogar: vencer; ninguém caiu; e o Farol inteiro (nos mapas com Farol) ou,
 // sem Farol, todos os heróis com mais da metade da vida. A melhor nota de cada fase fica salva em STARS_KEY.
 export const STARS_KEY = 'dt:estrelas';
-export function starsOf(state: BattleState, n: number): number {
-  if (state.outcome !== 'victory') return 0;
+// os 3 critérios separados (vencer, ninguém caiu, Farol inteiro ou todos acima da metade), para a tela de fim marcar cada um
+export function starParts(state: BattleState, n: number): [boolean, boolean, boolean] {
+  if (state.outcome !== 'victory') return [false, false, false];
   const heroes = state.units.filter((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF);
   const beacon = state.units.find((u) => u.def === OBJECTIVE_DEF);
   const clean = beacon ? beacon.hp === UNIT_DEFS[OBJECTIVE_DEF].hp : heroes.every((u) => u.hp * 2 > UNIT_DEFS[u.def].hp);
-  return 1 + Number(heroes.length === CHAPTERS[n].setup.heroes.length) + Number(clean);
+  return [true, heroes.length === CHAPTERS[n].setup.heroes.length, clean];
 }
+export const starsOf = (state: BattleState, n: number): number => starParts(state, n).filter(Boolean).length;
 export function parseStars(raw: unknown): number[] {
   const list = Array.isArray(raw) ? raw : [];
   return CHAPTERS.map((_, i) => (Number.isInteger(list[i]) && list[i] >= 0 && list[i] <= 3 ? list[i] : 0));

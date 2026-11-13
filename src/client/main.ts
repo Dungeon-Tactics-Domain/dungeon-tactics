@@ -27,7 +27,7 @@ import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, problems, slotsOf 
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
+import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starParts, starText, starsOf } from './campaign.ts';
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
 import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
 import { openParty, openWorld } from './world-ui.ts';
@@ -461,7 +461,9 @@ class Game {
 
   private faceTo(p: Pos) {
     const me = this.battle.actor;
-    if (samePos(p, me.pos)) return;
+    // clique no próprio boneco ou na direção que ele já encara confirma e passa a vez (revisão de 13/11: só com mouse
+    // não havia como terminar o turno, o clique só girava)
+    if (samePos(p, me.pos) || facingTo(me.pos, p) === me.facing) return void this.endTurn();
     sfx('cursor');
     this.battle.face(facingTo(me.pos, p));
     this.scene.sync(this.battle.state);
@@ -536,6 +538,7 @@ class Game {
   private undo() {
     if (!this.battle.undo()) return;
     sfx('cancel');
+    this.log = ''; // a linha de ajuda mostrava a ação desfeita (revisão de 13/11)
     this.screen = startScreen(this.battle);
     this.scene.sync(this.battle.state);
     this.save();
@@ -613,9 +616,13 @@ class Game {
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
       ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
         // só o critério da 3ª estrela que vale nesta fase (com Farol ou sem), sem o parêntese que explicava os dois
-        el('p', {}, slotsOf(CHAPTERS[n].setup.map).objective.length
-          ? t('★ vencer · ★ ninguém caiu · ★ Farol inteiro', '★ win · ★ nobody fell · ★ Beacon untouched')
-          : t('★ vencer · ★ ninguém caiu · ★ todos acima da metade da vida', '★ win · ★ nobody fell · ★ everyone above half HP')),
+        // cada critério com ✓ ou ✗, para saber qual estrela faltou (revisão de 13/11)
+        el('p', {}, (() => {
+          const [w, alive, clean] = starParts(this.battle.state, n).map((ok) => (ok ? '✓' : '✗'));
+          return slotsOf(CHAPTERS[n].setup.map).objective.length
+            ? t(`★ vencer ${w} · ★ ninguém caiu ${alive} · ★ Farol inteiro ${clean}`, `★ win ${w} · ★ nobody fell ${alive} · ★ Beacon untouched ${clean}`)
+            : t(`★ vencer ${w} · ★ ninguém caiu ${alive} · ★ todos acima da metade da vida ${clean}`, `★ win ${w} · ★ nobody fell ${alive} · ★ everyone above half HP ${clean}`);
+        })()),
         ...this.mvpLine(),
         ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair

@@ -459,7 +459,7 @@ export class BattleHud {
       return p && !p.ok ? REASON[p.reason ?? 'unknown']() : t('Escolha o alvo na área laranja (roxo = sem visão).', 'Pick the target in the orange area (purple = no sight).');
     }
     if (s.k === 'confirm') return t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`);
-    return t('Para onde olhar? Setas escolhem; confirmar passa a vez.', 'Which way to face? Arrows choose; confirm ends the turn.');
+    return t('Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.', 'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.');
   }
 
   private renderQueue(b: Battle, s: Screen) {
