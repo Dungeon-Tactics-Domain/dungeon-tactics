@@ -3,7 +3,8 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 // Altura dos marcadores em volta de cada unidade, em metros a partir do topo da casa. Puro para o teste conferir a
 // ordem (chão < boneco < barra de vida < seta do cursor), que a cena só aplica.
 export const UNIT_HEIGHT = { default: 0.85, brute: 1.05 }; // o Bruto é maior para ler de longe que ele bate forte
-export const unitHeight = (def: string) => (def === 'brute' ? UNIT_HEIGHT.brute : UNIT_HEIGHT.default);
+// pelo modelo, não pelo id: o Bruto da campanha e do menu de desenvolvedor tem ficha própria (camp1-e0…) e saía pequeno
+export const unitHeight = (def: string) => (modelOf(def) === MODEL.brute ? UNIT_HEIGHT.brute : UNIT_HEIGHT.default);
 
 export const MARKER = {
   frameY: 0.04, // rente à casa, acima das marcações (0,02) e do caminho (0,03)

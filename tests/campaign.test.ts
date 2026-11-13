@@ -3,6 +3,8 @@ import { Battle } from '../src/shared/battle/battle.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import { CHAPTERS, SPEAKERS, chapterScenario, learned, parseProgress, parseStars, starText, starsOf } from '../src/client/campaign.ts';
 import { problems } from '../src/client/dev-roster.ts';
+import { unitHeight } from '../src/client/markers.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 const say = (pt: string) => pt;
 // MEDIR=300 npx vitest run tests/campaign.test.ts mostra a vitória dos heróis (IA contra IA) em cada fase
@@ -16,6 +18,13 @@ describe('campanha Cinzas do Farol', () => {
       expect(Battle.load(b.save()), c.title[0]).not.toBeNull();
       expect(simulate(chapterScenario(n), 5).turns).toBeGreaterThan(1);
     });
+  });
+
+  it('o Bruto da campanha (ficha própria) tem a altura do Bruto', () => {
+    const s = chapterScenario(1);
+    const brute = s.spawns.find((sp) => UNIT_DEFS[sp.def].name === UNIT_DEFS.brute.name)!;
+    expect(unitHeight(brute.def)).toBe(unitHeight('brute'));
+    expect(unitHeight(brute.def)).toBeGreaterThan(unitHeight('soldier'));
   });
 
   it('as falas têm as duas línguas e quem fala existe', () => {
