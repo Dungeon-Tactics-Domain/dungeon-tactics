@@ -140,7 +140,7 @@ export const FIRST_BATTLE: Scenario = {
 };
 
 // Cripta Alagada (12/11, pedido do Fernando: um mapa de masmorra com as peças KayKit): 14x14 fechado. Os inimigos
-// guardam um altar elevado (nível 2) no fundo; no meio, um canal de água rasa (BMG 6.5: entrar custa 2 de movimento) com
+// guardam um altar elevado no fundo (de 3 a 4, em `CRYPT_H`); no meio, um canal de água rasa (BMG 6.5: entrar custa 2 de movimento) com
 // duas pontes; colunas, caixotes, barris e o baú bloqueiam; entulho é cobertura pisável; muros de tijolo fecham passagens.
 // Uma letra por casa diz terreno, altura e aparência (só desenho, as regras leem o terreno, a altura e a profundidade):
 const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number; spikes?: true }> = {
@@ -325,7 +325,7 @@ const ASH_WOOD: Scenario = {
   name: 'Bosque das Cinzas',
   en: 'Ash Wood',
   // altura de cada casa num mapa à parte (13/11, pedido do Fernando: "fases muito retas"; referência de relevo: Gariland
-  // tem 47% de vizinhos com queda de 2+, o Bosque tinha 0%): o acampamento inimigo num planalto 4 níveis acima do rio,
+  // tem 47% de vizinhos com queda de 2+, o Bosque tinha 0%): o acampamento inimigo num planalto 3 níveis acima do rio (4 nos cantos),
   // degraus de 1 que fazem rampas e quedas de 2 que obrigam a contornar. A água e a ponte mantêm a própria altura.
   grid: { width: 12, height: 12, tiles: WOOD_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('Wwb'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) }))) },
   spawns: [
@@ -340,8 +340,8 @@ const ASH_WOOD: Scenario = {
   ],
 };
 
-// Passo Gelado (noite de 12/11, Ato II da campanha): 12x14 sem Farol, subida em degraus de 1 nível (o salto máximo) da
-// neve baixa dos heróis (altura 0) até o cume dos inimigos (3), entre paredões; um lago raso congelado no meio da
+// Passo Gelado (noite de 12/11, Ato II da campanha): 12x14 sem Farol, subida da
+// neve baixa dos heróis até o cume dos inimigos, entre paredões (alturas em `PASS_H`); um lago raso congelado no meio da
 // encosta e árvores secas como cobertura. Inimigo no alto enxerga e alcança mais (bônus de altura): subir é o desafio.
 const PASS_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number }> = {
   n: { terrain: 'floor', h: 0, look: 'snow' },
@@ -371,7 +371,7 @@ const PASS_MAP = [
   'rnnnnnnnnnnr',
 ];
 // relevo (13/11, "fases muito retas"): a subida vira zigue-zague, em cada patamar um lado sobe por degrau e o outro cai
-// em penhasco de 2 (sobe-se pela esquerda até o meio, pela direita até o alto, de novo pela esquerda até o cume, no 5);
+// em penhasco de 2 (sobe-se pela esquerda até o meio, pela direita até o alto, de novo pela esquerda até o cume);
 // o lago fica numa bacia e os paredões sobem acima do caminho. O lago mantém a própria altura. Cume no 4 e vale dos heróis
 // no 1 (fase 7, MEDIR=300): cume no 5 com vale no 0 deixava o Colosso no alto com 4% de vitória dos heróis
 const PASS_H = [
