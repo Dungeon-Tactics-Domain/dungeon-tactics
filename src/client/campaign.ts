@@ -50,7 +50,7 @@ export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTER
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 39% → 37% no Ato I (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 39% → 21% no Ato II (o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 47% → 39% → 37% no Ato I (Cripta com relevo e um Arqueiro novato desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 39% → 21% no Ato II (o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -103,7 +103,7 @@ export const CHAPTERS: Chapter[] = [
     title: ['A Cripta Alagada', 'The Flooded Crypt'],
     song: 'crypt',
     light: 0.5, // debaixo do lago: meia-luz azulada ("cheiro de vela apagada")
-    setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('dark_mage'), foe('minion')] },
+    setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer', { name: 'Arqueiro novato', en: 'Novice archer', hp: 20 }), foe('dark_mage'), foe('minion')] },
     intro: [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
       L('tess', 'Cuidado com a água funda no meio: ninguém atravessa ali.', 'Watch the deep water in the middle: no one crosses there.'),

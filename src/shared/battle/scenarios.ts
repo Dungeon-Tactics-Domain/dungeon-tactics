@@ -170,6 +170,22 @@ const CRYPT_MAP = [
   'rfffffffffffcf',
   'ffffffffffffff',
 ];
+const CRYPT_H = [
+  '44444444444444',
+  '44443333334444',
+  '33331111113333',
+  '22222222222222',
+  '22211111111222',
+  '11111111111111',
+  '00000000000000',
+  '00000000000000',
+  '11111111111111',
+  '11111111111111',
+  '22111111111122',
+  '21100000000112',
+  '21100000000112',
+  '22100000000122',
+];
 const CRYPT: Scenario = {
   id: 'flooded_crypt',
   name: 'Cripta Alagada',
@@ -177,7 +193,9 @@ const CRYPT: Scenario = {
   grid: {
     width: CRYPT_MAP[0].length,
     height: CRYPT_MAP.length,
-    tiles: CRYPT_MAP.flatMap((row) => [...row].map((c) => ({ ...CRYPT_KEY[c] }))),
+    // altura por casa à parte (13/11, "fases muito retas"): altar em 4 níveis, o meio desaba 2 (desce-se pelas escadas
+    // dos lados) e o lado dos heróis afunda junto ao Farol. Água e ponte mantêm a própria altura
+    tiles: CRYPT_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(CRYPT_H[y][x]) }) }))),
   },
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 6, y: 13 },
