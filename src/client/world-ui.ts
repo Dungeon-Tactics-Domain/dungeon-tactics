@@ -20,19 +20,65 @@ import { WORLD, isOpen, step } from './world.ts';
 const WALK_MS = 320; // um trecho de estrada; o CSS usa o mesmo valor (--walk-ms)
 const FADE_MS = 300; // escurecer antes de entrar no ponto; o CSS usa o mesmo valor (.fade-out)
 
-// Fundo desenhado em SVG (viewBox 0–100, esticado na tela): rio, lago, floresta e montanhas, só para dar lugar aos pontos.
-// A estrada não chega ao último ponto (o epílogo, de volta à vila): a linha atravessaria o mapa inteiro.
-// O trecho já andado (até o ponto aberto) vai cheio por cima do tracejado: a jornada feita se lê de longe.
-const terrain = (done: number) => `<svg class="world-art" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-  <path class="river" d="M0 48 C 18 44, 30 56, 46 50 S 70 40, 100 44" />
-  <ellipse class="lake" cx="58" cy="56" rx="9" ry="6" />
-  <g class="forest">${[[8, 60], [12, 66], [18, 58], [22, 70], [33, 76], [36, 58], [6, 72]].flatMap(([x, y]) =>
-    // cada bosque são 3 pinheiros (triângulos), lidos como floresta de longe; o círculo de antes parecia mancha
-    [[-1.6, 0.6], [0, -0.8], [1.6, 0.8]].map(([dx, dy]) => `<path d="M${x + dx - 1.3} ${y + dy + 2.2} L${x + dx} ${y + dy - 2.2} L${x + dx + 1.3} ${y + dy + 2.2} Z" />`)).join('')}</g>
-  <g class="mountains">${[[66, 22], [76, 16], [86, 10], [93, 22], [80, 28]].map(([x, y]) => `<path d="M${x - 6} ${y + 8} L${x} ${y - 6} L${x + 6} ${y + 8} Z" />`).join('')}</g>
+// Mapa ilustrado (13/11, pedido do Fernando: "um mapa mundial na vibe" de um mapa de fantasia em pergaminho; só a vibe,
+// desenho nosso): mar com textura, um continente de costa irregular com halo de água rasa, matas, montanhas com face de
+// sombra e neve no alto, a terra cinza da Estrada de Cinzas, rio das montanhas ao lago e ao mar, ilhas, rosa dos ventos e
+// cartela com o nome. viewBox 0–100 esticado na tela (os pontos ficam em % do desenho), então cada símbolo é desenhado
+// ~2,2x mais estreito em x do que em y (a área do mapa tem ~2,2:1 no PC 16:9) para não sair achatado.
+const NODE_CLEAR = (x: number, y: number, dx: number, dy: number) => WORLD.every((w) => Math.abs(w.x - x) > dx || Math.abs(w.y - y) > dy);
+const LAND = 'M4 62 C2 50, 8 40, 16 36 C22 26, 30 30, 38 22 C44 12, 56 8, 66 10 C76 4, 90 2, 97 8 L97 60 C94 70, 86 74, 82 84 C76 94, 62 90, 52 94 C42 98, 30 96, 20 95 C10 94, 4 88, 5 78 Z';
+const ISLES = [[9, 14, 4, 5], [30, 7, 3, 2.5], [70, 97, 4, 2]]; // nenhuma no canto de baixo à direita: é da rosa dos ventos
+const FORESTS: [number, number, number, number, number][] = [[12, 58, 8, 12, 46], [34, 80, 8, 8, 30], [45, 44, 6, 7, 20], [68, 72, 9, 9, 34], [89, 54, 7, 12, 36], [22, 42, 6, 6, 18]];
+const PEAKS = [[64, 16], [72, 11], [80, 9], [91, 7], [95, 19], [84, 24], [76, 20], [93, 34], [86, 40], [95, 48], [62, 24], [97, 28]];
+const terrain = (done: number) => {
+  let s = 7; // sorteio fixo: o mapa sai igual toda vez
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const trees = FORESTS.flatMap(([cx, cy, rx, ry, n]) => Array.from({ length: n }, () => {
+    const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd());
+    return [cx + Math.cos(a) * rx * r, cy + Math.sin(a) * ry * r, rnd()];
+  })).filter(([x, y]) => NODE_CLEAR(x, y, 2.6, 5)).sort((a, b) => a[1] - b[1]);
+  const tree = ([x, y, k]: number[]) => k < 0.55
+    ? `<path class="pine" d="M${x - 0.6} ${y + 0.6} L${x} ${y - 2.6} L${x + 0.6} ${y + 0.6} Z" />`
+    : `<path class="trunk" d="M${x} ${y + 0.8} V${y - 0.4}" /><ellipse class="leaf" cx="${x}" cy="${y - 1}" rx="0.75" ry="1.5" />`;
+  const peaks = PEAKS.filter(([x, y]) => NODE_CLEAR(x, y - 4, 4.5, 8)).sort((a, b) => a[1] - b[1]);
+  const peak = ([x, y]: number[]) => `<path class="rock" d="M${x - 2.4} ${y} L${x - 0.2} ${y - 9} L${x + 2.4} ${y} Z" />`
+    + `<path class="shade" d="M${x - 0.2} ${y - 9} L${x + 2.4} ${y} L${x + 0.5} ${y} Z" />`
+    + (y < 26 ? `<path class="snow" d="M${x - 0.95} ${y - 6} L${x - 0.2} ${y - 9} L${x + 0.85} ${y - 5.4} L${x + 0.2} ${y - 6.4} Z" />` : '');
+  return `<svg class="world-art" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+  <defs>
+    <filter id="w-rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="3" /><feDisplacementMap in="SourceGraphic" scale="2.2" /></filter>
+    <filter id="w-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.05 0.11" numOctaves="4" seed="9" /><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.1" /></filter>
+    <clipPath id="w-land"><path d="${LAND}" />${ISLES.map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" />`).join('')}</clipPath>
+  </defs>
+  <rect class="sea" width="100" height="100" />
+  <rect class="grain" width="100" height="100" filter="url(#w-grain)" />
+  <g filter="url(#w-rough)">
+    <path class="shallow" d="${LAND}" />${ISLES.map(([x, y, rx, ry]) => `<ellipse class="shallow" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" />`).join('')}
+    <path class="land" d="${LAND}" />${ISLES.map(([x, y, rx, ry]) => `<ellipse class="land" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" />`).join('')}
+  </g>
+  <g clip-path="url(#w-land)" filter="url(#w-rough)">
+    <ellipse class="plain" cx="40" cy="74" rx="10" ry="9" /><ellipse class="plain" cx="20" cy="84" rx="9" ry="8" />
+    ${FORESTS.map(([x, y, rx, ry]) => `<ellipse class="wood" cx="${x}" cy="${y}" rx="${rx * 1.15}" ry="${ry * 1.15}" />`).join('')}
+    <ellipse class="ash" cx="27" cy="63" rx="7" ry="8" />
+    <path class="highland" d="M56 4 C70 2, 92 0, 99 6 L99 54 C92 50, 88 42, 80 40 C70 36, 62 30, 56 20 Z" />
+    <ellipse class="snowfield" cx="84" cy="8" rx="16" ry="10" />
+    <rect class="grain" width="100" height="100" filter="url(#w-grain)" />
+  </g>
+  <path class="river" d="M90 30 C84 38, 76 40, 70 46 S62 52, 60 54" /><path class="river" d="M52 58 C50 66, 52 74, 48 82 S46 92, 45 97" />
+  <ellipse class="lake" cx="57" cy="56" rx="6" ry="5" filter="url(#w-rough)" />
+  <g class="trees">${trees.map(tree).join('')}</g>
+  <g class="peaks">${peaks.map(peak).join('')}</g>
   <polyline class="road" points="${WORLD.slice(0, -1).map((w) => `${w.x},${w.y}`).join(' ')}" />
   <polyline class="road walked" points="${WORLD.slice(0, Math.min(done, WORLD.length - 2) + 1).map((w) => `${w.x},${w.y}`).join(' ')}" />
-</svg>`;
+</svg>
+<svg class="world-compass" viewBox="-50 -50 100 100" aria-hidden="true">
+  <circle r="30" /><circle r="22" />
+  <path class="star" d="M0 -46 L7 -7 L46 0 L7 7 L0 46 L-7 7 L-46 0 L-7 -7 Z" />
+  <path class="star-shade" d="M0 -46 L7 -7 L0 0 Z M46 0 L7 7 L0 0 Z M0 46 L-7 7 L0 0 Z M-46 0 L-7 -7 L0 0 Z" />
+  <text y="-34" text-anchor="middle">${t('N', 'N')}</text>
+</svg>
+<div class="world-title" aria-hidden="true">${t('Cinzas do Farol', 'Beacon Ashes')}</div>`;
+};
 
 // Tela Grupo (como a formação do FFT): retrato, classe, números e as habilidades já aprendidas de quem vai à próxima
 // batalha; diz quem fica no acampamento para o protagonista entrar. Usa o dialog() de sempre.

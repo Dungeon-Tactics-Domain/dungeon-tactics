@@ -308,10 +308,31 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world { position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 40%, var(--paper-hi), var(--paper) 55%, var(--paper-lo)); overflow: hidden; }
 .world-map { position: absolute; inset: 64px 4% 120px; }
 .world-svg, .world-art { position: absolute; inset: 0; width: 100%; height: 100%; }
-.world-art .river { fill: none; stroke: #6fa3c9; stroke-width: 2.4; vector-effect: non-scaling-stroke; stroke-linecap: round; opacity: .7; }
-.world-art .lake { fill: #6fa3c9; opacity: .55; }
-.world-art .forest path { fill: #4f7d40; opacity: .7; }
-.world-art .mountains path { fill: #8a8378; opacity: .6; }
+/* mapa ilustrado (13/11): mar com textura, costa irregular, matas, montanhas e neve; cores só do desenho, fora do texto */
+.world-map { border: 4px double var(--paper-edge); box-shadow: 0 0 0 3px var(--paper-lo), 0 6px 18px rgba(0, 0, 0, .35); overflow: hidden; }
+.world-art .sea { fill: #24505f; }
+.world-art .grain { fill: #000; opacity: .22; }
+.world-art .shallow { fill: none; stroke: #4d8a95; stroke-width: 22; vector-effect: non-scaling-stroke; opacity: .75; }
+.world-art .land { fill: #b8b483; stroke: #3d3423; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.world-art .plain { fill: #cdbf7c; opacity: .8; }
+.world-art .wood { fill: #5d7a3c; opacity: .55; }
+.world-art .ash { fill: #8f877b; opacity: .75; }
+.world-art .highland { fill: #9c8460; opacity: .65; }
+.world-art .snowfield { fill: #eef1ee; opacity: .7; }
+.world-art .river { fill: none; stroke: #3f7d97; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.world-art .lake { fill: #2f6478; stroke: #3d3423; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.world-art .pine { fill: #2f5a2c; stroke: #1e3519; stroke-width: .6; vector-effect: non-scaling-stroke; }
+.world-art .leaf { fill: #4c7a34; stroke: #1e3519; stroke-width: .6; vector-effect: non-scaling-stroke; }
+.world-art .trunk { stroke: #4a3520; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.world-art .rock { fill: #8a6f4d; stroke: #3d3423; stroke-width: .8; vector-effect: non-scaling-stroke; }
+.world-art .shade { fill: #5e4a33; }
+.world-art .snow { fill: #f4f6f4; }
+.world-compass { position: absolute; right: 2%; bottom: 3%; width: 84px; height: 84px; pointer-events: none; }
+.world-compass circle { fill: none; stroke: #e9dcae; stroke-width: 1.5; opacity: .8; }
+.world-compass .star { fill: #e9dcae; stroke: #3d3423; stroke-width: 1.5; }
+.world-compass .star-shade { fill: #9c8a5c; }
+.world-compass text { fill: #e9dcae; font: 700 12px var(--font); }
+.world-title { position: absolute; left: 2%; top: 3%; padding: 6px 16px; background: var(--paper); color: var(--ink); border: 3px double var(--paper-edge); font: 400 clamp(16px, 2.2vw, 28px) var(--font-px); letter-spacing: .12em; box-shadow: 0 3px 0 rgba(0, 0, 0, .3); pointer-events: none; }
 .world-art .road { fill: none; stroke: var(--paper-edge); stroke-width: 3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; stroke-linecap: round; }
 .world-art .road.walked { stroke: #e2b23a; stroke-dasharray: none; stroke-linejoin: round; }
 .world-node { position: absolute; width: 22px; height: 22px; min-width: 0; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 3px solid var(--paper-edge); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }
