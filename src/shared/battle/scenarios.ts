@@ -67,17 +67,53 @@ function dressBeaconHill(grid: Grid, beacon: { x: number; y: number }): Grid {
   return { ...grid, tiles };
 }
 
+// Rampas (13/11, pedido do Fernando: "tiles mais diagonais… não é Minecraft"): só desenho, as regras não leem `ramp`
+// (o salto continua pela altura de pé). Uma letra por casa diz para onde o chão sobe (v > ^ <, a ordem de FACING) até a
+// vizinha 1 nível acima; ponto é casa plana. Escolhidas a mão nas passagens e encostas de degrau 1 (teste em scenario-maps).
+const RAMP_DIR: Record<string, number> = { v: 0, '>': 1, '^': 2, '<': 3 };
+function withRamps(grid: Grid, overlay: string[]): Grid {
+  const tiles = grid.tiles.map((t, i) => {
+    const d = RAMP_DIR[overlay[Math.floor(i / grid.width)][i % grid.width]];
+    return d === undefined ? t : { ...t, ramp: [d, 1] as [number, number] };
+  });
+  return { ...grid, tiles };
+}
+
 // A 1ª batalha (marco 3, liberado pelo Fernando em 11/11): mapa 20x20. Os heróis e o farol nascem no morro do canto de
 // baixo, os inimigos no platô do canto de cima; no meio, uma colina com muros e floresta dá posição alta e cobertura.
 // Relevo refeito em 13/11 ("fases muito retas"; gerado por um roteiro de retângulos, conferido a pé com salto 1): vale
 // seco na diagonal com a margem sul em penhasco de 2 e 5 rampas; colina do meio com pico 5, que cai em penhasco ao
 // norte e a leste e desce em degraus ao sul e a oeste; platô dos inimigos no 3 com 3 rampas. Todo canto se alcança a pé.
 // Platô no 4 deixava a fase 2 em 56% (antes 81%); no 3, 71%
+// rampas (13/11): o morrinho de cima à esquerda, a encosta oeste e sul da colina do meio (sobe de 2 a 5 em 3 casas), as
+// passagens do platô inimigo e do vale e as subidas para o platô dos heróis
+const BEACON_RAMPS = [
+  '.............v......',
+  '^^.....^^^^^........',
+  '.>.v.v.<............',
+  '.>>...<<....>>......',
+  '.>>...<......^......',
+  '......^.............',
+  '...^^^v..vvv..^.....',
+  '...^^.>..vv.<.^.....',
+  '......>>>..<........',
+  '.....>>>>..<........',
+  '.....>>>.^^.<..vvvvv',
+  '.v..........^.......',
+  '......<....^^>......',
+  '.............^......',
+  '..........v..v......',
+  '.............v...v..',
+  '.............vvvv.vv',
+  'vvvv.......>........',
+  '...........>........',
+  '.....<.....>........',
+];
 export const FIRST_BATTLE: Scenario = {
   id: 'beacon_hill',
   name: 'Colina do Farol',
   en: 'Beacon Hill',
-  grid: dressBeaconHill(
+  grid: withRamps(dressBeaconHill(
     parseGrid(
       [
         '....................',
@@ -125,7 +161,7 @@ export const FIRST_BATTLE: Scenario = {
       ],
     ),
     { x: 2, y: 15 }, // casa do Farol (spawn "beacon")
-  ),
+  ), BEACON_RAMPS),
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 2, y: 15 },
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 14 },
@@ -191,17 +227,35 @@ const CRYPT_H = [
   '21100000000112',
   '22100000000122',
 ];
+// escadas (13/11; nas criptas a rampa vira escada no desenho): as dos lados do altar, as que sobem à faixa alta do meio
+// e as que saem do fosso dos heróis
+const CRYPT_RAMPS = [
+  '..............',
+  '..............',
+  '..^^......^^..',
+  '..^^......^^..',
+  '....^^..^^....',
+  '..............',
+  '..............',
+  '..............',
+  '..............',
+  '..............',
+  '..............',
+  '...<.^^^^.>...',
+  '...<......>...',
+  '..<<......>>..',
+];
 const CRYPT: Scenario = {
   id: 'flooded_crypt',
   name: 'Cripta Alagada',
   en: 'Flooded Crypt',
-  grid: {
+  grid: withRamps({
     width: CRYPT_MAP[0].length,
     height: CRYPT_MAP.length,
     // altura por casa à parte (13/11, "fases muito retas"): altar em 4 níveis, o meio desaba 2 (desce-se pelas escadas
     // dos lados) e o lado dos heróis afunda junto ao Farol. Água e ponte mantêm a própria altura
     tiles: CRYPT_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(CRYPT_H[y][x]) }) }))),
-  },
+  }, CRYPT_RAMPS),
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 6, y: 13 },
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 5, y: 11 },
@@ -254,15 +308,32 @@ const HEART_H = [
   '321111111123',
   '332111111233',
 ];
+// escadas (13/11): a passagem seca do meio até a ilha, a saída das pontes para a ilha e as dos lados dos heróis
+const HEART_RAMPS = [
+  '............',
+  '............',
+  '............',
+  '............',
+  '...v....v...',
+  '............',
+  '.....^^.....',
+  '.....^^.....',
+  '............',
+  '............',
+  '.<........>.',
+  '.<........>.',
+  '.<........>.',
+  '...<....>...',
+];
 const HEART: Scenario = {
   id: 'crypt_heart',
   name: 'Coração da Cripta',
   en: 'Heart of the Crypt',
-  grid: {
+  grid: withRamps({
     width: HEART_MAP[0].length,
     height: HEART_MAP.length,
     tiles: HEART_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(HEART_H[y][x]) }) }))),
-  },
+  }, HEART_RAMPS),
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 5, y: 13 },
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 11 },
@@ -324,6 +395,21 @@ const WOOD_H = [
   '221100001122',
   '321110011123',
 ];
+// rampas (13/11): as subidas da margem norte ao planalto inimigo e as da margem sul aos cantos altos dos heróis
+const WOOD_RAMPS = [
+  '..<.........',
+  '..<......>..',
+  '..^..^^^.^..',
+  '..^.<....^..',
+  '............',
+  '............',
+  'v...........',
+  '..........v.',
+  '..........>.',
+  '.<..........',
+  'v......>...v',
+  '.<<..<...>>.',
+];
 const ASH_WOOD: Scenario = {
   id: 'ash_wood',
   name: 'Bosque das Cinzas',
@@ -331,7 +417,7 @@ const ASH_WOOD: Scenario = {
   // altura de cada casa num mapa à parte (13/11, pedido do Fernando: "fases muito retas"; referência de relevo: Gariland
   // tem 47% de vizinhos com queda de 2+, o Bosque tinha 0%): o acampamento inimigo num planalto 3 níveis acima do rio (4 nos cantos),
   // degraus de 1 que fazem rampas e quedas de 2 que obrigam a contornar. A água e a ponte mantêm a própria altura.
-  grid: { width: 12, height: 12, tiles: WOOD_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('Wwb'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) }))) },
+  grid: withRamps({ width: 12, height: 12, tiles: WOOD_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('Wwb'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) }))) }, WOOD_RAMPS),
   spawns: [
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 3, y: 11 },
     { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 10 },
@@ -394,11 +480,28 @@ const PASS_H = [
   '322111111223',
   '322111111223',
 ];
+// rampas (13/11): os degraus do zigue-zague viram a subida do caminho; os penhascos de 2 ficam
+const PASS_RAMPS = [
+  '............',
+  '............',
+  '....^.......',
+  '...<........',
+  '......^.....',
+  '............',
+  '............',
+  '.........^..',
+  '..v......v..',
+  '...<.^^.>...',
+  '............',
+  '...<....>...',
+  '...<....>...',
+  '...<....>...',
+];
 const FROST_PASS: Scenario = {
   id: 'frost_pass',
   name: 'Passo Gelado',
   en: 'Frost Pass',
-  grid: { width: 12, height: 14, tiles: PASS_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...PASS_KEY[c], ...(c === 'i' ? {} : { h: Number(PASS_H[y][x]) }) }))) },
+  grid: withRamps({ width: 12, height: 14, tiles: PASS_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...PASS_KEY[c], ...(c === 'i' ? {} : { h: Number(PASS_H[y][x]) }) }))) }, PASS_RAMPS),
   spawns: [
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 13 },
     { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 12 },
