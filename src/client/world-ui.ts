@@ -63,6 +63,24 @@ export function itemStats(it: ItemDef): string {
 const loadChest = () => parseChest(store.json(CHEST_KEY));
 const loadEquip = () => parseEquip(store.json(EQUIP_KEY));
 
+// Menu da cidade (13/11, entrega 3): Loja, Bar com boatos e Grupo, em pergaminho por cima do mapa; Esc volta ao mapa
+function openTown(i: number, party: () => void) {
+  const w = WORLD[i];
+  const again = () => openTown(i, party);
+  const d = dialog('party', t(w.name[0], w.name[1]), [
+    el('div', { class: 'menu-actions camp-list' },
+      el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); openShop(again); } }, t('Loja: comprar e vender equipamento', 'Shop: buy and sell equipment')),
+      el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); openBar(i, again); } }, t('Bar: ouvir os boatos', 'Tavern: hear the rumors')),
+      el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); party(); } }, t('Grupo: fichas e equipamento', 'Party: sheets and equipment'))),
+  ]);
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+function openBar(i: number, back: () => void) {
+  const rumors = WORLD[i].town?.rumors ?? [];
+  dialog('party', t('Bar', 'Tavern'), [el('ul', { class: 'legend' }, ...rumors.map(([pt, en]) => el('li', {}, `“${t(pt, en)}”`))),
+    el('p', {}, t('Missões do bar chegam na próxima entrega.', 'Tavern quests come in the next delivery.'))], { onBack: back });
+}
+
 // Loja (13/11, entrega 2: provisória no mapa até as cidades): compra com o ouro do baú, vende pela metade (como no FFT)
 export function openShop(back?: () => void) {
   const chest = loadChest();
@@ -165,8 +183,11 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   const kindText = el('p', { class: 'world-kind' });
   const foes = el('p', { class: 'world-kind' }); // quantos inimigos e o chefe (só nos pontos de batalha)
   const enterBtn = el('button', { type: 'button', class: 'item focus', onclick: () => go() }, t('Entrar', 'Enter'));
+  // só nas cidades (WorldNode.town): o menu da cidade, como as cidades do FFT
+  const townBtn = el('button', { type: 'button', class: 'item', hidden: true, onclick: () => openTown(at, opts.party) }, t('Cidade', 'Town'));
   const panel = el('div', { class: 'panel world-panel', 'aria-live': 'polite' }, place, kindText, foes, el('div', { class: 'world-actions' }, enterBtn,
     el('button', { type: 'button', class: 'item', onclick: () => opts.party() }, t('Grupo', 'Party')),
+    townBtn,
     el('button', { type: 'button', class: 'item', onclick: () => openShop() }, t('Loja', 'Shop')),
     el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title'))));
   const root = el('div', { class: 'world' },
@@ -186,6 +207,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     kindText.textContent = w.chapter !== undefined
       ? t(`Batalha · Capítulo ${w.chapter + 1}`, `Battle · Chapter ${w.chapter + 1}`) + (at < done ? `  ${starText(stars[w.chapter])}` : '')
       : t('História', 'Story');
+    townBtn.hidden = !w.town;
     foes.textContent = w.chapter !== undefined ? foesText(w.chapter, t) : '';
     foes.hidden = w.chapter === undefined;
   };

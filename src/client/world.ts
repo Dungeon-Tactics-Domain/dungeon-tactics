@@ -13,6 +13,9 @@ export interface WorldNode {
   y: number;
   chapter?: number; // ponto de batalha: a fase da campanha (campaign.ts)
   scene?: Line[]; // ponto de história: a conversa que toca ao entrar
+  // cidade (13/11, entrega 3 do desenho docs/game-design/cidades-grupo-equipamento.md): menu com Loja, Bar e Grupo;
+  // `rumors` são os boatos do bar, que contam a história e dão dica (pt, en)
+  town?: { rumors: [string, string][] };
 }
 
 const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
@@ -28,6 +31,12 @@ export const INTRO: Line[] = [
 export const WORLD: WorldNode[] = [
   {
     id: 'vauclair', name: ['Vila de Vauclair', 'Vauclair Village'], x: 14, y: 80,
+    town: { rumors: [
+      ['Dizem que os esqueletos da estrada fogem da luz dos cristais. Mas só quando estão sozinhos.', 'They say the road skeletons flee the crystals’ light. But only when they are alone.'],
+      ['O ferreiro jura que uma lâmina de ferro corta osso como manteiga. Ele vende uma, claro.', 'The smith swears an iron blade cuts bone like butter. He sells one, of course.'],
+      ['Quem ataca pelas costas raramente erra. Os velhos soldados sabem disso.', 'Whoever strikes from behind rarely misses. Old soldiers know it.'],
+      ['A água rasa do lago só atrasa; a funda não deixa ninguém passar. Nem os mortos.', 'The lake’s shallow water only slows you; the deep water lets no one pass. Not even the dead.'],
+    ] },
     scene: [
       L('narr', 'Vauclair, a última vila antes da Estrada de Cinzas. O Farol do vale ainda brilha azul no alto da colina.', 'Vauclair, the last village before the Ash Road. The valley Beacon still glows blue atop the hill.'),
       L('bran', 'A caravana com os cristais sai ao amanhecer. Ninguém chega à Colina sem passar pela estrada.', 'The crystal caravan leaves at dawn. No one reaches the Hill without taking the road.'),
@@ -52,6 +61,11 @@ export const WORLD: WorldNode[] = [
   { id: 'farol', name: ['O Último Farol', 'The Last Beacon'], x: 56, y: 34, chapter: 4 },
   {
     id: 'acampamento', name: ['Acampamento na Neve', 'Snow Camp'], x: 70, y: 24,
+    town: { rumors: [
+      ['O mascate da fogueira diz que botas ligeiras valem ouro na neve. Ele vende botas ligeiras.', 'The campfire peddler says swift boots are worth gold in the snow. He sells swift boots.'],
+      ['Lá em cima, quem tem salto alto corta caminho pelos penhascos.', 'Up there, those who jump high cut through the cliffs.'],
+      ['A sombra do cume não anda. Mas ninguém que chegou perto voltou para contar.', 'The shadow on the summit does not walk. But no one who got close came back to tell.'],
+    ] },
     scene: [
       L('narr', 'Ato II. Ao pé das montanhas, uma fogueira pequena contra o frio.', 'Act II. At the foot of the mountains, a small fire against the cold.'),
       L('odo', 'Li nos livros velhos: todo Farol empurra o Véu para algum lugar. Alguém precisava estar lá para receber.', 'I read it in the old books: every Beacon pushes the Veil somewhere. Someone had to be there to catch it.'),
