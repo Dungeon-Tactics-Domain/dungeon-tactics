@@ -229,11 +229,35 @@ const HEART_MAP = [
   'ffffffffffff',
   'BBffffffffBB',
 ];
+// relevo (13/11, "fases muito retas"): altar em 3 com degraus de 2; ilha do meio em 3 com quedas de 2 nas bordas (só a
+// passagem seca e as pontes sobem); beiradas altas dos lados dos heróis para os arqueiros. Água e ponte mantêm a própria
+// altura. A altura do altar decide a fase (fase 4, MEDIR=300): trono no 5 dava 2% de vitória, altar todo no 4 dava 7%,
+// no 3 com o arqueiro no 2 deu 42% (entre a fase 3 e a 5)
+const HEART_H = [
+  '333333333333',
+  '332232232233',
+  '322222222223',
+  '000000000000',
+  '211222222112',
+  '212333333212',
+  '211322223112',
+  '000001100000',
+  '111111111111',
+  '221111111122',
+  '322111111223',
+  '321111111123',
+  '321111111123',
+  '332111111233',
+];
 const HEART: Scenario = {
   id: 'crypt_heart',
   name: 'Coração da Cripta',
   en: 'Heart of the Crypt',
-  grid: { width: HEART_MAP[0].length, height: HEART_MAP.length, tiles: HEART_MAP.flatMap((row) => [...row].map((c) => ({ ...CRYPT_KEY[c] }))) },
+  grid: {
+    width: HEART_MAP[0].length,
+    height: HEART_MAP.length,
+    tiles: HEART_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(HEART_H[y][x]) }) }))),
+  },
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 5, y: 13 },
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 11 },
