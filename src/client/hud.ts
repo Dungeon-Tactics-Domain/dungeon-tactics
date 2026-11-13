@@ -195,6 +195,7 @@ export interface Forecast {
   after: [number, number]; // vida depois, menor e maior
   ally: boolean; // golpe que pega alguém do mesmo lado de quem usa
   support: boolean; // apoio sem cura: só o efeito
+  side: 'front' | 'side' | 'back'; // de onde o golpe pega (direção do alvo, 13/11); "pelas costas" acerta mais
 }
 export function forecast(b: Battle, ability: string, p: Preview): Forecast[] {
   const a = ABILITIES[ability];
@@ -211,13 +212,16 @@ export function forecast(b: Battle, ability: string, p: Preview): Forecast[] {
     const after: [number, number] = heal ? [Math.min(max, u.hp + heal[0]), Math.min(max, u.hp + heal[1])]
       : support ? [u.hp, u.hp] : [Math.max(0, u.hp - tg.dmgMax - sure), Math.max(0, u.hp - tg.dmgMin - sure)];
     return { unit: u, chance: tg.chance, dmg: heal || support ? null : [tg.dmgMin, tg.dmgMax], heal, push,
-      spikes: !!shove?.events.some((e) => e.k === 'spike'), after, ally: !heal && !support && u.team === b.actor.team, support };
+      spikes: !!shove?.events.some((e) => e.k === 'spike'), after, ally: !heal && !support && u.team === b.actor.team, support,
+      side: a.magic || heal || support ? 'front' : tg.side };
   });
 }
 // "dano 9–12 · empurrão +3", "acerto 85% · dano 9–12 · empurrão +3" ou "cura 7–10"; e "vida 25 → 10–13"
 const dmgText = (f: Forecast) => t(`dano ${range(f.dmg!)}`, `damage ${range(f.dmg!)}`)
   + (f.push ? t(` · empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, ` · push +${f.push}${f.spikes ? ' (spikes!)' : ''}`) : '');
-export const forecastText = (f: Forecast) => f.heal ? t(`cura ${range(f.heal)}`, `heals ${range(f.heal)}`) : `${t(`acerto ${f.chance}%`, `hit ${f.chance}%`)} · ${dmgText(f)}`;
+// golpe físico pelo lado ou pelas costas diz de onde vem o bônus de acerto (combat.ts SIDE_BONUS/BACK_BONUS)
+const fromText = (f: Forecast) => (f.side === 'back' ? t(' (pelas costas)', ' (from behind)') : f.side === 'side' ? t(' (de lado)', ' (from the side)') : '');
+export const forecastText = (f: Forecast) => f.heal ? t(`cura ${range(f.heal)}`, `heals ${range(f.heal)}`) : `${t(`acerto ${f.chance}%`, `hit ${f.chance}%`)}${fromText(f)} · ${dmgText(f)}`;
 export const hpAfterText = (f: Forecast) => `${t('vida', 'HP')} ${f.unit.hp} → ${range(f.after)}`;
 
 // bloco da prévia no painel do alvo: acerto grande à esquerda (o número do FFT), dano e vida depois ao lado

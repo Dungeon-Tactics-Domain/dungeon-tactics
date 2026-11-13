@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { forecast, forecastText, hpAfterText } from '../src/client/hud.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { COMBAT } from '../src/shared/battle/combat.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
 
@@ -11,17 +13,19 @@ describe('prévia do golpe', () => {
   it('golpe: acerto, dano e a vida depois em faixa', () => {
     const b = new Battle(flat(4, 1), stateOf([{ id: 'w', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 's', def: 'soldier', team: 'enemy', x: 1, y: 0 }]));
     const [f] = fc(b, 'strike', { x: 1, y: 0 });
-    expect(f).toMatchObject({ chance: 90, dmg: [6, 9], heal: null, push: 0, after: [36, 39], ally: false });
-    expect(forecastText(f)).toBe('acerto 90% · dano 6–9');
-    expect(hpAfterText(f)).toBe('vida 45 → 36–39');
+    const [lo, hi] = ABILITIES.strike.damage; // os números vêm da tabela (mudaram no dano x1,75 de 13/11)
+    expect(f).toMatchObject({ chance: 90, dmg: [lo, hi], heal: null, push: 0, after: [45 - hi, 45 - lo], ally: false });
+    expect(forecastText(f)).toBe(`acerto 90% · dano ${lo}–${hi}`);
+    expect(hpAfterText(f)).toBe(`vida 45 → ${45 - hi}–${45 - lo}`);
   });
 
   it('empurrão contra a borda: a batida entra no dano e na vida depois', () => {
     const b = new Battle(flat(3, 1), stateOf([{ id: 'w', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 's', def: 'soldier', team: 'enemy', x: 1, y: 0 }]));
     const [f] = fc(b, 'shield_bash', { x: 1, y: 0 });
-    expect(f.push).toBe(3);
-    expect(f.after).toEqual([39, 40]); // 45 − (2 a 3) − 3 da batida
-    expect(forecastText(f)).toBe('acerto 95% · dano 2–3 · empurrão +3');
+    const [lo, hi] = ABILITIES.shield_bash.damage, bump = COMBAT.BUMP_DAMAGE;
+    expect(f.push).toBe(bump);
+    expect(f.after).toEqual([45 - hi - bump, 45 - lo - bump]); // dano mais a batida na borda
+    expect(forecastText(f)).toBe(`acerto 95% · dano ${lo}–${hi} · empurrão +${bump}`);
   });
 
   it('a vida depois bate com a regra de verdade num acerto com empurrão', () => {
@@ -38,8 +42,9 @@ describe('prévia do golpe', () => {
       { id: 'm', def: 'mage', team: 'hero', x: 0, y: 0 }, { id: 'a', def: 'archer', team: 'hero', x: 2, y: 0, hp: 10 }, { id: 'r', def: 'rogue', team: 'hero', x: 3, y: 0, hp: 25 },
     ]));
     const [hurt] = fc(b, 'heal', { x: 2, y: 0 });
-    expect(hurt).toMatchObject({ heal: [7, 10], dmg: null, after: [17, 20], ally: false });
-    expect(forecastText(hurt)).toBe('cura 7–10');
+    const [lo, hi] = ABILITIES.heal.heal;
+    expect(hurt).toMatchObject({ heal: [lo, hi], dmg: null, after: [10 + lo, 10 + hi], ally: false });
+    expect(forecastText(hurt)).toBe(`cura ${lo}–${hi}`);
     expect(fc(b, 'heal', { x: 3, y: 0 })[0].after).toEqual([26, 26]); // Ladino tem 26 de vida
   });
 

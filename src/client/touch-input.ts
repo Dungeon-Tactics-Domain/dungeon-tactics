@@ -19,6 +19,8 @@ export class TouchInput {
   constructor(target: HTMLElement, h: TouchHandlers) {
     const opts = { signal: this.ac.signal };
     target.addEventListener('pointerdown', (e) => {
+      // só o botão principal toca e arrasta (13/11, revisão): o direito virava toque e confirmava o andar em vez de voltar
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
       target.setPointerCapture(e.pointerId);
       this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (this.pointers.size === 1) {

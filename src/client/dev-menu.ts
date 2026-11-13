@@ -12,7 +12,7 @@ import { store } from './store.ts';
 
 const mapName = (id: string) => t(SCENARIOS[id].name, SCENARIOS[id].en);
 
-export function openDevMenu(start: (setup: DevSetup) => void) {
+export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => void) {
   let setup = parseSetup(store.json(DEV_KEY)) ?? defaultSetup('beacon_hill');
   const body = el('div', { class: 'dev-body' });
   const save = () => store.set(DEV_KEY, JSON.stringify(setup));
@@ -120,6 +120,6 @@ export function openDevMenu(start: (setup: DevSetup) => void) {
         el('button', { type: 'button', class: 'secondary', onclick: () => { setup = defaultSetup(setup.map); save(); render(); } }, t('Voltar ao padrão do mapa', 'Reset to map default'))),
     );
   }
-  const d = dialog('dev', t('Desenvolvedor', 'Developer'), [body]);
+  const d = dialog('dev', t('Desenvolvedor', 'Developer'), [body], { onBack });
   render();
 }

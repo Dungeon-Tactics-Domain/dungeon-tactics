@@ -270,7 +270,19 @@ button[hidden] { display: none; }
 .dialog.title h2 { font-size: 38px; letter-spacing: 1px; }
 .title-sub { margin: 4px 0 14px; }
 .continue-where { font: 400 var(--fs) var(--font); opacity: .8; margin-left: 8px; } /* onde o Continuar leva, na mesma linha */
-.dialog.title .legend { text-align: left; } /* Créditos: lista alinhada à esquerda mesmo no diálogo centrado do título */
+.dialog.title .legend { text-align: left; }
+/* tela de título (13/11, "quero uma tela de título mesmo"): sem janela, o nome grande sobre o mapa girando, o menu em
+   pergaminho embaixo; não fecha (dialog fixed) */
+.main-title .dialog.title { background: none; border: none; box-shadow: none; width: min(520px, 100%); overflow: visible; }
+.main-title .dialog-head { justify-content: center; }
+.main-title .dialog.title h2 { font-size: 64px; line-height: 1.05; color: var(--paper-hi); letter-spacing: 2px; margin: 0 0 4px;
+  text-shadow: 0 4px 0 var(--edge), 0 0 28px rgba(255, 207, 74, .55); animation: title-in 600ms ease-out; }
+.main-title .title-sub, .main-title .title-foot { color: var(--paper-hi); text-shadow: 0 2px 0 var(--edge), 0 0 8px var(--edge); }
+.main-title .title-foot { font-size: var(--fs-sm); margin: 14px 0 0; opacity: .85; }
+.main-title .menu-actions { background: linear-gradient(var(--paper-hi), var(--paper)); border: 2px solid var(--paper-edge); border-radius: var(--r);
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); padding: 12px; }
+@keyframes title-in { from { opacity: 0; transform: translateY(-12px) scale(.96); } }
+@media (prefers-reduced-motion: reduce) { .main-title .dialog.title h2 { animation: none; } } /* Créditos: lista alinhada à esquerda mesmo no diálogo centrado do título */
 .dialog a { color: var(--focus); } /* link na cor de destaque da tinta, sublinhado: não só pela cor */
 /* o mapa girando atrás é a arte do título: sem o HUD da batalha por cima e só com as bordas escurecidas */
 .title-overlay { background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%); }
