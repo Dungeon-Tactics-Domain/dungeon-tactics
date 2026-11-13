@@ -1,4 +1,5 @@
 import { resolveAbility } from './combat.ts';
+import { nearestTile } from './pathing.ts';
 import type { Grid } from './grid.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Charge } from './types.ts';
@@ -72,7 +73,9 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     for (const c of due) {
       if (!state.units.some((u) => u.id === c.unit)) continue; // quem carregava morreu
       const followed = c.follow && state.units.find((u) => u.id === c.follow);
-      const out = resolveAbility(grid, state, c.unit, c.ability, followed ? followed.pos : c.target, true);
+      const caster = state.units.find((u) => u.id === c.unit)!;
+      // unidade grande seguida: a casa dela mais perto de quem lança (a de canto podia estar fora do alcance); 1 casa: a mesma
+      const out = resolveAbility(grid, state, c.unit, c.ability, followed ? nearestTile(followed, caster.pos) : c.target, true);
       events.push(...(out.length ? out : [{ k: 'fizzle' as const, unit: c.unit, ability: c.ability }]));
       if (state.outcome !== 'ongoing') return events;
     }

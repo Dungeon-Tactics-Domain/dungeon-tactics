@@ -31,6 +31,20 @@ describe('unidade grande (2x2)', () => {
     expect(b.preview('spin', { x: 3, y: 5 }).targets.map((t) => t.unit)).toEqual(['big']);
   });
 
+  it('magia com carga no alcance máximo de uma casa dele sai no Colosso (antes media até a casa de canto e falhava)', () => {
+    const g = flat(10, 10);
+    const b = new Battle(g, stateOf([
+      { id: 'm', def: 'mage', team: 'hero', x: 4, y: 9 },
+      { id: 'big', def: 'colossus', team: 'enemy', x: 3, y: 3 },
+      { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 9 },
+    ], HIT_SEED));
+    expect(b.act('blast', { x: 4, y: 4 }).map((e) => e.k)).toEqual(['charge']);
+    const out: string[] = [];
+    for (let i = 0; i < 12 && b.state.charges.length; i++) out.push(...b.endTurn().map((e) => e.k));
+    expect(out).not.toContain('fizzle');
+    expect(out).toContain('attack');
+  });
+
   it('empurrão não move a unidade grande', () => {
     const b = scene();
     const big = b.state.units[1];

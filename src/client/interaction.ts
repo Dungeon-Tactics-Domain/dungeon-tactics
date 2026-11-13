@@ -4,7 +4,7 @@ import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
 import { dist, posKey, samePos } from '../shared/battle/grid.ts';
-import { inAbilityRange, lineOfSight, pathTo, reachable, unitAt } from '../shared/battle/pathing.ts';
+import { footprint, inAbilityRange, lineOfSight, nearestTile, pathTo, reachable, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
@@ -28,10 +28,11 @@ const selfCentered = (id: string) => ABILITIES[id].range[1] === 0;
 // que só pegaria o aliado ao lado não conta como alvo
 function hasTarget(b: Battle, id: string): boolean {
   const heal = ABILITIES[id].heal[1] > 0;
-  return b.state.units.some((u) => b.preview(id, u.pos).targets.some((tg) => {
+  // qualquer casa da unidade (a grande ocupa 4; só uma delas pode estar no alcance)
+  return b.state.units.some((u) => footprint(u).some((p) => b.preview(id, p).targets.some((tg) => {
     const hit = b.state.units.find((x) => x.id === tg.unit)!;
     return heal === (hit.team === b.actor.team);
-  }));
+  })));
 }
 
 // sem andar ainda: Mover; já andou: a primeira habilidade que tem alvo daqui (sem alvo, nenhuma: escolher a Facada
@@ -129,7 +130,10 @@ export function highlights(b: Battle, ui: Ui): Highlights {
 export function chargeDanger(state: BattleState, width: number, height: number): Map<string, string> {
   const out = new Map<string, string>(); // casa -> habilidade que cai nela
   for (const c of state.charges) {
-    const center = (c.follow && state.units.find((u) => u.id === c.follow)?.pos) || c.target;
+    // mesma conta da carga ao sair (turn-queue.ts): unidade grande seguida, a casa dela mais perto de quem lança
+    const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
+    const caster = state.units.find((u) => u.id === c.unit);
+    const center = followed ? (caster ? nearestTile(followed, caster.pos) : followed.pos) : c.target;
     const r = ABILITIES[c.ability].radius;
     for (let y = center.y - r; y <= center.y + r; y++)
       for (let x = center.x - r; x <= center.x + r; x++)

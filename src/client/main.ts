@@ -5,6 +5,7 @@ import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, samePos } from '../shared/battle/grid.ts';
+import { unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos } from '../shared/battle/types.ts';
 import { choice, dialog } from './dialog.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
@@ -429,7 +430,7 @@ class Game {
   // janela de status da unidade sob o cursor (ou de quem joga), com dialog() como os outros diálogos
   private status() {
     const s = this.battle.state;
-    const id = s.units.find((u) => u.pos.x === this.cursor.x && u.pos.y === this.cursor.y)?.id ?? this.battle.actor?.id;
+    const id = unitAt(s, this.cursor)?.id ?? this.battle.actor?.id; // qualquer casa da unidade grande
     if (!id) return;
     const u = s.units.find((x) => x.id === id)!;
     dialog('status', unitName(u.def), [el('dl', { class: 'keys' }, ...unitStatus(s, id).flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]))]);
@@ -610,6 +611,9 @@ async function boot() {
   const study = new URLSearchParams(location.search).get('cenario');
   const camp = new URLSearchParams(location.search).get('campanha');
   if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // mapa mundial: sem batalha montada
+  // fase inexistente ou ainda fechada (endereço digitado ou salvo): volta ao mapa em vez de cair numa batalha avulsa
+  const allowed = camp !== null && camp !== '' && CHAPTERS[Number(camp)] !== undefined && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY));
+  if (camp !== null && !allowed) return toWorld();
   if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
@@ -735,9 +739,9 @@ async function worldScreen(host: HTMLElement) {
     await talk(node.scene!, { title: t(node.name[0], node.name[1]), hero });
     done = afterNode(i, done);
     store.set(WORLD_KEY, String(done));
-    view.refresh(done);
+    view = view.refresh(done);
   };
-  const view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
+  let view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
     party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); } });
 }
 

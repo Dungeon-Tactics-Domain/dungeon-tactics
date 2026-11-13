@@ -10,7 +10,7 @@ import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { COMBAT, simulatePush, type Preview } from '../shared/battle/combat.ts';
 import { TERRAIN, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
-import { MAX_JUMP } from '../shared/battle/pathing.ts';
+import { MAX_JUMP, unitAt } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
 import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
@@ -253,7 +253,9 @@ export class BattleHud {
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me)] : []));
     // unidade sob o cursor (ou o alvo do "Executar?")
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
-    const other = b.state.units.find((u) => u.pos.x === at.x && u.pos.y === at.y && u.id !== me?.id);
+    // unitAt: qualquer casa da unidade grande mostra o painel dela
+    const found = unitAt(b.state, at);
+    const other = found?.id !== me?.id ? found : undefined;
     this.target.replaceChildren(...(other ? [unitPanel(b.state, other)] : []));
   }
 

@@ -84,6 +84,12 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
       else end();
     });
     const onEsc = (e: KeyboardEvent) => {
+      // Enter ou Espaço seguro (o jeito de acelerar a vez do inimigo) repetiria o clique e pularia as falas sem leitura
+      if (e.repeat && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       if (e.key !== 'Escape') return;
       e.stopPropagation();
       end();

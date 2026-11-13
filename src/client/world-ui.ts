@@ -48,7 +48,12 @@ export interface WorldOptions {
   party: () => void; // tela do grupo (main.ts), como a formação do FFT
 }
 
-export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLElement; refresh: (done: number) => void } {
+export interface WorldView {
+  root: HTMLElement;
+  refresh: (done: number) => WorldView; // troca este mapa por um novo; quem chama passa a guardar o novo (senão o 2º refresh duplicava o mapa)
+}
+
+export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   const { done, hero, stars, enter, back } = opts;
   // começa no ponto mais avançado aberto (o próximo a fazer)
   let at = Math.min(done, WORLD.length - 1);
@@ -152,5 +157,5 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLEl
   root.style.setProperty('--walk-ms', `${WALK_MS}ms`);
   show();
   enterBtn.focus();
-  return { root, refresh: (newDone: number) => { root.remove(); openWorld(host, { ...opts, done: newDone }); } };
+  return { root, refresh: (newDone: number) => { root.remove(); return openWorld(host, { ...opts, done: newDone }); } };
 }
