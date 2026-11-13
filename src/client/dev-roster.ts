@@ -3,6 +3,7 @@
 // Decisões dele (múltipla escolha, 12/11): edita classe, nome e números; monta heróis e inimigos; as unidades ocupam as
 // casas de partida do mapa; salva no navegador e exporta/importa JSON.
 import { ABILITIES } from '../shared/battle/abilities.ts';
+import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import type { Rules } from '../shared/battle/rules.ts';
 import { SCENARIOS, type Scenario, type Spawn } from '../shared/battle/scenarios.ts';
 import type { Team } from '../shared/battle/types.ts';
@@ -16,6 +17,7 @@ export interface DevUnit {
   hp: number;
   speed: number;
   move: number;
+  jump?: number; // Salto (13/11); opcional para os elencos salvos antes dele abrirem iguais (sem ele, o da classe)
   abilities: string[];
 }
 export interface DevSetup {
@@ -29,7 +31,7 @@ export const DEV_SCENARIO = 'dev';
 // mapas que o menu oferece: os do jogo e o relevo de Gariland (só o mapa: o estudo é carregado à parte, ver main.ts)
 export const DEV_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart', 'ash_wood', 'frost_pass', 'fft-gariland'];
 // limites dos números editáveis: largos para testar, mas sem quebrar a fila de turnos (velocidade 0 nunca joga)
-export const LIMITS = { hp: [1, 999], speed: [1, 50], move: [1, 12] } as const;
+export const LIMITS = { hp: [1, 999], speed: [1, 50], move: [1, 12], jump: [1, 6] } as const;
 const MAX_TEAM = 12;
 
 // classes e habilidades do jogo (as do estudo FFT dependem das regras do estudo e ficam de fora)
@@ -40,7 +42,7 @@ export const devAbilities = () => Object.keys(ABILITIES).filter(ours);
 
 export function unitFrom(base: string, name = UNIT_DEFS[base].name): DevUnit {
   const d = UNIT_DEFS[base];
-  return { base, name, hp: d.hp, speed: d.speed, move: d.move, abilities: [...d.abilities] };
+  return { base, name, hp: d.hp, speed: d.speed, move: d.move, jump: d.jump ?? MAX_JUMP, abilities: [...d.abilities] };
 }
 
 // casas de partida do mapa por lado (o Farol à parte: é o objetivo, não entra na party)
@@ -90,8 +92,9 @@ export function parseSetup(raw: unknown): DevSetup | null {
       if (typeof u.base !== 'string' || !devClasses().includes(u.base)) return null;
       if (typeof u.name !== 'string' || !u.name.trim() || u.name.length > 24) return null;
       if (!isInt(u.hp, LIMITS.hp) || !isInt(u.speed, LIMITS.speed) || !isInt(u.move, LIMITS.move)) return null;
+      if (u.jump !== undefined && !isInt(u.jump, LIMITS.jump)) return null;
       if (!Array.isArray(u.abilities) || u.abilities.length > 8 || !u.abilities.every((a) => typeof a === 'string' && devAbilities().includes(a))) return null;
-      units.push({ base: u.base, name: u.name.trim(), hp: u.hp as number, speed: u.speed as number, move: u.move as number, abilities: [...new Set(u.abilities as string[])] });
+      units.push({ base: u.base, name: u.name.trim(), hp: u.hp as number, speed: u.speed as number, move: u.move as number, ...(u.jump !== undefined && { jump: u.jump as number }), abilities: [...new Set(u.abilities as string[])] });
     }
     return units;
   };
@@ -122,7 +125,7 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
       BASE[id] = u.base;
       // o tamanho vem da classe (o Colosso da campanha ocupa 2x2 como o original)
-      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), ...(UNIT_DEFS[u.base].jump && { jump: UNIT_DEFS[u.base].jump }), ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
+      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), jump: u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP, ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');

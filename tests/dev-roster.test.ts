@@ -35,6 +35,21 @@ describe('menu de desenvolvedor: elenco', () => {
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], hp: 0 }] })).toBeNull();
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], base: 'fft_ramza' }] })).toBeNull();
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], abilities: ['nao_existe'] }] })).toBeNull();
+    // Salto (13/11): fora dos limites recusa; elenco salvo antes dele (sem o campo) abre igual
+    expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], jump: 9 }] })).toBeNull();
+    const { jump: _, ...old } = ok.heroes[0];
+    expect(parseSetup({ ...ok, heroes: [old] })?.heroes[0].jump).toBeUndefined();
+  });
+
+  it('o Salto editado vale na batalha; sem ele, o da classe', () => {
+    const s = defaultSetup('beacon_hill');
+    s.heroes[0] = { ...s.heroes[0], jump: 4 };
+    const { jump: _, ...noJump } = s.heroes[1];
+    s.heroes[1] = noJump;
+    const scenario = buildDevScenario(s);
+    const def = (id: string) => UNIT_DEFS[scenario.spawns.find((sp) => sp.id === id)!.def];
+    expect(def('h0').jump).toBe(4);
+    expect(def('h1').jump).toBe(UNIT_DEFS[s.heroes[1].base].jump ?? 1);
   });
 
   it('vira um cenário jogável com os números editados, salva e carrega', () => {

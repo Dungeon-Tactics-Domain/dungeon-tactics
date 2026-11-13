@@ -2,6 +2,7 @@
 // vida, velocidade, movimento e habilidades), salva no navegador, exporta e importa JSON e começa a batalha.
 // As regras do elenco ficam em dev-roster.ts (puro, testado); aqui só a tela.
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
+import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { choice, dialog } from './dialog.ts';
 import { DEV_KEY, DEV_MAPS, LIMITS, defaultSetup, devAbilities, devClasses, parseSetup, problems, slotsOf, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
@@ -57,7 +58,8 @@ export function openDevMenu(start: (setup: DevSetup) => void) {
       el('div', { class: 'dev-line' },
         number(t('Vida', 'HP'), u.hp, LIMITS.hp, (hp) => edit({ hp })),
         number(t('Velocidade', 'Speed'), u.speed, LIMITS.speed, (speed) => edit({ speed })),
-        number(t('Movimento', 'Move'), u.move, LIMITS.move, (move) => edit({ move }))),
+        number(t('Movimento', 'Move'), u.move, LIMITS.move, (move) => edit({ move })),
+        number(t('Salto', 'Jump'), u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP, LIMITS.jump, (jump) => edit({ jump }))),
       skills);
   };
 
