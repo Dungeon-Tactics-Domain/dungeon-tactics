@@ -427,7 +427,7 @@ export class BattleScene {
       this.tileTops.push(pick);
     }
     if (levels.size) {
-      this.water = new Water(this.scene, this.grid, levels, this.step);
+      this.water = new Water(this.scene, this.grid, levels, this.step, river);
       // o rio de fora é uma faixa contínua com correnteza (terrain.ts buildStream), não casas de água em degrau
       if (outside.size) { this.stream = buildStream(this.grid, this.step, levels, river); this.scene.add(...this.stream.meshes); }
       this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
