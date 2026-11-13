@@ -5,21 +5,26 @@ import { TRACKS, trackUrl, type SongId } from './music.ts';
 import { store } from './store.ts';
 
 export const SOUND_KEY = 'dt:sound';
-export type Level = 0 | 1 | 2; // desligado, baixo, alto
+// volume em % de 0 a 100, de 5 em 5 (13/11, pedido do Fernando: "som e efeitos devem ser barra de 5 em 5%")
 export interface SoundSettings {
-  music: Level;
-  sfx: Level;
+  music: number;
+  sfx: number;
 }
 // música baixa por padrão para não cobrir os efeitos; em localhost começa desligada (várias abas de teste tocando juntas
 // incomodavam, decisão de 20/10 herdada do Warlock)
 const LOCAL = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-export const DEFAULT_SOUND: SoundSettings = { music: LOCAL ? 0 : 1, sfx: 2 };
-const GAIN = [0, 0.35, 0.8];
+export const DEFAULT_SOUND: SoundSettings = { music: LOCAL ? 0 : 45, sfx: 100 };
+// 100% = o antigo "alto" (0,8): os níveis medidos em dB nos comentários abaixo continuam valendo no máximo
+const volume = (p: number) => (p / 100) * 0.8;
 
-const isLevel = (v: unknown): v is Level => v === 0 || v === 1 || v === 2;
+// O save antigo guardava 0, 1 ou 2 (desligado, baixo, alto). 1 e 2 não são múltiplos de 5, então não se confundem com
+// um volume novo: viram 45% e 100% (ganho 0,36 e 0,8; antes 0,35 e 0,8)
+const LEGACY: Record<number, number> = { 1: 45, 2: 100 };
+const pct = (v: unknown, fallback: number) =>
+  typeof v !== 'number' ? fallback : (LEGACY[v] ?? (v >= 0 && v <= 100 && v % 5 === 0 ? v : fallback));
 export function parseSound(raw: unknown): SoundSettings {
-  const r = (raw ?? {}) as Partial<SoundSettings>;
-  return { music: isLevel(r.music) ? r.music : DEFAULT_SOUND.music, sfx: isLevel(r.sfx) ? r.sfx : DEFAULT_SOUND.sfx };
+  const r = (raw ?? {}) as Partial<Record<keyof SoundSettings, unknown>>;
+  return { music: pct(r.music, DEFAULT_SOUND.music), sfx: pct(r.sfx, DEFAULT_SOUND.sfx) };
 }
 
 export type Sfx = 'cursor' | 'confirm' | 'cancel' | 'step' | 'swing' | 'throw' | 'hit' | 'miss' | 'heal' | 'charge' | 'spell' | 'fire' | 'die';
@@ -33,7 +38,7 @@ let ctx: AudioContext | null = null;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 
 // Música em arquivo (music.ts), uma faixa por momento (título, mapa, fases; sem fase toca a batalha avulsa). Trocar de
-// faixa faz fade de 0,5 s: a antiga some enquanto a nova sobe. Volume = nível das opções × 0,6 (a música fica abaixo
+// faixa faz fade de 0,5 s: a antiga some enquanto a nova sobe. Volume = barra das opções × 0,6 (a música fica abaixo
 // dos efeitos) × ganho da faixa.
 let track: SongId | null = null;
 export function setTrack(id: SongId | null) {
@@ -47,7 +52,7 @@ interface Voice {
 }
 const voices = new Map<SongId, Voice>();
 let fader: ReturnType<typeof setInterval> | undefined;
-// 0,05 a cada 50 ms: de 0 ao teto do nível alto (0,48) em ~0,5 s
+// 0,05 a cada 50 ms: de 0 ao teto do volume 100% (0,48) em ~0,5 s
 const FADE_STEP = 0.05;
 const fadeTick = () => {
   let moving = false;
@@ -83,7 +88,7 @@ const applyMusic = () => {
       voices.set(want, v);
       void audio.play().catch(() => undefined);
     }
-    v.to = GAIN[settings.music] * 0.6 * TRACKS[want].gain;
+    v.to = volume(settings.music) * 0.6 * TRACKS[want].gain;
   }
   fader ??= setInterval(fadeTick, 50);
 };
@@ -112,7 +117,7 @@ export function sfx(name: Sfx) {
     if (!buf) return;
     const src = c.createBufferSource();
     const gain = c.createGain();
-    gain.gain.value = GAIN[settings.sfx];
+    gain.gain.value = volume(settings.sfx);
     src.buffer = buf;
     src.connect(gain).connect(c.destination);
     src.start();
@@ -132,7 +137,7 @@ export function jingle(win: boolean) {
     osc.type = win ? 'square' : 'triangle';
     osc.frequency.value = f;
     // 0,4 (era 0,25, medido em 13/11): a fanfarra ficava em -24 a -27 dB, mais baixa que um clique; agora perto dos efeitos
-    gain.gain.setValueAtTime(GAIN[settings.sfx] * 0.4, t0);
+    gain.gain.setValueAtTime(volume(settings.sfx) * 0.4, t0);
     gain.gain.exponentialRampToValueAtTime(0.001, t0 + (last ? 0.9 : step * 0.95));
     osc.connect(gain).connect(ctx!.destination);
     osc.start(t0);
@@ -151,7 +156,7 @@ export function blip(pitch: number) {
   osc.frequency.value = pitch * (0.94 + Math.random() * 0.12);
   // 0,2 (era 0,08, medido em 13/11): o bipe ficava em -33 dB, abaixo da música (-31 dB), e a voz sumia nas conversas;
   // agora -26 dB, acima da música e abaixo dos efeitos de arquivo (-14 a -21 dB)
-  gain.gain.setValueAtTime(GAIN[settings.sfx] * 0.2, t0);
+  gain.gain.setValueAtTime(volume(settings.sfx) * 0.2, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
   osc.connect(gain).connect(ctx.destination);
   osc.start(t0);
