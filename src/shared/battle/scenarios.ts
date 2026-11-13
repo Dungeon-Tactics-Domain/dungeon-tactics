@@ -143,6 +143,7 @@ const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: str
   f: { terrain: 'floor', h: 1, look: 'crypt' },
   d: { terrain: 'floor', h: 2, look: 'altar' },
   w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
+  W: { terrain: 'floor', h: 0, look: 'water', depth: 2 }, // fosso fundo do Coração da Cripta: só as pontes passam
   b: { terrain: 'floor', h: 1, look: 'bridge' },
   B: { terrain: 'wall', h: 1, look: 'brick' },
   p: { terrain: 'wall', h: 1, look: 'pillar' },
@@ -188,6 +189,43 @@ const CRYPT: Scenario = {
     { id: 'e-archer', def: 'skeleton_archer', team: 'enemy', x: 8, y: 1 },
     { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 10, y: 2 },
     { id: 'e-brute', def: 'brute', team: 'enemy', x: 3, y: 2 },
+  ],
+};
+
+// Coração da Cripta (noite de 12/11, fase 4 da campanha, que antes repetia a Cripta Alagada): 12x12, as mesmas peças.
+// O chefe espera num altar elevado no fundo, atrás de um fosso fundo que só se cruza pelas duas pontes estreitas; um 2º canal no meio
+// tem uma passagem seca no centro guardada por espinhos. Os heróis trazem o cristal (o Farol) para acender a cripta.
+const HEART_MAP = [
+  'BBBddddddBBB',
+  'BPddddddddPB',
+  'BddddddddddB',
+  'WWWbWWWWbWWW',
+  'fsffuffuffsf',
+  'ffpffffffpff',
+  'ffffcffrffff',
+  'wwbwwffwwbww',
+  'fffffssfffff',
+  'fpffffffffpf',
+  'ffffffffffff',
+  'ffuffffffuff',
+  'ffffffffffff',
+  'BBffffffffBB',
+];
+const HEART: Scenario = {
+  id: 'crypt_heart',
+  name: 'Coração da Cripta',
+  en: 'Heart of the Crypt',
+  grid: { width: HEART_MAP[0].length, height: HEART_MAP.length, tiles: HEART_MAP.flatMap((row) => [...row].map((c) => ({ ...CRYPT_KEY[c] }))) },
+  spawns: [
+    { id: 'beacon', def: 'beacon', team: 'hero', x: 5, y: 13 },
+    { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 11 },
+    { id: 'h-archer', def: 'archer', team: 'hero', x: 6, y: 12 },
+    { id: 'h-mage', def: 'mage', team: 'hero', x: 6, y: 13 },
+    { id: 'h-rogue', def: 'rogue', team: 'hero', x: 7, y: 11 },
+    { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 6, y: 0 }, // 1ª casa inimiga: o chefe da fase (campaign.ts), no fundo
+    { id: 'e-soldier', def: 'soldier', team: 'enemy', x: 3, y: 2 }, // os outros guardam as duas pontes
+    { id: 'e-archer', def: 'skeleton_archer', team: 'enemy', x: 5, y: 1 },
+    { id: 'e-brute', def: 'brute', team: 'enemy', x: 8, y: 2 },
   ],
 };
 
@@ -286,7 +324,7 @@ const FROST_PASS: Scenario = {
   ],
 };
 
-export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT, ASH_WOOD, FROST_PASS].map((s) => [s.id, s]));
+export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT, HEART, ASH_WOOD, FROST_PASS].map((s) => [s.id, s]));
 
 // ct inicial 0 para todos: a ordem do começo sai só das velocidades
 export function initialState(scenario: Scenario, seed: number): BattleState {

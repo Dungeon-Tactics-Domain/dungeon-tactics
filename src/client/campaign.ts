@@ -48,7 +48,7 @@ export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTER
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 42% → 37% no Ato I (com os espinhos da Cripta) e 39% → 30% no Ato II (com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 39% → 37% no Ato I (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 39% → 30% no Ato II (com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -117,7 +117,7 @@ export const CHAPTERS: Chapter[] = [
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
     song: 'boss',
     boss: true,
-    setup: { map: 'flooded_crypt', heroes: party(3), enemies: [vesper(75, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
+    setup: { map: 'crypt_heart', heroes: party(3), enemies: [vesper(90, 9), foe('dark_mage'), foe('skeleton_archer'), foe('soldier', { name: 'Guarda da cripta', en: 'Crypt guard', hp: 32 })] },
     intro: [
       L('vesper', 'Lia. Voltou para casa e trouxe amigos.', 'Lia. You came home, and you brought friends.'),
       L('lia', 'Vim apagar o que você acendeu, Vesper.', 'I came to put out what you lit, Vesper.'),
