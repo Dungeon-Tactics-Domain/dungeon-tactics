@@ -58,10 +58,13 @@ export function freq(note: string): number | null {
 
 export const tokens = (voice: string) => voice.trim().split(/\s+/);
 
+const MIX = 0.5;
 // Toca em laço até stop(). volume 0–1 (o nível de música das opções)
 export function playSong(ctx: AudioContext, song: Song, volume: number) {
   const out = ctx.createGain();
-  out.gain.value = volume * 0.12; // onda quadrada é alta: bem abaixo dos efeitos
+  // 0,5: medido em 13/11 (cada música tocada 6 s num AudioContext com analisador no lugar do destino): com 0,12 as músicas ficavam em -43 dB de RMS, 13 dB abaixo da música
+  // da batalha avulsa (-30 dB) no mesmo nível e quase sumidas sob os efeitos; com 0,5 ficam no nível dela, pico em -11 dB
+  out.gain.value = volume * MIX;
   out.connect(ctx.destination);
   const voices = [{ notes: tokens(song.lead), type: 'square' as OscillatorType, gain: 0.6 }, { notes: tokens(song.bass), type: 'triangle' as OscillatorType, gain: 1 }];
   const step = 60 / song.bpm / 2; // colcheia
@@ -89,7 +92,7 @@ export function playSong(ctx: AudioContext, song: Song, volume: number) {
   tick();
   const timer = setInterval(tick, 50);
   return {
-    setVolume: (v: number) => (out.gain.value = v * 0.12),
+    setVolume: (v: number) => (out.gain.value = v * MIX),
     stop: () => {
       clearInterval(timer);
       out.disconnect();
