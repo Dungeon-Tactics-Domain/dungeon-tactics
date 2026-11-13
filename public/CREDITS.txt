@@ -61,12 +61,11 @@ tex/lava005.jpg (beira derretida das ilhas de refúgio)
   ambientCG, "Lava005" (Color, 1K reduzido a 512x512) - https://ambientcg.com/a/Lava005
   Licença lida na página: "CC0 license, making them free to use without attribution".
 
-tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg, tex/bark.jpg, tex/paint.jpg (terreno, árvores; desde 13/11/2026)
+tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg, tex/bark.jpg, tex/paint.jpg, tex/wood.jpg (terreno, árvores, objetos e ponte; desde 13/11/2026)
   Desenho nosso, pintado por scripts/assets/paint-textures.py (no lugar das fotos do Poly Haven usadas por algumas horas).
 
-tex/wood.jpg (tábuas da ponte, desde 13/11/2026)
-  Poly Haven, "weathered_brown_planks" (diff, 1K reduzido a 512x512) - https://polyhaven.com/textures
-  Licença: "CC0 1.0 Universal - public domain dedication, no attribution required" (https://polyhaven.com/license).
+Árvores, pedras, caixotes, barris, garrafas, sacos e entulho dos mapas abertos (desde 13/11/2026)
+  Modelos nossos, montados por código em src/client/trees.ts e src/client/props.ts (sem arquivo de modelo).
 
 == Partículas (fx/, reduzidas a 128x128) ==
 fx/puff_0.png fx/puff_1.png fx/puff_2.png (whitePuff00, 04 e 08: vapor das ilhas e dos corpos na lava)

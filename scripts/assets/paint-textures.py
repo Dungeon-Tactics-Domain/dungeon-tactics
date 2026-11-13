@@ -86,6 +86,16 @@ def main(out):
     v = fractal([5, 11, 27], [0.5, 0.3, 0.2])
     p = palette(v, ['#8e8e8e', '#b2b2b2', '#d2d2d2', '#ececec', '#ffffff'])
     save('paint', strokes(p, 500, ['#ffffff', '#9a9a9a'], 7, 2), out)
+    # madeira da ponte (antes uma foto do Poly Haven, que destoava do resto pintado): 9 tábuas deitadas, porque bridge.ts
+    # corta uma faixa de 0,11 da altura para cada tábua; cada uma com o seu tom, veios ao comprido e a fresta escura
+    g = rng.random((48, 5))
+    veins = np.asarray(Image.fromarray((np.tile(g, (3, 3)) * 255).astype(np.uint8)).resize((N * 3, N * 3), Image.BICUBIC), dtype=np.float32)[N:2 * N, N:2 * N] / 255
+    rows = np.arange(N) * 9 // N
+    tone = rng.random(9)[rows][:, None]
+    w = palette(np.clip(0.12 + 0.45 * tone + 0.55 * veins, 0, 0.999), ['#3a2815', '#573b21', '#75522e', '#946c3f', '#b28a55'])
+    w[np.diff(rows, prepend=rows[-1]) != 0] *= 0.3
+    w[np.diff(rows, append=rows[0]) != 0] *= 0.55
+    save('wood', w, out)
 
 
 if __name__ == '__main__':

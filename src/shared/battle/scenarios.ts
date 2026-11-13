@@ -350,7 +350,7 @@ const HEART: Scenario = {
 };
 
 // Bosque das Cinzas (noite de 12/11, fase 1 da campanha): 12x12 sem Farol (vence quem sobrar). Um rio fundo corta o
-// mapa: passa-se pela ponte (esquerda, estreita), pelo vau de água rasa (direita, custa 2 de movimento) ou a nado (desde 13/11, sem agir). Do lado dos
+// mapa: passa-se pela ponte (esquerda; 3 casas de largura desde 13/11, com entulho no meio), pelo vau de água rasa (direita, custa 2 de movimento) ou a nado (desde 13/11, sem agir). Do lado dos
 // heróis, a estrada de areia e a caravana parada (caixotes e barris); do lado dos inimigos, um morrinho de grama alta.
 const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number; noStop?: true }> = {
   g: { terrain: 'floor', h: 0, look: 'grass' },
@@ -363,6 +363,9 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
   // superfície no 1 e pé no 0, como na Cripta (13/11, revisão): no 0 o pé ficava no -1 e só o Salto 2 saía do vau
   w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
   b: { terrain: 'floor', h: 1, look: 'bridge' },
+  // entulho no meio da ponte (13/11, pedido do Fernando: "ponte de 3 tiles de largura e pode ter uns entulhos no meio"):
+  // cobertura pisável, como o entulho da cripta; o desenho são os restos da caravana em cima das tábuas (props.ts)
+  B: { terrain: 'rubble', h: 1, look: 'bridge' },
   r: { terrain: 'wall', h: 1, look: 'rock' },
   c: { terrain: 'wall', h: 0, look: 'crates' }, // no chão: a carga da caravana caída na estrada, não em cima de bloco
   x: { terrain: 'wall', h: 0, look: 'barrel' },
@@ -379,8 +382,8 @@ const WOOD_MAP = [
   'tgGssGGkTggg',
   'gxGssggggggg',
   'gtgssggrggtg',
-  'WWWbbWWWWwwW',
-  'WWWbbWWWWwwW',
+  'WWbBbWWWWwwW',
+  'WWbbbWWWWwwW',
   'gtgssgggtssg',
   'ggssggggssgT',
   'tgsssskssxgg',
@@ -410,7 +413,7 @@ const WOOD_RAMPS = [
   '..^......^..',
   '............',
   '............',
-  'v..^^.......',
+  'v.^^^.......',
   '..........v.',
   '..........>.',
   '.<..........',
@@ -424,7 +427,7 @@ const ASH_WOOD: Scenario = {
   // altura de cada casa num mapa à parte (13/11, pedido do Fernando: "fases muito retas"; referência de relevo: Gariland
   // tem 47% de vizinhos com queda de 2+, o Bosque tinha 0%): o acampamento inimigo num planalto 3 níveis acima do rio (4 nos cantos),
   // degraus de 1 que fazem rampas e quedas de 2 que obrigam a contornar. A água e a ponte mantêm a própria altura.
-  grid: withRamps({ width: 12, height: 12, tiles: WOOD_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('Wwb'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) }))) }, WOOD_RAMPS),
+  grid: withRamps({ width: 12, height: 12, tiles: WOOD_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('WwbB'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) }))) }, WOOD_RAMPS),
   spawns: [
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 3, y: 11 },
     { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 10 },

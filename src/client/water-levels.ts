@@ -64,5 +64,17 @@ export function waterLevels(grid: Grid, step: number): Map<string, WaterLevel> {
     const deep = near.some((l) => l.deep);
     out.set(posKey(at(i)), { surface, bed: bed(surface, deep), deep, under: true });
   });
+  // ponte larga (13/11, a do Bosque passou a 3 casas): a casa do meio só encosta em terra e em outras casas de ponte, e
+  // pega a água da ponte vizinha; sem isso o terreno desenhava um quadrado de chão na altura das tábuas
+  for (let grew = true; grew;) {
+    grew = false;
+    grid.tiles.forEach((t, i) => {
+      if (t.look !== 'bridge' || out.has(posKey(at(i)))) return;
+      const side = neighbors(grid, at(i)).map((q) => out.get(posKey(q))).find((l) => l?.under);
+      if (!side) return;
+      out.set(posKey(at(i)), { ...side });
+      grew = true;
+    });
+  }
   return out;
 }

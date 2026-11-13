@@ -27,7 +27,8 @@ import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from 
 import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
 import { addDetail } from './detail.ts';
 import { buildBridges } from './bridge.ts';
-import { boxOf as box, loadPaint, variant } from './painted.ts';
+import { boxOf as pieceBox, loadPaint, variant } from './painted.ts';
+import { DEBRIS, LITTER, swapProps } from './props.ts';
 import { swapTrees } from './trees.ts';
 import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
 
@@ -287,11 +288,11 @@ export class BattleScene {
     const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? LOOK.water.top, LOOK[t.look].prop ?? '', UNDER, t.ramp && LOOK[t.look].stairs ? STAIRS : '', ...Object.values(DETAIL)] : [])))].filter(Boolean);
     const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
     // mapas abertos: árvores pintadas feitas por código (trees.ts), com variações, no lugar das do KayKit
-    if (terrainTex) { await loadPaint(); swapTrees(looks); }
+    if (terrainTex) { await loadPaint(); swapTrees(looks); swapProps(looks, true); } // e os objetos pintados (props.ts)
     // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
     const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack, await terrainTex);
-    s.ambience = (await ambience).mount(s.scene, s.terrainTex);
+    s.ambience = (await ambience).mount(s.scene);
     s.sync(state);
     return s;
   }
@@ -535,11 +536,14 @@ export class BattleScene {
       if (painted) { /* chão do terreno liso */ } else if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
       else for (; y > 0; y -= 1) if (!this.buried(p, y)) put(column, 1, new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)));
       if (look.prop && tile.terrain !== 'forest') { // árvore de casa de floresta: buildTrees
-        const box = new THREE.Box3().setFromObject(this.lookPieces.get(look.prop)!);
+        // objeto pintado (props.ts): a variação sai da posição, como nas árvores
+        const prop = variant(this.lookPieces, look.prop, hash(p.x, p.y, 6)), box = pieceBox(this.lookPieces.get(prop)!);
         // propW: peça de chão (espinhos) medida pela largura, para caber na casa; as outras pela altura (1,1 = a árvore)
         const k = look.propW ? look.propW / Math.max(box.max.x - box.min.x, box.max.z - box.min.z) : (look.propH ?? 1.1) / (box.max.y - box.min.y);
-        put(look.prop, 0, new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)));
+        put(prop, 0, new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)));
       }
+      // entulho em cima da ponte (cobertura pisável): os restos da caravana sobre as tábuas (props.ts), só nos mapas abertos
+      if (tile.terrain === 'rubble' && tile.look === 'bridge' && this.lookPieces.has(DEBRIS)) put(variant(this.lookPieces, DEBRIS, hash(p.x, p.y, 6)), 0, new THREE.Matrix4().makeTranslation(w.x, top, w.z));
     };
     const build = () => {
       for (const b of batches.values()) this.instanced(b.piece, b.at, b.tiles);
@@ -552,6 +556,13 @@ export class BattleScene {
   // peças dos mapas abertos (caixotes, barris, ponte, muros, árvores de Gariland) com a textura e o sombreado de detail.ts;
   // um material por material de origem, para não multiplicar os programas do shader
   private readonly texturedMats = new Map<THREE.Material, THREE.Material>();
+  // boneco e corpo: só o sombreado de detail.ts, sem o granulado (13/11, o Fernando achou a textura em cima deles "zoada")
+  private shaded<M extends THREE.Material>(m: M): M {
+    const tex = this.terrainTex;
+    if (tex && !PLAIN_UNITS) m.onBeforeCompile = (sh) => addDetail(sh, tex, 2.5, 0);
+    return m;
+  }
+
   private textured(m: THREE.Material): THREE.Material {
     const tex = this.terrainTex;
     if (!tex || !(m as THREE.MeshStandardMaterial).isMeshStandardMaterial || m.userData.procedural) return m; // peça pintada (painted.ts): sem granulado
@@ -579,7 +590,7 @@ export class BattleScene {
         if (!mesh.isMesh) return;
         const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
         mat.color.multiplyScalar(0.55); // sem vida: mais escuro e apagado que os bonecos da batalha
-        mesh.material = this.textured(mat);
+        mesh.material = this.shaded(mat);
       });
       const b = new THREE.Box3().setFromObject(body);
       body.scale.setScalar(unitHeight('soldier') / (b.max.y - b.min.y));
@@ -596,9 +607,20 @@ export class BattleScene {
       body.position.copy(w);
       body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
       this.scene.add(body);
-      const spot = new THREE.Mesh(new THREE.CircleGeometry(0.42, 12).rotateX(-Math.PI / 2), stain);
+      // mancha de borda irregular (pincelada), não um disco
+      const blot = new THREE.CircleGeometry(0.42, 14).rotateX(-Math.PI / 2), bp = blot.getAttribute('position');
+      for (let k = 1; k < bp.count; k++) { const r = 0.7 + 0.5 * hash(p.x + (k % 14) * 0.37, p.y, 9); bp.setXYZ(k, bp.getX(k) * r, 0, bp.getZ(k) * r); }
+      const spot = new THREE.Mesh(blot, stain);
       spot.position.set(w.x + 0.08, w.y + 0.012, w.z - 0.05);
       spot.scale.set(1, 1, 0.7);
+      // restos da caravana ao lado do corpo: garrafas, saco, tábua (props.ts), só nos mapas abertos
+      const litter = this.lookPieces.get(variant(this.lookPieces, LITTER, hash(p.x, p.y, 8)))?.clone();
+      if (litter) {
+        const a = hash(p.x, p.y, 10) * Math.PI * 2;
+        litter.position.set(w.x + Math.cos(a) * 0.3, w.y, w.z + Math.sin(a) * 0.3);
+        litter.rotation.y = a * 3;
+        this.scene.add(litter);
+      }
       spot.renderOrder = -2;
       this.scene.add(spot);
     });
@@ -661,7 +683,7 @@ export class BattleScene {
       return look ? (LOOK[look].prop ?? null) : '';
     };
     const pieceOf = (name: string) => (name ? this.lookPieces.get(name)! : legacy);
-    const boxOf = (name: string) => box(pieceOf(name));
+    const boxOf = (name: string) => pieceBox(pieceOf(name));
     const width = (b: THREE.Box3) => Math.max(b.max.x - b.min.x, b.max.z - b.min.z);
     const batches = new Map<string, THREE.Matrix4[]>();
     for (let y = 0; y < g.height; y++) {
@@ -690,8 +712,9 @@ export class BattleScene {
         const name = variant(this.lookPieces, names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)), hash(x, y, 5));
         const box = boxOf(name), size = TREE_SIZE[tiles.length], tall = (pieceOf(name).userData.tall as number | undefined) ?? 1; // pinheiro: mais alto que o teto da casa
         // tamanho mais variado (13/11, "árvores de diferentes tamanhos"): de 75% a 135% do tamanho da casa
-        // o pé da árvore pintada (saia e raízes, userData.foot) não passa da casa dela
-        const foot = (0.42 * Math.sqrt(tiles.length)) / ((pieceOf(name).userData.foot as number | undefined) ?? 0.01);
+        // o pé da árvore pintada (saia e raízes, userData.foot) fica no miolo plano da casa dela: na encosta da borda
+        // (terrain.ts, 1/6 da casa) a raiz ficava no ar
+        const foot = (0.4 * Math.sqrt(tiles.length)) / ((pieceOf(name).userData.foot as number | undefined) ?? 0.01);
         const k = Math.min(Math.min((size.h * tall) / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1)), foot);
         const c = tiles.reduce((s: THREE.Vector3, p) => s.add(this.world(p)), new THREE.Vector3()).divideScalar(tiles.length);
         const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
@@ -718,10 +741,8 @@ export class BattleScene {
   private cutMaterial(src: THREE.MeshStandardMaterial) {
     const m = src.clone();
     m.allowOverride = false;
-    m.customProgramCacheKey = () => `copa${CUT_MAX}${this.terrainTex && !src.userData.procedural ? 't' : ''}`;
-    const tex = this.terrainTex;
+    m.customProgramCacheKey = () => `copa${CUT_MAX}`;
     m.onBeforeCompile = (s) => {
-      if (tex && !src.userData.procedural) addDetail(s, { leaves: tex.leaves, dirt: tex.bark }, 1.4, 0.9, true); // folhas na copa e terra no tronco (detail.ts)
       Object.assign(s.uniforms, { cutPoints: this.cuts.points, cutCount: this.cuts.count, cutNormals: this.cuts.normals });
       s.fragmentShader = s.fragmentShader
         .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`)
@@ -795,7 +816,7 @@ export class BattleScene {
     const g = this.grid;
     const at: Record<keyof typeof DETAIL, THREE.Matrix4[]> = { rock: [], boulder: [], pebble: [], tuft: [] };
     const put = (kind: keyof typeof DETAIL, x: number, y: number, z: number, size: number, turn: number) => {
-      const box = new THREE.Box3().setFromObject(this.lookPieces.get(DETAIL[kind])!);
+      const box = pieceBox(this.lookPieces.get(DETAIL[kind])!);
       const k = size / Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
       // base no chão, afundada 15% da altura da peça: pedra assentada, não pousada
       at[kind].push(new THREE.Matrix4().makeRotationY(turn * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(x, y - (box.min.y + 0.15 * (box.max.y - box.min.y)) * k, z));
@@ -904,10 +925,7 @@ export class BattleScene {
         const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
         // brilho de fábrica (olhos amarelos dos esqueletos): o piscar de golpe e cura mexe no emissivo e precisa voltar a ele
         mat.userData.glow = { color: mat.emissive.clone(), intensity: mat.emissiveIntensity };
-        // textura por cima da cor lisa do KayKit (detail.ts); ?bonecos=liso compara sem
-        const tex = this.terrainTex;
-        if (tex && !PLAIN_UNITS) mat.onBeforeCompile = (sh) => addDetail(sh, tex, 2.5, 0.65);
-        mesh.material = mat;
+        mesh.material = this.shaded(mat); // ?bonecos=liso compara sem o sombreado
         mats.push(mat);
       });
       this.glowBack(mats, u.def);

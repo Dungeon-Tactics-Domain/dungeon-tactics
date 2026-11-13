@@ -40,11 +40,11 @@ function trunk(parts: THREE.BufferGeometry[], rnd: Rnd, o: TrunkOpts) {
   };
   parts.push(tube(ys.map((y) => ({ p: center(y), r: radius(y) })), o.lite ? 6 : 12, bark, {
     flat: true, v: 0.9,
-    shape: (a, i) => 1 + (o.lite ? 0 : 0.6) * Math.exp(-Math.max(0, ys[i]) / flare) * Math.max(0, ...roots.map((r) => Math.max(0, Math.cos(a - r)) ** 4)),
+    shape: (a, i) => 1 + (o.lite ? 0 : 0.45) * Math.exp(-Math.max(0, ys[i]) / flare) * Math.max(0, ...roots.map((r) => Math.max(0, Math.cos(a - r)) ** 4)),
   }));
   for (const a of o.lite ? [] : roots) {
     if (rnd() < 0.2) continue; // nem toda sapopema vira raiz à mostra
-    const reach = Math.min(o.reach ?? 0.21, o.r * (3 + rnd() * 1.6)), side = (rnd() - 0.5) * o.r * 1.6;
+    const reach = Math.min(o.reach ?? 0.17, o.r * (2.6 + rnd() * 1.4)), side = (rnd() - 0.5) * o.r * 1.6;
     const at = (d: number, s: number, y: number) => V(Math.cos(a) * d - Math.sin(a) * s, y, Math.sin(a) * d + Math.cos(a) * s);
     const rings: Ring[] = [
       { p: at(o.r * 0.9, 0, flare * 1.1), r: o.r * 0.62 },
@@ -80,10 +80,10 @@ function finish(parts: THREE.BufferGeometry[], extra: Record<string, unknown> = 
     const p = g.getAttribute('position');
     for (let i = 0; i < p.count; i++) {
       if (p.getY(i) > 0.2) w = Math.max(w, Math.abs(p.getX(i)), Math.abs(p.getZ(i)));
-      else if (p.getY(i) > -0.005) foot = Math.max(foot, Math.hypot(p.getX(i), p.getZ(i)));
+      else if (p.getY(i) > -0.06) foot = Math.max(foot, Math.hypot(p.getX(i), p.getZ(i)));
     }
   }
-  // foot: raio do pé no chão (saia e raízes à mostra); a cena não deixa passar da casa da árvore
+  // foot: raio do pé (a saia e as raízes até onde mergulham); a cena não deixa passar do miolo plano da casa da árvore
   return piece(parts, w * 2, 1, { foot, ...extra });
 }
 
@@ -179,7 +179,7 @@ function shrub(seed: number, pal: Pal, lite: boolean): THREE.Group {
 
 type Make = (seed: number, lite: boolean) => THREE.Group;
 const oak = (pal: Pal, o: Partial<LeafOpts> = {}): Make => (s, lite) => broadleaf(s, { r: 0.065, th: 0.4, spread: 0.36, pal, lite, ...o });
-const old: Make = (s, lite) => broadleaf(s, { r: 0.1, th: 0.36, spread: 0.42, pal: LEAF.green, roots: 5, limbs: 5, lite }); // tronco grosso
+const old: Make = (s, lite) => broadleaf(s, { r: 0.09, th: 0.36, spread: 0.42, pal: LEAF.green, roots: 5, limbs: 5, lite }); // tronco grosso
 const pine: Make = (s, lite) => broadleaf(s, { r: 0.045, th: 0.62, spread: 0.2, top: 0.36, squash: 0.5, pal: LEAF.fir, limbs: 4, stubs: 3, tall: 1.6, reach: 0.11, lite }); // alto, tronco nu
 const spruce = (o: Partial<FirOpts> = {}): Make => (s, lite) => fir(s, { r: 0.05, R: 0.2, tiers: 7, base: 0.2, pal: LEAF.fir, tall: 1.5, lite, ...o });
 const bush = (pal: Pal): Make => (s, lite) => shrub(s, pal, lite);

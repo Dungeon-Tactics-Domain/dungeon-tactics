@@ -9,8 +9,8 @@ import { tileAt, type Grid } from '../shared/battle/grid.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { waterLevels } from './water-levels.ts';
-import { addDetail, type DetailTextures } from './detail.ts';
 import { boxOf, loadPaint, variant } from './painted.ts';
+import { swapProps } from './props.ts';
 import { swapTrees } from './trees.ts';
 
 type Kind = 'forest' | 'field' | 'crypt' | 'frost';
@@ -182,7 +182,6 @@ export class Ambience {
   private readonly textures: THREE.Texture[] = [];
   private readonly hw: number;
   private readonly hh: number;
-  private detailTex: DetailTextures | null = null;
   // chão do terreno liso de fora (terrain.ts), onde ele existe: as árvores e pedras de perto pousam nele
   private readonly outer: { step: number; river: ReturnType<typeof riverOf>; water: Set<string> } | null;
 
@@ -249,10 +248,8 @@ export class Ambience {
     if (s?.map) this.textures.push(s.map);
     // Lambert: mais barato que o Standard dos modelos, e de longe não se vê a diferença
     const mat = new THREE.MeshLambertMaterial({ map: s?.map ?? null, color: new THREE.Color(s?.color ?? 0xffffff).multiplyScalar(this.mood.shade), vertexColors: !!s?.vertexColors, ...opts });
-    const textured = !!s?.map && !s.userData.procedural; // só os modelos KayKit ganham o granulado; o chão e as árvores feitas por código, não
-    mat.customProgramCacheKey = () => (textured && this.detailTex ? 'amb-detalhe' : 'amb');
+    mat.customProgramCacheKey = () => 'amb';
     mat.onBeforeCompile = (sh) => {
-      if (textured && this.detailTex) addDetail(sh, this.detailTex, 1.4, 0.9, true); // detail.ts: folha na copa, casca no tronco
       Object.assign(sh.uniforms, this.u);
       sh.vertexShader = FOG_HEAD + sh.vertexShader.replace('#include <project_vertex>', FOG_VERT);
       sh.fragmentShader = FOG_HEAD + sh.fragmentShader.replace('#include <map_fragment>', SNOW_FRAG).replace('#include <tonemapping_fragment>', FOG_FRAG);
@@ -538,10 +535,7 @@ export class Ambience {
     this.root.add(points);
   }
 
-  // `tex`: texturas do terreno (terrain.ts) para o granulado dos modelos de fora; antes do 1º quadro, quando os
-  // materiais ainda não compilaram
-  mount(scene: THREE.Scene, tex: (DetailTextures & { bark: THREE.Texture }) | null = null): this {
-    this.detailTex = tex && { leaves: tex.leaves, dirt: tex.bark };
+  mount(scene: THREE.Scene): this {
     this.scene = scene;
     // as duas luzes da cena (céu e sol): o clima do mapa escurece e vira o sol por cima da luz da fase
     this.sky = scene.children.find((o): o is THREE.HemisphereLight => (o as THREE.HemisphereLight).isHemisphereLight);
@@ -614,6 +608,6 @@ export async function loadAmbience(grid: Grid): Promise<Ambience> {
   const loader = new GLTFLoader();
   const models = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
   // fora das criptas, as árvores e moitas de fora são as feitas por código (trees.ts), como as do tabuleiro
-  if (!mood.walls) { await loadPaint(); swapTrees(models, true); }
+  if (!mood.walls) { await loadPaint(); swapTrees(models, true); swapProps(models); }
   return new Ambience(grid, mood, models);
 }

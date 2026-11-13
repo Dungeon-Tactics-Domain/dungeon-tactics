@@ -9,7 +9,7 @@ export const TERRAIN: Record<TerrainKind, { walkable: boolean; blocks: number; c
   // árvore não se atravessa nem se pisa (13/11, pedido do Fernando: "árvores não devem ser passáveis"); continua tapando
   // a visão. O entulho da cripta, que era "floresta" para ser cobertura pisável, virou terreno próprio
   forest: { walkable: false, blocks: 2, cover: true },
-  rubble: { walkable: true, blocks: 2, cover: true },
+  rubble: { walkable: true, blocks: 1, cover: true }, // baixo, como os objetos de LOW (o da ponte do Bosque não tem `look` de entulho)
   wall: { walkable: false, blocks: 4, cover: false },
 };
 // objeto baixo em cima da casa (caixote, barril, corpo, baú, entulho): barra a visão só 1 nível acima do chão, não os 4 de

@@ -24,6 +24,11 @@ describe('níveis da água', () => {
     expect(heart.get('3,3')).toMatchObject({ under: true, deep: true, surface: heart.get('2,3')!.surface });
   });
 
+  it('ponte larga: a casa do meio, que só encosta em terra e em ponte, leva a água da ponte vizinha (Bosque, 3 casas)', () => {
+    const wood = waterLevels(SCENARIOS.ash_wood.grid, STEP);
+    for (const k of ['2,4', '3,4', '4,4', '2,5', '3,5', '4,5']) expect(wood.get(k)).toMatchObject({ under: true, surface: wood.get('1,4')!.surface });
+  });
+
   it('rio sem sobe e desce: o trecho fundo pequeno depois do vau do Bosque fica na altura da rasa; o maior fica baixo', () => {
     const r = raisedDeep(SCENARIOS.ash_wood.grid);
     expect(r.has('11,4') && r.has('11,5')).toBe(true);
