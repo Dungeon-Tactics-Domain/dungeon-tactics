@@ -20,6 +20,12 @@ export const SONGS = {
     lead: 'A4 - C5 - B4 - E4 -  A4 - C5 - D5 - B4 -  C5 - B4 - A4 - G#4 -  A4 - - - E4 - - -',
     bass: 'A2 - - - E2 - - -  F2 - - - E2 - - -  D2 - - - E2 - - -  A2 - - - A2 - - -',
   },
+  // Neve: mi menor, calma e aberta, notas longas (Ato II, Passo Gelado)
+  snow: {
+    bpm: 96,
+    lead: 'E4 - G4 - B4 - A4 G4  F#4 - E4 - D4 - E4 -  G4 - A4 - B4 - D5 -  B4 - A4 - G4 - F#4 -',
+    bass: 'E2 - - - B2 - - -  C3 - - - D3 - - -  E2 - - - G2 - - -  B1 - - - B2 - - -',
+  },
   // Chefe: ré menor, rápido, baixo em oitavas
   boss: {
     bpm: 144,

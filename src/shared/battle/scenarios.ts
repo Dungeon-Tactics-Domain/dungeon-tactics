@@ -238,7 +238,54 @@ const ASH_WOOD: Scenario = {
   ],
 };
 
-export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT, ASH_WOOD].map((s) => [s.id, s]));
+// Passo Gelado (noite de 12/11, Ato II da campanha): 12x14 sem Farol, subida em degraus de 1 nível (o salto máximo) da
+// neve baixa dos heróis (altura 0) até o cume dos inimigos (3), entre paredões; um lago raso congelado no meio da
+// encosta e árvores secas como cobertura. Inimigo no alto enxerga e alcança mais (bônus de altura): subir é o desafio.
+const PASS_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number }> = {
+  n: { terrain: 'floor', h: 0, look: 'snow' },
+  N: { terrain: 'floor', h: 1, look: 'snow' },
+  M: { terrain: 'floor', h: 2, look: 'snow' },
+  S: { terrain: 'floor', h: 3, look: 'summit' },
+  i: { terrain: 'floor', h: 1, look: 'water', depth: 1 },
+  k: { terrain: 'forest', h: 0, look: 'bare1' },
+  K: { terrain: 'forest', h: 1, look: 'bare2' },
+  r: { terrain: 'wall', h: 1, look: 'snow_rock' },
+  R: { terrain: 'wall', h: 2, look: 'snow_rock' },
+};
+const PASS_MAP = [
+  'RRSSSSSSSSRR',
+  'RRSSSMMSSSRR',
+  'RrMMMMMMMMrR',
+  'RrMMKMMKMMrR',
+  'RRrNNNNNNrRR',
+  'RRrNNiiNNrRR',
+  'RrNNNiiNNNrR',
+  'RrNKNNNNKNrR',
+  'RRnnnNNnnnRR',
+  'RrnnnnnnnnrR',
+  'Rnnknnnnknnr',
+  'Rnnnnnnnnnnr',
+  'rnnnnnnnnnnr',
+  'rnnnnnnnnnnr',
+];
+const FROST_PASS: Scenario = {
+  id: 'frost_pass',
+  name: 'Passo Gelado',
+  en: 'Frost Pass',
+  grid: { width: 12, height: 14, tiles: PASS_MAP.flatMap((row) => [...row].map((c) => ({ ...PASS_KEY[c] }))) },
+  spawns: [
+    { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 13 },
+    { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 12 },
+    { id: 'h-mage', def: 'mage', team: 'hero', x: 6, y: 13 },
+    { id: 'h-rogue', def: 'rogue', team: 'hero', x: 7, y: 12 },
+    { id: 'e-soldier', def: 'soldier', team: 'enemy', x: 3, y: 0 },
+    { id: 'e-archer', def: 'skeleton_archer', team: 'enemy', x: 5, y: 0 },
+    { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 7, y: 0 },
+    { id: 'e-brute', def: 'brute', team: 'enemy', x: 8, y: 1 },
+  ],
+};
+
+export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT, ASH_WOOD, FROST_PASS].map((s) => [s.id, s]));
 
 // ct inicial 0 para todos: a ordem do começo sai só das velocidades
 export function initialState(scenario: Scenario, seed: number): BattleState {

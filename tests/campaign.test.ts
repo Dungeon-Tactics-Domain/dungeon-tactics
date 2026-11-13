@@ -40,7 +40,7 @@ describe('campanha Cinzas do Farol', () => {
     const wood = won(0); // Bosque: sem Farol
     expect(starsOf({ ...wood, units: wood.units.map((u) => (u.team === 'hero' ? { ...u, hp: 3 } : u)) }, 0)).toBe(2);
     expect(starsOf({ ...wood, outcome: 'defeat' }, 0)).toBe(0);
-    expect(parseStars([3, 'x', 9, 2])).toEqual([3, 0, 0, 2, 0]);
+    expect(parseStars([3, 'x', 9, 2])).toEqual(CHAPTERS.map((_, i) => [3, 0, 0, 2][i] ?? 0));
     expect(starText(2)).toBe('★★☆');
   });
 

@@ -27,6 +27,7 @@ export const SPEAKERS = {
   odo: { name: 'Odo', def: 'mage', pitch: 260 },
   lia: { name: 'Lia', def: 'rogue', pitch: 420 },
   vesper: { name: 'Vesper', def: 'dark_mage', pitch: 110 },
+  shade: { name: 'A Sombra', def: 'dark_mage', pitch: 80 },
   merc: { name: 'Mercenário', def: 'soldier', pitch: 180 },
   narr: { name: '', def: 'beacon', pitch: 220 },
 } as const;
@@ -43,7 +44,7 @@ export const learned = (n: number) => n + 1 >= CHAPTERS.length ? [] : CHAPTERS[n
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 47% → 25%, caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 47% → 25% no Ato I e 51% → 23% no Ato II, caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -137,6 +138,41 @@ export const CHAPTERS: Chapter[] = [
       L('narr', 'O cristal brilhou mais forte do que nunca, e o Véu recuou até as montanhas.', 'The crystal shone brighter than ever, and the Veil fell back to the mountains.'),
       L('lia', 'Acabou. Desta vez, de verdade.', 'It is over. This time, for real.'),
       L('odo', 'Alguém mais está com fome? Eu estou com muita fome.', 'Is anyone else hungry? I am very hungry.'),
+      L('tess', 'Esperem. Se acabou... por que o Passo Gelado ainda brilha roxo lá em cima?', 'Wait. If it is over... why is Frost Pass still glowing purple up there?'),
+    ],
+  },
+  // Ato II (noite de 12/11): o Véu recuou para as montanhas, e quem chamava os mortos não era só o Vesper
+  {
+    title: ['O Passo Gelado', 'Frost Pass'],
+    song: 'snow',
+    setup: { map: 'frost_pass', heroes: party(5), enemies: [foe('skeleton_archer'), foe('soldier'), foe('dark_mage'), foe('minion')] },
+    intro: [
+      L('narr', 'Ato II. Três dias depois, o Passo Gelado, onde o Véu recuou, ainda brilha roxo à noite.', 'Act II. Three days later, Frost Pass, where the Veil retreated, still glows purple at night.'),
+      L('bran', 'Subida longa e inimigo no alto. Do jeito que eu odeio.', 'A long climb with the enemy up high. Just the way I hate it.'),
+      L('tess', 'Lá de cima eles enxergam e alcançam mais longe. Usem as árvores secas para se cobrir.', 'From up there they see and reach farther. Use the dead trees for cover.'),
+      L('lia', 'Esses mortos não usam as cores do Vesper. Alguém mais está chamando eles.', 'These dead do not wear Vesper\'s colors. Someone else is calling them.'),
+    ],
+    outro: [
+      L('odo', 'No cume... uma figura. Parece o Vesper, mas é feita de névoa.', 'On the summit... a figure. It looks like Vesper, but it is made of mist.'),
+      L('shade', 'O mago era só a porta. Eu sou o que estava do outro lado.', 'The mage was only the door. I am what waited on the other side.'),
+      L('bran', 'Então a gente fecha a porta com você do lado de fora.', 'Then we shut the door with you on the outside.'),
+    ],
+  },
+  {
+    title: ['A Sombra no Cume', 'The Shade on the Summit'],
+    song: 'boss',
+    setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('dark_mage', { name: 'A Sombra', hp: 95, speed: 9, abilities: ['firebolt', 'shadow_wave'] }), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
+    intro: [
+      L('shade', 'Cada Farol que vocês acendem me empurra para cá. Aqui em cima não sobrou luz nenhuma.', 'Every Beacon you light pushes me up here. Up here, there is no light left at all.'),
+      L('odo', 'Sobrou a gente. E eu trouxe fogo.', 'There is us. And I brought fire.'),
+      L('lia', 'A mesma regra de sempre: quando a área acender, saiam dela.', 'Same rule as always: when the area lights up, get out of it.'),
+    ],
+    outro: [
+      L('shade', 'A luz... de novo...', 'The light... again...'),
+      L('narr', 'A névoa do cume se desfez ao amanhecer. Pela primeira vez em anos, o vale inteiro viu o sol nascer.', 'The mist on the summit melted away at dawn. For the first time in years, the whole valley watched the sun rise.'),
+      L('tess', 'E agora?', 'And now?'),
+      L('bran', 'Agora a gente desce. Devagar. Com café.', 'Now we go down. Slowly. With coffee.'),
+      L('odo', 'E comida!', 'And food!'),
     ],
   },
 ];
