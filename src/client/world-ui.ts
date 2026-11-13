@@ -53,7 +53,9 @@ export interface WorldOptions {
 
 export interface WorldView {
   root: HTMLElement;
-  refresh: (done: number) => WorldView; // troca este mapa por um novo; quem chama passa a guardar o novo (senão o 2º refresh duplicava o mapa)
+  // troca este mapa por um novo; quem chama passa a guardar o novo (senão o 2º refresh duplicava o mapa). `from`: de onde o
+  // grupo sai (a história recém-vista); sem ele, o `from` antigo repetia a caminhada da última vitória a cada história
+  refresh: (done: number, from?: number) => WorldView;
 }
 
 export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
@@ -166,7 +168,8 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   root.style.setProperty('--walk-ms', `${WALK_MS}ms`);
   show();
   enterBtn.focus();
-  // volta de uma vitória: o grupo anda até o ponto que acabou de abrir (o avanço na jornada fica visível)
-  if (at !== goal) setTimeout(() => void walkTo(goal), 500);
-  return { root, refresh: (newDone: number) => { root.remove(); return openWorld(host, { ...opts, done: newDone }); } };
+  // volta de uma vitória: o grupo anda até o ponto que acabou de abrir (o avanço na jornada fica visível). Rejogar uma fase
+  // antiga não abre nada: o grupo fica onde jogou, em vez de atravessar o mapa inteiro sozinho
+  if (at === goal - 1) setTimeout(() => void walkTo(goal), 500);
+  return { root, refresh: (newDone: number, from?: number) => { root.remove(); return openWorld(host, { ...opts, done: newDone, from }); } };
 }

@@ -706,8 +706,9 @@ function quickBattle() {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// Créditos (resumo; a lista completa, com licença de cada arquivo, é o public/CREDITS.txt). Fechar volta ao título.
-function credits() {
+// Créditos (resumo; a lista completa, com licença de cada arquivo, é o public/CREDITS.txt). Voltar abre `back` (o título,
+// ou nada no fim da campanha, onde o mapa já está por baixo).
+function credits(back: () => void = titleScreen) {
   const d = dialog('title', t('Créditos', 'Credits'), [
     el('ul', { class: 'legend' },
       el('li', {}, t('Modelos 3D: KayKit, de Kay Lousberg (CC0)', '3D models: KayKit, by Kay Lousberg (CC0)')),
@@ -716,7 +717,7 @@ function credits() {
       el('li', {}, t('Fonte: Tiny5 (SIL Open Font License 1.1)', 'Font: Tiny5 (SIL Open Font License 1.1)')),
       el('li', {}, t('História, mapas e regras: Dungeon Tactics', 'Story, maps and rules: Dungeon Tactics'))),
     el('p', {}, el('a', { href: '/CREDITS.txt', target: '_blank', rel: 'noopener' }, t('Lista completa, com a licença de cada arquivo', 'Full list, with each file\'s license'))),
-    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); titleScreen(); } }, t('Voltar', 'Back')),
+    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); back(); } }, t('Voltar', 'Back')),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
@@ -802,9 +803,10 @@ async function worldScreen(host: HTMLElement) {
     // 1ª vez no epílogo: a jornada acabou, os créditos fecham a campanha (rever o epílogo depois não repete)
     const finale = i === WORLD.length - 1 && i >= done;
     done = afterNode(i, done);
-    if (finale) credits();
+    // nos créditos do fim, Voltar só fecha: o mapa já está aberto por baixo (o título por cima dele não tinha batalha ao fundo)
+    if (finale) credits(() => undefined);
     store.set(WORLD_KEY, String(done));
-    view = view.refresh(done);
+    view = view.refresh(done, i);
   };
   let view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
     party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); },
