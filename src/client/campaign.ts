@@ -31,6 +31,8 @@ export const SPEAKERS = {
   shade: { name: 'A Sombra', en: 'The Shade', def: 'dark_mage', pitch: 80 },
   merc: { name: 'Mercenário', en: 'Mercenary', def: 'soldier', pitch: 180 },
   narr: { name: '', def: 'beacon', pitch: 220 },
+  // o protagonista criado pelo jogador: nome e boneco trocados na hora (talk.ts recebe o herói salvo)
+  hero: { name: 'Você', en: 'You', def: 'warrior', pitch: 240 },
 } as const;
 
 export const CAMPAIGN_KEY = 'dt:campanha'; // quantas fases já foram vencidas

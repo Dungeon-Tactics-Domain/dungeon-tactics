@@ -25,6 +25,8 @@ import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roste
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { talk } from './talk.ts';
+import { WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld } from './world.ts';
+import { openWorld } from './world-ui.ts';
 
 // a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
 let scenario = FIRST_BATTLE;
@@ -525,6 +527,7 @@ class Game {
     const stars = starsOf(this.battle.state, n);
     if (won) {
       store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
+      store.set(WORLD_KEY, String(afterNode(nodeOfChapter(n), parseWorld(store.get(WORLD_KEY)))));
       const best = parseStars(store.json(STARS_KEY));
       best[n] = Math.max(best[n], stars);
       store.set(STARS_KEY, JSON.stringify(best));
@@ -534,11 +537,12 @@ class Game {
       ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
         el('p', {}, t('★ vencer · ★ ninguém caiu · ★ Farol inteiro (sem Farol: todos acima da metade da vida)', '★ win · ★ nobody fell · ★ Beacon untouched (no Beacon: everyone above half HP)')),
         ...learned(n).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
-      el('p', {}, won ? (last ? t('O vale está a salvo. Obrigado por jogar!', 'The valley is safe. Thanks for playing!') : t(`Próximo: ${CHAPTERS[n + 1].title[0]}.`, `Next: ${CHAPTERS[n + 1].title[1]}.`))
-        : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
-      won && !last
-        ? el('button', { type: 'button', class: 'primary', onclick: () => { store.set(`dt:battle:${chapterId(n + 1)}`, ''); location.search = `?campanha=${n + 1}`; } }, t('Próxima fase', 'Next stage'))
-        : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); won ? campaignMenu() : this.restart(); } }, won ? t('Fases', 'Stages') : t('Tentar de novo', 'Try again')),
+      el('p', {}, won ? t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.') : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
+      // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
+      el('div', { class: 'menu-actions' },
+        won ? el('button', { type: 'button', class: 'primary', onclick: toWorld }, t('Voltar ao mapa', 'Back to the map'))
+          : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Tentar de novo', 'Try again')),
+        ...(won ? [] : [el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa', 'Map'))])),
     ]);
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
   }
@@ -576,7 +580,7 @@ class Game {
           this.restart();
         } }, t('Reiniciar batalha', 'Restart battle')),
         el('button', { type: 'button', class: 'secondary', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português'),
-        el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); campaignMenu(); } }, t('Campanha', 'Campaign')),
+        el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa da campanha', 'Campaign map')),
         el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); void devMenu(); } }, t('Desenvolvedor', 'Developer'))),
     ]);
   }
@@ -598,6 +602,7 @@ async function boot() {
   // build (import dinâmico), então nada dele vai no pacote que o jogador baixa.
   const study = new URLSearchParams(location.search).get('cenario');
   const camp = new URLSearchParams(location.search).get('campanha');
+  if (new URLSearchParams(location.search).has('mundo')) return worldScreen(host); // mapa mundial: sem batalha montada
   if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
@@ -649,7 +654,19 @@ function titleScreen() {
   const d = dialog('title', 'Dungeon Tactics', [
     el('p', { class: 'title-sub' }, t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes')),
     el('div', { class: 'menu-actions camp-list' },
-      el('button', { type: 'button', class: 'primary', onclick: go(campaignMenu) }, t('Campanha: Cinzas do Farol', 'Campaign: Ashes of the Beacon')),
+      // Continuar só aparece com progresso salvo; Novo jogo apaga o progresso da campanha (o 2º toque confirma)
+      ...(parseWorld(store.get(WORLD_KEY)) > 0 ? [el('button', { type: 'button', class: 'primary', onclick: go(toWorld) }, t('Continuar', 'Continue'))] : []),
+      el('button', { type: 'button', class: parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary', onclick: (e: Event) => {
+        const btn = e.currentTarget as HTMLButtonElement;
+        if (parseWorld(store.get(WORLD_KEY)) > 0 && !btn.dataset.armed) {
+          btn.dataset.armed = '1';
+          btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
+          return;
+        }
+        for (const k of [WORLD_KEY, CAMPAIGN_KEY, STARS_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
+        d.close();
+        toWorld();
+      } }, t('Novo jogo', 'New game')),
       el('button', { type: 'button', class: 'secondary', onclick: go(() => undefined) }, t('Batalha avulsa (Colina do Farol)', 'Quick battle (Beacon Hill)')),
       el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu()) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'))),
   ]);
@@ -657,21 +674,26 @@ function titleScreen() {
 }
 
 const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
+const toWorld = () => { location.search = '?mundo'; };
 
-// Lista das fases: as vencidas e a próxima abrem; escolher apaga o save daquela fase e começa do zero (com a conversa)
-function campaignMenu() {
-  const done = parseProgress(store.get(CAMPAIGN_KEY));
-  const stars = parseStars(store.json(STARS_KEY));
-  const d = dialog('menu', t('Campanha: Cinzas do Farol', 'Campaign: Ashes of the Beacon'), [
-    el('div', { class: 'menu-actions camp-list' }, ...CHAPTERS.map((_, n) => el('button', {
-      type: 'button', class: n === done ? 'primary' : 'secondary', disabled: n > done,
-      onclick: () => {
-        d.close();
-        store.set(`dt:battle:${chapterId(n)}`, '');
-        location.search = `?campanha=${n}`;
-      },
-    }, `${chapterTitle(n)}${n < done ? `  ${starText(stars[n])}` : ''}`))),
-  ]);
+// Mapa mundial (world.ts e world-ui.ts): ponto de batalha abre a fase (rejogar começa do zero); ponto de história toca a
+// conversa ali mesmo e libera o seguinte. A fase só abre pela URL se já estiver liberada (boot), por isso o mapa libera antes.
+function worldScreen(host: HTMLElement) {
+  let done = parseWorld(store.get(WORLD_KEY));
+  const enter = async (i: number) => {
+    const node = WORLD[i];
+    if (node.chapter !== undefined) {
+      store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), node.chapter)));
+      if (i < done) store.set(`dt:battle:${chapterId(node.chapter)}`, '');
+      location.search = `?campanha=${node.chapter}`;
+      return;
+    }
+    await talk(node.scene!, t(node.name[0], node.name[1]));
+    done = afterNode(i, done);
+    store.set(WORLD_KEY, String(done));
+    view.refresh(done);
+  };
+  const view = openWorld(host, { done, hero: 'warrior', stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; } });
 }
 
 void boot();

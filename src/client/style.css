@@ -221,3 +221,31 @@ button[hidden] { display: none; }
 .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
 .confetti i { position: absolute; top: -12px; width: 8px; height: 12px; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(540deg); } }
+
+/* Mapa mundial (world-ui.ts): pergaminho em tela cheia, pontos em losango (batalha) e círculo (história), estrada
+   tracejada, retrato do grupo andando. Painéis com o mesmo pergaminho do HUD da batalha. */
+.world { position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 40%, var(--paper-hi), var(--paper) 55%, var(--paper-lo)); overflow: hidden; }
+.world-map { position: absolute; inset: 64px 4% 120px; }
+.world-svg, .world-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.world-art .river { fill: none; stroke: #6fa3c9; stroke-width: 2.4; vector-effect: non-scaling-stroke; stroke-linecap: round; opacity: .7; }
+.world-art .lake { fill: #6fa3c9; opacity: .55; }
+.world-art .forest circle { fill: #5b8a4a; opacity: .55; }
+.world-art .mountains path { fill: #8a8378; opacity: .6; }
+.world-art .road { fill: none; stroke: var(--paper-edge); stroke-width: 3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.world-node { position: absolute; width: 22px; height: 22px; min-width: 0; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 3px solid var(--paper-edge); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }
+.world-node.battle { background: #c0412b; transform: translate(-50%, -50%) rotate(45deg); border-radius: 3px; }
+.world-node.story { background: #3d6fb0; border-radius: 50%; }
+.world-node.done { border-color: #e2b23a; }
+.world-node:disabled { background: #b9ad97; border-color: #9a8f7c; filter: none; cursor: default; }
+.world-node.here { outline: 3px solid var(--focus); outline-offset: 4px; }
+.world-token { position: absolute; transform: translate(-50%, -110%); transition: left var(--walk-ms) ease-in-out, top var(--walk-ms) ease-in-out; pointer-events: none; animation: bob 1s ease-in-out infinite; }
+.world-token .portrait { width: 44px; height: 58px; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+@keyframes bob { 50% { margin-top: -4px; } }
+.world-head { position: absolute; top: 12px; left: 12px; padding: 8px 14px; color: var(--ink); font: 400 var(--fs-lg)/1 var(--font-px); }
+.world-panel { position: absolute; right: 24px; bottom: 24px; width: min(360px, calc(100% - 48px)); padding: 12px 14px; color: var(--ink); display: grid; gap: 6px; }
+.world-place { font: 400 var(--fs-lg)/1.2 var(--font-px); }
+.world-kind { margin: 0; color: var(--ink-muted); font-size: var(--fs-sm); }
+.world-actions { display: flex; gap: 8px; }
+.world-actions .item { flex: 1; justify-content: center; padding-left: 28px; }
+.world-help { position: absolute; left: 12px; bottom: 24px; margin: 0; padding: 8px 12px; color: var(--ink-muted); font-size: var(--fs-sm); }
+@media (prefers-reduced-motion: reduce) { .world-token { transition: none; animation: none; } }
