@@ -508,6 +508,7 @@ class Game {
     const won = this.battle.state.outcome === 'victory';
     jingle(won);
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
+    if (won) confetti();
     if (chapter !== null) return this.finishChapter(chapter, won);
     const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
       el('p', {}, won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
@@ -630,6 +631,16 @@ async function boot() {
   if (chapter !== null && !saved) void talk(CHAPTERS[chapter].intro, chapterTitle(chapter));
   // abrir o jogo sem parâmetro mostra a tela de título por cima da batalha avulsa (que fica ao fundo, já jogável)
   if (camp === null && !study) titleScreen();
+}
+
+// Vitória: papel picado caindo por 2,5 s (DOM e CSS, sem custo no quadro do 3D); some sozinho. Com movimento reduzido, nada.
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#f2c14e', '#4aa3ff', '#ff6b6b', '#7dffa8', '#ffffff'];
+  const box = el('div', { class: 'confetti', 'aria-hidden': 'true' }, ...Array.from({ length: 60 }, (_, i) =>
+    el('i', { style: `left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${Math.random() * 0.8}s;animation-duration:${1.6 + Math.random()}s` })));
+  document.body.append(box);
+  setTimeout(() => box.remove(), 3000);
 }
 
 // Tela de título (noite de 12/11): o jogo abria direto numa batalha sem dizer o que era nem que havia campanha

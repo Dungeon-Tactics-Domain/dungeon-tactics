@@ -217,3 +217,7 @@ button[hidden] { display: none; }
 .dialog.title { width: min(460px, 100%); text-align: center; }
 .dialog.title h2 { font-size: 38px; letter-spacing: 1px; }
 .title-sub { color: var(--muted); margin: 4px 0 14px; }
+/* papel picado da vitória (main.ts, confetti): por cima de tudo, sem pegar clique */
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
+.confetti i { position: absolute; top: -12px; width: 8px; height: 12px; animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(105vh) rotate(540deg); } }
