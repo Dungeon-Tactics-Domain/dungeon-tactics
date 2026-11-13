@@ -7,7 +7,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import type { DevUnit } from './dev-roster.ts';
 import { dialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
-import { portrait } from './hud.ts';
+import { abilityDetail, portrait } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { sfx } from './sound.ts';
@@ -33,8 +33,13 @@ const terrain = (done: number) => `<svg class="world-art" viewBox="0 0 100 100" 
 // Tela Grupo (como a formação do FFT): retrato, classe, números e as habilidades já aprendidas de quem vai à próxima
 // batalha; diz quem fica no acampamento para o protagonista entrar. Usa o dialog() de sempre.
 export function openParty(units: DevUnit[], benched: string | null) {
-  dialog('party', t('Grupo', 'Party'), [
-    el('ul', { class: 'party-list' }, ...units.map((u) => el('li', { class: 'party-card' }, portrait(u.base),
+  // cada linha abre a ficha da unidade (13/11, 1ª entrega do gerenciamento do grupo como no FFT; desenho em
+  // docs/game-design/cidades-grupo-equipamento.md)
+  const d = dialog('party', t('Grupo', 'Party'), [
+    el('ul', { class: 'party-list' }, ...units.map((u) => el('li', { class: 'party-card', role: 'button', tabindex: '0',
+      'aria-label': t(`Ficha de ${u.name}`, `${u.name}'s sheet`),
+      onclick: () => { d.close(); openSheet(u, () => openParty(units, benched)); },
+      onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); d.close(); openSheet(u, () => openParty(units, benched)); } } }, portrait(u.base),
       el('div', {},
         el('strong', {}, u.name), el('span', { class: 'party-class' }, ` · ${unitName(u.base)}`),
         el('p', { class: 'party-stats' }, t(`Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move} · Salto ${UNIT_DEFS[u.base].jump ?? MAX_JUMP}`, `HP ${u.hp} · Speed ${u.speed} · Move ${u.move} · Jump ${UNIT_DEFS[u.base].jump ?? MAX_JUMP}`)),
@@ -42,6 +47,30 @@ export function openParty(units: DevUnit[], benched: string | null) {
           ...(UNIT_DEFS[u.base].abilities.length > u.abilities.length ? [el('span', { class: 'party-more' }, t(` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} na jornada)`, ` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} on the journey)`))] : [])))))),
     ...(benched ? [el('p', { class: 'party-bench' }, t(`${benched} fica no acampamento e segue nas conversas.`, `${benched} stays at camp and keeps talking in the story.`))] : []),
   ]);
+  d.overlay.querySelector<HTMLElement>('.party-card')?.focus();
+}
+
+// Ficha da unidade (como a tela de status da formação do FFT): números, cada habilidade com o que faz (as que ainda vêm
+// marcadas) e os 3 espaços de equipamento, vazios até a loja das cidades (próxima entrega). Esc/✕ volta à lista.
+function openSheet(u: DevUnit, back: () => void) {
+  const def = UNIT_DEFS[u.base];
+  const row = (k: string, v: string | number) => [el('dt', {}, k), el('dd', {}, String(v))];
+  const later = def.abilities.filter((a) => !u.abilities.includes(a));
+  const d = dialog('party', u.name, [
+    el('div', { class: 'party-card' }, portrait(u.base), el('div', {},
+      el('strong', {}, unitName(u.base)),
+      el('dl', { class: 'keys' },
+        ...row(t('Vida', 'HP'), u.hp), ...row(t('Velocidade', 'Speed'), u.speed), ...row(t('Movimento', 'Move'), u.move),
+        ...row(t('Salto', 'Jump'), u.jump ?? def.jump ?? MAX_JUMP)))),
+    el('h3', {}, t('Habilidades', 'Abilities')),
+    el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a))),
+      ...later.flatMap((a) => row(abilityName(a), t('aprende mais adiante na jornada', 'learned later on the journey')))),
+    el('h3', {}, t('Equipamento', 'Equipment')),
+    el('dl', { class: 'keys' }, ...[t('Arma', 'Weapon'), t('Armadura', 'Armor'), t('Acessório', 'Accessory')]
+      .flatMap((slot) => row(slot, t('vazio — a loja chega com as cidades', 'empty — the shop comes with the towns')))),
+    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); back(); } }, t('Voltar ao grupo', 'Back to party')),
+  ], { onBack: back });
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
 export interface WorldOptions {

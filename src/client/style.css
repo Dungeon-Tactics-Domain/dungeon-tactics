@@ -370,6 +370,8 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .dialog.party { width: min(560px, 100%); }
 .party-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .party-card { display: flex; gap: 12px; align-items: center; }
+.party-list .party-card { cursor: pointer; padding: 4px; border-radius: var(--r); }
+.party-list .party-card:hover, .party-list .party-card:focus-visible { background: rgba(255, 255, 255, .55); outline: 2px solid var(--focus); }
 .party-card .portrait { width: 48px; height: 64px; }
 
 .party-stats, .party-skills { margin: 2px 0 0; font-size: var(--fs-sm); }
