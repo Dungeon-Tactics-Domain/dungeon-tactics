@@ -91,6 +91,8 @@ const LOOK: Record<string, { top: string; side: string | null; prop?: string; pr
 };
 // escada da masmorra: 2 de largura, 4 de fundo e 4 de altura, sobe para -z (conferido nos vértices do arquivo)
 const STAIRS = 'masmorra/stairs_modular_center';
+// muros sem peça que o terreno liso desenha como morro de pedra (o tijolo continua em blocos: é construção)
+const MOUND = new Set(['rock', 'snow_rock', 'summit', 'snow']);
 // Versão de teste ?bonecos=textura (13/11, pedido do Fernando: "coloca textura nos bonecos também pra gente ver como fica"):
 // a textura de terra do terreno vira um granulado por cima da cor lisa do KayKit, projetado pelos três eixos do boneco
 const UNIT_DETAIL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'textura';
@@ -223,7 +225,9 @@ export class BattleScene {
   private water: Water | null = null; // só nos mapas com água
   private raised?: Set<string>; // trechos fundos na altura da rasa (water-levels.ts raisedDeep)
   // casa desenhada pelo terreno liso (terrain.ts) em vez de blocos: aparência pintável, fora muro sem peça (pedra, tijolo)
-  private ground = (t: Tile): boolean => !!this.terrainTex && !!t.look && t.look in PAINT && !(t.terrain === 'wall' && !LOOK[t.look].prop);
+  // paredão de pedra ou neve (muro sem peça) também vira terreno: um morro de pedra dois níveis acima (rock(t))
+  private ground = (t: Tile): boolean => !!this.terrainTex && !!t.look && t.look in PAINT && (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look));
+  private rock = (t: Tile) => t.terrain === 'wall' && !LOOK[t.look ?? '']?.prop && MOUND.has(t.look ?? '');
   private ambience: Ambience | null = null; // arredores, neblina, raios de luz e partículas (ambience.ts)
 
   private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[], private readonly terrainTex: TerrainTextures | null = null) {
@@ -404,12 +408,12 @@ export class BattleScene {
     if (smooth) {
       const inner = (p: Pos, x: number, z: number) => {
         const lv = levels.get(posKey(p)), t = tileAt(this.grid, p);
-        return lv ? lv.bed : this.ground(t) ? this.surfaceY(p, x, z) : (t.h + 1) * this.step;
+        return lv ? lv.bed : this.rock(t) ? (t.h + 3) * this.step : this.ground(t) ? this.surfaceY(p, x, z) : (t.h + 1) * this.step;
       };
       this.scene.add(buildTerrain(this.grid, { step: this.step, inner, outside, river, extend: EXTEND === 'textura', tex: this.terrainTex! }));
       const picks = this.grid.tiles.flatMap((t, i) => {
         const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
-        return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.world(p) }] : [];
+        return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.rock(t) ? this.world(p).setY((t.h + 3) * this.step) : this.world(p) }] : [];
       });
       const pick = pickTiles(picks);
       this.scene.add(pick);

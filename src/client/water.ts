@@ -179,8 +179,10 @@ export class Water {
       fall.onBeforeCompile = (sh) => {
         sh.uniforms.uWTime = this.time;
         sh.fragmentShader = 'uniform float uWTime;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
-          float streak = fract(vUv.y * 2.5 + uWTime * 1.2 + sin(vUv.x * 31.0) * 0.35);
-          float foam = smoothstep(0.6, 1.0, streak) * 0.7 + smoothstep(0.75, 1.0, 1.0 - vUv.y) * 0.6;
+          // fios verticais: cada um com fase e força próprias (sorteio pela coluna), sem o zigue-zague de antes
+          float col = floor(vUv.x * 14.0), rnd = fract(sin(col * 12.9898) * 43758.5453);
+          float streak = fract(vUv.y * 2.0 + uWTime * (0.9 + 0.6 * rnd) + rnd);
+          float foam = smoothstep(0.55, 1.0, streak) * (0.35 + 0.45 * rnd) + smoothstep(0.7, 1.0, 1.0 - vUv.y) * 0.6;
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.97, 1.0), clamp(foam, 0.0, 1.0));
           diffuseColor.a = max(diffuseColor.a, foam);`);
       };
