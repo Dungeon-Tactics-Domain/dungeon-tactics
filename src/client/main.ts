@@ -11,9 +11,9 @@ import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
 import { sightBlock, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
-import { choice, dialog } from './dialog.ts';
+import { choice, dialog, slider } from './dialog.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
-import { LANG, abilityName, setLang, t, unitName } from './i18n.ts';
+import { LANG, abilityName, setLang, t, unitName, type Lang } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, highlights, hoverTile, selectMode, tapTile, type Highlights, type Ui } from './interaction.ts';
 import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, startScreen, stepIndex, type Screen } from './command.ts';
@@ -25,7 +25,7 @@ import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
 import { TIMING, isJump, pace, stepMs } from './timing.ts';
 import { lookOf } from './fx.ts';
-import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
+import { jingle, setSound, setTrack, sfx, soundSettings, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, problems, slotsOf } from './dev-roster.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
@@ -167,11 +167,18 @@ class Game {
         this.runKey(a);
         continue;
       }
-      const buttons = [...overlay.querySelectorAll<HTMLButtonElement>('button:not([disabled])')];
-      const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      // só o que está à vista: a seção escondida das Opções guarda botões que pegariam o foco sem aparecer
+      const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter((e) => e.offsetParent);
+      const at = buttons.indexOf(document.activeElement as HTMLElement);
+      const range = document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range' ? document.activeElement : null;
       if (a.k === 'cancel' || a.k === 'help') dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
       else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
-      else if (a.k === 'cursor') buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+      else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
+        // na barra de volume, esquerda e direita mudam o valor (stepUp/Down não avisam: o 'input' vai à mão)
+        if (a.dir === 'right') range.stepUp();
+        else range.stepDown();
+        range.dispatchEvent(new Event('input'));
+      } else if (a.k === 'cursor') buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
     }
   }
 
@@ -666,8 +673,11 @@ class Game {
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
   }
 
+  // Opções (13/11, pedido do Fernando: "o menu pode ser algo que ocupa mais a largura da tela, com subseções"): janela
+  // larga com as seções numa coluna à esquerda (choice() vertical) e uma seção por vez à direita, para nada rolar longe
   private menu() {
-    const d = dialog('menu', t('Menu', 'Menu'), [
+    const sections: [id: string, title: string, body: Node[]][] = [[
+      'jogo', t('Jogo', 'Game'), [
       // na campanha, o objetivo da fase (sem Farol, de chefe); na batalha avulsa, o de sempre
       el('p', {}, chapter !== null ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
         : scenario.id === SURVIVAL_ID ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
@@ -677,19 +687,31 @@ class Game {
         el('li', {}, el('i', { class: 'sw range' }), t('Laranja: alcance da habilidade', 'Orange: ability range')),
         el('li', {}, el('i', { class: 'sw blocked' }), t('Roxo: no alcance, mas sem visão', 'Purple: in range, but no sight')),
         el('li', {}, el('i', { class: 'sw threat' }), t('Vermelho: o que a unidade tocada alcança', 'Red: what the tapped unit can reach'))),
-      el('p', {}, t('Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, ombros giram a câmera, Start abre este menu.', 'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, shoulders rotate the camera, Start opens this menu.')),
-      el('h3', {}, t('Pixel art', 'Pixel art')),
+      choice(t('Velocidade do texto das conversas', 'Dialogue text speed'), [['normal', t('Normal', 'Normal')], ['fast', t('Rápida', 'Fast')], ['instant', t('Instantânea', 'Instant')]] as [TextSpeed, string][], textSpeed(), (v) => store.set(TEXT_KEY, v)),
+    ]], [
+      'som', t('Som', 'Sound'), [
+      slider(t('Música', 'Music'), soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
+      slider(t('Efeitos', 'Effects'), soundSettings().sfx, (v) => setSound({ ...soundSettings(), sfx: v })),
+    ]], [
+      'video', t('Vídeo e efeitos', 'Video and effects'), [
       choice(t('Tamanho do pixel', 'Pixel size'), [[0, t('Desligado', 'Off')], [2, '2 px'], [3, '3 px'], [4, '4 px']] as [PixelSize, string][], this.pixel.size, (size) => this.setPixel({ ...this.pixel, size })),
       choice(t('Contorno', 'Outline'), [[true, t('Ligado', 'On')], [false, t('Desligado', 'Off')]], this.pixel.outline, (outline) => this.setPixel({ ...this.pixel, outline })),
       choice(t('Paleta reduzida (16 bits)', 'Reduced palette (16-bit)'), [[false, t('Desligada', 'Off')], [true, t('Ligada', 'On')]], this.pixel.palette, (palette) => this.setPixel({ ...this.pixel, palette })),
       choice(t('Câmera presa à grade de pixels', 'Camera locked to the pixel grid'), [[true, t('Ligada', 'On')], [false, t('Desligada', 'Off')]], this.pixel.snap, (snap) => this.setPixel({ ...this.pixel, snap })),
-      el('h3', {}, t('Som', 'Sound')),
-      choice(t('Música', 'Music'), [[0, t('Desligada', 'Off')], [1, t('Baixa', 'Low')], [2, t('Alta', 'High')]] as [Level, string][], soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
-      choice(t('Efeitos', 'Effects'), [[0, t('Desligados', 'Off')], [1, t('Baixos', 'Low')], [2, t('Altos', 'High')]] as [Level, string][], soundSettings().sfx, (v) => setSound({ ...soundSettings(), sfx: v })),
-      el('h3', {}, t('Conversas', 'Dialogue')),
-      choice(t('Velocidade do texto', 'Text speed'), [['normal', t('Normal', 'Normal')], ['fast', t('Rápida', 'Fast')], ['instant', t('Instantânea', 'Instant')]] as [TextSpeed, string][], textSpeed(), (v) => store.set(TEXT_KEY, v)),
-      el('h3', {}, t('Teclado', 'Keyboard')),
+    ]], [
+      'controles', t('Controles', 'Controls'), [
+      el('p', {}, t('Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, ombros giram a câmera, Start abre este menu.', 'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, shoulders rotate the camera, Start opens this menu.')),
       el('dl', { class: 'keys' }, ...keyHelp().flatMap(([k, what]) => [el('dt', {}, k), el('dd', {}, what)])),
+    ]], [
+      'idioma', t('Idioma', 'Language'), [
+      choice(t('Idioma', 'Language'), [['pt', 'Português'], ['en', 'English']] as [Lang, string][], LANG, setLang),
+    ]]];
+    const panels = sections.map(([id, title, body]) => el('section', { class: 'menu-section', hidden: id !== 'jogo' }, el('h3', {}, title), ...body));
+    const nav = choice(t('Seções', 'Sections'), sections.map(([id, title]) => [id, title] as [string, string]), 'jogo',
+      (id) => panels.forEach((p, i) => (p.hidden = sections[i][0] !== id)));
+    nav.classList.add('menu-nav');
+    const d = dialog('menu', t('Opções', 'Options'), [
+      el('div', { class: 'menu-layout' }, nav, el('div', { class: 'menu-body' }, ...panels)),
       el('div', { class: 'menu-actions' },
         // durante a animação ou a vez do inimigo o laço ainda está rodando a batalha antiga
         // o 1º toque só pergunta: reiniciar apaga a batalha salva e não tem volta (auditoria mobile de 25/10)
@@ -703,7 +725,6 @@ class Game {
           d.close();
           this.restart();
         } }, t('Reiniciar batalha', 'Restart battle')),
-        el('button', { type: 'button', class: 'secondary', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português'),
         el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa da campanha', 'Campaign map')),
         // saída para o título (na Batalha avulsa o mapa da campanha não é de onde a pessoa veio)
         el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title')),

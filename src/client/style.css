@@ -236,6 +236,31 @@ button[hidden] { display: none; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: var(--fs-sm); }
 .keys dt { font-weight: 800; white-space: nowrap; }
 .keys dd { margin: 0; color: var(--muted); }
+/* barra de volume (slider em dialog.ts): trilho na cor de destaque da tinta, número em % ao lado */
+.slider { display: block; margin: 0 0 14px; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider input { flex: 1; min-height: var(--tap); margin: 0; accent-color: var(--focus); cursor: pointer; }
+.slider input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.slider-value { min-width: 4ch; text-align: right; font: 400 var(--fs-lg)/1 var(--font-px); color: var(--ink); }
+
+/* Opções (13/11, pedido do Fernando: "algo que ocupa mais a largura da tela, com subseções"): seções numa coluna à
+   esquerda e uma por vez à direita; altura fixa para a janela não pular ao trocar de seção. No estreito, seções em cima */
+.dialog.menu { width: min(1400px, 92vw); height: min(760px, 90dvh); display: grid; grid-template-rows: auto 1fr auto; }
+.menu-layout { display: grid; grid-template-columns: 240px 1fr; gap: 24px; min-height: 0; margin-top: 12px; }
+.menu-nav { margin: 0; padding-right: 24px; border-right: 2px solid var(--paper-lo); }
+.menu-nav .choice-label { display: none; } /* o nome do grupo fica no aria-label: na tela, as próprias seções bastam */
+.menu-nav .choice-row { flex-direction: column; flex-wrap: nowrap; }
+.menu-nav .choice-row button { flex: none; justify-content: flex-start; padding: 0 16px; font: 400 var(--fs)/1 var(--font-px); }
+.menu-body { overflow: auto; min-height: 0; padding-right: 8px; }
+.menu-section h3 { margin-top: 0; font-size: var(--fs-lg); }
+.menu-section .legend { margin-bottom: 20px; }
+.menu-section .choice, .menu-section .slider { max-width: 560px; }
+.dialog.menu .menu-actions button { flex: 1 1 20%; } /* na janela larga os 4 cabem numa linha */
+@media (max-width: 600px) {
+  .menu-layout { grid-template-columns: 1fr; }
+  .menu-nav { padding: 0 0 8px; border-right: none; border-bottom: 2px solid var(--paper-lo); }
+  .menu-nav .choice-row { flex-direction: row; flex-wrap: wrap; }
+}
 
 
 /* Menu de desenvolvedor (12/11): largo para os dois times lado a lado no PC; no estreito, um embaixo do outro */
