@@ -781,6 +781,18 @@ export class BattleScene {
     return hit ? (hit.object.userData.tiles as Pos[])[hit.instanceId!] : null;
   }
 
+  // Meio do corpo da unidade na tela (px do canvas, que ocupa o host inteiro) e meia largura dela em px: o HUD põe o menu
+  // de comandos ao lado do boneco, como no FFT. Câmera ortográfica: px por unidade do mundo = altura do canvas / altura da vista
+  screenOf(unitId: string): { x: number; y: number; r: number } | null {
+    const v = this.units.get(unitId);
+    if (!v) return null;
+    const c = this.renderer.domElement;
+    const p = v.holder.position.clone().setY(v.holder.position.y + unitHeight(v.def) / 2).project(this.camera);
+    // 0,5 casa por casa ocupada: cobre o aro do time no chão (raio 0,44) e o corpo de qualquer ângulo
+    const r = (0.5 * (UNIT_DEFS[v.def].size ?? 1) * c.clientHeight) / (this.camera.top - this.camera.bottom);
+    return { x: ((p.x + 1) / 2) * c.clientWidth, y: ((1 - p.y) / 2) * c.clientHeight, r };
+  }
+
   // desliza a câmera até a casa (o herói da vez), sem mudar o zoom
   focusOn(p: Pos, also?: Pos) {
     // com `also`, centra entre os dois (quem ataca e o alvo): o golpe nunca acontece fora da tela ou atrás do HUD

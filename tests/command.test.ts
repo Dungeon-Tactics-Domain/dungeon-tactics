@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { abilityEnabled, commandEnabled, startScreen, stepIndex } from '../src/client/command.ts';
+import { abilityEnabled, canUndoMove, commandEnabled, startScreen, stepIndex } from '../src/client/command.ts';
 import { emptyMemory, padActions } from '../src/client/gamepad.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { flat, stateOf } from './battle-helpers.ts';
@@ -20,6 +20,34 @@ describe('menu de comandos', () => {
     b.act('strike', { x: 2, y: 1 });
     expect(commandEnabled(b, 'act')).toBe(false);
     expect(startScreen(b)).toEqual({ k: 'menu', index: 2 });
+  });
+
+  // 13/11, pedido do Fernando, como no Tactics Ogre: depois de andar e antes de agir, Mover vira "Desfazer movimento"
+  it('andou e não agiu: Mover desfaz o movimento (de graça), sem o cursor do menu cair nele', () => {
+    const b = duel();
+    expect(canUndoMove(b)).toBe(false);
+    b.move({ x: 2, y: 2 });
+    expect(canUndoMove(b)).toBe(true);
+    expect(commandEnabled(b, 'move')).toBe(true);
+    expect(startScreen(b)).toEqual({ k: 'menu', index: 1 }); // o 2º Enter depois de andar não desfaz sem querer
+    const undos = b.undosLeft;
+    expect(b.undo()).toBe(true);
+    expect(b.actor.pos).toEqual({ x: 1, y: 1 });
+    expect(b.undosLeft).toBe(undos);
+    expect(canUndoMove(b)).toBe(false);
+    expect(startScreen(b)).toEqual({ k: 'menu', index: 0 }); // de volta ao menu de antes de andar
+  });
+
+  it('depois de agir não oferece mais desfazer o movimento (antes ou depois de andar)', () => {
+    const moved = duel();
+    moved.move({ x: 2, y: 2 });
+    moved.act('strike', { x: 2, y: 1 });
+    expect(canUndoMove(moved)).toBe(false);
+    expect(commandEnabled(moved, 'move')).toBe(false);
+    const acted = duel();
+    acted.act('strike', { x: 2, y: 1 });
+    acted.move({ x: 1, y: 2 });
+    expect(canUndoMove(acted)).toBe(false);
   });
 
   it('subir e descer pula o que está apagado e dá a volta', () => {

@@ -76,7 +76,7 @@ export function cycleUnit(state: BattleState, from: Pos, dir: 1 | -1): Pos {
 export const keyHelp = (): [string, string][] => [
   ['W A S D · ← ↑ → ↓', t('no menu, sobe e desce; no mapa, anda o cursor de casa em casa (segue a câmera)', 'in the menu, up and down; on the map, move the cursor tile by tile (follows the camera)')],
   [t('Enter · Espaço', 'Enter · Space'), t('andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º Enter age; no fim do turno, confirma a direção; seguro, acelera a batalha 3 vezes', 'move to the tile under the cursor; on a target, asks "Execute?" and the 2nd Enter acts; at turn end, confirms the facing; held, speeds the battle up 3 times')],
-  ['Esc · Backspace', t('cancelar a escolha; de novo, volta para Mover', 'cancel the choice; again, back to Move')],
+  ['Esc · Backspace', t('cancelar a escolha; de novo, volta para Mover; no menu, depois de andar e antes de agir, desfaz o movimento', 'cancel the choice; again, back to Move; in the menu, after moving and before acting, undoes the move')],
   ['1 – 7', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
   ['I', t('ficha da habilidade escolhida', 'details of the chosen ability')],
   ['C', t('Status: ficha da unidade sob o cursor (ou de quem joga)', 'Status: sheet of the unit under the cursor (or the active one)')],
