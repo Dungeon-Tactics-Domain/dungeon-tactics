@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { chooseTurn } from '../src/shared/battle/ai.ts';
-import { hitChance, simulatePush } from '../src/shared/battle/combat.ts';
+import { hitChance, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { type Grid } from '../src/shared/battle/grid.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
@@ -23,10 +23,20 @@ describe('água', () => {
     expect(reach.has('4,1')).toBe(false);
   });
 
-  it('funda (2 ou mais) não deixa entrar', () => {
-    const g = withWater(flat(5, 3), [[2, 1, 2]]);
+  it('funda (2 ou mais) deixa entrar desde 13/11 (escolha do Fernando): custa 2 e o salto 1 basta, medido pela superfície', () => {
+    const g = withWater(flat(5, 3), [[2, 1, 2], [3, 1, 2]]);
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }]);
-    expect(reachable(g, s, 'a').has('2,1')).toBe(false);
+    const reach = reachable(g, s, 'a');
+    expect(reach.get('2,1')?.cost).toBe(2);
+    expect(reach.get('3,1')?.cost).toBe(4);
+  });
+
+  it('na água funda só se anda ou espera: nenhuma habilidade sai dali', () => {
+    const g = withWater(flat(5, 3), [[2, 1, 2]]);
+    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 2, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 3, y: 1 }]);
+    expect(previewAbility(g, s, 'a', 'strike', { x: 3, y: 1 })).toMatchObject({ ok: false, reason: 'water' });
+    const dry = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 }]);
+    expect(previewAbility(g, dry, 'a', 'strike', { x: 2, y: 1 }).ok).toBe(true); // de fora, quem nada leva golpe normal
   });
 
   it('água rasa não rebaixa quem está de pé (13/11, pedido do Fernando): da margem 1 acima se desce e se sobe com salto 1', () => {

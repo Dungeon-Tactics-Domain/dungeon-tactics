@@ -3,6 +3,7 @@
 // turno mostra e o que vem depois de cada tecla. O Game executa; o HUD só desenha.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
+import { isDeep, tileAt } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
@@ -22,9 +23,12 @@ export type Screen =
 // como no Tactics Ogre). Andar não sorteia nada, então desfazer é de graça; depois de agir, só o Z (que gasta um desfazer)
 export const canUndoMove = (b: Battle) => b.state.turn.moved && !b.state.turn.usedAbility && b.canUndo;
 
+// na água funda só se anda ou espera (13/11, escolha do Fernando; a regra está em previewAbility)
+export const swimming = (b: Battle) => isDeep(tileAt(b.grid, b.actor.pos));
+
 export function commandEnabled(b: Battle, c: Command): boolean {
   if (c === 'move') return b.reach().size > 0 || canUndoMove(b);
-  if (c === 'act') return !b.state.turn.usedAbility;
+  if (c === 'act') return !b.state.turn.usedAbility && !swimming(b);
   return true;
 }
 

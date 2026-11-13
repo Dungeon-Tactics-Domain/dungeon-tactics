@@ -1,5 +1,5 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
-import { FACING, TERRAIN, canStand, dist, inBounds, samePos, sideOf, standH, tileAt, type Grid, type Side } from './grid.ts';
+import { FACING, TERRAIN, canStand, dist, inBounds, isDeep, samePos, sideOf, standH, tileAt, type Grid, type Side } from './grid.ts';
 import { MAX_JUMP, distTo, inAbilityRange, lineOfSight, nearestTile, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
@@ -36,7 +36,7 @@ export interface TargetPreview {
   healMax: number;
 }
 
-export type PreviewReason = 'unknown' | 'range' | 'sight' | 'no-target' | 'spent';
+export type PreviewReason = 'unknown' | 'range' | 'sight' | 'no-target' | 'spent' | 'water';
 export interface Preview {
   ok: boolean;
   reason?: PreviewReason;
@@ -89,6 +89,9 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   const fail = (reason: PreviewReason): Preview => ({ ok: false, reason, center, targets: [] });
   if (!actor || !ability || !UNIT_DEFS[actor.def].abilities.includes(abilityId) || !inBounds(grid, center)) return fail('unknown');
   if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
+  // na água funda só se anda ou espera (13/11, escolha do Fernando; grid.ts isDeep). A carga que já saiu não passa aqui:
+  // quem carrega não anda e o empurrão não entra na funda
+  if (!charged && isDeep(tileAt(grid, actor.pos))) return fail('water');
   // unidade grande mede alcance e visão da casa dela mais perto do alvo (para quem ocupa 1 casa é a mesma)
   const from = nearestTile(actor, center);
   if (!inAbilityRange(grid, ability, from, center)) return fail('range');
@@ -202,7 +205,8 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
     const cur = result.to;
     const next = { x: cur.x + dx, y: cur.y + dy };
     // água funda segura o empurrão como uma parede (suposição nossa: o guia não diz o que acontece)
-    const blocked = !inBounds(grid, next) || !canStand(tileAt(grid, next)) || !!unitAt(state, next)
+    // a água funda segura o empurrão como parede (suposição nossa, mantida quando ela passou a deixar entrar, 13/11)
+    const blocked = !inBounds(grid, next) || !canStand(tileAt(grid, next)) || isDeep(tileAt(grid, next)) || !!unitAt(state, next)
       || standH(tileAt(grid, next)) - standH(tileAt(grid, cur)) > MAX_JUMP;
     if (blocked) {
       result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });

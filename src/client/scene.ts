@@ -23,7 +23,7 @@ import type { PixelSettings } from './pixel-settings.ts';
 import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 import { Water } from './water.ts';
-import { DEEP_DROP, WADE, waterLevels, type WaterLevel } from './water-levels.ts';
+import { DEEP_DROP, SWIM, WADE, waterLevels, type WaterLevel } from './water-levels.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -270,10 +270,10 @@ export class BattleScene {
     return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step, p.y - this.grid.height / 2 + 0.5);
   }
 
-  // onde o boneco fica de pé: a casa, mais baixo na água rasa (marcas e cursor seguem em world(), na superfície)
+  // onde o boneco fica de pé: a casa, mais baixo na água rasa e nadando na funda (marcas e cursor seguem em world(), na superfície)
   private stand(p: Pos): THREE.Vector3 {
-    const w = this.world(p);
-    return tileAt(this.grid, p).depth === 1 ? w.setY(w.y - WADE * this.step) : w;
+    const w = this.world(p), d = tileAt(this.grid, p).depth ?? 0;
+    return d ? w.setY(w.y - (d >= 2 ? SWIM : WADE) * this.step) : w;
   }
 
   // Rampa (Tile.ramp): quanto o chão sobe, em metros, por casa andada em x e em z; null na casa plana. A mesma conta
@@ -451,7 +451,7 @@ export class BattleScene {
       const wall = tile.terrain === 'wall';
       const h = look.canopy && wall ? Math.min(...neighbors(this.grid, p).map((n) => tileAt(this.grid, n).h)) : tile.h + (wall && !look.prop ? 2 : 0);
       // água: o bloco de cima é o leito (waterLevels: na rasa onde os pés pisam, na funda bem abaixo); a superfície, mais
-      // baixa na funda que na rasa (o degrau na margem diz "aqui não se atravessa"), é desenhada em water.ts
+      // baixa na funda que na rasa (o degrau na margem diz "aqui é fundo"), é desenhada em water.ts
       const top = tile.look === 'water' ? water.get(posKey(p))!.bed : (h + 1) * this.step;
       // a ponte é uma tábua de um nível sobre a água; casa baixa (topo abaixo de 1) tem o cubo achatado até a base; na borda
       // o topo é uma fatia de um nível e a lateral lisa começa logo abaixo dela

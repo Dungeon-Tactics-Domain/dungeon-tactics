@@ -61,12 +61,17 @@ export function parseGrid(terrain: string[], heights: string[]): Grid {
 // altura de quem está na casa (na água, a casa menos a profundidade, BMG 6.5)
 // água rasa não rebaixa quem está de pé (13/11, pedido do Fernando: "tem água por cima da pedra e não consigo descer"):
 // com o pé 1 abaixo da superfície, o vau precisava subir 1 nível e ficava acima do rio; ela só custa 2 de movimento e o
-// boneco afundado é só desenho (WADE). Funda continua sem pé (canStand)
-export const standH = (t: Tile) => t.h - ((t.depth ?? 0) >= 2 ? t.depth! : 0);
-// dá para parar na casa: pisável e sem água funda (BMG 6.5: água de 2h ou mais não deixa andar nem agir)
-export const canStand = (t: Tile) => TERRAIN[t.terrain].walkable && (t.depth ?? 0) < 2;
-// pontos de movimento para entrar na casa: água rasa custa 2 (BMG 6.5, "flowing water")
-export const stepCost = (t: Tile) => ((t.depth ?? 0) === 1 ? 2 : 1);
+// boneco afundado é só desenho (WADE). Na funda quem nada fica na profundidade (pior no acerto, alcance e visão)
+export const standH = (t: Tile) => t.h - (isDeep(t) ? t.depth! : 0);
+// Água funda (2 ou mais). No FFT só entra quem nada (BMG 6.5); aqui todos entram desde 13/11 (escolha do Fernando:
+// "entra, mas não age dentro"): custa 2 como a rasa, quem está nela só anda ou espera (previewAbility) e o empurrão
+// continua parando na beira (simulatePush). O salto para entrar e sair mede pela superfície (t.h), não pelo fundo:
+// medindo pelo fundo, a margem ficava 2 níveis acima e só o Salto 2 entrava
+export const isDeep = (t: Tile) => (t.depth ?? 0) >= 2;
+// dá para parar na casa: pisável (a água funda também, desde 13/11)
+export const canStand = (t: Tile) => TERRAIN[t.terrain].walkable;
+// pontos de movimento para entrar na casa: água custa 2 (BMG 6.5, "flowing water"; a funda, por analogia, 13/11)
+export const stepCost = (t: Tile) => (t.depth ? 2 : 1);
 
 export const inBounds = (g: Grid, p: Pos) => p.x >= 0 && p.y >= 0 && p.x < g.width && p.y < g.height;
 export const tileAt = (g: Grid, p: Pos): Tile => g.tiles[p.y * g.width + p.x];

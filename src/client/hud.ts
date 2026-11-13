@@ -19,7 +19,7 @@ import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, type Command, type Screen } from './command.ts';
+import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, swimming, type Command, type Screen } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { UI_ICON, el, icon, iconButton, type Child } from './icons.ts';
 import { classOf } from './dev-roster.ts';
@@ -156,7 +156,7 @@ export function tileInfo(grid: Grid, p: Pos): string {
   const kind = tile.look ? LOOK_NAME[tile.look]?.() ?? tile.look : TERRAIN_NAME[tile.terrain]();
   // água rasa e funda têm o mesmo desenho: o texto da casa é o que diz qual é qual (achado olhando o Coração da Cripta)
   const blocked = (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable'))
-    + ((tile.depth ?? 0) >= 2 ? t(' · funda: não se atravessa', ' · deep: cannot be crossed') : tile.depth === 1 ? t(' · rasa: custa 2 de movimento', ' · shallow: costs 2 movement') : '')
+    + ((tile.depth ?? 0) >= 2 ? t(' · funda: custa 2 e não se age nela', ' · deep: costs 2, no actions inside') : tile.depth === 1 ? t(' · rasa: custa 2 de movimento', ' · shallow: costs 2 movement') : '')
     + (tile.spikes ? t(` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`, ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`) : '');
   // na água rasa vale a altura em que se fica de pé (a que o Salto compara), não a da superfície
   const h = tile.depth === 1 ? standH(tile) : tile.h;
@@ -169,6 +169,7 @@ const REASON: Record<string, () => string> = {
   'no-target': () => t('Nenhum alvo nesta casa', 'No target on this tile'),
   unknown: () => t('Não dá para usar aqui', 'Cannot use here'),
   spent: () => t('Acabou o estoque ou o MP', 'Out of stock or MP'),
+  water: () => t('Na água funda só dá para andar ou esperar', 'In deep water you can only move or wait'),
 };
 const COMMAND_NAME: Record<Command, () => string> = {
   move: () => t('Mover', 'Move'), act: () => t('Agir', 'Act'), wait: () => t('Esperar', 'Wait'), status: () => 'Status',
@@ -448,7 +449,8 @@ export class BattleHud {
     if (v.busy || !heroTurn) return v.log || (v.acting ? t(`Vez do inimigo: ${unitName(v.acting)}`, `Enemy turn: ${unitName(v.acting)}`) : '');
     const s = v.screen;
     const say = (pt: string, en: string) => (v.log ? `${v.log} — ` : '') + t(pt, en);
-    if (s.k === 'menu') return say(`${unitName(b.actor.def)}: escolha um comando.`, `${unitName(b.actor.def)}: pick a command.`);
+    if (s.k === 'menu') return swimming(b) ? say(`${unitName(b.actor.def)}: na água funda só dá para andar ou esperar.`, `${unitName(b.actor.def)}: in deep water you can only move or wait.`)
+      : say(`${unitName(b.actor.def)}: escolha um comando.`, `${unitName(b.actor.def)}: pick a command.`);
     if (s.k === 'abilities') {
       const id = abilitiesOf(b)[s.index];
       return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';

@@ -184,7 +184,7 @@ const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: str
   d: { terrain: 'floor', h: 2, look: 'altar' },
   // superfície no 1 e pé no 0 (13/11): com a superfície no 0 o pé ficava no -1, 2 abaixo das margens, e ninguém entrava no canal
   w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
-  W: { terrain: 'floor', h: 0, look: 'water', depth: 2 }, // fosso fundo do Coração da Cripta: só as pontes passam
+  W: { terrain: 'floor', h: 0, look: 'water', depth: 2 }, // fosso fundo do Coração da Cripta: as pontes, ou a nado sem agir (13/11)
   b: { terrain: 'floor', h: 1, look: 'bridge' },
   B: { terrain: 'wall', h: 1, look: 'brick' },
   p: { terrain: 'wall', h: 1, look: 'pillar' },
@@ -270,7 +270,7 @@ const CRYPT: Scenario = {
 };
 
 // Coração da Cripta (noite de 12/11, fase 4 da campanha, que antes repetia a Cripta Alagada): 12x12, as mesmas peças.
-// O chefe espera num altar elevado no fundo, atrás de um fosso fundo que só se cruza pelas duas pontes estreitas; um 2º canal no meio
+// O chefe espera num altar elevado no fundo, atrás de um fosso fundo que se cruza pelas duas pontes estreitas (ou a nado, sem agir, desde 13/11); um 2º canal no meio
 // tem uma passagem seca no centro guardada por espinhos. Os heróis trazem o cristal (o Farol) para acender a cripta.
 const HEART_MAP = [
   'BBBddddddBBB',
@@ -350,7 +350,7 @@ const HEART: Scenario = {
 };
 
 // Bosque das Cinzas (noite de 12/11, fase 1 da campanha): 12x12 sem Farol (vence quem sobrar). Um rio fundo corta o
-// mapa: só se passa pela ponte (esquerda, estreita) ou pelo vau de água rasa (direita, custa 2 de movimento). Do lado dos
+// mapa: passa-se pela ponte (esquerda, estreita), pelo vau de água rasa (direita, custa 2 de movimento) ou a nado (desde 13/11, sem agir). Do lado dos
 // heróis, a estrada de areia e a caravana parada (caixotes e barris); do lado dos inimigos, um morrinho de grama alta.
 const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number }> = {
   g: { terrain: 'floor', h: 0, look: 'grass' },

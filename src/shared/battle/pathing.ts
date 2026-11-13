@@ -1,5 +1,5 @@
 import type { AbilityDef } from './abilities.ts';
-import { FACING, TERRAIN, canStand, dist, inBounds, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
+import { FACING, TERRAIN, canStand, dist, inBounds, isDeep, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -50,7 +50,7 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
       const land = tileAt(grid, to);
       // pouso no mesmo nível ou abaixo, até `jump` níveis (13/11: o tutorial do FFT não deixa o vão pousar mais alto que a
       // saída; antes pousava até `jump` acima)
-      if (!canStand(land) || standH(land) > h0 || h0 - standH(land) > jump) continue;
+      if (!canStand(land) || isDeep(land) || standH(land) > h0 || h0 - standH(land) > jump) continue; // pousar na funda: é só entrar a nado
       const low = Math.min(h0, standH(land));
       if (over.every((p) => { const t = tileAt(grid, p); return !canStand(t) || standH(t) < low; })) out.push({ to, over: [...over] });
     }
@@ -75,7 +75,8 @@ export function reachable(grid: Grid, state: BattleState, unitId: string): Map<s
       // água rasa custa 2: o caminho mais barato pode chegar depois, então a casa é revista quando sai mais barata
       const next = cost + stepCost(to);
       if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
-      if (!canStand(to) || Math.abs(standH(to) - standH(tileAt(grid, cur))) > jump) continue;
+      // o salto mede pela superfície (t.h): entrar e sair da água funda é a mesma subida da margem (grid.ts, isDeep)
+      if (!canStand(to) || Math.abs(to.h - tileAt(grid, cur).h) > jump) continue;
       const other = unitAt(state, n);
       if (other && other.team !== unit.team) continue;
       seen.set(k, { pos: n, cost: next, from: posKey(cur) });

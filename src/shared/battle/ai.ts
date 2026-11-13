@@ -105,7 +105,7 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
     for (const n of neighbors(grid, p)) {
       const t = tileAt(grid, n);
       const next = cost + stepCost(here);
-      if (!canStand(t) || Math.abs(standH(t) - standH(here)) > jump || (best.get(posKey(n)) ?? Infinity) <= next) continue;
+      if (!canStand(t) || Math.abs(t.h - here.h) > jump || (best.get(posKey(n)) ?? Infinity) <= next) continue; // salto pela superfície, como reachable
       best.set(posKey(n), next);
       queue.push({ p: n, cost: next });
     }

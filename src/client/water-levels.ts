@@ -6,6 +6,9 @@ import type { Pos } from '../shared/battle/types.ts';
 // do Fernando ("mais profundidade da água perto da ponte"): com 0,45 o rio fundo parecia rente à margem e a ponte quase sem vão
 export const DEEP_DROP = 0.8;
 export const WADE = 0.45; // quanto o boneco afunda na água rasa, em níveis: água pela cintura (13/11: com 0,3 as pernas quase não apareciam na água transparente; a regra o põe 1 abaixo da margem)
+// quanto o boneco afunda na água funda, em níveis abaixo da superfície: nadando, só cabeça e ombros de fora (13/11, a
+// funda passou a deixar entrar). O leito dela fica mais alto que os pés, mas some na água escura (opaca 93%)
+export const SWIM = 0.75;
 const DEEP_BED = 1; // leito da funda, em níveis abaixo da superfície: some na cor escura, só não pode ficar à vista
 
 export interface WaterLevel { surface: number; bed: number; deep: boolean; under?: true }

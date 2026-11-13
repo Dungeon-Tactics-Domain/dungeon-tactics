@@ -39,7 +39,7 @@ describe('informação da casa', () => {
   });
 
   it('água funda e rasa (mesmo desenho) se distinguem pelo texto', () => {
-    expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 3 })).toBe('Casa 0,3 · altura 0 · água · funda: não se atravessa');
+    expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 3 })).toBe('Casa 0,3 · altura 0 · água · funda: custa 2 e não se age nela');
     expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe('Casa 0,7 · altura 0 · água · rasa: custa 2 de movimento');
   });
 });
