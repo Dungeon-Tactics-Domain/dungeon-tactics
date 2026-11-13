@@ -13,10 +13,12 @@ export const COMBAT = {
   COVER_PENALTY: 20, // alvo em terreno com cobertura, contra ataque à distância
   MIN_CHANCE: 5, // nunca certeza nem impossível: o dado sempre existe
   MAX_CHANCE: 95,
-  BUMP_DAMAGE: 3, // empurrão parado por parede, unidade, borda ou degrau alto
+  // batida, queda e espinhos x1,75 junto com o dano das habilidades (13/11, "danos muito baixos deixando a batalha lenta"):
+  // antes 3, 5 e 6
+  BUMP_DAMAGE: 5, // empurrão parado por parede, unidade, borda ou degrau alto
   FALL_FREE: 1, // queda de até 1 nível é só um degrau
-  FALL_DAMAGE: 5, // por nível além do degrau livre
-  SPIKE_DAMAGE: 6, // casa de espinhos (grid.ts): o mesmo que um golpe fraco; número inicial, medido na fase que usa
+  FALL_DAMAGE: 9, // por nível além do degrau livre
+  SPIKE_DAMAGE: 10, // casa de espinhos (grid.ts): o mesmo que um golpe fraco
   // golpe físico pelo lado e pelas costas (13/11, direção no jogo, como o FFT: lá o lado tira a evasão de classe e as
   // costas tiram também a do escudo). Nosso acerto não tem evasão: vira bônus. Números iniciais, medidos na campanha
   SIDE_BONUS: 15,

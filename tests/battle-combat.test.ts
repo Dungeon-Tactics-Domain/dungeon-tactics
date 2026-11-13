@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
+import { COMBAT, checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -70,7 +70,7 @@ describe('prévia da habilidade', () => {
   });
 
   it('mostra a faixa de dano', () => {
-    expect(previewAbility(flat(3, 1), duel('warrior', 1), 'a', 'strike', at(1)).targets[0]).toMatchObject({ dmgMin: 6, dmgMax: 9 });
+    expect(previewAbility(flat(3, 1), duel('warrior', 1), 'a', 'strike', at(1)).targets[0]).toMatchObject({ dmgMin: ABILITIES.strike.damage[0], dmgMax: ABILITIES.strike.damage[1] });
   });
 });
 
@@ -80,8 +80,8 @@ describe('resolver a habilidade', () => {
     const hit = duel('warrior', 1, 'soldier', HIT_SEED);
     const ev = resolveAbility(g, hit, 'a', 'strike', at(1));
     const lost = UNIT_DEFS.soldier.hp - hit.units[1].hp;
-    expect(lost).toBeGreaterThanOrEqual(6);
-    expect(lost).toBeLessThanOrEqual(9);
+    expect(lost).toBeGreaterThanOrEqual(ABILITIES.strike.damage[0]);
+    expect(lost).toBeLessThanOrEqual(ABILITIES.strike.damage[1]);
     expect(ev.map((e) => e.k)).toContain('hit');
     const miss = duel('warrior', 1, 'soldier', MISS_SEED);
     const ev2 = resolveAbility(g, miss, 'a', 'strike', at(1));
@@ -133,7 +133,7 @@ describe('empurrão', () => {
     const wall = duel('warrior', 1, 'soldier', HIT_SEED);
     const ev = bash(gridOf(['..#.']), wall);
     expect(wall.units[1].pos).toEqual(at(1));
-    expect(ev.find((e) => e.k === 'bump')).toMatchObject({ unit: 'f', dmg: 3 });
+    expect(ev.find((e) => e.k === 'bump')).toMatchObject({ unit: 'f', dmg: COMBAT.BUMP_DAMAGE });
 
     const crowd = stateOf([
       { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
@@ -152,7 +152,7 @@ describe('empurrão', () => {
     const drop = duel('warrior', 1, 'soldier', HIT_SEED);
     const ev = bash(gridOf(['....'], ['3300']), drop);
     expect(drop.units[1].pos).toEqual(at(3));
-    expect(ev.find((e) => e.k === 'fall')).toMatchObject({ levels: 3, dmg: 10 });
+    expect(ev.find((e) => e.k === 'fall')).toMatchObject({ levels: 3, dmg: 2 * COMBAT.FALL_DAMAGE });
     const step = duel('warrior', 1, 'soldier', HIT_SEED);
     expect(bash(gridOf(['....'], ['0110']), step).some((e) => e.k === 'fall')).toBe(false);
   });
@@ -208,5 +208,19 @@ describe('empurrão com chance', () => {
     expect(pushed(0)).toBe(false);
     expect(pushed(100)).toBe(true);
     expect(pushed()).toBe(true);
+  });
+});
+
+describe('direção no jogo (13/11)', () => {
+  it('golpe físico ganha acerto pelo lado e mais pelas costas; magia não olha a direção', () => {
+    const g = flat(5, 3);
+    const s = stateOf([{ id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 }, { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 1 }]);
+    const shot = (facing: number) => { s.units[1].facing = facing; return previewAbility(g, s, 'a', 'shot', { x: 3, y: 1 }).targets[0]; };
+    const front = shot(3); // olhando para -x, de frente para o arqueiro
+    expect(front.side).toBe('front');
+    expect(shot(0).side).toBe('side');
+    expect(shot(0).chance).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.SIDE_BONUS));
+    expect(shot(1).side).toBe('back');
+    expect(shot(1).chance).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.BACK_BONUS));
   });
 });

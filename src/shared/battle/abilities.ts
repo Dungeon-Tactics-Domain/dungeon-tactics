@@ -1,5 +1,7 @@
 // Habilidades são dados com stats gerais (alcance, dano, empurrão, atraso, área); nenhuma tem regra própria contra outra
-// (decisão de 21/10 herdada do Warlock). Números iniciais de 25/10: a decidir jogando e simulando.
+// (decisão de 21/10 herdada do Warlock). Números iniciais de 25/10: a decidir jogando e simulando. Dano e cura x1,75 em
+// 13/11 (pedido do Fernando: "danos muito baixos deixando a batalha lenta"): um golpe comum tirava ~17% da vida (6 golpes
+// para derrubar), no FFT tira ~37% (estudo de Gariland); agora ~30%
 export interface AbilityDef {
   id: string;
   name: string;

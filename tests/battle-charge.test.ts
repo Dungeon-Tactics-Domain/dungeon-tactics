@@ -85,10 +85,11 @@ describe('ações com carga', () => {
   it('quem está carregando leva 50% a mais de ataque físico, não de magia (BMG 6, Charging)', () => {
     const b = duel('warrior');
     b.state.charges = [{ unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 }];
-    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: 9, dmgMax: 13 }); // 6 a 9 vezes 1,5
+    const [lo, hi] = ABILITIES.strike.damage;
+    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: Math.floor(lo * 1.5), dmgMax: Math.floor(hi * 1.5) });
     const m = duel('mage', 2, 3);
     m.state.charges = [{ unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 }];
-    expect(m.preview('firebolt', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: 6, dmgMax: 9 });
+    expect(m.preview('firebolt', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: ABILITIES.firebolt.damage[0], dmgMax: ABILITIES.firebolt.damage[1] });
   });
 
   it('o turno da IA traz os eventos das cargas que saem antes do próximo turno', () => {
