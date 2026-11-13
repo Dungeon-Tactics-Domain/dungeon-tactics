@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forecast, forecastText, hpAfterText } from '../src/client/hud.ts';
+import { forecast, forecastText, hpAfterText, strikeInfo } from '../src/client/hud.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT } from '../src/shared/battle/combat.ts';
@@ -26,6 +26,8 @@ describe('prévia do golpe', () => {
     expect(f.push).toBe(bump);
     expect(f.after).toEqual([45 - hi - bump, 45 - lo - bump]); // dano mais a batida na borda
     expect(forecastText(f)).toBe(`acerto 95% · dano ${lo}–${hi} · empurrão +${bump}`);
+    // linha miúda da faixa da prévia (jeito do Tactics Ogre): quem, empurrão e a vida depois
+    expect(strikeInfo(f, 'shield_bash')).toEqual(['Soldado', `empurrão +${bump}`, `vida 45 → ${45 - hi - bump}–${45 - lo - bump}`]);
   });
 
   it('a vida depois bate com a regra de verdade num acerto com empurrão', () => {
@@ -57,5 +59,6 @@ describe('prévia do golpe', () => {
     expect(fs.map((f) => f.unit.id).sort()).toEqual(['e1', 'e2', 'h']);
     expect(fs.find((f) => f.unit.id === 'h')!.ally).toBe(true);
     expect(fs.find((f) => f.unit.id === 'e1')!.ally).toBe(false);
+    expect(strikeInfo(fs.find((f) => f.unit.id === 'h')!, 'blast').at(-1)).toBe('ALIADO!');
   });
 });

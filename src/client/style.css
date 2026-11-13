@@ -18,8 +18,12 @@
   --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #655134; --focus: #9e2c0c; /* um tom mais escuros (13/11, revisão): 4,7:1 também sobre --paper-lo, no pé dos painéis */
   --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;
   --heal-ink: #1f7a3a; /* cura prevista em número grande sobre o pergaminho: 4,2:1 no papel, 3,3:1 no pé do degradê */
+  /* faixa translúcida da prévia do golpe (13/11, jeito do Tactics Ogre): escura o bastante para o rosa do dano passar
+     de 4,5:1 mesmo sobre o céu claro (a faixa a 80% sobre branco fica perto de #3e3846) */
+  --strike: rgba(18, 10, 26, .8); --strike-dmg: #ffb8cf;
   --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
   --gap: 8px;
+  --slot-w: 440px; /* painéis de unidade de baixo; as faixas da prévia ficam no vão entre os dois */
   --font: 'Alegreya Sans', system-ui, sans-serif; /* texto corrido: legível em tamanho pequeno */
   /* títulos, opções, Confirmar e fila: Cinzel (OFL), serifada de inscrição (13/11, o Fernando achou a fonte pixel
      Tiny5 "meio tosca" e pediu "uma fonte mais legal serifada nas opções com um sombreamento"); o nome da variável ficou para não mexer em todo o CSS */
@@ -147,7 +151,7 @@ button[hidden] { display: none; }
 .panel .item:not(:disabled):active { transform: none; box-shadow: none; }
 .item-cost { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
 /* painéis de unidade: a da vez embaixo à esquerda, a sob o cursor embaixo à direita */
-.active-slot, .target-slot { position: absolute; bottom: 12px; width: 440px; pointer-events: none; }
+.active-slot, .target-slot { position: absolute; bottom: 12px; width: var(--slot-w); pointer-events: none; }
 .active-slot { left: 12px; }
 .target-slot { right: 12px; }
 .unit-panel { position: relative; display: flex; gap: 12px; border-left: 8px solid var(--side); }
@@ -171,15 +175,25 @@ button[hidden] { display: none; }
 .gauge-change.gain { background: repeating-linear-gradient(135deg, var(--heal) 0 3px, var(--well) 3px 6px); }
 @keyframes loss-blink { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .gauge-change { animation: none; } }
-/* bloco da prévia no painel do alvo: acerto grande (o número do FFT) e, ao lado, dano e vida depois */
-.forecast { display: flex; gap: 12px; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 2px solid var(--paper-lo); }
-.forecast-hit { display: grid; justify-items: center; min-width: 76px; font: 400 var(--fs-xl)/1 var(--font-px); color: var(--focus); }
-.forecast-hit.gain { color: var(--heal-ink); }
-.forecast-hit small { font: 700 var(--fs-sm)/1.2 var(--font); color: var(--ink-muted); }
-.forecast-body { display: grid; gap: 2px; font-size: var(--fs-sm); }
-.forecast-hp { font: 400 var(--fs-lg)/1.1 var(--font-px); }
-.forecast-warn { font-weight: 800; color: var(--focus); }
-.forecast-more { color: var(--ink-muted); }
+/* painel do alvo espelhado (retrato à direita), como a barra de status do Tactics Ogre: atacante e alvo se olham */
+.target-slot .unit-panel { flex-direction: row-reverse; border-left: 2px solid var(--paper-edge); border-right: 8px solid var(--side); }
+/* faixas da prévia do golpe (hud.ts strikes, 13/11, no jeito do Tactics Ogre, desenho nosso): no vão entre os dois
+   painéis de baixo, presas embaixo e em seta apontando para o painel do alvo. Ficam dentro da altura dos painéis (até 3
+   faixas) para não cobrir o mapa; sem clique (o mouse passa para as casas de baixo) */
+.strikes { position: absolute; bottom: 12px; left: calc(var(--slot-w) + 24px); right: calc(var(--slot-w) + 24px); display: grid; justify-items: end; align-content: end; gap: 4px; pointer-events: none; }
+.strike { max-width: 100%; padding: 4px 30px 5px 14px; color: var(--fg); background: var(--strike); border-left: 4px solid var(--strike-dmg);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%); }
+.strike.gain { border-left-color: var(--heal); }
+.strike.ally { border-left-color: var(--accent); }
+.strike-main { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+.strike-hp { font: 700 var(--fs-sm)/1 var(--font); color: var(--muted); }
+.strike-pts { font: 400 var(--fs-xl)/1 var(--font-px); color: var(--strike-dmg); font-variant-numeric: tabular-nums; }
+.strike.gain .strike-pts { color: var(--heal); }
+.strike-pts small { margin-left: 4px; font: 700 var(--fs-sm)/1 var(--font); }
+.strike-hit { margin-left: auto; font: 400 var(--fs-lg)/1 var(--font-px); }
+.strike-info { font-size: var(--fs-sm); color: var(--muted); }
+.strike.ally .strike-info { color: var(--accent); font-weight: 700; }
+.strike-more { margin: 0; padding: 2px 10px; font-size: var(--fs-sm); color: var(--fg); background: var(--strike); }
 .gauge.hp i { background: var(--hp); }
 .gauge.mp i { background: var(--mp); }
 .gauge.ct i { background: var(--ct); }
