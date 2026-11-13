@@ -56,7 +56,7 @@ export function abilityDetail(id: string): string {
   const parts = [a.range[1] === 0 ? t('em volta de você', 'around you') : t(`alcance ${range(a.range)}`, `range ${range(a.range)}`)];
   if (a.damage[1]) parts.push(t(`dano ${range(a.damage)}`, `damage ${range(a.damage)}`), t(`acerto ${a.accuracy}%`, `accuracy ${a.accuracy}%`));
   if (a.heal[1]) parts.push(t(`cura ${range(a.heal)}`, `heals ${range(a.heal)}`));
-  if (a.radius) parts.push(t('área (pega aliados)', 'area (hits allies)'));
+  if (a.radius) parts.push(t(`área de raio ${a.radius} (pega aliados)`, `area of radius ${a.radius} (hits allies)`)); // raio 2 existe desde a Onda sombria
   if (a.push) parts.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
   if (a.needsSight) parts.push(t('precisa de visão', 'needs sight'));
   if (a.heightRange) parts.push(t('+1 de alcance por nível acima', '+1 range per level above'));

@@ -190,6 +190,7 @@ export const chapterId = (n: number) => `camp${n}`;
 export function chapterScenario(n: number): Scenario {
   const s = buildDevScenario(CHAPTERS[n].setup, chapterId(n), CHAPTERS[n].title);
   if (CHAPTERS[n].boss) {
+    UNIT_DEFS[s.spawns.find((sp) => sp.id === 'e0')!.def].boss = true;
     const beacon = s.spawns.some((sp) => sp.def === OBJECTIVE_DEF);
     s.rules = {
       outcome: (state) => !state.units.some((u) => u.id === 'e0') ? 'victory'

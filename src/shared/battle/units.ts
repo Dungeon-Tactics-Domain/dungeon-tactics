@@ -10,6 +10,7 @@ export interface UnitDef {
   info?: Record<string, string | number>; // ficha extra para a janela de status (arma, Brave, Fé…); só o cenário de estudo tem
   vars?: Record<string, number>; // contadores com que a unidade nasce (ver UnitState.vars); só o cenário de estudo usa
   model?: string; // modelo em public/models; só o cenário de estudo informa, as unidades do jogo estão no mapa da cena
+  boss?: true; // chefe da fase (campanha): só a coroa no desenho; a regra de vitória vem do cenário
 }
 
 const LIST: UnitDef[] = [

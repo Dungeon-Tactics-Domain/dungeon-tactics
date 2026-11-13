@@ -478,6 +478,12 @@ export class BattleScene {
     barHolder.name = 'bar';
     barBg.renderOrder = bar.renderOrder = 10;
     holder.add(ring, barHolder);
+    // chefe da fase: coroa dourada acima da barra, para o objetivo "derrube o chefe" se ver no mapa
+    if (UNIT_DEFS[u.def].boss) {
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.2, 5), new THREE.MeshBasicMaterial({ color: '#f2c14e' }));
+      crown.position.y = MARKER.barY + 0.22;
+      holder.add(crown);
+    }
     this.scene.add(holder);
     const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null, body, mats };
     this.play(view, 'Idle');
