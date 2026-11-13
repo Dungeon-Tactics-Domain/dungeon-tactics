@@ -6,7 +6,7 @@ import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, samePos } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
-import type { BattleEvent, Pos } from '../shared/battle/types.ts';
+import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { choice, dialog } from './dialog.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { LANG, abilityName, setLang, t, unitName } from './i18n.ts';
@@ -23,6 +23,7 @@ import { TIMING, pace } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
+import { addEvents, emptyTally, mvp } from './tally.ts';
 import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
@@ -59,8 +60,13 @@ class Game {
   private readonly pad = emptyMemory();
   private padPrimed = false;
   private readonly fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
+  // placar da batalha (tally.ts) para o destaque no fim; lado e ficha de cada unidade guardados no começo (morto sai do estado)
+  private tally = emptyTally();
+  private roster: Record<string, { team: Team; def: string }> = {};
+  private readonly teamOf = () => Object.fromEntries(Object.entries(this.roster).map(([id, u]) => [id, u.team]));
 
   constructor(private battle: Battle, private readonly scene: BattleScene, host: HTMLElement, private pixel: PixelSettings) {
+    this.resetTally();
     this.ui = freshUi(battle);
     this.screen = startScreen(battle);
     this.cursor = battle.actor.pos;
@@ -368,6 +374,7 @@ class Game {
   }
 
   private async animate(events: BattleEvent[], enemy = false) {
+    addEvents(this.tally, events, this.teamOf());
     this.busy = true;
     this.update(this.ui);
     await this.scene.playEvents(events, this.battle.state, (e) => this.beforeEvent(e, enemy));
@@ -509,8 +516,24 @@ class Game {
     this.update(freshUi(this.battle));
   }
 
+  private resetTally() {
+    this.tally = emptyTally();
+    this.roster = Object.fromEntries(this.battle.state.units.map((u) => [u.id, { team: u.team, def: u.def }]));
+  }
+
+  // "Destaque: Bran · 48 de dano · 2 derrubados" (o herói que mais derrubou; empate pelo dano), como o fecho do FFT
+  private mvpLine(): HTMLElement[] {
+    const m = mvp(this.tally, this.teamOf(), 'hero');
+    if (!m) return [];
+    const [id, s] = m;
+    const name = unitName(this.roster[id].def);
+    return [el('p', { class: 'mvp' }, t(`Destaque: ${name} · ${s.dmg} de dano · ${s.kills} derrubado${s.kills === 1 ? '' : 's'}`,
+      `MVP: ${name} · ${s.dmg} damage · ${s.kills} ${s.kills === 1 ? 'takedown' : 'takedowns'}`))];
+  }
+
   private restart() {
     this.battle = newBattle();
+    this.resetTally();
     this.log = '';
     this.screen = startScreen(this.battle);
     this.scene.sync(this.battle.state);
@@ -532,6 +555,7 @@ class Game {
       ...(scenario.id === SURVIVAL_ID ? [el('p', { class: lasted > best ? 'learned' : '' },
         lasted > best ? t(`Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`, `New record: ${lasted} of ${SURVIVE_TURNS} turns!`)
           : t(`Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`, `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`))] : []),
+      ...this.mvpLine(),
       el('p', {}, scenario.id === SURVIVAL_ID
         ? (won ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.') : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.'))
         : won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
@@ -557,6 +581,7 @@ class Game {
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
       ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
         el('p', {}, t('★ vencer · ★ ninguém caiu · ★ Farol inteiro (sem Farol: todos acima da metade da vida)', '★ win · ★ nobody fell · ★ Beacon untouched (no Beacon: everyone above half HP)')),
+        ...this.mvpLine(),
         ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       el('p', {}, won ? t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.') : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
       // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa

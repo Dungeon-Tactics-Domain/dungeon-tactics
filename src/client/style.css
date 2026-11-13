@@ -213,6 +213,7 @@ button[hidden] { display: none; }
 .camp-list { flex-direction: column; } /* lista de fases da campanha: uma por linha, nome inteiro */
 .camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
 .dialog .stars { font: 400 40px/1 var(--font-px); color: var(--star); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
+.mvp { font-weight: 700; margin: 2px 0; } /* destaque da batalha (tally.ts), no fim da fase e da batalha avulsa */
 .learned { font-weight: 700; color: var(--trim-hi); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha) */
 /* tela de título (main.ts, titleScreen): nome grande e as três portas do jogo */
 .dialog.title { width: min(460px, 100%); text-align: center; }
