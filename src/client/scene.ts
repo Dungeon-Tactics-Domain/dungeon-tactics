@@ -421,6 +421,7 @@ export class BattleScene {
         return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.rock(t) ? this.world(p).setY((t.h + 3) * this.step) : this.world(p) }] : [];
       });
       this.scene.add(buildBridges(this.grid, this.step, this.terrainTex!.wood, this.terrainTex!.bark));
+      this.buildBorder(levels);
       const pick = pickTiles(picks);
       this.scene.add(pick);
       this.tileTops.push(pick);
@@ -599,6 +600,30 @@ export class BattleScene {
       spot.renderOrder = -2;
       this.scene.add(spot);
     });
+  }
+
+  // Linha pontilhada discreta na borda do campo de batalha (13/11, pedido do Fernando): segue a altura do chão de cada
+  // casa da borda (na água, a superfície), com degrau onde a altura muda
+  private buildBorder(levels: Map<string, WaterLevel>) {
+    const { width: W, height: H } = this.grid, pts: THREE.Vector3[] = [];
+    const yAt = (p: Pos, x: number, z: number) => (levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.04;
+    const side = (cells: Pos[], edge: (p: Pos, k: number) => [number, number]) => {
+      const line: THREE.Vector3[] = [];
+      for (const p of cells) for (let k = 0; k <= 4; k++) { const [x, z] = edge(p, k / 4); line.push(new THREE.Vector3(x, yAt(p, x, z), z)); }
+      for (let i = 1; i < line.length; i++) pts.push(line[i - 1], line[i]);
+    };
+    const X = (x: number) => x - W / 2, Z = (z: number) => z - H / 2;
+    const row = (y: number) => Array.from({ length: W }, (_, x) => ({ x, y }));
+    const col = (x: number) => Array.from({ length: H }, (_, y) => ({ x, y }));
+    side(row(0), (p, k) => [X(p.x + k), Z(0) + 0.01]);
+    side(row(H - 1), (p, k) => [X(p.x + k), Z(H) - 0.01]);
+    side(col(0), (p, k) => [X(0) + 0.01, Z(p.y + k)]);
+    side(col(W - 1), (p, k) => [X(W) - 0.01, Z(p.y + k)]);
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.LineSegments(g, new THREE.LineDashedMaterial({ color: '#f4ecd8', dashSize: 0.14, gapSize: 0.11, transparent: true, opacity: 0.45, depthWrite: false }));
+    line.computeLineDistances();
+    line.renderOrder = 2;
+    this.scene.add(line);
   }
 
   private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
@@ -784,6 +809,35 @@ export class BattleScene {
       if (!(green && this.terrainTex)) put(green ? 'tuft' : 'pebble', cx, this.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
     }
     for (const kind of Object.keys(at) as (keyof typeof DETAIL)[]) this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
+  }
+
+  // Prévia da trajetória: faixa fina do olho de quem atira até a mira do alvo, azul onde passa e vermelha depois do ponto
+  // em que bate (a casa que barra, sightBlock). Refeita a cada mudança do cursor; poucos vértices
+  private trajectory: THREE.Group | null = null;
+  setTrajectory(t: { from: Pos; to: Pos; block: Pos | null } | null) {
+    if (this.trajectory) { this.scene.remove(this.trajectory); this.trajectory.traverse((o) => (o as THREE.Mesh).geometry?.dispose()); this.trajectory = null; }
+    if (!t) return;
+    const eye = (p: Pos) => this.stand(p).add(new THREE.Vector3(0, unitHeight('soldier') * 0.7, 0));
+    const a = eye(t.from), b = eye(t.to);
+    const cut = t.block ? (() => { const w = this.world(t.block); const k = Math.hypot(w.x - a.x, w.z - a.z) / Math.max(1e-3, Math.hypot(b.x - a.x, b.z - a.z)); return a.clone().lerp(b, k); })() : b;
+    const seg = (p: THREE.Vector3, q: THREE.Vector3, color: string) => {
+      const len = p.distanceTo(q);
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, len, 6).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthTest: false }));
+      m.position.copy(p).lerp(q, 0.5);
+      m.lookAt(q);
+      m.renderOrder = 12;
+      return m;
+    };
+    this.trajectory = new THREE.Group();
+    this.trajectory.add(seg(a, cut, '#5fd6ff'));
+    if (t.block) {
+      this.trajectory.add(seg(cut, b, '#ff4d4d'));
+      const hit = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff4d4d', depthTest: false }));
+      hit.position.copy(cut);
+      hit.renderOrder = 12;
+      this.trajectory.add(hit);
+    }
+    this.scene.add(this.trajectory);
   }
 
   setCursor(p: Pos | null) {

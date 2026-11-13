@@ -7,7 +7,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { tileAt, type Grid } from '../shared/battle/grid.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
-import { EXT_DARK, EXT_FADE, EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
+import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { waterLevels } from './water-levels.ts';
 import { addDetail, type DetailTextures } from './detail.ts';
 import { loadTreeTextures, swapTrees } from './trees.ts';
@@ -106,7 +106,7 @@ const SUN = new THREE.Vector3(6, -12, -4).normalize(); // o raio de luz vem de o
 export const LIMIT = (d: number) => Math.min(0.5 + 0.55 * d, 8);
 const GROUND_MAX = 5.5;
 // fade para o preto em volta (13/11, pedido do Fernando, padrão desde então; ?fade=nao compara): a neblina dos arredores
-// vira preto de EXT_FADE a EXT_FADE + EXT_DARK casas da borda, junto com a extensão do terreno (terrain.ts); o tabuleiro
+// vira preto de 0,2 a 3,2 casas da borda, junto com a extensão do terreno (terrain.ts extTone); o tabuleiro
 // não recebe essa neblina
 const FADE = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fade') : null) !== 'nao';
 // extensão do mapa: 'textura' (padrão desde 13/11, "quero o fade para o preto e a textura") é o terreno liso de terrain.ts
@@ -187,7 +187,8 @@ export class Ambience {
     this.hh = grid.height / 2;
     const u = this.u;
     u.ambHalf.value.set(this.hw, this.hh);
-    Object.assign(u, { ambNear: { value: FADE ? EXT_FADE : mood.near }, ambFar: { value: FADE ? EXT_FADE + EXT_DARK : mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
+    // fade: árvores e objetos de fora somem no preto junto com o chão (terrain.ts extTone), logo depois da borda
+    Object.assign(u, { ambNear: { value: FADE ? 0.2 : mood.near }, ambFar: { value: FADE ? 3.2 : mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
     if (EXTEND === 'textura' && !mood.walls && grid.tiles.some((t) => t.look)) {
       const step = grid.levelHeight ?? 0.5, levels = waterLevels(grid, step), river = riverOf(grid, levels);
@@ -210,6 +211,10 @@ export class Ambience {
     if (!this.outer || this.out(x, z) >= EXT_RING) return this.height(x, z);
     const i = Math.floor(x + this.hw), j = Math.floor(z + this.hh);
     if (this.outer.water.has(`${i},${j}`)) return null;
+    // estrada que sai do mapa: clareira, sem árvore no caminho (13/11, pedido do Fernando: "o caminho que os aventureiros
+    // vêm deve ficar aberto, abrindo uma clareira na floresta")
+    const edge = tileAt(this.grid, { x: THREE.MathUtils.clamp(i, 0, this.grid.width - 1), y: THREE.MathUtils.clamp(j, 0, this.grid.height - 1) });
+    if (edge.look === 'sand') return null;
     return outerTop(this.grid, this.outer.step, this.outer.river, i, j);
   }
 

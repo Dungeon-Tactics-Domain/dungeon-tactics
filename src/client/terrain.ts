@@ -12,6 +12,10 @@ import { WADE, type WaterLevel } from './water-levels.ts';
 // extensão em volta do mapa (pedido do Fernando, 13/11): escurece em EXT_FADE blocos e vai ao preto total nos EXT_DARK
 // seguintes; árvores e objetos de fora somem no preto no mesmo trecho (neblina dos arredores, ambience.ts)
 export const EXT_FADE = 2, EXT_DARK = 4, EXT_RING = EXT_FADE + EXT_DARK;
+// tom de cada anel de fora: escurece logo na 1ª casa depois da borda e chega ao preto total no 4º (13/11, pedido do
+// Fernando: "o sombreamento começa no último tile da borda e escurece mais forte e mais rápido"); antes ia até o 6º
+const TONES = [1, 0.4, 0.16, 0.05, 0];
+export const extTone = (ring: number) => TONES[Math.min(ring, TONES.length - 1)];
 const SUB = 6; // subdivisões por casa: o meio (4 de 6) fica plano e a encosta ocupa 1/3 de casa em volta de cada borda
 const RISE = 0.5; // quanto o lado da nascente sobe (em níveis) a cada 2 casas para fora, junto com a água
 
@@ -102,7 +106,7 @@ export function buildStream(grid: Grid, step: number, levels: Map<string, WaterL
       const y2 = streamAt(grid, step, levels, river, side > 0 ? u + 0.05 : u - 0.05, j) ?? y;
       pos.push(u - W / 2, y + 0.01, v - H / 2);
       const ring = Math.floor(k) + 1;
-      const t = ring <= EXT_FADE ? 0.12 + 0.66 * (1 - ring / (EXT_FADE + 1)) : 0.12 * Math.max(0, 1 - (ring - EXT_FADE) / EXT_DARK);
+      const t = extTone(ring);
       col.push(t, t, t);
       flow.push(k);
       slope.push(Math.abs(y2 - y) / 0.05);
@@ -200,7 +204,7 @@ export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
     raw[c] = inside ? o.inner({ x: i, y: j }, x, z) : wet && flowing !== null ? flowing - (wet.surface - wet.bed) : outerTop(grid, o.step, o.river, i, j);
     const ring = inside ? 0 : ringOf(grid, i, j);
     // escurece de 1 até 0,12 nos EXT_FADE primeiros anéis e vai ao preto total nos EXT_DARK seguintes
-    tone[c] = ring === 0 ? 1 : ring <= EXT_FADE ? 0.12 + 0.66 * (1 - ring / (EXT_FADE + 1)) : 0.12 * Math.max(0, 1 - (ring - EXT_FADE) / EXT_DARK);
+    tone[c] = extTone(ring);
     paint.set(wet ? PAINT.water : PAINT[edge.look ?? 'grass'] ?? PAINT.grass, c * 5);
   }
   // vértice = média das até 4 sub-casas em volta: a borda entre duas alturas vira encosta, o meio da casa fica plano

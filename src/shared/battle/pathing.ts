@@ -113,12 +113,18 @@ export function pathTo(reach: Map<string, Step>, target: Pos): Pos[] | null {
 // de quem olha até o ponto de mira do alvo, com o topo de cada casa (altura + o quanto o terreno tapa). Roda sem Three e é
 // determinística, ao contrário da amostragem 3D da POC.
 export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
+  return sightBlock(grid, from, to) === null;
+}
+
+// a primeira casa que barra a linha de visão (null se passa livre): a prévia da trajetória mostra onde o tiro bate
+// (13/11, pedido do Fernando, "como no Tactics Ogre"). A mesma conta de sempre: a linha é traçada da casa de menor índice
+export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
   // traça sempre da casa de menor índice para a de maior (13/11, revisão): o Bresenham desempata a quina conforme o
   // sentido, e um arqueiro levava tiro de onde não conseguia responder (5 a 6% dos pares). Olho e mira têm a mesma altura
   // acima do chão, então trocar as pontas não muda a linha
   const [a, b] = from.y * grid.width + from.x <= to.y * grid.width + to.x ? [from, to] : [to, from];
   const total = dist(a, b);
-  if (total <= 1) return true;
+  if (total <= 1) return null;
   // quem nada na funda mira e é mirado da superfície (revisão de 13/11): com a altura do fundo, a linha passava por baixo do
   // chão vizinho e quem estava na água ficava invisível a 3 casas ou mais; o acerto continua pior pela altura (standH)
   const sight = (p: Pos) => { const t = tileAt(grid, p); return isDeep(t) ? t.h : standH(t); };
@@ -132,11 +138,11 @@ export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
     const e2 = 2 * err;
     if (e2 >= dy) { err += dy; x += sx; }
     if (e2 <= dx) { err += dx; y += sy; }
-    if (x === b.x && y === b.y) return true;
+    if (x === b.x && y === b.y) return null;
     const t = tileAt(grid, { x, y });
     // fração pelo avanço em passos de grade, não pelo índice do laço, que na diagonal anda 1 casa por iteração
     const frac = dist(a, { x, y }) / total;
-    if (t.h + TERRAIN[t.terrain].blocks > eye + (aim - eye) * frac) return false;
+    if (t.h + TERRAIN[t.terrain].blocks > eye + (aim - eye) * frac) return { x, y };
   }
 }
 
