@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
-import { CHAPTERS, SPEAKERS, chapterScenario, parseProgress, parseStars, starText, starsOf } from '../src/client/campaign.ts';
+import { CHAPTERS, SPEAKERS, chapterScenario, learned, parseProgress, parseStars, starText, starsOf } from '../src/client/campaign.ts';
 import { problems } from '../src/client/dev-roster.ts';
 
 const say = (pt: string) => pt;
@@ -42,6 +42,14 @@ describe('campanha Cinzas do Farol', () => {
     expect(starsOf({ ...wood, outcome: 'defeat' }, 0)).toBe(0);
     expect(parseStars([3, 'x', 9, 2])).toEqual([3, 0, 0, 2, 0]);
     expect(starText(2)).toBe('★★☆');
+  });
+
+  it('os heróis aprendem uma habilidade por fase até ter as 4 (a Cura do Odo chega na 3ª)', () => {
+    expect(CHAPTERS[0].setup.heroes.map((u) => u.abilities.length)).toEqual([2, 2, 2, 2]);
+    expect(learned(0).map((x) => x.abilities)).toEqual([['shield_bash'], ['knock_shot'], ['gust'], ['trip']]);
+    expect(learned(1).find((x) => x.name === 'Odo')?.abilities).toEqual(['heal']);
+    expect(learned(2)).toEqual([]);
+    expect(learned(CHAPTERS.length - 1)).toEqual([]);
   });
 
   it.runIf(RUNS > 0)('mede a vitória dos heróis por fase', () => {

@@ -23,7 +23,7 @@ import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
+import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { talk } from './talk.ts';
 
 // a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
@@ -531,7 +531,8 @@ class Game {
     }
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
       ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
-        el('p', {}, t('★ vencer · ★ ninguém caiu · ★ Farol inteiro (sem Farol: todos acima da metade da vida)', '★ win · ★ nobody fell · ★ Beacon untouched (no Beacon: everyone above half HP)'))] : []),
+        el('p', {}, t('★ vencer · ★ ninguém caiu · ★ Farol inteiro (sem Farol: todos acima da metade da vida)', '★ win · ★ nobody fell · ★ Beacon untouched (no Beacon: everyone above half HP)')),
+        ...learned(n).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       el('p', {}, won ? (last ? t('O vale está a salvo. Obrigado por jogar!', 'The valley is safe. Thanks for playing!') : t(`Próximo: ${CHAPTERS[n + 1].title[0]}.`, `Next: ${CHAPTERS[n + 1].title[1]}.`))
         : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
       won && !last
