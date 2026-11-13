@@ -340,6 +340,14 @@ class Game {
     await this.animate(events);
     this.save();
     if (this.battle.over) return this.finish();
+    // caiu no contra-ataque ao se afastar: a vez passa sozinha
+    if (!this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor)) {
+      const ev = this.battle.endTurn();
+      if (ev.length) await this.animate(ev);
+      this.save();
+      if (this.battle.over) return this.finish();
+      return this.runEnemies();
+    }
     this.screen = startScreen(this.battle);
     this.cursorToActor();
     this.update(freshUi(this.battle));

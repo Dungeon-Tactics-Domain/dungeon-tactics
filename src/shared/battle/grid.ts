@@ -12,6 +12,11 @@ export const TERRAIN: Record<TerrainKind, { walkable: boolean; blocks: number; c
   rubble: { walkable: true, blocks: 2, cover: true },
   wall: { walkable: false, blocks: 4, cover: false },
 };
+// objeto baixo em cima da casa (caixote, barril, corpo, baú, entulho): barra a visão só 1 nível acima do chão, não os 4 de
+// um muro (13/11, pedido do Fernando: o arqueiro no morro não atirava por cima dos caixotes e corpos da estrada)
+const LOW = new Set(['crates', 'barrel', 'corpse', 'chest', 'rubble']);
+export const blocksOf = (t: Tile) => (t.look && LOW.has(t.look) ? 1 : TERRAIN[t.terrain].blocks);
+
 
 export interface Tile {
   terrain: TerrainKind;
@@ -26,6 +31,9 @@ export interface Tile {
   // Espinhos (noite de 12/11, regra nossa, não do FFT): quem termina a vez em cima ou é empurrado para cá leva
   // COMBAT.SPIKE_DAMAGE. Andar por cima não fere. Dá uso tático aos empurrões (combat.ts) e a IA já valoriza pelo dano.
   spikes?: true;
+  // Corpo no chão (13/11, pedido do Fernando: "obstáculos tipo o corpo no chão devem ser atravessáveis, o personagem só não
+  // pode ficar em cima"): passa por cima, mas não para nem é empurrado para lá
+  noStop?: true;
 }
 
 // Mapa imutável durante a batalha: fica fora do BattleState (o estado guarda só o id do cenário).

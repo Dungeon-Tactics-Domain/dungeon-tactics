@@ -19,7 +19,8 @@ describe('menu de comandos', () => {
     expect(startScreen(b)).toEqual({ k: 'menu', index: 1 });
     b.act('strike', { x: 2, y: 1 });
     expect(commandEnabled(b, 'act')).toBe(false);
-    expect(startScreen(b)).toEqual({ k: 'menu', index: 2 });
+    // sobrou movimento (13/11, movimento em partes): volta em Mover
+    expect(startScreen(b)).toEqual({ k: 'menu', index: 0 });
   });
 
   // 13/11, pedido do Fernando, como no Tactics Ogre: depois de andar e antes de agir, Mover vira "Desfazer movimento"
@@ -43,7 +44,7 @@ describe('menu de comandos', () => {
     moved.move({ x: 2, y: 2 });
     moved.act('strike', { x: 2, y: 1 });
     expect(canUndoMove(moved)).toBe(false);
-    expect(commandEnabled(moved, 'move')).toBe(false);
+    expect(commandEnabled(moved, 'move')).toBe(moved.reach().size > 0); // só anda de novo se sobrou movimento
     const acted = duel();
     acted.act('strike', { x: 2, y: 1 });
     acted.move({ x: 1, y: 2 });

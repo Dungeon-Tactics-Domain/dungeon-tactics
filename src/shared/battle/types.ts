@@ -18,11 +18,17 @@ export interface UnitState {
   vars?: Record<string, number>; // contadores da unidade (estoque, MP, bônus de atributo); as chaves vêm de UnitDef.vars
 }
 
-// o que o ator da vez já fez: mover uma vez e agir uma vez, em qualquer ordem
+// o que o ator da vez já fez: anda (em quantas vezes quiser, até o movimento) e age uma vez, em qualquer ordem
 export interface TurnState {
   actor: string;
   moved: boolean;
   usedAbility: string | null; // habilidade usada, para o atraso do próximo turno
+  // Movimento em partes (13/11, pedido do Fernando: "anda, ataca e depois anda de novo com o movimento restante"): pontos
+  // já gastos no turno (ausente = 0, o save antigo continua valendo)
+  spent?: number;
+  // quem o ator atacou neste turno e pode contra-atacar se ele andar depois: corpo a corpo contra corpo a corpo (quando ele
+  // se afasta) e à distância contra à distância (quando ele anda); cada um uma vez só (combat.ts counters)
+  engaged?: { unit: string; ranged: boolean }[];
 }
 
 export type Outcome = 'ongoing' | 'victory' | 'defeat';

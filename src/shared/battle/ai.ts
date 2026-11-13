@@ -1,8 +1,8 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
-import { COMBAT, previewAbility, simulatePush } from './combat.ts';
+import { COMBAT, basicOf, previewAbility, simulatePush } from './combat.ts';
 import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
-import { footprint, jumpOf, leaps, reachable } from './pathing.ts';
+import { distTo, footprint, jumpOf, leaps, reachable, type Step } from './pathing.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
@@ -168,14 +168,46 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
   return best;
 }
 
+// Recuo depois de agir: cada casa ainda alcançável vale a posição (positionScore, como quem ataca) menos o dano esperado
+// do contra-ataque que o passo provoca (metade do básico de quem foi atacado, pela chance de acerto); fica parado se nada
+// vale mais que a casa atual
+function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Map<string, Step>): Pos | null {
+  const me = state.units.find((u) => u.id === unitId)!;
+  const walk = walkMap(grid, state, me);
+  const value = (spot: Pos) => {
+    const moved = { ...state, units: state.units.map((u) => (u === me ? { ...u, pos: spot } : u)) };
+    let s = positionScore(grid, moved, moved.units.find((u) => u.id === unitId)!, spot, true, walk);
+    if (spot === me.pos) return s;
+    for (const e of state.turn.engaged ?? []) {
+      const foe = state.units.find((u) => u.id === e.unit);
+      if (!foe || (!e.ranged && distTo(foe, spot) <= 1)) continue;
+      const p = previewAbility(grid, state, foe.id, basicOf(foe.def), me.pos, true);
+      if (p.ok && p.targets[0]) s -= (p.targets[0].chance / 100) * ((p.targets[0].dmgMin + p.targets[0].dmgMax) / 4);
+    }
+    return s;
+  };
+  let best: Pos | null = null, bestScore = value(me.pos);
+  for (const step of reach.values()) {
+    const v = value(step.pos);
+    if (v > bestScore + 0.5) { bestScore = v; best = step.pos; } // margem: não fica dançando por quase nada
+  }
+  return best;
+}
+
 // Joga o turno inteiro da unidade da vez (andar, agir e passar a vez) e devolve os eventos para o cliente animar.
 export function playAiTurn(battle: Battle): BattleEvent[] {
   const plan = chooseTurn(battle.grid, battle.state, battle.actor.id);
   const events: BattleEvent[] = [];
   if (plan.moveTo) events.push(...battle.move(plan.moveTo));
   if (plan.ability) events.push(...battle.act(plan.ability.id, plan.ability.target));
+  // com movimento sobrando depois de agir (13/11, movimento em partes), recua se a casa nova vale mais que o contra-ataque
+  if (!battle.over && plan.ability) {
+    const to = chooseRetreat(battle.grid, battle.state, battle.actor.id, battle.reach());
+    if (to) events.push(...battle.move(to));
+  }
   // com direção: termina o turno de frente para o inimigo mais próximo (escolha nossa; a IA do FFT não tem fonte)
-  if (!battle.over && battle.actor.facing !== undefined) {
+  // quem recuou pode ter caído no contra-ataque: sem ator, nada de virar
+  if (!battle.over && battle.state.units.some((u) => u.id === battle.state.turn.actor) && battle.actor.facing !== undefined) {
     const me = battle.actor;
     const foes = battle.state.units.filter((u) => u.team !== me.team);
     if (foes.length) battle.face(facingTo(me.pos, foes.reduce((a, b) => (dist(me.pos, b.pos) < dist(me.pos, a.pos) ? b : a)).pos));

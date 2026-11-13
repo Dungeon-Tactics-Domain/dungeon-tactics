@@ -1,6 +1,6 @@
 import { ABILITIES } from './abilities.ts';
-import { checkOutcome, previewAbility, resolveAbility, spikeAtTurnEnd, type Preview } from './combat.ts';
-import { FACING, canStand, faceNearest, facingTo, inBounds, samePos, tileAt, type Grid } from './grid.ts';
+import { basicOf, checkOutcome, counters, isRanged, previewAbility, resolveAbility, spikeAtTurnEnd, type Preview } from './combat.ts';
+import { FACING, canStand, faceNearest, facingTo, inBounds, posKey, samePos, tileAt, type Grid } from './grid.ts';
 import { pathTo, reachable, unitAt, type Step } from './pathing.ts';
 import { SCENARIOS, initialState, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
@@ -49,6 +49,11 @@ export class Battle {
   get over(): boolean {
     return this.state.outcome !== 'ongoing';
   }
+  // o último passo foi de graça (andar sem levar nada): o menu oferece "Desfazer movimento", também depois de agir
+  get lastFree(): boolean {
+    const last = this.history.at(-1);
+    return !!last && !last.paid;
+  }
   get canUndo(): boolean {
     const last = this.history.at(-1);
     return !!last && (!last.paid || this.undosLeft > 0);
@@ -57,7 +62,8 @@ export class Battle {
   // quem acabou de declarar uma carga não anda neste turno: andar a desfaria (andar num turno seguinte desfaz, sim)
   reach(): Map<string, Step> {
     const charging = !!this.state.turn.usedAbility && this.state.charges.some((c) => c.unit === this.actor.id);
-    return this.over || this.state.turn.moved || charging ? new Map() : reachable(this.grid, this.state, this.actor.id);
+    const left = UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0);
+    return this.over || left <= 0 || charging ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
   }
 
   preview(abilityId: string, target: Pos): Preview {
@@ -65,10 +71,19 @@ export class Battle {
   }
 
   move(to: Pos): BattleEvent[] {
-    const path = pathTo(this.reach(), to);
+    const reach = this.reach();
+    const path = pathTo(reach, to);
     if (!path) return [];
     this.remember(false);
     const from = this.actor.pos;
+    const id = this.actor.id;
+    const hit = counters(this.grid, this.state, id, to);
+    // levou contra-ataque: esse movimento não se desfaz (13/11, pedido do Fernando: "só não pode desfazer o movimento se o
+    // personagem tomar dano ou cair numa armadilha")
+    if (hit.length) this.history = [];
+    this.state.outcome = checkOutcome(this.state);
+    if (!this.state.units.some((u) => u.id === id) || this.over) return hit; // caiu no contra-ataque: não chega a sair
+    this.state.turn.spent = (this.state.turn.spent ?? 0) + reach.get(posKey(to))!.cost;
     // com direção, quem anda termina olhando para onde ia
     if (this.actor.facing !== undefined) this.actor.facing = facingTo(path.at(-2) ?? from, to);
     this.actor.pos = to;
@@ -76,7 +91,7 @@ export class Battle {
     this.state.charges = this.state.charges.filter((c) => c.unit !== this.actor.id);
     this.state.turn.moved = true;
     // o evento leva a casa de saída na frente (13/11): sem ela a animação começava no 1º passo e o boneco "teletransportava"
-    return [{ k: 'move', unit: this.actor.id, path: [from, ...path] }];
+    return [...hit, { k: 'move', unit: this.actor.id, path: [from, ...path] }];
   }
 
   act(abilityId: string, target: Pos): BattleEvent[] {
@@ -92,7 +107,20 @@ export class Battle {
       const follow = ability.panel ? null : unitAt(this.state, target)?.id ?? null;
       this.state.charges = [...this.state.charges.filter((c) => c.unit !== this.actor.id), { unit: this.actor.id, ability: abilityId, target, follow, ticks: ability.charge }];
       events = [{ k: 'charge', unit: this.actor.id, ability: abilityId, target }];
-    } else events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
+    } else {
+      events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
+      // quem levou o golpe e pode revidar do mesmo jeito (corpo a corpo ou à distância) fica de olho: se o ator andar
+      // depois, contra-ataca (counters)
+      if (!(ability.heal[1] > 0 || ability.ally)) {
+        const ranged = isRanged(abilityId);
+        for (const e of events) {
+          if (e.k !== 'hit' && e.k !== 'miss') continue;
+          const foe = this.state.units.find((u) => u.id === e.unit);
+          if (!foe || foe.team === this.actor.team || !basicOf(foe.def) || UNIT_DEFS[foe.def].speed === 0 || isRanged(basicOf(foe.def)) !== ranged) continue; // o Farol não revida
+          if (!(this.state.turn.engaged ?? []).some((x) => x.unit === foe.id)) (this.state.turn.engaged ??= []).push({ unit: foe.id, ranged });
+        }
+      }
+    }
     this.state.turn.usedAbility = abilityId;
     return events;
   }
@@ -220,5 +248,15 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (c.follow !== null && (typeof c.follow !== 'string' || !units.some((u) => u.id === c.follow))) return null;
     charges.push({ unit: c.unit, ability: c.ability, target: { x: c.target.x, y: c.target.y }, follow: c.follow, ticks: c.ticks });
   }
-  return { scenario: raw.scenario, units, rng: raw.rng, turn: { actor: actor.id, moved: t.moved, usedAbility }, charges, outcome: raw.outcome, turnsPlayed: raw.turnsPlayed };
+  if (t.spent !== undefined && (!isInt(t.spent) || t.spent < 0 || t.spent > 99)) return null;
+  const engaged: { unit: string; ranged: boolean }[] = [];
+  if (t.engaged !== undefined) {
+    if (!Array.isArray(t.engaged) || t.engaged.length > MAX_UNITS) return null;
+    for (const e of t.engaged) {
+      if (!isObj(e) || typeof e.unit !== 'string' || typeof e.ranged !== 'boolean' || !units.some((u) => u.id === e.unit)) return null;
+      engaged.push({ unit: e.unit, ranged: e.ranged });
+    }
+  }
+  const turn = { actor: actor.id, moved: t.moved, usedAbility, ...(t.spent !== undefined && { spent: t.spent as number }), ...(t.engaged !== undefined && { engaged }) };
+  return { scenario: raw.scenario, units, rng: raw.rng, turn, charges, outcome: raw.outcome, turnsPlayed: raw.turnsPlayed };
 }

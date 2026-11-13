@@ -85,6 +85,8 @@ describe('toque em duas etapas', () => {
   it('modo já gasto não pode ser escolhido', () => {
     const b = scene();
     confirm(b, tapTile(b, freshUi(b), at(2, 1)));
+    // gasta o resto do movimento (13/11: anda em partes até o movimento)
+    while (b.reach().size) b.move([...b.reach().values()][0].pos);
     const ui = selectMode(b, freshUi(b), { k: 'move' });
     expect(ui.mode).toEqual({ k: 'ability', id: 'shot' });
   });

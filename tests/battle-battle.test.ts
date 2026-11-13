@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Battle, UNDO_LIMIT, parseBattleState } from '../src/shared/battle/battle.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
@@ -13,11 +14,13 @@ const duel = (seed = HIT_SEED) => new Battle(flat(6, 3), stateOf([
 ], seed));
 
 describe('turno do jogador', () => {
-  it('anda uma vez e age uma vez, em qualquer ordem', () => {
+  it('anda em partes até o movimento (13/11) e age uma vez, em qualquer ordem', () => {
     const b = duel();
-    expect(b.move(at(1, 2)).length).toBeGreaterThan(0);
+    expect(b.move(at(0, 2)).length).toBeGreaterThan(0);
+    expect(b.state.turn.spent).toBe(1);
+    expect(b.move(at(1, 2)).length).toBeGreaterThan(0); // sobra movimento: anda de novo
     expect(b.state.units[0].pos).toEqual(at(1, 2));
-    expect(b.move(at(0, 2))).toEqual([]); // já andou
+    expect(b.reach().size).toBeGreaterThan(0); // ainda sobram 2
     expect(b.act('strike', at(1, 1)).length).toBeGreaterThan(0);
     expect(b.act('strike', at(1, 1))).toEqual([]); // já agiu
   });
@@ -183,5 +186,34 @@ describe('save com unidade grande (revisão de 13/11)', () => {
     const over = copy();
     over.units[0].pos = { x: 1, y: 1 }; // o guerreiro dentro do quadrado do Colosso
     expect(parseBattleState(over)).toBeNull();
+  });
+});
+
+// Contra-ataque (13/11, pedido do Fernando; metade do dano): quem foi atacado revida se o atacante andar depois
+describe('contra-ataque', () => {
+  const g = flat(6, 3);
+  it('corpo a corpo: bater e se afastar leva o revide com metade do dano; ficar do lado não', () => {
+    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 }, { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 0 }]); // o Farol: sem ele a batalha acaba no golpe
+    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    s.rng = HIT_SEED;
+    const b = new Battle(g, s);
+    b.act('strike', at(2, 1));
+    expect(b.state.turn.engaged).toEqual([{ unit: 'b', ranged: false }]);
+    const hp = b.state.units[0].hp;
+    expect(b.move(at(2, 2)).some((e) => e.k === 'attack' && e.unit === 'b')).toBe(false); // ainda do lado: sem revide
+    const ev = b.move(at(3, 2));
+    expect(ev.some((e) => e.k === 'attack' && e.unit === 'b')).toBe(true);
+    const hit = ev.find((e) => e.k === 'hit' && e.unit === 'a');
+    if (hit && hit.k === 'hit') expect(hit.dmg).toBeLessThanOrEqual(Math.ceil(ABILITIES.strike.damage[1] / 2));
+    expect(b.state.units[0].hp).toBeLessThanOrEqual(hp);
+  });
+
+  it('o arqueiro que atira em outro arqueiro e anda depois leva o revide à distância', () => {
+    const s = stateOf([{ id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 }, { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 3, y: 1 }, { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 2 }]);
+    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    const b = new Battle(g, s);
+    b.act(UNIT_DEFS.archer.abilities[0], at(3, 1));
+    expect(b.state.turn.engaged).toEqual([{ unit: 'b', ranged: true }]);
+    expect(b.move(at(0, 0)).some((e) => e.k === 'attack' && e.unit === 'b')).toBe(true);
   });
 });

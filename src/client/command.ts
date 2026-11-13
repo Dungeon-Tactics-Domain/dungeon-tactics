@@ -21,7 +21,9 @@ export type Screen =
 
 // Andou e ainda não agiu: a linha Mover vira "Desfazer movimento" e o Esc no menu desfaz (13/11, pedido do Fernando,
 // como no Tactics Ogre). Andar não sorteia nada, então desfazer é de graça; depois de agir, só o Z (que gasta um desfazer)
-export const canUndoMove = (b: Battle) => b.state.turn.moved && !b.state.turn.usedAbility && b.canUndo;
+// desde 13/11 também depois de agir ("depois de atacar e mover pode desfazer o movimento"), se o último passo foi andar
+// sem levar contra-ataque (Battle.lastFree)
+export const canUndoMove = (b: Battle) => b.state.turn.moved && b.lastFree && b.canUndo;
 
 // na água funda só se anda ou espera (13/11, escolha do Fernando; a regra está em previewAbility)
 export const swimming = (b: Battle) => isDeep(tileAt(b.grid, b.actor.pos));
@@ -42,7 +44,8 @@ export const abilitiesOf = (b: Battle) => UNIT_DEFS[b.actor.def].abilities;
 // onde o cursor do menu começa: Mover se ainda dá para andar, senão Agir, senão Esperar. O "Desfazer movimento" não
 // pega o cursor: o 2º Enter depois de andar desfaria o passo sem querer
 export function startScreen(b: Battle): Screen {
-  return { k: 'menu', index: b.reach().size ? 0 : commandEnabled(b, 'act') ? 1 : 2 };
+  // já andou e ainda não agiu: Agir (o resto do movimento fica para depois do golpe)
+  return { k: 'menu', index: b.reach().size && !b.state.turn.moved ? 0 : commandEnabled(b, 'act') ? 1 : b.reach().size ? 0 : 2 };
 }
 
 // sobe ou desce no menu pulando o que está apagado, dando a volta como no FFT

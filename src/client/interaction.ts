@@ -39,7 +39,7 @@ function hasTarget(b: Battle, id: string): boolean {
 // longe de todo mundo só pedia um toque impossível)
 export function defaultMode(b: Battle): Mode {
   if (b.over) return { k: 'idle' };
-  if (b.reach().size) return { k: 'move' }; // sem casa para andar (já andou, ou acabou de declarar uma carga)
+  if (b.reach().size && !b.state.turn.moved) return { k: 'move' }; // já andou: o padrão é agir (o resto do movimento fica para depois)
   const id = !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.find((a) => hasTarget(b, a));
   return id ? { k: 'ability', id } : { k: 'idle' };
 }
@@ -77,7 +77,9 @@ export function cancel(b: Battle, ui: Ui): Ui {
 export function confirm(b: Battle, ui: Ui): { events: BattleEvent[]; ui: Ui } {
   if (!ui.pending || ui.mode.k === 'idle') return { events: [], ui };
   const events = ui.mode.k === 'move' ? b.move(ui.pending) : b.act(ui.mode.id, ui.pending);
-  return { events, ui: events.length ? freshUi(b) : ui };
+  // quem anda pode cair no contra-ataque (13/11): sem ator, o Ui fica como estava e o jogo passa a vez
+  const alive = b.state.units.some((u) => u.id === b.state.turn.actor);
+  return { events, ui: events.length && alive ? freshUi(b) : ui };
 }
 
 function allTiles(b: Battle): Pos[] {

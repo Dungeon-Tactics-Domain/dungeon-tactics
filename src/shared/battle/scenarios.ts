@@ -352,7 +352,7 @@ const HEART: Scenario = {
 // Bosque das Cinzas (noite de 12/11, fase 1 da campanha): 12x12 sem Farol (vence quem sobrar). Um rio fundo corta o
 // mapa: passa-se pela ponte (esquerda, estreita), pelo vau de água rasa (direita, custa 2 de movimento) ou a nado (desde 13/11, sem agir). Do lado dos
 // heróis, a estrada de areia e a caravana parada (caixotes e barris); do lado dos inimigos, um morrinho de grama alta.
-const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number }> = {
+const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number; noStop?: true }> = {
   g: { terrain: 'floor', h: 0, look: 'grass' },
   G: { terrain: 'floor', h: 1, look: 'grass' },
   s: { terrain: 'floor', h: 0, look: 'sand' },
@@ -367,8 +367,8 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
   c: { terrain: 'wall', h: 0, look: 'crates' }, // no chão: a carga da caravana caída na estrada, não em cima de bloco
   x: { terrain: 'wall', h: 0, look: 'barrel' },
   // corpo da caravana (13/11, pedido do Fernando: "corpos em volta dos recursos para dizer que foram os esqueletos que os
-  // mataram; os corpos também bloqueiam o percurso"): bloqueia como os caixotes; o desenho é o boneco caído (scene.ts)
-  k: { terrain: 'wall', h: 0, look: 'corpse' },
+  // mataram"): o desenho é o boneco caído (scene.ts)
+  k: { terrain: 'floor', h: 0, look: 'corpse', noStop: true }, // passa por cima, não para em cima (grid.ts noStop)
 };
 // sem as árvores em 1,0, 11,1 e 10,2 (13/11): com árvore sem passagem, os dois cantos de cima viravam bolsas fechadas
 // estrada (13/11, pedido do Fernando: "uma estrada que passa pela ponte, desça o relevo para permitir a estrada"): a de

@@ -118,7 +118,31 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
 
 // Aplica a habilidade no estado (muda units e rng) e devolve os eventos para o cliente animar.
 // Ordem dos sorteios, por unidade atingida na ordem da lista: acerto, depois dano. Mudar a ordem muda o hash dos testes.
-export function resolveAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos, charged = false): BattleEvent[] {
+// `scale`: fração do dano (o contra-ataque sai com metade, counters)
+// ataque básico da unidade (a 1ª habilidade): é ele que sai no contra-ataque; à distância se alcança mais de 1 casa
+export const basicOf = (def: string) => UNIT_DEFS[def].abilities[0];
+export const isRanged = (abilityId: string) => ABILITIES[abilityId].range[1] > 1;
+
+// Contra-ataque (13/11, pedido do Fernando; metade do dano, escolha dele): quem foi atacado neste turno revida quando o
+// atacante anda, com o ataque básico e metade do dano, antes de ele sair da casa. Corpo a corpo só revida se ele se
+// afastar (termina a mais de 1 casa); à distância revida a qualquer passo. Cada atacado revida uma vez por turno
+export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos): BattleEvent[] {
+  const events: BattleEvent[] = [];
+  const left: { unit: string; ranged: boolean }[] = [];
+  for (const e of state.turn.engaged ?? []) {
+    const actor = state.units.find((u) => u.id === actorId);
+    const foe = state.units.find((u) => u.id === e.unit);
+    if (!actor || !foe) continue;
+    if (!e.ranged && distTo(foe, to) <= 1) { left.push(e); continue; } // ficou do lado: ainda pode revidar se sair depois
+    const basic = basicOf(foe.def);
+    // charged: o contra-ataque não paga MP nem estoque
+    if (previewAbility(grid, state, foe.id, basic, actor.pos, true).ok) events.push(...resolveAbility(grid, state, foe.id, basic, actor.pos, true, 0.5));
+  }
+  state.turn.engaged = left;
+  return events;
+}
+
+export function resolveAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos, charged = false, scale = 1): BattleEvent[] {
   const preview = previewAbility(grid, state, actorId, abilityId, target, charged);
   if (!preview.ok) return [];
   const actor = state.units.find((u) => u.id === actorId)!;
@@ -146,7 +170,7 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
     }
     let dmg: number;
     [dmg, state.rng] = rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ...withPower(actor, ability));
-    dmg = Math.floor(dmg * chargingBonus(state, ability, unit));
+    dmg = Math.max(1, Math.floor(dmg * chargingBonus(state, ability, unit) * scale));
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
     after?.(state, actor, ability, unit, events);
@@ -206,7 +230,7 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
     const next = { x: cur.x + dx, y: cur.y + dy };
     // água funda segura o empurrão como uma parede (suposição nossa: o guia não diz o que acontece)
     // a água funda segura o empurrão como parede (suposição nossa, mantida quando ela passou a deixar entrar, 13/11)
-    const blocked = !inBounds(grid, next) || !canStand(tileAt(grid, next)) || isDeep(tileAt(grid, next)) || !!unitAt(state, next)
+    const blocked = !inBounds(grid, next) || !canStand(tileAt(grid, next)) || isDeep(tileAt(grid, next)) || !!tileAt(grid, next).noStop || !!unitAt(state, next)
       || standH(tileAt(grid, next)) - standH(tileAt(grid, cur)) > MAX_JUMP;
     if (blocked) {
       result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });

@@ -1,5 +1,5 @@
 import type { AbilityDef } from './abilities.ts';
-import { FACING, TERRAIN, canStand, dist, inBounds, isDeep, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
+import { FACING, TERRAIN, blocksOf, canStand, dist, inBounds, isDeep, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -60,9 +60,10 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
 
 // Busca pelo custo de cada passo (1, ou 2 na água rasa; o vão, 1 por casa voada) até def.move pontos. Passa por aliado, nunca por inimigo; o resultado não inclui
 // a casa de saída nem casas ocupadas, para o cliente poder pintar só onde dá para parar.
-export function reachable(grid: Grid, state: BattleState, unitId: string): Map<string, Step> {
+// `budget`: pontos de movimento que sobram no turno (o movimento todo, se ausente)
+export function reachable(grid: Grid, state: BattleState, unitId: string, budget?: number): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
-  const budget = UNIT_DEFS[unit.def].move;
+  budget ??= UNIT_DEFS[unit.def].move;
   const jump = jumpOf(state, unit.def);
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
   const queue: Pos[] = [unit.pos];
@@ -100,7 +101,7 @@ export function reachable(grid: Grid, state: BattleState, unitId: string): Map<s
     step.path = path;
   }
   seen.delete(posKey(unit.pos));
-  for (const [k, step] of seen) if (unitAt(state, step.pos)) seen.delete(k);
+  for (const [k, step] of seen) if (unitAt(state, step.pos) || tileAt(grid, step.pos).noStop) seen.delete(k);
   return seen;
 }
 
@@ -142,7 +143,7 @@ export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
     const t = tileAt(grid, { x, y });
     // fração pelo avanço em passos de grade, não pelo índice do laço, que na diagonal anda 1 casa por iteração
     const frac = dist(a, { x, y }) / total;
-    if (t.h + TERRAIN[t.terrain].blocks > eye + (aim - eye) * frac) return { x, y };
+    if (t.h + blocksOf(t) > eye + (aim - eye) * frac) return { x, y };
   }
 }
 
