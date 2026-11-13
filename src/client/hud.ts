@@ -9,8 +9,8 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { COMBAT, simulatePush, type Preview } from '../shared/battle/combat.ts';
-import { TERRAIN, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
-import { MAX_JUMP, unitAt } from '../shared/battle/pathing.ts';
+import { TERRAIN, posKey, standH, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { jumpOf, unitAt } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
 import { SURVIVAL_ID, turnsLeft } from './survival.ts';
 import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
@@ -124,7 +124,7 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
     ['CT', `${Math.max(0, u.ct)}/${TURN_THRESHOLD}`],
     [t('Velocidade', 'Speed'), `${rulesOf(state).speed?.(u) ?? def.speed}${bonus('sp')}`],
     [t('Movimento', 'Move'), String(def.move)],
-    [t('Salto', 'Jump'), String(rulesOf(state).jump?.(u.def) ?? MAX_JUMP)],
+    [t('Salto', 'Jump'), String(jumpOf(state, u.def))],
   );
   for (const [k, v] of Object.entries(def.info ?? {})) rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);
   const c = state.charges.find((x) => x.unit === u.id);
@@ -155,7 +155,9 @@ export function tileInfo(grid: Grid, p: Pos): string {
   const blocked = (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable'))
     + ((tile.depth ?? 0) >= 2 ? t(' · funda: não se atravessa', ' · deep: cannot be crossed') : tile.depth === 1 ? t(' · rasa: custa 2 de movimento', ' · shallow: costs 2 movement') : '')
     + (tile.spikes ? t(` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`, ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`) : '');
-  return t(`Casa ${p.x},${p.y} · altura ${tile.h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`, `Tile ${p.x},${p.y} · height ${tile.h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`);
+  // na água rasa vale a altura em que se fica de pé (a que o Salto compara), não a da superfície
+  const h = tile.depth === 1 ? standH(tile) : tile.h;
+  return t(`Casa ${p.x},${p.y} · altura ${h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`, `Tile ${p.x},${p.y} · height ${h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`);
 }
 
 const REASON: Record<string, () => string> = {

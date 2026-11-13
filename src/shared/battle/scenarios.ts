@@ -146,7 +146,8 @@ export const FIRST_BATTLE: Scenario = {
 const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number; spikes?: true }> = {
   f: { terrain: 'floor', h: 1, look: 'crypt' },
   d: { terrain: 'floor', h: 2, look: 'altar' },
-  w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
+  // superfície no 1 e pé no 0 (13/11): com a superfície no 0 o pé ficava no -1, 2 abaixo das margens, e ninguém entrava no canal
+  w: { terrain: 'floor', h: 1, look: 'water', depth: 1 },
   W: { terrain: 'floor', h: 0, look: 'water', depth: 2 }, // fosso fundo do Coração da Cripta: só as pontes passam
   b: { terrain: 'floor', h: 1, look: 'bridge' },
   B: { terrain: 'wall', h: 1, look: 'brick' },

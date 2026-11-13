@@ -6,7 +6,7 @@ import type { BattleState } from '../shared/battle/types.ts';
 import { buildDevScenario, unitFrom, type DevUnit } from './dev-roster.ts';
 
 export const SURVIVAL_ID = 'survival';
-// medido em 13/11 (MEDIR=300, IA nos dois lados), com a emboscada e vida 2x: 56 turnos 90%, 64 60%, 72 36% (Bosque com relevo novo; antes 64 58%),
+// medido em 13/11 (MEDIR=300, IA nos dois lados), com a emboscada e vida 2x: 56 turnos 84%, 64 50%, 72 31% (com o salto por classe; antes 90%, 60%, 36%),
 // toda vitória pelo amanhecer; heróis parados (só passam a vez) vencem 7%. Com vida 1,5x, a partir de 80 turnos quase
 // toda vitória vinha de derrubar todos (o modo virava batalha comum)
 export const SURVIVE_TURNS = 64;

@@ -1,26 +1,38 @@
 // Tempos do fluxo de turno, em ms, todos juntos para ajustar o ritmo num lugar só (pedido do Fernando, 12/11: fluxo e
 // tempos parecidos com o Final Fantasy Tactics). Não há fonte de tempo de animação do FFT: os novos são estimativa.
 // Especificação e valores anteriores: docs/medicoes/fluxo-fft-2026-11-12.md.
+// 13/11, pedido do Fernando ("andar lento… animações de pulo bem realistas… game feel mais lento, não quero animações
+// rápidas"): o ritmo todo ficou ~40% mais lento que o de 12/11 (valor de antes ao lado), andar é a passo e todo degrau é um
+// pulo em 3 partes. Segurar Enter continua acelerando 3 vezes.
 export const TIMING = {
-  enemyStart: 450, // antes 600 (12/11, game feel): a câmera já chega em ~0,5 s; somado ao enemyAfter dava 1 s parado entre inimigos
-  enemyDestination: 500, // novo: cursor e caminho no destino do inimigo antes de ele andar, para ler para onde vai
-  step: 200, // antes 150: uma casa andada; o FFT anda mais devagar e cada passo se lê
-  banner: 700, // novo: faixa com o nome da habilidade e a área marcada antes do golpe, nos dois lados
-  windup: 380, // do gesto ao impacto (igual a antes)
-  projectile: 280, // novo: voo de flecha, faca e bola de fogo até o alvo (pedra e frasco em arco levam 1,4x)
-  lunge: 260, // novo: avanço e volta da Investida
-  hit: 320, // golpe que acertou, até o próximo evento (igual a antes)
-  hpDrain: 300, // novo: barra de vida descendo; cabe dentro do `hit` para o sync do fim não cortar a descida
-  crash: 220, // batida e queda (igual a antes)
-  push: 140, // uma casa empurrada (igual a antes)
-  die: 700, // queda de quem morre (igual a antes)
-  float: 1200, // antes 1100: número de dano pula, fica parado para ler e some (o mesmo valor vai no CSS, --float-ms)
-  enemyAfter: 250, // antes 400 (12/11): a linha de ajuda já resume o que o inimigo fez
-  hitStop: 90, // novo (12/11): tudo para no impacto, o alvo pisca branco; é o que dá peso ao golpe
-  shake: 220, // novo: o alvo treme depois da pausa e o tremor vai sumindo
-  pop: 240, // novo: pulinho de quem começa a vez
-  blink: 80, // novo: cada aceso/apagado de quem morre (3 piscadas, ~0,5 s)
+  enemyStart: 650, // 450: câmera chega e o jogador vê de quem é a vez
+  enemyDestination: 650, // 500: cursor e caminho no destino do inimigo antes de ele andar
+  step: 600, // 200: uma casa andada a passo (Walking_A), não correndo
+  jumpCrouch: 300, // novo: agacha e toma impulso (Jump_Start) antes de sair do chão
+  jumpAir: 450, // novo: voo em arco num degrau de 1 nível (Jump_Idle)...
+  jumpPerLevel: 90, // novo: ...e mais isto por nível a mais de altura
+  jumpLand: 300, // novo: aterrissa e se recompõe (Jump_Land) antes do próximo passo
+  banner: 900, // 700: faixa com o nome da habilidade e a área marcada antes do golpe
+  windup: 520, // 380: do gesto ao impacto
+  projectile: 420, // 280: voo de flecha, faca e bola de fogo até o alvo (pedra e frasco em arco levam 1,4x)
+  lunge: 380, // 260: avanço e volta da Investida
+  hit: 480, // 320: golpe que acertou, até o próximo evento
+  hpDrain: 450, // 300: barra de vida descendo; cabe dentro do `hit` para o sync do fim não cortar a descida
+  crash: 320, // 220: batida e queda
+  push: 260, // 140: uma casa empurrada
+  die: 1000, // 700: queda de quem morre
+  float: 1500, // 1200: número de dano pula, fica parado para ler e some (o mesmo valor vai no CSS, animação pop da .float)
+  enemyAfter: 450, // 250: respiro entre um inimigo e o próximo
+  hitStop: 110, // 90: tudo para no impacto, o alvo pisca branco; é o que dá peso ao golpe
+  shake: 280, // 220: o alvo treme depois da pausa e o tremor vai sumindo
+  pop: 320, // 240: pulinho de quem começa a vez
+  blink: 110, // 80: cada aceso/apagado de quem morre (3 piscadas)
 };
+
+// Duração de um passo do caminho: andar no plano, pulo (agacha, voo, aterrissa) quando muda de altura. `dh` em níveis.
+// A cena anima com isto e o jogo marca o som dos passos com isto, para os dois não se desencontrarem.
+export const stepMs = (dh: number) => (dh === 0 ? TIMING.step : TIMING.jumpCrouch + jumpAirMs(dh) + TIMING.jumpLand);
+export const jumpAirMs = (dh: number) => TIMING.jumpAir + TIMING.jumpPerLevel * (Math.abs(dh) - 1);
 
 // Segurar Enter, Espaço ou A (controle) acelera tudo da batalha (passos, golpes, esperas) 3 vezes; soltar volta ao ritmo
 // do FFT. Pedido do Fernando (12/11): batalha mais responsiva sem perder o ritmo de leitura de quem não tem pressa.

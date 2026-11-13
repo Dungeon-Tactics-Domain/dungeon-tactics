@@ -6,6 +6,10 @@ export interface UnitDef {
   hp: number;
   speed: number; // CT ganho por tique; mais veloz age antes e mais vezes
   move: number; // casas por turno
+  // níveis que sobe ou desce num passo, como o Jump do FFT (13/11, pedido do Fernando); sem isto, MAX_JUMP (1). Os mapas
+  // têm quedas de 2 de propósito: só quem salta 2 corta caminho por elas (o Ladino e o Lacaio, os ágeis, 1 a mais que os
+  // outros como o Ladrão do FFT). Ladino 3 e arqueiros 2 desmontavam a curva da campanha (fase 5 de 35% a 77%)
+  jump?: number;
   abilities: string[]; // o primeiro é o ataque básico
   info?: Record<string, string | number>; // ficha extra para a janela de status (arma, Brave, Fé…); só o cenário de estudo tem
   vars?: Record<string, number>; // contadores com que a unidade nasce (ver UnitState.vars); só o cenário de estudo usa
@@ -19,14 +23,14 @@ const LIST: UnitDef[] = [
   { id: 'warrior', name: 'Guerreiro', en: 'Warrior', hp: 42, speed: 8, move: 4, abilities: ['strike', 'heavy_strike', 'shield_bash', 'spin'] },
   { id: 'archer', name: 'Arqueiro', en: 'Archer', hp: 28, speed: 10, move: 4, abilities: ['shot', 'aimed_shot', 'knock_shot', 'dagger'] },
   { id: 'mage', name: 'Mago', en: 'Mage', hp: 24, speed: 7, move: 3, abilities: ['firebolt', 'blast', 'gust', 'heal'] },
-  { id: 'rogue', name: 'Ladino', en: 'Rogue', hp: 26, speed: 12, move: 5, abilities: ['stab', 'throwing_knife', 'trip', 'deathblow'] },
+  { id: 'rogue', name: 'Ladino', en: 'Rogue', hp: 26, speed: 12, move: 5, jump: 2, abilities: ['stab', 'throwing_knife', 'trip', 'deathblow'] },
   { id: 'soldier', name: 'Soldado', en: 'Soldier', hp: 45, speed: 8, move: 4, abilities: ['strike', 'shield_bash'] },
   { id: 'skeleton_archer', name: 'Arqueiro esqueleto', en: 'Skeleton archer', hp: 33, speed: 10, move: 4, abilities: ['shot', 'dagger'] },
   { id: 'dark_mage', name: 'Mago sombrio', en: 'Dark mage', hp: 30, speed: 7, move: 3, abilities: ['firebolt', 'blast'] },
   { id: 'brute', name: 'Bruto', en: 'Brute', hp: 82, speed: 5, move: 3, abilities: ['cleave', 'slam'] },
   // Lacaio (12/11, campanha): pouca vida e muita velocidade, vem em bando e cai num golpe; números iniciais, medidos na
   // dificuldade das fases da campanha (tests/campaign.test.ts)
-  { id: 'minion', name: 'Lacaio esqueleto', en: 'Skeleton minion', hp: 24, speed: 11, move: 5, abilities: ['stab', 'trip'] },
+  { id: 'minion', name: 'Lacaio esqueleto', en: 'Skeleton minion', hp: 24, speed: 11, move: 5, jump: 2, abilities: ['stab', 'trip'] },
   // Acólito do Véu (noite de 12/11, Ato II): cura os aliados, então derrubá-lo primeiro é a escolha que a fase pede (o
   // "puzzle" de prioridade de alvo). Pouca vida e ataque de mago; números iniciais, medidos na fase do Passo Gelado
   { id: 'acolyte', name: 'Acólito do Véu', en: 'Veil Acolyte', hp: 26, speed: 9, move: 3, abilities: ['firebolt', 'heal'], tint: '#8a5cff' },

@@ -20,7 +20,7 @@ import { el } from './icons.ts';
 import { chargeDanger, type Highlights, type TileKind } from './interaction.ts';
 import { MARKER, barYOf, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
-import { TIMING, speed } from './timing.ts';
+import { TIMING, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -507,11 +507,24 @@ export class BattleScene {
     return view;
   }
 
-  private play(v: UnitView, name: string, once = false) {
+  // Pulo de um degrau, como o salto do FFT: agacha parado, voa em arco até a casa e aterrissa. O topo do arco passa 0,4
+  // nível acima da casa mais alta, para subir parecer impulso e descer parecer queda; `levels` alonga o voo
+  private async jump(v: UnitView, a: THREE.Vector3, b: THREE.Vector3, levels: number) {
+    this.play(v, 'Jump_Start', true, 0.6 / (TIMING.jumpCrouch / 1000));
+    await this.wait(TIMING.jumpCrouch);
+    this.play(v, 'Jump_Idle');
+    const c = Math.max(a.y, b.y) + 0.4 * this.step - (a.y + b.y) / 2;
+    await this.animate(jumpAirMs(levels), (k) => v.holder.position.lerpVectors(a, b, k).setY(a.y + (b.y - a.y) * k + 4 * c * k * (1 - k)));
+    this.play(v, 'Jump_Land', true, 0.67 / (TIMING.jumpLand / 1000));
+    await this.wait(TIMING.jumpLand);
+  }
+
+  private play(v: UnitView, name: string, once = false, rate = 1) {
     const clip = v.clips.find((c) => c.name === name);
     if (!v.mixer || !clip) return;
     const action = v.mixer.clipAction(clip);
     action.reset();
+    action.setEffectiveTimeScale(rate);
     action.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
     action.clampWhenFinished = once;
     if (v.current && v.current !== action) action.crossFadeFrom(v.current, 0.15, false);
@@ -655,18 +668,21 @@ export class BattleScene {
       if (!v) continue;
       await before?.(e);
       if (e.k === 'move') {
-        this.play(v, 'Running_A');
-        for (let i = 1; i < e.path.length; i++) {
+        // a passo (13/11, pedido do Fernando: andar lento e pulo realista). Walking_A tem 2 passadas em 1,07 s: 1,25x dá
+        // ~1,4 passada por casa de 0,6 s, o pé quase não escorrega
+        this.play(v, 'Walking_A', false, 1.25);
+        const n = e.path.length - 1;
+        for (let i = 1; i <= n; i++) {
           const a = this.world(e.path[i - 1]), b = this.world(e.path[i]);
           this.face(v, e.path[i]);
-          const hop = Math.abs(b.y - a.y) > 0.01 ? 0.25 : 0; // degrau: pulinho para ler a altura
+          if (Math.abs(b.y - a.y) > 0.01) {
+            await this.jump(v, a, b, Math.max(1, Math.round(Math.abs(b.y - a.y) / this.step)));
+            if (i < n) this.play(v, 'Walking_A', false, 1.25);
+            continue;
+          }
           // arranca na 1ª casa e freia na última (curva seno), passo constante no meio: sai do jeito de boneco em trilho
-          const n = e.path.length - 1;
           const ease = (k: number) => (n === 1 ? (1 - Math.cos(Math.PI * k)) / 2 : i === 1 ? 1 - Math.cos((Math.PI / 2) * k) : i === n ? Math.sin((Math.PI / 2) * k) : k);
-          await this.animate(TIMING.step, (k) => {
-            const s = ease(k);
-            v.holder.position.lerpVectors(a, b, s).setY(a.y + (b.y - a.y) * s + Math.sin(Math.PI * k) * hop);
-          });
+          await this.animate(TIMING.step, (k) => v.holder.position.lerpVectors(a, b, ease(k)));
         }
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {

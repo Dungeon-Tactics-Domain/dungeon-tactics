@@ -2,8 +2,7 @@ import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
 import { COMBAT, previewAbility, simulatePush } from './combat.ts';
 import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
-import { MAX_JUMP, footprint, reachable } from './pathing.ts';
-import { rulesOf } from './rules.ts';
+import { footprint, jumpOf, reachable } from './pathing.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
@@ -89,7 +88,7 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
 // vizinhos se achavam "a 2 casas" e ninguém descia para dar a volta; com a água rasa (12/11) eram 35 batalhas travadas
 // em 1 000 no estudo das classes. Busca a partir dos inimigos: o custo de cada passo é o de entrar na casa de onde se vem.
 function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, number> {
-  const jump = rulesOf(state).jump?.(actor.def) ?? MAX_JUMP;
+  const jump = jumpOf(state, actor.def);
   const best = new Map<string, number>();
   const queue: { p: Pos; cost: number }[] = [];
   for (const o of state.units) {

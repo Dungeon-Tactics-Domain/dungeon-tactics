@@ -4,8 +4,10 @@ import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
-// Subir ou descer mais que isso num passo bloqueia (spec, 25/10). Igual para todos: nada de salto por classe na 1ª fatia.
+// Salto de quem não diz o seu (UnitDef.jump): subir ou descer mais que isso num passo bloqueia (spec, 25/10). Desde 13/11
+// cada classe pode ter o seu, como no FFT; o estudo do FFT troca pela regra própria (rules.jump)
 export const MAX_JUMP = 1;
+export const jumpOf = (state: BattleState, def: string) => rulesOf(state).jump?.(def) ?? UNIT_DEFS[def]?.jump ?? MAX_JUMP;
 // Altura dos olhos e do ponto de mira acima do chão da casa, em níveis. Com blocks do terreno decide quem enxerga por cima.
 const EYE = 1;
 
@@ -34,7 +36,7 @@ export interface Step {
 export function reachable(grid: Grid, state: BattleState, unitId: string): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
   const budget = UNIT_DEFS[unit.def].move;
-  const jump = rulesOf(state).jump?.(unit.def) ?? MAX_JUMP;
+  const jump = jumpOf(state, unit.def);
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
   const queue: Pos[] = [unit.pos];
   for (let i = 0; i < queue.length; i++) {

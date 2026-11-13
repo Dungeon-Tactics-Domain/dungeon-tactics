@@ -50,7 +50,7 @@ export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTER
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 71% → 47% → 42% → 35% no Ato I (Colina com relevo desde 13/11, e o Vesper da fase 5 de 95 para 85 de vida: no relevo novo com 95 dava 29%, com 80 dava 40%; Cripta com relevo e um Arqueiro novato e Coração com relevo desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 47% → 26% no Ato II (Passo com relevo em zigue-zague desde 13/11: com ele a fase 7 caía a 4% com o cume no 5 e a 14% no 4, por isso o Vigia do cume, um arqueiro com 20 de vida; antes 39% → 21%; o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 76% → 66% → 40% → 30% no Ato I e 56% → 31% no Ato II desde o salto por classe e a água rasa atravessável (13/11): o Soldado da fase 2 e o do Passo com 60 de vida, Soldado no lugar do Lacaio e os 2 arqueiros inteiros na Cripta, Guarda da cripta com 45, Vesper da fase 5 com 70 e o Vigia do cume com 33. Antes: 83% → 71% → 47% → 42% → 35% no Ato I (Colina com relevo desde 13/11, e o Vesper da fase 5 de 95 para 85 de vida: no relevo novo com 95 dava 29%, com 80 dava 40%; Cripta com relevo e um Arqueiro novato e Coração com relevo desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 47% → 26% no Ato II (Passo com relevo em zigue-zague desde 13/11: com ele a fase 7 caía a 4% com o cume no 5 e a 14% no 4, por isso o Vigia do cume, um arqueiro com 20 de vida; antes 39% → 21%; o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -85,7 +85,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Colina do Farol', 'Beacon Hill'],
     song: 'road',
-    setup: { map: 'beacon_hill', heroes: party(1), enemies: [foe('brute'), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
+    setup: { map: 'beacon_hill', heroes: party(1), enemies: [foe('brute'), foe('skeleton_archer'), foe('soldier', { hp: 60 }), foe('minion')] },
     intro: [
       L('narr', 'A Colina do Farol. Neve de um lado, campo do outro, e o cristal azul no meio de tudo.', 'Beacon Hill. Snow on one side, fields on the other, and the blue crystal in the middle of it all.'),
       L('tess', 'Eles já estão subindo. Um bruto, um arqueiro de ossos e mais dois atrás.', 'They\'re already climbing. A brute, a bone archer and two more behind them.'),
@@ -103,13 +103,13 @@ export const CHAPTERS: Chapter[] = [
     title: ['A Cripta Alagada', 'The Flooded Crypt'],
     song: 'crypt',
     light: 0.5, // debaixo do lago: meia-luz azulada ("cheiro de vela apagada")
-    setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer', { name: 'Arqueiro novato', en: 'Novice archer', hp: 20 }), foe('dark_mage'), foe('minion')] },
+    setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('dark_mage'), foe('soldier')] },
     intro: [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
-      L('tess', 'Cuidado com a água funda no meio: ninguém atravessa ali.', 'Watch the deep water in the middle: no one crosses there.'),
+      L('tess', 'A água do canal é rasa, mas pesa: cada passo nela custa o dobro.', 'The canal water is shallow, but heavy: every step in it costs double.'),
       L('lia', 'Arqueiros nos pontos altos. Ele sempre gostou de altura.', 'Archers on the high ground. He always liked height.'),
       L('odo', 'E eu sempre gostei de fogo. Vamos ver quem gosta mais.', 'And I always liked fire. Let\'s see who likes theirs more.'),
-      L('hero', 'Pelas pontes, um de cada vez. E longe dos espinhos: ser empurrado em cima deles dói.', 'Over the bridges, one at a time. And stay off the spikes: getting pushed onto them hurts.'),
+      L('hero', 'Pelas pontes é mais rápido. E longe dos espinhos: ser empurrado em cima deles dói.', 'The bridges are faster. And stay off the spikes: getting pushed onto them hurts.'),
     ],
     outro: [
       L('bran', 'Uma escada para baixo. A cripta continua.', 'A stairway down. The crypt goes deeper.'),
@@ -121,7 +121,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'boss',
     light: 0.35, // mais fundo, mais escuro
     boss: true,
-    setup: { map: 'crypt_heart', heroes: party(3), enemies: [vesper(90, 9), foe('dark_mage'), foe('skeleton_archer'), foe('soldier', { name: 'Guarda da cripta', en: 'Crypt guard', hp: 32 })] },
+    setup: { map: 'crypt_heart', heroes: party(3), enemies: [vesper(90, 9), foe('dark_mage'), foe('skeleton_archer'), foe('soldier', { name: 'Guarda da cripta', en: 'Crypt guard', hp: 45 })] },
     intro: [
       L('vesper', 'Lia. Voltou para casa e trouxe amigos.', 'Lia. You came home, and you brought friends.'),
       L('lia', 'Vim apagar o que você acendeu, Vesper.', 'I came to put out what you lit, Vesper.'),
@@ -141,7 +141,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'boss',
     light: 0.3, // "o Véu já desce pela Colina": a mesma Colina da fase 2, agora no escuro
     boss: true,
-    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(85, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
+    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(70, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),
@@ -163,7 +163,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Passo Gelado', 'Frost Pass'],
     song: 'snow',
-    setup: { map: 'frost_pass', heroes: party(5), enemies: [foe('skeleton_archer'), foe('soldier'), foe('acolyte'), foe('minion')] },
+    setup: { map: 'frost_pass', heroes: party(5), enemies: [foe('skeleton_archer'), foe('soldier', { hp: 60 }), foe('acolyte'), foe('minion')] },
     intro: [
       L('narr', 'Três dias depois. O Passo Gelado, para onde o Véu recuou, ainda brilha roxo à noite.', 'Three days later. Frost Pass, where the Veil retreated to, still glows purple at night.'),
       L('bran', 'Subida longa e inimigo no alto. Do jeito que eu odeio.', 'A long climb with the enemy up high. Just the way I hate it.'),
@@ -183,7 +183,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'boss',
     light: 0.15, // noite no cume; o sol nasce só no fim da conversa de saída
     boss: true,
-    setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('colossus', { name: 'A Sombra', en: 'The Shade', hp: 300 }), foe('skeleton_archer', { name: 'Vigia do cume', en: 'Summit lookout', hp: 20 }), foe('veil_knight'), foe('minion')] },
+    setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('colossus', { name: 'A Sombra', en: 'The Shade', hp: 300 }), foe('skeleton_archer', { name: 'Vigia do cume', en: 'Summit lookout', hp: 33 }), foe('veil_knight'), foe('minion')] },
     intro: [
       L('shade', 'Cada Farol que vocês acendem me empurra para cá. Aqui em cima não sobrou luz nenhuma.', 'Every Beacon you light pushes me up here. Up here, there is no light left at all.'),
       L('odo', 'Sobrou a gente. E eu trouxe fogo.', 'There is us. And I brought fire.'),

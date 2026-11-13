@@ -4,7 +4,7 @@ import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { dist, facingTo, inBounds, neighbors, samePos } from '../shared/battle/grid.ts';
+import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { choice, dialog } from './dialog.ts';
@@ -19,7 +19,7 @@ import { BattleScene } from './scene.ts';
 import { store } from './store.ts';
 import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
-import { TIMING, pace } from './timing.ts';
+import { TIMING, pace, stepMs } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, slotsOf } from './dev-roster.ts';
@@ -390,7 +390,16 @@ class Game {
   private sound(e: BattleEvent) {
     const MELEE = new Set(['slash', 'heavy', 'stab', 'impact', 'spin', 'dash', 'debuff']);
     const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = { hit: 'hit', bump: 'hit', fall: 'hit', spike: 'hit', miss: 'miss', heal: 'heal', charge: 'charge', fizzle: 'miss', die: 'die' };
-    if (e.k === 'move') for (let i = 1; i < e.path.length; i++) void this.scene.wait((i - 1) * TIMING.step).then(() => sfx('step'));
+    if (e.k === 'move') {
+      // passo no começo de cada casa andada; no pulo, o som vai na aterrissagem (mesmos tempos da cena, stepMs)
+      const h = (i: number) => standH(tileAt(this.battle.grid, e.path[i]));
+      let at = 0;
+      for (let i = 1; i < e.path.length; i++) {
+        const dh = h(i) - h(i - 1), ms = stepMs(dh);
+        void this.scene.wait(at + (dh ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
+        at += ms;
+      }
+    }
     else if (e.k === 'attack') {
       const fx = lookOf(e.ability).fx;
       sfx(MELEE.has(fx) ? 'swing' : fx === 'fire' || fx === 'blast' ? 'fire' : ['heal', 'buff', 'wind'].includes(fx) ? 'spell' : 'throw');
@@ -733,7 +742,7 @@ function confetti() {
 
 // Batalha avulsa: os mapas com Farol (a regra avulsa perde sem ele; Bosque e Passo são só da campanha). A Colina já está
 // montada ao fundo do título, então escolhê-la só fecha; as outras abrem pela URL, cada uma com o próprio save.
-// medido em 13/11 (npm run sim, 300 sementes, IA x IA): Colina 61% (com relevo desde 13/11; antes 76%), Cripta 40% (com relevo desde 13/11; antes 51%), Coração da Cripta 59% (fosso com 2 pontes; com relevo desde 13/11, antes 85%)
+// medido em 13/11 (npm run sim, 300 sementes, IA x IA), com o salto por classe e a água rasa atravessável: Colina 63%, Cripta 60%, Coração da Cripta 79% (antes 61%, 40% e 59%)
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
 function quickBattle() {
   const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
@@ -776,7 +785,7 @@ function howToPlay() {
     el('ul', { class: 'legend' },
       el('li', {}, t('A lista de turnos (canto de cima) mostra quem joga. Quem é mais rápido joga mais vezes.', 'The turn list (top corner) shows who acts. Faster units act more often.')),
       el('li', {}, t('Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.', 'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.')),
-      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; árvores e entulho protegem de ataques de longe. Só se sobe um nível por passo.', 'From high ground you hit more and reach farther; trees and rubble cover you from ranged attacks. You climb one level per step.')),
+      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; árvores e entulho protegem de ataques de longe. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino 2, os outros 1.', 'From high ground you hit more and reach farther; trees and rubble cover you from ranged attacks. Jump says how many levels each unit climbs or drops per step: the Rogue 2, the rest 1.')),
       el('li', {}, t('Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles.', 'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever lands on them.')),
       el('li', {}, t('Água rasa custa 2 de movimento; água funda não se atravessa.', 'Shallow water costs 2 movement; deep water cannot be crossed.')),
       el('li', {}, t('Habilidade com carga sai depois: a área acesa em roxo mostra onde vai cair. Saia dela.', 'Charged abilities land later: the purple area shows where. Get out of it.')),

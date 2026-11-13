@@ -9,6 +9,8 @@ const WANT = {
   'Rig_Medium_CombatMelee.glb': ['Melee_1H_Attack_Chop', 'Melee_1H_Attack_Stab', 'Melee_1H_Attack_Slice_Diagonal', 'Melee_2H_Attack_Chop', 'Melee_Block_Attack', 'Melee_Unarmed_Attack_Punch_A'],
   'Rig_Medium_CombatRanged.glb': ['Ranged_Bow_Aiming_Idle', 'Ranged_Bow_Release', 'Ranged_Magic_Shoot', 'Ranged_Magic_Raise', 'Ranged_Magic_Spellcasting'],
   'Rig_Medium_General.glb': ['Use_Item'],
+  // andar a passo e o pulo em 3 partes (13/11, pedido do Fernando: andar lento e pulo realista nos degraus)
+  'Rig_Medium_MovementBasic.glb': ['Walking_A', 'Jump_Start', 'Jump_Idle', 'Jump_Land'],
 };
 const io = new NodeIO();
 let doc = null;

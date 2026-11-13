@@ -11,7 +11,7 @@ Dungeon Tactics (25/10): o código do Warlock saiu para a quarentena `D:\_PARA-A
 ```
 src/shared/battle/  regras da batalha, sem DOM nem Three (spec em docs/superpowers/specs/2026-10-25-dungeon-tactics-design.md)
   grid.ts         mapa ASCII com altura e terreno (chão, floresta, muro)
-  pathing.ts      movimento (salto máx. 1), linha de visão, alcance com bônus de altura
+  pathing.ts      movimento (salto por classe, `jumpOf`), linha de visão, alcance com bônus de altura
   combat.ts       % de acerto, dano, empurrão, batida e queda, prévia antes de confirmar
   turn-queue.ts   fila estilo FFT (velocidade e atraso da habilidade)
   battle.ts       Battle: dono do estado, desfazer limitado (o dado não volta), salvar/carregar validado

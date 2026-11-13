@@ -122,7 +122,7 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
       BASE[id] = u.base;
       // o tamanho vem da classe (o Colosso da campanha ocupa 2x2 como o original)
-      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
+      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), ...(UNIT_DEFS[u.base].jump && { jump: UNIT_DEFS[u.base].jump }), ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');

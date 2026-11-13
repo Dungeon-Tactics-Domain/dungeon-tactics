@@ -12,13 +12,21 @@ describe('movimento', () => {
     expect(keys(reachable(g, s, 'a'))).toEqual(['1,0', '2,0', '3,0']);
   });
 
-  it('salto máximo é 1 nível: sobe e desce 1, não 2', () => {
-    const g = gridOf(['.....'], ['01245']);
-    const s = stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]); // move 5
+  it('salto de quem não diz o seu é 1 nível: sobe e desce 1, não 2', () => {
+    const g = gridOf(['....'], ['0124']);
+    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]); // move 4, sem jump
     expect(keys(reachable(g, s, 'a'))).toEqual(['1,0', '2,0']);
-    const down = gridOf(['.....'], ['54210']);
-    const s2 = stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 4, y: 0 }]);
-    expect(keys(reachable(down, s2, 'a'))).toEqual(['2,0', '3,0']);
+    const down = gridOf(['....'], ['4210']);
+    const s2 = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 3, y: 0 }]);
+    expect(keys(reachable(down, s2, 'a'))).toEqual(['1,0', '2,0']);
+  });
+
+  it('cada classe salta o seu (UnitDef.jump): o Ladino sobe e desce 2, o Guerreiro não', () => {
+    const g = gridOf(['....'], ['0247']); // 2 sobe, 3 não
+    expect(keys(reachable(g, stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual(['1,0', '2,0']);
+    expect(keys(reachable(g, stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual([]);
+    const down = gridOf(['...'], ['420']);
+    expect(keys(reachable(down, stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual(['1,0', '2,0']);
   });
 
   it('parede bloqueia o caminho, floresta não', () => {

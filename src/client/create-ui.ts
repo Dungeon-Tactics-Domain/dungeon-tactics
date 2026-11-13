@@ -1,6 +1,7 @@
 // Criação do protagonista (hero.ts tem as regras): nome e classe, com retrato, números e habilidades de cada classe à
 // vista para escolher sabendo o que muda. Setas trocam a classe, Enter (fora do campo de nome) começa.
 // Peça própria porque nenhuma das existentes (dialog, choice) mostra retrato e ficha lado a lado; estilo pelas variáveis do :root.
+import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { HERO_CLASSES, NAME_MAX, parseHero, type Hero, type HeroClass } from './hero.ts';
 import { abilityDetail, portrait } from './hud.ts';
@@ -38,7 +39,7 @@ export function createHero(host: HTMLElement): Promise<Hero> {
       const d = UNIT_DEFS[c];
       sheet.replaceChildren(
         el('p', { class: 'create-role' }, ROLE[c]()),
-        el('p', { class: 'create-stats' }, t(`Vida ${d.hp} · Velocidade ${d.speed} · Movimento ${d.move}`, `HP ${d.hp} · Speed ${d.speed} · Move ${d.move}`)),
+        el('p', { class: 'create-stats' }, t(`Vida ${d.hp} · Velocidade ${d.speed} · Movimento ${d.move} · Salto ${d.jump ?? MAX_JUMP}`, `HP ${d.hp} · Speed ${d.speed} · Move ${d.move} · Jump ${d.jump ?? MAX_JUMP}`)),
         el('ul', { class: 'create-skills' }, ...d.abilities.map((a) => el('li', {}, el('strong', {}, abilityName(a)), ` · ${abilityDetail(a)}`))),
         el('p', { class: 'create-stats' }, t('Começa com as 2 primeiras; as outras chegam ao longo da jornada.', 'Starts with the first 2; the rest come along the journey.')));
     }
