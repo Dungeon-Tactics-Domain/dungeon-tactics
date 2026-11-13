@@ -100,6 +100,7 @@ const WALL_COLOR: Record<string, string> = {
 };
 const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
+const DEEP_DROP = 0.45; // quanto a superfície da água funda fica abaixo da rasa, em níveis (só desenho; a regra lê depth)
 const TINT_GLOW = 0.45; // força do brilho próprio (UnitDef.tint): visível no boneco escuro sem apagar a textura
 
 // Paleta reduzida: cada canal em poucos degraus, depois da conversão para sRGB (degraus iguais ao olho). 6 níveis
@@ -370,7 +371,8 @@ export class BattleScene {
       // (coluna, caixote, barril), a peça é que bloqueia e a casa fica no nível do chão.
       const wall = tile.terrain === 'wall';
       const h = look.canopy && wall ? Math.min(...neighbors(this.grid, p).map((n) => tileAt(this.grid, n).h)) : tile.h + (wall && !look.prop ? 2 : 0);
-      const top = (h + 1) * this.step;
+      // água funda um pouco mais baixa que a rasa: a mesma peça de água, e o degrau na margem diz "aqui não se atravessa"
+      const top = (h + 1) * this.step - ((tile.depth ?? 0) >= 2 ? this.step * DEEP_DROP : 0);
       // a ponte é uma tábua de um nível sobre a água; casa baixa (topo abaixo de 1) tem o cubo achatado até a base; na borda
       // o topo é uma fatia de um nível e a lateral lisa começa logo abaixo dela
       const onEdge = edge(p);
