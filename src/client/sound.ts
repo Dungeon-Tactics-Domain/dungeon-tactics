@@ -110,7 +110,8 @@ export function jingle(win: boolean) {
     const last = i === notes.length - 1;
     osc.type = win ? 'square' : 'triangle';
     osc.frequency.value = f;
-    gain.gain.setValueAtTime(GAIN[settings.sfx] * 0.25, t0);
+    // 0,4 (era 0,25, medido em 13/11): a fanfarra ficava em -24 a -27 dB, mais baixa que um clique; agora perto dos efeitos
+    gain.gain.setValueAtTime(GAIN[settings.sfx] * 0.4, t0);
     gain.gain.exponentialRampToValueAtTime(0.001, t0 + (last ? 0.9 : step * 0.95));
     osc.connect(gain).connect(ctx!.destination);
     osc.start(t0);
@@ -127,7 +128,9 @@ export function blip(pitch: number) {
   const t0 = ctx.currentTime;
   osc.type = 'square';
   osc.frequency.value = pitch * (0.94 + Math.random() * 0.12);
-  gain.gain.setValueAtTime(GAIN[settings.sfx] * 0.08, t0);
+  // 0,2 (era 0,08, medido em 13/11): o bipe ficava em -33 dB, abaixo da música (-31 dB), e a voz sumia nas conversas;
+  // agora -26 dB, acima da música e abaixo dos efeitos de arquivo (-14 a -21 dB)
+  gain.gain.setValueAtTime(GAIN[settings.sfx] * 0.2, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
   osc.connect(gain).connect(ctx.destination);
   osc.start(t0);
