@@ -66,9 +66,12 @@ const fadeTick = () => {
   }
 };
 
+// página aberta por automação (Playwright das sessões de teste): sem música, mesmo com volume salvo (13/11, pedido do
+// Fernando: "mute as abas que você abre, essa música não pode ficar tocando no fundo"); `?musica=1` liga para testar som
+const AUTOMATED = typeof navigator !== 'undefined' && navigator.webdriver && !(typeof location !== 'undefined' && new URLSearchParams(location.search).has('musica'));
 const applyMusic = () => {
   if (!ctx) return;
-  const want = settings.music ? (track ?? 'battle') : null;
+  const want = settings.music && !AUTOMATED ? (track ?? 'battle') : null;
   for (const [id, v] of voices) if (id !== want) v.to = 0;
   if (want) {
     let v = voices.get(want);

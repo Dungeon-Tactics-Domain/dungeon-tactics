@@ -41,3 +41,4 @@ Vale junto com o `CLAUDE.md` da raiz. **Web no PC primeiro** (pedido do Fernando
   - Menus abrem em 90–120 ms e o ▶ pulsa; com movimento reduzido, nada anima.
 - **Pixel art configurável** (pedido do Fernando, 25/10): `pixel-settings.ts` (puro) guarda tamanho, contorno, paleta e câmera presa em `dt:pixel`; a `BattleScene.setPixel` aplica na hora. Atalho V e a linha Tamanho do pixel no menu do canto; opções no menu com `choice()` (`dialog.ts`).
 - Preferências e save em `store.ts` com prefixo `dt:`.
+- **Teste sem música** (13/11, pedido do Fernando): em `localhost` a música começa em 0 e, em página aberta por automação (`navigator.webdriver`, o Playwright), não toca nunca, a menos que a URL tenha `?musica=1`. Roteiros de teste lançam o Chrome com `--mute-audio`.
