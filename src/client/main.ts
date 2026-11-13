@@ -835,7 +835,8 @@ function titleScreen() {
         el('small', { class: 'continue-where' }, continueWhere()))] : []),
       el('button', { type: 'button', class: parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary', onclick: (e: Event) => {
         const btn = e.currentTarget as HTMLButtonElement;
-        if (parseWorld(store.get(WORLD_KEY)) > 0 && !btn.dataset.armed) {
+        // pede o 2º toque também com só o herói criado (revisão de 13/11: apagava o herói sem perguntar)
+        if ((parseWorld(store.get(WORLD_KEY)) > 0 || savedHero()) && !btn.dataset.armed) {
           btn.dataset.armed = '1';
           btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
           return;
@@ -848,7 +849,9 @@ function titleScreen() {
       el('button', { type: 'button', class: 'secondary', onclick: go(howToPlay) }, t('Como jogar', 'How to play')),
       el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu(titleScreen)) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map')),
       el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits'))),
-    el('p', { class: 'title-foot' }, t('Setas escolhem · Enter confirma', 'Arrows choose · Enter confirms')),
+    el('p', { class: 'title-foot' }, t('Setas escolhem · Enter confirma', 'Arrows choose · Enter confirms'), ' · ',
+      // idioma direto no título (revisão de 13/11: só dava pelo menu de dentro da batalha)
+      el('button', { type: 'button', class: 'title-lang', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português')),
   ], { fixed: true }); // tela de título de verdade (13/11): não fecha, e o mapa atrás é só cenário
   d.overlay.classList.add('main-title');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();

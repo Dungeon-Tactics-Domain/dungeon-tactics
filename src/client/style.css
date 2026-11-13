@@ -282,6 +282,10 @@ button[hidden] { display: none; }
   text-shadow: 0 4px 0 var(--edge), 0 0 28px rgba(255, 207, 74, .55); animation: title-in 600ms ease-out; }
 .main-title .title-sub, .main-title .title-foot { color: var(--paper-hi); text-shadow: 0 2px 0 var(--edge), 0 0 8px var(--edge); }
 .main-title .title-foot { font-size: var(--fs-sm); margin: 14px 0 0; opacity: .85; }
+.main-title .title-lang { min-height: 32px; padding: 0 12px; font-size: var(--fs-sm); vertical-align: middle; }
+/* menu de desenvolvedor: os botões de começar e exportar presos embaixo da janela, sempre à vista (revisão de 13/11: o
+   Começar ficava abaixo da dobra) */
+.dialog.dev > .menu-actions, .dialog.dev .menu-actions:last-child { position: sticky; bottom: -18px; background: var(--paper); padding: 8px 0; border-top: 2px solid var(--paper-edge); }
 .main-title .menu-actions { background: linear-gradient(var(--paper-hi), var(--paper)); border: 2px solid var(--paper-edge); border-radius: var(--r);
   box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); padding: 12px; }
 @keyframes title-in { from { opacity: 0; transform: translateY(-12px) scale(.96); } }
