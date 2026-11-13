@@ -20,7 +20,7 @@ import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
 import { TIMING, pace } from './timing.ts';
 import { lookOf } from './fx.ts';
-import { jingle, setSound, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
+import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from './campaign.ts';
@@ -593,6 +593,7 @@ async function boot() {
   if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
+    setTrack(CHAPTERS[chapter].song);
     scenario = chapterScenario(chapter);
     SAVE_KEY = `dt:battle:${chapterId(chapter)}`;
   } else if (study === 'fft-gariland' || study === 'fft-classes') {

@@ -3,6 +3,7 @@
 // falas antes e depois da batalha. Puro e testado; a tela das falas fica em talk.ts.
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import { buildDevScenario, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
+import type { SongId } from './music.ts';
 
 export interface Line {
   who: keyof typeof SPEAKERS;
@@ -11,6 +12,7 @@ export interface Line {
 }
 export interface Chapter {
   title: [string, string];
+  song: SongId; // música da fase (music.ts)
   setup: DevSetup;
   intro: Line[];
   outro: Line[];
@@ -41,6 +43,7 @@ const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
 export const CHAPTERS: Chapter[] = [
   {
     title: ['A Estrada de Cinzas', 'The Ash Road'],
+    song: 'road',
     setup: { map: 'skirmish', heroes: party(), enemies: [foe('soldier'), foe('soldier', { name: 'Recruta', hp: 25 }), foe('soldier', { name: 'Recruta', hp: 25 }), foe('skeleton_archer')] },
     intro: [
       L('narr', 'Os Faróis guardam os vilarejos do Véu, a névoa onde os mortos não descansam. Um a um, eles estão se apagando.', 'The Beacons keep the villages safe from the Veil, the mist where the dead never rest. One by one, they are going dark.'),
@@ -57,6 +60,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     title: ['A Colina do Farol', 'Beacon Hill'],
+    song: 'road',
     setup: { map: 'beacon_hill', heroes: party(), enemies: [foe('brute'), foe('dark_mage'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A Colina do Farol. Neve de um lado, campo do outro, e o cristal azul no meio de tudo.', 'Beacon Hill. Snow on one side, fields on the other, and the blue crystal in the middle of it all.'),
@@ -72,6 +76,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     title: ['A Cripta Alagada', 'The Flooded Crypt'],
+    song: 'crypt',
     setup: { map: 'flooded_crypt', heroes: party(), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('dark_mage'), foe('skeleton_archer', { name: 'Ossada', hp: 10 })] },
     intro: [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
@@ -86,6 +91,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
+    song: 'boss',
     setup: { map: 'flooded_crypt', heroes: party(), enemies: [vesper(60, 8), foe('brute'), foe('skeleton_archer'), foe('skeleton_archer', { name: 'Ossada', hp: 18 })] },
     intro: [
       L('vesper', 'Lia. Voltou para casa e trouxe amigos.', 'Lia. You came home, and you brought friends.'),
@@ -101,6 +107,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     title: ['O Último Farol', 'The Last Beacon'],
+    song: 'boss',
     setup: { map: 'beacon_hill', heroes: party(), enemies: [vesper(65, 8), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),

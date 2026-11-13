@@ -1,6 +1,7 @@
 // Som do jogo (12/11, pedido do Fernando: música e efeitos no jeito do FFT, mas nada do original): música de batalha em
 // laço, efeitos curtos e as fanfarras de vitória e derrota, que são notas feitas aqui no WebAudio (sem arquivo).
 // Arquivos e licenças (todos CC0) em public/CREDITS.txt. O navegador só deixa tocar depois do 1º clique ou tecla.
+import { SONGS, playSong, type SongId } from './music.ts';
 import { store } from './store.ts';
 
 export const SOUND_KEY = 'dt:sound';
@@ -32,8 +33,25 @@ let ctx: AudioContext | null = null;
 let music: HTMLAudioElement | null = null;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 
+// Fase da campanha toca a música sintetizada dela (music.ts) no lugar do arquivo de batalha
+let track: SongId | null = null;
+let synth: ReturnType<typeof playSong> | null = null;
+export function setTrack(id: SongId | null) {
+  track = id;
+  applyMusic();
+}
+
 const applyMusic = () => {
   if (!ctx) return;
+  if (track) {
+    music?.pause();
+    if (!settings.music) {
+      synth?.stop();
+      synth = null;
+    } else if (synth) synth.setVolume(GAIN[settings.music]);
+    else synth = playSong(ctx, SONGS[track], GAIN[settings.music]);
+    return;
+  }
   if (!music && settings.music) {
     music = new Audio('/music/battle.mp3');
     music.loop = true;
