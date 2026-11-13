@@ -448,6 +448,8 @@ export class BattleScene {
         const mesh = m as THREE.Mesh;
         if (!mesh.isMesh) return;
         mesh.material = (mesh.material as THREE.MeshStandardMaterial).clone();
+        const tint = UNIT_DEFS[u.def].tint; // roxo do Acólito por cima do mago: não confundir com o Odo
+        if (tint) (mesh.material as THREE.MeshStandardMaterial).color.lerp(new THREE.Color(tint), 0.55);
         mats.push(mesh.material as THREE.MeshStandardMaterial);
       });
       const b = new THREE.Box3().setFromObject(body);

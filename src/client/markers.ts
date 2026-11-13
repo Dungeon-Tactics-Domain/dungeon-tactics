@@ -25,6 +25,6 @@ export const MARKER = {
 const MODEL: Record<string, string> = {
   warrior: 'knight', archer: 'rogue', mage: 'mage', rogue: 'rogue_hooded',
   soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
-  minion: 'skeleton_minion', colossus: 'skeleton_warrior',
+  minion: 'skeleton_minion', colossus: 'skeleton_warrior', acolyte: 'mage', // Acólito: o mago tingido (UnitDef.tint)
 };
 export const modelOf = (def: string): string => MODEL[def] ?? UNIT_DEFS[def].model ?? ''; // '' = sem modelo (o Farol)

@@ -48,7 +48,7 @@ export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTER
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 42% → 37% no Ato I (com os espinhos da Cripta) e 51% → 31% no Ato II (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 42% → 37% no Ato I (com os espinhos da Cripta) e 39% → 30% no Ato II (com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -158,12 +158,13 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Passo Gelado', 'Frost Pass'],
     song: 'snow',
-    setup: { map: 'frost_pass', heroes: party(5), enemies: [foe('skeleton_archer'), foe('soldier'), foe('dark_mage'), foe('minion')] },
+    setup: { map: 'frost_pass', heroes: party(5), enemies: [foe('skeleton_archer'), foe('soldier'), foe('acolyte'), foe('minion')] },
     intro: [
       L('narr', 'Três dias depois. O Passo Gelado, para onde o Véu recuou, ainda brilha roxo à noite.', 'Three days later. Frost Pass, where the Veil retreated to, still glows purple at night.'),
       L('bran', 'Subida longa e inimigo no alto. Do jeito que eu odeio.', 'A long climb with the enemy up high. Just the way I hate it.'),
       L('tess', 'Lá de cima eles enxergam e alcançam mais longe. Usem as árvores secas para se cobrir.', 'From up there they see and reach farther. Use the dead trees for cover.'),
       L('lia', 'Esses mortos não usam as cores do Vesper. Alguém mais está chamando eles.', 'These dead do not wear Vesper\'s colors. Someone else is calling them.'),
+      L('odo', 'E aquele de manto roxo é um acólito: ele cura os outros. Derrubem ele primeiro!', 'And that one in the purple robe is an acolyte: he heals the others. Take him down first!'),
       L('hero', 'Subimos juntos, devagar. Quem chegar ao cume primeiro espera os outros.', 'We climb together, slowly. Whoever reaches the summit first waits for the rest.'),
     ],
     outro: [

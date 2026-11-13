@@ -176,7 +176,8 @@ function gauge(cls: string, label: string, value: number, max: number) {
 // retrato do boneco KayKit renderizado (public/chars, scripts/portraits.mjs); o Farol não tem boneco: um cristal em CSS
 export function portrait(def: string) {
   const model = modelOf(def);
-  return model ? el('img', { class: 'portrait', src: `/chars/${model}.webp`, alt: '' }) : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
+  // unidade tingida (UnitDef.tint, o Acólito sobre o mago): o retrato ganha o filtro .tinted para casar com o boneco
+  return model ? el('img', { class: `portrait${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`, src: `/chars/${model}.webp`, alt: '' }) : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
 }
 
 // lado e, para quem tem nome próprio (campanha, menu de desenvolvedor), a classe: "Ladino · herói"
