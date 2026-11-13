@@ -4,7 +4,7 @@
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
-import { buildDevScenario, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
+import { buildDevScenario, slotsOf, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
 import { withHero, type Hero } from './hero.ts';
 import type { SongId } from './music.ts';
 
@@ -221,6 +221,17 @@ export function parseStars(raw: unknown): number[] {
   return CHAPTERS.map((_, i) => (Number.isInteger(list[i]) && list[i] >= 0 && list[i] <= 3 ? list[i] : 0));
 }
 export const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
+
+// objetivo da fase em uma frase, anunciado no começo da batalha (como a faixa de objetivo do FFT)
+export function objectiveText(n: number, say: (pt: string, en: string) => string): string {
+  const c = CHAPTERS[n];
+  const beacon = slotsOf(c.setup.map).objective.length > 0;
+  if (c.boss) {
+    const boss = c.setup.enemies[0];
+    return say(`Derrube ${boss.name}${beacon ? ' e proteja o Farol' : ''}!`, `Bring down ${boss.en ?? boss.name}${beacon ? ' and protect the Beacon' : ''}!`);
+  }
+  return beacon ? say('Derrote os inimigos e proteja o Farol!', 'Defeat the enemies and protect the Beacon!') : say('Derrote todos os inimigos!', 'Defeat every enemy!');
+}
 
 // progresso salvo no navegador (fronteira de confiança): inteiro entre 0 e o número de fases, senão 0
 export function parseProgress(raw: unknown): number {

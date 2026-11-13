@@ -23,7 +23,7 @@ import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
+import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { talk } from './talk.ts';
 import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld } from './world.ts';
 import { openWorld } from './world-ui.ts';
@@ -635,9 +635,19 @@ async function boot() {
   const scene = await BattleScene.create(host, battle.grid, battle.state, pixel);
   new Game(battle, scene, host, pixel);
   // fase começando do zero: a conversa de abertura por cima do mapa já montado
-  if (chapter !== null && !saved) void talk(CHAPTERS[chapter].intro, { title: chapterTitle(chapter), hero: savedHero() });
+  // fase do zero: conversa de abertura e, ao fechar, a faixa do objetivo (como o anúncio de objetivo do FFT)
+  const n = chapter;
+  if (n !== null && !saved) void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() => announce(objectiveText(n, t)));
   // abrir o jogo sem parâmetro mostra a tela de título por cima da batalha avulsa (que fica ao fundo, já jogável)
   if (camp === null && !study) titleScreen();
+}
+
+// Faixa grande no meio da tela por 2 s (objetivo no começo da fase); some sozinha e não pega clique
+function announce(text: string) {
+  sfx('confirm');
+  const box = el('div', { class: 'announce', role: 'status' }, text);
+  document.body.append(box);
+  setTimeout(() => box.remove(), 2200);
 }
 
 // Vitória: papel picado caindo por 2,5 s (DOM e CSS, sem custo no quadro do 3D); some sozinho. Com movimento reduzido, nada.

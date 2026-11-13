@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
-import { CHAPTERS, SPEAKERS, chapterScenario, learned, parseProgress, parseStars, starText, starsOf } from '../src/client/campaign.ts';
+import { CHAPTERS, SPEAKERS, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from '../src/client/campaign.ts';
 import { problems } from '../src/client/dev-roster.ts';
 import { unitHeight } from '../src/client/markers.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -29,6 +29,13 @@ describe('campanha Cinzas do Farol', () => {
     expect(outcome({ ...st, units: st.units.filter((u) => u.id !== 'e0') })).toBe('victory');
     expect(outcome({ ...st, units: st.units.filter((u) => u.team !== 'hero' || u.def === 'beacon') })).toBe('defeat');
     expect(outcome({ ...st, units: st.units.filter((u) => u.def !== 'beacon') })).toBe('defeat');  });
+
+  it('o objetivo anunciado segue a regra da fase (chefe, Farol ou todos)', () => {
+    expect(objectiveText(0, say)).toBe('Derrote todos os inimigos!');
+    expect(objectiveText(1, say)).toBe('Derrote os inimigos e proteja o Farol!');
+    expect(objectiveText(3, say)).toBe('Derrube Vesper e proteja o Farol!');
+    expect(objectiveText(CHAPTERS.length - 1, (_pt, en) => en)).toBe('Bring down The Shade!');
+  });
 
   it('o Bruto da campanha (ficha própria) tem a altura do Bruto', () => {
     const s = chapterScenario(1);

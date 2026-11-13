@@ -274,3 +274,10 @@ button[hidden] { display: none; }
 @media (max-width: 600px) { .create-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { .talk-overlay.dark { animation: none; } }
 .talk-overlay.dark .panel.talk:focus-visible { outline: none; } /* a cena inteira é o botão; o ▼ piscando já mostra que dá para seguir */
+/* faixa do objetivo no começo da fase (main.ts, announce): entra esticando, segura para ler, some; não pega clique */
+.announce { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 15; pointer-events: none; padding: 14px 36px;
+  font: 400 30px/1.2 var(--font-px); color: var(--paper-hi); text-align: center; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
+  background: linear-gradient(90deg, transparent, rgba(20, 12, 30, .88) 15%, rgba(20, 12, 30, .88) 85%, transparent);
+  text-shadow: 0 2px 0 #000; animation: announce 2.2s ease-out forwards; }
+@keyframes announce { 0% { opacity: 0; transform: translate(-50%, -50%) scaleX(.3); } 12% { opacity: 1; transform: translate(-50%, -50%) scaleX(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .announce { animation: none; } }
