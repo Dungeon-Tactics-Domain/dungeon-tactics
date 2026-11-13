@@ -23,7 +23,7 @@ import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from './campaign.ts';
+import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { talk } from './talk.ts';
 
 // a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
@@ -521,11 +521,17 @@ class Game {
   // Fim de fase da campanha: vitória libera a próxima e toca a conversa de saída; derrota oferece tentar de novo
   private async finishChapter(n: number, won: boolean) {
     const last = n === CHAPTERS.length - 1;
+    const stars = starsOf(this.battle.state, n);
     if (won) {
       store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
+      const best = parseStars(store.json(STARS_KEY));
+      best[n] = Math.max(best[n], stars);
+      store.set(STARS_KEY, JSON.stringify(best));
       await talk(CHAPTERS[n].outro);
     }
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
+      ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
+        el('p', {}, t('★ vencer · ★ ninguém caiu · ★ Farol inteiro (sem Farol: todos acima da metade da vida)', '★ win · ★ nobody fell · ★ Beacon untouched (no Beacon: everyone above half HP)'))] : []),
       el('p', {}, won ? (last ? t('O vale está a salvo. Obrigado por jogar!', 'The valley is safe. Thanks for playing!') : t(`Próximo: ${CHAPTERS[n + 1].title[0]}.`, `Next: ${CHAPTERS[n + 1].title[1]}.`))
         : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
       won && !last
@@ -628,6 +634,7 @@ const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title
 // Lista das fases: as vencidas e a próxima abrem; escolher apaga o save daquela fase e começa do zero (com a conversa)
 function campaignMenu() {
   const done = parseProgress(store.get(CAMPAIGN_KEY));
+  const stars = parseStars(store.json(STARS_KEY));
   const d = dialog('menu', t('Campanha: Cinzas do Farol', 'Campaign: Ashes of the Beacon'), [
     el('div', { class: 'menu-actions camp-list' }, ...CHAPTERS.map((_, n) => el('button', {
       type: 'button', class: n === done ? 'primary' : 'secondary', disabled: n > done,
@@ -636,7 +643,7 @@ function campaignMenu() {
         store.set(`dt:battle:${chapterId(n)}`, '');
         location.search = `?campanha=${n}`;
       },
-    }, `${n < done ? '✓ ' : ''}${chapterTitle(n)}`))),
+    }, `${chapterTitle(n)}${n < done ? `  ${starText(stars[n])}` : ''}`))),
   ]);
 }
 

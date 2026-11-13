@@ -211,3 +211,4 @@ button[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .talk-title, .panel.talk, .talk.done .talk-next { animation: none; } }
 .camp-list { flex-direction: column; } /* lista de fases da campanha: uma por linha, nome inteiro */
 .camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
+.stars { font: 400 40px/1 var(--font-px); color: var(--gold, #f2c14e); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */

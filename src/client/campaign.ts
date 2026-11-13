@@ -2,6 +2,8 @@
 // sons de fala). História nossa. Cada fase é um elenco do menu de desenvolvedor (dev-roster.ts) num mapa do jogo, com
 // falas antes e depois da batalha. Puro e testado; a tela das falas fica em talk.ts.
 import type { Scenario } from '../shared/battle/scenarios.ts';
+import type { BattleState } from '../shared/battle/types.ts';
+import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
 import { buildDevScenario, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
 import type { SongId } from './music.ts';
 
@@ -126,6 +128,22 @@ export const CHAPTERS: Chapter[] = [
 
 export const chapterId = (n: number) => `camp${n}`;
 export const chapterScenario = (n: number): Scenario => buildDevScenario(CHAPTERS[n].setup, chapterId(n), CHAPTERS[n].title);
+
+// Estrelas da fase (0 a 3), para ter motivo de rejogar: vencer; ninguém caiu; e o Farol inteiro (nos mapas com Farol) ou,
+// sem Farol, todos os heróis com mais da metade da vida. A melhor nota de cada fase fica salva em STARS_KEY.
+export const STARS_KEY = 'dt:estrelas';
+export function starsOf(state: BattleState, n: number): number {
+  if (state.outcome !== 'victory') return 0;
+  const heroes = state.units.filter((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF);
+  const beacon = state.units.find((u) => u.def === OBJECTIVE_DEF);
+  const clean = beacon ? beacon.hp === UNIT_DEFS[OBJECTIVE_DEF].hp : heroes.every((u) => u.hp * 2 > UNIT_DEFS[u.def].hp);
+  return 1 + Number(heroes.length === CHAPTERS[n].setup.heroes.length) + Number(clean);
+}
+export function parseStars(raw: unknown): number[] {
+  const list = Array.isArray(raw) ? raw : [];
+  return CHAPTERS.map((_, i) => (Number.isInteger(list[i]) && list[i] >= 0 && list[i] <= 3 ? list[i] : 0));
+}
+export const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 // progresso salvo no navegador (fronteira de confiança): inteiro entre 0 e o número de fases, senão 0
 export function parseProgress(raw: unknown): number {
