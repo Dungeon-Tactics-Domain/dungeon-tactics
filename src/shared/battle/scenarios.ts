@@ -366,27 +366,32 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
   r: { terrain: 'wall', h: 1, look: 'rock' },
   c: { terrain: 'wall', h: 0, look: 'crates' }, // no chão: a carga da caravana caída na estrada, não em cima de bloco
   x: { terrain: 'wall', h: 0, look: 'barrel' },
+  // corpo da caravana (13/11, pedido do Fernando: "corpos em volta dos recursos para dizer que foram os esqueletos que os
+  // mataram; os corpos também bloqueiam o percurso"): bloqueia como os caixotes; o desenho é o boneco caído (scene.ts)
+  k: { terrain: 'wall', h: 0, look: 'corpse' },
 };
 // sem as árvores em 1,0, 11,1 e 10,2 (13/11): com árvore sem passagem, os dois cantos de cima viravam bolsas fechadas
+// estrada (13/11, pedido do Fernando: "uma estrada que passa pela ponte, desça o relevo para permitir a estrada"): a de
+// areia do lado dos heróis segue depois da ponte, num corte que sobe em rampa até o planalto inimigo (colunas 3 e 4)
 const WOOD_MAP = [
-  'gggggGGgggtg',
-  'tgGGgGGgTggg',
-  'ggGGrggggggg',
-  'gtgggggrggtg',
+  'gggssGGgggtg',
+  'tgGssGGgTggg',
+  'ggGssggggggg',
+  'gtgssggrggtg',
   'WWWbbWWWWwwW',
   'WWWbbWWWWwwW',
   'gtgssgggtssg',
   'ggcsxgggssgT',
-  'tgsssssssggg',
-  'ggsgcgtggsgt',
+  'tgsssksssggg',
+  'ggskcgtggsgt',
   'gTsgggggggyg',
   'ggsggggTgggg',
 ];
 const WOOD_H = [
   '443333333344',
-  '443333333344',
-  '222122221222',
-  '221100001122',
+  '443223333344',
+  '222112221222',
+  '221000001122',
   '000000000000',
   '000000000000',
   '000000000000',
@@ -399,9 +404,9 @@ const WOOD_H = [
 // rampas (13/11): as subidas da margem norte ao planalto inimigo e as da margem sul aos cantos altos dos heróis
 const WOOD_RAMPS = [
   '..<.........',
-  '..<......>..',
-  '..^..^^^.^..',
-  '..^.<....^..',
+  '..<^^....>..',
+  '..^^^^^^.^..',
+  '..^^^....^..',
   '............',
   '............',
   'v...........',

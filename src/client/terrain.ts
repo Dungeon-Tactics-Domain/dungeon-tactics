@@ -19,7 +19,7 @@ const RISE = 0.5; // quanto o lado da nascente sobe (em níveis) a cada 2 casas 
 type Paint = [grass: number, leaves: number, dirt: number, snow: number, stone: number];
 export const PAINT: Record<string, Paint> = {
   grass: [1, 0, 0, 0, 0], tree: [0.5, 0.5, 0, 0, 0], tree2: [0.6, 0.4, 0, 0, 0], tree3: [0.6, 0.4, 0, 0, 0], tree4: [0.6, 0.4, 0, 0, 0],
-  sand: [0.15, 0, 0.85, 0, 0], water: [0, 0, 1, 0, 0], crates: [0, 0, 1, 0, 0], barrel: [0, 0, 1, 0, 0],
+  sand: [0.15, 0, 0.85, 0, 0], water: [0, 0, 1, 0, 0], crates: [0, 0, 1, 0, 0], barrel: [0, 0, 1, 0, 0], corpse: [0.2, 0, 0.8, 0, 0],
   snow: [0, 0, 0.3, 0.7, 0], snow_rock: [0, 0, 0, 0.8, 0.2], bare1: [0, 0, 0.3, 0.7, 0], bare2: [0, 0, 0.3, 0.7, 0],
   rock: [0, 0, 0, 0, 1], summit: [0, 0, 0, 0, 1], gold: [0, 0, 0.3, 0, 0.7], stone: [0, 0, 0.4, 0, 0.6],
 };

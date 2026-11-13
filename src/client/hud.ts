@@ -148,7 +148,7 @@ const LOOK_NAME: Record<string, () => string> = {
   tree2: () => t('árvore', 'tree'), tree3: () => t('árvore', 'tree'), tree4: () => t('árvore', 'tree'), bare1: () => t('árvore seca', 'bare tree'), bare2: () => t('árvore seca', 'bare tree'),
   crypt: () => t('piso de pedra', 'stone floor'), altar: () => t('altar', 'altar'), pillar: () => t('coluna', 'pillar'), crates: () => t('caixotes', 'crates'),
   barrel: () => t('barril', 'barrel'), chest: () => t('baú', 'chest'), rubble: () => t('entulho', 'rubble'),
-  spikes: () => t('armadilha de espinhos', 'spike trap'),
+  spikes: () => t('armadilha de espinhos', 'spike trap'), corpse: () => t('corpo', 'body'),
 };
 const TERRAIN_NAME: Record<string, () => string> = { floor: () => t('chão', 'ground'), forest: () => t('árvore', 'tree'), rubble: () => t('entulho (cobertura)', 'rubble (cover)'), wall: () => t('muro', 'wall') };
 export function tileInfo(grid: Grid, p: Pos): string {

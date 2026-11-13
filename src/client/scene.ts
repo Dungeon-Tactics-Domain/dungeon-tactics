@@ -90,7 +90,11 @@ const LOOK: Record<string, { top: string; side: string | null; prop?: string; pr
   chest: { top: 'blocos/stone_dark', side: 'blocos/stone_dark', prop: 'masmorra/chest_gold', propH: 0.6 },
   rubble: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/rubble_half', propH: 0.4 },
   spikes: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/floor_tile_big_spikes', propW: 0.95 },
+  // corpo caído: o chão é o do terreno e o corpo é um boneco no fim da animação de morte (buildCorpses)
+  corpse: { top: 'blocos/dirt', side: 'blocos/dirt' },
 };
+// bonecos dos corpos da caravana (cavaleiro e ladino, os que guardavam a carga)
+const CORPSE_MODELS = ['knight', 'rogue'];
 // escada da masmorra: 2 de largura, 4 de fundo e 4 de altura, sobe para -z (conferido nos vértices do arquivo)
 const STAIRS = 'masmorra/stairs_modular_center';
 const PLAIN_UNITS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'liso';
@@ -216,7 +220,7 @@ export class BattleScene {
   private raised?: Set<string>; // trechos fundos na altura da rasa (water-levels.ts raisedDeep)
   // casa desenhada pelo terreno liso (terrain.ts) em vez de blocos: aparência pintável, fora muro sem peça (pedra, tijolo)
   // paredão de pedra ou neve (muro sem peça) também vira terreno: um morro de pedra dois níveis acima (rock(t))
-  private ground = (t: Tile): boolean => !!this.terrainTex && !!t.look && t.look in PAINT && (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look));
+  private ground = (t: Tile): boolean => !!this.terrainTex && !!t.look && t.look in PAINT && (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look) || t.look === 'corpse');
   private rock = (t: Tile) => t.terrain === 'wall' && !LOOK[t.look ?? '']?.prop && MOUND.has(t.look ?? '');
   private ambience: Ambience | null = null; // arredores, neblina, raios de luz e partículas (ambience.ts)
 
@@ -262,7 +266,8 @@ export class BattleScene {
     const terrainTex = grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt' ? loadTerrainTextures() : null;
     // bonecos comprimidos com meshopt (13/11, pedido do Fernando: o jogo baixava 11 MB para abrir); decodificador do Three
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const defs = [...new Set([...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)).filter(Boolean))];
+    const corpses = grid.tiles.some((t) => t.look === 'corpse') ? CORPSE_MODELS : [];
+    const defs = [...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean))];
     const [top, side, stone, tree, ...loaded] = await Promise.all([
       ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/quadrado/${n}.gltf`)),
       loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // a árvore do pack de blocos é um cubo de folhas
@@ -417,6 +422,7 @@ export class BattleScene {
       if (outside.size) { this.stream = buildStream(this.grid, this.step, levels, river); this.scene.add(...this.stream.meshes); }
       this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
     }
+    this.buildCorpses();
     this.buildTrees(pieces.tree);
     this.buildStairs();
     this.buildDetails();
@@ -544,6 +550,46 @@ export class BattleScene {
       this.texturedMats.set(m, out);
     }
     return out;
+  }
+
+  // Corpos da caravana: cavaleiro e ladino alternados, parados no último quadro da animação de morte, escurecidos, com uma
+  // mancha escura no chão; giro sorteado pela casa
+  private buildCorpses() {
+    const stain = new THREE.MeshBasicMaterial({ color: '#2a0f0a', transparent: true, opacity: 0.55, depthWrite: false });
+    this.grid.tiles.forEach((t, i) => {
+      if (t.look !== 'corpse') return;
+      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
+      const gltf = this.models.get(CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length]);
+      if (!gltf) return;
+      const body = prepare(cloneSkinned(gltf.scene));
+      body.traverse((m) => {
+        const mesh = m as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+        mat.color.multiplyScalar(0.55); // sem vida: mais escuro e apagado que os bonecos da batalha
+        mesh.material = this.textured(mat);
+      });
+      const b = new THREE.Box3().setFromObject(body);
+      body.scale.setScalar(unitHeight('soldier') / (b.max.y - b.min.y));
+      const clip = [...gltf.animations, ...this.packClips].find((c) => c.name === 'Death_A');
+      if (clip) {
+        const mixer = new THREE.AnimationMixer(body);
+        const act = mixer.clipAction(clip);
+        act.setLoop(THREE.LoopOnce, 1);
+        act.clampWhenFinished = true;
+        act.play();
+        mixer.update(clip.duration);
+      }
+      const w = this.world(p);
+      body.position.copy(w);
+      body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
+      this.scene.add(body);
+      const spot = new THREE.Mesh(new THREE.CircleGeometry(0.42, 12).rotateX(-Math.PI / 2), stain);
+      spot.position.set(w.x + 0.08, w.y + 0.012, w.z - 0.05);
+      spot.scale.set(1, 1, 0.7);
+      spot.renderOrder = -2;
+      this.scene.add(spot);
+    });
   }
 
   private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
