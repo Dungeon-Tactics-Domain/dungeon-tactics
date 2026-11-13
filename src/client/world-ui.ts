@@ -78,6 +78,9 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
       onmouseenter: () => isOpen(i, done) && sfx('cursor'), // som de cursor ao passar por um ponto aberto, como nos menus
     });
   });
+  // estrelas sob cada batalha já vencida: o mapa mostra de longe o que vale rejogar (fora do botão, que é girado 45°)
+  const starMarks = WORLD.flatMap((w, i) => w.chapter !== undefined && i < done
+    ? [el('span', { class: 'world-stars', style: `left:${w.x}%;top:${w.y}%`, 'aria-hidden': 'true' }, starText(stars[w.chapter]))] : []);
   const place = el('strong', { class: 'world-place' });
   const kindText = el('p', { class: 'world-kind' });
   const enterBtn = el('button', { type: 'button', class: 'item focus', onclick: () => go() }, t('Entrar', 'Enter'));
@@ -85,7 +88,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     el('button', { type: 'button', class: 'item', onclick: () => opts.party() }, t('Grupo', 'Party')),
     el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title'))));
   const root = el('div', { class: 'world' },
-    el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, token),
+    el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, ...starMarks, token),
     el('div', { class: 'panel world-head' }, el('strong', {}, t('Mapa do Vale', 'Valley Map')), ` · ${t(`${Math.min(done, WORLD.length)} de ${WORLD.length}`, `${Math.min(done, WORLD.length)} of ${WORLD.length}`)}`),
     panel,
     el('p', { class: 'panel world-help' }, t('Setas andam · Enter entra · G grupo · Esc volta', 'Arrows walk · Enter enters · G party · Esc goes back')));

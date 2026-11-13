@@ -250,6 +250,7 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world-node.story { background: #3d6fb0; border-radius: 50%; }
 .world-node.done { border-color: #e2b23a; }
 .world-node:disabled { background: #b9ad97; border-color: #9a8f7c; filter: none; cursor: default; }
+.world-stars { position: absolute; transform: translate(-50%, 16px); font: 400 14px/1 var(--font); color: var(--gold-trim); letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
 .world-node.here { outline: 3px solid var(--focus); outline-offset: 4px; }
 .world-token { position: absolute; transform: translate(-50%, -110%); transition: left var(--walk-ms) ease-in-out, top var(--walk-ms) ease-in-out; pointer-events: none; animation: bob 1s ease-in-out infinite; }
 .world-token .portrait { width: 44px; height: 58px; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
