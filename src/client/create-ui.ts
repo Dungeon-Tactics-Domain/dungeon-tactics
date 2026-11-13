@@ -22,7 +22,7 @@ export function createHero(host: HTMLElement): Promise<Hero> {
     let cls: HeroClass = 'warrior';
     // nome sugerido já preenchido: quem joga só com o controle não tem como digitar; o teclado troca à vontade
     const name = el('input', { id: 'hero-name', type: 'text', maxlength: String(NAME_MAX), value: 'Ayla', placeholder: t('Seu nome', 'Your name'), 'aria-label': t('Nome do protagonista', 'Protagonist name') }) as HTMLInputElement;
-    const cards = HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'create-card', 'aria-pressed': 'false', onclick: () => pick(c) }, portrait(c), el('strong', {}, unitName(c))));
+    const cards = HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'create-card', 'aria-pressed': 'false', 'data-cls': c, onclick: () => pick(c) }, portrait(c), el('strong', {}, unitName(c))));
     const sheet = el('div', { class: 'create-sheet' });
     const startBtn = el('button', { type: 'button', class: 'primary', onclick: () => start() }, t('Começar a jornada', 'Begin the journey'));
     const warn = el('p', { class: 'create-warn', role: 'status' });
@@ -58,7 +58,13 @@ export function createHero(host: HTMLElement): Promise<Hero> {
     const onKey = (e: KeyboardEvent) => {
       // tecla de verdade com o campo em foco é digitação; as setas do controle (evento sintético) trocam a classe mesmo assim
       const typing = e.isTrusted && document.activeElement === name;
-      if (e.key === 'Enter') { e.preventDefault(); return start(); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        // Enter numa carta de classe escolhe a classe dela antes de começar (revisão de 13/11: começava com a anterior)
+        const f = document.activeElement;
+        if (f instanceof HTMLElement && f.dataset.cls) pick(f.dataset.cls as HeroClass);
+        return start();
+      }
       if (typing) return;
       const i = HERO_CLASSES.indexOf(cls);
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); pick(HERO_CLASSES[(i + 1) % 4]); }

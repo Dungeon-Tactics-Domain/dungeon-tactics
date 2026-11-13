@@ -124,7 +124,7 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
   if (u.vars?.mp !== undefined) rows.push(['MP', String(u.vars.mp)]);
   if (u.vars?.potions !== undefined) rows.push([t('Poções', 'Potions'), String(u.vars.potions)]);
   rows.push(
-    ['CT', `${Math.max(0, u.ct)}/${TURN_THRESHOLD}`],
+    ['CT', `${Math.max(0, Math.min(u.ct, TURN_THRESHOLD))}/${TURN_THRESHOLD}`], // o painel já limitava a 100; o Status mostrava 108/100
     [t('Velocidade', 'Speed'), `${rulesOf(state).speed?.(u) ?? def.speed}${bonus('sp')}`],
     [t('Movimento', 'Move'), String(def.move)],
     [t('Salto', 'Jump'), String(jumpOf(state, u.def))],

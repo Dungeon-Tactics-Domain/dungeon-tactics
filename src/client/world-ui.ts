@@ -144,6 +144,10 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
       if (next === at) sfx('cancel'); // ponta da estrada ou ponto ainda fechado
       else void walkTo(next);
     } else if (k === 'enter' || k === ' ') {
+      // com o foco em outro botão do mapa (Título, Grupo), deixa o clique dele acontecer (revisão de 13/11: Enter no
+      // Título abria a fase)
+      const f = document.activeElement;
+      if (f instanceof HTMLButtonElement && f !== enterBtn && root.contains(f)) return;
       e.preventDefault();
       if (!e.repeat) go();
     } else if (k === 'escape') back();

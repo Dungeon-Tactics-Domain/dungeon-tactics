@@ -15,7 +15,7 @@
   /* mesmas cores das marcações da cena (MARK em scene.ts), para a legenda bater com o mapa */
   --mark-move: #ffffff; --mark-range: #ff6a3c; --mark-blocked: #6b3a8c; --mark-threat: #ff2d55;
   /* pergaminho do HUD (12/11, no espírito do FFT, cores nossas): tinta escura dá 11:1 sobre o papel */
-  --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #6b5638; --focus: #b2320f;
+  --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #655134; --focus: #9e2c0c; /* um tom mais escuros (13/11, revisão): 4,7:1 também sobre --paper-lo, no pé dos painéis */
   --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;
   --heal-ink: #1f7a3a; /* cura prevista em número grande sobre o pergaminho: 4,2:1 no papel, 3,3:1 no pé do degradê */
   --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
@@ -54,7 +54,7 @@ button { font: 700 var(--fs-sm)/1.1 var(--font); color: var(--fg); min-height: v
 /* apertado: bisel invertido e o botão desce 2 px, como uma tecla */
 button:not(:disabled):active { box-shadow: var(--frame-pressed); transform: translateY(2px); }
 button:disabled { filter: grayscale(.85) brightness(.65); cursor: default; }
-button:focus-visible { outline: 3px solid var(--trim-hi); outline-offset: 3px; }
+button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; } /* vermelho de tinta: o dourado sumia no pergaminho (1,2:1) */
 button[aria-pressed='true'] { box-shadow: var(--frame), var(--glow); }
 button.primary { background: var(--gold-btn); color: var(--on-accent); font: 400 var(--fs-lg)/1 var(--font-px); flex: 1;
   box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(255, 255, 255, .35), inset -4px -4px 0 0 rgba(0, 0, 0, .25), 0 3px 0 var(--edge); }
@@ -79,7 +79,6 @@ button[hidden] { display: none; }
 .queue.short li:nth-child(n + 6) { display: none; } /* título + 4 linhas; L mostra tudo */
 /* carga em prévia no "Executar?" (hud.ts queueRows): a lista mostra até a linha dela, que fica marcada; os alvos levam ◎ */
 .queue.preview li:nth-child(n) { display: flex; }
-.queue-row.pending { box-shadow: inset 0 0 0 2px var(--focus); font-weight: 700; font-style: normal; color: var(--ink); }
 .queue-target { margin-left: auto; font-weight: 700; color: var(--focus); }
 .queue-title { font: 400 var(--fs-sm)/1 var(--font-px); color: var(--ink-muted); padding: 2px 4px 4px; }
 .queue-row { display: flex; align-items: center; gap: 8px; padding: 2px 6px; font-size: var(--fs-sm); border-left: 5px solid var(--side); }
@@ -87,6 +86,8 @@ button[hidden] { display: none; }
 .queue-row.enemy { --side: var(--enemy); }
 .queue-row.now { background: rgba(255, 255, 255, .45); font-weight: 700; }
 .queue-row.charge { font-style: italic; color: var(--ink-muted); }
+/* depois de .charge, que ganhava por vir depois e deixava a linha "sai aqui" em itálico apagado (revisão de 13/11) */
+.queue-row.pending { box-shadow: inset 0 0 0 2px var(--focus); font-weight: 700; font-style: normal; color: var(--ink); }
 .queue-row .portrait { width: 24px; height: 32px; }
 /* ajuda do que fazer agora e faixa do nome da habilidade: no alto, no meio */
 .help { top: 12px; left: 50%; transform: translateX(-50%); max-width: 760px; text-align: center; font-size: var(--fs-sm); }
