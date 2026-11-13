@@ -82,7 +82,8 @@ export class Battle {
 
   act(abilityId: string, target: Pos): BattleEvent[] {
     if (this.over || this.state.turn.usedAbility || !this.preview(abilityId, target).ok) return [];
-    this.remember(true);
+    // declarar carga não sorteia dado: desfazer não gasta (13/11, revisão; o sorteio vem quando ela sai)
+    this.remember(ABILITIES[abilityId].charge === 0);
     if (this.actor.facing !== undefined && !samePos(target, this.actor.pos)) this.actor.facing = facingTo(this.actor.pos, target); // vira para o alvo
     const ability = ABILITIES[abilityId];
     let events: BattleEvent[];

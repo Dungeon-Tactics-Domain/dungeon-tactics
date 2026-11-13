@@ -33,8 +33,8 @@ export interface Step {
 }
 
 // Pulo por cima de vão, como no FFT (13/11, pedido do Fernando; BMG: o vão vai até [Jump/2] casas): em linha reta, por
-// cima de casas onde não se fica de pé (água funda) ou mais baixas que as duas pontas; parede no meio bloqueia. Pousa a
-// até `jump` níveis de onde saiu. `over` são as casas voadas, cada uma conta 1 ponto de movimento. Salto 1 não voa nada.
+// cima de casas onde não se fica de pé (água funda) ou mais baixas que as duas pontas; parede no meio bloqueia. Pousa no
+// mesmo nível ou até `jump` níveis abaixo (o FFT não deixa pousar mais alto). `over` são as casas voadas, cada uma conta 1 ponto de movimento. Salto 1 não voa nada.
 export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos[] }[] {
   const out: { to: Pos; over: Pos[] }[] = [];
   const h0 = standH(tileAt(grid, from));
@@ -48,7 +48,9 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
       if (!TERRAIN[g.terrain].walkable) break;
       over.push(mid);
       const land = tileAt(grid, to);
-      if (!canStand(land) || Math.abs(standH(land) - h0) > jump) continue;
+      // pouso no mesmo nível ou abaixo, até `jump` níveis (13/11: o tutorial do FFT não deixa o vão pousar mais alto que a
+      // saída; antes pousava até `jump` acima)
+      if (!canStand(land) || standH(land) > h0 || h0 - standH(land) > jump) continue;
       const low = Math.min(h0, standH(land));
       if (over.every((p) => { const t = tileAt(grid, p); return !canStand(t) || standH(t) < low; })) out.push({ to, over: [...over] });
     }

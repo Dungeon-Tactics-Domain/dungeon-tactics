@@ -123,7 +123,9 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
 function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos, attacking: boolean, walk: Map<string, number>): number {
   const tile = tileAt(grid, at);
   // espinhos: terminar a vez ali custa o dano deles (grid.ts)
-  let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * standH(tile) - (tile.spikes ? COMBAT.SPIKE_DAMAGE : 0);
+  // espinho que mata quem termina a vez nele conta como a própria morte (13/11, revisão: o Bruto com 5 de vida parava ali)
+  const spike = !tile.spikes ? 0 : actor.hp <= COMBAT.SPIKE_DAMAGE ? 1000 : COMBAT.SPIKE_DAMAGE;
+  let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * standH(tile) - spike;
   let nearest = Infinity;
   for (const o of state.units) {
     if (o.team === actor.team) {
