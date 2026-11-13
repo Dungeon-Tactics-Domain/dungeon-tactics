@@ -22,6 +22,8 @@ import { MARKER, barYOf, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
+import { Water } from './water.ts';
+import { DEEP_DROP, WADE, waterLevels, type WaterLevel } from './water-levels.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -51,7 +53,8 @@ const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
 const LOOK: Record<string, { top: string; side: string | null; prop?: string; propH?: number; propW?: number; canopy?: true }> = {
   grass: { top: 'blocos/grass', side: 'blocos/dirt' },
   stone: { top: 'blocos/gravel', side: 'blocos/stone' },
-  water: { top: 'blocos/water', side: 'blocos/stone_dark' },
+  // água: a peça de cima é o leito de cascalho (onde o boneco pisa), visto através da superfície de water.ts (13/11)
+  water: { top: 'blocos/gravel', side: 'blocos/stone_dark' },
   roof: { top: 'blocos/bricks_B', side: 'blocos/bricks_A' },
   chimney: { top: 'blocos/stone_dark', side: 'blocos/bricks_A' },
   wood: { top: 'blocos/wood', side: 'blocos/wood' },
@@ -83,7 +86,6 @@ const LOOK: Record<string, { top: string; side: string | null; prop?: string; pr
   rubble: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/rubble_half', propH: 0.4 },
   spikes: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/floor_tile_big_spikes', propW: 0.95 },
 };
-const WATER = 'blocos/water';
 const UNDER = 'blocos/stone_dark'; // coluna embaixo da água da ponte e da saia do mapa
 
 // Base do mapa como um bloco (pedidos do Fernando, 12/11, olhando o tabuleiro do FFT): todas as colunas terminam no mesmo
@@ -101,8 +103,6 @@ const WALL_COLOR: Record<string, string> = {
 };
 const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
-const DEEP_DROP = 0.45; // quanto a superfície da água funda fica abaixo da rasa, em níveis (só desenho; a regra lê depth)
-const WADE = 0.3; // quanto o boneco afunda na água rasa, em níveis: anda com a água nas canelas (a regra o põe 1 abaixo da margem)
 const TINT_GLOW = 0.45; // força do brilho próprio (UnitDef.tint): visível no boneco escuro sem apagar a textura
 
 // Paleta reduzida: cada canal em poucos degraus, depois da conversão para sRGB (degraus iguais ao olho). 6 níveis
@@ -181,6 +181,7 @@ export class BattleScene {
   private yawTarget = Math.PI / 4;
   private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
+  private water: Water | null = null; // só nos mapas com água
 
   private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[]) {
     this.pixel = pixel;
@@ -227,7 +228,7 @@ export class BattleScene {
     ]);
     const models = new Map(defs.map((d, i) => [d, loaded[i]]));
     // só o mapa que traz aparência por casa baixa essas peças (~630 KB com as texturas)
-    const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? WATER, LOOK[t.look].prop ?? '', UNDER] : [])))].filter(Boolean);
+    const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? LOOK.water.top, LOOK[t.look].prop ?? '', UNDER] : [])))].filter(Boolean);
     const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
     // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
@@ -278,7 +279,8 @@ export class BattleScene {
     };
     const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
-    const looks = this.lookBatches(edge, walls);
+    const levels = waterLevels(this.grid, this.step);
+    const looks = this.lookBatches(edge, walls, levels);
     for (const [i, tile] of this.grid.tiles.entries()) {
       const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
       const w = this.world(p);
@@ -321,9 +323,14 @@ export class BattleScene {
     this.instanced(stone, batch.stone.at);
     this.instanced(new THREE.Group().add(tree), batch.tree.at);
     looks.build();
+    if (levels.size) {
+      this.water = new Water(this.scene, this.grid, levels, this.step);
+      this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
+    }
     this.buildWalls(walls);
     this.focus.set(0, STEP, 0);
-    const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: MARKER.frameDepthTest, depthWrite: false }));
+    // transparent só para entrar na fila das transparentes, depois da água (renderOrder -1): sem isso a água tingia a moldura
+    const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: MARKER.frameDepthTest, depthWrite: false, transparent: true }));
     frame.position.y = MARKER.frameY;
     const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 4).rotateX(Math.PI), new THREE.MeshBasicMaterial({ color: '#ffcf4a', depthTest: false }));
     arrow.name = 'arrow';
@@ -355,7 +362,7 @@ export class BattleScene {
     this.scene.add(mesh);
   }
 
-  private lookBatches(edge: (p: Pos) => boolean, walls: { x: number; z: number; top: number; color: string }[]) {
+  private lookBatches(edge: (p: Pos) => boolean, walls: { x: number; z: number; top: number; color: string }[], water: Map<string, WaterLevel>) {
     const norm = (name: string, height: number) => {
       const o = this.lookPieces.get(name)!.clone();
       const size = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
@@ -382,8 +389,9 @@ export class BattleScene {
       // (coluna, caixote, barril), a peça é que bloqueia e a casa fica no nível do chão.
       const wall = tile.terrain === 'wall';
       const h = look.canopy && wall ? Math.min(...neighbors(this.grid, p).map((n) => tileAt(this.grid, n).h)) : tile.h + (wall && !look.prop ? 2 : 0);
-      // água funda um pouco mais baixa que a rasa: a mesma peça de água, e o degrau na margem diz "aqui não se atravessa"
-      const top = (h + 1) * this.step - ((tile.depth ?? 0) >= 2 ? this.step * DEEP_DROP : 0);
+      // água: o bloco de cima é o leito (waterLevels: na rasa onde os pés pisam, na funda bem abaixo); a superfície, mais
+      // baixa na funda que na rasa (o degrau na margem diz "aqui não se atravessa"), é desenhada em water.ts
+      const top = tile.look === 'water' ? water.get(posKey(p))!.bed : (h + 1) * this.step;
       // a ponte é uma tábua de um nível sobre a água; casa baixa (topo abaixo de 1) tem o cubo achatado até a base; na borda
       // o topo é uma fatia de um nível e a lateral lisa começa logo abaixo dela
       const onEdge = edge(p);
@@ -399,7 +407,9 @@ export class BattleScene {
       const column = look.side ?? UNDER;
       let y = top - slab;
       if (!look.side) {
-        put(WATER, 1, new THREE.Matrix4().makeTranslation(w.x, this.step, w.z).scale(new THREE.Vector3(1, this.step, 1)));
+        // ponte: o leito embaixo, se a água passa por baixo da tábua (a superfície vem de water.ts)
+        const under = water.get(posKey(p));
+        if (under) put(LOOK.water.top, 1, new THREE.Matrix4().makeTranslation(w.x, under.bed, w.z).scale(new THREE.Vector3(1, under.bed, 1)));
         y = 0;
       }
       if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
@@ -937,6 +947,7 @@ export class BattleScene {
       // barra de vida sempre de frente para a câmera
       v.holder.getObjectByName('bar')!.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
     }
+    this.water?.update(this.t, this.units.values());
     this.renderer.shadowMap.needsUpdate = true;
     this.composer.render();
   }
