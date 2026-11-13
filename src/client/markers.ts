@@ -21,9 +21,10 @@ export const MARKER = {
 };
 
 // modelo KayKit de cada unidade (public/models/<id>.glb e o retrato public/chars/<id>.webp); o Bruto usa o bárbaro (não há
-// esqueleto grande). A unidade do estudo traz o modelo na própria ficha. A cena e o HUD (retratos) usam o mesmo mapa.
+// esqueleto grande); o Arqueiro usa o `ranger` (a Ladina de vinho, sem facas e com arco: scripts/assets/ranger.mjs). A unidade do
+// estudo traz o modelo na própria ficha. A cena e o HUD (retratos) usam o mesmo mapa.
 const MODEL: Record<string, string> = {
-  warrior: 'knight', archer: 'rogue', mage: 'mage', rogue: 'rogue_hooded',
+  warrior: 'knight', archer: 'ranger', mage: 'mage', rogue: 'rogue_hooded',
   soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
   minion: 'skeleton_minion', colossus: 'skeleton_warrior', acolyte: 'mage', veil_knight: 'knight', // Acólito e Cavaleiro do Véu: bonecos com brilho próprio (UnitDef.tint)
 };
