@@ -23,10 +23,13 @@ import { lookOf } from './fx.ts';
 import { jingle, setSound, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
 import { openDevMenu } from './dev-menu.ts';
+import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from './campaign.ts';
+import { talk } from './talk.ts';
 
 // a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
 let scenario = FIRST_BATTLE;
 let SAVE_KEY = 'dt:battle';
+let chapter: number | null = null; // fase da campanha em jogo (null = batalha avulsa)
 
 const FPS_KEY = 'dt:fps'; // contador de desempenho ligado (1) ou não (0); começa ligado (pedido do Fernando, 12/11)
 // lista de turnos curta (os próximos 4) por padrão: o FFT não deixa a ordem inteira na tela e a lista cobria o mapa (12/11)
@@ -501,16 +504,34 @@ class Game {
     void this.runEnemies();
   }
 
-  private finish() {
+  private async finish() {
     const won = this.battle.state.outcome === 'victory';
     jingle(won);
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
+    if (chapter !== null) return this.finishChapter(chapter, won);
     const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
       el('p', {}, won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
         : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.')),
       el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
     ]);
     // Enter joga de novo (o foco ia para o ✕, e fechar deixava a batalha acabada sem tecla para recomeçar)
+    d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+  }
+
+  // Fim de fase da campanha: vitória libera a próxima e toca a conversa de saída; derrota oferece tentar de novo
+  private async finishChapter(n: number, won: boolean) {
+    const last = n === CHAPTERS.length - 1;
+    if (won) {
+      store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
+      await talk(CHAPTERS[n].outro);
+    }
+    const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
+      el('p', {}, won ? (last ? t('O vale está a salvo. Obrigado por jogar!', 'The valley is safe. Thanks for playing!') : t(`Próximo: ${CHAPTERS[n + 1].title[0]}.`, `Next: ${CHAPTERS[n + 1].title[1]}.`))
+        : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
+      won && !last
+        ? el('button', { type: 'button', class: 'primary', onclick: () => { store.set(`dt:battle:${chapterId(n + 1)}`, ''); location.search = `?campanha=${n + 1}`; } }, t('Próxima fase', 'Next stage'))
+        : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); won ? campaignMenu() : this.restart(); } }, won ? t('Fases', 'Stages') : t('Tentar de novo', 'Try again')),
+    ]);
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
   }
 
@@ -547,6 +568,7 @@ class Game {
           this.restart();
         } }, t('Reiniciar batalha', 'Restart battle')),
         el('button', { type: 'button', class: 'secondary', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português'),
+        el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); campaignMenu(); } }, t('Campanha', 'Campaign')),
         el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); void devMenu(); } }, t('Desenvolvedor', 'Developer'))),
     ]);
   }
@@ -567,7 +589,13 @@ async function boot() {
   // Estudo de referência do FFT (11/11): não é conteúdo do jogo. Só abre com o parâmetro e vem num pedaço separado do
   // build (import dinâmico), então nada dele vai no pacote que o jogador baixa.
   const study = new URLSearchParams(location.search).get('cenario');
-  if (study === 'fft-gariland' || study === 'fft-classes') {
+  const camp = new URLSearchParams(location.search).get('campanha');
+  if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
+    // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
+    chapter = Number(camp);
+    scenario = chapterScenario(chapter);
+    SAVE_KEY = `dt:battle:${chapterId(chapter)}`;
+  } else if (study === 'fft-gariland' || study === 'fft-classes') {
     const fft = await import('../shared/battle/fft/gariland.ts');
     fft.registerFftStudy();
     scenario = SCENARIOS[study];
@@ -590,6 +618,25 @@ async function boot() {
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(host, battle.grid, battle.state, pixel);
   new Game(battle, scene, host, pixel);
+  // fase começando do zero: a conversa de abertura por cima do mapa já montado
+  if (chapter !== null && !saved) void talk(CHAPTERS[chapter].intro, chapterTitle(chapter));
+}
+
+const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
+
+// Lista das fases: as vencidas e a próxima abrem; escolher apaga o save daquela fase e começa do zero (com a conversa)
+function campaignMenu() {
+  const done = parseProgress(store.get(CAMPAIGN_KEY));
+  const d = dialog('menu', t('Campanha: Cinzas do Farol', 'Campaign: Ashes of the Beacon'), [
+    el('div', { class: 'menu-actions camp-list' }, ...CHAPTERS.map((_, n) => el('button', {
+      type: 'button', class: n === done ? 'primary' : 'secondary', disabled: n > done,
+      onclick: () => {
+        d.close();
+        store.set(`dt:battle:${chapterId(n)}`, '');
+        location.search = `?campanha=${n}`;
+      },
+    }, `${n < done ? '✓ ' : ''}${chapterTitle(n)}`))),
+  ]);
 }
 
 void boot();

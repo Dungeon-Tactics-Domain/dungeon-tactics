@@ -169,7 +169,7 @@ function gauge(cls: string, label: string, value: number, max: number) {
 }
 
 // retrato do boneco KayKit renderizado (public/chars, scripts/portraits.mjs); o Farol não tem boneco: um cristal em CSS
-function portrait(def: string) {
+export function portrait(def: string) {
   const model = modelOf(def);
   return model ? el('img', { class: 'portrait', src: `/chars/${model}.webp`, alt: '' }) : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
 }

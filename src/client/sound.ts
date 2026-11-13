@@ -95,6 +95,22 @@ export function jingle(win: boolean) {
   });
 }
 
+// Bipe de fala (campanha): uma nota curta de onda quadrada por letra falada, no tom de quem fala, variando um pouco
+// para não soar como alarme. Sintetizado, sem arquivo.
+export function blip(pitch: number) {
+  if (!ctx || !settings.sfx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const t0 = ctx.currentTime;
+  osc.type = 'square';
+  osc.frequency.value = pitch * (0.94 + Math.random() * 0.12);
+  gain.gain.setValueAtTime(GAIN[settings.sfx] * 0.08, t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + 0.05);
+}
+
 export const soundSettings = () => settings;
 export function setSound(s: SoundSettings) {
   settings = s;

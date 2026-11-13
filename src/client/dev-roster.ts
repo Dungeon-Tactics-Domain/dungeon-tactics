@@ -104,19 +104,20 @@ const lastStanding: Rules = {
 
 // Transforma o elenco num cenário: cada unidade vira uma ficha própria (dev-h0, dev-e1…) com o boneco da classe de partida
 // e ocupa as casas de partida do mapa na ordem. Registra as fichas e o cenário nas listas do motor.
-export function buildDevScenario(setup: DevSetup): Scenario {
+// A campanha (campaign.ts) usa o mesmo caminho com id e nome próprios por fase.
+export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, title: [string, string] = ['Desenvolvedor', 'Developer']): Scenario {
   const base = SCENARIOS[setup.map];
   const s = slotsOf(setup.map);
   const spawns: Spawn[] = [...s.objective];
   const add = (units: DevUnit[], slots: Spawn[], team: Team, tag: string) =>
     units.slice(0, slots.length).forEach((u, i) => {
-      const id = `dev-${tag}${i}`;
+      const id = `${scenarioId}-${tag}${i}`;
       UNIT_DEFS[id] = { id, name: u.name, en: u.name, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');
   add(setup.enemies, s.enemy, 'enemy', 'e');
-  const scenario: Scenario = { id: DEV_SCENARIO, name: 'Desenvolvedor', en: 'Developer', grid: base.grid, spawns, ...(!s.objective.length && { rules: lastStanding }) };
-  SCENARIOS[DEV_SCENARIO] = scenario;
+  const scenario: Scenario = { id: scenarioId, name: title[0], en: title[1], grid: base.grid, spawns, ...(!s.objective.length && { rules: lastStanding }) };
+  SCENARIOS[scenarioId] = scenario;
   return scenario;
 }
