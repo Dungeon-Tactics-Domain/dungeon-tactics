@@ -21,13 +21,13 @@ interface Mood {
   beams: { n: number; color: Pair; power: [night: number, day: number]; tilt: number }; // tilt 1: na direção do sol; 0: a prumo
   motes: { n: number; color: Pair; size: number; fall: number; add: boolean; top: number };
   walls?: true; // cripta: paredes, colunas, tochas e cristais
-  // luz da cena por cima da luz da fase: multiplica o céu e o sol e põe o sol em `sun` (posição, como a da cena)
+  // luz da cena por cima da luz da fase: multiplica o céu e o sol e põe o sol em `at` (posição, como a da cena)
   light?: { sky: number; sun: number; at: [number, number, number] };
 }
 
 const F = 'floresta/', M = 'masmorra/';
 export const MOODS: Record<Kind, Mood> = {
-  // Bosque (14/11, pedido do Fernando: "mais escuro… luz baixa e direcional, raios entre as copas, floresta densa e mais
+  // Bosque (13/11, pedido do Fernando: "mais escuro… luz baixa e direcional, raios entre as copas, floresta densa e mais
   // alta nas 4 laterais, fundo de mata fechada"): neblina verde-escura, céu fraco e sol baixo e de lado (sombras compridas)
   forest: {
     low: ['#03070a', '#0c1610'], high: ['#0b141a', '#2f4636'], near: 2, far: 24, mist: 0.6, ceiling: 0, snow: 0,
@@ -472,10 +472,11 @@ export class Ambience {
     // o fundo só aparece se o chão não cobrir a tela: a cor do alto do degradê
     if (this.scene?.background instanceof THREE.Color) this.scene.background.copy(this.u.ambHigh.value);
     // a cena acabou de pôr a luz da fase (a BattleScene chama isto por último; sem fase, vale a do construtor, e o mount
-    // chama uma vez): multiplicar aqui não acumula
+    // chama uma vez): multiplicar aqui não acumula. Some à noite (k → 0): a noite da cena já é escura, e por cima dela os
+    // bonecos do Até o amanhecer viravam sombras
     if (m.light && this.sky && this.sun) {
-      this.sky.intensity *= m.light.sky;
-      this.sun.intensity *= m.light.sun;
+      this.sky.intensity *= THREE.MathUtils.lerp(1, m.light.sky, k);
+      this.sun.intensity *= THREE.MathUtils.lerp(1, m.light.sun, k);
       this.sun.position.set(...m.light.at);
     }
   }
