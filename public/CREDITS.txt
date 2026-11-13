@@ -61,7 +61,7 @@ tex/lava005.jpg (beira derretida das ilhas de refúgio)
   ambientCG, "Lava005" (Color, 1K reduzido a 512x512) - https://ambientcg.com/a/Lava005
   Licença lida na página: "CC0 license, making them free to use without attribution".
 
-tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg, tex/foliage.jpg, tex/bark.jpg (terreno, árvores; desde 13/11/2026)
+tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg, tex/bark.jpg, tex/paint.jpg (terreno, árvores; desde 13/11/2026)
   Desenho nosso, pintado por scripts/assets/paint-textures.py (no lugar das fotos do Poly Haven usadas por algumas horas).
 
 tex/wood.jpg (tábuas da ponte, desde 13/11/2026)

@@ -27,7 +27,8 @@ import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from 
 import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
 import { addDetail } from './detail.ts';
 import { buildBridges } from './bridge.ts';
-import { loadTreeTextures, swapTrees } from './trees.ts';
+import { boxOf as box, loadPaint, variant } from './painted.ts';
+import { swapTrees } from './trees.ts';
 import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -128,7 +129,7 @@ const TINT_GLOW = 0.45; // força do brilho próprio (UnitDef.tint): visível no
 // Árvores (13/11, pedido do Fernando: "árvores maiores… algumas podem até ocupar mais de 1 tile"): altura e largura
 // máximas, em casas, da árvore de 1 casa (o boneco tem 0,85: a copa passa da casa) e da que cobre 2 ou 4 casas de árvore
 // juntas na mesma altura. Cada modelo cabe no menor dos dois limites, para a copa redonda não ficar larga demais.
-const TREE_SIZE: Record<number, { h: number; w: number }> = { 1: { h: 2.1, w: 1.5 }, 2: { h: 2.8, w: 2.1 }, 4: { h: 3.4, w: 2.7 } };
+const TREE_SIZE: Record<number, { h: number; w: number }> = { 1: { h: 2.4, w: 1.9 }, 2: { h: 2.8, w: 2.3 }, 4: { h: 3.4, w: 2.9 } };
 // Recorte da copa (mesmo pedido: a copa não pode esconder boneco, cursor nem casa marcada): cada um abre um furo na
 // árvore que está na frente dele. Teto de pontos por quadro (9 bonecos, o cursor e as casas marcadas)
 const CUT_MAX = 64;
@@ -182,8 +183,8 @@ function prepare(o: THREE.Object3D) {
     const mesh = m as THREE.Mesh;
     if (!mesh.isMesh) return;
     mesh.castShadow = mesh.receiveShadow = true;
-    const map = (mesh.material as THREE.MeshStandardMaterial).map;
-    if (map && map.generateMipmaps) Object.assign(map, { generateMipmaps: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, needsUpdate: true });
+    const mat = mesh.material as THREE.MeshStandardMaterial, map = mat.map;
+    if (map && map.generateMipmaps && !mat.userData.procedural) Object.assign(map, { generateMipmaps: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, needsUpdate: true });
   });
   return o;
 }
@@ -285,8 +286,8 @@ export class BattleScene {
     // só o mapa que traz aparência por casa baixa essas peças (~630 KB com as texturas)
     const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? LOOK.water.top, LOOK[t.look].prop ?? '', UNDER, t.ramp && LOOK[t.look].stairs ? STAIRS : '', ...Object.values(DETAIL)] : [])))].filter(Boolean);
     const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
-    // mapas abertos: árvores feitas por código, com as fotos do terreno (trees.ts), no lugar das do KayKit
-    if (terrainTex) { await loadTreeTextures(); swapTrees(looks); }
+    // mapas abertos: árvores pintadas feitas por código (trees.ts), com variações, no lugar das do KayKit
+    if (terrainTex) { await loadPaint(); swapTrees(looks); }
     // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
     const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack, await terrainTex);
@@ -553,7 +554,7 @@ export class BattleScene {
   private readonly texturedMats = new Map<THREE.Material, THREE.Material>();
   private textured(m: THREE.Material): THREE.Material {
     const tex = this.terrainTex;
-    if (!tex || !(m as THREE.MeshStandardMaterial).isMeshStandardMaterial) return m;
+    if (!tex || !(m as THREE.MeshStandardMaterial).isMeshStandardMaterial || m.userData.procedural) return m; // peça pintada (painted.ts): sem granulado
     let out = this.texturedMats.get(m);
     if (!out) {
       out = m.clone();
@@ -660,7 +661,7 @@ export class BattleScene {
       return look ? (LOOK[look].prop ?? null) : '';
     };
     const pieceOf = (name: string) => (name ? this.lookPieces.get(name)! : legacy);
-    const boxOf = (name: string) => new THREE.Box3().setFromObject(pieceOf(name));
+    const boxOf = (name: string) => box(pieceOf(name));
     const width = (b: THREE.Box3) => Math.max(b.max.x - b.min.x, b.max.z - b.min.z);
     const batches = new Map<string, THREE.Matrix4[]>();
     for (let y = 0; y < g.height; y++) {
@@ -685,10 +686,13 @@ export class BattleScene {
         for (const p of tiles) taken.add(posKey(p));
         const names = tiles.map(modelOf).filter((n): n is string => n !== null);
         if (!names.length) continue;
-        const name = names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a));
-        const box = boxOf(name), size = TREE_SIZE[tiles.length];
+        // a variação da árvore sai da posição (painted.ts variant): espécies e portes diferentes lado a lado
+        const name = variant(this.lookPieces, names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)), hash(x, y, 5));
+        const box = boxOf(name), size = TREE_SIZE[tiles.length], tall = (pieceOf(name).userData.tall as number | undefined) ?? 1; // pinheiro: mais alto que o teto da casa
         // tamanho mais variado (13/11, "árvores de diferentes tamanhos"): de 75% a 135% do tamanho da casa
-        const k = Math.min(size.h / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1));
+        // o pé da árvore pintada (saia e raízes, userData.foot) não passa da casa dela
+        const foot = (0.42 * Math.sqrt(tiles.length)) / ((pieceOf(name).userData.foot as number | undefined) ?? 0.01);
+        const k = Math.min(Math.min((size.h * tall) / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1)), foot);
         const c = tiles.reduce((s: THREE.Vector3, p) => s.add(this.world(p)), new THREE.Vector3()).divideScalar(tiles.length);
         const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
         if (!batches.has(name)) batches.set(name, []);

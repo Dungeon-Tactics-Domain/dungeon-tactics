@@ -10,7 +10,8 @@ import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { waterLevels } from './water-levels.ts';
 import { addDetail, type DetailTextures } from './detail.ts';
-import { loadTreeTextures, swapTrees } from './trees.ts';
+import { boxOf, loadPaint, variant } from './painted.ts';
+import { swapTrees } from './trees.ts';
 
 type Kind = 'forest' | 'field' | 'crypt' | 'frost';
 type Pair = [night: string, day: string];
@@ -200,7 +201,7 @@ export class Ambience {
     this.buildGround();
     // na cripta não: as paredes, tochas e cristais ficam nessa faixa e sumiam dentro das colunas (revisão de 13/11)
     if (EXTEND !== 'nenhuma' && EXTEND !== 'textura' && !mood.walls) this.buildExtension(rand); // textura: a cena desenha (scene.ts)
-    for (const p of mood.props) this.scatter(p, models.get(p.model)!, rand);
+    for (const p of mood.props) this.scatter(p, models, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
     Object.assign(this.beamU, { ambHalf: u.ambHalf, ambNear: u.ambNear, ambFar: u.ambFar }); // os mesmos da neblina (trocados acima)
@@ -244,10 +245,10 @@ export class Ambience {
   private material(src: THREE.Material | null, opts: THREE.MeshLambertMaterialParameters = {}) {
     const s = src as THREE.MeshStandardMaterial | null;
     // texturas KayKit são paletas: sem mipmap e no pixel mais perto, como na cena (prepare)
-    if (s?.map) Object.assign(s.map, { generateMipmaps: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, needsUpdate: true });
+    if (s?.map && !s.userData.procedural) Object.assign(s.map, { generateMipmaps: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, needsUpdate: true });
     if (s?.map) this.textures.push(s.map);
     // Lambert: mais barato que o Standard dos modelos, e de longe não se vê a diferença
-    const mat = new THREE.MeshLambertMaterial({ map: s?.map ?? null, color: new THREE.Color(s?.color ?? 0xffffff).multiplyScalar(this.mood.shade), ...opts });
+    const mat = new THREE.MeshLambertMaterial({ map: s?.map ?? null, color: new THREE.Color(s?.color ?? 0xffffff).multiplyScalar(this.mood.shade), vertexColors: !!s?.vertexColors, ...opts });
     const textured = !!s?.map && !s.userData.procedural; // só os modelos KayKit ganham o granulado; o chão e as árvores feitas por código, não
     mat.customProgramCacheKey = () => (textured && this.detailTex ? 'amb-detalhe' : 'amb');
     mat.onBeforeCompile = (sh) => {
@@ -319,7 +320,7 @@ export class Ambience {
     const m = mesh as unknown as THREE.Mesh;
     const g = m.geometry.clone().applyMatrix4(m.matrixWorld);
     g.computeBoundingBox();
-    const b = g.boundingBox!;
+    const b = (src.userData.box as THREE.Box3 | undefined) ?? g.boundingBox!; // peça pintada: a caixa acima do chão (a raiz desce abaixo dela)
     g.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
     const inst = new THREE.InstancedMesh(g, this.material(m.material as THREE.Material), at.length);
     at.forEach((m, i) => inst.setMatrixAt(i, m));
@@ -327,15 +328,17 @@ export class Ambience {
   }
 
   // Espalha um modelo no anel [d0, d1] da borda, com o tamanho cortado para não passar de LIMIT
-  private scatter(p: Prop, src: THREE.Object3D, rand: () => number) {
-    const size = new THREE.Box3().setFromObject(src).getSize(new THREE.Vector3());
+  private scatter(p: Prop, models: Map<string, THREE.Object3D>, rand: () => number) {
+    const size = boxOf(models.get(p.model)!).getSize(new THREE.Vector3());
+    for (let i = 1; models.has(`${p.model}~${i}`); i++) size.max(boxOf(models.get(`${p.model}~${i}`)!).getSize(new THREE.Vector3())); // a variação mais larga manda no teto
     // a copa avança para o lado do tabuleiro (meia diagonal, qualquer giro): o topo tem de caber em LIMIT no ponto mais perto
     const lean = Math.hypot(size.x, size.z) / 2 / size.y;
-    const at: THREE.Matrix4[] = [];
+    const at = new Map<string, THREE.Matrix4[]>(); // por variação da peça (painted.ts variant)
+    let n = 0;
     const span = (a: number, b: number) => a + (b - a) * rand();
     // nada além de 85% da neblina cheia: some de todo e, no pixel art, só sobrava o contorno escuro no meio da névoa
     const reach = Math.min(p.d[1], this.mood.far * 0.85);
-    for (let tries = 0; at.length < p.n && tries < p.n * 30; tries++) {
+    for (let tries = 0; n < p.n && tries < p.n * 30; tries++) {
       const x = span(-this.hw - reach, this.hw + reach), z = span(-this.hh - reach, this.hh + reach), d = this.out(x, z);
       if (d < p.d[0] || d > reach) continue;
       const y = this.propY(x, z);
@@ -345,9 +348,12 @@ export class Ambience {
       if (h < p.h[0] * 0.6) continue; // não cabe ali sem tapar o tabuleiro
       const k = h / size.y;
       // afunda um pouco: no chão inclinado a base não fica no ar
-      at.push(new THREE.Matrix4().compose(new THREE.Vector3(x, y - 0.06 * h, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rand() * Math.PI * 2), new THREE.Vector3(k, k, k)));
+      const name = variant(models, p.model, hash(x, z)), list = at.get(name) ?? [];
+      at.set(name, list);
+      n++;
+      list.push(new THREE.Matrix4().compose(new THREE.Vector3(x, y - 0.06 * h, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rand() * Math.PI * 2), new THREE.Vector3(k, k, k)));
     }
-    this.instances(src, at);
+    for (const [name, list] of at) this.instances(models.get(name)!, list);
   }
 
   // Cripta: paredes num retângulo em volta (de frente para o tabuleiro), tochas nelas, tochas acesas perto da borda
@@ -608,6 +614,6 @@ export async function loadAmbience(grid: Grid): Promise<Ambience> {
   const loader = new GLTFLoader();
   const models = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
   // fora das criptas, as árvores e moitas de fora são as feitas por código (trees.ts), como as do tabuleiro
-  if (!mood.walls) { await loadTreeTextures(); swapTrees(models); }
+  if (!mood.walls) { await loadPaint(); swapTrees(models, true); }
   return new Ambience(grid, mood, models);
 }

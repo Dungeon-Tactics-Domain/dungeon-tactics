@@ -74,14 +74,18 @@ def main(out):
     v = fractal([4, 10], [0.7, 0.3])
     s = palette(v, ['#aab7c6', '#c1ccd8', '#d6dfe8', '#e9eff5'])
     save('snow', strokes(s, 300, ['#f4f8fb', '#9fb0c2'], 8, 2), out)
-    # copa: folhas em tufos, verde-escuro com bordas claras
-    v = fractal([6, 14, 34], [0.45, 0.35, 0.2])
-    f = palette(v, ['#1a3115', '#26451c', '#335a24', '#447230', '#5c8c3c'])
-    save('foliage', strokes(f, 1600, ['#6a9a40', '#1c3416', '#4f7f34'], 5, 3), out)
+    # (a copa tinha textura própria até 13/11; hoje é pintada por vértice, com a tinta neutra do fim. O sorteio dela
+    # continua sendo gasto aqui para a casca, logo abaixo, sair igual)
+    strokes(palette(fractal([6, 14, 34], [0.45, 0.35, 0.2]), ['#1a3115'] * 5), 1600, ['#6a9a40', '#1c3416', '#4f7f34'], 5, 3)
     # casca: listras verticais marrom-acinzentadas
     v = fractal([3, 7, 18], [0.5, 0.3, 0.2])
     b = palette(v, ['#3b2c20', '#4f3b2a', '#664d36', '#7d6347', '#93795a'])
     save('bark', strokes(b, 600, ['#2c2018', '#8a7154', '#4a5a2c'], 40, 2, vertical=True), out)
+    # tinta neutra das peças pintadas por vértice (src/client/painted.ts: árvores e objetos): só as manchas de pincel, em
+    # cinzas claros, que multiplicam a cor da peça. Fica no fim: o sorteio é um só e as de cima não mudam
+    v = fractal([5, 11, 27], [0.5, 0.3, 0.2])
+    p = palette(v, ['#8e8e8e', '#b2b2b2', '#d2d2d2', '#ececec', '#ffffff'])
+    save('paint', strokes(p, 500, ['#ffffff', '#9a9a9a'], 7, 2), out)
 
 
 if __name__ == '__main__':
