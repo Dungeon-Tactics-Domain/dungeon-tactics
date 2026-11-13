@@ -5,7 +5,7 @@ import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
-import { CHEST_KEY, EQUIP_KEY, GOLD_PER_STAR, parseChest, parseEquip } from './chest.ts';
+import { CHEST_KEY, EQUIP_KEY, VICTORY_GOLD, parseChest, parseEquip } from './chest.ts';
 import { MISSIONS, MISSIONS_KEY, missionScenario, missionScenarioId, parseDone, type Mission } from './missions.ts';
 import { ITEMS } from '../shared/battle/equipment.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
@@ -31,7 +31,7 @@ import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, problems, slotsOf 
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starParts, starText, starsOf } from './campaign.ts';
+import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, learned, objectiveText, parseProgress } from './campaign.ts';
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
 import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
 import { openParty, openWorld } from './world-ui.ts';
@@ -639,30 +639,19 @@ class Game {
   // Fim de fase da campanha: vitória libera a próxima e toca a conversa de saída; derrota oferece tentar de novo
   private async finishChapter(n: number, won: boolean) {
     const last = n === CHAPTERS.length - 1;
-    const stars = starsOf(this.battle.state, n);
     if (won) {
       store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
       store.set(WORLD_KEY, String(afterNode(nodeOfChapter(n), parseWorld(store.get(WORLD_KEY)))));
-      const best = parseStars(store.json(STARS_KEY));
-      best[n] = Math.max(best[n], stars);
-      // ouro por estrela a cada vitória (baú do grupo, chest.ts), para a loja
+      // ouro fixo por vitória (baú do grupo, chest.ts), para a loja; sem estrelas desde 13/11 (pedido do Fernando: "tire
+      // a mecânica das estrelas… isso vai ser o próximo Final Fantasy Tactics", sem pegada de puzzle)
       const chest = parseChest(store.json(CHEST_KEY));
-      store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + stars * GOLD_PER_STAR }));
-      store.set(STARS_KEY, JSON.stringify(best));
+      store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + VICTORY_GOLD }));
       await talk(CHAPTERS[n].outro, { hero: savedHero() });
     }
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
-      ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
-        // só o critério da 3ª estrela que vale nesta fase (com Farol ou sem), sem o parêntese que explicava os dois
-        // cada critério com ✓ ou ✗, para saber qual estrela faltou (revisão de 13/11)
-        el('p', {}, (() => {
-          const [w, alive, clean] = starParts(this.battle.state, n).map((ok) => (ok ? '✓' : '✗'));
-          return slotsOf(CHAPTERS[n].setup.map).objective.length
-            ? t(`★ vencer ${w} · ★ ninguém caiu ${alive} · ★ Farol inteiro ${clean}`, `★ win ${w} · ★ nobody fell ${alive} · ★ Beacon untouched ${clean}`)
-            : t(`★ vencer ${w} · ★ ninguém caiu ${alive} · ★ todos acima da metade da vida ${clean}`, `★ win ${w} · ★ nobody fell ${alive} · ★ everyone above half HP ${clean}`);
-        })()),
+      ...(won ? [
         ...this.mvpLine(),
-        el('p', { class: 'mvp' }, t(`+${stars * GOLD_PER_STAR} de ouro no baú do grupo`, `+${stars * GOLD_PER_STAR} gold in the party chest`)),
+        el('p', { class: 'mvp' }, t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`)),
         ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair
       el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) || !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF) ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.') : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.')),
@@ -910,7 +899,7 @@ function titleScreen() {
           btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
           return;
         }
-        for (const k of [WORLD_KEY, CAMPAIGN_KEY, STARS_KEY, HERO_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
+        for (const k of [WORLD_KEY, CAMPAIGN_KEY, 'dt:estrelas', HERO_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
         d.close();
         toWorld();
       } }, t('Novo jogo', 'New game')),
@@ -994,7 +983,7 @@ async function worldScreen(host: HTMLElement) {
     // um Enter reabria o epílogo por cima
     if (finale) credits(() => undefined);
   };
-  let view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
+  let view = openWorld(host, { done, hero: hero.cls, enter, back: () => { location.search = ''; },
     party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); },
     from: Number(new URLSearchParams(location.search).get('de') ?? -1) });
 }

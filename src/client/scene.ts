@@ -11,7 +11,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { FACING, dist, inBounds, neighbors, posKey, standH, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
+import { FACING, dist, inBounds, neighbors, posKey, samePos, standH, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
 import { footprint } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -1156,6 +1156,7 @@ export class BattleScene {
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
+        if (!samePos(this.posOf(v), e.target)) await this.actionCam(this.posOf(v), e.target);
         if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
         const look = lookOf(e.ability);
         this.play(v, look.clip, true);
@@ -1214,6 +1215,7 @@ export class BattleScene {
         await this.wait(TIMING.die);
       }
     }
+    await this.endActionCam();
     this.sync(state);
   }
 
@@ -1255,6 +1257,30 @@ export class BattleScene {
     // com `also`, centra entre os dois (quem ataca e o alvo): o golpe nunca acontece fora da tela ou atrás do HUD
     const w = also ? this.world(p).lerp(this.world(also), 0.5) : this.world(p);
     this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
+  }
+
+  // Câmera de ação (13/11, pedido do Fernando: "quando um personagem for atacar, uma action cam tipo XCOM"): gira para
+  // ficar atrás de quem ataca, chega perto e enquadra o atacante e o alvo; volta ao que era depois da sequência
+  private camSaved: { viewH: number; yaw: number } | null = null;
+  async actionCam(from: Pos, to: Pos) {
+    this.camSaved ??= { viewH: this.viewH, yaw: this.yawTarget };
+    const a = this.world(from), b = this.world(to);
+    // a câmera fica do lado de quem ataca, olhando para o alvo; 0,35 rad para o lado, para o atacante não tapar o alvo
+    let goal = Math.atan2(a.x - b.x, a.z - b.z) + 0.35;
+    while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
+    while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
+    this.yawTarget = goal;
+    this.focusOn(from, to);
+    const h0 = this.viewH, h1 = Math.max(ZOOM.min, Math.min(h0, 4 + a.distanceTo(b) * 0.9));
+    await this.animate(420, (k) => (this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k)));
+  }
+  private async endActionCam() {
+    const s = this.camSaved;
+    if (!s) return;
+    this.camSaved = null;
+    this.yawTarget = s.yaw;
+    const h0 = this.viewH;
+    await this.animate(380, (k) => (this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k)));
   }
 
   // volta ao enquadramento do mapa inteiro
@@ -1311,8 +1337,10 @@ export class BattleScene {
     this.resize();
   }
 
+  // 8 ângulos, de 45° em 45° (13/11, pedido do Fernando: "a câmera deve ter 8 ângulos"); gridStep acha o eixo mais
+  // perto de cada tecla em qualquer giro, então as setas seguem andando na grade
   rotate(dir: 1 | -1) {
-    this.yawTarget += (dir * Math.PI) / 2;
+    this.yawTarget += (dir * Math.PI) / 4;
   }
 
   // Luz do modo Até o amanhecer (survival.ts): k = 0 é noite de lua (azul e fraca), k = 1 é o sol nascendo (quente, na
@@ -1328,11 +1356,11 @@ export class BattleScene {
     this.ambience?.setDaylight(k); // por último: a neblina dos arredores manda na cor do fundo
   }
 
-  // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao quarto de volta mais perto,
-  // senão as setas andariam na diagonal (gridStep conta com o ângulo de 45° + n·90°).
+  // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao oitavo de volta mais perto
+  // (um dos 8 ângulos do rotate).
   private spinning = false;
   setSpin(on: boolean) {
-    if (this.spinning && !on) this.yawTarget = Math.PI / 4 + Math.round((this.yawTarget - Math.PI / 4) / (Math.PI / 2)) * (Math.PI / 2);
+    if (this.spinning && !on) this.yawTarget = Math.round(this.yawTarget / (Math.PI / 4)) * (Math.PI / 4);
     this.spinning = on;
   }
 

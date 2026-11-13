@@ -291,7 +291,6 @@ button[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .talk-title, .panel.talk, .talk.done .talk-next { animation: none; } }
 .camp-list { flex-direction: column; } /* lista de fases da campanha: uma por linha, nome inteiro */
 .camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
-.dialog .stars { font: 400 40px/1 var(--font-px); color: var(--star-ink); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
 .dialog .mvp { font-weight: 700; color: var(--gold-trim); margin: 2px 0 10px; } /* destaque da batalha (tally.ts), no fim da fase e da batalha avulsa */
 .dialog .learned { font-weight: 700; color: var(--focus); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha); .dialog na frente para vencer o .dialog p */
 /* tela de título (main.ts, titleScreen): nome grande e as três portas do jogo */
@@ -373,7 +372,6 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world-node.story { background: #3d6fb0; border-radius: 50%; }
 .world-node.done { border-color: #e2b23a; }
 .world-node:disabled { background: #6f6656; border-color: #4a4235; /* escuro: o bege antigo era da cor da terra */ filter: none; cursor: default; }
-.world-stars { position: absolute; transform: translate(-50%, 16px); font: 400 14px/1 var(--font); color: var(--gold-trim); letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
 .world-node.here { outline: 3px solid var(--focus); outline-offset: 4px; }
 .world-token { position: absolute; transform: translate(-50%, -110%); transition: left var(--walk-ms) ease-in-out, top var(--walk-ms) ease-in-out; pointer-events: none; animation: bob 1s ease-in-out infinite; }
 .world-token .portrait { width: 44px; height: 58px; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }

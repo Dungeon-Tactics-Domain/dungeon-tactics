@@ -1,7 +1,7 @@
 // Tela do mapa mundial (world.ts tem as regras): pergaminho com a estrada, os pontos e o retrato do grupo, que anda de
 // ponto em ponto. Setas (ou A D W S) andam, Enter entra, Esc volta ao título; clique num ponto aberto anda até ele.
 // Painel do lugar no canto de baixo à direita, como o nome do lugar no mapa do FFT; arte e texto nossos.
-import { foesText, starText } from './campaign.ts';
+import { foesText } from './campaign.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import type { DevUnit } from './dev-roster.ts';
@@ -162,7 +162,7 @@ export function openShop(back?: () => void) {
     el('h3', {}, t('No baú', 'In the chest')),
     chest.items.length ? el('dl', { class: 'keys' }, ...chest.items.flatMap((id) => [el('dt', {}, itemName(ITEMS[id])),
       el('dd', {}, `${Math.floor(ITEMS[id].price / 2)} ${t('de ouro', 'gold')} `, el('button', { type: 'button', class: 'secondary', onclick: () => save(sell(chest, id)) }, t('Vender', 'Sell')))]))
-      : el('p', {}, t('Vazio. Vencer uma fase dá ouro (50 por estrela).', 'Empty. Winning a stage gives gold (50 per star).')),
+      : el('p', {}, t('Vazio. Vencer uma fase dá 150 de ouro.', 'Empty. Winning a stage gives 150 gold.')),
   ], { onBack: back });
 }
 
@@ -211,7 +211,6 @@ function openSheet(u: DevUnit, back: () => void) {
 export interface WorldOptions {
   done: number; // pontos já passados (world.ts)
   hero: string; // ficha do retrato que anda no mapa
-  stars: number[]; // melhor nota de cada fase (campaign.ts)
   enter: (i: number) => void;
   back: () => void;
   party: () => void; // tela do grupo (main.ts), como a formação do FFT
@@ -226,7 +225,7 @@ export interface WorldView {
 }
 
 export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
-  const { done, hero, stars, enter, back } = opts;
+  const { done, hero, enter, back } = opts;
   // começa no ponto mais avançado aberto (o próximo a fazer)
   const goal = Math.min(done, WORLD.length - 1);
   let at = opts.from !== undefined && opts.from >= 0 && opts.from < goal ? opts.from : goal;
@@ -243,9 +242,6 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
       onmouseenter: () => isOpen(i, done) && sfx('cursor'), // som de cursor ao passar por um ponto aberto, como nos menus
     });
   });
-  // estrelas sob cada batalha já vencida: o mapa mostra de longe o que vale rejogar (fora do botão, que é girado 45°)
-  const starMarks = WORLD.flatMap((w, i) => w.chapter !== undefined && i < done
-    ? [el('span', { class: 'world-stars', style: `left:${w.x}%;top:${w.y}%`, 'aria-hidden': 'true' }, starText(stars[w.chapter]))] : []);
   const place = el('strong', { class: 'world-place' });
   const kindText = el('p', { class: 'world-kind' });
   const foes = el('p', { class: 'world-kind' }); // quantos inimigos e o chefe (só nos pontos de batalha)
@@ -258,7 +254,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     el('button', { type: 'button', class: 'item', onclick: () => openShop() }, t('Loja', 'Shop')),
     el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title'))));
   const root = el('div', { class: 'world' },
-    el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, ...starMarks, token),
+    el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, token),
     el('div', { class: 'panel world-head' }, el('strong', {}, t('Mapa do Vale', 'Valley Map')), ` · ${t(`${Math.min(done, WORLD.length)} de ${WORLD.length}`, `${Math.min(done, WORLD.length)} of ${WORLD.length}`)}`),
     panel,
     el('p', { class: 'panel world-help' }, t('Setas andam · Enter entra · G grupo · Esc volta', 'Arrows walk · Enter enters · G party · Esc goes back')));
@@ -272,7 +268,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     nodes.forEach((n, i) => n.classList.toggle('here', i === at));
     place.textContent = tag.textContent = t(w.name[0], w.name[1]);
     kindText.textContent = w.chapter !== undefined
-      ? t(`Batalha · Capítulo ${w.chapter + 1}`, `Battle · Chapter ${w.chapter + 1}`) + (at < done ? `  ${starText(stars[w.chapter])}` : '')
+      ? t(`Batalha · Capítulo ${w.chapter + 1}`, `Battle · Chapter ${w.chapter + 1}`)
       : t('História', 'Story');
     townBtn.hidden = !w.town;
     foes.textContent = w.chapter !== undefined ? foesText(w.chapter, t) : '';
