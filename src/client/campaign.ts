@@ -34,8 +34,8 @@ export const CAMPAIGN_KEY = 'dt:campanha'; // quantas fases já foram vencidas
 const party = (): DevUnit[] => [unitFrom('warrior', 'Bran'), unitFrom('archer', 'Tess'), unitFrom('mage', 'Odo'), unitFrom('rogue', 'Lia')];
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 64% → 55% → 42% → 36% → 35%, caindo fase a fase.
-// Recrutas e Ossadas (pouca vida) acertam o degrau: com 3 inimigos a fase ia a ~100%, com 4 inteiros a ~30%.
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 64% → 55% → 44% → 32% → 30%, caindo fase a fase.
+// Recrutas e Lacaios (pouca vida) acertam o degrau: com 3 inimigos a fase ia a ~100%, com 4 inteiros a ~30%. Na cripta,\n// dois arqueiros derrubam a fase para ~20%, e a velocidade do Vesper (8 → 9) pesa mais que 15 de vida.
 const vesper = (hp: number, speed: number) => foe('dark_mage', { name: 'Vesper', hp, speed, abilities: ['firebolt', 'blast'] });
 
 const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
@@ -77,7 +77,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Cripta Alagada', 'The Flooded Crypt'],
     song: 'crypt',
-    setup: { map: 'flooded_crypt', heroes: party(), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('dark_mage'), foe('skeleton_archer', { name: 'Ossada', hp: 10 })] },
+    setup: { map: 'flooded_crypt', heroes: party(), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('dark_mage'), foe('minion')] },
     intro: [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
       L('tess', 'Cuidado com a água funda no meio: ninguém atravessa ali.', 'Watch the deep water in the middle: no one crosses there.'),
@@ -92,7 +92,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
     song: 'boss',
-    setup: { map: 'flooded_crypt', heroes: party(), enemies: [vesper(60, 8), foe('brute'), foe('skeleton_archer'), foe('skeleton_archer', { name: 'Ossada', hp: 18 })] },
+    setup: { map: 'flooded_crypt', heroes: party(), enemies: [vesper(62, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
     intro: [
       L('vesper', 'Lia. Voltou para casa e trouxe amigos.', 'Lia. You came home, and you brought friends.'),
       L('lia', 'Vim apagar o que você acendeu, Vesper.', 'I came to put out what you lit, Vesper.'),
@@ -108,7 +108,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Último Farol', 'The Last Beacon'],
     song: 'boss',
-    setup: { map: 'beacon_hill', heroes: party(), enemies: [vesper(65, 8), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
+    setup: { map: 'beacon_hill', heroes: party(), enemies: [vesper(65, 9), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),
