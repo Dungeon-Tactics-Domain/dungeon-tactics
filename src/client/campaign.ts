@@ -17,6 +17,7 @@ export interface Chapter {
   title: [string, string];
   song: SongId; // música da fase (music.ts)
   boss?: true; // vence ao derrubar o 1º inimigo da lista (chapterScenario)
+  light?: number; // clima da fase (BattleScene.setDaylight: 0 noite, 1 sol nascendo); sem isto, a luz de sempre
   setup: DevSetup;
   intro: Line[];
   outro: Line[];
@@ -100,6 +101,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Cripta Alagada', 'The Flooded Crypt'],
     song: 'crypt',
+    light: 0.5, // debaixo do lago: meia-luz azulada ("cheiro de vela apagada")
     setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('dark_mage'), foe('minion')] },
     intro: [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
@@ -116,6 +118,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
     song: 'boss',
+    light: 0.35, // mais fundo, mais escuro
     boss: true,
     setup: { map: 'crypt_heart', heroes: party(3), enemies: [vesper(90, 9), foe('dark_mage'), foe('skeleton_archer'), foe('soldier', { name: 'Guarda da cripta', en: 'Crypt guard', hp: 32 })] },
     intro: [
@@ -135,6 +138,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Último Farol', 'The Last Beacon'],
     song: 'boss',
+    light: 0.3, // "o Véu já desce pela Colina": a mesma Colina da fase 2, agora no escuro
     boss: true,
     setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(95, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
@@ -176,6 +180,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Sombra no Cume', 'The Shade on the Summit'],
     song: 'boss',
+    light: 0.15, // noite no cume; o sol nasce só no fim da conversa de saída
     boss: true,
     setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('colossus', { name: 'A Sombra', en: 'The Shade', hp: 300 }), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
     intro: [

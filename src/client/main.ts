@@ -690,6 +690,9 @@ async function boot() {
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(host, battle.grid, battle.state, pixel);
   new Game(battle, scene, host, pixel);
+  // clima da fase da campanha (cripta escura, Colina sob o Véu, cume à noite): a mesma luz do modo Até o amanhecer
+  const light = chapter !== null ? CHAPTERS[chapter].light : undefined;
+  if (light !== undefined) scene.setDaylight(light);
   // fase começando do zero: a conversa de abertura por cima do mapa já montado
   // fase do zero: conversa de abertura e, ao fechar, a faixa do objetivo (como o anúncio de objetivo do FFT)
   const n = chapter;
