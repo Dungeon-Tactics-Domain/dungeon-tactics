@@ -38,13 +38,13 @@ models/blocos/ (grass, dirt, gravel, stone, stone_dark, water, wood, bricks_A, b
 models/poc/hex/ (tree_single_A, rock_single_A, hex_grass, hex_grass_bottom .gltf + .bin e hexagons_medieval.png), árvore da floresta nos mapas do Dungeon Tactics
   KayKit Medieval Hexagon Pack 1.0, por Kay Lousberg (www.kaylousberg.com), CC0
   https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0 (arquivos copiados sem alteração)
-models/floresta/ (Tree_1_A_Color1 a Tree_4_A_Color1, Tree_Bare_1_A_Color1, Tree_Bare_2_A_Color1 .gltf + .bin, forest_texture.png e LICENSE.txt), árvores dos mapas de Gariland e da Colina do Farol
+models/floresta/ (Tree_1_A_Color1 a Tree_4_A_Color1, Tree_Bare_1_A_Color1, Tree_Bare_2_A_Color1, Rock_1_A_Color1, Rock_2_A_Color1, Rock_3_A_Color1, Grass_1_A_Color1 .gltf + .bin, forest_texture.png e LICENSE.txt), árvores, pedras e tufos de grama dos mapas do Dungeon Tactics
   KayKit Forest Nature Pack 1.0 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-forest
   Licença lida no LICENSE.txt do pacote (cópia em models/floresta/LICENSE.txt): "Creative Commons Zero, CC0".
 models/animacoes.glb (12 clipes: golpes de uma e duas mãos, arco, magia, usar item), gestos das habilidades
   KayKit Character Animations 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
   Clipes do Rig_Medium juntos e sem malha por scripts/assets/anim-pack.mjs. Licença lida no LICENSE.txt do pacote (assets/kaykit/animacoes): "License: (Creative Commons Zero, CC0)".
-models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half e floor_tile_big_spikes .gltf + .bin, dungeon_texture.png e LICENSE.txt), caixas de Gariland, peças da Cripta Alagada e as casas de espinhos
+models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half, floor_tile_big_spikes e stairs_modular_center .gltf + .bin, dungeon_texture.png e LICENSE.txt), caixas de Gariland, peças da Cripta Alagada, as casas de espinhos e as escadas das criptas
   KayKit Dungeon Pack 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
   Licença lida no LICENSE.txt do pacote (cópia em models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
 
