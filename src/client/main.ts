@@ -727,7 +727,8 @@ function confetti() {
 
 // Batalha avulsa: os mapas com Farol (a regra avulsa perde sem ele; Bosque e Passo são só da campanha). A Colina já está
 // montada ao fundo do título, então escolhê-la só fecha; as outras abrem pela URL, cada uma com o próprio save.
-const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt'];
+// medido em 13/11 (npm run sim, 300 sementes, IA x IA): Colina 76%, Cripta 51%, Coração da Cripta 85% (fosso com 2 pontes)
+const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
 function quickBattle() {
   const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
     el('div', { class: 'menu-actions camp-list' }, ...QUICK_MAPS.map((id) => el('button', {
