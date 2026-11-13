@@ -272,7 +272,9 @@ const HEART: Scenario = {
     { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 6, y: 0 }, // 1ª casa inimiga: o chefe da fase (campaign.ts), no fundo
     { id: 'e-soldier', def: 'soldier', team: 'enemy', x: 3, y: 2 }, // os outros guardam as duas pontes
     { id: 'e-archer', def: 'skeleton_archer', team: 'enemy', x: 5, y: 1 },
-    { id: 'e-brute', def: 'brute', team: 'enemy', x: 8, y: 2 },
+    // 2º arqueiro no lugar do Bruto (13/11, só a Batalha avulsa; a campanha põe o elenco dela nestas casas): com o vão a
+    // IA do Ladino voava o fosso sozinha e caía no Bruto, 25%; com o arqueiro 60% (com Soldado, 97%)
+    { id: 'e-archer2', def: 'skeleton_archer', team: 'enemy', x: 8, y: 2 },
   ],
 };
 

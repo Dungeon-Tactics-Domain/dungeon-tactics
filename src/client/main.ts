@@ -742,7 +742,7 @@ function confetti() {
 
 // Batalha avulsa: os mapas com Farol (a regra avulsa perde sem ele; Bosque e Passo são só da campanha). A Colina já está
 // montada ao fundo do título, então escolhê-la só fecha; as outras abrem pela URL, cada uma com o próprio save.
-// medido em 13/11 (npm run sim, 300 sementes, IA x IA), com o salto por classe, a água rasa atravessável e o vão: Colina 63%, Cripta 60%, Coração da Cripta 25% (antes 61%, 40% e 59%; no Coração, sem o vão, 79%: a IA do Ladino voa o fosso sozinha e cai cercada)
+// medido em 13/11 (npm run sim, 300 sementes, IA x IA), com o salto por classe, a água rasa atravessável e o vão: Colina 63%, Cripta 60%, Coração da Cripta 60% (antes 61%, 40% e 59%; no Coração, o vão deixou 25%, a IA do Ladino voava o fosso e caía no Bruto: ele virou um 2º arqueiro)
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
 function quickBattle() {
   const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
