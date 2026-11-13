@@ -157,7 +157,7 @@ float rocky = max(1.0 - smoothstep(0.5, 0.82, tn.y), vStone);
 diffuseColor.rgb *= mix(base, cl, rocky);
 `;
 
-export interface TerrainTextures { grass: THREE.Texture; leaves: THREE.Texture; dirt: THREE.Texture; snow: THREE.Texture; cliff: THREE.Texture }
+export interface TerrainTextures { grass: THREE.Texture; leaves: THREE.Texture; dirt: THREE.Texture; snow: THREE.Texture; cliff: THREE.Texture; wood: THREE.Texture; bark: THREE.Texture }
 export function loadTerrainTextures(): Promise<TerrainTextures> {
   const loader = new THREE.TextureLoader();
   const one = async (n: string) => {
@@ -167,7 +167,8 @@ export function loadTerrainTextures(): Promise<TerrainTextures> {
     t.anisotropy = 4;
     return t;
   };
-  return Promise.all(['grass', 'leaves', 'dirt', 'snow', 'cliff'].map(one)).then(([grass, leaves, dirt, snow, cliff]) => ({ grass, leaves, dirt, snow, cliff }));
+  // wood e bark: a ponte de verdade (bridge.ts)
+  return Promise.all(['grass', 'leaves', 'dirt', 'snow', 'cliff', 'wood', 'bark'].map(one)).then(([grass, leaves, dirt, snow, cliff, wood, bark]) => ({ grass, leaves, dirt, snow, cliff, wood, bark }));
 }
 
 export interface TerrainOptions {

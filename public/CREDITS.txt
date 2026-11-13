@@ -65,6 +65,10 @@ tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg (terren
   Poly Haven, "rocky_terrain_02", "forrest_ground_01", "mossy_rock", "grass_path_2" e "snow_02" (diff, 1K reduzido a 512x512) - https://polyhaven.com/textures
   Licença: "CC0 1.0 Universal - public domain dedication, no attribution required" (https://polyhaven.com/license).
 
+tex/wood.jpg, tex/bark.jpg (ponte de verdade, desde 13/11/2026)
+  Poly Haven, "weathered_brown_planks" e "bark_brown_02" (diff, 1K reduzido a 512x512) - https://polyhaven.com/textures
+  Licença: "CC0 1.0 Universal - public domain dedication, no attribution required" (https://polyhaven.com/license).
+
 == Partículas (fx/, reduzidas a 128x128) ==
 fx/puff_0.png fx/puff_1.png fx/puff_2.png (whitePuff00, 04 e 08: vapor das ilhas e dos corpos na lava)
   Kenney, "Smoke Particles" - https://kenney.nl/assets/smoke-particles

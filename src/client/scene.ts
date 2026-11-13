@@ -26,6 +26,7 @@ import { Water } from './water.ts';
 import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
 import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
 import { addDetail } from './detail.ts';
+import { buildBridges } from './bridge.ts';
 import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -402,8 +403,10 @@ export class BattleScene {
       this.scene.add(buildTerrain(this.grid, { step: this.step, inner, outside, levels, river, extend: EXTEND === 'textura', tex: this.terrainTex! }));
       const picks = this.grid.tiles.flatMap((t, i) => {
         const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
+        if (t.look === 'bridge') return [{ p, at: this.world(p) }];
         return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.rock(t) ? this.world(p).setY((t.h + 3) * this.step) : this.world(p) }] : [];
       });
+      this.scene.add(buildBridges(this.grid, this.step, this.terrainTex!.wood, this.terrainTex!.bark));
       const pick = pickTiles(picks);
       this.scene.add(pick);
       this.tileTops.push(pick);
@@ -500,7 +503,8 @@ export class BattleScene {
         m.set(1, 0, 0, w.x, f.x * rise, (slab + rise) / slab, f.y * rise, top + rise / 2, 0, 0, 1, w.z, 0, 0, 0, 1);
       }
       const painted = this.ground(tile);
-      if (!painted) put(look.top, slab, m, p);
+      // a ponte dos mapas abertos é a de bridge.ts (tábuas, cordas e escadinha); o bloco de madeira fica só nas criptas
+      if (!painted && !(this.terrainTex && tile.look === 'bridge')) put(look.top, slab, m, p);
       // coluna até a base reta (y = 0): cubos inteiros e o último achatado no que falta, para o fundo não ficar em degraus
       const column = look.side ?? UNDER;
       let y = top - slab;
