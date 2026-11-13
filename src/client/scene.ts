@@ -499,7 +499,7 @@ export class BattleScene {
   // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
   // Versão de teste ?extensao=textura (13/11, pedido do Fernando: "os blocos de fora podem ter a textura, só mais escuros;
   // os primeiros com fade para escuro"): EXT casas em volta com a peça do topo da casa da borda mais perto, escurecendo anel
-  // a anel (0,75 no 1º até 0,15 no 5º), e coluna lisa escura até o chão dos arredores. Sem regra nem clique. A altura segue
+  // a anel (0,6 no 1º até 0,12 no 5º), e coluna lisa escura até o chão dos arredores. Sem regra nem clique. A altura segue
   // extH (a casa mais baixa por perto), a mesma conta que impede a extensão de tapar boneco na diagonal
   private buildTexturedExtension() {
     const { width: W, height: H } = this.grid, RING = 5, BOTTOM = -3;
