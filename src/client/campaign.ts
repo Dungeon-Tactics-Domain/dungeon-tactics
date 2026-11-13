@@ -43,8 +43,8 @@ export const learned = (n: number) => n + 1 >= CHAPTERS.length ? [] : CHAPTERS[n
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 79% → 53% → 38% → 28%, caindo fase a fase
-// (a 1ª, no Bosque, ensina). Medido de novo depois da IA mirar a carga em quem fica parado (ai.ts, W.ESCAPE).
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 47% → 27%, caindo fase a fase
+// (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
 // O que mais pesa: arqueiro esqueleto (na Colina, trocar o arqueiro por um Lacaio leva a fase de 67% a 98%) e a

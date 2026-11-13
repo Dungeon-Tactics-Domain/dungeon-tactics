@@ -22,8 +22,9 @@ const W = {
   THREAT: 0.25, // por ponto de dano médio de quem alcança a casa
   ADVANCE: 1.2, // por casa de distância quando não há em quem bater neste turno
   GUARD: 2, // por casa que o herói se afasta do alvo a proteger além do raio de guarda
-  // golpe com carga em quem joga antes de ela sair vale 40% (pode sair da casa). Medido em 12/11 (1 000 sementes): Colina
-  // 72,8% → 64,1% para os heróis (a Explosão do Mago sombrio passou a mirar quem fica), Escaramuça 45,2% → 45,1%
+  // Tiro mirado (carga na casa) em quem joga antes de ela sair vale 40% (pode sair dali). Medido em 12/11 (1 000
+  // sementes): Colina 72,8% → 72,7% para os heróis, Escaramuça 45,2% → 43,7%. Valer para toda carga foi erro: a magia
+  // segue a unidade, e a IA deixava de usar a Explosão em quem é rápido (Colina caía para 64,1%)
   ESCAPE: 0.4,
 };
 // Até onde o herói da IA sai de perto do alvo a proteger para ir ao encontro do inimigo. Medido em 11/11 no 20x20
@@ -57,8 +58,9 @@ function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId
     const dmg = (t.dmgMin + t.dmgMax) / 2; // da prévia: é a mesma faixa que o sorteio usa
     const expected = chance * (Math.min(dmg + pushDmg, u.hp) + (dmg + pushDmg >= u.hp ? W.KILL : 0));
     const foe = u.team !== actor.team;
-    // carga: quem joga antes de ela sair provavelmente sai da casa, e o golpe cai no vazio (12/11)
-    const leaves = ability.charge > 0 && u.ct + UNIT_DEFS[u.def].speed * ability.charge >= TURN_THRESHOLD ? W.ESCAPE : 1;
+    // carga que mira a casa (panel, o Tiro mirado): quem joga antes de ela sair provavelmente sai dali e o golpe cai no
+    // vazio (12/11). A magia com carga segue a unidade (abilities.ts) e não perde nada com isso
+    const leaves = ability.panel && u.ct + UNIT_DEFS[u.def].speed * ability.charge >= TURN_THRESHOLD ? W.ESCAPE : 1;
     total += (foe ? expected * (u.def === OBJECTIVE_DEF ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY) * leaves;
   }
   return total;
