@@ -33,6 +33,7 @@ export interface HudActions {
   recenter(): void;
   pixel(): void;
   fast(): void; // liga e desliga a batalha 3 vezes mais rápida (o jeito do toque; no teclado, segurar Enter)
+  undo(): void; // desfaz o último passo (o mesmo da tecla Z): quem joga só de mouse não tinha como
   menu(): void;
 }
 export interface HudView {
@@ -230,6 +231,7 @@ export class BattleHud {
     this.root = el('div', { class: `hud${KEYS ? ' kbd' : ''}` },
       this.tile, this.queue, this.help, this.bannerEl,
       el('div', { class: 'tools' },
+        iconButton(['↶', hint('Z')], t('Desfazer o último passo (Z)', 'Undo the last step (Z)'), () => act.undo()),
         iconButton(['⟲', hint('⇧R')], t('Girar câmera para a esquerda (Shift+R)', 'Rotate camera left (Shift+R)'), () => act.rotate(-1)),
         iconButton(['⟳', hint('R')], t('Girar câmera para a direita (R)', 'Rotate camera right (R)'), () => act.rotate(1)),
         iconButton([icon(UI_ICON.recenter), hint('F')], t('Ver o mapa inteiro (F)', 'Show the whole map (F)'), () => act.recenter()),

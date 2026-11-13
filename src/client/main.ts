@@ -84,6 +84,7 @@ class Game {
         this.hud.setFast(pace.toggle);
       },
       menu: () => this.menu(),
+      undo: () => this.runKey({ k: 'undo' }),
     });
     const canvas = host.querySelector('canvas')!;
     this.input = new TouchInput(canvas, {
