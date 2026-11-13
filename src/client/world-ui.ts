@@ -21,7 +21,9 @@ const FADE_MS = 300; // escurecer antes de entrar no ponto; o CSS usa o mesmo va
 const terrain = (done: number) => `<svg class="world-art" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
   <path class="river" d="M0 48 C 18 44, 30 56, 46 50 S 70 40, 100 44" />
   <ellipse class="lake" cx="58" cy="56" rx="9" ry="6" />
-  <g class="forest">${[[8, 60], [12, 66], [18, 58], [22, 70], [33, 76], [36, 58], [6, 72]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.6" />`).join('')}</g>
+  <g class="forest">${[[8, 60], [12, 66], [18, 58], [22, 70], [33, 76], [36, 58], [6, 72]].flatMap(([x, y]) =>
+    // cada bosque são 3 pinheiros (triângulos), lidos como floresta de longe; o círculo de antes parecia mancha
+    [[-1.6, 0.6], [0, -0.8], [1.6, 0.8]].map(([dx, dy]) => `<path d="M${x + dx - 1.3} ${y + dy + 2.2} L${x + dx} ${y + dy - 2.2} L${x + dx + 1.3} ${y + dy + 2.2} Z" />`)).join('')}</g>
   <g class="mountains">${[[66, 22], [76, 16], [86, 10], [93, 22], [80, 28]].map(([x, y]) => `<path d="M${x - 6} ${y + 8} L${x} ${y - 6} L${x + 6} ${y + 8} Z" />`).join('')}</g>
   <polyline class="road" points="${WORLD.slice(0, -1).map((w) => `${w.x},${w.y}`).join(' ')}" />
   <polyline class="road walked" points="${WORLD.slice(0, Math.min(done, WORLD.length - 2) + 1).map((w) => `${w.x},${w.y}`).join(' ')}" />

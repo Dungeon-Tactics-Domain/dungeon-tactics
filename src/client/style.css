@@ -236,7 +236,7 @@ body:has(.talk-overlay) .hud, body:has(.talk-overlay) .fps { visibility: hidden;
 .world-svg, .world-art { position: absolute; inset: 0; width: 100%; height: 100%; }
 .world-art .river { fill: none; stroke: #6fa3c9; stroke-width: 2.4; vector-effect: non-scaling-stroke; stroke-linecap: round; opacity: .7; }
 .world-art .lake { fill: #6fa3c9; opacity: .55; }
-.world-art .forest circle { fill: #5b8a4a; opacity: .55; }
+.world-art .forest path { fill: #4f7d40; opacity: .7; }
 .world-art .mountains path { fill: #8a8378; opacity: .6; }
 .world-art .road { fill: none; stroke: var(--paper-edge); stroke-width: 3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; stroke-linecap: round; }
 .world-art .road.walked { stroke: #e2b23a; stroke-dasharray: none; stroke-linejoin: round; }
