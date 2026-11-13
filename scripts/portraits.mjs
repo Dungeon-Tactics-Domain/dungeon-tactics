@@ -1,19 +1,21 @@
 // Gera public/chars/<id>.png renderizando cada personagem (pose Idle) num navegador sem janela.
-// Precisa do servidor local rodando (npm run dev) para servir /models: node scripts/portraits.mjs http://localhost:5173
+// Precisa do servidor local rodando (npm run dev) para servir /models: node scripts/portraits.mjs http://localhost:5173 [ids...]
 import { writeFileSync } from 'node:fs';
 import { chromium } from './lib/browser.mjs';
 
 const base = process.argv[2];
-const IDS = ['mage', 'knight', 'barbarian', 'rogue', 'rogue_hooded', 'skeleton_mage', 'skeleton_minion', 'skeleton_rogue', 'skeleton_warrior'];
+// ids depois da URL refazem só esses retratos (os outros PNG/WebP ficam como estão)
+const IDS = process.argv.length > 3 ? process.argv.slice(3) : ['mage', 'knight', 'barbarian', 'rogue', 'rogue_hooded', 'ranger', 'skeleton_mage', 'skeleton_minion', 'skeleton_rogue', 'skeleton_warrior'];
 const page_html = `<!doctype html><html><body style="margin:0;background:transparent">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.186.1/build/three.module.js","three/addons/":"https://unpkg.com/three@0.186.1/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 const r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
 r.setSize(240, 320); r.outputColorSpace = THREE.SRGBColorSpace; document.body.append(r.domElement);
 window.shot = async (url) => {
-  const g = await new GLTFLoader().loadAsync(url);
+  const g = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url); // bonecos comprimidos com meshopt desde 13/11
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight('#fff4e8', '#3a2018', 2.2));
   const key = new THREE.DirectionalLight('#ffffff', 2.4); key.position.set(2, 4, 5); scene.add(key);
@@ -29,7 +31,7 @@ window.shot = async (url) => {
 window.ready = true;
 </script></body></html>`;
 
-const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, args: ['--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, args: ['--enable-unsafe-swiftshader', '--mute-audio'] });
 const page = await browser.newPage();
 await page.route(base + '/_portraits', (route) => route.fulfill({ contentType: 'text/html', body: page_html }));
 await page.goto(base + '/_portraits');

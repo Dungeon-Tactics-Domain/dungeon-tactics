@@ -19,6 +19,11 @@ models/mage.glb, knight, barbarian, rogue, rogue_hooded e skeleton_*.glb (os 9 b
   Mais 4 animações copiadas osso a osso para os 9 bonecos (Ranged_Magic_Summon, Waving, Skeletons_Taunt, Spawn_Ground) de:
   KayKit Character Animations 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
   (Animations/gltf/Rig_Medium; mesmos ossos e mesma pose de repouso dos bonecos). Licença lida no License.txt do zip: "License: (Creative Commons Zero, CC0)".
+models/ranger.glb e chars/ranger.webp (o Arqueiro do Dungeon Tactics, desde 13/11/2026)
+  A Ladina do KayKit Adventurers Character Pack 1.0 (rogue.glb acima) sem as facas e o capuz, roupa tingida, e o
+  "Ranged_Bow_Idle" no lugar do Idle (KayKit Character Animations 1.1, Rig_Medium_CombatRanged), montados por scripts/assets/ranger.mjs.
+  O arco é o bow_A_withString de: KayKit Fantasy Weapons Bits 1.0 (Free), por Kay Lousberg (www.kaylousberg.com), CC0
+  https://kaylousberg.itch.io/fantasy-weapons-bits - licença lida no LICENSE.txt do pacote (assets/kaykit/armas-de-fantasia): "License: (Creative Commons Zero, CC0)".
 models/hex/rock_single_A..E.gltf (+ .bin e hexagons_medieval.png), pedras na beira das ilhas de refúgio
   KayKit Medieval Hexagon Pack 1.0, por Kay Lousberg (www.kaylousberg.com), CC0
   https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0 (arquivos copiados sem alteração)
