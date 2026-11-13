@@ -21,26 +21,31 @@ interface Mood {
   beams: { n: number; color: Pair; power: [night: number, day: number]; tilt: number }; // tilt 1: na direção do sol; 0: a prumo
   motes: { n: number; color: Pair; size: number; fall: number; add: boolean; top: number };
   walls?: true; // cripta: paredes, colunas, tochas e cristais
+  // luz da cena por cima da luz da fase: multiplica o céu e o sol e põe o sol em `sun` (posição, como a da cena)
+  light?: { sky: number; sun: number; at: [number, number, number] };
 }
 
 const F = 'floresta/', M = 'masmorra/';
 export const MOODS: Record<Kind, Mood> = {
+  // Bosque (14/11, pedido do Fernando: "mais escuro… luz baixa e direcional, raios entre as copas, floresta densa e mais
+  // alta nas 4 laterais, fundo de mata fechada"): neblina verde-escura, céu fraco e sol baixo e de lado (sombras compridas)
   forest: {
-    low: ['#05090c', '#24372a'], high: ['#121d27', '#9db38f'], near: 2, far: 20, mist: 0.55, ceiling: 0, snow: 0,
-    ground: '#2d4a26', rise: 0.22, bump: 0.7, shade: 0.7,
+    low: ['#03070a', '#0c1610'], high: ['#0b141a', '#2f4636'], near: 2, far: 24, mist: 0.6, ceiling: 0, snow: 0,
+    ground: '#203a1c', rise: 0.22, bump: 0.7, shade: 0.6,
     props: [
-      { model: F + 'Bush_2_A_Color1', n: 40, d: [0.5, 4], h: [0.5, 1] },
+      { model: F + 'Bush_2_A_Color1', n: 60, d: [0.5, 4], h: [0.5, 1] },
       { model: F + 'Rock_3_A_Color1', n: 14, d: [0.8, 7], h: [0.4, 1.1] },
       { model: F + 'Rock_1_A_Color1', n: 10, d: [0.6, 5], h: [0.3, 0.7] },
-      { model: F + 'Tree_2_A_Color1', n: 22, d: [2.5, 8], h: [2, 3.2] },
-      { model: F + 'Tree_1_A_Color1', n: 30, d: [4, 14], h: [3, 4.5] },
-      { model: F + 'Tree_3_A_Color1', n: 18, d: [4.5, 14], h: [3, 4.2] },
-      { model: F + 'Tree_2_C_Color1', n: 34, d: [8, 28], h: [5, 7.5] },
-      { model: F + 'Tree_1_B_Color1', n: 30, d: [8, 28], h: [5, 7] },
-      { model: F + 'Tree_4_B_Color1', n: 30, d: [9, 28], h: [5.5, 8] },
+      { model: F + 'Tree_2_A_Color1', n: 40, d: [2, 8], h: [2.2, 3.5] },
+      { model: F + 'Tree_1_A_Color1', n: 50, d: [3.5, 14], h: [3.5, 5] },
+      { model: F + 'Tree_3_A_Color1', n: 30, d: [4, 14], h: [3.5, 4.8] },
+      { model: F + 'Tree_2_C_Color1', n: 70, d: [7, 28], h: [6, 8] },
+      { model: F + 'Tree_1_B_Color1', n: 60, d: [7, 28], h: [6, 8] },
+      { model: F + 'Tree_4_B_Color1', n: 60, d: [8, 28], h: [6.5, 8] },
     ],
-    beams: { n: 9, color: ['#8fb0ff', '#ffe2a6'], power: [0.08, 0.3], tilt: 1 },
-    motes: { n: 260, color: ['#c8ff7a', '#ffe7a3'], size: 0.07, fall: -0.00008, add: true, top: 6 },
+    beams: { n: 14, color: ['#8fb0ff', '#ffd79a'], power: [0.1, 0.42], tilt: 1 },
+    motes: { n: 360, color: ['#c8ff7a', '#ffe7a3'], size: 0.07, fall: -0.00008, add: true, top: 6 },
+    light: { sky: 0.45, sun: 0.85, at: [-10, 7, 5] },
   },
   field: {
     low: ['#0b0b18', '#7da36a'], high: ['#252648', '#b9d3c8'], near: 12, far: 48, mist: 0.06, ceiling: 0, snow: 0,
@@ -141,6 +146,8 @@ const skipNormalPass = (o: THREE.Object3D) => {
 export class Ambience {
   readonly root = new THREE.Group();
   private scene: THREE.Scene | null = null;
+  private sky: THREE.HemisphereLight | undefined;
+  private sun: THREE.DirectionalLight | undefined;
   private k = 1; // luz da fase (setDaylight); sem chamada, a luz de sempre, que é a de dia
   private readonly u = {
     ambLow: { value: new THREE.Color() }, ambHigh: { value: new THREE.Color() }, ambHalf: { value: new THREE.Vector2() },
@@ -384,12 +391,13 @@ export class Ambience {
           gl_FragColor = vec4(uColor * uPower * vBeam.y * across * along * dust * breathe, 1.0);
         }`,
     });
-    const dir = new THREE.Vector3().copy(SUN).lerp(new THREE.Vector3(0, -1, 0), 1 - b.tilt).normalize();
+    const sun = this.mood.light ? new THREE.Vector3(...this.mood.light.at).negate().normalize() : SUN;
+    const dir = sun.clone().lerp(new THREE.Vector3(0, -1, 0), 1 - b.tilt).normalize();
     for (let i = 0; i < b.n; i++) {
-      // um terço cai no tabuleiro, com metade da força (a casa embaixo continua legível); o resto na mata em volta
+      // um terço cai no tabuleiro, com 35% da força (a casa e o boneco embaixo continuam legíveis); o resto na mata em volta
       const onBoard = i % 3 === 0;
       const g = new THREE.PlaneGeometry(1, 1).translate(0, -0.5, 0);
-      g.setAttribute('beam', new THREE.Float32BufferAttribute(new Array(4).fill([rand() * 100, onBoard ? 0.5 : 1]).flat(), 2));
+      g.setAttribute('beam', new THREE.Float32BufferAttribute(new Array(4).fill([rand() * 100, onBoard ? 0.35 : 1]).flat(), 2));
       const mesh = new THREE.Mesh(g, mat);
       mesh.matrixAutoUpdate = false;
       skipNormalPass(mesh);
@@ -442,6 +450,9 @@ export class Ambience {
 
   mount(scene: THREE.Scene): this {
     this.scene = scene;
+    // as duas luzes da cena (céu e sol): o clima do mapa escurece e vira o sol por cima da luz da fase
+    this.sky = scene.children.find((o): o is THREE.HemisphereLight => (o as THREE.HemisphereLight).isHemisphereLight);
+    this.sun = scene.children.find((o): o is THREE.DirectionalLight => (o as THREE.DirectionalLight).isDirectionalLight);
     scene.add(this.root);
     this.setDaylight(this.k);
     return this;
@@ -460,6 +471,13 @@ export class Ambience {
     this.beamU.uPower.value = THREE.MathUtils.lerp(m.beams.power[0], m.beams.power[1], k * k);
     // o fundo só aparece se o chão não cobrir a tela: a cor do alto do degradê
     if (this.scene?.background instanceof THREE.Color) this.scene.background.copy(this.u.ambHigh.value);
+    // a cena acabou de pôr a luz da fase (a BattleScene chama isto por último; sem fase, vale a do construtor, e o mount
+    // chama uma vez): multiplicar aqui não acumula
+    if (m.light && this.sky && this.sun) {
+      this.sky.intensity *= m.light.sky;
+      this.sun.intensity *= m.light.sun;
+      this.sun.position.set(...m.light.at);
+    }
   }
 
   private readonly fwd = new THREE.Vector3();
