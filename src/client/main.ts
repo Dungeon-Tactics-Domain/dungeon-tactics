@@ -784,7 +784,10 @@ async function worldScreen(host: HTMLElement) {
       return;
     }
     await talk(node.scene!, { title: t(node.name[0], node.name[1]), hero });
+    // 1ª vez no epílogo: a jornada acabou, os créditos fecham a campanha (rever o epílogo depois não repete)
+    const finale = i === WORLD.length - 1 && i >= done;
     done = afterNode(i, done);
+    if (finale) credits();
     store.set(WORLD_KEY, String(done));
     view = view.refresh(done);
   };
