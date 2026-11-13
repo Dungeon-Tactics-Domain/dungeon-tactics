@@ -366,7 +366,7 @@ class Game {
   // Som de cada evento (antes da animação dele): passos casa a casa, golpe no ar, acerto, erro, cura, carga, queda
   private sound(e: BattleEvent) {
     const MELEE = new Set(['slash', 'heavy', 'stab', 'impact', 'spin', 'dash', 'debuff']);
-    const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = { hit: 'hit', bump: 'hit', fall: 'hit', miss: 'miss', heal: 'heal', charge: 'charge', fizzle: 'miss', die: 'die' };
+    const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = { hit: 'hit', bump: 'hit', fall: 'hit', spike: 'hit', miss: 'miss', heal: 'heal', charge: 'charge', fizzle: 'miss', die: 'die' };
     if (e.k === 'move') for (let i = 1; i < e.path.length; i++) void this.scene.wait((i - 1) * TIMING.step).then(() => sfx('step'));
     else if (e.k === 'attack') {
       const fx = lookOf(e.ability).fx;

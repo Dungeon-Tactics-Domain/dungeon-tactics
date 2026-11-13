@@ -1,6 +1,6 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
-import { previewAbility, simulatePush } from './combat.ts';
+import { COMBAT, previewAbility, simulatePush } from './combat.ts';
 import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
 import { MAX_JUMP, reachable } from './pathing.ts';
 import { rulesOf } from './rules.ts';
@@ -113,7 +113,8 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
 
 function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos, attacking: boolean, walk: Map<string, number>): number {
   const tile = tileAt(grid, at);
-  let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * standH(tile);
+  // espinhos: terminar a vez ali custa o dano deles (grid.ts)
+  let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * standH(tile) - (tile.spikes ? COMBAT.SPIKE_DAMAGE : 0);
   let nearest = Infinity;
   for (const o of state.units) {
     if (o.team === actor.team) {

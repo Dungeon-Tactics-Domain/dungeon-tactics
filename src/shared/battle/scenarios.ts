@@ -139,7 +139,7 @@ export const FIRST_BATTLE: Scenario = {
 // guardam um altar elevado (nível 2) no fundo; no meio, um canal de água rasa (BMG 6.5: entrar custa 2 de movimento) com
 // duas pontes; colunas, caixotes, barris e o baú bloqueiam; entulho é cobertura pisável; muros de tijolo fecham passagens.
 // Uma letra por casa diz terreno, altura e aparência (só desenho, as regras leem o terreno, a altura e a profundidade):
-const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number }> = {
+const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number; spikes?: true }> = {
   f: { terrain: 'floor', h: 1, look: 'crypt' },
   d: { terrain: 'floor', h: 2, look: 'altar' },
   w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
@@ -151,18 +151,19 @@ const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: str
   r: { terrain: 'wall', h: 1, look: 'barrel' },
   x: { terrain: 'wall', h: 2, look: 'chest' },
   u: { terrain: 'forest', h: 1, look: 'rubble' },
+  s: { terrain: 'floor', h: 1, look: 'spikes', spikes: true }, // noite de 12/11: empurrar alguém para cá fere
 };
 const CRYPT_MAP = [
   'ddddddxddddddd',
   'dPdddddddddddP',
   'dddddddddddddd',
   'BBffffffffffBB',
-  'ffcfffffffffrf',
+  'ffcfffssffffrf',
   'fffuffffffufff',
   'wwwbbwwwwbbwww',
   'wwwbbwwwwbbwww',
   'ffffuffffuffff',
-  'fpffffffffffpf',
+  'fpffffssffffpf',
   'ffBBBffffBBBff',
   'ffffffffffffff',
   'rfffffffffffcf',

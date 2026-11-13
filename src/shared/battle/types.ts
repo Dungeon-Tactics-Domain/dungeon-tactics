@@ -59,4 +59,5 @@ export type BattleEvent =
   | { k: 'push'; unit: string; to: Pos }
   | { k: 'bump'; unit: string; dmg: number }
   | { k: 'fall'; unit: string; levels: number; dmg: number }
+  | { k: 'spike'; unit: string; dmg: number } // espinhos: empurrado para a casa ou terminou a vez nela
   | { k: 'die'; unit: string };

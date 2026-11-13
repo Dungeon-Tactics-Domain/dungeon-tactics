@@ -46,7 +46,7 @@ const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
 // coluna (fica a água por baixo); árvore põe o modelo da floresta em cima. Mapeamento do orquestrador em 12/11 (montagem
 // de Gariland a partir do surface_type do arquivo do mapa), aprovado pelo Fernando para entrar no jogo.
 // `canopy`: a altura da casa no mapa é a da copa (árvore de Gariland), e o chão sai do vizinho mais baixo.
-const LOOK: Record<string, { top: string; side: string | null; prop?: string; propH?: number; canopy?: true }> = {
+const LOOK: Record<string, { top: string; side: string | null; prop?: string; propH?: number; propW?: number; canopy?: true }> = {
   grass: { top: 'blocos/grass', side: 'blocos/dirt' },
   stone: { top: 'blocos/gravel', side: 'blocos/stone' },
   water: { top: 'blocos/water', side: 'blocos/stone_dark' },
@@ -79,6 +79,7 @@ const LOOK: Record<string, { top: string; side: string | null; prop?: string; pr
   barrel: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/barrel_large', propH: 0.8 },
   chest: { top: 'blocos/stone_dark', side: 'blocos/stone_dark', prop: 'masmorra/chest_gold', propH: 0.6 },
   rubble: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/rubble_half', propH: 0.4 },
+  spikes: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/floor_tile_big_spikes', propW: 0.95 },
 };
 const WATER = 'blocos/water';
 const UNDER = 'blocos/stone_dark'; // coluna embaixo da água da ponte e da saia do mapa
@@ -94,7 +95,7 @@ const WALL_COLOR: Record<string, string> = {
   water: '#2f6fae', bridge: '#2f6fae', roof: '#8a4b32', chimney: '#4a4a52', wood: '#8a6238',
   rock: '#7a7d86', summit: '#4a4a52', sand: '#b8a06a', gold: '#7a7d86', brick: '#8a4b32', snow: '#c9d2dc', snow_rock: '#c9d2dc',
   tree2: '#4f8f3a', tree3: '#4f8f3a', tree4: '#4f8f3a', bare1: '#c9d2dc', bare2: '#c9d2dc',
-  crypt: '#5a5d66', altar: '#4a4a52', pillar: '#5a5d66', crates: '#5a5d66', barrel: '#5a5d66', chest: '#4a4a52', rubble: '#5a5d66',
+  crypt: '#5a5d66', altar: '#4a4a52', pillar: '#5a5d66', crates: '#5a5d66', barrel: '#5a5d66', chest: '#4a4a52', rubble: '#5a5d66', spikes: '#5a5d66',
 };
 const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
@@ -388,7 +389,8 @@ export class BattleScene {
       else for (; y > 0; y -= 1) put(column, 1, new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)));
       if (look.prop) {
         const box = new THREE.Box3().setFromObject(this.lookPieces.get(look.prop)!);
-        const k = (look.propH ?? 1.1) / (box.max.y - box.min.y); // 1,1: mesma altura da árvore dos outros mapas
+        // propW: peça de chão (espinhos) medida pela largura, para caber na casa; as outras pela altura (1,1 = a árvore)
+        const k = look.propW ? look.propW / Math.max(box.max.x - box.min.x, box.max.z - box.min.z) : (look.propH ?? 1.1) / (box.max.y - box.min.y);
         put(look.prop, 0, new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)));
       }
     };
@@ -645,7 +647,7 @@ export class BattleScene {
           await this.animate(TIMING.lunge, (k) => v.holder.position.lerpVectors(a, b, Math.sin(Math.PI * k)));
         }
         await playFx(this.scene, (ms, step) => this.animate(ms, step), look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
-      } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall') {
+      } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall' || e.k === 'spike') {
         v.hp -= e.dmg;
         // golpe forte (25% da vida ou mais): a tela treme e o número sai maior. Com 30%, nenhum de 10 golpes de uma
         // Escaramuça passou (medido 12/11): o efeito tem de aparecer de vez em quando, não nunca

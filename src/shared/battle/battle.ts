@@ -1,5 +1,5 @@
 import { ABILITIES } from './abilities.ts';
-import { checkOutcome, previewAbility, resolveAbility, type Preview } from './combat.ts';
+import { checkOutcome, previewAbility, resolveAbility, spikeAtTurnEnd, type Preview } from './combat.ts';
 import { FACING, canStand, facingTo, inBounds, samePos, tileAt, type Grid } from './grid.ts';
 import { pathTo, reachable, type Step } from './pathing.ts';
 import { SCENARIOS, initialState, type Scenario } from './scenarios.ts';
@@ -104,9 +104,10 @@ export class Battle {
   endTurn(): BattleEvent[] {
     this.history = [];
     if (this.over) return [];
+    const spiked = spikeAtTurnEnd(this.grid, this.state);
     finishTurn(this.state);
     this.state.outcome = checkOutcome(this.state);
-    return this.over ? [] : startNextTurn(this.grid, this.state);
+    return [...spiked, ...(this.over ? [] : startNextTurn(this.grid, this.state))];
   }
 
   undo(): boolean {

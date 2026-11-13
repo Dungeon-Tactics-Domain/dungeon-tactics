@@ -33,6 +33,7 @@
 | `models/floresta/` (`Tree_1_A_Color1` a `Tree_4_A_Color1`, `Tree_Bare_1_A_Color1`, `Tree_Bare_2_A_Color1`, + `.bin`, `forest_texture.png`) | Dungeon Tactics: árvores de Gariland e da Colina do Farol (as secas no lado da neve) | `src/client/scene.ts` (`LOOK`) | KayKit Forest Nature Pack 1.0 Free, CC0 |
 | `models/animacoes.glb` | Dungeon Tactics: 12 gestos das habilidades (golpe de uma e duas mãos, estocada, arco mirando e soltando, magia carregando e saindo, usar item), aplicados pelo nome do osso aos bonecos | `src/client/scene.ts` (`BattleScene.create`), tabela em `src/client/fx.ts` | KayKit Character Animations 1.1 Free (Rig_Medium), CC0; junto por `scripts/assets/anim-pack.mjs` |
 | `models/masmorra/box_large.gltf` (+ `.bin`, `dungeon_texture.png`; 40 KB) | Dungeon Tactics: caixa das casas de caixa de Gariland | `src/client/scene.ts` (`LOOK.box`) | KayKit Dungeon Pack 1.1 Free, CC0 |
+| `models/masmorra/floor_tile_big_spikes.gltf` (+ `.bin`; 46 KB) | Dungeon Tactics: casa de espinhos (noite de 12/11), medida pela largura para caber na casa | `src/client/scene.ts` (`LOOK.spikes`, `propW`) | KayKit Dungeon Pack 1.1 Free, CC0 |
 | `chars/*.webp` | retrato de cada boneco (rosto) | `src/client/ui.ts`, `src/client/avatar.ts` | renderizados dos próprios bonecos por `scripts/portraits.mjs` |
 | `tex/stone.jpg`, `tex/stone_nor.jpg` | pedra da arena (cor e relevo) | `src/client/scene.ts` | Poly Haven slate_floor_02, CC0 |
 | `tex/lava_emit.jpg` | brilho da lava | `src/client/scene.ts` | ambientCG Lava001, CC0 |

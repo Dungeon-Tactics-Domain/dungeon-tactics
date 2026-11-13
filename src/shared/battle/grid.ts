@@ -20,6 +20,9 @@ export interface Tile {
   // Água (BMG 6.5; decisão do Fernando de 12/11): profundidade em níveis. 1 = rasa (andar custa 2), 2 ou mais = funda
   // (não dá para entrar nem parar). Quem está na água fica mais baixo: altura da casa menos a profundidade.
   depth?: number;
+  // Espinhos (noite de 12/11, regra nossa, não do FFT): quem termina a vez em cima ou é empurrado para cá leva
+  // COMBAT.SPIKE_DAMAGE. Andar por cima não fere. Dá uso tático aos empurrões (combat.ts) e a IA já valoriza pelo dano.
+  spikes?: true;
 }
 
 // Mapa imutável durante a batalha: fica fora do BattleState (o estado guarda só o id do cenário).

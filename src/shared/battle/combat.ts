@@ -16,6 +16,7 @@ export const COMBAT = {
   BUMP_DAMAGE: 3, // empurrão parado por parede, unidade, borda ou degrau alto
   FALL_FREE: 1, // queda de até 1 nível é só um degrau
   FALL_DAMAGE: 5, // por nível além do degrau livre
+  SPIKE_DAMAGE: 6, // casa de espinhos (grid.ts): o mesmo que um golpe fraco; número inicial, medido na fase que usa
 };
 
 export interface TargetPreview {
@@ -145,6 +146,15 @@ function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEv
   return false;
 }
 
+// Fim da vez em cima de espinhos (grid.ts): fere quem joga agora. Sem sorteio (o hash das partidas sem espinhos não muda)
+export function spikeAtTurnEnd(grid: Grid, state: BattleState): BattleEvent[] {
+  const actor = state.units.find((u) => u.id === state.turn.actor);
+  if (!actor || !tileAt(grid, actor.pos).spikes) return [];
+  const events: BattleEvent[] = [{ k: 'spike', unit: actor.id, dmg: COMBAT.SPIKE_DAMAGE }];
+  hurt(state, actor, COMBAT.SPIKE_DAMAGE, events);
+  return events;
+}
+
 export interface PushResult {
   to: Pos;
   dmg: number; // batida e queda somadas
@@ -181,6 +191,10 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
     if (dmg > 0) {
       result.events.push({ k: 'fall', unit: unit.id, levels, dmg });
       result.dmg += dmg;
+    }
+    if (tileAt(grid, next).spikes) {
+      result.events.push({ k: 'spike', unit: unit.id, dmg: COMBAT.SPIKE_DAMAGE });
+      result.dmg += COMBAT.SPIKE_DAMAGE;
     }
   }
   return result;

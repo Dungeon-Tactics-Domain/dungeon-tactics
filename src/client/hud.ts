@@ -8,7 +8,7 @@
 // Redesenha tudo a cada mudança (é pouco DOM).
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import type { Preview } from '../shared/battle/combat.ts';
+import { COMBAT, type Preview } from '../shared/battle/combat.ts';
 import { TERRAIN, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
@@ -96,6 +96,7 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
     else if (e.k === 'heal') parts.push(`${name(e.unit)} +${e.amount}`);
     else if (e.k === 'bump') parts.push(t(`${name(e.unit)} bateu −${e.dmg}`, `${name(e.unit)} crashed −${e.dmg}`));
     else if (e.k === 'fall') parts.push(t(`${name(e.unit)} caiu de altura −${e.dmg}`, `${name(e.unit)} fell −${e.dmg}`));
+    else if (e.k === 'spike') parts.push(t(`${name(e.unit)} nos espinhos −${e.dmg}`, `${name(e.unit)} on the spikes −${e.dmg}`));
     else if (e.k === 'die') parts.push(t(`${name(e.unit)} caiu`, `${name(e.unit)} is down`));
   }
   flush();
@@ -142,12 +143,14 @@ const LOOK_NAME: Record<string, () => string> = {
   tree2: () => t('árvore', 'tree'), tree3: () => t('árvore', 'tree'), tree4: () => t('árvore', 'tree'), bare1: () => t('árvore seca', 'bare tree'), bare2: () => t('árvore seca', 'bare tree'),
   crypt: () => t('piso de pedra', 'stone floor'), altar: () => t('altar', 'altar'), pillar: () => t('coluna', 'pillar'), crates: () => t('caixotes', 'crates'),
   barrel: () => t('barril', 'barrel'), chest: () => t('baú', 'chest'), rubble: () => t('entulho', 'rubble'),
+  spikes: () => t('armadilha de espinhos', 'spike trap'),
 };
 const TERRAIN_NAME: Record<string, () => string> = { floor: () => t('chão', 'ground'), forest: () => t('floresta (cobertura)', 'forest (cover)'), wall: () => t('muro', 'wall') };
 export function tileInfo(grid: Grid, p: Pos): string {
   const tile = tileAt(grid, p);
   const kind = tile.look ? LOOK_NAME[tile.look]?.() ?? tile.look : TERRAIN_NAME[tile.terrain]();
-  const blocked = TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable');
+  const blocked = (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable'))
+    + (tile.spikes ? t(` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`, ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`) : '');
   return t(`Casa ${p.x},${p.y} · altura ${tile.h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`, `Tile ${p.x},${p.y} · height ${tile.h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`);
 }
 

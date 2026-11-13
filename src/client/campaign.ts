@@ -45,7 +45,7 @@ export const learned = (n: number) => n + 1 >= CHAPTERS.length ? [] : CHAPTERS[n
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 44% → 37% no Ato I e 51% → 26% no Ato II (4, 5 e 7 são de chefe), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 42% → 37% no Ato I (com os espinhos da Cripta) e 51% → 26% no Ato II (4, 5 e 7 são de chefe), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -111,7 +111,7 @@ export const CHAPTERS: Chapter[] = [
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
     song: 'boss',
     boss: true,
-    setup: { map: 'flooded_crypt', heroes: party(3), enemies: [vesper(65, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
+    setup: { map: 'flooded_crypt', heroes: party(3), enemies: [vesper(75, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
     intro: [
       L('vesper', 'Lia. Voltou para casa e trouxe amigos.', 'Lia. You came home, and you brought friends.'),
       L('lia', 'Vim apagar o que você acendeu, Vesper.', 'I came to put out what you lit, Vesper.'),
