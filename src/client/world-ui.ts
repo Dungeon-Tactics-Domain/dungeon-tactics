@@ -11,6 +11,9 @@ import { abilityDetail, portrait } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { sfx } from './sound.ts';
+import { store } from './store.ts';
+import { CHEST_KEY, EQUIP_KEY, buy, equip, parseChest, parseEquip, sell } from './chest.ts';
+import { ITEMS, SLOTS, bonusOf, type ItemDef, type Slot } from '../shared/battle/equipment.ts';
 import { WORLD, isOpen, step } from './world.ts';
 
 const WALK_MS = 320; // um trecho de estrada; o CSS usa o mesmo valor (--walk-ms)
@@ -50,24 +53,71 @@ export function openParty(units: DevUnit[], benched: string | null) {
   d.overlay.querySelector<HTMLElement>('.party-card')?.focus();
 }
 
+const SLOT_NAME: Record<Slot, () => string> = { weapon: () => t('Arma', 'Weapon'), armor: () => t('Armadura', 'Armor'), accessory: () => t('Acessório', 'Accessory') };
+const itemName = (it: ItemDef) => t(it.name, it.en);
+// "+2 dano · +8 acerto": só o que o item muda, nas palavras da ficha
+export function itemStats(it: ItemDef): string {
+  const parts: [number | undefined, string, string][] = [[it.hp, 'vida', 'HP'], [it.power, 'dano', 'damage'], [it.hit, 'acerto', 'hit'], [it.move, 'movimento', 'move'], [it.jump, 'salto', 'jump'], [it.speed, 'velocidade', 'speed']];
+  return parts.filter(([v]) => v).map(([v, pt, en]) => `${v! > 0 ? '+' : ''}${v} ${t(pt, en)}`).join(' · ');
+}
+const loadChest = () => parseChest(store.json(CHEST_KEY));
+const loadEquip = () => parseEquip(store.json(EQUIP_KEY));
+
+// Loja (13/11, entrega 2: provisória no mapa até as cidades): compra com o ouro do baú, vende pela metade (como no FFT)
+export function openShop(back?: () => void) {
+  const chest = loadChest();
+  const save = (c: ReturnType<typeof buy>) => { if (!c) return void sfx('cancel'); store.set(CHEST_KEY, JSON.stringify(c)); sfx('confirm'); d.close(); openShop(back); };
+  const d = dialog('party', t('Loja', 'Shop'), [
+    el('p', { class: 'mvp' }, t(`Ouro no baú: ${chest.gold}`, `Gold in chest: ${chest.gold}`)),
+    el('dl', { class: 'keys' }, ...Object.values(ITEMS).flatMap((it) => [
+      el('dt', {}, `${itemName(it)} (${SLOT_NAME[it.slot]()})`),
+      el('dd', {}, `${itemStats(it)} · ${it.price} ${t('de ouro', 'gold')} `,
+        el('button', { type: 'button', class: 'secondary', disabled: chest.gold < it.price, onclick: () => save(buy(chest, it.id)) }, t('Comprar', 'Buy'))),
+    ])),
+    el('h3', {}, t('No baú', 'In the chest')),
+    chest.items.length ? el('dl', { class: 'keys' }, ...chest.items.flatMap((id) => [el('dt', {}, itemName(ITEMS[id])),
+      el('dd', {}, `${Math.floor(ITEMS[id].price / 2)} ${t('de ouro', 'gold')} `, el('button', { type: 'button', class: 'secondary', onclick: () => save(sell(chest, id)) }, t('Vender', 'Sell')))]))
+      : el('p', {}, t('Vazio. Vencer uma fase dá ouro (50 por estrela).', 'Empty. Winning a stage gives gold (50 per star).')),
+  ], { onBack: back });
+}
+
 // Ficha da unidade (como a tela de status da formação do FFT): números, cada habilidade com o que faz (as que ainda vêm
 // marcadas) e os 3 espaços de equipamento, vazios até a loja das cidades (próxima entrega). Esc/✕ volta à lista.
 function openSheet(u: DevUnit, back: () => void) {
   const def = UNIT_DEFS[u.base];
   const row = (k: string, v: string | number) => [el('dt', {}, k), el('dd', {}, String(v))];
   const later = def.abilities.filter((a) => !u.abilities.includes(a));
+  const eq = loadEquip(), chest = loadChest(), mine = eq[u.base] ?? {};
+  const b = bonusOf(mine);
+  // número com o equipamento: "42 (+6)"
+  const withB = (v: number, plus: number) => (plus ? `${v + plus} (${plus > 0 ? '+' : ''}${plus})` : String(v));
+  const put = (slot: Slot, id: string | null) => {
+    const r = equip(loadChest(), loadEquip(), u.base, slot, id);
+    if (!r) return void sfx('cancel');
+    store.set(CHEST_KEY, JSON.stringify(r.chest));
+    store.set(EQUIP_KEY, JSON.stringify(r.eq));
+    sfx('confirm');
+    d.close();
+    openSheet(u, back);
+  };
   const d = dialog('party', u.name, [
     el('div', { class: 'party-card' }, portrait(u.base), el('div', {},
       el('strong', {}, unitName(u.base)),
       el('dl', { class: 'keys' },
-        ...row(t('Vida', 'HP'), u.hp), ...row(t('Velocidade', 'Speed'), u.speed), ...row(t('Movimento', 'Move'), u.move),
-        ...row(t('Salto', 'Jump'), u.jump ?? def.jump ?? MAX_JUMP)))),
+        ...row(t('Vida', 'HP'), withB(u.hp, b.hp)), ...row(t('Velocidade', 'Speed'), withB(u.speed, b.speed)), ...row(t('Movimento', 'Move'), withB(u.move, b.move)),
+        ...row(t('Salto', 'Jump'), withB(u.jump ?? def.jump ?? MAX_JUMP, b.jump)),
+        ...(b.power ? row(t('Dano', 'Damage'), `+${b.power}`) : []), ...(b.hit ? row(t('Acerto', 'Hit'), `+${b.hit}`) : [])))),
     el('h3', {}, t('Habilidades', 'Abilities')),
     el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a))),
       ...later.flatMap((a) => row(abilityName(a), t('aprende mais adiante na jornada', 'learned later on the journey')))),
     el('h3', {}, t('Equipamento', 'Equipment')),
-    el('dl', { class: 'keys' }, ...[t('Arma', 'Weapon'), t('Armadura', 'Armor'), t('Acessório', 'Accessory')]
-      .flatMap((slot) => row(slot, t('vazio — a loja chega com as cidades', 'empty — the shop comes with the towns')))),
+    // cada espaço: o item de agora e os do baú que cabem nele (Equipar); Tirar devolve ao baú
+    el('dl', { class: 'keys' }, ...SLOTS.flatMap((slot) => [el('dt', {}, SLOT_NAME[slot]()), el('dd', {},
+      mine[slot] ? `${itemName(ITEMS[mine[slot]!])} (${itemStats(ITEMS[mine[slot]!])}) ` : t('vazio ', 'empty '),
+      ...(mine[slot] ? [el('button', { type: 'button', class: 'secondary', onclick: () => put(slot, null) }, t('Tirar', 'Remove'))] : []),
+      ...[...new Set(chest.items.filter((id) => ITEMS[id].slot === slot))].map((id) =>
+        el('button', { type: 'button', class: 'secondary', title: itemStats(ITEMS[id]), onclick: () => put(slot, id) }, t(`Equipar ${itemName(ITEMS[id])}`, `Equip ${itemName(ITEMS[id])}`))))])),
+    ...(chest.items.length ? [] : [el('p', {}, t('O baú está vazio: compre na Loja do mapa com o ouro das vitórias.', 'The chest is empty: buy at the map Shop with gold from victories.'))]),
     el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); back(); } }, t('Voltar ao grupo', 'Back to party')),
   ], { onBack: back });
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
@@ -117,6 +167,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   const enterBtn = el('button', { type: 'button', class: 'item focus', onclick: () => go() }, t('Entrar', 'Enter'));
   const panel = el('div', { class: 'panel world-panel', 'aria-live': 'polite' }, place, kindText, foes, el('div', { class: 'world-actions' }, enterBtn,
     el('button', { type: 'button', class: 'item', onclick: () => opts.party() }, t('Grupo', 'Party')),
+    el('button', { type: 'button', class: 'item', onclick: () => openShop() }, t('Loja', 'Shop')),
     el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title'))));
   const root = el('div', { class: 'world' },
     el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, ...starMarks, token),

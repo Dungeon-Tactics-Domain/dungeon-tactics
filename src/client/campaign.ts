@@ -5,6 +5,7 @@ import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
 import { buildDevScenario, slotsOf, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
+import type { Equip } from './chest.ts';
 import { withHero, type Hero } from './hero.ts';
 import type { SongId } from './music.ts';
 
@@ -206,8 +207,10 @@ export const CHAPTERS: Chapter[] = [
 export const chapterId = (n: number) => `camp${n}`;
 // Fase de chefe (boss: true, o 1º inimigo da lista, id e0): derrubar o chefe vence, mesmo com outros de pé; perder todos
 // os heróis (ou o Farol, se houver) perde. Pede outra tática: abrir caminho até ele em vez de limpar o mapa.
-export function chapterScenario(n: number, hero: Hero | null = null): Scenario {
-  const s = buildDevScenario(withHero(CHAPTERS[n].setup, hero), chapterId(n), CHAPTERS[n].title);
+// `eq`: equipamento salvo de cada classe (chest.ts); a medição da dificuldade roda sem ele (o grupo sem itens)
+export function chapterScenario(n: number, hero: Hero | null = null, eq: Equip = {}): Scenario {
+  const setup = withHero(CHAPTERS[n].setup, hero);
+  const s = buildDevScenario({ ...setup, heroes: setup.heroes.map((u) => ({ ...u, items: eq[u.base] })) }, chapterId(n), CHAPTERS[n].title);
   if (CHAPTERS[n].boss) {
     UNIT_DEFS[s.spawns.find((sp) => sp.id === 'e0')!.def].boss = true;
     const beacon = s.spawns.some((sp) => sp.def === OBJECTIVE_DEF);

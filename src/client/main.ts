@@ -4,6 +4,7 @@ import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
+import { CHEST_KEY, EQUIP_KEY, GOLD_PER_STAR, parseChest, parseEquip } from './chest.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
@@ -610,6 +611,9 @@ class Game {
       store.set(WORLD_KEY, String(afterNode(nodeOfChapter(n), parseWorld(store.get(WORLD_KEY)))));
       const best = parseStars(store.json(STARS_KEY));
       best[n] = Math.max(best[n], stars);
+      // ouro por estrela a cada vitória (baú do grupo, chest.ts), para a loja
+      const chest = parseChest(store.json(CHEST_KEY));
+      store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + stars * GOLD_PER_STAR }));
       store.set(STARS_KEY, JSON.stringify(best));
       await talk(CHAPTERS[n].outro, { hero: savedHero() });
     }
@@ -624,6 +628,7 @@ class Game {
             : t(`★ vencer ${w} · ★ ninguém caiu ${alive} · ★ todos acima da metade da vida ${clean}`, `★ win ${w} · ★ nobody fell ${alive} · ★ everyone above half HP ${clean}`);
         })()),
         ...this.mvpLine(),
+        el('p', { class: 'mvp' }, t(`+${stars * GOLD_PER_STAR} de ouro no baú do grupo`, `+${stars * GOLD_PER_STAR} gold in the party chest`)),
         ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair
       el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) || !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF) ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.') : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.')),
@@ -706,7 +711,7 @@ async function boot() {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
     setTrack(CHAPTERS[chapter].song);
-    scenario = chapterScenario(chapter, savedHero());
+    scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)));
     SAVE_KEY = `dt:battle:${chapterId(chapter)}`;
   } else if (study === 'fft-gariland' || study === 'fft-classes') {
     const fft = await import('../shared/battle/fft/gariland.ts');
