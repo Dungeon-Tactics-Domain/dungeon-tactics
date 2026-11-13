@@ -22,6 +22,7 @@ import { MARKER, barYOf, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
+import { loadAmbience, type Ambience } from './ambience.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -181,6 +182,7 @@ export class BattleScene {
   private yawTarget = Math.PI / 4;
   private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
+  private ambience: Ambience | null = null; // arredores, neblina, raios de luz e partículas (ambience.ts)
 
   private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[]) {
     this.pixel = pixel;
@@ -219,6 +221,7 @@ export class BattleScene {
   // `all`: fichas de todo o cenário, não só das vivas no save (13/11, revisão): sem isto, reabrir um save em que um modelo
   // já tinha morrido e apertar "Jogar de novo" trazia a unidade como o cristal do Farol
   static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings, all: string[] = []): Promise<BattleScene> {
+    const ambience = loadAmbience(grid); // baixa junto com as peças do mapa
     // bonecos comprimidos com meshopt (13/11, pedido do Fernando: o jogo baixava 11 MB para abrir); decodificador do Three
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const defs = [...new Set([...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)).filter(Boolean))];
@@ -234,6 +237,7 @@ export class BattleScene {
     // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
     const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack);
+    s.ambience = (await ambience).mount(s.scene);
     s.sync(state);
     return s;
   }
@@ -871,6 +875,7 @@ export class BattleScene {
     this.sun.color.copy(mix('#a9bcff', '#ffcf9a'));
     this.sun.intensity = 0.45 + 1.15 * k;
     (this.scene.background as THREE.Color).copy(mix('#0a0c1c', '#3b2638'));
+    this.ambience?.setDaylight(k); // por último: a neblina dos arredores manda na cor do fundo
   }
 
   // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao quarto de volta mais perto,
@@ -952,6 +957,7 @@ export class BattleScene {
       // barra de vida sempre de frente para a câmera
       v.holder.getObjectByName('bar')!.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
     }
+    this.ambience?.update(this.t, this.camera);
     this.renderer.shadowMap.needsUpdate = true;
     this.composer.render();
   }
@@ -959,6 +965,7 @@ export class BattleScene {
   dispose() {
     this.renderer.setAnimationLoop(null);
     removeEventListener('resize', this.onResize);
+    this.ambience?.dispose();
     this.scene.traverse((o) => {
       const m = o as THREE.Mesh;
       m.geometry?.dispose();

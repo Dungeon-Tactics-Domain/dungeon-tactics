@@ -39,12 +39,14 @@ models/poc/hex/ (tree_single_A, rock_single_A, hex_grass, hex_grass_bottom .gltf
   KayKit Medieval Hexagon Pack 1.0, por Kay Lousberg (www.kaylousberg.com), CC0
   https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0 (arquivos copiados sem alteração)
 models/floresta/ (Tree_1_A_Color1 a Tree_4_A_Color1, Tree_Bare_1_A_Color1, Tree_Bare_2_A_Color1 .gltf + .bin, forest_texture.png e LICENSE.txt), árvores dos mapas de Gariland e da Colina do Farol
+  e, desde 13/11, Tree_1_B_Color1, Tree_2_C_Color1, Tree_4_B_Color1, Bush_2_A_Color1, Rock_1_A_Color1 e Rock_3_A_Color1 (.gltf + .bin, copiados sem alteração), a mata e as pedras em volta do tabuleiro
   KayKit Forest Nature Pack 1.0 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-forest
   Licença lida no LICENSE.txt do pacote (cópia em models/floresta/LICENSE.txt): "Creative Commons Zero, CC0".
 models/animacoes.glb (12 clipes: golpes de uma e duas mãos, arco, magia, usar item), gestos das habilidades
   KayKit Character Animations 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
   Clipes do Rig_Medium juntos e sem malha por scripts/assets/anim-pack.mjs. Licença lida no LICENSE.txt do pacote (assets/kaykit/animacoes): "License: (Creative Commons Zero, CC0)".
 models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half e floor_tile_big_spikes .gltf + .bin, dungeon_texture.png e LICENSE.txt), caixas de Gariland, peças da Cripta Alagada e as casas de espinhos
+  e, desde 13/11, wall, wall_arched, wall_broken, column e torch_mounted (.gltf + .bin, copiados sem alteração), paredes, colunas e tochas em volta das criptas
   KayKit Dungeon Pack 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
   Licença lida no LICENSE.txt do pacote (cópia em models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
 
