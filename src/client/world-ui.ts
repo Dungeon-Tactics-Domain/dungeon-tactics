@@ -67,7 +67,8 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     const kind = w.chapter !== undefined ? 'battle' : 'story';
     return el('button', {
       type: 'button', class: `world-node ${kind}${i < done ? ' done' : ''}`, style: `left:${w.x}%;top:${w.y}%`,
-      disabled: !isOpen(i, done), 'aria-label': t(w.name[0], w.name[1]), onclick: () => void walkTo(i),
+      // title: com o mouse, o nome aparece sem precisar andar até o ponto (fechado também, para dar vontade de chegar)
+      disabled: !isOpen(i, done), 'aria-label': t(w.name[0], w.name[1]), title: t(w.name[0], w.name[1]), onclick: () => void walkTo(i),
     });
   });
   const place = el('strong', { class: 'world-place' });
