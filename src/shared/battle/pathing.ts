@@ -29,6 +29,7 @@ export interface Step {
   pos: Pos;
   cost: number;
   from: string | null; // chave da casa anterior
+  path?: Pos[]; // caminho desde a casa de saída (sem ela), montado antes de tirar as casas ocupadas
 }
 
 // Pulo por cima de vão, como no FFT (13/11, pedido do Fernando; BMG: o vão vai até [Jump/2] casas): em linha reta, por
@@ -88,28 +89,31 @@ export function reachable(grid: Grid, state: BattleState, unitId: string): Map<s
       queue.push(n);
     }
   }
+  // o caminho de cada casa sai antes de tirar as ocupadas (13/11, revisão): passar por aliado apagava a casa dele e o
+  // pathTo devolvia um caminho com buraco, que a cena desenhava como pulo de 2 a 4 casas
+  for (const step of seen.values()) {
+    const path: Pos[] = [];
+    for (let s: Step | undefined = step; s?.from; s = seen.get(s.from)) path.unshift(s.pos);
+    step.path = path;
+  }
   seen.delete(posKey(unit.pos));
   for (const [k, step] of seen) if (unitAt(state, step.pos)) seen.delete(k);
   return seen;
 }
 
-// Caminho até `target` pelas casas de saída guardadas em `reach`, sem a casa inicial; null se não alcança.
-// A casa de saída não está em `reach`: o laço termina quando `from` não é mais encontrado.
+// Caminho até `target`, sem a casa inicial (montado pelo `reachable`, passando por aliados); null se não alcança.
 export function pathTo(reach: Map<string, Step>, target: Pos): Pos[] | null {
-  let step = reach.get(posKey(target));
-  if (!step) return null;
-  const path: Pos[] = [];
-  while (step) {
-    path.unshift(step.pos);
-    step = step.from ? reach.get(step.from) : undefined;
-  }
-  return path;
+  return reach.get(posKey(target))?.path ?? null;
 }
 
 // Linha de visão na grade: percorre as casas entre os dois pontos (Bresenham) e compara a altura da linha, que vai do olho
 // de quem olha até o ponto de mira do alvo, com o topo de cada casa (altura + o quanto o terreno tapa). Roda sem Three e é
 // determinística, ao contrário da amostragem 3D da POC.
-export function lineOfSight(grid: Grid, a: Pos, b: Pos): boolean {
+export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
+  // traça sempre da casa de menor índice para a de maior (13/11, revisão): o Bresenham desempata a quina conforme o
+  // sentido, e um arqueiro levava tiro de onde não conseguia responder (5 a 6% dos pares). Olho e mira têm a mesma altura
+  // acima do chão, então trocar as pontas não muda a linha
+  const [a, b] = from.y * grid.width + from.x <= to.y * grid.width + to.x ? [from, to] : [to, from];
   const total = dist(a, b);
   if (total <= 1) return true;
   const eye = standH(tileAt(grid, a)) + EYE;

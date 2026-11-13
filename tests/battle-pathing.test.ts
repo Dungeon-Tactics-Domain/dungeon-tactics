@@ -121,3 +121,18 @@ describe('alcance das habilidades', () => {
     expect(inAbilityRange(g, ABILITIES.gust, { x: 0, y: 0 }, { x: 5, y: 0 })).toBe(false); // Rajada: 4 e sem bônus
   });
 });
+
+describe('achados da revisão de 13/11', () => {
+  it('passar por um aliado não deixa buraco no caminho', () => {
+    const g = flat(4, 1);
+    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 'b', def: 'archer', team: 'hero', x: 1, y: 0 }]);
+    expect(pathTo(reachable(g, s, 'a'), { x: 3, y: 0 })).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }]);
+  });
+
+  it('a linha de visão vale igual nos dois sentidos', () => {
+    const g = gridOf(['...', '.#.', '...']);
+    for (const [a, b] of [[{ x: 0, y: 0 }, { x: 2, y: 1 }], [{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 1, y: 0 }, { x: 2, y: 2 }]]) {
+      expect(lineOfSight(g, a, b)).toBe(lineOfSight(g, b, a));
+    }
+  });
+});

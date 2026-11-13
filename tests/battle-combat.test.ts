@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { Battle } from '../src/shared/battle/battle.ts';
+import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { COMBAT, checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
@@ -222,5 +224,13 @@ describe('direção no jogo (13/11)', () => {
     expect(shot(0).chance).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.SIDE_BONUS));
     expect(shot(1).side).toBe('back');
     expect(shot(1).chance).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.BACK_BONUS));
+  });
+});
+
+describe('fim de batalha sem Farol (13/11)', () => {
+  it('mapa que nasce sem Farol não perde por não ter Farol', () => {
+    const st = Battle.start(SCENARIOS.ash_wood, 1).state;
+    expect(checkOutcome(st)).toBe('ongoing');
+    expect(checkOutcome({ ...st, units: st.units.filter((u) => u.team !== 'enemy') })).toBe('victory');
   });
 });

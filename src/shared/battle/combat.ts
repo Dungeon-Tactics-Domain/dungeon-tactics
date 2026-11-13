@@ -3,6 +3,7 @@ import { FACING, TERRAIN, canStand, dist, inBounds, samePos, sideOf, standH, til
 import { MAX_JUMP, distTo, inAbilityRange, lineOfSight, nearestTile, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
+import { SCENARIOS } from './scenarios.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
 
@@ -230,8 +231,11 @@ export function checkOutcome(state: BattleState): Outcome {
   const custom = rulesOf(state).outcome;
   if (custom) return custom(state);
   const heroes = state.units.filter((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF);
+  // perde pelo Farol só quem nasceu com ele (13/11, revisão: Bosque e Passo pela Batalha avulsa perdiam no 1º turno);
+  // estado de teste fora da lista conta como mapa com Farol
+  const hadObjective = SCENARIOS[state.scenario]?.spawns.some((s) => s.def === OBJECTIVE_DEF) ?? true;
   const objective = state.units.some((u) => u.def === OBJECTIVE_DEF);
-  if (!objective || heroes.length === 0) return 'defeat';
+  if ((hadObjective && !objective) || heroes.length === 0) return 'defeat';
   if (!state.units.some((u) => u.team === 'enemy')) return 'victory';
   return 'ongoing';
 }

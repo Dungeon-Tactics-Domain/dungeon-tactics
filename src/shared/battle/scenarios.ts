@@ -289,7 +289,8 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
   T: { terrain: 'forest', h: 0, look: 'tree2' },
   y: { terrain: 'forest', h: 1, look: 'tree3' },
   W: { terrain: 'floor', h: 0, look: 'water', depth: 2 },
-  w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
+  // superfície no 1 e pé no 0, como na Cripta (13/11, revisão): no 0 o pé ficava no -1 e só o Salto 2 saía do vau
+  w: { terrain: 'floor', h: 1, look: 'water', depth: 1 },
   b: { terrain: 'floor', h: 1, look: 'bridge' },
   r: { terrain: 'wall', h: 1, look: 'rock' },
   c: { terrain: 'wall', h: 0, look: 'crates' }, // no chão: a carga da caravana caída na estrada, não em cima de bloco
