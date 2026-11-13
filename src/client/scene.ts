@@ -122,6 +122,7 @@ interface UnitView {
   aura: THREE.Mesh | null; // brilho no chão enquanto carrega uma habilidade
   body: THREE.Object3D | null;
   mats: THREE.MeshStandardMaterial[]; // materiais só deste boneco (cópias): piscar um não pisca os outros do mesmo modelo
+  flash: number; // conta as piscadas: só a última devolve o brilho (golpe e espinho seguidos não cortam a segunda)
 }
 
 interface Anim {
@@ -499,7 +500,7 @@ export class BattleScene {
       holder.add(crown);
     }
     this.scene.add(holder);
-    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null, body, mats };
+    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null, body, mats, flash: 0 };
     this.play(view, 'Idle');
     return view;
   }
@@ -629,7 +630,8 @@ export class BattleScene {
   private async impact(v: UnitView) {
     this.frozenUntil = this.t + TIMING.hitStop;
     for (const m of v.mats) m.emissive.set('#ffffff');
-    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k))).then(() => this.glowBack(v.mats, v.def));
+    const flash = ++v.flash;
+    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k))).then(() => flash === v.flash && this.glowBack(v.mats, v.def));
     await this.wait(TIMING.hitStop);
     if (v.body) void this.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * 0.07 * (1 - k)));
   }
@@ -700,7 +702,8 @@ export class BattleScene {
         v.hp += e.amount;
         // cura pisca verde, sem a pausa nem a tremida do golpe: o mesmo sinal, com outro sentido
         for (const m of v.mats) m.emissive.set('#5dff8a');
-        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k)))).then(() => this.glowBack(v.mats, v.def));
+        const flash = ++v.flash;
+        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k)))).then(() => flash === v.flash && this.glowBack(v.mats, v.def));
         this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `+${e.amount}`, 'heal');
         await this.wait(TIMING.hit);
