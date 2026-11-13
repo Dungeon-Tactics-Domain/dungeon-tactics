@@ -64,6 +64,9 @@ export const CHAPTERS: Chapter[] = [
       L('lia', 'Mercenários. E esse arqueiro de ossos... só um homem paga com mortos.', 'Mercenaries. And that bone archer... only one man pays with the dead.'),
       L('merc', 'Nada pessoal. O mago sombrio paga bem por quem anda com cristais.', 'Nothing personal. The dark mage pays well for anyone carrying crystals.'),
       L('tess', 'Então que ele pague o enterro. Formação!', 'Then let him pay for the burial. Formation!'),
+      // dicas da 1ª fase: o jogo ainda não tem tutorial; quem abre a campanha aprende o básico aqui
+      L('narr', 'Dica: na sua vez, Mover anda até uma casa clara e Agir usa uma habilidade. Dá para fazer os dois, em qualquer ordem.', 'Tip: on your turn, Move walks to a lit tile and Act uses an ability. You can do both, in any order.'),
+      L('narr', 'Dica: o rio fundo não se atravessa. Use a ponte ou o vau raso, que gasta mais movimento. Segure Enter (ou toque em ⏩) para a vez do inimigo passar rápido.', 'Tip: the deep river cannot be crossed. Use the bridge or the shallow ford, which costs more movement. Hold Enter (or tap ⏩) to speed up the enemy turn.'),
     ],
     outro: [
       L('odo', 'Achei isto com um deles: um mapa da Colina, com o Farol marcado em vermelho.', 'I found this on one of them: a map of the Hill, with the Beacon marked in red.'),
