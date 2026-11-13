@@ -451,8 +451,11 @@ export class BattleScene {
       body.traverse((m) => {
         const mesh = m as THREE.Mesh;
         if (!mesh.isMesh) return;
-        mesh.material = (mesh.material as THREE.MeshStandardMaterial).clone();
-        mats.push(mesh.material as THREE.MeshStandardMaterial);
+        const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+        // brilho de fábrica (olhos amarelos dos esqueletos): o piscar de golpe e cura mexe no emissivo e precisa voltar a ele
+        mat.userData.glow = { color: mat.emissive.clone(), intensity: mat.emissiveIntensity };
+        mesh.material = mat;
+        mats.push(mat);
       });
       this.glowBack(mats, u.def);
       const b = new THREE.Box3().setFromObject(body);
@@ -591,12 +594,14 @@ export class BattleScene {
   // Tudo da batalha corre no relógio da batalha (`t`), que anda 3 vezes mais rápido com o botão de acelerar seguro
   // Brilho próprio da unidade (UnitDef.tint, o Acólito sobre o mago): emissivo, porque a cor do material multiplica a
   // textura e num boneco escuro não aparecia (testado em 13/11). Golpe e cura usam o mesmo emissivo para piscar, então
-  // voltam a ele no fim; sem tint, volta ao apagado de sempre.
+  // voltam a ele no fim; sem tint, ao brilho de fábrica do material (antes zerava e apagava os olhos dos esqueletos)
   private glowBack(mats: THREE.MeshStandardMaterial[], def: string) {
     const tint = UNIT_DEFS[def]?.tint;
     for (const m of mats) {
-      m.emissive.set(tint ?? '#000000');
-      m.emissiveIntensity = tint ? TINT_GLOW : 0;
+      const glow = m.userData.glow as { color: THREE.Color; intensity: number } | undefined;
+      if (tint) m.emissive.set(tint);
+      else if (glow) m.emissive.copy(glow.color);
+      m.emissiveIntensity = tint ? TINT_GLOW : glow?.intensity ?? 0;
     }
   }
 
