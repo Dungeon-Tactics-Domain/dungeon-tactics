@@ -101,6 +101,8 @@ const SUN = new THREE.Vector3(6, -12, -4).normalize(); // o raio de luz vem de o
 // Tetos de 8 (modelos) e 5,5 (chão): mais alto que isso, longe, chega perto do plano da frente da câmera e pouco se veria
 export const LIMIT = (d: number) => Math.min(0.5 + 0.55 * d, 8);
 const GROUND_MAX = 5.5;
+const EXT_RING = 5; // casas de extensão cinza em cada lado na versão de teste (?extensao)
+const EXTEND = typeof location !== 'undefined' && new URLSearchParams(location.search).has('extensao');
 
 // sorteio com semente: o mesmo mapa monta sempre os mesmos arredores
 const seeded = (seed: number) => () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
@@ -170,6 +172,7 @@ export class Ambience {
     Object.assign(u, { ambNear: { value: mood.near }, ambFar: { value: mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
     this.buildGround();
+    if (EXTEND) this.buildExtension(rand);
     for (const p of mood.props) this.scatter(p, models.get(p.model)!, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
@@ -228,6 +231,28 @@ export class Ambience {
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     g.computeVertexNormals();
     this.root.add(new THREE.Mesh(g, this.material(null, { vertexColors: true, flatShading: true })));
+  }
+
+  // Versão de teste (?extensao, 13/11, pedido do Fernando: "tiles em preto e branco fora do limite… só para dar a vibe
+  // de que o mapa continua"): EXT_RING casas de cinza em volta do tabuleiro, sem regra nem clique. Cada uma continua a
+  // altura da casa da borda mais perto ou fica 1 nível abaixo, nunca acima: mais alta, na frente, tapava boneco.
+  private buildExtension(rand: () => number) {
+    const { width: W, height: H } = this.grid, step = this.grid.levelHeight ?? 0.5, BOTTOM = -3;
+    const at: THREE.Matrix4[] = [], tones: number[] = [];
+    for (let j = -EXT_RING; j < H + EXT_RING; j++) for (let i = -EXT_RING; i < W + EXT_RING; i++) {
+      if (i >= 0 && j >= 0 && i < W && j < H) continue;
+      const t = tileAt(this.grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
+      if (t.look === 'water' || t.look === 'bridge') continue; // o rio segue no chão dos arredores
+      const ring = Math.max(-i, -j, i - W + 1, j - H + 1);
+      const top = (t.h + 1 - (rand() < 0.15 + 0.12 * ring ? 1 : 0)) * step;
+      if (top <= BOTTOM + 0.1) continue;
+      const x = i - this.hw + 0.5, z = j - this.hh + 0.5;
+      at.push(new THREE.Matrix4().makeScale(0.96, top - BOTTOM, 0.96).setPosition(x, (top + BOTTOM) / 2, z));
+      tones.push((0.62 + 0.12 * rand()) * (1 - 0.07 * ring)); // cinza que escurece para fora
+    }
+    const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.material(null), at.length);
+    at.forEach((m, k) => { mesh.setMatrixAt(k, m); mesh.setColorAt(k, new THREE.Color().setScalar(tones[k])); });
+    this.root.add(mesh);
   }
 
   // Um InstancedMesh por modelo (cada um é uma malha só no KayKit), com a base no chão e o meio em x e z na origem
