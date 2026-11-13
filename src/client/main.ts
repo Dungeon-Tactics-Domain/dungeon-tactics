@@ -23,7 +23,7 @@ import { TIMING, pace } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
-import { SURVIVAL_ID, SURVIVE_TURNS, survivalGoal, survivalScenario, turnsLeft } from './survival.ts';
+import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
@@ -525,7 +525,13 @@ class Game {
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
     if (won) confetti();
     if (chapter !== null) return this.finishChapter(chapter, won);
+    // Até o amanhecer: quantos turnos aguentou e o recorde (novo recorde ganha destaque, como a nota da fase)
+    const lasted = survived(this.battle.state), best = parseBest(store.get(BEST_KEY));
+    if (scenario.id === SURVIVAL_ID && lasted > best) store.set(BEST_KEY, String(lasted));
     const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
+      ...(scenario.id === SURVIVAL_ID ? [el('p', { class: lasted > best ? 'learned' : '' },
+        lasted > best ? t(`Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`, `New record: ${lasted} of ${SURVIVE_TURNS} turns!`)
+          : t(`Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`, `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`))] : []),
       el('p', {}, scenario.id === SURVIVAL_ID
         ? (won ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.') : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.'))
         : won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
@@ -701,7 +707,8 @@ function quickBattle() {
     }, t(SCENARIOS[id].name, SCENARIOS[id].en))),
     // modo com outra regra: resistir até o amanhecer no Bosque (survival.ts)
     el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); location.search = `?cenario=${SURVIVAL_ID}`; } },
-      t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood'))),
+      t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood')
+        + (parseBest(store.get(BEST_KEY)) ? t(` (recorde ${parseBest(store.get(BEST_KEY))})`, ` (record ${parseBest(store.get(BEST_KEY))})`) : ''))),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }

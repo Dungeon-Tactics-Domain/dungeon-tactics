@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
-import { SURVIVE_TURNS, survivalScenario, turnsLeft } from '../src/client/survival.ts';
+import { SURVIVE_TURNS, parseBest, survivalScenario, turnsLeft } from '../src/client/survival.ts';
 
 // MEDIR=300 npx vitest run tests/survival.test.ts mostra a vitória dos heróis (IA contra IA) e quantas vieram do amanhecer
 const RUNS = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEDIR ?? 0);
@@ -16,6 +16,12 @@ describe('modo Até o amanhecer', () => {
     expect(outcome({ ...st, turnsPlayed: SURVIVE_TURNS })).toBe('victory');
     expect(outcome({ ...st, units: st.units.filter((u) => u.team !== 'enemy') })).toBe('victory');
     expect(outcome({ ...st, turnsPlayed: SURVIVE_TURNS, units: st.units.filter((u) => u.team !== 'hero') })).toBe('defeat');
+  });
+
+  it('o recorde salvo só aceita turnos válidos', () => {
+    expect(parseBest('40')).toBe(40);
+    expect(parseBest(String(SURVIVE_TURNS))).toBe(SURVIVE_TURNS);
+    for (const bad of ['-1', String(SURVIVE_TURNS + 1), 'x', null, '2.5']) expect(parseBest(bad)).toBe(0);
   });
 
   it('salva e carrega com a regra própria (sem Farol não perde na hora)', () => {

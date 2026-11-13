@@ -16,7 +16,16 @@ const tough = (base: string): DevUnit => {
 };
 
 export const turnsLeft = (state: BattleState) => Math.max(0, SURVIVE_TURNS - state.turnsPlayed);
-export const survivalGoal = (say: (pt: string, en: string) => string) =>
+// Recorde (para ter motivo de rejogar): quantos turnos o grupo aguentou na melhor partida, até SURVIVE_TURNS. Fica no
+// navegador; o valor salvo é fronteira de confiança (inteiro entre 0 e SURVIVE_TURNS, senão 0).
+export const BEST_KEY = 'dt:amanhecer';
+export function parseBest(raw: unknown): number {
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 0 && n <= SURVIVE_TURNS ? n : 0;
+}
+export const survived = (state: BattleState) => Math.min(state.turnsPlayed, SURVIVE_TURNS);
+
+export const survivalGoal =(say: (pt: string, en: string) => string) =>
   say(`Resista até o amanhecer: ${SURVIVE_TURNS} turnos!`, `Hold out until dawn: ${SURVIVE_TURNS} turns!`);
 
 // `turns`: só a medição (tests/survival.test.ts) troca, para achar o número de turnos que dá a dificuldade certa
