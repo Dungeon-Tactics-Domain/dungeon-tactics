@@ -328,6 +328,13 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world-art .shade { fill: #5e4a33; }
 .world-art .snow { fill: #f4f6f4; }
 .world-compass { position: absolute; left: 1.5%; bottom: 2%; /* à esquerda: o painel do ponto cobre o canto de baixo à direita */ width: 84px; height: 84px; pointer-events: none; }
+.world-icon { position: absolute; width: 30px; height: 30px; transform: translate(10px, -110%); pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .35)); } /* à direita e acima do ponto: em cima fica o retrato do grupo */
+.world-icon path { stroke: #3d3423; stroke-width: 1.6; stroke-linejoin: round; fill: none; }
+.world-icon .wall { fill: #e6d6a8; }
+.world-icon .roof { stroke: #8e3b24; stroke-width: 3; }
+.world-icon .stone { fill: #a39c8e; }
+.world-icon .door { fill: #2c2418; }
+.world-icon .flame { fill: #e8a33a; }
 .world-compass circle { fill: none; stroke: #e9dcae; stroke-width: 1.5; opacity: .8; }
 .world-compass .star { fill: #e9dcae; stroke: #3d3423; stroke-width: 1.5; }
 .world-compass .star-shade { fill: #9c8a5c; }

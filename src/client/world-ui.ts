@@ -30,6 +30,16 @@ const LAND = 'M4 62 C2 50, 8 40, 16 36 C22 26, 30 30, 38 22 C44 12, 56 8, 66 10 
 const ISLES = [[9, 14, 4, 5], [30, 7, 3, 2.5], [70, 97, 4, 2]]; // nenhuma no canto de baixo à direita: é da rosa dos ventos
 const FORESTS: [number, number, number, number, number][] = [[12, 58, 8, 12, 46], [34, 80, 8, 8, 30], [45, 44, 6, 7, 20], [68, 72, 9, 9, 34], [89, 54, 7, 12, 36], [22, 42, 6, 6, 18]];
 const PEAKS = [[64, 16], [72, 11], [80, 9], [91, 7], [95, 19], [84, 24], [76, 20], [93, 34], [86, 40], [95, 48], [62, 24], [97, 28]];
+// Desenho de cada lugar ao lado do ponto (13/11, mesmo pedido do mapa ilustrado): casas na vila, tenda no acampamento,
+// porta de pedra nas criptas, torre com chama nos faróis, bandeira no cume. Fora do SVG esticado para não deformar.
+const HOUSES = '<path class="wall" d="M3 28V17l7-6 7 6v11Z M15 28V19l7-6 7 6v9Z" /><path class="roof" d="M1 18l9-8 9 8 M13 20l9-8 9 8" />';
+const CRYPT = '<path class="stone" d="M4 29V12a12 12 0 0 1 24 0v17Z" /><path class="door" d="M11 29V17a5 5 0 0 1 10 0v12Z" />';
+const TOWER = '<path class="stone" d="M11 29l2-18h6l2 18Z M10 11h12v-3H10Z" /><path class="flame" d="M16 1c3 3 3 5 0 7c-3-2-3-4 0-7Z" />';
+const PLACE_ICON: Record<string, string> = {
+  vauclair: HOUSES, epilogo: HOUSES, cripta: CRYPT, coracao: CRYPT, farol: TOWER, colina: TOWER,
+  acampamento: '<path class="wall" d="M2 28L16 6l14 22Z" /><path class="door" d="M13 28l3-9 3 9Z" />',
+  cume: '<path class="stone" d="M2 30L16 10l14 20Z" /><path class="roof" d="M16 10V1" /><path class="flame" d="M16 1h9l-3 3 3 3h-9Z" />',
+};
 const terrain = (done: number) => {
   let s = 7; // sorteio fixo: o mapa sai igual toda vez
   const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -77,7 +87,8 @@ const terrain = (done: number) => {
   <path class="star-shade" d="M0 -46 L7 -7 L0 0 Z M46 0 L7 7 L0 0 Z M0 46 L-7 7 L0 0 Z M-46 0 L-7 -7 L0 0 Z" />
   <text y="-34" text-anchor="middle">${t('N', 'N')}</text>
 </svg>
-<div class="world-title" aria-hidden="true">${t('Cinzas do Farol', 'Beacon Ashes')}</div>`;
+<div class="world-title" aria-hidden="true">${t('Cinzas do Farol', 'Beacon Ashes')}</div>
+${WORLD.filter((w) => PLACE_ICON[w.id]).map((w) => `<svg class="world-icon" viewBox="0 0 32 32" style="left:${w.x}%;top:${w.y}%" aria-hidden="true">${PLACE_ICON[w.id]}</svg>`).join('')}`;
 };
 
 // Tela Grupo (como a formação do FFT): retrato, classe, números e as habilidades já aprendidas de quem vai à próxima

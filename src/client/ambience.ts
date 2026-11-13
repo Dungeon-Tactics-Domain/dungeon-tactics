@@ -45,7 +45,8 @@ export const MOODS: Record<Kind, Mood> = {
     ],
     beams: { n: 14, color: ['#8fb0ff', '#ffd79a'], power: [0.1, 0.42], tilt: 1 },
     motes: { n: 360, color: ['#c8ff7a', '#ffe7a3'], size: 0.07, fall: -0.00008, add: true, top: 6 },
-    light: { sky: 0.45, sun: 0.85, at: [-10, 7, 5] },
+    // céu 0,7 (antes 0,45): o Fernando achou o Bosque "meio escuro" (13/11); sol de lado continua, com sombra longa
+    light: { sky: 0.7, sun: 0.95, at: [-10, 7, 5] },
   },
   field: {
     low: ['#0b0b18', '#7da36a'], high: ['#252648', '#b9d3c8'], near: 12, far: 48, mist: 0.06, ceiling: 0, snow: 0,
