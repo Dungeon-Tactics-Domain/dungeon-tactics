@@ -708,8 +708,9 @@ export class BattleScene {
         for (const p of tiles) taken.add(posKey(p));
         const names = tiles.map(modelOf).filter((n): n is string => n !== null);
         if (!names.length) continue;
-        // a variação da árvore sai da posição (painted.ts variant): espécies e portes diferentes lado a lado
-        const name = variant(this.lookPieces, names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)), hash(x, y, 5));
+        // a variação da árvore sai da posição (painted.ts variant): espécies e portes diferentes lado a lado. O sorteio 16
+        // foi escolhido olhando o Bosque: 2 pinheiros altos, 4 de saias e 2 árvores velhas entre as 14 (com 5 saía 1 pinheiro)
+        const name = variant(this.lookPieces, names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)), hash(x, y, 16));
         const box = boxOf(name), size = TREE_SIZE[tiles.length], tall = (pieceOf(name).userData.tall as number | undefined) ?? 1; // pinheiro: mais alto que o teto da casa
         // tamanho mais variado (13/11, "árvores de diferentes tamanhos"): de 75% a 135% do tamanho da casa
         // o pé da árvore pintada (saia e raízes, userData.foot) fica no miolo plano da casa dela: na encosta da borda
