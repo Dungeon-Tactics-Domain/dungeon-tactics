@@ -18,8 +18,12 @@ export type Screen =
   | { k: 'confirm'; ability: string; target: Pos; yes: boolean }
   | { k: 'facing' };
 
+// Andou e ainda não agiu: a linha Mover vira "Desfazer movimento" e o Esc no menu desfaz (13/11, pedido do Fernando,
+// como no Tactics Ogre). Andar não sorteia nada, então desfazer é de graça; depois de agir, só o Z (que gasta um desfazer)
+export const canUndoMove = (b: Battle) => b.state.turn.moved && !b.state.turn.usedAbility && b.canUndo;
+
 export function commandEnabled(b: Battle, c: Command): boolean {
-  if (c === 'move') return b.reach().size > 0;
+  if (c === 'move') return b.reach().size > 0 || canUndoMove(b);
   if (c === 'act') return !b.state.turn.usedAbility;
   return true;
 }
@@ -31,10 +35,10 @@ export function abilityEnabled(b: Battle, id: string): boolean {
 }
 export const abilitiesOf = (b: Battle) => UNIT_DEFS[b.actor.def].abilities;
 
-// onde o cursor do menu começa: o primeiro comando que ainda vale (Mover, depois Agir), senão Esperar
+// onde o cursor do menu começa: Mover se ainda dá para andar, senão Agir, senão Esperar. O "Desfazer movimento" não
+// pega o cursor: o 2º Enter depois de andar desfaria o passo sem querer
 export function startScreen(b: Battle): Screen {
-  const i = COMMANDS.findIndex((c, i) => i < 2 && commandEnabled(b, c));
-  return { k: 'menu', index: i < 0 ? 2 : i };
+  return { k: 'menu', index: b.reach().size ? 0 : commandEnabled(b, 'act') ? 1 : 2 };
 }
 
 // sobe ou desce no menu pulando o que está apagado, dando a volta como no FFT

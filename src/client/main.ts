@@ -12,7 +12,7 @@ import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { LANG, abilityName, setLang, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, highlights, hoverTile, selectMode, tapTile, type Highlights, type Ui } from './interaction.ts';
-import { COMMANDS, abilitiesOf, abilityEnabled, commandEnabled, startScreen, stepIndex, type Screen } from './command.ts';
+import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, startScreen, stepIndex, type Screen } from './command.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { cycleUnit, gridStep, keyAction, keyHelp, type KeyAction } from './keyboard.ts';
 import { BattleScene } from './scene.ts';
@@ -149,6 +149,7 @@ class Game {
     requestAnimationFrame(() => this.pollPad());
     // a batalha avulsa é o fundo da tela de título (e das telas que saem dela): gira enquanto alguma está aberta
     this.scene.setSpin(!!document.querySelector('.title-overlay') && !matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.placeMenu();
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     pace.pad = !!gp?.buttons[0]?.pressed; // A (ou ×) seguro acelera a batalha
     if (!gp) return;
@@ -220,6 +221,8 @@ class Game {
       }
       if (a.k === 'confirm') return s.k === 'menu' ? this.chooseCommand(s.index) : this.chooseAbility(s.index);
       if (a.k === 'cancel' && s.k === 'abilities') return this.back({ k: 'menu', index: 1 });
+      // Esc, B ou botão direito no menu depois de andar (sem ter agido): desfaz o movimento, como no Tactics Ogre
+      if (a.k === 'cancel' && canUndoMove(b)) return this.undo();
       return;
     }
     if (s.k === 'confirm') {
@@ -266,6 +269,7 @@ class Game {
     const b = this.battle;
     const c = COMMANDS[index];
     if (this.busy || !this.heroTurn || !c || !commandEnabled(b, c)) return;
+    if (c === 'move' && canUndoMove(b)) return this.undo(); // a linha Mover virou "Desfazer movimento"
     sfx('confirm');
     if (c === 'status') return this.status();
     if (c === 'wait') return void this.endTurn();
@@ -369,9 +373,19 @@ class Game {
       : s.k === 'map' || s.k === 'confirm' ? highlights(this.battle, ui) : { tiles: [{ pos: this.battle.actor.pos, kind: 'actor' as const }], path: null, preview: null };
     this.scene.setHighlights(hl);
     this.scene.setCursor(hl ? this.cursor : null);
-    this.hud.render({ battle: this.battle, screen: s, hl, busy: this.busy, log: this.log, acting: this.acting, cursor: this.cursor });
+    this.hud.render({ battle: this.battle, screen: s, hl, busy: this.busy, log: this.log, acting: this.acting, cursor: this.cursor, ability: ui.mode.k === 'ability' ? ui.mode.id : null });
     const { top, bottom } = this.hud.insets();
     this.scene.setInsets(top, bottom);
+    this.placeMenu(); // já no lugar ao abrir: esperar o próximo quadro mostrava o menu 1 quadro no canto
+  }
+
+  // Menu de comandos, submenu e "Executar?" ao lado de quem joga (13/11, pedido do Fernando: "do lado do boneco igual no
+  // FFT"). Roda a cada quadro (pollPad) porque a câmera desliza e gira com o menu aberto. O "Executar?" não cobre o alvo.
+  private placeMenu() {
+    if (!this.hud.menuOpen) return;
+    const b = this.battle, s = this.screen;
+    const foe = s.k === 'confirm' ? unitAt(b.state, s.target) : undefined;
+    this.hud.place(this.scene.screenOf(b.actor.id), foe && foe.id !== b.actor.id ? this.scene.screenOf(foe.id) : null);
   }
 
   private async animate(events: BattleEvent[], enemy = false) {
@@ -523,6 +537,7 @@ class Game {
     this.scene.sync(this.battle.state);
     this.save();
     this.cursorToActor();
+    this.scene.focusOn(this.battle.actor.pos); // a câmera tinha ido atrás do cursor até o destino: volta para quem joga
     this.update(freshUi(this.battle));
   }
 

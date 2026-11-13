@@ -17,13 +17,14 @@
   /* pergaminho do HUD (12/11, no espírito do FFT, cores nossas): tinta escura dá 11:1 sobre o papel */
   --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #6b5638; --focus: #b2320f;
   --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;
+  --heal-ink: #1f7a3a; /* cura prevista em número grande sobre o pergaminho: 4,2:1 no papel, 3,3:1 no pé do degradê */
   --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
   --gap: 8px;
   --font: 'Alegreya Sans', system-ui, sans-serif; /* texto corrido: legível em tamanho pequeno */
   /* títulos, Confirmar e fila: a fonte pixel dá a cara de jogo. Tiny5 (OFL) porque a Pixelify Sans fazia o "2" parecer "8"
      e a ligadura "fi" virava "A" ("ConArmar"); comparadas também VT323, Silkscreen, Jersey 10, Micro 5, Handjet e DotGothic16 */
   --font-px: 'Tiny5', var(--font);
-  --fs-sm: 14px; --fs: 16px; --fs-lg: 20px;
+  --fs-sm: 14px; --fs: 16px; --fs-lg: 20px; --fs-xl: 32px; /* xl: a chance de acerto da prévia do golpe */
 }
 
 * { box-sizing: border-box; }
@@ -65,7 +66,8 @@ button[hidden] { display: none; }
 
 /* HUD no jeito da tela de batalha do FFT (pedido do Fernando, 12/11): só a disposição e o fluxo vêm de lá. Painel de
    pergaminho claro com tinta escura e moldura marrom, feito aqui em CSS (nada da arte do original). Posições fixas na
-   tela de 1920x1080 do PC; o celular tem etapa própria depois. */
+   tela de 1920x1080 do PC, menos o menu de comandos, que anda ao lado do boneco (hud.ts place); o celular tem etapa
+   própria depois. */
 .hud { position: absolute; inset: 0; pointer-events: none; font-size: var(--fs); }
 .panel { position: absolute; pointer-events: auto; margin: 0; padding: 8px 12px; color: var(--ink); border-radius: var(--r);
   background: linear-gradient(var(--paper), var(--paper-lo)); border: 2px solid var(--paper-edge);
@@ -112,10 +114,12 @@ button[hidden] { display: none; }
 .fps { position: absolute; top: 72px; right: 12px; pointer-events: none; white-space: pre; text-align: right;
   font: 12px/1.35 ui-monospace, Consolas, monospace; color: var(--fg); background: rgba(10, 6, 16, .55); padding: 4px 8px; border-radius: var(--r); }
 .fps[hidden] { display: none; }
-/* menu de comandos, submenu das habilidades e o "Executar?": à direita, no meio da altura */
-.commands { right: 24px; top: 34%; width: 220px; padding: 6px; }
-.abilities { right: 256px; top: 34%; width: 300px; padding: 6px; }
-.confirm { right: 24px; top: 34%; width: 420px; }
+/* menu de comandos, submenu das habilidades e o "Executar?": ao lado do boneco da vez, como no FFT (13/11); left e top
+   vêm do hud.ts (place), que segue a câmera a cada quadro. Por isso nada de transform aqui: as animações de abrir usam ele */
+.commands { display: grid; min-width: 220px; padding: 6px; } /* largura pelo item mais longo: "Desfazer movimento" numa linha */
+.commands .item { white-space: nowrap; }
+.abilities { width: 300px; padding: 6px; }
+.confirm { width: 420px; }
 .confirm strong { font: 400 var(--fs-lg)/1.2 var(--font-px); }
 .confirm p { margin: 6px 0 0; font-size: var(--fs-sm); }
 .yes-no { display: flex; gap: 6px; margin-top: 10px; }
@@ -125,12 +129,15 @@ button[hidden] { display: none; }
 /* mão do FFT trocada por uma seta nossa marcando o item com o foco */
 .panel .item.focus::before { content: '▶'; position: absolute; left: 8px; color: var(--focus); animation: nudge .6s steps(1, end) infinite; }
 /* menus abrem em vez de surgir (12/11, game feel): 90 ms, rápido o bastante para não atrasar quem já sabe o que quer;
-   o submenu vem da direita, de onde saiu o comando; a faixa do nome da habilidade abre do meio */
+   o submenu vem do lado do menu de onde saiu (hud.ts liga .from-right quando ele abre à esquerda do menu); a faixa do
+   nome da habilidade abre do meio */
 .commands:not([hidden]), .confirm:not([hidden]) { animation: menu-in 90ms ease-out; }
+.abilities { --slide: -24px; }
+.abilities.from-right { --slide: 24px; }
 .abilities:not([hidden]) { animation: menu-in-side 110ms ease-out; }
 .banner:not([hidden]) { animation: banner-in 120ms ease-out; }
 @keyframes menu-in { from { opacity: 0; transform: scaleY(.8); } }
-@keyframes menu-in-side { from { opacity: 0; transform: translateX(24px); } }
+@keyframes menu-in-side { from { opacity: 0; transform: translateX(var(--slide)); } }
 @keyframes banner-in { from { transform: translateX(-50%) scaleX(.2); opacity: 0; } }
 @keyframes nudge { 50% { transform: translateX(3px); } }
 @media (prefers-reduced-motion: reduce) { .commands, .confirm, .abilities, .banner, .tools-menu, .panel .item.focus::before { animation: none !important; } }
@@ -153,8 +160,24 @@ button[hidden] { display: none; }
 .unit-note { margin: 0; font-size: var(--fs-sm); color: var(--ink-muted); }
 .gauge { display: grid; grid-template-columns: 40px 1fr 64px; align-items: center; gap: 8px; font-size: var(--fs-sm); }
 .gauge-label { font-weight: 700; }
-.gauge-bar { height: 10px; background: var(--well); border: 1px solid var(--paper-edge); }
+.gauge-bar { position: relative; height: 10px; background: var(--well); border: 1px solid var(--paper-edge); }
 .gauge-bar i { display: block; height: 100%; }
+/* prévia do golpe na barra do alvo (hud.ts gauge): o trecho que sai em listras vermelhas piscando, o que a cura põe em
+   listras verdes, como no Tactics Ogre. Listra e o número "vida 25 → 13–16" ao lado: nunca só a cor */
+.gauge-change { position: absolute; top: 0; bottom: 0; }
+.gauge-change.loss { background: repeating-linear-gradient(135deg, var(--enemy) 0 3px, var(--well) 3px 6px); animation: loss-blink 1s steps(2, jump-none) infinite; }
+.gauge-change.gain { background: repeating-linear-gradient(135deg, var(--heal) 0 3px, var(--well) 3px 6px); }
+@keyframes loss-blink { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .gauge-change { animation: none; } }
+/* bloco da prévia no painel do alvo: acerto grande (o número do FFT) e, ao lado, dano e vida depois */
+.forecast { display: flex; gap: 12px; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 2px solid var(--paper-lo); }
+.forecast-hit { display: grid; justify-items: center; min-width: 76px; font: 400 var(--fs-xl)/1 var(--font-px); color: var(--focus); }
+.forecast-hit.gain { color: var(--heal-ink); }
+.forecast-hit small { font: 700 var(--fs-sm)/1.2 var(--font); color: var(--ink-muted); }
+.forecast-body { display: grid; gap: 2px; font-size: var(--fs-sm); }
+.forecast-hp { font: 400 var(--fs-lg)/1.1 var(--font-px); }
+.forecast-warn { font-weight: 800; color: var(--focus); }
+.forecast-more { color: var(--ink-muted); }
 .gauge.hp i { background: var(--hp); }
 .gauge.mp i { background: var(--mp); }
 .gauge.ct i { background: var(--ct); }
