@@ -43,13 +43,13 @@ export const learned = (n: number) => n + 1 >= CHAPTERS.length ? [] : CHAPTERS[n
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 47% → 27%, caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 47% → 25%, caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
 // O que mais pesa: arqueiro esqueleto (na Colina, trocar o arqueiro por um Lacaio leva a fase de 67% a 98%) e a
 // velocidade do Vesper (8 → 9 vale mais que 15 de vida).
-const vesper = (hp: number, speed: number) => foe('dark_mage', { name: 'Vesper', hp, speed, abilities: ['firebolt', 'blast'] });
+const vesper = (hp: number, speed: number, abilities = ['firebolt', 'blast']) => foe('dark_mage', { name: 'Vesper', hp, speed, abilities });
 
 const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
 
@@ -121,10 +121,11 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Último Farol', 'The Last Beacon'],
     song: 'boss',
-    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(65, 9), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
+    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(65, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),
+      L('odo', 'Ele está juntando o Véu numa onda! Quando a área acender, saiam de dentro dela!', 'He is gathering the Veil into a wave! When the area lights up, get out of it!'),
       L('lia', 'Tess, Odo, no mago. Bran, segure o bruto longe do cristal.', 'Tess, Odo, on the mage. Bran, keep the brute away from the crystal.'),
       L('bran', 'Pela Colina. Pelo vale. Agora!', 'For the Hill. For the valley. Now!'),
     ],

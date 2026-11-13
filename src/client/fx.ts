@@ -23,6 +23,7 @@ const LOOKS: Record<string, AbilityLook> = {
   dagger: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
   firebolt: { clip: 'Ranged_Magic_Shoot', fx: 'fire' },
   blast: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'blast' },
+  shadow_wave: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'blast' }, // efeito da Explosão: é o que desenha a área inteira
   gust: { clip: 'Ranged_Magic_Shoot', charge: MAGIC_CHARGE, fx: 'wind' },
   heal: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'heal' },
   stab: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },

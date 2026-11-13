@@ -50,6 +50,9 @@ const LIST: AbilityDef[] = [
   A({ id: 'trip', name: 'Rasteira', en: 'Trip', range: [1, 1], damage: [2, 3], accuracy: 90, push: 1 }),
   A({ id: 'deathblow', name: 'Golpe mortal', en: 'Deathblow', range: [1, 1], damage: [12, 16], accuracy: 70 }),
   // Bruto
+  // Onda sombria (12/11, magia de chefe do Vesper na fase final da campanha): área de raio 2 e carga longa (6 tiques),
+  // para os heróis verem a área marcada e terem tempo de sair dela; números iniciais, medidos na fase 5
+  A({ id: 'shadow_wave', name: 'Onda sombria', en: 'Shadow wave', range: [2, 5], heightRange: true, needsSight: true, radius: 2, damage: [6, 9], accuracy: 85, charge: 6, magic: true }),
   A({ id: 'cleave', name: 'Machadada', en: 'Cleave', range: [1, 1], damage: [10, 14], accuracy: 80 }),
   A({ id: 'slam', name: 'Pancada', en: 'Slam', range: [1, 1], damage: [4, 6], accuracy: 85, push: 2 }),
 ];
