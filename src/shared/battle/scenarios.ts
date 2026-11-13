@@ -190,7 +190,55 @@ const CRYPT: Scenario = {
   ],
 };
 
-export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT].map((s) => [s.id, s]));
+// Bosque das Cinzas (noite de 12/11, fase 1 da campanha): 12x12 sem Farol (vence quem sobrar). Um rio fundo corta o
+// mapa: só se passa pela ponte (esquerda, estreita) ou pelo vau de água rasa (direita, custa 2 de movimento). Do lado dos
+// heróis, a estrada de areia e a caravana parada (caixotes e barris); do lado dos inimigos, um morrinho de grama alta.
+const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number }> = {
+  g: { terrain: 'floor', h: 0, look: 'grass' },
+  G: { terrain: 'floor', h: 1, look: 'grass' },
+  s: { terrain: 'floor', h: 0, look: 'sand' },
+  t: { terrain: 'forest', h: 0, look: 'tree' },
+  T: { terrain: 'forest', h: 0, look: 'tree2' },
+  y: { terrain: 'forest', h: 1, look: 'tree3' },
+  W: { terrain: 'floor', h: 0, look: 'water', depth: 2 },
+  w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
+  b: { terrain: 'floor', h: 1, look: 'bridge' },
+  r: { terrain: 'wall', h: 1, look: 'rock' },
+  c: { terrain: 'wall', h: 0, look: 'crates' }, // no chão: a carga da caravana caída na estrada, não em cima de bloco
+  x: { terrain: 'wall', h: 0, look: 'barrel' },
+};
+const WOOD_MAP = [
+  'gtgggGGgggtg',
+  'tgGGgGGgTggt',
+  'ggGGrgggggTg',
+  'gtgggggrggtg',
+  'WWWbbWWWWwwW',
+  'WWWbbWWWWwwW',
+  'gtgssgggtssg',
+  'ggcsxgggssgT',
+  'tgsssssssggg',
+  'ggsgcgtggsgt',
+  'gTsgggggggyg',
+  'ggsggggTgggg',
+];
+const ASH_WOOD: Scenario = {
+  id: 'ash_wood',
+  name: 'Bosque das Cinzas',
+  en: 'Ash Wood',
+  grid: { width: 12, height: 12, tiles: WOOD_MAP.flatMap((row) => [...row].map((c) => ({ ...WOOD_KEY[c] }))) },
+  spawns: [
+    { id: 'h-warrior', def: 'warrior', team: 'hero', x: 3, y: 11 },
+    { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 10 },
+    { id: 'h-mage', def: 'mage', team: 'hero', x: 6, y: 11 },
+    { id: 'h-rogue', def: 'rogue', team: 'hero', x: 8, y: 10 },
+    { id: 'e-soldier', def: 'soldier', team: 'enemy', x: 2, y: 0 },
+    { id: 'e-archer', def: 'skeleton_archer', team: 'enemy', x: 5, y: 1 },
+    { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 8, y: 0 },
+    { id: 'e-brute', def: 'brute', team: 'enemy', x: 9, y: 2 },
+  ],
+};
+
+export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT, ASH_WOOD].map((s) => [s.id, s]));
 
 // ct inicial 0 para todos: a ordem do começo sai só das velocidades
 export function initialState(scenario: Scenario, seed: number): BattleState {

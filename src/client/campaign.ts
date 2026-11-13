@@ -34,7 +34,7 @@ export const CAMPAIGN_KEY = 'dt:campanha'; // quantas fases já foram vencidas
 const party = (): DevUnit[] => [unitFrom('warrior', 'Bran'), unitFrom('archer', 'Tess'), unitFrom('mage', 'Odo'), unitFrom('rogue', 'Lia')];
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 64% → 55% → 44% → 32% → 30%, caindo fase a fase.
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 82% → 55% → 44% → 32% → 30%, caindo fase a fase (a 1ª, no Bosque, ensina).
 // Recrutas e Lacaios (pouca vida) acertam o degrau: com 3 inimigos a fase ia a ~100%, com 4 inteiros a ~30%. Na cripta,\n// dois arqueiros derrubam a fase para ~20%, e a velocidade do Vesper (8 → 9) pesa mais que 15 de vida.
 const vesper = (hp: number, speed: number) => foe('dark_mage', { name: 'Vesper', hp, speed, abilities: ['firebolt', 'blast'] });
 
@@ -44,7 +44,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Estrada de Cinzas', 'The Ash Road'],
     song: 'road',
-    setup: { map: 'skirmish', heroes: party(), enemies: [foe('soldier'), foe('soldier', { name: 'Recruta', hp: 25 }), foe('soldier', { name: 'Recruta', hp: 25 }), foe('skeleton_archer')] },
+    setup: { map: 'ash_wood', heroes: party(), enemies: [foe('soldier'), foe('soldier'), foe('skeleton_archer'), foe('minion')] },
     intro: [
       L('narr', 'Os Faróis guardam os vilarejos do Véu, a névoa onde os mortos não descansam. Um a um, eles estão se apagando.', 'The Beacons keep the villages safe from the Veil, the mist where the dead never rest. One by one, they are going dark.'),
       L('bran', 'Caravana parada no meio da estrada. Isso não é acidente.', 'A caravan stopped in the middle of the road. That is no accident.'),

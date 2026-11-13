@@ -26,7 +26,7 @@ export interface DevSetup {
 export const DEV_KEY = 'dt:dev'; // elenco salvo no navegador
 export const DEV_SCENARIO = 'dev';
 // mapas que o menu oferece: os do jogo e o relevo de Gariland (só o mapa: o estudo é carregado à parte, ver main.ts)
-export const DEV_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'fft-gariland'];
+export const DEV_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'ash_wood', 'fft-gariland'];
 // limites dos números editáveis: largos para testar, mas sem quebrar a fila de turnos (velocidade 0 nunca joga)
 export const LIMITS = { hp: [1, 999], speed: [1, 50], move: [1, 12] } as const;
 const MAX_TEAM = 12;
