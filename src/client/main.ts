@@ -9,7 +9,7 @@ import { CHEST_KEY, EQUIP_KEY, VICTORY_GOLD, parseChest, parseEquip } from './ch
 import { MISSIONS, MISSIONS_KEY, missionScenario, missionScenarioId, parseDone, type Mission } from './missions.ts';
 import { ITEMS } from '../shared/battle/equipment.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
+import { dist, facingTo, inBounds, neighbors, posKey, samePos, standH, tileAt } from '../shared/battle/grid.ts';
 import { shotStop, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { choice, dialog, slider } from './dialog.ts';
@@ -17,7 +17,7 @@ import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { LANG, abilityName, setLang, t, unitName, type Lang } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, highlights, hoverTile, selectMode, tapTile, type Highlights, type Ui } from './interaction.ts';
-import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, startScreen, stepIndex, type Screen } from './command.ts';
+import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, longestRange, startScreen, stepIndex, type Screen } from './command.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { cycleUnit, gridStep, keyAction, keyHelp, type KeyAction } from './keyboard.ts';
 import { BattleScene, rampLink } from './scene.ts';
@@ -394,6 +394,12 @@ class Game {
       : s.k === 'map' || s.k === 'confirm' ? highlights(this.battle, ui) : { tiles: [{ pos: this.battle.actor.pos, kind: 'actor' as const }], path: null, preview: null };
     this.scene.setHighlights(hl);
     this.scene.setCursor(hl ? this.cursor : null);
+    // pontilhado do maior alcance: no menu em volta de quem joga; mirando o movimento, em volta da casa sob o cursor (se
+    // der para chegar nela), para ver de onde o golpe alcança antes de andar
+    const moving = s.k === 'map' && ui.mode.k === 'move';
+    const ringAt = !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving) ? null
+      : moving && this.battle.reach().has(posKey(this.cursor)) ? this.cursor : this.battle.actor.pos;
+    this.scene.setRangeRing(ringAt ? { center: ringAt, range: longestRange(this.battle) } : null);
     // prévia da trajetória (13/11, "como no Tactics Ogre"): mirando um tiro ou magia que precisa de visão, a linha vai de
     // quem ataca até a casa do cursor e fica vermelha a partir de onde bate
     const aim = hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight ? this.cursor : null;

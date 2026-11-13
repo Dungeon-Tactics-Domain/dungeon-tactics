@@ -366,6 +366,7 @@ export class BattleScene {
     const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
     const levels = waterLevels(this.grid, this.step);
+    this.levels = levels;
     const smooth = !!this.terrainTex;
     const river = smooth ? riverOf(this.grid, levels) : null;
     const outside = smooth && EXTEND === 'textura' ? riverOutside(this.grid, this.step, levels, river) : new Map<string, WaterLevel>();
@@ -823,6 +824,48 @@ export class BattleScene {
       if (!(green && this.terrainTex)) put(green ? 'tuft' : 'pebble', cx, this.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
     }
     for (const kind of Object.keys(at) as (keyof typeof DETAIL)[]) this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
+  }
+
+  // Pontilhado do maior alcance (13/11, pedido do Fernando: "ao redor do personagem deve aparecer pontilhado o range da
+  // sua skill que bate mais longe, e enquanto ele vê a prévia do movimento também"): contorno das casas a até `range`
+  // passos de `center` (a mesma distância da regra), na altura do chão de cada casa. Só refaz quando muda
+  private levels = new Map<string, WaterLevel>();
+  private ring: { key: string; mesh: THREE.Mesh } | null = null;
+  setRangeRing(r: { center: Pos; range: number } | null) {
+    const key = r ? `${posKey(r.center)}:${r.range}` : '';
+    if (this.ring?.key === key) return;
+    if (this.ring) { this.scene.remove(this.ring.mesh); this.ring.mesh.geometry.dispose(); (this.ring.mesh.material as THREE.Material).dispose(); this.ring = null; }
+    if (!r || r.range < 1) return;
+    const { width: W, height: H } = this.grid, pos: number[] = [];
+    const inside = (p: Pos) => inBounds(this.grid, p) && dist(p, r.center) <= r.range;
+    const yAt = (p: Pos, x: number, z: number) => (this.levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.05;
+    // tracinho chato deitado no chão (linha de 1 px do WebGL quase não aparecia): 2 triângulos de `a` até `b`, 0,07 de largura
+    const dash = (p: Pos, ax: number, az: number, bx: number, bz: number) => {
+      const nx = -(bz - az), nz = bx - ax, k = 0.035 / Math.hypot(nx, nz);
+      const v = (x: number, z: number, side: number) => [x + nx * k * side, yAt(p, x, z), z + nz * k * side];
+      const a1 = v(ax, az, 1), a2 = v(ax, az, -1), b1 = v(bx, bz, 1), b2 = v(bx, bz, -1);
+      pos.push(...a1, ...a2, ...b1, ...b1, ...a2, ...b2);
+    };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const p = { x, y };
+      if (!inside(p)) continue;
+      // cada lado da casa que encosta numa casa de fora vira 3 tracinhos (seguem rampa e degrau)
+      for (const [dx, dy, ax, az, bx, bz] of [[0, -1, 0, 0, 1, 0], [0, 1, 0, 1, 1, 1], [-1, 0, 0, 0, 0, 1], [1, 0, 1, 0, 1, 1]] as const) {
+        if (inside({ x: x + dx, y: y + dy })) continue;
+        for (let k = 0; k < 3; k++) {
+          const t0 = (k + 0.2) / 3, t1 = (k + 0.8) / 3;
+          const at = (t: number) => [x + ax + (bx - ax) * t - W / 2, y + az + (bz - az) * t - H / 2];
+          const [x0, z0] = at(t0), [x1, z1] = at(t1);
+          dash(p, x0, z0, x1, z1);
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+    mesh.renderOrder = 11;
+    this.scene.add(mesh);
+    this.ring = { key, mesh };
   }
 
   // Prévia da trajetória: faixa fina do olho de quem atira até a mira do alvo, azul onde passa e vermelha depois do ponto

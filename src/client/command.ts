@@ -40,6 +40,8 @@ export function abilityEnabled(b: Battle, id: string): boolean {
   return !cost || (b.actor.vars?.[cost[0]] ?? 0) >= cost[1];
 }
 export const abilitiesOf = (b: Battle) => UNIT_DEFS[b.actor.def].abilities;
+// alcance da habilidade que vai mais longe (o pontilhado em volta de quem joga)
+export const longestRange = (b: Battle) => Math.max(0, ...abilitiesOf(b).map((id) => ABILITIES[id].range[1]));
 
 // onde o cursor do menu começa: Mover se ainda dá para andar, senão Agir, senão Esperar. O "Desfazer movimento" não
 // pega o cursor: o 2º Enter depois de andar desfaria o passo sem querer
