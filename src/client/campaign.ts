@@ -236,6 +236,14 @@ export function parseStars(raw: unknown): number[] {
 }
 export const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
+// o que espera na fase, para o painel do mapa (FFT mostra o inimigo antes de entrar): "4 inimigos · chefe: Vesper"
+export function foesText(n: number, say: (pt: string, en: string) => string): string {
+  const c = CHAPTERS[n];
+  const count = c.setup.enemies.length;
+  const boss = c.boss ? c.setup.enemies[0] : null;
+  return say(`${count} inimigos${boss ? ` · chefe: ${boss.name}` : ''}`, `${count} enemies${boss ? ` · boss: ${boss.en ?? boss.name}` : ''}`);
+}
+
 // objetivo da fase em uma frase, anunciado no começo da batalha (como a faixa de objetivo do FFT)
 export function objectiveText(n: number, say: (pt: string, en: string) => string): string {
   const c = CHAPTERS[n];

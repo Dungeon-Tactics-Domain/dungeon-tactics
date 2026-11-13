@@ -1,7 +1,7 @@
 // Tela do mapa mundial (world.ts tem as regras): pergaminho com a estrada, os pontos e o retrato do grupo, que anda de
 // ponto em ponto. Setas (ou A D W S) andam, Enter entra, Esc volta ao título; clique num ponto aberto anda até ele.
 // Painel do lugar no canto de baixo à direita, como o nome do lugar no mapa do FFT; arte e texto nossos.
-import { starText } from './campaign.ts';
+import { foesText, starText } from './campaign.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import type { DevUnit } from './dev-roster.ts';
 import { dialog } from './dialog.ts';
@@ -83,8 +83,9 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     ? [el('span', { class: 'world-stars', style: `left:${w.x}%;top:${w.y}%`, 'aria-hidden': 'true' }, starText(stars[w.chapter]))] : []);
   const place = el('strong', { class: 'world-place' });
   const kindText = el('p', { class: 'world-kind' });
+  const foes = el('p', { class: 'world-kind' }); // quantos inimigos e o chefe (só nos pontos de batalha)
   const enterBtn = el('button', { type: 'button', class: 'item focus', onclick: () => go() }, t('Entrar', 'Enter'));
-  const panel = el('div', { class: 'panel world-panel', 'aria-live': 'polite' }, place, kindText, el('div', { class: 'world-actions' }, enterBtn,
+  const panel = el('div', { class: 'panel world-panel', 'aria-live': 'polite' }, place, kindText, foes, el('div', { class: 'world-actions' }, enterBtn,
     el('button', { type: 'button', class: 'item', onclick: () => opts.party() }, t('Grupo', 'Party')),
     el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title'))));
   const root = el('div', { class: 'world' },
@@ -104,6 +105,8 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     kindText.textContent = w.chapter !== undefined
       ? t(`Batalha · Capítulo ${w.chapter + 1}`, `Battle · Chapter ${w.chapter + 1}`) + (at < done ? `  ${starText(stars[w.chapter])}` : '')
       : t('História', 'Story');
+    foes.textContent = w.chapter !== undefined ? foesText(w.chapter, t) : '';
+    foes.hidden = w.chapter === undefined;
   };
   // anda um trecho por vez até o ponto pedido, com passo e pausa curta em cada um (o olho segue o caminho)
   async function walkTo(target: number) {
