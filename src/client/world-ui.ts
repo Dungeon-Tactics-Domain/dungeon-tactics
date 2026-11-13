@@ -2,6 +2,7 @@
 // ponto em ponto. Setas (ou A D W S) andam, Enter entra, Esc volta ao título; clique num ponto aberto anda até ele.
 // Painel do lugar no canto de baixo à direita, como o nome do lugar no mapa do FFT; arte e texto nossos.
 import { starText } from './campaign.ts';
+import { emptyMemory, padActions } from './gamepad.ts';
 import { portrait } from './hud.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
@@ -95,6 +96,28 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLEl
       if (!e.repeat) go();
     } else if (k === 'escape') back();
   });
+  // controle: o mesmo tradutor da batalha (gamepad.ts). Direcional anda, A entra, B volta; com uma conversa aberta,
+  // A aperta o botão em foco (a caixa de fala), como na batalha
+  const mem = emptyMemory();
+  const poll = () => {
+    if (!root.isConnected) return;
+    requestAnimationFrame(poll);
+    const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
+    if (!gp) return;
+    for (const a of padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, mem, performance.now())) {
+      if (document.querySelector('.overlay')) {
+        if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
+        continue;
+      }
+      if (a.k === 'cursor') {
+        const next = step(at, a.dir === 'right' || a.dir === 'up' ? 1 : -1, done);
+        if (next === at) sfx('cancel');
+        else void walkTo(next);
+      } else if (a.k === 'confirm') go();
+      else if (a.k === 'cancel') back();
+    }
+  };
+  requestAnimationFrame(poll);
   root.style.setProperty('--walk-ms', `${WALK_MS}ms`);
   show();
   enterBtn.focus();
