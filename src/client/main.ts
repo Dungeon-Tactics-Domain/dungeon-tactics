@@ -717,6 +717,29 @@ const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title
 const toWorld = () => { location.search = '?mundo'; };
 const savedHero = () => parseHero(store.json(HERO_KEY));
 
+// Controle na abertura e na criação (antes do mapa, que tem o próprio): A aperta o botão em foco ou vira Enter, o
+// direcional vira seta e B vira Esc, pelo mesmo tradutor da batalha. Devolve a função que para o laço.
+function padToKeys(): () => void {
+  let on = true;
+  const mem = emptyMemory();
+  const key = (k: string) => dispatchEvent(new KeyboardEvent('keydown', { key: k, code: k }));
+  const ARROW = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' } as const;
+  const poll = () => {
+    if (!on) return;
+    requestAnimationFrame(poll);
+    const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
+    if (!gp) return;
+    for (const a of padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, mem, performance.now())) {
+      const focused = document.activeElement;
+      if (a.k === 'confirm') focused instanceof HTMLButtonElement ? focused.click() : key('Enter');
+      else if (a.k === 'cancel') key('Escape');
+      else if (a.k === 'cursor') key(ARROW[a.dir]);
+    }
+  };
+  requestAnimationFrame(poll);
+  return () => { on = false; };
+}
+
 // Mapa mundial (world.ts e world-ui.ts): ponto de batalha abre a fase (rejogar começa do zero); ponto de história toca a
 // conversa ali mesmo e libera o seguinte. A fase só abre pela URL se já estiver liberada (boot), por isso o mapa libera antes.
 async function worldScreen(host: HTMLElement) {
@@ -724,8 +747,10 @@ async function worldScreen(host: HTMLElement) {
   let hero = savedHero();
   if (!hero) {
     setTrack('title');
+    const stopPad = padToKeys();
     await talk(INTRO, { dark: true });
     hero = await createHero(host);
+    stopPad();
     store.set(HERO_KEY, JSON.stringify(hero));
   }
   setTrack('world');

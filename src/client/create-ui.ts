@@ -19,7 +19,8 @@ const ROLE: Record<HeroClass, () => string> = {
 export function createHero(host: HTMLElement): Promise<Hero> {
   return new Promise((done) => {
     let cls: HeroClass = 'warrior';
-    const name = el('input', { id: 'hero-name', type: 'text', maxlength: String(NAME_MAX), placeholder: t('Seu nome', 'Your name'), 'aria-label': t('Nome do protagonista', 'Protagonist name') }) as HTMLInputElement;
+    // nome sugerido já preenchido: quem joga só com o controle não tem como digitar; o teclado troca à vontade
+    const name = el('input', { id: 'hero-name', type: 'text', maxlength: String(NAME_MAX), value: 'Ayla', placeholder: t('Seu nome', 'Your name'), 'aria-label': t('Nome do protagonista', 'Protagonist name') }) as HTMLInputElement;
     const cards = HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'create-card', 'aria-pressed': 'false', onclick: () => pick(c) }, portrait(c), el('strong', {}, unitName(c))));
     const sheet = el('div', { class: 'create-sheet' });
     const startBtn = el('button', { type: 'button', class: 'primary', onclick: () => start() }, t('Começar a jornada', 'Begin the journey'));
@@ -54,7 +55,8 @@ export function createHero(host: HTMLElement): Promise<Hero> {
       done(hero);
     }
     const onKey = (e: KeyboardEvent) => {
-      const typing = document.activeElement === name;
+      // tecla de verdade com o campo em foco é digitação; as setas do controle (evento sintético) trocam a classe mesmo assim
+      const typing = e.isTrusted && document.activeElement === name;
       if (e.key === 'Enter') { e.preventDefault(); return start(); }
       if (typing) return;
       const i = HERO_CLASSES.indexOf(cls);
