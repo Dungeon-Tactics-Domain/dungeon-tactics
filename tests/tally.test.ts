@@ -20,6 +20,15 @@ describe('placar da batalha', () => {
     expect(t.scores.h1).toBeUndefined();
   });
 
+  it('espinho de quem terminou a vez em cima dele não vai para quem atacou antes; o do empurrão vai', () => {
+    const t = emptyTally();
+    addEvents(t, [{ k: 'attack', unit: 'h1', ability: 'strike', target: at }, { k: 'hit', unit: 'e1', dmg: 4, chance: 90 }], team);
+    addEvents(t, [{ k: 'spike', unit: 'e2', dmg: 6 }, { k: 'die', unit: 'e2' }], team); // vez do e2: parou nos espinhos
+    expect(t.scores.h1).toEqual({ dmg: 4, kills: 0 });
+    addEvents(t, [{ k: 'attack', unit: 'h1', ability: 'shield_bash', target: at }, { k: 'push', unit: 'e1', to: at }, { k: 'spike', unit: 'e1', dmg: 6 }], team);
+    expect(t.scores.h1).toEqual({ dmg: 10, kills: 0 });
+  });
+
   it('o destaque do lado é quem mais derrubou; empate pelo dano', () => {
     const t = emptyTally();
     addEvents(t, [{ k: 'attack', unit: 'h1', ability: 'strike', target: at }, { k: 'hit', unit: 'e1', dmg: 20, chance: 90 },

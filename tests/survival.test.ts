@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import { SURVIVE_TURNS, parseBest, survivalScenario, turnsLeft } from '../src/client/survival.ts';
 
@@ -33,7 +34,7 @@ describe('modo Até o amanhecer', () => {
   });
 
   it.skipIf(!RUNS)('medição', () => {
-    for (const turns of [SURVIVE_TURNS - 4, SURVIVE_TURNS, SURVIVE_TURNS + 4]) {
+    for (const turns of [SURVIVE_TURNS - 8, SURVIVE_TURNS, SURVIVE_TURNS + 8]) {
       let won = 0, dawn = 0;
       for (let seed = 1; seed <= RUNS; seed++) {
         const r = simulate(survivalScenario(turns), seed);
@@ -42,5 +43,13 @@ describe('modo Até o amanhecer', () => {
       }
       console.log(`Até o amanhecer, ${turns} turnos: heróis ${((won / RUNS) * 100).toFixed(1)}% (amanhecer ${((dawn / RUNS) * 100).toFixed(1)}%)`);
     }
+    // heróis parados (só passam a vez) contra a IA: se isto vencer mais que lutar, o modo premia ficar parado
+    let still = 0;
+    for (let seed = 1; seed <= RUNS; seed++) {
+      const b = Battle.start(survivalScenario(), seed);
+      while (!b.over && b.state.turnsPlayed < 400) b.actor.team === 'hero' ? b.endTurn() : playAiTurn(b);
+      if (b.state.outcome === 'victory') still++;
+    }
+    console.log(`Até o amanhecer, heróis parados: ${((still / RUNS) * 100).toFixed(1)}%`);
   }, 600_000);
 });

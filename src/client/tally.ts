@@ -10,8 +10,16 @@ export interface Tally { by: string | null; scores: Record<string, Score> }
 export const emptyTally = (): Tally => ({ by: null, scores: {} });
 
 export function addEvents(t: Tally, events: BattleEvent[], team: Record<string, Team>): void {
+  // espinho sem empurrão logo antes (de quem terminou a vez em cima dele) é mérito de ninguém, nem a morte que vem dele;
+  // sem isto ia para quem atacou por último, talvez turnos antes (achado da revisão de 13/11)
+  const ownFault = new Set<string>();
+  events.forEach((e, i) => {
+    const prev = events[i - 1];
+    if (e.k === 'spike' && !(prev?.k === 'push' && prev.unit === e.unit)) ownFault.add(e.unit);
+  });
   for (const e of events) {
     if (e.k === 'attack') t.by = e.unit;
+    if ((e.k === 'spike' || e.k === 'die') && ownFault.has(e.unit)) continue;
     if (!t.by || team[e.unit] === undefined || team[e.unit] === team[t.by]) continue;
     const s = (t.scores[t.by] ??= { dmg: 0, kills: 0 });
     if ('dmg' in e) s.dmg += e.dmg;

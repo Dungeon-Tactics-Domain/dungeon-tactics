@@ -549,7 +549,8 @@ class Game {
     if (won) confetti();
     if (chapter !== null) return this.finishChapter(chapter, won);
     // Até o amanhecer: quantos turnos aguentou e o recorde (novo recorde ganha destaque, como a nota da fase)
-    const lasted = survived(this.battle.state), best = parseBest(store.get(BEST_KEY));
+    // vencer derrubando todos antes do amanhecer também é aguentar a noite inteira (antes gravava "recorde 20" numa vitória)
+    const lasted = won ? SURVIVE_TURNS : survived(this.battle.state), best = parseBest(store.get(BEST_KEY));
     if (scenario.id === SURVIVAL_ID && lasted > best) store.set(BEST_KEY, String(lasted));
     const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
       ...(scenario.id === SURVIVAL_ID ? [el('p', { class: lasted > best ? 'learned' : '' },

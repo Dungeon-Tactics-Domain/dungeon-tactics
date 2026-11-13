@@ -58,12 +58,13 @@ export function freq(note: string): number | null {
 
 export const tokens = (voice: string) => voice.trim().split(/\s+/);
 
-const MIX = 0.5;
+const MIX = 0.22;
 // Toca em laço até stop(). volume 0–1 (o nível de música das opções)
 export function playSong(ctx: AudioContext, song: Song, volume: number) {
   const out = ctx.createGain();
-  // 0,5: medido em 13/11 (cada música tocada 6 s num AudioContext com analisador no lugar do destino): com 0,12 as músicas ficavam em -43 dB de RMS, 13 dB abaixo da música
-  // da batalha avulsa (-30 dB) no mesmo nível e quase sumidas sob os efeitos; com 0,5 ficam no nível dela, pico em -11 dB
+  // 0,22: medido em 13/11 com um método só para tudo (analisador no lugar do destino, RMS das amostras acima de -50 dB):
+  // a música da batalha avulsa fica em -33 dB; com 0,12 as sintetizadas ficavam bem abaixo e com 0,5 passavam 7 dB acima
+  // dela e empatavam com o bipe de fala (-26 dB). Com 0,22 ficam no nível dela, e a voz sobra por cima.
   out.gain.value = volume * MIX;
   out.connect(ctx.destination);
   const voices = [{ notes: tokens(song.lead), type: 'square' as OscillatorType, gain: 0.6 }, { notes: tokens(song.bass), type: 'triangle' as OscillatorType, gain: 1 }];
