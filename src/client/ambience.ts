@@ -9,6 +9,7 @@ import { tileAt, type Grid } from '../shared/battle/grid.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { EXT_DARK, EXT_FADE, EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { waterLevels } from './water-levels.ts';
+import { addDetail, type DetailTextures } from './detail.ts';
 
 type Kind = 'forest' | 'field' | 'crypt' | 'frost';
 type Pair = [night: string, day: string];
@@ -176,6 +177,7 @@ export class Ambience {
   private readonly textures: THREE.Texture[] = [];
   private readonly hw: number;
   private readonly hh: number;
+  private detailTex: DetailTextures | null = null;
   // chão do terreno liso de fora (terrain.ts), onde ele existe: as árvores e pedras de perto pousam nele
   private readonly outer: { step: number; river: ReturnType<typeof riverOf>; water: Set<string> } | null;
 
@@ -237,7 +239,10 @@ export class Ambience {
     if (s?.map) this.textures.push(s.map);
     // Lambert: mais barato que o Standard dos modelos, e de longe não se vê a diferença
     const mat = new THREE.MeshLambertMaterial({ map: s?.map ?? null, color: new THREE.Color(s?.color ?? 0xffffff).multiplyScalar(this.mood.shade), ...opts });
+    const textured = !!s?.map; // só os modelos (árvores, pedras) ganham a textura por cima; o chão não
+    mat.customProgramCacheKey = () => (textured && this.detailTex ? 'amb-detalhe' : 'amb');
     mat.onBeforeCompile = (sh) => {
+      if (textured && this.detailTex) addDetail(sh, this.detailTex, 1.2); // detail.ts
       Object.assign(sh.uniforms, this.u);
       sh.vertexShader = FOG_HEAD + sh.vertexShader.replace('#include <project_vertex>', FOG_VERT);
       sh.fragmentShader = FOG_HEAD + sh.fragmentShader.replace('#include <map_fragment>', SNOW_FRAG).replace('#include <tonemapping_fragment>', FOG_FRAG);
@@ -518,7 +523,10 @@ export class Ambience {
     this.root.add(points);
   }
 
-  mount(scene: THREE.Scene): this {
+  // `tex`: texturas do terreno (terrain.ts) para o granulado dos modelos de fora; antes do 1º quadro, quando os
+  // materiais ainda não compilaram
+  mount(scene: THREE.Scene, tex: DetailTextures | null = null): this {
+    this.detailTex = tex;
     this.scene = scene;
     // as duas luzes da cena (céu e sol): o clima do mapa escurece e vira o sol por cima da luz da fase
     this.sky = scene.children.find((o): o is THREE.HemisphereLight => (o as THREE.HemisphereLight).isHemisphereLight);

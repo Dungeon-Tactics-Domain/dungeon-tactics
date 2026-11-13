@@ -25,6 +25,7 @@ import { chargeAura, lookOf, playFx } from './fx.ts';
 import { Water } from './water.ts';
 import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
 import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
+import { addDetail } from './detail.ts';
 import { PAINT, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -91,22 +92,9 @@ const LOOK: Record<string, { top: string; side: string | null; prop?: string; pr
 };
 // escada da masmorra: 2 de largura, 4 de fundo e 4 de altura, sobe para -z (conferido nos vértices do arquivo)
 const STAIRS = 'masmorra/stairs_modular_center';
+const PLAIN_UNITS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'liso';
 // muros sem peça que o terreno liso desenha como morro de pedra (o tijolo continua em blocos: é construção)
 const MOUND = new Set(['rock', 'snow_rock', 'summit', 'snow']);
-// Versão de teste ?bonecos=textura (13/11, pedido do Fernando: "coloca textura nos bonecos também pra gente ver como fica"):
-// a textura de terra do terreno vira um granulado por cima da cor lisa do KayKit, projetado pelos três eixos do boneco
-const UNIT_DETAIL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'textura';
-function detail(mat: THREE.MeshStandardMaterial, tex: THREE.Texture) {
-  mat.onBeforeCompile = (sh) => {
-    sh.uniforms.tDetail = { value: tex };
-    sh.vertexShader = 'varying vec3 vDPos; varying vec3 vDN;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvDPos = position; vDN = objectNormal;');
-    sh.fragmentShader = 'uniform sampler2D tDetail; varying vec3 vDPos; varying vec3 vDN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
-      vec3 dn = abs(normalize(vDN));
-      vec3 dt = (texture2D(tDetail, vDPos.zy * 2.5).rgb * dn.x + texture2D(tDetail, vDPos.xy * 2.5).rgb * dn.z + texture2D(tDetail, vDPos.xz * 2.5).rgb * dn.y) / (dn.x + dn.y + dn.z);
-      float lum = dot(dt, vec3(0.299, 0.587, 0.114));
-      diffuseColor.rgb *= mix(1.0, 0.55 + 1.0 * lum, 0.6);`);
-  };
-}
 const UNDER = 'blocos/stone_dark'; // coluna embaixo da água da ponte e da saia do mapa
 
 // Base do mapa como um bloco (pedidos do Fernando, 12/11, olhando o tabuleiro do FFT): todas as colunas terminam no mesmo
@@ -285,7 +273,7 @@ export class BattleScene {
     // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
     const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack, await terrainTex);
-    s.ambience = (await ambience).mount(s.scene);
+    s.ambience = (await ambience).mount(s.scene, s.terrainTex);
     s.sync(state);
     return s;
   }
@@ -536,6 +524,21 @@ export class BattleScene {
 
   // Um InstancedMesh por malha da peça em vez de um objeto por bloco: o 20x20 fazia 2 321 draw calls por quadro e caía
   // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
+  // peças dos mapas abertos (caixotes, barris, ponte, muros, árvores de Gariland) com a textura e o sombreado de detail.ts;
+  // um material por material de origem, para não multiplicar os programas do shader
+  private readonly texturedMats = new Map<THREE.Material, THREE.Material>();
+  private textured(m: THREE.Material): THREE.Material {
+    const tex = this.terrainTex;
+    if (!tex || !(m as THREE.MeshStandardMaterial).isMeshStandardMaterial) return m;
+    let out = this.texturedMats.get(m);
+    if (!out) {
+      out = m.clone();
+      out.onBeforeCompile = (sh) => addDetail(sh, tex, 1.5);
+      this.texturedMats.set(m, out);
+    }
+    return out;
+  }
+
   private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
     const out: THREE.InstancedMesh[] = [];
     if (!at.length) return out;
@@ -544,7 +547,7 @@ export class BattleScene {
     piece.traverse((o) => {
       const src = o as THREE.Mesh;
       if (!src.isMesh) return;
-      const inst = new THREE.InstancedMesh(src.geometry, src.material, at.length);
+      const inst = new THREE.InstancedMesh(src.geometry, this.textured(src.material as THREE.Material), at.length);
       at.forEach((p, i) => inst.setMatrixAt(i, (p instanceof THREE.Matrix4 ? m.copy(p) : m.makeTranslation(p.x, p.y, p.z)).multiply(src.matrixWorld)));
       inst.castShadow = inst.receiveShadow = true;
       if (tiles) {
@@ -610,8 +613,10 @@ export class BattleScene {
   private cutMaterial(src: THREE.MeshStandardMaterial) {
     const m = src.clone();
     m.allowOverride = false;
-    m.customProgramCacheKey = () => `copa${CUT_MAX}`;
+    m.customProgramCacheKey = () => `copa${CUT_MAX}${this.terrainTex ? 't' : ''}`;
+    const tex = this.terrainTex;
     m.onBeforeCompile = (s) => {
+      if (tex) addDetail(s, tex, 1.2); // folhas na copa e terra no tronco (detail.ts)
       Object.assign(s.uniforms, { cutPoints: this.cuts.points, cutCount: this.cuts.count, cutNormals: this.cuts.normals });
       s.fragmentShader = s.fragmentShader
         .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`)
@@ -758,7 +763,9 @@ export class BattleScene {
         const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
         // brilho de fábrica (olhos amarelos dos esqueletos): o piscar de golpe e cura mexe no emissivo e precisa voltar a ele
         mat.userData.glow = { color: mat.emissive.clone(), intensity: mat.emissiveIntensity };
-        if (UNIT_DETAIL && this.terrainTex) detail(mat, this.terrainTex.dirt);
+        // textura por cima da cor lisa do KayKit (detail.ts); ?bonecos=liso compara sem
+        const tex = this.terrainTex;
+        if (tex && !PLAIN_UNITS) mat.onBeforeCompile = (sh) => addDetail(sh, tex, 2.5, 0.65);
         mesh.material = mat;
         mats.push(mat);
       });
