@@ -26,7 +26,7 @@ import { Water } from './water.ts';
 import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
 import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
 import { addDetail } from './detail.ts';
-import { PAINT, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
+import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -211,6 +211,7 @@ export class BattleScene {
   private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
   private water: Water | null = null; // só nos mapas com água
+  private stream: { meshes: THREE.Mesh[]; time: { value: number } } | null = null;
   private raised?: Set<string>; // trechos fundos na altura da rasa (water-levels.ts raisedDeep)
   // casa desenhada pelo terreno liso (terrain.ts) em vez de blocos: aparência pintável, fora muro sem peça (pedra, tijolo)
   // paredão de pedra ou neve (muro sem peça) também vira terreno: um morro de pedra dois níveis acima (rock(t))
@@ -398,7 +399,7 @@ export class BattleScene {
         const lv = levels.get(posKey(p)), t = tileAt(this.grid, p);
         return lv ? lv.bed : this.rock(t) ? (t.h + 3) * this.step : this.ground(t) ? this.surfaceY(p, x, z) : (t.h + 1) * this.step;
       };
-      this.scene.add(buildTerrain(this.grid, { step: this.step, inner, outside, river, extend: EXTEND === 'textura', tex: this.terrainTex! }));
+      this.scene.add(buildTerrain(this.grid, { step: this.step, inner, outside, levels, river, extend: EXTEND === 'textura', tex: this.terrainTex! }));
       const picks = this.grid.tiles.flatMap((t, i) => {
         const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
         return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.rock(t) ? this.world(p).setY((t.h + 3) * this.step) : this.world(p) }] : [];
@@ -408,7 +409,9 @@ export class BattleScene {
       this.tileTops.push(pick);
     }
     if (levels.size) {
-      this.water = new Water(this.scene, this.grid, new Map([...levels, ...outside]), this.step);
+      this.water = new Water(this.scene, this.grid, levels, this.step);
+      // o rio de fora é uma faixa contínua com correnteza (terrain.ts buildStream), não casas de água em degrau
+      if (outside.size) { this.stream = buildStream(this.grid, this.step, levels, river); this.scene.add(...this.stream.meshes); }
       this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
     }
     this.buildTrees(pieces.tree);
@@ -1265,6 +1268,7 @@ export class BattleScene {
       v.holder.getObjectByName('bar')!.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
     }
     this.water?.update(this.t, this.units.values());
+    if (this.stream) this.stream.time.value = this.t / 1000;
     this.ambience?.update(this.t, this.camera);
     this.renderer.shadowMap.needsUpdate = true;
     this.composer.render();

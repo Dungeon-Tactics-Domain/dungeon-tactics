@@ -50,29 +50,97 @@ export function riverOf(grid: Grid, levels: Map<string, WaterLevel>): River | nu
 const riseAt = (grid: Grid, river: River | null, i: number) => {
   if (!river) return 0;
   const k = river.dir > 0 ? i - grid.width + 1 : -i;
-  return k > 0 ? Math.floor(k / 2) * RISE : 0;
+  return k > 0 ? Math.ceil(k / 2) * RISE : 0; // para cima: a margem fica acima da corredeira contínua (streamAt)
 };
 
 // topo do chão de fora em (i, j), em metros
 export const outerTop = (grid: Grid, step: number, river: River | null, i: number, j: number) =>
   (extH(grid, i, j, ringOf(grid, i, j)) + 1 + riseAt(grid, river, i)) * step;
 
-// água de fora: cada linha do rio segue EXT_RING casas para os dois lados, subindo RISE nível a cada 2 casas do lado da
-// nascente e descendo do outro (cascata a cada 2 casas). Entra em water.ts como as casas do mapa
+const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// Rio de fora (13/11, pedido do Fernando: "a cachoeira retona está tosca… água mais fluida… água descendo pelo morro"):
+// superfície contínua em `u` (casas, contínuo; fora do tabuleiro), plana na 1ª metade de cada par de casas e descendo em
+// corredeira na 2ª, RISE nível por par. Sobe do lado da nascente e desce do outro; null fora das linhas do rio
+export function streamAt(grid: Grid, step: number, levels: Map<string, WaterLevel>, river: River | null, u: number, j: number): number | null {
+  if (!river || !river.rows.includes(j) || (u >= 0 && u < grid.width)) return null;
+  const right = u >= grid.width;
+  const lv = levels.get(`${right ? grid.width - 1 : 0},${j}`)!;
+  const k = right ? u - grid.width : -u; // distância da borda, em casas
+  const up = (right ? 1 : -1) === river.dir ? 1 : -1;
+  return lv.surface + up * (Math.floor(k / 2) + smooth(0.5, 1, (k / 2) % 1)) * RISE * step;
+}
+
+// casas de fora com água (o meio de cada uma), para o chão e as árvores dos arredores saberem onde é rio
 export function riverOutside(grid: Grid, step: number, levels: Map<string, WaterLevel>, river: River | null): Map<string, WaterLevel> {
   const out = new Map<string, WaterLevel>();
   if (!river) return out;
-  for (const y of river.rows) {
-    for (const [edge, side] of [[grid.width - 1, 1], [0, -1]] as const) {
-      const lv = levels.get(`${edge},${y}`)!;
-      const up = side === river.dir ? 1 : -1;
-      for (let k = 1; k <= EXT_RING; k++) {
-        const surface = lv.surface + up * Math.floor(k / 2) * RISE * step;
-        out.set(`${edge + side * k},${y}`, { surface, bed: surface - (lv.deep ? step : WADE * step), deep: lv.deep });
-      }
+  for (const y of river.rows) for (const [edge, side] of [[grid.width - 1, 1], [0, -1]] as const) {
+    const deep = levels.get(`${edge},${y}`)!.deep;
+    for (let k = 1; k <= EXT_RING; k++) {
+      const i = edge + side * k, surface = streamAt(grid, step, levels, river, i + 0.5, y)!;
+      out.set(`${i},${y}`, { surface, bed: surface - (deep ? step : WADE * step), deep });
     }
   }
   return out;
+}
+
+// Malha do rio de fora: uma faixa por lado, com correnteza animada (listras que andam a favor da água) e espuma onde a
+// descida é mais forte; escurece com a extensão até o preto, como o chão. `time` anda no relógio da batalha (scene.ts)
+export function buildStream(grid: Grid, step: number, levels: Map<string, WaterLevel>, river: River | null): { meshes: THREE.Mesh[]; time: { value: number } } {
+  const time = { value: 0 };
+  if (!river) return { meshes: [], time };
+  const W = grid.width, H = grid.height, N = 8;
+  const z0 = Math.min(...river.rows), z1 = Math.max(...river.rows) + 1;
+  const meshes = ([1, -1] as const).map((side) => {
+    const pos: number[] = [], col: number[] = [], flow: number[] = [], slope: number[] = [], idx: number[] = [];
+    const nu = EXT_RING * N, nv = (z1 - z0) * 2;
+    for (let b = 0; b <= nv; b++) for (let a = 0; a <= nu; a++) {
+      const k = a / N, u = side > 0 ? W + k : -k, v = z0 + b / 2;
+      const j = Math.min(z1 - 1, Math.floor(v));
+      const y = streamAt(grid, step, levels, river, side > 0 ? u + 1e-4 : u - 1e-4, j)!;
+      const y2 = streamAt(grid, step, levels, river, side > 0 ? u + 0.05 : u - 0.05, j) ?? y;
+      pos.push(u - W / 2, y + 0.01, v - H / 2);
+      const ring = Math.floor(k) + 1;
+      const t = ring <= EXT_FADE ? 0.12 + 0.66 * (1 - ring / (EXT_FADE + 1)) : 0.12 * Math.max(0, 1 - (ring - EXT_FADE) / EXT_DARK);
+      col.push(t, t, t);
+      flow.push(k);
+      slope.push(Math.abs(y2 - y) / 0.05);
+    }
+    for (let b = 0; b < nv; b++) for (let a = 0; a < nu; a++) {
+      const v = b * (nu + 1) + a;
+      // a faixa da esquerda corre para -x: a ordem dos vértices vira para a face continuar para cima
+      if (side > 0) idx.push(v, v + nu + 1, v + 1, v + 1, v + nu + 1, v + nu + 2);
+      else idx.push(v, v + 1, v + nu + 1, v + 1, v + nu + 2, v + nu + 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute('aFlow', new THREE.Float32BufferAttribute(flow, 1));
+    g.setAttribute('aSlope', new THREE.Float32BufferAttribute(slope, 1));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    // a água corre da nascente para fora: do lado da nascente, para a borda (k diminui); do outro, para longe (k aumenta)
+    const dir = side === river.dir ? 1 : -1;
+    const mat = new THREE.MeshLambertMaterial({ color: '#1d4f7a', vertexColors: true, transparent: true, opacity: 0.92, depthWrite: false });
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uSTime = time;
+      sh.vertexShader = 'attribute float aFlow; attribute float aSlope; varying float vFlow; varying float vSlope; varying vec2 vSXZ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvFlow = aFlow; vSlope = aSlope; vSXZ = position.xz;');
+      sh.fragmentShader = 'uniform float uSTime; varying float vFlow; varying float vSlope; varying vec2 vSXZ;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+        float w = sin(vSXZ.y * 9.0 + vFlow * 3.0) * 0.08;
+        float lane = fract(vFlow * 1.6 + ${dir.toFixed(1)} * uSTime * (0.7 + 0.9 * clamp(vSlope, 0.0, 1.5)) + w);
+        float streak = smoothstep(0.75, 1.0, lane) * (0.35 + 0.65 * fract(sin(floor(vSXZ.y * 6.0) * 78.233) * 43758.5));
+        float foam = clamp(smoothstep(0.15, 0.7, vSlope) * (0.45 + 0.55 * streak) + streak * 0.3, 0.0, 1.0);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.9, 0.96, 1.0), foam);
+        diffuseColor.a = mix(diffuseColor.a, 1.0, foam);`);
+    };
+    const m = new THREE.Mesh(g, mat);
+    m.renderOrder = -1; // junto da água do mapa: marcas e cursor por cima
+    m.receiveShadow = true;
+    m.name = 'rio-de-fora';
+    return m;
+  });
+  return { meshes, time };
 }
 
 const VERT_HEAD = 'attribute vec4 aW; attribute float aStone; varying vec4 vW; varying float vStone; varying vec3 vWPos; varying vec3 vWN;\n';
@@ -107,6 +175,7 @@ export interface TerrainOptions {
   // altura do chão (metros) no ponto (x, z) do mundo dentro da casa p: o meio de cada casa, a rampa, o leito da água
   inner: (p: Pos, x: number, z: number) => number;
   outside: Map<string, WaterLevel>; // água de fora (riverOutside): o chão ali é o leito
+  levels: Map<string, WaterLevel>;
   river: River | null;
   extend: boolean; // com a extensão em volta (EXT_RING casas); sem ela, só o tabuleiro
   tex: TerrainTextures;
@@ -123,7 +192,8 @@ export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
     const inside = i >= 0 && j >= 0 && i < W && j < H;
     const edge: Tile = tileAt(grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
     const wet = o.outside.get(`${i},${j}`);
-    raw[c] = inside ? o.inner({ x: i, y: j }, x, z) : wet ? wet.bed : outerTop(grid, o.step, o.river, i, j);
+    const flowing = wet ? streamAt(grid, o.step, o.levels, o.river, u, j) : null;
+    raw[c] = inside ? o.inner({ x: i, y: j }, x, z) : wet && flowing !== null ? flowing - (wet.surface - wet.bed) : outerTop(grid, o.step, o.river, i, j);
     const ring = inside ? 0 : ringOf(grid, i, j);
     // escurece de 1 até 0,12 nos EXT_FADE primeiros anéis e vai ao preto total nos EXT_DARK seguintes
     tone[c] = ring === 0 ? 1 : ring <= EXT_FADE ? 0.12 + 0.66 * (1 - ring / (EXT_FADE + 1)) : 0.12 * Math.max(0, 1 - (ring - EXT_FADE) / EXT_DARK);
