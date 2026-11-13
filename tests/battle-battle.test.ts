@@ -166,3 +166,22 @@ describe('save torto não derruba o jogo', () => {
     expect(mutate((s) => (s.turn.usedAbility = 'fogo_infinito'))).toBeNull();
   });
 });
+
+describe('save com unidade grande (revisão de 13/11)', () => {
+  it('recusa Colosso com casa fora do mapa ou em cima de outra unidade', () => {
+    const base = Battle.start(SCENARIOS.skirmish, 1).state;
+    const st = { ...base, units: [
+      { id: 'h', def: 'warrior', team: 'hero' as const, pos: { x: 0, y: 7 }, hp: 42, ct: 0, facing: 2 },
+      { id: 'b', def: 'beacon', team: 'hero' as const, pos: { x: 3, y: 7 }, hp: 50, ct: 0 },
+      { id: 'c', def: 'colossus', team: 'enemy' as const, pos: { x: 0, y: 0 }, hp: 160, ct: 0, facing: 0 },
+    ], turn: { actor: 'h', moved: false, usedAbility: null }, charges: [] };
+    const copy = () => JSON.parse(JSON.stringify(st));
+    expect(parseBattleState(copy())).not.toBeNull();
+    const out = copy();
+    out.units[2].pos = { x: 7, y: 0 }; // 2x2 a partir da última coluna: metade fora do mapa
+    expect(parseBattleState(out)).toBeNull();
+    const over = copy();
+    over.units[0].pos = { x: 1, y: 1 }; // o guerreiro dentro do quadrado do Colosso
+    expect(parseBattleState(over)).toBeNull();
+  });
+});

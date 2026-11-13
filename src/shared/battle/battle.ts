@@ -1,9 +1,8 @@
 import { ABILITIES } from './abilities.ts';
 import { checkOutcome, previewAbility, resolveAbility, spikeAtTurnEnd, type Preview } from './combat.ts';
 import { FACING, canStand, faceNearest, facingTo, inBounds, samePos, tileAt, type Grid } from './grid.ts';
-import { pathTo, reachable, type Step } from './pathing.ts';
+import { pathTo, reachable, unitAt, type Step } from './pathing.ts';
 import { SCENARIOS, initialState, type Scenario } from './scenarios.ts';
-import { unitAt } from './pathing.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Charge, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -176,11 +175,15 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (u.team !== 'hero' && u.team !== 'enemy') return null;
     if (!isObj(u.pos) || !isInt(u.pos.x) || !isInt(u.pos.y)) return null;
     const pos = { x: u.pos.x, y: u.pos.y };
-    if (!inBounds(grid, pos) || !canStand(tileAt(grid, pos))) return null;
+    // todas as casas da unidade (a grande ocupa 2x2 a partir de `pos`): dentro do mapa, pisáveis e sem ninguém (13/11,
+    // revisão: só a casa de canto era conferida, e um Colosso cobria o Farol ou saía do mapa)
+    const size = UNIT_DEFS[u.def].size ?? 1;
+    const tiles = Array.from({ length: size * size }, (_, i) => ({ x: pos.x + (i % size), y: pos.y + Math.floor(i / size) }));
+    if (!tiles.every((p) => inBounds(grid, p) && canStand(tileAt(grid, p)) && !cells.has(`${p.x},${p.y}`))) return null;
     if (!isInt(u.hp) || u.hp < 1 || u.hp > UNIT_DEFS[u.def].hp || !isInt(u.ct) || Math.abs(u.ct) > 10000) return null;
-    if (ids.has(u.id) || cells.has(`${pos.x},${pos.y}`)) return null;
+    if (ids.has(u.id)) return null;
     ids.add(u.id);
-    cells.add(`${pos.x},${pos.y}`);
+    for (const p of tiles) cells.add(`${p.x},${p.y}`);
     // direção: todo mapa tem desde 13/11; save de antes (sem ela) abre virado para o inimigo mais perto (preenchido
     // depois do laço). Contadores só com as chaves da ficha
     if (u.facing !== undefined && (!isInt(u.facing) || !FACING[u.facing])) return null;
