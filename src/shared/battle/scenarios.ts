@@ -147,7 +147,7 @@ const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: str
   f: { terrain: 'floor', h: 1, look: 'crypt' },
   d: { terrain: 'floor', h: 2, look: 'altar' },
   // superfície no 1 e pé no 0 (13/11): com a superfície no 0 o pé ficava no -1, 2 abaixo das margens, e ninguém entrava no canal
-  w: { terrain: 'floor', h: 1, look: 'water', depth: 1 },
+  w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
   W: { terrain: 'floor', h: 0, look: 'water', depth: 2 }, // fosso fundo do Coração da Cripta: só as pontes passam
   b: { terrain: 'floor', h: 1, look: 'bridge' },
   B: { terrain: 'wall', h: 1, look: 'brick' },
@@ -290,7 +290,7 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
   y: { terrain: 'forest', h: 1, look: 'tree3' },
   W: { terrain: 'floor', h: 0, look: 'water', depth: 2 },
   // superfície no 1 e pé no 0, como na Cripta (13/11, revisão): no 0 o pé ficava no -1 e só o Salto 2 saía do vau
-  w: { terrain: 'floor', h: 1, look: 'water', depth: 1 },
+  w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
   b: { terrain: 'floor', h: 1, look: 'bridge' },
   r: { terrain: 'wall', h: 1, look: 'rock' },
   c: { terrain: 'wall', h: 0, look: 'crates' }, // no chão: a carga da caravana caída na estrada, não em cima de bloco

@@ -7,7 +7,7 @@ import { reachable } from '../src/shared/battle/pathing.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // Água rasa e funda (decisão do Fernando de 12/11, "como no FFT", BMG 6.5): rasa custa 2 de movimento, 2h ou mais não
-// deixa entrar, e quem está na água fica mais baixo (altura da casa menos a profundidade).
+// deixa entrar; desde 13/11 a rasa não rebaixa quem está de pé (só custa movimento).
 const withWater = (g: Grid, cells: [x: number, y: number, depth: number][]) => {
   for (const [x, y, depth] of cells) g.tiles[y * g.width + x] = { ...g.tiles[y * g.width + x], depth };
   return g;
@@ -29,14 +29,13 @@ describe('água', () => {
     expect(reachable(g, s, 'a').has('2,1')).toBe(false);
   });
 
-  it('quem está na água fica mais baixo: sair dela pede mais salto e o atacante de fora ganha altura', () => {
-    // corredor de 1 casa de largura, para não haver volta por fora da água
+  it('água rasa não rebaixa quem está de pé (13/11, pedido do Fernando): da margem 1 acima se desce e se sobe com salto 1', () => {
     const g = withWater(flat(5, 1), [[2, 0, 1]]);
-    g.tiles[3] = { ...g.tiles[3], h: 1 }; // margem 1 nível acima do chão; da água (0 - 1 = -1) são 2
+    g.tiles[3] = { ...g.tiles[3], h: 1 }; // margem 1 nível acima da água
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 2, y: 0 }]);
-    expect(reachable(g, s, 'a').has('3,0')).toBe(false); // salto 1 não sobe 2
+    expect(reachable(g, s, 'a').has('3,0')).toBe(true);
     const strike = ABILITIES.strike;
-    expect(hitChance(g, strike, { x: 1, y: 0 }, { x: 2, y: 0 })).toBe(Math.min(95, strike.accuracy + 5)); // 1 nível acima
+    expect(hitChance(g, strike, { x: 1, y: 0 }, { x: 2, y: 0 })).toBe(Math.min(95, strike.accuracy)); // mesmo nível
   });
 
   it('empurrão para na água funda, como numa parede (suposição nossa)', () => {
