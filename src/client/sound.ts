@@ -1,7 +1,7 @@
-// Som do jogo (12/11, pedido do Fernando: música e efeitos no jeito do FFT, mas nada do original): música de batalha em
-// laço, efeitos curtos e as fanfarras de vitória e derrota, que são notas feitas aqui no WebAudio (sem arquivo).
+// Som do jogo (12/11, pedido do Fernando: música e efeitos no jeito do FFT, mas nada do original): músicas em
+// laço (arquivos, 13/11), efeitos curtos e as fanfarras de vitória e derrota, que são notas feitas aqui no WebAudio.
 // Arquivos e licenças (todos CC0) em public/CREDITS.txt. O navegador só deixa tocar depois do 1º clique ou tecla.
-import { SONGS, playSong, type SongId } from './music.ts';
+import { TRACKS, trackUrl, type SongId } from './music.ts';
 import { store } from './store.ts';
 
 export const SOUND_KEY = 'dt:sound';
@@ -30,41 +30,59 @@ const FILE: Record<Sfx, string> = {
 
 let settings = parseSound(store.json(SOUND_KEY));
 let ctx: AudioContext | null = null;
-let music: HTMLAudioElement | null = null;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 
-// Fase da campanha toca a música sintetizada dela (music.ts) no lugar do arquivo de batalha
+// Música em arquivo (music.ts), uma faixa por momento (título, mapa, fases; sem fase toca a batalha avulsa). Trocar de
+// faixa faz fade de 0,5 s: a antiga some enquanto a nova sobe. Volume = nível das opções × 0,6 (a música fica abaixo
+// dos efeitos) × ganho da faixa.
 let track: SongId | null = null;
-let synth: ReturnType<typeof playSong> | null = null;
 export function setTrack(id: SongId | null) {
-  // trocou de música: a sintetizada anterior para (sem isto, título e batalha tocavam juntos)
-  if (id !== track) {
-    synth?.stop();
-    synth = null;
-  }
   track = id;
   applyMusic();
 }
 
+interface Voice {
+  audio: HTMLAudioElement;
+  to: number;
+}
+const voices = new Map<SongId, Voice>();
+let fader: ReturnType<typeof setInterval> | undefined;
+// 0,05 a cada 50 ms: de 0 ao teto do nível alto (0,48) em ~0,5 s
+const FADE_STEP = 0.05;
+const fadeTick = () => {
+  let moving = false;
+  for (const [id, v] of voices) {
+    const d = v.to - v.audio.volume;
+    v.audio.volume = Math.abs(d) <= FADE_STEP ? v.to : v.audio.volume + Math.sign(d) * FADE_STEP;
+    if (v.audio.volume !== v.to) moving = true;
+    else if (!v.to) {
+      v.audio.pause();
+      voices.delete(id);
+    }
+  }
+  if (!moving) {
+    clearInterval(fader);
+    fader = undefined;
+  }
+};
+
 const applyMusic = () => {
   if (!ctx) return;
-  if (track) {
-    music?.pause();
-    if (!settings.music) {
-      synth?.stop();
-      synth = null;
-    } else if (synth) synth.setVolume(GAIN[settings.music]);
-    else synth = playSong(ctx, SONGS[track], GAIN[settings.music]);
-    return;
+  const want = settings.music ? (track ?? 'battle') : null;
+  for (const [id, v] of voices) if (id !== want) v.to = 0;
+  if (want) {
+    let v = voices.get(want);
+    if (!v) {
+      const audio = new Audio(trackUrl(want));
+      audio.loop = true;
+      audio.volume = 0;
+      v = { audio, to: 0 };
+      voices.set(want, v);
+      void audio.play().catch(() => undefined);
+    }
+    v.to = GAIN[settings.music] * 0.6 * TRACKS[want].gain;
   }
-  if (!music && settings.music) {
-    music = new Audio('/music/battle.mp3');
-    music.loop = true;
-  }
-  if (!music) return;
-  music.volume = GAIN[settings.music] * 0.6; // a música fica abaixo dos efeitos
-  if (settings.music) void music.play().catch(() => undefined);
-  else music.pause();
+  fader ??= setInterval(fadeTick, 50);
 };
 
 // primeiro gesto do jogador: cria o contexto de áudio e começa a música

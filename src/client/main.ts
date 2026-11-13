@@ -787,7 +787,7 @@ function credits(back: () => void = titleScreen) {
     el('ul', { class: 'legend' },
       el('li', {}, t('Modelos 3D: KayKit, de Kay Lousberg (CC0)', '3D models: KayKit, by Kay Lousberg (CC0)')),
       el('li', {}, t('Efeitos sonoros: Kenney, artisticdude, JaggedStone, Julien Matthey e outros do OpenGameArt (CC0)', 'Sound effects: Kenney, artisticdude, JaggedStone, Julien Matthey and others from OpenGameArt (CC0)')),
-      el('li', {}, t('Música da batalha avulsa: Emma_MA (CC0). Músicas e vozes da campanha: compostas para o jogo', 'Quick battle music: Emma_MA (CC0). Campaign music and voices: composed for the game')),
+      el('li', {}, t('Músicas (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD e Emma_MA. Vozes da campanha: compostas para o jogo', 'Music (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD and Emma_MA. Campaign voices: composed for the game')),
       el('li', {}, t('Fontes: Tiny5 e Alegreya Sans (SIL Open Font License 1.1)', 'Fonts: Tiny5 and Alegreya Sans (SIL Open Font License 1.1)')),
       el('li', {}, t('História, mapas e regras: Dungeon Tactics', 'Story, maps and rules: Dungeon Tactics'))),
     el('p', {}, el('a', { href: '/CREDITS.txt', target: '_blank', rel: 'noopener' }, t('Lista completa, com a licença de cada arquivo', 'Full list, with each file\'s license'))),

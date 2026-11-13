@@ -42,7 +42,13 @@
 | `sfx/*.mp3` (10) | efeitos: bola de fogo, explosão, golpe, míssil, raio, escudo, teleporte, laço da lava, clique, confirmar | `src/client/sound.ts` (`/sfx/${name}.mp3`) | Kenney, OpenGameArt e Freesound, CC0 (detalhe no CREDITS) |
 | `sfx/taunt/*.mp3` (10) | vozes das provocações | `src/shared/taunts.ts`, `src/client/sound.ts` | Kenney Voiceover, OpenGameArt, CC0; "Ultra kill" é voz sintética feita para o jogo |
 | `taunts-local/*.mp4` (5) | provocações gravadas pelo Leonard: Tá pegando fogo!, Bosta city!, Foi uma delícia..., Usaram e abusaram., Lanchado | `src/shared/taunts.ts`, `src/client/sound.ts`, `src/client/scene.ts` | gravadas no celular pelo Leonard (lboesmans), que autorizou uso e redistribuição no jogo; sem licença livre, aceito pelo Fernando em 21/10/2026 (PR #243) |
-| `music/battle.mp3` | música da partida (laço) | `src/client/sound.ts` | Emma_MA "Determined Pursuit", CC0 |
+| `music/battle.mp3` | batalha avulsa (laço) | `src/client/music.ts` (`TRACKS.battle`), `src/client/sound.ts` | Emma_MA "Determined Pursuit", CC0 |
+| `music/titulo.ogg` | tela de título | `TRACKS.title` | CodeManu "A Legend Will Rise (Orchestral)", CC0 |
+| `music/mapa.ogg` | mapa mundial | `TRACKS.world` | TAD "Once Upon a Time (loop)", CC0 |
+| `music/estrada.ogg` | fases na estrada | `TRACKS.road` | cynicmusic "Battle Theme B for RPG", CC0 |
+| `music/cripta.ogg` | cripta | `TRACKS.crypt` | nene "Evil Approach", CC0 |
+| `music/neve.ogg` | neve (75 s, fade no fim) | `TRACKS.snow` | FAINOD "A Long Winter at Home (Classical)", CC0 |
+| `music/chefe.ogg` | chefes | `TRACKS.boss` | cynicmusic "Sinister Boss Appears!", CC0 |
 | `sfx/cancel.mp3`, `step.mp3`, `swing.mp3`, `throw.mp3`, `miss.mp3`, `heal.mp3`, `charge.mp3`, `spell.mp3`, `die.mp3` | Dungeon Tactics (12/11): cancelar, passo, golpe no ar, arremesso, erro, cura, magia carregando, magia saindo, queda; com `click`, `confirm`, `hit` e `fireball` que já existiam | `src/client/sound.ts` (`FILE`), ligados em `src/client/main.ts` (`sound`) | Kenney Interface e Impact, RPG Sound Pack, Swishes, Magic Spell SFX e 80 CC0 RPG SFX (OpenGameArt), todos CC0; MP3 mono normalizado por ffmpeg |
 | `icons.svg` | sprite com todos os ícones (magias, itens, runas, efeitos, interface) | `src/client/icons.ts`, `src/client/scene.ts`, `src/client/style.css` | game-icons.net, **CC BY 3.0 (crédito obrigatório)**; montado por `scripts/assets/build-icons.mjs` |
 | `warlock-wars.svg`, `favicon.ico`, `apple-touch-icon.png` | logo W e ícone da aba | `index.html`, `src/client/ui.ts`, `src/client/style.css` | arte própria, por `scripts/assets/favicon.py` (fonte Grenze Gotisch, OFL 1.1) |
