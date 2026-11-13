@@ -4,6 +4,7 @@ import { previewAbility, simulatePush } from './combat.ts';
 import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
 import { MAX_JUMP, reachable } from './pathing.ts';
 import { rulesOf } from './rules.ts';
+import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
 
@@ -21,6 +22,9 @@ const W = {
   THREAT: 0.25, // por ponto de dano médio de quem alcança a casa
   ADVANCE: 1.2, // por casa de distância quando não há em quem bater neste turno
   GUARD: 2, // por casa que o herói se afasta do alvo a proteger além do raio de guarda
+  // golpe com carga em quem joga antes de ela sair vale 40% (pode sair da casa). Medido em 12/11 (1 000 sementes): Colina
+  // 72,8% → 64,1% para os heróis (a Explosão do Mago sombrio passou a mirar quem fica), Escaramuça 45,2% → 45,1%
+  ESCAPE: 0.4,
 };
 // Até onde o herói da IA sai de perto do alvo a proteger para ir ao encontro do inimigo. Medido em 11/11 no 20x20
 // (1 000 sementes): com 10 os heróis seguram a colina do meio e vencem 53,3%; com 7 ficam no descampado (29%) e sem
@@ -53,7 +57,9 @@ function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId
     const dmg = (t.dmgMin + t.dmgMax) / 2; // da prévia: é a mesma faixa que o sorteio usa
     const expected = chance * (Math.min(dmg + pushDmg, u.hp) + (dmg + pushDmg >= u.hp ? W.KILL : 0));
     const foe = u.team !== actor.team;
-    total += foe ? expected * (u.def === OBJECTIVE_DEF ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY;
+    // carga: quem joga antes de ela sair provavelmente sai da casa, e o golpe cai no vazio (12/11)
+    const leaves = ability.charge > 0 && u.ct + UNIT_DEFS[u.def].speed * ability.charge >= TURN_THRESHOLD ? W.ESCAPE : 1;
+    total += (foe ? expected * (u.def === OBJECTIVE_DEF ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY) * leaves;
   }
   return total;
 }

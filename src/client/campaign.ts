@@ -36,8 +36,10 @@ export const CAMPAIGN_KEY = 'dt:campanha'; // quantas fases já foram vencidas
 const party = (): DevUnit[] => [unitFrom('warrior', 'Bran'), unitFrom('archer', 'Tess'), unitFrom('mage', 'Odo'), unitFrom('rogue', 'Lia')];
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 82% → 55% → 44% → 32% → 30%, caindo fase a fase (a 1ª, no Bosque, ensina).
-// Recrutas e Lacaios (pouca vida) acertam o degrau: com 3 inimigos a fase ia a ~100%, com 4 inteiros a ~30%. Na cripta,\n// dois arqueiros derrubam a fase para ~20%, e a velocidade do Vesper (8 → 9) pesa mais que 15 de vida.
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 82% → 67% → 53% → 38% → 28%, caindo fase a fase
+// (a 1ª, no Bosque, ensina). Medido de novo depois da IA mirar a carga em quem fica parado (ai.ts, W.ESCAPE).
+// O que mais pesa: arqueiro esqueleto (na Colina, trocar o arqueiro por um Lacaio leva a fase de 67% a 98%) e a
+// velocidade do Vesper (8 → 9 vale mais que 15 de vida).
 const vesper = (hp: number, speed: number) => foe('dark_mage', { name: 'Vesper', hp, speed, abilities: ['firebolt', 'blast'] });
 
 const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
@@ -46,7 +48,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Estrada de Cinzas', 'The Ash Road'],
     song: 'road',
-    setup: { map: 'ash_wood', heroes: party(), enemies: [foe('soldier'), foe('soldier'), foe('skeleton_archer'), foe('minion')] },
+    setup: { map: 'ash_wood', heroes: party(), enemies: [foe('soldier'), foe('soldier'), foe('skeleton_archer'), foe('dark_mage')] },
     intro: [
       L('narr', 'Os Faróis guardam os vilarejos do Véu, a névoa onde os mortos não descansam. Um a um, eles estão se apagando.', 'The Beacons keep the villages safe from the Veil, the mist where the dead never rest. One by one, they are going dark.'),
       L('bran', 'Caravana parada no meio da estrada. Isso não é acidente.', 'A caravan stopped in the middle of the road. That is no accident.'),
@@ -63,7 +65,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Colina do Farol', 'Beacon Hill'],
     song: 'road',
-    setup: { map: 'beacon_hill', heroes: party(), enemies: [foe('brute'), foe('dark_mage'), foe('skeleton_archer'), foe('soldier')] },
+    setup: { map: 'beacon_hill', heroes: party(), enemies: [foe('brute'), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
     intro: [
       L('narr', 'A Colina do Farol. Neve de um lado, campo do outro, e o cristal azul no meio de tudo.', 'Beacon Hill. Snow on one side, fields on the other, and the blue crystal in the middle of it all.'),
       L('tess', 'Eles já estão subindo. Um bruto, um mago e soldados.', 'They are already climbing. A brute, a mage and soldiers.'),
@@ -94,7 +96,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
     song: 'boss',
-    setup: { map: 'flooded_crypt', heroes: party(), enemies: [vesper(62, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
+    setup: { map: 'flooded_crypt', heroes: party(), enemies: [vesper(45, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
     intro: [
       L('vesper', 'Lia. Voltou para casa e trouxe amigos.', 'Lia. You came home, and you brought friends.'),
       L('lia', 'Vim apagar o que você acendeu, Vesper.', 'I came to put out what you lit, Vesper.'),
