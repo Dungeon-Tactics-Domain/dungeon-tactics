@@ -18,6 +18,8 @@ export const TIMING = {
   enemyAfter: 250, // antes 400 (12/11): a linha de ajuda já resume o que o inimigo fez
   hitStop: 90, // novo (12/11): tudo para no impacto, o alvo pisca branco; é o que dá peso ao golpe
   shake: 220, // novo: o alvo treme depois da pausa e o tremor vai sumindo
+  pop: 240, // novo: pulinho de quem começa a vez
+  blink: 80, // novo: cada aceso/apagado de quem morre (3 piscadas, ~0,5 s)
 };
 
 // Segurar Enter, Espaço ou A (controle) acelera tudo da batalha (passos, golpes, esperas) 3 vezes; soltar volta ao ritmo

@@ -25,7 +25,7 @@ Vale junto com o `CLAUDE.md` da raiz. **Web no PC primeiro** (pedido do Fernando
 - **Tempos do fluxo** em `timing.ts`; gesto e efeito de cada habilidade em `fx.ts`; som em `sound.ts`.
 - **Game feel** (pedido do Fernando, 12/11: "mais responsivos e gostosos de jogar"):
   - Toda espera e animação da batalha usa `BattleScene.wait`/`animate`, que correm no relógio da batalha. Segurar Enter, Espaço ou A acelera 3 vezes; no toque, o botão ⏩ nas ferramentas liga e desliga (`dt:rapido`) (`pace`/`speed()` em `timing.ts`). Nada de `setTimeout` para tempo de batalha.
-  - Golpe com pausa no impacto (`hitStop`), alvo piscando branco e tremendo (`shake`). Cada boneco tem cópia própria dos materiais.
+  - Golpe com pausa no impacto (`hitStop`), alvo piscando branco e tremendo (`shake`). Cura pisca verde, erro mostra um passinho para trás, quem morre pisca 3 vezes (`blink`), casas marcadas respiram. Golpe de 25% da vida ou mais treme a câmera e aumenta o número; quem começa a vez dá um pulinho (`pop`); o cursor desliza entre as casas. Cada boneco tem cópia própria dos materiais.
   - Confirmar só no aperto (sem repetição de tecla).
   - Câmera abre perto (`PC_START`) e enquadra quem ataca e o alvo.
   - Lista de turnos curta (4) por padrão, L mostra tudo (`dt:turnos`).

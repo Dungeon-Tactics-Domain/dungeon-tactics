@@ -160,6 +160,8 @@ export class BattleScene {
   private readonly clock = new THREE.Clock();
   private t = 0; // relógio da batalha em ms (acelera com speed())
   private frozenUntil = 0; // hit-stop: os bonecos ficam parados até aqui
+  private shakeUntil = 0; // golpe forte: a câmera treme até aqui
+  private readonly cursorGoal = new THREE.Vector3();
   private readonly onResize = () => this.resize();
   private viewH: number;
   private readonly fitView: number; // zoom em que o mapa inteiro cabe na largura
@@ -408,8 +410,10 @@ export class BattleScene {
   }
 
   setCursor(p: Pos | null) {
+    // aparece já no lugar; depois desliza de casa em casa (frame), em vez de pular
+    if (p && !this.cursor.visible) this.cursor.position.copy(this.world(p));
     this.cursor.visible = !!p;
-    if (p) this.cursor.position.copy(this.world(p));
+    if (p) this.cursorGoal.copy(this.world(p));
   }
 
   // giro para onde a câmera vai (não o do meio da animação): o WASD já anda certo logo depois do R
@@ -541,6 +545,7 @@ export class BattleScene {
     for (const { pos, kind } of h.tiles) {
       const m = this.marks.get(posKey(pos))!;
       const mat = m.material as THREE.MeshBasicMaterial;
+      m.userData.base = MARK[kind][1]; // opacidade de partida do pulso (frame)
       mat.color.set(MARK[kind][0]);
       mat.opacity = MARK[kind][1];
       m.visible = true;
@@ -551,6 +556,18 @@ export class BattleScene {
   // Tudo da batalha corre no relógio da batalha (`t`), que anda 3 vezes mais rápido com o botão de acelerar seguro
   private animate(dur: number, step: (k: number) => void): Promise<void> {
     return new Promise((done) => this.anims.push({ start: this.t, dur, step, done }));
+  }
+
+  // começo da vez: o boneco dá um pulinho (sobe e estica um pouco), para o olho achar quem joga
+  pop(unitId: string) {
+    const v = this.units.get(unitId);
+    if (!v?.body) return;
+    const body = v.body, base = body.scale.y;
+    void this.animate(TIMING.pop, (k) => {
+      const s = Math.sin(Math.PI * k);
+      body.position.y = s * 0.18;
+      body.scale.y = base * (1 + s * 0.08);
+    });
   }
 
   wait(ms: number): Promise<void> {
@@ -613,17 +630,26 @@ export class BattleScene {
         await playFx(this.scene, (ms, step) => this.animate(ms, step), look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
       } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall') {
         v.hp -= e.dmg;
+        // golpe forte (25% da vida ou mais): a tela treme e o número sai maior. Com 30%, nenhum de 10 golpes de uma
+        // Escaramuça passou (medido 12/11): o efeito tem de aparecer de vez em quando, não nunca
+        const big = e.dmg >= UNIT_DEFS[v.def].hp * 0.25;
+        if (big) this.shakeUntil = this.t + TIMING.hitStop + TIMING.shake;
         await this.impact(v);
         this.setBar(v, TIMING.hpDrain);
-        this.float(e.unit, `-${e.dmg}`, 'dmg');
+        this.float(e.unit, `-${e.dmg}`, big ? 'dmg big' : 'dmg');
         if (v.hp > 0) this.play(v, 'Hit_A', true);
         await this.wait(e.k === 'hit' ? TIMING.hit : TIMING.crash);
         if (v.hp > 0) this.play(v, 'Idle');
       } else if (e.k === 'miss') {
         this.float(e.unit, t('Errou', 'Miss'), 'miss');
+        // desvio: o alvo dá um passinho para trás e volta, para o erro se ver no boneco e não só no texto
+        if (v.body) void this.animate(TIMING.hit * 0.8, (k) => (v.body!.position.z = -Math.sin(Math.PI * k) * 0.25));
         await this.wait(TIMING.hit);
       } else if (e.k === 'heal') {
         v.hp += e.amount;
+        // cura pisca verde, sem a pausa nem a tremida do golpe: o mesmo sinal, com outro sentido
+        for (const m of v.mats) m.emissive.set('#5dff8a');
+        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k))));
         this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `+${e.amount}`, 'heal');
         await this.wait(TIMING.hit);
@@ -642,6 +668,11 @@ export class BattleScene {
       } else if (e.k === 'die') {
         this.play(v, 'Death_A', true);
         await this.wait(TIMING.die);
+        // pisca 3 vezes antes de sumir (no sync): fica claro que saiu da batalha e não só caiu
+        for (let i = 0; i < 6; i++) {
+          v.holder.visible = i % 2 === 1;
+          await this.wait(TIMING.blink);
+        }
       }
     }
     this.sync(state);
@@ -786,8 +817,18 @@ export class BattleScene {
     }
     this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
     if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
+    // dt*30: chega em ~0,1 s, rápido para não atrasar quem segura a seta, macio para o olho seguir
+    this.cursor.position.lerp(this.cursorGoal, Math.min(1, dt * 30));
     this.cursor.getObjectByName('arrow')!.position.y = MARKER.arrowY + Math.sin(performance.now() / 250) * MARKER.arrowBob;
+    // casas marcadas respiram (±20% da opacidade, ciclo de ~1,9 s): o mapa parece vivo e a área se lê sem piscar forte
+    const breath = 0.8 + 0.2 * Math.sin(performance.now() / 300);
+    for (const m of this.marks.values()) if (m.visible) (m.material as THREE.MeshBasicMaterial).opacity = m.userData.base * breath;
+    // tremor do golpe forte: desloca o foco só neste quadro, some sozinho (nada acumula no foco de verdade)
+    const s = this.t < this.shakeUntil ? 0.12 * ((this.shakeUntil - this.t) / TIMING.shake) : 0;
+    const jitter = new THREE.Vector3(Math.sin(this.t * 0.09) * s, 0, Math.cos(this.t * 0.13) * s);
+    this.focus.add(jitter);
     this.placeCamera();
+    this.focus.sub(jitter);
     for (const v of this.units.values()) {
       if (this.t >= this.frozenUntil) v.mixer?.update(dt * fast);
       // barra de vida sempre de frente para a câmera

@@ -135,6 +135,7 @@ button[hidden] { display: none; }
 /* número de dano no ritmo do FFT (12/11): pula, fica parado para ler e some; 1,2 s = TIMING.float em timing.ts */
 .float { position: absolute; transform: translate(-50%, -50%); font: 400 26px/1 var(--font-px); text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; animation: pop 1.2s linear forwards; }
 .float.dmg { color: #ffd0c4; }
+.float.big { font-size: 38px; color: #ffb199; } /* golpe de 25% da vida ou mais (scene.ts): maior e mais quente */
 .float.miss { color: var(--muted); }
 .float.heal { color: var(--heal); }
 @keyframes pop {

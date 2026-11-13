@@ -448,6 +448,7 @@ class Game {
       this.busy = true;
       this.acting = this.battle.actor.def;
       this.scene.focusOn(this.battle.actor.pos);
+      this.scene.pop(this.battle.actor.id);
       this.update(this.ui);
       await this.scene.wait(TIMING.enemyStart);
       await this.animate(playAiTurn(this.battle), true);
@@ -464,6 +465,7 @@ class Game {
     if (this.heroTurn) {
       this.cursorToActor();
       this.scene.focusOn(this.battle.actor.pos);
+      this.scene.pop(this.battle.actor.id);
     }
     this.update(freshUi(this.battle));
     if (this.battle.over) this.finish();
