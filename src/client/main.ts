@@ -22,7 +22,7 @@ import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } f
 import { TIMING, isJump, pace, stepMs } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
-import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, slotsOf } from './dev-roster.ts';
+import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, problems, slotsOf } from './dev-roster.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
@@ -422,7 +422,8 @@ class Game {
 
   private async beforeEvent(e: BattleEvent, enemy: boolean) {
     // os passos do inimigo tocam depois do cursor mostrar o destino, junto da caminhada
-    if (!(e.k === 'move' && enemy)) this.sound(e);
+    // o som do golpe sai junto do gesto, depois da faixa com o nome (13/11, revisão: tocava ~0,9 s antes)
+    if (!(e.k === 'move' && enemy) && e.k !== 'attack') this.sound(e);
     const show = async (hl: Highlights, ms: number) => {
       this.scene.setHighlights(hl);
       await this.scene.wait(ms);
@@ -441,6 +442,7 @@ class Game {
       const area =[e.target, ...this.allTiles().filter((p) => a.radius > 0 && dist(p, e.target) <= a.radius && !samePos(p, e.target))];
       this.hud.banner(abilityName(e.ability));
       await show({ tiles: area.map((pos, i) => ({ pos, kind: i ? 'area' : 'target' })), path: null, preview: null }, TIMING.banner);
+      this.sound(e);
     }
   }
 
@@ -706,7 +708,8 @@ async function boot() {
   } else if (study === DEV_SCENARIO) {
     // batalha do menu de desenvolvedor: o elenco salvo vira o cenário (sem elenco válido, volta para a batalha padrão)
     const setup = parseSetup(store.json(DEV_KEY));
-    if (setup) {
+    // elenco com problema (time vazio, unidade sem habilidade) quebrava a batalha (13/11, revisão): cai na padrão
+    if (setup && !problems(setup, t).length) {
       if (setup.map.startsWith('fft-')) (await import('../shared/battle/fft/gariland.ts')).registerFftStudy();
       scenario = buildDevScenario(setup);
       SAVE_KEY = `dt:battle:${DEV_SCENARIO}`;
@@ -723,7 +726,7 @@ async function boot() {
   const saved = store.get(SAVE_KEY);
   const battle = (saved && Battle.load(saved)) || newBattle();
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
-  const scene = await BattleScene.create(host, battle.grid, battle.state, pixel);
+  const scene = await BattleScene.create(host, battle.grid, battle.state, pixel, scenario.spawns.map((s) => s.def));
   new Game(battle, scene, host, pixel);
   // clima da fase da campanha (cripta escura, Colina sob o Véu, cume à noite): a mesma luz do modo Até o amanhecer
   const light = chapter !== null ? CHAPTERS[chapter].light : undefined;
@@ -785,7 +788,7 @@ function credits(back: () => void = titleScreen) {
       el('li', {}, t('Modelos 3D: KayKit, de Kay Lousberg (CC0)', '3D models: KayKit, by Kay Lousberg (CC0)')),
       el('li', {}, t('Efeitos sonoros: Kenney, artisticdude, JaggedStone, Julien Matthey e outros do OpenGameArt (CC0)', 'Sound effects: Kenney, artisticdude, JaggedStone, Julien Matthey and others from OpenGameArt (CC0)')),
       el('li', {}, t('Música da batalha avulsa: Emma_MA (CC0). Músicas e vozes da campanha: compostas para o jogo', 'Quick battle music: Emma_MA (CC0). Campaign music and voices: composed for the game')),
-      el('li', {}, t('Fonte: Tiny5 (SIL Open Font License 1.1)', 'Font: Tiny5 (SIL Open Font License 1.1)')),
+      el('li', {}, t('Fontes: Tiny5 e Alegreya Sans (SIL Open Font License 1.1)', 'Fonts: Tiny5 and Alegreya Sans (SIL Open Font License 1.1)')),
       el('li', {}, t('História, mapas e regras: Dungeon Tactics', 'Story, maps and rules: Dungeon Tactics'))),
     el('p', {}, el('a', { href: '/CREDITS.txt', target: '_blank', rel: 'noopener' }, t('Lista completa, com a licença de cada arquivo', 'Full list, with each file\'s license'))),
     el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); back(); } }, t('Voltar', 'Back')),
@@ -905,9 +908,11 @@ async function worldScreen(host: HTMLElement) {
     const finale = i === WORLD.length - 1 && i >= done;
     done = afterNode(i, done);
     // nos créditos do fim, Voltar só fecha: o mapa já está aberto por baixo (o título por cima dele não tinha batalha ao fundo)
-    if (finale) credits(() => undefined);
     store.set(WORLD_KEY, String(done));
     view = view.refresh(done, i);
+    // créditos depois de atualizar o mapa (13/11, revisão): antes, o refresh puxava o foco para o Entrar atrás dos créditos e
+    // um Enter reabria o epílogo por cima
+    if (finale) credits(() => undefined);
   };
   let view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
     party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); },

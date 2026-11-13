@@ -216,10 +216,12 @@ export class BattleScene {
     this.renderer.setAnimationLoop(() => this.frame());
   }
 
-  static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings): Promise<BattleScene> {
+  // `all`: fichas de todo o cenário, não só das vivas no save (13/11, revisão): sem isto, reabrir um save em que um modelo
+  // já tinha morrido e apertar "Jogar de novo" trazia a unidade como o cristal do Farol
+  static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings, all: string[] = []): Promise<BattleScene> {
     // bonecos comprimidos com meshopt (13/11, pedido do Fernando: o jogo baixava 11 MB para abrir); decodificador do Three
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const defs = [...new Set(state.units.map((u) => modelOf(u.def)).filter(Boolean))];
+    const defs = [...new Set([...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)).filter(Boolean))];
     const [top, side, stone, tree, ...loaded] = await Promise.all([
       ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/quadrado/${n}.gltf`)),
       loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // a árvore do pack de blocos é um cubo de folhas
@@ -709,6 +711,7 @@ export class BattleScene {
           await this.animate(TIMING.lunge, (k) => v.holder.position.lerpVectors(a, b, Math.sin(Math.PI * k)));
         }
         await playFx(this.scene, (ms, step) => this.animate(ms, step), look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
+        this.play(v, 'Idle'); // o gesto toca uma vez e travava no último quadro até o boneco agir de novo (revisão de 13/11)
       } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall' || e.k === 'spike') {
         v.hp -= e.dmg;
         // golpe forte (25% da vida ou mais): a tela treme e o número sai maior. Com 30%, nenhum de 10 golpes de uma

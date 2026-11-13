@@ -74,7 +74,7 @@ export const CHAPTERS: Chapter[] = [
       L('hero', 'Ninguém encosta na caravana. Comigo!', 'No one touches the caravan. With me!'),
       // dicas da 1ª fase: o jogo ainda não tem tutorial; quem abre a campanha aprende o básico aqui
       L('narr', 'Dica: na sua vez, Mover anda até uma casa clara e Agir usa uma habilidade. Dá para fazer os dois, em qualquer ordem.', 'Tip: on your turn, Move walks to a lit tile and Act uses an ability. You can do both, in any order.'),
-      L('narr', 'Dica: o rio fundo não se atravessa. Use a ponte ou o vau raso, que gasta mais movimento. Segure Enter (ou toque em ⏩) para a vez do inimigo passar rápido.', 'Tip: the deep river cannot be crossed. Use the bridge or the shallow ford, which costs more movement. Hold Enter (or tap ⏩) to speed up the enemy turn.'),
+      L('narr', 'Dica: o rio fundo não se atravessa. Use a ponte ou o vau raso, que gasta mais movimento. Segure Enter (ou ligue a Batalha rápida no menu do canto) para a vez do inimigo passar rápido.', 'Tip: the deep river cannot be crossed. Use the bridge or the shallow ford, which costs more movement. Hold Enter (or turn on Fast battle in the corner menu) to speed up the enemy turn.'),
     ],
     outro: [
       L('odo', 'Achei isto com um deles: um mapa da Colina, com o Farol marcado em vermelho.', 'I found this on one of them: a map of the Hill, with the Beacon marked in red.'),
@@ -145,7 +145,7 @@ export const CHAPTERS: Chapter[] = [
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),
-      L('odo', 'Ele está juntando o Véu numa onda! Quando a área acender, saiam de dentro dela!', 'He is gathering the Veil into a wave! When the area lights up, get out of it!'),
+      L('odo', 'Ele está juntando o Véu numa onda! Ela vai atrás de quem ele mirou: o resto, saia de perto!', 'He is gathering the Veil into a wave! It follows whoever he aimed at: everyone else, get clear!'),
       L('lia', 'Tess, Odo, no mago. Bran, segure o bruto longe do cristal.', 'Tess, Odo, on the mage. Bran, keep the brute away from the crystal.'),
       L('bran', 'Pela Colina. Pelo vale. Agora!', 'For the Hill. For the valley. Now!'),
       L('narr', 'Objetivo: derrube o Vesper e não deixe o Farol cair.', 'Goal: bring Vesper down and do not let the Beacon fall.'),
@@ -189,7 +189,7 @@ export const CHAPTERS: Chapter[] = [
       L('odo', 'Sobrou a gente. E eu trouxe fogo.', 'There is us. And I brought fire.'),
       L('narr', 'A Sombra se cobre com os ossos dos mortos do cume e cresce até ocupar o topo inteiro.', 'The Shade wraps itself in the bones of the summit dead and grows until it fills the whole peak.'),
       L('bran', 'Grande desse jeito, não sai do lugar. Cerquem e batam de todos os lados!', 'That big, it cannot move. Surround it and strike from every side!'),
-      L('lia', 'A mesma regra de sempre: quando a área acender, saiam dela.', 'Same rule as always: when the area lights up, get out of it.'),
+      L('lia', 'A mesma regra de sempre: a onda segue quem foi mirado, então o resto se espalha.', 'Same rule as always: the wave follows its target, so everyone else spreads out.'),
       L('narr', 'Objetivo: derrube A Sombra.', 'Goal: bring down The Shade.'),
       L('hero', 'Por Vauclair. Por todo mundo que o Véu levou.', 'For Vauclair. For everyone the Veil took.'),
     ],
