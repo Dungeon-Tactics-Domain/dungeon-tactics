@@ -11,10 +11,10 @@ import { sfx } from './sound.ts';
 
 // uma frase do papel de cada classe no grupo (o que muda na prática, não o lore)
 const ROLE: Record<HeroClass, () => string> = {
-  warrior: () => t('Aguenta a linha de frente e empurra inimigos com a Escudada.', 'Holds the front line and shoves enemies with Shield bash.'),
+  warrior: () => t('Aguenta a linha de frente; mais adiante, empurra inimigos com a Escudada.', 'Holds the front line; later on, shoves enemies with Shield bash.'),
   archer: () => t('Acerta de longe; do alto alcança ainda mais.', 'Hits from afar; from high ground it reaches even farther.'),
   mage: () => t('Explode áreas e, mais adiante, aprende a curar.', 'Blasts areas and, later on, learns to heal.'),
-  rogue: () => t('O mais rápido: joga antes e derruba com o Golpe mortal.', 'The fastest: acts first and finishes with Deathblow.'),
+  rogue: () => t('O mais rápido: joga antes e, mais adiante, derruba com o Golpe mortal.', 'The fastest: acts first and, later on, finishes with Deathblow.'),
 };
 
 export function createHero(host: HTMLElement): Promise<Hero> {

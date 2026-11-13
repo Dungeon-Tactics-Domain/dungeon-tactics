@@ -94,7 +94,7 @@ export const CHAPTERS: Chapter[] = [
       L('hero', 'Eu fico perto do cristal. Quem subir, cai.', 'I stay by the crystal. Whoever climbs, falls.'),
     ],
     outro: [
-      L('lia', 'Os que fugiram correram para o norte... para a cripta velha, debaixo do lago.', 'The ones who ran went north... to the old crypt, under the lake.'),
+      L('lia', 'Os rastros deles vêm do norte... da cripta velha, debaixo do lago.', 'Their tracks come from the north... from the old crypt, under the lake.'),
       L('odo', 'A Cripta Alagada? Ninguém entra lá há cem anos.', 'The Flooded Crypt? No one has gone in there for a hundred years.'),
       L('bran', 'Então ninguém vai nos esperar. Vamos.', 'Then no one will be expecting us. Let\'s go.'),
     ],
@@ -146,7 +146,7 @@ export const CHAPTERS: Chapter[] = [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),
       L('odo', 'Ele está juntando o Véu numa onda! Ela vai atrás de quem ele mirou: o resto, saia de perto!', 'He is gathering the Veil into a wave! It follows whoever he aimed at: everyone else, get clear!'),
-      L('lia', 'Tess, Odo, no mago. Bran, segure o bruto longe do cristal.', 'Tess, Odo, on the mage. Bran, keep the brute away from the crystal.'),
+      L('lia', 'Fogo e flechas no Vesper. Quem estiver na frente segura o bruto longe do cristal.', 'Fire and arrows on Vesper. Whoever is up front keeps the brute away from the crystal.'),
       L('bran', 'Pela Colina. Pelo vale. Agora!', 'For the Hill. For the valley. Now!'),
       L('narr', 'Objetivo: derrube o Vesper e não deixe o Farol cair.', 'Goal: bring Vesper down and do not let the Beacon fall.'),
       L('hero', 'Esta é a última luz do vale. Ela não apaga hoje.', 'This is the last light in the valley. It does not go out today.'),
@@ -165,7 +165,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'snow',
     setup: { map: 'frost_pass', heroes: party(5), enemies: [foe('skeleton_archer'), foe('soldier', { hp: 60 }), foe('acolyte'), foe('minion')] },
     intro: [
-      L('narr', 'Três dias depois. O Passo Gelado, para onde o Véu recuou, ainda brilha roxo à noite.', 'Three days later. Frost Pass, where the Veil retreated to, still glows purple at night.'),
+      L('narr', 'Na manhã seguinte. O Passo Gelado, para onde o Véu recuou, ainda brilha roxo à noite.', 'The next morning. Frost Pass, where the Veil retreated to, still glows purple at night.'),
       L('bran', 'Subida longa e inimigo no alto. Do jeito que eu odeio.', 'A long climb with the enemy up high. Just the way I hate it.'),
       L('tess', 'Lá de cima eles enxergam e alcançam mais longe. Usem as árvores secas para se cobrir.', 'From up there they see and reach farther. Use the dead trees for cover.'),
       L('lia', 'Esses mortos não usam as cores do Vesper. Alguém mais está chamando eles.', 'These dead do not wear Vesper\'s colors. Someone else is calling them.'),

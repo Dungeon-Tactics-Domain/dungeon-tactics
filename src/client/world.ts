@@ -66,7 +66,7 @@ export const WORLD: WorldNode[] = [
     scene: [
       L('narr', 'Semanas depois. O Farol do vale brilha mais forte do que nunca, e ninguém mais fala do Véu.', 'Weeks later. The valley Beacon shines brighter than ever, and no one speaks of the Veil anymore.'),
       L('lia', 'Minha irmã teria gostado deste lugar.', 'My sister would have liked this place.'),
-      L('tess', 'Ela ia gostar de saber quem fechou a porta.', 'She would like to know who shut the door.'),
+      L('tess', 'Ela ia gostar de saber quem fechou a porta.', 'She would have liked to know who shut the door.'),
       L('hero', 'Fechamos juntos. E se a porta abrir de novo, a gente fecha de novo.', 'We shut it together. And if the door opens again, we shut it again.'),
       L('narr', 'Fim. Obrigado por jogar Dungeon Tactics.', 'The end. Thank you for playing Dungeon Tactics.'),
     ],

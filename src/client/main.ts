@@ -3,6 +3,7 @@
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
+import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
@@ -618,7 +619,7 @@ class Game {
         ...this.mvpLine(),
         ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair
-      el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
+      el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) || !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF) ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.') : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.')),
       // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
       el('div', { class: 'menu-actions' },
         won ? el('button', { type: 'button', class: 'primary', onclick: () => { location.search = `?mundo&de=${nodeOfChapter(n)}`; } }, t('Voltar ao mapa', 'Back to the map'))
