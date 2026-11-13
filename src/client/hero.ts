@@ -1,8 +1,6 @@
 // Protagonista criado pelo jogador (noite de 12/11, pedido do Fernando: "pode ter criação de personagem"). Puro e
 // testado; a tela fica em create-ui.ts. O protagonista entra no lugar do companheiro da mesma classe nas batalhas da
-// campanha (o companheiro segue nas conversas, como os convidados do FFT): os mapas têm 4 casas de partida de herói.
-import type { DevSetup } from './dev-roster.ts';
-
+// campanha (group.ts, heroesFor) (o companheiro segue nas conversas, como os convidados do FFT): os mapas têm 4 casas de partida de herói.
 export const HERO_CLASSES = ['warrior', 'archer', 'mage', 'rogue'] as const;
 export type HeroClass = (typeof HERO_CLASSES)[number];
 export interface Hero {
@@ -19,10 +17,4 @@ export function parseHero(raw: unknown): Hero | null {
   const name = typeof r.name === 'string' ? r.name.trim() : '';
   if (!name || name.length > NAME_MAX || !HERO_CLASSES.includes(r.cls as HeroClass)) return null;
   return { name, cls: r.cls as HeroClass };
-}
-
-// o elenco da fase com o protagonista no lugar do companheiro da mesma classe (mesmas habilidades liberadas)
-export function withHero(setup: DevSetup, hero: Hero | null): DevSetup {
-  if (!hero) return setup;
-  return { ...setup, heroes: setup.heroes.map((u) => (u.base === hero.cls ? { ...u, name: hero.name, en: hero.name } : u)) };
 }

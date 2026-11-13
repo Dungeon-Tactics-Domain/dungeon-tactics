@@ -4,7 +4,8 @@
 // Os pontos vêm em ordem: vencer (batalha) ou ver (história) um ponto libera o seguinte. Rejogar o que já passou vale.
 import { CHAPTERS, type Line } from './campaign.ts';
 import type { DevUnit } from './dev-roster.ts';
-import { withHero, type Hero } from './hero.ts';
+import { defaultGroup, heroesFor, type Group } from './group.ts';
+import type { Hero } from './hero.ts';
 
 export interface WorldNode {
   id: string;
@@ -110,10 +111,10 @@ export function step(i: number, dir: 1 | -1, done: number): number {
 }
 
 // Grupo da próxima batalha (tela Grupo do mapa): as habilidades já liberadas e quem fica de fora para o protagonista entrar
-export function partyFor(done: number, hero: Hero | null): { units: DevUnit[]; benched: string | null } {
+export function partyFor(done: number, hero: Hero | null, group: Group = defaultGroup()): { units: DevUnit[]; benched: string | null; chapter: number } {
   const next = WORLD.slice(done).find((w) => w.chapter !== undefined)?.chapter ?? CHAPTERS.length - 1;
-  const base = CHAPTERS[next].setup;
-  return { units: withHero(base, hero).heroes, benched: hero ? base.heroes.find((u) => u.base === hero.cls)?.name ?? null : null };
+  const benched = hero ? group.members.find((m) => m.id === hero.cls)?.name ?? null : null;
+  return { units: heroesFor(group, next, hero), benched, chapter: next };
 }
 
 // toda fase da campanha tem um ponto no mapa, uma vez só (o teste confere)

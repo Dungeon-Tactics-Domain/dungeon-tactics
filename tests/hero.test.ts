@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS, chapterScenario, learned } from '../src/client/campaign.ts';
-import { parseHero, withHero } from '../src/client/hero.ts';
+import { heroesFor, defaultGroup } from '../src/client/group.ts';
+import { parseHero } from '../src/client/hero.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 describe('protagonista', () => {
@@ -11,10 +12,9 @@ describe('protagonista', () => {
 
   it('entra no lugar do companheiro da mesma classe, com as habilidades da fase', () => {
     const hero = { name: 'Aria', cls: 'mage' as const };
-    const setup = withHero(CHAPTERS[0].setup, hero);
-    expect(setup.heroes.map((u) => u.name)).toEqual(['Bran', 'Tess', 'Aria', 'Lia']);
-    expect(setup.heroes[2].abilities).toEqual(CHAPTERS[0].setup.heroes[2].abilities);
-    expect(withHero(CHAPTERS[0].setup, null)).toBe(CHAPTERS[0].setup);
+    const heroes = heroesFor(defaultGroup(), 0, hero);
+    expect(heroes.map((u) => u.name)).toEqual(['Bran', 'Tess', 'Aria', 'Lia']);
+    expect(heroes[2].abilities).toEqual(CHAPTERS[0].setup.heroes[2].abilities);
     const s = chapterScenario(0, hero);
     expect(s.spawns.some((sp) => UNIT_DEFS[sp.def].name === 'Aria')).toBe(true);
     expect(learned(0, hero).find((x) => x.abilities.includes('gust'))?.name).toBe('Aria');

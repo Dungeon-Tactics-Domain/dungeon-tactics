@@ -6,7 +6,8 @@ import type { Scenario } from '../shared/battle/scenarios.ts';
 import { CHAPTERS } from './campaign.ts';
 import type { Equip } from './chest.ts';
 import { buildDevScenario, unitFrom } from './dev-roster.ts';
-import { withHero, type Hero } from './hero.ts';
+import { defaultGroup, heroesFor, type Group } from './group.ts';
+import type { Hero } from './hero.ts';
 
 export const MISSIONS_KEY = 'dt:missoes';
 export interface Mission {
@@ -40,8 +41,7 @@ export function parseDone(raw: unknown): string[] {
 export const missionScenarioId = (id: string) => `missao-${id}`;
 
 // o grupo da fase mais avançada já aberta (com o protagonista e o equipamento), contra os inimigos da missão
-export function missionScenario(m: Mission, progress: number, hero: Hero | null, eq: Equip): Scenario {
-  const setup = withHero(CHAPTERS[Math.min(progress, CHAPTERS.length - 1)].setup, hero);
-  return buildDevScenario({ map: m.map, heroes: setup.heroes.map((u) => ({ ...u, items: eq[u.base] })), enemies: m.enemies.map((b) => unitFrom(b)) },
+export function missionScenario(m: Mission, progress: number, hero: Hero | null, eq: Equip, group: Group = defaultGroup()): Scenario {
+  return buildDevScenario({ map: m.map, heroes: heroesFor(group, Math.min(progress, CHAPTERS.length - 1), hero, eq), enemies: m.enemies.map((b) => unitFrom(b)) },
     missionScenarioId(m.id), m.name);
 }

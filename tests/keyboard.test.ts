@@ -59,6 +59,9 @@ describe('cursor segue a câmera', () => {
     expect(gridStep('right', turned)).toEqual({ x: 0, y: -1 });
     // quatro giros voltam ao começo
     expect(gridStep('up', START + 2 * Math.PI)).toEqual(gridStep('up', START));
+    // câmera reta (8 ângulos, 13/11): cada seta anda reto na tela; em 0° "cima" é -y
+    expect([gridStep('up', 0), gridStep('right', 0), gridStep('down', 0), gridStep('left', 0)]).toEqual([{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }]);
+    expect(gridStep('up', Math.PI / 2)).toEqual({ x: -1, y: 0 });
   });
 });
 

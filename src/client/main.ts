@@ -35,6 +35,7 @@ import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, learned, objectiveT
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
 import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
 import { openParty, openWorld } from './world-ui.ts';
+import { GROUP_KEY, parseGroup } from './group.ts';
 import { HERO_KEY, parseHero } from './hero.ts';
 import { createHero } from './create-ui.ts';
 
@@ -658,7 +659,7 @@ class Game {
       ...(won ? [
         ...this.mvpLine(),
         el('p', { class: 'mvp' }, t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`)),
-        ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
+        ...learned(n, savedHero(), savedGroup()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair
       el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) || !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF) ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.') : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.')),
       // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
@@ -753,7 +754,7 @@ async function boot() {
     if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) return toWorld();
     mission = m;
     setTrack('road');
-    scenario = missionScenario(m, parseProgress(store.get(CAMPAIGN_KEY)), savedHero(), parseEquip(store.json(EQUIP_KEY)));
+    scenario = missionScenario(m, parseProgress(store.get(CAMPAIGN_KEY)), savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
     SAVE_KEY = `dt:battle:${missionScenarioId(m.id)}`;
   }
   if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // mapa mundial: sem batalha montada
@@ -766,7 +767,7 @@ async function boot() {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
     setTrack(CHAPTERS[chapter].song);
-    scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)));
+    scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
     SAVE_KEY = `dt:battle:${chapterId(chapter)}`;
   } else if (study === 'fft-gariland' || study === 'fft-classes') {
     const fft = await import('../shared/battle/fft/gariland.ts');
@@ -905,7 +906,7 @@ function titleScreen() {
           btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
           return;
         }
-        for (const k of [WORLD_KEY, CAMPAIGN_KEY, 'dt:estrelas', HERO_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
+        for (const k of [WORLD_KEY, CAMPAIGN_KEY, 'dt:estrelas', HERO_KEY, GROUP_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
         d.close();
         toWorld();
       } }, t('Novo jogo', 'New game')),
@@ -931,6 +932,7 @@ function continueWhere(): string {
 const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
 const toWorld = () => { location.search = '?mundo'; };
 const savedHero = () => parseHero(store.json(HERO_KEY));
+const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // grupo do jogador (group.ts): quem vai, classe e recrutados
 
 // Controle na abertura e na criação (antes do mapa, que tem o próprio): A aperta o botão em foco ou vira Enter, o
 // direcional vira seta e B vira Esc, pelo mesmo tradutor da batalha. Devolve a função que para o laço.
@@ -990,7 +992,7 @@ async function worldScreen(host: HTMLElement) {
     if (finale) credits(() => undefined);
   };
   let view = openWorld(host, { done, hero: hero.cls, enter, back: () => { location.search = ''; },
-    party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); },
+    party: () => openParty(partyFor(done, hero, savedGroup()).chapter, hero),
     from: Number(new URLSearchParams(location.search).get('de') ?? -1) });
 }
 
