@@ -207,6 +207,22 @@ function unitPanel(state: BattleState, u: UnitState, extra: HTMLElement[] = []) 
       ...extra));
 }
 
+// Fila do topo com a carga que ainda vai ser confirmada (13/11, pedido do Fernando, como a lista de CT do FFT): a magia
+// entra onde vai sair (`at`) e quem ela pega fica em `targets`, para ver se o alvo joga antes dela (e sai da casa) ou não.
+// Fora do "Executar?" de uma habilidade com carga, é a fila de sempre.
+export function queueRows(b: Battle, pending: { ability: string; target: Pos } | null, n: number) {
+  const a = pending ? ABILITIES[pending.ability] : null;
+  if (!pending || !a?.charge) return { rows: previewOrder(b.state, n), targets: new Set<string>(), at: -1 };
+  const me = b.actor.id;
+  const follow = a.panel ? null : unitAt(b.state, pending.target)?.id ?? null;
+  // a mesma carga que Battle.act registraria (uma carga nova troca a anterior da mesma unidade)
+  const charge = { unit: me, ability: pending.ability, target: pending.target, follow, ticks: a.charge };
+  const rows = previewOrder({ ...b.state, charges: [...b.state.charges.filter((c) => c.unit !== me), charge] }, 24);
+  const at = rows.findIndex((r) => r.unit === me && r.charge === pending.ability);
+  const targets = new Set(b.preview(pending.ability, pending.target).targets.map((tg) => tg.unit));
+  return { rows: rows.slice(0, Math.max(n, at + 1)), targets, at };
+}
+
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
   private readonly queue = el('ol', { class: 'panel queue short', 'aria-label': t('Ordem dos turnos', 'Turn order') });
@@ -275,7 +291,7 @@ export class BattleHud {
     const open = heroTurn && !v.busy;
     const hit = chargeDanger(b.state, b.grid.width, b.grid.height).get(posKey(v.cursor));
     this.tile.textContent = b.over ? '' : tileInfo(b.grid, v.cursor) + (hit ? t(` · ⚠ ${abilityName(hit)} vai cair aqui`, ` · ⚠ ${abilityName(hit)} lands here`) : '');
-    this.renderQueue(b);
+    this.renderQueue(b, v.screen);
     this.help.textContent = this.helpText(v, heroTurn);
     this.renderCommands(v, open);
     this.renderAbilities(v, open);
@@ -313,14 +329,17 @@ export class BattleHud {
     return t('Para onde olhar? Setas escolhem; confirmar passa a vez.', 'Which way to face? Arrows choose; confirm ends the turn.');
   }
 
-  private renderQueue(b: Battle) {
-    const order = b.over ? [] : previewOrder(b.state, QUEUE_SIZE);
+  private renderQueue(b: Battle, s: Screen) {
+    const { rows, targets, at } = b.over ? { rows: [], targets: new Set<string>(), at: -1 } : queueRows(b, s.k === 'confirm' ? s : null, QUEUE_SIZE);
     // no modo Até o amanhecer, o título conta os turnos que faltam: o mesmo número que a regra usa (todos os turnos)
     const left = b.state.scenario === SURVIVAL_ID ? turnsLeft(b.state) : null;
-    this.queue.replaceChildren(el('li', { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined }, left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`)), ...order.map(({ unit, charge }, i) => {
+    // com a carga em prévia a lista curta não esconde nada até a linha dela (a lista some de novo ao sair do "Executar?")
+    this.queue.classList.toggle('preview', at >= 0);
+    this.queue.replaceChildren(el('li', { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined }, left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`)), ...rows.map(({ unit, charge }, i) => {
       const u = b.state.units.find((x) => x.id === unit)!;
-      const label = charge ? `${unitName(u.def)}: ${abilityName(charge)}` : unitName(u.def);
-      return el('li', { class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}` }, portrait(u.def), el('span', {}, label));
+      const label = i === at ? t(`⏳ ${abilityName(charge!)} sai aqui`, `⏳ ${abilityName(charge!)} goes off here`) : charge ? `${unitName(u.def)}: ${abilityName(charge)}` : unitName(u.def);
+      const mark = !charge && i > 0 && targets.has(unit) ? el('span', { class: 'queue-target' }, t('◎ alvo', '◎ target')) : null;
+      return el('li', { class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}` }, portrait(u.def), el('span', {}, label), mark);
     }));
   }
 
