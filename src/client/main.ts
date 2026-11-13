@@ -761,6 +761,23 @@ function credits(back: () => void = titleScreen) {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
+// Como jogar (noite de 12/11): as regras que mudam a decisão, uma linha cada, para quem chega sem tutorial (as dicas da
+// fase 1 só cobrem mover e agir). Texto conferido contra as regras do motor (turn-queue, combat, grid).
+function howToPlay() {
+  const d = dialog('title', t('Como jogar', 'How to play'), [
+    el('ul', { class: 'legend' },
+      el('li', {}, t('A lista de turnos (canto de cima) mostra quem joga. Quem é mais rápido joga mais vezes.', 'The turn list (top corner) shows who acts. Faster units act more often.')),
+      el('li', {}, t('Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.', 'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.')),
+      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; árvores e entulho protegem de ataques de longe. Só se sobe um nível por passo.', 'From high ground you hit more and reach farther; trees and rubble cover you from ranged attacks. You climb one level per step.')),
+      el('li', {}, t('Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles.', 'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever lands on them.')),
+      el('li', {}, t('Água rasa custa 2 de movimento; água funda não se atravessa.', 'Shallow water costs 2 movement; deep water cannot be crossed.')),
+      el('li', {}, t('Habilidade com carga sai depois: a área acesa em roxo mostra onde vai cair. Saia dela.', 'Charged abilities land later: the purple area shows where. Get out of it.')),
+      el('li', {}, t('Proteja o Farol (o cristal azul) quando houver um. Inimigo de coroa é o chefe: derrubá-lo vence a fase.', 'Protect the Beacon (the blue crystal) when there is one. A crowned enemy is the boss: bringing it down wins the stage.'))),
+    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); titleScreen(); } }, t('Voltar', 'Back')),
+  ]);
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+
 // Tela de título (noite de 12/11): o jogo abria direto numa batalha sem dizer o que era nem que havia campanha
 function titleScreen() {
   setTrack('title');
@@ -784,6 +801,7 @@ function titleScreen() {
         toWorld();
       } }, t('Novo jogo', 'New game')),
       el('button', { type: 'button', class: 'secondary', onclick: go(quickBattle) }, t('Batalha avulsa', 'Quick battle')),
+      el('button', { type: 'button', class: 'secondary', onclick: go(howToPlay) }, t('Como jogar', 'How to play')),
       el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu()) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map')),
       el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits'))),
   ]);
