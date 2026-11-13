@@ -555,7 +555,9 @@ class Game {
 
   private menu() {
     const d = dialog('menu', t('Menu', 'Menu'), [
-      el('p', {}, t('Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).', 'Goal: defeat the enemies and protect the Beacon (the blue crystal).')),
+      // na campanha, o objetivo da fase (sem Farol, de chefe); na batalha avulsa, o de sempre
+      el('p', {}, chapter !== null ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
+        : t('Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).', 'Goal: defeat the enemies and protect the Beacon (the blue crystal).')),
       el('ul', { class: 'legend' },
         el('li', {}, el('i', { class: 'sw move' }), t('Branco: onde o herói pode andar', 'White: where the hero can move')),
         el('li', {}, el('i', { class: 'sw range' }), t('Laranja: alcance da habilidade', 'Orange: ability range')),
