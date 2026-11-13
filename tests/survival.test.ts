@@ -20,7 +20,7 @@ describe('modo Até o amanhecer', () => {
   });
 
   it('o recorde salvo só aceita turnos válidos', () => {
-    expect(parseBest('40')).toBe(40);
+    expect(parseBest(String(SURVIVE_TURNS - 1))).toBe(SURVIVE_TURNS - 1);
     expect(parseBest(String(SURVIVE_TURNS))).toBe(SURVIVE_TURNS);
     for (const bad of ['-1', String(SURVIVE_TURNS + 1), 'x', null, '2.5']) expect(parseBest(bad)).toBe(0);
   });

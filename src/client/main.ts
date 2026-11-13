@@ -506,7 +506,7 @@ class Game {
     if (this.battle.over) this.finish();
   }
 
-  // gira a unidade da vez 90° no sentido do relógio (mapas com direção): é a escolha de para onde olhar antes de passar a vez
+  // gira a unidade da vez 90° no sentido do relógio: é a escolha de para onde olhar antes de passar a vez (todo mapa desde 13/11)
   private face() {
     const f = this.battle.actor.facing;
     if (this.busy || !this.heroTurn || f === undefined) return;
@@ -742,7 +742,7 @@ function confetti() {
 
 // Batalha avulsa: os mapas com Farol (a regra avulsa perde sem ele; Bosque e Passo são só da campanha). A Colina já está
 // montada ao fundo do título, então escolhê-la só fecha; as outras abrem pela URL, cada uma com o próprio save.
-// medido em 13/11 (npm run sim, 300 sementes, IA x IA), com o salto por classe, a água rasa atravessável e o vão: Colina 63%, Cripta 60%, Coração da Cripta 60% (antes 61%, 40% e 59%; no Coração, o vão deixou 25%, a IA do Ladino voava o fosso e caía no Bruto: ele virou um 2º arqueiro)
+// medido em 13/11 (npm run sim, 300 sementes, IA x IA) com dano x1,75, direção e árvores sem passagem: Colina 74%, Escaramuça 85%, Cripta 79%, Coração da Cripta 81% (antes 61%, 40% e 60%; o Coração com o 2º arqueiro no lugar do Bruto, que com o vão caía a 25%)
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
 function quickBattle() {
   const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
@@ -785,7 +785,7 @@ function howToPlay() {
     el('ul', { class: 'legend' },
       el('li', {}, t('A lista de turnos (canto de cima) mostra quem joga. Quem é mais rápido joga mais vezes.', 'The turn list (top corner) shows who acts. Faster units act more often.')),
       el('li', {}, t('Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.', 'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.')),
-      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; árvores e entulho protegem de ataques de longe. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1. Com Salto 2 também se voa 1 casa de água funda ou de buraco.', 'From high ground you hit more and reach farther; trees and rubble cover you from ranged attacks. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1. Jump 2 also clears 1 tile of deep water or a gap.')),
+      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1. Com Salto 2 também se voa 1 casa de água funda ou de buraco.', 'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1. Jump 2 also clears 1 tile of deep water or a gap.')),
       el('li', {}, t('Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles.', 'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever lands on them.')),
       el('li', {}, t('Água rasa custa 2 de movimento; água funda não se atravessa.', 'Shallow water costs 2 movement; deep water cannot be crossed.')),
       el('li', {}, t('Habilidade com carga sai depois: a área acesa em roxo mostra onde vai cair. Saia dela.', 'Charged abilities land later: the purple area shows where. Get out of it.')),

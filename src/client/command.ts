@@ -10,7 +10,7 @@ export type Command = 'move' | 'act' | 'wait' | 'status';
 export const COMMANDS: Command[] = ['move', 'act', 'wait', 'status'];
 
 // Telas do turno do herói, na ordem do FFT: menu → (submenu de Agir) → mapa (escolher casa) → "Executar?" → menu.
-// Esperar leva à escolha de direção nos mapas com direção.
+// Esperar leva à escolha de direção (todo mapa desde 13/11).
 export type Screen =
   | { k: 'menu'; index: number }
   | { k: 'abilities'; index: number }

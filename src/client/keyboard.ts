@@ -82,7 +82,7 @@ export const keyHelp = (): [string, string][] => [
   ['C', t('Status: ficha da unidade sob o cursor (ou de quem joga)', 'Status: sheet of the unit under the cursor (or the active one)')],
   ['Tab · Shift+Tab', t('pular de unidade em unidade (vida e alcance)', 'jump between units (HP and reach)')],
   ['Z', t('desfazer', 'undo')],
-  ['T', t('virar a unidade da vez (só nos mapas com direção)', 'turn the active unit (only on maps with facing)')],
+  ['T', t('virar a unidade da vez', 'turn the active unit')],
   ['P', t('Esperar: termina o turno; quem fez menos joga antes de novo (sem ter agido, pede P de novo)', 'Wait: ends the turn; doing less brings the next turn sooner (without acting, asks for P again)')],
   ['R · Shift+R', t('girar a câmera 90°', 'rotate the camera 90°')],
   ['Q · E', t('afastar · aproximar', 'zoom out · zoom in')],

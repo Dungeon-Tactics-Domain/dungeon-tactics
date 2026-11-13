@@ -50,7 +50,7 @@ export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTER
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 72% → 66% → 39% → 30% no Ato I e 56% → 31% no Ato II desde o salto por classe, o vão e a água rasa atravessável (13/11; sem o vão, a fase 2 dava 76% e a 4, 40%): o Soldado da fase 2 e o do Passo com 60 de vida, Soldado no lugar do Lacaio e os 2 arqueiros inteiros na Cripta, Guarda da cripta com 45, Vesper da fase 5 com 70 e o Vigia do cume com 33. Antes: 83% → 71% → 47% → 42% → 35% no Ato I (Colina com relevo desde 13/11, e o Vesper da fase 5 de 95 para 85 de vida: no relevo novo com 95 dava 29%, com 80 dava 40%; Cripta com relevo e um Arqueiro novato e Coração com relevo desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 47% → 26% no Ato II (Passo com relevo em zigue-zague desde 13/11: com ele a fase 7 caía a 4% com o cume no 5 e a 14% no 4, por isso o Vigia do cume, um arqueiro com 20 de vida; antes 39% → 21%; o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 79% → 70% → 62% → 45% → 42% no Ato I e 35% → 21% no Ato II desde o dano x1,75, a direção e as árvores sem passagem (13/11, batalhas de 33 a 53 turnos, antes 50 a 75; a fase 3 caiu a 16% e voltou com 2 arqueiros e 2 Lacaios de 28 de vida, a 5 subiu a 60% e voltou com o Vesper de 95). Antes disso, 83% → 72% → 66% → 39% → 30% e 56% → 31%, com o salto por classe, o vão e a água rasa (sem o vão, a fase 2 dava 76% e a 4, 40%): o Soldado da fase 2 e o do Passo com 60 de vida, Soldado no lugar do Lacaio e os 2 arqueiros inteiros na Cripta, Guarda da cripta com 45, Vesper da fase 5 com 70 e o Vigia do cume com 33. Antes: 83% → 71% → 47% → 42% → 35% no Ato I (Colina com relevo desde 13/11, e o Vesper da fase 5 de 95 para 85 de vida: no relevo novo com 95 dava 29%, com 80 dava 40%; Cripta com relevo e um Arqueiro novato e Coração com relevo desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 47% → 26% no Ato II (Passo com relevo em zigue-zague desde 13/11: com ele a fase 7 caía a 4% com o cume no 5 e a 14% no 4, por isso o Vigia do cume, um arqueiro com 20 de vida; antes 39% → 21%; o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -103,7 +103,7 @@ export const CHAPTERS: Chapter[] = [
     title: ['A Cripta Alagada', 'The Flooded Crypt'],
     song: 'crypt',
     light: 0.5, // debaixo do lago: meia-luz azulada ("cheiro de vela apagada")
-    setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('dark_mage'), foe('soldier')] },
+    setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('minion', { hp: 28 }), foe('minion', { hp: 28 })] },
     intro: [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
       L('tess', 'A água do canal é rasa, mas pesa: cada passo nela custa o dobro.', 'The canal water is shallow, but heavy: every step in it costs double.'),
@@ -141,7 +141,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'boss',
     light: 0.3, // "o Véu já desce pela Colina": a mesma Colina da fase 2, agora no escuro
     boss: true,
-    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(70, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
+    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(95, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),
