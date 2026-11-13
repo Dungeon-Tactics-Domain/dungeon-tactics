@@ -327,7 +327,7 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world-art .rock { fill: #8a6f4d; stroke: #3d3423; stroke-width: .8; vector-effect: non-scaling-stroke; }
 .world-art .shade { fill: #5e4a33; }
 .world-art .snow { fill: #f4f6f4; }
-.world-compass { position: absolute; right: 2%; bottom: 3%; width: 84px; height: 84px; pointer-events: none; }
+.world-compass { position: absolute; left: 1.5%; bottom: 2%; /* à esquerda: o painel do ponto cobre o canto de baixo à direita */ width: 84px; height: 84px; pointer-events: none; }
 .world-compass circle { fill: none; stroke: #e9dcae; stroke-width: 1.5; opacity: .8; }
 .world-compass .star { fill: #e9dcae; stroke: #3d3423; stroke-width: 1.5; }
 .world-compass .star-shade { fill: #9c8a5c; }
@@ -349,8 +349,8 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world-panel { position: absolute; right: 24px; bottom: 24px; width: min(360px, calc(100% - 48px)); padding: 12px 14px; color: var(--ink); display: grid; gap: 6px; }
 .world-place { font: 400 var(--fs-lg)/1.2 var(--font-px); }
 .world-kind { margin: 0; color: var(--ink-muted); font-size: var(--fs-sm); }
-.world-actions { display: flex; gap: 8px; }
-.world-actions .item { flex: 1; justify-content: center; padding-left: 28px; }
+.world-actions { display: flex; flex-wrap: wrap; gap: 8px; } /* na cidade são 5 botões (Entrar, Grupo, Cidade, Loja, Título): numa linha só o Loja e o Título saíam cortados */
+.world-actions .item { flex: 1 1 28%; justify-content: center; padding-left: 28px; }
 .world-help { position: absolute; left: 12px; bottom: 24px; margin: 0; padding: 8px 12px; color: var(--ink-muted); font-size: var(--fs-sm); }
 @media (prefers-reduced-motion: reduce) { .world-token { transition: none; animation: none; } }
 
