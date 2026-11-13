@@ -4,7 +4,7 @@
 import { SPEAKERS, type Line } from './campaign.ts';
 import type { Hero } from './hero.ts';
 import { portrait } from './hud.ts';
-import { LANG } from './i18n.ts';
+import { LANG, t } from './i18n.ts';
 import { el } from './icons.ts';
 import { blip } from './sound.ts';
 import { store } from './store.ts';
@@ -28,7 +28,9 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
     const face = el('div', { class: 'talk-face' });
     const name = el('strong', { class: 'talk-name' });
     const text = el('p', { class: 'talk-text', 'aria-live': 'polite' });
-    const box = el('button', { type: 'button', class: 'panel talk' }, face, el('div', { class: 'talk-body' }, name, text), el('span', { class: 'talk-next', 'aria-hidden': 'true' }, '▼')) as HTMLButtonElement;
+    const box = el('button', { type: 'button', class: 'panel talk' }, face, el('div', { class: 'talk-body' }, name, text), el('span', { class: 'talk-next', 'aria-hidden': 'true' }, '▼'),
+      // dica discreta: quem não sabia que Esc pulava a conversa inteira passava fala por fala
+      el('span', { class: 'talk-keys' }, t('Enter segue · Esc pula', 'Enter next · Esc skip'))) as HTMLButtonElement;
     const overlay = el('div', { class: `overlay talk-overlay${dark ? ' dark' : ''}` }, ...(title ? [el('div', { class: 'panel talk-title' }, title)] : []), box);
     const full = () => (LANG === 'pt' ? lines[i].pt : lines[i].en);
     const typing = () => shown < full().length;

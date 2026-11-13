@@ -298,3 +298,4 @@ button[hidden] { display: none; }
 .fade-out { position: fixed; inset: 0; background: #08050e; z-index: 9; pointer-events: none; animation: fade-in 300ms ease-in forwards; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .talk-face.pop, .fade-out { animation: none; } }
+.talk-keys { position: absolute; right: 40px; bottom: 8px; font-size: var(--fs-sm); color: var(--ink-muted); } .talk-overlay.dark .talk-keys { color: var(--paper-lo); right: 50%; transform: translateX(50%); bottom: -28px; } /* dica de teclas da conversa (talk.ts) */
