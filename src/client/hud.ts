@@ -8,7 +8,7 @@
 // Redesenha tudo a cada mudança (é pouco DOM).
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { COMBAT, type Preview } from '../shared/battle/combat.ts';
+import { COMBAT, simulatePush, type Preview } from '../shared/battle/combat.ts';
 import { TERRAIN, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
@@ -326,10 +326,13 @@ export class BattleHud {
       if (a.ally && !tg.healMax) return el('p', {}, `${unitName(u.def)}: ${abilityDetail(s.ability)}`);
       const after = tg.healMax ? range([Math.min(max, u.hp + tg.healMin), Math.min(max, u.hp + tg.healMax)]) : range([Math.max(0, u.hp - tg.dmgMax), Math.max(0, u.hp - tg.dmgMin)]);
       const warn = u.team === b.actor.team && !tg.healMax ? t(' · ALIADO!', ' · ALLY!') : '';
+      // empurrão: o dano extra de batida, queda e espinhos, para o jogador ver o combo antes de confirmar (noite de 12/11)
+      const shove = a.push ? simulatePush(b.grid, b.state, u, p.center, b.actor.pos, a.push) : null;
+      const extra = shove?.dmg ? t(` · empurrão +${shove.dmg}${shove.events.some((e) => e.k === 'spike') ? ' (espinhos!)' : ''}`, ` · push +${shove.dmg}${shove.events.some((e) => e.k === 'spike') ? ' (spikes!)' : ''}`) : '';
       return el('p', {}, el('strong', {}, unitName(u.def)), ' ',
         tg.healMax ? t(`cura ${range([tg.healMin, tg.healMax])}`, `heals ${range([tg.healMin, tg.healMax])}`)
           : t(`acerto ${tg.chance}% · dano ${range([tg.dmgMin, tg.dmgMax])}`, `hit ${tg.chance}% · damage ${range([tg.dmgMin, tg.dmgMax])}`),
-        ` · ${t('vida', 'HP')} ${u.hp} → ${after}${warn}`);
+        extra, ` · ${t('vida', 'HP')} ${u.hp} → ${after}${warn}`);
     });
     if (a.charge) rows.push(el('p', { class: 'unit-note' }, a.panel ? t(`Sai em ${a.charge} tiques; se o alvo sair da casa, erra.`, `Goes off in ${a.charge} ticks; misses if the target leaves the tile.`)
       : t(`Sai em ${a.charge} tiques e segue o alvo.`, `Goes off in ${a.charge} ticks and follows the target.`)));
