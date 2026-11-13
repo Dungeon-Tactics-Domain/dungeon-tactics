@@ -652,6 +652,7 @@ function confetti() {
 
 // Tela de título (noite de 12/11): o jogo abria direto numa batalha sem dizer o que era nem que havia campanha
 function titleScreen() {
+  setTrack('title');
   const go = (fn: () => void) => () => { d.close(); fn(); };
   const d = dialog('title', 'Dungeon Tactics', [
     el('p', { class: 'title-sub' }, t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes')),
@@ -669,7 +670,7 @@ function titleScreen() {
         d.close();
         toWorld();
       } }, t('Novo jogo', 'New game')),
-      el('button', { type: 'button', class: 'secondary', onclick: go(() => undefined) }, t('Batalha avulsa (Colina do Farol)', 'Quick battle (Beacon Hill)')),
+      el('button', { type: 'button', class: 'secondary', onclick: go(() => setTrack(null)) }, t('Batalha avulsa (Colina do Farol)', 'Quick battle (Beacon Hill)')),
       el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu()) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'))),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
@@ -685,10 +686,12 @@ async function worldScreen(host: HTMLElement) {
   // jogo novo (sem herói salvo): a abertura da história e a criação do protagonista antes do mapa
   let hero = savedHero();
   if (!hero) {
+    setTrack('title');
     await talk(INTRO, { dark: true });
     hero = await createHero(host);
     store.set(HERO_KEY, JSON.stringify(hero));
   }
+  setTrack('world');
   let done = parseWorld(store.get(WORLD_KEY));
   const enter = async (i: number) => {
     const node = WORLD[i];

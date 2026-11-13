@@ -37,6 +37,11 @@ const buffers = new Map<string, Promise<AudioBuffer | null>>();
 let track: SongId | null = null;
 let synth: ReturnType<typeof playSong> | null = null;
 export function setTrack(id: SongId | null) {
+  // trocou de música: a sintetizada anterior para (sem isto, título e batalha tocavam juntos)
+  if (id !== track) {
+    synth?.stop();
+    synth = null;
+  }
   track = id;
   applyMusic();
 }

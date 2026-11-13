@@ -20,6 +20,18 @@ export const SONGS = {
     lead: 'A4 - C5 - B4 - E4 -  A4 - C5 - D5 - B4 -  C5 - B4 - A4 - G#4 -  A4 - - - E4 - - -',
     bass: 'A2 - - - E2 - - -  F2 - - - E2 - - -  D2 - - - E2 - - -  A2 - - - A2 - - -',
   },
+  // Título: sol maior, devagar e solene, subindo até o sol agudo (a abertura do jogo)
+  title: {
+    bpm: 88,
+    lead: 'G4 - B4 - D5 - - -  C5 - B4 - A4 - - -  B4 - D5 - G5 - F#5 -  G5 - - - D5 - - -',
+    bass: 'G2 - - - D3 - - -  A2 - - - D3 - - -  E2 - - - B2 - - -  C3 - D3 - G2 - - -',
+  },
+  // Mapa: fá maior, passo de viagem, melodia que volta sempre para o fá (o caminho entre as fases)
+  world: {
+    bpm: 108,
+    lead: 'F4 A4 C5 A4 Bb4 - A4 G4  F4 A4 C5 F5 E5 - C5 -  D5 C5 Bb4 A4 G4 - A4 Bb4  A4 G4 F4 E4 F4 - - -',
+    bass: 'F2 - C3 - F2 - C3 -  F2 - C3 - C2 - G2 -  Bb1 - F2 - Bb1 - F2 -  C2 - G2 - F2 - - -',
+  },
   // Neve: mi menor, calma e aberta, notas longas (Ato II, Passo Gelado)
   snow: {
     bpm: 96,
