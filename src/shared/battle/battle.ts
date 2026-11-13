@@ -69,13 +69,15 @@ export class Battle {
     const path = pathTo(this.reach(), to);
     if (!path) return [];
     this.remember(false);
+    const from = this.actor.pos;
     // com direção, quem anda termina olhando para onde ia
-    if (this.actor.facing !== undefined) this.actor.facing = facingTo(path.at(-2) ?? this.actor.pos, to);
+    if (this.actor.facing !== undefined) this.actor.facing = facingTo(path.at(-2) ?? from, to);
     this.actor.pos = to;
     // andar desfaz a própria carga (como a Carga do Arqueiro, BMG 2.2; para as outras, suposição)
     this.state.charges = this.state.charges.filter((c) => c.unit !== this.actor.id);
     this.state.turn.moved = true;
-    return [{ k: 'move', unit: this.actor.id, path }];
+    // o evento leva a casa de saída na frente (13/11): sem ela a animação começava no 1º passo e o boneco "teletransportava"
+    return [{ k: 'move', unit: this.actor.id, path: [from, ...path] }];
   }
 
   act(abilityId: string, target: Pos): BattleEvent[] {

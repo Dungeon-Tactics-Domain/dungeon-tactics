@@ -22,6 +22,12 @@ describe('turno do jogador', () => {
     expect(b.act('strike', at(1, 1))).toEqual([]); // já agiu
   });
 
+  it('o evento de andar começa na casa de saída (a animação parte dali, sem pular para o 1º passo)', () => {
+    const b = duel();
+    const [e] = b.move(at(1, 2));
+    expect(e.k === 'move' && e.path).toEqual([at(0, 1), at(0, 2), at(1, 2)]);
+  });
+
   it('recusa destino fora do alcance e habilidade que o ator não tem', () => {
     const b = duel();
     expect(b.move(at(5, 2))).toEqual([]);

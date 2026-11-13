@@ -417,7 +417,7 @@ class Game {
     if (e.k === 'move' && enemy) {
       const to = e.path.at(-1)!;
       this.scene.setCursor(to);
-      await show({ tiles: [{ pos: to, kind: 'target' }], path: e.path, preview: null }, TIMING.enemyDestination);
+      await show({ tiles: [{ pos: to, kind: 'target' }], path: e.path.slice(1), preview: null }, TIMING.enemyDestination); // sem o ponto embaixo de quem anda
       this.scene.setCursor(null);
       this.sound(e);
     } else if (e.k === 'attack') {
