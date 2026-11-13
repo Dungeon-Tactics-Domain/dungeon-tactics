@@ -235,8 +235,9 @@ export class BattleScene {
   // casa (x, y) da batalha → mundo: x no eixo X, y no eixo Z, mapa centrado na origem
   private world(p: Pos): THREE.Vector3 {
     const t = tileAt(this.grid, p);
-    // na rampa a unidade fica no meio da subida
-    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0)) * this.step, p.y - this.grid.height / 2 + 0.5);
+    // na rampa a unidade fica no meio da subida; na água funda, rebaixada como o desenho (cursor e marcas não flutuam)
+    const drop = (t.depth ?? 0) >= 2 ? DEEP_DROP : 0;
+    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step, p.y - this.grid.height / 2 + 0.5);
   }
 
   private buildBoard(pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>) {
