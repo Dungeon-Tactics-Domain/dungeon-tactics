@@ -69,6 +69,7 @@ export const CHAPTERS: Chapter[] = [
       L('lia', 'Mercenários. E esse arqueiro de ossos... só um homem paga com mortos.', 'Mercenaries. And that bone archer... only one man pays with the dead.'),
       L('merc', 'Nada pessoal. O mago sombrio paga bem por quem anda com cristais.', 'Nothing personal. The dark mage pays well for anyone carrying crystals.'),
       L('tess', 'Então que ele pague o enterro. Formação!', 'Then let him pay for the burial. Formation!'),
+      L('hero', 'Ninguém encosta na caravana. Comigo!', 'No one touches the caravan. With me!'),
       // dicas da 1ª fase: o jogo ainda não tem tutorial; quem abre a campanha aprende o básico aqui
       L('narr', 'Dica: na sua vez, Mover anda até uma casa clara e Agir usa uma habilidade. Dá para fazer os dois, em qualquer ordem.', 'Tip: on your turn, Move walks to a lit tile and Act uses an ability. You can do both, in any order.'),
       L('narr', 'Dica: o rio fundo não se atravessa. Use a ponte ou o vau raso, que gasta mais movimento. Segure Enter (ou toque em ⏩) para a vez do inimigo passar rápido.', 'Tip: the deep river cannot be crossed. Use the bridge or the shallow ford, which costs more movement. Hold Enter (or tap ⏩) to speed up the enemy turn.'),
@@ -88,6 +89,7 @@ export const CHAPTERS: Chapter[] = [
       L('tess', 'Eles já estão subindo. Um bruto, um mago e soldados.', 'They are already climbing. A brute, a mage and soldiers.'),
       L('odo', 'Se o cristal cair, o Véu cobre o vale até o anoitecer!', 'If the crystal falls, the Veil covers the valley by nightfall!'),
       L('bran', 'Ninguém encosta no Farol. Segurem a subida.', 'No one touches the Beacon. Hold the climb.'),
+      L('hero', 'Eu fico perto do cristal. Quem subir, cai.', 'I stay by the crystal. Whoever climbs, falls.'),
     ],
     outro: [
       L('lia', 'O mago fugiu para o norte... para a cripta velha, debaixo do lago.', 'The mage ran north... to the old crypt, under the lake.'),
@@ -104,6 +106,7 @@ export const CHAPTERS: Chapter[] = [
       L('tess', 'Cuidado com a água funda no meio: ninguém atravessa ali.', 'Watch the deep water in the middle: no one crosses there.'),
       L('lia', 'Arqueiros nos pontos altos. Ele sempre gostou de altura.', 'Archers on the high ground. He always liked height.'),
       L('odo', 'E eu sempre gostei de fogo. Vamos ver quem gosta mais.', 'And I always liked fire. Let us see who likes theirs more.'),
+      L('hero', 'Pelas pontes, um de cada vez. E cuidado com os espinhos no meio.', 'Over the bridges, one at a time. And mind the spikes in the middle.'),
     ],
     outro: [
       L('bran', 'Uma escada para baixo. A cripta continua.', 'A stairway down. The crypt goes deeper.'),
@@ -121,6 +124,7 @@ export const CHAPTERS: Chapter[] = [
       L('vesper', 'Os Faróis prendem os mortos longe de quem os ama. Eu só abro a porta.', 'The Beacons keep the dead away from those who love them. I only open the door.'),
       L('bran', 'E deixa o vale inteiro do lado de fora. Chega de conversa.', 'And leave the whole valley outside. Enough talk.'),
       L('narr', 'Objetivo: derrube o Vesper. Quando ele cair, os outros recuam.', 'Goal: bring Vesper down. When he falls, the rest retreat.'),
+      L('hero', 'Então vamos direto nele. O resto é distração.', 'Then we go straight for him. The rest is a distraction.'),
     ],
     outro: [
       L('vesper', 'Vocês venceram aqui. Mas o último Farol já está no meu caminho.', 'You won here. But the last Beacon is already on my path.'),
@@ -140,6 +144,7 @@ export const CHAPTERS: Chapter[] = [
       L('lia', 'Tess, Odo, no mago. Bran, segure o bruto longe do cristal.', 'Tess, Odo, on the mage. Bran, keep the brute away from the crystal.'),
       L('bran', 'Pela Colina. Pelo vale. Agora!', 'For the Hill. For the valley. Now!'),
       L('narr', 'Objetivo: derrube o Vesper e não deixe o Farol cair.', 'Goal: bring Vesper down and do not let the Beacon fall.'),
+      L('hero', 'Esta é a última luz do vale. Ela não apaga hoje.', 'This is the last light in the valley. It does not go out today.'),
     ],
     outro: [
       L('vesper', 'A porta... fechou de novo...', 'The door... it closed again...'),
@@ -159,6 +164,7 @@ export const CHAPTERS: Chapter[] = [
       L('bran', 'Subida longa e inimigo no alto. Do jeito que eu odeio.', 'A long climb with the enemy up high. Just the way I hate it.'),
       L('tess', 'Lá de cima eles enxergam e alcançam mais longe. Usem as árvores secas para se cobrir.', 'From up there they see and reach farther. Use the dead trees for cover.'),
       L('lia', 'Esses mortos não usam as cores do Vesper. Alguém mais está chamando eles.', 'These dead do not wear Vesper\'s colors. Someone else is calling them.'),
+      L('hero', 'Subimos juntos, devagar. Quem chegar ao cume primeiro espera os outros.', 'We climb together, slowly. Whoever reaches the summit first waits for the rest.'),
     ],
     outro: [
       L('odo', 'No cume... uma figura. Parece o Vesper, mas é feita de névoa.', 'On the summit... a figure. It looks like Vesper, but it is made of mist.'),
@@ -178,6 +184,7 @@ export const CHAPTERS: Chapter[] = [
       L('bran', 'Grande desse jeito, não sai do lugar. Cerquem e batam de todos os lados!', 'That big, it cannot move. Surround it and strike from every side!'),
       L('lia', 'A mesma regra de sempre: quando a área acender, saiam dela.', 'Same rule as always: when the area lights up, get out of it.'),
       L('narr', 'Objetivo: derrube A Sombra.', 'Goal: bring down The Shade.'),
+      L('hero', 'Por Vauclair. Por todo mundo que o Véu levou.', 'For Vauclair. For everyone the Veil took.'),
     ],
     outro: [
       L('shade', 'A luz... de novo...', 'The light... again...'),
