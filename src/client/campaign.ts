@@ -15,6 +15,7 @@ export interface Line {
 export interface Chapter {
   title: [string, string];
   song: SongId; // música da fase (music.ts)
+  boss?: true; // vence ao derrubar o 1º inimigo da lista (chapterScenario)
   setup: DevSetup;
   intro: Line[];
   outro: Line[];
@@ -44,7 +45,7 @@ export const learned = (n: number) => n + 1 >= CHAPTERS.length ? [] : CHAPTERS[n
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 47% → 25% no Ato I e 51% → 23% no Ato II, caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 56% → 44% → 37% no Ato I e 51% → 26% no Ato II (4, 5 e 7 são de chefe), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -109,12 +110,14 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
     song: 'boss',
-    setup: { map: 'flooded_crypt', heroes: party(3), enemies: [vesper(45, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
+    boss: true,
+    setup: { map: 'flooded_crypt', heroes: party(3), enemies: [vesper(65, 9), foe('dark_mage'), foe('skeleton_archer'), foe('minion')] },
     intro: [
       L('vesper', 'Lia. Voltou para casa e trouxe amigos.', 'Lia. You came home, and you brought friends.'),
       L('lia', 'Vim apagar o que você acendeu, Vesper.', 'I came to put out what you lit, Vesper.'),
       L('vesper', 'Os Faróis prendem os mortos longe de quem os ama. Eu só abro a porta.', 'The Beacons keep the dead away from those who love them. I only open the door.'),
       L('bran', 'E deixa o vale inteiro do lado de fora. Chega de conversa.', 'And leave the whole valley outside. Enough talk.'),
+      L('narr', 'Objetivo: derrube o Vesper. Quando ele cair, os outros recuam.', 'Goal: bring Vesper down. When he falls, the rest retreat.'),
     ],
     outro: [
       L('vesper', 'Vocês venceram aqui. Mas o último Farol já está no meu caminho.', 'You won here. But the last Beacon is already on my path.'),
@@ -125,13 +128,15 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Último Farol', 'The Last Beacon'],
     song: 'boss',
-    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(65, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
+    boss: true,
+    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(95, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),
       L('odo', 'Ele está juntando o Véu numa onda! Quando a área acender, saiam de dentro dela!', 'He is gathering the Veil into a wave! When the area lights up, get out of it!'),
       L('lia', 'Tess, Odo, no mago. Bran, segure o bruto longe do cristal.', 'Tess, Odo, on the mage. Bran, keep the brute away from the crystal.'),
       L('bran', 'Pela Colina. Pelo vale. Agora!', 'For the Hill. For the valley. Now!'),
+      L('narr', 'Objetivo: derrube o Vesper e não deixe o Farol cair.', 'Goal: bring Vesper down and do not let the Beacon fall.'),
     ],
     outro: [
       L('vesper', 'A porta... fechou de novo...', 'The door... it closed again...'),
@@ -161,11 +166,13 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Sombra no Cume', 'The Shade on the Summit'],
     song: 'boss',
+    boss: true,
     setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('dark_mage', { name: 'A Sombra', en: 'The Shade', hp: 95, speed: 9, abilities: ['firebolt', 'shadow_wave'] }), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
     intro: [
       L('shade', 'Cada Farol que vocês acendem me empurra para cá. Aqui em cima não sobrou luz nenhuma.', 'Every Beacon you light pushes me up here. Up here, there is no light left at all.'),
       L('odo', 'Sobrou a gente. E eu trouxe fogo.', 'There is us. And I brought fire.'),
       L('lia', 'A mesma regra de sempre: quando a área acender, saiam dela.', 'Same rule as always: when the area lights up, get out of it.'),
+      L('narr', 'Objetivo: derrube A Sombra.', 'Goal: bring down The Shade.'),
     ],
     outro: [
       L('shade', 'A luz... de novo...', 'The light... again...'),
@@ -178,7 +185,20 @@ export const CHAPTERS: Chapter[] = [
 ];
 
 export const chapterId = (n: number) => `camp${n}`;
-export const chapterScenario = (n: number): Scenario => buildDevScenario(CHAPTERS[n].setup, chapterId(n), CHAPTERS[n].title);
+// Fase de chefe (boss: true, o 1º inimigo da lista, id e0): derrubar o chefe vence, mesmo com outros de pé; perder todos
+// os heróis (ou o Farol, se houver) perde. Pede outra tática: abrir caminho até ele em vez de limpar o mapa.
+export function chapterScenario(n: number): Scenario {
+  const s = buildDevScenario(CHAPTERS[n].setup, chapterId(n), CHAPTERS[n].title);
+  if (CHAPTERS[n].boss) {
+    const beacon = s.spawns.some((sp) => sp.def === OBJECTIVE_DEF);
+    s.rules = {
+      outcome: (state) => !state.units.some((u) => u.id === 'e0') ? 'victory'
+        : !state.units.some((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF) || (beacon && !state.units.some((u) => u.def === OBJECTIVE_DEF)) ? 'defeat'
+        : 'ongoing',
+    };
+  }
+  return s;
+}
 
 // Estrelas da fase (0 a 3), para ter motivo de rejogar: vencer; ninguém caiu; e o Farol inteiro (nos mapas com Farol) ou,
 // sem Farol, todos os heróis com mais da metade da vida. A melhor nota de cada fase fica salva em STARS_KEY.

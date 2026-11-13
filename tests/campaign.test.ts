@@ -20,6 +20,16 @@ describe('campanha Cinzas do Farol', () => {
     });
   });
 
+  it('fase de chefe: derrubar o 1º inimigo vence com outros de pé; sem heróis ou sem Farol, perde', () => {
+    const n = CHAPTERS.findIndex((c) => c.boss && c.setup.map === 'beacon_hill');
+    const s = chapterScenario(n);
+    const st = Battle.start(s, 1).state;
+    const outcome = s.rules!.outcome!;
+    expect(outcome(st)).toBe('ongoing');
+    expect(outcome({ ...st, units: st.units.filter((u) => u.id !== 'e0') })).toBe('victory');
+    expect(outcome({ ...st, units: st.units.filter((u) => u.team !== 'hero' || u.def === 'beacon') })).toBe('defeat');
+    expect(outcome({ ...st, units: st.units.filter((u) => u.def !== 'beacon') })).toBe('defeat');  });
+
   it('o Bruto da campanha (ficha própria) tem a altura do Bruto', () => {
     const s = chapterScenario(1);
     const brute = s.spawns.find((sp) => UNIT_DEFS[sp.def].name === UNIT_DEFS.brute.name)!;
