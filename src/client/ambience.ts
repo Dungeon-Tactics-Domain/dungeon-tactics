@@ -242,7 +242,7 @@ export class Ambience {
     const textured = !!s?.map; // só os modelos (árvores, pedras) ganham a textura por cima; o chão não
     mat.customProgramCacheKey = () => (textured && this.detailTex ? 'amb-detalhe' : 'amb');
     mat.onBeforeCompile = (sh) => {
-      if (textured && this.detailTex) addDetail(sh, this.detailTex, 1.2); // detail.ts
+      if (textured && this.detailTex) addDetail(sh, this.detailTex, 1.4, 0.9, true); // detail.ts: folha na copa, casca no tronco
       Object.assign(sh.uniforms, this.u);
       sh.vertexShader = FOG_HEAD + sh.vertexShader.replace('#include <project_vertex>', FOG_VERT);
       sh.fragmentShader = FOG_HEAD + sh.fragmentShader.replace('#include <map_fragment>', SNOW_FRAG).replace('#include <tonemapping_fragment>', FOG_FRAG);
@@ -525,8 +525,8 @@ export class Ambience {
 
   // `tex`: texturas do terreno (terrain.ts) para o granulado dos modelos de fora; antes do 1º quadro, quando os
   // materiais ainda não compilaram
-  mount(scene: THREE.Scene, tex: DetailTextures | null = null): this {
-    this.detailTex = tex;
+  mount(scene: THREE.Scene, tex: (DetailTextures & { bark: THREE.Texture }) | null = null): this {
+    this.detailTex = tex && { leaves: tex.leaves, dirt: tex.bark };
     this.scene = scene;
     // as duas luzes da cena (céu e sol): o clima do mapa escurece e vira o sol por cima da luz da fase
     this.sky = scene.children.find((o): o is THREE.HemisphereLight => (o as THREE.HemisphereLight).isHemisphereLight);

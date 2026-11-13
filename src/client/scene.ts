@@ -669,7 +669,7 @@ export class BattleScene {
     m.customProgramCacheKey = () => `copa${CUT_MAX}${this.terrainTex ? 't' : ''}`;
     const tex = this.terrainTex;
     m.onBeforeCompile = (s) => {
-      if (tex) addDetail(s, tex, 1.2); // folhas na copa e terra no tronco (detail.ts)
+      if (tex) addDetail(s, { leaves: tex.leaves, dirt: tex.bark }, 1.4, 0.9, true); // folhas na copa e terra no tronco (detail.ts)
       Object.assign(s.uniforms, { cutPoints: this.cuts.points, cutCount: this.cuts.count, cutNormals: this.cuts.normals });
       s.fragmentShader = s.fragmentShader
         .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`)
