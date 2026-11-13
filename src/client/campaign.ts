@@ -50,7 +50,7 @@ export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTER
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 47% → 42% → 37% no Ato I (Cripta com relevo e um Arqueiro novato e Coração com relevo desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 39% → 21% no Ato II (o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 71% → 47% → 42% → 35% no Ato I (Colina com relevo desde 13/11, e o Vesper da fase 5 de 95 para 85 de vida: no relevo novo com 95 dava 29%, com 80 dava 40%; Cripta com relevo e um Arqueiro novato e Coração com relevo desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 39% → 21% no Ato II (o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -141,7 +141,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'boss',
     light: 0.3, // "o Véu já desce pela Colina": a mesma Colina da fase 2, agora no escuro
     boss: true,
-    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(95, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
+    setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(85, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
       L('narr', 'A neve virou cinza. O Véu já desce pelo lado norte da Colina.', 'The snow has turned to ash. The Veil is already creeping down the north side of the Hill.'),
       L('vesper', 'Olhem bem para a luz. É a última vez.', 'Take a good look at the light. It is the last time.'),

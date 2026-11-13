@@ -57,9 +57,10 @@ function dressBeaconHill(grid: Grid, beacon: { x: number; y: number }): Grid {
       : t.terrain === 'forest' ? (cold ? ((x + y) % 2 ? 'bare1' : 'bare2') : ['tree', 'tree2', 'tree3', 'tree4'][(x * 7 + y * 3) % 4])
       : near === 0 ? 'gold'
       : near <= 2 ? 'sand'
-      : cold ? (t.h >= 2 ? 'snow_rock' : 'snow')
-      : t.h >= 3 ? 'summit'
-      : t.h >= 2 ? 'rock'
+      // desde o relevo de 13/11 o chão comum fica no 2: rocha só a partir do 3, senão o lado dos heróis virava pedra
+      : cold ? (t.h >= 3 ? 'snow_rock' : 'snow')
+      : t.h >= 4 ? 'summit'
+      : t.h >= 3 ? 'rock'
       : 'grass';
     return { ...t, look };
   });
@@ -67,8 +68,11 @@ function dressBeaconHill(grid: Grid, beacon: { x: number; y: number }): Grid {
 }
 
 // A 1ª batalha (marco 3, liberado pelo Fernando em 11/11): mapa 20x20. Os heróis e o farol nascem no morro do canto de
-// baixo, os inimigos no platô do canto de cima; no meio, uma colina de 3 níveis com muros e floresta dá posição alta
-// e cobertura para disputar. Só rampas de 1 nível: todo canto se alcança a pé.
+// baixo, os inimigos no platô do canto de cima; no meio, uma colina com muros e floresta dá posição alta e cobertura.
+// Relevo refeito em 13/11 ("fases muito retas"; gerado por um roteiro de retângulos, conferido a pé com salto 1): vale
+// seco na diagonal com a margem sul em penhasco de 2 e 5 rampas; colina do meio com pico 5, que cai em penhasco ao
+// norte e a leste e desce em degraus ao sul e a oeste; platô dos inimigos no 3 com 3 rampas. Todo canto se alcança a pé.
+// Platô no 4 deixava a fase 2 em 56% (antes 81%); no 3, 71%
 export const FIRST_BATTLE: Scenario = {
   id: 'beacon_hill',
   name: 'Colina do Farol',
@@ -98,26 +102,26 @@ export const FIRST_BATTLE: Scenario = {
         '....................',
       ],
       [
-        '00000000001111100000',
-        '00000000011222110000',
-        '00000000012232110000',
-        '00001100012222100000',
-        '00011110001111000000',
-        '00012210000000000000',
-        '00011100001110000000',
-        '00000000012221000000',
-        '00000000123321000000',
-        '00000001233321000000',
-        '00000001223221000000',
-        '00000000122210001100',
-        '00000000011100012210',
-        '00110000000000012210',
-        '01221000000000001100',
-        '01221000000000000000',
-        '00110000001110000000',
-        '00000000012210000000',
-        '00000000011100000000',
-        '00000000000000000000',
+        '22222222222221333333',
+        '11111111111112333333',
+        '11222221111111333333',
+        '11233321111112333333',
+        '11233321111111333333',
+        '11233311111111333333',
+        '11222213333331211111',
+        '11111123444431111111',
+        '11111123455431111111',
+        '01111123455431111111',
+        '00000123444431111111',
+        '21200000222221222222',
+        '22222100000111222222',
+        '22222222220000022222',
+        '22222222221220000022',
+        '22222222222221220000',
+        '22222222222222222122',
+        '22222222222233333333',
+        '33333222222233333333',
+        '33333222222233333333',
       ],
     ),
     { x: 2, y: 15 }, // casa do Farol (spawn "beacon")
