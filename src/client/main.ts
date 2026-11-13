@@ -640,6 +640,8 @@ class Game {
         } }, t('Reiniciar batalha', 'Restart battle')),
         el('button', { type: 'button', class: 'secondary', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português'),
         el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa da campanha', 'Campaign map')),
+        // saída para o título (na Batalha avulsa o mapa da campanha não é de onde a pessoa veio)
+        el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title')),
         el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); void devMenu(); } }, t('Desenvolvedor', 'Developer'))),
     ]);
   }
