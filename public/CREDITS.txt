@@ -44,7 +44,7 @@ models/floresta/ (Tree_1_A_Color1 a Tree_4_A_Color1, Tree_Bare_1_A_Color1, Tree_
 models/animacoes.glb (12 clipes: golpes de uma e duas mãos, arco, magia, usar item), gestos das habilidades
   KayKit Character Animations 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
   Clipes do Rig_Medium juntos e sem malha por scripts/assets/anim-pack.mjs. Licença lida no LICENSE.txt do pacote (assets/kaykit/animacoes): "License: (Creative Commons Zero, CC0)".
-models/masmorra/ (box_large .gltf + .bin, dungeon_texture.png e LICENSE.txt), caixas do mapa de Gariland
+models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half e floor_tile_big_spikes .gltf + .bin, dungeon_texture.png e LICENSE.txt), caixas de Gariland, peças da Cripta Alagada e as casas de espinhos
   KayKit Dungeon Pack 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
   Licença lida no LICENSE.txt do pacote (cópia em models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
 
@@ -104,12 +104,13 @@ sfx/heal.mp3 (magical_3.ogg, cortado em 1,2 s)
 sfx/die.mp3 (creature_die_01.ogg)
   "80 CC0 RPG SFX" - https://opengameart.org/content/80-cc0-rpg-sfx
   Licença lida na página em 12/11/2026: CC0.
-Fanfarras de vitória e derrota: notas geradas no navegador (src/client/sound.ts, jingle), sem arquivo; criação do projeto.
+Fanfarras de vitória e derrota e bipes de fala da campanha: notas geradas no navegador (src/client/sound.ts, jingle e blip), sem arquivo; criação do projeto.
 sfx/lava_loop.mp3 (fire-1.ogg, com crossfade para laço)
   AntumDeluge, "Fire Crackling" - https://opengameart.org/content/fire-crackling
   Licença lida na página: "Licensing: Creative Commons Zero (CC0)".
 
 == Música ==
+Músicas da campanha (título, mapa, estrada, cripta, neve e chefe): compostas para o Dungeon Tactics e tocadas por um sequenciador no navegador (src/client/music.ts), sem arquivo; criação do projeto (12/11/2026).
 music/battle.mp3
   Emma_MA, "Determined Pursuit (epic orchestra loop)" - https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
   Licença lida na página: CC0 ("This track is in the public domain as of January 2017. No attribution necessary.").

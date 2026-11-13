@@ -663,6 +663,21 @@ function confetti() {
   setTimeout(() => box.remove(), 3000);
 }
 
+// Créditos (resumo; a lista completa, com licença de cada arquivo, é o public/CREDITS.txt). Fechar volta ao título.
+function credits() {
+  const d = dialog('menu', t('Créditos', 'Credits'), [
+    el('ul', { class: 'legend' },
+      el('li', {}, t('Modelos 3D: KayKit, de Kay Lousberg (CC0)', '3D models: KayKit, by Kay Lousberg (CC0)')),
+      el('li', {}, t('Efeitos sonoros: Kenney, artisticdude, JaggedStone, Julien Matthey e outros do OpenGameArt (CC0)', 'Sound effects: Kenney, artisticdude, JaggedStone, Julien Matthey and others from OpenGameArt (CC0)')),
+      el('li', {}, t('Música da batalha avulsa: Emma_MA (CC0). Músicas e vozes da campanha: compostas para o jogo', 'Quick battle music: Emma_MA (CC0). Campaign music and voices: composed for the game')),
+      el('li', {}, t('Fonte: Tiny5 (SIL Open Font License 1.1)', 'Font: Tiny5 (SIL Open Font License 1.1)')),
+      el('li', {}, t('História, mapas e regras: Dungeon Tactics', 'Story, maps and rules: Dungeon Tactics'))),
+    el('p', {}, el('a', { href: '/CREDITS.txt', target: '_blank', rel: 'noopener' }, t('Lista completa, com a licença de cada arquivo', 'Full list, with each file\'s license'))),
+    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); titleScreen(); } }, t('Voltar', 'Back')),
+  ]);
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+
 // Tela de título (noite de 12/11): o jogo abria direto numa batalha sem dizer o que era nem que havia campanha
 function titleScreen() {
   setTrack('title');
@@ -684,7 +699,8 @@ function titleScreen() {
         toWorld();
       } }, t('Novo jogo', 'New game')),
       el('button', { type: 'button', class: 'secondary', onclick: go(() => setTrack(null)) }, t('Batalha avulsa (Colina do Farol)', 'Quick battle (Beacon Hill)')),
-      el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu()) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'))),
+      el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu()) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map')),
+      el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits'))),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
