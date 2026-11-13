@@ -83,7 +83,7 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
 // Valor da casa. Atacando, pesa a ameaça (bater de um lugar seguro). Sem ninguém ao alcance, a ameaça não conta e a
 // distância pesa mais: no mapa 20x20 o inimigo fugia do alcance dos heróis em vez de avançar e a batalha não andava
 // (medido em 11/11: 28 dos 40 turnos inimigos sem atacar). O herói avança só até o raio de guarda do alvo a proteger.
-// Distância a pé de cada casa até o inimigo mais perto, em pontos de movimento: água rasa custa 2 e o salto é o de quem
+// Distância a pé de cada casa até o inimigo mais perto, em pontos de movimento (stepCost) e o salto é o de quem
 // anda (unidades no caminho não contam). Antes era a distância em linha reta: em Gariland, duas unidades em telhados
 // vizinhos se achavam "a 2 casas" e ninguém descia para dar a volta; com a água rasa (12/11) eram 35 batalhas travadas
 // em 1 000 no estudo das classes. Busca a partir dos inimigos: o custo de cada passo é o de entrar na casa de onde se vem.

@@ -25,7 +25,7 @@ export interface Tile {
   // `ramp` inclina o topo, subindo `rise` níveis na direção FACING[dir]. Mapa sem os dois é desenhado como antes.
   look?: string;
   ramp?: [dir: number, rise: number];
-  // Água (BMG 6.5; decisão do Fernando de 12/11): profundidade em níveis. 1 = rasa (andar custa 2), 2 ou mais = funda
+  // Água (BMG 6.5; decisão do Fernando de 12/11): profundidade em níveis. 1 = rasa, 2 ou mais = funda
   // (não dá para entrar nem parar). Quem está na água fica mais baixo: altura da casa menos a profundidade.
   depth?: number;
   // Espinhos (noite de 12/11, regra nossa, não do FFT): quem termina a vez em cima ou é empurrado para cá leva
@@ -81,8 +81,10 @@ export const standH = (t: Tile) => t.h - (isDeep(t) ? t.depth! : 0);
 export const isDeep = (t: Tile) => (t.depth ?? 0) >= 2;
 // dá para parar na casa: pisável (a água funda também, desde 13/11)
 export const canStand = (t: Tile) => TERRAIN[t.terrain].walkable;
-// pontos de movimento para entrar na casa: água custa 2 (BMG 6.5, "flowing water"; a funda, por analogia, 13/11)
-export const stepCost = (t: Tile) => (t.depth ? 2 : 1);
+// pontos de movimento para entrar na casa: 1 em tudo, água também (13/11, escolha do Fernando: "menos constraints de
+// movimento para permitir mais estratégias"; antes a água custava 2, do BMG 6.5). Fica como função para o dia em que
+// algum terreno voltar a custar mais
+export const stepCost = (_t: Tile) => 1;
 
 export const inBounds = (g: Grid, p: Pos) => p.x >= 0 && p.y >= 0 && p.x < g.width && p.y < g.height;
 export const tileAt = (g: Grid, p: Pos): Tile => g.tiles[p.y * g.width + p.x];

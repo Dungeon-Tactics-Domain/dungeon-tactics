@@ -14,21 +14,21 @@ const withWater = (g: Grid, cells: [x: number, y: number, depth: number][]) => {
 };
 
 describe('água', () => {
-  it('rasa custa 2 de movimento; com 4 pontos o Guerreiro atravessa só 2 casas de água', () => {
+  it('água custa 1 de movimento desde 13/11 (escolha do Fernando: menos amarras); com 4 pontos o Guerreiro atravessa 4 casas', () => {
     const g = withWater(flat(8, 3), [[2, 1, 1], [3, 1, 1], [4, 1, 1], [5, 1, 1]]);
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }]);
     const reach = reachable(g, s, 'a');
-    expect(reach.get('2,1')?.cost).toBe(2);
-    expect(reach.get('3,1')?.cost).toBe(4);
-    expect(reach.has('4,1')).toBe(false);
+    expect(reach.get('2,1')?.cost).toBe(1);
+    expect(reach.get('5,1')?.cost).toBe(4);
+    expect(reach.has('6,1')).toBe(false);
   });
 
-  it('funda (2 ou mais) deixa entrar desde 13/11 (escolha do Fernando): custa 2 e o salto 1 basta, medido pela superfície', () => {
+  it('funda (2 ou mais) deixa entrar desde 13/11 (escolha do Fernando): custa 1 e o salto 1 basta, medido pela superfície', () => {
     const g = withWater(flat(5, 3), [[2, 1, 2], [3, 1, 2]]);
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }]);
     const reach = reachable(g, s, 'a');
-    expect(reach.get('2,1')?.cost).toBe(2);
-    expect(reach.get('3,1')?.cost).toBe(4);
+    expect(reach.get('2,1')?.cost).toBe(1);
+    expect(reach.get('3,1')?.cost).toBe(2);
   });
 
   it('na água funda só se anda ou espera: nenhuma habilidade sai dali', () => {

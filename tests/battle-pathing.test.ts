@@ -34,11 +34,11 @@ describe('movimento', () => {
     g.tiles[1] = { ...g.tiles[1], depth: 2 }; // água funda no meio
     const rogue = stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]); // salto 2
     const r = reachable(g, rogue, 'a');
-    expect(keys(r)).toEqual(['1,0', '2,0']); // a funda também se entra a nado (13/11), custo 2
+    expect(keys(r)).toEqual(['1,0', '2,0']); // a funda também se entra a nado (13/11)
     expect(r.get('2,0')?.cost).toBe(2); // a casa voada conta 1
     expect(pathTo(r, { x: 2, y: 0 })).toEqual([{ x: 2, y: 0 }]); // o caminho pula direto
     const swim = reachable(g, stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]), 'a'); // salto 1 não voa
-    expect([swim.get('1,0')?.cost, swim.get('2,0')?.cost]).toEqual([2, 3]); // nada (2) e sai (1)
+    expect([swim.get('1,0')?.cost, swim.get('2,0')?.cost]).toEqual([1, 2]); // nada (1) e sai (1)
     expect(leaps(gridOf(['.#.'], ['000']), { x: 0, y: 0 }, 2)).toEqual([]); // parede não é vão
     expect(leaps(gridOf(['...'], ['010']), { x: 0, y: 0 }, 2)).toEqual([]); // casa mais alta no meio não é vão
     const high = gridOf(['...'], ['003']);

@@ -157,7 +157,7 @@ export function tileInfo(grid: Grid, p: Pos): string {
   const kind = tile.look ? LOOK_NAME[tile.look]?.() ?? tile.look : TERRAIN_NAME[tile.terrain]();
   // água rasa e funda têm o mesmo desenho: o texto da casa é o que diz qual é qual (achado olhando o Coração da Cripta)
   const blocked = (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable'))
-    + ((tile.depth ?? 0) >= 2 ? t(' · funda: custa 2 e não se age nela', ' · deep: costs 2, no actions inside') : tile.depth === 1 ? t(' · rasa: custa 2 de movimento', ' · shallow: costs 2 movement') : '')
+    + ((tile.depth ?? 0) >= 2 ? t(' · funda: não se age nela', ' · deep: no actions inside') : tile.depth === 1 ? t(' · rasa', ' · shallow') : '')
     + (tile.spikes ? t(` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`, ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`) : '');
   // na água rasa vale a altura em que se fica de pé (a que o Salto compara), não a da superfície
   const h = tile.depth === 1 ? standH(tile) : tile.h;
