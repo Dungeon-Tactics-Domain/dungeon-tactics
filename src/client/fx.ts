@@ -49,7 +49,8 @@ const LOOKS: Record<string, AbilityLook> = {
   fire: { clip: 'Ranged_Magic_Shoot', charge: MAGIC_CHARGE, fx: 'blast' },
   cure: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'heal' },
 };
-export const lookOf = (id: string): AbilityLook => LOOKS[id] ?? LOOKS[id.split('_').slice(2).join('_')] ?? LOOKS.strike;
+// '½': habilidade da meia casa (half.ts) usa o gesto da original
+export const lookOf = (id: string): AbilityLook => { const b = id.replace(/½$/, ''); return LOOKS[b] ?? LOOKS[b.split('_').slice(2).join('_')] ?? LOOKS.strike; };
 
 // cores dos efeitos: luz, não tinta do tema (o HUD segue as variáveis do :root; isto é dentro da cena 3D)
 const COLOR: Record<FxKind, string> = {
@@ -62,12 +63,12 @@ export type Tween = (ms: number, step: (k: number) => void) => Promise<void>;
 const glow = (color: string, opacity = 0.9) =>
   new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending });
 
-function spawn(scene: THREE.Scene, mesh: THREE.Mesh) {
+function spawn(scene: THREE.Scene, mesh: THREE.Object3D) {
   scene.add(mesh);
   return () => {
     scene.remove(mesh);
-    mesh.geometry.dispose();
-    (mesh.material as THREE.Material).dispose();
+    // peça com várias partes (a flecha e a faca): libera cada uma
+    mesh.traverse((o) => { const m = o as THREE.Mesh; if (!m.isMesh) return; m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
   };
 }
 
@@ -126,14 +127,35 @@ async function arc(scene: THREE.Scene, tween: Tween, at: THREE.Vector3, from: TH
 }
 
 // projétil de `from` até `to`, reto ou em arco (pedra e frasco sobem como no arremesso)
-async function fly(scene: THREE.Scene, tween: Tween, from: THREE.Vector3, to: THREE.Vector3, geo: THREE.BufferGeometry, color: string, height: number, ms: number) {
-  const m = new THREE.Mesh(geo, glow(color, 1));
+// `spin`: voltas por segundo em torno do próprio eixo (a faca gira no ar; a flecha não)
+async function fly(scene: THREE.Scene, tween: Tween, from: THREE.Vector3, to: THREE.Vector3, geo: THREE.BufferGeometry | THREE.Object3D, color: string, height: number, ms: number, spin = 0) {
+  const m = geo instanceof THREE.Object3D ? geo : new THREE.Mesh(geo, glow(color, 1));
   const done = spawn(scene, m);
   await tween(ms, (k) => {
     m.position.lerpVectors(from, to, k).y += Math.sin(Math.PI * k) * height;
     m.lookAt(to);
+    if (spin) m.rotateX(k * (ms / 1000) * spin * Math.PI * 2);
   });
   done();
+}
+
+// Flecha e faca de verdade no ar (13/11, pedido do Fernando: "a faca arremessada deve ser um projétil de faca, e a flecha
+// um projétil de flecha"): peças simples apontando para +z (o lookAt mira o alvo)
+function arrowModel(): THREE.Group {
+  const g = new THREE.Group();
+  const wood = new THREE.MeshLambertMaterial({ color: '#8a6a44' }), iron = new THREE.MeshLambertMaterial({ color: '#c9d2da' }), feather = new THREE.MeshLambertMaterial({ color: '#e8e1cf', side: THREE.DoubleSide });
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.62, 5).rotateX(Math.PI / 2), wood));
+  g.add(new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.1, 5).rotateX(Math.PI / 2).translate(0, 0, 0.35), iron));
+  for (const turn of [0, Math.PI / 2]) g.add(new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.14).rotateY(Math.PI / 2).rotateZ(turn).translate(0, 0, -0.26), feather));
+  return g;
+}
+function knifeModel(): THREE.Group {
+  const g = new THREE.Group();
+  const blade = new THREE.Shape([new THREE.Vector2(-0.025, 0), new THREE.Vector2(0.025, 0), new THREE.Vector2(0, 0.2)]);
+  g.add(new THREE.Mesh(new THREE.ShapeGeometry(blade).rotateX(-Math.PI / 2).translate(0, 0, 0.02), new THREE.MeshLambertMaterial({ color: '#dfe6ec', side: THREE.DoubleSide })));
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.02, 0.02).translate(0, 0, 0.01), new THREE.MeshLambertMaterial({ color: '#b08a3a' })));
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.09, 6).rotateX(Math.PI / 2).translate(0, 0, -0.045), new THREE.MeshLambertMaterial({ color: '#5a3d24' })));
+  return g;
 }
 
 // Efeito da habilidade do gesto até o impacto (espera o projétil chegar); o que vem depois do impacto não segura a fila
@@ -145,8 +167,8 @@ export async function playFx(scene: THREE.Scene, tween: Tween, kind: FxKind, fro
     case 'heavy': after(bits(scene, tween, to, '#ffffff', 'burst', 0.2, 400)); return arc(scene, tween, to, from, c, 1.6, 300);
     case 'impact': case 'dash': return bits(scene, tween, to, c, 'burst', 0.25, 380);
     case 'spin': return ring(scene, tween, from, c, 1.6, 300);
-    case 'arrow': return fly(scene, tween, from, to, new THREE.BoxGeometry(0.05, 0.05, 0.6), c, 0.15, travel);
-    case 'knife': return fly(scene, tween, from, to, new THREE.BoxGeometry(0.05, 0.02, 0.25), c, 0.1, travel);
+    case 'arrow': return fly(scene, tween, from, to, arrowModel(), c, 0.15, travel);
+    case 'knife': return fly(scene, tween, from, to, knifeModel(), c, 0.1, travel, 3);
     case 'rock': await fly(scene, tween, from, to, new THREE.DodecahedronGeometry(0.12), c, 1.1, travel * 1.4); return after(bits(scene, tween, to, c, 'burst', 0.2, 320));
     case 'flask': await fly(scene, tween, from, to, new THREE.CylinderGeometry(0.06, 0.08, 0.18, 6), c, 1.1, travel * 1.4); return after(bits(scene, tween, to, '#7dffa8', 'up', 0.3, 700));
     case 'fire': await fly(scene, tween, from, to, new THREE.IcosahedronGeometry(0.22), c, 0.3, travel); return after(ring(scene, tween, to, c, 1, 280));

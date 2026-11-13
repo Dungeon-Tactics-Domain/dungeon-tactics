@@ -10,7 +10,7 @@ import { MISSIONS, MISSIONS_KEY, missionScenario, missionScenarioId, parseDone, 
 import { ITEMS } from '../shared/battle/equipment.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
-import { sightBlock, unitAt } from '../shared/battle/pathing.ts';
+import { shotStop, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { choice, dialog } from './dialog.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
@@ -391,7 +391,8 @@ class Game {
     // quem ataca até a casa do cursor e fica vermelha a partir de onde bate
     const aim = hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight ? this.cursor : null;
     const from = this.battle.actor.pos;
-    this.scene.setTrajectory(aim && (aim.x !== from.x || aim.y !== from.y) ? { from, to: aim, block: sightBlock(this.battle.grid, from, aim) } : null);
+    const magic = ui.mode.k === 'ability' && !!ABILITIES[ui.mode.id].magic;
+    this.scene.setTrajectory(aim && (aim.x !== from.x || aim.y !== from.y) ? { from, to: aim, block: shotStop(this.battle.grid, this.battle.state, from, aim, this.battle.actor.id, !magic)?.pos ?? null } : null);
     this.hud.render({ battle: this.battle, screen: s, hl, busy: this.busy, log: this.log, acting: this.acting, cursor: this.cursor, ability: ui.mode.k === 'ability' ? ui.mode.id : null });
     const { top, bottom } = this.hud.insets();
     this.scene.setInsets(top, bottom);

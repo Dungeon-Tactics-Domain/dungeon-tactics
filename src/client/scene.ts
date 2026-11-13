@@ -224,6 +224,7 @@ export class BattleScene {
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
   private water: Water | null = null; // só nos mapas com água
   private stream: { meshes: THREE.Mesh[]; time: { value: number } } | null = null;
+  private readonly fallen = new Map<string, THREE.Group>(); // corpos de quem morreu, no chão até o fim da batalha
   private raised?: Set<string>; // trechos fundos na altura da rasa (water-levels.ts raisedDeep)
   // casa desenhada pelo terreno liso (terrain.ts) em vez de blocos: aparência pintável, fora muro sem peça (pedra, tijolo)
   // paredão de pedra ou neve (muro sem peça) também vira terreno: um morro de pedra dois níveis acima (rock(t))
@@ -845,10 +846,16 @@ export class BattleScene {
     this.trajectory.add(seg(a, cut, '#5fd6ff'));
     if (t.block) {
       this.trajectory.add(seg(cut, b, '#ff4d4d'));
-      const hit = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff4d4d', depthTest: false }));
-      hit.position.copy(cut);
-      hit.renderOrder = 12;
-      this.trajectory.add(hit);
+      // X vermelho onde o tiro bate (13/11, pedido do Fernando: "deve ficar com um X onde for bater")
+      const mat = new THREE.MeshBasicMaterial({ color: '#ff3b3b', depthTest: false });
+      for (const turn of [Math.PI / 4, -Math.PI / 4]) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.07), mat);
+        bar.position.copy(cut);
+        bar.quaternion.copy(this.camera.quaternion);
+        bar.rotateZ(turn);
+        bar.renderOrder = 13;
+        this.trajectory.add(bar);
+      }
     }
     this.scene.add(this.trajectory);
   }
@@ -1003,7 +1010,18 @@ export class BattleScene {
     const hot = chargeDanger(state, this.grid.width, this.grid.height);
     for (const [k, m] of this.danger) m.visible = hot.has(k);
     const alive = new Set(state.units.map((u) => u.id));
-    for (const [id, v] of this.units) if (!alive.has(id)) { this.scene.remove(v.holder); this.units.delete(id); }
+    // quem morreu vira corpo no chão: sem barra, sem aro, mais escuro; o desfazer que traz a unidade de volta tira o corpo
+    for (const [id, v] of this.units) {
+      if (alive.has(id)) continue;
+      this.units.delete(id);
+      v.mixer?.update(10); // fecha a animação de morte no último quadro
+      v.holder.getObjectByName('bar')?.removeFromParent();
+      v.ground.visible = false;
+      if (v.aura) v.aura.visible = false;
+      for (const m of v.mats) { m.color.multiplyScalar(0.55); m.emissive.setScalar(0); }
+      this.fallen.set(id, v.holder);
+    }
+    for (const [id, h] of this.fallen) if (alive.has(id)) { this.scene.remove(h); this.fallen.delete(id); }
     const enemies = state.units.filter((u) => u.team === 'enemy');
     for (const u of state.units) {
       let v = this.units.get(u.id);
@@ -1190,13 +1208,10 @@ export class BattleScene {
         this.float(e.unit, t('Sem alvo', 'No target'), 'miss');
         await this.wait(TIMING.hit);
       } else if (e.k === 'die') {
+        // cai e fica caído (13/11, pedido do Fernando: "os corpos dos inimigos devem continuar no chão e não sumir"); o
+        // sync tira a barra, o aro e escurece o corpo (fallen)
         this.play(v, 'Death_A', true);
         await this.wait(TIMING.die);
-        // pisca 3 vezes antes de sumir (no sync): fica claro que saiu da batalha e não só caiu
-        for (let i = 0; i < 6; i++) {
-          v.holder.visible = i % 2 === 1;
-          await this.wait(TIMING.blink);
-        }
       }
     }
     this.sync(state);

@@ -1,6 +1,6 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import { FACING, TERRAIN, canStand, dist, inBounds, isDeep, samePos, sideOf, standH, tileAt, type Grid, type Side } from './grid.ts';
-import { MAX_JUMP, distTo, inAbilityRange, nearestTile, sightBlock, unitAt } from './pathing.ts';
+import { MAX_JUMP, distTo, inAbilityRange, nearestTile, shotStop, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';
@@ -98,8 +98,12 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   // Sem visão o tiro sai assim mesmo e para no primeiro obstáculo do caminho (13/11, pedido do Fernando: "deve permitir o
   // ataque e o cara perde o ataque"); a área, se houver, explode ali. E atacar o chão vazio vale (13/11): o golpe sai
   // sem alvo. A IA só escolhe ataque com alvo (attackScore soma zero sem alvo)
-  if (ability.needsSight) center = sightBlock(grid, from, center) ?? center;
-  const hit = affected(state, actor, ability, center);
+  // boneco no caminho só barra o que voa reto (flecha, faca): magia passa por cima das cabeças
+  const stop = ability.needsSight ? shotStop(grid, state, from, center, actor.id, !ability.magic) : null;
+  if (stop) center = stop.pos;
+  // bateu num boneco no caminho: ele leva o golpe, seja de que lado for (sem área: só ele)
+  const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;
+  const hit = blocker && ability.radius === 0 ? [blocker] : affected(state, actor, ability, center);
   const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? withPower(actor, ability);
   const targets = hit.map((u) => {
     // contra unidade grande, a casa dela mais perto de quem ataca (distância e altura)

@@ -167,6 +167,32 @@ export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
 
 // a primeira casa que barra a linha de visão (null se passa livre): a prévia da trajetória mostra onde o tiro bate
 // (13/11, pedido do Fernando, "como no Tactics Ogre"). A mesma conta de sempre: a linha é traçada da casa de menor índice
+// Onde o tiro para, saindo de quem atira (13/11, pedido do Fernando: "a prévia do projétil não avisou que ia bater no meu
+// aliado"): o primeiro obstáculo do terreno (como sightBlock) ou o primeiro boneco no caminho, aliado ou inimigo, se a
+// linha passa abaixo da cabeça dele (UNIT_TALL níveis acima do chão). null se chega ao alvo
+const UNIT_TALL = 1.6;
+export function shotStop(grid: Grid, state: BattleState, from: Pos, to: Pos, shooter: string, units = true): { pos: Pos; unit: string | null } | null {
+  const total = dist(from, to);
+  if (total <= 1) return null;
+  const sight = (p: Pos) => { const t = tileAt(grid, p); return isDeep(t) ? t.h : standH(t); };
+  const eye = sight(from) + EYE, aim = sight(to) + EYE;
+  let x = from.x, y = from.y;
+  const dx = Math.abs(to.x - from.x), dy = -Math.abs(to.y - from.y);
+  const sx = from.x < to.x ? 1 : -1, sy = from.y < to.y ? 1 : -1;
+  let err = dx + dy;
+  for (;;) {
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x += sx; }
+    if (e2 <= dx) { err += dx; y += sy; }
+    if (x === to.x && y === to.y) return null;
+    const p = { x, y }, t = tileAt(grid, p);
+    const line = eye + (aim - eye) * (dist(from, p) / total);
+    if (t.h + blocksOf(t) > line) return { pos: p, unit: null };
+    const u = units ? unitAt(state, p) : undefined;
+    if (u && u.id !== shooter && sight(p) + UNIT_TALL > line) return { pos: p, unit: u.id };
+  }
+}
+
 export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
   // traça sempre da casa de menor índice para a de maior (13/11, revisão): o Bresenham desempata a quina conforme o
   // sentido, e um arqueiro levava tiro de onde não conseguia responder (5 a 6% dos pares). Olho e mira têm a mesma altura
