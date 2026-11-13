@@ -28,6 +28,17 @@ describe('arredores do tabuleiro', () => {
       amb.root.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if (!mesh.isMesh || (mesh.material as THREE.Material).transparent) return; // névoa e raios são transparentes, não tapam
+        if (mesh.name === 'extensao') { // casas de fora: nunca acima da casa da borda mais perto (mesma altura na frente não tapa boneco)
+          const step = grid.levelHeight ?? 0.5, ext = mesh as THREE.InstancedMesh;
+          for (let i = 0; i < ext.count; i++) {
+            ext.getMatrixAt(i, m);
+            v.setFromMatrixPosition(m);
+            const tx = Math.min(Math.max(Math.floor(v.x + grid.width / 2), 0), grid.width - 1), ty = Math.min(Math.max(Math.floor(v.z + grid.height / 2), 0), grid.height - 1);
+            const top = v.y + new THREE.Vector3().setFromMatrixScale(m).y / 2;
+            expect(top).toBeLessThanOrEqual((grid.tiles[ty * grid.width + tx].h + 1) * step + 1e-6);
+          }
+          return;
+        }
         const pos = mesh.geometry.getAttribute('position');
         const n = (mesh as THREE.InstancedMesh).isInstancedMesh ? (mesh as THREE.InstancedMesh).count : 1;
         for (let i = 0; i < n; i++) {

@@ -102,9 +102,15 @@ const SUN = new THREE.Vector3(6, -12, -4).normalize(); // o raio de luz vem de o
 export const LIMIT = (d: number) => Math.min(0.5 + 0.55 * d, 8);
 const GROUND_MAX = 5.5;
 const EXT_RING = 5; // casas de extensão cinza em cada lado na versão de teste (?extensao)
-const EXTEND = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('extensao') : null;
-// ?extensao=escuro (13/11, 2ª versão pedida): as casas de fora com a cor do piso da borda, bem escura, em vez de cinza
-const DARK_TONE: Record<string, string> = { grass: '#3f8a35', sand: '#b39a5e', rock: '#7a7d86', tree: '#3f8a35', tree2: '#3f8a35', tree3: '#3f8a35' };
+// Extensão do mapa: casas de fora na cor do piso da borda, bem escuras, com sombra das copas. Padrão em todos os mapas desde
+// 13/11 (o Fernando gostou da versão de teste e escolheu "padrão em todos os mapas"); ?extensao=cinza mostra a 1ª versão
+// de teste e ?extensao=nenhuma tira
+const EXTEND = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('extensao') : null) || 'escuro';
+const DARK_TONE: Record<string, string> = {
+  grass: '#3f8a35', tree: '#3f8a35', tree2: '#3f8a35', tree3: '#3f8a35', tree4: '#3f8a35', sand: '#b39a5e', wood: '#8a6a44', brick: '#8a5a44',
+  rock: '#7a7d86', gold: '#7a7d86', summit: '#5a5a62', stone: '#8a8c92', snow: '#dfe6ee', snow_rock: '#9aa3ad', bare1: '#dfe6ee', bare2: '#dfe6ee',
+};
+const DARK_FALLBACK = '#6b6f7a'; // pisos de cripta, altar e o resto: pedra
 
 // sorteio com semente: o mesmo mapa monta sempre os mesmos arredores
 const seeded = (seed: number) => () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
@@ -174,7 +180,7 @@ export class Ambience {
     Object.assign(u, { ambNear: { value: mood.near }, ambFar: { value: mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
     this.buildGround();
-    if (EXTEND !== null) this.buildExtension(rand);
+    if (EXTEND !== 'nenhuma') this.buildExtension(rand);
     for (const p of mood.props) this.scatter(p, models.get(p.model)!, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
@@ -235,7 +241,7 @@ export class Ambience {
     this.root.add(new THREE.Mesh(g, this.material(null, { vertexColors: true, flatShading: true })));
   }
 
-  // Versão de teste (?extensao, 13/11, pedido do Fernando: "tiles em preto e branco fora do limite… só para dar a vibe
+  // Extensão (13/11, pedido do Fernando: "tiles em preto e branco fora do limite… só para dar a vibe
   // de que o mapa continua"): EXT_RING casas de cinza em volta do tabuleiro, sem regra nem clique. Cada uma continua a
   // altura da casa da borda mais perto ou fica 1 nível abaixo, nunca acima: mais alta, na frente, tapava boneco.
   private buildExtension(rand: () => number) {
@@ -253,11 +259,12 @@ export class Ambience {
       const shade = (0.62 + 0.12 * rand()) * (1 - 0.07 * ring); // escurece para fora
       // no escuro, sombra das copas por cima (pedido do Fernando, "com uma sombra por cima deles"): manchas pelo ruído
       const dapple = 0.45 + 0.55 * noise(x * 0.3, z * 0.3);
-      tones.push(EXTEND === 'escuro' ? new THREE.Color(DARK_TONE[t.look ?? ''] ?? DARK_TONE.grass).multiplyScalar(shade * 0.5 * dapple) : new THREE.Color().setScalar(shade));
+      tones.push(EXTEND !== 'cinza' ? new THREE.Color(DARK_TONE[t.look ?? ''] ?? DARK_FALLBACK).multiplyScalar(shade * 0.5 * dapple) : new THREE.Color().setScalar(shade));
     }
     const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.material(null), at.length);
     at.forEach((m, k) => { mesh.setMatrixAt(k, m); mesh.setColorAt(k, tones[k]); });
     mesh.receiveShadow = true; // a sombra de verdade das árvores de fora cai em cima
+    mesh.name = 'extensao'; // o teste da linha de visão mede a extensão pela casa da borda, não por LIMIT
     this.root.add(mesh);
   }
 
