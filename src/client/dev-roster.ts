@@ -3,6 +3,7 @@
 // Decisões dele (múltipla escolha, 12/11): edita classe, nome e números; monta heróis e inimigos; as unidades ocupam as
 // casas de partida do mapa; salva no navegador e exporta/importa JSON.
 import { ABILITIES } from '../shared/battle/abilities.ts';
+import { bonusOf, type Loadout } from '../shared/battle/equipment.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import type { Rules } from '../shared/battle/rules.ts';
 import { SCENARIOS, type Scenario, type Spawn } from '../shared/battle/scenarios.ts';
@@ -18,6 +19,7 @@ export interface DevUnit {
   speed: number;
   move: number;
   jump?: number; // Salto (13/11); opcional para os elencos salvos antes dele abrirem iguais (sem ele, o da classe)
+  items?: Loadout; // equipamento (13/11, equipment.ts): soma na ficha da batalha
   abilities: string[];
 }
 export interface DevSetup {
@@ -125,7 +127,9 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
       BASE[id] = u.base;
       // o tamanho vem da classe (o Colosso da campanha ocupa 2x2 como o original)
-      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), jump: u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP, ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
+      const b = bonusOf(u.items); // equipamento: soma de stats gerais (equipment.ts), 0 sem item
+      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), jump: (u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP) + b.jump,
+        ...(b.power && { power: b.power }), ...(b.hit && { hit: b.hit }), ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp + b.hp, speed: Math.max(1, u.speed + b.speed), move: u.move + b.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');

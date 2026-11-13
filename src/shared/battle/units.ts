@@ -16,7 +16,9 @@ export interface UnitDef {
   model?: string; // modelo em public/models; só o cenário de estudo informa, as unidades do jogo estão no mapa da cena
   boss?: true; // chefe da fase (campanha): só a coroa no desenho; a regra de vitória vem do cenário
   tint?: string; // cor do brilho próprio do boneco, só no desenho: unidade que divide o boneco com outra (o Acólito usa o mago)
-  size?: number; // lado do quadrado ocupado (2 = 2x2, pathing.ts footprint); sem isto, 1 casa. Unidade grande não anda nem é empurrada
+  size?: number;
+  power?: number; // dano a mais em toda habilidade que fere (equipamento, equipment.ts); sem isto, 0
+  hit?: number; // pontos de acerto a mais (equipamento); sem isto, 0 // lado do quadrado ocupado (2 = 2x2, pathing.ts footprint); sem isto, 1 casa. Unidade grande não anda nem é empurrada
 }
 
 const LIST: UnitDef[] = [

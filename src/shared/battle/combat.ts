@@ -44,6 +44,12 @@ export interface Preview {
   targets: TargetPreview[];
 }
 
+// faixa de dano com o equipamento de quem usa (UnitDef.power); sem equipamento é a faixa da habilidade, e o sorteio não muda
+const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
+  const p = a.damage[1] > 0 ? UNIT_DEFS[actor.def].power ?? 0 : 0;
+  return [a.damage[0] + p, a.damage[1] + p];
+};
+
 // cura e habilidade de apoio miram aliado e não erram
 const isHeal = (a: AbilityDef) => a.heal[1] > 0 || !!a.ally;
 
@@ -89,7 +95,7 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   if (ability.needsSight && !lineOfSight(grid, from, center)) return fail('sight');
   const hit = affected(state, actor, ability, center);
   if (!hit.length) return fail('no-target');
-  const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? ability.damage;
+  const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? withPower(actor, ability);
   const targets = hit.map((u) => {
     // contra unidade grande, a casa dela mais perto de quem ataca (distância e altura)
     const at = nearestTile(u, actor.pos), from = nearestTile(actor, at);
@@ -97,7 +103,7 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
     return {
       unit: u.id,
       side,
-      chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? hitChance(grid, ability, from, at, side),
+      chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
       dmgMin: Math.floor(dmgMin * chargingBonus(state, ability, u)),
       dmgMax: Math.floor(dmgMax * chargingBonus(state, ability, u)),
       healMin: ability.heal[0],
@@ -136,7 +142,7 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
       continue;
     }
     let dmg: number;
-    [dmg, state.rng] = rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ability.damage[0], ability.damage[1]);
+    [dmg, state.rng] = rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ...withPower(actor, ability));
     dmg = Math.floor(dmg * chargingBonus(state, ability, unit));
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
