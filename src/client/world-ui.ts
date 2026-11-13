@@ -69,6 +69,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
       type: 'button', class: `world-node ${kind}${i < done ? ' done' : ''}`, style: `left:${w.x}%;top:${w.y}%`,
       // title: com o mouse, o nome aparece sem precisar andar até o ponto (fechado também, para dar vontade de chegar)
       disabled: !isOpen(i, done), 'aria-label': t(w.name[0], w.name[1]), title: t(w.name[0], w.name[1]), onclick: () => void walkTo(i),
+      onmouseenter: () => isOpen(i, done) && sfx('cursor'), // som de cursor ao passar por um ponto aberto, como nos menus
     });
   });
   const place = el('strong', { class: 'world-place' });
