@@ -2,7 +2,7 @@ import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
 import { COMBAT, previewAbility, simulatePush } from './combat.ts';
 import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
-import { footprint, jumpOf, reachable } from './pathing.ts';
+import { footprint, jumpOf, leaps, reachable } from './pathing.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
@@ -106,6 +106,13 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
       const t = tileAt(grid, n);
       const next = cost + stepCost(here);
       if (!canStand(t) || Math.abs(standH(t) - standH(here)) > jump || (best.get(posKey(n)) ?? Infinity) <= next) continue;
+      best.set(posKey(n), next);
+      queue.push({ p: n, cost: next });
+    }
+    // vão (pathing.ts leaps): a regra é a mesma nos dois sentidos, então serve à busca que sai dos inimigos
+    for (const { to: n, over } of leaps(grid, p, jump)) {
+      const next = cost + over.length + stepCost(here);
+      if ((best.get(posKey(n)) ?? Infinity) <= next) continue;
       best.set(posKey(n), next);
       queue.push({ p: n, cost: next });
     }

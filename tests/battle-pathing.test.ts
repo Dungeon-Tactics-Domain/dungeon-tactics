@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { inAbilityRange, lineOfSight, pathTo, reachable } from '../src/shared/battle/pathing.ts';
+import { inAbilityRange, leaps, lineOfSight, pathTo, reachable } from '../src/shared/battle/pathing.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 const keys = (m: Map<string, unknown>) => [...m.keys()].sort();
@@ -27,6 +27,22 @@ describe('movimento', () => {
     expect(keys(reachable(g, stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual([]);
     const down = gridOf(['...'], ['420']);
     expect(keys(reachable(down, stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual(['1,0', '2,0']);
+  });
+
+  it('vão do FFT ([Jump/2] casas): salto 2 voa 1 casa de água funda, salto 1 não; parede e queda grande barram', () => {
+    const g = gridOf(['...'], ['000']);
+    g.tiles[1] = { ...g.tiles[1], depth: 2 }; // água funda no meio
+    const rogue = stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]); // salto 2
+    const r = reachable(g, rogue, 'a');
+    expect(keys(r)).toEqual(['2,0']);
+    expect(r.get('2,0')?.cost).toBe(2); // a casa voada conta 1
+    expect(pathTo(r, { x: 2, y: 0 })).toEqual([{ x: 2, y: 0 }]); // o caminho pula direto
+    expect(keys(reachable(g, stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual([]);
+    expect(leaps(gridOf(['.#.'], ['000']), { x: 0, y: 0 }, 2)).toEqual([]); // parede não é vão
+    expect(leaps(gridOf(['...'], ['010']), { x: 0, y: 0 }, 2)).toEqual([]); // casa mais alta no meio não é vão
+    const high = gridOf(['...'], ['003']);
+    high.tiles[1] = { ...high.tiles[1], depth: 2 };
+    expect(leaps(high, { x: 0, y: 0 }, 2)).toEqual([]); // pousar 3 acima passa do salto
   });
 
   it('parede bloqueia o caminho, floresta não', () => {

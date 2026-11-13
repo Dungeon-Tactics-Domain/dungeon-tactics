@@ -29,9 +29,11 @@ export const TIMING = {
   blink: 110, // 80: cada aceso/apagado de quem morre (3 piscadas)
 };
 
-// Duração de um passo do caminho: andar no plano, pulo (agacha, voo, aterrissa) quando muda de altura. `dh` em níveis.
-// A cena anima com isto e o jogo marca o som dos passos com isto, para os dois não se desencontrarem.
-export const stepMs = (dh: number) => (dh === 0 ? TIMING.step : TIMING.jumpCrouch + jumpAirMs(dh) + TIMING.jumpLand);
+// Duração de um passo do caminho: andar no plano, pulo (agacha, voo, aterrissa) quando muda de altura ou voa um vão.
+// `dh` em níveis, `tiles` casas entre as duas pontas (2 no vão). A cena anima com isto e o jogo marca o som dos passos
+// com isto, para os dois não se desencontrarem.
+export const isJump = (dh: number, tiles = 1) => dh !== 0 || tiles > 1;
+export const stepMs = (dh: number, tiles = 1) => (isJump(dh, tiles) ? TIMING.jumpCrouch + jumpAirMs(Math.max(Math.abs(dh), tiles)) + TIMING.jumpLand : TIMING.step);
 export const jumpAirMs = (dh: number) => TIMING.jumpAir + TIMING.jumpPerLevel * (Math.abs(dh) - 1);
 
 // Segurar Enter, Espaço ou A (controle) acelera tudo da batalha (passos, golpes, esperas) 3 vezes; soltar volta ao ritmo

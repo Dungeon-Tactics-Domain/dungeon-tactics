@@ -1,5 +1,5 @@
 import type { AbilityDef } from './abilities.ts';
-import { TERRAIN, canStand, dist, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
+import { FACING, TERRAIN, canStand, dist, inBounds, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -31,7 +31,31 @@ export interface Step {
   from: string | null; // chave da casa anterior
 }
 
-// Busca pelo custo de cada passo (1, ou 2 na água rasa) até def.move pontos. Passa por aliado, nunca por inimigo; o resultado não inclui
+// Pulo por cima de vão, como no FFT (13/11, pedido do Fernando; BMG: o vão vai até [Jump/2] casas): em linha reta, por
+// cima de casas onde não se fica de pé (água funda) ou mais baixas que as duas pontas; parede no meio bloqueia. Pousa a
+// até `jump` níveis de onde saiu. `over` são as casas voadas, cada uma conta 1 ponto de movimento. Salto 1 não voa nada.
+export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos[] }[] {
+  const out: { to: Pos; over: Pos[] }[] = [];
+  const h0 = standH(tileAt(grid, from));
+  for (const d of FACING) {
+    const over: Pos[] = [];
+    for (let k = 1; k <= Math.floor(jump / 2); k++) {
+      const mid = { x: from.x + d.x * k, y: from.y + d.y * k };
+      const to = { x: mid.x + d.x, y: mid.y + d.y };
+      if (!inBounds(grid, to)) break;
+      const g = tileAt(grid, mid);
+      if (!TERRAIN[g.terrain].walkable) break;
+      over.push(mid);
+      const land = tileAt(grid, to);
+      if (!canStand(land) || Math.abs(standH(land) - h0) > jump) continue;
+      const low = Math.min(h0, standH(land));
+      if (over.every((p) => { const t = tileAt(grid, p); return !canStand(t) || standH(t) < low; })) out.push({ to, over: [...over] });
+    }
+  }
+  return out;
+}
+
+// Busca pelo custo de cada passo (1, ou 2 na água rasa; o vão, 1 por casa voada) até def.move pontos. Passa por aliado, nunca por inimigo; o resultado não inclui
 // a casa de saída nem casas ocupadas, para o cliente poder pintar só onde dá para parar.
 export function reachable(grid: Grid, state: BattleState, unitId: string): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
@@ -51,6 +75,15 @@ export function reachable(grid: Grid, state: BattleState, unitId: string): Map<s
       if (!canStand(to) || Math.abs(standH(to) - standH(tileAt(grid, cur))) > jump) continue;
       const other = unitAt(state, n);
       if (other && other.team !== unit.team) continue;
+      seen.set(k, { pos: n, cost: next, from: posKey(cur) });
+      queue.push(n);
+    }
+    // vão: cada casa voada conta 1, mais a casa onde pousa; inimigo embaixo do voo bloqueia, como no caminho a pé
+    for (const { to: n, over } of leaps(grid, cur, jump)) {
+      const k = posKey(n);
+      const next = cost + over.length + stepCost(tileAt(grid, n));
+      if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
+      if ([n, ...over].some((p) => { const o = unitAt(state, p); return o && o.team !== unit.team; })) continue;
       seen.set(k, { pos: n, cost: next, from: posKey(cur) });
       queue.push(n);
     }

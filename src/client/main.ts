@@ -19,7 +19,7 @@ import { BattleScene } from './scene.ts';
 import { store } from './store.ts';
 import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
-import { TIMING, pace, stepMs } from './timing.ts';
+import { TIMING, isJump, pace, stepMs } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, slotsOf } from './dev-roster.ts';
@@ -395,8 +395,8 @@ class Game {
       const h = (i: number) => standH(tileAt(this.battle.grid, e.path[i]));
       let at = 0;
       for (let i = 1; i < e.path.length; i++) {
-        const dh = h(i) - h(i - 1), ms = stepMs(dh);
-        void this.scene.wait(at + (dh ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
+        const dh = h(i) - h(i - 1), tiles = dist(e.path[i - 1], e.path[i]), ms = stepMs(dh, tiles);
+        void this.scene.wait(at + (isJump(dh, tiles) ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
         at += ms;
       }
     }
@@ -742,7 +742,7 @@ function confetti() {
 
 // Batalha avulsa: os mapas com Farol (a regra avulsa perde sem ele; Bosque e Passo são só da campanha). A Colina já está
 // montada ao fundo do título, então escolhê-la só fecha; as outras abrem pela URL, cada uma com o próprio save.
-// medido em 13/11 (npm run sim, 300 sementes, IA x IA), com o salto por classe e a água rasa atravessável: Colina 63%, Cripta 60%, Coração da Cripta 79% (antes 61%, 40% e 59%)
+// medido em 13/11 (npm run sim, 300 sementes, IA x IA), com o salto por classe, a água rasa atravessável e o vão: Colina 63%, Cripta 60%, Coração da Cripta 25% (antes 61%, 40% e 59%; no Coração, sem o vão, 79%: a IA do Ladino voa o fosso sozinha e cai cercada)
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
 function quickBattle() {
   const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
@@ -785,7 +785,7 @@ function howToPlay() {
     el('ul', { class: 'legend' },
       el('li', {}, t('A lista de turnos (canto de cima) mostra quem joga. Quem é mais rápido joga mais vezes.', 'The turn list (top corner) shows who acts. Faster units act more often.')),
       el('li', {}, t('Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.', 'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.')),
-      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; árvores e entulho protegem de ataques de longe. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1.', 'From high ground you hit more and reach farther; trees and rubble cover you from ranged attacks. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1.')),
+      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; árvores e entulho protegem de ataques de longe. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1. Com Salto 2 também se voa 1 casa de água funda ou de buraco.', 'From high ground you hit more and reach farther; trees and rubble cover you from ranged attacks. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1. Jump 2 also clears 1 tile of deep water or a gap.')),
       el('li', {}, t('Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles.', 'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever lands on them.')),
       el('li', {}, t('Água rasa custa 2 de movimento; água funda não se atravessa.', 'Shallow water costs 2 movement; deep water cannot be crossed.')),
       el('li', {}, t('Habilidade com carga sai depois: a área acesa em roxo mostra onde vai cair. Saia dela.', 'Charged abilities land later: the purple area shows where. Get out of it.')),

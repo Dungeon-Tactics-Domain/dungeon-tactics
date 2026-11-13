@@ -11,7 +11,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { FACING, neighbors, posKey, standH, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { FACING, dist, neighbors, posKey, standH, tileAt, type Grid } from '../shared/battle/grid.ts';
 import { footprint } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -20,7 +20,7 @@ import { el } from './icons.ts';
 import { chargeDanger, type Highlights, type TileKind } from './interaction.ts';
 import { MARKER, barYOf, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
-import { TIMING, jumpAirMs, speed } from './timing.ts';
+import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -682,10 +682,11 @@ export class BattleScene {
         for (let i = 1; i <= n; i++) {
           const a = this.stand(e.path[i - 1]), b = this.stand(e.path[i]);
           this.face(v, e.path[i]);
-          // pula quando a altura de pé muda (a mesma conta do Salto e do som dos passos, stepMs); rampa do estudo é plano
+          // pula quando a altura de pé muda ou voa um vão (a mesma conta do Salto e do som dos passos, stepMs); rampa do estudo é plano
           const dh = standH(tileAt(this.grid, e.path[i])) - standH(tileAt(this.grid, e.path[i - 1]));
-          if (dh !== 0) {
-            await this.jump(v, a, b, Math.abs(dh));
+          const tiles = dist(e.path[i - 1], e.path[i]);
+          if (isJump(dh, tiles)) {
+            await this.jump(v, a, b, Math.max(Math.abs(dh), tiles));
             if (i < n) this.play(v, 'Walking_A', false, 1.25);
             continue;
           }
