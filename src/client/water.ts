@@ -172,7 +172,19 @@ export class Water {
     this.surface.renderOrder = -1;
     scene.add(this.surface);
     if (sides.length) {
-      const wall = new THREE.Mesh(mergeGeometries(sides), new THREE.MeshLambertMaterial({ color: COLOR.side, transparent: true, opacity: 0.7, depthWrite: false }));
+      // degrau de água vira cachoeira (13/11, pedido do Fernando: "descendo… com algum tipo de cachoeira e física rolando"):
+      // listras de espuma que escorrem para baixo e espuma no pé, onde a água bate
+      const fall = new THREE.MeshLambertMaterial({ color: COLOR.side, transparent: true, opacity: 0.7, depthWrite: false });
+      fall.defines = { USE_UV: '' };
+      fall.onBeforeCompile = (sh) => {
+        sh.uniforms.uWTime = this.time;
+        sh.fragmentShader = 'uniform float uWTime;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+          float streak = fract(vUv.y * 2.5 + uWTime * 1.2 + sin(vUv.x * 31.0) * 0.35);
+          float foam = smoothstep(0.6, 1.0, streak) * 0.7 + smoothstep(0.75, 1.0, 1.0 - vUv.y) * 0.6;
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.97, 1.0), clamp(foam, 0.0, 1.0));
+          diffuseColor.a = max(diffuseColor.a, foam);`);
+      };
+      const wall = new THREE.Mesh(mergeGeometries(sides), fall);
       for (const g of sides) g.dispose();
       wall.renderOrder = -1;
       scene.add(wall);

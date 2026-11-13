@@ -7,6 +7,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { tileAt, type Grid } from '../shared/battle/grid.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
+import { EXT_DARK, EXT_FADE, EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
+import { waterLevels } from './water-levels.ts';
 
 type Kind = 'forest' | 'field' | 'crypt' | 'frost';
 type Pair = [night: string, day: string];
@@ -36,9 +38,9 @@ export const MOODS: Record<Kind, Mood> = {
       { model: F + 'Bush_2_A_Color1', n: 60, d: [0.5, 4], h: [0.5, 1] },
       { model: F + 'Rock_3_A_Color1', n: 14, d: [0.8, 7], h: [0.4, 1.1] },
       { model: F + 'Rock_1_A_Color1', n: 10, d: [0.6, 5], h: [0.3, 0.7] },
-      { model: F + 'Tree_2_A_Color1', n: 40, d: [2, 8], h: [2.2, 3.5] },
-      { model: F + 'Tree_1_A_Color1', n: 50, d: [3.5, 14], h: [3.5, 5] },
-      { model: F + 'Tree_3_A_Color1', n: 30, d: [4, 14], h: [3.5, 4.8] },
+      { model: F + 'Tree_2_A_Color1', n: 110, d: [1.5, 7], h: [2.2, 3.5] }, // mais mata perto (13/11, pedido do Fernando: "volume maior de árvores"): o fade apaga o que fica longe
+      { model: F + 'Tree_1_A_Color1', n: 110, d: [2.5, 9], h: [3.5, 5] },
+      { model: F + 'Tree_3_A_Color1', n: 80, d: [3, 9], h: [3.5, 4.8] },
       { model: F + 'Tree_2_C_Color1', n: 70, d: [7, 28], h: [6, 8] },
       { model: F + 'Tree_1_B_Color1', n: 60, d: [7, 28], h: [6, 8] },
       { model: F + 'Tree_4_B_Color1', n: 60, d: [8, 28], h: [6.5, 8] },
@@ -101,29 +103,17 @@ const SUN = new THREE.Vector3(6, -12, -4).normalize(); // o raio de luz vem de o
 // Tetos de 8 (modelos) e 5,5 (chão): mais alto que isso, longe, chega perto do plano da frente da câmera e pouco se veria
 export const LIMIT = (d: number) => Math.min(0.5 + 0.55 * d, 8);
 const GROUND_MAX = 5.5;
-// versão de teste ?fade=preto (13/11, pedido do Fernando: "fade para preto ao redor do mapa"): a neblina dos arredores
-// vira preto e fecha em 7 casas da borda; o tabuleiro não recebe essa neblina e fica igual
-const FADE = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fade') : null) !== 'nao'; // padrão desde 13/11; ?fade=nao compara
-// extensão (13/11, pedido do Fernando): escurece em EXT_FADE blocos, segue EXT_DARK blocos escuros, e só então o fade para o
-// preto começa (a neblina dos arredores, de EXT_FADE + EXT_DARK a + 4 casas da borda)
-export const EXT_FADE = 2, EXT_DARK = 4;
-const EXT_RING = 5; // casas de extensão cinza em cada lado na versão de teste (?extensao)
-// Extensão do mapa: casas de fora na cor do piso da borda, bem escuras, com sombra das copas. Padrão em todos os mapas desde
-// 13/11 (o Fernando gostou da versão de teste e escolheu "padrão em todos os mapas"); ?extensao=cinza mostra a 1ª versão
-// de teste e ?extensao=nenhuma tira
-// padrão desde 13/11 (o Fernando: "quero o fade para o preto e a textura"): extensão com a textura do piso (scene.ts)
+// fade para o preto em volta (13/11, pedido do Fernando, padrão desde então; ?fade=nao compara): a neblina dos arredores
+// vira preto de EXT_FADE a EXT_FADE + EXT_DARK casas da borda, junto com a extensão do terreno (terrain.ts); o tabuleiro
+// não recebe essa neblina
+const FADE = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fade') : null) !== 'nao';
+// extensão do mapa: 'textura' (padrão desde 13/11, "quero o fade para o preto e a textura") é o terreno liso de terrain.ts
+// continuando para fora; ?extensao=escuro e ?extensao=cinza são as versões de teste em blocos daqui; ?extensao=nenhuma tira
 export const EXTEND = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('extensao') : null) || 'textura';
+const TEST_RING = 5; // casas das versões de teste em blocos
 const DARK_TONE: Record<string, string> = {
   grass: '#3f8a35', tree: '#3f8a35', tree2: '#3f8a35', tree3: '#3f8a35', tree4: '#3f8a35', sand: '#b39a5e', wood: '#8a6a44', brick: '#8a5a44',
   rock: '#7a7d86', gold: '#7a7d86', summit: '#5a5a62', stone: '#8a8c92', snow: '#dfe6ee', snow_rock: '#9aa3ad', bare1: '#dfe6ee', bare2: '#dfe6ee',
-};
-// altura (h) da casa mais baixa do tabuleiro a até `ring` casas de (i, j): a extensão nunca passa dela
-export const extH = (g: Grid, i: number, j: number, ring: number) => {
-  let h = Infinity;
-  for (let b = j - ring; b <= j + ring; b++) for (let a = i - ring; a <= i + ring; a++) {
-    if (a >= 0 && b >= 0 && a < g.width && b < g.height) h = Math.min(h, tileAt(g, { x: a, y: b }).h);
-  }
-  return h;
 };
 const DARK_FALLBACK = '#6b6f7a'; // pisos de cripta, altar e o resto: pedra
 
@@ -186,22 +176,38 @@ export class Ambience {
   private readonly textures: THREE.Texture[] = [];
   private readonly hw: number;
   private readonly hh: number;
+  // chão do terreno liso de fora (terrain.ts), onde ele existe: as árvores e pedras de perto pousam nele
+  private readonly outer: { step: number; river: ReturnType<typeof riverOf>; water: Set<string> } | null;
 
   constructor(private readonly grid: Grid, private readonly mood: Mood, models: Map<string, THREE.Object3D>) {
     this.hw = grid.width / 2;
     this.hh = grid.height / 2;
     const u = this.u;
     u.ambHalf.value.set(this.hw, this.hh);
-    Object.assign(u, { ambNear: { value: FADE ? EXT_FADE + EXT_DARK : mood.near }, ambFar: { value: FADE ? EXT_FADE + EXT_DARK + 4 : mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
+    Object.assign(u, { ambNear: { value: FADE ? EXT_FADE : mood.near }, ambFar: { value: FADE ? EXT_FADE + EXT_DARK : mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
+    if (EXTEND === 'textura' && !mood.walls && grid.tiles.some((t) => t.look)) {
+      const step = grid.levelHeight ?? 0.5, levels = waterLevels(grid, step), river = riverOf(grid, levels);
+      this.outer = { step, river, water: new Set(riverOutside(grid, step, levels, river).keys()) };
+    } else this.outer = null;
     this.buildGround();
     // na cripta não: as paredes, tochas e cristais ficam nessa faixa e sumiam dentro das colunas (revisão de 13/11)
     if (EXTEND !== 'nenhuma' && EXTEND !== 'textura' && !mood.walls) this.buildExtension(rand); // textura: a cena desenha (scene.ts)
     for (const p of mood.props) this.scatter(p, models.get(p.model)!, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
+    Object.assign(this.beamU, { ambHalf: u.ambHalf, ambNear: u.ambNear, ambFar: u.ambFar }); // os mesmos da neblina (trocados acima)
     this.buildBeams(rand);
     this.buildMotes(rand);
+  }
+
+  // onde pousa um modelo dos arredores: no terreno liso de fora (até EXT_RING casas) ou no chão dos arredores; null em
+  // cima do rio de fora
+  private propY(x: number, z: number): number | null {
+    if (!this.outer || this.out(x, z) >= EXT_RING) return this.height(x, z);
+    const i = Math.floor(x + this.hw), j = Math.floor(z + this.hh);
+    if (this.outer.water.has(`${i},${j}`)) return null;
+    return outerTop(this.grid, this.outer.step, this.outer.river, i, j);
   }
 
   // distância até a borda do tabuleiro (0 em cima dele), com o mapa centrado na origem como na cena
@@ -219,6 +225,8 @@ export class Ambience {
     const m = this.mood, d = this.out(x, z);
     let y = -0.7 - 0.3 * smooth(0, 3, d) + m.rise * Math.max(0, d - 1.5) + m.bump * smooth(2, 10, d) * (noise(x * 0.11, z * 0.11) * 2 - 1);
     if (EDGE[this.edgeLook(x, z)] === EDGE.water) y -= 0.35 * (1 - smooth(4, 14, d)); // o rio segue num leito fundo
+    // embaixo do terreno liso de fora (terrain.ts) o chão dos arredores fica mais baixo: aparecia por cima dele na Colina
+    if (this.outer && d < EXT_RING + 1) y = Math.min(y, -1.5);
     return Math.min(y, LIMIT(d) - 0.3, GROUND_MAX);
   }
 
@@ -251,6 +259,8 @@ export class Ambience {
       // perto da borda puxa a cor da casa vizinha; longe, a cor do lugar, com manchas e mais escura
       c.copy(base).lerp(new THREE.Color(edge ?? this.mood.ground), edge ? 1 - smooth(0.5, edge === EDGE.water ? 12 : 6, d) : 0);
       c.multiplyScalar((0.8 + 0.35 * noise(x * 0.35, z * 0.35)) * (1 - 0.3 * smooth(3, 18, d))).toArray(colors, i * 3);
+      // embaixo do terreno liso de fora o chão fica preto: pela borda do terreno a câmera o via por baixo (faixa verde na Colina)
+      if (this.outer && d < EXT_RING + 0.5) c.setScalar(0).toArray(colors, i * 3);
     }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     g.computeVertexNormals();
@@ -258,12 +268,12 @@ export class Ambience {
   }
 
   // Extensão (13/11, pedido do Fernando: "tiles em preto e branco fora do limite… só para dar a vibe
-  // de que o mapa continua"): EXT_RING casas de cinza em volta do tabuleiro, sem regra nem clique. Cada uma continua a
+  // de que o mapa continua"): TEST_RING casas de cinza em volta do tabuleiro, sem regra nem clique. Cada uma continua a
   // altura da casa da borda mais perto ou fica 1 nível abaixo, nunca acima: mais alta, na frente, tapava boneco.
   private buildExtension(rand: () => number) {
     const { width: W, height: H } = this.grid, step = this.grid.levelHeight ?? 0.5, BOTTOM = -3;
     const at: THREE.Matrix4[] = [], tones: THREE.Color[] = [];
-    for (let j = -EXT_RING; j < H + EXT_RING; j++) for (let i = -EXT_RING; i < W + EXT_RING; i++) {
+    for (let j = -TEST_RING; j < H + TEST_RING; j++) for (let i = -TEST_RING; i < W + TEST_RING; i++) {
       if (i >= 0 && j >= 0 && i < W && j < H) continue;
       const t = tileAt(this.grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
       if (t.look === 'water' || t.look === 'bridge') continue; // o rio segue no chão dos arredores
@@ -314,7 +324,8 @@ export class Ambience {
     for (let tries = 0; at.length < p.n && tries < p.n * 30; tries++) {
       const x = span(-this.hw - reach, this.hw + reach), z = span(-this.hh - reach, this.hh + reach), d = this.out(x, z);
       if (d < p.d[0] || d > reach) continue;
-      const y = this.height(x, z);
+      const y = this.propY(x, z);
+      if (y === null) continue; // em cima do rio de fora
       // y + h <= 0,5 + 0,55·(d - lean·h), e o teto de 8
       const h = Math.min(span(p.h[0], p.h[1]), (0.5 + 0.55 * d - y) / (1 + 0.55 * lean), 8 - y);
       if (h < p.h[0] * 0.6) continue; // não cabe ali sem tapar o tabuleiro
@@ -438,14 +449,16 @@ export class Ambience {
     if (!b.n) return;
     const mat = new THREE.ShaderMaterial({
       uniforms: this.beamU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-      vertexShader: 'varying vec2 vUv; varying vec2 vBeam; attribute vec2 beam; void main() { vUv = uv; vBeam = beam; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: `uniform vec3 uColor; uniform float uPower; uniform float uTime; varying vec2 vUv; varying vec2 vBeam;
+      vertexShader: 'varying vec2 vUv; varying vec2 vBeam; varying vec3 vBW; attribute vec2 beam; void main() { vUv = uv; vBeam = beam; vBW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `uniform vec3 uColor; uniform float uPower; uniform float uTime; uniform vec2 ambHalf; uniform float ambNear; uniform float ambFar; varying vec2 vUv; varying vec2 vBeam; varying vec3 vBW;
         void main() {
           float across = pow(1.0 - abs(vUv.x * 2.0 - 1.0), 1.6);
           float along = (1.0 - smoothstep(0.55, 1.0, vUv.y)) * smoothstep(0.0, 0.12, vUv.y);
           float dust = 0.7 + 0.3 * sin(vUv.y * 22.0 + uTime * 0.0011 + vBeam.x) * sin(vUv.x * 9.0 - uTime * 0.0006);
           float breathe = 0.55 + 0.45 * sin(uTime * 0.0004 + vBeam.x);
-          gl_FragColor = vec4(uColor * uPower * vBeam.y * across * along * dust * breathe, 1.0);
+          // some junto com a neblina: com o fade para o preto, o raio fora do mapa riscava uma faixa clara no escuro (Colina)
+          float fade = 1.0 - smoothstep(ambNear, ambFar, length(max(abs(vBW.xz) - ambHalf, 0.0)));
+          gl_FragColor = vec4(uColor * uPower * vBeam.y * across * along * dust * breathe * fade, 1.0);
         }`,
     });
     const sun = this.mood.light ? new THREE.Vector3(...this.mood.light.at).negate().normalize() : SUN;

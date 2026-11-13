@@ -24,7 +24,8 @@ import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 import { Water } from './water.ts';
 import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
-import { EXTEND, EXT_DARK, EXT_FADE, extH, kindOf, loadAmbience, type Ambience } from './ambience.ts';
+import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
+import { PAINT, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -90,6 +91,20 @@ const LOOK: Record<string, { top: string; side: string | null; prop?: string; pr
 };
 // escada da masmorra: 2 de largura, 4 de fundo e 4 de altura, sobe para -z (conferido nos vértices do arquivo)
 const STAIRS = 'masmorra/stairs_modular_center';
+// Versão de teste ?bonecos=textura (13/11, pedido do Fernando: "coloca textura nos bonecos também pra gente ver como fica"):
+// a textura de terra do terreno vira um granulado por cima da cor lisa do KayKit, projetado pelos três eixos do boneco
+const UNIT_DETAIL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'textura';
+function detail(mat: THREE.MeshStandardMaterial, tex: THREE.Texture) {
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.tDetail = { value: tex };
+    sh.vertexShader = 'varying vec3 vDPos; varying vec3 vDN;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvDPos = position; vDN = objectNormal;');
+    sh.fragmentShader = 'uniform sampler2D tDetail; varying vec3 vDPos; varying vec3 vDN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+      vec3 dn = abs(normalize(vDN));
+      vec3 dt = (texture2D(tDetail, vDPos.zy * 2.5).rgb * dn.x + texture2D(tDetail, vDPos.xy * 2.5).rgb * dn.z + texture2D(tDetail, vDPos.xz * 2.5).rgb * dn.y) / (dn.x + dn.y + dn.z);
+      float lum = dot(dt, vec3(0.299, 0.587, 0.114));
+      diffuseColor.rgb *= mix(1.0, 0.55 + 1.0 * lum, 0.6);`);
+  };
+}
 const UNDER = 'blocos/stone_dark'; // coluna embaixo da água da ponte e da saia do mapa
 
 // Base do mapa como um bloco (pedidos do Fernando, 12/11, olhando o tabuleiro do FFT): todas as colunas terminam no mesmo
@@ -207,9 +222,11 @@ export class BattleScene {
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
   private water: Water | null = null; // só nos mapas com água
   private raised?: Set<string>; // trechos fundos na altura da rasa (water-levels.ts raisedDeep)
+  // casa desenhada pelo terreno liso (terrain.ts) em vez de blocos: aparência pintável, fora muro sem peça (pedra, tijolo)
+  private ground = (t: Tile): boolean => !!this.terrainTex && !!t.look && t.look in PAINT && !(t.terrain === 'wall' && !LOOK[t.look].prop);
   private ambience: Ambience | null = null; // arredores, neblina, raios de luz e partículas (ambience.ts)
 
-  private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[]) {
+  private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[], private readonly terrainTex: TerrainTextures | null = null) {
     this.pixel = pixel;
     this.step = grid.levelHeight ?? STEP;
     this.renderer.shadowMap.enabled = true;
@@ -247,6 +264,8 @@ export class BattleScene {
   // já tinha morrido e apertar "Jogar de novo" trazia a unidade como o cristal do Farol
   static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings, all: string[] = []): Promise<BattleScene> {
     const ambience = loadAmbience(grid); // baixa junto com as peças do mapa
+    // terreno liso nos mapas abertos (terrain.ts); as criptas seguem em blocos
+    const terrainTex = grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt' ? loadTerrainTextures() : null;
     // bonecos comprimidos com meshopt (13/11, pedido do Fernando: o jogo baixava 11 MB para abrir); decodificador do Three
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const defs = [...new Set([...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)).filter(Boolean))];
@@ -261,7 +280,7 @@ export class BattleScene {
     const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
     // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
-    const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack);
+    const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack, await terrainTex);
     s.ambience = (await ambience).mount(s.scene);
     s.sync(state);
     return s;
@@ -338,6 +357,9 @@ export class BattleScene {
     const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
     const levels = waterLevels(this.grid, this.step);
+    const smooth = !!this.terrainTex;
+    const river = smooth ? riverOf(this.grid, levels) : null;
+    const outside = smooth && EXTEND === 'textura' ? riverOutside(this.grid, this.step, levels, river) : new Map<string, WaterLevel>();
     const looks = this.lookBatches(edge, walls, levels);
     for (const [i, tile] of this.grid.tiles.entries()) {
       const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
@@ -379,10 +401,22 @@ export class BattleScene {
     this.instanced(side, batch.side.at);
     this.instanced(stone, batch.stone.at);
     looks.build();
-    // não nas criptas: paredes, tochas e cristais dos arredores ficam nessa faixa (ambience.ts)
-    if (EXTEND === 'textura' && kindOf(this.grid) !== 'crypt') this.buildTexturedExtension();
+    if (smooth) {
+      const inner = (p: Pos, x: number, z: number) => {
+        const lv = levels.get(posKey(p)), t = tileAt(this.grid, p);
+        return lv ? lv.bed : this.ground(t) ? this.surfaceY(p, x, z) : (t.h + 1) * this.step;
+      };
+      this.scene.add(buildTerrain(this.grid, { step: this.step, inner, outside, river, extend: EXTEND === 'textura', tex: this.terrainTex! }));
+      const picks = this.grid.tiles.flatMap((t, i) => {
+        const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
+        return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.world(p) }] : [];
+      });
+      const pick = pickTiles(picks);
+      this.scene.add(pick);
+      this.tileTops.push(pick);
+    }
     if (levels.size) {
-      this.water = new Water(this.scene, this.grid, levels, this.step);
+      this.water = new Water(this.scene, this.grid, new Map([...levels, ...outside]), this.step);
       this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
     }
     this.buildTrees(pieces.tree);
@@ -470,17 +504,18 @@ export class BattleScene {
         // y' = y * (altura + subida) / altura + subida * (meio passo na direção da rampa + 1/2)
         m.set(1, 0, 0, w.x, f.x * rise, (slab + rise) / slab, f.y * rise, top + rise / 2, 0, 0, 1, w.z, 0, 0, 0, 1);
       }
-      put(look.top, slab, m, p);
+      const painted = this.ground(tile);
+      if (!painted) put(look.top, slab, m, p);
       // coluna até a base reta (y = 0): cubos inteiros e o último achatado no que falta, para o fundo não ficar em degraus
       const column = look.side ?? UNDER;
       let y = top - slab;
       if (!look.side) {
         // ponte: o leito embaixo, se a água passa por baixo da tábua (a superfície vem de water.ts)
         const under = water.get(posKey(p));
-        if (under) put(LOOK.water.top, 1, new THREE.Matrix4().makeTranslation(w.x, under.bed, w.z).scale(new THREE.Vector3(1, under.bed, 1)));
+        if (under && !this.terrainTex) put(LOOK.water.top, 1, new THREE.Matrix4().makeTranslation(w.x, under.bed, w.z).scale(new THREE.Vector3(1, under.bed, 1)));
         y = 0;
       }
-      if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
+      if (painted) { /* chão do terreno liso */ } else if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
       else for (; y > 0; y -= 1) if (!this.buried(p, y)) put(column, 1, new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)));
       if (look.prop && tile.terrain !== 'forest') { // árvore de casa de floresta: buildTrees
         const box = new THREE.Box3().setFromObject(this.lookPieces.get(look.prop)!);
@@ -497,43 +532,6 @@ export class BattleScene {
 
   // Um InstancedMesh por malha da peça em vez de um objeto por bloco: o 20x20 fazia 2 321 draw calls por quadro e caía
   // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
-  // Versão de teste ?extensao=textura (13/11, pedido do Fernando: "os blocos de fora podem ter a textura, só mais escuros;
-  // os primeiros com fade para escuro"): EXT casas em volta com a peça do topo da casa da borda mais perto, escurecendo nos
-  // EXT_FADE primeiros anéis e escura nos EXT_DARK seguintes (ambience.ts), e coluna lisa escura até o chão dos arredores. Sem regra nem clique. A altura segue
-  // extH (a casa mais baixa por perto), a mesma conta que impede a extensão de tapar boneco na diagonal
-  private buildTexturedExtension() {
-    const { width: W, height: H } = this.grid, RING = EXT_FADE + EXT_DARK, BOTTOM = -3;
-    const tops = new Map<string, { at: THREE.Matrix4[]; tone: number[] }>();
-    const cols: THREE.Matrix4[] = [], colTone: number[] = [];
-    for (let j = -RING; j < H + RING; j++) for (let i = -RING; i < W + RING; i++) {
-      if (i >= 0 && j >= 0 && i < W && j < H) continue;
-      const t = tileAt(this.grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
-      if (t.look === 'water' || t.look === 'bridge') continue;
-      const ring = Math.max(-i, -j, i - W + 1, j - H + 1);
-      const name = LOOK[t.look ?? 'grass']?.top ?? LOOK.grass.top;
-      if (!this.lookPieces.has(name)) continue;
-      const top = (extH(this.grid, i, j, ring) + 1) * this.step, x = i - W / 2 + 0.5, z = j - H / 2 + 0.5;
-      // escurece de 0,78 até 0,18 nos EXT_FADE primeiros anéis e fica em 0,18 nos EXT_DARK seguintes (0,58 e 0,38 com 2)
-      const tone = ring <= EXT_FADE ? 0.18 + 0.6 * (1 - ring / (EXT_FADE + 1)) : 0.18;
-      let b = tops.get(name);
-      if (!b) tops.set(name, (b = { at: [], tone: [] }));
-      b.at.push(new THREE.Matrix4().makeTranslation(x, top, z));
-      b.tone.push(tone);
-      cols.push(new THREE.Matrix4().makeScale(1, top - this.step - BOTTOM, 1).setPosition(x, (top - this.step + BOTTOM) / 2, z));
-      colTone.push(tone * 0.5);
-    }
-    for (const [name, b] of tops) {
-      const o = this.lookPieces.get(name)!.clone();
-      const box = new THREE.Box3().setFromObject(o), size = box.getSize(new THREE.Vector3());
-      o.scale.set(1 / size.x, this.step / size.y, 1 / size.z);
-      o.position.set(-(box.min.x + box.max.x) / 2 / size.x, -box.max.y * (this.step / size.y), -(box.min.z + box.max.z) / 2 / size.z);
-      for (const inst of this.instanced(prepare(new THREE.Group().add(o)), b.at)) b.tone.forEach((k, n) => inst.setColorAt(n, new THREE.Color().setScalar(k)));
-    }
-    const col = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: '#2a3a22' }), cols.length);
-    cols.forEach((m, n) => { col.setMatrixAt(n, m); col.setColorAt(n, new THREE.Color().setScalar(colTone[n])); });
-    this.scene.add(col);
-  }
-
   private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
     const out: THREE.InstancedMesh[] = [];
     if (!at.length) return out;
@@ -756,6 +754,7 @@ export class BattleScene {
         const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
         // brilho de fábrica (olhos amarelos dos esqueletos): o piscar de golpe e cura mexe no emissivo e precisa voltar a ele
         mat.userData.glow = { color: mat.emissive.clone(), intensity: mat.emissiveIntensity };
+        if (UNIT_DETAIL && this.terrainTex) detail(mat, this.terrainTex.dirt);
         mesh.material = mat;
         mats.push(mat);
       });

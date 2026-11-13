@@ -21,9 +21,9 @@
   --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
   --gap: 8px;
   --font: 'Alegreya Sans', system-ui, sans-serif; /* texto corrido: legível em tamanho pequeno */
-  /* títulos, Confirmar e fila: a fonte pixel dá a cara de jogo. Tiny5 (OFL) porque a Pixelify Sans fazia o "2" parecer "8"
-     e a ligadura "fi" virava "A" ("ConArmar"); comparadas também VT323, Silkscreen, Jersey 10, Micro 5, Handjet e DotGothic16 */
-  --font-px: 'Tiny5', var(--font);
+  /* títulos, opções, Confirmar e fila: Cinzel (OFL), serifada de inscrição (13/11, o Fernando achou a fonte pixel
+     Tiny5 "meio tosca" e pediu "uma fonte mais legal serifada nas opções com um sombreamento"); o nome da variável ficou para não mexer em todo o CSS */
+  --font-px: 'Cinzel', var(--font);
   --fs-sm: 14px; --fs: 16px; --fs-lg: 20px; --fs-xl: 32px; /* xl: a chance de acerto da prévia do golpe */
 }
 
@@ -125,7 +125,8 @@ button[hidden] { display: none; }
 .confirm p { margin: 6px 0 0; font-size: var(--fs-sm); }
 .yes-no { display: flex; gap: 6px; margin-top: 10px; }
 .panel .item { width: 100%; min-height: 40px; justify-content: space-between; position: relative; padding: 4px 10px 4px 28px;
-  background: transparent; border: none; box-shadow: none; color: var(--ink); font: 400 var(--fs-lg)/1 var(--font-px); }
+  background: transparent; border: none; box-shadow: none; color: var(--ink); font: 700 var(--fs-lg)/1 var(--font-px);
+  text-shadow: 0 1px 0 rgba(255, 248, 225, .9), 0 2px 3px rgba(60, 40, 15, .35); } /* gravado no pergaminho: luz embaixo, sombra leve */
 .panel .item.focus { background: rgba(255, 255, 255, .5); }
 /* mão do FFT trocada por uma seta nossa marcando o item com o foco */
 .panel .item.focus::before { content: '▶'; position: absolute; left: 8px; color: var(--focus); animation: nudge .6s steps(1, end) infinite; }

@@ -61,6 +61,10 @@ tex/lava005.jpg (beira derretida das ilhas de refúgio)
   ambientCG, "Lava005" (Color, 1K reduzido a 512x512) - https://ambientcg.com/a/Lava005
   Licença lida na página: "CC0 license, making them free to use without attribution".
 
+tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg (terreno liso, desde 13/11/2026)
+  Poly Haven, "rocky_terrain_02", "forrest_ground_01", "mossy_rock", "grass_path_2" e "snow_02" (diff, 1K reduzido a 512x512) - https://polyhaven.com/textures
+  Licença: "CC0 1.0 Universal - public domain dedication, no attribution required" (https://polyhaven.com/license).
+
 == Partículas (fx/, reduzidas a 128x128) ==
 fx/puff_0.png fx/puff_1.png fx/puff_2.png (whitePuff00, 04 e 08: vapor das ilhas e dos corpos na lava)
   Kenney, "Smoke Particles" - https://kenney.nl/assets/smoke-particles
@@ -252,3 +256,4 @@ Gravações de provocações de Leonard (lboesmans), 21/10/2026 (PR #243, aceita
 
 Fonte Tiny5 (Dungeon Tactics, 25/10/2026): "Copyright 2022-2024 The Tiny5 Project Authors" (https://github.com/Gissio/font_tiny5),
   SIL Open Font License 1.1 (texto em https://github.com/google/fonts/blob/main/ofl/tiny5/OFL.txt), carregada do Google Fonts pelo index.html.
+Fonte Cinzel (títulos, opções e botões desde 13/11/2026, no lugar da Tiny5): Natanael Gama, SIL Open Font License 1.1 (Google Fonts)
