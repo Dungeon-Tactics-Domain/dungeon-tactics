@@ -7,8 +7,14 @@ import { portrait } from './hud.ts';
 import { LANG } from './i18n.ts';
 import { el } from './icons.ts';
 import { blip } from './sound.ts';
+import { store } from './store.ts';
 
-const CHAR_MS = 28; // ~35 letras por segundo: lê no ritmo de quem lê devagar e não cansa quem lê rápido
+// Velocidade do texto (menu, dt:texto): Normal ~35 letras por segundo, no ritmo de quem lê devagar sem cansar quem lê rápido;
+// Rápida ~3 vezes isso; Instantânea mostra a frase inteira (pedido comum em RPG tático, noite de 12/11)
+export const TEXT_KEY = 'dt:texto';
+export type TextSpeed = 'normal' | 'fast' | 'instant';
+const CHAR_MS: Record<TextSpeed, number> = { normal: 28, fast: 10, instant: 0 };
+export const textSpeed = (): TextSpeed => { const v = store.get(TEXT_KEY); return v === 'fast' || v === 'instant' ? v : 'normal'; };
 
 export interface TalkOptions {
   title?: string; // faixa acima da caixa (nome da fase ou do lugar)
@@ -46,12 +52,21 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
         const s = full();
         shown++;
         text.textContent = s.slice(0, shown);
-        if (shown % 2 && /\p{L}/u.test(s[shown - 1])) blip(who.pitch); // uma letra sim, outra não: bipe sem metralhar
+        // uma letra sim, outra não (na rápida, 1 em 4): bipe sem metralhar
+        if (shown % (textSpeed() === 'fast' ? 4 : 2) === 1 && /\p{L}/u.test(s[shown - 1])) blip(who.pitch);
         if (!typing()) {
           clearInterval(timer);
           box.classList.add('done');
         }
-      }, CHAR_MS);
+      }, CHAR_MS[textSpeed()] || 1);
+      if (!CHAR_MS[textSpeed()]) {
+        // instantânea: a frase inteira de uma vez, com um bipe só para marcar quem fala
+        clearInterval(timer);
+        shown = full().length;
+        text.textContent = full();
+        box.classList.add('done');
+        blip(who.pitch);
+      }
     };
     box.addEventListener('click', () => {
       if (typing()) {

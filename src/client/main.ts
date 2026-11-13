@@ -24,7 +24,7 @@ import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } 
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
-import { talk } from './talk.ts';
+import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
 import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
 import { openParty, openWorld } from './world-ui.ts';
 import { HERO_KEY, parseHero } from './hero.ts';
@@ -569,6 +569,8 @@ class Game {
       el('h3', {}, t('Som', 'Sound')),
       choice(t('Música', 'Music'), [[0, t('Desligada', 'Off')], [1, t('Baixa', 'Low')], [2, t('Alta', 'High')]] as [Level, string][], soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
       choice(t('Efeitos', 'Effects'), [[0, t('Desligados', 'Off')], [1, t('Baixos', 'Low')], [2, t('Altos', 'High')]] as [Level, string][], soundSettings().sfx, (v) => setSound({ ...soundSettings(), sfx: v })),
+      el('h3', {}, t('Conversas', 'Dialogue')),
+      choice(t('Velocidade do texto', 'Text speed'), [['normal', t('Normal', 'Normal')], ['fast', t('Rápida', 'Fast')], ['instant', t('Instantânea', 'Instant')]] as [TextSpeed, string][], textSpeed(), (v) => store.set(TEXT_KEY, v)),
       el('h3', {}, t('Teclado', 'Keyboard')),
       el('dl', { class: 'keys' }, ...keyHelp().flatMap(([k, what]) => [el('dt', {}, k), el('dd', {}, what)])),
       el('div', { class: 'menu-actions' },
