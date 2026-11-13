@@ -561,7 +561,10 @@ class Game {
         ? (won ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.') : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.'))
         : won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
         : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.')),
-      el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
+      // Título ao lado: sem ele, sair da batalha avulsa pedia recarregar a página
+      el('div', { class: 'menu-actions' },
+        el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
+        el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title'))),
     ]);
     // Enter joga de novo (o foco ia para o ✕, e fechar deixava a batalha acabada sem tecla para recomeçar)
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
