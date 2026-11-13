@@ -5,6 +5,8 @@ import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
 import { CHEST_KEY, EQUIP_KEY, GOLD_PER_STAR, parseChest, parseEquip } from './chest.ts';
+import { MISSIONS, MISSIONS_KEY, missionScenario, missionScenarioId, parseDone, type Mission } from './missions.ts';
+import { ITEMS } from '../shared/battle/equipment.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
@@ -37,6 +39,7 @@ import { createHero } from './create-ui.ts';
 
 // a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
 let scenario = FIRST_BATTLE;
+let mission: Mission | null = null; // missão do bar em jogo (missions.ts)
 let SAVE_KEY = 'dt:battle';
 let chapter: number | null = null; // fase da campanha em jogo (null = batalha avulsa)
 // Teste (só em localhost): ?auto=1 faz a IA jogar pelos heróis também, para conferir fim de fase, vitória e volta ao
@@ -583,19 +586,27 @@ class Game {
     // Até o amanhecer: quantos turnos aguentou e o recorde (novo recorde ganha destaque, como a nota da fase)
     // vencer derrubando todos antes do amanhecer também é aguentar a noite inteira (antes gravava "recorde 20" numa vitória)
     const lasted = won ? SURVIVE_TURNS : survived(this.battle.state), best = parseBest(store.get(BEST_KEY));
+    // missão do bar vencida: ouro e item no baú, e ela sai do bar (missions.ts)
+    if (mission && won && !parseDone(store.json(MISSIONS_KEY)).includes(mission.id)) {
+      const chest = parseChest(store.json(CHEST_KEY));
+      store.set(CHEST_KEY, JSON.stringify({ gold: chest.gold + mission.gold, items: mission.item ? [...chest.items, mission.item] : chest.items }));
+      store.set(MISSIONS_KEY, JSON.stringify([...parseDone(store.json(MISSIONS_KEY)), mission.id]));
+    }
     if (scenario.id === SURVIVAL_ID && lasted > best) store.set(BEST_KEY, String(lasted));
     const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
       ...(scenario.id === SURVIVAL_ID ? [el('p', { class: lasted > best ? 'learned' : '' },
         lasted > best ? t(`Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`, `New record: ${lasted} of ${SURVIVE_TURNS} turns!`)
           : t(`Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`, `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`))] : []),
       ...this.mvpLine(),
+      ...(mission && won ? [el('p', { class: 'mvp' }, t(`Recompensa: ${mission.gold} de ouro${mission.item ? ` e ${ITEMS[mission.item].name}` : ''} no baú.`, `Reward: ${mission.gold} gold${mission.item ? ` and ${ITEMS[mission.item].en}` : ''} in the chest.`))] : []),
       el('p', {}, scenario.id === SURVIVAL_ID
         ? (won ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.') : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.'))
         : won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
         : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.')),
       // Título ao lado: sem ele, sair da batalha avulsa pedia recarregar a página
       el('div', { class: 'menu-actions' },
-        el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
+        mission && won ? el('button', { type: 'button', class: 'primary', onclick: toWorld }, t('Voltar ao mapa', 'Back to map'))
+          : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
         el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title'))),
     ]);
     // Enter joga de novo (o foco ia para o ✕, e fechar deixava a batalha acabada sem tecla para recomeçar)
@@ -703,11 +714,23 @@ async function boot() {
   // build (import dinâmico), então nada dele vai no pacote que o jogador baixa.
   const study = new URLSearchParams(location.search).get('cenario');
   const camp = new URLSearchParams(location.search).get('campanha');
+  // missão do bar (missions.ts): só as ainda não vencidas; endereço de missão desconhecida ou vencida volta ao mapa
+  const mis = new URLSearchParams(location.search).get('missao');
+  if (mis !== null) {
+    const m = MISSIONS.find((x) => x.id === mis);
+    if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) return toWorld();
+    mission = m;
+    setTrack('road');
+    scenario = missionScenario(m, parseProgress(store.get(CAMPAIGN_KEY)), savedHero(), parseEquip(store.json(EQUIP_KEY)));
+    SAVE_KEY = `dt:battle:${missionScenarioId(m.id)}`;
+  }
   if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // mapa mundial: sem batalha montada
   // fase inexistente ou ainda fechada (endereço digitado ou salvo): volta ao mapa em vez de cair numa batalha avulsa
   const allowed = camp !== null && camp !== '' && CHAPTERS[Number(camp)] !== undefined && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY));
   if (camp !== null && !allowed) return toWorld();
-  if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
+  if (mission) {
+    // já montada acima
+  } else if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
     setTrack(CHAPTERS[chapter].song);

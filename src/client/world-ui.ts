@@ -13,6 +13,7 @@ import { el } from './icons.ts';
 import { sfx } from './sound.ts';
 import { store } from './store.ts';
 import { CHEST_KEY, EQUIP_KEY, buy, equip, parseChest, parseEquip, sell } from './chest.ts';
+import { MISSIONS, MISSIONS_KEY, parseDone } from './missions.ts';
 import { ITEMS, SLOTS, bonusOf, type ItemDef, type Slot } from '../shared/battle/equipment.ts';
 import { WORLD, isOpen, step } from './world.ts';
 
@@ -77,8 +78,17 @@ function openTown(i: number, party: () => void) {
 }
 function openBar(i: number, back: () => void) {
   const rumors = WORLD[i].town?.rumors ?? [];
+  const done = parseDone(store.json(MISSIONS_KEY));
+  const open = MISSIONS.filter((m) => m.town === WORLD[i].id && !done.includes(m.id));
   dialog('party', t('Bar', 'Tavern'), [el('ul', { class: 'legend' }, ...rumors.map(([pt, en]) => el('li', {}, `“${t(pt, en)}”`))),
-    el('p', {}, t('Missões do bar chegam na próxima entrega.', 'Tavern quests come in the next delivery.'))], { onBack: back });
+    el('h3', {}, t('Missões', 'Quests')),
+    // missão: batalha extra com o grupo atual; vencer dá ouro e item (missions.ts)
+    ...(open.length ? open.map((m) => el('div', { class: 'party-card' }, el('div', {},
+      el('strong', {}, t(m.name[0], m.name[1])), el('p', {}, t(m.text[0], m.text[1])),
+      el('p', { class: 'party-stats' }, t(`Recompensa: ${m.gold} de ouro${m.item ? ` e ${ITEMS[m.item].name}` : ''}`, `Reward: ${m.gold} gold${m.item ? ` and ${ITEMS[m.item].en}` : ''}`)),
+      el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = `?missao=${m.id}`; } }, t('Aceitar', 'Accept')))))
+      : [el('p', {}, t('Nenhuma missão por agora.', 'No quests for now.'))]),
+  ], { onBack: back });
 }
 
 // Loja (13/11, entrega 2: provisória no mapa até as cidades): compra com o ouro do baú, vende pela metade (como no FFT)
