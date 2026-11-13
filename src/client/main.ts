@@ -628,6 +628,21 @@ async function boot() {
   new Game(battle, scene, host, pixel);
   // fase começando do zero: a conversa de abertura por cima do mapa já montado
   if (chapter !== null && !saved) void talk(CHAPTERS[chapter].intro, chapterTitle(chapter));
+  // abrir o jogo sem parâmetro mostra a tela de título por cima da batalha avulsa (que fica ao fundo, já jogável)
+  if (camp === null && !study) titleScreen();
+}
+
+// Tela de título (noite de 12/11): o jogo abria direto numa batalha sem dizer o que era nem que havia campanha
+function titleScreen() {
+  const go = (fn: () => void) => () => { d.close(); fn(); };
+  const d = dialog('title', 'Dungeon Tactics', [
+    el('p', { class: 'title-sub' }, t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes')),
+    el('div', { class: 'menu-actions camp-list' },
+      el('button', { type: 'button', class: 'primary', onclick: go(campaignMenu) }, t('Campanha: Cinzas do Farol', 'Campaign: Ashes of the Beacon')),
+      el('button', { type: 'button', class: 'secondary', onclick: go(() => undefined) }, t('Batalha avulsa (Colina do Farol)', 'Quick battle (Beacon Hill)')),
+      el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu()) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'))),
+  ]);
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
 const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
