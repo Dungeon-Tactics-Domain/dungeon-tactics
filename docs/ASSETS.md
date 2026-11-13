@@ -21,7 +21,7 @@
 
 | Arquivo | O que é | Onde é usado | Origem e licença |
 |---|---|---|---|
-| `models/mage.glb`, `knight`, `barbarian`, `rogue`, `rogue_hooded`, `skeleton_mage`, `skeleton_minion`, `skeleton_rogue`, `skeleton_warrior` | os 9 bonecos (1 MB cada), com 21 animações | `src/client/scene.ts` (`/models/${id}.glb`), lista em `src/shared/characters.ts` | KayKit Adventurers e Skeletons, CC0; cortados por `scripts/slim-character.mjs`, capuz por `scripts/assets/hood.mjs` |
+| `models/mage.glb`, `knight`, `barbarian`, `rogue`, `rogue_hooded`, `skeleton_mage`, `skeleton_minion`, `skeleton_rogue`, `skeleton_warrior` | os 9 bonecos (~0,7 MB cada), com as 10 animações que o código chama | `src/client/scene.ts` (`/models/${id}.glb`, lidos com `MeshoptDecoder`), lista em `src/shared/characters.ts` | KayKit Adventurers e Skeletons, CC0; cortados por `scripts/slim-character.mjs`, capuz por `scripts/assets/hood.mjs`; em 13/11 sem as 11 animações nunca chamadas e comprimidos com meshopt (`@gltf-transform/functions` `meshopt`, sem prune manual; os 9 juntos 9,3 → 6,3 MB), conferidos com prints antes/depois |
 | `models/KAYKIT-LICENSE.txt`, `KAYKIT-SKELETONS-LICENSE.txt` | licenças dos bonecos | — | KayKit, CC0 |
 | `desktop/icon.png` (fora de `public/`) | ícone do app e do instalador para Windows | `desktop/package.json` (`build.win.icon`; o electron-builder converte para o ícone do `.exe`) | gerado do `public/warlock-wars.svg` (o W da aba) em 512×512, recortado em círculo transparente; arte do projeto |
 | `models/decor.glb` | decoração da arena num GLB só (caveiras, ossos, árvores mortas, tochas, colunas, velas) | `src/client/decor.ts` | KayKit Halloween e Dungeon, CC0; junto por `scripts/assets/merge-decor.mjs` |

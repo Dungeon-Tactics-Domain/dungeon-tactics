@@ -2,6 +2,7 @@
 // RenderPixelatedPass (o pixel art SNES da spec). Só desenha: não conhece regras, recebe estado, destaques e eventos.
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -215,7 +216,8 @@ export class BattleScene {
   }
 
   static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings): Promise<BattleScene> {
-    const loader = new GLTFLoader();
+    // bonecos comprimidos com meshopt (13/11, pedido do Fernando: o jogo baixava 11 MB para abrir); decodificador do Three
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const defs = [...new Set(state.units.map((u) => modelOf(u.def)).filter(Boolean))];
     const [top, side, stone, tree, ...loaded] = await Promise.all([
       ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/quadrado/${n}.gltf`)),
