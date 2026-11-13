@@ -23,7 +23,7 @@ import { TIMING, pace } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
-import { SURVIVAL_ID, survivalGoal, survivalScenario } from './survival.ts';
+import { SURVIVAL_ID, SURVIVE_TURNS, survivalGoal, survivalScenario, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
@@ -355,6 +355,7 @@ class Game {
 
   private update(ui: Ui) {
     this.ui = ui;
+    if (this.battle.state.scenario === SURVIVAL_ID) this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.screen;
     // no menu e no submenu só a casa de quem joga fica marcada; o alcance aparece ao escolher (como no FFT)
     const hl = !this.heroTurn || this.busy ? null : s.k === 'facing' ? this.facingMarks()

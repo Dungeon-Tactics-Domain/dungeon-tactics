@@ -174,6 +174,8 @@ export class BattleScene {
   private insets = { top: 0, bottom: 0 }; // px cobertos pelo HUD em cima e embaixo
   private yaw = Math.PI / 4;
   private yawTarget = Math.PI / 4;
+  private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
+  private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
 
   private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[]) {
     this.pixel = pixel;
@@ -196,8 +198,8 @@ export class BattleScene {
     // a paleta vem depois da saída em sRGB; liga e desliga sem refazer a cadeia
     for (const pass of [this.renderPass, this.pixelPass, new OutputPass(), this.palettePass]) this.composer.addPass(pass);
     this.scene.background = new THREE.Color('#1b1626');
-    this.scene.add(new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15));
-    const sun = new THREE.DirectionalLight('#ffffff', 1.6);
+    this.scene.add(this.sky);
+    const sun = this.sun;
     sun.position.set(-6, 12, 4);
     sun.castShadow = true;
     Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10 });
@@ -790,6 +792,18 @@ export class BattleScene {
 
   rotate(dir: 1 | -1) {
     this.yawTarget += (dir * Math.PI) / 2;
+  }
+
+  // Luz do modo Até o amanhecer (survival.ts): k = 0 é noite de lua (azul e fraca), k = 1 é o sol nascendo (quente, na
+  // força normal). O jogador vê o fim chegando sem ler o número; os outros mapas nunca chamam e ficam na luz de sempre.
+  setDaylight(k: number) {
+    const mix = (night: string, day: string) => new THREE.Color(night).lerp(new THREE.Color(day), k);
+    this.sky.color.copy(mix('#7d8fd8', '#ffe2c0'));
+    this.sky.groundColor.copy(mix('#141226', '#3a3050'));
+    this.sky.intensity = 0.55 + 0.6 * k;
+    this.sun.color.copy(mix('#a9bcff', '#ffcf9a'));
+    this.sun.intensity = 0.45 + 1.15 * k;
+    (this.scene.background as THREE.Color).copy(mix('#0a0c1c', '#3b2638'));
   }
 
   // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao quarto de volta mais perto,
