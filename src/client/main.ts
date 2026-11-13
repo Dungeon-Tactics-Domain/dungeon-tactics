@@ -25,8 +25,10 @@ import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roste
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { talk } from './talk.ts';
-import { WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld } from './world.ts';
+import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld } from './world.ts';
 import { openWorld } from './world-ui.ts';
+import { HERO_KEY, parseHero } from './hero.ts';
+import { createHero } from './create-ui.ts';
 
 // a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
 let scenario = FIRST_BATTLE;
@@ -531,12 +533,12 @@ class Game {
       const best = parseStars(store.json(STARS_KEY));
       best[n] = Math.max(best[n], stars);
       store.set(STARS_KEY, JSON.stringify(best));
-      await talk(CHAPTERS[n].outro);
+      await talk(CHAPTERS[n].outro, { hero: savedHero() });
     }
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
       ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
         el('p', {}, t('★ vencer · ★ ninguém caiu · ★ Farol inteiro (sem Farol: todos acima da metade da vida)', '★ win · ★ nobody fell · ★ Beacon untouched (no Beacon: everyone above half HP)')),
-        ...learned(n).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
+        ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       el('p', {}, won ? t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.') : t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')),
       // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
       el('div', { class: 'menu-actions' },
@@ -602,12 +604,12 @@ async function boot() {
   // build (import dinâmico), então nada dele vai no pacote que o jogador baixa.
   const study = new URLSearchParams(location.search).get('cenario');
   const camp = new URLSearchParams(location.search).get('campanha');
-  if (new URLSearchParams(location.search).has('mundo')) return worldScreen(host); // mapa mundial: sem batalha montada
+  if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // mapa mundial: sem batalha montada
   if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
     setTrack(CHAPTERS[chapter].song);
-    scenario = chapterScenario(chapter);
+    scenario = chapterScenario(chapter, savedHero());
     SAVE_KEY = `dt:battle:${chapterId(chapter)}`;
   } else if (study === 'fft-gariland' || study === 'fft-classes') {
     const fft = await import('../shared/battle/fft/gariland.ts');
@@ -633,7 +635,7 @@ async function boot() {
   const scene = await BattleScene.create(host, battle.grid, battle.state, pixel);
   new Game(battle, scene, host, pixel);
   // fase começando do zero: a conversa de abertura por cima do mapa já montado
-  if (chapter !== null && !saved) void talk(CHAPTERS[chapter].intro, chapterTitle(chapter));
+  if (chapter !== null && !saved) void talk(CHAPTERS[chapter].intro, { title: chapterTitle(chapter), hero: savedHero() });
   // abrir o jogo sem parâmetro mostra a tela de título por cima da batalha avulsa (que fica ao fundo, já jogável)
   if (camp === null && !study) titleScreen();
 }
@@ -663,7 +665,7 @@ function titleScreen() {
           btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
           return;
         }
-        for (const k of [WORLD_KEY, CAMPAIGN_KEY, STARS_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
+        for (const k of [WORLD_KEY, CAMPAIGN_KEY, STARS_KEY, HERO_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
         d.close();
         toWorld();
       } }, t('Novo jogo', 'New game')),
@@ -675,10 +677,18 @@ function titleScreen() {
 
 const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
 const toWorld = () => { location.search = '?mundo'; };
+const savedHero = () => parseHero(store.json(HERO_KEY));
 
 // Mapa mundial (world.ts e world-ui.ts): ponto de batalha abre a fase (rejogar começa do zero); ponto de história toca a
 // conversa ali mesmo e libera o seguinte. A fase só abre pela URL se já estiver liberada (boot), por isso o mapa libera antes.
-function worldScreen(host: HTMLElement) {
+async function worldScreen(host: HTMLElement) {
+  // jogo novo (sem herói salvo): a abertura da história e a criação do protagonista antes do mapa
+  let hero = savedHero();
+  if (!hero) {
+    await talk(INTRO, { dark: true });
+    hero = await createHero(host);
+    store.set(HERO_KEY, JSON.stringify(hero));
+  }
   let done = parseWorld(store.get(WORLD_KEY));
   const enter = async (i: number) => {
     const node = WORLD[i];
@@ -688,12 +698,12 @@ function worldScreen(host: HTMLElement) {
       location.search = `?campanha=${node.chapter}`;
       return;
     }
-    await talk(node.scene!, t(node.name[0], node.name[1]));
+    await talk(node.scene!, { title: t(node.name[0], node.name[1]), hero });
     done = afterNode(i, done);
     store.set(WORLD_KEY, String(done));
     view.refresh(done);
   };
-  const view = openWorld(host, { done, hero: 'warrior', stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; } });
+  const view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; } });
 }
 
 void boot();

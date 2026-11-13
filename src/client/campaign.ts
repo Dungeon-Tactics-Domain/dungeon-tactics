@@ -5,6 +5,7 @@ import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
 import { buildDevScenario, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
+import { withHero, type Hero } from './hero.ts';
 import type { SongId } from './music.ts';
 
 export interface Line {
@@ -42,7 +43,7 @@ export const CAMPAIGN_KEY = 'dt:campanha'; // quantas fases já foram vencidas
 const party = (n: number): DevUnit[] => [unitFrom('warrior', 'Bran'), unitFrom('archer', 'Tess'), unitFrom('mage', 'Odo'), unitFrom('rogue', 'Lia')]
   .map((u) => ({ ...u, abilities: u.abilities.slice(0, Math.min(4, 2 + n)) }));
 // habilidades que cada herói ganha ao passar da fase n para a n+1 (para o aviso no fim da fase)
-export const learned = (n: number) => n + 1 >= CHAPTERS.length ? [] : CHAPTERS[n + 1].setup.heroes
+export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTERS.length ? [] : withHero(CHAPTERS[n + 1].setup, hero).heroes
   .map((u, i) => ({ name: u.name, abilities: u.abilities.filter((a) => !CHAPTERS[n].setup.heroes[i].abilities.includes(a)) }))
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
@@ -189,8 +190,8 @@ export const CHAPTERS: Chapter[] = [
 export const chapterId = (n: number) => `camp${n}`;
 // Fase de chefe (boss: true, o 1º inimigo da lista, id e0): derrubar o chefe vence, mesmo com outros de pé; perder todos
 // os heróis (ou o Farol, se houver) perde. Pede outra tática: abrir caminho até ele em vez de limpar o mapa.
-export function chapterScenario(n: number): Scenario {
-  const s = buildDevScenario(CHAPTERS[n].setup, chapterId(n), CHAPTERS[n].title);
+export function chapterScenario(n: number, hero: Hero | null = null): Scenario {
+  const s = buildDevScenario(withHero(CHAPTERS[n].setup, hero), chapterId(n), CHAPTERS[n].title);
   if (CHAPTERS[n].boss) {
     UNIT_DEFS[s.spawns.find((sp) => sp.id === 'e0')!.def].boss = true;
     const beacon = s.spawns.some((sp) => sp.def === OBJECTIVE_DEF);

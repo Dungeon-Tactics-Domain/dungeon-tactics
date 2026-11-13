@@ -15,6 +15,14 @@ export interface WorldNode {
 
 const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
 
+// Abertura da história (jogo novo, tela escura, antes da criação do protagonista)
+export const INTRO: Line[] = [
+  L('narr', 'Há cem anos, os magos do vale ergueram os Faróis: cristais azuis que empurram para longe o Véu, a névoa onde os mortos não descansam.', 'A hundred years ago, the valley mages raised the Beacons: blue crystals that push back the Veil, the mist where the dead never rest.'),
+  L('narr', 'Enquanto os Faróis brilham, o vale dorme em paz. Mas neste outono, um a um, eles começaram a se apagar.', 'While the Beacons shine, the valley sleeps in peace. But this autumn, one by one, they began to go dark.'),
+  L('narr', 'Em Vauclair, a última vila antes da Estrada de Cinzas, quatro viajantes se preparam para levar cristais novos até a Colina do Farol.', 'In Vauclair, the last village before the Ash Road, four travelers prepare to carry new crystals to Beacon Hill.'),
+  L('narr', 'Falta alguém para liderá-los.', 'They still need someone to lead them.'),
+];
+
 export const WORLD: WorldNode[] = [
   {
     id: 'vauclair', name: ['Vila de Vauclair', 'Vauclair Village'], x: 14, y: 80,
