@@ -34,6 +34,9 @@ import { createHero } from './create-ui.ts';
 let scenario = FIRST_BATTLE;
 let SAVE_KEY = 'dt:battle';
 let chapter: number | null = null; // fase da campanha em jogo (null = batalha avulsa)
+// Teste (só em localhost): ?auto=1 faz a IA jogar pelos heróis também, para conferir fim de fase, vitória e volta ao
+// mapa sem jogar à mão (noite de 12/11). No ar nada muda.
+const AUTO = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('auto');
 
 const FPS_KEY = 'dt:fps'; // contador de desempenho ligado (1) ou não (0); começa ligado (pedido do Fernando, 12/11)
 // lista de turnos curta (os próximos 4) por padrão: o FFT não deixa a ordem inteira na tela e a lista cobria o mapa (12/11)
@@ -340,7 +343,7 @@ class Game {
   }
 
   private get heroTurn() {
-    return !this.battle.over && this.battle.actor.team === 'hero';
+    return !AUTO && !this.battle.over && this.battle.actor.team === 'hero';
   }
 
   private update(ui: Ui) {

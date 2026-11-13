@@ -7,7 +7,7 @@
      O filete dourado dá 5,9:1 sobre a pedra (mínimo de 3:1 para contorno de controle) */
   --stone: #2c2342; --stone-lo: #1d1630; --edge: #07050c; --trim: #b8923f; --trim-hi: #ffdd7a;
   --bevel-hi: rgba(255, 255, 255, .16); --bevel-lo: rgba(0, 0, 0, .5); --well: #110c1b;
-  --gold-btn: linear-gradient(#ffd75e, #e2a62b); --gold-trim: #7a5513;
+  --gold-btn: linear-gradient(#ffd75e, #e2a62b); --gold-trim: #7a5513; --star: #f2c14e;
   --r: 3px; /* canto quase reto: pixel art não tem canto redondo */
   --frame: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), 0 3px 0 var(--edge);
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
@@ -211,7 +211,7 @@ button[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .talk-title, .panel.talk, .talk.done .talk-next { animation: none; } }
 .camp-list { flex-direction: column; } /* lista de fases da campanha: uma por linha, nome inteiro */
 .camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
-.stars { font: 400 40px/1 var(--font-px); color: var(--gold, #f2c14e); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
+.dialog .stars { font: 400 40px/1 var(--font-px); color: var(--star); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
 .learned { font-weight: 700; color: var(--trim-hi); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha) */
 /* tela de título (main.ts, titleScreen): nome grande e as três portas do jogo */
 .dialog.title { width: min(460px, 100%); text-align: center; }
@@ -281,3 +281,4 @@ button[hidden] { display: none; }
   text-shadow: 0 2px 0 #000; animation: announce 2.2s ease-out forwards; }
 @keyframes announce { 0% { opacity: 0; transform: translate(-50%, -50%) scaleX(.3); } 12% { opacity: 1; transform: translate(-50%, -50%) scaleX(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .announce { animation: none; } }
+.tile-info:empty { display: none; } /* fim de batalha: sem casa sob o cursor, a caixa vazia sumia de sentido */
