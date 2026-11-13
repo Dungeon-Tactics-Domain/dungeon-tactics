@@ -150,7 +150,9 @@ const TERRAIN_NAME: Record<string, () => string> = { floor: () => t('chão', 'gr
 export function tileInfo(grid: Grid, p: Pos): string {
   const tile = tileAt(grid, p);
   const kind = tile.look ? LOOK_NAME[tile.look]?.() ?? tile.look : TERRAIN_NAME[tile.terrain]();
+  // água rasa e funda têm o mesmo desenho: o texto da casa é o que diz qual é qual (achado olhando o Coração da Cripta)
   const blocked = (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable'))
+    + ((tile.depth ?? 0) >= 2 ? t(' · funda: não se atravessa', ' · deep: cannot be crossed') : tile.depth === 1 ? t(' · rasa: custa 2 de movimento', ' · shallow: costs 2 movement') : '')
     + (tile.spikes ? t(` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`, ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`) : '');
   return t(`Casa ${p.x},${p.y} · altura ${tile.h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`, `Tile ${p.x},${p.y} · height ${tile.h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`);
 }

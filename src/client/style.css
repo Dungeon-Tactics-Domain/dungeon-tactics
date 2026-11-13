@@ -117,7 +117,7 @@ button[hidden] { display: none; }
 .unit-panel.hero { --side: var(--hero); }
 .unit-panel.enemy { --side: var(--enemy); }
 .portrait { width: 72px; height: 96px; object-fit: cover; flex: none; background: var(--paper-hi); border: 2px solid var(--paper-edge); }
-.portrait.tinted { filter: sepia(.6) hue-rotate(220deg) saturate(1.6) brightness(.65); } /* Acólito: o retrato do mago puxado para o roxo escuro do boneco */
+.portrait.tinted { filter: sepia(.4) hue-rotate(220deg) saturate(2) brightness(1.1); } /* Acólito: o retrato do mago com o brilho violeta do boneco (UnitDef.tint) */
 .portrait.gem { background: radial-gradient(circle, #bff7ff, #2bb8d6 60%, #0c4a5a); }
 .unit-body { flex: 1; display: grid; gap: 4px; align-content: start; }
 .unit-name { font: 400 var(--fs-lg)/1.1 var(--font-px); display: flex; align-items: baseline; gap: 8px; }

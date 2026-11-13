@@ -100,6 +100,7 @@ const WALL_COLOR: Record<string, string> = {
 };
 const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // contorno da POC aprovada
+const TINT_GLOW = 0.45; // força do brilho próprio (UnitDef.tint): visível no boneco escuro sem apagar a textura
 
 // Paleta reduzida: cada canal em poucos degraus, depois da conversão para sRGB (degraus iguais ao olho). 6 níveis
 // lembram os 15 bits do SNES sem virar pôster; a opção existe para o Fernando comparar.
@@ -448,10 +449,9 @@ export class BattleScene {
         const mesh = m as THREE.Mesh;
         if (!mesh.isMesh) return;
         mesh.material = (mesh.material as THREE.MeshStandardMaterial).clone();
-        const tint = UNIT_DEFS[u.def].tint; // roxo do Acólito por cima do mago: não confundir com o Odo
-        if (tint) (mesh.material as THREE.MeshStandardMaterial).color.lerp(new THREE.Color(tint), 0.55);
         mats.push(mesh.material as THREE.MeshStandardMaterial);
       });
+      this.glowBack(mats, u.def);
       const b = new THREE.Box3().setFromObject(body);
       body.scale.setScalar(unitHeight(u.def) / (b.max.y - b.min.y));
       holder.add(body);
@@ -586,6 +586,17 @@ export class BattleScene {
   }
 
   // Tudo da batalha corre no relógio da batalha (`t`), que anda 3 vezes mais rápido com o botão de acelerar seguro
+  // Brilho próprio da unidade (UnitDef.tint, o Acólito sobre o mago): emissivo, porque a cor do material multiplica a
+  // textura e num boneco escuro não aparecia (testado em 13/11). Golpe e cura usam o mesmo emissivo para piscar, então
+  // voltam a ele no fim; sem tint, volta ao apagado de sempre.
+  private glowBack(mats: THREE.MeshStandardMaterial[], def: string) {
+    const tint = UNIT_DEFS[def]?.tint;
+    for (const m of mats) {
+      m.emissive.set(tint ?? '#000000');
+      m.emissiveIntensity = tint ? TINT_GLOW : 0;
+    }
+  }
+
   private animate(dur: number, step: (k: number) => void): Promise<void> {
     return new Promise((done) => this.anims.push({ start: this.t, dur, step, done }));
   }
@@ -610,7 +621,7 @@ export class BattleScene {
   private async impact(v: UnitView) {
     this.frozenUntil = this.t + TIMING.hitStop;
     for (const m of v.mats) m.emissive.set('#ffffff');
-    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k)));
+    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k))).then(() => this.glowBack(v.mats, v.def));
     await this.wait(TIMING.hitStop);
     if (v.body) void this.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * 0.07 * (1 - k)));
   }
@@ -681,7 +692,7 @@ export class BattleScene {
         v.hp += e.amount;
         // cura pisca verde, sem a pausa nem a tremida do golpe: o mesmo sinal, com outro sentido
         for (const m of v.mats) m.emissive.set('#5dff8a');
-        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k))));
+        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k)))).then(() => this.glowBack(v.mats, v.def));
         this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `+${e.amount}`, 'heal');
         await this.wait(TIMING.hit);

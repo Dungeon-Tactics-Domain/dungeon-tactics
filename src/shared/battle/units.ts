@@ -11,7 +11,7 @@ export interface UnitDef {
   vars?: Record<string, number>; // contadores com que a unidade nasce (ver UnitState.vars); só o cenário de estudo usa
   model?: string; // modelo em public/models; só o cenário de estudo informa, as unidades do jogo estão no mapa da cena
   boss?: true; // chefe da fase (campanha): só a coroa no desenho; a regra de vitória vem do cenário
-  tint?: string; // cor misturada ao modelo, só no desenho: unidade que divide o boneco com outra (o Acólito usa o mago)
+  tint?: string; // cor do brilho próprio do boneco, só no desenho: unidade que divide o boneco com outra (o Acólito usa o mago)
   size?: number; // lado do quadrado ocupado (2 = 2x2, pathing.ts footprint); sem isto, 1 casa. Unidade grande não anda nem é empurrada
 }
 
@@ -29,7 +29,7 @@ const LIST: UnitDef[] = [
   { id: 'minion', name: 'Lacaio esqueleto', en: 'Skeleton minion', hp: 24, speed: 11, move: 5, abilities: ['stab', 'trip'] },
   // Acólito do Véu (noite de 12/11, Ato II): cura os aliados, então derrubá-lo primeiro é a escolha que a fase pede (o
   // "puzzle" de prioridade de alvo). Pouca vida e ataque de mago; números iniciais, medidos na fase do Passo Gelado
-  { id: 'acolyte', name: 'Acólito do Véu', en: 'Veil Acolyte', hp: 26, speed: 9, move: 3, abilities: ['firebolt', 'heal'], tint: '#4a2a6a' },
+  { id: 'acolyte', name: 'Acólito do Véu', en: 'Veil Acolyte', hp: 26, speed: 9, move: 3, abilities: ['firebolt', 'heal'], tint: '#8a5cff' },
   // Colosso de Ossos (noite de 12/11, chefe final do Ato II): ocupa 2x2 e não anda; lança a Onda sombria e a Explosão.
   // Muita vida e velocidade baixa: o desafio é chegar perto sob as magias dele. Números iniciais, medidos na fase 7
   { id: 'colossus', name: 'Colosso de Ossos', en: 'Bone Colossus', hp: 160, speed: 6, move: 0, abilities: ['shadow_wave', 'blast'], size: 2 },
