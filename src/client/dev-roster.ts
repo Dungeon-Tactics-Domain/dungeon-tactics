@@ -105,6 +105,10 @@ const lastStanding: Rules = {
 
 // Transforma o elenco num cenário: cada unidade vira uma ficha própria (dev-h0, dev-e1…) com o boneco da classe de partida
 // e ocupa as casas de partida do mapa na ordem. Registra as fichas e o cenário nas listas do motor.
+// classe de origem de cada ficha montada aqui (dev-h0 → warrior): o HUD mostra "Bran · Guerreiro"
+const BASE: Record<string, string> = {};
+export const classOf = (def: string): string | undefined => BASE[def];
+
 // A campanha (campaign.ts) usa o mesmo caminho com id e nome próprios por fase.
 export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, title: [string, string] = ['Desenvolvedor', 'Developer']): Scenario {
   const base = SCENARIOS[setup.map];
@@ -115,6 +119,7 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
       const id = `${scenarioId}-${tag}${i}`;
       // nome sem mudar = o da classe nas duas línguas; nome próprio (Bran, Vesper) é igual nas duas; en só se vier no elenco
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
+      BASE[id] = u.base;
       UNIT_DEFS[id] = { id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });

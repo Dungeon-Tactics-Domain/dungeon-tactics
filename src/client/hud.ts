@@ -19,6 +19,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { COMMANDS, abilitiesOf, abilityEnabled, commandEnabled, type Command, type Screen } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { UI_ICON, el, icon, iconButton } from './icons.ts';
+import { classOf } from './dev-roster.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 
@@ -174,6 +175,13 @@ export function portrait(def: string) {
   return model ? el('img', { class: 'portrait', src: `/chars/${model}.webp`, alt: '' }) : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
 }
 
+// lado e, para quem tem nome próprio (campanha, menu de desenvolvedor), a classe: "Ladino · herói"
+function sideText(u: UnitState) {
+  const base = classOf(u.def);
+  const side = u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy');
+  return base && unitName(base) !== unitName(u.def) ? `${unitName(base)} · ${side}` : side;
+}
+
 // painel de unidade (o da vez embaixo à esquerda, o do alvo embaixo à direita)
 function unitPanel(state: BattleState, u: UnitState, extra: HTMLElement[] = []) {
   const def = UNIT_DEFS[u.def];
@@ -183,7 +191,7 @@ function unitPanel(state: BattleState, u: UnitState, extra: HTMLElement[] = []) 
   const charge = state.charges.find((c) => c.unit === u.id);
   return el('div', { class: `panel unit-panel ${u.team}` }, portrait(u.def),
     el('div', { class: 'unit-body' },
-      el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy'))),
+      el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, sideText(u))),
       ...rows,
       charge ? el('p', { class: 'unit-note' }, t(`Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`, `Charging ${abilityName(charge.ability)} (${charge.ticks} ticks)`)) : null,
       ...extra));
