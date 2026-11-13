@@ -23,6 +23,7 @@ import { TIMING, pace } from './timing.ts';
 import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup } from './dev-roster.ts';
+import { SURVIVAL_ID, survivalGoal, survivalScenario } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
 import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from './campaign.ts';
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
@@ -524,7 +525,9 @@ class Game {
     if (won) confetti();
     if (chapter !== null) return this.finishChapter(chapter, won);
     const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
-      el('p', {}, won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
+      el('p', {}, scenario.id === SURVIVAL_ID
+        ? (won ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.') : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.'))
+        : won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
         : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.')),
       el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
     ]);
@@ -562,6 +565,7 @@ class Game {
     const d = dialog('menu', t('Menu', 'Menu'), [
       // na campanha, o objetivo da fase (sem Farol, de chefe); na batalha avulsa, o de sempre
       el('p', {}, chapter !== null ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
+        : scenario.id === SURVIVAL_ID ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
         : t('Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).', 'Goal: defeat the enemies and protect the Beacon (the blue crystal).')),
       el('ul', { class: 'legend' },
         el('li', {}, el('i', { class: 'sw move' }), t('Branco: onde o herói pode andar', 'White: where the hero can move')),
@@ -640,6 +644,10 @@ async function boot() {
       scenario = buildDevScenario(setup);
       SAVE_KEY = `dt:battle:${DEV_SCENARIO}`;
     }
+  } else if (study === SURVIVAL_ID) {
+    // a regra própria (vence no amanhecer) só existe depois de montar o cenário: montar antes de carregar o save
+    scenario = survivalScenario();
+    SAVE_KEY = `dt:battle:${SURVIVAL_ID}`;
   } else if (study && SCENARIOS[study]) {
     // outros mapas do jogo pelo mesmo parâmetro (ex.: ?cenario=flooded_crypt), com save próprio
     scenario = SCENARIOS[study];
@@ -654,6 +662,7 @@ async function boot() {
   // fase do zero: conversa de abertura e, ao fechar, a faixa do objetivo (como o anúncio de objetivo do FFT)
   const n = chapter;
   if (n !== null && !saved) void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() => announce(objectiveText(n, t)));
+  if (study === SURVIVAL_ID && !saved) announce(survivalGoal(t));
   // abrir o jogo sem parâmetro mostra a tela de título por cima da batalha avulsa (que fica ao fundo, já jogável)
   if (camp === null && !study) titleScreen();
 }
@@ -688,7 +697,10 @@ function quickBattle() {
         setTrack(null);
         if (id !== 'beacon_hill') location.search = `?cenario=${id}`;
       },
-    }, t(SCENARIOS[id].name, SCENARIOS[id].en)))),
+    }, t(SCENARIOS[id].name, SCENARIOS[id].en))),
+    // modo com outra regra: resistir até o amanhecer no Bosque (survival.ts)
+    el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); location.search = `?cenario=${SURVIVAL_ID}`; } },
+      t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood'))),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }

@@ -12,6 +12,7 @@ import { COMBAT, simulatePush, type Preview } from '../shared/battle/combat.ts';
 import { TERRAIN, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import { MAX_JUMP, unitAt } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
+import { SURVIVAL_ID, turnsLeft } from './survival.ts';
 import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
@@ -282,7 +283,9 @@ export class BattleHud {
 
   private renderQueue(b: Battle) {
     const order = b.over ? [] : previewOrder(b.state, QUEUE_SIZE);
-    this.queue.replaceChildren(el('li', { class: 'queue-title', 'aria-hidden': 'true' }, t('Turnos', 'Turns')), ...order.map(({ unit, charge }, i) => {
+    // no modo Até o amanhecer, o título conta os turnos que faltam: o mesmo número que a regra usa (todos os turnos)
+    const left = b.state.scenario === SURVIVAL_ID ? turnsLeft(b.state) : null;
+    this.queue.replaceChildren(el('li', { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined }, left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`)), ...order.map(({ unit, charge }, i) => {
       const u = b.state.units.find((x) => x.id === unit)!;
       const label = charge ? `${unitName(u.def)}: ${abilityName(charge)}` : unitName(u.def);
       return el('li', { class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}` }, portrait(u.def), el('span', {}, label));
