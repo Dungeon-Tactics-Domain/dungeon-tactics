@@ -102,7 +102,9 @@ const SUN = new THREE.Vector3(6, -12, -4).normalize(); // o raio de luz vem de o
 export const LIMIT = (d: number) => Math.min(0.5 + 0.55 * d, 8);
 const GROUND_MAX = 5.5;
 const EXT_RING = 5; // casas de extensão cinza em cada lado na versão de teste (?extensao)
-const EXTEND = typeof location !== 'undefined' && new URLSearchParams(location.search).has('extensao');
+const EXTEND = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('extensao') : null;
+// ?extensao=escuro (13/11, 2ª versão pedida): as casas de fora com a cor do piso da borda, bem escura, em vez de cinza
+const DARK_TONE: Record<string, string> = { grass: '#3f8a35', sand: '#b39a5e', rock: '#7a7d86', tree: '#3f8a35', tree2: '#3f8a35', tree3: '#3f8a35' };
 
 // sorteio com semente: o mesmo mapa monta sempre os mesmos arredores
 const seeded = (seed: number) => () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
@@ -172,7 +174,7 @@ export class Ambience {
     Object.assign(u, { ambNear: { value: mood.near }, ambFar: { value: mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
     this.buildGround();
-    if (EXTEND) this.buildExtension(rand);
+    if (EXTEND !== null) this.buildExtension(rand);
     for (const p of mood.props) this.scatter(p, models.get(p.model)!, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
@@ -238,7 +240,7 @@ export class Ambience {
   // altura da casa da borda mais perto ou fica 1 nível abaixo, nunca acima: mais alta, na frente, tapava boneco.
   private buildExtension(rand: () => number) {
     const { width: W, height: H } = this.grid, step = this.grid.levelHeight ?? 0.5, BOTTOM = -3;
-    const at: THREE.Matrix4[] = [], tones: number[] = [];
+    const at: THREE.Matrix4[] = [], tones: THREE.Color[] = [];
     for (let j = -EXT_RING; j < H + EXT_RING; j++) for (let i = -EXT_RING; i < W + EXT_RING; i++) {
       if (i >= 0 && j >= 0 && i < W && j < H) continue;
       const t = tileAt(this.grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
@@ -248,10 +250,14 @@ export class Ambience {
       if (top <= BOTTOM + 0.1) continue;
       const x = i - this.hw + 0.5, z = j - this.hh + 0.5;
       at.push(new THREE.Matrix4().makeScale(0.96, top - BOTTOM, 0.96).setPosition(x, (top + BOTTOM) / 2, z));
-      tones.push((0.62 + 0.12 * rand()) * (1 - 0.07 * ring)); // cinza que escurece para fora
+      const shade = (0.62 + 0.12 * rand()) * (1 - 0.07 * ring); // escurece para fora
+      // no escuro, sombra das copas por cima (pedido do Fernando, "com uma sombra por cima deles"): manchas pelo ruído
+      const dapple = 0.45 + 0.55 * noise(x * 0.3, z * 0.3);
+      tones.push(EXTEND === 'escuro' ? new THREE.Color(DARK_TONE[t.look ?? ''] ?? DARK_TONE.grass).multiplyScalar(shade * 0.5 * dapple) : new THREE.Color().setScalar(shade));
     }
     const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.material(null), at.length);
-    at.forEach((m, k) => { mesh.setMatrixAt(k, m); mesh.setColorAt(k, new THREE.Color().setScalar(tones[k])); });
+    at.forEach((m, k) => { mesh.setMatrixAt(k, m); mesh.setColorAt(k, tones[k]); });
+    mesh.receiveShadow = true; // a sombra de verdade das árvores de fora cai em cima
     this.root.add(mesh);
   }
 
