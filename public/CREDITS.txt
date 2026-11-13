@@ -110,8 +110,20 @@ sfx/lava_loop.mp3 (fire-1.ogg, com crossfade para laço)
   Licença lida na página: "Licensing: Creative Commons Zero (CC0)".
 
 == Música ==
-Músicas da campanha (título, mapa, estrada, cripta, neve e chefe): compostas para o Dungeon Tactics e tocadas por um sequenciador no navegador (src/client/music.ts), sem arquivo; criação do projeto (12/11/2026).
-music/battle.mp3
+Músicas da campanha (13/11/2026): faixas do OpenGameArt, todas CC0 (licença lida na página de cada uma), convertidas para .ogg por ffmpeg (a de neve cortada nos primeiros 75 s com fade, a do mapa com +2,2 dB). Ganho por faixa em src/client/music.ts.
+music/titulo.ogg (tela de título)
+  CodeManu, "A Legend Will Rise (Orchestral)" - https://opengameart.org/content/a-legend-will-rise-orchestral
+music/mapa.ogg (mapa mundial)
+  TAD, "Once Upon a Time (loop)" - https://opengameart.org/content/once-upon-a-time-loop
+music/estrada.ogg (fases na estrada)
+  cynicmusic, "Battle Theme B for RPG" - https://opengameart.org/content/battle-theme-b-for-rpg
+music/cripta.ogg (cripta)
+  nene, "Evil Approach" - https://opengameart.org/content/evil-approach
+music/neve.ogg (neve)
+  FAINOD, "A Long Winter at Home (Classical)" - https://opengameart.org/content/a-long-winter-at-home-classical-fainod
+music/chefe.ogg (chefes)
+  cynicmusic, "Sinister Boss Appears!" - https://opengameart.org/content/sinister-boss-appears
+music/battle.mp3 (batalha avulsa)
   Emma_MA, "Determined Pursuit (epic orchestra loop)" - https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
   Licença lida na página: CC0 ("This track is in the public domain as of January 2017. No attribution necessary.").
 

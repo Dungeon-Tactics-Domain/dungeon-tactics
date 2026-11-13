@@ -1,102 +1,21 @@
-// Músicas da campanha (noite de 12/11, pedido do Fernando: "músicas novas"): composições nossas, tocadas por um
-// sequenciador de 2 vozes no WebAudio (melodia em onda quadrada, baixo em triangular), sem arquivo. Cada token é uma
-// colcheia: nota ("C4", "F#3", "Bb1") ou "-" (pausa). O agendador olha 0,2 s à frente para o tempo não tremer.
-export interface Song {
-  bpm: number;
-  lead: string;
-  bass: string;
-}
-
-export const SONGS = {
-  // Estrada: dó maior, andando, a viagem começa
-  road: {
-    bpm: 120,
-    lead: 'E4 G4 A4 G4 E4 D4 C4 D4  E4 G4 A4 C5 B4 A4 G4 -  A4 G4 E4 D4 C4 D4 E4 G4  A4 - G4 E4 D4 - C4 -',
-    bass: 'C3 - G2 - C3 - G2 -  A2 - E2 - A2 - E2 -  F2 - C3 - F2 - C3 -  G2 - D3 - G2 - G2 -',
-  },
-  // Cripta: lá menor, devagar, com a sensível (G#) puxando de volta para o lá
-  crypt: {
-    bpm: 84,
-    lead: 'A4 - C5 - B4 - E4 -  A4 - C5 - D5 - B4 -  C5 - B4 - A4 - G#4 -  A4 - - - E4 - - -',
-    bass: 'A2 - - - E2 - - -  F2 - - - E2 - - -  D2 - - - E2 - - -  A2 - - - A2 - - -',
-  },
-  // Título: sol maior, devagar e solene, subindo até o sol agudo (a abertura do jogo)
-  title: {
-    bpm: 88,
-    lead: 'G4 - B4 - D5 - - -  C5 - B4 - A4 - - -  B4 - D5 - G5 - F#5 -  G5 - - - D5 - - -',
-    bass: 'G2 - - - D3 - - -  A2 - - - D3 - - -  E2 - - - B2 - - -  C3 - D3 - G2 - - -',
-  },
-  // Mapa: fá maior, passo de viagem, melodia que volta sempre para o fá (o caminho entre as fases)
-  world: {
-    bpm: 108,
-    lead: 'F4 A4 C5 A4 Bb4 - A4 G4  F4 A4 C5 F5 E5 - C5 -  D5 C5 Bb4 A4 G4 - A4 Bb4  A4 G4 F4 E4 F4 - - -',
-    bass: 'F2 - C3 - F2 - C3 -  F2 - C3 - C2 - G2 -  Bb1 - F2 - Bb1 - F2 -  C2 - G2 - F2 - - -',
-  },
-  // Neve: mi menor, calma e aberta, notas longas (Ato II, Passo Gelado)
-  snow: {
-    bpm: 96,
-    lead: 'E4 - G4 - B4 - A4 G4  F#4 - E4 - D4 - E4 -  G4 - A4 - B4 - D5 -  B4 - A4 - G4 - F#4 -',
-    bass: 'E2 - - - B2 - - -  C3 - - - D3 - - -  E2 - - - G2 - - -  B1 - - - B2 - - -',
-  },
-  // Chefe: ré menor, rápido, baixo em oitavas
-  boss: {
-    bpm: 144,
-    lead: 'D5 D5 C5 D5 F5 E5 D5 C5  A4 A4 G4 A4 C5 A4 G4 F4  D5 D5 C5 D5 F5 G5 A5 G5  F5 E5 D5 C#5 D5 - D5 -',
-    bass: 'D2 D3 D2 D3 D2 D3 D2 D3  F2 F3 F2 F3 F2 F3 F2 F3  Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2  A1 A2 A1 A2 A1 A2 A1 A2',
-  },
-} satisfies Record<string, Song>;
-export type SongId = keyof typeof SONGS;
-
-const SEMI: Record<string, number> = { C: -9, D: -7, E: -5, F: -4, G: -2, A: 0, B: 2 };
-// "A4" = 440 Hz; sustenido e bemol sobem e descem meio tom. Pausa ou nota inválida = null
-export function freq(note: string): number | null {
-  const m = /^([A-G])([#b]?)(-?\d)$/.exec(note);
-  if (!m) return null;
-  const semis = SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + (Number(m[3]) - 4) * 12;
-  return 440 * 2 ** (semis / 12);
-}
-
-export const tokens = (voice: string) => voice.trim().split(/\s+/);
-
-const MIX = 0.22;
-// Toca em laço até stop(). volume 0–1 (o nível de música das opções)
-export function playSong(ctx: AudioContext, song: Song, volume: number) {
-  const out = ctx.createGain();
-  // 0,22: medido em 13/11 com um método só para tudo (analisador no lugar do destino, RMS das amostras acima de -50 dB):
-  // a música da batalha avulsa fica em -33 dB; com 0,12 as sintetizadas ficavam bem abaixo e com 0,5 passavam 7 dB acima
-  // dela e empatavam com o bipe de fala (-26 dB). Com 0,22 ficam no nível dela, e a voz sobra por cima.
-  out.gain.value = volume * MIX;
-  out.connect(ctx.destination);
-  const voices = [{ notes: tokens(song.lead), type: 'square' as OscillatorType, gain: 0.6 }, { notes: tokens(song.bass), type: 'triangle' as OscillatorType, gain: 1 }];
-  const step = 60 / song.bpm / 2; // colcheia
-  let i = 0;
-  let at = ctx.currentTime + 0.05;
-  const tick = () => {
-    while (at < ctx.currentTime + 0.2) {
-      for (const v of voices) {
-        const f = freq(v.notes[i % v.notes.length]);
-        if (!f) continue;
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = v.type;
-        osc.frequency.value = f;
-        g.gain.setValueAtTime(v.gain, at);
-        g.gain.exponentialRampToValueAtTime(0.001, at + step * 0.95);
-        osc.connect(g).connect(out);
-        osc.start(at);
-        osc.stop(at + step);
-      }
-      i++;
-      at += step;
-    }
-  };
-  tick();
-  const timer = setInterval(tick, 50);
-  return {
-    setVolume: (v: number) => (out.gain.value = v * MIX),
-    stop: () => {
-      clearInterval(timer);
-      out.disconnect();
-    },
-  };
-}
+// Músicas do jogo (13/11, pedido do Fernando: "pegue pacote de músicas grátis para esse tipo de RPG e use elas em vez
+// das que você criou"): arquivos .ogg de faixas CC0 do OpenGameArt em public/music/, em laço. Autores, links e licença
+// em public/CREDITS.txt e docs/ASSETS.md. Quem toca é o sound.ts; aqui ficam só o arquivo e o ganho de cada faixa.
+//
+// Ganho por faixa (medido em 13/11 com o volumedetect do ffmpeg, média de cada arquivo): as faixas novas têm volumes
+// bem diferentes (título -12,9 dB, estrada -15,6, mapa -17,0, neve e chefe -17,8, cripta -18,7). O alvo é o da música da
+// batalha avulsa, -17,3 dB, que já estava no nível certo; o HTMLAudioElement não passa de 1, então quem estava mais alto
+// desce (título -4,4 dB, estrada -1,7 dB) e quem estava mais baixo fica em 1 (cripta fica 1,4 dB abaixo, neve e chefe 0,6).
+// O arquivo do mapa já tem +2,2 dB gravados na conversão (limitador a 0,95) para chegar ao alvo sem passar de 1.
+export const TRACKS = {
+  title: { file: 'titulo.ogg', gain: 0.6 },
+  world: { file: 'mapa.ogg', gain: 0.97 },
+  road: { file: 'estrada.ogg', gain: 0.82 },
+  crypt: { file: 'cripta.ogg', gain: 1 },
+  snow: { file: 'neve.ogg', gain: 1 },
+  boss: { file: 'chefe.ogg', gain: 1 },
+  // batalha avulsa (sem fase da campanha): o mesmo arquivo de antes
+  battle: { file: 'battle.mp3', gain: 1 },
+} satisfies Record<string, { file: string; gain: number }>;
+export type SongId = keyof typeof TRACKS;
+export const trackUrl = (id: SongId) => `/music/${TRACKS[id].file}`;
