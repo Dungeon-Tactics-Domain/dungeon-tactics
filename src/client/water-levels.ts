@@ -1,5 +1,5 @@
 // Alturas da água no desenho (13/11), à parte de water.ts para ser pura (sem Three) e testada, como markers.ts.
-import { neighbors, posKey, type Grid } from '../shared/battle/grid.ts';
+import { neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 
 // quanto a superfície da água funda fica abaixo da rasa, em níveis (só desenho; a regra lê depth). 0,8 desde 13/11, pedido
@@ -11,6 +11,34 @@ export const WADE = 0.45; // quanto o boneco afunda na água rasa, em níveis: �
 export const SWIM = 0.75;
 const DEEP_BED = 1; // leito da funda, em níveis abaixo da superfície: some na cor escura, só não pode ficar à vista
 
+// Rio sem sobe e desce (13/11, pedido do Fernando: "a água pode descer como uma cachoeira, mas não subir e descer como
+// nessa ponte de pedra"): a funda fica DEEP_DROP abaixo da rasa, então um trecho fundo pequeno depois do vau fazia a água
+// subir no vau e descer de novo. Cada trecho fundo ligado (pontes separam) que encosta em água rasa e não é o maior do mapa
+// fica na altura da rasa; o maior continua baixo e o vau desce para ele como cachoeira. Só desenho: a regra lê depth.
+export function raisedDeep(grid: Grid): Set<string> {
+  const deep = (p: Pos) => { const t = tileAt(grid, p); return t.look === 'water' && (t.depth ?? 0) >= 2; };
+  const seen = new Set<string>(), parts: { tiles: string[]; shallow: boolean }[] = [];
+  grid.tiles.forEach((_, i) => {
+    const start = { x: i % grid.width, y: Math.floor(i / grid.width) };
+    if (!deep(start) || seen.has(posKey(start))) return;
+    const part = { tiles: [] as string[], shallow: false }, queue = [start];
+    seen.add(posKey(start));
+    while (queue.length) {
+      const p = queue.pop()!;
+      part.tiles.push(posKey(p));
+      for (const n of neighbors(grid, p)) {
+        const t = tileAt(grid, n);
+        if (t.look === 'water' && t.depth === 1) part.shallow = true;
+        if (deep(n) && !seen.has(posKey(n))) { seen.add(posKey(n)); queue.push(n); }
+      }
+    }
+    parts.push(part);
+  });
+  const biggest = Math.max(0, ...parts.map((p) => p.tiles.length));
+  const big = parts.find((p) => p.tiles.length === biggest);
+  return new Set(parts.filter((p) => p !== big && p.shallow).flatMap((p) => p.tiles));
+}
+
 export interface WaterLevel { surface: number; bed: number; deep: boolean; under?: true }
 
 // Altura da superfície e do leito de cada casa de água e de cada ponte com água por baixo. O leito da rasa fica onde
@@ -19,10 +47,11 @@ export function waterLevels(grid: Grid, step: number): Map<string, WaterLevel> {
   const out = new Map<string, WaterLevel>();
   const bed = (surface: number, deep: boolean) => (deep ? Math.max(0.02, surface - DEEP_BED * step) : surface - WADE * step);
   const at = (i: number): Pos => ({ x: i % grid.width, y: Math.floor(i / grid.width) });
+  const raised = raisedDeep(grid);
   grid.tiles.forEach((t, i) => {
     if (t.look !== 'water') return;
     const deep = (t.depth ?? 0) >= 2;
-    const surface = (t.h + 1 - (deep ? DEEP_DROP : 0)) * step;
+    const surface = (t.h + 1 - (deep && !raised.has(posKey(at(i))) ? DEEP_DROP : 0)) * step;
     out.set(posKey(at(i)), { surface, bed: bed(surface, deep), deep });
   });
   // ponte: a água passa por baixo na altura das vizinhas. Com a tábua rente à água (Cripta Alagada) não há vão e fica de fora

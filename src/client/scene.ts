@@ -23,8 +23,8 @@ import type { PixelSettings } from './pixel-settings.ts';
 import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 import { Water } from './water.ts';
-import { DEEP_DROP, SWIM, WADE, waterLevels, type WaterLevel } from './water-levels.ts';
-import { EXTEND, extH, loadAmbience, type Ambience } from './ambience.ts';
+import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
+import { EXTEND, extH, kindOf, loadAmbience, type Ambience } from './ambience.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -206,6 +206,7 @@ export class BattleScene {
   private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
   private water: Water | null = null; // só nos mapas com água
+  private raised?: Set<string>; // trechos fundos na altura da rasa (water-levels.ts raisedDeep)
   private ambience: Ambience | null = null; // arredores, neblina, raios de luz e partículas (ambience.ts)
 
   private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[]) {
@@ -270,7 +271,7 @@ export class BattleScene {
   private world(p: Pos): THREE.Vector3 {
     const t = tileAt(this.grid, p);
     // na rampa a unidade fica no meio da subida; na água funda, rebaixada como o desenho (cursor e marcas não flutuam)
-    const drop = (t.depth ?? 0) >= 2 ? DEEP_DROP : 0;
+    const drop = (t.depth ?? 0) >= 2 && !(this.raised ??= raisedDeep(this.grid)).has(posKey(p)) ? DEEP_DROP : 0;
     return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step, p.y - this.grid.height / 2 + 0.5);
   }
 
@@ -378,7 +379,8 @@ export class BattleScene {
     this.instanced(side, batch.side.at);
     this.instanced(stone, batch.stone.at);
     looks.build();
-    if (EXTEND === 'textura') this.buildTexturedExtension();
+    // não nas criptas: paredes, tochas e cristais dos arredores ficam nessa faixa (ambience.ts)
+    if (EXTEND === 'textura' && kindOf(this.grid) !== 'crypt') this.buildTexturedExtension();
     if (levels.size) {
       this.water = new Water(this.scene, this.grid, levels, this.step);
       this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
@@ -511,7 +513,7 @@ export class BattleScene {
       const name = LOOK[t.look ?? 'grass']?.top ?? LOOK.grass.top;
       if (!this.lookPieces.has(name)) continue;
       const top = (extH(this.grid, i, j, ring) + 1) * this.step, x = i - W / 2 + 0.5, z = j - H / 2 + 0.5;
-      const tone = 0.75 - 0.15 * (ring - 1);
+      const tone = 0.6 - 0.12 * (ring - 1); // 0,6 no 1º anel: com 0,75 a extensão da Colina (luz de dia) se confundia com o tabuleiro
       let b = tops.get(name);
       if (!b) tops.set(name, (b = { at: [], tone: [] }));
       b.at.push(new THREE.Matrix4().makeTranslation(x, top, z));
