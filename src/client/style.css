@@ -217,6 +217,7 @@ button[hidden] { display: none; }
 .dialog.title { width: min(460px, 100%); text-align: center; }
 .dialog.title h2 { font-size: 38px; letter-spacing: 1px; }
 .title-sub { color: var(--muted); margin: 4px 0 14px; }
+.continue-where { font: 400 var(--fs) var(--font); opacity: .8; margin-left: 8px; } /* onde o Continuar leva, na mesma linha */
 .dialog.title .legend { text-align: left; } /* Créditos: lista alinhada à esquerda mesmo no diálogo centrado do título */
 .dialog a { color: var(--trim-hi); } /* o azul padrão do navegador quase some no fundo escuro do diálogo */
 /* o mapa girando atrás é a arte do título: sem o HUD da batalha por cima e só com as bordas escurecidas */

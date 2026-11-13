@@ -737,7 +737,9 @@ function titleScreen() {
     el('p', { class: 'title-sub' }, t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes')),
     el('div', { class: 'menu-actions camp-list' },
       // Continuar só aparece com progresso salvo; Novo jogo apaga o progresso da campanha (o 2º toque confirma)
-      ...(parseWorld(store.get(WORLD_KEY)) > 0 ? [el('button', { type: 'button', class: 'primary', onclick: go(toWorld) }, t('Continuar', 'Continue'))] : []),
+      // Continuar diz quem e onde (como o resumo do save no FFT): quem volta depois de dias sabe o que vai abrir
+      ...(parseWorld(store.get(WORLD_KEY)) > 0 ? [el('button', { type: 'button', class: 'primary', onclick: go(toWorld) }, t('Continuar', 'Continue'),
+        el('small', { class: 'continue-where' }, continueWhere()))] : []),
       el('button', { type: 'button', class: parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary', onclick: (e: Event) => {
         const btn = e.currentTarget as HTMLButtonElement;
         if (parseWorld(store.get(WORLD_KEY)) > 0 && !btn.dataset.armed) {
@@ -754,6 +756,13 @@ function titleScreen() {
       el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits'))),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+
+// "Ayla · Colina do Farol": o protagonista salvo e o próximo ponto aberto do mapa
+function continueWhere(): string {
+  const w = WORLD[Math.min(parseWorld(store.get(WORLD_KEY)), WORLD.length - 1)];
+  const hero = savedHero();
+  return `${hero ? `${hero.name} · ` : ''}${t(w.name[0], w.name[1])}`;
 }
 
 const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
