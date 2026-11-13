@@ -60,11 +60,59 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
 
 // Busca pelo custo de cada passo (1, ou 2 na água rasa; o vão, 1 por casa voada) até def.move pontos. Passa por aliado, nunca por inimigo; o resultado não inclui
 // a casa de saída nem casas ocupadas, para o cliente poder pintar só onde dá para parar.
+// Quem ocupa mais de uma casa e anda (meia casa, 13/11: os bonecos ocupam 2x2 e andam de 1 em 1; half.ts): a busca é
+// pelo canto de cima à esquerda. Cabe se todas as casas do quadrado são de pisar, sem parar em corpo, sem outra unidade e
+// com no máximo 1 nível de diferença entre elas; a altura do quadrado é a mais alta, e o passo segue o salto. Custo: o
+// da casa mais cara que entra no quadrado. Sem vão por enquanto
+function reachableBig(grid: Grid, state: BattleState, unit: UnitState, budget: number, jump: number): Map<string, Step> {
+  const size = UNIT_DEFS[unit.def].size!;
+  const cells = (p: Pos) => { const out: Pos[] = []; for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: p.x + dx, y: p.y + dy }); return out; };
+  const heightOf = (p: Pos): number | null => {
+    let lo = Infinity, hi = -Infinity;
+    for (const c of cells(p)) {
+      if (!inBounds(grid, c)) return null;
+      const t = tileAt(grid, c);
+      if (!canStand(t) || isDeep(t)) return null;
+      const o = unitAt(state, c);
+      if (o && o.id !== unit.id && o.team !== unit.team) return null; // passa por aliado, nunca por inimigo
+      lo = Math.min(lo, t.h); hi = Math.max(hi, t.h);
+    }
+    return hi - lo > 1 ? null : hi;
+  };
+  const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
+  const queue: Pos[] = [unit.pos];
+  for (let i = 0; i < queue.length; i++) {
+    const cur = queue[i];
+    const cost = seen.get(posKey(cur))!.cost;
+    const h0 = heightOf(cur) ?? tileAt(grid, cur).h;
+    for (const d of FACING) {
+      const n = { x: cur.x + d.x, y: cur.y + d.y };
+      const h = heightOf(n);
+      if (h === null || Math.abs(h - h0) > jump) continue;
+      const next = cost + Math.max(...cells(n).map((c) => stepCost(tileAt(grid, c))));
+      const k = posKey(n);
+      if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
+      seen.set(k, { pos: n, cost: next, from: posKey(cur) });
+      queue.push(n);
+    }
+  }
+  for (const step of seen.values()) {
+    const path: Pos[] = [];
+    for (let s: Step | undefined = step; s?.from; s = seen.get(s.from)) path.unshift(s.pos);
+    step.path = path;
+  }
+  seen.delete(posKey(unit.pos));
+  // para só onde o quadrado inteiro está livre (aliado no caminho, sim; em cima, não) e sem corpo embaixo
+  for (const [k, step] of seen) if (cells(step.pos).some((c) => { const o = unitAt(state, c); return (o && o.id !== unit.id) || tileAt(grid, c).noStop; })) seen.delete(k);
+  return seen;
+}
+
 // `budget`: pontos de movimento que sobram no turno (o movimento todo, se ausente)
 export function reachable(grid: Grid, state: BattleState, unitId: string, budget?: number): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
   budget ??= UNIT_DEFS[unit.def].move;
   const jump = jumpOf(state, unit.def);
+  if ((UNIT_DEFS[unit.def].size ?? 1) > 1 && UNIT_DEFS[unit.def].move > 0) return reachableBig(grid, state, unit, budget, jump);
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
   const queue: Pos[] = [unit.pos];
   for (let i = 0; i < queue.length; i++) {

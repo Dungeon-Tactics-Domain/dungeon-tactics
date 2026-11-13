@@ -73,6 +73,17 @@ export function buildBridges(grid: Grid, step: number, wood: THREE.Texture, bark
       const ground = (tileAt(grid, nb).h + 1) * step;
       const drop = top - ground;
       if (drop < 0.08) continue;
+      // margem em rampa até a ponte (13/11, pedido do Fernando: "a escada da ponte deve ser uma rampa que ocupa um tile
+      // inteiro"): tábuas inclinadas cobrindo a casa toda, da altura das tábuas até o chão na outra ponta
+      if (tileAt(grid, nb).ramp) {
+        const pitch = Math.atan2(drop, 1);
+        for (let a = 0.02; a + PLANK <= 1; a += PLANK + 0.03) {
+          const g = plankBox(width * 0.96, DECK, PLANK / Math.cos(pitch), rnd() * 4);
+          g.rotateX(dir * (alongZ ? 1 : -1) * pitch);
+          put(g, end + dir * (a + PLANK / 2), mid, top - drop * (a + PLANK / 2) - DECK / 2 + 0.01, planks);
+        }
+        continue;
+      }
       const n = Math.max(2, Math.round(drop / 0.13)), run = 0.36 / n;
       for (let k = 1; k <= n; k++) {
         const y = top - (drop * k) / (n + 0.5);

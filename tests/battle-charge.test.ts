@@ -73,13 +73,12 @@ describe('ações com carga', () => {
     expect(out[0]).toMatchObject({ k: 'attack', target: { x: 4, y: 4 } });
   });
 
-  it('no turno em que declara não anda; num turno seguinte, andar desfaz a carga', () => {
+  it('anda depois de declarar e a carga continua (13/11, pedido do Fernando: "pode se mover para jogar ela mais longe")', () => {
     const b = duel('mage', 1, 3);
     b.act('blast', { x: 4, y: 3 });
-    expect(b.reach().size).toBe(0);
-    b.state.turn = { actor: 'a', moved: false, usedAbility: null }; // a próxima vez dele, com a carga ainda na fila
+    expect(b.reach().size).toBeGreaterThan(0);
     b.move({ x: 1, y: 4 });
-    expect(b.state.charges).toEqual([]);
+    expect(b.state.charges.length).toBe(1);
   });
 
   it('quem está carregando leva 50% a mais de ataque físico, não de magia (BMG 6, Charging)', () => {

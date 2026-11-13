@@ -59,12 +59,14 @@ function build(kind: Kind, seed: number): THREE.Group {
       p.setXYZ(i, p.getX(i) * flare + Math.sin(y * 2.2) * lean, p.getY(i), p.getZ(i) * flare);
     }
     trunks.push(g);
-    const n = 4 + Math.floor(rnd() * 3);
+    // metade das árvores tem raiz à mostra (13/11: "nem toda árvore precisa ter")
+    const n = rnd() < 0.5 ? 0 : 3 + Math.floor(rnd() * 3);
     for (let k = 0; k < n; k++) {
       const len = 0.16 + rnd() * 0.1, a = (k / n) * Math.PI * 2 + rnd() * 0.6;
       const root = new THREE.CylinderGeometry(0.006, r * 0.55, len, 5, 3).translate(0, len / 2, 0);
-      // deita para fora e afunda a ponta: só o começo da raiz fica acima do chão
-      root.rotateZ(-(1.2 + rnd() * 0.25)).rotateY(a).translate(0, 0.035, 0);
+      // a base grossa no tronco e a ponta para fora e para baixo, entrando no chão (13/11: antes a ponta subia e parecia
+      // espinho): passa da horizontal (π/2) em 0,25 a 0,5 rad
+      root.rotateZ(-(Math.PI / 2 + 0.25 + rnd() * 0.25)).rotateY(a).translate(0, 0.05, 0);
       trunks.push(root);
     }
   };

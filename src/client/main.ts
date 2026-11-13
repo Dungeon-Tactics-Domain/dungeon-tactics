@@ -1,5 +1,6 @@
 // Entrada do jogo: liga a batalha (regras), a cena (Three), o HUD (DOM) e o toque. Dono do laço de turno: o jogador age
 // pelo HUD; na vez do inimigo a IA joga sozinha, uma unidade por vez, com pausa para dar para ler.
+import { HALF_ID, registerHalf } from '../shared/battle/half.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
@@ -764,6 +765,10 @@ async function boot() {
       scenario = buildDevScenario(setup);
       SAVE_KEY = `dt:battle:${DEV_SCENARIO}`;
     }
+  } else if (study === 'meia') {
+    // meia casa (13/11, versão de teste: bonecos 2x2 andando de 1 em 1, árvores de 3 a 5; half.ts)
+    scenario = registerHalf();
+    SAVE_KEY = `dt:battle:${HALF_ID}`;
   } else if (study === SURVIVAL_ID) {
     // a regra própria (vence no amanhecer) só existe depois de montar o cenário: montar antes de carregar o save
     scenario = survivalScenario();

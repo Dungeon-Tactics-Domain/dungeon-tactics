@@ -59,11 +59,11 @@ export class Battle {
     return !!last && (!last.paid || this.undosLeft > 0);
   }
 
-  // quem acabou de declarar uma carga não anda neste turno: andar a desfaria (andar num turno seguinte desfaz, sim)
+  // desde 13/11 dá para andar depois de começar a carregar (pedido do Fernando: "pode se mover para jogar ela mais longe"):
+  // a carga não se desfaz e sai de onde a unidade estiver
   reach(): Map<string, Step> {
-    const charging = !!this.state.turn.usedAbility && this.state.charges.some((c) => c.unit === this.actor.id);
     const left = UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0);
-    return this.over || left <= 0 || charging ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
+    return this.over || left <= 0 ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
   }
 
   preview(abilityId: string, target: Pos): Preview {
@@ -87,8 +87,6 @@ export class Battle {
     // com direção, quem anda termina olhando para onde ia
     if (this.actor.facing !== undefined) this.actor.facing = facingTo(path.at(-2) ?? from, to);
     this.actor.pos = to;
-    // andar desfaz a própria carga (como a Carga do Arqueiro, BMG 2.2; para as outras, suposição)
-    this.state.charges = this.state.charges.filter((c) => c.unit !== this.actor.id);
     this.state.turn.moved = true;
     // o evento leva a casa de saída na frente (13/11): sem ela a animação começava no 1º passo e o boneco "teletransportava"
     return [...hit, { k: 'move', unit: this.actor.id, path: [from, ...path] }];

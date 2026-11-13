@@ -665,6 +665,18 @@ export class BattleScene {
     for (let y = 0; y < g.height; y++) {
       for (let x = 0; x < g.width; x++) {
         const t = tileAt(g, { x, y });
+        // árvore grande da meia casa (half.ts): uma árvore só, do tamanho do quadrado dela
+        if (t.tree && !taken.has(posKey({ x, y })) && modelOf({ x, y })) {
+          const n = t.tree, name = modelOf({ x, y })!;
+          for (let dy = 0; dy < n; dy++) for (let dx = 0; dx < n; dx++) taken.add(posKey({ x: x + dx, y: y + dy }));
+          const box = boxOf(name);
+          const k = Math.min((n * (1 + 0.5 * hash(x, y, 4))) / (box.max.y - box.min.y), (n * 0.95) / width(box));
+          const c = this.world({ x, y }).add(new THREE.Vector3((n - 1) / 2, 0, (n - 1) / 2));
+          const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
+          if (!batches.has(name)) batches.set(name, []);
+          batches.get(name)!.push(m);
+          continue;
+        }
         if (!free(x, y, t.h)) continue;
         const group = free(x + 1, y, t.h) && free(x, y + 1, t.h) && free(x + 1, y + 1, t.h) ? [[0, 0], [1, 0], [0, 1], [1, 1]]
           : free(x + 1, y, t.h) ? [[0, 0], [1, 0]] : free(x, y + 1, t.h) ? [[0, 0], [0, 1]] : [[0, 0]];

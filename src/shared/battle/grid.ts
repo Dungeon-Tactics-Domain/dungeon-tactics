@@ -34,6 +34,9 @@ export interface Tile {
   // Corpo no chão (13/11, pedido do Fernando: "obstáculos tipo o corpo no chão devem ser atravessáveis, o personagem só não
   // pode ficar em cima"): passa por cima, mas não para nem é empurrado para lá
   noStop?: true;
+  // Árvore que ocupa um quadrado de `tree` x `tree` casas (meia casa, half.ts): fica na casa de cima à esquerda; as outras
+  // casas do quadrado são floresta sem desenho próprio. Só desenho: a regra lê o terreno de cada casa
+  tree?: number;
 }
 
 // Mapa imutável durante a batalha: fica fora do BattleState (o estado guarda só o id do cenário).
