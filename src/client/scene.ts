@@ -15,7 +15,7 @@ import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
-import type { Highlights, TileKind } from './interaction.ts';
+import { chargeDanger, type Highlights, type TileKind } from './interaction.ts';
 import { MARKER, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { TIMING, speed } from './timing.ts';
@@ -34,6 +34,8 @@ const PC_START = 10;
 
 
 // cores das marcações; o significado também vai em texto no HUD (nunca só a cor)
+// roxo do Véu: a área de uma magia carregando fica acesa até ela sair (o texto vai na casa sob o cursor, hud.ts)
+const DANGER: [string, number] = ['#9b4dff', 0.4];
 const MARK: Record<TileKind | 'path', [color: string, opacity: number]> = {
   // movimento branco (12/11): o azul de antes sumia na água azul dos mapas novos
   actor: ['#ffd479', 0.75], move: ['#ffffff', 0.5], range: ['#ff6a3c', 0.5], blocked: ['#6b3a8c', 0.6],
@@ -152,6 +154,7 @@ export class BattleScene {
   private readonly tileTops: THREE.Object3D[] = [];
   private readonly marks = new Map<string, THREE.Mesh>();
   private readonly pathDots = new Map<string, THREE.Mesh>();
+  private readonly danger = new Map<string, THREE.Mesh>(); // casas onde uma carga vai cair (chargeDanger)
   // cursor do teclado: moldura na altura da casa e seta flutuando em cima, para ler o nível mesmo atrás de um boneco
   private readonly cursor = new THREE.Group();
   private readonly units = new Map<string, UnitView>();
@@ -283,6 +286,12 @@ export class BattleScene {
       mark.visible = false;
       this.scene.add(mark);
       this.marks.set(posKey(p), mark);
+      // perigo da carga: camada própria, por baixo das marcas da vez (a escolha do jogador continua por cima)
+      const danger = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: DANGER[0], transparent: true, opacity: DANGER[1], depthWrite: false }));
+      danger.position.set(w.x, w.y + 0.015, w.z);
+      danger.visible = false;
+      this.scene.add(danger);
+      this.danger.set(posKey(p), danger);
       const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: MARK.path[0], transparent: true, opacity: MARK.path[1], depthWrite: false }));
       dot.position.set(w.x, w.y + 0.03, w.z);
       dot.visible = false;
@@ -506,6 +515,8 @@ export class BattleScene {
 
   // Põe cada unidade onde o estado diz (cria quem falta, tira quem morreu). Chamado ao abrir, depois de cada animação e no desfazer.
   sync(state: BattleState) {
+    const hot = chargeDanger(state, this.grid.width, this.grid.height);
+    for (const [k, m] of this.danger) m.visible = hot.has(k);
     const alive = new Set(state.units.map((u) => u.id));
     for (const [id, v] of this.units) if (!alive.has(id)) { this.scene.remove(v.holder); this.units.delete(id); }
     const enemies = state.units.filter((u) => u.team === 'enemy');

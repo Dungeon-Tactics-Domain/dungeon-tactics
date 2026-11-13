@@ -9,7 +9,7 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
-import { TERRAIN, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { TERRAIN, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
 import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
@@ -19,7 +19,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { COMMANDS, abilitiesOf, abilityEnabled, commandEnabled, type Command, type Screen } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { UI_ICON, el, icon, iconButton } from './icons.ts';
-import type { Highlights } from './interaction.ts';
+import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 
 export interface HudActions {
@@ -229,7 +229,8 @@ export class BattleHud {
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
-    this.tile.textContent = b.over ? '' : tileInfo(b.grid, v.cursor);
+    const hit = chargeDanger(b.state, b.grid.width, b.grid.height).get(posKey(v.cursor));
+    this.tile.textContent = b.over ? '' : tileInfo(b.grid, v.cursor) + (hit ? t(` · ⚠ ${abilityName(hit)} vai cair aqui`, ` · ⚠ ${abilityName(hit)} lands here`) : '');
     this.renderQueue(b);
     this.help.textContent = this.helpText(v, heroTurn);
     this.renderCommands(v, open);

@@ -5,7 +5,7 @@ import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
 import { dist, posKey, samePos } from '../shared/battle/grid.ts';
 import { inAbilityRange, lineOfSight, pathTo, reachable, unitAt } from '../shared/battle/pathing.ts';
-import type { BattleEvent, Pos } from '../shared/battle/types.ts';
+import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
 export type Mode = { k: 'move' } | { k: 'ability'; id: string } | { k: 'idle' };
@@ -122,4 +122,18 @@ export function highlights(b: Battle, ui: Ui): Highlights {
   if (ui.pending) mark(ui.pending, 'target');
   if (!b.over) mark(b.actor.pos, 'actor');
   return { tiles: [...tiles.values()], path, preview };
+}
+
+// Casas que as cargas na fila vão atingir (noite de 12/11): a magia com carga segue a unidade (follow) e a do Tiro mirado
+// fica na casa; a área é o raio da habilidade em volta. A cena pinta de roxo e o HUD diz em texto, para dar tempo de sair.
+export function chargeDanger(state: BattleState, width: number, height: number): Map<string, string> {
+  const out = new Map<string, string>(); // casa -> habilidade que cai nela
+  for (const c of state.charges) {
+    const center = (c.follow && state.units.find((u) => u.id === c.follow)?.pos) || c.target;
+    const r = ABILITIES[c.ability].radius;
+    for (let y = center.y - r; y <= center.y + r; y++)
+      for (let x = center.x - r; x <= center.x + r; x++)
+        if (x >= 0 && y >= 0 && x < width && y < height && dist({ x, y }, center) <= r) out.set(posKey({ x, y }), c.ability);
+  }
+  return out;
 }

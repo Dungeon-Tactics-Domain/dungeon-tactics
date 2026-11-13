@@ -8,6 +8,7 @@ import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { previewOrder } from '../src/shared/battle/turn-queue.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { chargeDanger } from '../src/client/interaction.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Ações com carga (12/11, regras de turno do FFT em todos os mapas): declarada no turno, sai depois de N tiques
@@ -28,6 +29,16 @@ function untilResolved(b: Battle): BattleEvent[] {
 }
 
 describe('ações com carga', () => {
+  it('a área da carga acende onde vai cair e segue a unidade (chargeDanger, aviso para sair da área)', () => {
+    const b = duel('mage', 1, 3);
+    b.act('blast', { x: 4, y: 3 });
+    const area = [...chargeDanger(b.state, 8, 8).keys()].sort();
+    expect(area).toEqual(['3,3', '4,2', '4,3', '4,4', '5,3'].sort());
+    const moved = { ...b.state, units: b.state.units.map((u) => (u.id === 'b' ? { ...u, pos: { x: 6, y: 6 } } : u)) };
+    expect(chargeDanger(moved, 8, 8).has('6,6')).toBe(true);
+    expect(chargeDanger(moved, 8, 8).has('4,3')).toBe(false);
+  });
+
   it('declarar não acerta na hora: entra na fila e sai depois, com o golpe', () => {
     const b = duel('mage', 1, 3);
     const hp = b.state.units[1].hp;
