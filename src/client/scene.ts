@@ -24,7 +24,7 @@ import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
 import { Water } from './water.ts';
 import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
-import { EXTEND, extH, kindOf, loadAmbience, type Ambience } from './ambience.ts';
+import { EXTEND, EXT_DARK, EXT_FADE, extH, kindOf, loadAmbience, type Ambience } from './ambience.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
@@ -498,11 +498,11 @@ export class BattleScene {
   // Um InstancedMesh por malha da peça em vez de um objeto por bloco: o 20x20 fazia 2 321 draw calls por quadro e caía
   // a 9 fps no celular emulado (medição de 11/11). `tiles` marca as peças que valem como casa no toque.
   // Versão de teste ?extensao=textura (13/11, pedido do Fernando: "os blocos de fora podem ter a textura, só mais escuros;
-  // os primeiros com fade para escuro"): EXT casas em volta com a peça do topo da casa da borda mais perto, escurecendo anel
-  // a anel (0,6 no 1º até 0,12 no 5º), e coluna lisa escura até o chão dos arredores. Sem regra nem clique. A altura segue
+  // os primeiros com fade para escuro"): EXT casas em volta com a peça do topo da casa da borda mais perto, escurecendo nos
+  // EXT_FADE primeiros anéis e escura nos EXT_DARK seguintes (ambience.ts), e coluna lisa escura até o chão dos arredores. Sem regra nem clique. A altura segue
   // extH (a casa mais baixa por perto), a mesma conta que impede a extensão de tapar boneco na diagonal
   private buildTexturedExtension() {
-    const { width: W, height: H } = this.grid, RING = 5, BOTTOM = -3;
+    const { width: W, height: H } = this.grid, RING = EXT_FADE + EXT_DARK, BOTTOM = -3;
     const tops = new Map<string, { at: THREE.Matrix4[]; tone: number[] }>();
     const cols: THREE.Matrix4[] = [], colTone: number[] = [];
     for (let j = -RING; j < H + RING; j++) for (let i = -RING; i < W + RING; i++) {
@@ -513,7 +513,8 @@ export class BattleScene {
       const name = LOOK[t.look ?? 'grass']?.top ?? LOOK.grass.top;
       if (!this.lookPieces.has(name)) continue;
       const top = (extH(this.grid, i, j, ring) + 1) * this.step, x = i - W / 2 + 0.5, z = j - H / 2 + 0.5;
-      const tone = 0.6 - 0.12 * (ring - 1); // 0,6 no 1º anel: com 0,75 a extensão da Colina (luz de dia) se confundia com o tabuleiro
+      // escurece de 0,78 até 0,18 nos EXT_FADE primeiros anéis e fica em 0,18 nos EXT_DARK seguintes (0,58 e 0,38 com 2)
+      const tone = ring <= EXT_FADE ? 0.18 + 0.6 * (1 - ring / (EXT_FADE + 1)) : 0.18;
       let b = tops.get(name);
       if (!b) tops.set(name, (b = { at: [], tone: [] }));
       b.at.push(new THREE.Matrix4().makeTranslation(x, top, z));

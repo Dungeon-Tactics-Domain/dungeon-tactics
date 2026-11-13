@@ -104,6 +104,9 @@ const GROUND_MAX = 5.5;
 // versão de teste ?fade=preto (13/11, pedido do Fernando: "fade para preto ao redor do mapa"): a neblina dos arredores
 // vira preto e fecha em 7 casas da borda; o tabuleiro não recebe essa neblina e fica igual
 const FADE = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fade') : null) !== 'nao'; // padrão desde 13/11; ?fade=nao compara
+// extensão (13/11, pedido do Fernando): escurece em EXT_FADE blocos, segue EXT_DARK blocos escuros, e só então o fade para o
+// preto começa (a neblina dos arredores, de EXT_FADE + EXT_DARK a + 4 casas da borda)
+export const EXT_FADE = 2, EXT_DARK = 4;
 const EXT_RING = 5; // casas de extensão cinza em cada lado na versão de teste (?extensao)
 // Extensão do mapa: casas de fora na cor do piso da borda, bem escuras, com sombra das copas. Padrão em todos os mapas desde
 // 13/11 (o Fernando gostou da versão de teste e escolheu "padrão em todos os mapas"); ?extensao=cinza mostra a 1ª versão
@@ -189,7 +192,7 @@ export class Ambience {
     this.hh = grid.height / 2;
     const u = this.u;
     u.ambHalf.value.set(this.hw, this.hh);
-    Object.assign(u, { ambNear: { value: FADE ? 0.5 : mood.near }, ambFar: { value: FADE ? 7 : mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
+    Object.assign(u, { ambNear: { value: FADE ? EXT_FADE + EXT_DARK : mood.near }, ambFar: { value: FADE ? EXT_FADE + EXT_DARK + 4 : mood.far }, ambMist: { value: mood.mist }, ambCeil: { value: mood.ceiling }, ambSnow: { value: mood.snow } });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
     this.buildGround();
     // na cripta não: as paredes, tochas e cristais ficam nessa faixa e sumiam dentro das colunas (revisão de 13/11)
