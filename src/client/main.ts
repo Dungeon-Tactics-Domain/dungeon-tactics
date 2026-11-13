@@ -674,6 +674,23 @@ function confetti() {
   setTimeout(() => box.remove(), 3000);
 }
 
+// Batalha avulsa: os mapas com Farol (a regra avulsa perde sem ele; Bosque e Passo são só da campanha). A Colina já está
+// montada ao fundo do título, então escolhê-la só fecha; as outras abrem pela URL, cada uma com o próprio save.
+const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt'];
+function quickBattle() {
+  const d = dialog('menu', t('Batalha avulsa', 'Quick battle'), [
+    el('div', { class: 'menu-actions camp-list' }, ...QUICK_MAPS.map((id) => el('button', {
+      type: 'button', class: id === 'beacon_hill' ? 'primary' : 'secondary',
+      onclick: () => {
+        d.close();
+        setTrack(null);
+        if (id !== 'beacon_hill') location.search = `?cenario=${id}`;
+      },
+    }, t(SCENARIOS[id].name, SCENARIOS[id].en)))),
+  ]);
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+
 // Créditos (resumo; a lista completa, com licença de cada arquivo, é o public/CREDITS.txt). Fechar volta ao título.
 function credits() {
   const d = dialog('menu', t('Créditos', 'Credits'), [
@@ -709,7 +726,7 @@ function titleScreen() {
         d.close();
         toWorld();
       } }, t('Novo jogo', 'New game')),
-      el('button', { type: 'button', class: 'secondary', onclick: go(() => setTrack(null)) }, t('Batalha avulsa (Colina do Farol)', 'Quick battle (Beacon Hill)')),
+      el('button', { type: 'button', class: 'secondary', onclick: go(quickBattle) }, t('Batalha avulsa', 'Quick battle')),
       el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu()) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map')),
       el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits'))),
   ]);
