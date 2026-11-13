@@ -64,10 +64,10 @@ export const CHAPTERS: Chapter[] = [
     song: 'road',
     setup: { map: 'ash_wood', heroes: party(0), enemies: [foe('soldier'), foe('soldier'), foe('skeleton_archer', { name: 'Arqueiro novato', en: 'Novice archer', hp: 20 }), foe('soldier', { name: 'Recruta', en: 'Recruit', hp: 25 })] },
     intro: [
-      L('narr', 'Os Faróis guardam os vilarejos do Véu, a névoa onde os mortos não descansam. Um a um, eles estão se apagando.', 'The Beacons keep the villages safe from the Veil, the mist where the dead never rest. One by one, they are going dark.'),
+      L('narr', 'Os Faróis protegem os vilarejos do Véu, a névoa onde os mortos não descansam. Um a um, eles estão se apagando.', 'The Beacons keep the villages safe from the Veil, the mist where the dead never rest. One by one, they are going dark.'),
       L('bran', 'Caravana parada no meio da estrada. Isso não é acidente.', 'A caravan stopped in the middle of the road. That is no accident.'),
       L('lia', 'Mercenários. E esse arqueiro de ossos... só um homem paga com mortos.', 'Mercenaries. And that bone archer... only one man pays with the dead.'),
-      L('merc', 'Nada pessoal. O mago sombrio paga bem por quem anda com cristais.', 'Nothing personal. The dark mage pays well for anyone carrying crystals.'),
+      L('merc', 'Nada pessoal. O mago sombrio paga bem pelos cristais que vocês levam.', 'Nothing personal. The dark mage pays well for the crystals you\'re carrying.'),
       L('tess', 'Então que ele pague o enterro. Formação!', 'Then let him pay for the burial. Formation!'),
       L('hero', 'Ninguém encosta na caravana. Comigo!', 'No one touches the caravan. With me!'),
       // dicas da 1ª fase: o jogo ainda não tem tutorial; quem abre a campanha aprende o básico aqui
@@ -86,15 +86,15 @@ export const CHAPTERS: Chapter[] = [
     setup: { map: 'beacon_hill', heroes: party(1), enemies: [foe('brute'), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
     intro: [
       L('narr', 'A Colina do Farol. Neve de um lado, campo do outro, e o cristal azul no meio de tudo.', 'Beacon Hill. Snow on one side, fields on the other, and the blue crystal in the middle of it all.'),
-      L('tess', 'Eles já estão subindo. Um bruto, um mago e soldados.', 'They are already climbing. A brute, a mage and soldiers.'),
+      L('tess', 'Eles já estão subindo. Um bruto, um arqueiro de ossos e mais dois atrás.', 'They\'re already climbing. A brute, a bone archer and two more behind them.'),
       L('odo', 'Se o cristal cair, o Véu cobre o vale até o anoitecer!', 'If the crystal falls, the Veil covers the valley by nightfall!'),
       L('bran', 'Ninguém encosta no Farol. Segurem a subida.', 'No one touches the Beacon. Hold the climb.'),
       L('hero', 'Eu fico perto do cristal. Quem subir, cai.', 'I stay by the crystal. Whoever climbs, falls.'),
     ],
     outro: [
-      L('lia', 'O mago fugiu para o norte... para a cripta velha, debaixo do lago.', 'The mage ran north... to the old crypt, under the lake.'),
+      L('lia', 'Os que fugiram correram para o norte... para a cripta velha, debaixo do lago.', 'The ones who ran went north... to the old crypt, under the lake.'),
       L('odo', 'A Cripta Alagada? Ninguém entra lá há cem anos.', 'The Flooded Crypt? No one has gone in there for a hundred years.'),
-      L('bran', 'Então ninguém vai nos esperar. Vamos.', 'Then no one will be expecting us. Let us go.'),
+      L('bran', 'Então ninguém vai nos esperar. Vamos.', 'Then no one will be expecting us. Let\'s go.'),
     ],
   },
   {
@@ -105,8 +105,8 @@ export const CHAPTERS: Chapter[] = [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
       L('tess', 'Cuidado com a água funda no meio: ninguém atravessa ali.', 'Watch the deep water in the middle: no one crosses there.'),
       L('lia', 'Arqueiros nos pontos altos. Ele sempre gostou de altura.', 'Archers on the high ground. He always liked height.'),
-      L('odo', 'E eu sempre gostei de fogo. Vamos ver quem gosta mais.', 'And I always liked fire. Let us see who likes theirs more.'),
-      L('hero', 'Pelas pontes, um de cada vez. E cuidado com os espinhos no meio.', 'Over the bridges, one at a time. And mind the spikes in the middle.'),
+      L('odo', 'E eu sempre gostei de fogo. Vamos ver quem gosta mais.', 'And I always liked fire. Let\'s see who likes theirs more.'),
+      L('hero', 'Pelas pontes, um de cada vez. E longe dos espinhos: ser empurrado em cima deles dói.', 'Over the bridges, one at a time. And stay off the spikes: getting pushed onto them hurts.'),
     ],
     outro: [
       L('bran', 'Uma escada para baixo. A cripta continua.', 'A stairway down. The crypt goes deeper.'),
@@ -149,8 +149,8 @@ export const CHAPTERS: Chapter[] = [
     outro: [
       L('vesper', 'A porta... fechou de novo...', 'The door... it closed again...'),
       L('narr', 'O cristal brilhou mais forte do que nunca, e o Véu recuou até as montanhas.', 'The crystal shone brighter than ever, and the Veil fell back to the mountains.'),
-      L('lia', 'Acabou. Desta vez, de verdade.', 'It is over. This time, for real.'),
-      L('odo', 'Alguém mais está com fome? Eu estou com muita fome.', 'Is anyone else hungry? I am very hungry.'),
+      L('lia', 'Acabou. Desta vez, de verdade.', 'It\'s over. For real this time.'),
+      L('odo', 'Alguém mais está com fome? Eu estou com muita fome.', 'Is anyone else hungry? I\'m starving.'),
       L('tess', 'Esperem. Se acabou... por que o Passo Gelado ainda brilha roxo lá em cima?', 'Wait. If it is over... why is Frost Pass still glowing purple up there?'),
     ],
   },
@@ -160,7 +160,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'snow',
     setup: { map: 'frost_pass', heroes: party(5), enemies: [foe('skeleton_archer'), foe('soldier'), foe('dark_mage'), foe('minion')] },
     intro: [
-      L('narr', 'Ato II. Três dias depois, o Passo Gelado, onde o Véu recuou, ainda brilha roxo à noite.', 'Act II. Three days later, Frost Pass, where the Veil retreated, still glows purple at night.'),
+      L('narr', 'Três dias depois. O Passo Gelado, para onde o Véu recuou, ainda brilha roxo à noite.', 'Three days later. Frost Pass, where the Veil retreated to, still glows purple at night.'),
       L('bran', 'Subida longa e inimigo no alto. Do jeito que eu odeio.', 'A long climb with the enemy up high. Just the way I hate it.'),
       L('tess', 'Lá de cima eles enxergam e alcançam mais longe. Usem as árvores secas para se cobrir.', 'From up there they see and reach farther. Use the dead trees for cover.'),
       L('lia', 'Esses mortos não usam as cores do Vesper. Alguém mais está chamando eles.', 'These dead do not wear Vesper\'s colors. Someone else is calling them.'),
