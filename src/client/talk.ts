@@ -28,7 +28,7 @@ export function talk(lines: Line[], title?: string): Promise<void> {
     const show = () => {
       const who = SPEAKERS[lines[i].who];
       face.replaceChildren(portrait(who.def));
-      name.textContent = who.name;
+      name.textContent = LANG === 'en' && 'en' in who ? who.en : who.name; // nomes próprios são iguais nas duas línguas
       name.hidden = face.hidden = !who.name; // narrador: sem retrato nem nome
       shown = 0;
       text.textContent = '';

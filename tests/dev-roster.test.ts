@@ -43,7 +43,9 @@ describe('menu de desenvolvedor: elenco', () => {
     const scenario = buildDevScenario(s);
     expect(scenario.id).toBe(DEV_SCENARIO);
     const hero = scenario.spawns.find((sp) => sp.id === 'h0')!;
-    expect(UNIT_DEFS[hero.def]).toMatchObject({ name: 'Teste', hp: 99, speed: 20 });
+    expect(UNIT_DEFS[hero.def]).toMatchObject({ name: 'Teste', en: 'Teste', hp: 99, speed: 20 });
+    // nome da classe sem mudar sai em inglês no jogo em inglês (antes ficava "Soldado")
+    expect(UNIT_DEFS[scenario.spawns.find((sp) => sp.id === 'e0')!.def].en).toBe(UNIT_DEFS[s.enemies[0].base].en);
     expect(scenario.spawns.some((sp) => sp.def === 'beacon')).toBe(true);
     const b = Battle.start(scenario, 7);
     expect(Battle.load(b.save())).not.toBeNull();

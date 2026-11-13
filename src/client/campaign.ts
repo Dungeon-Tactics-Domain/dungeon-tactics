@@ -27,8 +27,8 @@ export const SPEAKERS = {
   odo: { name: 'Odo', def: 'mage', pitch: 260 },
   lia: { name: 'Lia', def: 'rogue', pitch: 420 },
   vesper: { name: 'Vesper', def: 'dark_mage', pitch: 110 },
-  shade: { name: 'A Sombra', def: 'dark_mage', pitch: 80 },
-  merc: { name: 'Mercenário', def: 'soldier', pitch: 180 },
+  shade: { name: 'A Sombra', en: 'The Shade', def: 'dark_mage', pitch: 80 },
+  merc: { name: 'Mercenário', en: 'Mercenary', def: 'soldier', pitch: 180 },
   narr: { name: '', def: 'beacon', pitch: 220 },
 } as const;
 
@@ -58,7 +58,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Estrada de Cinzas', 'The Ash Road'],
     song: 'road',
-    setup: { map: 'ash_wood', heroes: party(0), enemies: [foe('soldier'), foe('soldier'), foe('skeleton_archer', { name: 'Arqueiro novato', hp: 20 }), foe('soldier', { name: 'Recruta', hp: 25 })] },
+    setup: { map: 'ash_wood', heroes: party(0), enemies: [foe('soldier'), foe('soldier'), foe('skeleton_archer', { name: 'Arqueiro novato', en: 'Novice archer', hp: 20 }), foe('soldier', { name: 'Recruta', en: 'Recruit', hp: 25 })] },
     intro: [
       L('narr', 'Os Faróis guardam os vilarejos do Véu, a névoa onde os mortos não descansam. Um a um, eles estão se apagando.', 'The Beacons keep the villages safe from the Veil, the mist where the dead never rest. One by one, they are going dark.'),
       L('bran', 'Caravana parada no meio da estrada. Isso não é acidente.', 'A caravan stopped in the middle of the road. That is no accident.'),
@@ -161,7 +161,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Sombra no Cume', 'The Shade on the Summit'],
     song: 'boss',
-    setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('dark_mage', { name: 'A Sombra', hp: 95, speed: 9, abilities: ['firebolt', 'shadow_wave'] }), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
+    setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('dark_mage', { name: 'A Sombra', en: 'The Shade', hp: 95, speed: 9, abilities: ['firebolt', 'shadow_wave'] }), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
     intro: [
       L('shade', 'Cada Farol que vocês acendem me empurra para cá. Aqui em cima não sobrou luz nenhuma.', 'Every Beacon you light pushes me up here. Up here, there is no light left at all.'),
       L('odo', 'Sobrou a gente. E eu trouxe fogo.', 'There is us. And I brought fire.'),

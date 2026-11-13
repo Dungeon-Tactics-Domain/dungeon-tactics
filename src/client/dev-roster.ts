@@ -12,6 +12,7 @@ import { modelOf } from './markers.ts';
 export interface DevUnit {
   base: string; // classe de partida (id em UNIT_DEFS): dá o boneco e os números iniciais
   name: string;
+  en?: string; // nome em inglês, quando o nome é traduzível (Recruta, A Sombra); o menu de desenvolvedor não usa
   hp: number;
   speed: number;
   move: number;
@@ -112,7 +113,9 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
   const add = (units: DevUnit[], slots: Spawn[], team: Team, tag: string) =>
     units.slice(0, slots.length).forEach((u, i) => {
       const id = `${scenarioId}-${tag}${i}`;
-      UNIT_DEFS[id] = { id, name: u.name, en: u.name, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
+      // nome sem mudar = o da classe nas duas línguas; nome próprio (Bran, Vesper) é igual nas duas; en só se vier no elenco
+      const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
+      UNIT_DEFS[id] = { id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');
