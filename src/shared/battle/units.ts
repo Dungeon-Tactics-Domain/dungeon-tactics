@@ -30,6 +30,9 @@ const LIST: UnitDef[] = [
   // Acólito do Véu (noite de 12/11, Ato II): cura os aliados, então derrubá-lo primeiro é a escolha que a fase pede (o
   // "puzzle" de prioridade de alvo). Pouca vida e ataque de mago; números iniciais, medidos na fase do Passo Gelado
   { id: 'acolyte', name: 'Acólito do Véu', en: 'Veil Acolyte', hp: 26, speed: 9, move: 3, abilities: ['firebolt', 'heal'], tint: '#8a5cff' },
+  // Cavaleiro do Véu (13/11, conteúdo novo pedido pelo Fernando): um cavaleiro tomado pelo Véu, boneco do cavaleiro com
+  // brilho vermelho (UnitDef.tint) para não confundir com o Bran. Golpe pesado e pouca vida (38); na fase 7 no lugar do Soldado: 30% → 21% (com 55 de vida e escudada caía a 5%)
+  { id: 'veil_knight', name: 'Cavaleiro do Véu', en: 'Veil Knight', hp: 38, speed: 8, move: 4, abilities: ['strike', 'heavy_strike'], tint: '#ff4a2a' },
   // Colosso de Ossos (noite de 12/11, chefe final do Ato II): ocupa 2x2 e não anda; lança a Onda sombria e a Explosão.
   // Muita vida e velocidade baixa: o desafio é chegar perto sob as magias dele. Números iniciais, medidos na fase 7
   { id: 'colossus', name: 'Colosso de Ossos', en: 'Bone Colossus', hp: 160, speed: 6, move: 0, abilities: ['shadow_wave', 'blast'], size: 2 },

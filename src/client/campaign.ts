@@ -50,7 +50,7 @@ export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTER
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 39% → 37% no Ato I (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 39% → 30% no Ato II (com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
+// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 83% → 81% → 43% → 39% → 37% no Ato I (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 39% → 21% no Ato II (o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
 // (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
 // Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
 // muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
@@ -183,7 +183,7 @@ export const CHAPTERS: Chapter[] = [
     song: 'boss',
     light: 0.15, // noite no cume; o sol nasce só no fim da conversa de saída
     boss: true,
-    setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('colossus', { name: 'A Sombra', en: 'The Shade', hp: 300 }), foe('skeleton_archer'), foe('soldier'), foe('minion')] },
+    setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('colossus', { name: 'A Sombra', en: 'The Shade', hp: 300 }), foe('skeleton_archer'), foe('veil_knight'), foe('minion')] },
     intro: [
       L('shade', 'Cada Farol que vocês acendem me empurra para cá. Aqui em cima não sobrou luz nenhuma.', 'Every Beacon you light pushes me up here. Up here, there is no light left at all.'),
       L('odo', 'Sobrou a gente. E eu trouxe fogo.', 'There is us. And I brought fire.'),
