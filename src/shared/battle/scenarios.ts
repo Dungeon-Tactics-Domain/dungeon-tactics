@@ -370,11 +370,31 @@ const PASS_MAP = [
   'rnnnnnnnnnnr',
   'rnnnnnnnnnnr',
 ];
+// relevo (13/11, "fases muito retas"): a subida vira zigue-zague, em cada patamar um lado sobe por degrau e o outro cai
+// em penhasco de 2 (sobe-se pela esquerda até o meio, pela direita até o alto, de novo pela esquerda até o cume, no 5);
+// o lago fica numa bacia e os paredões sobem acima do caminho. O lago mantém a própria altura. Cume no 4 e vale dos heróis
+// no 1 (fase 7, MEDIR=300): cume no 5 com vale no 0 deixava o Colosso no alto com 4% de vitória dos heróis
+const PASS_H = [
+  '664444444466',
+  '664443344466',
+  '654333334456',
+  '654333334456',
+  '664332222466',
+  '664321112466',
+  '653221112235',
+  '541122221145',
+  '441112211144',
+  '432111111234',
+  '322111111223',
+  '322111111223',
+  '322111111223',
+  '322111111223',
+];
 const FROST_PASS: Scenario = {
   id: 'frost_pass',
   name: 'Passo Gelado',
   en: 'Frost Pass',
-  grid: { width: 12, height: 14, tiles: PASS_MAP.flatMap((row) => [...row].map((c) => ({ ...PASS_KEY[c] }))) },
+  grid: { width: 12, height: 14, tiles: PASS_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...PASS_KEY[c], ...(c === 'i' ? {} : { h: Number(PASS_H[y][x]) }) }))) },
   spawns: [
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 13 },
     { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 12 },
