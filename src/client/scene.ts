@@ -792,6 +792,14 @@ export class BattleScene {
     this.yawTarget += (dir * Math.PI) / 2;
   }
 
+  // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao quarto de volta mais perto,
+  // senão as setas andariam na diagonal (gridStep conta com o ângulo de 45° + n·90°).
+  private spinning = false;
+  setSpin(on: boolean) {
+    if (this.spinning && !on) this.yawTarget = Math.PI / 4 + Math.round((this.yawTarget - Math.PI / 4) / (Math.PI / 2)) * (Math.PI / 2);
+    this.spinning = on;
+  }
+
   private resize() {
     const w = this.host.clientWidth, h = this.host.clientHeight;
     this.renderer.setSize(w, h, false);
@@ -843,6 +851,7 @@ export class BattleScene {
       this.anims.splice(this.anims.indexOf(a), 1);
       a.done();
     }
+    if (this.spinning) this.yawTarget += dt * 0.15; // ~42 s por volta: dá para ver o mapa sem enjoar
     this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
     if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
     // dt*30: chega em ~0,1 s, rápido para não atrasar quem segura a seta, macio para o olho seguir

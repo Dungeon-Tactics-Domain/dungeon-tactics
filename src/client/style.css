@@ -217,6 +217,9 @@ button[hidden] { display: none; }
 .dialog.title { width: min(460px, 100%); text-align: center; }
 .dialog.title h2 { font-size: 38px; letter-spacing: 1px; }
 .title-sub { color: var(--muted); margin: 4px 0 14px; }
+/* o mapa girando atrás é a arte do título: sem o HUD da batalha por cima e só com as bordas escurecidas */
+.title-overlay { background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%); }
+body:has(.title-overlay) .hud, body:has(.title-overlay) .fps { visibility: hidden; }
 /* papel picado da vitória (main.ts, confetti): por cima de tudo, sem pegar clique */
 .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
 .confetti i { position: absolute; top: -12px; width: 8px; height: 12px; animation: fall linear forwards; }

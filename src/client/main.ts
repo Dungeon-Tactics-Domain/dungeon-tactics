@@ -139,6 +139,8 @@ class Game {
   // diálogo aberto, o controle anda entre os botões dele (A aperta, B fecha).
   private pollPad() {
     requestAnimationFrame(() => this.pollPad());
+    // a batalha avulsa é o fundo da tela de título (e das telas que saem dela): gira enquanto alguma está aberta
+    this.scene.setSpin(!!document.querySelector('.title-overlay') && !matchMedia('(prefers-reduced-motion: reduce)').matches);
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     pace.pad = !!gp?.buttons[0]?.pressed; // A (ou ×) seguro acelera a batalha
     if (!gp) return;
@@ -678,7 +680,7 @@ function confetti() {
 // montada ao fundo do título, então escolhê-la só fecha; as outras abrem pela URL, cada uma com o próprio save.
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt'];
 function quickBattle() {
-  const d = dialog('menu', t('Batalha avulsa', 'Quick battle'), [
+  const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
     el('div', { class: 'menu-actions camp-list' }, ...QUICK_MAPS.map((id) => el('button', {
       type: 'button', class: id === 'beacon_hill' ? 'primary' : 'secondary',
       onclick: () => {
@@ -693,7 +695,7 @@ function quickBattle() {
 
 // Créditos (resumo; a lista completa, com licença de cada arquivo, é o public/CREDITS.txt). Fechar volta ao título.
 function credits() {
-  const d = dialog('menu', t('Créditos', 'Credits'), [
+  const d = dialog('title', t('Créditos', 'Credits'), [
     el('ul', { class: 'legend' },
       el('li', {}, t('Modelos 3D: KayKit, de Kay Lousberg (CC0)', '3D models: KayKit, by Kay Lousberg (CC0)')),
       el('li', {}, t('Efeitos sonoros: Kenney, artisticdude, JaggedStone, Julien Matthey e outros do OpenGameArt (CC0)', 'Sound effects: Kenney, artisticdude, JaggedStone, Julien Matthey and others from OpenGameArt (CC0)')),
