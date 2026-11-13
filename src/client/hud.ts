@@ -6,7 +6,8 @@
 //   ao lado do boneco da vez: o menu de comandos (Mover · Agir · Esperar · Status), o submenu das habilidades e o
 //   "Executar?" (13/11, pedido do Fernando: "do lado do boneco igual no FFT"; `place` acompanha a câmera a cada quadro);
 //   embaixo à esquerda: a unidade da vez (retrato, vida, MP e CT em barras); embaixo à direita: a unidade sob o cursor,
-//   que ao mirar mostra a prévia do golpe (acerto, dano e o pedaço da vida que sai, como no FFT e no Tactics Ogre).
+//   que ao mirar marca na barra o pedaço da vida que sai; entre os dois, as faixas da prévia do golpe no jeito do
+//   Tactics Ogre (13/11): uma seta por alvo com o dano grande e o acerto.
 // Redesenha tudo a cada mudança (é pouco DOM); a posição do menu muda só em left/top.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
@@ -225,18 +226,36 @@ const fromText = (f: Forecast) => (f.side === 'back' ? t(' (pelas costas)', ' (f
 export const forecastText = (f: Forecast) => f.heal ? t(`cura ${range(f.heal)}`, `heals ${range(f.heal)}`) : `${t(`acerto ${f.chance}%`, `hit ${f.chance}%`)}${fromText(f)} · ${dmgText(f)}`;
 export const hpAfterText = (f: Forecast) => `${t('vida', 'HP')} ${f.unit.hp} → ${range(f.after)}`;
 
-// bloco da prévia no painel do alvo: acerto grande à esquerda (o número do FFT), dano e vida depois ao lado
-function forecastBlock(f: Forecast, ability: string, others: Forecast[]) {
-  const names = others.map((o) => unitName(o.unit.def) + (o.ally ? t(' (aliado!)', ' (ally!)') : ''));
-  return el('div', { class: 'forecast' },
-    f.support ? null : el('span', { class: `forecast-hit${f.heal ? ' gain' : ''}` }, el('small', {}, f.heal ? t('Cura', 'Heal') : t('Acerto', 'Hit')), f.heal ? `+${range(f.heal)}` : `${f.chance}%`),
-    el('div', { class: 'forecast-body' },
-      f.heal ? null : el('span', {}, f.support ? abilityDetail(ability) : dmgText(f)),
-      f.support ? null : el('strong', { class: 'forecast-hp' }, hpAfterText(f)),
-      f.ally ? el('span', { class: 'forecast-warn' }, t('Pega um ALIADO!', 'Hits an ALLY!')) : null,
-      // área com vários alvos: o painel é de um só, e a linha diz quem mais leva (até 3 nomes)
-      names.length ? el('span', { class: 'forecast-more' }, t(`+${names.length} ${names.length === 1 ? 'alvo' : 'alvos'}: `, `+${names.length} ${names.length === 1 ? 'target' : 'targets'}: `)
-        + names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '')) : null));
+// Faixas da prévia no jeito do Tactics Ogre (13/11, pedido do Fernando; desenho nosso): uma faixa em seta por alvo,
+// "HP", o número grande (−12–15 PTS, ou +7–10 na cura) e a mira com o acerto; embaixo, a linha miúda de `strikeInfo`.
+// Até STRIKES faixas: mais que isso subiria acima da faixa dos painéis e cobriria o mapa; o resto vira "+N alvos".
+const STRIKES = 3;
+// linha miúda da faixa: quem, de onde vem o golpe, empurrão e a vida depois. Puro para o teste
+export function strikeInfo(f: Forecast, ability: string): string[] {
+  const out = [unitName(f.unit.def)];
+  if (f.support) return [...out, abilityDetail(ability)];
+  // ↶ e ⇥: a vantagem de direção (combat.ts SIDE_BONUS/BACK_BONUS), com a palavra junto (nunca só o ícone)
+  if (f.side === 'back') out.push(t('↶ pelas costas', '↶ from behind'));
+  else if (f.side === 'side') out.push(t('⇥ de lado', '⇥ from the side'));
+  if (f.push) out.push(t(`empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, `push +${f.push}${f.spikes ? ' (spikes!)' : ''}`));
+  out.push(hpAfterText(f));
+  if (f.ally) out.push(t('ALIADO!', 'ALLY!'));
+  return out;
+}
+function strike(f: Forecast, ability: string) {
+  const amount = f.heal ? `+${range(f.heal)}` : f.dmg ? `−${range(f.dmg)}` : null;
+  return el('div', { class: `strike${f.heal ? ' gain' : ''}${f.ally ? ' ally' : ''}` },
+    amount ? el('div', { class: 'strike-main' },
+      el('span', { class: 'strike-hp' }, t('Vida', 'HP')),
+      el('strong', { class: 'strike-pts' }, amount, el('small', {}, 'PTS')),
+      el('span', { class: 'strike-hit', title: t('Chance de acerto', 'Chance to hit') }, `⊕ ${f.chance}%`)) : null,
+    el('div', { class: 'strike-info' }, strikeInfo(f, ability).join(' · ')));
+}
+function strikes(fs: Forecast[], ability: string) {
+  const rest = fs.slice(STRIKES).map((o) => unitName(o.unit.def) + (o.ally ? t(' (aliado!)', ' (ally!)') : ''));
+  return [...fs.slice(0, STRIKES).map((f) => strike(f, ability)),
+    rest.length ? el('p', { class: 'strike-more' }, t(`+${rest.length} ${rest.length === 1 ? 'alvo' : 'alvos'}: `, `+${rest.length} ${rest.length === 1 ? 'target' : 'targets'}: `) + rest.join(', ')) : null]
+    .filter((x) => x !== null);
 }
 
 // Painel ao lado do boneco, como o menu do FFT: à direita dele; sem lugar, à esquerda; sempre dentro de `area` (a parte
@@ -277,8 +296,9 @@ function sideText(u: UnitState) {
   return base && unitName(base) !== unitName(u.def) ? `${unitName(base)} · ${side}` : side;
 }
 
-// painel de unidade (o da vez embaixo à esquerda, o do alvo embaixo à direita); com `f`, a prévia do golpe nele
-function unitPanel(state: BattleState, u: UnitState, extra: HTMLElement[] = [], f?: Forecast) {
+// painel de unidade (o da vez embaixo à esquerda, o do alvo embaixo à direita, espelhado); com `f`, o trecho da vida
+// que o golpe tira ou a cura põe, em listras na barra
+function unitPanel(state: BattleState, u: UnitState, f?: Forecast) {
   const def = UNIT_DEFS[u.def];
   const change = !f || f.support ? undefined : f.heal ? { from: u.hp, to: f.after[1], kind: 'gain' as const } : { from: f.after[0], to: u.hp, kind: 'loss' as const };
   const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp, change)];
@@ -289,8 +309,7 @@ function unitPanel(state: BattleState, u: UnitState, extra: HTMLElement[] = [], 
     el('div', { class: 'unit-body' },
       el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, sideText(u))),
       ...rows,
-      charge ? el('p', { class: 'unit-note' }, t(`Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`, `Charging ${abilityName(charge.ability)} (${charge.ticks} ticks)`)) : null,
-      ...extra));
+      charge ? el('p', { class: 'unit-note' }, t(`Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`, `Charging ${abilityName(charge.ability)} (${charge.ticks} ticks)`)) : null));
 }
 
 // Fila do topo com a carga que ainda vai ser confirmada (13/11, pedido do Fernando, como a lista de CT do FFT): a magia
@@ -329,6 +348,7 @@ export class BattleHud {
   private readonly confirmBox = el('div', { class: 'panel confirm', role: 'dialog' });
   private readonly active = el('div', { class: 'active-slot' });
   private readonly target = el('div', { class: 'target-slot' });
+  private readonly strikesEl = el('div', { class: 'strikes' });
   private readonly root: HTMLElement;
 
   private readonly toolsMenu = el('div', { class: 'panel tools-menu', role: 'menu', hidden: true });
@@ -367,7 +387,7 @@ export class BattleHud {
       // um botão de menu (3 traços) no pergaminho do HUD no lugar da fileira de 7 botões de pedra (13/11, pedido do
       // Fernando: "tosco e despadronizado"); as teclas continuam valendo e aparecem em cada linha
       el('div', { class: 'tools' }, this.burger, this.toolsMenu),
-      this.commands, this.abilities, this.confirmBox, this.active, this.target);
+      this.commands, this.abilities, this.confirmBox, this.active, this.strikesEl, this.target);
     host.append(this.root);
   }
 
@@ -390,17 +410,19 @@ export class BattleHud {
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
     // unitAt: qualquer casa da unidade grande mostra o painel dela
     const found = unitAt(b.state, at);
-    // mirando (mapa de Agir ou "Executar?"): o painel do alvo traz a prévia do golpe; numa área, o alvo sob o cursor ou o
-    // primeiro, e os outros numa linha. Vale até para quem cura a si mesmo (fora da mira, o próprio painel não se repete)
+    // mirando (mapa de Agir ou "Executar?"): o painel do alvo mostra a barra com o que sai, e as faixas entre os dois
+    // painéis, a do alvo sob o cursor primeiro. Vale até para quem cura a si mesmo (fora da mira, o próprio painel não se repete)
     const ability = v.screen.k === 'confirm' ? v.screen.ability : v.screen.k === 'map' ? v.ability : null;
     const fs = open && ability && v.hl?.preview?.ok ? forecast(b, ability, v.hl.preview) : [];
     const main = fs.find((f) => f.unit.id === found?.id) ?? fs[0];
     const other = main?.unit ?? (found?.id !== me?.id ? found : undefined);
-    this.target.replaceChildren(...(other ? [unitPanel(b.state, other, main ? [forecastBlock(main, ability!, fs.filter((f) => f !== main))] : [], main)] : []));
-    // tamanho dos painéis que andam com o boneco, medido uma vez por desenho (o `place` de cada quadro só lê o cache)
+    this.target.replaceChildren(...(other ? [unitPanel(b.state, other, main)] : []));
+    this.strikesEl.replaceChildren(...(main ? strikes([main, ...fs.filter((f) => f !== main)], ability!) : []));
+    // tamanho dos painéis que andam com o boneco, medido uma vez por desenho (o `place` de cada quadro só lê o cache);
+    // as faixas entram na altura de baixo para o "Executar?" não cair em cima delas
     const box = (e: HTMLElement) => ({ w: e.offsetWidth, h: e.offsetHeight });
     this.sizes = { commands: box(this.commands), abilities: box(this.abilities), confirm: box(this.confirmBox),
-      bottom: Math.max(this.active.offsetHeight, this.target.offsetHeight) };
+      bottom: Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight) };
   }
 
   private sizes = { commands: { w: 0, h: 0 }, abilities: { w: 0, h: 0 }, confirm: { w: 0, h: 0 }, bottom: 0 };
