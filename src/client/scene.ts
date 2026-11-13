@@ -27,6 +27,7 @@ import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from 
 import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
 import { addDetail } from './detail.ts';
 import { buildBridges } from './bridge.ts';
+import { loadTreeTextures, swapTrees } from './trees.ts';
 import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
@@ -97,6 +98,12 @@ const LOOK: Record<string, { top: string; side: string | null; prop?: string; pr
 const CORPSE_MODELS = ['knight', 'rogue'];
 // escada da masmorra: 2 de largura, 4 de fundo e 4 de altura, sobe para -z (conferido nos vértices do arquivo)
 const STAIRS = 'masmorra/stairs_modular_center';
+// Rampa e a casa de cima para onde ela sobe: o passo entre as duas é andando, não pulo (13/11, pedido do Fernando: "na
+// hora de descer a rampa os bonecos estão descendo pulando; as rampas devem descer andando"). walkY segue o chão inclinado
+export function rampLink(grid: Grid, a: Pos, b: Pos): boolean {
+  const up = (r: Pos, top: Pos) => { const t = tileAt(grid, r).ramp; return !!t && r.x + FACING[t[0]].x === top.x && r.y + FACING[t[0]].y === top.y; };
+  return up(a, b) || up(b, a);
+}
 const PLAIN_UNITS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'liso';
 // muros sem peça que o terreno liso desenha como morro de pedra (o tijolo continua em blocos: é construção)
 const MOUND = new Set(['rock', 'snow_rock', 'summit', 'snow']);
@@ -277,6 +284,8 @@ export class BattleScene {
     // só o mapa que traz aparência por casa baixa essas peças (~630 KB com as texturas)
     const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? LOOK.water.top, LOOK[t.look].prop ?? '', UNDER, t.ramp && LOOK[t.look].stairs ? STAIRS : '', ...Object.values(DETAIL)] : [])))].filter(Boolean);
     const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
+    // mapas abertos: árvores feitas por código, com as fotos do terreno (trees.ts), no lugar das do KayKit
+    if (terrainTex) { await loadTreeTextures(); swapTrees(looks); }
     // gestos extras das habilidades (KayKit Rig_Medium, mesmos ossos dos bonecos): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
     const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack, await terrainTex);
@@ -666,10 +675,10 @@ export class BattleScene {
   private cutMaterial(src: THREE.MeshStandardMaterial) {
     const m = src.clone();
     m.allowOverride = false;
-    m.customProgramCacheKey = () => `copa${CUT_MAX}${this.terrainTex ? 't' : ''}`;
+    m.customProgramCacheKey = () => `copa${CUT_MAX}${this.terrainTex && !src.userData.procedural ? 't' : ''}`;
     const tex = this.terrainTex;
     m.onBeforeCompile = (s) => {
-      if (tex) addDetail(s, { leaves: tex.leaves, dirt: tex.bark }, 1.4, 0.9, true); // folhas na copa e terra no tronco (detail.ts)
+      if (tex && !src.userData.procedural) addDetail(s, { leaves: tex.leaves, dirt: tex.bark }, 1.4, 0.9, true); // folhas na copa e terra no tronco (detail.ts)
       Object.assign(s.uniforms, { cutPoints: this.cuts.points, cutCount: this.cuts.count, cutNormals: this.cuts.normals });
       s.fragmentShader = s.fragmentShader
         .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`)
@@ -771,7 +780,8 @@ export class BattleScene {
       if (t.terrain !== 'floor' || hash(p.x, p.y, 29) > 0.4) continue;
       const cx = w.x + (hash(p.x, p.y, 31) < 0.5 ? -0.36 : 0.36), cz = w.z + (hash(p.x, p.y, 37) < 0.5 ? -0.36 : 0.36);
       const green = GREEN.has(t.look ?? '');
-      put(green ? 'tuft' : 'pebble', cx, this.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
+      // tufo de grama só nos mapas em bloco: no terreno liso ele não combinava com a foto do chão (13/11, pedido do Fernando)
+      if (!(green && this.terrainTex)) put(green ? 'tuft' : 'pebble', cx, this.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
     }
     for (const kind of Object.keys(at) as (keyof typeof DETAIL)[]) this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
   }
@@ -1042,7 +1052,7 @@ export class BattleScene {
           const a = this.stand(e.path[i - 1]), b = this.stand(e.path[i]);
           this.face(v, e.path[i]);
           // pula quando a altura de pé muda ou voa um vão (a mesma conta do Salto e do som dos passos, stepMs); rampa do estudo é plano
-          const dh = standH(tileAt(this.grid, e.path[i])) - standH(tileAt(this.grid, e.path[i - 1]));
+          const dh = rampLink(this.grid, e.path[i - 1], e.path[i]) ? 0 : standH(tileAt(this.grid, e.path[i])) - standH(tileAt(this.grid, e.path[i - 1]));
           const tiles = dist(e.path[i - 1], e.path[i]);
           if (isJump(dh, tiles)) {
             await this.jump(v, a, b, Math.max(Math.abs(dh), tiles));

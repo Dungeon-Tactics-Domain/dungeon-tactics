@@ -154,6 +154,9 @@ vec3 base = (tg * vW.x + tl * vW.y + td * vW.z + ts * vW.w) / max(vW.x + vW.y + 
 vec3 tn = normalize(vWN), an = abs(tn);
 vec3 cl = (texture2D(tCliff, vWPos.zy * 0.45).rgb * an.x + texture2D(tCliff, vWPos.xy * 0.45).rgb * an.z + texture2D(tCliff, vWPos.xz * 0.45).rgb * an.y) / (an.x + an.y + an.z);
 float rocky = max(1.0 - smoothstep(0.5, 0.82, tn.y), vStone);
+// manchas de sol no chão, como no FFT (13/11, "pintado, tipo FFT"): ruído largo tirado da própria grama, só no plano
+float dap = smoothstep(0.55, 0.62, dot(texture2D(tGrass, vWPos.xz * 0.045 + 0.3).rgb, vec3(0.333)) * 1.6);
+base = mix(base, base * vec3(1.45, 1.32, 0.72), dap * 0.55 * (1.0 - rocky) * vW.x);
 diffuseColor.rgb *= mix(base, cl, rocky);
 `;
 

@@ -19,7 +19,7 @@ import { confirm, freshUi, highlights, hoverTile, selectMode, tapTile, type High
 import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, startScreen, stepIndex, type Screen } from './command.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { cycleUnit, gridStep, keyAction, keyHelp, type KeyAction } from './keyboard.ts';
-import { BattleScene } from './scene.ts';
+import { BattleScene, rampLink } from './scene.ts';
 import { store } from './store.ts';
 import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
@@ -414,7 +414,8 @@ class Game {
       const h = (i: number) => standH(tileAt(this.battle.grid, e.path[i]));
       let at = 0;
       for (let i = 1; i < e.path.length; i++) {
-        const dh = h(i) - h(i - 1), tiles = dist(e.path[i - 1], e.path[i]), ms = stepMs(dh, tiles);
+        // rampa: andando, no tempo do passo (o mesmo de scene.ts)
+        const dh = rampLink(this.battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1), tiles = dist(e.path[i - 1], e.path[i]), ms = stepMs(dh, tiles);
         void this.scene.wait(at + (isJump(dh, tiles) ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
         at += ms;
       }

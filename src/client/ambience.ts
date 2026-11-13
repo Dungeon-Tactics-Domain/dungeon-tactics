@@ -10,6 +10,7 @@ import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { EXT_DARK, EXT_FADE, EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { waterLevels } from './water-levels.ts';
 import { addDetail, type DetailTextures } from './detail.ts';
+import { loadTreeTextures, swapTrees } from './trees.ts';
 
 type Kind = 'forest' | 'field' | 'crypt' | 'frost';
 type Pair = [night: string, day: string];
@@ -239,7 +240,7 @@ export class Ambience {
     if (s?.map) this.textures.push(s.map);
     // Lambert: mais barato que o Standard dos modelos, e de longe não se vê a diferença
     const mat = new THREE.MeshLambertMaterial({ map: s?.map ?? null, color: new THREE.Color(s?.color ?? 0xffffff).multiplyScalar(this.mood.shade), ...opts });
-    const textured = !!s?.map; // só os modelos (árvores, pedras) ganham a textura por cima; o chão não
+    const textured = !!s?.map && !s.userData.procedural; // só os modelos KayKit ganham o granulado; o chão e as árvores feitas por código, não
     mat.customProgramCacheKey = () => (textured && this.detailTex ? 'amb-detalhe' : 'amb');
     mat.onBeforeCompile = (sh) => {
       if (textured && this.detailTex) addDetail(sh, this.detailTex, 1.4, 0.9, true); // detail.ts: folha na copa, casca no tronco
@@ -598,5 +599,7 @@ export async function loadAmbience(grid: Grid): Promise<Ambience> {
   const names = [...new Set([...mood.props.map((p) => p.model), ...(mood.walls ? [...WALL, TORCH] : [])])];
   const loader = new GLTFLoader();
   const models = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
+  // fora das criptas, as árvores e moitas de fora são as feitas por código (trees.ts), como as do tabuleiro
+  if (!mood.walls) { await loadTreeTextures(); swapTrees(models); }
   return new Ambience(grid, mood, models);
 }
