@@ -37,7 +37,10 @@ export const MOODS: Record<Kind, Mood> = {
     low: ['#03070a', '#0c1610'], high: ['#0b141a', '#2f4636'], near: 2, far: 24, mist: 0.6, ceiling: 0, snow: 0,
     ground: '#203a1c', rise: 0.22, bump: 0.7, shade: 0.6,
     props: [
-      { model: F + 'Bush_2_A_Color1', n: 60, d: [0.5, 4], h: [0.5, 1] },
+      { model: F + 'Bush_2_A_Color1', n: 160, d: [0.3, 4], h: [0.4, 1.1] },
+      // mata mais cheia e de tamanhos variados (13/11, "recheie o mapa do bosque com mais árvores de diferentes tamanhos")
+      { model: F + 'Tree_3_A_Color1', n: 140, d: [0.4, 3.5], h: [0.9, 1.9] },
+      { model: F + 'Tree_1_A_Color1', n: 120, d: [1, 4], h: [1.8, 3] },
       { model: F + 'Rock_3_A_Color1', n: 14, d: [0.8, 7], h: [0.4, 1.1] },
       { model: F + 'Rock_1_A_Color1', n: 10, d: [0.6, 5], h: [0.3, 0.7] },
       { model: F + 'Tree_2_A_Color1', n: 110, d: [1.5, 7], h: [2.2, 3.5] }, // mais mata perto (13/11, pedido do Fernando: "volume maior de árvores"): o fade apaga o que fica longe

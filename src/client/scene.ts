@@ -674,7 +674,8 @@ export class BattleScene {
         if (!names.length) continue;
         const name = names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a));
         const box = boxOf(name), size = TREE_SIZE[tiles.length];
-        const k = Math.min(size.h / (box.max.y - box.min.y), size.w / width(box)) * (0.9 + 0.2 * hash(x, y, 1));
+        // tamanho mais variado (13/11, "árvores de diferentes tamanhos"): de 75% a 135% do tamanho da casa
+        const k = Math.min(size.h / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1));
         const c = tiles.reduce((s: THREE.Vector3, p) => s.add(this.world(p)), new THREE.Vector3()).divideScalar(tiles.length);
         const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
         if (!batches.has(name)) batches.set(name, []);

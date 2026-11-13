@@ -458,7 +458,7 @@ export class BattleHud {
     if (s.k === 'map' && s.command === 'move') return t('Mover: escolha uma casa clara.', 'Move: pick a highlighted tile.');
     if (s.k === 'map') {
       const p = v.hl?.preview;
-      return p && !p.ok ? REASON[p.reason ?? 'unknown']() : t('Escolha o alvo na área laranja (roxo = sem visão).', 'Pick the target in the orange area (purple = no sight).');
+      return p && !p.ok ? REASON[p.reason ?? 'unknown']() : t('Escolha o alvo na área laranja (roxo: o tiro bate no caminho).', 'Pick the target in the orange area (purple: the shot hits something on the way).');
     }
     if (s.k === 'confirm') return t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`);
     return t('Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.', 'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.');

@@ -372,19 +372,20 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
 };
 // sem as árvores em 1,0, 11,1 e 10,2 (13/11): com árvore sem passagem, os dois cantos de cima viravam bolsas fechadas
 // estrada (13/11, pedido do Fernando: "uma estrada que passa pela ponte, desça o relevo para permitir a estrada"): a de
-// areia do lado dos heróis segue depois da ponte, num corte que sobe em rampa até o planalto inimigo (colunas 3 e 4)
+// areia do lado dos heróis segue depois da ponte, num corte que sobe em rampa até o planalto inimigo (colunas 3 e 4).
+// Caixotes, barris e corpos espalhados pelos dois lados (13/11, pedido do Fernando: na entrada da ponte virava um bolo)
 const WOOD_MAP = [
-  'gggssGGgggtg',
-  'tgGssGGgTggg',
-  'ggGssggggggg',
+  'gggssGGggctg',
+  'tgGssGGkTggg',
+  'gxGssggggggg',
   'gtgssggrggtg',
   'WWWbbWWWWwwW',
   'WWWbbWWWWwwW',
   'gtgssgggtssg',
-  'ggcsxgggssgT',
-  'tgsssksssggg',
-  'ggskcgtggsgt',
-  'gTsgggggggyg',
+  'ggssggggssgT',
+  'tgsssskssxgg',
+  'ggsgggtcgsgt',
+  'gTskggggggyg',
   'ggsggggTgggg',
 ];
 const WOOD_H = [

@@ -38,12 +38,12 @@ describe('chance de acerto', () => {
 });
 
 describe('prévia da habilidade', () => {
-  it('fora do alcance, sem visão e sem alvo válido dizem o motivo', () => {
+  it('fora do alcance diz o motivo; sem visão o tiro para no obstáculo e o chão vazio também vale (13/11)', () => {
     const g = flat(9, 1);
     expect(previewAbility(g, duel('archer', 8), 'a', 'shot', at(8))).toMatchObject({ ok: false, reason: 'range' });
-    expect(previewAbility(gridOf(['..#..']), duel('archer', 4), 'a', 'shot', at(4))).toMatchObject({ ok: false, reason: 'sight' });
+    expect(previewAbility(gridOf(['..#..']), duel('archer', 4), 'a', 'shot', at(4))).toMatchObject({ ok: true, center: at(2), targets: [] });
     expect(previewAbility(g, duel('archer', 3), 'a', 'shot', at(1))).toMatchObject({ ok: false, reason: 'range' });
-    expect(previewAbility(flat(5, 1), duel('archer', 3), 'a', 'shot', at(2))).toMatchObject({ ok: false, reason: 'no-target' });
+    expect(previewAbility(flat(5, 1), duel('archer', 3), 'a', 'shot', at(2))).toMatchObject({ ok: true, targets: [] });
   });
 
   it('dano mira inimigo, cura mira aliado', () => {
@@ -53,10 +53,10 @@ describe('prévia da habilidade', () => {
       { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 0 },
     ]);
     const g = flat(5, 1);
-    expect(previewAbility(g, s, 'a', 'firebolt', at(2)).ok).toBe(false);
+    expect(previewAbility(g, s, 'a', 'firebolt', at(2)).targets).toEqual([]); // aliado não é alvo de dano: sai no vazio
     expect(previewAbility(g, s, 'a', 'firebolt', at(3)).ok).toBe(true);
     expect(previewAbility(g, s, 'a', 'heal', at(2)).ok).toBe(true);
-    expect(previewAbility(g, s, 'a', 'heal', at(3)).ok).toBe(false);
+    expect(previewAbility(g, s, 'a', 'heal', at(3)).targets).toEqual([]); // cura no inimigo: sai no vazio
   });
 
   it('área atinge todo mundo dentro dela, aliado também, e nunca quem usa', () => {

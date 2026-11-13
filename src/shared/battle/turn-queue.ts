@@ -76,7 +76,9 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
       const caster = state.units.find((u) => u.id === c.unit)!;
       // unidade grande seguida: a casa dela mais perto de quem lança (a de canto podia estar fora do alcance); 1 casa: a mesma
       const out = resolveAbility(grid, state, c.unit, c.ability, followed ? nearestTile(followed, caster.pos) : c.target, true);
-      events.push(...(out.length ? out : [{ k: 'fizzle' as const, unit: c.unit, ability: c.ability }]));
+      // sem ninguém atingido (o alvo saiu dali): a carga se perde
+      const landed = out.some((e) => e.k !== 'attack');
+      events.push(...(landed ? out : [{ k: 'fizzle' as const, unit: c.unit, ability: c.ability }]));
       if (state.outcome !== 'ongoing') return events;
     }
     gain(1);
