@@ -79,7 +79,24 @@ button[hidden] { display: none; }
 .help:empty { display: none; }
 .banner { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 28px; font: 400 var(--fs-lg)/1 var(--font-px); }
 /* ferramentas da câmera e o menu: canto de cima à direita; o contador de desempenho logo abaixo */
-.tools { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; pointer-events: auto; }
+.tools { position: absolute; top: 12px; right: 12px; pointer-events: auto; z-index: 2; } /* a lista aberta passa por cima do contador e do menu de comandos */
+/* botão de menu no mesmo pergaminho dos painéis, com 3 traços de tinta; aberto, fica afundado */
+.tools .burger { background: linear-gradient(var(--paper), var(--paper-lo)); border-color: var(--paper-edge); color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+.tools .burger[aria-expanded='true'] { box-shadow: inset 0 0 0 2px var(--paper-hi), inset 0 3px 0 rgba(0, 0, 0, .2); transform: translateY(2px); }
+.burger-bars, .burger-bars::before, .burger-bars::after { display: block; width: 22px; height: 3px; background: currentColor; border-radius: 1px; }
+.burger-bars { position: relative; }
+.burger-bars::before, .burger-bars::after { content: ''; position: absolute; left: 0; }
+.burger-bars::before { top: -7px; }
+.burger-bars::after { top: 7px; }
+/* a lista abre embaixo do botão, alinhada à direita, com as mesmas linhas do menu de comandos */
+.tools-menu { top: calc(var(--tap) + 8px); right: 0; width: 320px; padding: 6px; animation: menu-in 90ms ease-out; transform-origin: top; }
+.tools-menu .item { font: 400 var(--fs)/1 var(--font-px); min-height: 38px; }
+@media (hover: hover) { .tools-menu .item:hover { background: rgba(255, 255, 255, .5); filter: none; } }
+.tool-label { display: flex; align-items: center; gap: 10px; white-space: nowrap; margin-right: 16px; }
+.tool-glyph { width: 22px; display: inline-flex; justify-content: center; color: var(--ink-muted); font-size: var(--fs-lg); }
+/* batalha rápida ligada: marca ✓ e o texto "ligada", não só cor */
+.tools-menu [aria-checked='true'] .tool-label::after { content: '✓'; color: var(--focus); font-weight: 700; }
 .fps { position: absolute; top: 72px; right: 12px; pointer-events: none; white-space: pre; text-align: right;
   font: 12px/1.35 ui-monospace, Consolas, monospace; color: var(--fg); background: rgba(10, 6, 16, .55); padding: 4px 8px; border-radius: var(--r); }
 .fps[hidden] { display: none; }
@@ -103,9 +120,8 @@ button[hidden] { display: none; }
 @keyframes menu-in { from { opacity: 0; transform: scaleY(.8); } }
 @keyframes menu-in-side { from { opacity: 0; transform: translateX(24px); } }
 @keyframes banner-in { from { transform: translateX(-50%) scaleX(.2); opacity: 0; } }
-.tools [aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--focus); } /* ⏩ ligado: borda e não só cor do ícone */
 @keyframes nudge { 50% { transform: translateX(3px); } }
-@media (prefers-reduced-motion: reduce) { .commands, .confirm, .abilities, .banner, .panel .item.focus::before { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .commands, .confirm, .abilities, .banner, .tools-menu, .panel .item.focus::before { animation: none !important; } }
 .panel .item:disabled { filter: none; opacity: .45; }
 .panel .item:not(:disabled):active { transform: none; box-shadow: none; }
 .item-cost { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }

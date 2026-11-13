@@ -10,7 +10,7 @@ Vale junto com o `CLAUDE.md` da raiz. **Web no PC primeiro** (pedido do Fernando
     - alto, no meio: linha de ajuda e, abaixo, a faixa do nome da habilidade;
     - direita: menu Mover · Agir · Esperar · Status, submenu e janela "Executar?" com acerto, efeito e vida antes → depois;
     - embaixo: painel da unidade da vez (esquerda) e da unidade sob o cursor (direita), com retrato e barras de vida, MP e CT;
-    - canto de cima à direita: ferramentas da câmera, menu e contador de desempenho.
+    - canto de cima à direita: botão de menu (3 traços, no pergaminho) que abre a lista Desfazer, girar, ver o mapa, pixel, Batalha rápida e Opções, cada linha com a tecla (13/11, pedido do Fernando: a fileira de 7 botões de pedra estava "tosca e despadronizada"); o contador de desempenho logo abaixo.
   - **O que não se copia:** arte, fonte, ícones, retratos, molduras, sons e textos do original. Moldura de pergaminho feita em CSS (`--paper*`, `--ink*`, `--focus` no `:root`), retratos dos nossos bonecos KayKit (`public/chars`, `scripts/portraits.mjs`), e seta ▶ nossa no lugar da mão do menu.
   - **Peça nova de HUD:** `.panel` (pergaminho) com `.item` (linha de menu, `.focus` marca o foco), `gauge()` (barra com rótulo e número) e `unitPanel()` em `hud.ts`. Cores e tamanhos só pelas variáveis do `:root`.
 - **Entrada:** teclado, mouse e controle andam o mesmo cursor e passam pelo mesmo `Game.runKey`.
@@ -28,11 +28,11 @@ Vale junto com o `CLAUDE.md` da raiz. **Web no PC primeiro** (pedido do Fernando
 - **Modo Até o amanhecer** (noite de 12/11): na Batalha avulsa, `?cenario=survival` monta em `survival.ts` os 4 heróis contra inimigos com vida 2x que já nascem do lado dos heróis do rio, no Bosque (emboscada: nascendo do outro lado, ficar só passando a vez vencia 100%); vence ao chegar em `SURVIVE_TURNS` turnos (todos os turnos, o mesmo que a lista conta: o título dela mostra quantos faltam) ou derrubando todos. Medição: `MEDIR=300 npx vitest run tests/survival.test.ts --silent=false`.
 - **Tempos do fluxo** em `timing.ts`; gesto e efeito de cada habilidade em `fx.ts`; som em `sound.ts`.
 - **Game feel** (pedido do Fernando, 12/11: "mais responsivos e gostosos de jogar"):
-  - Toda espera e animação da batalha usa `BattleScene.wait`/`animate`, que correm no relógio da batalha. Segurar Enter, Espaço ou A acelera 3 vezes; no toque, o botão ⏩ nas ferramentas liga e desliga (`dt:rapido`) (`pace`/`speed()` em `timing.ts`). Nada de `setTimeout` para tempo de batalha.
+  - Toda espera e animação da batalha usa `BattleScene.wait`/`animate`, que correm no relógio da batalha. Segurar Enter, Espaço ou A acelera 3 vezes; no toque, a linha Batalha rápida do menu do canto liga e desliga (`dt:rapido`) (`pace`/`speed()` em `timing.ts`). Nada de `setTimeout` para tempo de batalha.
   - Golpe com pausa no impacto (`hitStop`), alvo piscando branco e tremendo (`shake`). Cura pisca verde, erro mostra um passinho para trás, quem morre pisca 3 vezes (`blink`), casas marcadas respiram. Golpe de 25% da vida ou mais treme a câmera e aumenta o número; quem começa a vez dá um pulinho (`pop`); o cursor desliza entre as casas. Cada boneco tem cópia própria dos materiais.
   - Confirmar só no aperto (sem repetição de tecla).
   - Câmera abre perto (`PC_START`) e enquadra quem ataca e o alvo.
   - Lista de turnos curta (4) por padrão, L mostra tudo (`dt:turnos`).
   - Menus abrem em 90–120 ms e o ▶ pulsa; com movimento reduzido, nada anima.
-- **Pixel art configurável** (pedido do Fernando, 25/10): `pixel-settings.ts` (puro) guarda tamanho, contorno, paleta e câmera presa em `dt:pixel`; a `BattleScene.setPixel` aplica na hora. Atalho V e o botão de TV nas ferramentas; opções no menu com `choice()` (`dialog.ts`).
+- **Pixel art configurável** (pedido do Fernando, 25/10): `pixel-settings.ts` (puro) guarda tamanho, contorno, paleta e câmera presa em `dt:pixel`; a `BattleScene.setPixel` aplica na hora. Atalho V e a linha Tamanho do pixel no menu do canto; opções no menu com `choice()` (`dialog.ts`).
 - Preferências e save em `store.ts` com prefixo `dt:`.

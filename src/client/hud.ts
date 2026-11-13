@@ -19,7 +19,7 @@ import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { COMMANDS, abilitiesOf, abilityEnabled, commandEnabled, type Command, type Screen } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { UI_ICON, el, icon, iconButton } from './icons.ts';
+import { UI_ICON, el, icon, iconButton, type Child } from './icons.ts';
 import { classOf } from './dev-roster.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
@@ -210,7 +210,7 @@ export class BattleHud {
   private readonly queue = el('ol', { class: 'panel queue short', 'aria-label': t('Ordem dos turnos', 'Turn order') });
   private fastBtn!: HTMLElement;
   setFast(on: boolean) {
-    this.fastBtn.setAttribute('aria-pressed', String(on));
+    this.fastBtn.setAttribute('aria-checked', String(on));
   }
   get queueFull() {
     return !this.queue.classList.contains('short');
@@ -227,17 +227,41 @@ export class BattleHud {
   private readonly target = el('div', { class: 'target-slot' });
   private readonly root: HTMLElement;
 
+  private readonly toolsMenu = el('div', { class: 'panel tools-menu', role: 'menu', hidden: true });
+  private readonly burger = iconButton(el('span', { class: 'burger-bars', 'aria-hidden': 'true' }), t('Menu', 'Menu'),
+    () => this.showTools(!!this.toolsMenu.hidden), { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' });
+  // fecha ao clicar fora ou ao apertar qualquer tecla (Esc também volta no jogo; a tecla da ação continua agindo)
+  private readonly closeOutside = (e: Event) => {
+    if (!(e.target instanceof Node && this.toolsMenu.parentElement?.contains(e.target))) this.showTools(false);
+  };
+  private showTools(open: boolean) {
+    this.toolsMenu.hidden = !open;
+    this.burger.setAttribute('aria-expanded', String(open));
+    for (const ev of ['pointerdown', 'keydown']) {
+      if (open) document.addEventListener(ev, this.closeOutside, true);
+      else document.removeEventListener(ev, this.closeOutside, true);
+    }
+  }
+  private toolItem(glyph: Child, label: string, key: string, run: () => void, props: Record<string, unknown> = {}) {
+    return el('button', { type: 'button', class: 'item', role: 'menuitem', ...props, onclick: () => { this.showTools(false); run(); } },
+      el('span', { class: 'tool-label' }, el('span', { class: 'tool-glyph', 'aria-hidden': 'true' }, glyph), label), key ? hint(key) : null);
+  }
+
   constructor(host: HTMLElement, private readonly act: HudActions) {
+    this.fastBtn = this.toolItem('»', t('Batalha rápida', 'Fast battle'), '', () => act.fast(), { role: 'menuitemcheckbox', 'aria-checked': 'false' });
+    this.toolsMenu.append(
+      this.toolItem(icon(UI_ICON.undo), t('Desfazer', 'Undo'), 'Z', () => act.undo()),
+      this.toolItem('⟲', t('Girar à esquerda', 'Rotate left'), '⇧R', () => act.rotate(-1)),
+      this.toolItem('⟳', t('Girar à direita', 'Rotate right'), 'R', () => act.rotate(1)),
+      this.toolItem(icon(UI_ICON.recenter), t('Ver o mapa inteiro', 'Show the whole map'), 'F', () => act.recenter()),
+      this.toolItem(icon(UI_ICON.pixel), t('Tamanho do pixel', 'Pixel size'), 'V', () => act.pixel()),
+      this.fastBtn,
+      this.toolItem(icon(UI_ICON.menu), t('Opções e ajuda', 'Options and help'), 'H', () => act.menu()));
     this.root = el('div', { class: `hud${KEYS ? ' kbd' : ''}` },
       this.tile, this.queue, this.help, this.bannerEl,
-      el('div', { class: 'tools' },
-        iconButton(['↶', hint('Z')], t('Desfazer o último passo (Z)', 'Undo the last step (Z)'), () => act.undo()),
-        iconButton(['⟲', hint('⇧R')], t('Girar câmera para a esquerda (Shift+R)', 'Rotate camera left (Shift+R)'), () => act.rotate(-1)),
-        iconButton(['⟳', hint('R')], t('Girar câmera para a direita (R)', 'Rotate camera right (R)'), () => act.rotate(1)),
-        iconButton([icon(UI_ICON.recenter), hint('F')], t('Ver o mapa inteiro (F)', 'Show the whole map (F)'), () => act.recenter()),
-        iconButton([icon(UI_ICON.pixel), hint('V')], t('Trocar o tamanho do pixel art (V)', 'Change the pixel art size (V)'), () => act.pixel()),
-        this.fastBtn = iconButton(['⏩'], t('Batalha 3 vezes mais rápida (ou segure Enter)', 'Battle 3 times faster (or hold Enter)'), () => act.fast()),
-        iconButton([icon(UI_ICON.menu), hint('H')], t('Menu e ajuda (H)', 'Menu and help (H)'), () => act.menu())),
+      // um botão de menu (3 traços) no pergaminho do HUD no lugar da fileira de 7 botões de pedra (13/11, pedido do
+      // Fernando: "tosco e despadronizado"); as teclas continuam valendo e aparecem em cada linha
+      el('div', { class: 'tools' }, this.burger, this.toolsMenu),
       this.commands, this.abilities, this.confirmBox, this.active, this.target);
     host.append(this.root);
   }
@@ -363,6 +387,7 @@ export class BattleHud {
   }
 
   dispose() {
+    this.showTools(false);
     this.root.remove();
   }
 }
