@@ -41,6 +41,12 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
     const show = () => {
       const base = SPEAKERS[lines[i].who];
       const who = lines[i].who === 'hero' && hero ? { ...base, name: hero.name, en: hero.name, def: hero.cls } : base;
+      // quem fala mudou: o retrato dá um pulinho (reinicia a animação do CSS)
+      if (i === 0 || lines[i - 1].who !== lines[i].who) {
+        face.classList.remove('pop');
+        void face.offsetWidth;
+        face.classList.add('pop');
+      }
       face.replaceChildren(portrait(who.def));
       name.textContent = LANG === 'en' && 'en' in who ? who.en : who.name; // nomes próprios são iguais nas duas línguas
       name.hidden = face.hidden = !who.name; // narrador: sem retrato nem nome

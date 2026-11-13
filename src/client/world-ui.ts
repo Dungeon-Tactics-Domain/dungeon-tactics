@@ -13,6 +13,7 @@ import { sfx } from './sound.ts';
 import { WORLD, isOpen, step } from './world.ts';
 
 const WALK_MS = 320; // um trecho de estrada; o CSS usa o mesmo valor (--walk-ms)
+const FADE_MS = 300; // escurecer antes de entrar no ponto; o CSS usa o mesmo valor (.fade-out)
 
 // Fundo desenhado em SVG (viewBox 0–100, esticado na tela): rio, lago, floresta e montanhas, só para dar lugar aos pontos.
 // A estrada não chega ao último ponto (o epílogo, de volta à vila): a linha atravessaria o mapa inteiro.
@@ -98,10 +99,18 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLEl
     }
     walking = false;
   }
+  // entrar: a tela escurece antes (transição de cena, como no FFT); a história abre por cima do escuro e ele some depois
   const go = () => {
     if (walking) return;
     sfx('confirm');
-    enter(at);
+    const fade = el('div', { class: 'fade-out', 'aria-hidden': 'true' });
+    document.body.append(fade);
+    walking = true;
+    setTimeout(() => {
+      walking = false;
+      enter(at);
+      setTimeout(() => fade.remove(), 400);
+    }, FADE_MS);
   };
   addEventListener('keydown', (e) => {
     if (!root.isConnected || document.querySelector('.overlay')) return;
