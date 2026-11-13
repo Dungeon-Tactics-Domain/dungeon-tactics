@@ -52,7 +52,9 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLEl
   // começa no ponto mais avançado aberto (o próximo a fazer)
   let at = Math.min(done, WORLD.length - 1);
   let walking = false;
-  const token = el('div', { class: 'world-token', 'aria-hidden': 'true' }, portrait(hero));
+  const tag = el('span', { class: 'world-tag' });
+  // nome do lugar logo abaixo do retrato: o olho não precisa ir ao painel do canto para saber onde o grupo está
+  const token = el('div', { class: 'world-token', 'aria-hidden': 'true' }, portrait(hero), tag);
   const nodes = WORLD.map((w, i) => {
     const kind = w.chapter !== undefined ? 'battle' : 'story';
     return el('button', {
@@ -79,7 +81,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): { root: HTMLEl
     token.style.left = `${w.x}%`;
     token.style.top = `${w.y}%`;
     nodes.forEach((n, i) => n.classList.toggle('here', i === at));
-    place.textContent = t(w.name[0], w.name[1]);
+    place.textContent = tag.textContent = t(w.name[0], w.name[1]);
     kindText.textContent = w.chapter !== undefined
       ? t(`Batalha · Capítulo ${w.chapter + 1}`, `Battle · Chapter ${w.chapter + 1}`) + (at < done ? `  ${starText(stars[w.chapter])}` : '')
       : t('História', 'Story');

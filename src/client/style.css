@@ -291,3 +291,4 @@ button[hidden] { display: none; }
 .party-class, .party-more, .party-bench { color: var(--muted); }
 .party-stats, .party-skills { margin: 2px 0 0; font-size: var(--fs-sm); }
 .party-stats { font-variant-numeric: tabular-nums; }
+.world-tag { position: absolute; left: 50%; top: calc(100% + 26px); transform: translateX(-50%); white-space: nowrap; padding: 2px 8px; font: 400 var(--fs-sm)/1.2 var(--font-px); color: var(--paper-hi); background: rgba(20, 12, 30, .8); border-radius: 3px; } /* nome do lugar sob o grupo no mapa */
