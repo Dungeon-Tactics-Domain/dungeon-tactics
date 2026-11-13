@@ -135,12 +135,15 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   // controle: o mesmo tradutor da batalha (gamepad.ts). Direcional anda, A entra, B volta; com uma conversa aberta,
   // A aperta o botão em foco (a caixa de fala), como na batalha
   const mem = emptyMemory();
+  let primed = false; // o 1º quadro só registra o que já estava apertado: o A que começou a jornada não entra no 1º ponto
   const poll = () => {
     if (!root.isConnected) return;
     requestAnimationFrame(poll);
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     if (!gp) return;
-    for (const a of padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, mem, performance.now())) {
+    const actions = padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, mem, performance.now());
+    if (!primed) return void (primed = true);
+    for (const a of actions) {
       if (document.querySelector('.overlay')) {
         if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
         continue;

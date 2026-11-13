@@ -56,6 +56,7 @@ class Game {
   private readonly hud: BattleHud;
   private readonly input: TouchInput;
   private readonly pad = emptyMemory();
+  private padPrimed = false;
   private readonly fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
 
   constructor(private battle: Battle, private readonly scene: BattleScene, host: HTMLElement, private pixel: PixelSettings) {
@@ -142,6 +143,8 @@ class Game {
     pace.pad = !!gp?.buttons[0]?.pressed; // A (ou ×) seguro acelera a batalha
     if (!gp) return;
     const actions = padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, this.pad, performance.now());
+    // 1º quadro com controle: só registra o que já vinha apertado (o A que entrou na fase não escolhe o 1º comando)
+    if (!this.padPrimed) return void (this.padPrimed = true);
     for (const a of actions) {
       const overlay = document.querySelector<HTMLElement>('.overlay');
       if (!overlay) {
