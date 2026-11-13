@@ -11,6 +11,7 @@ export interface UnitDef {
   vars?: Record<string, number>; // contadores com que a unidade nasce (ver UnitState.vars); só o cenário de estudo usa
   model?: string; // modelo em public/models; só o cenário de estudo informa, as unidades do jogo estão no mapa da cena
   boss?: true; // chefe da fase (campanha): só a coroa no desenho; a regra de vitória vem do cenário
+  size?: number; // lado do quadrado ocupado (2 = 2x2, pathing.ts footprint); sem isto, 1 casa. Unidade grande não anda nem é empurrada
 }
 
 const LIST: UnitDef[] = [
@@ -25,6 +26,9 @@ const LIST: UnitDef[] = [
   // Lacaio (12/11, campanha): pouca vida e muita velocidade, vem em bando e cai num golpe; números iniciais, medidos na
   // dificuldade das fases da campanha (tests/campaign.test.ts)
   { id: 'minion', name: 'Lacaio esqueleto', en: 'Skeleton minion', hp: 24, speed: 11, move: 5, abilities: ['stab', 'trip'] },
+  // Colosso de Ossos (noite de 12/11, chefe final do Ato II): ocupa 2x2 e não anda; lança a Onda sombria e a Explosão.
+  // Muita vida e velocidade baixa: o desafio é chegar perto sob as magias dele. Números iniciais, medidos na fase 7
+  { id: 'colossus', name: 'Colosso de Ossos', en: 'Bone Colossus', hp: 160, speed: 6, move: 0, abilities: ['shadow_wave', 'blast'], size: 2 },
   // 50 de vida (era 35): com a IA inimiga avançando de verdade (11/11) o farol caía cedo; 8x8 em 1 000 sementes: 33,7% → 62,8%
   { id: 'beacon', name: 'Farol', en: 'Beacon', hp: 50, speed: 0, move: 0, abilities: [] },
 ];

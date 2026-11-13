@@ -9,7 +9,19 @@ export const MAX_JUMP = 1;
 // Altura dos olhos e do ponto de mira acima do chão da casa, em níveis. Com blocks do terreno decide quem enxerga por cima.
 const EYE = 1;
 
-export const unitAt = (state: BattleState, p: Pos): UnitState | undefined => state.units.find((u) => samePos(u.pos, p));
+// Unidade grande (UnitDef.size, noite de 12/11: o chefe que ocupa 2x2): `pos` é a casa de cima à esquerda do quadrado.
+// Toda pergunta "quem está nesta casa" passa por aqui, então andar, bloquear e mirar valem para as 4 casas.
+export function footprint(u: UnitState): Pos[] {
+  const size = UNIT_DEFS[u.def].size ?? 1;
+  const out: Pos[] = [];
+  for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: u.pos.x + dx, y: u.pos.y + dy });
+  return out;
+}
+// distância até a casa mais perto da unidade (alcance, área e acerto contra o chefe grande)
+export const distTo = (u: UnitState, p: Pos) => Math.min(...footprint(u).map((f) => dist(f, p)));
+export const nearestTile = (u: UnitState, p: Pos): Pos => footprint(u).reduce((a, b) => (dist(b, p) < dist(a, p) ? b : a));
+
+export const unitAt = (state: BattleState, p: Pos): UnitState | undefined => state.units.find((u) => footprint(u).some((f) => samePos(f, p)));
 
 export interface Step {
   pos: Pos;

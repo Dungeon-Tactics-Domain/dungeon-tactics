@@ -2,7 +2,7 @@ import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
 import { COMBAT, previewAbility, simulatePush } from './combat.ts';
 import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
-import { MAX_JUMP, reachable } from './pathing.ts';
+import { MAX_JUMP, footprint, reachable } from './pathing.ts';
 import { rulesOf } from './rules.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
@@ -72,8 +72,11 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
   const out = new Map<string, Pos>();
   for (const u of state.units) {
     if (u.id === actor.id) continue;
-    out.set(posKey(u.pos), u.pos);
-    if (ability.radius > 0) for (const n of neighbors(grid, u.pos)) out.set(posKey(n), n);
+    // unidade grande: qualquer uma das casas dela (footprint); para quem ocupa 1 casa, a mesma ordem de antes
+    for (const f of footprint(u)) {
+      out.set(posKey(f), f);
+      if (ability.radius > 0) for (const n of neighbors(grid, f)) out.set(posKey(n), n);
+    }
   }
   return [...out.values()];
 }

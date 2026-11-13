@@ -11,12 +11,13 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { FACING, neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { footprint } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { chargeDanger, type Highlights, type TileKind } from './interaction.ts';
-import { MARKER, modelOf, unitHeight } from './markers.ts';
+import { MARKER, barYOf, modelOf, unitHeight } from './markers.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { TIMING, speed } from './timing.ts';
 import { chargeAura, lookOf, playFx } from './fx.ts';
@@ -471,19 +472,20 @@ export class BattleScene {
     // aro da cor do time no chão: o lado se lê mesmo quando o modelo é parecido
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthWrite: false, transparent: true, opacity: 0.9 }));
     ring.position.y = 0.04;
+    ring.scale.setScalar(UNIT_DEFS[u.def].size ?? 1); // unidade grande: o anel cerca o quadrado inteiro
     // barra de 0,12 de altura (cheia 0,08): com 0,06 ela sumia em parte no pixel art de 2 px
     const barBg = new THREE.Mesh(new THREE.PlaneGeometry(0.7, MARKER.barHalf * 2), new THREE.MeshBasicMaterial({ color: '#1a1020', depthTest: false }));
     const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.08), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthTest: false }));
     bar.position.z = 0.001;
     const barHolder = new THREE.Group().add(barBg, bar);
-    barHolder.position.y = MARKER.barY;
+    barHolder.position.y = barYOf(u.def);
     barHolder.name = 'bar';
     barBg.renderOrder = bar.renderOrder = 10;
     holder.add(ring, barHolder);
     // chefe da fase: coroa dourada acima da barra, para o objetivo "derrube o chefe" se ver no mapa
     if (UNIT_DEFS[u.def].boss) {
       const crown = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.2, 5), new THREE.MeshBasicMaterial({ color: '#f2c14e' }));
-      crown.position.y = MARKER.barY + 0.22;
+      crown.position.y = barYOf(u.def) + 0.22;
       holder.add(crown);
     }
     this.scene.add(holder);
@@ -516,6 +518,13 @@ export class BattleScene {
     void this.animate(ms, (s) => apply(from + (k - from) * s));
   }
 
+  // centro das casas que a unidade ocupa, na altura da mais alta (unidade grande: o meio do quadrado 2x2)
+  private unitWorld(u: UnitState): THREE.Vector3 {
+    const tiles = footprint(u).map((p) => this.world(p));
+    const c = tiles.reduce((a, b) => a.add(b), new THREE.Vector3()).divideScalar(tiles.length);
+    return c.setY(Math.max(...tiles.map((w) => w.y)));
+  }
+
   private face(v: UnitView, to: Pos) {
     const d = this.world(to).sub(v.holder.position);
     if (d.lengthSq() > 0.001) v.holder.rotation.y = Math.atan2(d.x, d.z);
@@ -535,9 +544,9 @@ export class BattleScene {
         this.units.set(u.id, v);
         // nasce olhando para o lado de lá
         const foe = u.team === 'hero' ? enemies[0] : state.units.find((x) => x.team === 'hero');
-        if (foe) { v.holder.position.copy(this.world(u.pos)); this.face(v, foe.pos); }
+        if (foe) { v.holder.position.copy(this.unitWorld(u)); this.face(v, foe.pos); }
       }
-      v.holder.position.copy(this.world(u.pos));
+      v.holder.position.copy(this.unitWorld(u));
       // mapa com direção (estudo do FFT): o modelo olha para onde o estado diz, depois de cada animação e do desfazer
       if (u.facing !== undefined) v.holder.rotation.y = (u.facing * Math.PI) / 2;
       v.hp = u.hp;

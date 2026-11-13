@@ -34,7 +34,8 @@ const MAX_TEAM = 12;
 
 // classes e habilidades do jogo (as do estudo FFT dependem das regras do estudo e ficam de fora)
 const ours = (id: string) => !id.startsWith('fft_') && !id.startsWith('dev-');
-export const devClasses = () => Object.keys(UNIT_DEFS).filter((id) => ours(id) && id !== OBJECTIVE_DEF);
+// unidade grande (size) fica de fora: as casas de partida dos mapas são de 1 casa
+export const devClasses = () => Object.keys(UNIT_DEFS).filter((id) => ours(id) && id !== OBJECTIVE_DEF && !UNIT_DEFS[id].size);
 export const devAbilities = () => Object.keys(ABILITIES).filter(ours);
 
 export function unitFrom(base: string, name = UNIT_DEFS[base].name): DevUnit {
@@ -120,7 +121,8 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
       // nome sem mudar = o da classe nas duas línguas; nome próprio (Bran, Vesper) é igual nas duas; en só se vier no elenco
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
       BASE[id] = u.base;
-      UNIT_DEFS[id] = { id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
+      // o tamanho vem da classe (o Colosso da campanha ocupa 2x2 como o original)
+      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), id, name: u.name, en, hp: u.hp, speed: u.speed, move: u.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');

@@ -1,6 +1,6 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import { TERRAIN, canStand, dist, inBounds, samePos, standH, tileAt, type Grid } from './grid.ts';
-import { MAX_JUMP, inAbilityRange, lineOfSight, unitAt } from './pathing.ts';
+import { MAX_JUMP, distTo, inAbilityRange, lineOfSight, nearestTile, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, UnitState } from './types.ts';
@@ -50,7 +50,7 @@ export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): 
 }
 
 function affected(state: BattleState, actor: UnitState, ability: AbilityDef, center: Pos): UnitState[] {
-  const inArea = state.units.filter((u) => u.id !== actor.id && dist(u.pos, center) <= ability.radius);
+  const inArea = state.units.filter((u) => u.id !== actor.id && distTo(u, center) <= ability.radius);
   if (ability.radius > 0) return inArea; // área atinge todo mundo, aliado inclusive
   const u = unitAt(state, center);
   // quem usa só é alvo de habilidade de apoio cujo alcance começa em 0
@@ -73,14 +73,17 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   const fail = (reason: PreviewReason): Preview => ({ ok: false, reason, center, targets: [] });
   if (!actor || !ability || !UNIT_DEFS[actor.def].abilities.includes(abilityId) || !inBounds(grid, center)) return fail('unknown');
   if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
-  if (!inAbilityRange(grid, ability, actor.pos, center)) return fail('range');
-  if (ability.needsSight && !lineOfSight(grid, actor.pos, center)) return fail('sight');
+  // unidade grande mede alcance e visão da casa dela mais perto do alvo (para quem ocupa 1 casa é a mesma)
+  const from = nearestTile(actor, center);
+  if (!inAbilityRange(grid, ability, from, center)) return fail('range');
+  if (ability.needsSight && !lineOfSight(grid, from, center)) return fail('sight');
   const hit = affected(state, actor, ability, center);
   if (!hit.length) return fail('no-target');
   const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? ability.damage;
   const targets = hit.map((u) => ({
     unit: u.id,
-    chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? hitChance(grid, ability, actor.pos, u.pos),
+    // contra unidade grande, a casa dela mais perto de quem ataca (distância e altura)
+    chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? hitChance(grid, ability, nearestTile(actor, nearestTile(u, actor.pos)), nearestTile(u, actor.pos)),
     dmgMin: Math.floor(dmgMin * chargingBonus(state, ability, u)),
     dmgMax: Math.floor(dmgMax * chargingBonus(state, ability, u)),
     healMin: ability.heal[0],
@@ -166,6 +169,7 @@ export interface PushResult {
 // de 2 níveis para cima. Não muda o estado: a IA usa isto para valorizar empurrões antes de escolher a jogada.
 export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, center: Pos, origin: Pos, steps: number): PushResult {
   const result: PushResult = { to: unit.pos, dmg: 0, events: [] };
+  if ((UNIT_DEFS[unit.def].size ?? 1) > 1) return result; // unidade grande não sai do lugar
   const from = samePos(unit.pos, center) ? origin : center;
   let dx = unit.pos.x - from.x;
   let dy = unit.pos.y - from.y;

@@ -2,9 +2,12 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 
 // Altura dos marcadores em volta de cada unidade, em metros a partir do topo da casa. Puro para o teste conferir a
 // ordem (chão < boneco < barra de vida < seta do cursor), que a cena só aplica.
-export const UNIT_HEIGHT = { default: 0.85, brute: 1.05 }; // o Bruto é maior para ler de longe que ele bate forte
+export const UNIT_HEIGHT = { default: 0.85, brute: 1.05, colossus: 2 }; // o Bruto é maior para ler de longe que ele bate forte; o Colosso ocupa 2x2
 // pelo modelo, não pelo id: o Bruto da campanha e do menu de desenvolvedor tem ficha própria (camp1-e0…) e saía pequeno
-export const unitHeight = (def: string) => (modelOf(def) === MODEL.brute ? UNIT_HEIGHT.brute : UNIT_HEIGHT.default);
+export const unitHeight = (def: string) => ((UNIT_DEFS[def]?.size ?? 1) > 1 ? UNIT_HEIGHT.colossus : modelOf(def) === MODEL.brute ? UNIT_HEIGHT.brute : UNIT_HEIGHT.default);
+
+// altura da barra de vida (e da coroa) de cada unidade: a padrão ou, para quem é mais alto que ela (o Colosso), logo acima da cabeça
+export const barYOf = (def: string) => Math.max(MARKER.barY, unitHeight(def) + 0.3);
 
 export const MARKER = {
   frameY: 0.04, // rente à casa, acima das marcações (0,02) e do caminho (0,03)
@@ -22,6 +25,6 @@ export const MARKER = {
 const MODEL: Record<string, string> = {
   warrior: 'knight', archer: 'rogue', mage: 'mage', rogue: 'rogue_hooded',
   soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
-  minion: 'skeleton_minion',
+  minion: 'skeleton_minion', colossus: 'skeleton_warrior',
 };
 export const modelOf = (def: string): string => MODEL[def] ?? UNIT_DEFS[def].model ?? ''; // '' = sem modelo (o Farol)
