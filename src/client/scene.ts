@@ -35,7 +35,8 @@ import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, river
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
 // Câmeras de ação para comparar (13/11, pedido do Fernando: "as action cams teste várias opções como por cima do ombro,
-// pelas costas do inimigo, etc"): `?camera=<nome>` escolhe uma; sem o parâmetro vale a `xcom`, a que já estava no jogo.
+// pelas costas do inimigo, etc"): `?camera=<nome>` escolhe uma; sem o parâmetro vale a `heroi` (escolha dele em 13/11,
+// depois de ver os prints de todas), que alterna `ombro` e `costas` para ficar sempre do lado dos heróis.
 // turn: giro em volta do alvo a partir da linha do golpe (0 = atrás de quem ataca, π = atrás do alvo); pitch: inclinação
 // em graus (32 = a do jogo; baixa = câmera perto do chão); zoom: altura da vista, base + por casa de distância; aim: onde
 // a câmera mira entre quem ataca (0) e o alvo (1); lift: quanto o foco sobe do chão, para o boneco não ficar na beira;
@@ -51,8 +52,8 @@ const ACTION_CAMS: Record<string, ActionCam | null> = {
   nenhuma: null, // sem câmera de ação
 }; // e `heroi`, que alterna entre `ombro` e `costas` (actionCam)
 const CAM_DIST = 30; // distância da câmera ao foco (ortográfica: só decide o que fica na frente do plano de corte)
-const camName = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('camera') : null;
-const ACTION_CAM = camName !== null && camName in ACTION_CAMS ? ACTION_CAMS[camName] : ACTION_CAMS.xcom;
+const camAsked = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('camera') : null;
+const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'heroi';
 const ZOOM = { min: 4, max: 16 };
 const ZOOM_START = 1.5;
 // celular em pé: no máximo ~9,5 casas de largura ao abrir. No 20x20 o mapa inteiro deixava a casa com ~20 px, pequena
@@ -1396,12 +1397,11 @@ export class BattleScene {
     // contra-ataque (o alvo devolve o golpe na mesma sequência): a câmera fica onde está, sem dar meia-volta no meio do golpe
     if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
     // `heroi`: a câmera fica sempre do lado dos heróis (no ombro de quem ataca; quando é o inimigo que ataca, nas costas do herói)
-    const cam = camName === 'heroi' ? ACTION_CAMS[enemy ? 'costas' : 'ombro'] : ACTION_CAM;
+    const cam = ACTION_CAMS[CAM_NAME === 'heroi' ? (enemy ? 'costas' : 'ombro') : CAM_NAME];
     if (!cam) return;
     this.camSaved = { viewH: this.camSaved?.viewH ?? this.viewH, yaw: this.camSaved?.yaw ?? this.yawTarget, pair: `${posKey(from)}>${posKey(to)}` };
     const a = this.world(from), b = this.world(to);
-    // a câmera gira em volta do golpe (na `xcom`, fica do lado de quem ataca, olhando para o alvo, 0,35 rad para o lado
-    // para o atacante não tapar o alvo)
+    // a câmera gira em volta do golpe pelo `turn` da opção, sempre um pouco para o lado, para o boneco de perto não tapar o outro
     let goal = Math.atan2(a.x - b.x, a.z - b.z) + cam.turn;
     while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
     while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
