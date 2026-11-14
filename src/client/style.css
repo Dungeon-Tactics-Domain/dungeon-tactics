@@ -18,8 +18,12 @@
   --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #655134; --focus: #9e2c0c; /* um tom mais escuros (13/11, revisão): 4,7:1 também sobre --paper-lo, no pé dos painéis */
   --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;
   --heal-ink: #1f7a3a; /* cura prevista em número grande sobre o pergaminho: 4,2:1 no papel, 3,3:1 no pé do degradê */
+  /* faixa translúcida da prévia do golpe (13/11, jeito do Tactics Ogre): escura o bastante para o rosa do dano passar
+     de 4,5:1 mesmo sobre o céu claro (a faixa a 80% sobre branco fica perto de #3e3846) */
+  --strike: rgba(18, 10, 26, .8); --strike-dmg: #ffb8cf;
   --tap: 48px; /* alvo de toque: ≥ 44 px (spec) com folga para o polegar */
   --gap: 8px;
+  --slot-w: 440px; /* painéis de unidade de baixo; as faixas da prévia ficam no vão entre os dois */
   --font: 'Alegreya Sans', system-ui, sans-serif; /* texto corrido: legível em tamanho pequeno */
   /* títulos, opções, Confirmar e fila: Cinzel (OFL), serifada de inscrição (13/11, o Fernando achou a fonte pixel
      Tiny5 "meio tosca" e pediu "uma fonte mais legal serifada nas opções com um sombreamento"); o nome da variável ficou para não mexer em todo o CSS */
@@ -147,7 +151,7 @@ button[hidden] { display: none; }
 .panel .item:not(:disabled):active { transform: none; box-shadow: none; }
 .item-cost { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
 /* painéis de unidade: a da vez embaixo à esquerda, a sob o cursor embaixo à direita */
-.active-slot, .target-slot { position: absolute; bottom: 12px; width: 440px; pointer-events: none; }
+.active-slot, .target-slot { position: absolute; bottom: 12px; width: var(--slot-w); pointer-events: none; }
 .active-slot { left: 12px; }
 .target-slot { right: 12px; }
 .unit-panel { position: relative; display: flex; gap: 12px; border-left: 8px solid var(--side); }
@@ -171,15 +175,25 @@ button[hidden] { display: none; }
 .gauge-change.gain { background: repeating-linear-gradient(135deg, var(--heal) 0 3px, var(--well) 3px 6px); }
 @keyframes loss-blink { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .gauge-change { animation: none; } }
-/* bloco da prévia no painel do alvo: acerto grande (o número do FFT) e, ao lado, dano e vida depois */
-.forecast { display: flex; gap: 12px; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 2px solid var(--paper-lo); }
-.forecast-hit { display: grid; justify-items: center; min-width: 76px; font: 400 var(--fs-xl)/1 var(--font-px); color: var(--focus); }
-.forecast-hit.gain { color: var(--heal-ink); }
-.forecast-hit small { font: 700 var(--fs-sm)/1.2 var(--font); color: var(--ink-muted); }
-.forecast-body { display: grid; gap: 2px; font-size: var(--fs-sm); }
-.forecast-hp { font: 400 var(--fs-lg)/1.1 var(--font-px); }
-.forecast-warn { font-weight: 800; color: var(--focus); }
-.forecast-more { color: var(--ink-muted); }
+/* painel do alvo espelhado (retrato à direita), como a barra de status do Tactics Ogre: atacante e alvo se olham */
+.target-slot .unit-panel { flex-direction: row-reverse; border-left: 2px solid var(--paper-edge); border-right: 8px solid var(--side); }
+/* faixas da prévia do golpe (hud.ts strikes, 13/11, no jeito do Tactics Ogre, desenho nosso): no vão entre os dois
+   painéis de baixo, presas embaixo e em seta apontando para o painel do alvo. Ficam dentro da altura dos painéis (até 3
+   faixas) para não cobrir o mapa; sem clique (o mouse passa para as casas de baixo) */
+.strikes { position: absolute; bottom: 12px; left: calc(var(--slot-w) + 24px); right: calc(var(--slot-w) + 24px); display: grid; justify-items: end; align-content: end; gap: 4px; pointer-events: none; }
+.strike { max-width: 100%; padding: 4px 30px 5px 14px; color: var(--fg); background: var(--strike); border-left: 4px solid var(--strike-dmg);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%); }
+.strike.gain { border-left-color: var(--heal); }
+.strike.ally { border-left-color: var(--accent); }
+.strike-main { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+.strike-hp { font: 700 var(--fs-sm)/1 var(--font); color: var(--muted); }
+.strike-pts { font: 400 var(--fs-xl)/1 var(--font-px); color: var(--strike-dmg); font-variant-numeric: tabular-nums; }
+.strike.gain .strike-pts { color: var(--heal); }
+.strike-pts small { margin-left: 4px; font: 700 var(--fs-sm)/1 var(--font); }
+.strike-hit { margin-left: auto; font: 400 var(--fs-lg)/1 var(--font-px); }
+.strike-info { font-size: var(--fs-sm); color: var(--muted); }
+.strike.ally .strike-info { color: var(--accent); font-weight: 700; }
+.strike-more { margin: 0; padding: 2px 10px; font-size: var(--fs-sm); color: var(--fg); background: var(--strike); }
 .gauge.hp i { background: var(--hp); }
 .gauge.mp i { background: var(--mp); }
 .gauge.ct i { background: var(--ct); }
@@ -236,6 +250,31 @@ button[hidden] { display: none; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: var(--fs-sm); }
 .keys dt { font-weight: 800; white-space: nowrap; }
 .keys dd { margin: 0; color: var(--muted); }
+/* barra de volume (slider em dialog.ts): trilho na cor de destaque da tinta, número em % ao lado */
+.slider { display: block; margin: 0 0 14px; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider input { flex: 1; min-height: var(--tap); margin: 0; accent-color: var(--focus); cursor: pointer; }
+.slider input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.slider-value { min-width: 4ch; text-align: right; font: 400 var(--fs-lg)/1 var(--font-px); color: var(--ink); }
+
+/* Opções (13/11, pedido do Fernando: "algo que ocupa mais a largura da tela, com subseções"): seções numa coluna à
+   esquerda e uma por vez à direita; altura fixa para a janela não pular ao trocar de seção. No estreito, seções em cima */
+.dialog.menu { width: min(1400px, 92vw); height: min(760px, 90dvh); display: grid; grid-template-rows: auto 1fr auto; }
+.menu-layout { display: grid; grid-template-columns: 240px 1fr; gap: 24px; min-height: 0; margin-top: 12px; }
+.menu-nav { margin: 0; padding-right: 24px; border-right: 2px solid var(--paper-lo); }
+.menu-nav .choice-label { display: none; } /* o nome do grupo fica no aria-label: na tela, as próprias seções bastam */
+.menu-nav .choice-row { flex-direction: column; flex-wrap: nowrap; }
+.menu-nav .choice-row button { flex: none; justify-content: flex-start; padding: 0 16px; font: 400 var(--fs)/1 var(--font-px); }
+.menu-body { overflow: auto; min-height: 0; padding-right: 8px; }
+.menu-section h3 { margin-top: 0; font-size: var(--fs-lg); }
+.menu-section .legend { margin-bottom: 20px; }
+.menu-section .choice, .menu-section .slider { max-width: 560px; }
+.dialog.menu .menu-actions button { flex: 1 1 20%; } /* na janela larga os 4 cabem numa linha */
+@media (max-width: 600px) {
+  .menu-layout { grid-template-columns: 1fr; }
+  .menu-nav { padding: 0 0 8px; border-right: none; border-bottom: 2px solid var(--paper-lo); }
+  .menu-nav .choice-row { flex-direction: row; flex-wrap: wrap; }
+}
 
 
 /* Menu de desenvolvedor (12/11): largo para os dois times lado a lado no PC; no estreito, um embaixo do outro */
@@ -266,7 +305,6 @@ button[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .talk-title, .panel.talk, .talk.done .talk-next { animation: none; } }
 .camp-list { flex-direction: column; } /* lista de fases da campanha: uma por linha, nome inteiro */
 .camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
-.dialog .stars { font: 400 40px/1 var(--font-px); color: var(--star-ink); letter-spacing: 6px; margin: 4px 0; text-align: center; } /* nota da fase (campanha) */
 .dialog .mvp { font-weight: 700; color: var(--gold-trim); margin: 2px 0 10px; } /* destaque da batalha (tally.ts), no fim da fase e da batalha avulsa */
 .dialog .learned { font-weight: 700; color: var(--focus); margin: 2px 0; } /* habilidade nova ao vencer a fase (campanha); .dialog na frente para vencer o .dialog p */
 /* tela de título (main.ts, titleScreen): nome grande e as três portas do jogo */
@@ -348,7 +386,6 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .world-node.story { background: #3d6fb0; border-radius: 50%; }
 .world-node.done { border-color: #e2b23a; }
 .world-node:disabled { background: #6f6656; border-color: #4a4235; /* escuro: o bege antigo era da cor da terra */ filter: none; cursor: default; }
-.world-stars { position: absolute; transform: translate(-50%, 16px); font: 400 14px/1 var(--font); color: var(--gold-trim); letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
 .world-node.here { outline: 3px solid var(--focus); outline-offset: 4px; }
 .world-token { position: absolute; transform: translate(-50%, -110%); transition: left var(--walk-ms) ease-in-out, top var(--walk-ms) ease-in-out; pointer-events: none; animation: bob 1s ease-in-out infinite; }
 .world-token .portrait { width: 44px; height: 58px; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }

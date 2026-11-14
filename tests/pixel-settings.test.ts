@@ -3,8 +3,8 @@ import { PIXEL_SIZES, defaultPixel, nextSize, parsePixel } from '../src/client/p
 
 describe('configuração do pixel art', () => {
   it('padrão: 2 px no celular em pé, 3 px no PC, contorno e câmera presa ligados, paleta desligada', () => {
-    expect(defaultPixel(true)).toEqual({ size: 2, outline: true, palette: false, snap: true });
-    expect(defaultPixel(false)).toEqual({ size: 3, outline: true, palette: false, snap: true });
+    expect(defaultPixel(true)).toEqual({ size: 0, outline: true, palette: false, snap: true });
+    expect(defaultPixel(false)).toEqual({ size: 0, outline: true, palette: false, snap: true });
   });
 
   it('save torto do navegador cai no padrão, campo a campo', () => {

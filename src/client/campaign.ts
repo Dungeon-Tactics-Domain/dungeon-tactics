@@ -6,7 +6,8 @@ import type { BattleState } from '../shared/battle/types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
 import { buildDevScenario, slotsOf, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
 import type { Equip } from './chest.ts';
-import { withHero, type Hero } from './hero.ts';
+import { defaultGroup, heroesFor, type Group } from './group.ts';
+import type { Hero } from './hero.ts';
 import type { SongId } from './music.ts';
 
 export interface Line {
@@ -43,11 +44,11 @@ export const CAMPAIGN_KEY = 'dt:campanha'; // quantas fases já foram vencidas
 
 // Os heróis aprendem uma habilidade por fase vencida (2 na 1ª, 3 na 2ª, as 4 da 3ª em diante): a 1ª fase ensina pouco de
 // cada vez e a Cura do Odo chega no meio da campanha, quando os inimigos apertam
-const party = (n: number): DevUnit[] => [unitFrom('warrior', 'Bran'), unitFrom('archer', 'Tess'), unitFrom('mage', 'Odo'), unitFrom('rogue', 'Lia')]
-  .map((u) => ({ ...u, abilities: u.abilities.slice(0, Math.min(4, 2 + n)) }));
+const party = (n: number): DevUnit[] => heroesFor(defaultGroup(), n).map(({ items: _, ...u }) => u);
 // habilidades que cada herói ganha ao passar da fase n para a n+1 (para o aviso no fim da fase)
-export const learned = (n: number, hero: Hero | null = null) => n + 1 >= CHAPTERS.length ? [] : withHero(CHAPTERS[n + 1].setup, hero).heroes
-  .map((u, i) => ({ name: u.name, abilities: u.abilities.filter((a) => !CHAPTERS[n].setup.heroes[i].abilities.includes(a)) }))
+// (do grupo escalado, com a classe atual de cada um)
+export const learned = (n: number, hero: Hero | null = null, group: Group = defaultGroup()) => n + 1 >= CHAPTERS.length ? [] : heroesFor(group, n + 1, hero)
+  .map((u, i) => ({ name: u.name, abilities: u.abilities.filter((a) => !heroesFor(group, n, hero)[i].abilities.includes(a)) }))
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
 // Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
@@ -207,10 +208,10 @@ export const CHAPTERS: Chapter[] = [
 export const chapterId = (n: number) => `camp${n}`;
 // Fase de chefe (boss: true, o 1º inimigo da lista, id e0): derrubar o chefe vence, mesmo com outros de pé; perder todos
 // os heróis (ou o Farol, se houver) perde. Pede outra tática: abrir caminho até ele em vez de limpar o mapa.
-// `eq`: equipamento salvo de cada classe (chest.ts); a medição da dificuldade roda sem ele (o grupo sem itens)
-export function chapterScenario(n: number, hero: Hero | null = null, eq: Equip = {}): Scenario {
-  const setup = withHero(CHAPTERS[n].setup, hero);
-  const s = buildDevScenario({ ...setup, heroes: setup.heroes.map((u) => ({ ...u, items: eq[u.base] })) }, chapterId(n), CHAPTERS[n].title);
+// `eq`: equipamento salvo de cada membro (chest.ts) e `group`: quem vai à batalha (group.ts); a medição da dificuldade
+// roda sem os dois (o grupo da história, sem itens)
+export function chapterScenario(n: number, hero: Hero | null = null, eq: Equip = {}, group: Group = defaultGroup()): Scenario {
+  const s = buildDevScenario({ ...CHAPTERS[n].setup, heroes: heroesFor(group, n, hero, eq) }, chapterId(n), CHAPTERS[n].title);
   if (CHAPTERS[n].boss) {
     UNIT_DEFS[s.spawns.find((sp) => sp.id === 'e0')!.def].boss = true;
     const beacon = s.spawns.some((sp) => sp.def === OBJECTIVE_DEF);
@@ -222,24 +223,6 @@ export function chapterScenario(n: number, hero: Hero | null = null, eq: Equip =
   }
   return s;
 }
-
-// Estrelas da fase (0 a 3), para ter motivo de rejogar: vencer; ninguém caiu; e o Farol inteiro (nos mapas com Farol) ou,
-// sem Farol, todos os heróis com mais da metade da vida. A melhor nota de cada fase fica salva em STARS_KEY.
-export const STARS_KEY = 'dt:estrelas';
-// os 3 critérios separados (vencer, ninguém caiu, Farol inteiro ou todos acima da metade), para a tela de fim marcar cada um
-export function starParts(state: BattleState, n: number): [boolean, boolean, boolean] {
-  if (state.outcome !== 'victory') return [false, false, false];
-  const heroes = state.units.filter((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF);
-  const beacon = state.units.find((u) => u.def === OBJECTIVE_DEF);
-  const clean = beacon ? beacon.hp === UNIT_DEFS[OBJECTIVE_DEF].hp : heroes.every((u) => u.hp * 2 > UNIT_DEFS[u.def].hp);
-  return [true, heroes.length === CHAPTERS[n].setup.heroes.length, clean];
-}
-export const starsOf = (state: BattleState, n: number): number => starParts(state, n).filter(Boolean).length;
-export function parseStars(raw: unknown): number[] {
-  const list = Array.isArray(raw) ? raw : [];
-  return CHAPTERS.map((_, i) => (Number.isInteger(list[i]) && list[i] >= 0 && list[i] <= 3 ? list[i] : 0));
-}
-export const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 // o que espera na fase, para o painel do mapa (FFT mostra o inimigo antes de entrar): "4 inimigos · chefe: Vesper"
 export function foesText(n: number, say: (pt: string, en: string) => string): string {

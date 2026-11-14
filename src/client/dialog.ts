@@ -49,3 +49,17 @@ export function choice<T>(label: string, options: [value: T, text: string][], va
   });
   return el('div', { class: 'choice', role: 'group', 'aria-label': label }, el('span', { class: 'choice-label' }, label), el('div', { class: 'choice-row' }, ...buttons));
 }
+
+// Barra de 0 a 100% (13/11, pedido do Fernando: volume "de 5 em 5%"): input range nativo (setas do teclado já andam;
+// o controle anda por main.ts pollPad), número em % ao lado, troca na hora a cada movimento, sem botão de salvar
+export function slider(label: string, value: number, onChange: (v: number) => void): HTMLElement {
+  const out = el('output', { class: 'slider-value' }, `${value}%`);
+  const input = el('input', { type: 'range', min: 0, max: 100, step: 5, value, 'aria-valuetext': `${value}%` });
+  input.addEventListener('input', () => {
+    const v = Number(input.value);
+    out.textContent = `${v}%`;
+    input.setAttribute('aria-valuetext', `${v}%`);
+    onChange(v);
+  });
+  return el('label', { class: 'slider' }, el('span', { class: 'choice-label' }, label), el('span', { class: 'slider-row' }, input, out));
+}

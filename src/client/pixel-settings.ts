@@ -8,10 +8,12 @@ export interface PixelSettings {
   palette: boolean; // poucas cores por canal (cara de 16 bits)
   snap: boolean; // câmera presa à grade de pixels (sem ela o chão "ferve" ao mover)
 }
-export const PIXEL_KEY = 'dt:pixel';
+// chave nova em 13/11: quem já tinha o pixel salvo também volta ao 3D normal (o padrão mudou)
+export const PIXEL_KEY = 'dt:pixel2';
 
-// 2 px no celular em pé (393 px viram ~196 de largura; 3 apagava os rostos), 3 px no PC
-export const defaultPixel = (phone: boolean): PixelSettings => ({ size: phone ? 2 : 3, outline: true, palette: false, snap: true });
+// 3D normal por padrão (13/11, pedido do Fernando: "tire esse pixelizado como o padrão"); o pixel art segue nas Opções
+// e na tecla V. O parâmetro `phone` fica para o dia em que o celular tiver padrão próprio
+export const defaultPixel = (_phone: boolean): PixelSettings => ({ size: 0, outline: true, palette: false, snap: true });
 
 const isSize = (v: unknown): v is PixelSize => PIXEL_SIZES.includes(v as PixelSize);
 

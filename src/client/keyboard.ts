@@ -57,7 +57,10 @@ export function keyAction(e: KeyInput): KeyAction | null {
 export function gridStep(dir: ScreenDir, yaw: number): Pos {
   const up = { x: -Math.sin(yaw), y: -Math.cos(yaw) }; // "para cima na tela" medido no chão (mesmas contas do pan da cena)
   const right = { x: Math.cos(yaw), y: -Math.sin(yaw) };
-  const [a, b] = { up: [1, 1], right: [-1, 1], down: [-1, -1], left: [1, -1] }[dir];
+  // 8 ângulos (13/11): com a câmera reta (0°, 90°…) o mapa não fica em losango e cada seta anda reto na tela (pedido do
+  // Fernando: "quando muda o ângulo da câmera os controles devem mudar os direcionais"); na diagonal, a regra de cima
+  const diamond = Math.round(yaw / (Math.PI / 4)) % 2 !== 0;
+  const [a, b] = diamond ? { up: [1, 1], right: [-1, 1], down: [-1, -1], left: [1, -1] }[dir] : { up: [1, 0], right: [0, 1], down: [-1, 0], left: [0, -1] }[dir];
   const vx = a * up.x + b * right.x;
   const vy = a * up.y + b * right.y;
   // Math.sign(0) é 0, e o "|| 0" troca o -0 por 0

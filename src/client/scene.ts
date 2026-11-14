@@ -11,7 +11,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { FACING, dist, inBounds, neighbors, posKey, standH, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
+import { FACING, dist, inBounds, neighbors, posKey, samePos, standH, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
 import { footprint } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -410,6 +410,7 @@ export class BattleScene {
     const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
     const levels = waterLevels(this.grid, this.step);
+    this.levels = levels;
     const smooth = !!this.terrainTex;
     const river = smooth ? riverOf(this.grid, levels) : null;
     const outside = smooth && EXTEND === 'textura' ? riverOutside(this.grid, this.step, levels, river) : new Map<string, WaterLevel>();
@@ -472,7 +473,7 @@ export class BattleScene {
       this.tileTops.push(pick);
     }
     if (levels.size) {
-      this.water = new Water(this.scene, this.grid, levels, this.step);
+      this.water = new Water(this.scene, this.grid, levels, this.step, river);
       // o rio de fora é uma faixa contínua com correnteza (terrain.ts buildStream), não casas de água em degrau
       if (outside.size) { this.stream = buildStream(this.grid, this.step, levels, river); this.scene.add(...this.stream.meshes); }
       this.tileTops.push(this.water.surface); // tocar na água escolhe a casa dela, não o leito lá embaixo
@@ -893,6 +894,48 @@ export class BattleScene {
     for (const kind of Object.keys(at) as (keyof typeof DETAIL)[]) this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
   }
 
+  // Pontilhado do maior alcance (13/11, pedido do Fernando: "ao redor do personagem deve aparecer pontilhado o range da
+  // sua skill que bate mais longe, e enquanto ele vê a prévia do movimento também"): contorno das casas a até `range`
+  // passos de `center` (a mesma distância da regra), na altura do chão de cada casa. Só refaz quando muda
+  private levels = new Map<string, WaterLevel>();
+  private ring: { key: string; mesh: THREE.Mesh } | null = null;
+  setRangeRing(r: { center: Pos; range: number } | null) {
+    const key = r ? `${posKey(r.center)}:${r.range}` : '';
+    if (this.ring?.key === key) return;
+    if (this.ring) { this.scene.remove(this.ring.mesh); this.ring.mesh.geometry.dispose(); (this.ring.mesh.material as THREE.Material).dispose(); this.ring = null; }
+    if (!r || r.range < 1) return;
+    const { width: W, height: H } = this.grid, pos: number[] = [];
+    const inside = (p: Pos) => inBounds(this.grid, p) && dist(p, r.center) <= r.range;
+    const yAt = (p: Pos, x: number, z: number) => (this.levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.05;
+    // tracinho chato deitado no chão (linha de 1 px do WebGL quase não aparecia): 2 triângulos de `a` até `b`, 0,07 de largura
+    const dash = (p: Pos, ax: number, az: number, bx: number, bz: number) => {
+      const nx = -(bz - az), nz = bx - ax, k = 0.035 / Math.hypot(nx, nz);
+      const v = (x: number, z: number, side: number) => [x + nx * k * side, yAt(p, x, z), z + nz * k * side];
+      const a1 = v(ax, az, 1), a2 = v(ax, az, -1), b1 = v(bx, bz, 1), b2 = v(bx, bz, -1);
+      pos.push(...a1, ...a2, ...b1, ...b1, ...a2, ...b2);
+    };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const p = { x, y };
+      if (!inside(p)) continue;
+      // cada lado da casa que encosta numa casa de fora vira 3 tracinhos (seguem rampa e degrau)
+      for (const [dx, dy, ax, az, bx, bz] of [[0, -1, 0, 0, 1, 0], [0, 1, 0, 1, 1, 1], [-1, 0, 0, 0, 0, 1], [1, 0, 1, 0, 1, 1]] as const) {
+        if (inside({ x: x + dx, y: y + dy })) continue;
+        for (let k = 0; k < 3; k++) {
+          const t0 = (k + 0.2) / 3, t1 = (k + 0.8) / 3;
+          const at = (t: number) => [x + ax + (bx - ax) * t - W / 2, y + az + (bz - az) * t - H / 2];
+          const [x0, z0] = at(t0), [x1, z1] = at(t1);
+          dash(p, x0, z0, x1, z1);
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+    mesh.renderOrder = 11;
+    this.scene.add(mesh);
+    this.ring = { key, mesh };
+  }
+
   // Prévia da trajetória: faixa fina do olho de quem atira até a mira do alvo, azul onde passa e vermelha depois do ponto
   // em que bate (a casa que barra, sightBlock). Refeita a cada mudança do cursor; poucos vértices
   private trajectory: THREE.Group | null = null;
@@ -1222,6 +1265,7 @@ export class BattleScene {
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
+        if (!samePos(this.posOf(v), e.target)) await this.actionCam(this.posOf(v), e.target);
         if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
         const look = lookOf(e.ability);
         this.play(v, look.clip, true);
@@ -1280,6 +1324,7 @@ export class BattleScene {
         await this.wait(TIMING.die);
       }
     }
+    await this.endActionCam();
     this.sync(state);
   }
 
@@ -1321,6 +1366,30 @@ export class BattleScene {
     // com `also`, centra entre os dois (quem ataca e o alvo): o golpe nunca acontece fora da tela ou atrás do HUD
     const w = also ? this.world(p).lerp(this.world(also), 0.5) : this.world(p);
     this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
+  }
+
+  // Câmera de ação (13/11, pedido do Fernando: "quando um personagem for atacar, uma action cam tipo XCOM"): gira para
+  // ficar atrás de quem ataca, chega perto e enquadra o atacante e o alvo; volta ao que era depois da sequência
+  private camSaved: { viewH: number; yaw: number } | null = null;
+  async actionCam(from: Pos, to: Pos) {
+    this.camSaved ??= { viewH: this.viewH, yaw: this.yawTarget };
+    const a = this.world(from), b = this.world(to);
+    // a câmera fica do lado de quem ataca, olhando para o alvo; 0,35 rad para o lado, para o atacante não tapar o alvo
+    let goal = Math.atan2(a.x - b.x, a.z - b.z) + 0.35;
+    while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
+    while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
+    this.yawTarget = goal;
+    this.focusOn(from, to);
+    const h0 = this.viewH, h1 = Math.max(ZOOM.min, Math.min(h0, 4 + a.distanceTo(b) * 0.9));
+    await this.animate(420, (k) => (this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k)));
+  }
+  private async endActionCam() {
+    const s = this.camSaved;
+    if (!s) return;
+    this.camSaved = null;
+    this.yawTarget = s.yaw;
+    const h0 = this.viewH;
+    await this.animate(380, (k) => (this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k)));
   }
 
   // volta ao enquadramento do mapa inteiro
@@ -1377,8 +1446,10 @@ export class BattleScene {
     this.resize();
   }
 
+  // 8 ângulos, de 45° em 45° (13/11, pedido do Fernando: "a câmera deve ter 8 ângulos"); gridStep acha o eixo mais
+  // perto de cada tecla em qualquer giro, então as setas seguem andando na grade
   rotate(dir: 1 | -1) {
-    this.yawTarget += (dir * Math.PI) / 2;
+    this.yawTarget += (dir * Math.PI) / 4;
   }
 
   // Luz do modo Até o amanhecer (survival.ts): k = 0 é noite de lua (azul e fraca), k = 1 é o sol nascendo (quente, na
@@ -1394,11 +1465,11 @@ export class BattleScene {
     this.ambience?.setDaylight(k); // por último: a neblina dos arredores manda na cor do fundo
   }
 
-  // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao quarto de volta mais perto,
-  // senão as setas andariam na diagonal (gridStep conta com o ângulo de 45° + n·90°).
+  // Fundo da tela de título: a câmera gira devagar em volta do mapa. Ao parar, volta ao oitavo de volta mais perto
+  // (um dos 8 ângulos do rotate).
   private spinning = false;
   setSpin(on: boolean) {
-    if (this.spinning && !on) this.yawTarget = Math.PI / 4 + Math.round((this.yawTarget - Math.PI / 4) / (Math.PI / 2)) * (Math.PI / 2);
+    if (this.spinning && !on) this.yawTarget = Math.round(this.yawTarget / (Math.PI / 4)) * (Math.PI / 4);
     this.spinning = on;
   }
 

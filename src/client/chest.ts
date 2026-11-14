@@ -8,7 +8,7 @@ export const EQUIP_KEY = 'dt:equip';
 export interface Chest { gold: number; items: string[] }
 export type Equip = Record<string, Loadout>;
 
-export const GOLD_PER_STAR = 50; // vencer uma fase rende 50 por estrela (número inicial; a loja do 1º ato custa 100 a 240)
+export const VICTORY_GOLD = 150; // vencer uma fase rende 150 (o antigo máximo de 3 estrelas x 50) (número inicial; a loja do 1º ato custa 100 a 240)
 
 export function parseChest(raw: unknown): Chest {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;

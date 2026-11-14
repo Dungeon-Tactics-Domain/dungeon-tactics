@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
-import { CHAPTERS, SPEAKERS, chapterScenario, foesText, learned, objectiveText, parseProgress, parseStars, starText, starsOf } from '../src/client/campaign.ts';
+import { CHAPTERS, SPEAKERS, chapterScenario, foesText, learned, objectiveText, parseProgress } from '../src/client/campaign.ts';
 import { problems } from '../src/client/dev-roster.ts';
 import { unitHeight } from '../src/client/markers.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -63,18 +63,6 @@ describe('campanha Cinzas do Farol', () => {
     for (const bad of ['-1', '99', 'x', null, '1.5']) expect(parseProgress(bad)).toBe(0);
   });
 
-  it('estrelas: vencer, ninguém cair e o Farol inteiro (sem Farol, todos acima da metade da vida)', () => {
-    const won = (n: number) => ({ ...Battle.start(chapterScenario(n), 1).state, outcome: 'victory' as const });
-    const hill = won(1); // Colina: tem Farol
-    expect(starsOf(hill, 1)).toBe(3);
-    expect(starsOf({ ...hill, units: hill.units.map((u) => (u.def === 'beacon' ? { ...u, hp: u.hp - 1 } : u)) }, 1)).toBe(2);
-    expect(starsOf({ ...hill, units: hill.units.filter((u) => !u.def.endsWith('h0')) }, 1)).toBe(2);
-    const wood = won(0); // Bosque: sem Farol
-    expect(starsOf({ ...wood, units: wood.units.map((u) => (u.team === 'hero' ? { ...u, hp: 3 } : u)) }, 0)).toBe(2);
-    expect(starsOf({ ...wood, outcome: 'defeat' }, 0)).toBe(0);
-    expect(parseStars([3, 'x', 9, 2])).toEqual(CHAPTERS.map((_, i) => [3, 0, 0, 2][i] ?? 0));
-    expect(starText(2)).toBe('★★☆');
-  });
 
   it('os heróis aprendem uma habilidade por fase até ter as 4 (a Cura do Odo chega na 3ª)', () => {
     expect(CHAPTERS[0].setup.heroes.map((u) => u.abilities.length)).toEqual([2, 2, 2, 2]);

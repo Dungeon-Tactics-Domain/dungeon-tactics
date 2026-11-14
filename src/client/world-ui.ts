@@ -1,10 +1,10 @@
 // Tela do mapa mundial (world.ts tem as regras): pergaminho com a estrada, os pontos e o retrato do grupo, que anda de
 // ponto em ponto. Setas (ou A D W S) andam, Enter entra, Esc volta ao título; clique num ponto aberto anda até ele.
 // Painel do lugar no canto de baixo à direita, como o nome do lugar no mapa do FFT; arte e texto nossos.
-import { foesText, starText } from './campaign.ts';
+import { foesText } from './campaign.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import type { DevUnit } from './dev-roster.ts';
+import { unitFrom } from './dev-roster.ts';
 import { dialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { abilityDetail, portrait } from './hud.ts';
@@ -16,6 +16,8 @@ import { CHEST_KEY, EQUIP_KEY, buy, equip, parseChest, parseEquip, sell } from '
 import { MISSIONS, MISSIONS_KEY, parseDone } from './missions.ts';
 import { ITEMS, SLOTS, bonusOf, type ItemDef, type Slot } from '../shared/battle/equipment.ts';
 import { WORLD, isOpen, step } from './world.ts';
+import { DEPLOY_MAX, GROUP_KEY, GROUP_MAX, RECRUIT_COST, changeClass, dismiss, learnedCount, parseGroup, recruit, toggleDeploy, type Group, type Member } from './group.ts';
+import { HERO_CLASSES, type Hero } from './hero.ts';
 
 const WALK_MS = 320; // um trecho de estrada; o CSS usa o mesmo valor (--walk-ms)
 const FADE_MS = 300; // escurecer antes de entrar no ponto; o CSS usa o mesmo valor (.fade-out)
@@ -91,22 +93,34 @@ const terrain = (done: number) => {
 ${WORLD.filter((w) => PLACE_ICON[w.id]).map((w) => `<svg class="world-icon" viewBox="0 0 32 32" style="left:${w.x}%;top:${w.y}%" aria-hidden="true">${PLACE_ICON[w.id]}</svg>`).join('')}`;
 };
 
-// Tela Grupo (como a formação do FFT): retrato, classe, números e as habilidades já aprendidas de quem vai à próxima
-// batalha; diz quem fica no acampamento para o protagonista entrar. Usa o dialog() de sempre.
-export function openParty(units: DevUnit[], benched: string | null) {
-  // cada linha abre a ficha da unidade (13/11, 1ª entrega do gerenciamento do grupo como no FFT; desenho em
-  // docs/game-design/cidades-grupo-equipamento.md)
-  const d = dialog('party', t('Grupo', 'Party'), [
-    el('ul', { class: 'party-list' }, ...units.map((u) => el('li', { class: 'party-card', role: 'button', tabindex: '0',
-      'aria-label': t(`Ficha de ${u.name}`, `${u.name}'s sheet`),
-      onclick: () => { d.close(); openSheet(u, () => openParty(units, benched)); },
-      onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); d.close(); openSheet(u, () => openParty(units, benched)); } } }, portrait(u.base),
+// Tela Grupo (como a formação do FFT): todos do grupo, quem vai à próxima batalha (até 4) e quem fica no acampamento,
+// com retrato, classe e números; cada linha abre a ficha. `n`: a próxima fase (as habilidades liberadas).
+// 13/11, entrega 5 do desenho (docs/game-design/cidades-grupo-equipamento.md): recrutados e troca de classe
+const loadGroup = () => parseGroup(store.json(GROUP_KEY));
+const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
+// nome na tela: o protagonista entra no lugar do companheiro da história com a classe de partida dele (group.ts)
+const shown = (m: Member, hero: Hero | null) => (hero && m.id === hero.cls ? hero.name : m.name);
+const unitOf = (m: Member, n: number, hero: Hero | null) => { const u = unitFrom(m.cls, shown(m, hero)); return { ...u, abilities: u.abilities.slice(0, learnedCount(n)) }; };
+
+export function openParty(n: number, hero: Hero | null) {
+  const g = loadGroup();
+  const again = () => openParty(n, hero);
+  const card = (m: Member) => {
+    const u = unitOf(m, n, hero), going = g.deployed.includes(m.id);
+    const open = () => { d.close(); openSheet(m, n, hero, again); };
+    return el('li', { class: 'party-card', role: 'button', tabindex: '0', 'aria-label': t(`Ficha de ${u.name}`, `${u.name}'s sheet`),
+      onclick: open, onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); open(); } } }, portrait(m.cls),
       el('div', {},
-        el('strong', {}, u.name), el('span', { class: 'party-class' }, ` · ${unitName(u.base)}`),
-        el('p', { class: 'party-stats' }, t(`Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move} · Salto ${UNIT_DEFS[u.base].jump ?? MAX_JUMP}`, `HP ${u.hp} · Speed ${u.speed} · Move ${u.move} · Jump ${UNIT_DEFS[u.base].jump ?? MAX_JUMP}`)),
-        el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · '),
-          ...(UNIT_DEFS[u.base].abilities.length > u.abilities.length ? [el('span', { class: 'party-more' }, t(` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} na jornada)`, ` (+${UNIT_DEFS[u.base].abilities.length - u.abilities.length} on the journey)`))] : [])))))),
-    ...(benched ? [el('p', { class: 'party-bench' }, t(`${benched} fica no acampamento e segue nas conversas.`, `${benched} stays at camp and keeps talking in the story.`))] : []),
+        el('strong', {}, u.name), el('span', { class: 'party-class' }, ` · ${unitName(m.cls)} · ${going ? t('vai à batalha', 'in battle') : t('no acampamento', 'at camp')}`),
+        el('p', { class: 'party-stats' }, t(`Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move} · Salto ${u.jump}`, `HP ${u.hp} · Speed ${u.speed} · Move ${u.move} · Jump ${u.jump}`)),
+        el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · '))));
+  };
+  const benched = hero ? g.members.find((m) => m.id === hero.cls) : undefined;
+  const d = dialog('party', t('Grupo', 'Party'), [
+    el('p', {}, t(`${g.deployed.length} de ${DEPLOY_MAX} vão à batalha. Escolha alguém para trocar a classe ou quem vai.`, `${g.deployed.length} of ${DEPLOY_MAX} go to battle. Pick someone to change class or who goes.`)),
+    el('ul', { class: 'party-list' }, ...g.deployed.map((id) => g.members.find((m) => m.id === id)!).map(card),
+      ...g.members.filter((m) => !g.deployed.includes(m.id)).map(card)),
+    ...(benched ? [el('p', { class: 'party-bench' }, t(`${benched.name} fica no acampamento e segue nas conversas.`, `${benched.name} stays at camp and keeps talking in the story.`))] : []),
   ]);
   d.overlay.querySelector<HTMLElement>('.party-card')?.focus();
 }
@@ -129,7 +143,7 @@ function openTown(i: number, party: () => void) {
     el('div', { class: 'menu-actions camp-list' },
       el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); openShop(again); } }, t('Loja: comprar e vender equipamento', 'Shop: buy and sell equipment')),
       el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); openBar(i, again); } }, t('Bar: ouvir os boatos', 'Tavern: hear the rumors')),
-      el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); party(); } }, t('Grupo: fichas e equipamento', 'Party: sheets and equipment'))),
+      el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); party(); } }, t('Grupo: classe, equipamento e quem vai', 'Party: class, equipment and who goes'))),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
@@ -137,7 +151,7 @@ function openBar(i: number, back: () => void) {
   const rumors = WORLD[i].town?.rumors ?? [];
   const done = parseDone(store.json(MISSIONS_KEY));
   const open = MISSIONS.filter((m) => m.town === WORLD[i].id && !done.includes(m.id));
-  dialog('party', t('Bar', 'Tavern'), [el('ul', { class: 'legend' }, ...rumors.map(([pt, en]) => el('li', {}, `“${t(pt, en)}”`))),
+  const d = dialog('party', t('Bar', 'Tavern'), [el('ul', { class: 'legend' }, ...rumors.map(([pt, en]) => el('li', {}, `“${t(pt, en)}”`))),
     el('h3', {}, t('Missões', 'Quests')),
     // missão: batalha extra com o grupo atual; vencer dá ouro e item (missions.ts)
     ...(open.length ? open.map((m) => el('div', { class: 'party-card' }, el('div', {},
@@ -145,6 +159,20 @@ function openBar(i: number, back: () => void) {
       el('p', { class: 'party-stats' }, t(`Recompensa: ${m.gold} de ouro${m.item ? ` e ${ITEMS[m.item].name}` : ''}`, `Reward: ${m.gold} gold${m.item ? ` and ${ITEMS[m.item].en}` : ''}`)),
       el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = `?missao=${m.id}`; } }, t('Aceitar', 'Accept')))))
       : [el('p', {}, t('Nenhuma missão por agora.', 'No quests for now.'))]),
+    // recrutar (entrega 5): uma pessoa de uma das 4 classes por ouro, até o teto do grupo
+    el('h3', {}, t('Recrutar', 'Recruit')),
+    el('p', {}, t(`${RECRUIT_COST} de ouro cada · ouro no baú: ${loadChest().gold} · grupo ${loadGroup().members.length} de ${GROUP_MAX}`,
+      `${RECRUIT_COST} gold each · gold in chest: ${loadChest().gold} · party ${loadGroup().members.length} of ${GROUP_MAX}`)),
+    el('div', { class: 'menu-actions' }, ...HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'secondary',
+      onclick: () => {
+        const r = recruit(loadGroup(), loadChest(), c);
+        if (!r) return void sfx('cancel');
+        saveGroup(r.group);
+        store.set(CHEST_KEY, JSON.stringify(r.chest));
+        sfx('confirm');
+        d.close();
+        openBar(i, back);
+      } }, t(`Recrutar ${unitName(c)}`, `Recruit ${unitName(c)}`)))),
   ], { onBack: back });
 }
 
@@ -162,36 +190,70 @@ export function openShop(back?: () => void) {
     el('h3', {}, t('No baú', 'In the chest')),
     chest.items.length ? el('dl', { class: 'keys' }, ...chest.items.flatMap((id) => [el('dt', {}, itemName(ITEMS[id])),
       el('dd', {}, `${Math.floor(ITEMS[id].price / 2)} ${t('de ouro', 'gold')} `, el('button', { type: 'button', class: 'secondary', onclick: () => save(sell(chest, id)) }, t('Vender', 'Sell')))]))
-      : el('p', {}, t('Vazio. Vencer uma fase dá ouro (50 por estrela).', 'Empty. Winning a stage gives gold (50 per star).')),
+      : el('p', {}, t('Vazio. Vencer uma fase dá 150 de ouro.', 'Empty. Winning a stage gives 150 gold.')),
   ], { onBack: back });
 }
 
 // Ficha da unidade (como a tela de status da formação do FFT): números, cada habilidade com o que faz (as que ainda vêm
-// marcadas) e os 3 espaços de equipamento, vazios até a loja das cidades (próxima entrega). Esc/✕ volta à lista.
-function openSheet(u: DevUnit, back: () => void) {
-  const def = UNIT_DEFS[u.base];
+// marcadas), os 3 espaços de equipamento e as ações do grupo: classe, ir ou não à batalha e dispensar (só recrutados).
+// Esc/✕ volta à lista
+function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
+  const u = unitOf(m, n, hero);
+  const def = UNIT_DEFS[m.cls];
+  const again = (x: Member) => { d.close(); openSheet(x, n, hero, back); };
   const row = (k: string, v: string | number) => [el('dt', {}, k), el('dd', {}, String(v))];
   const later = def.abilities.filter((a) => !u.abilities.includes(a));
-  const eq = loadEquip(), chest = loadChest(), mine = eq[u.base] ?? {};
+  const eq = loadEquip(), chest = loadChest(), mine = eq[m.id] ?? {};
   const b = bonusOf(mine);
+  const g = loadGroup(), going = g.deployed.includes(m.id);
   // número com o equipamento: "42 (+6)"
   const withB = (v: number, plus: number) => (plus ? `${v + plus} (${plus > 0 ? '+' : ''}${plus})` : String(v));
   const put = (slot: Slot, id: string | null) => {
-    const r = equip(loadChest(), loadEquip(), u.base, slot, id);
+    const r = equip(loadChest(), loadEquip(), m.id, slot, id);
     if (!r) return void sfx('cancel');
     store.set(CHEST_KEY, JSON.stringify(r.chest));
     store.set(EQUIP_KEY, JSON.stringify(r.eq));
     sfx('confirm');
+    again(m);
+  };
+  const deploy = () => {
+    const r = toggleDeploy(loadGroup(), m.id);
+    if (!r) return void sfx('cancel');
+    saveGroup(r);
+    sfx('confirm');
+    again(m);
+  };
+  const setClass = (c: (typeof HERO_CLASSES)[number]) => {
+    saveGroup(changeClass(loadGroup(), m.id, c));
+    sfx('confirm');
+    again({ ...m, cls: c });
+  };
+  const fire = () => {
+    const r = dismiss(loadGroup(), loadEquip(), loadChest(), m.id);
+    if (!r) return void sfx('cancel');
+    saveGroup(r.group);
+    store.set(EQUIP_KEY, JSON.stringify(r.eq));
+    store.set(CHEST_KEY, JSON.stringify(r.chest));
+    sfx('confirm');
     d.close();
-    openSheet(u, back);
+    back();
   };
   const d = dialog('party', u.name, [
-    el('div', { class: 'party-card' }, portrait(u.base), el('div', {},
-      el('strong', {}, unitName(u.base)),
+    el('div', { class: 'party-card' }, portrait(m.cls), el('div', {},
+      el('strong', {}, unitName(m.cls)),
       el('dl', { class: 'keys' },
         ...row(t('Vida', 'HP'), withB(u.hp, b.hp)), ...row(t('Velocidade', 'Speed'), withB(u.speed, b.speed)), ...row(t('Movimento', 'Move'), withB(u.move, b.move)),
         ...row(t('Salto', 'Jump'), withB(u.jump ?? def.jump ?? MAX_JUMP, b.jump)),
         ...(b.power ? row(t('Dano', 'Damage'), `+${b.power}`) : []), ...(b.hit ? row(t('Acerto', 'Hit'), `+${b.hit}`) : [])))),
+    el('div', { class: 'menu-actions' },
+      el('button', { type: 'button', class: 'primary', onclick: deploy, disabled: !going && g.deployed.length >= DEPLOY_MAX },
+        going ? t('Deixar no acampamento', 'Leave at camp') : t('Levar à batalha', 'Bring to battle')),
+      ...(m.recruit ? [el('button', { type: 'button', class: 'secondary', onclick: fire }, t('Dispensar', 'Dismiss'))] : [])),
+    ...(!going && g.deployed.length >= DEPLOY_MAX ? [el('p', {}, t(`Já vão ${DEPLOY_MAX}: deixe alguém no acampamento antes.`, `${DEPLOY_MAX} already go: leave someone at camp first.`))] : []),
+    // troca de classe (como o Job do FFT): os números e as habilidades passam a ser os da classe nova; o equipamento fica
+    el('h3', {}, t('Classe', 'Class')),
+    el('div', { class: 'menu-actions' }, ...HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'secondary', disabled: c === m.cls,
+      'aria-pressed': String(c === m.cls), onclick: () => setClass(c) }, c === m.cls ? `✓ ${unitName(c)}` : unitName(c)))),
     el('h3', {}, t('Habilidades', 'Abilities')),
     el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a))),
       ...later.flatMap((a) => row(abilityName(a), t('aprende mais adiante na jornada', 'learned later on the journey')))),
@@ -203,7 +265,7 @@ function openSheet(u: DevUnit, back: () => void) {
       ...[...new Set(chest.items.filter((id) => ITEMS[id].slot === slot))].map((id) =>
         el('button', { type: 'button', class: 'secondary', title: itemStats(ITEMS[id]), onclick: () => put(slot, id) }, t(`Equipar ${itemName(ITEMS[id])}`, `Equip ${itemName(ITEMS[id])}`))))])),
     ...(chest.items.length ? [] : [el('p', {}, t('O baú está vazio: compre na Loja do mapa com o ouro das vitórias.', 'The chest is empty: buy at the map Shop with gold from victories.'))]),
-    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); back(); } }, t('Voltar ao grupo', 'Back to party')),
+    el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); back(); } }, t('Voltar ao grupo', 'Back to party')),
   ], { onBack: back });
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
@@ -211,7 +273,6 @@ function openSheet(u: DevUnit, back: () => void) {
 export interface WorldOptions {
   done: number; // pontos já passados (world.ts)
   hero: string; // ficha do retrato que anda no mapa
-  stars: number[]; // melhor nota de cada fase (campaign.ts)
   enter: (i: number) => void;
   back: () => void;
   party: () => void; // tela do grupo (main.ts), como a formação do FFT
@@ -226,7 +287,7 @@ export interface WorldView {
 }
 
 export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
-  const { done, hero, stars, enter, back } = opts;
+  const { done, hero, enter, back } = opts;
   // começa no ponto mais avançado aberto (o próximo a fazer)
   const goal = Math.min(done, WORLD.length - 1);
   let at = opts.from !== undefined && opts.from >= 0 && opts.from < goal ? opts.from : goal;
@@ -243,9 +304,6 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
       onmouseenter: () => isOpen(i, done) && sfx('cursor'), // som de cursor ao passar por um ponto aberto, como nos menus
     });
   });
-  // estrelas sob cada batalha já vencida: o mapa mostra de longe o que vale rejogar (fora do botão, que é girado 45°)
-  const starMarks = WORLD.flatMap((w, i) => w.chapter !== undefined && i < done
-    ? [el('span', { class: 'world-stars', style: `left:${w.x}%;top:${w.y}%`, 'aria-hidden': 'true' }, starText(stars[w.chapter]))] : []);
   const place = el('strong', { class: 'world-place' });
   const kindText = el('p', { class: 'world-kind' });
   const foes = el('p', { class: 'world-kind' }); // quantos inimigos e o chefe (só nos pontos de batalha)
@@ -258,7 +316,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     el('button', { type: 'button', class: 'item', onclick: () => openShop() }, t('Loja', 'Shop')),
     el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title'))));
   const root = el('div', { class: 'world' },
-    el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, ...starMarks, token),
+    el('div', { class: 'world-map' }, el('div', { class: 'world-svg' }), ...nodes, token),
     el('div', { class: 'panel world-head' }, el('strong', {}, t('Mapa do Vale', 'Valley Map')), ` · ${t(`${Math.min(done, WORLD.length)} de ${WORLD.length}`, `${Math.min(done, WORLD.length)} of ${WORLD.length}`)}`),
     panel,
     el('p', { class: 'panel world-help' }, t('Setas andam · Enter entra · G grupo · Esc volta', 'Arrows walk · Enter enters · G party · Esc goes back')));
@@ -272,7 +330,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     nodes.forEach((n, i) => n.classList.toggle('here', i === at));
     place.textContent = tag.textContent = t(w.name[0], w.name[1]);
     kindText.textContent = w.chapter !== undefined
-      ? t(`Batalha · Capítulo ${w.chapter + 1}`, `Battle · Chapter ${w.chapter + 1}`) + (at < done ? `  ${starText(stars[w.chapter])}` : '')
+      ? t(`Batalha · Capítulo ${w.chapter + 1}`, `Battle · Chapter ${w.chapter + 1}`)
       : t('História', 'Story');
     townBtn.hidden = !w.town;
     foes.textContent = w.chapter !== undefined ? foesText(w.chapter, t) : '';

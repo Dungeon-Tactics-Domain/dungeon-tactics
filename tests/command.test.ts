@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { abilityEnabled, canUndoMove, commandEnabled, startScreen, stepIndex } from '../src/client/command.ts';
+import { abilityEnabled, canUndoMove, commandEnabled, longestRange, startScreen, stepIndex } from '../src/client/command.ts';
 import { emptyMemory, padActions } from '../src/client/gamepad.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // Interface no jeito do FFT (12/11): menu de comandos e controle
@@ -12,6 +14,12 @@ const duel = () => new Battle(flat(6, 6), stateOf([
 ]));
 
 describe('menu de comandos', () => {
+  it('pontilhado: o alcance da habilidade que vai mais longe', () => {
+    expect(longestRange(duel())).toBe(Math.max(...UNIT_DEFS.warrior.abilities.map((id) => ABILITIES[id].range[1])));
+    const archer = new Battle(flat(6, 6), stateOf([{ id: 'a', def: 'archer', team: 'hero', x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 4 }]));
+    expect(longestRange(archer)).toBe(6); // Tiro: 2 a 6
+  });
+
   it('começa em Mover; depois de andar, em Agir; depois de andar e agir, em Esperar', () => {
     const b = duel();
     expect(startScreen(b)).toEqual({ k: 'menu', index: 0 });

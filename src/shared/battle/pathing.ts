@@ -121,7 +121,7 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
     for (const n of neighbors(grid, cur)) {
       const k = posKey(n);
       const to = tileAt(grid, n);
-      // água rasa custa 2: o caminho mais barato pode chegar depois, então a casa é revista quando sai mais barata
+      // se algum terreno custar mais que 1: o caminho mais barato pode chegar depois, então a casa é revista quando sai mais barata
       const next = cost + stepCost(to);
       if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
       // o salto mede pela superfície (t.h): entrar e sair da água funda é a mesma subida da margem (grid.ts, isDeep)

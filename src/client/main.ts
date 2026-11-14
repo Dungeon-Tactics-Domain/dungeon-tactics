@@ -5,19 +5,19 @@ import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
-import { CHEST_KEY, EQUIP_KEY, GOLD_PER_STAR, parseChest, parseEquip } from './chest.ts';
+import { CHEST_KEY, EQUIP_KEY, VICTORY_GOLD, parseChest, parseEquip } from './chest.ts';
 import { MISSIONS, MISSIONS_KEY, missionScenario, missionScenarioId, parseDone, type Mission } from './missions.ts';
 import { ITEMS } from '../shared/battle/equipment.ts';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { dist, facingTo, inBounds, neighbors, samePos, standH, tileAt } from '../shared/battle/grid.ts';
+import { dist, facingTo, inBounds, neighbors, posKey, samePos, standH, tileAt } from '../shared/battle/grid.ts';
 import { shotStop, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
-import { choice, dialog } from './dialog.ts';
+import { choice, dialog, slider } from './dialog.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
-import { LANG, abilityName, setLang, t, unitName } from './i18n.ts';
+import { LANG, abilityName, setLang, t, unitName, type Lang } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, highlights, hoverTile, selectMode, tapTile, type Highlights, type Ui } from './interaction.ts';
-import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, startScreen, stepIndex, type Screen } from './command.ts';
+import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, longestRange, startScreen, stepIndex, type Screen } from './command.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { cycleUnit, gridStep, keyAction, keyHelp, type KeyAction } from './keyboard.ts';
 import { BattleScene, rampLink } from './scene.ts';
@@ -26,15 +26,16 @@ import { TouchInput } from './touch-input.ts';
 import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
 import { TIMING, isJump, pace, stepMs } from './timing.ts';
 import { lookOf } from './fx.ts';
-import { jingle, setSound, setTrack, sfx, soundSettings, type Level, type Sfx } from './sound.ts';
+import { jingle, setSound, setTrack, sfx, soundSettings, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, problems, slotsOf } from './dev-roster.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { CAMPAIGN_KEY, CHAPTERS, STARS_KEY, chapterId, chapterScenario, learned, objectiveText, parseProgress, parseStars, starParts, starText, starsOf } from './campaign.ts';
+import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, learned, objectiveText, parseProgress } from './campaign.ts';
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
 import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
 import { openParty, openWorld } from './world-ui.ts';
+import { GROUP_KEY, parseGroup } from './group.ts';
 import { HERO_KEY, parseHero } from './hero.ts';
 import { createHero } from './create-ui.ts';
 
@@ -168,11 +169,18 @@ class Game {
         this.runKey(a);
         continue;
       }
-      const buttons = [...overlay.querySelectorAll<HTMLButtonElement>('button:not([disabled])')];
-      const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      // só o que está à vista: a seção escondida das Opções guarda botões que pegariam o foco sem aparecer
+      const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter((e) => e.offsetParent);
+      const at = buttons.indexOf(document.activeElement as HTMLElement);
+      const range = document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range' ? document.activeElement : null;
       if (a.k === 'cancel' || a.k === 'help') dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
       else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
-      else if (a.k === 'cursor') buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+      else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
+        // na barra de volume, esquerda e direita mudam o valor (stepUp/Down não avisam: o 'input' vai à mão)
+        if (a.dir === 'right') range.stepUp();
+        else range.stepDown();
+        range.dispatchEvent(new Event('input'));
+      } else if (a.k === 'cursor') buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
     }
   }
 
@@ -387,6 +395,12 @@ class Game {
       : s.k === 'map' || s.k === 'confirm' ? highlights(this.battle, ui) : { tiles: [{ pos: this.battle.actor.pos, kind: 'actor' as const }], path: null, preview: null };
     this.scene.setHighlights(hl);
     this.scene.setCursor(hl ? this.cursor : null);
+    // pontilhado do maior alcance: no menu em volta de quem joga; mirando o movimento, em volta da casa sob o cursor (se
+    // der para chegar nela), para ver de onde o golpe alcança antes de andar
+    const moving = s.k === 'map' && ui.mode.k === 'move';
+    const ringAt = !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving) ? null
+      : moving && this.battle.reach().has(posKey(this.cursor)) ? this.cursor : this.battle.actor.pos;
+    this.scene.setRangeRing(ringAt ? { center: ringAt, range: longestRange(this.battle) } : null);
     // prévia da trajetória (13/11, "como no Tactics Ogre"): mirando um tiro ou magia que precisa de visão, a linha vai de
     // quem ataca até a casa do cursor e fica vermelha a partir de onde bate
     const aim = hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight ? this.cursor : null;
@@ -632,31 +646,20 @@ class Game {
   // Fim de fase da campanha: vitória libera a próxima e toca a conversa de saída; derrota oferece tentar de novo
   private async finishChapter(n: number, won: boolean) {
     const last = n === CHAPTERS.length - 1;
-    const stars = starsOf(this.battle.state, n);
     if (won) {
       store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
       store.set(WORLD_KEY, String(afterNode(nodeOfChapter(n), parseWorld(store.get(WORLD_KEY)))));
-      const best = parseStars(store.json(STARS_KEY));
-      best[n] = Math.max(best[n], stars);
-      // ouro por estrela a cada vitória (baú do grupo, chest.ts), para a loja
+      // ouro fixo por vitória (baú do grupo, chest.ts), para a loja; sem estrelas desde 13/11 (pedido do Fernando: "tire
+      // a mecânica das estrelas… isso vai ser o próximo Final Fantasy Tactics", sem pegada de puzzle)
       const chest = parseChest(store.json(CHEST_KEY));
-      store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + stars * GOLD_PER_STAR }));
-      store.set(STARS_KEY, JSON.stringify(best));
+      store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + VICTORY_GOLD }));
       await talk(CHAPTERS[n].outro, { hero: savedHero() });
     }
     const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
-      ...(won ? [el('p', { class: 'stars', 'aria-label': t(`${stars} de 3 estrelas`, `${stars} of 3 stars`) }, starText(stars)),
-        // só o critério da 3ª estrela que vale nesta fase (com Farol ou sem), sem o parêntese que explicava os dois
-        // cada critério com ✓ ou ✗, para saber qual estrela faltou (revisão de 13/11)
-        el('p', {}, (() => {
-          const [w, alive, clean] = starParts(this.battle.state, n).map((ok) => (ok ? '✓' : '✗'));
-          return slotsOf(CHAPTERS[n].setup.map).objective.length
-            ? t(`★ vencer ${w} · ★ ninguém caiu ${alive} · ★ Farol inteiro ${clean}`, `★ win ${w} · ★ nobody fell ${alive} · ★ Beacon untouched ${clean}`)
-            : t(`★ vencer ${w} · ★ ninguém caiu ${alive} · ★ todos acima da metade da vida ${clean}`, `★ win ${w} · ★ nobody fell ${alive} · ★ everyone above half HP ${clean}`);
-        })()),
+      ...(won ? [
         ...this.mvpLine(),
-        el('p', { class: 'mvp' }, t(`+${stars * GOLD_PER_STAR} de ouro no baú do grupo`, `+${stars * GOLD_PER_STAR} gold in the party chest`)),
-        ...learned(n, savedHero()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
+        el('p', { class: 'mvp' }, t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`)),
+        ...learned(n, savedHero(), savedGroup()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
       // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair
       el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) || !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF) ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.') : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.')),
       // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
@@ -668,8 +671,11 @@ class Game {
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
   }
 
+  // Opções (13/11, pedido do Fernando: "o menu pode ser algo que ocupa mais a largura da tela, com subseções"): janela
+  // larga com as seções numa coluna à esquerda (choice() vertical) e uma seção por vez à direita, para nada rolar longe
   private menu() {
-    const d = dialog('menu', t('Menu', 'Menu'), [
+    const sections: [id: string, title: string, body: Node[]][] = [[
+      'jogo', t('Jogo', 'Game'), [
       // na campanha, o objetivo da fase (sem Farol, de chefe); na batalha avulsa, o de sempre
       el('p', {}, chapter !== null ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
         : scenario.id === SURVIVAL_ID ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
@@ -679,19 +685,31 @@ class Game {
         el('li', {}, el('i', { class: 'sw range' }), t('Laranja: alcance da habilidade', 'Orange: ability range')),
         el('li', {}, el('i', { class: 'sw blocked' }), t('Roxo: no alcance, mas sem visão', 'Purple: in range, but no sight')),
         el('li', {}, el('i', { class: 'sw threat' }), t('Vermelho: o que a unidade tocada alcança', 'Red: what the tapped unit can reach'))),
-      el('p', {}, t('Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, ombros giram a câmera, Start abre este menu.', 'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, shoulders rotate the camera, Start opens this menu.')),
-      el('h3', {}, t('Pixel art', 'Pixel art')),
+      choice(t('Velocidade do texto das conversas', 'Dialogue text speed'), [['normal', t('Normal', 'Normal')], ['fast', t('Rápida', 'Fast')], ['instant', t('Instantânea', 'Instant')]] as [TextSpeed, string][], textSpeed(), (v) => store.set(TEXT_KEY, v)),
+    ]], [
+      'som', t('Som', 'Sound'), [
+      slider(t('Música', 'Music'), soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
+      slider(t('Efeitos', 'Effects'), soundSettings().sfx, (v) => setSound({ ...soundSettings(), sfx: v })),
+    ]], [
+      'video', t('Vídeo e efeitos', 'Video and effects'), [
       choice(t('Tamanho do pixel', 'Pixel size'), [[0, t('Desligado', 'Off')], [2, '2 px'], [3, '3 px'], [4, '4 px']] as [PixelSize, string][], this.pixel.size, (size) => this.setPixel({ ...this.pixel, size })),
       choice(t('Contorno', 'Outline'), [[true, t('Ligado', 'On')], [false, t('Desligado', 'Off')]], this.pixel.outline, (outline) => this.setPixel({ ...this.pixel, outline })),
       choice(t('Paleta reduzida (16 bits)', 'Reduced palette (16-bit)'), [[false, t('Desligada', 'Off')], [true, t('Ligada', 'On')]], this.pixel.palette, (palette) => this.setPixel({ ...this.pixel, palette })),
       choice(t('Câmera presa à grade de pixels', 'Camera locked to the pixel grid'), [[true, t('Ligada', 'On')], [false, t('Desligada', 'Off')]], this.pixel.snap, (snap) => this.setPixel({ ...this.pixel, snap })),
-      el('h3', {}, t('Som', 'Sound')),
-      choice(t('Música', 'Music'), [[0, t('Desligada', 'Off')], [1, t('Baixa', 'Low')], [2, t('Alta', 'High')]] as [Level, string][], soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
-      choice(t('Efeitos', 'Effects'), [[0, t('Desligados', 'Off')], [1, t('Baixos', 'Low')], [2, t('Altos', 'High')]] as [Level, string][], soundSettings().sfx, (v) => setSound({ ...soundSettings(), sfx: v })),
-      el('h3', {}, t('Conversas', 'Dialogue')),
-      choice(t('Velocidade do texto', 'Text speed'), [['normal', t('Normal', 'Normal')], ['fast', t('Rápida', 'Fast')], ['instant', t('Instantânea', 'Instant')]] as [TextSpeed, string][], textSpeed(), (v) => store.set(TEXT_KEY, v)),
-      el('h3', {}, t('Teclado', 'Keyboard')),
+    ]], [
+      'controles', t('Controles', 'Controls'), [
+      el('p', {}, t('Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, ombros giram a câmera, Start abre este menu.', 'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, shoulders rotate the camera, Start opens this menu.')),
       el('dl', { class: 'keys' }, ...keyHelp().flatMap(([k, what]) => [el('dt', {}, k), el('dd', {}, what)])),
+    ]], [
+      'idioma', t('Idioma', 'Language'), [
+      choice(t('Idioma', 'Language'), [['pt', 'Português'], ['en', 'English']] as [Lang, string][], LANG, setLang),
+    ]]];
+    const panels = sections.map(([id, title, body]) => el('section', { class: 'menu-section', hidden: id !== 'jogo' }, el('h3', {}, title), ...body));
+    const nav = choice(t('Seções', 'Sections'), sections.map(([id, title]) => [id, title] as [string, string]), 'jogo',
+      (id) => panels.forEach((p, i) => (p.hidden = sections[i][0] !== id)));
+    nav.classList.add('menu-nav');
+    const d = dialog('menu', t('Opções', 'Options'), [
+      el('div', { class: 'menu-layout' }, nav, el('div', { class: 'menu-body' }, ...panels)),
       el('div', { class: 'menu-actions' },
         // durante a animação ou a vez do inimigo o laço ainda está rodando a batalha antiga
         // o 1º toque só pergunta: reiniciar apaga a batalha salva e não tem volta (auditoria mobile de 25/10)
@@ -705,7 +723,6 @@ class Game {
           d.close();
           this.restart();
         } }, t('Reiniciar batalha', 'Restart battle')),
-        el('button', { type: 'button', class: 'secondary', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português'),
         el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa da campanha', 'Campaign map')),
         // saída para o título (na Batalha avulsa o mapa da campanha não é de onde a pessoa veio)
         el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title')),
@@ -737,7 +754,7 @@ async function boot() {
     if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) return toWorld();
     mission = m;
     setTrack('road');
-    scenario = missionScenario(m, parseProgress(store.get(CAMPAIGN_KEY)), savedHero(), parseEquip(store.json(EQUIP_KEY)));
+    scenario = missionScenario(m, parseProgress(store.get(CAMPAIGN_KEY)), savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
     SAVE_KEY = `dt:battle:${missionScenarioId(m.id)}`;
   }
   if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // mapa mundial: sem batalha montada
@@ -750,7 +767,7 @@ async function boot() {
     // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
     chapter = Number(camp);
     setTrack(CHAPTERS[chapter].song);
-    scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)));
+    scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
     SAVE_KEY = `dt:battle:${chapterId(chapter)}`;
   } else if (study === 'fft-gariland' || study === 'fft-classes') {
     const fft = await import('../shared/battle/fft/gariland.ts');
@@ -861,7 +878,7 @@ function howToPlay() {
       el('li', {}, t('Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.', 'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.')),
       el('li', {}, t('Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1. Com Salto 2 também se voa 1 casa de água funda ou de buraco.', 'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1. Jump 2 also clears 1 tile of deep water or a gap.')),
       el('li', {}, t('Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles ou termina a vez em cima (passar por cima não fere).', 'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever is pushed onto them or ends a turn on them (walking over is safe).')),
-      el('li', {}, t('Toda água custa 2 de movimento; na funda só se anda ou espera.', 'All water costs 2 movement; in deep water you can only move or wait.')),
+      el('li', {}, t('Na água funda só se anda ou espera.', 'In deep water you can only move or wait.')),
       // a carga mirada em alguém segue a unidade (battle.ts follow): "saia dela" estava errado para o alvo (revisão de 13/11)
       el('li', {}, t('Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Se mirou alguém, a área anda junto: os vizinhos saem dela; o alvo só escapa saindo do alcance ou da vista de quem lança.', 'Charged abilities land later: the purple area shows where and the turn list shows when. If it targeted someone, the area moves with them: neighbours step out; the target only escapes by leaving the caster’s range or sight.')),
       el('li', {}, t('Proteja o Farol (o cristal azul) quando houver um. Inimigo de coroa é o chefe: derrubá-lo vence a fase.', 'Protect the Beacon (the blue crystal) when there is one. A crowned enemy is the boss: bringing it down wins the stage.'))),
@@ -889,7 +906,7 @@ function titleScreen() {
           btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
           return;
         }
-        for (const k of [WORLD_KEY, CAMPAIGN_KEY, STARS_KEY, HERO_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
+        for (const k of [WORLD_KEY, CAMPAIGN_KEY, 'dt:estrelas', HERO_KEY, GROUP_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
         d.close();
         toWorld();
       } }, t('Novo jogo', 'New game')),
@@ -915,6 +932,7 @@ function continueWhere(): string {
 const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
 const toWorld = () => { location.search = '?mundo'; };
 const savedHero = () => parseHero(store.json(HERO_KEY));
+const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // grupo do jogador (group.ts): quem vai, classe e recrutados
 
 // Controle na abertura e na criação (antes do mapa, que tem o próprio): A aperta o botão em foco ou vira Enter, o
 // direcional vira seta e B vira Esc, pelo mesmo tradutor da batalha. Devolve a função que para o laço.
@@ -973,8 +991,8 @@ async function worldScreen(host: HTMLElement) {
     // um Enter reabria o epílogo por cima
     if (finale) credits(() => undefined);
   };
-  let view = openWorld(host, { done, hero: hero.cls, stars: parseStars(store.json(STARS_KEY)), enter, back: () => { location.search = ''; },
-    party: () => { const p = partyFor(done, hero); openParty(p.units, p.benched); },
+  let view = openWorld(host, { done, hero: hero.cls, enter, back: () => { location.search = ''; },
+    party: () => openParty(partyFor(done, hero, savedGroup()).chapter, hero),
     from: Number(new URLSearchParams(location.search).get('de') ?? -1) });
 }
 
