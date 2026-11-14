@@ -20,6 +20,7 @@ On localhost, `?auto=1` lets the AI play the heroes, `?scenario=<id>` opens a ma
 ## Architecture
 
 - `src/shared/battle` holds the rules: pure TypeScript without DOM or Three.js. The state is plain JSON-friendly data, so saving, undo and the AI simulator all work on the same object.
+- `src/content` holds the game content as typed data (classes, abilities, items, maps, campaign, world, quests, party); the rules files keep the types and registries and import it.
 - `src/client` is the browser: `main.ts` wires the game loop and screens, `scene.ts` renders with Three.js, `hud.ts` and `world-ui.ts` build the interface from the components in `dialog.ts` and `icons.ts`.
 - `tests` covers the rules and the pure client functions with Vitest.
 - Each folder's `CLAUDE.md` explains the patterns and the reasoning behind that area.
@@ -38,7 +39,7 @@ This is a portfolio project: the history is part of what people read. Every comm
 - **Summary.** Imperative mood, lowercase, no final period, at most 72 characters. Details go in the body.
 - **Body.** Optional for trivial changes; otherwise wrapped at 72 columns, says *why* and lists notable behaviour.
 - **Types:** `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style` (visual/CSS only), `balance` (numbers only), `build`, `ci`, `chore`.
-- **Scopes:** `battle`, `ai`, `maps`, `units`, `scene`, `terrain`, `water`, `fx`, `hud`, `ui`, `input`, `camera`, `campaign`, `world`, `party`, `audio`, `assets`, `docs`, `ci`, `deps`.
+- **Scopes:** `battle`, `ai`, `maps`, `units`, `scene`, `terrain`, `water`, `fx`, `hud`, `ui`, `input`, `camera`, `campaign`, `world`, `party`, `content`, `audio`, `assets`, `docs`, `ci`, `deps`.
 - **Breaking changes** to browser saves (`dt:*`) are marked `!` (`feat(party)!: ...`) and explained in the body.
 - History stays linear: no merge commits; bring other branches in with `git rebase` or `git cherry-pick`. No `Co-Authored-By` trailers or tool signatures.
 

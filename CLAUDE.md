@@ -2,25 +2,27 @@
 
 A turn-based tactics game for the browser, with the pacing and layout of Final Fantasy Tactics and Tactics Ogre, KayKit characters and a story campaign. Nothing is copied from the originals: art, music, text and rules are our own. Live at https://dungeon-tactics.fernandorffdev.com.
 
-One developer (Fernando) works on it with AI agents. `AGENTS.md` points here. Each main folder (`src/shared`, `src/client`, `scripts`, `tests`) has its own `CLAUDE.md` with the patterns of that area: read the one for the folder you touch.
+One developer (Fernando) works on it with AI agents. `AGENTS.md` points here. Each main folder (`src/shared`, `src/content`, `src/client`, `scripts`, `tests`) has its own `CLAUDE.md` with the patterns of that area: read the one for the folder you touch.
 
 ## Code map
 
 ```
 src/shared/battle/  battle rules, no DOM or Three.js
-  grid.ts           ASCII map with height, terrain, water depth, ramps, corpses
+  grid.ts           tiles with height, terrain, water depth, ramps, corpses; parseGrid and withRamps build the maps
   pathing.ts        movement (per-class jump, leaps, 2x2 movers), line of sight, range with height bonus, shot path
   combat.ts         hit chance by facing, damage, push, wall and fall damage, counters, forecast
   turn-queue.ts     FFT-style CT queue with charged actions
   battle.ts         Battle: owns the state, limited undo (dice never roll back), validated save/load
   ai.ts             greedy one-turn AI; simulate.ts plays AI against AI
-  units.ts, abilities.ts, equipment.ts, scenarios.ts   data
+  units.ts, abilities.ts, equipment.ts, scenarios.ts   types and registries (UNIT_DEFS, ABILITIES, ITEMS, SCENARIOS)
   half.ts           half-tile test mode (?scenario=half); fft/ is a reference study, not the game
+src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), campaign (stages and
+                    lines), world (nodes, towns, rumors), quests, party (story members, recruit names)
 src/client/         browser: main.ts (game loop and screens), scene.ts (Three.js), hud.ts, world-ui.ts (map, towns, party),
-                    group.ts (party), campaign.ts, terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
+                    group.ts (party rules), campaign.ts (stage rules), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
 scripts/            battle-sim.ts (optional simulator), assets/ (texture and model generators)
 tests/              Vitest: rules and pure client functions
-docs/               design spec, pillars, party and towns design, FFT/Tactics Ogre references, design system, assets index
+docs/               game-design/README.md (index and what each lab touches), design spec, pillars, party and towns design, FFT/Tactics Ogre references, design system, assets index
 assets/             source packs (KayKit, sounds); not shipped
 ```
 
@@ -53,6 +55,7 @@ npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 - **Everything in English:** comments, docs, `CLAUDE.md` files and commits. Player-facing text stays bilingual through `t('português', 'English')` from `src/client/i18n.ts`; names come from `unitName` and `abilityName`.
 - **Comments explain why**, in one short line, wherever the code alone does not: chosen numbers and timings, call order that matters, browser workarounds, the request behind a behaviour. Do not narrate what the line does. When a decision changes, change its comment.
 - **Imports at the top of the file.** No inline type imports.
+- **Content is data in `src/content`** (Nov 14): classes, abilities, items, maps, stages, lines, towns and quests. Labs change content first; the engine changes only when a new mechanic needs it. The engine (`src/shared`) never imports `src/client`.
 - **Abilities and items are data with general stats** (range, damage, area, push, charge, bonuses) that apply the same against everything. No rule of the kind "ability X does Y against Z".
 - **Determinism:** the rules never call `Math.random`; randomness goes through `rng.ts` with its state inside `BattleState`, in a fixed order (hit, then damage, per target).
 - **Trust boundaries:** anything read from the browser (`dt:*` saves) is rebuilt field by field by its `parse*` function, which returns a safe default on any doubt.
@@ -84,3 +87,4 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 13/11 | Single developer: straight to `master`; only the CI and manual deploy workflows remain; no PR bots or templates | no contributors, nothing for them to run on |
 | 13/11 | Balance by playing; the simulator is optional | focus on implementing mechanics |
 | 13/11 | Gates are the only mandatory check before `master`; the design system rules the interface | lean process for one developer |
+| 14/11 | Game content lives in `src/content` as typed data; labs change content first, the engine only for a new mechanic | the narrative and mechanics labs tune data without touching the rules |
