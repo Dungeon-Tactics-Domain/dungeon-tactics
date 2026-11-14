@@ -4,7 +4,7 @@
 // spec in a fresh page of one headless Chrome (muted) and writes <out>/<name>.png or .webp; --sheet adds contact-sheet.png.
 // --video records the spec's steps in real time instead: <out>/<name>.webm (+ .mp4 with ffmpeg) and <out>/clips.json.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, extname, join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -149,6 +149,8 @@ try {
       process.exitCode = 1;
     }
     await context.close();
+    // a spec that failed leaves no raw recording behind in the temp folder (a saved clip already deleted its own)
+    await page.video()?.delete();
   }
   if (clips.length) await writeManifest(clips);
   if (values.sheet && shots.length) {
@@ -193,21 +195,28 @@ async function saveClip(video, name, from) {
   await video.saveAs(raw);
   await video.delete();
   const cut = ['-y', '-loglevel', 'error', '-ss', from.toFixed(2), '-i', raw, '-an'];
-  execFileSync('ffmpeg', [...cut, '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '32', '-row-mt', '1', webm]);
   const mp4 = join(values.out, `${name}.mp4`);
-  execFileSync('ffmpeg', [
-    ...cut,
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-crf',
-    '23',
-    '-movflags',
-    '+faststart',
-    mp4,
-  ]);
-  await unlink(raw);
+  try {
+    execFileSync('ffmpeg', [...cut, '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '32', '-row-mt', '1', webm]);
+    execFileSync('ffmpeg', [
+      ...cut,
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-crf',
+      '23',
+      '-movflags',
+      '+faststart',
+      mp4,
+    ]);
+  } catch (e) {
+    // a clip reported as FAIL gets no manifest entry, so no half of it stays beside the good ones
+    await Promise.all([webm, mp4].map((f) => rm(f, { force: true })));
+    throw e;
+  } finally {
+    await unlink(raw);
+  }
   console.log(`ok   ${webm} + .mp4`);
   return { file: basename(webm), mp4: basename(mp4) };
 }
