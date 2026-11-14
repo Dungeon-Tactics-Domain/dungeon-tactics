@@ -6,6 +6,7 @@ import type { Preview } from '../shared/battle/combat.ts';
 import { type Grid, posKey, samePos } from '../shared/battle/grid.ts';
 import {
   aimEnds,
+  aimTile,
   areaOf,
   footprint,
   inAbilityRange,
@@ -168,8 +169,9 @@ export function chargeDanger(grid: Grid, state: BattleState): Map<string, string
     const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
     const caster = state.units.find((u) => u.id === c.unit);
     const center = followed ? (caster ? nearestTile(followed, caster.pos) : followed.pos) : c.target;
+    // a charge aimed at a cell lands on its whole tile, as when it fires (previewAbility)
     const r = ABILITIES[c.ability].radius,
-      area = areaOf(grid, state, center);
+      area = areaOf(grid, state, aimTile(grid, state, center));
     for (let y = 0; y < grid.height; y++)
       for (let x = 0; x < grid.width; x++) if (inArea(grid, area, r, [{ x, y }])) out.set(posKey({ x, y }), c.ability);
   }

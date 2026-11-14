@@ -56,20 +56,30 @@ export const nearCells = (g: Grid, r: number) => Math.max(r, subOf(g) * (r - 1))
 // whole tiles that `d` cells stand for (the inverse of farCells): the distance the hit chance counts
 export const wholeTiles = (g: Grid, d: number) => Math.ceil((d + subOf(g) - 1) / subOf(g));
 
-// Area of an ability aimed at `center`: on the split map, the square of the unit standing there (or the 2x2 from the cell, on
-// empty ground), the same as the whole tile it stands for; on a whole map, the tile itself
+// Area of an ability aimed at `center`: on the split map, the square of the unit standing there (or, on empty ground, the 2x2
+// from the cell: the aimed tile's corner from `aimTile`, or the square where a shot stopped, which is not snapped so an
+// off-grid shooter's blocked shot stays where it hit), the same as the whole tile it stands for; on a whole map, the tile
 export const areaOf = (grid: Grid, state: BattleState, center: Pos): Pos[] => {
   if (subOf(grid) === 1) return [center];
   const u = unitAt(state, center);
   return u ? footprint(u) : cellsOf(center, subOf(grid));
 };
-// The two cells range and sight are measured between when `actor` aims at `center`: its cell nearest to the tile; on the split
-// map, against a unit, the closest cells of the two squares, whichever of its 4 cells was picked (an adjacent token stays
-// adjacent for the minimum range)
-export const aimEnds = (grid: Grid, state: BattleState, actor: UnitState, center: Pos): [Pos, Pos] => {
-  const u = subOf(grid) > 1 ? unitAt(state, center) : undefined;
-  return u ? closest(footprint(actor), footprint(u)) : [nearestTile(actor, center), center];
+// The whole tile an aim at `p` stands for on the split map, as the corner cell of its square: the tile of the token's own
+// square that holds `p`, or the map's tile under the cell on empty ground (Nov 14 review: an empty aim was measured from
+// the clicked cell, so a tile's far cells reached less and its areas straddled two tiles). On a whole map, `p` itself
+export const aimTile = (grid: Grid, state: BattleState, p: Pos): Pos => {
+  const k = subOf(grid);
+  if (k === 1) return p;
+  const o = unitAt(state, p)?.pos ?? { x: 0, y: 0 };
+  return { x: p.x - ((p.x - o.x) % k), y: p.y - ((p.y - o.y) % k) };
 };
+// The two cells range and sight are measured between when `actor` aims at `center`: its cell nearest to the tile; on the split
+// map, the closest cells of its square and the aimed tile's, whichever of the 4 cells was picked (an adjacent token stays
+// adjacent for the minimum range)
+export const aimEnds = (grid: Grid, state: BattleState, actor: UnitState, center: Pos): [Pos, Pos] =>
+  subOf(grid) === 1
+    ? [nearestTile(actor, center), center]
+    : closest(footprint(actor), areaOf(grid, state, aimTile(grid, state, center)));
 export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[]) =>
   gap(area, cells) <= farCells(grid, radius);
 
@@ -390,8 +400,7 @@ export const sightEnds = (grid: Grid, state: BattleState, actor: UnitState, cent
     x: u.pos.x + Math.floor((p.x - u.pos.x) / k) * k,
     y: u.pos.y + Math.floor((p.y - u.pos.y) / k) * k,
   });
-  const t = unitAt(state, center);
-  const to = t ? snap(t, center) : center;
+  const to = aimTile(grid, state, center);
   return [snap(actor, nearestTile(actor, to)), to];
 };
 

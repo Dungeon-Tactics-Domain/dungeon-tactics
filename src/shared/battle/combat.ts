@@ -16,6 +16,7 @@ import {
 } from './grid.ts';
 import {
   aimEnds,
+  aimTile,
   areaOf,
   cellsOf,
   closest,
@@ -133,6 +134,8 @@ export function previewAbility(
   const fail = (reason: PreviewReason): Preview => ({ ok: false, reason, center, targets: [] });
   if (!actor || !ability || !UNIT_DEFS[actor.def].abilities.includes(abilityId) || !inBounds(grid, center))
     return fail('unknown');
+  // on the split map any cell of a tile aims at that whole tile (Nov 14 review), so range, area, sight and push agree
+  center = aimTile(grid, state, center);
   if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
   // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that already fired does not pass here:
   // whoever charges does not walk and a push does not enter deep water

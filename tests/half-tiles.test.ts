@@ -47,29 +47,30 @@ describe('half tiles: abilities measure the same as on whole tiles', () => {
         for (let x = 0; x < 9; x++) {
           const B = { x, y };
           if (posKey(B) === posKey(A)) continue;
-          // the target and, for the areas, a bystander beside it (facing +x: front, side and back all show up)
-          const units = [
-            { id: 'a', def: 't-all', team: 'hero' as const, ...A },
-            { id: 'b', def: 'soldier', team: 'enemy' as const, ...B },
-          ];
-          const by = { x: B.x, y: B.y + 1 };
-          if (by.y < 9 && posKey(by) !== posKey(A)) units.push({ id: 'c', def: 'brute', team: 'enemy', ...by });
-          const s = stateOf(units);
-          for (const u of s.units) if (u.id !== 'a') u.facing = 1;
-          const w = previewAbility(whole, s, 'a', id, B);
-          const hs = halfState(s);
-          // the player may aim at any of the target's 4 cells; the best answer counts
-          const hp = cellsOf(cell(B), 2)
-            .map((p) => previewAbility(half, hs, 'a', id, p))
-            .find((p) => p.ok);
-          const say = (p?: { ok: boolean; targets: { unit: string; chance: number; side: string }[] }) =>
-            p?.ok
-              ? p.targets
-                  .map((t) => `${t.unit}:${t.chance}:${t.side}`)
-                  .sort()
-                  .join(',')
-              : 'out';
-          if (say(w) !== say(hp)) diff.push(`${posKey(B)} whole ${say(w)} half ${say(hp)}`);
+          // the target (or empty ground, Nov 14 review) and, for the areas, a bystander beside it (facing +x: front, side
+          // and back all show up)
+          for (const empty of [false, true]) {
+            const units: Parameters<typeof stateOf>[0] = [{ id: 'a', def: 't-all', team: 'hero', ...A }];
+            if (!empty) units.push({ id: 'b', def: 'soldier', team: 'enemy', ...B });
+            const by = { x: B.x, y: B.y + 1 };
+            if (by.y < 9 && posKey(by) !== posKey(A)) units.push({ id: 'c', def: 'brute', team: 'enemy', ...by });
+            const s = stateOf(units);
+            for (const u of s.units) if (u.id !== 'a') u.facing = 1;
+            const w = previewAbility(whole, s, 'a', id, B);
+            const hs = halfState(s);
+            const say = (p: { ok: boolean; targets: { unit: string; chance: number; side: string }[] }) =>
+              p.ok
+                ? p.targets
+                    .map((t) => `${t.unit}:${t.chance}:${t.side}`)
+                    .sort()
+                    .join(',')
+                : 'out';
+            // the player may aim at any of the tile's 4 cells: each one answers as the whole tile
+            for (const p of cellsOf(cell(B), 2)) {
+              const hp = previewAbility(half, hs, 'a', id, p);
+              if (say(w) !== say(hp)) diff.push(`${posKey(B)} cell ${posKey(p)} whole ${say(w)} half ${say(hp)}`);
+            }
+          }
         }
       expect(diff).toEqual([]);
     });
@@ -109,6 +110,36 @@ describe('half tiles: line of sight on the game maps', () => {
       expect(diff.slice(0, 5)).toEqual([]);
     }, 30000);
   }
+});
+
+describe('half tiles: aiming at empty ground', () => {
+  it('a Blast at empty ground stops on Beacon Hill where the whole map stops it, from every cell of the tile', () => {
+    // review, stage 1 turn 33: from the tile corner the line runs to a raw odd cell and reached the archer behind the hill
+    const map = MAPS.find((m) => m.id === 'beacon_hill') as Scenario;
+    const hm = halve({ ...map, spawns: [] });
+    const g = map.grid;
+    const diff: string[] = [];
+    for (let ay = 0; ay < g.height; ay += 3)
+      for (let ax = 0; ax < g.width; ax += 3) {
+        const A = { x: ax, y: ay };
+        if (!canStand(tileAt(g, A))) continue;
+        const s = stateOf([{ id: 'a', def: 't-all', team: 'hero', ...A }]);
+        const hs = halfState(s);
+        for (let y = 0; y < g.height; y++)
+          for (let x = 0; x < g.width; x++) {
+            const B = { x, y };
+            if (posKey(B) === posKey(A)) continue;
+            const w = previewAbility(g, s, 'a', 'blast', B);
+            const want = w.ok ? posKey(cell(w.center)) : w.reason;
+            for (const p of cellsOf(cell(B), 2)) {
+              const h = previewAbility(hm.grid, hs, 'a', 'blast', p);
+              const got = h.ok ? posKey(h.center) : h.reason;
+              if (want !== got) diff.push(`${posKey(A)} -> ${posKey(p)} whole ${want} half ${got}`);
+            }
+          }
+      }
+    expect(diff.slice(0, 5)).toEqual([]);
+  }, 30000);
 });
 
 describe('half tiles: line of sight between tiles and against big units', () => {
