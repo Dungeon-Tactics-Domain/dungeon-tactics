@@ -1,5 +1,5 @@
 // Smooth terrain (Nov 13, Fernando's pick in multiple choice: "truly smooth terrain" instead of the KayKit blocks, which
-// "look like Minecraft"; CC0 Poly Haven textures in public/tex). A single mesh for the ground of every open map (crypts
+// "look like Minecraft"; textures painted by scripts/assets/paint-textures.py into public/tex). A single mesh for the ground of every open map (crypts
 // stay block-based): each tile is flat in the middle (where unit, marker and cursor sit) and the step becomes a slope in the
 // outer third. The same mesh continues EXT_RING tiles outward (the extension), darkening to full black, and the river that
 // crosses the map continues outside: it starts higher on one side and exits lower on the other, in cascades. Visuals only: the rules
