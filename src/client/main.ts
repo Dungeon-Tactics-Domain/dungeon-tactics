@@ -4,8 +4,8 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { dist, facingTo, inBounds, neighbors, posKey, samePos, standH, subOf, tileAt } from '../shared/battle/grid.ts';
-import { cellsOf, farCells, shotStop, unitAt } from '../shared/battle/pathing.ts';
+import { dist, facingTo, inBounds, neighbors, posKey, samePos, subOf } from '../shared/battle/grid.ts';
+import { cellsOf, farCells, shotStop, squareH, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { CAMPAIGN_KEY, CHAPTERS, objectiveText, parseProgress } from './campaign.ts';
@@ -553,7 +553,8 @@ export class Game {
     };
     if (e.k === 'move') {
       // step at the start of each tile walked; on a jump, the sound goes on landing (same timings as the scene, stepMs)
-      const h = (i: number) => standH(tileAt(this.battle.grid, e.path[i]));
+      const size = UNIT_DEFS[this.battle.state.units.find((u) => u.id === e.unit)?.def ?? '']?.size ?? 1;
+      const h = (i: number) => squareH(this.battle.grid, e.path[i], size);
       let at = 0;
       for (let i = 1; i < e.path.length; i++) {
         // ramp: walking, at the step pace (the same as scene/units.ts)

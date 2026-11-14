@@ -5,8 +5,8 @@ import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
-import { dist, samePos, standH, subOf, tileAt } from '../../shared/battle/grid.ts';
-import { footprint } from '../../shared/battle/pathing.ts';
+import { dist, samePos, subOf, tileAt } from '../../shared/battle/grid.ts';
+import { cellsOf, squareH } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { chargeAura, lookOf, playFx } from '../fx.ts';
@@ -272,11 +272,15 @@ export class Units {
     void this.time.animate(ms, (s) => apply(from + (k - from) * s));
   }
 
-  // center of the tiles the unit occupies, at the height of the highest (big unit: the middle of the 2x2 square)
-  private unitWorld(u: UnitState): THREE.Vector3 {
-    const tiles = footprint(u).map((p) => this.space.stand(p));
+  // center of the tiles the unit occupies, at the height of the highest (big unit and half-tile token: the middle of the
+  // square, also on each step of a walk or a push)
+  private squareAt(def: string, p: Pos): THREE.Vector3 {
+    const tiles = cellsOf(p, UNIT_DEFS[def].size ?? 1).map((c) => this.space.stand(c));
     const c = tiles.reduce((a, b) => a.add(b), new THREE.Vector3()).divideScalar(tiles.length);
     return c.setY(Math.max(...tiles.map((w) => w.y)));
+  }
+  private unitWorld(u: UnitState): THREE.Vector3 {
+    return this.squareAt(u.def, u.pos);
   }
 
   private face(v: UnitView, to: Pos) {
@@ -405,15 +409,16 @@ export class Units {
         // by step (Nov 13, Fernando's request: slow walking and realistic jump). Walking_A has 2 strides in 1.07 s: 1.25x gives
         // ~1.4 strides per 0.6 s tile, the foot barely slides
         this.play(v, 'Walking_A', false, 1.25);
-        const n = e.path.length - 1;
+        const n = e.path.length - 1,
+          size = UNIT_DEFS[v.def].size ?? 1;
         for (let i = 1; i <= n; i++) {
-          const a = this.space.stand(e.path[i - 1]),
-            b = this.space.stand(e.path[i]);
-          this.face(v, e.path[i]);
+          const a = this.squareAt(v.def, e.path[i - 1]),
+            b = this.squareAt(v.def, e.path[i]);
+          v.holder.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
           // jumps when the standing height changes or flies a gap (the same math as the Jump and the footstep sound, stepMs); a study ramp is flat
           const dh = rampLink(this.space.grid, e.path[i - 1], e.path[i])
             ? 0
-            : standH(tileAt(this.space.grid, e.path[i])) - standH(tileAt(this.space.grid, e.path[i - 1]));
+            : squareH(this.space.grid, e.path[i], size) - squareH(this.space.grid, e.path[i - 1], size);
           const tiles = dist(e.path[i - 1], e.path[i]) / subOf(this.space.grid);
           if (isJump(dh, tiles)) {
             await this.jump(v, a, b, Math.max(Math.abs(dh), tiles));
@@ -431,7 +436,8 @@ export class Units {
                   : k;
           const from = e.path[i - 1],
             to = e.path[i];
-          const ramp = !!(tileAt(this.space.grid, from).ramp || tileAt(this.space.grid, to).ramp);
+          // the ramp's ground line is a 1-tile unit's; a square goes straight between its middles
+          const ramp = size === 1 && !!(tileAt(this.space.grid, from).ramp || tileAt(this.space.grid, to).ramp);
           await this.time.animate(stepMs(0, tiles), (k) => {
             v.holder.position.lerpVectors(a, b, ease(k));
             if (ramp) v.holder.position.y = this.space.walkY(from, to, ease(k));
@@ -495,7 +501,7 @@ export class Units {
         await this.time.wait(TIMING.hit);
       } else if (e.k === 'push') {
         const a = v.holder.position.clone(),
-          b = this.space.stand(e.to);
+          b = this.squareAt(v.def, e.to);
         await this.time.animate(TIMING.push, (k) => v.holder.position.lerpVectors(a, b, k));
       } else if (e.k === 'charge') {
         // starts charging: the long spell gesture (each ability's own effect comes in the animation block)
