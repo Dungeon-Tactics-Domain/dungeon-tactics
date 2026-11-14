@@ -16,8 +16,8 @@ import { CHEST_KEY, EQUIP_KEY, buy, equip, parseChest, parseEquip, sell } from '
 import { MISSIONS, MISSIONS_KEY, parseDone } from './missions.ts';
 import { ITEMS, SLOTS, bonusOf, type ItemDef, type Slot } from '../shared/battle/equipment.ts';
 import { WORLD, isOpen, step } from './world.ts';
-import { DEPLOY_MAX, GROUP_KEY, GROUP_MAX, RECRUIT_COST, changeClass, dismiss, learnedCount, parseGroup, recruit, toggleDeploy, type Group, type Member } from './group.ts';
-import { HERO_CLASSES, type Hero } from './hero.ts';
+import { DEPLOY_MAX, GROUP_KEY, GROUP_MAX, JOBS, RECRUIT_COST, changeClass, dismiss, learnedCount, parseGroup, recruit, toggleDeploy, type Group, type Member } from './group.ts';
+import type { Hero } from './hero.ts';
 
 const WALK_MS = 320; // um trecho de estrada; o CSS usa o mesmo valor (--walk-ms)
 const FADE_MS = 300; // escurecer antes de entrar no ponto; o CSS usa o mesmo valor (.fade-out)
@@ -163,7 +163,7 @@ function openBar(i: number, back: () => void) {
     el('h3', {}, t('Recrutar', 'Recruit')),
     el('p', {}, t(`${RECRUIT_COST} de ouro cada · ouro no baú: ${loadChest().gold} · grupo ${loadGroup().members.length} de ${GROUP_MAX}`,
       `${RECRUIT_COST} gold each · gold in chest: ${loadChest().gold} · party ${loadGroup().members.length} of ${GROUP_MAX}`)),
-    el('div', { class: 'menu-actions' }, ...HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'secondary',
+    el('div', { class: 'menu-actions' }, ...JOBS.map((c) => el('button', { type: 'button', class: 'secondary',
       onclick: () => {
         const r = recruit(loadGroup(), loadChest(), c);
         if (!r) return void sfx('cancel');
@@ -223,7 +223,7 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
     sfx('confirm');
     again(m);
   };
-  const setClass = (c: (typeof HERO_CLASSES)[number]) => {
+  const setClass = (c: (typeof JOBS)[number]) => {
     saveGroup(changeClass(loadGroup(), m.id, c));
     sfx('confirm');
     again({ ...m, cls: c });
@@ -252,7 +252,7 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
     ...(!going && g.deployed.length >= DEPLOY_MAX ? [el('p', {}, t(`Já vão ${DEPLOY_MAX}: deixe alguém no acampamento antes.`, `${DEPLOY_MAX} already go: leave someone at camp first.`))] : []),
     // troca de classe (como o Job do FFT): os números e as habilidades passam a ser os da classe nova; o equipamento fica
     el('h3', {}, t('Classe', 'Class')),
-    el('div', { class: 'menu-actions' }, ...HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'secondary', disabled: c === m.cls,
+    el('div', { class: 'menu-actions' }, ...JOBS.map((c) => el('button', { type: 'button', class: 'secondary', disabled: c === m.cls,
       'aria-pressed': String(c === m.cls), onclick: () => setClass(c) }, c === m.cls ? `✓ ${unitName(c)}` : unitName(c)))),
     el('h3', {}, t('Habilidades', 'Abilities')),
     el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a))),

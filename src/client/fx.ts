@@ -32,6 +32,9 @@ const LOOKS: Record<string, AbilityLook> = {
   deathblow: { clip: 'Melee_1H_Attack_Slice_Diagonal', fx: 'heavy' },
   cleave: { clip: 'Melee_2H_Attack_Chop', fx: 'heavy' },
   slam: { clip: 'Melee_Unarmed_Attack_Punch_A', fx: 'impact' },
+  lance: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
+  sweep: { clip: '2H_Melee_Attack_Spin', fx: 'impact' },
+  lance_jump: { clip: 'Melee_2H_Attack_Chop', charge: 'Jump_Idle', fx: 'heavy' }, // carrega "no ar" e cai com o golpe
   // estudo do FFT
   attack: { clip: 'Melee_1H_Attack_Chop', fx: 'slash' },
   fft_archer_attack: { clip: 'Ranged_Bow_Release', fx: 'arrow' },

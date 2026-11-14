@@ -51,9 +51,9 @@ describe('ações com carga', () => {
     expect(b.state.charges).toEqual([]);
   });
 
-  it('golpe físico sai na hora; carregam só as magias e o Tiro mirado (decisão de 12/11)', () => {
+  it('golpe físico sai na hora; carregam só as magias, o Tiro mirado e o Salto do Lanceiro (12/11 e 13/11)', () => {
     const charged = Object.values(ABILITIES).filter((a) => a.charge > 0 && !a.id.startsWith('fft_')).map((a) => a.id).sort();
-    expect(charged).toEqual(['aimed_shot', 'blast', 'gust', 'heal', 'shadow_wave']);
+    expect(charged).toEqual(['aimed_shot', 'blast', 'gust', 'heal', 'lance_jump', 'shadow_wave']);
     expect(Object.values(ABILITIES).filter((a) => a.charge > 0 && !a.magic && !a.panel)).toEqual([]);
     expect(duel('warrior').act('heavy_strike', { x: 4, y: 3 })[0].k).toBe('attack');
   });
