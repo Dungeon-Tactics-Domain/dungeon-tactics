@@ -1,0 +1,39 @@
+{
+  "name": "archer-shot",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "units": {
+    "h-archer": {
+      "x": 5,
+      "y": 10,
+      "facing": 2
+    },
+    "e-archer": {
+      "x": 5,
+      "y": 7,
+      "facing": 0
+    }
+  },
+  "camera": {
+    "fixed": "side",
+    "zoom": 3,
+    "focus": {
+      "x": 5,
+      "y": 8
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "act": {
+        "unit": "h-archer",
+        "ability": "shot",
+        "target": {
+          "x": 5,
+          "y": 7
+        }
+      }
+    }
+  ]
+}

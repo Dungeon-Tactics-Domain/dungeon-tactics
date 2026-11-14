@@ -1,0 +1,39 @@
+{
+  "name": "arena-wall",
+  "scenario": "arena",
+  "seed": 1,
+  "units": {
+    "a-hero": {
+      "x": 9,
+      "y": 4,
+      "facing": 1
+    },
+    "a-foe": {
+      "x": 10,
+      "y": 4,
+      "facing": 3
+    }
+  },
+  "camera": {
+    "fixed": "side",
+    "zoom": 3.5,
+    "focus": {
+      "x": 10,
+      "y": 4
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "act": {
+        "unit": "a-hero",
+        "ability": "shield_bash",
+        "target": {
+          "x": 10,
+          "y": 4
+        }
+      }
+    }
+  ]
+}

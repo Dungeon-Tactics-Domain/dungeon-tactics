@@ -1,0 +1,39 @@
+{
+  "name": "arena-spikes",
+  "scenario": "arena",
+  "seed": 1,
+  "units": {
+    "a-hero": {
+      "x": 0,
+      "y": 4,
+      "facing": 1
+    },
+    "a-foe": {
+      "x": 1,
+      "y": 4,
+      "facing": 3
+    }
+  },
+  "camera": {
+    "fixed": "side",
+    "zoom": 3.5,
+    "focus": {
+      "x": 2,
+      "y": 4
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "act": {
+        "unit": "a-hero",
+        "ability": "shield_bash",
+        "target": {
+          "x": 1,
+          "y": 4
+        }
+      }
+    }
+  ]
+}

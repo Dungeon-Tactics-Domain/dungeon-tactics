@@ -1,0 +1,36 @@
+{
+  "name": "arena-gap",
+  "scenario": "arena",
+  "seed": 1,
+  "units": {},
+  "add": [
+    {
+      "id": "rogue",
+      "def": "rogue",
+      "team": "hero",
+      "x": 4,
+      "y": 2
+    }
+  ],
+  "camera": {
+    "fixed": "side",
+    "zoom": 3.5,
+    "focus": {
+      "x": 5,
+      "y": 2
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "move": {
+        "unit": "rogue",
+        "to": {
+          "x": 6,
+          "y": 2
+        }
+      }
+    }
+  ]
+}

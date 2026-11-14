@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import battleClean from '../scripts/sandbox/battle-clean.json';
 import battleUi from '../scripts/sandbox/battle-ui.json';
+import benchArcher from '../scripts/sandbox/bench/archer-shot.json';
+import benchGap from '../scripts/sandbox/bench/arena-gap.json';
+import benchSpikes from '../scripts/sandbox/bench/arena-spikes.json';
+import benchStairs from '../scripts/sandbox/bench/arena-stairs.json';
+import benchWall from '../scripts/sandbox/bench/arena-wall.json';
+import benchClimb from '../scripts/sandbox/bench/climb.json';
+import benchDeath from '../scripts/sandbox/bench/death.json';
+import benchDrop from '../scripts/sandbox/bench/drop.json';
+import benchFirebolt from '../scripts/sandbox/bench/firebolt.json';
+import benchHeavy from '../scripts/sandbox/bench/heavy-strike.json';
+import benchMeleeHit from '../scripts/sandbox/bench/melee-hit.json';
+import benchMeleeMiss from '../scripts/sandbox/bench/melee-miss.json';
+import benchBash from '../scripts/sandbox/bench/shield-bash-fall.json';
+import benchWalk from '../scripts/sandbox/bench/walk.json';
 import archerShot from '../scripts/sandbox/clips/archer-shot.json';
 import blastCharge from '../scripts/sandbox/clips/blast-charge.json';
 import climbDescend from '../scripts/sandbox/clips/climb-descend.json';
@@ -586,5 +600,73 @@ describe('arena', () => {
     const { b } = staged({ scenario: 'arena', add: [{ id: 'w', def: 'warrior', team: 'hero', x: 3, y: 0 }] });
     // the warrior jumps 1: the step up 2 is too high
     expect(playStep(b, { move: { unit: 'w', to: { x: 4, y: 0 } } }).problem).toBe('w cannot reach 4,0');
+  });
+});
+
+// The bench scenes of the Mechanics lab (scripts/sandbox/bench/), on the rules: Ash Wood in whole tiles (x column, y row of
+// WOOD_H) and the arena (src/client/dev/arena.ts). Ash Wood's 2,6-4,6 and the climb's 9,3 and 9,2 are ramp tiles
+const BENCH = {
+  walk: [['move h-warrior 2,6 h0 > 2.5,6 h0 > 3,6 h0 > 3.5,6 h0 > 4,6 h0 > 4.5,6 h0 > 5,6 h0'], benchWalk],
+  climb: [['move h-rogue 9,3 h1 > 9,2.5 h2 > 9,2 h2 > 9,1.5 h3 > 9,1 h3'], benchClimb],
+  drop: [['move h-rogue 11,1 h4 > 11,1.5 h4 > 11,2 h2 > 11,2.5 h2 > 11,3 h2'], benchDrop],
+  'melee-hit': [['attack h-warrior strike', 'hit e-soldier 10'], benchMeleeHit],
+  'melee-miss': [['attack h-warrior strike', 'miss e-soldier'], benchMeleeMiss],
+  // 19 of 45 HP: a quarter or more shakes the camera
+  'heavy-strike': [['attack h-warrior heavy_strike', 'hit e-soldier 19'], benchHeavy],
+  death: [['attack h-warrior strike', 'hit e-soldier 10', 'die e-soldier'], benchDeath],
+  'archer-shot': [['attack h-archer shot', 'hit e-archer 9'], benchArcher],
+  'shield-bash-fall': [
+    [
+      'attack h-warrior shield_bash',
+      'hit e-soldier 4',
+      'push e-soldier 11,1.5',
+      'push e-soldier 11,2',
+      'fall e-soldier 2 9',
+      'push e-soldier 11,2.5',
+      'push e-soldier 11,3',
+    ],
+    benchBash,
+  ],
+  firebolt: [['attack h-mage firebolt', 'hit e-soldier 10'], benchFirebolt],
+  // up 1, up 2 (wait), up 3, down 2: only the lancer jumps 3
+  'arena-stairs': [
+    [
+      'move lancer 0,0 h0 > 0.5,0 h0 > 1,0 h0 > 1.5,0 h0 > 2,0 h1',
+      '|',
+      'move lancer 2,0 h1 > 2.5,0 h1 > 3,0 h1 > 3.5,0 h1 > 4,0 h3',
+      '|',
+      '|',
+      'move lancer 4,0 h3 > 4.5,0 h3 > 5,0 h3 > 5.5,0 h3 > 6,0 h6',
+      '|',
+      'move lancer 6,0 h6 > 6.5,0 h6 > 7,0 h6 > 7.5,0 h6 > 8,0 h4',
+    ],
+    benchStairs,
+  ],
+  'arena-gap': [['move rogue 4,2 h0 > 6,2 h0'], benchGap],
+  'arena-wall': [['attack a-hero shield_bash', 'hit a-foe 4', 'bump a-foe'], benchWall],
+  'arena-spikes': [
+    [
+      'attack a-hero shield_bash',
+      'hit a-foe 4',
+      'push a-foe 1.5,4',
+      'push a-foe 2,4',
+      'push a-foe 2.5,4',
+      'spike a-foe',
+      'push a-foe 3,4',
+    ],
+    benchSpikes,
+  ],
+} as const;
+
+describe('bench specs', () => {
+  for (const [name, [want, raw]] of Object.entries(BENCH))
+    it(`plays ${name}`, () => {
+      const { p, play } = staged(raw);
+      expect(play()).toEqual(want);
+      expect(p).toEqual([]);
+    });
+
+  it('names every bench spec after its file', () => {
+    for (const [name, [, raw]] of Object.entries(BENCH)) expect(raw.name).toBe(name);
   });
 });

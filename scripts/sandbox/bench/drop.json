@@ -1,0 +1,33 @@
+{
+  "name": "drop",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "units": {
+    "h-rogue": {
+      "x": 11,
+      "y": 1,
+      "facing": 0
+    }
+  },
+  "camera": {
+    "fixed": "side",
+    "zoom": 3.5,
+    "focus": {
+      "x": 11,
+      "y": 2
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "move": {
+        "unit": "h-rogue",
+        "to": {
+          "x": 11,
+          "y": 3
+        }
+      }
+    }
+  ]
+}

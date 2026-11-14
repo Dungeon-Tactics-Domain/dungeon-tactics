@@ -1,0 +1,33 @@
+{
+  "name": "walk",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "units": {
+    "h-warrior": {
+      "x": 2,
+      "y": 6,
+      "facing": 1
+    }
+  },
+  "camera": {
+    "fixed": "side",
+    "zoom": 3.5,
+    "focus": {
+      "x": 3,
+      "y": 6
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "move": {
+        "unit": "h-warrior",
+        "to": {
+          "x": 5,
+          "y": 6
+        }
+      }
+    }
+  ]
+}

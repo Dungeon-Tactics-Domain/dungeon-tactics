@@ -1,0 +1,36 @@
+{
+  "name": "climb",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "units": {
+    "h-rogue": {
+      "x": 9,
+      "y": 3,
+      "facing": 2
+    },
+    "e-brute": {
+      "remove": true
+    }
+  },
+  "camera": {
+    "fixed": "side",
+    "zoom": 3.5,
+    "focus": {
+      "x": 9,
+      "y": 2
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "move": {
+        "unit": "h-rogue",
+        "to": {
+          "x": 9,
+          "y": 1
+        }
+      }
+    }
+  ]
+}

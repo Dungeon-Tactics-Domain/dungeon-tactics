@@ -1,0 +1,39 @@
+{
+  "name": "melee-miss",
+  "scenario": "ash_wood",
+  "seed": 4,
+  "units": {
+    "h-warrior": {
+      "x": 5,
+      "y": 7,
+      "facing": 2
+    },
+    "e-soldier": {
+      "x": 5,
+      "y": 6,
+      "facing": 0
+    }
+  },
+  "camera": {
+    "fixed": "side",
+    "zoom": 3.5,
+    "focus": {
+      "x": 5,
+      "y": 6
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "act": {
+        "unit": "h-warrior",
+        "ability": "strike",
+        "target": {
+          "x": 5,
+          "y": 6
+        }
+      }
+    }
+  ]
+}

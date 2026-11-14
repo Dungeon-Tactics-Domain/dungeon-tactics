@@ -1,0 +1,68 @@
+{
+  "name": "arena-stairs",
+  "scenario": "arena",
+  "seed": 1,
+  "units": {},
+  "add": [
+    {
+      "id": "lancer",
+      "def": "lancer",
+      "team": "hero",
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "camera": {
+    "fixed": "side",
+    "zoom": 2,
+    "focus": {
+      "x": 4,
+      "y": 0
+    }
+  },
+  "hide": ["all"],
+  "loop": true,
+  "steps": [
+    {
+      "move": {
+        "unit": "lancer",
+        "to": {
+          "x": 2,
+          "y": 0
+        }
+      }
+    },
+    {
+      "move": {
+        "unit": "lancer",
+        "to": {
+          "x": 4,
+          "y": 0
+        }
+      }
+    },
+    {
+      "wait": {
+        "unit": "lancer"
+      }
+    },
+    {
+      "move": {
+        "unit": "lancer",
+        "to": {
+          "x": 6,
+          "y": 0
+        }
+      }
+    },
+    {
+      "move": {
+        "unit": "lancer",
+        "to": {
+          "x": 8,
+          "y": 0
+        }
+      }
+    }
+  ]
+}
