@@ -152,7 +152,7 @@ A hand-written address works too:
 - **Before and after.** The same specs, recorded on another commit (a proposal applied), give a comparison.
 - **The specs.** `scripts/sandbox/clips/` holds one spec per mechanic: walk, climb and drop, leap over water, hit, miss,
   heavy hit, shot, push into a fall, death, Fire Bolt and the charged Blast. Their seeds were picked so the dice give the
-  named outcome.
+  named outcome. `tests/sandbox-spec.test.ts` plays each one on the split map, as the page does, and checks it.
 - **The interface.** The clip specs hide every panel except the ability banner and the damage numbers.
 - **Without `--video`.** The same specs give a screenshot of the scene after the steps (fake clock, run in slices until
   the steps end).

@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import battleClean from '../scripts/sandbox/battle-clean.json';
 import battleUi from '../scripts/sandbox/battle-ui.json';
+import archerShot from '../scripts/sandbox/clips/archer-shot.json';
+import blastCharge from '../scripts/sandbox/clips/blast-charge.json';
+import climbDescend from '../scripts/sandbox/clips/climb-descend.json';
+import death from '../scripts/sandbox/clips/death.json';
+import firebolt from '../scripts/sandbox/clips/firebolt.json';
+import heavyHit from '../scripts/sandbox/clips/heavy-hit.json';
+import leapGap from '../scripts/sandbox/clips/leap-gap.json';
+import meleeHit from '../scripts/sandbox/clips/melee-hit.json';
+import meleeMiss from '../scripts/sandbox/clips/melee-miss.json';
+import shieldBashFall from '../scripts/sandbox/clips/shield-bash-fall.json';
+import walkFlat from '../scripts/sandbox/clips/walk-flat.json';
 import frostPass from '../scripts/sandbox/frost-pass-ambush.json';
 import {
   castOf,
@@ -15,8 +26,11 @@ import {
   storageFor,
 } from '../src/client/dev/sandbox-spec.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
+import type { BattleEvent } from '../src/shared/battle/types.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 describe('parseSpec', () => {
@@ -404,5 +418,82 @@ describe('playStep on a split map', () => {
     expect(offMap(b.grid, { steps: [{ move: { unit: 'h-warrior', to: { x: 14, y: 0 } } }] })).toEqual([
       'steps[0].move.to: 14,0 is outside the 12x12 map',
     ]);
+  });
+});
+
+// The clip specs were picked on whole-tile movement (Nov 14); staged and played the way the page does on the split map
+// (stage: halve, inCells, castOf; apply: patchUnits, actor; play: playStep), each must still show its named mechanic.
+// Tiles in whole tiles (x.5 is a token between tiles), heights of the tile walked on
+const CLIPS = {
+  'walk-flat': [['move h-warrior 3,7 h0 > 3.5,7 h0 > 4,7 h0 > 4.5,7 h0 > 5,7 h0 > 5.5,7 h0 > 6,7 h0'], walkFlat],
+  // up 1 then down 2, without going round the drop
+  'climb-descend': [['move h-rogue 1,11 h1 > 1.5,11 h1 > 2,11 h2 > 2.5,11 h2 > 3,11 h0'], climbDescend],
+  // one leap over the moat
+  'leap-gap': [['move h-rogue 5,4 h2 > 5,2 h2'], leapGap],
+  'melee-hit': [['attack h-warrior strike', 'hit e-brute 10'], meleeHit],
+  'melee-miss': [['attack h-warrior strike', 'miss e-brute'], meleeMiss],
+  'heavy-hit': [['attack h-warrior heavy_strike', 'hit e-soldier 19'], heavyHit],
+  'archer-shot': [['attack h-archer shot', 'hit e-soldier 9'], archerShot],
+  'shield-bash-fall': [
+    [
+      'attack h-warrior shield_bash',
+      'hit e-soldier 4',
+      'push e-soldier 11,1.5',
+      'push e-soldier 11,2',
+      'fall e-soldier 2 9',
+      'push e-soldier 11,2.5',
+      'push e-soldier 11,3',
+    ],
+    shieldBashFall,
+  ],
+  death: [['attack h-archer shot', 'hit e-soldier 9', 'die e-soldier'], death],
+  firebolt: [['attack h-mage firebolt', 'hit e-soldier 10'], firebolt],
+  // the charge on the act, the blast on the wait, before anyone else's turn
+  'blast-charge': [
+    ['charge h-mage blast', '|', 'attack h-mage blast', 'hit e-soldier 9', 'hit e-brute 14'],
+    blastCharge,
+  ],
+} as const;
+
+describe('clip specs on a split map', () => {
+  for (const [name, [want, raw]] of Object.entries(CLIPS))
+    it(`plays ${name} as on whole tiles`, () => {
+      const spec = parseSpec(raw).spec;
+      const sc = halve(SCENARIOS[spec.scenario!]);
+      const cells = inCells(spec, 2);
+      const cast = castOf(sc.spawns, cells);
+      const b = Battle.start({ ...sc, spawns: cast.spawns }, spec.seed ?? 1);
+      const units = patchUnits(b.state.units, cells.units ?? {});
+      b.state.units = units.units;
+      const p = [...cast.problems, ...units.problems, ...placementProblems(b.grid, b.state.units)];
+      const turn = giveTurn(b, spec.actor!, true);
+      if (turn) p.push(turn);
+      const w = (q: { x: number; y: number }) => `${q.x / 2},${q.y / 2}`;
+      const said = (e: BattleEvent) =>
+        e.k === 'move'
+          ? `move ${e.unit} ${e.path.map((q) => `${w(q)} h${tileAt(b.grid, q).h}`).join(' > ')}`
+          : e.k === 'attack' || e.k === 'charge'
+            ? `${e.k} ${e.unit} ${e.ability}`
+            : e.k === 'hit'
+              ? `hit ${e.unit} ${e.dmg}`
+              : e.k === 'push'
+                ? `push ${e.unit} ${w(e.to)}`
+                : e.k === 'fall'
+                  ? `fall ${e.unit} ${e.levels} ${e.dmg}`
+                  : `${e.k} ${e.unit}`;
+      // '|' between steps, so a charge shows on the act and its blast on the wait
+      const told = spec.steps!.flatMap((step, i) => {
+        const r = playStep(b, step);
+        if (r.problem) p.push(r.problem);
+        return [...(i ? ['|'] : []), ...r.events.map(said)];
+      });
+      expect(p).toEqual([]);
+      expect(told).toEqual(want);
+    });
+
+  // the camera shakes on a strike of 25% of life or more: the heavy hit must reach it
+  it('keeps the heavy hit at a quarter of the life or more', () => {
+    const hit = CLIPS['heavy-hit'][0][1].split(' ');
+    expect(Number(hit[2]) / UNIT_DEFS.soldier.hp).toBeGreaterThanOrEqual(0.25);
   });
 });
