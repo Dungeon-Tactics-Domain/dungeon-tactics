@@ -3,7 +3,7 @@
 // The map, the cast, the dice and the language are fixed when the page loads (`stage`); everything else changes live (`apply`).
 import { Battle } from '../../shared/battle/battle.ts';
 import { subOf } from '../../shared/battle/grid.ts';
-import { halfDef } from '../../shared/battle/half.ts';
+import { HALF, halfDef } from '../../shared/battle/half.ts';
 import { SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
@@ -63,7 +63,8 @@ let castFits = true;
 export function stage(base: Scenario): { scenario: Scenario; battle: Battle } {
   const k = subOf(base.grid);
   const cells = inCells(spec, k);
-  if (k > 1) cells.add = cells.add?.map((a) => ({ ...a, def: halfDef(a.def) }));
+  // a token sheet copied from list() (soldier½) stays as it is
+  if (k > 1) cells.add = cells.add?.map((a) => ({ ...a, def: a.def.endsWith(HALF) ? a.def : halfDef(a.def) }));
   const cast = castOf(base.spawns, cells);
   const scenario = { ...base, spawns: cast.spawns };
   battle = Battle.start(scenario, spec.seed ?? 1);
