@@ -75,13 +75,40 @@ Small bug fixes, text corrections, and focused interface/visual adjustments can 
 
 A local proof of concept uses a `poc/<topic>` branch and screenshots without an issue or PR. It becomes an issue/PR after Fernando decides it is worth pursuing. The decision register also allows an immediate adjustment explicitly requested by Fernando to go straight to a task branch and PR; the PR records the request. Issues are used for work that needs agreement or belongs in the backlog.
 
+## Commit convention
+
+This is a portfolio project: the history is part of what people read. Every commit follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), in **English** (decided by Fernando on 13/11; code comments and docs stay in Portuguese).
+
+```
+<type>(<scope>): <summary>
+
+<body: why the change, and anything non-obvious about how>
+```
+
+- **Atomic.** One logical change per commit: it builds, passes `npm run typecheck`, `npx vitest run` and `npx vite build`, and can be reverted alone. A feature that touches rules and screen is two commits (rules + tests, then UI) when each stands on its own. Never mix a refactor, a fix and a feature in one commit.
+- **Summary.** Imperative mood, lowercase, no final period, **at most 72 characters** (`add lancer class`, not `added the lancer class with jump 3 and...`). Details go in the body.
+- **Body.** Optional for trivial changes; otherwise wrapped at 72 columns, says *why* (the request or problem) and lists notable behaviour. Reference issues with `Closes #n`.
+- **Types:** `feat` (new behaviour), `fix` (bug), `refactor` (no behaviour change), `perf`, `test`, `docs`, `style` (visual/CSS only), `balance` (numbers only), `build`, `ci`, `chore` (tooling, assets housekeeping).
+- **Scopes** (the area touched): `battle` (rules engine), `ai`, `maps`, `units` (classes and abilities), `scene` (3D rendering), `terrain`, `water`, `fx`, `hud`, `ui` (dialogs and menus), `input`, `camera`, `campaign`, `world` (world map and towns), `party`, `audio`, `assets`, `docs`, `ci`, `deps`.
+- **Breaking changes** to saves (`dt:*` in the browser) are marked `!` (`feat(party)!: ...`) and explained in the body.
+- No merge commits inside a feature branch: integrate other branches with `git rebase` or `git cherry-pick` before pushing, so the history stays linear. No `Co-Authored-By` trailers or tool signatures.
+
+Examples:
+
+```
+feat(units): add lancer class with long thrust and jump
+fix(input): move straight on screen when the camera is axis-aligned
+refactor(party): build battle rosters from the saved group
+test(battle): cover enemies blocking 2x2 movers
+```
+
 ## Branches, commits, and pull requests
 
 The release flow is **task branch → PR to `master` → automatic production deployment**. The former `dev` promotion flow is retired.
 
 1. Create a branch from current `master`: `feat/<topic>`, `fix/<topic>`, `balance/<topic>`, `style/<topic>`, `docs/<topic>`, or `refactor/<topic>`. One branch/PR covers one subject.
 2. Use a branch in this repository when you have contributor access. Fork PRs require CI approval, do not get the automatic review, and cannot use deployment secrets or PR environments.
-3. Make small commits using `type: description`. Accepted types are `feat`, `fix`, `balance`, `style`, `refactor`, `docs`, `ci`, and `test`. The repository convention is a Portuguese description; follow explicit maintainer instructions for the task's language. Agent commits do not add `Co-Authored-By` trailers.
+3. Commit atomically, following the [commit convention](#commit-convention) below.
 4. Run `npm run typecheck`, `npx vitest run`, and `npx vite build` before committing. Add meaningful regression coverage for behavior changes and verify changed screens in the browser.
 5. Open the PR against `master` using [.github/pull_request_template.md](.github/pull_request_template.md): motivation, changes, screenshots when relevant, validation, and balance evidence when required. Use `Closes #n` for its issue. The title follows the same `type: description` format and becomes the squash commit title.
 6. Keep the branch current after each merge to `master`: `git fetch origin` followed by `git merge origin/master`. Run the gates and restart the local server. After review starts, respond with new commits rather than rebasing or force-pushing.
