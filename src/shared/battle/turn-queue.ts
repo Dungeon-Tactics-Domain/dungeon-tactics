@@ -1,6 +1,6 @@
 import { resolveAbility } from './combat.ts';
-import { nearestTile } from './pathing.ts';
 import type { Grid } from './grid.ts';
+import { nearestTile } from './pathing.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Charge } from './types.ts';
 import { UNIT_DEFS } from './units.ts';

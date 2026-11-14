@@ -3,7 +3,7 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { previewAbility } from '../src/shared/battle/combat.ts';
 import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
-import { tileAt, TERRAIN } from '../src/shared/battle/grid.ts';
+import { TERRAIN, tileAt } from '../src/shared/battle/grid.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';

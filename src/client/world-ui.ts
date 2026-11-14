@@ -1,37 +1,38 @@
 // Worldmap screen (world.ts has the rules): a parchment with the road, the nodes and the party portrait, which walks from
 // node to node. Arrows (or A D W S) walk, Enter enters, Esc goes back to the title; clicking an open node walks to it.
 // Place panel in the bottom-right corner, like the place name on the FFT map; art and text are ours.
-import { foesText } from './campaign.ts';
+
+import { bonusOf, ITEMS, type ItemDef, SLOTS, type Slot } from '../shared/battle/equipment.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { foesText } from './campaign.ts';
+import { buy, CHEST_KEY, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
 import { unitFrom } from './dev-roster.ts';
 import { choice, dialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
+import {
+  changeClass,
+  DEPLOY_MAX,
+  dismiss,
+  GROUP_KEY,
+  GROUP_MAX,
+  type Group,
+  JOBS,
+  learnedCount,
+  type Member,
+  parseGroup,
+  RECRUIT_COST,
+  recruit,
+  toggleDeploy,
+} from './group.ts';
+import type { Hero } from './hero.ts';
 import { abilityDetail, portrait } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
+import { MISSIONS, MISSIONS_KEY, parseDone } from './missions.ts';
 import { sfx } from './sound.ts';
 import { store } from './store.ts';
-import { CHEST_KEY, EQUIP_KEY, buy, equip, parseChest, parseEquip, sell } from './chest.ts';
-import { MISSIONS, MISSIONS_KEY, parseDone } from './missions.ts';
-import { ITEMS, SLOTS, bonusOf, type ItemDef, type Slot } from '../shared/battle/equipment.ts';
-import { WORLD, isOpen, step } from './world.ts';
-import {
-  DEPLOY_MAX,
-  GROUP_KEY,
-  GROUP_MAX,
-  JOBS,
-  RECRUIT_COST,
-  changeClass,
-  dismiss,
-  learnedCount,
-  parseGroup,
-  recruit,
-  toggleDeploy,
-  type Group,
-  type Member,
-} from './group.ts';
-import type { Hero } from './hero.ts';
+import { isOpen, step, WORLD } from './world.ts';
 
 const WALK_MS = 320; // one stretch of road; the CSS uses the same value (--walk-ms)
 const FADE_MS = 300; // fade to dark before entering the node; the CSS uses the same value (.fade-out)

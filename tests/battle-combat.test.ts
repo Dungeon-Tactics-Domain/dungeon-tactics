@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { Battle } from '../src/shared/battle/battle.ts';
-import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT, checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
+import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { HIT_SEED, MISS_SEED, flat, gridOf, stateOf } from './battle-helpers.ts';
+import { flat, gridOf, HIT_SEED, MISS_SEED, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
 const chanceOf = (g: Grid, s: BattleState, ability: string, target: { x: number; y: number }) =>

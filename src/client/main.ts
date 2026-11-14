@@ -1,64 +1,16 @@
 // Game entry point: wires the battle (rules), the scene (Three), the HUD (DOM) and touch input. Owns the turn loop: the player acts
 // through the HUD; on the enemy turn the AI plays on its own, one unit at a time, with a pause so it can be read.
-import { HALF_ID, registerHalf } from '../shared/battle/half.ts';
+
+import { ABILITIES } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
-import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
-import { CHEST_KEY, EQUIP_KEY, VICTORY_GOLD, parseChest, parseEquip } from './chest.ts';
-import { MISSIONS, MISSIONS_KEY, missionScenario, missionScenarioId, parseDone, type Mission } from './missions.ts';
 import { ITEMS } from '../shared/battle/equipment.ts';
-import { ABILITIES } from '../shared/battle/abilities.ts';
 import { dist, facingTo, inBounds, neighbors, posKey, samePos, standH, tileAt } from '../shared/battle/grid.ts';
+import { HALF_ID, registerHalf } from '../shared/battle/half.ts';
 import { shotStop, unitAt } from '../shared/battle/pathing.ts';
+import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
-import { choice, dialog, slider } from './dialog.ts';
-import { BattleHud, eventLog, unitStatus } from './hud.ts';
-import { LANG, abilityName, setLang, t, unitName, type Lang } from './i18n.ts';
-import { el } from './icons.ts';
-import {
-  confirm,
-  freshUi,
-  highlights,
-  hoverTile,
-  selectMode,
-  tapTile,
-  type Highlights,
-  type Ui,
-} from './interaction.ts';
-import {
-  COMMANDS,
-  abilitiesOf,
-  abilityEnabled,
-  canUndoMove,
-  commandEnabled,
-  longestRange,
-  startScreen,
-  stepIndex,
-  type Screen,
-} from './command.ts';
-import { emptyMemory, padActions } from './gamepad.ts';
-import { cycleUnit, gridStep, keyAction, keyHelp, type KeyAction } from './keyboard.ts';
-import { BattleScene, rampLink } from './scene.ts';
-import { store } from './store.ts';
-import { TouchInput } from './touch-input.ts';
-import { PIXEL_KEY, nextSize, parsePixel, type PixelSettings, type PixelSize } from './pixel-settings.ts';
-import { TIMING, isJump, pace, stepMs } from './timing.ts';
-import { lookOf } from './fx.ts';
-import { jingle, setSound, setTrack, sfx, soundSettings, type Sfx } from './sound.ts';
-import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, problems, slotsOf } from './dev-roster.ts';
-import { addEvents, emptyTally, mvp } from './tally.ts';
-import {
-  BEST_KEY,
-  SURVIVAL_ID,
-  SURVIVE_TURNS,
-  parseBest,
-  survivalGoal,
-  survivalScenario,
-  survived,
-  turnsLeft,
-} from './survival.ts';
-import { openDevMenu } from './dev-menu.ts';
+import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
 import {
   CAMPAIGN_KEY,
   CHAPTERS,
@@ -68,12 +20,61 @@ import {
   objectiveText,
   parseProgress,
 } from './campaign.ts';
-import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
-import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
-import { openParty, openWorld } from './world-ui.ts';
+import { CHEST_KEY, EQUIP_KEY, parseChest, parseEquip, VICTORY_GOLD } from './chest.ts';
+import {
+  abilitiesOf,
+  abilityEnabled,
+  COMMANDS,
+  canUndoMove,
+  commandEnabled,
+  longestRange,
+  type Screen,
+  startScreen,
+  stepIndex,
+} from './command.ts';
+import { createHero } from './create-ui.ts';
+import { openDevMenu } from './dev-menu.ts';
+import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from './dev-roster.ts';
+import { choice, dialog, slider } from './dialog.ts';
+import { lookOf } from './fx.ts';
+import { emptyMemory, padActions } from './gamepad.ts';
 import { GROUP_KEY, parseGroup } from './group.ts';
 import { HERO_KEY, parseHero } from './hero.ts';
-import { createHero } from './create-ui.ts';
+import { BattleHud, eventLog, unitStatus } from './hud.ts';
+import { abilityName, LANG, type Lang, setLang, t, unitName } from './i18n.ts';
+import { el } from './icons.ts';
+import {
+  confirm,
+  freshUi,
+  type Highlights,
+  highlights,
+  hoverTile,
+  selectMode,
+  tapTile,
+  type Ui,
+} from './interaction.ts';
+import { cycleUnit, gridStep, type KeyAction, keyAction, keyHelp } from './keyboard.ts';
+import { MISSIONS, MISSIONS_KEY, type Mission, missionScenario, missionScenarioId, parseDone } from './missions.ts';
+import { nextSize, PIXEL_KEY, type PixelSettings, type PixelSize, parsePixel } from './pixel-settings.ts';
+import { BattleScene, rampLink } from './scene.ts';
+import { jingle, type Sfx, setSound, setTrack, sfx, soundSettings } from './sound.ts';
+import { store } from './store.ts';
+import {
+  BEST_KEY,
+  parseBest,
+  SURVIVAL_ID,
+  SURVIVE_TURNS,
+  survivalGoal,
+  survivalScenario,
+  survived,
+  turnsLeft,
+} from './survival.ts';
+import { TEXT_KEY, type TextSpeed, talk, textSpeed } from './talk.ts';
+import { addEvents, emptyTally, mvp } from './tally.ts';
+import { isJump, pace, stepMs, TIMING } from './timing.ts';
+import { TouchInput } from './touch-input.ts';
+import { afterNode, INTRO, nodeOfChapter, parseWorld, partyFor, WORLD, WORLD_KEY } from './world.ts';
+import { openParty, openWorld } from './world-ui.ts';
 
 // the battle the game opens and where it is saved; the FFT study swaps both at boot (separate save)
 let scenario = FIRST_BATTLE;
@@ -99,7 +100,6 @@ class Game {
   private acting: string | null = null;
   private cursor: Pos; // cursor tile (keyboard, mouse and gamepad move the same cursor)
   private readonly hud: BattleHud;
-  private readonly input: TouchInput;
   private readonly pad = emptyMemory();
   private padPrimed = false;
   private readonly fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
@@ -135,7 +135,8 @@ class Game {
       undo: () => this.runKey({ k: 'undo' }),
     });
     const canvas = host.querySelector('canvas')!;
-    this.input = new TouchInput(canvas, {
+    // TouchInput attaches its listeners to the canvas in the constructor; nothing else needs a reference
+    new TouchInput(canvas, {
       tap: (x, y) => {
         const pos = this.scene.pick(x, y);
         if (!pos || this.busy || !this.heroTurn) return;
@@ -356,7 +357,7 @@ class Game {
     if (c === 'wait') return void this.endTurn();
     if (c === 'act') {
       const list = abilitiesOf(b).map((id) => abilityEnabled(b, id));
-      this.screen = { k: 'abilities', index: list.indexOf(true) < 0 ? 0 : list.indexOf(true) };
+      this.screen = { k: 'abilities', index: Math.max(0, list.indexOf(true)) };
       return this.update(this.ui);
     }
     this.screen = { k: 'map', command: 'move' };

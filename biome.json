@@ -6,12 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "src/**",
-      "tests/**",
-      "scripts/**",
-      "*.ts"
-    ]
+    "includes": ["src/**", "tests/**", "scripts/**", "*.ts"]
   },
   "formatter": {
     "indentStyle": "space",
@@ -35,7 +30,8 @@
         "noDescendingSpecificity": "off"
       },
       "suspicious": {
-        "noAssignInExpressions": "off"
+        "noAssignInExpressions": "off",
+        "useIterableCallbackReturn": "off"
       }
     }
   }

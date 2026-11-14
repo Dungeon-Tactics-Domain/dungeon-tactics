@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT } from '../src/shared/battle/combat.ts';
-import { tileAt, type Grid } from '../src/shared/battle/grid.ts';
+import { type Grid, tileAt } from '../src/shared/battle/grid.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Spikes (night of Nov 12): being pushed onto the tile or ending the turn on it hurts; walking over does not.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MARKER, barYOf, unitHeight } from '../src/client/markers.ts';
+import { barYOf, MARKER, unitHeight } from '../src/client/markers.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 // Oct 25 bug (mobile, PR 1 environment): the cursor frame and the yellow arrow were drawn on top of the hero

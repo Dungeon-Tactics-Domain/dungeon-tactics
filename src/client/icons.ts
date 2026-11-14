@@ -5,6 +5,7 @@
 export type Child = Node | string | null | undefined | false;
 export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
+  // biome-ignore lint/suspicious/noExplicitAny: DOM properties and handlers of every type are assigned by name
   props: Record<string, any> = {},
   ...children: Child[]
 ): HTMLElementTagNameMap[K] {

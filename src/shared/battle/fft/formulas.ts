@@ -3,7 +3,8 @@
 // docs/game-design/referencia-fft.md. Pure functions, no state: the game uses nothing from here outside the study scenario.
 
 import type { Side } from '../grid.ts';
-export { sideOf, type Side } from '../grid.ts'; // the side calculation lives in grid.ts since the game uses direction (Nov 13)
+
+export { type Side, sideOf } from '../grid.ts'; // the side calculation lives in grid.ts since the game uses direction (Nov 13)
 
 // [x]: the guide always discards the remainder of the division (BMG 1.2)
 const trunc = Math.trunc;

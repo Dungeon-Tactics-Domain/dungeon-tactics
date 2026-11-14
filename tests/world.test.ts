@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { SPEAKERS } from '../src/client/campaign.ts';
 import {
   ALL_CHAPTERS,
-  WORLD,
   afterNode,
   chaptersOnMap,
   isOpen,
@@ -10,6 +9,7 @@ import {
   parseWorld,
   partyFor,
   step,
+  WORLD,
 } from '../src/client/world.ts';
 
 describe('world map', () => {

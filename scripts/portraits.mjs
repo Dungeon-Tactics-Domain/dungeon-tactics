@@ -52,8 +52,8 @@ const browser = await chromium.launch({
   args: ['--enable-unsafe-swiftshader', '--mute-audio'],
 });
 const page = await browser.newPage();
-await page.route(base + '/_portraits', (route) => route.fulfill({ contentType: 'text/html', body: page_html }));
-await page.goto(base + '/_portraits');
+await page.route(`${base}/_portraits`, (route) => route.fulfill({ contentType: 'text/html', body: page_html }));
+await page.goto(`${base}/_portraits`);
 await page.waitForFunction(() => window.ready, null, { timeout: 30000 });
 for (const id of IDS) {
   const data = await page.evaluate((u) => window.shot(u), `/models/${id}.glb`);

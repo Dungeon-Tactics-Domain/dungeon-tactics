@@ -1,10 +1,10 @@
 import type { AbilityDef } from './abilities.ts';
 import {
-  FACING,
-  TERRAIN,
   blocksOf,
   canStand,
   dist,
+  FACING,
+  type Grid,
   inBounds,
   isDeep,
   neighbors,
@@ -12,8 +12,8 @@ import {
   samePos,
   standH,
   stepCost,
+  TERRAIN,
   tileAt,
-  type Grid,
 } from './grid.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';

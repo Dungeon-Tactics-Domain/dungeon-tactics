@@ -5,7 +5,7 @@
 // and bush. The trunk opens into a flare with buttresses and roots that dive into the ground (the piece goes down
 // below y = 0). Piece of height 1, one mesh and one material (painted.ts); the caller scales and picks the variation.
 import * as THREE from 'three';
-import { V, lump, piece, ramp, rng, tones, tube, type Ring } from './painted.ts';
+import { lump, piece, type Ring, ramp, rng, tones, tube, V } from './painted.ts';
 
 const BARK = tones('#2e2016', '#523b27', '#77593c', '#9c8059');
 const ASH = tones('#2a2622', '#4d4740', '#746c62', '#9a9287'); // dry wood
@@ -118,7 +118,7 @@ function limb(
   const curve = new THREE.QuadraticBezierCurve3(from, mid, to),
     s = rnd() * 9;
   const rings = [0, 0.4, 0.75, 1].map((t) => ({ p: curve.getPoint(t), r: r0 + (r1 - r0) * t }));
-  parts.push(tube(rings, 5, (p, i, a) => ramp(bark, 0.42 + 0.2 * Math.sin(a * 2 + s) + i * 0.05), { v: 2 }));
+  parts.push(tube(rings, 5, (_p, i, a) => ramp(bark, 0.42 + 0.2 * Math.sin(a * 2 + s) + i * 0.05), { v: 2 }));
 }
 
 // painted crown light: each tuft is light on top and dark below, and the whole crown brightens toward the top

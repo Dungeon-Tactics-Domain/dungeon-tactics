@@ -1,17 +1,17 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Battle } from '../src/shared/battle/battle.ts';
-import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
-import { simulate } from '../src/shared/battle/simulate.ts';
-import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import {
-  DEV_SCENARIO,
   buildDevScenario,
+  DEV_SCENARIO,
   defaultSetup,
   devClasses,
   parseSetup,
   problems,
   unitFrom,
 } from '../src/client/dev-roster.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
+import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
+import { simulate } from '../src/shared/battle/simulate.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 const say = (pt: string) => pt;
 

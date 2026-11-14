@@ -4,7 +4,7 @@
 // Nodes come in order: winning (battle) or seeing (story) a node unlocks the next one. Replaying what's already passed is allowed.
 import { CHAPTERS, type Line } from './campaign.ts';
 import type { DevUnit } from './dev-roster.ts';
-import { defaultGroup, heroesFor, type Group } from './group.ts';
+import { defaultGroup, type Group, heroesFor } from './group.ts';
 import type { Hero } from './hero.ts';
 
 export interface WorldNode {

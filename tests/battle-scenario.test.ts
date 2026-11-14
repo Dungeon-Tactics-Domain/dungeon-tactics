@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { neighbors, posKey, tileAt, TERRAIN } from '../src/shared/battle/grid.ts';
+import { neighbors, posKey, TERRAIN, tileAt } from '../src/shared/battle/grid.ts';
 import { MAX_JUMP } from '../src/shared/battle/pathing.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { OBJECTIVE_DEF } from '../src/shared/battle/units.ts';

@@ -3,7 +3,7 @@
 // counts). Downing everyone also wins. Kept outside the campaign: a new stage in the middle would change the saves and the map order.
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
-import { buildDevScenario, unitFrom, type DevUnit } from './dev-roster.ts';
+import { buildDevScenario, type DevUnit, unitFrom } from './dev-roster.ts';
 
 export const SURVIVAL_ID = 'survival';
 // measured on Nov 13 (MEDIR=300, AI on both sides) after the x1.75 damage and the facing: with 1.5x HP and 40 turns the heroes

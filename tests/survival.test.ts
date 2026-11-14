@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Battle } from '../src/shared/battle/battle.ts';
+import { parseBest, SURVIVE_TURNS, survivalScenario, turnsLeft } from '../src/client/survival.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
-import { SURVIVE_TURNS, parseBest, survivalScenario, turnsLeft } from '../src/client/survival.ts';
 
 // MEDIR=300 npx vitest run tests/survival.test.ts shows the heroes win rate (AI vs AI) and how many came from dawn
 const RUNS = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEDIR ?? 0);

@@ -1,7 +1,7 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
-import { COMBAT, basicOf, previewAbility, simulatePush } from './combat.ts';
-import { TERRAIN, canStand, dist, facingTo, neighbors, posKey, standH, stepCost, tileAt, type Grid } from './grid.ts';
+import { basicOf, COMBAT, previewAbility, simulatePush } from './combat.ts';
+import { canStand, dist, facingTo, type Grid, neighbors, posKey, standH, stepCost, TERRAIN, tileAt } from './grid.ts';
 import { distTo, footprint, jumpOf, leaps, reachable, type Step } from './pathing.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';

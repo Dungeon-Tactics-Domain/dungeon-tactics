@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PIXEL_SIZES, defaultPixel, nextSize, parsePixel } from '../src/client/pixel-settings.ts';
+import { defaultPixel, nextSize, PIXEL_SIZES, parsePixel } from '../src/client/pixel-settings.ts';
 
 describe('pixel art settings', () => {
   it('default: 2 px on portrait mobile, 3 px on PC, outline and locked camera on, palette off', () => {

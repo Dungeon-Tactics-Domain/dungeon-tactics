@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildDevScenario, defaultSetup } from '../src/client/dev-roster.ts';
-import { Battle } from '../src/shared/battle/battle.ts';
-import { ITEMS, bonusOf } from '../src/shared/battle/equipment.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
+import { bonusOf, ITEMS } from '../src/shared/battle/equipment.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 // Equipment (Nov 13): general stats added to the battle sheet

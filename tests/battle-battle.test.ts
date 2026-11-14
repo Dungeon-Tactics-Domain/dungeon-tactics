@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Battle, UNDO_LIMIT, parseBattleState } from '../src/shared/battle/battle.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { Battle, parseBattleState, UNDO_LIMIT } from '../src/shared/battle/battle.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
+import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
 // warrior next to a soldier (1 tile above), with room to move; the warrior is the current actor
@@ -146,6 +146,7 @@ describe('clone and save', () => {
 
 describe('a broken save does not crash the game', () => {
   const good = () => JSON.parse(Battle.start(SCENARIOS.skirmish, 1).save());
+  // biome-ignore lint/suspicious/noExplicitAny: the test corrupts arbitrary fields of a parsed save
   const mutate = (fn: (s: any) => void) => {
     const s = good();
     fn(s.state);

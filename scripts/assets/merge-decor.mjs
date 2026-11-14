@@ -1,8 +1,9 @@
 // Merges several .gltf/.glb files into a single GLB: each model becomes a top-level node named after the file (without extension).
 // node scripts/assets/merge-decor.mjs <output.glb> <input1> <input2> ...
-import { NodeIO } from '@gltf-transform/core';
-import { dedup, prune, getBounds, mergeDocuments } from '@gltf-transform/functions';
+
 import path from 'node:path';
+import { NodeIO } from '@gltf-transform/core';
+import { dedup, getBounds, mergeDocuments, prune } from '@gltf-transform/functions';
 
 const [out, ...inputs] = process.argv.slice(2);
 const io = new NodeIO();
@@ -48,7 +49,7 @@ await base.transform(prune(), dedup());
 await io.write(out, base);
 
 const dup = names.filter((n, i) => names.indexOf(n) !== i);
-if (dup.length) throw new Error('nomes duplicados: ' + dup);
+if (dup.length) throw new Error(`nomes duplicados: ${dup}`);
 for (const n of scene.listChildren()) {
   const b = getBounds(n);
   const f = (v) => v.map((x) => +x.toFixed(3)).join(',');

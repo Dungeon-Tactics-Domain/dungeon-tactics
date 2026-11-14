@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CLASSES } from '../src/shared/battle/fft/data.ts';
 import {
   critXa,
   fallDamage,
@@ -9,7 +10,6 @@ import {
   turnCt,
   weaponDamage,
 } from '../src/shared/battle/fft/formulas.ts';
-import { CLASSES } from '../src/shared/battle/fft/data.ts';
 
 // FFT reference study (Fernando's request, Nov 11). Each example below comes from the Battle Mechanics Handbook v6.1 by
 // Aerostar (docs/game-design/referencia-fft.md); the section is in each test.

@@ -5,13 +5,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { tileAt, type Grid } from '../shared/battle/grid.ts';
+import { type Grid, tileAt } from '../shared/battle/grid.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
-import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
-import { waterLevels } from './water-levels.ts';
 import { boxOf, loadPaint, variant } from './painted.ts';
 import { swapProps } from './props.ts';
+import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { swapTrees } from './trees.ts';
+import { waterLevels } from './water-levels.ts';
 
 type Kind = 'forest' | 'field' | 'crypt' | 'frost';
 type Pair = [night: string, day: string];
@@ -59,18 +59,18 @@ export const MOODS: Record<Kind, Mood> = {
     bump: 0.7,
     shade: 0.6,
     props: [
-      { model: F + 'Bush_2_A_Color1', n: 160, d: [0.3, 4], h: [0.4, 1.1] },
+      { model: `${F}Bush_2_A_Color1`, n: 160, d: [0.3, 4], h: [0.4, 1.1] },
       // fuller forest with varied sizes (Nov 13, "fill Ash Wood map with more trees of different sizes")
-      { model: F + 'Tree_3_A_Color1', n: 140, d: [0.4, 3.5], h: [0.9, 1.9] },
-      { model: F + 'Tree_1_A_Color1', n: 120, d: [1, 4], h: [1.8, 3] },
-      { model: F + 'Rock_3_A_Color1', n: 14, d: [0.8, 7], h: [0.4, 1.1] },
-      { model: F + 'Rock_1_A_Color1', n: 10, d: [0.6, 5], h: [0.3, 0.7] },
-      { model: F + 'Tree_2_A_Color1', n: 110, d: [1.5, 7], h: [2.2, 3.5] }, // more forest nearby (Nov 13, Fernando's request: "bigger volume of trees"): the fade wipes out what is far away
-      { model: F + 'Tree_1_A_Color1', n: 110, d: [2.5, 9], h: [3.5, 5] },
-      { model: F + 'Tree_3_A_Color1', n: 80, d: [3, 9], h: [3.5, 4.8] },
-      { model: F + 'Tree_2_C_Color1', n: 70, d: [7, 28], h: [6, 8] },
-      { model: F + 'Tree_1_B_Color1', n: 60, d: [7, 28], h: [6, 8] },
-      { model: F + 'Tree_4_B_Color1', n: 60, d: [8, 28], h: [6.5, 8] },
+      { model: `${F}Tree_3_A_Color1`, n: 140, d: [0.4, 3.5], h: [0.9, 1.9] },
+      { model: `${F}Tree_1_A_Color1`, n: 120, d: [1, 4], h: [1.8, 3] },
+      { model: `${F}Rock_3_A_Color1`, n: 14, d: [0.8, 7], h: [0.4, 1.1] },
+      { model: `${F}Rock_1_A_Color1`, n: 10, d: [0.6, 5], h: [0.3, 0.7] },
+      { model: `${F}Tree_2_A_Color1`, n: 110, d: [1.5, 7], h: [2.2, 3.5] }, // more forest nearby (Nov 13, Fernando's request: "bigger volume of trees"): the fade wipes out what is far away
+      { model: `${F}Tree_1_A_Color1`, n: 110, d: [2.5, 9], h: [3.5, 5] },
+      { model: `${F}Tree_3_A_Color1`, n: 80, d: [3, 9], h: [3.5, 4.8] },
+      { model: `${F}Tree_2_C_Color1`, n: 70, d: [7, 28], h: [6, 8] },
+      { model: `${F}Tree_1_B_Color1`, n: 60, d: [7, 28], h: [6, 8] },
+      { model: `${F}Tree_4_B_Color1`, n: 60, d: [8, 28], h: [6.5, 8] },
     ],
     beams: { n: 14, color: ['#8fb0ff', '#ffd79a'], power: [0.1, 0.42], tilt: 1 },
     motes: { n: 360, color: ['#c8ff7a', '#ffe7a3'], size: 0.07, fall: -0.00008, add: true, top: 6 },
@@ -90,12 +90,12 @@ export const MOODS: Record<Kind, Mood> = {
     bump: 1.2,
     shade: 0.9,
     props: [
-      { model: F + 'Bush_2_A_Color1', n: 30, d: [0.5, 6], h: [0.4, 0.9] },
-      { model: F + 'Rock_3_A_Color1', n: 16, d: [0.8, 12], h: [0.4, 1.2] },
-      { model: F + 'Rock_1_A_Color1', n: 12, d: [0.6, 8], h: [0.3, 0.7] },
-      { model: F + 'Tree_1_A_Color1', n: 16, d: [5, 22], h: [3, 4.5] },
-      { model: F + 'Tree_3_A_Color1', n: 10, d: [6, 22], h: [3, 4] },
-      { model: F + 'Tree_4_A_Color1', n: 12, d: [9, 30], h: [4, 6] },
+      { model: `${F}Bush_2_A_Color1`, n: 30, d: [0.5, 6], h: [0.4, 0.9] },
+      { model: `${F}Rock_3_A_Color1`, n: 16, d: [0.8, 12], h: [0.4, 1.2] },
+      { model: `${F}Rock_1_A_Color1`, n: 12, d: [0.6, 8], h: [0.3, 0.7] },
+      { model: `${F}Tree_1_A_Color1`, n: 16, d: [5, 22], h: [3, 4.5] },
+      { model: `${F}Tree_3_A_Color1`, n: 10, d: [6, 22], h: [3, 4] },
+      { model: `${F}Tree_4_A_Color1`, n: 12, d: [9, 30], h: [4, 6] },
     ],
     beams: { n: 0, color: ['#8fb0ff', '#ffe2a6'], power: [0, 0], tilt: 1 },
     motes: { n: 160, color: ['#b8c8ff', '#fff3c4'], size: 0.05, fall: -0.00005, add: true, top: 5 },
@@ -113,8 +113,8 @@ export const MOODS: Record<Kind, Mood> = {
     bump: 0.15,
     shade: 0.85,
     props: [
-      { model: M + 'column', n: 10, d: [0.8, 4], h: [0.7, 1.4] },
-      { model: M + 'pillar', n: 8, d: [3.5, 5], h: [2.6, 3.3] },
+      { model: `${M}column`, n: 10, d: [0.8, 4], h: [0.7, 1.4] },
+      { model: `${M}pillar`, n: 8, d: [3.5, 5], h: [2.6, 3.3] },
     ],
     beams: { n: 3, color: ['#8fc6ff', '#8fc6ff'], power: [0.07, 0.09], tilt: 0.25 },
     motes: { n: 220, color: ['#ffb070', '#ffb070'], size: 0.045, fall: -0.00012, add: true, top: 4 },
@@ -133,12 +133,12 @@ export const MOODS: Record<Kind, Mood> = {
     bump: 1,
     shade: 0.95,
     props: [
-      { model: F + 'Rock_3_A_Color1', n: 26, d: [0.6, 10], h: [0.5, 1.6] },
-      { model: F + 'Rock_1_A_Color1', n: 14, d: [0.5, 6], h: [0.3, 0.8] },
-      { model: F + 'Tree_Bare_1_A_Color1', n: 12, d: [1, 9], h: [1.5, 2.6] },
-      { model: F + 'Tree_Bare_2_A_Color1', n: 12, d: [1.5, 10], h: [1.8, 3] },
-      { model: F + 'Tree_4_A_Color1', n: 26, d: [5, 24], h: [3, 5] },
-      { model: F + 'Tree_4_B_Color1', n: 26, d: [7, 26], h: [4, 6.5] },
+      { model: `${F}Rock_3_A_Color1`, n: 26, d: [0.6, 10], h: [0.5, 1.6] },
+      { model: `${F}Rock_1_A_Color1`, n: 14, d: [0.5, 6], h: [0.3, 0.8] },
+      { model: `${F}Tree_Bare_1_A_Color1`, n: 12, d: [1, 9], h: [1.5, 2.6] },
+      { model: `${F}Tree_Bare_2_A_Color1`, n: 12, d: [1.5, 10], h: [1.8, 3] },
+      { model: `${F}Tree_4_A_Color1`, n: 26, d: [5, 24], h: [3, 5] },
+      { model: `${F}Tree_4_B_Color1`, n: 26, d: [7, 26], h: [4, 6.5] },
     ],
     beams: { n: 0, color: ['#8fb0ff', '#ffe2a6'], power: [0, 0], tilt: 1 },
     motes: { n: 900, color: ['#dfe8ff', '#ffffff'], size: 0.065, fall: 0.0011, add: false, top: 9 },
@@ -167,8 +167,8 @@ const EDGE: Record<string, string> = {
   gold: '#6a6d76',
   summit: '#4a4a52',
 };
-const WALL = [M + 'wall', M + 'wall_arched', M + 'wall_broken'],
-  TORCH = M + 'torch_mounted';
+const WALL = [`${M}wall`, `${M}wall_arched`, `${M}wall_broken`],
+  TORCH = `${M}torch_mounted`;
 const SUN = new THREE.Vector3(6, -12, -4).normalize(); // the light ray comes from where the scene's sun comes from (sun.position -6, 12, 4)
 // Nothing in the surroundings rises above this line: with the camera at 32° (tan = 0.625), whatever sits d tiles from the edge up to
 // 0.5 + 0.55·d in height never covers a tile or unit, from any angle of the rotation (the lowest tile has its top at 0.5).

@@ -1,5 +1,5 @@
 // Water heights in the drawing (Nov 13), apart from water.ts so it is pure (no Three) and testable, like markers.ts.
-import { neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { type Grid, neighbors, posKey, tileAt } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 
 // how much the deep water surface sits below the shallow one, in levels (visuals only; the rules read depth). 0.8 since Nov 13, Fernando's request

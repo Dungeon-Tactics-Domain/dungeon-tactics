@@ -1,7 +1,7 @@
 // Party chest and each member's equipment (Nov 13, delivery 2 of the design docs/game-design/cidades-grupo-equipamento.md):
 // gold and items stored in the browser; equipment is kept per base class (each class is one person in the campaign). Pure and
 // tested; the saved values are a trust boundary (parseChest/parseEquip reject what they don't know).
-import { ITEMS, SLOTS, type Loadout, type Slot } from '../shared/battle/equipment.ts';
+import { ITEMS, type Loadout, SLOTS, type Slot } from '../shared/battle/equipment.ts';
 
 export const CHEST_KEY = 'dt:bau';
 export const EQUIP_KEY = 'dt:equip';

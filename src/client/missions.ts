@@ -6,7 +6,7 @@ import type { Scenario } from '../shared/battle/scenarios.ts';
 import { CHAPTERS } from './campaign.ts';
 import type { Equip } from './chest.ts';
 import { buildDevScenario, unitFrom } from './dev-roster.ts';
-import { defaultGroup, heroesFor, type Group } from './group.ts';
+import { defaultGroup, type Group, heroesFor } from './group.ts';
 import type { Hero } from './hero.ts';
 
 export const MISSIONS_KEY = 'dt:missoes';

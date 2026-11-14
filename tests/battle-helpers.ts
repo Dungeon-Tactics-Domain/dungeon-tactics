@@ -1,4 +1,4 @@
-import { parseGrid, type Grid } from '../src/shared/battle/grid.ts';
+import { type Grid, parseGrid } from '../src/shared/battle/grid.ts';
 import { nextRng } from '../src/shared/battle/rng.ts';
 import type { BattleState, Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';

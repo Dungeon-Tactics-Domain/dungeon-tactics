@@ -4,14 +4,14 @@ import {
   checkOutcome,
   counters,
   isRanged,
+  type Preview,
   previewAbility,
   resolveAbility,
   spikeAtTurnEnd,
-  type Preview,
 } from './combat.ts';
-import { FACING, canStand, faceNearest, facingTo, inBounds, posKey, samePos, tileAt, type Grid } from './grid.ts';
-import { pathTo, reachable, unitAt, type Step } from './pathing.ts';
-import { SCENARIOS, initialState, type Scenario } from './scenarios.ts';
+import { canStand, FACING, faceNearest, facingTo, type Grid, inBounds, posKey, samePos, tileAt } from './grid.ts';
+import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
+import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Charge, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';

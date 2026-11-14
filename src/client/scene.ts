@@ -1,8 +1,8 @@
 // Three.js battle scene: block map, units, tile markers, floating numbers and an orthographic camera with
 // RenderPixelatedPass (the spec's SNES pixel art). It only draws: it knows no rules, it receives state, highlights and events.
 import * as THREE from 'three';
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -12,45 +12,45 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import {
-  FACING,
   dist,
+  FACING,
+  type Grid,
   inBounds,
   neighbors,
   posKey,
   samePos,
   standH,
-  tileAt,
-  type Grid,
   type Tile,
+  tileAt,
 } from '../shared/battle/grid.ts';
 import { footprint } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { type Ambience, EXTEND, kindOf, loadAmbience } from './ambience.ts';
+import { buildBridges } from './bridge.ts';
+import { addDetail } from './detail.ts';
+import { chargeAura, lookOf, playFx } from './fx.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { chargeDanger, type Highlights, type TileKind } from './interaction.ts';
-import { MARKER, barYOf, modelOf, unitHeight } from './markers.ts';
+import { barYOf, MARKER, modelOf, unitHeight } from './markers.ts';
+import { loadPaint, boxOf as pieceBox, variant } from './painted.ts';
 import type { PixelSettings } from './pixel-settings.ts';
-import { TIMING, isJump, jumpAirMs, speed } from './timing.ts';
-import { chargeAura, lookOf, playFx } from './fx.ts';
-import { Water } from './water.ts';
-import { DEEP_DROP, SWIM, WADE, raisedDeep, waterLevels, type WaterLevel } from './water-levels.ts';
-import { EXTEND, kindOf, loadAmbience, type Ambience } from './ambience.ts';
-import { addDetail } from './detail.ts';
-import { buildBridges } from './bridge.ts';
-import { boxOf as pieceBox, loadPaint, variant } from './painted.ts';
 import { DEBRIS, LITTER, swapProps } from './props.ts';
-import { swapTrees } from './trees.ts';
 import {
-  PAINT,
   buildStream,
   buildTerrain,
   loadTerrainTextures,
+  PAINT,
   pickTiles,
   riverOf,
   riverOutside,
   type TerrainTextures,
 } from './terrain.ts';
+import { isJump, jumpAirMs, speed, TIMING } from './timing.ts';
+import { swapTrees } from './trees.ts';
+import { Water } from './water.ts';
+import { DEEP_DROP, raisedDeep, SWIM, WADE, type WaterLevel, waterLevels } from './water-levels.ts';
 
 const STEP = 0.5; // height of one level in meters (1 tile = 1 wide), the same as the approved POC
 const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
@@ -338,7 +338,7 @@ function prepare(o: THREE.Object3D) {
     mesh.castShadow = mesh.receiveShadow = true;
     const mat = mesh.material as THREE.MeshStandardMaterial,
       map = mat.map;
-    if (map && map.generateMipmaps && !mat.userData.procedural)
+    if (map?.generateMipmaps && !mat.userData.procedural)
       Object.assign(map, {
         generateMipmaps: false,
         minFilter: THREE.NearestFilter,

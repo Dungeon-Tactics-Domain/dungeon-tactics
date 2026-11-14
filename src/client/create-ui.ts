@@ -3,7 +3,7 @@
 // Own piece because none of the existing ones (dialog, choice) shows portrait and sheet side by side; style via the :root variables.
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { HERO_CLASSES, NAME_MAX, parseHero, type Hero, type HeroClass } from './hero.ts';
+import { HERO_CLASSES, type Hero, type HeroClass, NAME_MAX, parseHero } from './hero.ts';
 import { abilityDetail, portrait } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';

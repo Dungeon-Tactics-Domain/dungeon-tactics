@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { confirm, defaultMode, freshUi, highlights, selectMode, tapTile } from '../src/client/interaction.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
+import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
 // current archer with a soldier at shooting range and an ally beside

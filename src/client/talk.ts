@@ -1,7 +1,7 @@
 // Campaign speech box: portrait, name and the text appearing letter by letter with the speaker's beep. Click, Enter,
 // Space or A complete the sentence and, once complete, move to the next; Esc skips the whole conversation. It's a button inside an
 // .overlay, so keyboard, mouse and gamepad (main.ts presses the focused button) arrive through the same click.
-import { SPEAKERS, type Line } from './campaign.ts';
+import { type Line, SPEAKERS } from './campaign.ts';
 import type { Hero } from './hero.ts';
 import { portrait } from './hud.ts';
 import { LANG, t } from './i18n.ts';

@@ -7,7 +7,7 @@
 // Run once: node scripts/assets/lancer.mjs (generates public/models/lancer.glb; knight.glb does not change)
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { meshopt, mergeDocuments, prune, unpartition } from '@gltf-transform/functions';
+import { mergeDocuments, meshopt, prune, unpartition } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 

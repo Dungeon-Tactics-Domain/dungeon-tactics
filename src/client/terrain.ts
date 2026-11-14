@@ -5,7 +5,7 @@
 // crosses the map continues outside: it starts higher on one side and exits lower on the other, in cascades. Visuals only: the rules
 // keep reading each tile's height (grid.ts).
 import * as THREE from 'three';
-import { posKey, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
+import { type Grid, posKey, type Tile, tileAt } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { WADE, type WaterLevel } from './water-levels.ts';
 
@@ -99,7 +99,7 @@ export function streamAt(
   u: number,
   j: number,
 ): number | null {
-  if (!river || !river.rows.includes(j) || (u >= 0 && u < grid.width)) return null;
+  if (!river?.rows.includes(j) || (u >= 0 && u < grid.width)) return null;
   const right = u >= grid.width;
   const lv = levels.get(`${right ? grid.width - 1 : 0},${j}`)!;
   const k = right ? u - grid.width : -u; // distance from the edge, in tiles

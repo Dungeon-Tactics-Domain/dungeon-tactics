@@ -536,7 +536,7 @@ button[hidden] {
   .banner,
   .tools-menu,
   .panel .item.focus::before {
-    animation: none !important;
+    animation: none;
   }
 }
 .panel .item:disabled {

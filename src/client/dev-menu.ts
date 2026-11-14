@@ -1,24 +1,25 @@
 // Developer menu screen (Fernando's request, Nov 12): picks the map, builds heroes and enemies (class, name,
 // HP, speed, movement and abilities), saves in the browser, exports and imports JSON and starts the battle.
 // The cast rules live in dev-roster.ts (pure, tested); here it's only the screen.
-import { SCENARIOS } from '../shared/battle/scenarios.ts';
+
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
+import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { choice, dialog } from './dialog.ts';
 import {
   DEV_KEY,
   DEV_MAPS,
-  LIMITS,
+  type DevSetup,
+  type DevUnit,
   defaultSetup,
   devAbilities,
   devClasses,
+  LIMITS,
   parseSetup,
   problems,
   slotsOf,
   unitFrom,
-  type DevSetup,
-  type DevUnit,
 } from './dev-roster.ts';
+import { choice, dialog } from './dialog.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { store } from './store.ts';

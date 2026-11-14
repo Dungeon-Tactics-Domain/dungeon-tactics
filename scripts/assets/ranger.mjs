@@ -5,7 +5,7 @@
 // Run once: node scripts/assets/ranger.mjs (generates public/models/ranger.glb; rogue.glb does not change, the fallen bodies use it)
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { meshopt, mergeDocuments, prune, unpartition } from '@gltf-transform/functions';
+import { mergeDocuments, meshopt, prune, unpartition } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS, chapterScenario, learned } from '../src/client/campaign.ts';
-import { heroesFor, defaultGroup } from '../src/client/group.ts';
+import { defaultGroup, heroesFor } from '../src/client/group.ts';
 import { parseHero } from '../src/client/hero.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 

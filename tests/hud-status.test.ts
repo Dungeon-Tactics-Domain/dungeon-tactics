@@ -41,7 +41,7 @@ describe('status window', () => {
 
   it('Chemist shows the potion stock', () => {
     const rows = Object.fromEntries(unitStatus(initialState(GARILAND, 1), 'chemist'));
-    expect(rows['Poções']).toBe('4');
+    expect(rows.Poções).toBe('4');
   });
 });
 

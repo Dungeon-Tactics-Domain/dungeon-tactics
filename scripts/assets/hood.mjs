@@ -75,7 +75,10 @@ const out = keep.map((v) => {
         .filter((h) => (h[0] * u[0] + h[1] * u[1] + h[2] * u[2]) / len3(h) > 0.985)
         .map(len3),
     );
-    if (r < reach + GAP) (d = u.map((x) => x * (reach + GAP))), pushed++;
+    if (r < reach + GAP) {
+      d = u.map((x) => x * (reach + GAP));
+      pushed++;
+    }
   }
   return [d[0] + CENTER[0], d[1] + CENTER[1] + LIFT, d[2] + CENTER[2]];
 });

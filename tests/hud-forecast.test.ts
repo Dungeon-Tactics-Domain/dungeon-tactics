@@ -4,7 +4,7 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT } from '../src/shared/battle/combat.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
-import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
+import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Strike preview when aiming (Nov 13, Fernando's request, as in FFT and Tactics Ogre): the same calculation as the "Executar?" (Execute?) prompt
 const fc = (b: Battle, ability: string, target: Pos) => forecast(b, ability, b.preview(ability, target));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FACING, blocksOf, canStand, inBounds, standH, tileAt } from '../src/shared/battle/grid.ts';
+import { blocksOf, canStand, FACING, inBounds, standH, tileAt } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
 // Game maps (Nov 12: Lighthouse Hill dressed with pieces and the new Flooded Crypt): full grid and nobody spawning

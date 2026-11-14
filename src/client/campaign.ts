@@ -2,11 +2,10 @@
 // speech sounds). Our own story. Each stage is a cast from the developer menu (dev-roster.ts) on a game map, with
 // lines before and after the battle. Pure and tested; the dialogue screen lives in talk.ts.
 import type { Scenario } from '../shared/battle/scenarios.ts';
-import type { BattleState } from '../shared/battle/types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
-import { buildDevScenario, slotsOf, unitFrom, type DevSetup, type DevUnit } from './dev-roster.ts';
 import type { Equip } from './chest.ts';
-import { defaultGroup, heroesFor, type Group } from './group.ts';
+import { buildDevScenario, type DevSetup, type DevUnit, slotsOf, unitFrom } from './dev-roster.ts';
+import { defaultGroup, type Group, heroesFor } from './group.ts';
 import type { Hero } from './hero.ts';
 import type { SongId } from './music.ts';
 

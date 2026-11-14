@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEEP_DROP, WADE, raisedDeep, waterLevels } from '../src/client/water-levels.ts';
+import { DEEP_DROP, raisedDeep, WADE, waterLevels } from '../src/client/water-levels.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
 // Water drawing (Nov 13): the shallow bed sits where stand() puts the feet, and the bridge only carries water underneath when there is a gap

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { chargeDanger } from '../src/client/interaction.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -8,7 +9,6 @@ import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { previewOrder } from '../src/shared/battle/turn-queue.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { chargeDanger } from '../src/client/interaction.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Charged actions (Nov 12, FFT turn rules on all maps): declared on the turn, resolves after N ticks
@@ -162,6 +162,6 @@ describe('charges in the FFT study (BMG 2.2, 3.3)', () => {
     expect(wizard.vars!.mp).toBe(11);
     expect(b.state.charges[0].ticks).toBe(4);
     untilResolved(b);
-    expect(b.state.units.find((u) => u.id === 'wizard')?.vars!.mp).toBe(11);
+    expect(b.state.units.find((u) => u.id === 'wizard')!.vars!.mp).toBe(11);
   });
 });

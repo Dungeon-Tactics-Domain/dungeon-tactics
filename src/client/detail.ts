@@ -26,8 +26,7 @@ export function addDetail(
   scale: number,
   strength = 0.75,
 ) {
-  sh.vertexShader =
-    'varying vec3 vDPos; varying vec3 vDN;\n' + sh.vertexShader.replace('#include <begin_vertex>', DET_VERT);
+  sh.vertexShader = `varying vec3 vDPos; varying vec3 vDN;\n${sh.vertexShader.replace('#include <begin_vertex>', DET_VERT)}`;
   // strength 0 (units and bodies, Nov 13: Fernando found the grain on them "ugly"): only a light shading, the side
   // slightly darker than the top, with no texture at all
   if (!strength) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TERRAIN, inBounds, neighbors, parseGrid, tileAt } from '../src/shared/battle/grid.ts';
+import { inBounds, neighbors, parseGrid, TERRAIN, tileAt } from '../src/shared/battle/grid.ts';
 
 describe('grid', () => {
   const grid = parseGrid(['.T#', '...'], ['012', '300']);

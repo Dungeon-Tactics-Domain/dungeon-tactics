@@ -4,7 +4,7 @@
 // with moss, and the caravan remains (bottles, sack, broken plank) to place next to bodies. Same material
 // and same convention as the trees (painted.ts): y = 0 is the ground, one mesh per piece, the box in `userData.box`.
 import * as THREE from 'three';
-import { V, lump, piece, ramp, rng, slab, tones, tube } from './painted.ts';
+import { lump, piece, ramp, rng, slab, tones, tube, V } from './painted.ts';
 
 const WOOD = tones('#3b2814', '#614224', '#8a6034', '#b08248', '#d2a765');
 const IRON = tones('#1e2126', '#353a41', '#525962', '#767e88');

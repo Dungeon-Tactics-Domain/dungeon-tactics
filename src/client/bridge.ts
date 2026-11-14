@@ -5,7 +5,7 @@
 // its height in the rules, and the top of the planks sits exactly at that height (the unit steps on them).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { inBounds, neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { type Grid, inBounds, neighbors, posKey, tileAt } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 
 const PLANK = 0.19; // depth of each plank, with a 0.03 gap

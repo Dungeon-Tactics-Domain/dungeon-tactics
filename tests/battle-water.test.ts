@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn } from '../src/shared/battle/ai.ts';
 import { hitChance, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
-import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { type Grid } from '../src/shared/battle/grid.ts';
+import type { Grid } from '../src/shared/battle/grid.ts';
 import { lineOfSight, reachable } from '../src/shared/battle/pathing.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 

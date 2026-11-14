@@ -1,19 +1,19 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import {
-  FACING,
-  TERRAIN,
   canStand,
   dist,
+  FACING,
+  type Grid,
   inBounds,
   isDeep,
+  type Side,
   samePos,
   sideOf,
   standH,
+  TERRAIN,
   tileAt,
-  type Grid,
-  type Side,
 } from './grid.ts';
-import { MAX_JUMP, distTo, inAbilityRange, nearestTile, shotStop, unitAt } from './pathing.ts';
+import { distTo, inAbilityRange, MAX_JUMP, nearestTile, shotStop, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';

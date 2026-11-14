@@ -11,30 +11,30 @@
 // Redraws everything on each change (it is little DOM); the menu position changes only via left/top.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { COMBAT, simulatePush, type Preview } from '../shared/battle/combat.ts';
-import { TERRAIN, posKey, standH, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { COMBAT, type Preview, simulatePush } from '../shared/battle/combat.ts';
+import { type Grid, posKey, standH, TERRAIN, tileAt } from '../shared/battle/grid.ts';
 import { jumpOf, unitAt } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
-import { SURVIVAL_ID, turnsLeft } from './survival.ts';
-import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
+import { previewOrder, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import {
-  COMMANDS,
   abilitiesOf,
   abilityEnabled,
+  COMMANDS,
+  type Command,
   canUndoMove,
   commandEnabled,
-  swimming,
-  type Command,
   type Screen,
+  swimming,
 } from './command.ts';
-import { abilityName, t, unitName } from './i18n.ts';
-import { UI_ICON, el, icon, iconButton, type Child } from './icons.ts';
 import { classOf } from './dev-roster.ts';
+import { abilityName, t, unitName } from './i18n.ts';
+import { type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
+import { SURVIVAL_ID, turnsLeft } from './survival.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item

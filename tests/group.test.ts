@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from '../src/client/campaign.ts';
 import {
-  DEPLOY_MAX,
-  GROUP_MAX,
-  RECRUIT_COST,
   changeClass,
+  DEPLOY_MAX,
   defaultGroup,
   dismiss,
+  GROUP_MAX,
   heroesFor,
   parseGroup,
+  RECRUIT_COST,
   recruit,
   toggleDeploy,
 } from '../src/client/group.ts';

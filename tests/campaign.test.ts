@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { Battle } from '../src/shared/battle/battle.ts';
-import { simulate } from '../src/shared/battle/simulate.ts';
 import {
   CHAPTERS,
-  SPEAKERS,
   chapterScenario,
   foesText,
   learned,
   objectiveText,
   parseProgress,
+  SPEAKERS,
 } from '../src/client/campaign.ts';
 import { problems } from '../src/client/dev-roster.ts';
 import { unitHeight } from '../src/client/markers.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
+import { simulate } from '../src/shared/battle/simulate.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 const say = (pt: string) => pt;

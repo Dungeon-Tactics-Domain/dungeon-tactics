@@ -13,7 +13,7 @@
 // wave normal only exist in the color pass.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { inBounds, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
+import { type Grid, inBounds, posKey, tileAt } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { pickTiles, type River } from './terrain.ts';
 import type { WaterLevel } from './water-levels.ts';

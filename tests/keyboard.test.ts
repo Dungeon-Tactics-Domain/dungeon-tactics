@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { cycleUnit, gridStep, keyAction } from '../src/client/keyboard.ts';
 import { cancel, freshUi, hoverTile, selectMode } from '../src/client/interaction.ts';
+import { cycleUnit, gridStep, keyAction } from '../src/client/keyboard.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
+import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 const key = (k: string, extra: Partial<KeyboardEvent> = {}) =>
   keyAction({ key: k, code: '', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...extra });

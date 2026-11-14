@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { Ambience, LIMIT, MOODS, kindOf } from '../src/client/ambience.ts';
-import { extH } from '../src/client/terrain.ts';
+import { Ambience, kindOf, LIMIT, MOODS } from '../src/client/ambience.ts';
 import { chapterScenario } from '../src/client/campaign.ts';
+import { extH } from '../src/client/terrain.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
 // distance to the board edge, as in ambience.ts (map centered on the origin)

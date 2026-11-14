@@ -4,8 +4,8 @@
 // among the unlocked ones (JOBS), and up to 4 go to battle (the maps' starting tiles). The default party assembles exactly the
 // measured cast of each stage, so the campaign curve doesn't change for whoever doesn't touch the party.
 import type { Chest, Equip } from './chest.ts';
-import { unitFrom, type DevUnit } from './dev-roster.ts';
-import { HERO_CLASSES, NAME_MAX, type Hero } from './hero.ts';
+import { type DevUnit, unitFrom } from './dev-roster.ts';
+import { HERO_CLASSES, type Hero, NAME_MAX } from './hero.ts';
 
 // party classes: the protagonist's 4 and the new ones, which only join via recruitment and class change (design, section 4)
 export const JOBS = [...HERO_CLASSES, 'lancer'] as const;

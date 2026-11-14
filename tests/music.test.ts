@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TRACKS, trackUrl, type SongId } from '../src/client/music.ts';
+import { type SongId, TRACKS, trackUrl } from '../src/client/music.ts';
 
 describe('music', () => {
   it('every track has a file in /music and a gain between 0 and 1 (audio volume never exceeds 1)', () => {

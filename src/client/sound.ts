@@ -1,7 +1,7 @@
 // Game sound (Nov 12, Fernando's request: music and effects the FFT way, but nothing from the original): looping
 // songs (files, Nov 13), short effects and the victory and defeat fanfares, which are notes made here in WebAudio.
 // Files and licenses (all CC0) in public/CREDITS.txt. The browser only lets it play after the 1st click or key.
-import { TRACKS, trackUrl, type SongId } from './music.ts';
+import { type SongId, TRACKS, trackUrl } from './music.ts';
 import { store } from './store.ts';
 
 export const SOUND_KEY = 'dt:sound';

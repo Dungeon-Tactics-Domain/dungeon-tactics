@@ -4,7 +4,7 @@
 // movement and ranges doubled, and the Wood gets trees 3 to 5 half-tiles wide and crates and bodies
 // scattered around. It only exists for whoever calls registerHalf (the client with ?cenario=meia), like the FFT study.
 import { ABILITIES } from './abilities.ts';
-import { FACING, posKey, tileAt, type Grid, type Tile } from './grid.ts';
+import { FACING, type Grid, posKey, type Tile, tileAt } from './grid.ts';
 import { SCENARIOS, type Scenario } from './scenarios.ts';
 import type { Pos } from './types.ts';
 import { UNIT_DEFS } from './units.ts';

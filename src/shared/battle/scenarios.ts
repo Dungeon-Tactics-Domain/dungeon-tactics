@@ -1,4 +1,4 @@
-import { faceNearest, parseGrid, type Grid, type Tile } from './grid.ts';
+import { faceNearest, type Grid, parseGrid, type Tile } from './grid.ts';
 import type { Rules } from './rules.ts';
 import type { BattleState, Team } from './types.ts';
 import { UNIT_DEFS } from './units.ts';

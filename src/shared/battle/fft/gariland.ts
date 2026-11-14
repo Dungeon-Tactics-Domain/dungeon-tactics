@@ -12,13 +12,13 @@ import { UNIT_DEFS, type UnitDef } from '../units.ts';
 import {
   BRAVE,
   CLASSES,
+  type ClassDef,
   ESCUTCHEON,
   FAITH,
   KNIGHT_GEAR_HP,
   SKILLS,
   STARTING_GEAR_HP,
   WEAPONS,
-  type ClassDef,
 } from './data.ts';
 import {
   CRIT_CHANCE,
