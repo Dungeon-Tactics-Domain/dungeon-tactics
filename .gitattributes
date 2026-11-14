@@ -1,0 +1,2 @@
+# LF everywhere: Biome checks line endings, and Windows checkouts with core.autocrlf turned files into CRLF
+* text=auto eol=lf
