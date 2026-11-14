@@ -160,7 +160,9 @@ button:disabled {
   cursor: default;
 }
 button:focus-visible,
-.slider input:focus-visible {
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 } /* ink red: the gold vanished on the parchment (1.2:1) */

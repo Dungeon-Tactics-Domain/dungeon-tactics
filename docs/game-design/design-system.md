@@ -121,13 +121,13 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Dialogue box** `talk()` | `talk.ts` | letter by letter; ▼ blinks when done; `dark` for the opening | conversations and narration |
 | **Class card** `.create-card` | `create-ui.ts` | S ink ring and white background | protagonist creation |
 | **Map node** `.world-node` | `world-ui.ts` | battle red diamond · story blue circle · done gold border · D dark grey · here: ring with halo | world map |
-| **Form field** (text, select, number, checkbox, `details`) | `create-ui.ts`, `dev-menu.ts` | no focus style of its own (the browser's); `--paper-hi` or `#fff` background | protagonist name, Developer menu |
+| **Form field** (text, select, number, checkbox, `details`) | `create-ui.ts`, `dev-menu.ts` | F the same ink ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | protagonist name, Developer menu |
 | **Key hint** `.hint` | `style.css` | PC with keyboard only (`.kbd`) | menu rows and buttons |
 | **Banner** `.banner` / `.announce` | `style.css` | enters, holds, leaves | ability name, stage objective |
 
 ### Focus
 
-- 3 px ring in `--focus`, offset 3 px, on every button and on the volume bar (`:focus-visible`).
+- 3 px ring in `--focus`, offset 3 px, on every button, form field (text, number, select, checkbox, `details` summary) and the volume bar (`:focus-visible`).
 - On parchment the ring alone exceeds 4.5:1. **Outside the parchment** (menu button over the scene, map node, title language button, dialogue box) `--focus-halo` is added: a light band hugging the inside of the ring, which guarantees 6.9:1 between the two on any background.
 - Menu rows do not use a ring: focus is the ▶ and the light background (`.focus`), moved by the same cursor from keyboard, mouse and gamepad.
 - A dialog that rebuilds itself after an action (Sheet) returns focus to the same button.
@@ -178,7 +178,6 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 - **Party list** (`.party-card`) is an `li` with `role="button"`: make it a real button.
 - **Tavern:** quests and recruiting in the same long dialog (833 px).
 - **Gamepad in world map dialogs:** in `?world` there is no `Game`, so `pollPad` does not run; the loop in `world-ui.ts` only forwards A. Party, Sheet, Shop and Tavern cannot be navigated with the d-pad.
-- **Form field focus:** the ink ring only covers `button` and the volume bar; text, select and checkbox keep the browser's focus.
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
 - **`--stone*` tokens** are almost unused after "everything in parchment": only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 
