@@ -112,6 +112,55 @@ describe('half tiles: line of sight on the game maps', () => {
   }
 });
 
+describe('half tiles: aiming at a big unit', () => {
+  it('every tile of the Colossus answers as on the whole map, from every cell of it', () => {
+    // review, "The Shade on the Summit": range went to the Colossus' nearest tile and sight to the aimed one, and an area
+    // centered on its whole 4x4 square; the whole map measures all three from the aimed tile
+    UNIT_DEFS['t-all'] = { ...UNIT_DEFS.warrior, id: 't-all', abilities: Object.keys(ABILITIES) };
+    const whole = gridOf(Array(9).fill('.........'), [
+      '000011122',
+      '000111122',
+      '001112223',
+      ...Array(6).fill('001122233'),
+    ]);
+    const half = split(whole, 't-colossus', [
+      { id: 'a', def: 't-all', team: 'hero', x: 0, y: 0 },
+      { id: 'k', def: 'colossus', team: 'enemy', x: 0, y: 0 },
+      { id: 'c', def: 'brute', team: 'enemy', x: 0, y: 0 },
+    ]).grid;
+    const C = { x: 4, y: 3 };
+    const by = { x: 3, y: 4 }; // beside the Colossus' left column: an area on its left tiles catches it, one on its right does not
+    const diff: string[] = [];
+    for (let y = 0; y < 9; y++)
+      for (let x = 0; x < 9; x++) {
+        const A = { x, y };
+        if ([...cellsOf(C, 2), by].some((p) => posKey(p) === posKey(A))) continue;
+        const s = stateOf([
+          { id: 'a', def: 't-all', team: 'hero', ...A },
+          { id: 'k', def: 'colossus', team: 'enemy', ...C },
+          { id: 'c', def: 'brute', team: 'enemy', ...by },
+        ]);
+        const hs = halfState(s);
+        const say = (p: ReturnType<typeof previewAbility>) =>
+          p.ok
+            ? p.targets
+                .map((t) => `${t.unit}:${t.chance}`)
+                .sort()
+                .join(',')
+            : 'out';
+        for (const id of Object.keys(ABILITIES))
+          for (const T of cellsOf(C, 2)) {
+            const w = say(previewAbility(whole, s, 'a', id, T));
+            for (const p of cellsOf(cell(T), 2)) {
+              const h = say(previewAbility(half, hs, 'a', id, p));
+              if (w !== h) diff.push(`${id} ${posKey(A)} -> ${posKey(p)} whole ${w} half ${h}`);
+            }
+          }
+      }
+    expect(diff.slice(0, 5)).toEqual([]);
+  });
+});
+
 describe('half tiles: aiming at empty ground', () => {
   it('a Blast at empty ground stops on Beacon Hill where the whole map stops it, from every cell of the tile', () => {
     // review, stage 1 turn 33: from the tile corner the line runs to a raw odd cell and reached the archer behind the hill
