@@ -5,7 +5,7 @@
 // crosses the map continues outside: it starts higher on one side and exits lower on the other, in cascades. Visuals only: the rules
 // keep reading each tile's height (grid.ts).
 import * as THREE from 'three';
-import { type Grid, posKey, type Tile, tileAt } from '../shared/battle/grid.ts';
+import { type Grid, type Tile, tileAt } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { WADE, type WaterLevel } from './water-levels.ts';
 
