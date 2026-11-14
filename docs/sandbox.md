@@ -2,8 +2,9 @@
 
 A battle you stage from code instead of playing to it: pick a map, move heroes and enemies, open a menu or an attack
 forecast, frame the camera, hide the interface and take the screenshot. Add `steps` and the units walk, strike and wait
-through the game's own rules and animation, recorded as a video clip. It is for the UX and design work, the mechanics
-and game-feel lab, the README media and any agent that needs to see a screen.
+through the game's own rules and animation, recorded as a video clip. Add `"loop": true` and the page plays them by
+itself, over and over, for a live look at the game feel ([Bench](#bench-live-game-feel)). It is for the UX and design
+work, the mechanics and game-feel lab, the README media and any agent that needs to see a screen.
 
 It works only on `localhost` / `127.0.0.1` with `?sandbox=` in the address. The code is its own chunk
 (`src/client/dev/sandbox.ts`), loaded with a dynamic import behind that check. The online game never downloads it.
@@ -47,7 +48,7 @@ different picture.
 | Key | Value | When it applies |
 |---|---|---|
 | `name` | output file name (default: the spec file name) | CLI |
-| `scenario` | map id: `skirmish`, `beacon_hill`, `flooded_crypt`, `crypt_heart`, `ash_wood`, `frost_pass` (also `survival`, `half`, `fft-gariland`) | page load |
+| `scenario` | map id: `skirmish`, `beacon_hill`, `flooded_crypt`, `crypt_heart`, `ash_wood`, `frost_pass` (also `survival`, `half`, `fft-gariland`, and the sandbox-only `arena`) | page load |
 | `stage` | campaign stage index (0-6); the CLI unlocks it | page load |
 | `path` | any other page with no staged battle, e.g. `"/?world"` (a hero is seeded) or `"/"` (title) | page load |
 | `seed` | battle dice (default 1) | page load |
@@ -59,11 +60,14 @@ different picture.
 | `actor` | the hero whose turn it is (default: the first hero that plays) | load and live |
 | `screen` | `"menu"`, `"abilities"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y}, "confirm": true }` | load and live |
 | `cursor` | `{x,y}`: the tile under the cursor (tile info, target panel, move preview) | load and live |
-| `camera` | `{ "angle": 0-7, "zoom": 1.5, "focus": {x,y}, "action": { "from": "<unit id>", "to": {x,y} } }` | load and live |
+| `camera` | `{ "angle": 0-7, "zoom": 1.5, "focus": {x,y}, "action": { "from": "<unit id>", "to": {x,y} }, "fixed": "side" \| "three-quarter" }` | load and live |
 | `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all` | load and live |
 | `pixel` | `0` (plain 3D), `2`, `3`, `4`: pixel-art block size | load and live |
 | `daylight` | `0` night to `1` day: the light that Until Dawn and the dark stages use | load and live |
-| `steps` | `[{ "move": { "unit", "to": {x,y} } }, { "act": { "unit", "ability", "target": {x,y} } }, { "wait": { "unit", "facing"? } }]` | played after the scene settles (CLI) or by `play` |
+| `steps` | `[{ "move": { "unit", "to": {x,y} } }, { "act": { "unit", "ability", "target": {x,y} } }, { "wait": { "unit", "facing"? } }, { "pause": 500 }]` | played after the scene settles (CLI), by `play`, or by the page with `loop` |
+| `loop` | `true`: the page plays the steps by itself and replays them forever ([Bench](#bench-live-game-feel)) | page load |
+| `timing` | `{ "hitStop": 160, "jumpCrouch": 380 }`: `TIMING` values (`src/client/timing.ts`) for this page only | page load |
+| `speed` | battle clock rate, above 0 up to 4; `0.25` is slow motion | page load |
 
 Notes:
 
@@ -94,6 +98,8 @@ Notes:
 - **Steps** (see [Gameplay clips](#gameplay-clips)): played in order, each one only after the last has settled. A
   step whose unit does not have the turn gets it first, as if the queue had reached it; any unit that plays may take a
   step, enemies included.
+- **`pause` steps** wait that many ms of battle clock (0 to 60000), so they stretch with `speed` and stop with
+  `__sandbox.pause()`.
 - **Not in the game, so not in the spec:** weather, fog and unit status effects. Each map has its own mood (`ambience.ts`); `daylight` is
   the only light control.
 
@@ -110,11 +116,30 @@ __sandbox.apply({ screen: { aim: 'firebolt', target: { x: 4, y: 5 }, confirm: tr
 __sandbox.load({ scenario: 'crypt_heart', lang: 'pt', seed: 4 });                  // another map, cast, seed or language: reloads
 await __sandbox.play({ act: { unit: 'h-archer', ability: 'shot', target: { x: 5, y: 3 } } });  // one step or a list; returns the problems
 await __sandbox.play(__sandbox.spec.steps);   // the steps of the spec in the address
+__sandbox.pause(); await __sandbox.step(); __sandbox.resume();   // stop the battle clock, one frame of it, run again
 __sandbox.problems;                           // what went wrong when the page loaded
 ```
 
 A hand-written address works too:
 `http://localhost:5181/?scenario=frost_pass&sandbox={"hide":["all"],"camera":{"angle":2}}`.
+
+**`?sandbox=` takes the spec in three forms:**
+
+| Form | Example | When |
+|---|---|---|
+| JSON, percent-encoded | `?scenario=ash_wood&sandbox=%7B%22seed%22%3A4%7D` | hand-written, readable (`specUrl` builds it) |
+| a spec file under `scripts/sandbox/`, ending in `.json` | `?scenario=ash_wood&sandbox=bench/walk.json` | the examples; the dev server serves the file |
+| base64url of the JSON (UTF-8, `-` and `_`, no `=`) | `?scenario=ash_wood&sandbox=eyJzZWVkIjo0fQ` | a spec built by another page: nothing to escape |
+
+Base64url in JavaScript (`specParam` in `sandbox-spec.ts` does the same):
+
+```js
+const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(spec))))
+  .replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+```
+
+The map always comes from the address (`?scenario=` or `?stage=`), because the game picks it before the sandbox loads. A
+spec whose `scenario` differs from the address is a problem, not another map.
 
 ## Gameplay clips
 
@@ -157,6 +182,80 @@ A hand-written address works too:
 - **Without `--video`.** The same specs give a screenshot of the scene after the steps (fake clock, run in slices until
   the steps end).
 
+## Bench: live game feel
+
+The Mechanics lab watches the game's own animation on its page (`localhost:5190`), with the game in an iframe.
+
+- **Serve:** `npm run bench` serves the current code on **port 5291** (Vite, `--strictPort`: it fails if the port is
+  taken instead of moving). A proposal branch, from its own worktree: `npm run bench -- --port 5292` (the last `--port`
+  wins).
+- **Embed:** `<iframe src="http://localhost:5291/?scenario=ash_wood&sandbox=bench/walk.json">`. Vite's dev server sends
+  no `X-Frame-Options` or `Content-Security-Policy` header and the game sets none, so any localhost page may embed it
+  (checked with `curl -I` on the dev server, Nov 14). The embedding page must itself come from a localhost server:
+  Chrome's local network checks block a localhost iframe inside a page with a public or unknown address
+  (`ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS`, seen on a page Playwright served from memory).
+- **`"loop": true`:** once the scene settles, the page plays the steps by itself; when they end it waits 1.5 s of battle
+  clock, rewinds the battle to the scene as it loaded (positions, HP, facing, the dead alive again, the same seed, no undo
+  history: `rewind` in `sandbox-spec.ts`), shows the turn menu, applies the camera again and plays again, forever. A step
+  that cannot be played stops the loop with its problem. The CLI drops `loop` and plays the steps once itself.
+- **`timing`** overrides `TIMING` for this page only; an unknown name or a value not above 0 (up to 10000) is a spec
+  error. `float` is also written in the CSS (`.float`), so it only changes when the number leaves the DOM.
+- **`speed`, `pause()`, `step()`, `resume()`** act on the battle clock (`bench` in `timing.ts`, read by `speed()`): walks,
+  jumps, strikes, waits, the hit-stop, the body animations and the water. They do not slow or stop the camera's easing,
+  the damage numbers (CSS) or the music. `step()` runs exactly one frame of it (the frame's real `dt` times the speed).
+  Holding Enter still speeds up 3 times on top.
+- **`camera.fixed`** keeps one tilt for the whole page, turns the action camera off and drops the game's slides to
+  whoever acts, so the body is always seen from the same angle. `side` is 12° and cuts what stands more than 4 tiles in
+  front of the focus (trees, cliffs), like the low action cameras; with no `angle` it looks across the line of the first
+  move or act (angle 7 for a line along a row, 1 for one along a column). `three-quarter` is the game's own 32° at the
+  spec's `angle` (default 0). The focus sits in the middle of the page (the hidden HUD's space is ignored) at the
+  height of its ground, so a body on a plateau stays in frame; `zoom` sets how close (about 3.5 is the closest on Ash
+  Wood). The shake of a strong strike stays. It cannot go with `camera.action`.
+- **From the lab page.** The iframe is on another port, so its `window.__sandbox` is out of reach. The page talks by
+  `postMessage` instead:
+  - it posts `{ sandbox: 'problems', problems: [...] }` to its parent when it is ready (`[]` = ok) and again if a loop
+    stops on a step;
+  - it takes `{ sandbox: 'pause' | 'step' | 'resume' }` from a `http://localhost` or `http://127.0.0.1` page:
+    `iframe.contentWindow.postMessage({ sandbox: 'pause' }, '*')`.
+- **Sound:** the music stays at 0 on localhost; the sound effects play as in the game.
+
+### The arena (`?scenario=arena`)
+
+A 12x6 test map for the body alone (`src/client/dev/arena.ts`): flat grass, a plain grey background with no
+surroundings, fog or particles (`BattleScene.bare`), and no turn list. It lives in the sandbox chunk and is registered
+only on a sandbox page, so the game can never open it (`?scenario=arena` without `?sandbox=` opens the default battle).
+
+| Row (y) | Feature | Who can do it |
+|---|---|---|
+| 0 | stairs: up 1 (x1 to x2), up 2 (x3 to x4), up 3 (x5 to x6), then down 2 (x7 to x8) | up 1: everyone; up 2 and down 2: jump 2 (rogue, minion) or more; up 3: the lancer (jump 3) |
+| 2 | deep water on x5: a 1-tile gap | a leap needs jump 2 (rogue, minion, lancer); others swim |
+| 4 | spikes on x3, a wall on x11 | a push onto the spikes hurts; a push into the wall bumps |
+| 1, 3, 5 | flat | walks |
+
+Two units are parked so the battle goes on (the last side standing wins): `a-hero` (warrior, 0,3) and `a-foe` (soldier,
+11,3). Move them with `units`, bring any class with `add`; keep one of each side.
+
+### Bench scenes (`scripts/sandbox/bench/`)
+
+Each loops, hides every panel and fixes a side camera. Seeds were picked so the dice give the named outcome;
+`tests/sandbox-spec.test.ts` plays every one on the rules and checks its events.
+
+| Spec | Map | What happens |
+|---|---|---|
+| `walk` | ash_wood | warrior 2,6 > 5,6, flat. 2,6 to 4,6 are ramp tiles at height 0 (the climb to the bridge), walked across |
+| `climb` | ash_wood | rogue 9,3 > 9,1 up 2 levels; 9,3 and 9,2 are ramp tiles, so it mixes ramp walking and jumps. The brute is removed from 9,2 |
+| `drop` | ash_wood | rogue 11,1 > 11,3: down 2 levels, then flat |
+| `melee-hit` / `melee-miss` | ash_wood, seed 1 / 4 | warrior on 5,7 strikes the soldier on 5,6: hit 10 / miss |
+| `heavy-strike` | ash_wood | the same pair, Heavy strike: hit 19 of 45, the camera shakes |
+| `death` | ash_wood | the soldier with 10 HP: hit 10, dies |
+| `archer-shot` | ash_wood | archer 5,10 shoots the skeleton archer on 5,7: hit 9 |
+| `shield-bash-fall` | ash_wood | warrior 11,0 bashes the soldier on 11,1: hit 4, pushed 2 tiles, falls 2 levels (9) |
+| `firebolt` | ash_wood | mage 4,11 Fire Bolt at the soldier on 4,7: hit 10 |
+| `arena-stairs` | arena | the lancer climbs 1, 2 (then waits) and 3, then drops 2 |
+| `arena-gap` | arena | the rogue leaps the water gap |
+| `arena-wall` | arena | Shield Bash into the wall: hit 4, bump |
+| `arena-spikes` | arena | Shield Bash pushes the soldier 2 tiles onto the spikes |
+
 ## Examples (`scripts/sandbox/`)
 
 - `battle-ui.json`: Ash Wood. The archer aims a Shot at a soldier moved across the river, with the "Execute?" window,
@@ -167,8 +266,10 @@ A hand-written address works too:
 
 ## How it fits
 
-- **`src/client/dev/sandbox-spec.ts`** holds the pure part: `parseSpec`, `specUrl`, `storageFor`, `castOf`,
-  `patchUnits`, `placementProblems`, `giveTurn` and `playStep`. Both the page and the Node CLI use it. Tested in `tests/sandbox-spec.test.ts`.
+- **`src/client/dev/sandbox-spec.ts`** holds the pure part: `parseSpec`, `specUrl`, `readParam`, `specParam`,
+  `storageFor`, `castOf`, `patchUnits`, `placementProblems`, `giveTurn`, `playStep`, `rewind` and `sideAngle`. Both the
+  page and the Node CLI use it. Tested in `tests/sandbox-spec.test.ts`.
+- **`src/client/dev/arena.ts`** is the arena map, in the sandbox chunk.
 - **`src/client/dev/sandbox.ts`** does two jobs:
   - `stage(scenario)` builds the battle before the scene exists (cast, seed, actor).
   - `install(game, scene)` applies the rest and exposes `window.__sandbox`.
@@ -177,3 +278,5 @@ A hand-written address works too:
   - `Game.showScreen` (a turn screen, cursor and marks set directly).
   - `Game.playStep` (a step's events through `animate`, then the turn menu).
   - `BattleScene.actionCam`.
+  - Bench: `bench` in `timing.ts` (slow motion and pause of the battle clock), `BattleScene.hold` / `CameraRig.hold`
+    (fixed camera), `BattleScene.bare` (the arena's plain background).
