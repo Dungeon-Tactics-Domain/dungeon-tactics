@@ -164,7 +164,10 @@ try {
     }
     await context.close();
     // a spec that failed leaves no raw recording behind in the temp folder (a saved clip already deleted its own)
-    await page.video()?.delete();
+    await page
+      .video()
+      ?.delete()
+      .catch(() => {}); // best effort: a clip that failed in saveClip already deleted it
   }
   if (clips.length) await writeManifest(clips);
   if (values.sheet && shots.length) {
