@@ -56,7 +56,8 @@ import {
 import { cycleUnit, gridStep, type KeyAction, keyAction, keyHelp } from './keyboard.ts';
 import { MISSIONS, MISSIONS_KEY, type Mission, missionScenario, missionScenarioId, parseDone } from './missions.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings, type PixelSize, parsePixel } from './pixel-settings.ts';
-import { BattleScene, rampLink } from './scene.ts';
+import { rampLink } from './scene/space.ts';
+import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, setSound, setTrack, sfx, soundSettings } from './sound.ts';
 import { param, RENAMED_QUESTS, store } from './store.ts';
 import {
