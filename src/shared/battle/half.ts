@@ -172,12 +172,14 @@ export function halve(base: Scenario): Scenario {
 // Wood in half-tiles with the big trees and the scattered props (client with ?scenario=half)
 export function registerHalf(): Scenario {
   const sc = halve(SCENARIOS.ash_wood);
+  // its own copy of the tiles: halve registered `ash_wood½` with this grid, which the trees must not reach (Nov 14 review)
+  const grid = structuredClone(sc.grid);
   const anchors = sc.spawns.map((sp) => ({ x: sp.x, y: sp.y }));
   const hero = sc.spawns.find((sp) => sp.team === 'hero')!,
     foe = sc.spawns.find((sp) => sp.team === 'enemy')!;
-  plantTrees(sc.grid, anchors, hero, foe);
-  scatterProps(sc.grid, anchors);
-  const test: Scenario = { ...sc, id: HALF_ID, name: `${sc.name} (meia casa)`, en: `${sc.en} (half tiles)` };
+  plantTrees(grid, anchors, hero, foe);
+  scatterProps(grid, anchors);
+  const test: Scenario = { ...sc, grid, id: HALF_ID, name: `${sc.name} (meia casa)`, en: `${sc.en} (half tiles)` };
   SCENARIOS[HALF_ID] = test;
   return test;
 }

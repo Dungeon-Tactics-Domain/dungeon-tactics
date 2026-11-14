@@ -6,9 +6,9 @@ import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { canStand, dist, type Grid, posKey, tileAt } from '../src/shared/battle/grid.ts';
-import { halve } from '../src/shared/battle/half.ts';
+import { halve, registerHalf } from '../src/shared/battle/half.ts';
 import { cellsOf, jumpOf, reachable } from '../src/shared/battle/pathing.ts';
-import { initialState, MAPS, type Scenario } from '../src/shared/battle/scenarios.ts';
+import { initialState, MAPS, SCENARIOS, type Scenario } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import type { BattleState, Pos, UnitState } from '../src/shared/battle/types.ts';
 import { baseDef, HALF, UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -387,6 +387,15 @@ describe('half tiles: push', () => {
       expect(h.to).toEqual(cell(w.to));
       expect(h.dmg).toBe(w.dmg);
     }
+  });
+});
+
+describe('half tiles: the test map', () => {
+  it('plants its trees and props without touching Ash Wood on half tiles', () => {
+    // registerHalf used to write into the grid halve(ash_wood) registered (Nov 14 review)
+    registerHalf();
+    const after = SCENARIOS[`ash_wood${HALF}`].grid;
+    expect(after).toEqual(halve(SCENARIOS.ash_wood).grid);
   });
 });
 
