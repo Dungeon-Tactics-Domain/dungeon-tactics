@@ -53,6 +53,8 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-t
 .dialog button:not(.primary):not(:disabled):active { box-shadow: inset 0 2px 0 rgba(0, 0, 0, .2); }
 .dialog button[aria-pressed='true']:not(.primary) { box-shadow: inset 0 0 0 3px var(--focus); font-weight: 800; }
 .dialog button:focus-visible { outline-color: var(--focus); }
+/* disabled on parchment: faded, like the menu row (.panel .item); the stone's dark grey looked like a pressed button */
+.dialog button:disabled { filter: none; opacity: .5; }
 
 /* small labels in the text font (the pixel font at 12 px was unreadable); the pixel font stays on titles, Confirm and queue */
 button { font: 700 var(--fs-sm)/1.1 var(--font); color: var(--fg); min-height: var(--tap); min-width: var(--tap); border-radius: var(--r);
