@@ -83,13 +83,14 @@ const TOWER =
   '<path class="stone" d="M11 29l2-18h6l2 18Z M10 11h12v-3H10Z" /><path class="flame" d="M16 1c3 3 3 5 0 7c-3-2-3-4 0-7Z" />';
 const PLACE_ICON: Record<string, string> = {
   vauclair: HOUSES,
-  epilogo: HOUSES,
-  cripta: CRYPT,
-  coracao: CRYPT,
-  farol: TOWER,
-  colina: TOWER,
-  acampamento: '<path class="wall" d="M2 28L16 6l14 22Z" /><path class="door" d="M13 28l3-9 3 9Z" />',
-  cume: '<path class="stone" d="M2 30L16 10l14 20Z" /><path class="roof" d="M16 10V1" /><path class="flame" d="M16 1h9l-3 3 3 3h-9Z" />',
+  epilogue: HOUSES,
+  crypt: CRYPT,
+  heart: CRYPT,
+  beacon: TOWER,
+  hill: TOWER,
+  camp: '<path class="wall" d="M2 28L16 6l14 22Z" /><path class="door" d="M13 28l3-9 3 9Z" />',
+  summit:
+    '<path class="stone" d="M2 30L16 10l14 20Z" /><path class="roof" d="M16 10V1" /><path class="flame" d="M16 1h9l-3 3 3 3h-9Z" />',
 };
 const terrain = (done: number) => {
   let s = 7; // fixed seed: the map comes out the same every time

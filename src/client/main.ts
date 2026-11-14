@@ -58,7 +58,7 @@ import { MISSIONS, MISSIONS_KEY, type Mission, missionScenario, missionScenarioI
 import { nextSize, PIXEL_KEY, type PixelSettings, type PixelSize, parsePixel } from './pixel-settings.ts';
 import { BattleScene, rampLink } from './scene.ts';
 import { jingle, type Sfx, setSound, setTrack, sfx, soundSettings } from './sound.ts';
-import { param, store } from './store.ts';
+import { param, RENAMED_QUESTS, store } from './store.ts';
 import {
   BEST_KEY,
   parseBest,
@@ -1169,7 +1169,7 @@ async function boot() {
   // bar mission (missions.ts): only the ones not yet won; unknown or won mission address goes back to the map
   const mis = param('quest');
   if (mis !== null) {
-    const m = MISSIONS.find((x) => x.id === mis);
+    const m = MISSIONS.find((x) => x.id === (Object.hasOwn(RENAMED_QUESTS, mis) ? RENAMED_QUESTS[mis] : mis));
     if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) return toWorld();
     mission = m;
     setTrack('road');

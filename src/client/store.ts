@@ -17,6 +17,12 @@ const RENAMED: [old: string, now: string][] = [
   ['dt:turnos', 'dt:turns'],
   ['dt:pixel2', 'dt:pixel'],
 ];
+// Nov 14: quest ids that were Portuguese (also in old ?quest= links)
+export const RENAMED_QUESTS: Record<string, string> = {
+  'ratos-da-estrada': 'road-rats',
+  'cripta-rasa': 'shallow-crypt',
+  'lobos-do-passo': 'pass-wolves',
+};
 // Save format changes, in order. Each takes the saves as they were left by the previous one.
 const MIGRATIONS: ((s: Saves) => void)[] = [
   (s) => {
@@ -28,6 +34,24 @@ const MIGRATIONS: ((s: Saves) => void)[] = [
       const v = s.getItem(old);
       if (v !== null && s.getItem(now) === null) s.setItem(now, v);
       s.removeItem(old);
+    }
+  },
+  (s) => {
+    // won quests keep their place in dt:quests; a quest battle in progress keeps its save, whose scenario and unit
+    // sheets carry the scenario id (missao-<id>-h0…), so the old id is replaced inside it too
+    const done = s.getItem('dt:quests');
+    if (done !== null)
+      s.setItem(
+        'dt:quests',
+        done.replace(/"([a-z-]+)"/g, (all, id: string) =>
+          Object.hasOwn(RENAMED_QUESTS, id) ? `"${RENAMED_QUESTS[id]}"` : all,
+        ),
+      );
+    for (const [old, now] of Object.entries(RENAMED_QUESTS)) {
+      const battle = s.getItem(`dt:battle:missao-${old}`);
+      if (battle === null) continue;
+      s.setItem(`dt:battle:quest-${now}`, battle.replaceAll(`missao-${old}`, `quest-${now}`));
+      s.removeItem(`dt:battle:missao-${old}`);
     }
   },
 ];

@@ -20,7 +20,7 @@ describe('save migration', () => {
       'dt:world': '4',
       'dt:chest': '{"gold":150}',
       'dt:lang': 'en',
-      'dt:migrated': '1',
+      'dt:migrated': '2',
     });
   });
 
@@ -40,5 +40,23 @@ describe('save migration', () => {
     s.setItem('dt:pixel', '{"size":4}');
     migrate(s);
     expect(s.m.get('dt:pixel')).toBe('{"size":4}');
+  });
+});
+
+describe('quest id migration', () => {
+  it('renames won quests and the battle save of a quest in progress', () => {
+    const battle = '{"scenario":"missao-cripta-rasa","units":[{"def":"missao-cripta-rasa-h0"}]}';
+    const s = saves({
+      'dt:migrated': '1',
+      'dt:quests': '["ratos-da-estrada","lobos-do-passo"]',
+      'dt:battle:missao-cripta-rasa': battle,
+    });
+    migrate(s);
+    expect(s.m.get('dt:quests')).toBe('["road-rats","pass-wolves"]');
+    expect(s.m.get('dt:battle:quest-shallow-crypt')).toBe(
+      '{"scenario":"quest-shallow-crypt","units":[{"def":"quest-shallow-crypt-h0"}]}',
+    );
+    expect(s.m.has('dt:battle:missao-cripta-rasa')).toBe(false);
+    expect(s.m.get('dt:migrated')).toBe('2');
   });
 });

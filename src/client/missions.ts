@@ -23,7 +23,7 @@ export interface Mission {
 
 export const MISSIONS: Mission[] = [
   {
-    id: 'ratos-da-estrada',
+    id: 'road-rats',
     town: 'vauclair',
     name: ['Ossos na estrada', 'Bones on the road'],
     text: [
@@ -36,7 +36,7 @@ export const MISSIONS: Mission[] = [
     item: 'leather_vest',
   },
   {
-    id: 'cripta-rasa',
+    id: 'shallow-crypt',
     town: 'vauclair',
     name: ['O porão alagado', 'The flooded cellar'],
     text: [
@@ -49,8 +49,8 @@ export const MISSIONS: Mission[] = [
     item: 'iron_blade',
   },
   {
-    id: 'lobos-do-passo',
-    town: 'acampamento',
+    id: 'pass-wolves',
+    town: 'camp',
     name: ['Guarda do passo', 'Pass watch'],
     text: [
       'Uma patrulha do Véu vigia o caminho do cume. Afastem-na antes da subida.',
@@ -70,7 +70,7 @@ export function parseDone(raw: unknown): string[] {
     : [];
 }
 
-export const missionScenarioId = (id: string) => `missao-${id}`;
+export const missionScenarioId = (id: string) => `quest-${id}`;
 
 // the party of the most advanced open stage (with the protagonist and equipment), against the mission's enemies
 export function missionScenario(
