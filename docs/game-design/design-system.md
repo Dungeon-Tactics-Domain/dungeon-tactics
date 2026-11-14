@@ -28,10 +28,9 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 | Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the parchment (almost unused today), bar background |
 | Gold | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button, battle highlight |
 | Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
-| Bars | `--hp` `--mp` `--ct` `--heal` `--heal-ink` | HP, MP, CT, healing |
+| Bars | `--hp` `--mp` `--ct` `--heal` | HP, MP, CT, healing |
 | Strike preview | `--strike` `--strike-dmg` | arrow band between the panels |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` | legend; same as `MARK` in `src/client/scene/marks.ts` |
-| Star | `--star` `--star-ink` | leftover from the stars (removed on Nov 13) |
 
 ### Contrast (measured on Nov 13, WCAG 2.1 formula, script over the CSS hex values)
 
@@ -41,8 +40,6 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 | `--ink-muted` | 7.1 | 5.9 | 4.7 | 4.5 ✓ |
 | `--focus` | 7.0 | 5.8 | 4.6 | 4.5 ✓ |
 | `--gold-trim` (battle highlight) | 6.3 | 5.3 | 4.2 | 4.5: passes in dialogs (`paper-hi` → `paper`); do not use at the foot of `.panel` |
-| `--heal-ink` (large number) | 5.0 | 4.2 | 3.4 | 3.0 (large text) ✓ |
-| `--star-ink` (large text) | 4.4 | 3.7 | 2.95 | 3.0: dialogs only |
 
 | Pair on dark | Value | Bar |
 |---|---|---|
@@ -180,7 +177,7 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 - **Gamepad in world map dialogs:** in `?world` there is no `Game`, so `pollPad` does not run; the loop in `world-ui.ts` only forwards A. Party, Sheet, Shop and Tavern cannot be navigated with the d-pad.
 - **Form field focus:** the ink ring only covers `button` and the volume bar; text, select and checkbox keep the browser's focus.
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
-- **`--stone*` and `--star*` tokens** are almost unused after "everything in parchment": check and remove.
+- **`--stone*` tokens** are almost unused after "everything in parchment": only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 
 ## 7. What was and was not checked
 

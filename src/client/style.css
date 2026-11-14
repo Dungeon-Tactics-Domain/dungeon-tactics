@@ -22,8 +22,6 @@
   --well: #110c1b;
   --gold-btn: linear-gradient(#ffd75e, #e2a62b);
   --gold-trim: #7a5513;
-  --star: #f2c14e;
-  --star-ink: #9a6a0c; /* star on the parchment: 3.7:1 (large text) */
   --r: 3px; /* near-square corner: pixel art has no rounded corners */
   --frame:
     inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo),
@@ -46,7 +44,6 @@
   --hp: #4fbf5a;
   --mp: #4a8fe0;
   --ct: #e8b030;
-  --heal-ink: #1f7a3a; /* predicted heal in big numbers on the parchment: 4.2:1 on the paper, 3.3:1 at the foot of the gradient */
   /* translucent strip of the strike preview (Nov 13, Tactics Ogre style): dark enough for the damage pink to pass
      4.5:1 even over the bright sky (the strip at 80% over white lands near #3e3846) */
   --strike: rgba(18, 10, 26, 0.8);
@@ -847,18 +844,12 @@ button[hidden] {
 .dialog .choice-label,
 .dialog .title-sub,
 .dialog .party-class,
-.dialog .party-more,
 .dialog .party-bench,
 .dialog .dev-num {
   color: var(--ink-muted);
 }
 .dialog .sw {
   border-color: var(--ink);
-}
-.kbd .dialog .hint,
-.dialog .hint {
-  color: var(--ink-muted);
-  border-color: var(--ink-muted);
 }
 .dialog .primary {
   width: 100%;
@@ -940,10 +931,6 @@ button[hidden] {
   border: 1px solid var(--muted);
   border-radius: 2px;
   padding: 2px 4px;
-}
-.kbd .primary .hint {
-  color: var(--on-accent);
-  border-color: var(--on-accent);
 }
 .kbd .panel .hint {
   color: var(--ink-muted);
