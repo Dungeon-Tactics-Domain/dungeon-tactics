@@ -64,6 +64,11 @@ different picture.
 
 Notes:
 
+- **Whole tiles:** every `x`, `y` in a spec (units, `add`, `screen.target`, `cursor`, `camera.focus`,
+  `camera.action.to`) is a whole map tile, the way the map files count them. Game battles run on the split map
+  (half tiles, `src/shared/battle/half.ts`), so the sandbox turns each tile into the corner cell of its 2x2 square
+  and each `add` sheet into its 2x2 token, the same way the map's own spawns are split. Problems and `list()` speak
+  in whole tiles too (`list()` shows `x.5` for a token standing between tiles).
 - **Units:** unit ids are the map's spawn ids (`h-archer`, `e-brute`…). `__sandbox.list()` shows them with their
   positions. `facing` is an index into `FACING`: 0 +y, 1 +x, 2 −y, 3 −x. A unit is valid on ground it can stand on (deep
   water included) that is inside the map and free, across every tile of a large unit's footprint

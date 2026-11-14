@@ -15,7 +15,7 @@ const SUB = 2;
 
 // the token of a sheet: the square doubles (a 2x2 boss becomes 4x4) and so does the movement, now counted in cells. Always
 // rebuilt: the campaign sheets (dev-h0, dev-e0…) change from stage to stage under the same id
-function halfDef(id: string): string {
+export function halfDef(id: string): string {
   const d = UNIT_DEFS[id];
   UNIT_DEFS[id + HALF] = { ...d, id: id + HALF, size: (d.size ?? 1) * SUB, move: d.move * SUB };
   return id + HALF;

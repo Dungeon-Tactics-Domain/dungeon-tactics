@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import frostPass from '../scripts/sandbox/frost-pass-ambush.json';
 import {
   castOf,
+  inCells,
   offMap,
   parseSpec,
   patchUnits,
@@ -8,6 +10,7 @@ import {
   specUrl,
   storageFor,
 } from '../src/client/dev/sandbox-spec.ts';
+import { halve } from '../src/shared/battle/half.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
@@ -181,5 +184,50 @@ describe('placementProblems', () => {
     const grid = flat(2, 1);
     grid.tiles[1] = { ...grid.tiles[1], noStop: true };
     expect(placementProblems(grid, [unit('a', 'soldier', 1, 0)])).toEqual(['a: cannot stand on 1,0 (floor)']);
+  });
+});
+
+// every game battle runs split since Nov 14 (half.ts) while specs stay in whole tiles (Nov 14 review)
+describe('specs on a split map', () => {
+  const split = (w: number, h: number) => ({ ...flat(w * 2, h * 2), sub: 2 });
+
+  it('puts every whole tile of the spec on the corner cell of its square', () => {
+    const spec = {
+      units: { a: { x: 1, y: 2, hp: 3 }, b: { facing: 1 } },
+      add: [{ id: 'x', def: 'minion', team: 'enemy' as const, x: 3, y: 0 }],
+      screen: { aim: 'shot', target: { x: 2, y: 2 } },
+      cursor: { x: 4, y: 1 },
+      camera: { zoom: 2, focus: { x: 5, y: 5 }, action: { from: 'a', to: { x: 0, y: 1 } } },
+    };
+    expect(inCells(spec, 1)).toBe(spec);
+    expect(inCells(spec, 2)).toEqual({
+      units: { a: { x: 2, y: 4, hp: 3 }, b: { facing: 1 } },
+      add: [{ id: 'x', def: 'minion', team: 'enemy', x: 6, y: 0 }],
+      screen: { aim: 'shot', target: { x: 4, y: 4 } },
+      cursor: { x: 8, y: 2 },
+      camera: { zoom: 2, focus: { x: 10, y: 10 }, action: { from: 'a', to: { x: 0, y: 2 } } },
+    });
+  });
+
+  it('stages the Frost Pass example where the whole map has it', () => {
+    const spec = parseSpec(frostPass).spec;
+    const { spawns, problems } = castOf(halve(SCENARIOS.frost_pass).spawns, inCells(spec, 2));
+    expect(problems).toEqual([]);
+    expect(spawns.find((s) => s.id === 'e-soldier')).toMatchObject({ x: 8, y: 20 });
+  });
+
+  it('names places off the map in whole tiles', () => {
+    expect(offMap(split(4, 4), { cursor: { x: 3, y: 3 }, camera: { focus: { x: 4, y: 0 } } })).toEqual([
+      'camera.focus: 4,0 is outside the 4x4 map',
+    ]);
+  });
+
+  it('names a token problem once, at its whole tile', () => {
+    halve(SCENARIOS.ash_wood); // registers the token sheets (soldier½)
+    const unit = (id: string, x: number, y: number) => stateOf([{ id, def: 'soldier½', team: 'enemy', x, y }]).units[0];
+    expect(placementProblems(split(4, 4), [unit('a', 2, 2), unit('b', 2, 2), unit('c', 6, 7)])).toEqual([
+      'b: tile 1,1 is taken by a',
+      'c: tile 3,4 is outside the 4x4 map',
+    ]);
   });
 });

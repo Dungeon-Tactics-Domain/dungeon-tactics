@@ -2,6 +2,8 @@
 // window.__sandbox. Loaded only on localhost with ?sandbox= (main.ts), as its own chunk: the online game never fetches it.
 // The map, the cast, the dice and the language are fixed when the page loads (`stage`); everything else changes live (`apply`).
 import { Battle } from '../../shared/battle/battle.ts';
+import { subOf } from '../../shared/battle/grid.ts';
+import { halfDef } from '../../shared/battle/half.ts';
 import { SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
@@ -14,6 +16,7 @@ import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
 import {
   castOf,
+  inCells,
   offMap,
   PANELS,
   type Panel,
@@ -55,9 +58,13 @@ let view: BattleScene;
 let castFits = true;
 
 // Before the scene exists: the spec's cast on the map, its dice, and a hero on the turn (otherwise the AI would play
-// the opening enemy turn while the shot is taken). A cast that does not fit falls back to the map's own.
+// the opening enemy turn while the shot is taken). A cast that does not fit falls back to the map's own. On a split map
+// the spec's whole tiles become cells and an added sheet becomes its token, as `halve` does for the map's own spawns.
 export function stage(base: Scenario): { scenario: Scenario; battle: Battle } {
-  const cast = castOf(base.spawns, spec);
+  const k = subOf(base.grid);
+  const cells = inCells(spec, k);
+  if (k > 1) cells.add = cells.add?.map((a) => ({ ...a, def: halfDef(a.def) }));
+  const cast = castOf(base.spawns, cells);
   const scenario = { ...base, spawns: cast.spawns };
   battle = Battle.start(scenario, spec.seed ?? 1);
   const bad = [...cast.problems, ...placementProblems(battle.grid, battle.state.units)];
@@ -114,9 +121,11 @@ export function install(game: Game, scene: BattleScene) {
 
   function apply(raw: SceneSpec): string[] {
     // the live call skips the CLI's check: a typo or an angle of 2.5 (the rotation would never stop) is refused here
-    const { spec: s, problems: shape } = parseSpec(raw);
-    const p = [...shape, ...offMap(battle.grid, s)];
+    const { spec: whole, problems: shape } = parseSpec(raw);
+    const p = [...shape, ...offMap(battle.grid, whole)];
     if (p.length) return p;
+    const k = subOf(battle.grid);
+    const s = inCells(whole, k);
     if (s.units) {
       const next = patchUnits(battle.state.units, s.units);
       p.push(...next.problems, ...placementProblems(battle.grid, next.units));
@@ -139,7 +148,7 @@ export function install(game: Game, scene: BattleScene) {
     } else if (sc) {
       if (!abilitiesOf(battle).includes(sc.aim)) p.push(`screen.aim: ${battle.actor.id} has no ability "${sc.aim}"`);
       else if (!battle.preview(sc.aim, sc.target).ok)
-        p.push(`screen.aim: ${sc.aim} cannot reach ${sc.target.x},${sc.target.y}`);
+        p.push(`screen.aim: ${sc.aim} cannot reach ${sc.target.x / k},${sc.target.y / k}`);
       else {
         const ui = hoverTile(battle, selectMode(battle, freshUi(battle), { k: 'ability', id: sc.aim }), sc.target);
         show(
@@ -158,7 +167,8 @@ export function install(game: Game, scene: BattleScene) {
       scene.resetView(); // whole map, then closer: the same number gives the same framing on any page
       scene.zoom(1 / c.zoom);
     }
-    if (c?.focus) scene.focusOn(c.focus);
+    // a split tile's middle lies between its corner cells
+    if (c?.focus) scene.focusOn(c.focus, k > 1 ? { x: c.focus.x + k - 1, y: c.focus.y + k - 1 } : undefined);
     if (c?.action) {
       const from = battle.state.units.find((u) => u.id === c.action!.from);
       if (from) void scene.actionCam(from.pos, c.action.to, from.team === 'enemy');
@@ -201,16 +211,18 @@ export function install(game: Game, scene: BattleScene) {
       defs: Object.keys(UNIT_DEFS),
       panels: Object.keys(PANELS),
       actor: battle.actor.id,
+      // in whole tiles like the spec (x.5 is a token standing between tiles)
       units: battle.state.units.map((u) => ({
         id: u.id,
         def: u.def,
         team: u.team,
-        ...u.pos,
+        x: u.pos.x / subOf(battle.grid),
+        y: u.pos.y / subOf(battle.grid),
         hp: u.hp,
         ct: u.ct,
         facing: u.facing,
       })),
-      map: { width: battle.grid.width, height: battle.grid.height },
+      map: { width: battle.grid.width / subOf(battle.grid), height: battle.grid.height / subOf(battle.grid) },
     }),
     idle,
   };

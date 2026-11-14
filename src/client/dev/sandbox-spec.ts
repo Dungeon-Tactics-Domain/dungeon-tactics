@@ -1,7 +1,7 @@
 // Scene spec of the sandbox (docs/sandbox.md): what a scripted screenshot opens and shows. Pure, shared by the page
 // (dev/sandbox.ts) and the Node CLI (scripts/sandbox.mjs), so no DOM or Three here. Every check returns readable
 // problems instead of a silent default: a typo in a spec must fail the shot, not produce a different picture.
-import { canStand, type Grid, inBounds, posKey, tileAt } from '../../shared/battle/grid.ts';
+import { canStand, type Grid, inBounds, posKey, subOf, tileAt } from '../../shared/battle/grid.ts';
 import { footprint } from '../../shared/battle/pathing.ts';
 import type { Spawn } from '../../shared/battle/scenarios.ts';
 import type { Pos, Team, UnitState } from '../../shared/battle/types.ts';
@@ -195,6 +195,35 @@ export function storageFor(spec: SceneSpec): Record<string, string> {
   return out;
 }
 
+// Specs are written in whole tiles (docs/sandbox.md), but every game battle runs split since Nov 14 (half.ts): there a
+// tile is k x k cells and its spot is the corner cell of its square, where `halve` puts the spawns (Nov 14 review)
+export function inCells(spec: SceneSpec, k: number): SceneSpec {
+  if (k === 1) return spec;
+  const c = (p: Pos) => ({ x: p.x * k, y: p.y * k });
+  const { units, add, screen, cursor, camera } = spec;
+  return {
+    ...spec,
+    ...(units && {
+      units: Object.fromEntries(
+        Object.entries(units).map(([id, u]) => [
+          id,
+          u.x !== undefined && u.y !== undefined ? { ...u, ...c({ x: u.x, y: u.y }) } : u,
+        ]),
+      ),
+    }),
+    ...(add && { add: add.map((a) => ({ ...a, ...c(a) })) }),
+    ...(typeof screen === 'object' && { screen: { ...screen, target: c(screen.target) } }),
+    ...(cursor && { cursor: c(cursor) }),
+    ...(camera && {
+      camera: {
+        ...camera,
+        ...(camera.focus && { focus: c(camera.focus) }),
+        ...(camera.action && { action: { ...camera.action, to: c(camera.action.to) } }),
+      },
+    }),
+  };
+}
+
 // The cast the staged battle starts from: spawns removed, moved and added by the spec
 export function castOf(spawns: Spawn[], spec: SceneSpec): { spawns: Spawn[]; problems: string[] } {
   const p: string[] = [];
@@ -238,8 +267,10 @@ export function patchUnits(
   return { units: out, problems: p };
 }
 
-// Tiles the spec points at (cursor, focus, aim, action camera) inside the map: off the map the game would throw mid-boot
+// Tiles the spec points at (cursor, focus, aim, action camera) inside the map: off the map the game would throw mid-boot.
+// The spec is in whole tiles, so a split map is measured in whole tiles too
 export function offMap(grid: Grid, spec: SceneSpec): string[] {
+  const k = subOf(grid);
   const c = spec.screen;
   const at: [string, Pos | undefined][] = [
     ['cursor', spec.cursor],
@@ -247,27 +278,33 @@ export function offMap(grid: Grid, spec: SceneSpec): string[] {
     ['camera.action.to', spec.camera?.action?.to],
     ['screen.target', typeof c === 'object' ? c.target : undefined],
   ];
-  return at.flatMap(([k, p]) =>
-    p && !inBounds(grid, p) ? [`${k}: ${p.x},${p.y} is outside the ${grid.width}x${grid.height} map`] : [],
+  return at.flatMap(([name, p]) =>
+    p && !inBounds(grid, { x: p.x * k, y: p.y * k })
+      ? [`${name}: ${p.x},${p.y} is outside the ${grid.width / k}x${grid.height / k} map`]
+      : [],
   );
 }
 
 // Where a unit may stand: every tile of its footprint inside the map, walkable, not a pass-through tile, and nobody
-// else on it (deep water is allowed: the rules let a unit stand there)
+// else on it (deep water is allowed: the rules let a unit stand there). Named in whole tiles like the spec, once per tile
 export function placementProblems(grid: Grid, units: UnitState[]): string[] {
   const p: string[] = [];
+  const k = subOf(grid),
+    W = grid.width / k,
+    H = grid.height / k;
   const taken = new Map<string, string>();
   for (const u of units)
     for (const f of footprint(u)) {
+      const at = `${Math.floor(f.x / k)},${Math.floor(f.y / k)}`;
       if (!inBounds(grid, f)) {
-        p.push(`${u.id}: tile ${f.x},${f.y} is outside the ${grid.width}x${grid.height} map`);
+        p.push(`${u.id}: tile ${at} is outside the ${W}x${H} map`);
         continue;
       }
       const t = tileAt(grid, f);
-      if (!canStand(t) || t.noStop) p.push(`${u.id}: cannot stand on ${f.x},${f.y} (${t.terrain})`);
+      if (!canStand(t) || t.noStop) p.push(`${u.id}: cannot stand on ${at} (${t.terrain})`);
       const other = taken.get(posKey(f));
-      if (other) p.push(`${u.id}: tile ${f.x},${f.y} is taken by ${other}`);
+      if (other) p.push(`${u.id}: tile ${at} is taken by ${other}`);
       taken.set(posKey(f), u.id);
     }
-  return p;
+  return [...new Set(p)];
 }
