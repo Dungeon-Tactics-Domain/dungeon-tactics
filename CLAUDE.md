@@ -36,7 +36,9 @@ npm run dev                       # http://localhost:5173 (the "dungeon-tactics"
 npm run lint                      # biome: lint and formatting check (npm run format fixes)
 npm run typecheck                 # client, tests and scripts
 npx vitest run                    # tests
+npm run coverage                  # tests with a coverage summary; lcov report in coverage/
 npx vite build                    # production build in dist/
+npm run smoke                     # headless Chrome opens the built title, a battle and the world map
 npx wrangler deploy               # publish dist/ to https://dungeon-tactics.fernandorffdev.com
 npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 ```

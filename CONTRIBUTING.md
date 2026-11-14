@@ -12,7 +12,9 @@ npm run dev         # http://localhost:5173
 npm run lint        # biome lint and formatting check
 npm run typecheck   # client, tests and scripts
 npx vitest run      # tests
+npm run coverage    # tests with a coverage summary; lcov report in coverage/
 npx vite build      # production build in dist/
+npm run smoke       # after the build: title, battle and world map in headless Chrome
 ```
 
 On localhost, `?auto=1` lets the AI play the heroes, `?scenario=<id>` opens a map directly (`ash_wood`, `beacon_hill`, `half` for half tiles) and `?world` opens the world map. Links with the Portuguese names used before Nov 14 (`?cenario`, `?campanha`, `?mundo`…) still work.
@@ -53,7 +55,7 @@ test(battle): cover enemies blocking 2x2 movers
 ## From change to live game
 
 1. Commit on `master`. Every commit passes `npm run lint`, `npm run typecheck`, `npx vitest run` and `npx vite build` (`npm run format` fixes lint and formatting).
-2. Push. GitHub Actions runs the same checks (`.github/workflows/ci.yml`).
+2. Push. GitHub Actions runs the same checks, the tests with coverage, and `npm run smoke` on Playwright's Chromium (`.github/workflows/ci.yml`).
 3. Publish with `npx wrangler deploy` and confirm that https://dungeon-tactics.fernandorffdev.com serves the new `index-*.js`. The deploy workflow can also be started by hand from GitHub Actions.
 
 Parallel agent sessions (3D models, design system) commit on their own branch; their commits are brought onto `master` with rebase or cherry-pick.
