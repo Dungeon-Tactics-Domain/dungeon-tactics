@@ -205,16 +205,3 @@ export function buildBridges(grid: Grid, step: number, wood: THREE.Texture, bark
   }
   return out;
 }
-
-export async function loadBridgeTextures(): Promise<{ wood: THREE.Texture; bark: THREE.Texture }> {
-  const loader = new THREE.TextureLoader();
-  const one = async (n: string) => {
-    const t = await loader.loadAsync(`/tex/${n}.jpg`);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 4;
-    return t;
-  };
-  const [wood, bark] = await Promise.all([one('wood'), one('bark')]);
-  return { wood, bark };
-}

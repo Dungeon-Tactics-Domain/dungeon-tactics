@@ -389,5 +389,3 @@ export function pickTiles(tiles: { p: Pos; at: THREE.Vector3 }[]): THREE.Instanc
   m.userData.tiles = tiles.map((t) => t.p);
   return m;
 }
-
-export const keyOf = posKey;
