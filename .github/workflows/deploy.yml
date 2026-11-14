@@ -1,9 +1,8 @@
-# Jogo no ar: todo merge no master (PR da tarefa, em squash) publica em https://dungeon-tactics.fernandorffdev.com
+# Jogo no ar em https://dungeon-tactics.fernandorffdev.com. Só por disparo manual desde 13/11: os commits vão direto no
+# master e a publicação é feita à mão (npx wrangler deploy); sem o segredo da Cloudflare, o disparo a cada push só falhava
 name: Produção
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 # um deploy por vez, sem cancelar o que já começou
