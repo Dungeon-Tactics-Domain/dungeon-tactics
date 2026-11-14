@@ -203,6 +203,17 @@ describe('half tiles: walking', () => {
     // the gap: from the bank over the water to the other bank costs 2 tiles = 4 cells, as walking through
     expect(rogue.get('4,0')?.cost).toBe(4);
   });
+
+  it('flies a gap whose first cell is a drop deeper than the jump', () => {
+    // Crypt Heart: from the island (height 3) over the canal (0) to the floor at 1, as the whole map's leap does; the square
+    // half over the canal edge (3 against 0) cannot stand, and that used to cancel the gap
+    const map = MAPS.find((m) => m.id === 'crypt_heart') as Scenario;
+    const hm = halve(map);
+    const whole = reachable(map.grid, stateOf([{ id: 'r', def: 'rogue', team: 'hero', x: 3, y: 6 }]), 'r');
+    const half = reachable(hm.grid, stateOf([{ id: 'r', def: `rogue${HALF}`, team: 'hero', x: 6, y: 12 }]), 'r');
+    expect(whole.get('3,8')?.cost).toBe(2);
+    expect(half.get(posKey(cell({ x: 3, y: 8 })))?.cost).toBe(4);
+  });
 });
 
 describe('half tiles: push', () => {

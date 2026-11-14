@@ -163,10 +163,11 @@ function reachableBig(
     for (const d of FACING) {
       const n = { x: cur.x + d.x, y: cur.y + d.y };
       const h = heightOf(n);
-      if (h === null || Math.abs(h - h0) > jump) continue;
-      visit(n, cost + Math.max(...cells(n).map((c) => stepCost(tileAt(grid, c)))), cur);
+      if (h !== null && Math.abs(h - h0) <= jump)
+        visit(n, cost + Math.max(...cells(n).map((c) => stepCost(tileAt(grid, c)))), cur);
       // gap: `g` lines of cells past the square's edge are flown over (deep water or lower than both ends; a wall or an enemy
-      // blocks) and the square lands right after them, never higher and never in deep water
+      // blocks) and the square lands right after them, never higher and never in deep water. Tried even when the first
+      // step does not fit: a square half over a drop deeper than the jump cannot stand there, but `leaps` flies it (Nov 14)
       const edge = { x: cur.x + (d.x > 0 ? size - 1 : 0), y: cur.y + (d.y > 0 ? size - 1 : 0) };
       const strip: Pos[] = [];
       for (let g = 1; g <= flyMax; g++) {
