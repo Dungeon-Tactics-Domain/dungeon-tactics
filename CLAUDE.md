@@ -15,7 +15,7 @@ src/shared/battle/  battle rules, no DOM or Three.js
   battle.ts         Battle: owns the state, limited undo (dice never roll back), validated save/load
   ai.ts             greedy one-turn AI; simulate.ts plays AI against AI
   units.ts, abilities.ts, equipment.ts, scenarios.ts   data
-  half.ts           half-tile test mode (?cenario=meia); fft/ is a reference study, not the game
+  half.ts           half-tile test mode (?scenario=half); fft/ is a reference study, not the game
 src/client/         browser: main.ts (game loop and screens), scene.ts (Three.js), hud.ts, world-ui.ts (map, towns, party),
                     group.ts (party), campaign.ts, terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
 scripts/            battle-sim.ts (optional simulator), assets/ (texture and model generators)
@@ -46,7 +46,7 @@ npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 - **Process skills:** `superpowers:systematic-debugging` before fixing a bug and `superpowers:verification-before-completion` before calling work done. Brainstorming, written plans and TDD only for large tasks.
 - **Balance is decided by playing.** The simulator is an optional tool, not a gate.
 - **PC first.** Mobile comes later; keep the existing media queries and touch input working.
-- **Browser automation** launches Chrome with `--mute-audio`; on localhost the game starts with music at 0 and never plays it under automation unless the URL has `?musica=1`.
+- **Browser automation** launches Chrome with `--mute-audio`; on localhost the game starts with music at 0 and never plays it under automation unless the URL has `?music=1`.
 
 ## Code rules
 

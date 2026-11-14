@@ -372,7 +372,7 @@ function openBar(i: number, back: () => void) {
                     type: 'button',
                     class: 'secondary',
                     onclick: () => {
-                      location.search = `?missao=${m.id}`;
+                      location.search = `?quest=${m.id}`;
                     },
                   },
                   t('Aceitar', 'Accept'),

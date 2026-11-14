@@ -9,6 +9,7 @@ import { type Grid, tileAt } from '../shared/battle/grid.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { boxOf, loadPaint, variant } from './painted.ts';
 import { swapProps } from './props.ts';
+import { param } from './store.ts';
 import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { swapTrees } from './trees.ts';
 import { waterLevels } from './water-levels.ts';
@@ -175,14 +176,13 @@ const SUN = new THREE.Vector3(6, -12, -4).normalize(); // the light ray comes fr
 // Caps of 8 (models) and 5.5 (ground): higher than that, far away, it gets close to the camera's front plane and little would be seen
 export const LIMIT = (d: number) => Math.min(0.5 + 0.55 * d, 8);
 const GROUND_MAX = 5.5;
-// fade to black around (Nov 13, Fernando's request, default since then; ?fade=nao compares): the surroundings' fog
+// fade to black around (Nov 13, Fernando's request, default since then; ?fade=off compares): the surroundings' fog
 // turns black from 0.2 to 3.2 tiles from the edge, together with the terrain extension (terrain.ts extTone); the board
 // does not get this fog
-const FADE = (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fade') : null) !== 'nao';
-// map extension: 'textura' (default since Nov 13, "I want the fade to black and the texture") is the smooth terrain from terrain.ts
-// continuing outward; ?extensao=escuro and ?extensao=cinza are the block-based test versions from here; ?extensao=nenhuma removes
-export const EXTEND =
-  (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('extensao') : null) || 'textura';
+const FADE = param('fade') !== 'off';
+// map extension: 'texture' (default since Nov 13, "I want the fade to black and the texture") is the smooth terrain from terrain.ts
+// continuing outward; ?extension=dark and ?extension=gray are the block-based test versions from here; ?extension=none removes
+export const EXTEND = param('extension') || 'texture';
 const TEST_RING = 5; // tiles of the block-based test versions
 const DARK_TONE: Record<string, string> = {
   grass: '#3f8a35',
@@ -305,7 +305,7 @@ export class Ambience {
       ambSnow: { value: mood.snow },
     });
     const rand = seeded(grid.width * 131 + grid.height * 7 + grid.tiles.length);
-    if (EXTEND === 'textura' && !mood.walls && grid.tiles.some((t) => t.look)) {
+    if (EXTEND === 'texture' && !mood.walls && grid.tiles.some((t) => t.look)) {
       const step = grid.levelHeight ?? 0.5,
         levels = waterLevels(grid, step),
         river = riverOf(grid, levels);
@@ -313,7 +313,7 @@ export class Ambience {
     } else this.outer = null;
     this.buildGround();
     // not in the crypt: the walls, torches and crystals sit in that band and vanished inside the columns (Nov 13 review)
-    if (EXTEND !== 'nenhuma' && EXTEND !== 'textura' && !mood.walls) this.buildExtension(rand); // texture: the scene draws it (scene.ts)
+    if (EXTEND !== 'none' && EXTEND !== 'texture' && !mood.walls) this.buildExtension(rand); // texture: the scene draws it (scene.ts)
     for (const p of mood.props) this.scatter(p, models, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();
@@ -449,7 +449,7 @@ export class Ambience {
         // in the dark, canopy shadow on top (Fernando's request, "with a shadow over them"): patches by noise
         const dapple = 0.45 + 0.55 * noise(x * 0.3, z * 0.3);
         tones.push(
-          EXTEND !== 'cinza'
+          EXTEND !== 'gray'
             ? new THREE.Color(DARK_TONE[t.look ?? ''] ?? DARK_FALLBACK).multiplyScalar(shade * 0.5 * dapple)
             : new THREE.Color().setScalar(shade),
         );
@@ -792,7 +792,7 @@ export class Ambience {
     if (FADE) {
       this.u.ambLow.value.set(0);
       this.u.ambHigh.value.set(0);
-    } // ?fade=preto: the surroundings vanish into black
+    } // fade on (default): the surroundings vanish into black
     mix(m.beams.color, this.beamU.uColor.value);
     mix(m.motes.color, this.moteU.uColor.value);
     this.beamU.uPower.value = THREE.MathUtils.lerp(m.beams.power[0], m.beams.power[1], k * k);

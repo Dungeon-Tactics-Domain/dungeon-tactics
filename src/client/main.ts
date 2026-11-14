@@ -58,7 +58,7 @@ import { MISSIONS, MISSIONS_KEY, type Mission, missionScenario, missionScenarioI
 import { nextSize, PIXEL_KEY, type PixelSettings, type PixelSize, parsePixel } from './pixel-settings.ts';
 import { BattleScene, rampLink } from './scene.ts';
 import { jingle, type Sfx, setSound, setTrack, sfx, soundSettings } from './sound.ts';
-import { store } from './store.ts';
+import { param, store } from './store.ts';
 import {
   BEST_KEY,
   parseBest,
@@ -916,7 +916,7 @@ class Game {
                   type: 'button',
                   class: 'primary',
                   onclick: () => {
-                    location.search = `?mundo&de=${nodeOfChapter(n)}`;
+                    location.search = `?world&from=${nodeOfChapter(n)}`;
                   },
                 },
                 t('Voltar ao mapa', 'Back to the map'),
@@ -1156,7 +1156,7 @@ async function devMenu(onBack?: () => void) {
   (await import('../shared/battle/fft/gariland.ts')).registerFftStudy();
   openDevMenu(() => {
     store.set(`dt:battle:${DEV_SCENARIO}`, '');
-    location.search = `?cenario=${DEV_SCENARIO}`;
+    location.search = `?scenario=${DEV_SCENARIO}`;
   }, onBack);
 }
 
@@ -1164,10 +1164,10 @@ async function boot() {
   const host = document.getElementById('app')!;
   // FFT reference study (Nov 11): not game content. Only opens with the parameter and comes in a separate chunk of the
   // build (dynamic import), so none of it goes into the package the player downloads.
-  const study = new URLSearchParams(location.search).get('cenario');
-  const camp = new URLSearchParams(location.search).get('campanha');
+  const study = param('scenario');
+  const camp = param('stage');
   // bar mission (missions.ts): only the ones not yet won; unknown or won mission address goes back to the map
-  const mis = new URLSearchParams(location.search).get('missao');
+  const mis = param('quest');
   if (mis !== null) {
     const m = MISSIONS.find((x) => x.id === mis);
     if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) return toWorld();
@@ -1182,7 +1182,7 @@ async function boot() {
     );
     SAVE_KEY = `dt:battle:${missionScenarioId(m.id)}`;
   }
-  if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // world map: no battle assembled
+  if (param('world') !== null) return void worldScreen(host); // world map: no battle assembled
   // stage that does not exist or is still locked (typed or saved address): goes back to the map instead of falling into a standalone battle
   const allowed =
     camp !== null &&
@@ -1212,7 +1212,7 @@ async function boot() {
       scenario = buildDevScenario(setup);
       SAVE_KEY = `dt:battle:${DEV_SCENARIO}`;
     }
-  } else if (study === 'meia') {
+  } else if (study === 'half') {
     // half tile (Nov 13, test version: 2x2 characters walking 1 at a time, trees of 3 to 5; half.ts)
     scenario = registerHalf();
     SAVE_KEY = `dt:battle:${HALF_ID}`;
@@ -1221,7 +1221,7 @@ async function boot() {
     scenario = survivalScenario();
     SAVE_KEY = `dt:battle:${SURVIVAL_ID}`;
   } else if (study && SCENARIOS[study]) {
-    // other game maps through the same parameter (e.g. ?cenario=flooded_crypt), with their own save
+    // other game maps through the same parameter (e.g. ?scenario=flooded_crypt), with their own save
     scenario = SCENARIOS[study];
     SAVE_KEY = `dt:battle:${study}`;
   }
@@ -1297,7 +1297,7 @@ function quickBattle() {
               onclick: () => {
                 d.close();
                 setTrack(null);
-                location.search = `?cenario=${id}`;
+                location.search = `?scenario=${id}`;
               },
             },
             t(SCENARIOS[id].name, SCENARIOS[id].en),
@@ -1311,7 +1311,7 @@ function quickBattle() {
             class: 'secondary',
             onclick: () => {
               d.close();
-              location.search = `?cenario=${SURVIVAL_ID}`;
+              location.search = `?scenario=${SURVIVAL_ID}`;
             },
           },
           t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood') +
@@ -1570,7 +1570,7 @@ function continueWhere(): string {
 const chapterTitle = (n: number) =>
   t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
 const toWorld = () => {
-  location.search = '?mundo';
+  location.search = '?world';
 };
 const savedHero = () => parseHero(store.json(HERO_KEY));
 const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // player's group (group.ts): who goes, class and recruits
@@ -1624,7 +1624,7 @@ async function worldScreen(host: HTMLElement) {
     if (node.chapter !== undefined) {
       store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), node.chapter)));
       if (i < done) store.set(`dt:battle:${chapterId(node.chapter)}`, '');
-      location.search = `?campanha=${node.chapter}`;
+      location.search = `?stage=${node.chapter}`;
       return;
     }
     await talk(node.scene!, { title: t(node.name[0], node.name[1]), hero });
@@ -1646,7 +1646,7 @@ async function worldScreen(host: HTMLElement) {
       location.search = '';
     },
     party: () => openParty(partyFor(done, hero, savedGroup()).chapter, hero),
-    from: Number(new URLSearchParams(location.search).get('de') ?? -1),
+    from: Number(param('from') ?? -1),
   });
 }
 

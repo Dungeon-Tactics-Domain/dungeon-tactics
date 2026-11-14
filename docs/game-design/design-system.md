@@ -177,7 +177,7 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 - **Shop with 9 items and a full chest** still scrolls (761 px at 1280×720; fits at 1920×1080): asks for Buy / Sell tabs.
 - **Party list** (`.party-card`) is an `li` with `role="button"`: make it a real button.
 - **Tavern:** quests and recruiting in the same long dialog (833 px).
-- **Gamepad in world map dialogs:** in `?mundo` there is no `Game`, so `pollPad` does not run; the loop in `world-ui.ts` only forwards A. Party, Sheet, Shop and Tavern cannot be navigated with the d-pad.
+- **Gamepad in world map dialogs:** in `?world` there is no `Game`, so `pollPad` does not run; the loop in `world-ui.ts` only forwards A. Party, Sheet, Shop and Tavern cannot be navigated with the d-pad.
 - **Form field focus:** the ink ring only covers `button` and the volume bar; text, select and checkbox keep the browser's focus.
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
 - **`--stone*` and `--star*` tokens** are almost unused after "everything in parchment": check and remove.

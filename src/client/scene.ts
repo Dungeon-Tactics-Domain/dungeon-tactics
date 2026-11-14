@@ -37,6 +37,7 @@ import { barYOf, MARKER, modelOf, unitHeight } from './markers.ts';
 import { loadPaint, boxOf as pieceBox, variant } from './painted.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { DEBRIS, LITTER, swapProps } from './props.ts';
+import { param } from './store.ts';
 import {
   buildStream,
   buildTerrain,
@@ -55,8 +56,8 @@ import { DEEP_DROP, raisedDeep, SWIM, WADE, type WaterLevel, waterLevels } from 
 const STEP = 0.5; // height of one level in meters (1 tile = 1 wide), the same as the approved POC
 const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
 // Action cameras to compare (Nov 13, Fernando's request: "test several action cam options like over the shoulder,
-// from behind the enemy, etc"): `?camera=<name>` picks one; without the parameter `heroi` applies (his pick on Nov 13,
-// after seeing the prints of all of them), which alternates `ombro` and `costas` to stay always on the heroes' side.
+// from behind the enemy, etc"): `?camera=<name>` picks one; without the parameter `hero` applies (his pick on Nov 13,
+// after seeing the prints of all of them), which alternates `shoulder` and `behind` to stay always on the heroes' side.
 // turn: rotation around the target from the strike line (0 = behind the attacker, π = behind the target); pitch: tilt
 // in degrees (32 = the game's; low = camera near the ground); zoom: view height, base + per tile of distance; aim: where
 // the camera aims between the attacker (0) and the target (1); lift: how much the focus rises off the ground, so the unit is not at the edge;
@@ -72,15 +73,15 @@ interface ActionCam {
 }
 const ACTION_CAMS: Record<string, ActionCam | null> = {
   xcom: { turn: 0.35, pitch: 32, zoom: [4, 0.9], aim: 0.5, lift: 0 },
-  ombro: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // over the shoulder of the attacker
-  costas: { turn: Math.PI - 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.4, lift: 0.45, clip: 3.2 }, // from behind the enemy
-  lado: { turn: Math.PI / 2, pitch: 16, zoom: [2.6, 0.95], aim: 0.5, lift: 0.4, clip: 3 }, // the two in profile
-  alto: { turn: 0.35, pitch: 60, zoom: [4.2, 0.9], aim: 0.5, lift: 0 }, // from above, tactical
-  nenhuma: null, // no action camera
-}; // and `heroi`, which alternates between `ombro` and `costas` (actionCam)
+  shoulder: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // over the shoulder of the attacker
+  behind: { turn: Math.PI - 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.4, lift: 0.45, clip: 3.2 }, // from behind the enemy
+  side: { turn: Math.PI / 2, pitch: 16, zoom: [2.6, 0.95], aim: 0.5, lift: 0.4, clip: 3 }, // the two in profile
+  top: { turn: 0.35, pitch: 60, zoom: [4.2, 0.9], aim: 0.5, lift: 0 }, // from above, tactical
+  none: null, // no action camera
+}; // and `hero`, which alternates between `shoulder` and `behind` (actionCam)
 const CAM_DIST = 30; // camera distance to the focus (orthographic: it only decides what sits in front of the clipping plane)
-const camAsked = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('camera') : null;
-const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'heroi';
+const camAsked = param('camera');
+const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'hero';
 const ZOOM = { min: 4, max: 16 };
 const ZOOM_START = 1.5;
 // portrait phone: at most ~9.5 tiles wide when opening. On the 20x20 the whole map left the tile at ~20 px, small
@@ -216,7 +217,7 @@ export function rampLink(grid: Grid, a: Pos, b: Pos): boolean {
   };
   return up(a, b) || up(b, a);
 }
-const PLAIN_UNITS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'liso';
+const PLAIN_UNITS = param('units') === 'plain';
 // walls without a piece that the smooth terrain draws as a stone hill (brick stays as blocks: it is construction)
 const MOUND = new Set(['rock', 'snow_rock', 'summit', 'snow']);
 const UNDER = 'blocos/stone_dark'; // column under the bridge water and the map skirt
@@ -598,7 +599,7 @@ export class BattleScene {
     const smooth = !!this.terrainTex;
     const river = smooth ? riverOf(this.grid, levels) : null;
     const outside =
-      smooth && EXTEND === 'textura'
+      smooth && EXTEND === 'texture'
         ? riverOutside(this.grid, this.step, levels, river)
         : new Map<string, WaterLevel>();
     const looks = this.lookBatches(edge, walls, levels);
@@ -677,7 +678,7 @@ export class BattleScene {
           outside,
           levels,
           river,
-          extend: EXTEND === 'textura',
+          extend: EXTEND === 'texture',
           tex: this.terrainTex!,
         }),
       );
@@ -1457,7 +1458,7 @@ export class BattleScene {
         const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
         // factory glow (yellow eyes on the skeletons): the strike and heal flash touches the emissive and must return to it
         mat.userData.glow = { color: mat.emissive.clone(), intensity: mat.emissiveIntensity };
-        mesh.material = this.shaded(mat); // ?bonecos=liso compares without the shading
+        mesh.material = this.shaded(mat); // ?units=plain compares without the shading
         mats.push(mat);
       });
       this.glowBack(mats, u.def);
@@ -1911,7 +1912,7 @@ export class BattleScene {
     // counterattack (the target returns the strike in the same sequence): the camera stays where it is, without turning around mid-strike
     if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
     // `heroi`: the camera always stays on the heroes' side (over the attacker's shoulder; when the enemy attacks, behind the hero)
-    const cam = ACTION_CAMS[CAM_NAME === 'heroi' ? (enemy ? 'costas' : 'ombro') : CAM_NAME];
+    const cam = ACTION_CAMS[CAM_NAME === 'hero' ? (enemy ? 'behind' : 'shoulder') : CAM_NAME];
     if (!cam) return;
     this.camSaved = {
       viewH: this.camSaved?.viewH ?? this.viewH,

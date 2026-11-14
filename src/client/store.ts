@@ -26,3 +26,21 @@ export const store = {
     }
   },
 };
+
+// URL parameters were Portuguese until Nov 14 (?cenario, ?campanha, ?mundo…): links shared before that still open, through
+// the old name. Presence-only flags (?world) come back as '' (test with `!== null`).
+const OLD_PARAM: Record<string, string> = {
+  scenario: 'cenario',
+  stage: 'campanha',
+  quest: 'missao',
+  world: 'mundo',
+  from: 'de',
+  music: 'musica',
+  units: 'bonecos',
+  extension: 'extensao',
+};
+export function param(name: string): string | null {
+  if (typeof location === 'undefined') return null;
+  const q = new URLSearchParams(location.search);
+  return q.get(name) ?? (OLD_PARAM[name] ? q.get(OLD_PARAM[name]) : null);
+}

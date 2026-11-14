@@ -2,7 +2,7 @@
 // songs (files, Nov 13), short effects and the victory and defeat fanfares, which are notes made here in WebAudio.
 // Files and licenses (all CC0) in public/CREDITS.txt. The browser only lets it play after the 1st click or key.
 import { type SongId, TRACKS, trackUrl } from './music.ts';
-import { store } from './store.ts';
+import { param, store } from './store.ts';
 
 export const SOUND_KEY = 'dt:sound';
 // volume in % from 0 to 100, in steps of 5 (Nov 13, Fernando's request: "sound and effects should be a bar in 5% steps")
@@ -96,11 +96,8 @@ const fadeTick = () => {
 };
 
 // page opened by automation (Playwright from the test sessions): no music, even with a saved volume (Nov 13, Fernando's
-// request: "mute the tabs you open, that music can't keep playing in the background"); `?musica=1` turns it on to test sound
-const AUTOMATED =
-  typeof navigator !== 'undefined' &&
-  navigator.webdriver &&
-  !(typeof location !== 'undefined' && new URLSearchParams(location.search).has('musica'));
+// request: "mute the tabs you open, that music can't keep playing in the background"); `?music=1` turns it on to test sound
+const AUTOMATED = typeof navigator !== 'undefined' && navigator.webdriver && param('music') === null;
 const applyMusic = () => {
   if (!ctx) return;
   const want = settings.music && !AUTOMATED ? (track ?? 'battle') : null;

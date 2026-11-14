@@ -1,8 +1,8 @@
 // Half tile (Nov 13, Fernando's request: "the characters occupy a square of 4 tiles 2x2, but movement is 1 tile at a time;
 // I want to test it like this"; later: "trees can be 3, 4, 5 wide… many kinds of tree"). Test version
-// (?cenario=meia, Wood): the map is divided into half-tiles (each tile becomes 2x2), each unit becomes a 2x2 token with
+// (?scenario=half, Wood): the map is divided into half-tiles (each tile becomes 2x2), each unit becomes a 2x2 token with
 // movement and ranges doubled, and the Wood gets trees 3 to 5 half-tiles wide and crates and bodies
-// scattered around. It only exists for whoever calls registerHalf (the client with ?cenario=meia), like the FFT study.
+// scattered around. It only exists for whoever calls registerHalf (the client with ?scenario=half), like the FFT study.
 import { ABILITIES } from './abilities.ts';
 import { FACING, type Grid, posKey, type Tile, tileAt } from './grid.ts';
 import { SCENARIOS, type Scenario } from './scenarios.ts';
@@ -182,7 +182,7 @@ function scatterProps(g: Grid, spawns: Pos[]): void {
   }
 }
 
-// Wood in half-tiles; registers the tokens and the scenario (client with ?cenario=meia)
+// Wood in half-tiles; registers the tokens and the scenario (client with ?scenario=half)
 export function registerHalf(): Scenario {
   registerDefs();
   const base = SCENARIOS.ash_wood;

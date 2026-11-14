@@ -15,7 +15,7 @@ npx vitest run      # tests
 npx vite build      # production build in dist/
 ```
 
-On localhost, `?auto=1` lets the AI play the heroes, `?cenario=<id>` opens a map directly (`ash_wood`, `beacon_hill`, `meia` for half tiles) and `?mundo` opens the world map.
+On localhost, `?auto=1` lets the AI play the heroes, `?scenario=<id>` opens a map directly (`ash_wood`, `beacon_hill`, `half` for half tiles) and `?world` opens the world map. Links with the Portuguese names used before Nov 14 (`?cenario`, `?campanha`, `?mundo`…) still work.
 
 ## Architecture
 
