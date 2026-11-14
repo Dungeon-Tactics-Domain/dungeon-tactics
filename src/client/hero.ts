@@ -7,7 +7,7 @@ export interface Hero {
   name: string;
   cls: HeroClass;
 }
-export const HERO_KEY = 'dt:heroi';
+export const HERO_KEY = 'dt:hero';
 export const NAME_MAX = 16;
 
 // trust boundary: the saved hero comes from the browser; only a name of 1 to 16 letters and one of the 4 classes pass

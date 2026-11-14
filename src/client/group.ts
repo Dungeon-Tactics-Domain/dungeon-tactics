@@ -21,7 +21,7 @@ export interface Group {
   members: Member[];
   deployed: string[]; // ids of who goes to battle, in the order of the starting tiles
 }
-export const GROUP_KEY = 'dt:grupo';
+export const GROUP_KEY = 'dt:party';
 export const GROUP_MAX = 8; // design cap (section 3)
 export const DEPLOY_MAX = 4; // the maps have 4 hero starting tiles
 export const RECRUIT_COST = 200; // initial number: a victory gives 150, the 1st act shop costs 100 to 240

@@ -185,7 +185,7 @@ export const WORLD: WorldNode[] = [
   },
 ];
 
-export const WORLD_KEY = 'dt:mundo'; // how many nodes were already won or seen, in order
+export const WORLD_KEY = 'dt:world'; // how many nodes were already won or seen, in order
 
 // trust boundary: the number saved in the browser is only valid between 0 and the total number of nodes
 export function parseWorld(raw: unknown): number {

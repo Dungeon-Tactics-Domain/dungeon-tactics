@@ -8,8 +8,8 @@ export interface PixelSettings {
   palette: boolean; // few colors per channel (16-bit look)
   snap: boolean; // camera snapped to the pixel grid (without it the ground "boils" when moving)
 }
-// new key on Nov 13: anyone who already had pixel saved also goes back to normal 3D (the default changed)
-export const PIXEL_KEY = 'dt:pixel2';
+// dt:pixel2 from Nov 13 (to put everyone back on plain 3D) to Nov 14, when it took the English name (store.ts migrate)
+export const PIXEL_KEY = 'dt:pixel';
 
 // normal 3D by default (Nov 13, Fernando's request: "make the pixelated look not the default"); pixel art stays in Options
 // and on the V key. The `phone` parameter is kept for the day the phone gets its own default

@@ -3,7 +3,7 @@
 // tested; the saved values are a trust boundary (parseChest/parseEquip reject what they don't know).
 import { ITEMS, type Loadout, SLOTS, type Slot } from '../shared/battle/equipment.ts';
 
-export const CHEST_KEY = 'dt:bau';
+export const CHEST_KEY = 'dt:chest';
 export const EQUIP_KEY = 'dt:equip';
 export interface Chest {
   gold: number;

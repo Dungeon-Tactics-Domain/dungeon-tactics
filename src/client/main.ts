@@ -87,8 +87,8 @@ const AUTO = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSear
 
 const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (Fernando's request, Nov 12)
 // short turn list (next 4) by default: FFT does not leave the whole order on screen and the list covered the map (Nov 12)
-const QUEUE_KEY = 'dt:turnos';
-const FAST_KEY = 'dt:rapido'; // fast-forward button on stays on in the next battle
+const QUEUE_KEY = 'dt:turns';
+const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
 const newBattle = () => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
 
 class Game {
@@ -1516,7 +1516,6 @@ function titleScreen() {
               for (const k of [
                 WORLD_KEY,
                 CAMPAIGN_KEY,
-                'dt:estrelas',
                 HERO_KEY,
                 GROUP_KEY,
                 ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`),

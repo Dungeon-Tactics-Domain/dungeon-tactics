@@ -29,7 +29,7 @@ const AMBUSH = [
 export const turnsLeft = (state: BattleState) => Math.max(0, SURVIVE_TURNS - state.turnsPlayed);
 // Record (to give a reason to replay): how many turns the party held out in the best game, up to SURVIVE_TURNS. Kept in the
 // browser; the saved value is a trust boundary (integer between 0 and SURVIVE_TURNS, otherwise 0).
-export const BEST_KEY = 'dt:amanhecer';
+export const BEST_KEY = 'dt:dawn';
 export function parseBest(raw: unknown): number {
   const n = Number(raw);
   return Number.isInteger(n) && n >= 0 && n <= SURVIVE_TURNS ? n : 0;

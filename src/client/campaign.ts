@@ -39,7 +39,7 @@ export const SPEAKERS = {
   hero: { name: 'Você', en: 'You', def: 'warrior', pitch: 240 },
 } as const;
 
-export const CAMPAIGN_KEY = 'dt:campanha'; // how many stages were already won
+export const CAMPAIGN_KEY = 'dt:campaign'; // how many stages were already won
 
 // The heroes learn one ability per stage won (2 in the 1st, 3 in the 2nd, all 4 from the 3rd on): the 1st stage teaches a little of
 // each at a time and Odo's Heal arrives mid-campaign, when the enemies press

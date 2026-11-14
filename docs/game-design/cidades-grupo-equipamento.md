@@ -12,7 +12,7 @@ Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, te
   - **Equip:** picks an item from the party chest for each slot; shows before → after for each number, like FFT.
   - **Change class:** among the unlocked classes; abilities come from the class (learned per stage, `party(n)`).
   - **Dismiss:** recruits only; story characters stay.
-- **Data:** the party saved in `dt:grupo` (list of units: base/class, name, equipment, recruited or story) and the chest in `dt:bau` (items and gold). Trust boundary: `parseGroup`/`parseChest` reject garbage, like the other saves.
+- **Data:** the party saved in `dt:party` (list of units: base/class, name, equipment, recruited or story) and the chest in `dt:chest` (items and gold). Trust boundary: `parseGroup`/`parseChest` reject garbage, like the other saves.
 
 ## 2. Equipment
 

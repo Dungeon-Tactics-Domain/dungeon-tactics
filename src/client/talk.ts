@@ -9,9 +9,9 @@ import { el } from './icons.ts';
 import { blip } from './sound.ts';
 import { store } from './store.ts';
 
-// Text speed (menu, dt:texto): Normal ~35 letters per second, the pace of someone reading slowly without tiring fast readers;
+// Text speed (menu, dt:text): Normal ~35 letters per second, the pace of someone reading slowly without tiring fast readers;
 // Fast ~3 times that; Instant shows the whole sentence (a common request in tactical RPGs, night of Nov 12)
-export const TEXT_KEY = 'dt:texto';
+export const TEXT_KEY = 'dt:text';
 export type TextSpeed = 'normal' | 'fast' | 'instant';
 const CHAR_MS: Record<TextSpeed, number> = { normal: 28, fast: 10, instant: 0 };
 export const textSpeed = (): TextSpeed => {

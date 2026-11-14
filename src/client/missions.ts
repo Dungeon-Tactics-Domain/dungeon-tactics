@@ -9,7 +9,7 @@ import { buildDevScenario, unitFrom } from './dev-roster.ts';
 import { defaultGroup, type Group, heroesFor } from './group.ts';
 import type { Hero } from './hero.ts';
 
-export const MISSIONS_KEY = 'dt:missoes';
+export const MISSIONS_KEY = 'dt:quests';
 export interface Mission {
   id: string;
   town: string; // id of the town node (world.ts)
