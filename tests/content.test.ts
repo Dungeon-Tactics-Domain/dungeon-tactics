@@ -1,0 +1,96 @@
+import { describe, expect, it } from 'vitest';
+import { ABILITY_LIST } from '../src/content/abilities.ts';
+import { SPEAKERS, STAGES } from '../src/content/campaign.ts';
+import { ITEM_LIST } from '../src/content/items.ts';
+import { RECRUIT_NAMES, STORY } from '../src/content/party.ts';
+import { MISSIONS } from '../src/content/quests.ts';
+import { UNIT_LIST } from '../src/content/units.ts';
+import { WORLD } from '../src/content/world.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { ITEMS } from '../src/shared/battle/equipment.ts';
+import { TERRAIN } from '../src/shared/battle/grid.ts';
+import { MAPS } from '../src/shared/battle/scenarios.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+
+// Content in src/content refers to itself by id (a stage names a map and enemy classes, a quest a town and an item). A typo
+// only shows up mid-game, so it shows up here. Covered elsewhere, not repeated: full grid and free spawns and ramps
+// (scenario-maps), line speakers (campaign and world tests, and the Line type), every stage on the world map (world).
+const unique = (ids: string[]) => ids.filter((id, i) => ids.indexOf(id) !== i);
+const mapIds = MAPS.map((m) => m.id);
+
+describe('content ids', () => {
+  // the registries are built with Object.fromEntries, which keeps the last of two equal ids without a word
+  it('are unique in every list', () => {
+    expect(unique(UNIT_LIST.map((u) => u.id))).toEqual([]);
+    expect(unique(ABILITY_LIST.map((a) => a.id))).toEqual([]);
+    expect(unique(ITEM_LIST.map((i) => i.id))).toEqual([]);
+    expect(unique(mapIds)).toEqual([]);
+    expect(unique(MISSIONS.map((m) => m.id))).toEqual([]);
+    expect(unique(STORY.map((m) => m.id))).toEqual([]);
+    expect(unique(RECRUIT_NAMES)).toEqual([]);
+  });
+});
+
+describe('classes and abilities', () => {
+  it('every ability of every unit exists', () => {
+    for (const u of Object.values(UNIT_DEFS))
+      for (const a of u.abilities) expect(ABILITIES[a], `${u.id} → ${a}`).toBeDefined();
+  });
+
+  it('each hero has 4 abilities or more and fits the 6-slot bar (move + abilities + end)', () => {
+    for (const id of ['warrior', 'archer', 'mage', 'rogue']) {
+      const n = UNIT_DEFS[id].abilities.length;
+      expect(n, id).toBeGreaterThanOrEqual(4);
+      expect(n + 2, id).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('an ability deals damage or heals, never both, and has a coherent range', () => {
+    for (const a of Object.values(ABILITIES)) {
+      expect(a.damage[1] > 0 !== a.heal[1] > 0, a.id).toBe(true);
+      expect(a.range[0], a.id).toBeLessThanOrEqual(a.range[1]);
+      expect(a.damage[0], a.id).toBeLessThanOrEqual(a.damage[1]);
+      expect(a.accuracy, a.id).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('maps', () => {
+  // a letter missing from a map key gives a tile without terrain, and a short height row gives a NaN height
+  it('every tile has a known terrain and a whole height, and every spawn a known class', () => {
+    for (const m of MAPS) {
+      m.grid.tiles.forEach((t, i) => {
+        expect(TERRAIN[t.terrain], `${m.id} tile ${i}`).toBeDefined();
+        expect(Number.isInteger(t.h), `${m.id} tile ${i}`).toBe(true);
+      });
+      for (const s of m.spawns) expect(UNIT_DEFS[s.def], `${m.id} → ${s.def}`).toBeDefined();
+    }
+  });
+});
+
+describe('campaign, world and quests', () => {
+  it('stages use existing maps, enemy classes and abilities', () => {
+    for (const s of STAGES) {
+      expect(mapIds, s.title[1]).toContain(s.setup.map);
+      for (const e of s.setup.enemies) {
+        expect(UNIT_DEFS[e.base], `${s.title[1]} → ${e.base}`).toBeDefined();
+        for (const a of e.abilities ?? []) expect(ABILITIES[a], `${s.title[1]} → ${a}`).toBeDefined();
+      }
+    }
+  });
+
+  it('speakers, story members and battle nodes point to things that exist', () => {
+    for (const [id, sp] of Object.entries(SPEAKERS)) expect(UNIT_DEFS[sp.def], id).toBeDefined();
+    for (const m of STORY) expect(UNIT_DEFS[m.cls], m.id).toBeDefined();
+    for (const w of WORLD) if (w.chapter !== undefined) expect(STAGES[w.chapter], w.id).toBeDefined();
+  });
+
+  it('quests use an existing town, map, enemy classes and reward item', () => {
+    for (const q of MISSIONS) {
+      expect(WORLD.find((w) => w.id === q.town)?.town, `${q.id} → ${q.town}`).toBeDefined();
+      expect(mapIds, q.id).toContain(q.map);
+      for (const e of q.enemies) expect(UNIT_DEFS[e], `${q.id} → ${e}`).toBeDefined();
+      if (q.item) expect(ITEMS[q.item], `${q.id} → ${q.item}`).toBeDefined();
+    }
+  });
+});

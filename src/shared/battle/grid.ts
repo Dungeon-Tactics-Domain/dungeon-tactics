@@ -73,6 +73,9 @@ export function parseGrid(terrain: string[], heights: string[]): Grid {
 // neighbor 1 level above; a dot is a flat tile. Hand-picked on the passages and slopes with a step of 1 (test in scenario-maps).
 const RAMP_DIR: Record<string, number> = { v: 0, '>': 1, '^': 2, '<': 3 };
 export function withRamps(grid: Grid, overlay: string[]): Grid {
+  // a short row would silently drop ramps, so a drawing that does not match the map fails on load, like parseGrid
+  if (overlay.length !== grid.height || overlay.some((row) => row.length !== grid.width))
+    throw new Error('ramps: the drawing size differs from the map');
   const tiles = grid.tiles.map((t, i) => {
     const d = RAMP_DIR[overlay[Math.floor(i / grid.width)][i % grid.width]];
     return d === undefined ? t : { ...t, ramp: [d, 1] as [number, number] };

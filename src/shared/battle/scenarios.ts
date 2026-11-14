@@ -30,9 +30,9 @@ export interface Scenario {
 // The maps live in src/content/maps, one file each; Beacon Hill is the 1st battle and the standalone default
 export const FIRST_BATTLE = BEACON_HILL;
 
-export const SCENARIOS: Record<string, Scenario> = Object.fromEntries(
-  [SKIRMISH, FIRST_BATTLE, FLOODED_CRYPT, CRYPT_HEART, ASH_WOOD, FROST_PASS].map((s) => [s.id, s]),
-);
+// the game maps as written; SCENARIOS also receives the casts built at runtime (campaign, quests, developer menu)
+export const MAPS: Scenario[] = [SKIRMISH, FIRST_BATTLE, FLOODED_CRYPT, CRYPT_HEART, ASH_WOOD, FROST_PASS];
+export const SCENARIOS: Record<string, Scenario> = Object.fromEntries(MAPS.map((s) => [s.id, s]));
 
 // initial ct 0 for everyone: the opening order comes only from the speeds
 export function initialState(scenario: Scenario, seed: number): BattleState {
