@@ -240,6 +240,11 @@ export class BattleScene {
     this.cam.focusOn(p, also);
   }
 
+  // the strike camera with no strike, for the sandbox (dev/sandbox.ts)
+  actionCam(from: Pos, to: Pos, enemy = false) {
+    return this.cam.actionCam(from, to, enemy);
+  }
+
   // back to the whole-map framing
   resetView() {
     this.cam.resetView();

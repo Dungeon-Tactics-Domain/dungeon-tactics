@@ -48,7 +48,7 @@ import { nextSize, PIXEL_KEY, type PixelSettings, parsePixel } from './pixel-set
 import { rampLink } from './scene/space.ts';
 import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, sfx } from './sound.ts';
-import { store } from './store.ts';
+import { param, store } from './store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
 import { talk } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
@@ -58,14 +58,15 @@ import { afterNode, nodeOfChapter, parseWorld, WORLD_KEY } from './world.ts';
 
 // Test (localhost only): ?auto=1 makes the AI play the heroes too, to check stage end, victory and return to the
 // map without playing by hand (night of Nov 12). Nothing changes in production.
-const AUTO = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('auto');
+const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+const AUTO = LOCAL && new URLSearchParams(location.search).has('auto');
 
 const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (Fernando's request, Nov 12)
 // short turn list (next 4) by default: FFT does not leave the whole order on screen and the list covered the map (Nov 12)
 const QUEUE_KEY = 'dt:turns';
 const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
 
-class Game {
+export class Game {
   private ui: Ui;
   // hero turn screen in the FFT style (command.ts): menu -> submenu -> map -> "Execute?" -> menu; Wait -> direction
   private screen: Screen;
@@ -312,6 +313,13 @@ class Game {
       const m = this.ui.mode;
       this.back(m.k === 'ability' ? { k: 'abilities', index: abilitiesOf(b).indexOf(m.id) } : { k: 'menu', index: 0 });
     }
+  }
+
+  // sandbox (dev/sandbox.ts): a turn screen, cursor and marks put straight in, the way a key would leave them
+  showScreen(screen: Screen, cursor: Pos, ui: Ui) {
+    this.screen = screen;
+    this.cursor = cursor;
+    this.update(ui);
   }
 
   private back(screen: Screen) {
@@ -803,9 +811,14 @@ async function boot() {
   const sel = await selectBattle();
   if (sel === 'world') return void worldScreen(host); // world map: no battle assembled
   if (!sel) return; // went back to the map
-  const { scenario, chapter, study } = sel;
-  const saved = store.get(sel.saveKey);
-  const battle = (saved && Battle.load(saved)) || newBattle(scenario);
+  // localhost ?sandbox=<spec>: a battle staged for screenshots (docs/sandbox.md); its own chunk, never fetched online
+  const sandbox = LOCAL && param('sandbox') !== null ? await import('./dev/sandbox.ts') : null;
+  const staged = sandbox?.stage(sel.scenario);
+  // its own save key: acting in a staged battle must not overwrite the real one
+  const run = staged ? { ...sel, scenario: staged.scenario, saveKey: 'dt:battle:sandbox' } : sel;
+  const { scenario, chapter, study } = run;
+  const saved = staged ? null : store.get(sel.saveKey);
+  const battle = staged?.battle ?? ((saved && Battle.load(saved)) || newBattle(scenario));
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(
     host,
@@ -814,18 +827,19 @@ async function boot() {
     pixel,
     scenario.spawns.map((s) => s.def),
   );
-  new Game(battle, scene, host, pixel, sel);
+  const game = new Game(battle, scene, host, pixel, run);
   // campaign stage mood (dark crypt, Hill under the Veil, ridge at night): the same light as Until Dawn mode
   const light = chapter !== null ? CHAPTERS[chapter].light : undefined;
   if (light !== undefined) scene.setDaylight(light);
+  sandbox?.install(game, scene); // after the stage light, so the spec's daylight wins
   // stage starting from zero: the opening conversation over the already assembled map
   // stage from zero: opening conversation and, on closing, the objective banner (like FFT's objective announcement)
   const n = chapter;
-  if (n !== null && !saved)
+  if (n !== null && !saved && !sandbox)
     void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() =>
       announce(objectiveText(n, t)),
     );
-  if (study === SURVIVAL_ID && !saved) announce(survivalGoal(t));
+  if (study === SURVIVAL_ID && !saved && !sandbox) announce(survivalGoal(t));
   // opening the game without a parameter shows the title screen over the standalone battle (which stays behind, already playable)
   if (sel.title) titleScreen();
 }
