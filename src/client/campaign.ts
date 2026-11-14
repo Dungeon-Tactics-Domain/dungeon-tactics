@@ -1,4 +1,4 @@
-// Campaign "Ashes of the Lighthouse" (night of Nov 12: Fernando asked for a campaign with several stages, story, dialogue and
+// Campaign "Beacon Ashes" (night of Nov 12: Fernando asked for a campaign with several stages, story, dialogue and
 // speech sounds). Each stage is a cast from the developer menu (dev-roster.ts) on a game map, with lines before and after the
 // battle; the stages and lines are data in src/content/campaign.ts. Pure and tested; the dialogue screen lives in talk.ts.
 import { SPEAKERS, STAGES } from '../content/campaign.ts';
@@ -60,7 +60,7 @@ export const CHAPTERS: Chapter[] = STAGES.map((s, n) => ({
 
 export const chapterId = (n: number) => `camp${n}`;
 // Boss stage (boss: true, the 1st enemy in the list, id e0): downing the boss wins, even with others still standing; losing all
-// heroes (or the Lighthouse, if there is one) loses. Calls for another tactic: cut a path to him instead of clearing the map.
+// heroes (or the Beacon, if there is one) loses. Calls for another tactic: cut a path to him instead of clearing the map.
 // `eq`: each member's saved equipment (chest.ts) and `group`: who goes to battle (group.ts); the difficulty measurement
 // runs without both (the story party, no items)
 export function chapterScenario(

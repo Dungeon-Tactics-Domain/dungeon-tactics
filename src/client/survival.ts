@@ -54,7 +54,7 @@ export function survivalScenario(turns = SURVIVE_TURNS): Scenario {
   // turn won 100% (waiting costs little, the turn counter runs and the enemies never even arrived; measured on Nov 13)
   let k = 0;
   s.spawns = s.spawns.map((sp) => (sp.team === 'enemy' ? { ...sp, ...AMBUSH[k++] } : sp));
-  // the custom rule replaces the default entirely (which loses without a Lighthouse): hence it repeats fallen heroes and downed enemies
+  // the custom rule replaces the default entirely (which loses without a Beacon): hence it repeats fallen heroes and downed enemies
   s.rules = {
     outcome: (st) =>
       !st.units.some((u) => u.team === 'hero')

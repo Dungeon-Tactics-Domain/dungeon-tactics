@@ -56,7 +56,7 @@ export function unitFrom(base: string, name = UNIT_DEFS[base].name): DevUnit {
   return { base, name, hp: d.hp, speed: d.speed, move: d.move, jump: d.jump ?? MAX_JUMP, abilities: [...d.abilities] };
 }
 
-// map starting tiles per side (the Lighthouse aside: it's the objective, not part of the party)
+// map starting tiles per side (the Beacon aside: it's the objective, not part of the party)
 export function slotsOf(map: string): Record<Team, Spawn[]> & { objective: Spawn[] } {
   const spawns = SCENARIOS[map]?.spawns ?? [];
   return {
@@ -142,7 +142,7 @@ export function parseSetup(raw: unknown): DevSetup | null {
   return heroes && enemies ? { map: r.map, heroes, enemies } : null;
 }
 
-// Map without the Lighthouse (Gariland): no objective, last one standing wins; the default rule would give an instant defeat (no Lighthouse = lost)
+// Map without the Beacon (Gariland): no objective, last one standing wins; the default rule would give an instant defeat (no Beacon = lost)
 const lastStanding: Rules = {
   outcome: (state) =>
     !state.units.some((u) => u.team === 'enemy')

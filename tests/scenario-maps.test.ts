@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { blocksOf, canStand, FACING, inBounds, standH, tileAt } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
-// Game maps (Nov 12: Lighthouse Hill dressed with pieces and the new Flooded Crypt): full grid and nobody spawning
+// Game maps (Nov 12: Beacon Hill dressed with pieces and the new Flooded Crypt): full grid and nobody spawning
 // in a wall, deep water or on top of another
 describe('game maps', () => {
   for (const s of Object.values(SCENARIOS)) {
@@ -51,7 +51,7 @@ describe('game maps', () => {
     expect(total).toBeGreaterThan(0);
   });
 
-  it('Lighthouse Hill: snow only on the enemy side and gold on the Lighthouse tile', () => {
+  it('Beacon Hill: snow only on the enemy side and gold on the Beacon tile', () => {
     const s = SCENARIOS.beacon_hill;
     const beacon = s.spawns.find((sp) => sp.def === 'beacon')!;
     expect(tileAt(s.grid, beacon).look).toBe('gold');

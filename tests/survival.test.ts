@@ -29,7 +29,7 @@ describe('Until Dawn mode', () => {
     for (const bad of ['-1', String(SURVIVE_TURNS + 1), 'x', null, '2.5']) expect(parseBest(bad)).toBe(0);
   });
 
-  it('saves and loads with its own rule (without the Lighthouse it does not lose at once)', () => {
+  it('saves and loads with its own rule (without the Beacon it does not lose at once)', () => {
     const b = Battle.start(survivalScenario(), 3);
     const loaded = Battle.load(b.save())!;
     expect(loaded).not.toBeNull();

@@ -177,7 +177,7 @@ const LOOK: Record<
   bridge: { top: 'blocks/wood', side: null },
   box: { top: 'dungeon/box_large', side: 'blocks/stone' },
   tree: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_1_A_Color1', canopy: true },
-  // Lighthouse Hill (Nov 12, proposal approved by Fernando): rock on the hill, sand and gold on the Lighthouse mound, brick
+  // Beacon Hill (Nov 12, proposal approved by Fernando): rock on the hill, sand and gold on the Beacon mound, brick
   // walls, four varied trees and the enemies' side in the snow (read from afar which side each team starts on)
   rock: { top: 'blocks/stone', side: 'blocks/stone' },
   summit: { top: 'blocks/stone_dark', side: 'blocks/stone' },
@@ -446,7 +446,7 @@ export class BattleScene {
   }
 
   // `all`: sheets for the whole scenario, not just the ones alive in the save (Nov 13, review): without this, reopening a save where a model
-  // had already died and pressing "Play again" brought the unit back as the Lighthouse crystal
+  // had already died and pressing "Play again" brought the unit back as the Beacon crystal
   static async create(
     host: HTMLElement,
     grid: Grid,
