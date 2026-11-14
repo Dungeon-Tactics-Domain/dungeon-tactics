@@ -111,6 +111,59 @@ describe('half tiles: line of sight on the game maps', () => {
   }
 });
 
+describe('half tiles: line of sight between tiles and against big units', () => {
+  it('a shooter between tiles does not lose a target on a ledge to the ledge it stands on', () => {
+    // flat ground up to a ledge of 5 on the last tile: from tile 0 the whole map sees the target up there
+    const sc = split(gridOf(['....', '....'], ['0005', '0005']), 't-ledge', [
+      { id: 'a', def: 'archer', team: 'hero', x: 0, y: 0 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 0, y: 0 },
+    ]);
+    for (const x of [0, 1]) {
+      const s = stateOf([
+        { id: 'a', def: `archer${HALF}`, team: 'hero', x, y: 0 },
+        { id: 'b', def: `soldier${HALF}`, team: 'enemy', x: 6, y: 0 },
+      ]);
+      const p = previewAbility(sc.grid, s, 'a', 'shot', { x: 6, y: 0 });
+      expect(p.ok && p.targets.map((t) => t.unit), `shooter at ${x}`).toEqual(['b']);
+    }
+  });
+
+  it('the Colossus sees and is seen from the same tiles as on the whole map', () => {
+    UNIT_DEFS['t-all'] = { ...UNIT_DEFS.warrior, id: 't-all', abilities: Object.keys(ABILITIES) };
+    const map = MAPS.find((m) => m.id === 'frost_pass') as Scenario;
+    const hm = halve({ ...map, spawns: [{ id: 'c', def: 'colossus', team: 'enemy', x: 0, y: 0 }] });
+    const g = map.grid;
+    const sighted = Object.keys(ABILITIES).filter((id) => ABILITIES[id].needsSight);
+    const fits = (p: Pos) => cellsOf(p, 2).every((c) => c.x < g.width && c.y < g.height && canStand(tileAt(g, c)));
+    const diff: string[] = [];
+    for (let cy = 0; cy < g.height; cy += 4)
+      for (let cx = 0; cx < g.width; cx += 4) {
+        const C = { x: cx, y: cy };
+        if (!fits(C)) continue;
+        for (let y = 0; y < g.height; y++)
+          for (let x = 0; x < g.width; x++) {
+            const A = { x, y };
+            if (!canStand(tileAt(g, A)) || cellsOf(C, 2).some((c) => posKey(c) === posKey(A))) continue;
+            const s = stateOf([
+              { id: 'a', def: 't-all', team: 'hero', ...A },
+              { id: 'c', def: 'colossus', team: 'enemy', ...C },
+            ]);
+            const hs = halfState(s);
+            const say = (p: ReturnType<typeof previewAbility>) =>
+              p.ok ? p.targets.map((t) => `${t.unit}:${t.chance}`).join(',') : 'out';
+            // aimed at its tile nearest to the shooter, where both maps measure the range alike
+            const T = cellsOf(C, 2).reduce((p, q) => (dist(q, A) < dist(p, A) ? q : p));
+            for (const id of sighted) {
+              const w = say(previewAbility(g, s, 'a', id, T));
+              const h = say(previewAbility(hm.grid, hs, 'a', id, cell(T)));
+              if (w !== h) diff.push(`${id} ${posKey(A)} -> ${posKey(T)} whole ${w} half ${h}`);
+            }
+          }
+      }
+    expect(diff.slice(0, 5)).toEqual([]);
+  }, 30000);
+});
+
 describe('half tiles: walking', () => {
   // every spawn of every map: the whole tiles it reaches are the token's corner cells, at twice the cost
   for (const map of MAPS) {

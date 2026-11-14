@@ -296,6 +296,9 @@ function* sightLine(grid: Grid, a: Pos, b: Pos): Generator<{ pos: Pos; cells: Po
   if (total <= 1) return;
   const sx = a.x < b.x ? k : -k,
     sy = a.y < b.y ? k : -k;
+  // an end between tiles rounds its strides up, so the last square probed can overlap that end's own square: its ground is
+  // not an obstacle (a target on a ledge was hidden by the ledge it stands on)
+  const ends = [...cellsOf(a, k), ...cellsOf(b, k)];
   let i = 0,
     j = 0,
     err = nx - ny;
@@ -312,7 +315,8 @@ function* sightLine(grid: Grid, a: Pos, b: Pos): Generator<{ pos: Pos; cells: Po
     if (i === nx && j === ny) return;
     // fraction by the advance in grid steps, not by the loop index, which on the diagonal moves 1 tile per iteration
     const pos = { x: a.x + i * sx, y: a.y + j * sy };
-    yield { pos, cells: cellsOf(pos, k).filter((c) => inBounds(grid, c)), frac: (i + j) / total };
+    const cells = cellsOf(pos, k).filter((c) => inBounds(grid, c) && !ends.some((e) => samePos(e, c)));
+    yield { pos, cells, frac: (i + j) / total };
   }
 }
 
@@ -360,10 +364,20 @@ export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
   return null;
 }
 
-// ends of a line of sight: on the split map from the corner of the shooter's square to the corner of the target's (or the
-// aimed cell), so the whole-tile strides of sightLine retrace the whole map's line; elsewhere from the shooter's nearest tile
-export const sightEnds = (grid: Grid, state: BattleState, actor: UnitState, center: Pos): [Pos, Pos] =>
-  subOf(grid) > 1 ? [actor.pos, unitAt(state, center)?.pos ?? center] : [nearestTile(actor, center), center];
+// ends of a line of sight: from the shooter's tile nearest to the aimed one. On the split map each end is the corner of a whole
+// tile of its token (the aimed tile of a big target, the shooter's nearest), so the whole-tile strides of sightLine retrace
+// the whole map's line
+export const sightEnds = (grid: Grid, state: BattleState, actor: UnitState, center: Pos): [Pos, Pos] => {
+  const k = subOf(grid);
+  if (k === 1) return [nearestTile(actor, center), center];
+  const snap = (u: UnitState, p: Pos) => ({
+    x: u.pos.x + Math.floor((p.x - u.pos.x) / k) * k,
+    y: u.pos.y + Math.floor((p.y - u.pos.y) / k) * k,
+  });
+  const t = unitAt(state, center);
+  const to = t ? snap(t, center) : center;
+  return [snap(actor, nearestTile(actor, to)), to];
+};
 
 // max range against a tile: +1 per level above the target for whoever has heightRange (in cells on the split map)
 export function maxRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): number {
