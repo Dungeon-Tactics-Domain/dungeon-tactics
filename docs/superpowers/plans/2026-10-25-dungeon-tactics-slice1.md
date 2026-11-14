@@ -8,7 +8,7 @@
 
 **Tech Stack:** strict TypeScript, Vite, Three.js 0.186 (orthographic camera + `RenderPixelatedPass`), Vitest.
 
-**Spec:** `docs/superpowers/specs/2026-10-25-dungeon-tactics-design.md` · pillars: `docs/game-design/PILARES.md`.
+**Spec:** `docs/superpowers/specs/2026-10-25-dungeon-tactics-design.md` · pillars: `docs/game-design/pillars.md`.
 
 ## Global Constraints
 

@@ -1,6 +1,6 @@
 # Dungeon Tactics — design for slice 1 (Oct 25, 2026)
 
-Origin: pillars grill with Fernando on Oct 25, 2026 (decisions also in the memory `visao-do-jogo.md`). Pillars and goals: [`docs/game-design/PILARES.md`](../../game-design/PILARES.md).
+Origin: pillars grill with Fernando on Oct 25, 2026 (decisions also in the memory `visao-do-jogo.md`). Pillars and goals: [`docs/game-design/pillars.md`](../../game-design/pillars.md).
 
 ## What it is
 

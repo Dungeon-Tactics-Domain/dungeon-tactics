@@ -1,5 +1,5 @@
 // Player party (Nov 13, Fernando's request: "recruitment and class change", like the FFT formation; design in
-// docs/game-design/cidades-grupo-equipamento.md, delivery 5). Pure and tested; the screens live in world-ui.ts.
+// docs/game-design/towns-party-equipment.md, delivery 5). Pure and tested; the screens live in world-ui.ts.
 // The 4 from the story never leave; recruits are hired at the Bar with gold and can be dismissed. Anyone can change class
 // among the unlocked ones (JOBS), and up to 4 go to battle (the maps' starting tiles). The default party assembles exactly the
 // measured cast of each stage, so the campaign curve doesn't change for whoever doesn't touch the party.

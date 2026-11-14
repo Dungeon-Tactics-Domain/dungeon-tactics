@@ -1,6 +1,6 @@
 # Reference: FFT battle screen and Tactics Ogre mechanics
 
-Study requested by Fernando on Nov 13, 2026 ("you can take all the FFT and Tactics Ogre references possible for this first part of development"). Internal use: only mechanics and flow are copied, never art, text, music or names. Complements `referencia-fft.md` (FFT formulas from the Battle Mechanics Handbook); what is already there is not repeated here, only pointed to by section.
+Study requested by Fernando on Nov 13, 2026 ("you can take all the FFT and Tactics Ogre references possible for this first part of development"). Internal use: only mechanics and flow are copied, never art, text, music or names. Complements `fft-reference.md` (FFT formulas from the Battle Mechanics Handbook); what is already there is not repeated here, only pointed to by section.
 
 **Rule of this document:** every claim has a source and a game version. What has no source is marked **unconfirmed**; what is our own calculation or conclusion is marked **deduction**.
 
@@ -14,8 +14,8 @@ How each was read, on three levels:
 | Abbrev. | What it is | Version | Link | How it was read |
 |---|---|---|---|---|
 | TUT | Script of the tutorial inside FFT itself, transcribed by the Corpse Brigadier site. The cited pages go as `02_03`, `03_15` etc. | PS1 (deduction: it cites the L2 and R2 buttons and the "Wide" sound, which the PSP does not have) | https://corpsebrigadier.neocities.org/2022/content/info/tutorialscript.html (page `x_y` at `.../tutorial/tutorial_x_y.html`) | Page opened (summary) |
-| BMG | *Battle Mechanics Handbook* v6.1, by Aerostar (2004), the same one as in `referencia-fft.md` | PS1 | https://www.video-games-museum.com/en/faqs/Playstation/26882-Final-Fantasy-Tactics.pdf | Text extracted here (sections 4.1, 4.3 and 6.5) |
-| MAPA | Map 022 (Gariland) as JSON, the same one as in `referencia-fft.md` | PS1 | see `referencia-fft.md` | Not reopened |
+| BMG | *Battle Mechanics Handbook* v6.1, by Aerostar (2004), the same one as in `fft-reference.md` | PS1 | https://www.video-games-museum.com/en/faqs/Playstation/26882-Final-Fantasy-Tactics.pdf | Text extracted here (sections 4.1, 4.3 and 6.5) |
+| MAPA | Map 022 (Gariland) as JSON, the same one as in `fft-reference.md` | PS1 | see `fft-reference.md` | Not reopened |
 | KAIN | *Tactics Ogre FAQ*, by Kain (Zhou Tai An), 1998; says a good part comes from Japanese pages (rpgdl.com) | PS1 | https://www.video-games-museum.com/en/faqs/Playstation/29008-Tactics-Ogre-Let-Us-Cling-Together.pdf | Text extracted here |
 | ZAHL | *Tactics Ogre: LUCT FAQ/Walkthrough*, by Zahlzeit, v2.23 (2016) | PSP | https://www.video-games-museum.com/en/faqs/PSP/12539-Tactics-Ogre-Let-Us-Cling-Together.pdf | Text extracted here |
 | SKILL | *Tactics Ogre: LUCT Skill FAQ*, by coineineagh, v3.3 (2015) | PSP | https://www.video-games-museum.com/en/faqs/PSP/12545-Tactics-Ogre-Let-Us-Cling-Together.pdf | Text extracted here |
@@ -34,7 +34,7 @@ How each was read, on three levels:
 | ENG | Engadget review of The Ivalice Chronicles | FFT 2025 | https://www.engadget.com/gaming/final-fantasy-tactics-ivalice-chronicles-review-140000972.html | Page opened (summary) |
 | BUSCA | Search snippets of pages that did not open: Sportskeeda (previews of Reborn and Ivalice Chronicles), RPGamer, PC Gamer, Kotaku and DSOGaming (Reborn), Press Start (Ivalice Chronicles), RPGFan and Destructoid (WotL), Square Enix "A closer look at Tactics Ogre: Reborn", Caves of Narshe (battle 16), FFHacktics wiki (SEQ) | various | https://sportskeeda.com/esports/final-fantasy-tactics-ivalice-chronicles-preview · https://www.sportskeeda.com/esports/tactics-ogre-reborn-ps5-preview-more-simple-visual-overhaul · https://rpgamer.com/review/tactics-ogre-reborn-review/ · https://pcgamer.com/tactics-ogre-reborn-review · https://kotaku.com/tactics-ogre-reborn-review-remaster-tactics-jrpg-switch-1849774409 · https://www.dsogaming.com/?p=167341 · https://press-start.com.au/reviews/ps5-reviews/2025/10/13/final-fantasy-tactics-the-ivalice-chronicles-review-well-worth-it/ · https://www.rpgfan.com/review/final-fantasy-tactics-the-war-of-the-lions/ · https://www.square-enix-games.com/news/tactics-ogre-reborn · https://www.cavesofnarshe.com/fft/walkthrough.php?battle=16 · https://ffhacktics.com/wiki/SEQ | Search only |
 
-Did not open in this research (blocked or empty page): `ogrebattlesaga.fandom.com` (402), the `breezewiki.discard.no` mirror of the Final Fantasy wiki (certificate error), `strategywiki.org`, `gematsu.com`, `pushsquare.com`, `rpgamer.com`, `dsogaming.com` (403), `sportskeeda.com` (405), `pcgamer.com` (truncated text), `hardcoregaming101.net` (server migration), `square-enix-games.com` (only the site menu). `gamefaqs.gamespot.com` and `finalfantasy.fandom.com` are blocked according to `referencia-fft.md` (Nov 11) and were not tried again. The mechanics *In-Depth FAQ* for the PSP Tactics Ogre lives on GameFAQs and was left out.
+Did not open in this research (blocked or empty page): `ogrebattlesaga.fandom.com` (402), the `breezewiki.discard.no` mirror of the Final Fantasy wiki (certificate error), `strategywiki.org`, `gematsu.com`, `pushsquare.com`, `rpgamer.com`, `dsogaming.com` (403), `sportskeeda.com` (405), `pcgamer.com` (truncated text), `hardcoregaming101.net` (server migration), `square-enix-games.com` (only the site menu). `gamefaqs.gamespot.com` and `finalfantasy.fandom.com` are blocked according to `fft-reference.md` (Nov 11) and were not tried again. The mechanics *In-Depth FAQ* for the PSP Tactics Ogre lives on GameFAQs and was left out.
 
 **Weak coverage:** The War of the Lions (PSP, 2007) only appears through search snippets about slowness; no source read describes a difference in screen or rules compared to the PS1. The Reborn Tactics Ogre has no source on direction or on trees.
 
@@ -42,12 +42,12 @@ Did not open in this research (blocked or empty page): `ogrebattlesaga.fandom.co
 
 | Game | Versions cited | Turn order |
 |---|---|---|
-| Final Fantasy Tactics | PS1 (1997), The War of the Lions (PSP, 2007), The Ivalice Chronicles (2025, outside the request, but it answers screen questions) | CT (`referencia-fft.md`, "Turn order") |
+| Final Fantasy Tactics | PS1 (1997), The War of the Lions (PSP, 2007), The Ivalice Chronicles (2025, outside the request, but it answers screen questions) | CT (`fft-reference.md`, "Turn order") |
 | Tactics Ogre: Let Us Cling Together | PS1 (port of the 1995 Super Famicom game), PSP (remade in 2010), Reborn (2022, remade from the PSP) | PS1: WT. PSP and Reborn in English: RT, *Recovery Time* (SKILL, FW). The Japanese article on Reborn calls it WT (IMP) |
 
 ## What FFT's tutorial answers anew
 
-Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and that the game's tutorial (TUT) answers:
+Points that `fft-reference.md` marks as unconfirmed, or does not cover, and that the game's tutorial (TUT) answers:
 
 | Subject | What the tutorial says | Page |
 |---|---|---|
@@ -57,7 +57,7 @@ Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and tha
 | Horizontal gap | Beyond `[Jump / 2]` tiles, the edge you jump from must be at least as high as the one you arrive at | 03_15 |
 | Wait | Waiting without moving or acting restarts the charge at 40; after moving or acting, at 20 | 02_04 |
 
-- The Wait line matches the BMG (CT − 60 and CT − 80, `referencia-fft.md`, "Turn order") when the unit had CT 100 (**deduction**).
+- The Wait line matches the BMG (CT − 60 and CT − 80, `fft-reference.md`, "Turn order") when the unit had CT 100 (**deduction**).
 - **Divergence about water of depth 2.** The tutorial (03_16) says: "If you stop when the water depth is 2h, you can't move." The BMG 6.5 says the unit cannot act or react; the BMG note on Float talks about not being able to move. Not resolved here. Our game currently treats 2 or more as water you cannot enter (`src/shared/CLAUDE.md`, "Água em todos os mapas").
 
 ## 1. Battle screen and turn flow
@@ -110,7 +110,7 @@ Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and tha
 
 ### 2.1 Direction (front, side, back)
 
-- **FFT (PS1):** the direction is chosen by the player at the end of the turn (TUT 02_03) and changes only the hit chance, through the evasions that count on each side (`referencia-fft.md`, "Hit chance and evasion"). The BMG damage formulas have no direction term (**deduction**: a hit from behind lands more often, it does not hit harder).
+- **FFT (PS1):** the direction is chosen by the player at the end of the turn (TUT 02_03) and changes only the hit chance, through the evasions that count on each side (`fft-reference.md`, "Hit chance and evasion"). The BMG damage formulas have no direction term (**deduction**: a hit from behind lands more often, it does not hit harder).
 - **Tactics Ogre (PS1):** hit chance rises 25% from the side and 50% from behind (KAIN). Single source, from 1998, taken from Japanese pages; whether the addition is in points or in proportion: **unconfirmed**.
 - **Tactics Ogre (PSP):** attacking from behind improves the hit chance, with no number (ZAHL).
 - **Tactics Ogre Reborn:** **unconfirmed**. The damage document (DMG) does not cover direction.
@@ -119,15 +119,15 @@ Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and tha
 
 ### 2.2 Jump and gap
 
-- **FFT (PS1):** jump and the `[Jump / 2]` tile gap and the edge rule on ramps are in `referencia-fft.md` ("Height and movement") and in BMG 6.5. New: the gap requires the departure edge to be at least as high as the arrival one (TUT 03_15); the jump bonus increases the gap, but the ability that ignores height does not (BMG 6.5).
+- **FFT (PS1):** jump and the `[Jump / 2]` tile gap and the edge rule on ramps are in `fft-reference.md` ("Height and movement") and in BMG 6.5. New: the gap requires the departure edge to be at least as high as the arrival one (TUT 03_15); the jump bonus increases the gap, but the ability that ignores height does not (BMG 6.5).
 - **Tactics Ogre (PSP):** climbing and descending are separate limits. Most fighting classes climb 2 and descend 3; mages and clerics climb 1 and descend 2; the Ninja walks 5, climbs 3 and descends 4; flyers ignore height (SKILL, each class's sheet). On the PS1 the Ninja already climbed 3 and descended 4 (KAIN).
-- **Vertical range of the strike:** in the PSP Tactics Ogre, common melee reaches 2 in height upward and 3 downward (SKILL); on the PS1, spear and whip reach 1 tile more and 2 in height more (KAIN). In FFT, the vertical limit appears in the ability's help text (for example, "Vertical 2") (TUT 03_06; numbers in `referencia-fft.md`, "Attack damage by weapon").
+- **Vertical range of the strike:** in the PSP Tactics Ogre, common melee reaches 2 in height upward and 3 downward (SKILL); on the PS1, spear and whip reach 1 tile more and 2 in height more (KAIN). In FFT, the vertical limit appears in the ability's help text (for example, "Vertical 2") (TUT 03_06; numbers in `fft-reference.md`, "Attack damage by weapon").
 
 **For Dungeon Tactics:** we already have jump per class (climbing and descending equal) and FFT's gap (`leaps` in `pathing.ts`). Missing is the tutorial's edge rule: today the gap lands up to `jump` levels above where it started, and in FFT the arrival tile cannot be higher than the departure one. Tactics Ogre also suggests descending 1 more than you climb and magic classes with a smaller jump; and a height limit on the melee strike (climb 2, descend 3), which we do not have today (`inAbilityRange` only looks at distance and the extra range from height). All of this affects map victory: measure first.
 
 ### 2.3 Height
 
-- **FFT (PS1):** height gives range to the longbow (`referencia-fft.md`, "Height and movement"); in the BMG formulas, height does not add damage or hit chance (**deduction**). Whoever is in water counts the tile's height minus the depth (BMG 6.5).
+- **FFT (PS1):** height gives range to the longbow (`fft-reference.md`, "Height and movement"); in the BMG formulas, height does not add damage or hit chance (**deduction**). Whoever is in water counts the tile's height minus the depth (BMG 6.5).
 - **Tactics Ogre (PSP):** the bow shoots in an arc, passes over obstacles and goes beyond the marked range when fired from high up; from below, it loses range (SKILL). The archer gains attack and hit chance the higher he is (GDEV).
 - **Tactics Ogre (PS1):** the arrow almost always goes 1 tile beyond what is marked, sometimes 2, much more from top to bottom, and almost never rises more than 2 in height (KAIN).
 - **Tactics Ogre Reborn:** height and line of sight count in the action (RS-R); some forbidden spells change the damage by the defender's height (DMG).
@@ -136,7 +136,7 @@ Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and tha
 
 ### 2.4 Terrain
 
-- **Water (FFT PS1):** is in `referencia-fft.md` and in our game. The divergence about depth 2 is at the top of this document. Some swamps have depth 2 (Caves of Narshe, search only). With heavy rain, swamp and still lake also cost 2 to walk (BMG 6.5).
+- **Water (FFT PS1):** is in `fft-reference.md` and in our game. The divergence about depth 2 is at the top of this document. Some swamps have depth 2 (Caves of Narshe, search only). With heavy rain, swamp and still lake also cost 2 to walk (BMG 6.5).
 - **Lava (FFT PS1):** the float ability lets you stop on top of lava; the float status lets you pass, but not stop (BMG 4.3); the BMG also cites, in passing, an ability to walk on lava. So, without one of them, you do not stop on lava (**deduction**). **Whether lava hurts: unconfirmed.**
 - **Trees (FFT PS1):** on the Gariland map, the only two tiles where you cannot stand are trees (MAPA). It is the data of one map only; **as a general rule, unconfirmed**.
 - **Shooting with an obstacle (FFT PS1):** a wall or unit in the way takes the arrow or bullet instead of the target; a preview with effect 0 is a sign of this (TUT 03_14). At night, bow and crossbow hit less (BMG 6.5).
@@ -157,7 +157,7 @@ Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and tha
 
 ### 2.6 Charge and turn order
 
-- **FFT (PS1):** in `referencia-fft.md` ("Turn order", "Slow action") and in section 1.3.
+- **FFT (PS1):** in `fft-reference.md` ("Turn order", "Slow action") and in section 1.3.
 - **Tactics Ogre (PS1):** each unit's wait is 550 minus agility, plus what equipment adds or removes, plus or minus the class value (KAIN). Moving and acting lengthen the wait until the next turn (GDEV, about the PSP).
 - **Tactics Ogre (PSP):** each class has a recovery time; the lower, the earlier it plays (**deduction** from how the guide uses it). Examples: Ninja 22, Cleric 24, Mage 25, Archer 26, Warrior 32, Knight 36 (SKILL). Some abilities add extra time (the guide lists one with +20) (SKILL). Here the strong action delays the user's next turn, instead of taking long to go off.
 - **Tactics Ogre Reborn:** friends and enemies in the same queue; the wait comes from equipment weight, class and actions (IMP, FW).
@@ -166,7 +166,7 @@ Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and tha
 
 ### 2.7 Damage and hits to take down
 
-- **FFT (PS1):** multiplicative damage (strength times weapon power; `referencia-fft.md`, "Attack damage by weapon"). With the level 1 table in `referencia-fft.md`: a Squire (43 health) falls to 3 hits from another Squire (16), 3 from Ramza (20), 2 from the Knight (24), 4 from the Chemist (12) and 2 Fires from the Black Mage (30) (**deduction**). Hit chance of 95% to 100% without a shield, critical of about 5% (`referencia-fft.md`).
+- **FFT (PS1):** multiplicative damage (strength times weapon power; `fft-reference.md`, "Attack damage by weapon"). With the level 1 table in `fft-reference.md`: a Squire (43 health) falls to 3 hits from another Squire (16), 3 from Ramza (20), 2 from the Knight (24), 4 from the Chemist (12) and 2 Fires from the Black Mage (30) (**deduction**). Hit chance of 95% to 100% without a shield, critical of about 5% (`fft-reference.md`).
 - **Tactics Ogre Reborn:** subtractive damage: the attacker's attributes minus the defender's, plus the weapon's attack minus the equipment's defense, with weights per weapon type (DMG). The inflated attributes make enemies take a long time to fall until the bonus cards come in (RS-R).
 - **Hits to take down in Tactics Ogre: unconfirmed.**
 
@@ -174,7 +174,7 @@ Points that `referencia-fft.md` marks as unconfirmed, or does not cover, and tha
 
 ### 2.8 Battle length and undoing moves
 
-- **FFT:** **turns per battle: unconfirmed.** Gariland has 5 enemies; the size of the player's side is a study assumption (`referencia-fft.md`, "The Gariland battle").
+- **FFT:** **turns per battle: unconfirmed.** Gariland has 5 enemies; the size of the player's side is a study assumption (`fft-reference.md`, "The Gariland battle").
 - **Tactics Ogre Reborn:** one map took 40 minutes and battles come close to 1 hour with fine control of each unit (VOOKS); even at 2x, it gets slow with a dozen units on each side (DSOGaming, search only).
 - **Undoing moves:** on the PSP, the time-rewind feature (Chariot Tarot) keeps the last 50 moves and any one can be resumed (ZAHL, GDEV); repeating the same action gives the same draw, changing anything draws again (GDEV, IMP). In Reborn, the start of the game lets you go back up to 10 moves and the limit grows later (RS-N); the Japanese review mentions up to about 50, depending on the scene (IMP). PSP × Reborn divergence recorded, not resolved.
 
@@ -202,4 +202,4 @@ The text sources do not give frames per tile when walking, jump duration, or how
 | Turn list with charge | We already have it; the next step is to show where the chosen action puts the unit in the queue | TUT, TIC-P |
 | Direction and hit chance from behind | FFT: only hit chance, through evasions. Tactics Ogre PS1: +25 side, +50 back. Us: +15 and +30 | BMG, KAIN |
 | Trees blocking passage | FFT: tree not walkable on 1 map. Tactics Ogre: unconfirmed; alternative of terrain with defense | MAPA, KAIN |
-| Damage per hit and pace | FFT: 2 to 4 hits, 3 in the common case (deduction). Turns per battle: unconfirmed. Speed-up in both remakes (2x confirmed only in Reborn) | `referencia-fft.md`, RS-R, TIC-R |
+| Damage per hit and pace | FFT: 2 to 4 hits, 3 in the common case (deduction). Turns per battle: unconfirmed. Speed-up in both remakes (2x confirmed only in Reborn) | `fft-reference.md`, RS-R, TIC-R |

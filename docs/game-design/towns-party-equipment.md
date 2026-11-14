@@ -2,7 +2,7 @@
 
 Request from Fernando (Nov 13): "create the character management menu just like FFT's and towns just like FFT's too, with taverns, side quests, equipment, shops, recruiting; implement new classes; and overall keep testing in loops to find bugs and improvements in interface, UX and game feel".
 
-Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, text, names or music (project rule). Sources already gathered in `referencia-fft.md` and `referencia-tactics-ogre-e-fft-ui.md`.
+Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, text, names or music (project rule). Sources already gathered in `fft-reference.md` and `tactics-ogre-fft-ui-reference.md`.
 
 ## 1. Party management ("Formation", like FFT)
 

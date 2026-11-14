@@ -1,7 +1,7 @@
 // Final Fantasy Tactics STUDY scenarios on our engine, to compare numbers and start balancing (Fernando's requests,
 // Nov 11): the 1st battle (Magic City of Gariland) and, on the same map, a clash of the next four basic classes.
 // It is not game content: it only comes in by parameter (`?scenario=fft-gariland` or `?scenario=fft-classes`) and through the
-// simulator, with our models. Sources, degree of fidelity and what is an assumption: docs/game-design/referencia-fft.md.
+// simulator, with our models. Sources, degree of fidelity and what is an assumption: docs/game-design/fft-reference.md.
 import { ABILITIES, type AbilityDef } from '../abilities.ts';
 import { FACING, type Grid, type TerrainKind } from '../grid.ts';
 import { nextRng, rollInt } from '../rng.ts';

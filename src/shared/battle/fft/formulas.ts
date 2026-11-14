@@ -1,6 +1,6 @@
 // Final Fantasy Tactics (PS1, 1997) formulas, only for the balance study (Fernando's request, Nov 11).
 // Source of all: Battle Mechanics Handbook v6.1, by Aerostar; the section is on each function and the link in
-// docs/game-design/referencia-fft.md. Pure functions, no state: the game uses nothing from here outside the study scenario.
+// docs/game-design/fft-reference.md. Pure functions, no state: the game uses nothing from here outside the study scenario.
 
 import type { Side } from '../grid.ts';
 

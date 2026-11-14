@@ -158,7 +158,7 @@ const LIST: AbilityDef[] = [
   }),
   A({ id: 'cleave', name: 'Machadada', en: 'Cleave', range: [1, 1], damage: [18, 24], accuracy: 80 }),
   A({ id: 'slam', name: 'Pancada', en: 'Slam', range: [1, 1], damage: [7, 10], accuracy: 85, push: 2 }),
-  // Lancer (Nov 13, 1st new class of the group design, docs/game-design/cidades-grupo-equipamento.md): the lance reaches 2
+  // Lancer (Nov 13, 1st new class of the group design, docs/game-design/towns-party-equipment.md): the lance reaches 2
   // tiles; the Jump drops from above onto the aimed tile after the charge (like the FFT Dragoon's Jump, in general stats: a charge that
   // aims at the tile and misses if the target leaves). Initial numbers, unmeasured (Fernando's request: only implement the mechanics)
   A({ id: 'lance', name: 'Estocada longa', en: 'Long thrust', range: [1, 2], damage: [11, 16], accuracy: 90 }),

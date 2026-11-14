@@ -12,7 +12,7 @@ import {
 } from '../src/shared/battle/fft/formulas.ts';
 
 // FFT reference study (Fernando's request, Nov 11). Each example below comes from the Battle Mechanics Handbook v6.1 by
-// Aerostar (docs/game-design/referencia-fft.md); the section is in each test.
+// Aerostar (docs/game-design/fft-reference.md); the section is in each test.
 describe('FFT: stats from the raw value (BMG 7.1)', () => {
   it('level 1 female Squire has 28 or 29 HP (guide example)', () => {
     expect(stat(RAW.female.hp[0], CLASSES.squire.hpm)).toBe(28);

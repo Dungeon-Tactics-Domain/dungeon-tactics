@@ -163,7 +163,7 @@ ${WORLD.filter((w) => PLACE_ICON[w.id])
 
 // Party screen (like the FFT formation): everyone in the party, who goes to the next battle (up to 4) and who stays in camp,
 // with portrait, class and numbers; each row opens the sheet. `n`: the next stage (the unlocked abilities).
-// Nov 13, delivery 5 of the design (docs/game-design/cidades-grupo-equipamento.md): recruits and class change
+// Nov 13, delivery 5 of the design (docs/game-design/towns-party-equipment.md): recruits and class change
 const loadGroup = () => parseGroup(store.json(GROUP_KEY));
 const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
 // name on screen: the protagonist takes the place of the story companion with that companion's starting class (group.ts)

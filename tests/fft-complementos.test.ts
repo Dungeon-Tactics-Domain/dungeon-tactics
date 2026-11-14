@@ -17,7 +17,7 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { seedWhere } from './battle-helpers.ts';
 
 // FFT study supplements (Fernando's request, Nov 11): facing, missing abilities, four classes and stock
-// of potions. Source of the formulas: Battle Mechanics Handbook v6.1 (docs/game-design/referencia-fft.md).
+// of potions. Source of the formulas: Battle Mechanics Handbook v6.1 (docs/game-design/fft-reference.md).
 registerFftStudy();
 
 describe('FFT: where the attack comes from (BMG 1.4, diagram)', () => {

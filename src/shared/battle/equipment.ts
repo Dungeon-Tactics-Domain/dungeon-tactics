@@ -1,5 +1,5 @@
 // Equipment (Nov 13, Fernando's request: "equipment, shops… just like FFT"; design in
-// docs/game-design/cidades-grupo-equipamento.md). An item is data with general stats, equal against everything (project rule):
+// docs/game-design/towns-party-equipment.md). An item is data with general stats, equal against everything (project rule):
 // it adds to the battle sheet, never a rule "item X against ability Y". Initial numbers, to be measured before they become a shop.
 export type Slot = 'weapon' | 'armor' | 'accessory';
 export interface ItemDef {

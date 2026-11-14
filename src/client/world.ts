@@ -14,7 +14,7 @@ export interface WorldNode {
   y: number;
   chapter?: number; // battle node: the campaign stage (campaign.ts)
   scene?: Line[]; // story node: the conversation that plays on entering
-  // town (Nov 13, delivery 3 of the design docs/game-design/cidades-grupo-equipamento.md): menu with Shop, Bar and Party;
+  // town (Nov 13, delivery 3 of the design docs/game-design/towns-party-equipment.md): menu with Shop, Bar and Party;
   // `rumors` are the bar's rumors, which tell the story and give hints (pt, en)
   town?: { rumors: [string, string][] };
 }

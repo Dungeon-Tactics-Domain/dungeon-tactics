@@ -9,7 +9,7 @@ import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
-// Study scenario: FFT's 1st battle in our engine (Fernando's request, Nov 11). Sources in docs/game-design/referencia-fft.md
+// Study scenario: FFT's 1st battle in our engine (Fernando's request, Nov 11). Sources in docs/game-design/fft-reference.md
 registerFftStudy();
 
 describe('FFT Gariland: map (fft-map-json, MAP022)', () => {

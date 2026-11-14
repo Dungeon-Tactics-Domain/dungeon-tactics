@@ -1,5 +1,5 @@
 // Final Fantasy Tactics (PS1, 1997) data used in the balance study. Source: Battle Mechanics Handbook v6.1
-// (sections 7.4, 2.5, 3.3 and appendix B); link and what was left unconfirmed in docs/game-design/referencia-fft.md.
+// (sections 7.4, 2.5, 3.3 and appendix B); link and what was left unconfirmed in docs/game-design/fft-reference.md.
 import type { WeaponKind } from './formulas.ts';
 
 export interface ClassDef {
