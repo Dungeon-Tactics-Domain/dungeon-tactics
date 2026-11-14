@@ -143,7 +143,8 @@ A hand-written address works too:
 - **ffmpeg.** With `ffmpeg` on the PATH the load is cut out, giving `<name>.webm` (VP9) and `<name>.mp4` (H.264).
   Without it, the raw recording is kept whole and `clips.json` gives the second where the action starts.
 - **`clips.json`** in the output folder lists each clip with its spec file, the spec itself, and the game commit, branch
-  and dirty flag it was recorded from. Recording a clip again replaces its entry; other keys of the file stay.
+  and dirty flag (a change to a tracked file; untracked files such as the clips themselves do not count) it was
+  recorded from. Recording a clip again replaces its entry; other keys of the file stay.
 - **Before and after.** The same specs, recorded on another commit (a proposal applied), give a comparison.
 - **The specs.** `scripts/sandbox/clips/` holds one spec per mechanic: walk, climb and drop, leap over water, hit, miss,
   heavy hit, shot, push into a fall, death, Fire Bolt and the charged Blast. Their seeds were picked so the dice give the

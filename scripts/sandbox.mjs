@@ -221,7 +221,8 @@ async function writeManifest(made) {
   const game = {
     commit: git('rev-parse', '--short', 'HEAD'),
     branch: git('branch', '--show-current'),
-    dirty: !!git('status', '--porcelain'),
+    // tracked files only: the clips just written (often inside the repo, as with --out clips) are not game changes
+    dirty: !!git('status', '--porcelain', '--untracked-files=no'),
   };
   const recorded = new Date().toISOString();
   const now = made.map(({ name, spec, specFile, ...rest }) => ({
