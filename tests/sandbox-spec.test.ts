@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import battleClean from '../scripts/sandbox/battle-clean.json';
+import battleUi from '../scripts/sandbox/battle-ui.json';
 import frostPass from '../scripts/sandbox/frost-pass-ambush.json';
 import {
   castOf,
@@ -10,6 +12,7 @@ import {
   specUrl,
   storageFor,
 } from '../src/client/dev/sandbox-spec.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
@@ -188,6 +191,8 @@ describe('placementProblems', () => {
 });
 
 // every game battle runs split since Nov 14 (half.ts) while specs stay in whole tiles (Nov 14 review)
+const EXAMPLES = { 'battle-ui.json': battleUi, 'battle-clean.json': battleClean, 'frost-pass-ambush.json': frostPass };
+
 describe('specs on a split map', () => {
   const split = (w: number, h: number) => ({ ...flat(w * 2, h * 2), sub: 2 });
 
@@ -209,12 +214,28 @@ describe('specs on a split map', () => {
     });
   });
 
-  it('stages the Frost Pass example where the whole map has it', () => {
-    const spec = parseSpec(frostPass).spec;
-    const { spawns, problems } = castOf(halve(SCENARIOS.frost_pass).spawns, inCells(spec, 2));
-    expect(problems).toEqual([]);
-    expect(spawns.find((s) => s.id === 'e-soldier')).toMatchObject({ x: 8, y: 20 });
-  });
+  // the examples as `stage` builds them on the split map: the cast fits, the places are on the map and the aim reaches
+  for (const [file, raw] of Object.entries(EXAMPLES))
+    it(`stages ${file} where the whole map has it`, () => {
+      const spec = parseSpec(raw).spec;
+      const sc = halve(SCENARIOS[spec.scenario!]);
+      const cells = inCells(spec, 2);
+      const cast = castOf(sc.spawns, cells);
+      const battle = Battle.start({ ...sc, spawns: cast.spawns }, spec.seed ?? 1);
+      expect([
+        ...cast.problems,
+        ...placementProblems(battle.grid, battle.state.units),
+        ...offMap(battle.grid, spec),
+      ]).toEqual([]);
+      for (const [id, u] of Object.entries(spec.units ?? {}))
+        if (u.x !== undefined)
+          expect(battle.state.units.find((x) => x.id === id)?.pos).toEqual({ x: 2 * u.x, y: 2 * u.y! });
+      const aim = cells.screen;
+      if (typeof aim === 'object') {
+        battle.state.turn = { actor: spec.actor!, moved: false, usedAbility: null };
+        expect(battle.preview(aim.aim, aim.target).ok).toBe(true);
+      }
+    });
 
   it('names places off the map in whole tiles', () => {
     expect(offMap(split(4, 4), { cursor: { x: 3, y: 3 }, camera: { focus: { x: 4, y: 0 } } })).toEqual([
