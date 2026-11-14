@@ -299,7 +299,8 @@ describe('half tiles: walking', () => {
 describe('half tiles: the AI walking map', () => {
   // the AI's distance on foot follows the token's square, not a 1-cell walker that slips through gaps a 2x2 cannot (Nov 14
   // review: 192 of 400 Beacon Hill tiles came out 1 or 2 tiles shorter for the hero h0). With jump 2 the token may also fly
-  // a single cell and land straddling a bank, which no whole tile can, so it is only never farther
+  // a single cell and land straddling a bank, which no whole tile can, so it is never farther and at most 1 tile (2 cells)
+  // nearer; the old 1-cell walker came out 2 tiles short for the rogue on Beacon Hill (second review)
   for (const map of MAPS) {
     it(`${map.id}: every whole tile is twice as far in cells`, () => {
       const hm = halve(map);
@@ -316,7 +317,8 @@ describe('half tiles: the AI walking map', () => {
             const p = { x, y };
             const want = w.has(posKey(p)) ? 2 * (w.get(posKey(p)) as number) : undefined;
             const got = h.get(posKey(cell(p)));
-            const ok = want === got || (flies && want !== undefined && got !== undefined && got <= want);
+            const ok =
+              want === got || (flies && want !== undefined && got !== undefined && got <= want && got >= want - 2);
             if (!ok) diff.push(`${posKey(p)} whole ${want} half ${got}`);
           }
         expect(diff.slice(0, 5), `${u.id}`).toEqual([]);
