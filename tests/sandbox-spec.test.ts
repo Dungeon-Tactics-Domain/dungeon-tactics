@@ -337,6 +337,19 @@ describe('playStep', () => {
     expect(playStep(b, { wait: { unit: 'ghost' } }).problem).toBe('"ghost" is not a unit that plays on this map');
   });
 
+  it('passes the turn on when the mover falls to a counter-attack', () => {
+    const b = start();
+    b.state.units.find((u) => u.id === 'e-soldier')!.pos = { x: 3, y: 10 };
+    b.state.units.find((u) => u.id === 'h-warrior')!.hp = 1;
+    playStep(b, { act: { unit: 'h-warrior', ability: 'strike', target: { x: 3, y: 10 } } });
+    const { events, problem } = playStep(b, { move: { unit: 'h-warrior', to: { x: 5, y: 11 } } });
+    expect(problem).toBeNull();
+    expect(events).toContainEqual(expect.objectContaining({ k: 'die', unit: 'h-warrior' }));
+    // the turn screen reads the actor right after: it must be a living unit
+    expect(b.state.units.some((u) => u.id === b.state.turn.actor)).toBe(true);
+    expect(() => b.reach()).not.toThrow();
+  });
+
   it('wait turns the unit and passes the turn on', () => {
     const b = start();
     playStep(b, { wait: { unit: 'h-mage', facing: 3 } });

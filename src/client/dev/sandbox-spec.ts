@@ -381,9 +381,10 @@ export function playStep(b: Battle, step: Step): { events: BattleEvent[]; proble
   if (turn) return fail(turn);
   if ('move' in step) {
     const events = b.move(step.move.to);
-    return events.length
-      ? { events, problem: null }
-      : fail(`${s.unit} cannot reach ${step.move.to.x},${step.move.to.y}`);
+    if (!events.length) return fail(`${s.unit} cannot reach ${step.move.to.x},${step.move.to.y}`);
+    // fell to a counter-attack on the way: the turn passes by itself, as in Game.execute
+    if (!b.state.units.some((u) => u.id === s.unit)) events.push(...b.endTurn());
+    return { events, problem: null };
   }
   if ('act' in step) {
     const { ability, target } = step.act;

@@ -334,6 +334,8 @@ export class Game {
   // sandbox: a scripted step's events played like a confirmed command, then the turn menu of whoever plays now
   async playStep(events: BattleEvent[], enemy: boolean) {
     await this.animate(events, enemy);
+    // the step ended the battle with its mover down: no actor to show a menu for (the sandbox shows no end screen)
+    if (!this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor)) return;
     this.screen = startScreen(this.battle);
     this.cursorToActor();
     this.update(freshUi(this.battle));
