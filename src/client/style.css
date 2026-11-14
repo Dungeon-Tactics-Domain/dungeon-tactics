@@ -87,6 +87,7 @@
   --t-nudge: 0.6s;
 }
 
+/* ---- Page ---- */
 * {
   box-sizing: border-box;
 }
@@ -126,44 +127,7 @@ body {
   flex: none;
 }
 
-/* windows on the HUD parchment (Nov 13, Fernando's choice: "everything in parchment", previously dark purple stone). One shade
-   lighter than the battle panel (paper-hi → paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
-.dialog {
-  padding: 14px 18px 18px;
-  width: min(460px, 100%);
-  max-height: 90dvh;
-  overflow: auto;
-  border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  color: var(--ink);
-  background: linear-gradient(var(--paper-hi), var(--paper));
-  box-shadow: var(--paper-frame);
-}
-/* buttons inside the window: light paper with an ink outline (the primary's gold stays); chosen = red border */
-.dialog button:not(.primary) {
-  color: var(--ink);
-  background: linear-gradient(var(--paper-hi), var(--paper-lo));
-  border-color: var(--paper-edge);
-  box-shadow:
-    inset 0 0 0 1px var(--paper-hi),
-    0 2px 0 rgba(0, 0, 0, 0.3);
-}
-.dialog button:not(.primary):not(:disabled):active {
-  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
-}
-.dialog button[aria-pressed="true"]:not(.primary) {
-  box-shadow: inset 0 0 0 3px var(--focus);
-  font-weight: 800;
-}
-.dialog button:focus-visible {
-  outline-color: var(--focus);
-}
-/* disabled on parchment: faded, like the menu row (.panel .item); the stone's dark grey looked like a pressed button */
-.dialog button:disabled {
-  filter: none;
-  opacity: 0.5;
-}
-
+/* ---- Buttons: base, primary, secondary, icon; focus ring and halo ---- */
 /* small labels in the text font (the pixel font at 12 px was unreadable); the pixel font stays on titles, Confirm and queue */
 button {
   font: 700 var(--fs-sm) / 1.1 var(--font);
@@ -241,6 +205,355 @@ button[hidden],
   display: none;
 }
 
+/* ---- Dialog: window on the parchment, its buttons, title, text and action row ---- */
+/* windows on the HUD parchment (Nov 13, Fernando's choice: "everything in parchment", previously dark purple stone). One shade
+   lighter than the battle panel (paper-hi → paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
+.dialog {
+  padding: 14px 18px 18px;
+  width: min(460px, 100%);
+  max-height: 90dvh;
+  overflow: auto;
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  color: var(--ink);
+  background: linear-gradient(var(--paper-hi), var(--paper));
+  box-shadow: var(--paper-frame);
+}
+/* buttons inside the window: light paper with an ink outline (the primary's gold stays); chosen = red border */
+.dialog button:not(.primary) {
+  color: var(--ink);
+  background: linear-gradient(var(--paper-hi), var(--paper-lo));
+  border-color: var(--paper-edge);
+  box-shadow:
+    inset 0 0 0 1px var(--paper-hi),
+    0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.dialog button:not(.primary):not(:disabled):active {
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+.dialog button[aria-pressed="true"]:not(.primary) {
+  box-shadow: inset 0 0 0 3px var(--focus);
+  font-weight: 800;
+}
+.dialog button:focus-visible {
+  outline-color: var(--focus);
+}
+/* disabled on parchment: faded, like the menu row (.panel .item); the stone's dark grey looked like a pressed button */
+.dialog button:disabled {
+  filter: none;
+  opacity: 0.5;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 10;
+}
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+.dialog h2,
+.dialog h3 {
+  font-family: var(--font-title);
+  margin: 0;
+}
+.dialog h2 {
+  font-size: var(--fs-title);
+}
+.dialog h3 {
+  font-size: var(--fs);
+  margin: 16px 0 8px;
+  color: var(--focus);
+}
+.dialog p,
+.dialog .title-sub,
+.dialog .party-class,
+.dialog .party-bench {
+  color: var(--ink-muted);
+}
+.dialog .primary {
+  width: 100%;
+}
+.dialog a {
+  color: var(--focus);
+} /* link in the ink highlight color, underlined: not by color alone */
+.menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+  margin-top: 16px;
+}
+.menu-actions button {
+  flex: 1 1 40%;
+} /* 2 per row: with 5 in a row, "Developer" got cut off (review of Nov 13) */
+.camp-list {
+  flex-direction: column;
+} /* campaign stage list: one per row, full name */
+.camp-list > button {
+  flex: none;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+}
+.dialog .mvp {
+  font-weight: 700;
+  color: var(--gold-trim);
+  margin: 2px 0 10px;
+} /* battle highlight (tally.ts), at the end of the stage and of the standalone battle */
+.dialog .learned {
+  font-weight: 700;
+  color: var(--focus);
+  margin: 2px 0;
+} /* new ability on winning the stage (campaign); .dialog in front to beat .dialog p */
+
+/* ---- Pieces inside dialogs: legend, choice, key list, value bar ---- */
+.legend {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  display: grid;
+  gap: 6px;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+}
+.sw {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1px solid var(--ink);
+}
+.sw.move {
+  background: var(--mark-move);
+}
+.sw.range {
+  background: var(--mark-range);
+}
+.sw.blocked {
+  background: var(--mark-blocked);
+}
+.sw.threat {
+  background: var(--mark-threat);
+}
+.choice {
+  margin: 0 0 10px;
+}
+.choice-label {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.choice-row button {
+  flex: 1;
+  min-width: 64px;
+}
+.keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  font-size: var(--fs-sm);
+}
+.keys dt {
+  font-weight: 800;
+  white-space: nowrap;
+}
+.keys dd {
+  margin: 0;
+  color: var(--ink-muted);
+}
+/* volume bar (slider in dialog.ts): track in the ink highlight color, number in % alongside */
+.slider {
+  display: block;
+  margin: 0 0 14px;
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.slider input {
+  flex: 1;
+  min-height: var(--tap);
+  margin: 0;
+  accent-color: var(--focus);
+  cursor: pointer;
+}
+.slider-value {
+  min-width: 4ch;
+  text-align: right;
+  font: 400 var(--fs-lg) / 1 var(--font-title);
+  color: var(--ink);
+}
+
+/* ---- Options window ---- */
+/* Options (Nov 13, Fernando's request: "something that takes up more of the screen width, with subsections"): sections in a column on the
+   left and one at a time on the right; fixed height so the window does not jump when switching sections. On narrow screens, sections on top */
+.dialog.menu {
+  width: min(1400px, 92vw);
+  height: min(760px, 90dvh);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.menu-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  min-height: 0;
+  margin-top: 12px;
+}
+.menu-nav {
+  margin: 0;
+  padding-right: 24px;
+  border-right: 2px solid var(--paper-lo);
+}
+.menu-nav .choice-label {
+  display: none;
+} /* the group name stays in the aria-label: on screen, the sections themselves are enough */
+.menu-nav .choice-row {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.menu-nav .choice-row button {
+  flex: none;
+  justify-content: flex-start;
+  padding: 0 16px;
+  font: 400 var(--fs) / 1 var(--font-title);
+}
+.menu-body {
+  overflow: auto;
+  min-height: 0;
+  padding-right: 8px;
+}
+.menu-section h3 {
+  margin-top: 0;
+  font-size: var(--fs-lg);
+}
+.menu-section .legend {
+  margin-bottom: 20px;
+}
+.menu-section .choice,
+.menu-section .slider {
+  max-width: 560px;
+}
+.dialog.menu .menu-actions button {
+  flex: 1 1 20%;
+} /* in the wide window all 4 fit on one row */
+@media (max-width: 600px) {
+  .menu-layout {
+    grid-template-columns: 1fr;
+  }
+  .menu-nav {
+    padding: 0 0 8px;
+    border-right: none;
+    border-bottom: 2px solid var(--paper-lo);
+  }
+  .menu-nav .choice-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---- Title screen ---- */
+/* title screen (game/title.ts, titleScreen): big name and the three doors of the game */
+.dialog.title {
+  text-align: center;
+}
+.dialog.title h2 {
+  font-size: var(--fs-display);
+  letter-spacing: 1px;
+}
+.title-sub {
+  margin: 4px 0 14px;
+}
+.continue-where {
+  font: 400 var(--fs) var(--font);
+  opacity: 0.8;
+  margin-left: 8px;
+} /* where Continue leads, on the same line */
+/* Credits: left-aligned list even in the title's centered dialog */
+.dialog.title .legend {
+  text-align: left;
+}
+/* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the parchment menu
+   at the bottom; does not close (dialog fixed) */
+.main-title .dialog.title {
+  background: none;
+  border: none;
+  box-shadow: none;
+  width: min(520px, 100%);
+  overflow: visible;
+}
+.main-title .dialog-head {
+  justify-content: center;
+}
+.main-title .dialog.title h2 {
+  font-size: 64px;
+  line-height: 1.05;
+  color: var(--paper-hi);
+  letter-spacing: 2px;
+  margin: 0 0 4px;
+  text-shadow:
+    0 4px 0 var(--edge),
+    0 0 28px rgba(255, 207, 74, 0.55);
+  animation: title-in 600ms ease-out;
+}
+.main-title .title-sub,
+.main-title .title-foot {
+  color: var(--paper-hi);
+  text-shadow:
+    0 2px 0 var(--edge),
+    0 0 8px var(--edge);
+}
+.main-title .title-foot {
+  font-size: var(--fs-sm);
+  margin: 14px 0 0;
+  opacity: 0.85;
+}
+.main-title .title-lang {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: var(--fs-sm);
+  vertical-align: middle;
+}
+.main-title .menu-actions {
+  background: linear-gradient(var(--paper-hi), var(--paper));
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  box-shadow: var(--paper-frame);
+  padding: 12px;
+}
+@keyframes title-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .main-title .dialog.title h2 {
+    animation: none;
+  }
+}
+/* the rotating map behind is the title's art: no battle HUD on top and only the edges darkened */
+.title-overlay {
+  background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%);
+}
+
+/* ---- Battle HUD: panels, turn list, help, corner menu, command menu ---- */
 /* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Light
    parchment panel with dark ink and a brown frame, built here in CSS (nothing from the original art). Fixed positions on
    the PC's 1920x1080 screen, except the command menu, which moves beside the character (hud.ts place); mobile gets its
@@ -268,6 +581,9 @@ button[hidden],
   left: var(--inset);
   font-size: var(--fs-sm);
 }
+.tile-info:empty {
+  display: none;
+} /* end of battle: with no tile under the cursor, the empty box lost its meaning */
 .queue {
   top: 56px;
   left: 12px;
@@ -563,6 +879,29 @@ button[hidden],
   font: 400 var(--fs-sm) / 1 var(--font);
   color: var(--ink-muted);
 }
+/* menus beside the character over the fps counter, which covered the submenu */
+.commands,
+.abilities,
+.confirm {
+  z-index: 1;
+}
+/* key hint on the buttons, only on PC with a mouse (.hud.kbd) */
+.hint {
+  display: none;
+}
+.kbd .hint {
+  display: inline-block;
+  font:
+    700 11px / 1 system-ui,
+    sans-serif; /* the game font does not have the ⇧ */
+  color: var(--ink-muted);
+  border: 1px solid var(--ink-muted);
+  border-radius: 2px;
+  padding: 2px 4px;
+  margin-left: 8px;
+}
+
+/* ---- Battle HUD: unit panels, bars and strike preview ---- */
 /* unit panels: the acting one bottom left, the one under the cursor bottom right */
 .active-slot,
 .target-slot {
@@ -757,6 +1096,7 @@ button[hidden],
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- Battle HUD: floating numbers, objective banner, hidden under windows ---- */
 .floats {
   position: absolute;
   inset: 0;
@@ -819,311 +1159,81 @@ button[hidden],
     animation-timing-function: steps(1, end);
   }
 }
+/* objective banner at the start of the stage (main.ts, announce): enters stretching, holds to be read, fades; takes no clicks */
+.announce {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 15;
+  pointer-events: none;
+  padding: 14px 36px;
+  font: 400 30px / 1.2 var(--font-title);
+  color: var(--paper-hi);
+  text-align: center;
+  white-space: nowrap;
+  max-width: 92vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: linear-gradient(90deg, transparent, rgba(20, 12, 30, 0.88) 15%, rgba(20, 12, 30, 0.88) 85%, transparent);
+  text-shadow: 0 2px 0 #000;
+  animation: announce 2.2s ease-out forwards;
+}
+@keyframes announce {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(0.3);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .announce {
+    animation: none;
+  }
+}
+/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye; and on
+   the result, the empty turn list and the help line behind the end dialog said nothing */
+body:has(.title-overlay) .hud,
+body:has(.title-overlay) .fps,
+body:has(.talk-overlay) .hud,
+body:has(.talk-overlay) .fps,
+body:has(.result-overlay) .hud,
+body:has(.result-overlay) .fps {
+  visibility: hidden;
+}
 
-.overlay {
+/* ---- End of battle: confetti ---- */
+/* victory confetti (game/end-screens.ts, confetti): on top of everything, takes no clicks */
+.confetti {
   position: fixed;
   inset: 0;
-  background: var(--overlay);
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  z-index: 10;
+  pointer-events: none;
+  z-index: 9;
+  overflow: hidden;
+} /* behind the victory window (10): it covered the text */
+.confetti i {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 12px;
+  animation: fall linear forwards;
 }
-.dialog-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap);
-}
-.dialog h2,
-.dialog h3 {
-  font-family: var(--font-title);
-  margin: 0;
-}
-.dialog h2 {
-  font-size: var(--fs-title);
-}
-.dialog h3 {
-  font-size: var(--fs);
-  margin: 16px 0 8px;
-  color: var(--focus);
-}
-.dialog p,
-.dialog .title-sub,
-.dialog .party-class,
-.dialog .party-bench {
-  color: var(--ink-muted);
-}
-.dialog .primary {
-  width: 100%;
-}
-.legend {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 8px;
-  display: grid;
-  gap: 6px;
-}
-.legend li {
-  display: flex;
-  align-items: center;
-  gap: var(--gap);
-}
-.sw {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  border: 1px solid var(--ink);
-}
-.sw.move {
-  background: var(--mark-move);
-}
-.sw.range {
-  background: var(--mark-range);
-}
-.sw.blocked {
-  background: var(--mark-blocked);
-}
-.sw.threat {
-  background: var(--mark-threat);
-}
-.menu-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap);
-  margin-top: 16px;
-}
-.menu-actions button {
-  flex: 1 1 40%;
-} /* 2 per row: with 5 in a row, "Developer" got cut off (review of Nov 13) */
-/* menus beside the character over the fps counter, which covered the submenu */
-.commands,
-.abilities,
-.confirm {
-  z-index: 1;
-}
-.choice {
-  margin: 0 0 10px;
-}
-.choice-label {
-  display: block;
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-  margin-bottom: 4px;
-}
-.choice-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.choice-row button {
-  flex: 1;
-  min-width: 64px;
-}
-
-/* key hint on the buttons, only on PC with a mouse (.hud.kbd) */
-.hint {
-  display: none;
-}
-.kbd .hint {
-  display: inline-block;
-  font:
-    700 11px / 1 system-ui,
-    sans-serif; /* the game font does not have the ⇧ */
-  color: var(--ink-muted);
-  border: 1px solid var(--ink-muted);
-  border-radius: 2px;
-  padding: 2px 4px;
-  margin-left: 8px;
-}
-.keys {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
-  margin: 0 0 12px;
-  font-size: var(--fs-sm);
-}
-.keys dt {
-  font-weight: 800;
-  white-space: nowrap;
-}
-.keys dd {
-  margin: 0;
-  color: var(--ink-muted);
-}
-/* volume bar (slider in dialog.ts): track in the ink highlight color, number in % alongside */
-.slider {
-  display: block;
-  margin: 0 0 14px;
-}
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.slider input {
-  flex: 1;
-  min-height: var(--tap);
-  margin: 0;
-  accent-color: var(--focus);
-  cursor: pointer;
-}
-.slider-value {
-  min-width: 4ch;
-  text-align: right;
-  font: 400 var(--fs-lg) / 1 var(--font-title);
-  color: var(--ink);
-}
-
-/* Options (Nov 13, Fernando's request: "something that takes up more of the screen width, with subsections"): sections in a column on the
-   left and one at a time on the right; fixed height so the window does not jump when switching sections. On narrow screens, sections on top */
-.dialog.menu {
-  width: min(1400px, 92vw);
-  height: min(760px, 90dvh);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-}
-.menu-layout {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 24px;
-  min-height: 0;
-  margin-top: 12px;
-}
-.menu-nav {
-  margin: 0;
-  padding-right: 24px;
-  border-right: 2px solid var(--paper-lo);
-}
-.menu-nav .choice-label {
-  display: none;
-} /* the group name stays in the aria-label: on screen, the sections themselves are enough */
-.menu-nav .choice-row {
-  flex-direction: column;
-  flex-wrap: nowrap;
-}
-.menu-nav .choice-row button {
-  flex: none;
-  justify-content: flex-start;
-  padding: 0 16px;
-  font: 400 var(--fs) / 1 var(--font-title);
-}
-.menu-body {
-  overflow: auto;
-  min-height: 0;
-  padding-right: 8px;
-}
-.menu-section h3 {
-  margin-top: 0;
-  font-size: var(--fs-lg);
-}
-.menu-section .legend {
-  margin-bottom: 20px;
-}
-.menu-section .choice,
-.menu-section .slider {
-  max-width: 560px;
-}
-.dialog.menu .menu-actions button {
-  flex: 1 1 20%;
-} /* in the wide window all 4 fit on one row */
-@media (max-width: 600px) {
-  .menu-layout {
-    grid-template-columns: 1fr;
-  }
-  .menu-nav {
-    padding: 0 0 8px;
-    border-right: none;
-    border-bottom: 2px solid var(--paper-lo);
-  }
-  .menu-nav .choice-row {
-    flex-direction: row;
-    flex-wrap: wrap;
+@keyframes fall {
+  to {
+    transform: translateY(105vh) rotate(540deg);
   }
 }
 
-/* Developer menu (Nov 12): wide for the two teams side by side on PC; on narrow screens, one below the other */
-.dialog.dev {
-  width: min(980px, 100%);
-}
-.dev-teams {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--gap);
-}
-.dev-list {
-  list-style: none;
-  margin: 0 0 var(--gap);
-  padding: 0;
-  display: grid;
-  gap: var(--gap);
-}
-.dev-unit {
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--r);
-  background: var(--paper-hi);
-  padding: var(--gap);
-  display: grid;
-  gap: 6px;
-}
-.dev-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: end;
-}
-.dev-line select,
-.dev-line input[type="text"] {
-  flex: 1;
-  min-width: 0;
-  min-height: 36px;
-  font: inherit;
-  background: var(--paper-white);
-  color: var(--ink);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--r);
-  padding: 0 8px;
-}
-.dev-num {
-  display: grid;
-  gap: 2px;
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-}
-.dev-num input {
-  width: 84px;
-  min-height: 32px;
-  font: inherit;
-  background: var(--paper-white);
-  color: var(--ink);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--r);
-  padding: 0 6px;
-}
-.dev-skills summary {
-  cursor: pointer;
-  color: var(--focus);
-  font-size: var(--fs-sm);
-}
-.dev-skills {
-  font-size: var(--fs-sm);
-}
-.dev-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 2px 10px 2px 0;
-  color: var(--ink);
-}
-.dialog .dev-issues {
-  color: var(--focus);
-  margin: var(--gap) 0;
-}
-.dialog .dev-msg {
-  color: var(--focus);
-  min-height: 1em;
-}
-
+/* ---- Dialogue box (talk.ts) and the opening narration ---- */
 /* campaign dialogue box (talk.ts): at the bottom, wide, parchment like the rest of the HUD; the ▼ blinks when the sentence is done */
 .talk-overlay {
   place-items: end center;
@@ -1184,151 +1294,74 @@ button[hidden],
     animation: none;
   }
 }
-.camp-list {
-  flex-direction: column;
-} /* campaign stage list: one per row, full name */
-.camp-list > button {
-  flex: none;
-  width: 100%;
-  padding: 10px 14px;
-  text-align: left;
+/* the speaker's portrait does a little hop when the voice changes (talk.ts) and fades out on entering a map point (world-ui.ts, FADE_MS) */
+.talk-face.pop {
+  animation: face-pop 220ms ease-out;
 }
-.dialog .mvp {
-  font-weight: 700;
-  color: var(--gold-trim);
-  margin: 2px 0 10px;
-} /* battle highlight (tally.ts), at the end of the stage and of the standalone battle */
-.dialog .learned {
-  font-weight: 700;
-  color: var(--focus);
-  margin: 2px 0;
-} /* new ability on winning the stage (campaign); .dialog in front to beat .dialog p */
-/* title screen (game/title.ts, titleScreen): big name and the three doors of the game */
-.dialog.title {
-  text-align: center;
-}
-.dialog.title h2 {
-  font-size: var(--fs-display);
-  letter-spacing: 1px;
-}
-.title-sub {
-  margin: 4px 0 14px;
-}
-.continue-where {
-  font: 400 var(--fs) var(--font);
-  opacity: 0.8;
-  margin-left: 8px;
-} /* where Continue leads, on the same line */
-.dialog.title .legend {
-  text-align: left;
-}
-/* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the parchment menu
-   at the bottom; does not close (dialog fixed) */
-.main-title .dialog.title {
-  background: none;
-  border: none;
-  box-shadow: none;
-  width: min(520px, 100%);
-  overflow: visible;
-}
-.main-title .dialog-head {
-  justify-content: center;
-}
-.main-title .dialog.title h2 {
-  font-size: 64px;
-  line-height: 1.05;
-  color: var(--paper-hi);
-  letter-spacing: 2px;
-  margin: 0 0 4px;
-  text-shadow:
-    0 4px 0 var(--edge),
-    0 0 28px rgba(255, 207, 74, 0.55);
-  animation: title-in 600ms ease-out;
-}
-.main-title .title-sub,
-.main-title .title-foot {
-  color: var(--paper-hi);
-  text-shadow:
-    0 2px 0 var(--edge),
-    0 0 8px var(--edge);
-}
-.main-title .title-foot {
-  font-size: var(--fs-sm);
-  margin: 14px 0 0;
-  opacity: 0.85;
-}
-.main-title .title-lang {
-  min-height: 32px;
-  padding: 0 12px;
-  font-size: var(--fs-sm);
-  vertical-align: middle;
-}
-/* developer menu: the start and export buttons pinned to the bottom of the window, always in view (review of Nov 13: Start
-   was below the fold) */
-.dialog.dev > .menu-actions,
-.dialog.dev .menu-actions:last-child {
-  position: sticky;
-  bottom: -18px;
-  background: var(--paper);
-  padding: 8px 0;
-  border-top: 2px solid var(--paper-edge);
-}
-.main-title .menu-actions {
-  background: linear-gradient(var(--paper-hi), var(--paper));
-  border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  box-shadow: var(--paper-frame);
-  padding: 12px;
-}
-@keyframes title-in {
-  from {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.96);
+@keyframes face-pop {
+  0% {
+    transform: translateY(6px) scale(0.92);
+    opacity: 0.4;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .main-title .dialog.title h2 {
+  .talk-face.pop {
     animation: none;
   }
-} /* Credits: left-aligned list even in the title's centered dialog */
-.dialog a {
-  color: var(--focus);
-} /* link in the ink highlight color, underlined: not by color alone */
-/* the rotating map behind is the title's art: no battle HUD on top and only the edges darkened */
-.title-overlay {
-  background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%);
 }
-/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye; and on
-   the result, the empty turn list and the help line behind the end dialog said nothing */
-body:has(.title-overlay) .hud,
-body:has(.title-overlay) .fps,
-body:has(.talk-overlay) .hud,
-body:has(.talk-overlay) .fps,
-body:has(.result-overlay) .hud,
-body:has(.result-overlay) .fps {
-  visibility: hidden;
-}
-/* victory confetti (game/end-screens.ts, confetti): on top of everything, takes no clicks */
-.confetti {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9;
-  overflow: hidden;
-} /* behind the victory window (10): it covered the text */
-.confetti i {
+.talk-keys {
   position: absolute;
-  top: -12px;
-  width: 8px;
-  height: 12px;
-  animation: fall linear forwards;
+  right: 40px;
+  bottom: 8px;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
 }
-@keyframes fall {
-  to {
-    transform: translateY(105vh) rotate(540deg);
+.talk-overlay.dark .talk-keys {
+  color: var(--paper-lo);
+  right: 50%;
+  transform: translateX(50%);
+  bottom: -28px;
+} /* dialogue key hint (talk.ts) */
+/* opening (new game): big narration in the center, no frame, with the Beacon's blue glow pulsing behind */
+.talk-overlay.dark {
+  background: radial-gradient(circle at 50% 30%, rgba(90, 170, 255, 0.28), transparent 40%), rgba(8, 5, 14, 0.96);
+  place-items: center;
+  align-content: center;
+  animation: beacon 4s ease-in-out infinite;
+}
+.talk-overlay.dark .panel.talk {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--paper);
+  text-align: center;
+  min-height: 0;
+  padding: 0 24px;
+}
+.talk-overlay.dark .talk-text {
+  font-size: var(--fs-title);
+  line-height: 1.5;
+  max-width: 34em;
+  margin: 0 auto;
+}
+.talk-overlay.dark .talk-next {
+  color: var(--paper);
+}
+@keyframes beacon {
+  50% {
+    background-color: rgba(8, 5, 14, 0.9);
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .talk-overlay.dark {
+    animation: none;
+  }
+}
+.talk-overlay.dark .panel.talk:focus-visible {
+  outline: none;
+} /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 
+/* ---- World map (world-ui.ts) ---- */
 /* World map (world-ui.ts): full-screen parchment, diamond points (battle) and circle (story), dashed road,
    walking party portrait. Panels with the same parchment as the battle HUD. */
 .world {
@@ -1623,38 +1656,117 @@ body:has(.result-overlay) .fps {
     animation: none;
   }
 }
-
-/* Protagonist creation (create-ui.ts): a central parchment; 4 class cards with portrait and the sheet of the chosen one */
-.talk-overlay.dark {
-  background: radial-gradient(circle at 50% 30%, rgba(90, 170, 255, 0.28), transparent 40%), rgba(8, 5, 14, 0.96);
-  place-items: center;
-  align-content: center;
-  animation: beacon 4s ease-in-out infinite;
+.world-tag {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 26px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 2px 8px;
+  font: 400 var(--fs-sm) / 1.2 var(--font-title);
+  color: var(--paper-hi);
+  background: rgba(20, 12, 30, 0.8);
+  border-radius: var(--r);
+} /* place name under the party on the map */
+.fade-out {
+  position: fixed;
+  inset: 0;
+  background: var(--fade);
+  z-index: 9;
+  pointer-events: none;
+  animation: fade-in 300ms ease-in forwards;
 }
-/* opening (new game): big narration in the center, no frame, with the Beacon's blue glow pulsing behind */
-.talk-overlay.dark .panel.talk {
-  background: none;
-  border: none;
-  box-shadow: none;
-  color: var(--paper);
-  text-align: center;
-  min-height: 0;
-  padding: 0 24px;
-}
-.talk-overlay.dark .talk-text {
-  font-size: var(--fs-title);
-  line-height: 1.5;
-  max-width: 34em;
-  margin: 0 auto;
-}
-.talk-overlay.dark .talk-next {
-  color: var(--paper);
-}
-@keyframes beacon {
-  50% {
-    background-color: rgba(8, 5, 14, 0.9);
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .fade-out {
+    animation: none;
+  }
+}
+
+/* ---- Party, unit sheet and shop (world-ui.ts) ---- */
+/* Party screen on the map (world-ui.ts, openParty): one row per hero, portrait on the left */
+.dialog.party {
+  width: min(560px, 100%);
+}
+.party-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--gap);
+}
+.party-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.party-list .party-card {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--r);
+}
+.party-list .party-card:hover,
+.party-list .party-card:focus-visible {
+  background: rgba(255, 255, 255, 0.55);
+  outline: 2px solid var(--focus);
+}
+.party-card .portrait {
+  width: 48px;
+  height: 64px;
+}
+.party-stats,
+.party-skills {
+  margin: 2px 0 0;
+  font-size: var(--fs-sm);
+}
+.party-stats {
+  font-variant-numeric: tabular-nums;
+}
+/* Unit sheet (world-ui.ts, openSheet): two columns on PC so it fits without scrolling at 1280x720; one when narrow */
+.dialog.sheet {
+  width: min(980px, 100%);
+}
+.sheet-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 0 28px;
+}
+.sheet-cols > div:first-child > .secondary {
+  margin-top: 12px;
+}
+.sheet-cols h3:first-child {
+  margin-top: 12px;
+}
+@media (max-width: 760px) {
+  .sheet-cols {
+    grid-template-columns: 1fr;
+  }
+}
+/* Shop (world-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
+   landed in a different column and the 9-item list ran past 900 px */
+.shop .keys {
+  align-items: center;
+}
+.shop .keys dd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shop .keys button {
+  min-height: 36px;
+  min-width: 112px;
+}
+
+/* ---- Protagonist creation (create-ui.ts) ---- */
+/* Protagonist creation (create-ui.ts): a central parchment; 4 class cards with portrait and the sheet of the chosen one */
 .overlay.create {
   background: rgba(8, 5, 14, 0.7);
 }
@@ -1734,187 +1846,96 @@ body:has(.result-overlay) .fps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .talk-overlay.dark {
-    animation: none;
-  }
-}
-.talk-overlay.dark .panel.talk:focus-visible {
-  outline: none;
-} /* the whole scene is the button; the blinking ▼ already shows that it can continue */
-/* objective banner at the start of the stage (main.ts, announce): enters stretching, holds to be read, fades; takes no clicks */
-.announce {
-  position: fixed;
-  left: 50%;
-  top: 38%;
-  transform: translate(-50%, -50%);
-  z-index: 15;
-  pointer-events: none;
-  padding: 14px 36px;
-  font: 400 30px / 1.2 var(--font-title);
-  color: var(--paper-hi);
-  text-align: center;
-  white-space: nowrap;
-  max-width: 92vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: linear-gradient(90deg, transparent, rgba(20, 12, 30, 0.88) 15%, rgba(20, 12, 30, 0.88) 85%, transparent);
-  text-shadow: 0 2px 0 #000;
-  animation: announce 2.2s ease-out forwards;
-}
-@keyframes announce {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scaleX(0.3);
-  }
-  12% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scaleX(1);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .announce {
-    animation: none;
-  }
-}
-.tile-info:empty {
-  display: none;
-} /* end of battle: with no tile under the cursor, the empty box lost its meaning */
 
-/* Party screen on the map (world-ui.ts, openParty): one row per hero, portrait on the left */
-.dialog.party {
-  width: min(560px, 100%);
+/* ---- Developer menu (dev-menu.ts) ---- */
+/* Developer menu (Nov 12): wide for the two teams side by side on PC; on narrow screens, one below the other */
+.dialog.dev {
+  width: min(980px, 100%);
 }
-.party-list {
+.dev-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--gap);
+}
+.dev-list {
   list-style: none;
-  margin: 0;
+  margin: 0 0 var(--gap);
   padding: 0;
   display: grid;
   gap: var(--gap);
 }
-.party-card {
+.dev-unit {
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--r);
+  background: var(--paper-hi);
+  padding: var(--gap);
+  display: grid;
+  gap: 6px;
+}
+.dev-line {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: end;
 }
-.party-list .party-card {
-  cursor: pointer;
-  padding: 4px;
+.dev-line select,
+.dev-line input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  font: inherit;
+  background: var(--paper-white);
+  color: var(--ink);
+  border: 1px solid var(--paper-edge);
   border-radius: var(--r);
+  padding: 0 8px;
 }
-.party-list .party-card:hover,
-.party-list .party-card:focus-visible {
-  background: rgba(255, 255, 255, 0.55);
-  outline: 2px solid var(--focus);
-}
-.party-card .portrait {
-  width: 48px;
-  height: 64px;
-}
-
-.party-stats,
-.party-skills {
-  margin: 2px 0 0;
-  font-size: var(--fs-sm);
-}
-.party-stats {
-  font-variant-numeric: tabular-nums;
-}
-.world-tag {
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 26px);
-  transform: translateX(-50%);
-  white-space: nowrap;
-  padding: 2px 8px;
-  font: 400 var(--fs-sm) / 1.2 var(--font-title);
-  color: var(--paper-hi);
-  background: rgba(20, 12, 30, 0.8);
-  border-radius: var(--r);
-} /* place name under the party on the map */
-/* the speaker's portrait does a little hop when the voice changes (talk.ts) and fades out on entering a map point (world-ui.ts, FADE_MS) */
-.talk-face.pop {
-  animation: face-pop 220ms ease-out;
-}
-@keyframes face-pop {
-  0% {
-    transform: translateY(6px) scale(0.92);
-    opacity: 0.4;
-  }
-}
-.fade-out {
-  position: fixed;
-  inset: 0;
-  background: var(--fade);
-  z-index: 9;
-  pointer-events: none;
-  animation: fade-in 300ms ease-in forwards;
-}
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .talk-face.pop,
-  .fade-out {
-    animation: none;
-  }
-}
-.talk-keys {
-  position: absolute;
-  right: 40px;
-  bottom: 8px;
+.dev-num {
+  display: grid;
+  gap: 2px;
   font-size: var(--fs-sm);
   color: var(--ink-muted);
 }
-.talk-overlay.dark .talk-keys {
-  color: var(--paper-lo);
-  right: 50%;
-  transform: translateX(50%);
-  bottom: -28px;
-} /* dialogue key hint (talk.ts) */
-/* Unit sheet (world-ui.ts, openSheet): two columns on PC so it fits without scrolling at 1280x720; one when narrow */
-.dialog.sheet {
-  width: min(980px, 100%);
+.dev-num input {
+  width: 84px;
+  min-height: 32px;
+  font: inherit;
+  background: var(--paper-white);
+  color: var(--ink);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--r);
+  padding: 0 6px;
 }
-.sheet-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: 0 28px;
+.dev-skills summary {
+  cursor: pointer;
+  color: var(--focus);
+  font-size: var(--fs-sm);
 }
-.sheet-cols > div:first-child > .secondary {
-  margin-top: 12px;
+.dev-skills {
+  font-size: var(--fs-sm);
 }
-.sheet-cols h3:first-child {
-  margin-top: 12px;
-}
-@media (max-width: 760px) {
-  .sheet-cols {
-    grid-template-columns: 1fr;
-  }
-}
-/* Shop (world-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
-   landed in a different column and the 9-item list ran past 900 px */
-.shop .keys {
+.dev-check {
+  display: inline-flex;
   align-items: center;
+  gap: 4px;
+  margin: 2px 10px 2px 0;
+  color: var(--ink);
 }
-.shop .keys dd {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.dialog .dev-issues {
+  color: var(--focus);
+  margin: var(--gap) 0;
 }
-.shop .keys button {
-  min-height: 36px;
-  min-width: 112px;
+.dialog .dev-msg {
+  color: var(--focus);
+  min-height: 1em;
+}
+/* developer menu: the start and export buttons pinned to the bottom of the window, always in view (review of Nov 13: Start
+   was below the fold) */
+.dialog.dev > .menu-actions,
+.dialog.dev .menu-actions:last-child {
+  position: sticky;
+  bottom: -18px;
+  background: var(--paper);
+  padding: 8px 0;
+  border-top: 2px solid var(--paper-edge);
 }
