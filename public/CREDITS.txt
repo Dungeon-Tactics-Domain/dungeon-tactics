@@ -1,110 +1,66 @@
 ASSET CREDITS (the icons are CC BY 3.0, with mandatory credit, see "Icons"; the rest is CC0 / public domain, credits as a courtesy)
 
-== 3D models ==
-models/decor.glb
-  Merge (scripts/assets/merge-decor.mjs) of models from:
-  - KayKit Halloween Bits 1.0, by Kay Lousberg (www.kaylousberg.com), CC0
-    https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0
-    nodes: skull, skull_candle, ribcage, bone_A, bone_B, tree_dead_large, tree_dead_medium, pillar, post_skull, lantern_standing, arch, shrine_candles
-  - KayKit Dungeon Remastered 1.0, by Kay Lousberg (www.kaylousberg.com), CC0
-    https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0
-    nodes: torch_lit, pillar_decorated, column, rubble_large, rubble_half, candle_triple
-  Licence read in each repository's LICENSE.txt: "License: (Creative Commons Zero, CC0)".
-models/mage.glb, knight, barbarian, rogue, rogue_hooded and skeleton_*.glb (the 9 characters), models/KAYKIT-LICENSE.txt and KAYKIT-SKELETONS-LICENSE.txt
+== 3D models: characters ==
+models/mage.glb, knight, barbarian, rogue, rogue_hooded and skeleton_*.glb, models/KAYKIT-LICENSE.txt and KAYKIT-SKELETONS-LICENSE.txt
   KayKit Adventurers Character Pack 1.0 and KayKit Character Pack: Skeletons 1.0, by Kay Lousberg (www.kaylousberg.com), CC0
-  Trimmed by scripts/slim-character.mjs: 17 animations from the originals themselves (Idle, Running_A, Spellcast_Shoot, Hit_A,
-  Death_A, Cheer and, since Oct 20, Dodge_Forward, Throw, Hit_B, Jump_Idle, Death_B, Block, Spellcast_Long, Dodge_Backward,
-  Unarmed_Melee_Attack_Kick, 2H_Melee_Attack_Spinning and 2H_Melee_Attack_Spin) and without the extra weapons.
+  Trimmed by scripts/slim-character.mjs (animations from the originals themselves, without the extra weapons); hood by scripts/assets/hood.mjs.
   Licence read in the copies models/KAYKIT-LICENSE.txt and KAYKIT-SKELETONS-LICENSE.txt: "License: (Creative Commons Zero, CC0)".
-  4 more animations copied bone by bone to the 9 characters (Ranged_Magic_Summon, Waving, Skeletons_Taunt, Spawn_Ground) from:
+  4 more animations copied bone by bone to the characters (Ranged_Magic_Summon, Waving, Skeletons_Taunt, Spawn_Ground) from:
   KayKit Character Animations 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
   (Animations/gltf/Rig_Medium; same bones and same rest pose as the characters). Licence read in the zip's License.txt: "License: (Creative Commons Zero, CC0)".
-models/ranger.glb and chars/ranger.webp (the Archer of Dungeon Tactics, since Nov 13, 2026)
-  The Rogue from KayKit Adventurers Character Pack 1.0 (rogue.glb above) without the knives and the hood, tinted clothes, and
+models/ranger.glb and chars/ranger.webp (the Archer, since Nov 13, 2026)
+  The Rogue from KayKit Adventurers Character Pack 1.0 without the knives and the hood, tinted clothes, and
   "Ranged_Bow_Idle" in place of Idle (KayKit Character Animations 1.1, Rig_Medium_CombatRanged), assembled by scripts/assets/ranger.mjs.
   The bow is the bow_A_withString from: KayKit Fantasy Weapons Bits 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0
   https://kaylousberg.itch.io/fantasy-weapons-bits - licence read in the pack's LICENSE.txt (assets/kaykit/armas-de-fantasia): "License: (Creative Commons Zero, CC0)".
-models/hex/rock_single_A..E.gltf (+ .bin and hexagons_medieval.png), rocks at the edge of the refuge islands
+models/lancer.glb and chars/lancer.webp (the Lancer, since Nov 13, 2026)
+  KayKit Adventurers (the Knight, without sword, shield and cape, armour tinted teal steel), the "spear_A" spear from
+  KayKit Fantasy Weapons Bits 1.0 and the "Melee_2H_Idle" gesture in place of Idle (KayKit Character Animations 1.1,
+  Rig_Medium_CombatMelee), assembled by scripts/assets/lancer.mjs. All CC0.
+chars/*.webp (the other 9 portraits)
+  Rendered from the characters themselves by scripts/portraits.mjs.
+models/animacoes.glb (ability gestures: one- and two-handed strikes, bow, magic, use item, walk and jump)
+  KayKit Character Animations 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
+  Rig_Medium clips merged and mesh-free by scripts/assets/anim-pack.mjs. Licence read in the pack's LICENSE.txt (assets/kaykit/animacoes): "License: (Creative Commons Zero, CC0)".
+
+== 3D models: map pieces ==
+models/poc/quadrado/ (dirt_with_grass, dirt, stone .gltf + .bin and block_bits_texture.png), ground, dirt and wall of the maps
+models/blocos/ (grass, dirt, gravel, stone, stone_dark, water, wood, bricks_A, bricks_B, snow, dirt_with_snow, stone_with_gold, sand_with_grass .gltf + .bin, block_bits_texture.png and LICENSE.txt), per-tile pieces of the Gariland and Beacon Hill maps
+  KayKit Block Bits 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/block-bits (files copied unchanged)
+  Licence read in the pack's LICENSE.txt (copy in models/blocos/LICENSE.txt): "Creative Commons Zero, CC0".
+models/poc/hex/ (tree_single_A .gltf + .bin and hexagons_medieval.png), tree of the forest tile
   KayKit Medieval Hexagon Pack 1.0, by Kay Lousberg (www.kaylousberg.com), CC0
   https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0 (files copied unchanged)
   Licence read in the pack's LICENSE.txt: "License: (Creative Commons Zero, CC0)".
-models/barrier_half.glb (barrier_half.gltf.glb), the Stone Pillar wall
-  KayKit Dungeon Remastered 1.0, by Kay Lousberg (www.kaylousberg.com), CC0
-  https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0 (file copied unchanged)
-  Licence read in the repository's LICENSE.txt: "License: (Creative Commons Zero, CC0)".
+models/floresta/ (Tree_1_A, Tree_1_B, Tree_2_A, Tree_2_C, Tree_3_A, Tree_4_A, Tree_4_B, Tree_Bare_1_A, Tree_Bare_2_A, Rock_1_A, Rock_2_A, Rock_3_A, Grass_1_A, Bush_2_A, all "_Color1" .gltf + .bin, forest_texture.png and LICENSE.txt), trees, rocks, bush and grass tufts
+  KayKit Forest Nature Pack 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-forest
+  Licence read in the pack's LICENSE.txt (copy in models/floresta/LICENSE.txt): "Creative Commons Zero, CC0".
+models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half, floor_tile_big_spikes, stairs_modular_center, wall, wall_arched, wall_broken, column, torch_mounted .gltf + .bin, dungeon_texture.png and LICENSE.txt)
+  KayKit Dungeon Pack 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
+  Licence read in the pack's LICENSE.txt (copy in models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
+
 assets/kaykit/ (outside public/, does not go to the live game; library for contributors)
   All the free KayKit packs, by Kay Lousberg (www.kaylousberg.com), CC0 - https://github.com/KayKit-Game-Assets and https://kaylousberg.itch.io (FREE versions)
   Only the glTFs, unchanged; list and links in assets/kaykit/README.md. Licence read in each pack's LICENSE.txt: "License: (Creative Commons Zero, CC0)"
   (Holiday Bits without a licence in the zip: read on the page, "Creative Commons Zero v1.0 Universal").
-models/poc/quadrado/ (dirt_with_grass, dirt, stone, tree .gltf + .bin and block_bits_texture.png), ground, dirt and wall of the Dungeon Tactics maps
-models/blocos/ (grass, dirt, gravel, stone, stone_dark, water, wood, bricks_A, bricks_B, snow, dirt_with_snow, stone_with_gold, sand_with_grass .gltf + .bin, block_bits_texture.png and LICENSE.txt), pieces of the Gariland and Beacon Hill maps
-  KayKit Block Bits 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/block-bits (files copied unchanged)
-  Licence read in the pack's LICENSE.txt (copy in models/blocos/LICENSE.txt): "Creative Commons Zero, CC0".
-models/poc/hex/ (tree_single_A, rock_single_A, hex_grass, hex_grass_bottom .gltf + .bin and hexagons_medieval.png), forest tree on the Dungeon Tactics maps
-  KayKit Medieval Hexagon Pack 1.0, by Kay Lousberg (www.kaylousberg.com), CC0
-  https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0 (files copied unchanged)
-models/floresta/ (Tree_1_A_Color1 to Tree_4_A_Color1, Tree_Bare_1_A_Color1, Tree_Bare_2_A_Color1, Rock_1_A_Color1, Rock_2_A_Color1, Rock_3_A_Color1, Grass_1_A_Color1 .gltf + .bin, forest_texture.png and LICENSE.txt), trees, rocks and grass tufts of the Dungeon Tactics maps
-  and, since Nov 13, Tree_1_B_Color1, Tree_2_C_Color1, Tree_4_B_Color1 and Bush_2_A_Color1 (.gltf + .bin, copied unchanged), the woods and rocks around the board
-  KayKit Forest Nature Pack 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-forest
-  Licence read in the pack's LICENSE.txt (copy in models/floresta/LICENSE.txt): "Creative Commons Zero, CC0".
-models/animacoes.glb (12 clips: one- and two-handed strikes, bow, magic, use item), ability gestures
-  KayKit Character Animations 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
-  Rig_Medium clips merged and mesh-free by scripts/assets/anim-pack.mjs. Licence read in the pack's LICENSE.txt (assets/kaykit/animacoes): "License: (Creative Commons Zero, CC0)".
-models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half, floor_tile_big_spikes and stairs_modular_center .gltf + .bin, dungeon_texture.png and LICENSE.txt), Gariland boxes, Flooded Crypt pieces, the spike tiles and the crypt stairs
-  and, since Nov 13, wall, wall_arched, wall_broken, column and torch_mounted (.gltf + .bin, copied unchanged), walls, columns and torches around the crypts
-  KayKit Dungeon Pack 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
-  Licence read in the pack's LICENSE.txt (copy in models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
-
-models/lancer.glb and chars/lancer.webp (the Lancer of Dungeon Tactics, since Nov 13, 2026)
-  KayKit Adventurers (the Knight, without sword, shield and cape, armour tinted teal steel), the "spear_A" spear from
-  KayKit Fantasy Weapons Bits 1.0 and the "Melee_2H_Idle" gesture in place of Idle (KayKit Character Animations 1.1,
-  Rig_Medium_CombatMelee), assembled by scripts/assets/lancer.mjs. All CC0.
+assets/sons-rpg/ (outside public/, does not go to the live game)
+  532 RPG sound effects. Origin and licence: source not recorded (see assets/sons-rpg/README.md). Nothing from there may go to public/ before the origin and a free licence are found.
 
 == Textures ==
-tex/lava_emit.jpg
-  ambientCG, "Lava001" (Emission, 1K reduced to 512x512) - https://ambientcg.com/a/Lava001
-  Licence read on the page: "CC0 license, making them free to use without attribution".
-tex/stone.jpg, tex/stone_nor.jpg
-  Poly Haven, "slate_floor_02" (diff and nor_gl, 1K reduced to 512x512) - https://polyhaven.com/a/slate_floor_02
-  Licence read on the page: "CC0 1.0 Universal - public domain dedication, no attribution required" (https://polyhaven.com/license).
-tex/lava005.jpg (melted edge of the refuge islands)
-  ambientCG, "Lava005" (Color, 1K reduced to 512x512) - https://ambientcg.com/a/Lava005
-  Licence read on the page: "CC0 license, making them free to use without attribution".
+tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg, tex/bark.jpg, tex/paint.jpg, tex/wood.jpg (terrain, trees, objects and bridge)
+  Our own design, painted by scripts/assets/paint-textures.py.
 
-tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg, tex/bark.jpg, tex/paint.jpg, tex/wood.jpg (terrain, trees, objects and bridge; since Nov 13, 2026)
-  Our own design, painted by scripts/assets/paint-textures.py (replacing the Poly Haven photos used for a few hours).
-
-Trees, rocks, crates, barrels, bottles, sacks and rubble of the open maps (since Nov 13, 2026)
+Trees, rocks, crates, barrels, bottles, sacks and rubble of the open maps
   Our own models, assembled in code in src/client/trees.ts and src/client/props.ts (no model file).
-
-== Particles (fx/, reduced to 128x128) ==
-fx/puff_0.png fx/puff_1.png fx/puff_2.png (whitePuff00, 04 and 08: steam from the islands and from bodies in the lava)
-  Kenney, "Smoke Particles" - https://kenney.nl/assets/smoke-particles
-  Licence read on the page and in the zip's License.txt: "Creative Commons CC0".
-fx/flame_01.png fx/fire_01.png fx/smoke_01.png fx/spark_01.png fx/magic_02.png fx/light_01.png fx/circle_05.png fx/scorch_02.png
-  Kenney (Kenney Vleugels), "Particle Pack 1.1" - https://kenney.nl/assets/particle-pack
-  Licence read in the zip's License.txt: "License (Creative Commons Zero, CC0)".
 
 == Sound effects (sfx/, mono MP3, trimmed and normalized) ==
 sfx/fireball.mp3
   Julien Matthey, "JM_FX_Fireball_01" (Freesound 105016), via OpenGameArt "Fireball" - https://opengameart.org/content/fireball-1
   Licence read on the page: CC0.
-sfx/explode.mp3 (explosionCrunch_000), sfx/shield.mp3 (forceField_000)
-  Kenney, "Sci-fi Sounds" - https://kenney.nl/assets/sci-fi-sounds
-  Licence read in the zip's License.txt: "License: (Creative Commons Zero, CC0)".
 sfx/hit.mp3 (impactPunch_heavy_000)
   Kenney, "Impact Sounds" - https://kenney.nl/assets/impact-sounds
   Licence read in the zip's License.txt: "License: (Creative Commons Zero, CC0)".
-sfx/click.mp3 (click_001), sfx/confirm.mp3 (confirmation_001)
-  Kenney, "Interface Sounds" - https://kenney.nl/assets/interface-sounds
-  Licence read in the zip's License.txt: "License: (Creative Commons Zero, CC0)".
-sfx/teleport.mp3 (teleport.ogg), sfx/lightning.mp3 (electricspell2.ogg)
-  Augmentality (Brandon Morris), "Spell sounds" (uploaded by HaelDB) - https://opengameart.org/content/spell-sounds
-  Licence read on the page: two options, "OGA-BY 3.0" and "CC0"; used under CC0.
-sfx/homing.mp3 (magical_7.ogg)
-  JaggedStone, "Magic Spell SFX" - https://opengameart.org/content/magic-spell-sfx
-  Licence read on the page: CC0 ("Copyright/Attribution Notice: None needed").
-sfx/cancel.mp3 (back_001)
+sfx/click.mp3 (click_001), sfx/confirm.mp3 (confirmation_001), sfx/cancel.mp3 (back_001)
   Kenney, "Interface Sounds" - https://kenney.nl/assets/interface-sounds
   Licence read in the zip's License.txt: "License: (Creative Commons Zero, CC0)".
 sfx/step.mp3 (footstep_grass_001, trimmed to 0.3 s)
@@ -123,9 +79,6 @@ sfx/die.mp3 (creature_die_01.ogg)
   "80 CC0 RPG SFX" - https://opengameart.org/content/80-cc0-rpg-sfx
   Licence read on the page on Nov 12, 2026: CC0.
 Victory and defeat fanfares and campaign speech blips: notes generated in the browser (src/client/sound.ts, jingle and blip), no file; created by the project.
-sfx/lava_loop.mp3 (fire-1.ogg, with crossfade for looping)
-  AntumDeluge, "Fire Crackling" - https://opengameart.org/content/fire-crackling
-  Licence read on the page: "Licensing: Creative Commons Zero (CC0)".
 
 == Music ==
 Campaign music (Nov 13, 2026): OpenGameArt tracks, all CC0 (licence read on each one's page), converted to .ogg by ffmpeg (the snow one trimmed to the first 75 s with a fade, the map one with +2.2 dB). Gain per track in src/client/music.ts.
@@ -145,127 +98,39 @@ music/battle.mp3 (standalone battle)
   Emma_MA, "Determined Pursuit (epic orchestra loop)" - https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
   Licence read on the page: CC0 ("This track is in the public domain as of January 2017. No attribution necessary.").
 
-  Kenney, "Voiceover Pack" and "Voiceover Pack: Fighter" (CC0) - https://kenney.nl/assets/voiceover-pack | https://kenney.nl/assets/voiceover-pack-fighter
-  AntumDeluge, "Kitten Mew" (CC0) - https://opengameart.org/content/kitten-mew
-  "Evil Laugh" (CC0) - https://opengameart.org/content/evil-laugh
-
-  "Ultra kill": synthetic voice generated with Microsoft Speech (Zira voice) and an ffmpeg effect, made for this game
-
-== Site icon (warlock-wars.svg, favicon.ico, apple-touch-icon.png) ==
-warlock-wars.svg (vector, the W as a <path>), favicon.ico (16, 32 and 48 px) and apple-touch-icon.png (180 px): our own art, the same as the Telegram group photo, generated by scripts/assets/favicon.py.
+== Site icon (favicon.ico, 16 and 32 px) ==
+  Our own art (the Warlock Wars "W"), generated by scripts/assets/favicon.py. Source of the file itself in this repository: first commit that added it, 5032187.
   The W uses the font Grenze Gotisch Bold, "Copyright 2020 The Grenze Gotisch Project Authors" (https://github.com/Omnibus-Type/Grenze-Gotisch),
   SIL Open Font License 1.1 (http://scripts.sil.org/OFL), read in the font file's name table (Google Fonts). The font is not shipped on the site; only the drawn letter.
 
 == Icons (public/icons.svg) ==
   game-icons.net - https://game-icons.net - official repository https://github.com/game-icons/icons
   Licence read in the repository's license.txt: "Icons provided under the Creative Commons 3.0 BY" - https://creativecommons.org/licenses/by/3.0/
-  Icons made by Lorc, Delapouite, Skoll, Sbed, Caro Asercion and HeavenlyDog. Modification: black background removed and colour swapped for the theme's (currentColor);
-  assembled into a sprite by scripts/assets/build-icons.mjs. Each icon (use in the game: file in the repository, author):
-  Spells:
-    Fireball: lorc/fire-ray.svg, Lorc (http://lorcblog.blogspot.com)
-    Lightning: lorc/focused-lightning.svg, Lorc (http://lorcblog.blogspot.com)
-    Homing missile: lorc/on-target.svg, Lorc (http://lorcblog.blogspot.com)
-    Shield: lorc/shield-reflect.svg, Lorc (http://lorcblog.blogspot.com)
-    Teleport: lorc/teleport.svg, Lorc (http://lorcblog.blogspot.com)
-    Swap: lorc/body-swapping.svg, Lorc (http://lorcblog.blogspot.com)
-    Grab: lorc/grab.svg, Lorc (http://lorcblog.blogspot.com)
-    Meteor: lorc/meteor-impact.svg, Lorc (http://lorcblog.blogspot.com)
-    Charge: lorc/sprint.svg, Lorc (http://lorcblog.blogspot.com)
-    Burst: lorc/striking-splinter.svg, Lorc (http://lorcblog.blogspot.com)
-    Boomerang: delapouite/boomerang.svg, Delapouite (http://delapouite.com)
-    Thrust: lorc/knife-thrust.svg, Lorc (http://lorcblog.blogspot.com)
-    Gravity: lorc/vortex.svg, Lorc (http://lorcblog.blogspot.com)
-    Barricade: heavenly-dog/defensive-wall.svg, HeavenlyDog (http://www.gnomosygoblins.blogspot.com)
-    "Pillar" cause on the scoreboard: delapouite/menhir.svg, Delapouite (http://delapouite.com)
-    Ricochet: caro-asercion/ricochet.svg, Caro Asercion
-    Drain: lorc/life-tap.svg, Lorc (http://lorcblog.blogspot.com)
-    Snowball: lorc/frozen-orb.svg, Lorc (http://lorcblog.blogspot.com)
-    Illusion: lorc/two-shadows.svg, Lorc (http://lorcblog.blogspot.com)
-    Magnetize: lorc/magnet.svg, Lorc (http://lorcblog.blogspot.com)
-    Recharge: lorc/cycle.svg, Lorc (http://lorcblog.blogspot.com)
-    Alteration: delapouite/card-exchange.svg, Delapouite (http://delapouite.com)
-    Link: lorc/harpoon-chain.svg, Lorc (http://lorcblog.blogspot.com)
-    Windwalk: lorc/wind-slap.svg, Lorc (http://lorcblog.blogspot.com)
-    Splitter: delapouite/split-arrows.svg, Delapouite (http://delapouite.com)
-    Warp zone: lorc/time-trap.svg, Lorc (http://lorcblog.blogspot.com)
-  Items:
-    Ring of life: delapouite/diamond-ring.svg, Delapouite (http://delapouite.com)
-    Cursed ring: lorc/skull-ring.svg, Lorc (http://lorcblog.blogspot.com)
-    Cape: delapouite/cape.svg, Delapouite (http://delapouite.com)
-    Armour: lorc/breastplate.svg, Lorc (http://lorcblog.blogspot.com)
-    Boots: lorc/leather-boot.svg, Lorc (http://lorcblog.blogspot.com)
-    Pocket watch: skoll/pocket-watch.svg, Skoll
-    Lifesteal: delapouite/bat.svg, Delapouite (http://delapouite.com)
-    Flail: delapouite/flail.svg, Delapouite (http://delapouite.com)
-    Redirector: lorc/divert.svg, Lorc (http://lorcblog.blogspot.com)
-    Pact: lorc/chalice-drops.svg, Lorc (http://lorcblog.blogspot.com)
-    Lava boots: delapouite/metal-boot.svg, Delapouite (http://delapouite.com)
-    Guardian: delapouite/stone-bust.svg, Delapouite (http://delapouite.com)
-    Helm: delapouite/spartan-helmet.svg, Delapouite (http://delapouite.com)
-    Shock boots: lorc/winged-leg.svg, Lorc (http://lorcblog.blogspot.com)
-    Aegis: lorc/angel-wings.svg, Lorc (http://lorcblog.blogspot.com)
-    Wind boots: lorc/feather.svg, Lorc (http://lorcblog.blogspot.com)
-    Lethal Lens: lorc/magnifying-glass.svg, Lorc (http://lorcblog.blogspot.com)
-    Piercing Magic: lorc/pierced-heart.svg, Lorc (http://lorcblog.blogspot.com)
-    Rune of affliction: lorc/rune-stone.svg, Lorc (http://lorcblog.blogspot.com)
-  Runes:
-    Haste: delapouite/rabbit.svg, Delapouite (http://delapouite.com)
-    Fury: delapouite/enrage.svg, Delapouite (http://delapouite.com)
-    Shield: lorc/checked-shield.svg, Lorc (http://lorcblog.blogspot.com)
-    Recharge: lorc/energise.svg, Lorc (http://lorcblog.blogspot.com)
-  Effects above the mage and causes of death:
-    stunned: lorc/star-swirl.svg, Lorc (http://lorcblog.blogspot.com)
-    vulnerable: lorc/broken-shield.svg, Lorc (http://lorcblog.blogspot.com)
-    invulnerable: lorc/sunbeams.svg, Lorc (http://lorcblog.blogspot.com)
-    trapped: lorc/padlock.svg, Lorc (http://lorcblog.blogspot.com)
-    slowed: lorc/snail.svg, Lorc (http://lorcblog.blogspot.com)
-    burning: lorc/small-fire.svg, Lorc (http://lorcblog.blogspot.com)
-    magnetized: repels: lorc/magnet-blast.svg, Lorc (http://lorcblog.blogspot.com)
-    invisible: lorc/ghost.svg, Lorc (http://lorcblog.blogspot.com)
-    hasted: lorc/run.svg, Lorc (http://lorcblog.blogspot.com)
-    lava (feed, scoreboard, sudden death): lorc/volcano.svg, Lorc (http://lorcblog.blogspot.com)
-    shock: skoll/knockout.svg, Skoll
-    unknown cause: lorc/uncertainty.svg, Lorc (http://lorcblog.blogspot.com)
-  Interface:
-    scoreboard: delapouite/histogram.svg, Delapouite (http://delapouite.com)
-    mage sheet: lorc/scroll-unfurled.svg, Lorc (http://lorcblog.blogspot.com)
-    taunts: skoll/talk.svg, Skoll
-    vote: delapouite/vote.svg, Delapouite (http://delapouite.com)
-    sound on: delapouite/speaker.svg, Delapouite (http://delapouite.com)
-    sound off: delapouite/speaker-off.svg, Delapouite (http://delapouite.com)
-    help: sbed/help.svg, Sbed (http://opengameart.org/content/95-game-icons)
-    change keys: delapouite/keyboard.svg, Delapouite (http://delapouite.com)
-    option info: delapouite/info.svg, Delapouite (http://delapouite.com)
-    mid-round shop: delapouite/shop.svg, Delapouite (http://delapouite.com)
-    kills: lorc/skull-crossed-bones.svg, Lorc (http://lorcblog.blogspot.com)
-    damage: lorc/spiky-explosion.svg, Lorc (http://lorcblog.blogspot.com)
-    wins and podium: lorc/trophy.svg, Lorc (http://lorcblog.blogspot.com)
-    accuracy and training: lorc/archery-target.svg, Lorc (http://lorcblog.blogspot.com)
-    gold: delapouite/two-coins.svg, Delapouite (http://delapouite.com)
-    training tip: lorc/light-bulb.svg, Lorc (http://lorcblog.blogspot.com)
-    bot: delapouite/robot-antennas.svg, Delapouite (http://delapouite.com)
-    people in the room: delapouite/character.svg, Delapouite (http://delapouite.com)
-    leave the room: delapouite/exit-door.svg, Delapouite (http://delapouite.com)
-    watch (spectator): lorc/eyeball.svg, Lorc (http://lorcblog.blogspot.com)
-    buy in the shop: delapouite/shopping-cart.svg, Delapouite (http://delapouite.com)
-    level up in the shop: delapouite/upgrade.svg, Delapouite (http://delapouite.com)
-    undo the purchase: delapouite/anticlockwise-rotation.svg, Delapouite (http://delapouite.com)
+  Modification: black background removed and colour swapped for the theme's (currentColor); assembled into a sprite by scripts/assets/build-icons.mjs.
+  The sprite also carries other symbols that the code does not reference; only the ones used (ABILITY_ICON, STUDY_ICON and UI_ICON in src/client/icons.ts) are credited here.
+  Ability and interface icons (id: file in the repository, author):
+    knife-thrust: lorc/knife-thrust.svg, Lorc (http://lorcblog.blogspot.com)
+    flail: delapouite/flail.svg, Delapouite (http://delapouite.com)
+    checked-shield: lorc/checked-shield.svg, Lorc (http://lorcblog.blogspot.com)
+    cycle: lorc/cycle.svg, Lorc (http://lorcblog.blogspot.com)
+    on-target: lorc/on-target.svg, Lorc (http://lorcblog.blogspot.com)
+    archery-target: lorc/archery-target.svg, Lorc (http://lorcblog.blogspot.com)
+    ricochet: caro-asercion/ricochet.svg, Caro Asercion
+    striking-splinter: lorc/striking-splinter.svg, Lorc (http://lorcblog.blogspot.com)
+    fire-ray: lorc/fire-ray.svg, Lorc (http://lorcblog.blogspot.com)
+    meteor-impact: lorc/meteor-impact.svg, Lorc (http://lorcblog.blogspot.com)
+    wind-slap: lorc/wind-slap.svg, Lorc (http://lorcblog.blogspot.com)
+    chalice-drops: lorc/chalice-drops.svg, Lorc (http://lorcblog.blogspot.com)
+    split-arrows: delapouite/split-arrows.svg, Delapouite (http://delapouite.com)
+    snail: lorc/snail.svg, Lorc (http://lorcblog.blogspot.com)
+    skull-crossed-bones: lorc/skull-crossed-bones.svg, Lorc (http://lorcblog.blogspot.com)
+    knockout: skoll/knockout.svg, Skoll
+    run: lorc/run.svg, Lorc (http://lorcblog.blogspot.com)
+    anticlockwise-rotation: delapouite/anticlockwise-rotation.svg, Delapouite (http://delapouite.com)
+    pocket-watch: skoll/pocket-watch.svg, Skoll
+    cog: lorc/cog.svg, Lorc (http://lorcblog.blogspot.com)
+    tv: delapouite/tv.svg, Delapouite (http://delapouite.com)
 
-Main menu (issue #83, PR #85):
-  home-cat.jpg: image gato2.jpg supplied by Leonard (lboesmans), who declared
-    authorship and asked for it to be included. No free licence declared: it enters by authorization
-    of the project owner (Fernando, Oct 20). Do not presume CC0 nor reuse outside the game;
-    it leaves the repository if the author or whoever holds the rights asks.
-  wrench.svg: original vector drawing created for this contribution by Codex.
-  The bar logo is warlock-wars.svg (the same as the tab icon, already credited above).
-
-Taunt recordings by Leonard (lboesmans), Oct 21, 2026 (PR #243, accepted by Fernando):
-  taunts-local/{fausto,emafia,meestruparam,usarameabusaram,lanchado}.mp4.
-  The contributor declared he recorded the audio on his own phone and is the author,
-  that they are not extractions from third-party songs/games/videos, and authorized submission,
-  use and redistribution in this public repository and in the Warlock game.
-  Express permission from the author for the project; do not presume CC0 nor a third-party licence.
-
-Tiny5 font (Dungeon Tactics, Oct 25, 2026): "Copyright 2022-2024 The Tiny5 Project Authors" (https://github.com/Gissio/font_tiny5),
-  SIL Open Font License 1.1 (text at https://github.com/google/fonts/blob/main/ofl/tiny5/OFL.txt), loaded from Google Fonts by index.html.
-Cinzel font (titles, options and buttons since Nov 13, 2026, in place of Tiny5): Natanael Gama, SIL Open Font License 1.1 (Google Fonts)
+== Fonts (loaded from Google Fonts by index.html, not shipped in the repository) ==
+Alegreya Sans (running text): SIL Open Font License 1.1, as stated in the in-game credits (src/client/main.ts); author not recorded here.
+Cinzel (titles, options and buttons): Natanael Gama, SIL Open Font License 1.1 (Google Fonts)
