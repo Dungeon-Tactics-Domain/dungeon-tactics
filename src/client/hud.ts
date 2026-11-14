@@ -744,7 +744,12 @@ export class BattleHud {
       return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
     }
     if (s.k === 'map' && s.command === 'move')
-      return t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.');
+      return v.hl?.tiles.some((m) => m.kind === 'nogo')
+        ? t(
+            'Mover: não dá para parar aqui; a unidade inteira precisa caber em chão livre ao alcance.',
+            'Move: cannot stop here; the whole unit must fit on free ground in reach.',
+          )
+        : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.');
     if (s.k === 'map') {
       const p = v.hl?.preview;
       return p && !p.ok

@@ -4,8 +4,17 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { dist, facingTo, inBounds, neighbors, posKey, samePos, subOf } from '../shared/battle/grid.ts';
-import { cellsOf, farCells, shotStop, sightEnds, squareH, unitAt } from '../shared/battle/pathing.ts';
+import { dist, facingTo, inBounds, posKey, samePos, subOf } from '../shared/battle/grid.ts';
+import {
+  cellsOf,
+  farCells,
+  footprint,
+  nearestTile,
+  shotStop,
+  sightEnds,
+  squareH,
+  unitAt,
+} from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { CAMPAIGN_KEY, CHAPTERS, objectiveText, parseProgress } from './campaign.ts';
@@ -34,6 +43,7 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import {
   confirm,
+  facingHighlights,
   freshUi,
   type Highlights,
   highlights,
@@ -304,8 +314,10 @@ export class Game {
     }
     if (s.k === 'facing') {
       if (a.k === 'cursor') {
-        const st = gridStep(a.dir, this.scene.heading);
-        this.faceTo({ x: b.actor.pos.x + st.x, y: b.actor.pos.y + st.y });
+        // the tile past that side of the unit's square (a 2x2 token's corner + 1 is its own cell)
+        const st = gridStep(a.dir, this.scene.heading),
+          s = UNIT_DEFS[b.actor.def].size ?? 1;
+        this.faceTo({ x: b.actor.pos.x + st.x * s, y: b.actor.pos.y + st.y * s });
       } else if (a.k === 'confirm') void this.endTurn();
       else if (a.k === 'cancel') this.back({ k: 'menu', index: 2 });
       return;
@@ -470,15 +482,20 @@ export class Game {
       !this.heroTurn || this.busy
         ? null
         : s.k === 'facing'
-          ? this.facingMarks()
+          ? facingHighlights(this.battle)
           : s.k === 'map' || s.k === 'confirm'
-            ? highlights(this.battle, ui)
-            : { tiles: [{ pos: this.battle.actor.pos, kind: 'actor' as const }], path: null, preview: null };
+            ? highlights(this.battle, ui, this.cursor)
+            : {
+                tiles: footprint(this.battle.actor).map((pos) => ({ pos, kind: 'actor' as const })),
+                path: null,
+                preview: null,
+              };
+    const moving = s.k === 'map' && ui.mode.k === 'move';
     this.scene.setHighlights(hl);
-    this.scene.setCursor(hl ? this.cursor : null);
+    // choosing where to move, the cursor frames the whole square the unit would stand on
+    this.scene.setCursor(hl ? this.cursor : null, moving ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1);
     // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
     // it can be reached), to see where the strike reaches before moving
-    const moving = s.k === 'map' && ui.mode.k === 'move';
     const ringAt =
       !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving)
         ? null
@@ -606,9 +623,15 @@ export class Game {
     };
     if (e.k === 'move' && enemy) {
       const to = e.path.at(-1)!;
-      this.scene.setCursor(to);
+      const size = UNIT_DEFS[this.battle.state.units.find((u) => u.id === e.unit)?.def ?? '']?.size ?? 1;
+      this.scene.setCursor(to, size);
       await show(
-        { tiles: [{ pos: to, kind: 'target' }], path: e.path.slice(1), preview: null },
+        {
+          tiles: cellsOf(to, size).map((pos) => ({ pos, kind: 'target' as const })),
+          path: e.path.slice(1),
+          preview: null,
+          size,
+        },
         TIMING.enemyDestination,
       ); // without the dot under the walker
       this.scene.setCursor(null);
@@ -635,23 +658,15 @@ export class Game {
     return Array.from({ length: g.width * g.height }, (_, i) => ({ x: i % g.width, y: Math.floor(i / g.width) }));
   }
 
-  // tiles around the acting unit: the one it faces is highlighted (direction choice at the end of the turn)
-  private facingMarks(): Highlights {
-    const me = this.battle.actor;
-    const tiles = neighbors(this.battle.grid, me.pos).map((pos) => ({
-      pos,
-      kind: facingTo(me.pos, pos) === me.facing ? ('target' as const) : ('range' as const),
-    }));
-    return { tiles: [...tiles, { pos: me.pos, kind: 'actor' }], path: null, preview: null };
-  }
-
   private faceTo(p: Pos) {
     const me = this.battle.actor;
     // clicking the unit itself or the direction it already faces confirms and passes the turn (review of Nov 13: with only a mouse
     // there was no way to end the turn, the click only rotated)
-    if (samePos(p, me.pos) || facingTo(me.pos, p) === me.facing) return void this.endTurn();
+    // measured from the unit's cell nearest the tile: from a 2x2 token's corner, a tile beside it read as a diagonal
+    const dir = facingTo(nearestTile(me, p), p);
+    if (footprint(me).some((c) => samePos(c, p)) || dir === me.facing) return void this.endTurn();
     sfx('cursor');
-    this.battle.face(facingTo(me.pos, p));
+    this.battle.face(dir);
     this.scene.sync(this.battle.state);
     this.update(this.ui);
   }

@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { confirm, defaultMode, freshUi, highlights, selectMode, tapTile } from '../src/client/interaction.ts';
+import {
+  confirm,
+  defaultMode,
+  facingHighlights,
+  freshUi,
+  highlights,
+  hoverTile,
+  selectMode,
+  tapTile,
+} from '../src/client/interaction.ts';
+import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
+import { posKey } from '../src/shared/battle/grid.ts';
+import { halve } from '../src/shared/battle/half.ts';
+import { cellsOf, footprint } from '../src/shared/battle/pathing.ts';
+import type { Pos } from '../src/shared/battle/types.ts';
+import { flat, gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
 // current archer with a soldier at shooting range and an ally beside
@@ -113,5 +127,103 @@ describe('two-step touch', () => {
     confirm(b, tapTile(b, freshUi(b), at(4, 1)));
     expect(defaultMode(b)).toEqual({ k: 'idle' });
     expect(highlights(b, freshUi(b)).tiles.filter((t) => t.kind !== 'actor')).toEqual([]);
+  });
+});
+
+// Half tiles (Nov 14, Fernando on stage 0: "it needs a preview of the tiles the units will occupy in 2x2"): a 2x2 token is
+// marked by its whole square, never by its corner cell alone
+describe('the square of a 2x2 token', () => {
+  // heights: a step of 2 between whole tiles (1,1) and (2,1), both reachable around the top through (1,0)
+  const token = () => {
+    const sc = halve({
+      id: 't-square',
+      name: 't',
+      en: 't',
+      grid: gridOf(['....', '....', '....'], ['0122', '0022', '0000']),
+      spawns: [
+        { id: 'w', def: 'warrior', team: 'hero', x: 0, y: 1 },
+        { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 2 },
+      ],
+    });
+    const b = Battle.start(sc, HIT_SEED);
+    while (b.actor.id !== 'w') playAiTurn(b);
+    return b;
+  };
+  const keys = (ps: Pos[]) => new Set(ps.map(posKey));
+  const of = (b: Battle, ui: ReturnType<typeof freshUi>, kind: string, cursor?: Pos) =>
+    keys(
+      highlights(b, ui, cursor)
+        .tiles.filter((t) => t.kind === kind)
+        .map((t) => t.pos),
+    );
+
+  it('marks every cell its reachable squares cover, and its own 4 cells as the actor', () => {
+    const b = token();
+    const ui = selectMode(b, freshUi(b), { k: 'move' });
+    const h = highlights(b, ui);
+    const covered = keys([...b.reach().values()].flatMap((s) => cellsOf(s.pos, 2)));
+    const own = keys(footprint(b.actor));
+    for (const t of h.tiles) {
+      if (t.kind === 'move') expect(covered.has(posKey(t.pos))).toBe(true);
+      if (t.kind === 'actor') expect(own.has(posKey(t.pos))).toBe(true);
+    }
+    for (const k of covered) if (!own.has(k)) expect(of(b, ui, 'move').has(k)).toBe(true);
+    expect(of(b, ui, 'actor').size).toBe(4);
+  });
+
+  it('shows the destination as its whole square, over its own cells too, with the path and its size', () => {
+    const b = token();
+    const to = { x: b.actor.pos.x + 1, y: b.actor.pos.y };
+    const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'move' }), to);
+    expect(ui.pending).toEqual(to);
+    expect(of(b, ui, 'target', to)).toEqual(keys(cellsOf(to, 2)));
+    const h = highlights(b, ui, to);
+    expect(h.path?.at(-1)).toEqual(to);
+    expect(h.size).toBe(2);
+  });
+
+  it('a square that straddles a step too high is not a destination, even with all 4 cells marked', () => {
+    const b = token();
+    const at = { x: 3, y: 2 }; // cells 3 (height 0) and 4 (height 2) of the row: a step of 2 inside the square
+    expect(b.reach().has(posKey(at))).toBe(false);
+    const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'move' }), at);
+    const covered = keys([...b.reach().values()].flatMap((s) => cellsOf(s.pos, 2)));
+    for (const c of cellsOf(at, 2)) expect(covered.has(posKey(c))).toBe(true);
+    expect(ui.pending).toBeNull();
+    expect(of(b, ui, 'nogo', at)).toEqual(keys(cellsOf(at, 2)));
+    expect(of(b, ui, 'target', at).size).toBe(0);
+  });
+
+  it('shows no square on the unit itself, and only the part of one inside the map', () => {
+    const b = token();
+    const ui = selectMode(b, freshUi(b), { k: 'move' });
+    expect(of(b, ui, 'nogo', b.actor.pos).size).toBe(0);
+    expect(of(b, ui, 'nogo', { x: 7, y: 5 })).toEqual(keys([{ x: 7, y: 5 }]));
+  });
+
+  it('aiming at any cell of a token marks all 4 of its cells', () => {
+    const b = new Battle(
+      halve({ id: 't-aim', name: 't', en: 't', grid: gridOf(['....']), spawns: [] }).grid,
+      stateOf(
+        [
+          { id: 'w', def: 'warrior½', team: 'hero', x: 2, y: 0 },
+          { id: 'f', def: 'soldier½', team: 'enemy', x: 4, y: 0 },
+        ],
+        HIT_SEED,
+      ),
+    );
+    const far = { x: 5, y: 1 };
+    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'strike' }), far);
+    expect(ui.pending).toEqual(far);
+    expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 4, y: 0 }, 2)));
+  });
+
+  it('the facing marks sit beside each side of the square, none under it', () => {
+    const b = token();
+    const h = facingHighlights(b);
+    const own = keys(footprint(b.actor));
+    const sides = h.tiles.filter((t) => t.kind !== 'actor');
+    for (const t of sides) expect(own.has(posKey(t.pos))).toBe(false);
+    expect(sides.filter((t) => t.kind === 'target')).toHaveLength(2);
   });
 });

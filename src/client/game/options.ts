@@ -72,6 +72,12 @@ export function optionsMenu(o: OptionsContext) {
             el('i', { class: 'sw threat' }),
             t('Vermelho, listras: o que a unidade tocada alcança', 'Red, stripes: what the tapped unit can reach'),
           ),
+          el(
+            'li',
+            {},
+            el('i', { class: 'sw nogo' }),
+            t('Vermelho, xis: a unidade não cabe ali', 'Red, cross: the unit does not fit there'),
+          ),
         ),
         choice(
           t('Velocidade do texto das conversas', 'Dialogue text speed'),

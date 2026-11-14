@@ -33,6 +33,7 @@
   --mark-range: #ff7a3c;
   --mark-blocked: #b07ae0;
   --mark-threat: #ff2d55;
+  --mark-nogo: #ff4040;
   /* HUD parchment (Nov 12, in the spirit of FFT, our colors): dark ink gives 11:1 on the paper */
   --paper: #efe3c4;
   --paper-lo: #dccb9f;
@@ -344,6 +345,9 @@ button[hidden],
 }
 .sw.threat {
   background: var(--mark-threat);
+}
+.sw.nogo {
+  background: var(--mark-nogo);
 }
 .choice {
   margin: 0 0 10px;

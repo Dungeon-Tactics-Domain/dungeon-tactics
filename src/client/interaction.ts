@@ -3,11 +3,12 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
-import { type Grid, posKey, samePos } from '../shared/battle/grid.ts';
+import { FACING, type Grid, inBounds, posKey, samePos } from '../shared/battle/grid.ts';
 import {
   aimEnds,
   aimTile,
   areaOf,
+  cellsOf,
   footprint,
   inAbilityRange,
   inArea,
@@ -28,11 +29,12 @@ export interface Ui {
   inspect: string | null; // unit tapped to see HP and threat
   invalid: boolean; // the last tap landed on a tile that doesn't work: the card warns instead of staying silent
 }
-export type TileKind = 'actor' | 'move' | 'range' | 'blocked' | 'threat' | 'area' | 'target';
+export type TileKind = 'actor' | 'move' | 'range' | 'blocked' | 'threat' | 'area' | 'target' | 'nogo';
 export interface Highlights {
   tiles: { pos: Pos; kind: TileKind }[];
   path: Pos[] | null;
   preview: Preview | null;
+  size?: number; // cells per side of whoever walks `path`: a big unit or a half-tile token walks by its corner cell
 }
 
 const selfCentered = (id: string) => ABILITIES[id].range[1] === 0;
@@ -126,16 +128,20 @@ function threat(b: Battle, unitId: string): Pos[] {
   );
 }
 
-export function highlights(b: Battle, ui: Ui): Highlights {
+// `cursor`: the tile under the cursor, whose square shows as not fitting when the unit cannot stop there (Move)
+export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   const tiles = new Map<string, { pos: Pos; kind: TileKind }>();
   const mark = (pos: Pos, kind: TileKind) => tiles.set(posKey(pos), { pos, kind });
   let path: Pos[] | null = null;
   let preview: Preview | null = null;
+  const size = ui.mode.k === 'move' ? (UNIT_DEFS[b.actor.def].size ?? 1) : 1;
   if (ui.inspect && b.state.units.some((u) => u.id === ui.inspect))
     for (const p of threat(b, ui.inspect)) mark(p, 'threat');
   if (ui.mode.k === 'move') {
     const reach = b.reach();
-    for (const s of reach.values()) mark(s.pos, 'move');
+    // every cell the unit's square can cover: a 2x2 token stops by its corner cell, and marking only the corners showed the
+    // area half a tile off (Nov 14, Fernando on stage 0: "it needs a preview of the tiles the units will occupy in 2x2")
+    for (const s of reach.values()) for (const c of cellsOf(s.pos, size)) mark(c, 'move');
     if (ui.pending) path = pathTo(reach, ui.pending);
   } else if (ui.mode.k === 'ability') {
     const a = ABILITIES[ui.mode.id];
@@ -155,9 +161,39 @@ export function highlights(b: Battle, ui: Ui): Highlights {
         if (a.radius > 0 && inArea(b.grid, area, a.radius, [t]) && !own.some((p) => samePos(p, t))) mark(t, 'area');
     }
   }
-  if (ui.pending) mark(ui.pending, 'target');
-  if (!b.over) mark(b.actor.pos, 'actor');
-  return { tiles: [...tiles.values()], path, preview };
+  if (!b.over) for (const c of footprint(b.actor)) mark(c, 'actor');
+  // the choice goes over the actor's square: a 2x2 token stepping 1 cell overlaps where it stands
+  if (ui.mode.k === 'move') {
+    // the whole square where it would stop; only `reach` says whether it fits (a square on 4 marked cells may still
+    // straddle a step too high, an ally or a body)
+    const at = ui.pending ?? cursor;
+    const fits = !!at && b.reach().has(posKey(at));
+    if (at && !samePos(at, b.actor.pos))
+      for (const c of cellsOf(at, size)) if (inBounds(b.grid, c)) mark(c, fits ? 'target' : 'nogo');
+  } else if (ui.pending)
+    for (const c of areaOf(b.grid, b.state, aimTile(b.grid, b.state, ui.pending))) mark(c, 'target'); // the aimed whole tile: all 4 cells of a token
+  return { tiles: [...tiles.values()], path, preview, size };
+}
+
+// Direction choice at the end of the turn: the tiles beside each side of the acting unit's square, the faced side marked
+// (beside a 2x2 token, not around its corner cell, which put two of the four marks under it)
+export function facingHighlights(b: Battle): Highlights {
+  const me = b.actor,
+    s = UNIT_DEFS[me.def].size ?? 1;
+  const side = (d: Pos, k: number): Pos => ({
+    x: d.x > 0 ? me.pos.x + s : d.x < 0 ? me.pos.x - 1 : me.pos.x + k,
+    y: d.y > 0 ? me.pos.y + s : d.y < 0 ? me.pos.y - 1 : me.pos.y + k,
+  });
+  const tiles = FACING.flatMap((d, i) =>
+    Array.from({ length: s }, (_, k) => side(d, k))
+      .filter((p) => inBounds(b.grid, p))
+      .map((pos) => ({ pos, kind: (i === me.facing ? 'target' : 'range') as TileKind })),
+  );
+  return {
+    tiles: [...tiles, ...footprint(me).map((pos) => ({ pos, kind: 'actor' as const }))],
+    path: null,
+    preview: null,
+  };
 }
 
 // Tiles the queued charges will hit (night of Nov 12): a charged spell follows the unit (follow) and the Aimed Shot's

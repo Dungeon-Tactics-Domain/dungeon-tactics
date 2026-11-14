@@ -123,14 +123,17 @@ export function install(game: Game, scene: BattleScene) {
   view = scene;
   // marks off survive the game's own redraws: the scene's setters pass null while hidden and keep the last value
   let marks = true;
-  const keep = <T>(set: (v: T | null) => void) => {
+  // `rest`: what goes with the value (the cursor's square size), passed along as it came
+  const keep = <T, R extends unknown[]>(set: (v: T | null, ...rest: R) => void) => {
     let last: T | null = null;
+    let more = [] as unknown as R;
     return [
-      (v: T | null) => {
+      (v: T | null, ...rest: R) => {
         last = v;
-        set(marks ? v : null);
+        more = rest;
+        set(marks ? v : null, ...rest);
       },
-      () => set(marks ? last : null),
+      () => set(marks ? last : null, ...more),
     ] as const;
   };
   const marked = [

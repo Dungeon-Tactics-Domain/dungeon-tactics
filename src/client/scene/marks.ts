@@ -25,6 +25,7 @@ const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?:
   threat: ['#ff2d55', 0.6, 'hatch'],
   area: ['#ffb020', 1, 'solid'],
   target: ['#fff2a0', 1, 'solid'],
+  nogo: ['#ff4040', 1, 'cross'], // the unit's square does not fit where the cursor is (Move)
   path: ['#1e6fff', 0.95],
 };
 const markTextures = new Map<MarkPattern, THREE.CanvasTexture>();
@@ -299,13 +300,19 @@ export class Marks {
     this.scene.add(this.trajectory);
   }
 
-  setCursor(p: Pos | null) {
+  // `size`: the frame goes around the square a unit of that many cells per side would stand on, with its corner on `p` (Move)
+  setCursor(p: Pos | null, size = 1) {
     // appears in place right away; then slides from tile to tile (frame), instead of jumping
-    if (p && !this.cursor.visible) this.cursor.position.copy(this.space.world(p));
+    if (p && !this.cursor.visible) this.cursor.position.copy(this.space.squareTop(p, size));
     this.cursor.visible = !!p;
     if (p) {
-      this.cursorGoal.copy(this.space.world(p));
-      this.space.lay(this.cursor.getObjectByName('frame')!, p);
+      this.cursorGoal.copy(this.space.squareTop(p, size));
+      const frame = this.cursor.getObjectByName('frame')!;
+      // a square flat at its standing height, like the token on it (a big unit does not tilt on a ramp)
+      if (size > 1) {
+        frame.rotation.set(0, 0, 0);
+        frame.scale.set(size, 1, size);
+      } else this.space.lay(frame, p);
     }
   }
 
@@ -323,6 +330,16 @@ export class Marks {
       mat.map = markTexture(MARK[kind][2] ?? 'frame');
       m.visible = true;
     }
-    for (const p of h.path ?? []) this.pathDots.get(posKey(p))!.visible = true;
+    // a token's path runs through the middle of its square, not over its corner cell
+    const size = h.size ?? 1;
+    for (const p of h.path ?? []) {
+      const dot = this.pathDots.get(posKey(p))!;
+      dot.position.copy(this.space.squareTop(p, size)).y += 0.03;
+      if (size > 1) {
+        dot.rotation.set(0, 0, 0);
+        dot.scale.set(1, 1, 1);
+      } else this.space.lay(dot, p);
+      dot.visible = true;
+    }
   }
 }

@@ -1,7 +1,8 @@
 // Tile ↔ world coordinates of the battle scene: where a tile, a standing unit and the sloped ground are. Every other part of the
 // scene (board, markers, units, camera) places things through here, so a ramp or deep water is measured the same everywhere.
 import * as THREE from 'three';
-import { FACING, type Grid, posKey, tileAt } from '../../shared/battle/grid.ts';
+import { FACING, type Grid, inBounds, posKey, tileAt } from '../../shared/battle/grid.ts';
+import { cellsOf } from '../../shared/battle/pathing.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { DEEP_DROP, raisedDeep, SWIM, WADE, type WaterLevel, waterLevels } from '../water-levels.ts';
 
@@ -37,6 +38,17 @@ export class TileSpace {
       (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step,
       p.y - this.grid.height / 2 + 0.5,
     );
+  }
+
+  // middle of the square of `size` cells with its corner on `p`, on its highest cell's ground (where a token stands); cells
+  // off the map do not count, so a square the cursor pushes past the edge stays where the cursor is
+  squareTop(p: Pos, size: number): THREE.Vector3 {
+    if (size === 1) return this.world(p);
+    const ys = cellsOf(p, size)
+      .filter((c) => inBounds(this.grid, c))
+      .map((c) => this.world(c).y);
+    const w = this.world(p);
+    return w.set(w.x + (size - 1) / 2, Math.max(...ys), w.z + (size - 1) / 2);
   }
 
   // where the unit stands: the tile, lower in shallow water and swimming in deep (markers and cursor follow in world(), on the surface)

@@ -34,7 +34,7 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 | Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
 | Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
 | Fade | `--fade` | black of the fade on entering a map point |
-| Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` | legend; same as `MARK` in `src/client/scene/marks.ts` |
+| Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` | legend; same as `MARK` in `src/client/scene/marks.ts` |
 
 ### Contrast (measured on Nov 13, WCAG 2.1 formula, script over the CSS hex values)
 
