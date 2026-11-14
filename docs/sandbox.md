@@ -128,6 +128,9 @@ A hand-written address works too:
   - `wait` passes the turn without the facing screen. The AI never plays: the next step gives the turn to its own unit.
   - The scene's camera is kept, so the camera does not follow the cursor to the next actor.
   - A battle that ends shows no end screen.
+  - Giving the turn to another unit mid-turn skips the previous unit's turn end: its CT is not charged and its undo
+    history stays, so the menu may offer "Undo move", which would restore the previous unit's step. A `wait` for a unit
+    below 100 CT leaves it with a negative CT. Specs set the CT they need (`units.<id>.ct`).
 - **A step that cannot be played stops the run with its reason:** a tile out of reach, an ability the unit lacks, out
   of range, already acted, the battle already over. A step never does nothing in silence. A shot with no line of sight
   is not refused: as in the game, it fires and stops at the first obstacle or unit on its path.
