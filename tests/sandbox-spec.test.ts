@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import battleClean from '../scripts/sandbox/battle-clean.json';
+import battleMove from '../scripts/sandbox/battle-move.json';
 import battleUi from '../scripts/sandbox/battle-ui.json';
 import benchArcher from '../scripts/sandbox/bench/archer-shot.json';
 import benchGap from '../scripts/sandbox/bench/arena-gap.json';
@@ -226,7 +227,12 @@ describe('placementProblems', () => {
 });
 
 // every game battle runs split since Nov 14 (half.ts) while specs stay in whole tiles (Nov 14 review)
-const EXAMPLES = { 'battle-ui.json': battleUi, 'battle-clean.json': battleClean, 'frost-pass-ambush.json': frostPass };
+const EXAMPLES = {
+  'battle-ui.json': battleUi,
+  'battle-clean.json': battleClean,
+  'battle-move.json': battleMove,
+  'frost-pass-ambush.json': frostPass,
+};
 
 describe('specs on a split map', () => {
   const split = (w: number, h: number) => ({ ...flat(w * 2, h * 2), sub: 2 });
@@ -271,6 +277,15 @@ describe('specs on a split map', () => {
         expect(battle.preview(aim.aim, aim.target).ok).toBe(true);
       }
     });
+
+  it('takes a cursor between tiles only on a split map', () => {
+    expect(parseSpec({ cursor: { x: 2.5, y: 3 } }).problems).toEqual([]);
+    expect(parseSpec({ cursor: { x: 2.25, y: 3 } }).problems).toEqual(['cursor must be { x, y } (whole or x.5)']);
+    expect(offMap(split(4, 4), { cursor: { x: 2.5, y: 3 } })).toEqual([]);
+    expect(offMap(flat(4, 4), { cursor: { x: 2.5, y: 3 } })).toEqual([
+      'cursor: 2.5,3 is between tiles, and this map has no half tiles',
+    ]);
+  });
 
   it('names places off the map in whole tiles', () => {
     expect(offMap(split(4, 4), { cursor: { x: 3, y: 3 }, camera: { focus: { x: 4, y: 0 } } })).toEqual([

@@ -1,0 +1,11 @@
+{
+  "scenario": "ash_wood",
+  "seed": 1,
+  "lang": "en",
+  "actor": "h-archer",
+  "units": { "h-archer": { "x": 5, "y": 7 } },
+  "screen": "move",
+  "cursor": { "x": 8.5, "y": 7.5 },
+  "camera": { "angle": 0, "zoom": 2.4, "focus": { "x": 8, "y": 7 } },
+  "hide": ["fps"]
+}

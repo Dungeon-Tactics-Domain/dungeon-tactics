@@ -111,6 +111,8 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 const isInt = (v: unknown, min = -Infinity, max = Infinity): v is number =>
   Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
 const isPos = (v: unknown): v is Pos => isObj(v) && isInt(v.x, 0) && isInt(v.y, 0);
+// the cursor may stand between tiles (x.5), where a 2x2 token can stop on the split map: the Move preview of its square
+const isHalfPos = (v: unknown): v is Pos => isObj(v) && isInt(2 * (v.x as number), 0) && isInt(2 * (v.y as number), 0);
 
 // Shape check of a spec read from JSON or a URL. The spec comes back as given (typed) when there is no problem.
 export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] } {
@@ -172,7 +174,7 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
     )
   )
     p.push('screen must be menu, abilities, move, facing or { aim, target, confirm? }');
-  if (r.cursor !== undefined && !isPos(r.cursor)) p.push('cursor must be { x, y }');
+  if (r.cursor !== undefined && !isHalfPos(r.cursor)) p.push('cursor must be { x, y } (whole or x.5)');
   const c = r.camera;
   if (c !== undefined) {
     if (!isObj(c)) p.push('camera must be an object');
@@ -353,7 +355,9 @@ export function offMap(grid: Grid, spec: SceneSpec): string[] {
   return at.flatMap(([name, p]) =>
     p && !inBounds(grid, { x: p.x * k, y: p.y * k })
       ? [`${name}: ${p.x},${p.y} is outside the ${grid.width / k}x${grid.height / k} map`]
-      : [],
+      : p && !Number.isInteger(p.x * k + p.y * k)
+        ? [`${name}: ${p.x},${p.y} is between tiles, and this map has no half tiles`]
+        : [],
   );
 }
 

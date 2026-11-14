@@ -12,7 +12,7 @@ It works only on `localhost` / `127.0.0.1` with `?sandbox=` in the address. The 
 ## Quick start
 
 ```bash
-npm run sandbox -- scripts/sandbox --sheet          # the 3 example specs -> screenshots/*.png|webp + contact-sheet.png
+npm run sandbox -- scripts/sandbox --sheet          # the 4 example specs -> screenshots/*.png|webp + contact-sheet.png
 npm run sandbox -- my-spec.json --out shots         # one spec (a file may also hold a list of specs)
 npm run sandbox -- specs/ --url http://localhost:5181   # reuse a dev server that is already running
 npm run sandbox -- scripts/sandbox/clips --video --out clips   # gameplay clips: clips/<name>.webm + .mp4 + clips.json
@@ -59,7 +59,7 @@ different picture.
 | `add` | `[{ "id", "def", "team": "hero" \| "enemy", "x", "y" }]` | page load |
 | `actor` | the hero whose turn it is (default: the first hero that plays) | load and live |
 | `screen` | `"menu"`, `"abilities"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y}, "confirm": true }` | load and live |
-| `cursor` | `{x,y}`: the tile under the cursor (tile info, target panel, move preview) | load and live |
+| `cursor` | `{x,y}`: the tile under the cursor (tile info, target panel, move preview); on a split map `x.5` puts it between tiles, where a token's square can stop | load and live |
 | `camera` | `{ "angle": 0-7, "zoom": 1.5, "focus": {x,y}, "action": { "from": "<unit id>", "to": {x,y} }, "fixed": "side" \| "three-quarter" }` | load and live |
 | `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all` | load and live |
 | `pixel` | `0` (plain 3D), `2`, `3`, `4`: pixel-art block size | load and live |
@@ -263,6 +263,8 @@ Each loops, hides every panel and fixes a side camera. Seeds were picked so the 
 - `battle-ui.json`: Ash Wood. The archer aims a Shot at a soldier moved across the river, with the "Execute?" window,
   the strike strip and the shot line.
 - `battle-clean.json`: the same scene with `"hide": ["all"]`, framed identically.
+- `battle-move.json`: Ash Wood, the archer's Move screen with the cursor between tiles (`x.5`), where the 2x2 token's
+  square would straddle a barrel: drawn as not fitting, and the help line says it cannot stop there.
 - `frost-pass-ambush.json`: Frost Pass, with three enemies moved next to the heroes and a wounded skeleton archer. The
   command menu is open, the camera is turned to angle 3, the output is WebP.
 
