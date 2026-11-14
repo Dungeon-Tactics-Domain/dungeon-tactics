@@ -10,7 +10,7 @@ Index of the art, sound and fonts in the project, so people and AIs know what al
 - **Look:** painted, in the spirit of Final Fantasy Tactics (choice of Nov 13): low-poly KayKit characters on top of terrain, trees and objects painted in our own colours (vertex colours plus a neutral brush texture), seen from above on a grid. Pixel-art style is an option of the scene (`act.pixel`, key V).
 - **Colours:** dark fantasy purple and gold, all in the `:root` variables of [`src/client/style.css`](../src/client/style.css): background `--bg #16111f`, text `--fg`, accent gold `--accent #ffcf4a`, hero blue `--hero`, enemy red `--enemy`, heal green `--heal`, HUD parchment `--paper`. Loose colours in the code are not allowed.
 - **Panels and buttons:** pure CSS (`--stone`, `--trim`, `--bevel-*`, `--frame` in the `:root`): stone gradient, gold trim, light bevel, near-square corners. No image.
-- **Fonts** (Google Fonts, loaded in `index.html`): running text in **Alegreya Sans** (`--font`); titles, options, Confirm and queue in **Cinzel** (`--font-px`; replaced the Tiny5 pixel font on Nov 13).
+- **Fonts** (Google Fonts, loaded in `index.html`): running text in **Alegreya Sans** (`--font`); titles, options, Confirm and queue in **Cinzel** (`--font-title`; replaced the Tiny5 pixel font on Nov 13).
 - **3D:** low-poly from **KayKit** (flat colours with a small palette texture). A new model must be KayKit or in the same style; the `legacy-*` packs in `assets/kaykit/` are from an older KayKit phase and stand out a little.
 - **Icons:** game-icons.net silhouettes in a single colour (`currentColor`).
 - **Sound:** short mono MP3 effects, looping `.ogg` music per place, and notes generated in code for fanfares and speech blips.

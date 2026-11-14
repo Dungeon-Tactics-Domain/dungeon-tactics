@@ -52,17 +52,39 @@
      ring alone gives 2.5:1 on the dark background and 1.2:1 on the map sea; with the light halo hugging it, the ring
      exceeds 6.9:1 against the halo on any background */
   --focus-halo: 0 0 0 3px var(--paper-hi);
+  /* parchment frame of panels, dialogs and the menu button: light inner line and a hard drop shadow */
+  --paper-frame: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, 0.45);
+  --paper-white: #fff; /* brightest paper: Developer fields and the selected class card */
+  --row-hi: rgba(255, 255, 255, 0.5); /* menu row under focus or hover */
+  /* floating damage number: pale, and hotter on a strike of 25% of life or more */
+  --float-dmg: #ffd0c4;
+  --float-big: #ffb199;
+  --fade: #08050e; /* fade to black on entering a map point */
+  /* map nodes: battle red, story blue, gold edge once done, dark grey when locked (the old beige was the colour of the land) */
+  --node-battle: #c0412b;
+  --node-story: #3d6fb0;
+  --node-done: #e2b23a;
+  --node-locked: #6f6656;
+  --node-locked-edge: #4a4235;
   --tap: 48px; /* touch target: >= 44 px (spec) with room for the thumb */
   --gap: 8px;
+  --inset: 12px; /* panel margin to the screen edge */
   --slot-w: 440px; /* bottom unit panels; the preview strips sit in the gap between the two */
   --font: "Alegreya Sans", system-ui, sans-serif; /* running text: legible at small sizes */
   /* titles, options, Confirm and queue: Cinzel (OFL), an inscriptional serif (Nov 13, Fernando found the Tiny5 pixel font
      "kind of crude" and asked for "a nicer serif font on the options with some shading"); the variable name stayed to avoid touching all the CSS */
-  --font-px: "Cinzel", var(--font);
+  --font-title: "Cinzel", var(--font);
+  --fs-xs: 12px; /* performance counter */
   --fs-sm: 14px;
   --fs: 16px;
   --fs-lg: 20px;
   --fs-xl: 32px; /* xl: the hit chance of the strike preview */
+  --fs-title: 24px; /* dialog title, opening narration */
+  --fs-display: 38px; /* game title in a window, big damage number */
+  /* motion: menus open in 90 ms, banners and the dialogue box in 120 ms; the ▶ and ▼ nudge every 0.6 s */
+  --t-menu: 90ms;
+  --t-open: 120ms;
+  --t-nudge: 0.6s;
 }
 
 * {
@@ -111,9 +133,7 @@ body {
   border-radius: var(--r);
   color: var(--ink);
   background: linear-gradient(var(--paper-hi), var(--paper));
-  box-shadow:
-    inset 0 0 0 2px var(--paper-hi),
-    0 3px 0 rgba(0, 0, 0, 0.45);
+  box-shadow: var(--paper-frame);
 }
 /* buttons inside the window: light paper with an ink outline (the primary's gold stays); chosen = red border */
 .dialog button:not(.primary) {
@@ -188,7 +208,7 @@ button[aria-pressed="true"] {
 button.primary {
   background: var(--gold-btn);
   color: var(--on-accent);
-  font: 400 var(--fs-lg) / 1 var(--font-px);
+  font: 400 var(--fs-lg) / 1 var(--font-title);
   flex: 1;
   box-shadow:
     inset 0 0 0 2px var(--gold-trim),
@@ -233,17 +253,15 @@ button[hidden] {
   border-radius: var(--r);
   background: linear-gradient(var(--paper), var(--paper-lo));
   border: 2px solid var(--paper-edge);
-  box-shadow:
-    inset 0 0 0 2px var(--paper-hi),
-    0 3px 0 rgba(0, 0, 0, 0.45);
+  box-shadow: var(--paper-frame);
 }
 .panel[hidden] {
   display: none;
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
 .tile-info {
-  top: 12px;
-  left: 12px;
+  top: var(--inset);
+  left: var(--inset);
   font-size: var(--fs-sm);
 }
 .queue {
@@ -268,14 +286,14 @@ button[hidden] {
   color: var(--focus);
 }
 .queue-title {
-  font: 400 var(--fs-sm) / 1 var(--font-px);
+  font: 400 var(--fs-sm) / 1 var(--font-title);
   color: var(--ink-muted);
   padding: 2px 4px 4px;
 }
 .queue-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap);
   padding: 2px 6px;
   font-size: var(--fs-sm);
   border-left: 5px solid var(--side);
@@ -322,13 +340,13 @@ button[hidden] {
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 28px;
-  font: 400 var(--fs-lg) / 1 var(--font-px);
+  font: 400 var(--fs-lg) / 1 var(--font-title);
 }
 /* camera tools and the menu: top right corner; the performance counter right below */
 .tools {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: var(--inset);
+  right: var(--inset);
   pointer-events: auto;
   z-index: 2;
 } /* the open list goes over the counter and the command menu */
@@ -337,9 +355,7 @@ button[hidden] {
   background: linear-gradient(var(--paper), var(--paper-lo));
   border-color: var(--paper-edge);
   color: var(--ink);
-  box-shadow:
-    inset 0 0 0 2px var(--paper-hi),
-    0 3px 0 rgba(0, 0, 0, 0.45);
+  box-shadow: var(--paper-frame);
 }
 .tools .burger[aria-expanded="true"] {
   box-shadow:
@@ -377,16 +393,16 @@ button[hidden] {
   right: 0;
   width: 320px;
   padding: 6px;
-  animation: menu-in 90ms ease-out;
+  animation: menu-in var(--t-menu) ease-out;
   transform-origin: top;
 }
 .tools-menu .item {
-  font: 400 var(--fs) / 1 var(--font-px);
+  font: 400 var(--fs) / 1 var(--font-title);
   min-height: 38px;
 }
 @media (hover: hover) {
   .tools-menu .item:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--row-hi);
     filter: none;
   }
 }
@@ -413,12 +429,12 @@ button[hidden] {
 .fps {
   position: absolute;
   top: 72px;
-  right: 12px;
+  right: var(--inset);
   pointer-events: none;
   white-space: pre;
   text-align: right;
   font:
-    12px / 1.35 ui-monospace,
+    var(--fs-xs) / 1.35 ui-monospace,
     Consolas,
     monospace;
   color: var(--fg);
@@ -447,7 +463,7 @@ button[hidden] {
   width: 420px;
 }
 .confirm strong {
-  font: 400 var(--fs-lg) / 1.2 var(--font-px);
+  font: 400 var(--fs-lg) / 1.2 var(--font-title);
 }
 .confirm p {
   margin: 6px 0 0;
@@ -468,13 +484,13 @@ button[hidden] {
   border: none;
   box-shadow: none;
   color: var(--ink);
-  font: 700 var(--fs-lg) / 1 var(--font-px);
+  font: 700 var(--fs-lg) / 1 var(--font-title);
   text-shadow:
     0 1px 0 rgba(255, 248, 225, 0.9),
     0 2px 3px rgba(60, 40, 15, 0.35);
 } /* engraved on the parchment: light below, soft shadow */
 .panel .item.focus {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--row-hi);
 }
 /* FFT's hand replaced by an arrow of ours marking the focused item */
 .panel .item.focus::before {
@@ -482,14 +498,14 @@ button[hidden] {
   position: absolute;
   left: 8px;
   color: var(--focus);
-  animation: nudge 0.6s steps(1, end) infinite;
+  animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 /* menus open instead of popping in (Nov 12, game feel): 90 ms, fast enough not to slow down whoever knows what they want;
    the submenu comes from the side of the menu it left (hud.ts sets .from-right when it opens to the left of the menu); the ability
    name banner opens from the middle */
 .commands:not([hidden]),
 .confirm:not([hidden]) {
-  animation: menu-in 90ms ease-out;
+  animation: menu-in var(--t-menu) ease-out;
 }
 .abilities {
   --slide: -24px;
@@ -501,7 +517,7 @@ button[hidden] {
   animation: menu-in-side 110ms ease-out;
 }
 .banner:not([hidden]) {
-  animation: banner-in 120ms ease-out;
+  animation: banner-in var(--t-open) ease-out;
 }
 @keyframes menu-in {
   from {
@@ -552,15 +568,15 @@ button[hidden] {
 .active-slot,
 .target-slot {
   position: absolute;
-  bottom: 12px;
+  bottom: var(--inset);
   width: var(--slot-w);
   pointer-events: none;
 }
 .active-slot {
-  left: 12px;
+  left: var(--inset);
 }
 .target-slot {
-  right: 12px;
+  right: var(--inset);
 }
 .unit-panel {
   position: relative;
@@ -595,10 +611,10 @@ button[hidden] {
   align-content: start;
 }
 .unit-name {
-  font: 400 var(--fs-lg) / 1.1 var(--font-px);
+  font: 400 var(--fs-lg) / 1.1 var(--font-title);
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--gap);
 }
 .unit-side {
   font: 400 var(--fs-sm) / 1 var(--font);
@@ -613,7 +629,7 @@ button[hidden] {
   display: grid;
   grid-template-columns: 40px 1fr 64px;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap);
   font-size: var(--fs-sm);
 }
 .gauge-label {
@@ -664,9 +680,9 @@ button[hidden] {
    strips) so as not to cover the map; no click (the mouse passes through to the tiles below) */
 .strikes {
   position: absolute;
-  bottom: 12px;
-  left: calc(var(--slot-w) + 24px);
-  right: calc(var(--slot-w) + 24px);
+  bottom: var(--inset);
+  left: calc(var(--slot-w) + 2 * var(--inset));
+  right: calc(var(--slot-w) + 2 * var(--inset));
   display: grid;
   justify-items: end;
   align-content: end;
@@ -698,7 +714,7 @@ button[hidden] {
   color: var(--muted);
 }
 .strike-pts {
-  font: 400 var(--fs-xl) / 1 var(--font-px);
+  font: 400 var(--fs-xl) / 1 var(--font-title);
   color: var(--strike-dmg);
   font-variant-numeric: tabular-nums;
 }
@@ -711,7 +727,7 @@ button[hidden] {
 }
 .strike-hit {
   margin-left: auto;
-  font: 400 var(--fs-lg) / 1 var(--font-px);
+  font: 400 var(--fs-lg) / 1 var(--font-title);
 }
 .strike-info {
   font-size: var(--fs-sm);
@@ -752,7 +768,7 @@ button[hidden] {
 .float {
   position: absolute;
   transform: translate(-50%, -50%);
-  font: 400 26px / 1 var(--font-px);
+  font: 400 26px / 1 var(--font-title);
   text-shadow:
     0 2px 0 #000,
     2px 0 0 #000,
@@ -761,11 +777,11 @@ button[hidden] {
   animation: pop 1.5s linear forwards;
 }
 .float.dmg {
-  color: #ffd0c4;
+  color: var(--float-dmg);
 }
 .float.big {
-  font-size: 38px;
-  color: #ffb199;
+  font-size: var(--fs-display);
+  color: var(--float-big);
 } /* strike of 25% of life or more (scene/units.ts): bigger and hotter */
 .float.miss {
   color: var(--muted);
@@ -828,11 +844,11 @@ button[hidden] {
 }
 .dialog h2,
 .dialog h3 {
-  font-family: var(--font-px);
+  font-family: var(--font-title);
   margin: 0;
 }
 .dialog h2 {
-  font-size: 24px;
+  font-size: var(--fs-title);
 }
 .dialog h3 {
   font-size: var(--fs);
@@ -864,7 +880,7 @@ button[hidden] {
 .legend li {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap);
 }
 .sw {
   width: 20px;
@@ -976,7 +992,7 @@ button[hidden] {
 .slider-value {
   min-width: 4ch;
   text-align: right;
-  font: 400 var(--fs-lg) / 1 var(--font-px);
+  font: 400 var(--fs-lg) / 1 var(--font-title);
   color: var(--ink);
 }
 
@@ -1011,7 +1027,7 @@ button[hidden] {
   flex: none;
   justify-content: flex-start;
   padding: 0 16px;
-  font: 400 var(--fs) / 1 var(--font-px);
+  font: 400 var(--fs) / 1 var(--font-title);
 }
 .menu-body {
   overflow: auto;
@@ -1083,7 +1099,7 @@ button[hidden] {
   min-width: 0;
   min-height: 36px;
   font: inherit;
-  background: #fff;
+  background: var(--paper-white);
   color: var(--ink);
   border: 1px solid var(--paper-edge);
   border-radius: var(--r);
@@ -1099,7 +1115,7 @@ button[hidden] {
   width: 84px;
   min-height: 32px;
   font: inherit;
-  background: #fff;
+  background: var(--paper-white);
   color: var(--ink);
   border: 1px solid var(--paper-edge);
   border-radius: var(--r);
@@ -1140,7 +1156,7 @@ button[hidden] {
 .talk-title {
   position: static;
   padding: 8px 28px;
-  font: 400 var(--fs-lg) / 1 var(--font-px);
+  font: 400 var(--fs-lg) / 1 var(--font-title);
   color: var(--ink);
   justify-self: center;
   animation: banner-in 160ms ease-out;
@@ -1155,7 +1171,7 @@ button[hidden] {
   min-height: 132px;
   padding: 14px 40px 14px 14px;
   color: var(--ink);
-  animation: menu-in 120ms ease-out;
+  animation: menu-in var(--t-open) ease-out;
 }
 .talk-face .portrait {
   width: 72px;
@@ -1167,7 +1183,7 @@ button[hidden] {
   flex: 1;
 }
 .talk-name {
-  font: 400 var(--fs-lg) / 1 var(--font-px);
+  font: 400 var(--fs-lg) / 1 var(--font-title);
   color: var(--focus);
 }
 .talk-text {
@@ -1184,7 +1200,7 @@ button[hidden] {
 }
 .talk.done .talk-next {
   visibility: visible;
-  animation: nudge 0.6s steps(1, end) infinite;
+  animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .talk-title,
@@ -1218,7 +1234,7 @@ button[hidden] {
   text-align: center;
 }
 .dialog.title h2 {
-  font-size: 38px;
+  font-size: var(--fs-display);
   letter-spacing: 1px;
 }
 .title-sub {
@@ -1287,9 +1303,7 @@ button[hidden] {
   background: linear-gradient(var(--paper-hi), var(--paper));
   border: 2px solid var(--paper-edge);
   border-radius: var(--r);
-  box-shadow:
-    inset 0 0 0 2px var(--paper-hi),
-    0 3px 0 rgba(0, 0, 0, 0.45);
+  box-shadow: var(--paper-frame);
   padding: 12px;
 }
 @keyframes title-in {
@@ -1518,7 +1532,7 @@ body:has(.result-overlay) .fps {
   background: var(--paper);
   color: var(--ink);
   border: 3px double var(--paper-edge);
-  font: 400 clamp(16px, 2.2vw, 28px) var(--font-px);
+  font: 400 clamp(16px, 2.2vw, 28px) var(--font-title);
   letter-spacing: 0.12em;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
   pointer-events: none;
@@ -1549,20 +1563,20 @@ body:has(.result-overlay) .fps {
   cursor: pointer;
 }
 .world-node.battle {
-  background: #c0412b;
+  background: var(--node-battle);
   transform: translate(-50%, -50%) rotate(45deg);
-  border-radius: 3px;
+  border-radius: var(--r);
 }
 .world-node.story {
-  background: #3d6fb0;
+  background: var(--node-story);
   border-radius: 50%;
 }
 .world-node.done {
-  border-color: #e2b23a;
+  border-color: var(--node-done);
 }
 .world-node:disabled {
-  background: #6f6656;
-  border-color: #4a4235; /* dark: the old beige was the color of the land */
+  background: var(--node-locked);
+  border-color: var(--node-locked-edge); /* dark: the old beige was the color of the land */
   filter: none;
   cursor: default;
 }
@@ -1592,11 +1606,11 @@ body:has(.result-overlay) .fps {
 }
 .world-head {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: var(--inset);
+  left: var(--inset);
   padding: 8px 14px;
   color: var(--ink);
-  font: 400 var(--fs-lg) / 1 var(--font-px);
+  font: 400 var(--fs-lg) / 1 var(--font-title);
 }
 .world-panel {
   position: absolute;
@@ -1609,7 +1623,7 @@ body:has(.result-overlay) .fps {
   gap: 6px;
 }
 .world-place {
-  font: 400 var(--fs-lg) / 1.2 var(--font-px);
+  font: 400 var(--fs-lg) / 1.2 var(--font-title);
 }
 .world-kind {
   margin: 0;
@@ -1619,7 +1633,7 @@ body:has(.result-overlay) .fps {
 .world-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--gap);
 } /* in the city there are 5 buttons (Enter, Party, City, Shop, Title): on one row only Shop and Title got cut off */
 .world-actions .item {
   flex: 1 1 28%;
@@ -1628,7 +1642,7 @@ body:has(.result-overlay) .fps {
 }
 .world-help {
   position: absolute;
-  left: 12px;
+  left: var(--inset);
   bottom: 24px;
   margin: 0;
   padding: 8px 12px;
@@ -1660,7 +1674,7 @@ body:has(.result-overlay) .fps {
   padding: 0 24px;
 }
 .talk-overlay.dark .talk-text {
-  font-size: 24px;
+  font-size: var(--fs-title);
   line-height: 1.5;
   max-width: 34em;
   margin: 0 auto;
@@ -1688,7 +1702,7 @@ body:has(.result-overlay) .fps {
 }
 .create-panel h2 {
   margin: 0;
-  font: 400 28px / 1.1 var(--font-px);
+  font: 400 28px / 1.1 var(--font-title);
 }
 .create-name {
   font-weight: 700;
@@ -1719,7 +1733,7 @@ body:has(.result-overlay) .fps {
 .create-card[aria-pressed="true"] {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
-  background: #fff;
+  background: var(--paper-white);
 }
 .create-card .portrait {
   width: 72px;
@@ -1773,7 +1787,7 @@ body:has(.result-overlay) .fps {
   z-index: 15;
   pointer-events: none;
   padding: 14px 36px;
-  font: 400 30px / 1.2 var(--font-px);
+  font: 400 30px / 1.2 var(--font-title);
   color: var(--paper-hi);
   text-align: center;
   white-space: nowrap;
@@ -1818,7 +1832,7 @@ body:has(.result-overlay) .fps {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  gap: var(--gap);
 }
 .party-card {
   display: flex;
@@ -1855,10 +1869,10 @@ body:has(.result-overlay) .fps {
   transform: translateX(-50%);
   white-space: nowrap;
   padding: 2px 8px;
-  font: 400 var(--fs-sm) / 1.2 var(--font-px);
+  font: 400 var(--fs-sm) / 1.2 var(--font-title);
   color: var(--paper-hi);
   background: rgba(20, 12, 30, 0.8);
-  border-radius: 3px;
+  border-radius: var(--r);
 } /* place name under the party on the map */
 /* the speaker's portrait does a little hop when the voice changes (talk.ts) and fades out on entering a map point (world-ui.ts, FADE_MS) */
 .talk-face.pop {
@@ -1873,7 +1887,7 @@ body:has(.result-overlay) .fps {
 .fade-out {
   position: fixed;
   inset: 0;
-  background: #08050e;
+  background: var(--fade);
   z-index: 9;
   pointer-events: none;
   animation: fade-in 300ms ease-in forwards;

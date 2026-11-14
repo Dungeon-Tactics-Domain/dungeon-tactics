@@ -30,6 +30,10 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 | Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
 | Bars | `--hp` `--mp` `--ct` `--heal` | HP, MP, CT, healing |
 | Strike preview | `--strike` `--strike-dmg` | arrow band between the panels |
+| Parchment extras | `--paper-white` `--row-hi` | brightest paper (Developer fields, selected class card); menu row under focus or hover |
+| Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
+| Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
+| Fade | `--fade` | black of the fade on entering a map point |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` | legend; same as `MARK` in `src/client/scene/marks.ts` |
 
 ### Contrast (measured on Nov 13, WCAG 2.1 formula, script over the CSS hex values)
@@ -55,8 +59,9 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 | Token | Value | Use |
 |---|---|---|
 | `--font` | Alegreya Sans | running text, small labels, numbers |
-| `--font-px` | Cinzel (the name is left over from the old pixel font) | titles, menu rows, primary button, queue |
-| `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 14 / 16 / 20 / 32 px | note and help / body / menu item and name / preview damage |
+| `--font-title` | Cinzel | titles, menu rows, primary button, queue |
+| `--fs-xs` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 12 / 14 / 16 / 20 / 32 px | fps counter / note and help / body / menu item and name / preview damage |
+| `--fs-title` / `--fs-display` | 24 / 38 px | dialog title and opening narration / game title in a window and big damage number |
 
 Minimum text: 14 px (the key hint, 11 px, and the fps counter, 12 px, are the exceptions).
 
@@ -71,23 +76,23 @@ Minimum text: 14 px (the key hint, 11 px, and the fps counter, 12 px, are the ex
 | `--frame` / `--frame-pressed` | stone bevel | button outside the parchment |
 | `--glow` | gold glow | selected stone button |
 | `--focus-halo` | 3 px of `--paper-hi` | focus outside the parchment (see Focus) |
-| Parchment shadow | `inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0,0,0,.45)` | `.panel`, `.dialog`, menu button (repeated 4 times: debt) |
+| `--paper-frame` | `inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0,0,0,.45)` | `.panel`, `.dialog`, menu button, title menu |
 
-Panel margin to the screen edge: 12 px.
+| `--inset` | 12 px | panel margin to the screen edge |
 
 ### Motion
 
 | What | Time | Where |
 |---|---|---|
-| Command menu, "Execute?", corner list | 90 ms | `menu-in` |
+| Command menu, "Execute?", corner list | 90 ms (`--t-menu`) | `menu-in` |
 | Ability submenu | 110 ms | `menu-in-side` |
-| Ability name banner, dialogue box | 120 ms | `banner-in`, `menu-in` |
+| Ability name banner, dialogue box | 120 ms (`--t-open`) | `banner-in`, `menu-in` |
 | Conversation title | 160 ms | `banner-in` |
 | Speaker portrait | 220 ms | `face-pop` |
 | Fade when entering a node | 300 ms | `.fade-out` = `FADE_MS` in `world-ui.ts` |
 | Step on the world map | 320 ms | `--walk-ms` = `WALK_MS` |
 | Game title | 600 ms | `title-in` |
-| Focus ▶ and dialogue ▼ | 0.6 s in 2 steps | `nudge` |
+| Focus ▶ and dialogue ▼ | 0.6 s in 2 steps (`--t-nudge`) | `nudge` |
 | Damage number | 1.5 s | `pop` = `TIMING.float` |
 | Objective banner | 2.2 s | `announce` |
 
@@ -167,10 +172,8 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 
 ## 6. Debts (left for later)
 
-- **Loose font sizes:** 11, 12, 24, 26, 28, 30, 38 and 64 px in the CSS, outside the `--fs-*` scale. A `--fs-xs` and two title sizes are missing.
-- **Loose interface colours:** `#fff` (Developer fields, selected card), `#ffd0c4` and `#ffb199` (damage number), `#08050e` (fade), map node colours, confetti in `main.ts`. The illustrated map palette (`.world-art`) is drawing, not interface: it stays as is.
-- **Parchment shadow repeated** in 4 rules: becomes a `--paper-frame` token.
-- **`--font-px`** holds Cinzel: rename to `--font-title`.
+- **Loose font sizes:** one-off sizes left outside the `--fs-*` scale: 11 (key hint), 12 (compass letters, map art), 26 (damage number), 28 (creation title), 30 (objective banner) and 64 px (game title).
+- **Loose interface colours:** the confetti colours in `game/end-screens.ts`. The illustrated map palette (`.world-art`, `.world-icon`, `.world-compass`) is drawing, not interface: it stays as is.
 - **Shop with 9 items and a full chest** still scrolls (761 px at 1280×720; fits at 1920×1080): asks for Buy / Sell tabs.
 - **Party list** (`.party-card`) is an `li` with `role="button"`: make it a real button.
 - **Tavern:** quests and recruiting in the same long dialog (833 px).
