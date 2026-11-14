@@ -1,7 +1,7 @@
 // What the page opens, read from the URL: a campaign stage, a bar mission, a study or developer battle, another map, the
 // world map, or the standalone battle behind the title. Also the save readers the screens share.
 import { Battle } from '../../shared/battle/battle.ts';
-import { HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
+import { HALF, HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from '../campaign.ts';
 import { EQUIP_KEY, parseEquip } from '../chest.ts';
@@ -110,7 +110,7 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     // the own rule (wins at dawn) only exists after the scenario is assembled: assemble before loading the save
     scenario = survivalScenario();
     saveKey = `dt:battle:${SURVIVAL_ID}`;
-  } else if (study && SCENARIOS[study]) {
+  } else if (study && SCENARIOS[study] && !study.endsWith(HALF)) {
     // other game maps through the same parameter (e.g. ?scenario=flooded_crypt), with their own save
     scenario = SCENARIOS[study];
     saveKey = `dt:battle:${study}`;

@@ -9,7 +9,7 @@ import { keyHelp } from '../keyboard.ts';
 import type { PixelSettings, PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
-import { SURVIVAL_ID, survivalGoal } from '../survival.ts';
+import { isSurvival, survivalGoal } from '../survival.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { toWorld } from './boot.ts';
 import { devMenu } from './title.ts';
@@ -38,7 +38,7 @@ export function optionsMenu(o: OptionsContext) {
           {},
           chapter !== null
             ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
-            : scenario.id === SURVIVAL_ID
+            : isSurvival(scenario.id)
               ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
               : t(
                   'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',

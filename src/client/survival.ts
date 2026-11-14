@@ -3,9 +3,12 @@
 // counts). Downing everyone also wins. Kept outside the campaign: a new stage in the middle would change the saves and the map order.
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
+import { HALF } from '../shared/battle/units.ts';
 import { buildDevScenario, type DevUnit, unitFrom } from './dev-roster.ts';
 
 export const SURVIVAL_ID = 'survival';
+// the battle is opened in half tiles (half.ts) under `survival½`
+export const isSurvival = (id: string) => id === SURVIVAL_ID || id === SURVIVAL_ID + HALF;
 // measured on Nov 13 (MEASURE=300, AI on both sides) after the x1.75 damage and the facing: with 1.5x HP and 40 turns the heroes
 // win 30% and idle ones win 16%; with 36 turns, idle (48%) won more than fighting (43%), and with 2x HP and 28 turns
 // idle won 99% (the battle got shorter and the enemies didn't arrive in time). Before the new damage: 2x HP and 64 turns

@@ -34,7 +34,7 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
-import { SURVIVAL_ID, turnsLeft } from './survival.ts';
+import { isSurvival, turnsLeft } from './survival.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
@@ -766,7 +766,7 @@ export class BattleHud {
       ? { rows: [], targets: new Set<string>(), at: -1 }
       : queueRows(b, s.k === 'confirm' ? s : null, QUEUE_SIZE);
     // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
-    const left = b.state.scenario === SURVIVAL_ID ? turnsLeft(b.state) : null;
+    const left = isSurvival(b.state.scenario) ? turnsLeft(b.state) : null;
     // with the charge in preview the short list hides nothing up to its row (the list disappears again on leaving "Execute?")
     this.queue.classList.toggle('preview', at >= 0);
     this.queue.replaceChildren(

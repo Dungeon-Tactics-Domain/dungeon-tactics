@@ -49,7 +49,16 @@ import { rampLink } from './scene/space.ts';
 import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, sfx } from './sound.ts';
 import { param, store } from './store.ts';
-import { BEST_KEY, parseBest, SURVIVAL_ID, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
+import {
+  BEST_KEY,
+  isSurvival,
+  parseBest,
+  SURVIVAL_ID,
+  SURVIVE_TURNS,
+  survivalGoal,
+  survived,
+  turnsLeft,
+} from './survival.ts';
 import { talk } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
@@ -443,7 +452,7 @@ export class Game {
 
   private update(ui: Ui) {
     this.ui = ui;
-    if (this.battle.state.scenario === SURVIVAL_ID)
+    if (isSurvival(this.battle.state.scenario))
       this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.screen;
     // on the menu and submenu only the acting unit's tile is marked; the range shows when choosing (like FFT)
@@ -765,10 +774,10 @@ export class Game {
       );
       store.set(MISSIONS_KEY, JSON.stringify([...parseDone(store.json(MISSIONS_KEY)), mission.id]));
     }
-    if (scenario.id === SURVIVAL_ID && lasted > best) store.set(BEST_KEY, String(lasted));
+    if (isSurvival(scenario.id) && lasted > best) store.set(BEST_KEY, String(lasted));
     battleEndScreen({
       won,
-      survival: scenario.id === SURVIVAL_ID,
+      survival: isSurvival(scenario.id),
       lasted,
       best,
       mvp: this.mvpLine(),
