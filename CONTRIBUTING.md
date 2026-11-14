@@ -104,7 +104,7 @@ test(battle): cover enemies blocking 2x2 movers
 
 ## Branches, commits, and pull requests
 
-The release flow is **task branch → PR to `master` → automatic production deployment**. The former `dev` promotion flow is retired.
+**For now, work goes straight to `master`** (decided by Fernando on 13/11, while the project is solo): atomic commits following the convention above, green gates before each commit, push to `master`, then a manual `npx wrangler deploy` to https://dungeon-tactics.fernandorffdev.com. Parallel agent sessions work on their own branch and their commits are brought onto `master` with rebase or cherry-pick. The branch and PR flow below comes back when contributors join.
 
 1. Create a branch from current `master`: `feat/<topic>`, `fix/<topic>`, `balance/<topic>`, `style/<topic>`, `docs/<topic>`, or `refactor/<topic>`. One branch/PR covers one subject.
 2. Use a branch in this repository when you have contributor access. Fork PRs require CI approval, do not get the automatic review, and cannot use deployment secrets or PR environments.

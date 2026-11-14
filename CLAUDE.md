@@ -230,7 +230,7 @@ Prints com Playwright headless contra `npx wrangler dev`; confira no PC (1280×7
 
 ## Git
 
-Fluxo completo em [CONTRIBUTING.md](CONTRIBUTING.md): uma branch por tarefa a partir do `master` (`feat/`, `fix/`, `balance/`, `style/`, `docs/`, `refactor/`), commits em português com o tipo na frente (`feat: …`), pull request com o modelo de `.github/`, CI verde (`.github/workflows/ci.yml`: os três `tsc`, `vitest`, `vite build`) e *squash and merge*. PR da tarefa vai direto para o `master`. Agente: nunca dê push direto no `master`; abra PR.
+**Por enquanto, tudo direto no `master`** (decisão do Fernando de 13/11: "não precisamos mais ter fluxo de feat, tudo vai direto pra main"): commits atômicos no padrão de [CONTRIBUTING.md](CONTRIBUTING.md#commit-convention), gates verdes antes de cada commit, push no `master` e publicação à mão (`npx wrangler deploy`) em https://dungeon-tactics.fernandorffdev.com. Sessões paralelas (modelos, design system) trabalham num branch próprio e a sessão principal traz os commits delas para o `master` com rebase/cherry-pick, sem merge commit. O fluxo de branch + PR volta quando entrarem colaboradores.
 
 ## Publicar
 
