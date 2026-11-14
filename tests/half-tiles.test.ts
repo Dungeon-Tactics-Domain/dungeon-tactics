@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS, chapterScenario } from '../src/client/campaign.ts';
+import { confirm, freshUi, selectMode, tapTile } from '../src/client/interaction.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { playAiTurn } from '../src/shared/battle/ai.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
-import { type Grid, posKey } from '../src/shared/battle/grid.ts';
+import { dist, type Grid, posKey } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { cellsOf, reachable } from '../src/shared/battle/pathing.ts';
 import { initialState, MAPS, type Scenario } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import type { BattleState, Pos, UnitState } from '../src/shared/battle/types.ts';
 import { HALF, UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { gridOf, stateOf } from './battle-helpers.ts';
+import { gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Half tiles in the game battles (Nov 14): on whole-tile positions the split map must answer exactly as the whole one, so
 // the balance measured on whole tiles still holds. Each check runs the same question on both maps.
@@ -37,7 +40,7 @@ describe('half tiles: abilities measure the same as on whole tiles', () => {
     { id: 'c', def: 'brute', team: 'enemy', x: 0, y: 0 },
   ]).grid;
   const A = { x: 4, y: 4 };
-  for (const id of Object.keys(ABILITIES).filter((x) => ABILITIES[x].range[1] > 0 && !ABILITIES[x].charge)) {
+  for (const id of Object.keys(ABILITIES)) {
     it(`${id}: same reach, targets and hit chance against every tile`, () => {
       const diff: string[] = [];
       for (let y = 0; y < 9; y++)
@@ -151,4 +154,54 @@ describe('half tiles: whole battles', () => {
       expect(r.outcome, `stage ${n}`).not.toBe('timeout');
     }
   }, 60000);
+});
+
+describe('half tiles: a turn through the interface (stage 0 is what Fernando plays)', () => {
+  it('moves the token to a cell between tiles and undoes the move for free', () => {
+    const b = Battle.start(halve(chapterScenario(0)), 7);
+    while (b.actor.team !== 'hero') playAiTurn(b);
+    const from = { ...b.actor.pos };
+    const odd = [...b.reach().values()].find((s) => s.pos.x % 2 === 1)!.pos;
+    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'move' }), odd);
+    const { events } = confirm(b, ui);
+    const move = events.find((e) => e.k === 'move');
+    expect(b.actor.pos).toEqual(odd);
+    // one cell per step: the walk animation reads the path
+    if (move?.k === 'move')
+      for (let i = 1; i < move.path.length; i++) expect(dist(move.path[i - 1], move.path[i])).toBe(1);
+    const undos = b.undosLeft;
+    expect(b.undo()).toBe(true);
+    expect(b.actor.pos).toEqual(from);
+    expect(b.undosLeft).toBe(undos);
+  });
+
+  it('attacks a token from any of its cells, undoes the attack and keeps the save', () => {
+    const sc = split(gridOf(Array(6).fill('......')), 't-turn', [
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+    ]);
+    const b = Battle.start(sc, HIT_SEED);
+    while (b.actor.id !== 'a') playAiTurn(b);
+    const foe = () => b.state.units.find((u) => u.id === 'b')!;
+    const hp = foe().hp;
+    // the far cell of the enemy square: the attack still reaches, measured between the closest cells
+    const far = { x: foe().pos.x + 1, y: foe().pos.y + 1 };
+    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'strike' }), far);
+    expect(ui.pending).toEqual(far);
+    const { events } = confirm(b, ui);
+    expect(events.some((e) => e.k === 'hit' || e.k === 'miss')).toBe(true);
+    expect(Battle.load(b.save())?.state).toEqual(b.state);
+    expect(b.undo()).toBe(true);
+    expect(foe().hp).toBe(hp);
+  });
+
+  it('the AI plays its turns on the split stage, walking cell by cell, and the save loads back', () => {
+    const b = Battle.start(halve(chapterScenario(0)), 11);
+    for (let turn = 0; turn < 6; turn++) {
+      for (const e of playAiTurn(b))
+        if (e.k === 'move')
+          for (let i = 1; i < e.path.length; i++) expect(dist(e.path[i - 1], e.path[i])).toBeLessThanOrEqual(4); // 1, or a gap
+      expect(Battle.load(b.save())?.state).toEqual(b.state);
+    }
+  });
 });
