@@ -9,12 +9,23 @@ import {
   resolveAbility,
   spikeAtTurnEnd,
 } from './combat.ts';
-import { canStand, FACING, faceNearest, facingTo, type Grid, inBounds, posKey, samePos, tileAt } from './grid.ts';
+import {
+  canStand,
+  FACING,
+  faceNearest,
+  facingTo,
+  type Grid,
+  inBounds,
+  posKey,
+  samePos,
+  subOf,
+  tileAt,
+} from './grid.ts';
 import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Charge, Pos, UnitState } from './types.ts';
-import { UNIT_DEFS } from './units.ts';
+import { HALF, UNIT_DEFS } from './units.ts';
 
 // Undo per battle (spec: initial value 3, to be measured). It only counts within the current turn: after the turn ends the
 // enemy has already acted and the new information does not come back.
@@ -220,6 +231,9 @@ export function parseBattleState(raw: unknown): BattleState | null {
   for (const u of raw.units) {
     if (!isObj(u) || typeof u.id !== 'string' || typeof u.def !== 'string' || !Object.hasOwn(UNIT_DEFS, u.def))
       return null;
+    // a split map holds only half-tile tokens and a whole map only whole sheets (Nov 14 review: an edited save put 1-cell
+    // units on the split map)
+    if (u.def.endsWith(HALF) !== subOf(grid) > 1) return null;
     if (u.team !== 'hero' && u.team !== 'enemy') return null;
     if (!isObj(u.pos) || !isInt(u.pos.x) || !isInt(u.pos.y)) return null;
     const pos = { x: u.pos.x, y: u.pos.y };

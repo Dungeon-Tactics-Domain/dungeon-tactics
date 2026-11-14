@@ -11,7 +11,7 @@ import { cellsOf, jumpOf, reachable } from '../src/shared/battle/pathing.ts';
 import { initialState, MAPS, type Scenario } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import type { BattleState, Pos, UnitState } from '../src/shared/battle/types.ts';
-import { HALF, UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { baseDef, HALF, UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Half tiles in the game battles (Nov 14): on whole-tile positions the split map must answer exactly as the whole one, so
@@ -387,6 +387,17 @@ describe('half tiles: push', () => {
       expect(h.to).toEqual(cell(w.to));
       expect(h.dmg).toBe(w.dmg);
     }
+  });
+});
+
+describe('half tiles: saves', () => {
+  it('a split battle save does not load with whole-tile sheets', () => {
+    // an edited save (Nov 14 review): 1-cell units on the split map measured range from a single cell
+    const b = Battle.start(halve(chapterScenario(0)), 1);
+    expect(Battle.load(b.save())).not.toBeNull();
+    const raw = JSON.parse(b.save());
+    raw.state.units = raw.state.units.map((u: UnitState) => ({ ...u, def: baseDef(u.def) }));
+    expect(Battle.load(JSON.stringify(raw))).toBeNull();
   });
 });
 
