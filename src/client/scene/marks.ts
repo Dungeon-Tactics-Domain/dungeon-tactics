@@ -2,7 +2,7 @@
 // cursor, the dotted range ring and the shot trajectory. It only draws what the scene passes in.
 import * as THREE from 'three';
 import { inBounds, posKey } from '../../shared/battle/grid.ts';
-import { gap } from '../../shared/battle/pathing.ts';
+import { cellsOf, gap } from '../../shared/battle/pathing.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import type { Highlights, TileKind } from '../interaction.ts';
 import { MARKER, unitHeight } from '../markers.ts';
@@ -300,14 +300,27 @@ export class Marks {
     this.scene.add(this.trajectory);
   }
 
-  // `size`: the frame goes around the square a unit of that many cells per side would stand on, with its corner on `p` (Move)
-  setCursor(p: Pos | null, size = 1) {
+  // `size`: the frame goes around the square a unit of that many cells per side would stand on, with its corner on `p` (Move).
+  // `fits` false turns frame and arrow red: the arrow draws over everything, so a square hidden behind a barrel or a tree still
+  // reads as not fitting
+  setCursor(p: Pos | null, size = 1, fits = true) {
     // appears in place right away; then slides from tile to tile (frame), instead of jumping
     if (p && !this.cursor.visible) this.cursor.position.copy(this.space.squareTop(p, size));
     this.cursor.visible = !!p;
     if (p) {
       this.cursorGoal.copy(this.space.squareTop(p, size));
-      const frame = this.cursor.getObjectByName('frame')!;
+      const frame = this.cursor.getObjectByName('frame') as THREE.Mesh;
+      for (const [o, color] of [
+        [frame, '#ffffff'],
+        [this.cursor.getObjectByName('arrow') as THREE.Mesh, '#ffcf4a'],
+      ] as const)
+        (o.material as THREE.MeshBasicMaterial).color.set(fits ? color : MARK.nogo[0]);
+      // over a step or a ramp the flat frame floated off the lower cells' marks (stills at angles 0 and 2 on stage 0): there
+      // the square's 4 marks and the arrow show it
+      const ys = cellsOf(p, size)
+        .filter((c) => inBounds(this.space.grid, c))
+        .map((c) => this.space.world(c).y);
+      frame.visible = Math.max(...ys) - Math.min(...ys) < 0.01;
       // a square flat at its standing height, like the token on it (a big unit does not tilt on a ramp)
       if (size > 1) {
         frame.rotation.set(0, 0, 0);

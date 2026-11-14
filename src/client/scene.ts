@@ -176,8 +176,8 @@ export class BattleScene {
     this.marks.setTrajectory(t);
   }
 
-  setCursor(p: Pos | null, size = 1) {
-    this.marks.setCursor(p, size);
+  setCursor(p: Pos | null, size = 1, fits = true) {
+    this.marks.setCursor(p, size, fits);
   }
 
   // rotation to where the camera is going (not the mid-animation one): WASD already walks right after R

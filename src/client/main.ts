@@ -497,8 +497,12 @@ export class Game {
               };
     const moving = s.k === 'map' && ui.mode.k === 'move';
     this.scene.setHighlights(hl);
-    // choosing where to move, the cursor frames the whole square the unit would stand on
-    this.scene.setCursor(hl ? this.cursor : null, moving ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1);
+    // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square
+    this.scene.setCursor(
+      hl ? this.cursor : null,
+      hl && (moving || samePos(this.cursor, this.battle.actor.pos)) ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1,
+      !hl?.tiles.some((m) => m.kind === 'nogo'),
+    );
     // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
     // it can be reached), to see where the strike reaches before moving
     const ringAt =
