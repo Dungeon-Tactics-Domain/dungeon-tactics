@@ -163,7 +163,7 @@ describe('a broken save does not crash the game', () => {
 
   it('invalid scenario, unit, HP, position and actor are rejected', () => {
     expect(parseBattleState(good().state)).not.toBeNull();
-    expect(mutate((s) => (s.scenario = 'inexistente'))).toBeNull();
+    expect(mutate((s) => (s.scenario = 'missing'))).toBeNull();
     expect(mutate((s) => (s.units[0].def = 'dragao'))).toBeNull();
     expect(mutate((s) => (s.units[1].hp = -3))).toBeNull();
     expect(mutate((s) => (s.units[1].hp = 9999))).toBeNull();

@@ -82,7 +82,7 @@ Base hit chance of the physical attack: 100%. The attacker's position decides wh
 | From behind | `[base × (100 − accessory) / 100]` |
 
 - The weapon's evasion only counts with the Weapon Guard reaction.
-- Front, side or back: the greatest of the distances in front of, beside and behind the target wins; on a tie, front beats side and side beats back; tile height does not count. Reopened on Nov 12 and fixed in the test with the guide's 5x5 diagram (`tests/fft-complementos.test.ts`).
+- Front, side or back: the greatest of the distances in front of, beside and behind the target wins; on a tie, front beats side and side beats back; tile height does not count. Reopened on Nov 12 and fixed in the test with the guide's 5x5 diagram (`tests/fft-supplements.test.ts`).
 - Squire and Chemist: class evasion 5%. Ramza: 10%. With no shield or accessory at the start, the hit chance is 95% from the front and 100% from the side or behind: **in Gariland the direction barely changes the hit chance**; it matters with a shield (the Knight: 81% front, 90% side, 100% behind, calculations of this study).
 - Guide example: from the side, a 40% shield and a 40% mantle leave a 36% hit chance.
 - **Which way the unit turns when walking and attacking, and how the AI chooses the direction at the end of the turn: unconfirmed** (the guide does not cover it).

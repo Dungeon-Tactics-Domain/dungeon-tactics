@@ -31,7 +31,7 @@ function rope(a: THREE.Vector3, b: THREE.Vector3, sag: number) {
 
 export function buildBridges(grid: Grid, step: number, wood: THREE.Texture, bark: THREE.Texture): THREE.Group {
   const out = new THREE.Group();
-  out.name = 'pontes';
+  out.name = 'bridges';
   const isBridge = (p: Pos) => inBounds(grid, p) && tileAt(grid, p).look === 'bridge';
   const seen = new Set<string>();
   const planks: THREE.BufferGeometry[] = [],

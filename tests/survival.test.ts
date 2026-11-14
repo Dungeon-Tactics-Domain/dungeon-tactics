@@ -4,8 +4,10 @@ import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 
-// MEDIR=300 npx vitest run tests/survival.test.ts shows the heroes win rate (AI vs AI) and how many came from dawn
-const RUNS = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEDIR ?? 0);
+// MEASURE=300 npx vitest run tests/survival.test.ts shows the heroes win rate (AI vs AI) and how many came from dawn
+const RUNS = Number(
+  (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEASURE ?? 0,
+);
 
 describe('Until Dawn mode', () => {
   it('wins on reaching the final turn or with no enemies; loses with no heroes', () => {

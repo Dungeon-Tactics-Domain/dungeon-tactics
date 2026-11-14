@@ -17,7 +17,7 @@ describe('summary of what happened', () => {
     expect(text).toBe('Ladino: Faca arremessada → Mago sombrio −6 · Mago sombrio caiu');
   });
 
-  it('erro, cura, batida e queda', () => {
+  it('miss, heal, wall hit and fall', () => {
     expect(
       eventLog(
         [

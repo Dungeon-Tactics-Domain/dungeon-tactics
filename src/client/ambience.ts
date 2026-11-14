@@ -460,7 +460,7 @@ export class Ambience {
       mesh.setColorAt(k, tones[k]);
     });
     mesh.receiveShadow = true; // the real shadow of the outside trees falls on top
-    mesh.name = 'extensao'; // the line-of-sight test measures the extension by the edge tile, not by LIMIT
+    mesh.name = 'extension'; // the line-of-sight test measures the extension by the edge tile, not by LIMIT
     this.root.add(mesh);
   }
 

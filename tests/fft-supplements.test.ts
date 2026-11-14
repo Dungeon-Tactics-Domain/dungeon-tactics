@@ -44,7 +44,7 @@ describe('FFT: where the attack comes from (BMG 1.4, diagram)', () => {
 });
 
 describe('FFT: formulas of the new abilities', () => {
-  it('Fire and Heal: [(MA * fé * fé * 14) / 10000] (BMG 3.4)', () => {
+  it('Fire and Heal: [(MA * Faith * Faith * 14) / 10000] (BMG 3.4)', () => {
     expect(faithMagic(6, 60, 60, 14)).toBe(30); // Black Mage level 1, MA 6
     expect(faithMagic(4, 60, 60, 14)).toBe(20); // White Mage level 1, MA 4
     expect(faithMagic(6, 100, 100, 14)).toBe(84); // full faith on both sides: MA * Q

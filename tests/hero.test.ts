@@ -4,7 +4,7 @@ import { defaultGroup, heroesFor } from '../src/client/group.ts';
 import { parseHero } from '../src/client/hero.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
-describe('protagonista', () => {
+describe('protagonist', () => {
   it('the saved hero only passes with a name of 1 to 16 letters and one of the 4 classes', () => {
     expect(parseHero({ name: '  Aria ', cls: 'mage' })).toEqual({ name: 'Aria', cls: 'mage' });
     for (const bad of [

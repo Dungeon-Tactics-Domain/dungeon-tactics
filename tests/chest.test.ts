@@ -11,7 +11,7 @@ describe('chest and equipment', () => {
     });
   });
 
-  it('comprar tira o ouro, vender devolve metade', () => {
+  it('buying takes the gold, selling gives half back', () => {
     const c = buy({ gold: 150, items: [] }, 'iron_blade')!;
     expect(c).toEqual({ gold: 30, items: ['iron_blade'] });
     expect(buy(c, 'iron_blade')).toBeNull(); // no gold

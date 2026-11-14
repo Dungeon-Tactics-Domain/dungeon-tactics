@@ -373,7 +373,7 @@ export class Water {
     water.receiveShadow = true;
     // drawn before the other transparent ones: markers, path, cursor and the team ring always stay on top of the water
     water.renderOrder = -1;
-    water.name = 'agua';
+    water.name = 'water';
     scene.add(water);
     this.surface = pickTiles(
       tiles.map((p) => ({
@@ -386,7 +386,7 @@ export class Water {
       const wall = new THREE.Mesh(mergeGeometries(sides), this.fallMaterial());
       for (const s of sides) s.dispose();
       wall.renderOrder = -1;
-      wall.name = 'cachoeiras';
+      wall.name = 'waterfalls';
       scene.add(wall);
     }
     // splash drops: little cubes (pixels, like the bits in fx.ts) in a single InstancedMesh, up to 64 in the air

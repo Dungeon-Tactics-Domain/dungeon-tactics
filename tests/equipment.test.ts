@@ -6,7 +6,7 @@ import { bonusOf, ITEMS } from '../src/shared/battle/equipment.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 // Equipment (Nov 13): general stats added to the battle sheet
-describe('equipamento', () => {
+describe('equipment', () => {
   it('sums the items in each slot and ignores unknown items or items in the wrong slot', () => {
     expect(bonusOf({ weapon: 'iron_blade', armor: 'chain_mail', accessory: 'swift_boots' })).toEqual({
       hp: 12,

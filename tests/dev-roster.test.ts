@@ -74,7 +74,7 @@ describe('developer menu: roster', () => {
     expect(Battle.load(b.save())).not.toBeNull();
   });
 
-  it('Gariland sem Farol termina quando um lado acaba (sem derrota na hora)', () => {
+  it('Gariland without a Beacon ends when one side is gone (no instant defeat)', () => {
     const scenario = buildDevScenario(defaultSetup('fft-gariland'));
     expect(scenario.spawns.some((sp) => sp.def === 'beacon')).toBe(false);
     const r = simulate(scenario, 3);

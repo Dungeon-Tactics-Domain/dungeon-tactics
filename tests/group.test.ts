@@ -17,7 +17,7 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // Recruitment and class change (Nov 13, delivery 5 of the FFT-style group design)
-describe('grupo', () => {
+describe('party', () => {
   it("the default group builds exactly the measured roster of each stage (the campaign curve doesn't change)", () => {
     CHAPTERS.forEach((c, n) =>
       expect(heroesFor(defaultGroup(), n)).toEqual(c.setup.heroes.map((u) => ({ ...u, items: undefined }))),

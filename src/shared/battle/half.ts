@@ -10,7 +10,7 @@ import type { Pos } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
 export const HALF = '½';
-export const HALF_ID = 'ash_wood_meia';
+export const HALF_ID = 'ash_wood_half';
 export const baseDef = (def: string) => (def.endsWith(HALF) ? def.slice(0, -HALF.length) : def);
 
 // range in half-tiles: melee stays 1 (two squares side by side are 1 half-tile apart), the rest doubles

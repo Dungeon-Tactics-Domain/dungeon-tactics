@@ -82,13 +82,13 @@ describe('command menu', () => {
     expect(stepIndex(1, -1, [false, true, true, true])).toBe(3);
   });
 
-  it('habilidade sem estoque fica apagada', () => {
+  it('an ability without stock is greyed out', () => {
     const b = duel();
     expect(abilityEnabled(b, 'strike')).toBe(true);
   });
 });
 
-describe('controle', () => {
+describe('gamepad', () => {
   const pad = (buttons: number[], axes: number[] = [0, 0]) => ({
     buttons: Array.from({ length: 16 }, (_, i) => buttons.includes(i)),
     axes,

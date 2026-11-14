@@ -15,11 +15,13 @@ import { simulate } from '../src/shared/battle/simulate.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 const say = (pt: string) => pt;
-// MEDIR=300 npx vitest run tests/campaign.test.ts shows hero wins (AI vs AI) in each stage
-const RUNS = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEDIR ?? 0); // no @types/node in the project
+// MEASURE=300 npx vitest run tests/campaign.test.ts shows hero wins (AI vs AI) in each stage
+const RUNS = Number(
+  (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEASURE ?? 0,
+); // no @types/node in the project
 
-describe('campaign Cinzas do Farol', () => {
-  it('toda fase monta, cabe no mapa, joga, salva e carrega', () => {
+describe('campaign Beacon Ashes', () => {
+  it('every stage builds, fits the map, plays, saves and loads', () => {
     CHAPTERS.forEach((c, n) => {
       expect(problems(c.setup, say), c.title[0]).toEqual([]);
       const b = Battle.start(chapterScenario(n), 3);

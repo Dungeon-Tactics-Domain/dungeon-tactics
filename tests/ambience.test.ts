@@ -32,7 +32,7 @@ describe('board surroundings', () => {
       amb.root.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if (!mesh.isMesh || (mesh.material as THREE.Material).transparent) return; // fog and rays are transparent, they don't block
-        if (mesh.name === 'extensao') {
+        if (mesh.name === 'extension') {
           // outer tiles: never above the nearest edge tile (same height in front doesn't hide a unit)
           const step = grid.levelHeight ?? 0.5,
             ext = mesh as THREE.InstancedMesh;

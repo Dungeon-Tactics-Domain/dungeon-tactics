@@ -18,7 +18,7 @@ Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, te
 
 - **Rule (src/shared):** an item is data with general stats, equal against everything (project rule): `+health`, `+damage` (adds to the range of physical or magical abilities, depending on the item), `+accuracy`, `+movement`, `+jump`, `+speed`. The battle sheet = class + items (`buildDevScenario` already builds each unit's sheet: add it up there).
 - **Slots:** weapon (damage/accuracy), armor (health), accessory (movement, jump, speed).
-- **Balancing:** each item measured in the simulator before it goes in (`MEDIR=300`); the campaign curve must keep falling stage by stage.
+- **Balancing:** each item measured in the simulator before it goes in (`MEASURE=300`); the campaign curve must keep falling stage by stage.
 
 ## 3. Towns
 

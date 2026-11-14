@@ -374,7 +374,7 @@ export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
   };
   const mesh = new THREE.Mesh(g, mat);
   mesh.receiveShadow = mesh.castShadow = true;
-  mesh.name = 'terreno';
+  mesh.name = 'terrain';
   return mesh;
 }
 

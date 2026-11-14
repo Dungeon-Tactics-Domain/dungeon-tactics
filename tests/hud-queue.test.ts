@@ -14,7 +14,7 @@ const archerVsRogue = (rogueCt = 0) => {
 };
 
 describe('turn list with the charge in preview', () => {
-  it('a magia lenta entra onde vai sair e o alvo fica marcado', () => {
+  it('a slow spell is placed where it will go off and its target is marked', () => {
     // Rogue with CT 80 and speed 12: reaches 100 in 2 ticks, before the Aimed Shot (4 ticks)
     const { rows, targets, at } = queueRows(archerVsRogue(80), { ability: 'aimed_shot', target: { x: 4, y: 0 } }, 4);
     expect(at).toBeGreaterThan(0);

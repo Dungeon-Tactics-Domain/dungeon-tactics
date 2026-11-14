@@ -6,7 +6,7 @@ import type { BattleState } from '../shared/battle/types.ts';
 import { buildDevScenario, type DevUnit, unitFrom } from './dev-roster.ts';
 
 export const SURVIVAL_ID = 'survival';
-// measured on Nov 13 (MEDIR=300, AI on both sides) after the x1.75 damage and the facing: with 1.5x HP and 40 turns the heroes
+// measured on Nov 13 (MEASURE=300, AI on both sides) after the x1.75 damage and the facing: with 1.5x HP and 40 turns the heroes
 // win 30% and idle ones win 16%; with 36 turns, idle (48%) won more than fighting (43%), and with 2x HP and 28 turns
 // idle won 99% (the battle got shorter and the enemies didn't arrive in time). Before the new damage: 2x HP and 64 turns
 export const SURVIVE_TURNS = 40;

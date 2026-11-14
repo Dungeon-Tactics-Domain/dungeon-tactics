@@ -313,7 +313,7 @@ const HEART_MAP = [
 ];
 // relief (Nov 13, "stages too flat"): altar at 3 with steps of 2; middle island at 3 with drops of 2 at the edges (only the dry
 // passage and the bridges climb); high edges at the heroes' sides for the archers. Water and bridge keep their own
-// height. The altar height decides the stage (stage 4, MEDIR=300): throne at 5 gave 2% victory, a whole altar at 4 gave 7%,
+// height. The altar height decides the stage (stage 4, MEASURE=300): throne at 5 gave 2% victory, a whole altar at 4 gave 7%,
 // at 3 with the archer at 2 gave 42% (between stage 3 and 5)
 const HEART_H = [
   '333333333333',
@@ -510,7 +510,7 @@ const PASS_MAP = [
 // relief (Nov 13, "stages too flat"): the climb becomes a zigzag, on each landing one side rises by a step and the other drops
 // as a cliff of 2 (you climb on the left to the middle, on the right to the top, on the left again to the summit);
 // the lake sits in a basin and the cliff walls rise above the path. The lake keeps its own height. Summit at 4 and the heroes' valley
-// at 1 (stage 7, MEDIR=300): summit at 5 with the valley at 0 left the Colossus up high with 4% hero victory
+// at 1 (stage 7, MEASURE=300): summit at 5 with the valley at 0 left the Colossus up high with 4% hero victory
 const PASS_H = [
   '664444444466',
   '664443344466',

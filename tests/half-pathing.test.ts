@@ -4,7 +4,7 @@ import { reachable } from '../src/shared/battle/pathing.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // Half tile (Nov 13): the 2x2 unit passes through allies and never through enemies, like the 1-tile one
-describe('meia casa: ficha 2x2', () => {
+describe('half tiles: 2x2 token', () => {
   registerHalf();
   // corridor 2 tiles wide (y 0 and 1); the unit starts at x 0 and wants to reach x 8
   const run = (other: 'hero' | 'enemy') =>
@@ -17,10 +17,10 @@ describe('meia casa: ficha 2x2', () => {
       'a',
       20,
     );
-  it('inimigo no corredor barra a passagem', () => {
+  it('an enemy in the corridor blocks the way', () => {
     expect(run('enemy').has('8,0')).toBe(false);
   });
-  it('aliado no corredor deixa passar', () => {
+  it('an ally in the corridor lets you through', () => {
     expect(run('hero').has('8,0')).toBe(true);
   });
 });
