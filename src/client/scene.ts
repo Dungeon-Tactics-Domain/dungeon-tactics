@@ -22,7 +22,7 @@ import { swapProps } from './props.ts';
 import { Board, CORPSE_MODELS, lookPieceNames } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
 import { Marks } from './scene/marks.ts';
-import { TileSpace } from './scene/space.ts';
+import { squareUnder, TileSpace } from './scene/space.ts';
 import { Timeline } from './scene/timeline.ts';
 import { Units } from './scene/units.ts';
 import { loadTerrainTextures, type TerrainTextures } from './terrain.ts';
@@ -216,8 +216,9 @@ export class BattleScene {
   }
 
   // Tile under the finger. The unit's body counts before the ground: the drawn unit covers the tile behind, and whoever touches it
-  // wants the unit (mobile audit of Oct 25: tapping the enemy picked the tile behind it)
-  pick(clientX: number, clientY: number): Pos | null {
+  // wants the unit (mobile audit of Oct 25: tapping the enemy picked the tile behind it). `size`: on the ground, the corner
+  // of the square of that many cells centred under the finger (choosing where a 2x2 token stops)
+  pick(clientX: number, clientY: number, size = 1): Pos | null {
     const r = this.renderer.domElement.getBoundingClientRect();
     const ray = new THREE.Raycaster();
     ray.setFromCamera(
@@ -227,7 +228,10 @@ export class BattleScene {
     const unit = this.units.pick(ray);
     if (unit) return unit;
     const hit = ray.intersectObjects(this.board.tileTops, false)[0];
-    return hit ? (hit.object.userData.tiles as Pos[])[hit.instanceId!] : null;
+    if (!hit) return null;
+    const p = (hit.object.userData.tiles as Pos[])[hit.instanceId!];
+    const w = this.space.world(p);
+    return squareUnder(this.grid, p, hit.point.x - w.x, hit.point.z - w.z, size);
   }
 
   // where the unit is on screen, for the HUD's command menu beside it

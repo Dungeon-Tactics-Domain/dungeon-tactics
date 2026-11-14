@@ -18,6 +18,15 @@ export function rampLink(grid: Grid, a: Pos, b: Pos): boolean {
   return up(a, b) || up(b, a);
 }
 
+// The square of `size` cells a pointer stands for, `dx`/`dz` from the middle of the cell under it: centred on the cell corner
+// nearest the pointer, kept inside the map. With the corner cell under the mouse, a 2x2 token's square hung to a different
+// side at each camera angle
+export function squareUnder(grid: Grid, cell: Pos, dx: number, dz: number, size: number): Pos {
+  const shift = (d: number) => Math.floor(Math.min(0.49, Math.max(-0.5, d)) + 1 - size / 2);
+  const keep = (v: number, w: number) => Math.min(Math.max(0, v), Math.max(0, w - size));
+  return { x: keep(cell.x + shift(dx), grid.width), y: keep(cell.y + shift(dz), grid.height) };
+}
+
 export class TileSpace {
   readonly step: number; // height of one level on this map
   readonly levels: Map<string, WaterLevel>; // water bed and surface of each water tile

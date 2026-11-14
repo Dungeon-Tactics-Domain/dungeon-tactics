@@ -133,7 +133,7 @@ export class Game {
     // TouchInput attaches its listeners to the canvas in the constructor; nothing else needs a reference
     new TouchInput(canvas, {
       tap: (x, y) => {
-        const pos = this.scene.pick(x, y);
+        const pos = this.scene.pick(x, y, this.pickSize);
         if (!pos || this.busy || !this.heroTurn) return;
         if (this.screen.k === 'facing') return this.faceTo(pos);
         // on the map the tile is already chosen by mouse hover (or the 1st tap): clicking it confirms
@@ -142,7 +142,7 @@ export class Game {
         this.update(this.screen.k === 'map' ? tapTile(this.battle, this.ui, pos) : this.ui);
       },
       hover: (x, y) => {
-        const pos = this.scene.pick(x, y);
+        const pos = this.scene.pick(x, y, this.pickSize);
         if (
           !pos ||
           this.busy ||
@@ -466,6 +466,11 @@ export class Game {
   // cursor goes back to the acting unit (start of turn, after acting, undo)
   private cursorToActor() {
     this.cursor = this.battle.actor.pos;
+  }
+
+  // choosing where to move: the mouse picks the square of the acting unit's size centred under it, not the cell under it
+  private get pickSize() {
+    return this.screen.k === 'map' && this.ui.mode.k === 'move' ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1;
   }
 
   private get heroTurn() {

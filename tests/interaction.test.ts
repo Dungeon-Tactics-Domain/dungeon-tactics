@@ -9,6 +9,7 @@ import {
   selectMode,
   tapTile,
 } from '../src/client/interaction.ts';
+import { squareUnder } from '../src/client/scene/space.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { posKey } from '../src/shared/battle/grid.ts';
@@ -225,5 +226,19 @@ describe('the square of a 2x2 token', () => {
     const sides = h.tiles.filter((t) => t.kind !== 'actor');
     for (const t of sides) expect(own.has(posKey(t.pos))).toBe(false);
     expect(sides.filter((t) => t.kind === 'target')).toHaveLength(2);
+  });
+
+  it('the mouse picks the square centred on the cell corner nearest to it', () => {
+    const g = flat(10, 8),
+      c = { x: 5, y: 5 };
+    expect(squareUnder(g, c, -0.3, -0.3, 2)).toEqual({ x: 4, y: 4 });
+    expect(squareUnder(g, c, 0.3, -0.3, 2)).toEqual({ x: 5, y: 4 });
+    expect(squareUnder(g, c, 0.3, 0.3, 2)).toEqual({ x: 5, y: 5 });
+    expect(squareUnder(g, c, 0.6, -0.6, 2)).toEqual({ x: 5, y: 4 }); // a point past the cell's edge stays on its cell
+    expect(squareUnder(g, c, 0.4, -0.4, 1)).toEqual(c);
+    expect(squareUnder(g, c, -0.2, 0.2, 4)).toEqual({ x: 3, y: 4 });
+    // at the map's edge the square stays inside: the outer half of the first and last cells picks the edge square
+    expect(squareUnder(g, { x: 0, y: 0 }, -0.3, -0.3, 2)).toEqual({ x: 0, y: 0 });
+    expect(squareUnder(g, { x: 9, y: 7 }, 0.3, 0.3, 2)).toEqual({ x: 8, y: 6 });
   });
 });
