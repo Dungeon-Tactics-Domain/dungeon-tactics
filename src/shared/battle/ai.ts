@@ -103,7 +103,8 @@ export function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<s
     const { p, cost } = queue[i];
     if (cost > (best.get(posKey(p)) ?? Infinity)) continue;
     // a token (half tiles) walks as its square, like `reachable`: a 1-cell walker slipped through gaps it cannot pass (Nov 14
-    // review). Moves are symmetric, and the gap is read from the enemy side as on whole tiles
+    // review). Steps are symmetric but the gap is not: it never lands higher, so read from the enemy side it misses a leap
+    // down toward them, the same heuristic as on whole tiles
     if (size > 1) {
       for (const { to, cost: step } of squareMoves(grid, p, size, jump, () => false)) {
         if ((best.get(posKey(to)) ?? Infinity) <= cost + step) continue;
@@ -120,7 +121,7 @@ export function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<s
       best.set(posKey(n), next);
       queue.push({ p: n, cost: next });
     }
-    // gap (pathing.ts leaps): the rule is the same in both directions, so it serves the search that starts from the enemies
+    // gap (pathing.ts leaps), read from the enemies' side: it never lands higher, so a leap down toward them is missed (heuristic)
     for (const { to: n, over } of leaps(grid, p, jump)) {
       const next = cost + over.length + stepCost(here);
       if ((best.get(posKey(n)) ?? Infinity) <= next) continue;

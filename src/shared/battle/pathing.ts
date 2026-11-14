@@ -123,10 +123,8 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
   return out;
 }
 
-// Search by the cost of each step (1, or 2 in shallow water; the gap, 1 per tile flown) up to def.move points. Passes through allies, never enemies; the result does not include
-// the starting tile or occupied tiles, so the client can paint only where you can stop.
-// Whoever occupies more than one tile and walks (half tile: the tokens occupy 2x2 and walk 1 cell at a time; half.ts): the
-// search is by the top-left corner. It fits if all the cells of the square are walkable, none holds an enemy and they differ by at
+// A square that walks (half tile: the tokens occupy 2x2 and walk 1 cell at a time; half.ts), by its top-left corner. It
+// fits if all the cells of the square are walkable, none holds an enemy and they differ by at
 // most the jump (a square across a step of 2 is the middle of the jump of whoever jumps 2); the square's height is the highest, and
 // the step follows the jump by the surface, deep water included (it enters, like the 1-tile unit). Cost: 1 per cell. The gap flies
 // over the cells between the two squares, up to [jump/2] whole tiles, like `leaps`
@@ -183,6 +181,9 @@ export function squareMoves(
   return out;
 }
 
+// Search by the cost of each step (1, or 2 in shallow water; the gap, 1 per tile flown) up to def.move points. Passes through allies, never enemies; the result does not include
+// the starting tile or occupied tiles, so the client can paint only where you can stop.
+// Whoever occupies more than one tile and walks: the search is by the top-left corner, one `squareMoves` at a time
 function reachableBig(
   grid: Grid,
   state: BattleState,
