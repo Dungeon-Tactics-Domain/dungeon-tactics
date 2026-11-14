@@ -1,3 +1,3 @@
-# Instruções para agentes
+# Instructions for agents
 
-As instruções deste repositório estão em [CLAUDE.md](CLAUDE.md): mapa do código, comandos, gates, regras de código, balanceamento, testes e publicação. Valem para qualquer agente (Claude Code, Codex, Cursor, Copilot) e para humanos. Cada pasta principal (`src/shared`, `src/client`, `src/worker`, `scripts`, `tests`) tem um `CLAUDE.md` com os padrões daquela área: leia o da pasta onde vai mexer.
+This repository's instructions live in [CLAUDE.md](CLAUDE.md): code map, commands, workflow, code rules and the decision log. They apply to any agent (Claude Code, Codex, Cursor, Copilot) and to people. Each main folder (`src/shared`, `src/client`, `scripts`, `tests`) has a `CLAUDE.md` with the patterns of that area: read the one for the folder you touch.
