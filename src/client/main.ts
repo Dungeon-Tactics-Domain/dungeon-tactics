@@ -6,21 +6,12 @@ import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { ITEMS } from '../shared/battle/equipment.ts';
 import { dist, facingTo, inBounds, neighbors, posKey, samePos, standH, tileAt } from '../shared/battle/grid.ts';
-import { HALF_ID, registerHalf } from '../shared/battle/half.ts';
 import { shotStop, unitAt } from '../shared/battle/pathing.ts';
-import { FIRST_BATTLE, SCENARIOS } from '../shared/battle/scenarios.ts';
+import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
-import {
-  CAMPAIGN_KEY,
-  CHAPTERS,
-  chapterId,
-  chapterScenario,
-  learned,
-  objectiveText,
-  parseProgress,
-} from './campaign.ts';
-import { CHEST_KEY, EQUIP_KEY, parseChest, parseEquip, VICTORY_GOLD } from './chest.ts';
+import { CAMPAIGN_KEY, CHAPTERS, chapterId, learned, objectiveText, parseProgress } from './campaign.ts';
+import { CHEST_KEY, parseChest, VICTORY_GOLD } from './chest.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -34,12 +25,13 @@ import {
 } from './command.ts';
 import { createHero } from './create-ui.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from './dev-roster.ts';
+import { DEV_SCENARIO } from './dev-roster.ts';
 import { choice, dialog, slider } from './dialog.ts';
 import { lookOf } from './fx.ts';
+import { newBattle, type Selection, savedGroup, savedHero, selectBattle, toWorld } from './game/boot.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
-import { GROUP_KEY, parseGroup } from './group.ts';
-import { HERO_KEY, parseHero } from './hero.ts';
+import { GROUP_KEY } from './group.ts';
+import { HERO_KEY } from './hero.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { abilityName, LANG, type Lang, setLang, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
@@ -54,22 +46,13 @@ import {
   type Ui,
 } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction, keyAction, keyHelp } from './keyboard.ts';
-import { MISSIONS, MISSIONS_KEY, type Mission, missionScenario, missionScenarioId, parseDone } from './missions.ts';
+import { MISSIONS_KEY, parseDone } from './missions.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings, type PixelSize, parsePixel } from './pixel-settings.ts';
 import { rampLink } from './scene/space.ts';
 import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, setSound, setTrack, sfx, soundSettings } from './sound.ts';
-import { param, RENAMED_QUESTS, store } from './store.ts';
-import {
-  BEST_KEY,
-  parseBest,
-  SURVIVAL_ID,
-  SURVIVE_TURNS,
-  survivalGoal,
-  survivalScenario,
-  survived,
-  turnsLeft,
-} from './survival.ts';
+import { param, store } from './store.ts';
+import { BEST_KEY, parseBest, SURVIVAL_ID, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
 import { TEXT_KEY, type TextSpeed, talk, textSpeed } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
@@ -77,11 +60,6 @@ import { TouchInput } from './touch-input.ts';
 import { afterNode, INTRO, nodeOfChapter, parseWorld, partyFor, WORLD, WORLD_KEY } from './world.ts';
 import { openParty, openWorld } from './world-ui.ts';
 
-// the battle the game opens and where it is saved; the FFT study swaps both at boot (separate save)
-let scenario = FIRST_BATTLE;
-let mission: Mission | null = null; // bar mission in play (missions.ts)
-let SAVE_KEY = 'dt:battle';
-let chapter: number | null = null; // campaign stage in play (null = standalone battle)
 // Test (localhost only): ?auto=1 makes the AI play the heroes too, to check stage end, victory and return to the
 // map without playing by hand (night of Nov 12). Nothing changes in production.
 const AUTO = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('auto');
@@ -90,7 +68,6 @@ const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (F
 // short turn list (next 4) by default: FFT does not leave the whole order on screen and the list covered the map (Nov 12)
 const QUEUE_KEY = 'dt:turns';
 const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
-const newBattle = () => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
 
 class Game {
   private ui: Ui;
@@ -114,6 +91,7 @@ class Game {
     private readonly scene: BattleScene,
     host: HTMLElement,
     private pixel: PixelSettings,
+    private readonly sel: Selection,
   ) {
     this.resetTally();
     this.ui = freshUi(battle);
@@ -652,7 +630,7 @@ class Game {
   }
 
   private save() {
-    store.set(SAVE_KEY, this.battle.over ? '' : this.battle.save());
+    store.set(this.sel.saveKey, this.battle.over ? '' : this.battle.save());
   }
 
   private async endTurn() {
@@ -743,7 +721,7 @@ class Game {
   }
 
   private restart() {
-    this.battle = newBattle();
+    this.battle = newBattle(this.sel.scenario);
     this.resetTally();
     this.log = '';
     this.screen = startScreen(this.battle);
@@ -754,6 +732,7 @@ class Game {
   }
 
   private async finish() {
+    const { chapter, mission, scenario } = this.sel;
     const won = this.battle.state.outcome === 'victory';
     jingle(won);
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
@@ -855,6 +834,7 @@ class Game {
 
   // Campaign stage end: victory unlocks the next and plays the exit conversation; defeat offers to try again
   private async finishChapter(n: number, won: boolean) {
+    const { scenario } = this.sel;
     const last = n === CHAPTERS.length - 1;
     if (won) {
       store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
@@ -944,6 +924,7 @@ class Game {
   // Options (Nov 13, Fernando's request: "the menu could take up more of the screen width, with subsections"): wide window
   // with the sections in a left column (vertical choice()) and one section at a time on the right, so nothing scrolls far
   private menu() {
+    const { chapter, scenario } = this.sel;
     const sections: [id: string, title: string, body: Node[]][] = [
       [
         'game',
@@ -1163,71 +1144,12 @@ async function devMenu(onBack?: () => void) {
 
 async function boot() {
   const host = document.getElementById('app')!;
-  // FFT reference study (Nov 11): not game content. Only opens with the parameter and comes in a separate chunk of the
-  // build (dynamic import), so none of it goes into the package the player downloads.
-  const study = param('scenario');
-  const camp = param('stage');
-  // bar mission (missions.ts): only the ones not yet won; unknown or won mission address goes back to the map
-  const mis = param('quest');
-  if (mis !== null) {
-    const m = MISSIONS.find((x) => x.id === (Object.hasOwn(RENAMED_QUESTS, mis) ? RENAMED_QUESTS[mis] : mis));
-    if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) return toWorld();
-    mission = m;
-    setTrack('road');
-    scenario = missionScenario(
-      m,
-      parseProgress(store.get(CAMPAIGN_KEY)),
-      savedHero(),
-      parseEquip(store.json(EQUIP_KEY)),
-      savedGroup(),
-    );
-    SAVE_KEY = `dt:battle:${missionScenarioId(m.id)}`;
-  }
-  if (param('world') !== null) return void worldScreen(host); // world map: no battle assembled
-  // stage that does not exist or is still locked (typed or saved address): goes back to the map instead of falling into a standalone battle
-  const allowed =
-    camp !== null &&
-    camp !== '' &&
-    CHAPTERS[Number(camp)] !== undefined &&
-    Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY));
-  if (camp !== null && !allowed) return toWorld();
-  if (mission) {
-    // already assembled above
-  } else if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
-    // campaign stage: only opens if already unlocked (beat the previous one); each stage has its own save
-    chapter = Number(camp);
-    setTrack(CHAPTERS[chapter].song);
-    scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
-    SAVE_KEY = `dt:battle:${chapterId(chapter)}`;
-  } else if (study === 'fft-gariland' || study === 'fft-classes') {
-    const fft = await import('../shared/battle/fft/gariland.ts');
-    fft.registerFftStudy();
-    scenario = SCENARIOS[study];
-    SAVE_KEY = `dt:battle:${study}`;
-  } else if (study === DEV_SCENARIO) {
-    // battle from the developer menu: the saved roster becomes the scenario (no valid roster, goes back to the default battle)
-    const setup = parseSetup(store.json(DEV_KEY));
-    // roster with a problem (empty team, unit without ability) broke the battle (Nov 13, review): falls back to the default
-    if (setup && !problems(setup, t).length) {
-      if (setup.map.startsWith('fft-')) (await import('../shared/battle/fft/gariland.ts')).registerFftStudy();
-      scenario = buildDevScenario(setup);
-      SAVE_KEY = `dt:battle:${DEV_SCENARIO}`;
-    }
-  } else if (study === 'half') {
-    // half tile (Nov 13, test version: 2x2 characters walking 1 at a time, trees of 3 to 5; half.ts)
-    scenario = registerHalf();
-    SAVE_KEY = `dt:battle:${HALF_ID}`;
-  } else if (study === SURVIVAL_ID) {
-    // the own rule (wins at dawn) only exists after the scenario is assembled: assemble before loading the save
-    scenario = survivalScenario();
-    SAVE_KEY = `dt:battle:${SURVIVAL_ID}`;
-  } else if (study && SCENARIOS[study]) {
-    // other game maps through the same parameter (e.g. ?scenario=flooded_crypt), with their own save
-    scenario = SCENARIOS[study];
-    SAVE_KEY = `dt:battle:${study}`;
-  }
-  const saved = store.get(SAVE_KEY);
-  const battle = (saved && Battle.load(saved)) || newBattle();
+  const sel = await selectBattle();
+  if (sel === 'world') return void worldScreen(host); // world map: no battle assembled
+  if (!sel) return; // went back to the map
+  const { scenario, chapter, study } = sel;
+  const saved = store.get(sel.saveKey);
+  const battle = (saved && Battle.load(saved)) || newBattle(scenario);
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(
     host,
@@ -1236,7 +1158,7 @@ async function boot() {
     pixel,
     scenario.spawns.map((s) => s.def),
   );
-  new Game(battle, scene, host, pixel);
+  new Game(battle, scene, host, pixel, sel);
   // campaign stage mood (dark crypt, Hill under the Veil, ridge at night): the same light as Until Dawn mode
   const light = chapter !== null ? CHAPTERS[chapter].light : undefined;
   if (light !== undefined) scene.setDaylight(light);
@@ -1249,7 +1171,7 @@ async function boot() {
     );
   if (study === SURVIVAL_ID && !saved) announce(survivalGoal(t));
   // opening the game without a parameter shows the title screen over the standalone battle (which stays behind, already playable)
-  if (camp === null && !study) titleScreen();
+  if (sel.title) titleScreen();
 }
 
 // Large banner in the middle of the screen for 2 s (objective at the start of the stage); disappears by itself and does not take clicks
@@ -1569,11 +1491,6 @@ function continueWhere(): string {
 
 const chapterTitle = (n: number) =>
   t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
-const toWorld = () => {
-  location.search = '?world';
-};
-const savedHero = () => parseHero(store.json(HERO_KEY));
-const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // player's group (group.ts): who goes, class and recruits
 
 // Gamepad on the intro and creation (before the map, which has its own): A presses the focused button or becomes Enter, the
 // d-pad becomes arrows and B becomes Esc, through the same translator as the battle. Returns the function that stops the loop.
