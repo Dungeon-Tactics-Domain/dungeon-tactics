@@ -151,6 +151,9 @@ function openBar(i: number, back: () => void) {
   const rumors = WORLD[i].town?.rumors ?? [];
   const done = parseDone(store.json(MISSIONS_KEY));
   const open = MISSIONS.filter((m) => m.town === WORLD[i].id && !done.includes(m.id));
+  const gold = loadChest().gold;
+  const why = loadGroup().members.length >= GROUP_MAX ? t('Grupo cheio: dispense alguém na ficha para recrutar.', 'Party is full: dismiss someone on their sheet to recruit.')
+    : gold < RECRUIT_COST ? t(`Faltam ${RECRUIT_COST - gold} de ouro para recrutar.`, `${RECRUIT_COST - gold} more gold needed to recruit.`) : '';
   const d = dialog('party', t('Bar', 'Tavern'), [el('ul', { class: 'legend' }, ...rumors.map(([pt, en]) => el('li', {}, `“${t(pt, en)}”`))),
     el('h3', {}, t('Missões', 'Quests')),
     // mission: extra battle with the current party; winning gives gold and an item (missions.ts)
@@ -163,7 +166,9 @@ function openBar(i: number, back: () => void) {
     el('h3', {}, t('Recrutar', 'Recruit')),
     el('p', {}, t(`${RECRUIT_COST} de ouro cada · ouro no baú: ${loadChest().gold} · grupo ${loadGroup().members.length} de ${GROUP_MAX}`,
       `${RECRUIT_COST} gold each · gold in chest: ${loadChest().gold} · party ${loadGroup().members.length} of ${GROUP_MAX}`)),
-    el('div', { class: 'menu-actions' }, ...JOBS.map((c) => el('button', { type: 'button', class: 'secondary',
+    // without gold or with a full party the buttons turn off and the line says what is missing (before, only the error sound played)
+    ...(why ? [el('p', { class: 'learned' }, why)] : []),
+    el('div', { class: 'menu-actions' }, ...JOBS.map((c) => el('button', { type: 'button', class: 'secondary', disabled: !!why,
       onclick: () => {
         const r = recruit(loadGroup(), loadChest(), c);
         if (!r) return void sfx('cancel');
@@ -180,12 +185,14 @@ function openBar(i: number, back: () => void) {
 export function openShop(back?: () => void) {
   const chest = loadChest();
   const save = (c: ReturnType<typeof buy>) => { if (!c) return void sfx('cancel'); store.set(CHEST_KEY, JSON.stringify(c)); sfx('confirm'); d.close(); openShop(back); };
-  const d = dialog('party', t('Loja', 'Shop'), [
+  const d = dialog('party shop', t('Loja', 'Shop'), [
     el('p', { class: 'mvp' }, t(`Ouro no baú: ${chest.gold}`, `Gold in chest: ${chest.gold}`)),
     el('dl', { class: 'keys' }, ...Object.values(ITEMS).flatMap((it) => [
       el('dt', {}, `${itemName(it)} (${SLOT_NAME[it.slot]()})`),
+      // too expensive: the button turns off and its text says how much is missing (before, it only went grey)
       el('dd', {}, `${itemStats(it)} · ${it.price} ${t('de ouro', 'gold')} `,
-        el('button', { type: 'button', class: 'secondary', disabled: chest.gold < it.price, onclick: () => save(buy(chest, it.id)) }, t('Comprar', 'Buy'))),
+        el('button', { type: 'button', class: 'secondary', disabled: chest.gold < it.price, onclick: () => save(buy(chest, it.id)) },
+          chest.gold < it.price ? t(`Faltam ${it.price - chest.gold}`, `${it.price - chest.gold} short`) : t('Comprar', 'Buy'))),
     ])),
     el('h3', {}, t('No baú', 'In the chest')),
     chest.items.length ? el('dl', { class: 'keys' }, ...chest.items.flatMap((id) => [el('dt', {}, itemName(ITEMS[id])),

@@ -461,3 +461,8 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 .sheet-cols > div:first-child > .secondary { margin-top: 12px; }
 .sheet-cols h3:first-child { margin-top: 12px; }
 @media (max-width: 760px) { .sheet-cols { grid-template-columns: 1fr; } }
+/* Shop (world-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
+   landed in a different column and the 9-item list ran past 900 px */
+.shop .keys { align-items: center; }
+.shop .keys dd { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.shop .keys button { min-height: 36px; min-width: 112px; }
