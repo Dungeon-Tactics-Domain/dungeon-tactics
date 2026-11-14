@@ -224,6 +224,8 @@ The Mechanics lab watches the game's own animation on its page (`localhost:5190`
 A 12x6 test map for the body alone (`src/client/dev/arena.ts`): flat grass, a plain grey background with no
 surroundings, fog or particles (`BattleScene.bare`), and no turn list. It lives in the sandbox chunk and is registered
 only on a sandbox page, so the game can never open it (`?scenario=arena` without `?sandbox=` opens the default battle).
+The terrain extension still darkens to black past the map edge; add `&extension=none` for a plain grey edge
+(`?scenario=arena&extension=none&sandbox=bench/arena-wall.json`).
 
 | Row (y) | Feature | Who can do it |
 |---|---|---|
