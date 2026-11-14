@@ -335,6 +335,8 @@ describe('playStep', () => {
       'h-archer cannot use shot on 2,0: out of range',
     );
     expect(playStep(b, { wait: { unit: 'ghost' } }).problem).toBe('"ghost" is not a unit that plays on this map');
+    b.state.outcome = 'victory';
+    expect(playStep(b, { wait: { unit: 'h-mage' } })).toEqual({ events: [], problem: 'the battle is already over' });
   });
 
   it('passes the turn on when the mover falls to a counter-attack', () => {

@@ -129,7 +129,8 @@ A hand-written address works too:
   - The scene's camera is kept, so the camera does not follow the cursor to the next actor.
   - A battle that ends shows no end screen.
 - **A step that cannot be played stops the run with its reason:** a tile out of reach, an ability the unit lacks, out
-  of range, no line of sight, already acted. A step never does nothing in silence.
+  of range, already acted, the battle already over. A step never does nothing in silence. A shot with no line of sight
+  is not refused: as in the game, it fires and stops at the first obstacle or unit on its path.
 - **Charged actions** (Blast) fire inside `endTurn`, when their ticks run out before anyone reaches 100 CT. A `wait` after
   the charge plays the blast, provided the spec gives the other units a low `ct`. Otherwise the turn queue reaches someone
   first (`clips/blast-charge.json`).

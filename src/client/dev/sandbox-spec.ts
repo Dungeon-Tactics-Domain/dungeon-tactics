@@ -3,6 +3,7 @@
 // problems instead of a silent default: a typo in a spec must fail the shot, not produce a different picture.
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import type { Battle } from '../../shared/battle/battle.ts';
+import type { PreviewReason } from '../../shared/battle/combat.ts';
 import { canStand, type Grid, inBounds, posKey, subOf, tileAt } from '../../shared/battle/grid.ts';
 import { footprint } from '../../shared/battle/pathing.ts';
 import type { Spawn } from '../../shared/battle/scenarios.ts';
@@ -361,7 +362,8 @@ export function giveTurn(b: Battle, id: string, heroes = false): string | null {
   return null;
 }
 
-const WHY: Record<string, string> = {
+// every reason Battle.preview may give, so a new one is a type error here instead of a raw code in the message
+const WHY: Record<PreviewReason, string> = {
   unknown: 'not one of its abilities',
   range: 'out of range',
   sight: 'no line of sight',
@@ -390,7 +392,7 @@ export function playStep(b: Battle, step: Step): { events: BattleEvent[]; proble
     const { ability, target } = step.act;
     if (b.state.turn.usedAbility) return fail(`${s.unit} already acted this turn`);
     const { ok, reason = 'unknown' } = b.preview(ability, target);
-    if (!ok) return fail(`${s.unit} cannot use ${ability} on ${target.x},${target.y}: ${WHY[reason] ?? reason}`);
+    if (!ok) return fail(`${s.unit} cannot use ${ability} on ${target.x},${target.y}: ${WHY[reason]}`);
     return { events: b.act(ability, target), problem: null };
   }
   if (step.wait.facing !== undefined) b.face(step.wait.facing);
