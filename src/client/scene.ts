@@ -34,6 +34,25 @@ import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, river
 
 const STEP = 0.5; // altura de um nível em metros (1 casa = 1 de largura), o mesmo da POC aprovada
 const PITCH = THREE.MathUtils.degToRad(32); // ângulo do FFT
+// Câmeras de ação para comparar (13/11, pedido do Fernando: "as action cams teste várias opções como por cima do ombro,
+// pelas costas do inimigo, etc"): `?camera=<nome>` escolhe uma; sem o parâmetro vale a `xcom`, a que já estava no jogo.
+// turn: giro em volta do alvo a partir da linha do golpe (0 = atrás de quem ataca, π = atrás do alvo); pitch: inclinação
+// em graus (32 = a do jogo; baixa = câmera perto do chão); zoom: altura da vista, base + por casa de distância; aim: onde
+// a câmera mira entre quem ataca (0) e o alvo (1); lift: quanto o foco sobe do chão, para o boneco não ficar na beira;
+// clip: com a câmera baixa, o que fica entre ela e os bonecos (mata de fora, barranco, árvore) taparia o golpe, então tudo
+// a mais de `clip` casas na frente do foco deixa de ser desenhado (o plano de corte da câmera) enquanto ela dura
+interface ActionCam { turn: number; pitch: number; zoom: [base: number, perTile: number]; aim: number; lift: number; clip?: number }
+const ACTION_CAMS: Record<string, ActionCam | null> = {
+  xcom: { turn: 0.35, pitch: 32, zoom: [4, 0.9], aim: 0.5, lift: 0 },
+  ombro: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // por cima do ombro de quem ataca
+  costas: { turn: Math.PI - 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.4, lift: 0.45, clip: 3.2 }, // pelas costas do inimigo
+  lado: { turn: Math.PI / 2, pitch: 16, zoom: [2.6, 0.95], aim: 0.5, lift: 0.4, clip: 3 }, // os dois de perfil
+  alto: { turn: 0.35, pitch: 60, zoom: [4.2, 0.9], aim: 0.5, lift: 0 }, // de cima, tática
+  nenhuma: null, // sem câmera de ação
+}; // e `heroi`, que alterna entre `ombro` e `costas` (actionCam)
+const CAM_DIST = 30; // distância da câmera ao foco (ortográfica: só decide o que fica na frente do plano de corte)
+const camName = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('camera') : null;
+const ACTION_CAM = camName !== null && camName in ACTION_CAMS ? ACTION_CAMS[camName] : ACTION_CAMS.xcom;
 const ZOOM = { min: 4, max: 16 };
 const ZOOM_START = 1.5;
 // celular em pé: no máximo ~9,5 casas de largura ao abrir. No 20x20 o mapa inteiro deixava a casa com ~20 px, pequena
@@ -263,6 +282,8 @@ export class BattleScene {
   private readonly step: number; // altura de um nível neste mapa
   private insets = { top: 0, bottom: 0 }; // px cobertos pelo HUD em cima e embaixo
   private yaw = Math.PI / 4;
+  private pitch = PITCH; // só a câmera de ação muda (ACTION_CAMS)
+  private pitchTarget = PITCH;
   private yawTarget = Math.PI / 4;
   private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
@@ -1265,7 +1286,7 @@ export class BattleScene {
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
-        if (!samePos(this.posOf(v), e.target)) await this.actionCam(this.posOf(v), e.target);
+        if (!samePos(this.posOf(v), e.target)) await this.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
         if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
         const look = lookOf(e.ability);
         this.play(v, look.clip, true);
@@ -1371,25 +1392,37 @@ export class BattleScene {
   // Câmera de ação (13/11, pedido do Fernando: "quando um personagem for atacar, uma action cam tipo XCOM"): gira para
   // ficar atrás de quem ataca, chega perto e enquadra o atacante e o alvo; volta ao que era depois da sequência
   private camSaved: { viewH: number; yaw: number } | null = null;
-  async actionCam(from: Pos, to: Pos) {
+  async actionCam(from: Pos, to: Pos, enemy = false) {
+    // `heroi`: a câmera fica sempre do lado dos heróis (no ombro de quem ataca; quando é o inimigo que ataca, nas costas do herói)
+    const cam = camName === 'heroi' ? ACTION_CAMS[enemy ? 'costas' : 'ombro'] : ACTION_CAM;
+    if (!cam) return;
     this.camSaved ??= { viewH: this.viewH, yaw: this.yawTarget };
     const a = this.world(from), b = this.world(to);
-    // a câmera fica do lado de quem ataca, olhando para o alvo; 0,35 rad para o lado, para o atacante não tapar o alvo
-    let goal = Math.atan2(a.x - b.x, a.z - b.z) + 0.35;
+    // a câmera gira em volta do golpe (na `xcom`, fica do lado de quem ataca, olhando para o alvo, 0,35 rad para o lado
+    // para o atacante não tapar o alvo)
+    let goal = Math.atan2(a.x - b.x, a.z - b.z) + cam.turn;
     while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
     while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
     this.yawTarget = goal;
-    this.focusOn(from, to);
-    const h0 = this.viewH, h1 = Math.max(ZOOM.min, Math.min(h0, 4 + a.distanceTo(b) * 0.9));
-    await this.animate(420, (k) => (this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k)));
+    this.pitchTarget = THREE.MathUtils.degToRad(cam.pitch);
+    this.camera.near = cam.clip ? CAM_DIST - cam.clip : 0.1;
+    // a `xcom` mira o meio dos dois na altura de sempre; as de câmera baixa miram na altura dos bonecos, senão a casa
+    // mais alta saía do quadro
+    this.focusGoal = cam.lift ? a.clone().lerp(b, cam.aim).setY(Math.max(a.y, b.y) + cam.lift) : this.focusGoal;
+    if (!cam.lift) this.focusOn(from, to);
+    const h0 = this.viewH, h1 = Math.max(Math.min(ZOOM.min, cam.zoom[0]), Math.min(h0, cam.zoom[0] + a.distanceTo(b) * cam.zoom[1]));
+    await this.animate(420, (k) => { this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k); this.frameView(); });
   }
   private async endActionCam() {
     const s = this.camSaved;
     if (!s) return;
     this.camSaved = null;
     this.yawTarget = s.yaw;
+    this.pitchTarget = PITCH;
+    this.camera.near = 0.1;
+    if (this.focusGoal) this.focusGoal.y = STEP;
     const h0 = this.viewH;
-    await this.animate(380, (k) => (this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k)));
+    await this.animate(380, (k) => { this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k); this.frameView(); });
   }
 
   // volta ao enquadramento do mapa inteiro
@@ -1410,7 +1443,7 @@ export class BattleScene {
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const fwd = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     this.focusGoal = null; // o dedo manda: para o deslize automático
-    this.focus.addScaledVector(right, -dx * k).addScaledVector(fwd, (dy * k) / Math.sin(PITCH));
+    this.focus.addScaledVector(right, -dx * k).addScaledVector(fwd, (dy * k) / Math.sin(this.pitch));
     const lim = Math.max(this.grid.width, this.grid.height) / 2;
     this.focus.x = THREE.MathUtils.clamp(this.focus.x, -lim, lim);
     this.focus.z = THREE.MathUtils.clamp(this.focus.z, -lim, lim);
@@ -1477,6 +1510,13 @@ export class BattleScene {
     const w = this.host.clientWidth, h = this.host.clientHeight;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
+    this.frameView();
+  }
+
+  // quadro da câmera pela altura da vista (viewH), sem refazer os alvos de desenho: é o que o zoom da câmera de ação
+  // chama a cada quadro (ela mudava viewH e nada acontecia, porque só o resize aplicava)
+  private frameView() {
+    const w = this.host.clientWidth, h = this.host.clientHeight;
     const a = w / h;
     // celular em pé: abre o quadro até a largura mostrar o mapa todo (pinça para ajustar)
     const viewH = a < 1 ? (this.viewH * 1.15) / a : this.viewH;
@@ -1487,7 +1527,7 @@ export class BattleScene {
   }
 
   private placeCamera() {
-    const off = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(this.yaw) * Math.cos(PITCH)).multiplyScalar(30);
+    const off = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)).multiplyScalar(CAM_DIST);
     this.camera.position.copy(this.focus).add(off);
     this.camera.lookAt(this.focus);
     this.camera.updateMatrixWorld();
@@ -1526,6 +1566,7 @@ export class BattleScene {
     }
     if (this.spinning) this.yawTarget += dt * 0.15; // ~42 s por volta: dá para ver o mapa sem enjoar
     this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
+    this.pitch += (this.pitchTarget - this.pitch) * Math.min(1, dt * 10);
     if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
     // dt*30: chega em ~0,1 s, rápido para não atrasar quem segura a seta, macio para o olho seguir
     this.cursor.position.lerp(this.cursorGoal, Math.min(1, dt * 30));
