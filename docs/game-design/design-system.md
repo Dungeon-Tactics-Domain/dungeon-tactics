@@ -30,7 +30,7 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 | Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
 | Bars | `--hp` `--mp` `--ct` `--heal` `--heal-ink` | HP, MP, CT, healing |
 | Strike preview | `--strike` `--strike-dmg` | arrow band between the panels |
-| Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` | legend; same as `MARK` in `scene.ts` |
+| Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` | legend; same as `MARK` in `src/client/scene/marks.ts` |
 | Star | `--star` `--star-ink` | leftover from the stars (removed on Nov 13) |
 
 ### Contrast (measured on Nov 13, WCAG 2.1 formula, script over the CSS hex values)
