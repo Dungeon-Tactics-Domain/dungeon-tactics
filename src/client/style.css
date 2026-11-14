@@ -129,6 +129,10 @@ body {
 /* windows on the HUD parchment (Nov 13, Fernando's choice: "everything in parchment", previously dark purple stone). One shade
    lighter than the battle panel (paper-hi → paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
 .dialog {
+  padding: 14px 18px 18px;
+  width: min(460px, 100%);
+  max-height: 90dvh;
+  overflow: auto;
   border: 2px solid var(--paper-edge);
   border-radius: var(--r);
   color: var(--ink);
@@ -191,7 +195,8 @@ button:disabled {
   filter: grayscale(0.85) brightness(0.65);
   cursor: default;
 }
-button:focus-visible {
+button:focus-visible,
+.slider input:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 } /* ink red: the gold vanished on the parchment (1.2:1) */
@@ -230,7 +235,9 @@ button.icon {
   font-size: var(--fs-lg);
 }
 /* the button's display beat the hidden attribute: the rotate ↻ showed up on maps without direction (Nov 12) */
-button[hidden] {
+button[hidden],
+.panel[hidden],
+.fps[hidden] {
   display: none;
 }
 
@@ -254,9 +261,6 @@ button[hidden] {
   background: linear-gradient(var(--paper), var(--paper-lo));
   border: 2px solid var(--paper-edge);
   box-shadow: var(--paper-frame);
-}
-.panel[hidden] {
-  display: none;
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
 .tile-info {
@@ -442,9 +446,6 @@ button[hidden] {
   padding: 4px 8px;
   border-radius: var(--r);
 }
-.fps[hidden] {
-  display: none;
-}
 /* command menu, abilities submenu and "Execute?": beside the acting character, like FFT (Nov 13); left and top
    come from hud.ts (place), which follows the camera every frame. Hence no transform here: the open animations use it */
 .commands {
@@ -458,6 +459,7 @@ button[hidden] {
 .abilities {
   width: 300px;
   padding: 6px;
+  --slide: -24px;
 }
 .confirm {
   width: 420px;
@@ -506,9 +508,6 @@ button[hidden] {
 .commands:not([hidden]),
 .confirm:not([hidden]) {
   animation: menu-in var(--t-menu) ease-out;
-}
-.abilities {
-  --slide: -24px;
 }
 .abilities.from-right {
   --slide: 24px;
@@ -830,12 +829,6 @@ button[hidden] {
   padding: 16px;
   z-index: 10;
 }
-.dialog {
-  padding: 14px 18px 18px;
-  width: min(460px, 100%);
-  max-height: 90dvh;
-  overflow: auto;
-}
 .dialog-head {
   display: flex;
   align-items: center;
@@ -856,16 +849,10 @@ button[hidden] {
   color: var(--focus);
 }
 .dialog p,
-.dialog .keys dd,
-.dialog .choice-label,
 .dialog .title-sub,
 .dialog .party-class,
-.dialog .party-bench,
-.dialog .dev-num {
+.dialog .party-bench {
   color: var(--ink-muted);
-}
-.dialog .sw {
-  border-color: var(--ink);
 }
 .dialog .primary {
   width: 100%;
@@ -886,7 +873,7 @@ button[hidden] {
   width: 20px;
   height: 20px;
   flex: none;
-  border: 1px solid var(--fg);
+  border: 1px solid var(--ink);
 }
 .sw.move {
   background: var(--mark-move);
@@ -921,7 +908,7 @@ button[hidden] {
 .choice-label {
   display: block;
   font-size: var(--fs-sm);
-  color: var(--muted);
+  color: var(--ink-muted);
   margin-bottom: 4px;
 }
 .choice-row {
@@ -943,14 +930,10 @@ button[hidden] {
   font:
     700 11px / 1 system-ui,
     sans-serif; /* the game font does not have the ⇧ */
-  color: var(--muted);
-  border: 1px solid var(--muted);
+  color: var(--ink-muted);
+  border: 1px solid var(--ink-muted);
   border-radius: 2px;
   padding: 2px 4px;
-}
-.kbd .panel .hint {
-  color: var(--ink-muted);
-  border-color: var(--ink-muted);
   margin-left: 8px;
 }
 .keys {
@@ -966,7 +949,7 @@ button[hidden] {
 }
 .keys dd {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 /* volume bar (slider in dialog.ts): track in the ink highlight color, number in % alongside */
 .slider {
@@ -984,10 +967,6 @@ button[hidden] {
   margin: 0;
   accent-color: var(--focus);
   cursor: pointer;
-}
-.slider input:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
 }
 .slider-value {
   min-width: 4ch;
@@ -1109,7 +1088,7 @@ button[hidden] {
   display: grid;
   gap: 2px;
   font-size: var(--fs-sm);
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .dev-num input {
   width: 84px;
@@ -1173,10 +1152,6 @@ button[hidden] {
   color: var(--ink);
   animation: menu-in var(--t-open) ease-out;
 }
-.talk-face .portrait {
-  width: 72px;
-  height: 96px;
-}
 .talk-body {
   display: grid;
   gap: 6px;
@@ -1230,7 +1205,6 @@ button[hidden] {
 } /* new ability on winning the stage (campaign); .dialog in front to beat .dialog p */
 /* title screen (game/title.ts, titleScreen): big name and the three doors of the game */
 .dialog.title {
-  width: min(460px, 100%);
   text-align: center;
 }
 .dialog.title h2 {
@@ -1324,16 +1298,12 @@ button[hidden] {
 .title-overlay {
   background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%);
 }
+/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye; and on
+   the result, the empty turn list and the help line behind the end dialog said nothing */
 body:has(.title-overlay) .hud,
-body:has(.title-overlay) .fps {
-  visibility: hidden;
-}
-/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye */
+body:has(.title-overlay) .fps,
 body:has(.talk-overlay) .hud,
-body:has(.talk-overlay) .fps {
-  visibility: hidden;
-}
-/* and on the result: the empty turn list and the help line behind the end dialog said nothing */
+body:has(.talk-overlay) .fps,
 body:has(.result-overlay) .hud,
 body:has(.result-overlay) .fps {
   visibility: hidden;
@@ -1370,6 +1340,11 @@ body:has(.result-overlay) .fps {
 .world-map {
   position: absolute;
   inset: 64px 4% 120px;
+  border: 4px double var(--paper-edge);
+  box-shadow:
+    0 0 0 3px var(--paper-lo),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
 }
 .world-svg,
 .world-art {
@@ -1379,13 +1354,6 @@ body:has(.result-overlay) .fps {
   height: 100%;
 }
 /* illustrated map (Nov 13): textured sea, irregular coast, woods, mountains and snow; colors only for the art, outside the text */
-.world-map {
-  border: 4px double var(--paper-edge);
-  box-shadow:
-    0 0 0 3px var(--paper-lo),
-    0 6px 18px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-}
 .world-art .sea {
   fill: #24505f;
 }
@@ -1734,10 +1702,6 @@ body:has(.result-overlay) .fps {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
   background: var(--paper-white);
-}
-.create-card .portrait {
-  width: 72px;
-  height: 96px;
 }
 .create-sheet {
   display: grid;
