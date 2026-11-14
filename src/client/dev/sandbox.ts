@@ -14,6 +14,7 @@ import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
 import {
   castOf,
+  offMap,
   PANELS,
   type Panel,
   parseSpec,
@@ -29,7 +30,7 @@ interface SandboxApi {
   spec: SceneSpec;
   problems: string[];
   apply(spec: SceneSpec): string[];
-  load(spec: SceneSpec): void;
+  load(spec: SceneSpec): string[];
   list(): unknown;
   idle(): Promise<void>;
 }
@@ -111,8 +112,11 @@ export function install(game: Game, scene: BattleScene) {
   const show = (screen: Screen, cursor = battle.actor.pos, ui: Ui = freshUi(battle)) =>
     game.showScreen(screen, cursor, ui);
 
-  function apply(s: SceneSpec): string[] {
-    const p: string[] = [];
+  function apply(raw: SceneSpec): string[] {
+    // the live call skips the CLI's check: a typo or an angle of 2.5 (the rotation would never stop) is refused here
+    const { spec: s, problems: shape } = parseSpec(raw);
+    const p = [...shape, ...offMap(battle.grid, s)];
+    if (p.length) return p;
     if (s.units) {
       const next = patchUnits(battle.state.units, s.units);
       p.push(...next.problems, ...placementProblems(battle.grid, next.units));
@@ -178,10 +182,18 @@ export function install(game: Game, scene: BattleScene) {
     spec,
     problems,
     apply,
-    // map, cast, seed and language only change on load: the page reopens with the new spec
+    // map, cast, seed and language only change on load: the page reopens with the new spec. In a dev browser the saves are
+    // the real ones: progress only goes up and an existing hero stays
     load(next) {
-      for (const [k, v] of Object.entries(storageFor(next))) store.set(k, v);
+      const bad = parseSpec(next).problems;
+      if (bad.length) return bad;
+      for (const [k, v] of Object.entries(storageFor(next))) {
+        const now = store.get(k);
+        if (now && (k === 'dt:hero' || (k === 'dt:campaign' && Number(now) >= Number(v)))) continue;
+        store.set(k, v);
+      }
       location.href = specUrl(next);
+      return [];
     },
     list: () => ({
       scenarios: Object.keys(SCENARIOS),

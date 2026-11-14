@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   castOf,
+  offMap,
   parseSpec,
   patchUnits,
   placementProblems,
@@ -127,6 +128,20 @@ describe('patchUnits', () => {
     expect(patchUnits(units, { a: { remove: true }, z: { hp: 1 } }).problems).toEqual([
       'units.a: remove only works when the scene loads',
       'units: no unit "z" on this map',
+    ]);
+  });
+});
+
+describe('offMap', () => {
+  it('names every tile the spec points at outside the map', () => {
+    const spec = {
+      cursor: { x: 1, y: 1 },
+      camera: { focus: { x: 9, y: 0 }, action: { from: 'a', to: { x: 0, y: 5 } } },
+      screen: { aim: 'shot', target: { x: 3, y: 3 } },
+    };
+    expect(offMap(flat(4, 4), spec)).toEqual([
+      'camera.focus: 9,0 is outside the 4x4 map',
+      'camera.action.to: 0,5 is outside the 4x4 map',
     ]);
   });
 });

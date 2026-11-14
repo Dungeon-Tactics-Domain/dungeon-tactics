@@ -238,6 +238,20 @@ export function patchUnits(
   return { units: out, problems: p };
 }
 
+// Tiles the spec points at (cursor, focus, aim, action camera) inside the map: off the map the game would throw mid-boot
+export function offMap(grid: Grid, spec: SceneSpec): string[] {
+  const c = spec.screen;
+  const at: [string, Pos | undefined][] = [
+    ['cursor', spec.cursor],
+    ['camera.focus', spec.camera?.focus],
+    ['camera.action.to', spec.camera?.action?.to],
+    ['screen.target', typeof c === 'object' ? c.target : undefined],
+  ];
+  return at.flatMap(([k, p]) =>
+    p && !inBounds(grid, p) ? [`${k}: ${p.x},${p.y} is outside the ${grid.width}x${grid.height} map`] : [],
+  );
+}
+
 // Where a unit may stand: every tile of its footprint inside the map, walkable, not a pass-through tile, and nobody
 // else on it (deep water is allowed: the rules let a unit stand there)
 export function placementProblems(grid: Grid, units: UnitState[]): string[] {

@@ -85,7 +85,7 @@ try {
           };
         });
         await page.goto(base + specUrl(spec));
-        await until(() => page.evaluate(() => window.__sandbox?.ready));
+        await until(() => page.evaluate(() => window.__sandbox?.ready), errors);
         errors.push(...(await page.evaluate(() => window.__sandbox.problems)));
         await page.clock.runFor(SETTLE_MS);
       }
@@ -124,9 +124,9 @@ try {
 }
 
 // polls from Node, not the page: the page's timers are fake and only move when the clock is run
-async function until(ready) {
+async function until(ready, errors) {
   for (let t = 0; !(await ready()); t += 200) {
-    if (t > TIMEOUT) throw new Error('the sandbox did not get ready');
+    if (t > TIMEOUT) throw new Error(`the sandbox did not get ready${errors.length ? `: ${errors.join('; ')}` : ''}`);
     await new Promise((r) => setTimeout(r, 200));
   }
 }

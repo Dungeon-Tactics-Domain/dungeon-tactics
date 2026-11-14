@@ -79,7 +79,11 @@ Notes:
   shot line, and stays off through the game's own redraws.
 - **Turns:** the AI never plays on its own, because the sandbox puts a hero on the turn. The opening conversation of a
   stage is skipped. Acting in the battle by hand saves to `dt:battle:sandbox`, never to the real save.
-- **Not in the game, so not in the spec:** weather and fog. Each map has its own mood (`ambience.ts`); `daylight` is
+- **Restart resets the sandbox:** Options → Restart builds a new battle the sandbox no longer holds; reload the
+  page (or `load`) to go on scripting.
+- **Saves in a dev browser:** `load` only raises campaign progress and keeps an existing hero, because those are the
+  real saves there. The CLI's fresh contexts start empty.
+- **Not in the game, so not in the spec:** weather, fog and unit status effects. Each map has its own mood (`ambience.ts`); `daylight` is
   the only light control.
 
 ## Live API: `window.__sandbox`
