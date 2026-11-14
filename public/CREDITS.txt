@@ -107,27 +107,9 @@ music/battle.mp3 (standalone battle)
   game-icons.net - https://game-icons.net - official repository https://github.com/game-icons/icons
   Licence read in the repository's license.txt: "Icons provided under the Creative Commons 3.0 BY" - https://creativecommons.org/licenses/by/3.0/
   Modification: black background removed and colour swapped for the theme's (currentColor); assembled into a sprite by scripts/assets/build-icons.mjs.
-  The sprite also carries other symbols that the code does not reference; only the ones used (ABILITY_ICON, STUDY_ICON and UI_ICON in src/client/icons.ts) are credited here.
-  Ability and interface icons (id: file in the repository, author):
-    knife-thrust: lorc/knife-thrust.svg, Lorc (http://lorcblog.blogspot.com)
-    flail: delapouite/flail.svg, Delapouite (http://delapouite.com)
-    checked-shield: lorc/checked-shield.svg, Lorc (http://lorcblog.blogspot.com)
-    cycle: lorc/cycle.svg, Lorc (http://lorcblog.blogspot.com)
+  The sprite holds only the 4 interface symbols the code uses (UI_ICON in src/client/icons.ts):
     on-target: lorc/on-target.svg, Lorc (http://lorcblog.blogspot.com)
-    archery-target: lorc/archery-target.svg, Lorc (http://lorcblog.blogspot.com)
-    ricochet: caro-asercion/ricochet.svg, Caro Asercion
-    striking-splinter: lorc/striking-splinter.svg, Lorc (http://lorcblog.blogspot.com)
-    fire-ray: lorc/fire-ray.svg, Lorc (http://lorcblog.blogspot.com)
-    meteor-impact: lorc/meteor-impact.svg, Lorc (http://lorcblog.blogspot.com)
-    wind-slap: lorc/wind-slap.svg, Lorc (http://lorcblog.blogspot.com)
-    chalice-drops: lorc/chalice-drops.svg, Lorc (http://lorcblog.blogspot.com)
-    split-arrows: delapouite/split-arrows.svg, Delapouite (http://delapouite.com)
-    snail: lorc/snail.svg, Lorc (http://lorcblog.blogspot.com)
-    skull-crossed-bones: lorc/skull-crossed-bones.svg, Lorc (http://lorcblog.blogspot.com)
-    knockout: skoll/knockout.svg, Skoll
-    run: lorc/run.svg, Lorc (http://lorcblog.blogspot.com)
     anticlockwise-rotation: delapouite/anticlockwise-rotation.svg, Delapouite (http://delapouite.com)
-    pocket-watch: skoll/pocket-watch.svg, Skoll
     cog: lorc/cog.svg, Lorc (http://lorcblog.blogspot.com)
     tv: delapouite/tv.svg, Delapouite (http://delapouite.com)
 

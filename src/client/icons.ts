@@ -47,51 +47,9 @@ export function icon(id: string): SVGSVGElement {
   return svg;
 }
 
-// sprite drawings that already existed in the Warlock, chosen by each ability's gesture
-export const ABILITY_ICON: Record<string, string> = {
-  strike: 'knife-thrust',
-  heavy_strike: 'flail',
-  shield_bash: 'checked-shield',
-  spin: 'cycle',
-  shot: 'on-target',
-  aimed_shot: 'archery-target',
-  knock_shot: 'ricochet',
-  dagger: 'striking-splinter',
-  firebolt: 'fire-ray',
-  blast: 'meteor-impact',
-  gust: 'wind-slap',
-  heal: 'chalice-drops',
-  stab: 'knife-thrust',
-  throwing_knife: 'split-arrows',
-  trip: 'snail',
-  deathblow: 'skull-crossed-bones',
-  cleave: 'flail',
-  slam: 'knockout',
-  lance: 'knife-thrust',
-  sweep: 'ricochet',
-  lance_jump: 'meteor-impact',
-};
-// FFT study abilities (ids `fft_<unit>_<ability>`): the drawing comes from the ability's name, no new icon
-const STUDY_ICON: Record<string, string> = {
-  attack: 'knife-thrust',
-  stone: 'ricochet',
-  dash: 'checked-shield',
-  accumulate: 'cycle',
-  wish: 'chalice-drops',
-  yell: 'wind-slap',
-  potion: 'chalice-drops',
-  speed_break: 'snail',
-  power_break: 'knockout',
-  charge1: 'on-target',
-  charge2: 'archery-target',
-  fire: 'fire-ray',
-  cure: 'chalice-drops',
-};
-export const abilityIcon = (id: string) => ABILITY_ICON[id] ?? STUDY_ICON[id.split('_').slice(2).join('_')];
+// the 4 interface symbols kept in public/icons.svg (game-icons.net, credited in public/CREDITS.txt)
 export const UI_ICON = {
-  move: 'run',
   undo: 'anticlockwise-rotation',
-  wait: 'pocket-watch',
   menu: 'cog',
   recenter: 'on-target',
   pixel: 'tv',
