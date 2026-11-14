@@ -1,46 +1,36 @@
 # Dungeon Tactics
 
-Jogo tático por turnos no navegador, com o ritmo e o layout da série Final Fantasy Tactics (nada copiado: arte, música, texto e regras próprios), bonecos KayKit em pixel art e uma campanha com história.
+A turn-based tactics game for the browser, with the pacing and layout of Final Fantasy Tactics and Tactics Ogre, painted 3D maps, KayKit characters and a story campaign. Nothing is copied from the originals: art, music, text and rules are our own.
 
-**Jogar (ambiente do PR 1):** https://pr-1-dungeon-tactics.fernandorffdev.com
+**Play:** https://dungeon-tactics.fernandorffdev.com
 
-## O que tem
+## Features
 
-- Campanha **Cinzas do Farol**: abertura narrada, criação do protagonista (nome e classe), mapa mundial com o grupo andando entre 11 pontos (7 batalhas e 4 histórias), conversas antes e depois de cada batalha com bipe de voz por personagem, 2 atos e epílogo
-- Fases com objetivos diferentes (derrotar todos, proteger o Farol, derrubar o chefe), estrelas por fase (vencer, ninguém cair, Farol inteiro) e habilidades liberadas aos poucos (2, 3 e 4 por herói)
-- Chefe que ocupa 2x2 casas (Colosso de Ossos), Onda sombria (área de raio 2), casas de espinhos, água rasa e funda, altura que dá alcance e acerto
-- Regras de turno do FFT: custo do turno, fila de CT e magias com carga (a área acende em roxo até cair)
-- Mapas: Colina do Farol, Escaramuça, Cripta Alagada, Bosque das Cinzas e Passo Gelado; menu de desenvolvedor para montar heróis, inimigos e mapa
-- Músicas próprias sintetizadas no navegador (título, mapa, estrada, cripta, neve e chefe), efeitos sonoros CC0
-- Teclado, mouse e controle; segurar Enter (ou ⏩ no toque) acelera a vez do inimigo; velocidade do texto ajustável
-- Em português e inglês
+- **Campaign "Beacon Ashes":** an opening, character creation, an illustrated world map with towns, 7 battles across 2 acts with dialogue before and after each one, and an epilogue.
+- **Tactical rules in the FFT tradition:** a CT turn queue, charged spells, per-class jump and leaps, height that adds range and hit chance, facing, push and fall damage, counters, deep and shallow water, spike traps and 2x2 bosses.
+- **Move, act, keep moving:** units spend a movement budget around their action, and the move can be undone while nothing has happened.
+- **Party management:** recruit at the tavern, change classes (including the new lancer), equip items bought at the shop, take side quests.
+- **Readable combat:** a Tactics Ogre-style forecast with hit chance and HP before and after, shot trajectories that stop at the first obstacle, a range ring for the longest skill and an action camera.
+- **Painted maps:** smooth terrain with hand-made textures, procedural trees and props, wave-field water with currents and waterfalls, fog and light per map, 8 camera angles.
+- Keyboard, mouse and gamepad; English and Portuguese.
 
 ## Stack
 
-- **Cliente:** TypeScript, Vite, Three.js (WebGL), interface em HTML/CSS puros, Web Audio; publicado como arquivos estáticos (Cloudflare)
-- **Regras:** `src/shared/battle` (puro, sem DOM), com simulador IA contra IA para medir dificuldade
-- **Testes:** Vitest (regras e funções puras do cliente); roteiros Playwright para o fluxo no navegador
+- **Client:** TypeScript, Vite, Three.js (WebGL), plain DOM and CSS for the interface, Web Audio. Deployed as static files on Cloudflare.
+- **Rules:** `src/shared/battle`, pure TypeScript with no DOM, so the same code runs the game, the AI and the headless simulator.
+- **Tests:** Vitest for the rules and the pure client functions.
 
-## Rodar
+## Run
 
 ```bash
 npm ci
-npm run dev        # cliente em http://localhost:5173
-npm run typecheck  # tipos do cliente e dos scripts
-npx vitest run     # testes
-npm run sim -- beacon_hill 1000   # vitória dos heróis por semente (IA contra IA)
+npm run dev        # http://localhost:5173
+npm run typecheck
+npx vitest run
 ```
 
-No localhost, `?auto=1` faz a IA jogar pelos heróis (para testar o fim de fase sem jogar à mão).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and commit convention, and [CLAUDE.md](CLAUDE.md) for the code rules and decision log.
 
-## Contribuir
+## Credits
 
-- Guia de contribuição em inglês: [CONTRIBUTING.md](CONTRIBUTING.md) (máquina, agentes e skills, fluxo, testes, balanceamento e revisão)
-- Regras do código para gente e para agentes de IA (Claude Code, Codex, Cursor): [CLAUDE.md](CLAUDE.md), também lido via [AGENTS.md](AGENTS.md); cada pasta principal tem o seu `CLAUDE.md`
-- Fluxo de Git (detalhes no guia de contribuição): branch da tarefa no próprio repositório (não fork) a partir do `master` → PR para o `master` com o modelo, CI verde → jogo no ar, publicado sozinho. Todo PR recebe a revisão automática do Claude; comente `@claude` num PR ou issue para pedir ajuda
-- Ambiente de cada PR: todo PR (rascunho também) publica em `https://pr-<n>-dungeon-tactics.fernandorffdev.com`, apagado quando o PR fecha (`CLAUDE.md`, seção "Ambiente por PR")
-- O jogo no ar é publicado sozinho quando o PR entra no `master`
-
-## Créditos
-
-Modelos, texturas, efeitos, sons e música de uso livre (KayKit, Kenney, ambientCG, Poly Haven, OpenGameArt); lista completa em `public/CREDITS.txt` e índice de todos os assets em [docs/ASSETS.md](docs/ASSETS.md) (todo asset novo entra lá). Biblioteca com todos os modelos grátis do KayKit para quem contribui: `assets/kaykit/`. O código nasceu do projeto Warlock Wars (mesma estrutura de CI, PR e documentação).
+Models, textures, effects, sounds and music under free licences (KayKit, Kenney, ambientCG, Poly Haven, OpenGameArt): full list in `public/CREDITS.txt` and an index of every asset in [docs/ASSETS.md](docs/ASSETS.md).
