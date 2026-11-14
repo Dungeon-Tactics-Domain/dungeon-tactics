@@ -1,0 +1,38 @@
+{
+  "name": "shield-bash-fall",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "units": {
+    "h-warrior": {
+      "x": 11,
+      "y": 0,
+      "facing": 0
+    },
+    "e-soldier": {
+      "x": 11,
+      "y": 1,
+      "facing": 2
+    }
+  },
+  "actor": "h-warrior",
+  "camera": {
+    "zoom": 2.5,
+    "focus": {
+      "x": 11,
+      "y": 2
+    }
+  },
+  "steps": [
+    {
+      "act": {
+        "unit": "h-warrior",
+        "ability": "shield_bash",
+        "target": {
+          "x": 11,
+          "y": 1
+        }
+      }
+    }
+  ],
+  "hide": ["tile", "queue", "help", "tools", "menu", "units", "strikes", "fps", "dialogs", "marks"]
+}

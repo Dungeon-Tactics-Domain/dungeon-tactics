@@ -1,0 +1,65 @@
+{
+  "name": "blast-charge",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "units": {
+    "h-mage": {
+      "x": 4,
+      "y": 11,
+      "facing": 2
+    },
+    "e-brute": {
+      "x": 4,
+      "y": 7,
+      "facing": 0,
+      "ct": 0
+    },
+    "e-soldier": {
+      "x": 5,
+      "y": 7,
+      "ct": 0
+    },
+    "e-archer": {
+      "ct": 0
+    },
+    "e-mage": {
+      "ct": 0
+    },
+    "h-warrior": {
+      "ct": 0
+    },
+    "h-archer": {
+      "ct": 0
+    },
+    "h-rogue": {
+      "ct": 0
+    }
+  },
+  "actor": "h-mage",
+  "camera": {
+    "zoom": 2,
+    "focus": {
+      "x": 4,
+      "y": 9
+    }
+  },
+  "steps": [
+    {
+      "act": {
+        "unit": "h-mage",
+        "ability": "blast",
+        "target": {
+          "x": 4,
+          "y": 7
+        }
+      }
+    },
+    {
+      "wait": {
+        "unit": "h-mage",
+        "facing": 2
+      }
+    }
+  ],
+  "hide": ["tile", "queue", "help", "tools", "menu", "units", "strikes", "fps", "dialogs", "marks"]
+}

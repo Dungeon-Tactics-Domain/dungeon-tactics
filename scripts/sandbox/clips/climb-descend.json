@@ -1,0 +1,31 @@
+{
+  "name": "climb-descend",
+  "scenario": "beacon_hill",
+  "units": {
+    "h-rogue": {
+      "x": 1,
+      "y": 11,
+      "facing": 1
+    }
+  },
+  "actor": "h-rogue",
+  "camera": {
+    "zoom": 2.5,
+    "focus": {
+      "x": 2,
+      "y": 11
+    }
+  },
+  "steps": [
+    {
+      "move": {
+        "unit": "h-rogue",
+        "to": {
+          "x": 3,
+          "y": 11
+        }
+      }
+    }
+  ],
+  "hide": ["tile", "queue", "help", "tools", "menu", "units", "strikes", "fps", "dialogs", "marks"]
+}

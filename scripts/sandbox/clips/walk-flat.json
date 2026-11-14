@@ -1,0 +1,31 @@
+{
+  "name": "walk-flat",
+  "scenario": "ash_wood",
+  "units": {
+    "h-warrior": {
+      "x": 3,
+      "y": 7,
+      "facing": 1
+    }
+  },
+  "actor": "h-warrior",
+  "camera": {
+    "zoom": 2.2,
+    "focus": {
+      "x": 5,
+      "y": 7
+    }
+  },
+  "steps": [
+    {
+      "move": {
+        "unit": "h-warrior",
+        "to": {
+          "x": 6,
+          "y": 7
+        }
+      }
+    }
+  ],
+  "hide": ["tile", "queue", "help", "tools", "menu", "units", "strikes", "fps", "dialogs", "marks"]
+}

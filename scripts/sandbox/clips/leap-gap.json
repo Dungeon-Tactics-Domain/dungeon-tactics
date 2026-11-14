@@ -1,0 +1,31 @@
+{
+  "name": "leap-gap",
+  "scenario": "crypt_heart",
+  "units": {
+    "h-rogue": {
+      "x": 5,
+      "y": 4,
+      "facing": 2
+    }
+  },
+  "actor": "h-rogue",
+  "camera": {
+    "zoom": 2.2,
+    "focus": {
+      "x": 5,
+      "y": 3
+    }
+  },
+  "steps": [
+    {
+      "move": {
+        "unit": "h-rogue",
+        "to": {
+          "x": 5,
+          "y": 2
+        }
+      }
+    }
+  ],
+  "hide": ["tile", "queue", "help", "tools", "menu", "units", "strikes", "fps", "dialogs", "marks"]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "firebolt",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "units": {
+    "h-mage": {
+      "x": 4,
+      "y": 11,
+      "facing": 2
+    },
+    "e-soldier": {
+      "x": 4,
+      "y": 7,
+      "facing": 0
+    }
+  },
+  "actor": "h-mage",
+  "camera": {
+    "zoom": 2,
+    "focus": {
+      "x": 4,
+      "y": 9
+    }
+  },
+  "steps": [
+    {
+      "act": {
+        "unit": "h-mage",
+        "ability": "firebolt",
+        "target": {
+          "x": 4,
+          "y": 7
+        }
+      }
+    }
+  ],
+  "hide": ["tile", "queue", "help", "tools", "menu", "units", "strikes", "fps", "dialogs", "marks"]
+}
