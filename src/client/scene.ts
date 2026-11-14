@@ -1391,12 +1391,14 @@ export class BattleScene {
 
   // Câmera de ação (13/11, pedido do Fernando: "quando um personagem for atacar, uma action cam tipo XCOM"): gira para
   // ficar atrás de quem ataca, chega perto e enquadra o atacante e o alvo; volta ao que era depois da sequência
-  private camSaved: { viewH: number; yaw: number } | null = null;
+  private camSaved: { viewH: number; yaw: number; pair: string } | null = null;
   async actionCam(from: Pos, to: Pos, enemy = false) {
+    // contra-ataque (o alvo devolve o golpe na mesma sequência): a câmera fica onde está, sem dar meia-volta no meio do golpe
+    if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
     // `heroi`: a câmera fica sempre do lado dos heróis (no ombro de quem ataca; quando é o inimigo que ataca, nas costas do herói)
     const cam = camName === 'heroi' ? ACTION_CAMS[enemy ? 'costas' : 'ombro'] : ACTION_CAM;
     if (!cam) return;
-    this.camSaved ??= { viewH: this.viewH, yaw: this.yawTarget };
+    this.camSaved = { viewH: this.camSaved?.viewH ?? this.viewH, yaw: this.camSaved?.yaw ?? this.yawTarget, pair: `${posKey(from)}>${posKey(to)}` };
     const a = this.world(from), b = this.world(to);
     // a câmera gira em volta do golpe (na `xcom`, fica do lado de quem ataca, olhando para o alvo, 0,35 rad para o lado
     // para o atacante não tapar o alvo)
@@ -1405,7 +1407,8 @@ export class BattleScene {
     while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
     this.yawTarget = goal;
     this.pitchTarget = THREE.MathUtils.degToRad(cam.pitch);
-    this.camera.near = cam.clip ? CAM_DIST - cam.clip : 0.1;
+    // o boneco de perto fica a meia distância na frente do foco: o corte recua junto, senão ele sumia no tiro longo
+    this.camera.near = cam.clip ? CAM_DIST - cam.clip - 0.5 * a.distanceTo(b) : 0.1;
     // a `xcom` mira o meio dos dois na altura de sempre; as de câmera baixa miram na altura dos bonecos, senão a casa
     // mais alta saía do quadro
     this.focusGoal = cam.lift ? a.clone().lerp(b, cam.aim).setY(Math.max(a.y, b.y) + cam.lift) : this.focusGoal;
