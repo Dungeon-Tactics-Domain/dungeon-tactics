@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHAPTERS, chapterScenario } from '../src/client/campaign.ts';
 import { confirm, freshUi, selectMode, tapTile } from '../src/client/interaction.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
+import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { canStand, dist, type Grid, posKey, tileAt } from '../src/shared/battle/grid.ts';
@@ -323,6 +323,27 @@ describe('half tiles: the AI walking map', () => {
       }
     });
   }
+});
+
+describe('half tiles: the AI position score', () => {
+  it('does not stop a token that the spikes would kill with any cell on them', () => {
+    // spikes from tile 2 to 7; the enemy far beyond. Read at the top-left cell only, the corner 1 cell before the band
+    // looked safe while the token's right column stood on the spikes (Nov 14 review)
+    const whole = gridOf(['..........', '..........']);
+    whole.tiles.forEach((t, i) => {
+      if (i % 10 >= 2 && i % 10 <= 7) t.spikes = true;
+    });
+    const sc = split(whole, 't-spikes', [
+      { id: 'b', def: 'brute', team: 'enemy', x: 0, y: 0 },
+      { id: 'w', def: 'warrior', team: 'hero', x: 0, y: 0 },
+    ]);
+    const s = stateOf([
+      { id: 'b', def: `brute${HALF}`, team: 'enemy', x: 0, y: 0, hp: 5 },
+      { id: 'w', def: `warrior${HALF}`, team: 'hero', x: 18, y: 0 },
+    ]);
+    const to = chooseTurn(sc.grid, s, 'b').moveTo ?? { x: 0, y: 0 };
+    expect(cellsOf(to, 2).filter((c) => tileAt(sc.grid, c).spikes)).toEqual([]);
+  });
 });
 
 describe('half tiles: push', () => {

@@ -1,20 +1,8 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
 import { basicOf, COMBAT, previewAbility, simulatePush } from './combat.ts';
-import {
-  canStand,
-  dist,
-  facingTo,
-  type Grid,
-  neighbors,
-  posKey,
-  standH,
-  stepCost,
-  subOf,
-  TERRAIN,
-  tileAt,
-} from './grid.ts';
-import { cellsOf, footprint, gap, jumpOf, leaps, reachable, type Step, squareMoves } from './pathing.ts';
+import { canStand, dist, facingTo, type Grid, neighbors, posKey, stepCost, subOf, TERRAIN, tileAt } from './grid.ts';
+import { cellsOf, footprint, gap, jumpOf, leaps, reachable, type Step, squareH, squareMoves } from './pathing.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { isObjective, UNIT_DEFS } from './units.ts';
@@ -151,13 +139,17 @@ function positionScore(
   attacking: boolean,
   walk: Map<string, number>,
 ): number {
-  const tile = tileAt(grid, at);
+  // a token reads its whole square, like the rules (Nov 14 review: the top-left cell alone let a token stop half on spikes)
+  const size = UNIT_DEFS[actor.def].size ?? 1;
+  const cells = cellsOf(at, size).map((c) => tileAt(grid, c));
   // the weights are per whole tile: on the split map (half.ts) the cells between the corners are counted back in tiles
   const tiles = (d: number) => d / subOf(grid);
-  // spikes: ending the turn there costs their damage (grid.ts)
+  // spikes: ending the turn there costs their damage (grid.ts), on any cell of the square (spikeAtTurnEnd)
   // a spike that kills whoever ends the turn on it counts as their own death (Nov 13, review: the Brute with 5 life stopped there)
-  const spike = !tile.spikes ? 0 : actor.hp <= COMBAT.SPIKE_DAMAGE ? 1000 : COMBAT.SPIKE_DAMAGE;
-  let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * standH(tile) - spike;
+  const spike = !cells.some((t) => t.spikes) ? 0 : actor.hp <= COMBAT.SPIKE_DAMAGE ? 1000 : COMBAT.SPIKE_DAMAGE;
+  // cover only when every cell has it: the hit chance reads the cell nearest the attacker, which may be any of them
+  const cover = cells.every((t) => TERRAIN[t.terrain].cover);
+  let score = (cover ? W.COVER : 0) + W.HEIGHT * squareH(grid, at, size) - spike;
   let nearest = Infinity;
   for (const o of state.units) {
     if (o.team === actor.team) {
