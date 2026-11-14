@@ -2,12 +2,13 @@
 # Comenta no PR como claude[bot]; nunca aprova nem mescla (isso é do dono do projeto).
 name: Revisão do Claude
 
+# Desligado em 13/11 (decisão do Fernando: "não precisa de Claude bot, só vai ser nós implementando"): sem disparo
+# automático; o arquivo fica para quando entrarem colaboradores (basta voltar o gatilho pull_request e cadastrar a chave)
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+  workflow_dispatch:
 
 concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}
+  group: claude-review-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
