@@ -30,7 +30,7 @@ export interface DevSetup {
 
 export const DEV_KEY = 'dt:dev'; // cast saved in the browser
 export const DEV_SCENARIO = 'dev';
-// maps the menu offers: the game's and the Gariland relief (the map only: the study is loaded separately, see main.ts)
+// maps the menu offers: the game's and the Gariland relief (the map only: the study is loaded separately, see game/boot.ts)
 export const DEV_MAPS = [
   'beacon_hill',
   'skirmish',

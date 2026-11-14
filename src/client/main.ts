@@ -532,7 +532,7 @@ class Game {
       const h = (i: number) => standH(tileAt(this.battle.grid, e.path[i]));
       let at = 0;
       for (let i = 1; i < e.path.length; i++) {
-        // ramp: walking, at the step pace (the same as scene.ts)
+        // ramp: walking, at the step pace (the same as scene/units.ts)
         const dh = rampLink(this.battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1),
           tiles = dist(e.path[i - 1], e.path[i]),
           ms = stepMs(dh, tiles);

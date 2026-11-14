@@ -313,7 +313,7 @@ export class Ambience {
     } else this.outer = null;
     this.buildGround();
     // not in the crypt: the walls, torches and crystals sit in that band and vanished inside the columns (Nov 13 review)
-    if (EXTEND !== 'none' && EXTEND !== 'texture' && !mood.walls) this.buildExtension(rand); // texture: the scene draws it (scene.ts)
+    if (EXTEND !== 'none' && EXTEND !== 'texture' && !mood.walls) this.buildExtension(rand); // texture: the scene draws it (scene/board.ts)
     for (const p of mood.props) this.scatter(p, models, rand);
     if (mood.walls) this.buildCrypt(models, rand);
     this.buildMist();

@@ -696,7 +696,7 @@ export interface WorldOptions {
   hero: string; // sheet of the portrait that walks on the map
   enter: (i: number) => void;
   back: () => void;
-  party: () => void; // party screen (main.ts), like the FFT formation
+  party: () => void; // party screen (game/world-screen.ts), like the FFT formation
   from?: number; // node the party comes from (just-won stage): opens there and walks on its own to the next open one
 }
 

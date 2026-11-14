@@ -30,7 +30,7 @@
     0 3px 0 var(--edge);
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
   --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, 0.55);
-  /* same colors as the scene markings (MARK in scene.ts), so the legend matches the map */
+  /* same colors as the scene markings (MARK in scene/marks.ts), so the legend matches the map */
   --mark-move: #6fc0ff;
   --mark-range: #ff7a3c;
   --mark-blocked: #b07ae0;
@@ -769,7 +769,7 @@ button[hidden] {
 .float.big {
   font-size: 38px;
   color: #ffb199;
-} /* strike of 25% of life or more (scene.ts): bigger and hotter */
+} /* strike of 25% of life or more (scene/units.ts): bigger and hotter */
 .float.miss {
   color: var(--muted);
 }
@@ -1225,7 +1225,7 @@ button[hidden] {
   color: var(--focus);
   margin: 2px 0;
 } /* new ability on winning the stage (campaign); .dialog in front to beat .dialog p */
-/* title screen (main.ts, titleScreen): big name and the three doors of the game */
+/* title screen (game/title.ts, titleScreen): big name and the three doors of the game */
 .dialog.title {
   width: min(460px, 100%);
   text-align: center;
@@ -1337,7 +1337,7 @@ body:has(.result-overlay) .hud,
 body:has(.result-overlay) .fps {
   visibility: hidden;
 }
-/* victory confetti (main.ts, confetti): on top of everything, takes no clicks */
+/* victory confetti (game/end-screens.ts, confetti): on top of everything, takes no clicks */
 .confetti {
   position: fixed;
   inset: 0;

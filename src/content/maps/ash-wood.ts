@@ -22,7 +22,7 @@ const WOOD_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: stri
   c: { terrain: 'wall', h: 0, look: 'crates' }, // on the ground: the caravan's cargo fallen on the road, not on top of a block
   x: { terrain: 'wall', h: 0, look: 'barrel' },
   // caravan body (Nov 13, Fernando's request: "bodies around the resources to say it was the skeletons that
-  // killed them"): the drawing is the fallen model (scene.ts)
+  // killed them"): the drawing is the fallen model (scene/board.ts)
   k: { terrain: 'floor', h: 0, look: 'corpse', noStop: true }, // you pass over it, do not stop on it (grid.ts noStop)
 };
 // without the trees at 1,0, 11,1 and 10,2 (Nov 13): with impassable trees, the two top corners became closed pockets

@@ -132,7 +132,7 @@ export function riverOutside(
 }
 
 // Outside river mesh: one strip per side, with animated current (stripes moving with the water) and foam where the
-// drop is steepest; darkens with the extension down to black, like the ground. `time` runs on the battle clock (scene.ts)
+// drop is steepest; darkens with the extension down to black, like the ground. `time` runs on the battle clock (scene/timeline.ts)
 export function buildStream(
   grid: Grid,
   step: number,

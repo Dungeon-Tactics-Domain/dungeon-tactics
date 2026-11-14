@@ -400,7 +400,7 @@ const bush =
   (pal: Pal): Make =>
   (s, lite) =>
     shrub(s, pal, lite);
-// Variations per KayKit model (the name says where the piece is used: LOOK in scene.ts and MOODS in ambience.ts). Every
+// Variations per KayKit model (the name says where the piece is used: LOOK in scene/board.ts and MOODS in ambience.ts). Every
 // set mixes species: Ash Wood forest has broadleaf, old tree and pine side by side
 const SETS: [RegExp, Make[]][] = [
   [/Bush/, [bush(LEAF.green), bush(LEAF.olive), bush(LEAF.teal)]],
