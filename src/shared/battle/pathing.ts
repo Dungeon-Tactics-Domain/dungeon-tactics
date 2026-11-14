@@ -366,8 +366,14 @@ export function shotStop(
     const line = eye + (aim - eye) * frac;
     if (Math.max(...cells.map((c) => blockTop(grid, c))) > line) return { pos, unit: null };
     if (!units) continue;
-    const u = cells.map((c) => unitAt(state, c)).find((u) => u && u.id !== shooter && u.id !== target);
-    if (u && sightH(grid, cells) + UNIT_TALL > line) return { pos, unit: u.id };
+    // the stop is the blocker's own cell, not the probe's corner: a token between tiles may miss that corner, and the push
+    // then read its direction from the probe and went sideways (Nov 14 review). On whole tiles it is the same tile
+    const at = cells.find((c) => {
+      const u = unitAt(state, c);
+      return u && u.id !== shooter && u.id !== target;
+    });
+    const u = at && unitAt(state, at);
+    if (at && u && sightH(grid, cells) + UNIT_TALL > line) return { pos: at, unit: u.id };
   }
   return null;
 }

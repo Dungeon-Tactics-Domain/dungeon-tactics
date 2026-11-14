@@ -4,7 +4,7 @@ import { confirm, freshUi, selectMode, tapTile } from '../src/client/interaction
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { checkOutcome, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
+import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { canStand, dist, type Grid, posKey, tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { cellsOf, jumpOf, reachable } from '../src/shared/battle/pathing.ts';
@@ -347,6 +347,27 @@ describe('half tiles: the AI position score', () => {
 });
 
 describe('half tiles: push', () => {
+  it('a shot stopped by a token between tiles pushes it away from the shooter', () => {
+    // shooting down column 0 at a target 4 tiles below; a Brute half a tile to the right stands in the way. The probe square
+    // that meets it has its corner outside the Brute, and the push read the direction from that square (Nov 14 review)
+    const sc = split(gridOf(Array(8).fill('....')), 't-knock', [
+      { id: 'a', def: 't-all', team: 'hero', x: 0, y: 0 },
+      { id: 'x', def: 'brute', team: 'enemy', x: 0, y: 0 },
+      { id: 't', def: 'soldier', team: 'enemy', x: 0, y: 0 },
+    ]);
+    const s = stateOf(
+      [
+        { id: 'a', def: `t-all${HALF}`, team: 'hero', x: 0, y: 0 },
+        { id: 'x', def: `brute${HALF}`, team: 'enemy', x: 1, y: 3 },
+        { id: 't', def: `soldier${HALF}`, team: 'enemy', x: 0, y: 8 },
+      ],
+      HIT_SEED,
+    );
+    const events = resolveAbility(sc.grid, s, 'a', 'knock_shot', { x: 0, y: 8 });
+    expect(events.find((e) => e.k === 'hit')).toMatchObject({ unit: 'x' });
+    expect(s.units.find((u) => u.id === 'x')?.pos).toEqual({ x: 1, y: 5 });
+  });
+
   it('pushes the token the same whole tiles, with the same bump and fall', () => {
     const whole = gridOf(['......', '......'], ['322100', '322100']);
     const sc = split(whole, 't-push', [{ id: 'b', def: 'soldier', team: 'enemy', x: 0, y: 0 }]);
