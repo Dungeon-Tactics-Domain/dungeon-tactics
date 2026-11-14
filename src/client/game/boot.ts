@@ -15,7 +15,7 @@ import { param, RENAMED_QUESTS, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
 
 // the battle the page opens: the scenario, where it is saved and what it belongs to
-export interface Selection {
+export interface BattleSelection {
   scenario: Scenario;
   mission: Mission | null; // bar mission in play (missions.ts)
   saveKey: string;
@@ -33,7 +33,7 @@ export const savedHero = () => parseHero(store.json(HERO_KEY));
 export const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // player's group (group.ts): who goes, class and recruits
 
 // 'world' for the world map; null when the address went back to the map (unknown, won or locked)
-export async function selectBattle(): Promise<Selection | 'world' | null> {
+export async function selectBattle(): Promise<BattleSelection | 'world' | null> {
   // the battle the game opens and where it is saved; the FFT study swaps both at boot (separate save)
   let scenario = FIRST_BATTLE;
   let mission: Mission | null = null;

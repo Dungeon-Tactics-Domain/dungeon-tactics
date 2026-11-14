@@ -23,7 +23,7 @@ import {
 } from './command.ts';
 import { dialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
-import { newBattle, type Selection, savedHero, selectBattle } from './game/boot.ts';
+import { type BattleSelection, newBattle, savedHero, selectBattle } from './game/boot.ts';
 import { battleEndScreen, confetti, stageEndScreen } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
@@ -87,7 +87,7 @@ class Game {
     private readonly scene: BattleScene,
     host: HTMLElement,
     private pixel: PixelSettings,
-    private readonly sel: Selection,
+    private readonly sel: BattleSelection,
   ) {
     this.resetTally();
     this.ui = freshUi(battle);
