@@ -4,11 +4,11 @@ import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import { SURVIVE_TURNS, parseBest, survivalScenario, turnsLeft } from '../src/client/survival.ts';
 
-// MEDIR=300 npx vitest run tests/survival.test.ts mostra a vitória dos heróis (IA contra IA) e quantas vieram do amanhecer
+// MEDIR=300 npx vitest run tests/survival.test.ts shows the heroes win rate (AI vs AI) and how many came from dawn
 const RUNS = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEDIR ?? 0);
 
-describe('modo Até o amanhecer', () => {
-  it('vence ao chegar no turno final ou sem inimigos; perde sem heróis', () => {
+describe('Until Dawn mode', () => {
+  it('wins on reaching the final turn or with no enemies; loses with no heroes', () => {
     const s = survivalScenario();
     const st = Battle.start(s, 1).state;
     const outcome = s.rules!.outcome!;
@@ -19,13 +19,13 @@ describe('modo Até o amanhecer', () => {
     expect(outcome({ ...st, turnsPlayed: SURVIVE_TURNS, units: st.units.filter((u) => u.team !== 'hero') })).toBe('defeat');
   });
 
-  it('o recorde salvo só aceita turnos válidos', () => {
+  it('the saved record only accepts valid turns', () => {
     expect(parseBest(String(SURVIVE_TURNS - 1))).toBe(SURVIVE_TURNS - 1);
     expect(parseBest(String(SURVIVE_TURNS))).toBe(SURVIVE_TURNS);
     for (const bad of ['-1', String(SURVIVE_TURNS + 1), 'x', null, '2.5']) expect(parseBest(bad)).toBe(0);
   });
 
-  it('salva e carrega com a regra própria (sem Farol não perde na hora)', () => {
+  it('saves and loads with its own rule (without the Lighthouse it does not lose at once)', () => {
     const b = Battle.start(survivalScenario(), 3);
     const loaded = Battle.load(b.save())!;
     expect(loaded).not.toBeNull();
@@ -33,7 +33,7 @@ describe('modo Até o amanhecer', () => {
     expect(simulate(survivalScenario(), 5).turns).toBeGreaterThan(1);
   });
 
-  it.skipIf(!RUNS)('medição', () => {
+  it.skipIf(!RUNS)('measurement', () => {
     for (const turns of [SURVIVE_TURNS - 8, SURVIVE_TURNS, SURVIVE_TURNS + 8]) {
       let won = 0, dawn = 0;
       for (let seed = 1; seed <= RUNS; seed++) {
@@ -43,7 +43,7 @@ describe('modo Até o amanhecer', () => {
       }
       console.log(`Até o amanhecer, ${turns} turnos: heróis ${((won / RUNS) * 100).toFixed(1)}% (amanhecer ${((dawn / RUNS) * 100).toFixed(1)}%)`);
     }
-    // heróis parados (só passam a vez) contra a IA: se isto vencer mais que lutar, o modo premia ficar parado
+    // idle heroes (they only pass the turn) against the AI: if this wins more than fighting, the mode rewards standing still
     let still = 0;
     for (let seed = 1; seed <= RUNS; seed++) {
       const b = Battle.start(survivalScenario(), seed);

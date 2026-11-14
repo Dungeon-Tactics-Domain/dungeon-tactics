@@ -2,34 +2,34 @@ import { describe, expect, it } from 'vitest';
 import { DEEP_DROP, WADE, raisedDeep, waterLevels } from '../src/client/water-levels.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
-// Desenho da água (13/11): o leito da rasa fica onde stand() põe os pés, e a ponte só leva água por baixo quando há vão
-describe('níveis da água', () => {
+// Water drawing (Nov 13): the shallow bed sits where stand() puts the feet, and the bridge only carries water underneath when there is a gap
+describe('water levels', () => {
   const STEP = 0.5;
 
-  it('na rasa o leito fica WADE abaixo da superfície (os pés pisam nele); na funda a superfície fica bem abaixo da margem', () => {
+  it('in shallow water the bed is WADE below the surface (feet step on it); in deep water the surface is well below the bank', () => {
     const crypt = waterLevels(SCENARIOS.flooded_crypt.grid, STEP);
     const canal = crypt.get('6,6')!;
     expect(canal.deep).toBe(false);
     expect(canal.surface - canal.bed).toBeCloseTo(WADE * STEP);
     const moat = waterLevels(SCENARIOS.crypt_heart.grid, STEP).get('0,3')!;
     expect(moat.deep).toBe(true);
-    expect(moat.bed).toBeGreaterThan(0); // o leito não desce abaixo da base do mapa
+    expect(moat.bed).toBeGreaterThan(0); // the bed does not go below the map base
     expect(moat.bed).toBeLessThan(moat.surface);
     expect((SCENARIOS.crypt_heart.grid.tiles[3 * SCENARIOS.crypt_heart.grid.width].h + 1) * STEP - moat.surface).toBeCloseTo(DEEP_DROP * STEP);
   });
 
-  it('ponte rente à água fica sem água por baixo; ponte alta sobre o fosso leva a água das vizinhas', () => {
+  it('bridge flush with the water has no water underneath; high bridge over the moat carries the neighbors water', () => {
     expect(waterLevels(SCENARIOS.flooded_crypt.grid, STEP).has('3,6')).toBe(false);
     const heart = waterLevels(SCENARIOS.crypt_heart.grid, STEP);
     expect(heart.get('3,3')).toMatchObject({ under: true, deep: true, surface: heart.get('2,3')!.surface });
   });
 
-  it('ponte larga: a casa do meio, que só encosta em terra e em ponte, leva a água da ponte vizinha (Bosque, 3 casas)', () => {
+  it('wide bridge: the middle tile, which only touches land and bridge, carries the neighboring bridge water (Grove, 3 tiles)', () => {
     const wood = waterLevels(SCENARIOS.ash_wood.grid, STEP);
     for (const k of ['2,4', '3,4', '4,4', '2,5', '3,5', '4,5']) expect(wood.get(k)).toMatchObject({ under: true, surface: wood.get('1,4')!.surface });
   });
 
-  it('rio sem sobe e desce: o trecho fundo pequeno depois do vau do Bosque fica na altura da rasa; o maior fica baixo', () => {
+  it('river without rise and drop: the small deep stretch after the Grove ford sits at shallow height; the larger one stays low', () => {
     const r = raisedDeep(SCENARIOS.ash_wood.grid);
     expect(r.has('11,4') && r.has('11,5')).toBe(true);
     expect(r.has('6,4') || r.has('0,4')).toBe(false);

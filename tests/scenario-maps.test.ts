@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { FACING, blocksOf, canStand, inBounds, standH, tileAt } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
-// Mapas do jogo (12/11: Colina do Farol vestida com peças e a Cripta Alagada nova): grade inteira e ninguém nascendo
-// em parede, água funda ou em cima de outro
-describe('mapas do jogo', () => {
+// Game maps (Nov 12: Lighthouse Hill dressed with pieces and the new Flooded Crypt): full grid and nobody spawning
+// in a wall, deep water or on top of another
+describe('game maps', () => {
   for (const s of Object.values(SCENARIOS)) {
-    it(`${s.id}: grade completa e casas de partida livres`, () => {
+    it(`${s.id}: full grid and free starting tiles`, () => {
       expect(s.grid.tiles.length).toBe(s.grid.width * s.grid.height);
       const cells = new Set<string>();
       for (const sp of s.spawns) {
@@ -17,9 +17,9 @@ describe('mapas do jogo', () => {
     });
   }
 
-  // ponte do Bosque (13/11, 3 casas de largura): as 6 casas ficam na altura das tábuas, inclusive a do entulho, que é
-  // cobertura pisável e baixa (a casa `B` já saiu com a altura 0 do mapa de relevo: um buraco no meio da ponte)
-  it('ponte do Bosque: 3 casas de largura na mesma altura, com entulho pisável e baixo no meio', () => {
+  // Ash Wood bridge (Nov 13, 3 tiles wide): the 6 tiles sit at plank height, including the rubble one, which is a
+  // walkable low cover (the `B` tile used to come out with height 0 from the relief map: a hole in the middle of the bridge)
+  it('Grove bridge: 3 tiles wide at the same height, with walkable low rubble in the middle', () => {
     const g = SCENARIOS.ash_wood.grid;
     for (const y of [4, 5]) for (const x of [2, 3, 4]) expect(tileAt(g, { x, y }), `${x},${y}`).toMatchObject({ look: 'bridge', h: 1 });
     const rubble = tileAt(g, { x: 3, y: 4 });
@@ -28,12 +28,12 @@ describe('mapas do jogo', () => {
     expect(blocksOf(rubble)).toBe(1);
   });
 
-  // rampa é só desenho (13/11): fica em chão plano pisável (sem água nem espinho) e sobe exatamente 1 nível até a
-  // vizinha, que também é chão. Assim o desenho nunca mostra subida onde a regra pede pulo de 2 ou não deixa passar
-  it('rampas dos mapas do jogo: chão que sobe 1 nível até a vizinha', () => {
+  // ramp is only drawing (Nov 13): sits on flat walkable ground (no water or spikes) and rises exactly 1 level to the
+  // neighbor, which is also ground. So the drawing never shows a climb where the rule asks for a jump of 2 or blocks passage
+  it('game map ramps: ground that rises 1 level to the neighbor', () => {
     let total = 0;
     for (const s of Object.values(SCENARIOS)) {
-      if (s.rules) continue; // estudo do FFT: rampas do arquivo original, com subidas de 2 (fft-gariland.test)
+      if (s.rules) continue; // FFT study: ramps from the original file, with climbs of 2 (fft-gariland.test)
       s.grid.tiles.forEach((t, i) => {
         if (!t.ramp) return;
         total++;
@@ -49,7 +49,7 @@ describe('mapas do jogo', () => {
     expect(total).toBeGreaterThan(0);
   });
 
-  it('Colina do Farol: neve só no lado dos inimigos e ouro na casa do Farol', () => {
+  it('Lighthouse Hill: snow only on the enemy side and gold on the Lighthouse tile', () => {
     const s = SCENARIOS.beacon_hill;
     const beacon = s.spawns.find((sp) => sp.def === 'beacon')!;
     expect(tileAt(s.grid, beacon).look).toBe('gold');

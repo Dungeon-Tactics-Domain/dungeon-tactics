@@ -4,7 +4,7 @@ import { Battle } from '../src/shared/battle/battle.ts';
 import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
-// arqueiro da vez com um soldado à distância de tiro e um aliado ao lado
+// current archer with a soldier at shooting range and an ally beside
 const scene = () => new Battle(flat(8, 3), stateOf([
   { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
   { id: 'b', def: 'beacon', team: 'hero', x: 0, y: 0 },
@@ -12,15 +12,15 @@ const scene = () => new Battle(flat(8, 3), stateOf([
 ], HIT_SEED));
 const kinds = (b: Battle, ui: ReturnType<typeof freshUi>, kind: string) => highlights(b, ui).tiles.filter((t) => t.kind === kind).map((t) => t.pos);
 
-describe('toque em duas etapas', () => {
-  it('começa em Mover e mostra as casas alcançáveis', () => {
+describe('two-step touch', () => {
+  it('starts in Move and shows the reachable tiles', () => {
     const b = scene();
     const ui = freshUi(b);
     expect(ui.mode).toEqual({ k: 'move' });
     expect(kinds(b, ui, 'move').length).toBe(b.reach().size);
   });
 
-  it('1º toque numa casa marca o destino e o caminho; nada anda antes do Confirmar', () => {
+  it('1st tap on a tile marks the destination and path; nothing moves before Confirm', () => {
     const b = scene();
     const ui = tapTile(b, freshUi(b), at(2, 1));
     expect(ui.pending).toEqual(at(2, 1));
@@ -32,20 +32,20 @@ describe('toque em duas etapas', () => {
     expect(done.ui.pending).toBeNull();
   });
 
-  it('casa fora do alcance não vira destino', () => {
+  it('tile out of reach does not become a destination', () => {
     const b = scene();
     const ui = tapTile(b, freshUi(b), at(7, 2));
     expect(ui.pending).toBeNull();
     expect(confirm(b, ui).events).toEqual([]);
   });
 
-  it('depois de andar, o modo padrão é a primeira habilidade que tem alvo', () => {
+  it('after moving, the default mode is the first ability that has a target', () => {
     const b = scene();
     confirm(b, tapTile(b, freshUi(b), at(1, 2)));
     expect(defaultMode(b)).toEqual({ k: 'ability', id: 'shot' });
   });
 
-  it('depois de andar sem nenhum alvo ao alcance, nenhuma habilidade fica escolhida', () => {
+  it('after moving with no target in reach, no ability is selected', () => {
     const b = new Battle(flat(12, 1), stateOf([
       { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
       { id: 'b', def: 'beacon', team: 'hero', x: 1, y: 0 },
@@ -55,13 +55,13 @@ describe('toque em duas etapas', () => {
     expect(defaultMode(b)).toEqual({ k: 'idle' });
   });
 
-  it('tocar numa casa fora do alcance avisa em vez de não fazer nada', () => {
+  it('tapping a tile out of reach warns instead of doing nothing', () => {
     const b = scene();
     expect(tapTile(b, freshUi(b), at(7, 2)).invalid).toBe(true);
     expect(tapTile(b, freshUi(b), at(2, 1)).invalid).toBe(false);
   });
 
-  it('habilidade: alvo válido mostra a % de acerto antes de confirmar', () => {
+  it('ability: valid target shows the hit % before confirming', () => {
     const b = scene();
     const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), at(4, 1));
     const h = highlights(b, ui);
@@ -74,7 +74,7 @@ describe('toque em duas etapas', () => {
     expect(b.state.units[2].hp).toBeLessThanOrEqual(hp);
   });
 
-  it('tocar num inimigo fora do alcance da habilidade mostra o que ele ameaça', () => {
+  it('tapping an enemy out of ability range shows what it threatens', () => {
     const b = scene();
     const ui = tapTile(b, freshUi(b), at(4, 1));
     expect(ui.inspect).toBe('f');
@@ -82,16 +82,16 @@ describe('toque em duas etapas', () => {
     expect(kinds(b, ui, 'threat').length).toBeGreaterThan(0);
   });
 
-  it('modo já gasto não pode ser escolhido', () => {
+  it('spent mode cannot be chosen', () => {
     const b = scene();
     confirm(b, tapTile(b, freshUi(b), at(2, 1)));
-    // gasta o resto do movimento (13/11: anda em partes até o movimento)
+    // spends the rest of the movement (Nov 13: moves in parts until movement runs out)
     while (b.reach().size) b.move([...b.reach().values()][0].pos);
     const ui = selectMode(b, freshUi(b), { k: 'move' });
     expect(ui.mode).toEqual({ k: 'ability', id: 'shot' });
   });
 
-  it('com tudo feito no turno, não há modo nem casa marcada', () => {
+  it('with everything done in the turn, there is no mode or marked tile', () => {
     const b = scene();
     confirm(b, tapTile(b, freshUi(b), at(1, 1)));
     confirm(b, tapTile(b, freshUi(b), at(4, 1)));

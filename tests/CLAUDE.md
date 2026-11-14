@@ -1,8 +1,8 @@
 # tests — Vitest
 
-Vale junto com o `CLAUDE.md` da raiz.
+Applies together with the root `CLAUDE.md`.
 
-- Um arquivo por assunto (`battle-combat.test.ts`, `interaction.test.ts`); `describe` e `it` em português.
-- Atalhos de batalha em `tests/battle-helpers.ts` (`flat`, `gridOf`, `stateOf`, `HIT_SEED`, `MISS_SEED`).
-- `tests/setup.ts` fixa o idioma em português. Não importe `scene.ts` nem `main.ts` (Three e DOM); teste a função pura.
-- Bug de lógica: o teste novo tem que falhar sem a correção.
+- One file per subject (`battle-combat.test.ts`, `interaction.test.ts`); `describe` and `it` in English.
+- Battle shortcuts in `tests/battle-helpers.ts` (`flat`, `gridOf`, `stateOf`, `HIT_SEED`, `MISS_SEED`).
+- `tests/setup.ts` pins the language to Portuguese. Do not import `scene.ts` or `main.ts` (Three and DOM); test the pure function.
+- Logic bug: the new test must fail without the fix.

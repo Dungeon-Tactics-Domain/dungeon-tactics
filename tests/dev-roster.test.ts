@@ -7,10 +7,10 @@ import { DEV_SCENARIO, buildDevScenario, defaultSetup, devClasses, parseSetup, p
 
 const say = (pt: string) => pt;
 
-describe('menu de desenvolvedor: elenco', () => {
+describe('developer menu: roster', () => {
   beforeAll(() => registerFftStudy());
 
-  it('o elenco padrão é quem nasce no mapa; em Gariland entram as nossas classes', () => {
+  it('the default roster is whoever spawns on the map; in Gariland our classes come in', () => {
     const colina = defaultSetup('beacon_hill');
     expect(colina.heroes.map((u) => u.base)).toEqual(['warrior', 'archer', 'mage', 'rogue']);
     expect(colina.enemies).toHaveLength(4);
@@ -19,7 +19,7 @@ describe('menu de desenvolvedor: elenco', () => {
     expect(problems(gariland, say)).toEqual([]);
   });
 
-  it('avisa quando o time passa das casas de partida ou fica vazio', () => {
+  it('warns when the team exceeds the start tiles or is empty', () => {
     const s = defaultSetup('skirmish');
     s.heroes.push(unitFrom('mage'));
     s.enemies = [];
@@ -28,20 +28,20 @@ describe('menu de desenvolvedor: elenco', () => {
     expect(p.some((x) => x.includes('inimigos'))).toBe(true);
   });
 
-  it('o JSON importado só passa no formato conhecido', () => {
+  it('imported JSON only passes in the known format', () => {
     const ok = defaultSetup('flooded_crypt');
     expect(parseSetup(JSON.parse(JSON.stringify(ok)))).toEqual(ok);
     expect(parseSetup({ ...ok, map: 'nada' })).toBeNull();
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], hp: 0 }] })).toBeNull();
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], base: 'fft_ramza' }] })).toBeNull();
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], abilities: ['nao_existe'] }] })).toBeNull();
-    // Salto (13/11): fora dos limites recusa; elenco salvo antes dele (sem o campo) abre igual
+    // Jump (Nov 13): out of bounds is refused; a roster saved before it (without the field) opens the same
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], jump: 9 }] })).toBeNull();
     const { jump: _, ...old } = ok.heroes[0];
     expect(parseSetup({ ...ok, heroes: [old] })?.heroes[0].jump).toBeUndefined();
   });
 
-  it('o Salto editado vale na batalha; sem ele, o da classe', () => {
+  it('the edited Jump applies in battle; without it, the class\'s', () => {
     const s = defaultSetup('beacon_hill');
     s.heroes[0] = { ...s.heroes[0], jump: 4 };
     const { jump: _, ...noJump } = s.heroes[1];
@@ -52,14 +52,14 @@ describe('menu de desenvolvedor: elenco', () => {
     expect(def('h1').jump).toBe(UNIT_DEFS[s.heroes[1].base].jump ?? 1);
   });
 
-  it('vira um cenário jogável com os números editados, salva e carrega', () => {
+  it('becomes a playable scenario with the edited numbers, saves and loads', () => {
     const s = defaultSetup('beacon_hill');
     s.heroes[0] = { ...s.heroes[0], name: 'Teste', hp: 99, speed: 20 };
     const scenario = buildDevScenario(s);
     expect(scenario.id).toBe(DEV_SCENARIO);
     const hero = scenario.spawns.find((sp) => sp.id === 'h0')!;
     expect(UNIT_DEFS[hero.def]).toMatchObject({ name: 'Teste', en: 'Teste', hp: 99, speed: 20 });
-    // nome da classe sem mudar sai em inglês no jogo em inglês (antes ficava "Soldado")
+    // unchanged class name comes out in English in the English game (it used to stay "Soldado")
     expect(UNIT_DEFS[scenario.spawns.find((sp) => sp.id === 'e0')!.def].en).toBe(UNIT_DEFS[s.enemies[0].base].en);
     expect(scenario.spawns.some((sp) => sp.def === 'beacon')).toBe(true);
     const b = Battle.start(scenario, 7);

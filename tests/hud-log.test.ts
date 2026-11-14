@@ -4,8 +4,8 @@ import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
 const state = initialState(SCENARIOS.skirmish, 1);
 
-describe('resumo do que aconteceu', () => {
-  it('diz quem usou o quê e o resultado em cada alvo, inclusive quem já saiu do mapa', () => {
+describe('summary of what happened', () => {
+  it('says who used what and the result on each target, including whoever already left the map', () => {
     const text = eventLog([
       { k: 'attack', unit: 'h-rogue', ability: 'throwing_knife', target: { x: 6, y: 3 } },
       { k: 'hit', unit: 'e-mage', dmg: 6, chance: 76 },
@@ -24,7 +24,7 @@ describe('resumo do que aconteceu', () => {
     ], state)).toBe('Mago: Cura → Guerreiro +8 · Soldado errou (40%) · Bruto bateu −3 · Bruto caiu de altura −5');
   });
 
-  it('só andar não gera resumo', () => {
+  it('just moving produces no summary', () => {
     expect(eventLog([{ k: 'move', unit: 'h-rogue', path: [] }], state)).toBe('');
   });
 });

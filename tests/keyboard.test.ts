@@ -6,16 +6,16 @@ import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
 
 const key = (k: string, extra: Partial<KeyboardEvent> = {}) => keyAction({ key: k, code: '', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...extra });
 
-describe('teclas do jogo', () => {
-  it('WASD e setas movem o cursor nas quatro direções da tela', () => {
+describe('game keys', () => {
+  it('WASD and arrows move the cursor in the four screen directions', () => {
     expect(key('w')).toEqual({ k: 'cursor', dir: 'up' });
     expect(key('ArrowUp')).toEqual({ k: 'cursor', dir: 'up' });
     expect(key('a')).toEqual({ k: 'cursor', dir: 'left' });
-    expect(key('S')).toEqual({ k: 'cursor', dir: 'down' }); // Caps Lock não muda nada
+    expect(key('S')).toEqual({ k: 'cursor', dir: 'down' }); // Caps Lock changes nothing
     expect(key('ArrowRight')).toEqual({ k: 'cursor', dir: 'right' });
   });
 
-  it('confirmar, cancelar, ciclar, barra e atalhos', () => {
+  it('confirm, cancel, cycle, space bar and shortcuts', () => {
     expect(key('Enter')).toEqual({ k: 'confirm' });
     expect(key(' ')).toEqual({ k: 'confirm' });
     expect(key('Escape')).toEqual({ k: 'cancel' });
@@ -35,7 +35,7 @@ describe('teclas do jogo', () => {
     expect(key('h')).toEqual({ k: 'help' });
   });
 
-  it('atalho do navegador (Ctrl, Alt, Cmd) e tecla desconhecida ficam com o navegador', () => {
+  it('browser shortcut (Ctrl, Alt, Cmd) and unknown key are left to the browser', () => {
     expect(key('r', { ctrlKey: true })).toBeNull();
     expect(key('w', { metaKey: true })).toBeNull();
     expect(key('x')).toBeNull();
@@ -43,29 +43,29 @@ describe('teclas do jogo', () => {
   });
 });
 
-describe('cursor segue a câmera', () => {
-  // câmera inicial (π/4): o mapa aparece em losango; cima na tela é o eixo -y da grade
+describe('cursor follows the camera', () => {
+  // initial camera (π/4): the map shows as a diamond; screen up is the grid -y axis
   const START = Math.PI / 4;
-  it('na câmera inicial cada direção é um eixo diferente da grade', () => {
+  it('in the initial camera each direction is a different grid axis', () => {
     expect(gridStep('up', START)).toEqual({ x: 0, y: -1 });
     expect(gridStep('right', START)).toEqual({ x: 1, y: 0 });
     expect(gridStep('down', START)).toEqual({ x: 0, y: 1 });
     expect(gridStep('left', START)).toEqual({ x: -1, y: 0 });
   });
 
-  it('girar a câmera 90° gira as direções junto (W continua sendo cima na tela)', () => {
+  it('rotating the camera 90° rotates the directions too (W is still screen up)', () => {
     const turned = START + Math.PI / 2;
     expect(gridStep('up', turned)).toEqual({ x: -1, y: 0 });
     expect(gridStep('right', turned)).toEqual({ x: 0, y: -1 });
-    // quatro giros voltam ao começo
+    // four turns return to the start
     expect(gridStep('up', START + 2 * Math.PI)).toEqual(gridStep('up', START));
-    // câmera reta (8 ângulos, 13/11): cada seta anda reto na tela; em 0° "cima" é -y
+    // straight camera (8 angles, Nov 13): each arrow moves straight on screen; at 0° "up" is -y
     expect([gridStep('up', 0), gridStep('right', 0), gridStep('down', 0), gridStep('left', 0)]).toEqual([{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }]);
     expect(gridStep('up', Math.PI / 2)).toEqual({ x: -1, y: 0 });
   });
 });
 
-describe('cursor na batalha', () => {
+describe('cursor in battle', () => {
   const at = (x: number, y = 0) => ({ x, y });
   const scene = () => new Battle(flat(8, 3), stateOf([
     { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
@@ -73,7 +73,7 @@ describe('cursor na batalha', () => {
     { id: 'f', def: 'soldier', team: 'enemy', x: 4, y: 1 },
   ], HIT_SEED));
 
-  it('passar o cursor sobre uma casa marca a prévia, sem aviso de casa inválida', () => {
+  it('hovering the cursor over a tile marks the preview, with no invalid-tile warning', () => {
     const b = scene();
     expect(hoverTile(b, freshUi(b), at(2, 1)).pending).toEqual(at(2, 1));
     const far = hoverTile(b, freshUi(b), at(7, 2));
@@ -81,7 +81,7 @@ describe('cursor na batalha', () => {
     expect(far.invalid).toBe(false);
   });
 
-  it('cancelar tira a casa marcada; de novo, volta da habilidade para Mover', () => {
+  it('cancel clears the marked tile; again, goes from ability back to Move', () => {
     const b = scene();
     const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), at(4, 1));
     const once = cancel(b, ui);
@@ -90,11 +90,11 @@ describe('cursor na batalha', () => {
     expect(cancel(b, once).mode).toEqual({ k: 'move' });
   });
 
-  it('Tab passa pelas unidades vivas em ordem e dá a volta', () => {
+  it('Tab cycles through living units in order and wraps around', () => {
     const b = scene();
     expect(cycleUnit(b.state, at(0, 1), 1)).toEqual(at(0, 0));
     expect(cycleUnit(b.state, at(4, 1), 1)).toEqual(at(0, 1));
     expect(cycleUnit(b.state, at(0, 1), -1)).toEqual(at(4, 1));
-    expect(cycleUnit(b.state, at(7, 2), 1)).toEqual(at(0, 1)); // cursor numa casa vazia: começa da primeira
+    expect(cycleUnit(b.state, at(7, 2), 1)).toEqual(at(0, 1)); // cursor on an empty tile: starts from the first
   });
 });

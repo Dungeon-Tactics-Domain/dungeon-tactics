@@ -1,5 +1,5 @@
-// os testes conferem textos em português: o idioma fica fixo em pt, seja qual for o do sistema
-// (sem importar o i18n.ts aqui: ele lê o idioma ao carregar, e tem de ler depois desta linha)
+// tests check Portuguese texts: the language stays fixed at pt, whatever the system language
+// (do not import i18n.ts here: it reads the language on load, and must read it after this line)
 import { store } from '../src/client/store.ts';
 
 store.set('dt:lang', 'pt');

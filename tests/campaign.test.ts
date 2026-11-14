@@ -7,10 +7,10 @@ import { unitHeight } from '../src/client/markers.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 const say = (pt: string) => pt;
-// MEDIR=300 npx vitest run tests/campaign.test.ts mostra a vitória dos heróis (IA contra IA) em cada fase
-const RUNS = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEDIR ?? 0); // sem @types/node no projeto
+// MEDIR=300 npx vitest run tests/campaign.test.ts shows hero wins (AI vs AI) in each stage
+const RUNS = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.MEDIR ?? 0); // no @types/node in the project
 
-describe('campanha Cinzas do Farol', () => {
+describe('campaign Cinzas do Farol', () => {
   it('toda fase monta, cabe no mapa, joga, salva e carrega', () => {
     CHAPTERS.forEach((c, n) => {
       expect(problems(c.setup, say), c.title[0]).toEqual([]);
@@ -20,7 +20,7 @@ describe('campanha Cinzas do Farol', () => {
     });
   });
 
-  it('fase de chefe: derrubar o 1º inimigo vence com outros de pé; sem heróis ou sem Farol, perde', () => {
+  it('boss stage: downing the 1st enemy wins with others standing; without heroes or without the Beacon, it\'s a loss', () => {
     const n = CHAPTERS.findIndex((c) => c.boss && c.setup.map === 'beacon_hill');
     const s = chapterScenario(n);
     const st = Battle.start(s, 1).state;
@@ -30,41 +30,41 @@ describe('campanha Cinzas do Farol', () => {
     expect(outcome({ ...st, units: st.units.filter((u) => u.team !== 'hero' || u.def === 'beacon') })).toBe('defeat');
     expect(outcome({ ...st, units: st.units.filter((u) => u.def !== 'beacon') })).toBe('defeat');  });
 
-  it('o objetivo anunciado segue a regra da fase (chefe, Farol ou todos)', () => {
+  it('the announced objective follows the stage rule (boss, Beacon or all)', () => {
     expect(objectiveText(0, say)).toBe('Derrote todos os inimigos!');
     expect(objectiveText(1, say)).toBe('Derrote os inimigos e proteja o Farol!');
     expect(objectiveText(3, say)).toBe('Derrube Vesper e proteja o Farol!');
     expect(objectiveText(CHAPTERS.length - 1, (_pt, en) => en)).toBe('Bring down The Shade!');
   });
 
-  it('o painel do mapa diz quantos inimigos e o chefe, se houver', () => {
+  it('the map panel states how many enemies and the boss, if any', () => {
     expect(foesText(0, say)).toBe('4 inimigos');
     expect(foesText(3, say)).toBe('4 inimigos · chefe: Vesper');
     expect(foesText(CHAPTERS.length - 1, (_pt, en) => en)).toBe('4 enemies · boss: The Shade');
   });
 
-  it('o Bruto da campanha (ficha própria) tem a altura do Bruto', () => {
+  it('the campaign Brute (own sheet) has the Brute\'s height', () => {
     const s = chapterScenario(1);
     const brute = s.spawns.find((sp) => UNIT_DEFS[sp.def].name === UNIT_DEFS.brute.name)!;
     expect(unitHeight(brute.def)).toBe(unitHeight('brute'));
     expect(unitHeight(brute.def)).toBeGreaterThan(unitHeight('soldier'));
   });
 
-  it('as falas têm as duas línguas e quem fala existe', () => {
+  it('lines have both languages and the speaker exists', () => {
     for (const c of CHAPTERS) for (const l of [...c.intro, ...c.outro]) {
       expect(SPEAKERS[l.who]).toBeDefined();
       expect(l.pt.length && l.en.length).toBeTruthy();
     }
   });
 
-  it('o progresso salvo só aceita um número de fases válido', () => {
+  it('saved progress only accepts a valid stage count', () => {
     expect(parseProgress('2')).toBe(2);
     expect(parseProgress(String(CHAPTERS.length))).toBe(CHAPTERS.length);
     for (const bad of ['-1', '99', 'x', null, '1.5']) expect(parseProgress(bad)).toBe(0);
   });
 
 
-  it('os heróis aprendem uma habilidade por fase até ter as 4 (a Cura do Odo chega na 3ª)', () => {
+  it('heroes learn one ability per stage until they have 4 (Odo\'s Heal arrives in the 3rd)', () => {
     expect(CHAPTERS[0].setup.heroes.map((u) => u.abilities.length)).toEqual([2, 2, 2, 2]);
     expect(learned(0).map((x) => x.abilities)).toEqual([['shield_bash'], ['knock_shot'], ['gust'], ['trip']]);
     expect(learned(1).find((x) => x.name === 'Odo')?.abilities).toEqual(['heal']);
@@ -72,7 +72,7 @@ describe('campanha Cinzas do Farol', () => {
     expect(learned(CHAPTERS.length - 1)).toEqual([]);
   });
 
-  it.runIf(RUNS > 0)('mede a vitória dos heróis por fase', () => {
+  it.runIf(RUNS > 0)('measures hero wins per stage', () => {
     CHAPTERS.forEach((c, n) => {
       let wins = 0, turns = 0;
       for (let s = 1; s <= RUNS; s++) {

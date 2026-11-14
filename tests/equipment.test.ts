@@ -5,15 +5,15 @@ import { ITEMS, bonusOf } from '../src/shared/battle/equipment.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
-// Equipamento (13/11): soma de stats gerais na ficha da batalha
+// Equipment (Nov 13): general stats added to the battle sheet
 describe('equipamento', () => {
-  it('soma os itens de cada espaço e ignora item desconhecido ou no espaço errado', () => {
+  it('sums the items in each slot and ignores unknown items or items in the wrong slot', () => {
     expect(bonusOf({ weapon: 'iron_blade', armor: 'chain_mail', accessory: 'swift_boots' })).toEqual({ hp: 12, power: 2, hit: 0, move: 1, jump: 0, speed: -1 });
     expect(bonusOf({ weapon: 'chain_mail', armor: 'nada' })).toEqual({ hp: 0, power: 0, hit: 0, move: 0, jump: 0, speed: 0 });
     expect(Object.values(ITEMS).every((i) => i.price > 0)).toBe(true);
   });
 
-  it('a ficha da batalha leva o equipamento: vida, movimento e dano a mais na prévia', () => {
+  it('the battle sheet carries the equipment: extra health, movement and damage in the preview', () => {
     const s = defaultSetup('skirmish');
     s.heroes[0] = { ...s.heroes[0], items: { weapon: 'iron_blade', armor: 'leather_vest', accessory: 'swift_boots' } };
     const sc = buildDevScenario(s);

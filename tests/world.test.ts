@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { SPEAKERS } from '../src/client/campaign.ts';
 import { ALL_CHAPTERS, WORLD, afterNode, chaptersOnMap, isOpen, nodeOfChapter, parseWorld, partyFor, step } from '../src/client/world.ts';
 
-describe('mapa mundial', () => {
-  it('toda fase tem um ponto, uma vez só, na ordem da campanha; o resto é história com fala', () => {
+describe('world map', () => {
+  it('every stage has one point, once only, in campaign order; the rest is story with dialogue', () => {
     expect(chaptersOnMap()).toEqual(ALL_CHAPTERS);
     const order = ALL_CHAPTERS.map(nodeOfChapter);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
@@ -17,7 +17,7 @@ describe('mapa mundial', () => {
     expect(new Set(WORLD.map((w) => w.id)).size).toBe(WORLD.length);
   });
 
-  it('abre os pontos já passados e o próximo; rejogar um antigo não volta o progresso', () => {
+  it('opens the points already passed and the next; replaying an old one does not roll back progress', () => {
     expect(isOpen(0, 0)).toBe(true);
     expect(isOpen(1, 0)).toBe(false);
     expect(isOpen(3, 3)).toBe(true);
@@ -26,14 +26,14 @@ describe('mapa mundial', () => {
     expect(afterNode(5, 5)).toBe(6);
   });
 
-  it('as setas andam um ponto e param na ponta ou no ponto fechado', () => {
+  it('arrows move one point and stop at the end or at a closed point', () => {
     expect(step(0, -1, 3)).toBe(0);
     expect(step(2, 1, 3)).toBe(3);
     expect(step(3, 1, 3)).toBe(3);
     expect(step(3, -1, 3)).toBe(2);
   });
 
-  it('o Grupo mostra quem vai à próxima batalha, com as habilidades dela, e quem fica no acampamento', () => {
+  it('the Party shows who goes to the next battle, with its abilities, and who stays in camp', () => {
     const start = partyFor(0, { name: 'Aria', cls: 'mage' });
     expect(start.units.map((u) => u.name)).toEqual(['Bran', 'Tess', 'Aria', 'Lia']);
     expect(start.units.every((u) => u.abilities.length === 2)).toBe(true);
@@ -42,7 +42,7 @@ describe('mapa mundial', () => {
     expect(partyFor(WORLD.length, null).units[0].abilities).toHaveLength(4);
   });
 
-  it('o progresso salvo só aceita um número válido', () => {
+  it('saved progress only accepts a valid number', () => {
     expect(parseWorld('4')).toBe(4);
     for (const bad of ['-1', '999', 'x', null, '2.5']) expect(parseWorld(bad)).toBe(0);
   });

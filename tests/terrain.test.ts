@@ -3,17 +3,17 @@ import { EXT_RING, outerTop, riverOf, riverOutside } from '../src/client/terrain
 import { waterLevels } from '../src/client/water-levels.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
-// Terreno liso e rio de fora (13/11): o rio do Bosque nasce à direita (o vau, mais alto) e sai à esquerda, mais baixo
-describe('terreno de fora e rio', () => {
+// Smooth terrain and outer river (Nov 13): Ash Wood river starts on the right (the ford, higher) and exits on the left, lower
+describe('outer terrain and river', () => {
   const grid = SCENARIOS.ash_wood.grid, step = 0.5;
   const levels = waterLevels(grid, step), river = riverOf(grid, levels)!;
 
-  it('o rio do Bosque cruza o mapa e nasce do lado do vau', () => {
+  it('the Grove river crosses the map and starts on the ford side', () => {
     expect(river.rows).toEqual([4, 5]);
     expect(river.dir).toBe(1);
   });
 
-  it('a água de fora só sobe do lado da nascente e só desce do outro, em cascatas (nunca sobe e desce)', () => {
+  it('the outer water only rises on the source side and only drops on the other, in cascades (never rises and drops)', () => {
     const out = riverOutside(grid, step, levels, river);
     const right = Array.from({ length: EXT_RING }, (_, k) => out.get(`${grid.width + k},4`)!.surface);
     const left = Array.from({ length: EXT_RING }, (_, k) => out.get(`${-1 - k},4`)!.surface);
@@ -25,7 +25,7 @@ describe('terreno de fora e rio', () => {
     expect(left.at(-1)!).toBeLessThan(left[0]);
   });
 
-  it('a margem do lado da nascente sobe junto com a água (a água não fica acima do chão em volta)', () => {
+  it('the bank on the source side rises with the water (the water is never above the surrounding ground)', () => {
     const out = riverOutside(grid, step, levels, river);
     for (let k = 0; k < EXT_RING; k++) expect(outerTop(grid, step, river, grid.width + k, 6)).toBeGreaterThanOrEqual(out.get(`${grid.width + k},5`)!.surface - 1e-6);
   });

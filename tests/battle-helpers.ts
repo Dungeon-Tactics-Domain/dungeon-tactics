@@ -3,7 +3,7 @@ import { nextRng } from '../src/shared/battle/rng.ts';
 import type { BattleState, Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
-// grade plana WxH de chão, ou a partir de linhas ASCII (terreno e altura)
+// flat WxH ground grid, or built from ASCII lines (terrain and height)
 export const flat = (w: number, h: number): Grid => parseGrid(Array(h).fill('.'.repeat(w)), Array(h).fill('0'.repeat(w)));
 export const gridOf = (terrain: string[], heights?: string[]): Grid => parseGrid(terrain, heights ?? terrain.map((r) => '0'.repeat(r.length)));
 
@@ -16,7 +16,7 @@ interface Spec {
   hp?: number;
 }
 
-// estado mínimo para testar uma regra; o primeiro da lista é o ator da vez
+// minimal state to test a rule; the first in the list is the current actor
 export function stateOf(units: Spec[], rng = 1): BattleState {
   return {
     scenario: 'test',
@@ -29,7 +29,7 @@ export function stateOf(units: Spec[], rng = 1): BattleState {
   };
 }
 
-// primeira semente cuja primeira rolagem satisfaz o teste: força acerto (valor baixo) ou erro (valor alto) sem mock
+// first seed whose first roll satisfies the test: forces a hit (low value) or a miss (high value) without a mock
 export function seedWhere(pred: (firstRoll: number) => boolean): number {
   for (let s = 1; ; s++) if (pred(nextRng(s)[0])) return s;
 }

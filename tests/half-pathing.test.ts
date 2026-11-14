@@ -3,10 +3,10 @@ import { registerHalf } from '../src/shared/battle/half.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
-// Meia casa (13/11): a ficha 2x2 passa por aliado e nunca por inimigo, como a de 1 casa
+// Half tile (Nov 13): the 2x2 unit passes through allies and never through enemies, like the 1-tile one
 describe('meia casa: ficha 2x2', () => {
   registerHalf();
-  // corredor de 2 casas de largura (y 0 e 1); a ficha sai de x 0 e quer chegar em x 8
+  // corridor 2 tiles wide (y 0 and 1); the unit starts at x 0 and wants to reach x 8
   const run = (other: 'hero' | 'enemy') => reachable(flat(10, 2), stateOf([
     { id: 'a', def: 'warrior½', team: 'hero', x: 0, y: 0 },
     { id: 'b', def: 'soldier', team: other, x: 4, y: 1 },
