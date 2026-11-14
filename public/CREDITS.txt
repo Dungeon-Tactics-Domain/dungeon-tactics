@@ -55,6 +55,11 @@ models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, r
   KayKit Dungeon Pack 1.1 (Free), por Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
   Licença lida no LICENSE.txt do pacote (cópia em models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
 
+models/lancer.glb e chars/lancer.webp (o Lanceiro do Dungeon Tactics, desde 13/11/2026)
+  KayKit Adventurers (o Cavaleiro, sem espada, escudo e capa, armadura tingida de aço verde-azulado), a lança "spear_A" do
+  KayKit Fantasy Weapons Bits 1.0 e o gesto "Melee_2H_Idle" no lugar do Idle (KayKit Character Animations 1.1,
+  Rig_Medium_CombatMelee), montados por scripts/assets/lancer.mjs. Todos CC0.
+
 == Texturas ==
 tex/lava_emit.jpg
   ambientCG, "Lava001" (Emission, 1K reduzido a 512x512) - https://ambientcg.com/a/Lava001

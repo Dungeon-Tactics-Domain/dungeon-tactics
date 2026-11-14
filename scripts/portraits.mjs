@@ -5,7 +5,7 @@ import { chromium } from './lib/browser.mjs';
 
 const base = process.argv[2];
 // ids depois da URL refazem só esses retratos (os outros PNG/WebP ficam como estão)
-const IDS = process.argv.length > 3 ? process.argv.slice(3) : ['mage', 'knight', 'barbarian', 'rogue', 'rogue_hooded', 'ranger', 'skeleton_mage', 'skeleton_minion', 'skeleton_rogue', 'skeleton_warrior'];
+const IDS = process.argv.length > 3 ? process.argv.slice(3) : ['mage', 'knight', 'barbarian', 'rogue', 'rogue_hooded', 'ranger', 'lancer', 'skeleton_mage', 'skeleton_minion', 'skeleton_rogue', 'skeleton_warrior'];
 const page_html = `<!doctype html><html><body style="margin:0;background:transparent">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.186.1/build/three.module.js","three/addons/":"https://unpkg.com/three@0.186.1/examples/jsm/"}}</script>
 <script type="module">

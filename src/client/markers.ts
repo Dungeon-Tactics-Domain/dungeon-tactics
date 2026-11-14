@@ -28,7 +28,7 @@ export const MARKER = {
 const MODEL: Record<string, string> = {
   warrior: 'knight', archer: 'ranger', mage: 'mage', rogue: 'rogue_hooded',
   soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
-  minion: 'skeleton_minion', colossus: 'skeleton_warrior', lancer: 'barbarian', // Lanceiro: o bárbaro até ter boneco próprio com lança
+  minion: 'skeleton_minion', colossus: 'skeleton_warrior', lancer: 'lancer', // Lanceiro: o Cavaleiro sem capa nem escudo, de aço verde-azulado, com lança (scripts/assets/lancer.mjs)
    acolyte: 'mage', veil_knight: 'knight', // Acólito e Cavaleiro do Véu: bonecos com brilho próprio (UnitDef.tint)
 };
 export const modelOf = (def: string): string => MODEL[baseDef(def)] ?? UNIT_DEFS[def].model ?? ''; // '' = sem modelo (o Farol)
