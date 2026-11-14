@@ -14,7 +14,7 @@ import {
   TERRAIN,
   tileAt,
 } from './grid.ts';
-import { cellsOf, footprint, gap, jumpOf, leaps, reachable, type Step } from './pathing.ts';
+import { cellsOf, footprint, gap, jumpOf, leaps, reachable, type Step, squareMoves } from './pathing.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { isObjective, UNIT_DEFS } from './units.ts';
@@ -99,8 +99,9 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
 // walks (units on the path do not count). It used to be the straight-line distance: in Gariland, two units on neighboring
 // rooftops thought they were "2 tiles away" and nobody went down to go around; with shallow water (Nov 12) there were 35 stuck battles
 // in 1,000 in the class study. The search starts from the enemies: the cost of each step is that of entering the tile it comes from.
-function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, number> {
+export function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, number> {
   const jump = jumpOf(state, actor.def);
+  const size = UNIT_DEFS[actor.def].size ?? 1;
   const best = new Map<string, number>();
   const queue: { p: Pos; cost: number }[] = [];
   for (const o of state.units) {
@@ -113,6 +114,16 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
   for (let i = 0; i < queue.length; i++) {
     const { p, cost } = queue[i];
     if (cost > (best.get(posKey(p)) ?? Infinity)) continue;
+    // a token (half tiles) walks as its square, like `reachable`: a 1-cell walker slipped through gaps it cannot pass (Nov 14
+    // review). Moves are symmetric, and the gap is read from the enemy side as on whole tiles
+    if (size > 1) {
+      for (const { to, cost: step } of squareMoves(grid, p, size, jump, () => false)) {
+        if ((best.get(posKey(to)) ?? Infinity) <= cost + step) continue;
+        best.set(posKey(to), cost + step);
+        queue.push({ p: to, cost: cost + step });
+      }
+      continue;
+    }
     const here = tileAt(grid, p);
     for (const n of neighbors(grid, p)) {
       const t = tileAt(grid, n);

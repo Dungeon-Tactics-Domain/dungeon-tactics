@@ -122,6 +122,59 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
 // most the jump (a square across a step of 2 is the middle of the jump of whoever jumps 2); the square's height is the highest, and
 // the step follows the jump by the surface, deep water included (it enters, like the 1-tile unit). Cost: 1 per cell. The gap flies
 // over the cells between the two squares, up to [jump/2] whole tiles, like `leaps`
+// One move of such a square from the corner `cur`, in FACING order, each step before its gaps: the corner it reaches and the
+// points it costs. `blocked` is a cell the square cannot stand on or fly over (an enemy, for `reachable`; nothing, for the
+// AI's walking map, which ignores units)
+export function squareMoves(
+  grid: Grid,
+  cur: Pos,
+  size: number,
+  jump: number,
+  blocked: (c: Pos) => boolean,
+): { to: Pos; cost: number }[] {
+  const cells = (p: Pos) => cellsOf(p, size);
+  const heightOf = (p: Pos): number | null => {
+    let lo = Infinity,
+      hi = -Infinity;
+    for (const c of cells(p)) {
+      if (!inBounds(grid, c)) return null;
+      const t = tileAt(grid, c);
+      if (!canStand(t) || blocked(c)) return null;
+      lo = Math.min(lo, t.h);
+      hi = Math.max(hi, t.h);
+    }
+    return hi - lo > jump ? null : hi;
+  };
+  const out: { to: Pos; cost: number }[] = [];
+  const flyMax = subOf(grid) * Math.floor(jump / 2);
+  const h0 = heightOf(cur) ?? tileAt(grid, cur).h;
+  for (const d of FACING) {
+    const n = { x: cur.x + d.x, y: cur.y + d.y };
+    const h = heightOf(n);
+    if (h !== null && Math.abs(h - h0) <= jump)
+      out.push({ to: n, cost: Math.max(...cells(n).map((c) => stepCost(tileAt(grid, c)))) });
+    // gap: `g` lines of cells past the square's edge are flown over (deep water or lower than both ends; a wall or an enemy
+    // blocks) and the square lands right after them, never higher and never in deep water. Tried even when the first
+    // step does not fit: a square half over a drop deeper than the jump cannot stand there, but `leaps` flies it (Nov 14)
+    const edge = { x: cur.x + (d.x > 0 ? size - 1 : 0), y: cur.y + (d.y > 0 ? size - 1 : 0) };
+    const strip: Pos[] = [];
+    for (let g = 1; g <= flyMax; g++) {
+      const line = Array.from({ length: size }, (_, k) => ({
+        x: edge.x + d.x * g + (d.x ? 0 : k),
+        y: edge.y + d.y * g + (d.y ? 0 : k),
+      }));
+      if (line.some((c) => !inBounds(grid, c) || !TERRAIN[tileAt(grid, c).terrain].walkable || blocked(c))) break;
+      strip.push(...line);
+      const land = { x: cur.x + d.x * (size + g), y: cur.y + d.y * (size + g) };
+      const hl = heightOf(land);
+      if (hl === null || hl > h0 || h0 - hl > jump || cells(land).some((c) => isDeep(tileAt(grid, c)))) continue;
+      const low = Math.min(h0, hl);
+      if (strip.every((c) => standH(tileAt(grid, c)) < low)) out.push({ to: land, cost: size + g });
+    }
+  }
+  return out;
+}
+
 function reachableBig(
   grid: Grid,
   state: BattleState,
@@ -135,54 +188,16 @@ function reachableBig(
     const o = unitAt(state, c);
     return !!o && o.id !== unit.id && o.team !== unit.team; // passes through allies, never enemies
   };
-  const heightOf = (p: Pos): number | null => {
-    let lo = Infinity,
-      hi = -Infinity;
-    for (const c of cells(p)) {
-      if (!inBounds(grid, c)) return null;
-      const t = tileAt(grid, c);
-      if (!canStand(t) || foe(c)) return null;
-      lo = Math.min(lo, t.h);
-      hi = Math.max(hi, t.h);
-    }
-    return hi - lo > jump ? null : hi;
-  };
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
   const queue: Pos[] = [unit.pos];
-  const visit = (n: Pos, next: number, cur: Pos) => {
-    const k = posKey(n);
-    if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) return;
-    seen.set(k, { pos: n, cost: next, from: posKey(cur) });
-    queue.push(n);
-  };
-  const flyMax = subOf(grid) * Math.floor(jump / 2);
   for (let i = 0; i < queue.length; i++) {
     const cur = queue[i];
     const cost = seen.get(posKey(cur))!.cost;
-    const h0 = heightOf(cur) ?? tileAt(grid, cur).h;
-    for (const d of FACING) {
-      const n = { x: cur.x + d.x, y: cur.y + d.y };
-      const h = heightOf(n);
-      if (h !== null && Math.abs(h - h0) <= jump)
-        visit(n, cost + Math.max(...cells(n).map((c) => stepCost(tileAt(grid, c)))), cur);
-      // gap: `g` lines of cells past the square's edge are flown over (deep water or lower than both ends; a wall or an enemy
-      // blocks) and the square lands right after them, never higher and never in deep water. Tried even when the first
-      // step does not fit: a square half over a drop deeper than the jump cannot stand there, but `leaps` flies it (Nov 14)
-      const edge = { x: cur.x + (d.x > 0 ? size - 1 : 0), y: cur.y + (d.y > 0 ? size - 1 : 0) };
-      const strip: Pos[] = [];
-      for (let g = 1; g <= flyMax; g++) {
-        const line = Array.from({ length: size }, (_, k) => ({
-          x: edge.x + d.x * g + (d.x ? 0 : k),
-          y: edge.y + d.y * g + (d.y ? 0 : k),
-        }));
-        if (line.some((c) => !inBounds(grid, c) || !TERRAIN[tileAt(grid, c).terrain].walkable || foe(c))) break;
-        strip.push(...line);
-        const land = { x: cur.x + d.x * (size + g), y: cur.y + d.y * (size + g) };
-        const hl = heightOf(land);
-        if (hl === null || hl > h0 || h0 - hl > jump || cells(land).some((c) => isDeep(tileAt(grid, c)))) continue;
-        const low = Math.min(h0, hl);
-        if (strip.every((c) => standH(tileAt(grid, c)) < low)) visit(land, cost + size + g, cur);
-      }
+    for (const { to, cost: step } of squareMoves(grid, cur, size, jump, foe)) {
+      const k = posKey(to);
+      if (cost + step > budget || (seen.get(k)?.cost ?? Infinity) <= cost + step) continue;
+      seen.set(k, { pos: to, cost: cost + step, from: posKey(cur) });
+      queue.push(to);
     }
   }
   for (const step of seen.values()) {
