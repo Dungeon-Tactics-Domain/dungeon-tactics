@@ -22,6 +22,7 @@ src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.t
                     group.ts (party rules), campaign.ts (stage rules), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
   game/             what opens around the battle: boot (URL to scenario), title, options, end screens, world map flow
   scene/            the parts BattleScene composes: board, marks (tile marks, cursor), units, camera, space (tile to world), timeline
+  dev/              localhost-only sandbox: battles staged from a scene spec, scripted through window.__sandbox (docs/sandbox.md)
 scripts/            battle-sim.ts (optional simulator), assets/ (texture and model generators)
 tests/              Vitest: rules and pure client functions
 docs/               game-design/README.md (index and what each lab touches), design spec, pillars, party and towns design, FFT/Tactics Ogre references, design system, assets index
@@ -41,6 +42,7 @@ npx vite build                    # production build in dist/
 npm run smoke                     # headless Chrome opens the built title, a battle and the world map
 npx wrangler deploy               # publish dist/ to https://dungeon-tactics.fernandorffdev.com
 npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
+npm run sandbox -- scripts/sandbox --sheet   # screenshots from scene specs: map, units, camera, hidden HUD (docs/sandbox.md)
 ```
 
 ## Workflow

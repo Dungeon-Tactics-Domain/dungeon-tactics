@@ -18,7 +18,7 @@ Index of the design documents and of what each lab touches. Decision of Nov 14 (
 
 | Lab | Content it changes (`src/content`) | Modules it may touch when content is not enough |
 |---|---|---|
-| Design system and UX | none (it changes the interface, not the game data) | `src/client/style.css` (`:root` tokens), `dialog.ts`, `icons.ts`, `hud.ts`, `world-ui.ts`, `create-ui.ts`, `talk.ts`, `dev-menu.ts`; [design-system.md](design-system.md) |
+| Design system and UX | none (it changes the interface, not the game data) | `src/client/style.css` (`:root` tokens), `dialog.ts`, `icons.ts`, `hud.ts`, `world-ui.ts`, `create-ui.ts`, `talk.ts`, `dev-menu.ts`; [design-system.md](design-system.md); screenshots of any screen from code: [sandbox.md](../sandbox.md) |
 | Narrative and game loop | `campaign.ts` (stages, speakers, lines), `world.ts` (nodes, towns, rumors), `quests.ts`, `party.ts`, `items.ts` (prices) | `src/client/campaign.ts` (boss and objective rules), `world.ts` (progress), `missions.ts`, `group.ts` (recruit cost, party size), `chest.ts` (victory gold), `music.ts` (tracks) |
 | Mechanics and game feel | `units.ts`, `abilities.ts`, `items.ts` (stats), `maps/` | `src/shared/battle/` (a new mechanic: `combat.ts`, `pathing.ts`, `turn-queue.ts`, `ai.ts`), `src/client/timing.ts`, `fx.ts` (ability gestures), `scene/board.ts` (tile looks), `ambience.ts` (map moods), `sound.ts` |
 
