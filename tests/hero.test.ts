@@ -7,10 +7,18 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 describe('protagonista', () => {
   it('the saved hero only passes with a name of 1 to 16 letters and one of the 4 classes', () => {
     expect(parseHero({ name: '  Aria ', cls: 'mage' })).toEqual({ name: 'Aria', cls: 'mage' });
-    for (const bad of [null, {}, { name: '', cls: 'mage' }, { name: 'x'.repeat(17), cls: 'mage' }, { name: 'Aria', cls: 'brute' }, { name: 3, cls: 'mage' }]) expect(parseHero(bad)).toBeNull();
+    for (const bad of [
+      null,
+      {},
+      { name: '', cls: 'mage' },
+      { name: 'x'.repeat(17), cls: 'mage' },
+      { name: 'Aria', cls: 'brute' },
+      { name: 3, cls: 'mage' },
+    ])
+      expect(parseHero(bad)).toBeNull();
   });
 
-  it('takes the place of the same-class companion, with the stage\'s abilities', () => {
+  it("takes the place of the same-class companion, with the stage's abilities", () => {
     const hero = { name: 'Aria', cls: 'mage' as const };
     const heroes = heroesFor(defaultGroup(), 0, hero);
     expect(heroes.map((u) => u.name)).toEqual(['Bran', 'Tess', 'Aria', 'Lia']);

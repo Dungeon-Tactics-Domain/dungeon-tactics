@@ -1,5 +1,20 @@
 import type { AbilityDef } from './abilities.ts';
-import { FACING, TERRAIN, blocksOf, canStand, dist, inBounds, isDeep, neighbors, posKey, samePos, standH, stepCost, tileAt, type Grid } from './grid.ts';
+import {
+  FACING,
+  TERRAIN,
+  blocksOf,
+  canStand,
+  dist,
+  inBounds,
+  isDeep,
+  neighbors,
+  posKey,
+  samePos,
+  standH,
+  stepCost,
+  tileAt,
+  type Grid,
+} from './grid.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
@@ -7,7 +22,8 @@ import { UNIT_DEFS } from './units.ts';
 // Jump of whoever does not state its own (UnitDef.jump): climbing or descending more than this in one step is blocked (spec, Oct 25). Since Nov 13
 // each class may have its own, as in FFT; the FFT study swaps it for its own rule (rules.jump)
 export const MAX_JUMP = 1;
-export const jumpOf = (state: BattleState, def: string) => rulesOf(state).jump?.(def) ?? UNIT_DEFS[def]?.jump ?? MAX_JUMP;
+export const jumpOf = (state: BattleState, def: string) =>
+  rulesOf(state).jump?.(def) ?? UNIT_DEFS[def]?.jump ?? MAX_JUMP;
 // Height of the eyes and the aim point above the tile floor, in levels. Together with the terrain's blocks it decides who sees over.
 const EYE = 1;
 
@@ -21,9 +37,11 @@ export function footprint(u: UnitState): Pos[] {
 }
 // distance to the unit's nearest tile (range, area and hit chance against the large boss)
 export const distTo = (u: UnitState, p: Pos) => Math.min(...footprint(u).map((f) => dist(f, p)));
-export const nearestTile = (u: UnitState, p: Pos): Pos => footprint(u).reduce((a, b) => (dist(b, p) < dist(a, p) ? b : a));
+export const nearestTile = (u: UnitState, p: Pos): Pos =>
+  footprint(u).reduce((a, b) => (dist(b, p) < dist(a, p) ? b : a));
 
-export const unitAt = (state: BattleState, p: Pos): UnitState | undefined => state.units.find((u) => footprint(u).some((f) => samePos(f, p)));
+export const unitAt = (state: BattleState, p: Pos): UnitState | undefined =>
+  state.units.find((u) => footprint(u).some((f) => samePos(f, p)));
 
 export interface Step {
   pos: Pos;
@@ -52,7 +70,13 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
       // start; it used to land up to `jump` above)
       if (!canStand(land) || isDeep(land) || standH(land) > h0 || h0 - standH(land) > jump) continue; // landing in deep water: it is just swimming in
       const low = Math.min(h0, standH(land));
-      if (over.every((p) => { const t = tileAt(grid, p); return !canStand(t) || standH(t) < low; })) out.push({ to, over: [...over] });
+      if (
+        over.every((p) => {
+          const t = tileAt(grid, p);
+          return !canStand(t) || standH(t) < low;
+        })
+      )
+        out.push({ to, over: [...over] });
     }
   }
   return out;
@@ -64,18 +88,30 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
 // by the top-left corner. It fits if all the tiles of the square are walkable, none is a body to stop on, no other unit is there and
 // they differ by at most 1 level; the square's height is the highest, and the step follows the jump. Cost: that
 // of the most expensive tile entering the square. No gap for now
-function reachableBig(grid: Grid, state: BattleState, unit: UnitState, budget: number, jump: number): Map<string, Step> {
+function reachableBig(
+  grid: Grid,
+  state: BattleState,
+  unit: UnitState,
+  budget: number,
+  jump: number,
+): Map<string, Step> {
   const size = UNIT_DEFS[unit.def].size!;
-  const cells = (p: Pos) => { const out: Pos[] = []; for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: p.x + dx, y: p.y + dy }); return out; };
+  const cells = (p: Pos) => {
+    const out: Pos[] = [];
+    for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: p.x + dx, y: p.y + dy });
+    return out;
+  };
   const heightOf = (p: Pos): number | null => {
-    let lo = Infinity, hi = -Infinity;
+    let lo = Infinity,
+      hi = -Infinity;
     for (const c of cells(p)) {
       if (!inBounds(grid, c)) return null;
       const t = tileAt(grid, c);
       if (!canStand(t) || isDeep(t)) return null;
       const o = unitAt(state, c);
       if (o && o.id !== unit.id && o.team !== unit.team) return null; // passes through allies, never enemies
-      lo = Math.min(lo, t.h); hi = Math.max(hi, t.h);
+      lo = Math.min(lo, t.h);
+      hi = Math.max(hi, t.h);
     }
     return hi - lo > 1 ? null : hi;
   };
@@ -103,7 +139,14 @@ function reachableBig(grid: Grid, state: BattleState, unit: UnitState, budget: n
   }
   seen.delete(posKey(unit.pos));
   // stop only where the whole square is free (an ally on the path, yes; on top, no) and with no body underneath
-  for (const [k, step] of seen) if (cells(step.pos).some((c) => { const o = unitAt(state, c); return (o && o.id !== unit.id) || tileAt(grid, c).noStop; })) seen.delete(k);
+  for (const [k, step] of seen)
+    if (
+      cells(step.pos).some((c) => {
+        const o = unitAt(state, c);
+        return (o && o.id !== unit.id) || tileAt(grid, c).noStop;
+      })
+    )
+      seen.delete(k);
   return seen;
 }
 
@@ -112,7 +155,8 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
   const unit = state.units.find((u) => u.id === unitId)!;
   budget ??= UNIT_DEFS[unit.def].move;
   const jump = jumpOf(state, unit.def);
-  if ((UNIT_DEFS[unit.def].size ?? 1) > 1 && UNIT_DEFS[unit.def].move > 0) return reachableBig(grid, state, unit, budget, jump);
+  if ((UNIT_DEFS[unit.def].size ?? 1) > 1 && UNIT_DEFS[unit.def].move > 0)
+    return reachableBig(grid, state, unit, budget, jump);
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
   const queue: Pos[] = [unit.pos];
   for (let i = 0; i < queue.length; i++) {
@@ -136,7 +180,13 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
       const k = posKey(n);
       const next = cost + over.length + stepCost(tileAt(grid, n));
       if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
-      if ([n, ...over].some((p) => { const o = unitAt(state, p); return o && o.team !== unit.team; })) continue;
+      if (
+        [n, ...over].some((p) => {
+          const o = unitAt(state, p);
+          return o && o.team !== unit.team;
+        })
+      )
+        continue;
       seen.set(k, { pos: n, cost: next, from: posKey(cur) });
       queue.push(n);
     }
@@ -171,21 +221,42 @@ export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
 // ally"): the first terrain obstacle (like sightBlock) or the first model on the path, ally or enemy, if the
 // line passes below its head (UNIT_TALL levels above the ground). null if it reaches the target
 const UNIT_TALL = 1.6;
-export function shotStop(grid: Grid, state: BattleState, from: Pos, to: Pos, shooter: string, units = true): { pos: Pos; unit: string | null } | null {
+export function shotStop(
+  grid: Grid,
+  state: BattleState,
+  from: Pos,
+  to: Pos,
+  shooter: string,
+  units = true,
+): { pos: Pos; unit: string | null } | null {
   const total = dist(from, to);
   if (total <= 1) return null;
-  const sight = (p: Pos) => { const t = tileAt(grid, p); return isDeep(t) ? t.h : standH(t); };
-  const eye = sight(from) + EYE, aim = sight(to) + EYE;
-  let x = from.x, y = from.y;
-  const dx = Math.abs(to.x - from.x), dy = -Math.abs(to.y - from.y);
-  const sx = from.x < to.x ? 1 : -1, sy = from.y < to.y ? 1 : -1;
+  const sight = (p: Pos) => {
+    const t = tileAt(grid, p);
+    return isDeep(t) ? t.h : standH(t);
+  };
+  const eye = sight(from) + EYE,
+    aim = sight(to) + EYE;
+  let x = from.x,
+    y = from.y;
+  const dx = Math.abs(to.x - from.x),
+    dy = -Math.abs(to.y - from.y);
+  const sx = from.x < to.x ? 1 : -1,
+    sy = from.y < to.y ? 1 : -1;
   let err = dx + dy;
   for (;;) {
     const e2 = 2 * err;
-    if (e2 >= dy) { err += dy; x += sx; }
-    if (e2 <= dx) { err += dx; y += sy; }
+    if (e2 >= dy) {
+      err += dy;
+      x += sx;
+    }
+    if (e2 <= dx) {
+      err += dx;
+      y += sy;
+    }
     if (x === to.x && y === to.y) return null;
-    const p = { x, y }, t = tileAt(grid, p);
+    const p = { x, y },
+      t = tileAt(grid, p);
     const line = eye + (aim - eye) * (dist(from, p) / total);
     if (t.h + blocksOf(t) > line) return { pos: p, unit: null };
     const u = units ? unitAt(state, p) : undefined;
@@ -202,17 +273,29 @@ export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
   if (total <= 1) return null;
   // whoever swims in deep water aims and is aimed at from the surface (Nov 13 review): with the bottom height, the line passed under the
   // neighboring ground and whoever was in the water became invisible at 3 tiles or more; the hit chance is still worse because of height (standH)
-  const sight = (p: Pos) => { const t = tileAt(grid, p); return isDeep(t) ? t.h : standH(t); };
+  const sight = (p: Pos) => {
+    const t = tileAt(grid, p);
+    return isDeep(t) ? t.h : standH(t);
+  };
   const eye = sight(a) + EYE;
   const aim = sight(b) + EYE;
-  let x = a.x, y = a.y;
-  const dx = Math.abs(b.x - a.x), dy = -Math.abs(b.y - a.y);
-  const sx = a.x < b.x ? 1 : -1, sy = a.y < b.y ? 1 : -1;
+  let x = a.x,
+    y = a.y;
+  const dx = Math.abs(b.x - a.x),
+    dy = -Math.abs(b.y - a.y);
+  const sx = a.x < b.x ? 1 : -1,
+    sy = a.y < b.y ? 1 : -1;
   let err = dx + dy;
   for (;;) {
     const e2 = 2 * err;
-    if (e2 >= dy) { err += dy; x += sx; }
-    if (e2 <= dx) { err += dx; y += sy; }
+    if (e2 >= dy) {
+      err += dy;
+      x += sx;
+    }
+    if (e2 <= dx) {
+      err += dx;
+      y += sy;
+    }
     if (x === b.x && y === b.y) return null;
     const t = tileAt(grid, { x, y });
     // fraction by the advance in grid steps, not by the loop index, which on the diagonal moves 1 tile per iteration

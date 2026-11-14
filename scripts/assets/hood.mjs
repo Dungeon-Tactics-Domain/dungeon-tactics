@@ -5,10 +5,20 @@
 // It only appends to the GLB (the rest of the file stays the same). Run once: node scripts/assets/hood.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const SCALE = 1.2, LIFT = 0.07, GAP = 0.03;
+const SCALE = 1.2,
+  LIFT = 0.07,
+  GAP = 0.03;
 const CENTER = [0, 1.62, 0]; // middle of the head, in model space (y up)
-const HEADS = { mage: ['Mage_Head'], knight: ['Knight_Head'], barbarian: ['Barbarian_Head'], rogue: ['Rogue_Head'], skeleton_mage: ['Skeleton_Mage_Skull'],
-  skeleton_minion: ['Skeleton_Minion_Head'], skeleton_rogue: ['Skeleton_Rogue_Head'], skeleton_warrior: ['Skeleton_Warrior_Head'] };
+const HEADS = {
+  mage: ['Mage_Head'],
+  knight: ['Knight_Head'],
+  barbarian: ['Barbarian_Head'],
+  rogue: ['Rogue_Head'],
+  skeleton_mage: ['Skeleton_Mage_Skull'],
+  skeleton_minion: ['Skeleton_Minion_Head'],
+  skeleton_rogue: ['Skeleton_Rogue_Head'],
+  skeleton_warrior: ['Skeleton_Warrior_Head'],
+};
 
 const SIZE = { 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 };
 const COMP = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
@@ -19,8 +29,11 @@ function open(path) {
 }
 // bytes of each accessor element (respects the byteStride of interleaved views)
 function elements({ j, bin }, a) {
-  const acc = j.accessors[a], view = j.bufferViews[acc.bufferView];
-  const size = SIZE[acc.componentType] * COMP[acc.type], stride = view.byteStride ?? size, start = (view.byteOffset ?? 0) + (acc.byteOffset ?? 0);
+  const acc = j.accessors[a],
+    view = j.bufferViews[acc.bufferView];
+  const size = SIZE[acc.componentType] * COMP[acc.type],
+    stride = view.byteStride ?? size,
+    start = (view.byteOffset ?? 0) + (acc.byteOffset ?? 0);
   return Array.from({ length: acc.count }, (_, i) => bin.subarray(start + i * stride, start + i * stride + size));
 }
 const vec3 = (e) => [e.readFloatLE(0), e.readFloatLE(4), e.readFloatLE(8)];
@@ -53,8 +66,15 @@ let pushed = 0;
 const out = keep.map((v) => {
   let d = sub(pos[v], CENTER).map((x) => x * SCALE);
   if (shell(v) && d[1] > 0) {
-    const r = len3(d), u = d.map((x) => x / r);
-    const reach = Math.max(0, ...heads.map((h) => sub(h, [CENTER[0], CENTER[1] + LIFT, CENTER[2]])).filter((h) => (h[0] * u[0] + h[1] * u[1] + h[2] * u[2]) / len3(h) > 0.985).map(len3));
+    const r = len3(d),
+      u = d.map((x) => x / r);
+    const reach = Math.max(
+      0,
+      ...heads
+        .map((h) => sub(h, [CENTER[0], CENTER[1] + LIFT, CENTER[2]]))
+        .filter((h) => (h[0] * u[0] + h[1] * u[1] + h[2] * u[2]) / len3(h) > 0.985)
+        .map(len3),
+    );
     if (r < reach + GAP) (d = u.map((x) => x * (reach + GAP))), pushed++;
   }
   return [d[0] + CENTER[0], d[1] + CENTER[1] + LIFT, d[2] + CENTER[2]];
@@ -70,7 +90,12 @@ function add(buf, acc) {
   const pad = (4 - (offset % 4)) % 4;
   if (pad) chunks.push(Buffer.alloc(pad));
   offset += pad;
-  j.bufferViews.push({ buffer: 0, byteOffset: offset, byteLength: buf.length, target: acc.type === 'SCALAR' ? 34963 : 34962 });
+  j.bufferViews.push({
+    buffer: 0,
+    byteOffset: offset,
+    byteLength: buf.length,
+    target: acc.type === 'SCALAR' ? 34963 : 34962,
+  });
   chunks.push(buf);
   offset += buf.length;
   return j.accessors.push({ ...acc, bufferView: j.bufferViews.length - 1, byteOffset: 0 }) - 1;
@@ -78,18 +103,33 @@ function add(buf, acc) {
 const posBuf = Buffer.alloc(out.length * 12);
 out.forEach((v, i) => v.forEach((x, k) => posBuf.writeFloatLE(x, i * 12 + k * 4)));
 const attributes = {
-  POSITION: add(posBuf, { type: 'VEC3', componentType: 5126, count: out.length, min: [0, 1, 2].map((k) => Math.min(...out.map((v) => v[k]))), max: [0, 1, 2].map((k) => Math.max(...out.map((v) => v[k]))) }),
+  POSITION: add(posBuf, {
+    type: 'VEC3',
+    componentType: 5126,
+    count: out.length,
+    min: [0, 1, 2].map((k) => Math.min(...out.map((v) => v[k]))),
+    max: [0, 1, 2].map((k) => Math.max(...out.map((v) => v[k]))),
+  }),
 };
 for (const name of ['NORMAL', 'TEXCOORD_0', 'JOINTS_0', 'WEIGHTS_0']) {
-  const a = src.j.accessors[p.attributes[name]], all = elements(src, p.attributes[name]);
-  attributes[name] = add(Buffer.concat(keep.map((v) => all[v])), { type: a.type, componentType: a.componentType, count: keep.length, ...(a.normalized && { normalized: true }) });
+  const a = src.j.accessors[p.attributes[name]],
+    all = elements(src, p.attributes[name]);
+  attributes[name] = add(Buffer.concat(keep.map((v) => all[v])), {
+    type: a.type,
+    componentType: a.componentType,
+    count: keep.length,
+    ...(a.normalized && { normalized: true }),
+  });
 }
 const idx = tri.filter((_, i) => isHood(tri[i - (i % 3)]));
 const idxBuf = Buffer.alloc(idx.length * 2);
 idx.forEach((v, i) => idxBuf.writeUInt16LE(map.get(v), i * 2));
 const indices = add(idxBuf, { type: 'SCALAR', componentType: 5123, count: idx.length });
 const head = j.nodes.find((n) => n.name === 'Rogue_Head');
-j.meshes.push({ name: 'Rogue_Hood', primitives: [{ attributes, indices, material: prim(dst, 'Rogue_Head').material }] });
+j.meshes.push({
+  name: 'Rogue_Hood',
+  primitives: [{ attributes, indices, material: prim(dst, 'Rogue_Head').material }],
+});
 j.nodes.push({ name: 'Rogue_Hood', mesh: j.meshes.length - 1, skin: head.skin });
 j.nodes.find((n) => n.name === 'Rig').children.push(j.nodes.length - 1);
 
@@ -110,4 +150,6 @@ glb.writeUInt32LE(bin.length, 20 + json.length);
 glb.writeUInt32LE(0x004e4942, 24 + json.length);
 bin.copy(glb, 28 + json.length);
 writeFileSync('public/models/rogue.glb', glb);
-console.log(`Rogue_Hood: ${keep.length} vértices, ${idx.length / 3} triângulos; ${pushed} vértices da casca empurrados para fora`);
+console.log(
+  `Rogue_Hood: ${keep.length} vértices, ${idx.length / 3} triângulos; ${pushed} vértices da casca empurrados para fora`,
+);

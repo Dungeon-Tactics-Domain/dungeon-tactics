@@ -7,7 +7,11 @@ import { OBJECTIVE_DEF } from '../src/shared/battle/units.ts';
 // Milestone 3 (approved by Fernando on Nov 11): the first real battle, as the spec asks
 describe('1st battle scenario', () => {
   const s = FIRST_BATTLE;
-  const defs = (team: string) => s.spawns.filter((u) => u.team === team && u.def !== OBJECTIVE_DEF).map((u) => u.def).sort();
+  const defs = (team: string) =>
+    s.spawns
+      .filter((u) => u.team === team && u.def !== OBJECTIVE_DEF)
+      .map((u) => u.def)
+      .sort();
 
   it('is the 20x20 map and is in the scenario list', () => {
     expect([s.grid.width, s.grid.height]).toEqual([20, 20]);
@@ -32,7 +36,8 @@ describe('1st battle scenario', () => {
     for (let p = todo.pop(); p; p = todo.pop()) {
       for (const n of neighbors(s.grid, p)) {
         const t = tileAt(s.grid, n);
-        if (seen.has(posKey(n)) || !TERRAIN[t.terrain].walkable || Math.abs(t.h - tileAt(s.grid, p).h) > MAX_JUMP) continue;
+        if (seen.has(posKey(n)) || !TERRAIN[t.terrain].walkable || Math.abs(t.h - tileAt(s.grid, p).h) > MAX_JUMP)
+          continue;
         seen.add(posKey(n));
         todo.push(n);
       }

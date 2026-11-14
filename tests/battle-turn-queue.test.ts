@@ -18,11 +18,12 @@ function play(s: BattleState, n: number, ability: (actor: string) => string | nu
   return order;
 }
 
-const mixed = () => stateOf([
-  { id: 'rogue', def: 'rogue', team: 'hero', x: 0, y: 0 }, // speed 12
-  { id: 'warrior', def: 'warrior', team: 'hero', x: 1, y: 0 }, // 8
-  { id: 'brute', def: 'brute', team: 'enemy', x: 2, y: 0 }, // 5
-]);
+const mixed = () =>
+  stateOf([
+    { id: 'rogue', def: 'rogue', team: 'hero', x: 0, y: 0 }, // speed 12
+    { id: 'warrior', def: 'warrior', team: 'hero', x: 1, y: 0 }, // 8
+    { id: 'brute', def: 'brute', team: 'enemy', x: 2, y: 0 }, // 5
+  ]);
 
 describe('turn queue', () => {
   it('whoever has more speed acts first and more often', () => {
@@ -48,13 +49,19 @@ describe('turn queue', () => {
   });
 
   it('waiting without acting returns the turn sooner', () => {
-    const s = stateOf([{ id: 'x', def: 'rogue', team: 'hero', x: 0, y: 0 }, { id: 'y', def: 'brute', team: 'enemy', x: 1, y: 0 }]);
+    const s = stateOf([
+      { id: 'x', def: 'rogue', team: 'hero', x: 0, y: 0 },
+      { id: 'y', def: 'brute', team: 'enemy', x: 1, y: 0 },
+    ]);
     const order = play(s, 6, () => null);
     expect(order.filter((i) => i === 'x').length).toBeGreaterThanOrEqual(4);
   });
 
   it('tie at 100 or more: the first in the character list acts, and enemies come first (BMG A.2)', () => {
-    const s = stateOf([{ id: 'h', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 'e', def: 'soldier', team: 'enemy', x: 1, y: 0 }]);
+    const s = stateOf([
+      { id: 'h', def: 'warrior', team: 'hero', x: 0, y: 0 },
+      { id: 'e', def: 'soldier', team: 'enemy', x: 1, y: 0 },
+    ]);
     s.units[0].ct = 130; // more CT does not go first
     s.units[1].ct = 100;
     startNextTurn(G, s);
@@ -62,7 +69,10 @@ describe('turn queue', () => {
   });
 
   it('a target without speed never gets a turn', () => {
-    const s = stateOf([{ id: 'h', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 'beacon', def: 'beacon', team: 'hero', x: 1, y: 0 }]);
+    const s = stateOf([
+      { id: 'h', def: 'warrior', team: 'hero', x: 0, y: 0 },
+      { id: 'beacon', def: 'beacon', team: 'hero', x: 1, y: 0 },
+    ]);
     expect(play(s, 10)).not.toContain('beacon');
     expect(previewOrder(s, 5).map((e) => e.unit)).not.toContain('beacon');
   });

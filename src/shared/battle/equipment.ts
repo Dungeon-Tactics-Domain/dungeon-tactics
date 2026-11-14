@@ -31,7 +31,14 @@ export const ITEMS: Record<string, ItemDef> = Object.fromEntries(LIST.map((i) =>
 export const SLOTS: Slot[] = ['weapon', 'armor', 'accessory'];
 
 export type Loadout = Partial<Record<Slot, string>>;
-export interface Bonus { hp: number; power: number; hit: number; move: number; jump: number; speed: number }
+export interface Bonus {
+  hp: number;
+  power: number;
+  hit: number;
+  move: number;
+  jump: number;
+  speed: number;
+}
 
 // sum of the equipped items; an unknown item or one in the wrong slot does not count (the save is a trust boundary)
 export function bonusOf(loadout: Loadout | undefined): Bonus {

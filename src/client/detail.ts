@@ -5,7 +5,10 @@
 // units get only the shading (strength 0).
 import type * as THREE from 'three';
 
-export interface DetailTextures { leaves: THREE.Texture; dirt: THREE.Texture }
+export interface DetailTextures {
+  leaves: THREE.Texture;
+  dirt: THREE.Texture;
+}
 
 // world position and normal (with the instance): the file scale varies from model to model, and measured in the file the
 // texture came out so tiny it vanished
@@ -17,17 +20,32 @@ dw = instanceMatrix * dw; dnw = mat3(instanceMatrix) * dnw;
 vDPos = (modelMatrix * dw).xyz; vDN = mat3(modelMatrix) * dnw;`;
 
 // `scale`: texture repeats per meter
-export function addDetail(sh: THREE.WebGLProgramParametersWithUniforms, tex: DetailTextures, scale: number, strength = 0.75) {
-  sh.vertexShader = 'varying vec3 vDPos; varying vec3 vDN;\n' + sh.vertexShader.replace('#include <begin_vertex>', DET_VERT);
+export function addDetail(
+  sh: THREE.WebGLProgramParametersWithUniforms,
+  tex: DetailTextures,
+  scale: number,
+  strength = 0.75,
+) {
+  sh.vertexShader =
+    'varying vec3 vDPos; varying vec3 vDN;\n' + sh.vertexShader.replace('#include <begin_vertex>', DET_VERT);
   // strength 0 (units and bodies, Nov 13: Fernando found the grain on them "ugly"): only a light shading, the side
   // slightly darker than the top, with no texture at all
   if (!strength) {
-    sh.fragmentShader = 'varying vec3 vDPos; varying vec3 vDN;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n  diffuseColor.rgb *= 0.74 + 0.26 * smoothstep(-0.6, 0.9, normalize(vDN).y);');
+    sh.fragmentShader =
+      'varying vec3 vDPos; varying vec3 vDN;\n' +
+      sh.fragmentShader.replace(
+        '#include <map_fragment>',
+        '#include <map_fragment>\n  diffuseColor.rgb *= 0.74 + 0.26 * smoothstep(-0.6, 0.9, normalize(vDN).y);',
+      );
     return;
   }
   sh.uniforms.tDetLeaf = { value: tex.leaves };
   sh.uniforms.tDetDirt = { value: tex.dirt };
-  sh.fragmentShader = 'uniform sampler2D tDetLeaf; uniform sampler2D tDetDirt; varying vec3 vDPos; varying vec3 vDN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+  sh.fragmentShader =
+    'uniform sampler2D tDetLeaf; uniform sampler2D tDetDirt; varying vec3 vDPos; varying vec3 vDN;\n' +
+    sh.fragmentShader.replace(
+      '#include <map_fragment>',
+      `#include <map_fragment>
     {
       vec3 dn = abs(normalize(vDN)); dn /= (dn.x + dn.y + dn.z);
       vec3 p = vDPos * ${scale.toFixed(2)};
@@ -39,5 +57,6 @@ export function addDetail(sh: THREE.WebGLProgramParametersWithUniforms, tex: Det
       // shading (Nov 13, "objects also need to be shaded"): the downward-facing and side faces darken,
       // like ambient occlusion; without it the KayKit piece looked evenly lit in the dark Ash Wood
       diffuseColor.rgb *= 0.5 + 0.5 * smoothstep(-0.6, 0.9, normalize(vDN).y);
-    }`);
+    }`,
+    );
 }

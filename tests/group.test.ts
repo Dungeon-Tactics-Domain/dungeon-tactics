@@ -1,14 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from '../src/client/campaign.ts';
-import { DEPLOY_MAX, GROUP_MAX, RECRUIT_COST, changeClass, defaultGroup, dismiss, heroesFor, parseGroup, recruit, toggleDeploy } from '../src/client/group.ts';
+import {
+  DEPLOY_MAX,
+  GROUP_MAX,
+  RECRUIT_COST,
+  changeClass,
+  defaultGroup,
+  dismiss,
+  heroesFor,
+  parseGroup,
+  recruit,
+  toggleDeploy,
+} from '../src/client/group.ts';
 import { previewAbility } from '../src/shared/battle/combat.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // Recruitment and class change (Nov 13, delivery 5 of the FFT-style group design)
 describe('grupo', () => {
-  it('the default group builds exactly the measured roster of each stage (the campaign curve doesn\'t change)', () => {
-    CHAPTERS.forEach((c, n) => expect(heroesFor(defaultGroup(), n)).toEqual(c.setup.heroes.map((u) => ({ ...u, items: undefined }))));
+  it("the default group builds exactly the measured roster of each stage (the campaign curve doesn't change)", () => {
+    CHAPTERS.forEach((c, n) =>
+      expect(heroesFor(defaultGroup(), n)).toEqual(c.setup.heroes.map((u) => ({ ...u, items: undefined }))),
+    );
   });
 
   it('recruiting costs gold, joins the deployment if there is room and respects the cap', () => {
@@ -26,10 +39,15 @@ describe('grupo', () => {
   it('changing class changes the numbers and abilities in battle', () => {
     const g = changeClass(defaultGroup(), 'warrior', 'mage');
     const bran = heroesFor(g, 6)[0];
-    expect(bran).toMatchObject({ name: 'Bran', base: 'mage', hp: UNIT_DEFS.mage.hp, abilities: UNIT_DEFS.mage.abilities.slice(0, 4) });
+    expect(bran).toMatchObject({
+      name: 'Bran',
+      base: 'mage',
+      hp: UNIT_DEFS.mage.hp,
+      abilities: UNIT_DEFS.mage.abilities.slice(0, 4),
+    });
   });
 
-  it('deploying: at most 4 and never none; whoever stays in camp doesn\'t go to battle', () => {
+  it("deploying: at most 4 and never none; whoever stays in camp doesn't go to battle", () => {
     const r = recruit(defaultGroup(), { gold: 500, items: [] }, 'rogue')!.group;
     expect(toggleDeploy(r, 'r1')).toBeNull(); // already 4
     const swapped = toggleDeploy(toggleDeploy(r, 'archer')!, 'r1')!;
@@ -50,8 +68,22 @@ describe('grupo', () => {
 
   it('the saved group only accepts what it knows; the story characters always return', () => {
     expect(parseGroup(null)).toEqual(defaultGroup());
-    const g = parseGroup({ members: [{ id: 'warrior', cls: 'rogue' }, { id: 'r2', name: 'Ivo', cls: 'mage' }, { id: 'x', name: 'Hack', cls: 'mage' }, { id: 'r3', name: 'Zé', cls: 'brute' }], deployed: ['r2', 'r2', 'nada', 'warrior'] });
-    expect(g.members.map((m) => `${m.id}:${m.cls}`)).toEqual(['warrior:rogue', 'archer:archer', 'mage:mage', 'rogue:rogue', 'r2:mage']);
+    const g = parseGroup({
+      members: [
+        { id: 'warrior', cls: 'rogue' },
+        { id: 'r2', name: 'Ivo', cls: 'mage' },
+        { id: 'x', name: 'Hack', cls: 'mage' },
+        { id: 'r3', name: 'Zé', cls: 'brute' },
+      ],
+      deployed: ['r2', 'r2', 'nada', 'warrior'],
+    });
+    expect(g.members.map((m) => `${m.id}:${m.cls}`)).toEqual([
+      'warrior:rogue',
+      'archer:archer',
+      'mage:mage',
+      'rogue:rogue',
+      'r2:mage',
+    ]);
     expect(g.deployed).toEqual(['r2', 'warrior']);
   });
 
@@ -61,7 +93,10 @@ describe('grupo', () => {
     const lancer = heroesFor(g, 6).at(-1)!;
     expect(lancer).toMatchObject({ base: 'lancer', jump: 3, abilities: ['lance', 'sweep', 'lance_jump'] });
     expect(parseGroup(JSON.parse(JSON.stringify(g))).members.at(-1)?.cls).toBe('lancer');
-    const s = stateOf([{ id: 'l', def: 'lancer', team: 'hero', x: 1, y: 1 }, { id: 'e', def: 'soldier', team: 'enemy', x: 3, y: 1 }]);
+    const s = stateOf([
+      { id: 'l', def: 'lancer', team: 'hero', x: 1, y: 1 },
+      { id: 'e', def: 'soldier', team: 'enemy', x: 3, y: 1 },
+    ]);
     expect(previewAbility(flat(6, 6), s, 'l', 'lance', { x: 3, y: 1 }).ok).toBe(true);
   });
 });

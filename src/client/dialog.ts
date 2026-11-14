@@ -6,7 +6,8 @@ import { t } from './i18n.ts';
 import { el, iconButton } from './icons.ts';
 
 // With a window open, the game behind is `inert` (Nov 13, review): Tab left the window and Enter acted on the battle behind
-const syncInert = () => document.getElementById('app')?.toggleAttribute('inert', !!document.querySelector('.overlay > .dialog'));
+const syncInert = () =>
+  document.getElementById('app')?.toggleAttribute('inert', !!document.querySelector('.overlay > .dialog'));
 
 export function dialog(cls: string, title: string, body: Node[], opts: { fixed?: boolean; onBack?: () => void } = {}) {
   const ac = new AbortController();
@@ -22,15 +23,26 @@ export function dialog(cls: string, title: string, body: Node[], opts: { fixed?:
     opts.onBack?.();
   };
   const x = opts.fixed ? null : iconButton('✕', t('Fechar', 'Close'), back);
-  const overlay = el('div', { class: `overlay ${cls}-overlay`, onclick: (e: Event) => e.target === overlay && back() },
-    el('div', { class: `dialog ${cls}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-      el('header', { class: 'dialog-head' }, el('h2', {}, title), x), ...body));
-  addEventListener('keydown', (e) => {
-    if (e.code !== 'Escape') return;
-    e.preventDefault();
-    e.stopImmediatePropagation(); // Esc closes only the dialog: without this it reached the game and canceled the choice too
-    back();
-  }, { capture: true, signal: ac.signal });
+  const overlay = el(
+    'div',
+    { class: `overlay ${cls}-overlay`, onclick: (e: Event) => e.target === overlay && back() },
+    el(
+      'div',
+      { class: `dialog ${cls}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+      el('header', { class: 'dialog-head' }, el('h2', {}, title), x),
+      ...body,
+    ),
+  );
+  addEventListener(
+    'keydown',
+    (e) => {
+      if (e.code !== 'Escape') return;
+      e.preventDefault();
+      e.stopImmediatePropagation(); // Esc closes only the dialog: without this it reached the game and canceled the choice too
+      back();
+    },
+    { capture: true, signal: ac.signal },
+  );
   document.body.append(overlay);
   syncInert();
   x?.focus();
@@ -38,7 +50,12 @@ export function dialog(cls: string, title: string, body: Node[], opts: { fixed?:
 }
 
 // Group of exclusive options (like radio) in buttons with aria-pressed; switches instantly, no save button
-export function choice<T>(label: string, options: [value: T, text: string][], value: T, onPick: (v: T) => void): HTMLElement {
+export function choice<T>(
+  label: string,
+  options: [value: T, text: string][],
+  value: T,
+  onPick: (v: T) => void,
+): HTMLElement {
   const buttons = options.map(([v, text]) => {
     const b = el('button', { type: 'button', class: 'secondary', 'aria-pressed': String(v === value) }, text);
     b.addEventListener('click', () => {
@@ -47,7 +64,12 @@ export function choice<T>(label: string, options: [value: T, text: string][], va
     });
     return b;
   });
-  return el('div', { class: 'choice', role: 'group', 'aria-label': label }, el('span', { class: 'choice-label' }, label), el('div', { class: 'choice-row' }, ...buttons));
+  return el(
+    'div',
+    { class: 'choice', role: 'group', 'aria-label': label },
+    el('span', { class: 'choice-label' }, label),
+    el('div', { class: 'choice-row' }, ...buttons),
+  );
 }
 
 // 0 to 100% bar (Nov 13, Fernando's request: volume "in 5% steps"): native range input (keyboard arrows already move it;
@@ -61,5 +83,10 @@ export function slider(label: string, value: number, onChange: (v: number) => vo
     input.setAttribute('aria-valuetext', `${v}%`);
     onChange(v);
   });
-  return el('label', { class: 'slider' }, el('span', { class: 'choice-label' }, label), el('span', { class: 'slider-row' }, input, out));
+  return el(
+    'label',
+    { class: 'slider' },
+    el('span', { class: 'choice-label' }, label),
+    el('span', { class: 'slider-row' }, input, out),
+  );
 }

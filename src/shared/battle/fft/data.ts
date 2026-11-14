@@ -56,7 +56,10 @@ export const SKILLS = {
   wish: { range: 1 }, // heals RU{MaxHP * 2/5} and costs the user RU{MaxHP * 1/5}
   speed_break: { speed: -2 }, // hit (PA + 50)% before evasion
   power_break: { pa: -3 },
-  charge: [[1, 4], [2, 5]], // Charge +K: adds K to PA and Speed in the weapon formula; charge of 4 and 5 ticks (BMG 2.2 and A.2)
+  charge: [
+    [1, 4],
+    [2, 5],
+  ], // Charge +K: adds K to PA and Speed in the weapon formula; charge of 4 and 5 ticks (BMG 2.2 and A.2)
   fire: { range: 4, q: 14, mp: 6, ctr: 4 }, // damage [CFa/100 * TFa/100 * MA * 14], area of 2 (target and neighbors), charge of 4 ticks
   cure: { range: 4, q: 14, mp: 6, ctr: 4 }, // healing with the same formula and the same charge
 } as const;

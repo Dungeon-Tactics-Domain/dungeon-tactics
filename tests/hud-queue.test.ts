@@ -5,7 +5,10 @@ import { flat, stateOf } from './battle-helpers.ts';
 
 // Turn list with the charge in preview on the "Executar?" (Execute?) prompt (Nov 13, Fernando's request, like FFT's CT list)
 const archerVsRogue = (rogueCt = 0) => {
-  const s = stateOf([{ id: 'a', def: 'archer', team: 'hero', x: 0, y: 0 }, { id: 'r', def: 'rogue', team: 'enemy', x: 4, y: 0 }]);
+  const s = stateOf([
+    { id: 'a', def: 'archer', team: 'hero', x: 0, y: 0 },
+    { id: 'r', def: 'rogue', team: 'enemy', x: 4, y: 0 },
+  ]);
   s.units[1].ct = rogueCt;
   return new Battle(flat(8, 1), s);
 };

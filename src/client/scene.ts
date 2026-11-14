@@ -11,7 +11,18 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { FACING, dist, inBounds, neighbors, posKey, samePos, standH, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
+import {
+  FACING,
+  dist,
+  inBounds,
+  neighbors,
+  posKey,
+  samePos,
+  standH,
+  tileAt,
+  type Grid,
+  type Tile,
+} from '../shared/battle/grid.ts';
 import { footprint } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -30,7 +41,16 @@ import { buildBridges } from './bridge.ts';
 import { boxOf as pieceBox, loadPaint, variant } from './painted.ts';
 import { DEBRIS, LITTER, swapProps } from './props.ts';
 import { swapTrees } from './trees.ts';
-import { PAINT, buildStream, buildTerrain, loadTerrainTextures, pickTiles, riverOf, riverOutside, type TerrainTextures } from './terrain.ts';
+import {
+  PAINT,
+  buildStream,
+  buildTerrain,
+  loadTerrainTextures,
+  pickTiles,
+  riverOf,
+  riverOutside,
+  type TerrainTextures,
+} from './terrain.ts';
 
 const STEP = 0.5; // height of one level in meters (1 tile = 1 wide), the same as the approved POC
 const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
@@ -42,7 +62,14 @@ const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
 // the camera aims between the attacker (0) and the target (1); lift: how much the focus rises off the ground, so the unit is not at the edge;
 // clip: with the camera low, whatever sits between it and the units (outside forest, ravine, tree) would cover the strike, so everything
 // more than `clip` tiles in front of the focus stops being drawn (the camera's clipping plane) while it lasts
-interface ActionCam { turn: number; pitch: number; zoom: [base: number, perTile: number]; aim: number; lift: number; clip?: number }
+interface ActionCam {
+  turn: number;
+  pitch: number;
+  zoom: [base: number, perTile: number];
+  aim: number;
+  lift: number;
+  clip?: number;
+}
 const ACTION_CAMS: Record<string, ActionCam | null> = {
   xcom: { turn: 0.35, pitch: 32, zoom: [4, 0.9], aim: 0.5, lift: 0 },
   ombro: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // over the shoulder of the attacker
@@ -63,7 +90,6 @@ const PORTRAIT_START = 8.3;
 // few tiles and big units; the camera follows the cursor and whoever acts, and F still shows the whole map (Nov 12)
 const PC_START = 10;
 
-
 // marker colors; the meaning also goes in HUD text (never color alone)
 // Veil purple: the area of a spell being charged stays lit until it goes off (the text goes on the tile under the cursor, hud.ts)
 const DANGER: [string, number] = ['#9b4dff', 0.4];
@@ -74,15 +100,22 @@ const DANGER: [string, number] = ['#9b4dff', 0.4];
 // (strike range, threat) and cross (blocked shot)
 type MarkPattern = 'frame' | 'solid' | 'hatch' | 'cross';
 const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?: MarkPattern]> = {
-  actor: ['#ffd479', 0.95, 'solid'], move: ['#6fc0ff', 0.95, 'frame'], range: ['#ff7a3c', 0.95, 'hatch'], blocked: ['#b07ae0', 0.95, 'cross'],
-  threat: ['#ff2d55', 0.6, 'hatch'], area: ['#ffb020', 1, 'solid'], target: ['#fff2a0', 1, 'solid'], path: ['#1e6fff', 0.95],
+  actor: ['#ffd479', 0.95, 'solid'],
+  move: ['#6fc0ff', 0.95, 'frame'],
+  range: ['#ff7a3c', 0.95, 'hatch'],
+  blocked: ['#b07ae0', 0.95, 'cross'],
+  threat: ['#ff2d55', 0.6, 'hatch'],
+  area: ['#ffb020', 1, 'solid'],
+  target: ['#fff2a0', 1, 'solid'],
+  path: ['#1e6fff', 0.95],
 };
 const markTextures = new Map<MarkPattern, THREE.CanvasTexture>();
 // white texture (the color comes from the material) with the marker drawing; one per drawing, made the first time
 function markTexture(p: MarkPattern): THREE.CanvasTexture {
   let t = markTextures.get(p);
   if (t) return t;
-  const S = 64, c = document.createElement('canvas');
+  const S = 64,
+    c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d')!;
   g.fillStyle = `rgba(255,255,255,${p === 'solid' ? 0.42 : 0.08})`; // core
@@ -95,8 +128,17 @@ function markTexture(p: MarkPattern): THREE.CanvasTexture {
     g.strokeStyle = 'rgba(255,255,255,0.6)';
     g.lineWidth = 4;
     g.beginPath();
-    if (p === 'hatch') for (let k = -S; k < S; k += 16) { g.moveTo(k, S); g.lineTo(k + S, 0); }
-    else { g.moveTo(10, 10); g.lineTo(S - 10, S - 10); g.moveTo(S - 10, 10); g.lineTo(10, S - 10); }
+    if (p === 'hatch')
+      for (let k = -S; k < S; k += 16) {
+        g.moveTo(k, S);
+        g.lineTo(k + S, 0);
+      }
+    else {
+      g.moveTo(10, 10);
+      g.lineTo(S - 10, S - 10);
+      g.moveTo(S - 10, 10);
+      g.lineTo(10, S - 10);
+    }
     g.stroke();
     g.restore();
   }
@@ -120,7 +162,10 @@ const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
 // of Gariland from the map file's surface_type), approved by Fernando to go into the game.
 // `canopy`: the tile height on the map is the crown's (a Gariland tree), and the ground comes from the lowest neighbor.
 // `stairs`: on a ramp tile the top stays flat and the dungeon stairs (STAIRS) climb over it (crypts, Nov 13)
-const LOOK: Record<string, { top: string; side: string | null; prop?: string; propH?: number; propW?: number; canopy?: true; stairs?: true }> = {
+const LOOK: Record<
+  string,
+  { top: string; side: string | null; prop?: string; propH?: number; propW?: number; canopy?: true; stairs?: true }
+> = {
   grass: { top: 'blocos/grass', side: 'blocos/dirt' },
   stone: { top: 'blocos/gravel', side: 'blocos/stone' },
   // water: the top piece is the gravel bed (where the unit steps), seen through the water.ts surface (Nov 13)
@@ -165,7 +210,10 @@ const STAIRS = 'masmorra/stairs_modular_center';
 // Ramp and the tile on top it climbs to: the step between the two is walking, not a jump (Nov 13, Fernando's request: "when
 // going down the ramp the units are going down jumping; ramps must be walked down"). walkY follows the sloped ground
 export function rampLink(grid: Grid, a: Pos, b: Pos): boolean {
-  const up = (r: Pos, top: Pos) => { const t = tileAt(grid, r).ramp; return !!t && r.x + FACING[t[0]].x === top.x && r.y + FACING[t[0]].y === top.y; };
+  const up = (r: Pos, top: Pos) => {
+    const t = tileAt(grid, r).ramp;
+    return !!t && r.x + FACING[t[0]].x === top.x && r.y + FACING[t[0]].y === top.y;
+  };
   return up(a, b) || up(b, a);
 }
 const PLAIN_UNITS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('bonecos') === 'liso';
@@ -180,25 +228,66 @@ const BASE_DEPTH = 2; // in tiles, below the ground; with 1 the gradient ended b
 const BACKGROUND = '#1b1626'; // the scene background: the gradient ends in it
 // side color by the floor above (Tile.look) or by the terrain on maps without a per-tile look
 const WALL_COLOR: Record<string, string> = {
-  grass: '#4f8f3a', tree: '#4f8f3a', floor: '#4f8f3a', forest: '#3f7a34', stone: '#7a7d86', box: '#7a7d86', wall: '#7a7d86',
-  water: '#2f6fae', bridge: '#2f6fae', roof: '#8a4b32', chimney: '#4a4a52', wood: '#8a6238',
-  rock: '#7a7d86', summit: '#4a4a52', sand: '#b8a06a', gold: '#7a7d86', brick: '#8a4b32', snow: '#c9d2dc', snow_rock: '#c9d2dc',
-  tree2: '#4f8f3a', tree3: '#4f8f3a', tree4: '#4f8f3a', bare1: '#c9d2dc', bare2: '#c9d2dc',
-  crypt: '#5a5d66', altar: '#4a4a52', pillar: '#5a5d66', crates: '#5a5d66', barrel: '#5a5d66', chest: '#4a4a52', rubble: '#5a5d66', spikes: '#5a5d66',
+  grass: '#4f8f3a',
+  tree: '#4f8f3a',
+  floor: '#4f8f3a',
+  forest: '#3f7a34',
+  stone: '#7a7d86',
+  box: '#7a7d86',
+  wall: '#7a7d86',
+  water: '#2f6fae',
+  bridge: '#2f6fae',
+  roof: '#8a4b32',
+  chimney: '#4a4a52',
+  wood: '#8a6238',
+  rock: '#7a7d86',
+  summit: '#4a4a52',
+  sand: '#b8a06a',
+  gold: '#7a7d86',
+  brick: '#8a4b32',
+  snow: '#c9d2dc',
+  snow_rock: '#c9d2dc',
+  tree2: '#4f8f3a',
+  tree3: '#4f8f3a',
+  tree4: '#4f8f3a',
+  bare1: '#c9d2dc',
+  bare2: '#c9d2dc',
+  crypt: '#5a5d66',
+  altar: '#4a4a52',
+  pillar: '#5a5d66',
+  crates: '#5a5d66',
+  barrel: '#5a5d66',
+  chest: '#4a4a52',
+  rubble: '#5a5d66',
+  spikes: '#5a5d66',
 };
-const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const NEIGHBORS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
 const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // outline from the approved POC
 const TINT_GLOW = 0.45; // strength of the own glow (UnitDef.tint): visible on the dark unit without erasing the texture
 // Trees (Nov 13, Fernando's request: "bigger trees... some can even take up more than 1 tile"): maximum height and width,
 // in tiles, of the 1-tile tree (the unit is 0.85: the crown goes past the tile) and of the one covering 2 or 4 tree tiles
 // together at the same height. Each model fits the smaller of the two limits, so the round crown does not get too wide.
-const TREE_SIZE: Record<number, { h: number; w: number }> = { 1: { h: 2.4, w: 1.9 }, 2: { h: 2.8, w: 2.3 }, 4: { h: 3.4, w: 2.9 } };
+const TREE_SIZE: Record<number, { h: number; w: number }> = {
+  1: { h: 2.4, w: 1.9 },
+  2: { h: 2.8, w: 2.3 },
+  4: { h: 3.4, w: 2.9 },
+};
 // Crown cutout (same request: the crown must not hide a unit, the cursor or a marked tile): each one opens a hole in the
 // tree in front of it. Cap of points per frame (9 units, the cursor and the marked tiles)
 const CUT_MAX = 64;
 // Details that break the grid (Nov 13, "it's not Minecraft"): rocks at the foot of ravines, tufts and pebbles at the corners of
 // tiles, away from the unit's ring (0.44 from the center). Pieces from KayKit's forest pack (same texture as the trees)
-const DETAIL = { rock: 'floresta/Rock_1_A_Color1', boulder: 'floresta/Rock_3_A_Color1', pebble: 'floresta/Rock_2_A_Color1', tuft: 'floresta/Grass_1_A_Color1' };
+const DETAIL = {
+  rock: 'floresta/Rock_1_A_Color1',
+  boulder: 'floresta/Rock_3_A_Color1',
+  pebble: 'floresta/Rock_2_A_Color1',
+  tuft: 'floresta/Grass_1_A_Color1',
+};
 const GREEN = new Set(['grass', 'sand', 'tree', 'tree2', 'tree3', 'tree4']); // ground that gets a grass tuft
 const ROCKY = new Set(['rock', 'summit', 'snow', 'snow_rock', 'bare1', 'bare2']); // ground that gets a pebble
 // fixed draw by position (the same map always draws the same), from 0 to 1
@@ -213,8 +302,10 @@ const TMP = new THREE.Vector3(); // per-frame math without creating objects
 // recall the SNES's 15 bits without becoming a poster; the option exists for Fernando to compare.
 const PALETTE_SHADER = {
   uniforms: { tDiffuse: { value: null }, levels: { value: 6 } },
-  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: 'uniform sampler2D tDiffuse; uniform float levels; varying vec2 vUv; void main() { vec4 c = texture2D(tDiffuse, vUv); gl_FragColor = vec4(floor(c.rgb * levels + 0.5) / levels, c.a); }',
+  vertexShader:
+    'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader:
+    'uniform sampler2D tDiffuse; uniform float levels; varying vec2 vUv; void main() { vec4 c = texture2D(tDiffuse, vUv); gl_FragColor = vec4(floor(c.rgb * levels + 0.5) / levels, c.a); }',
 };
 
 interface UnitView {
@@ -239,15 +330,21 @@ interface Anim {
   done: () => void;
 }
 
-
 // KayKit textures are palettes: with mipmap the low-resolution render blends neighboring colors (learned in the POC)
 function prepare(o: THREE.Object3D) {
   o.traverse((m) => {
     const mesh = m as THREE.Mesh;
     if (!mesh.isMesh) return;
     mesh.castShadow = mesh.receiveShadow = true;
-    const mat = mesh.material as THREE.MeshStandardMaterial, map = mat.map;
-    if (map && map.generateMipmaps && !mat.userData.procedural) Object.assign(map, { generateMipmaps: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, needsUpdate: true });
+    const mat = mesh.material as THREE.MeshStandardMaterial,
+      map = mat.map;
+    if (map && map.generateMipmaps && !mat.userData.procedural)
+      Object.assign(map, {
+        generateMipmaps: false,
+        minFilter: THREE.NearestFilter,
+        magFilter: THREE.NearestFilter,
+        needsUpdate: true,
+      });
   });
   return o;
 }
@@ -294,11 +391,24 @@ export class BattleScene {
   private raised?: Set<string>; // deep stretches at the shallow height (water-levels.ts raisedDeep)
   // tile drawn by the smooth terrain (terrain.ts) instead of blocks: paintable look, plus pieceless wall (stone, brick)
   // stone or snow wall (pieceless wall) also becomes terrain: a stone hill two levels above (rock(t))
-  private ground = (t: Tile): boolean => !!this.terrainTex && !!t.look && t.look in PAINT && (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look) || t.look === 'corpse');
+  private ground = (t: Tile): boolean =>
+    !!this.terrainTex &&
+    !!t.look &&
+    t.look in PAINT &&
+    (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look) || t.look === 'corpse');
   private rock = (t: Tile) => t.terrain === 'wall' && !LOOK[t.look ?? '']?.prop && MOUND.has(t.look ?? '');
   private ambience: Ambience | null = null; // surroundings, fog, light rays and particles (ambience.ts)
 
-  private constructor(private readonly host: HTMLElement, private readonly grid: Grid, private readonly models: Map<string, GLTF>, pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>, pixel: PixelSettings, private readonly lookPieces: Map<string, THREE.Object3D>, private readonly packClips: THREE.AnimationClip[], private readonly terrainTex: TerrainTextures | null = null) {
+  private constructor(
+    private readonly host: HTMLElement,
+    private readonly grid: Grid,
+    private readonly models: Map<string, GLTF>,
+    pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>,
+    pixel: PixelSettings,
+    private readonly lookPieces: Map<string, THREE.Object3D>,
+    private readonly packClips: THREE.AnimationClip[],
+    private readonly terrainTex: TerrainTextures | null = null,
+  ) {
     this.pixel = pixel;
     this.step = grid.levelHeight ?? STEP;
     this.renderer.shadowMap.enabled = true;
@@ -313,11 +423,13 @@ export class BattleScene {
     // Starts 1.5x closer: with the whole map the tile was ~45x24 px, small for a finger (mobile audit of Oct 25);
     // the camera goes to the hero of the turn, and the recenter button goes back to the whole map
     this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
-    this.viewH = innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, PC_START);
+    this.viewH =
+      innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, PC_START);
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
     // the palette comes after the sRGB output; it toggles without rebuilding the chain
-    for (const pass of [this.renderPass, this.pixelPass, new OutputPass(), this.palettePass]) this.composer.addPass(pass);
+    for (const pass of [this.renderPass, this.pixelPass, new OutputPass(), this.palettePass])
+      this.composer.addPass(pass);
     this.scene.background = new THREE.Color('#1b1626');
     this.scene.add(this.sky);
     const sun = this.sun;
@@ -334,14 +446,22 @@ export class BattleScene {
 
   // `all`: sheets for the whole scenario, not just the ones alive in the save (Nov 13, review): without this, reopening a save where a model
   // had already died and pressing "Play again" brought the unit back as the Lighthouse crystal
-  static async create(host: HTMLElement, grid: Grid, state: BattleState, pixel: PixelSettings, all: string[] = []): Promise<BattleScene> {
+  static async create(
+    host: HTMLElement,
+    grid: Grid,
+    state: BattleState,
+    pixel: PixelSettings,
+    all: string[] = [],
+  ): Promise<BattleScene> {
     const ambience = loadAmbience(grid); // downloads along with the map pieces
     // smooth terrain on open maps (terrain.ts); crypts stay block-based
     const terrainTex = grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt' ? loadTerrainTextures() : null;
     // units compressed with meshopt (Nov 13, Fernando's request: the game downloaded 11 MB to open); Three's decoder
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const corpses = grid.tiles.some((t) => t.look === 'corpse') ? CORPSE_MODELS : [];
-    const defs = [...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean))];
+    const defs = [
+      ...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean)),
+    ];
     const [top, side, stone, tree, ...loaded] = await Promise.all([
       ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/quadrado/${n}.gltf`)),
       loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // the tree in the block pack is a cube of leaves
@@ -349,13 +469,43 @@ export class BattleScene {
     ]);
     const models = new Map(defs.map((d, i) => [d, loaded[i]]));
     // only the map that brings a per-tile look downloads these pieces (~630 KB with the textures)
-    const names = [...new Set(grid.tiles.flatMap((t) => (t.look ? [LOOK[t.look].top, LOOK[t.look].side ?? LOOK.water.top, LOOK[t.look].prop ?? '', UNDER, t.ramp && LOOK[t.look].stairs ? STAIRS : '', ...Object.values(DETAIL)] : [])))].filter(Boolean);
-    const looks = new Map(await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)));
+    const names = [
+      ...new Set(
+        grid.tiles.flatMap((t) =>
+          t.look
+            ? [
+                LOOK[t.look].top,
+                LOOK[t.look].side ?? LOOK.water.top,
+                LOOK[t.look].prop ?? '',
+                UNDER,
+                t.ramp && LOOK[t.look].stairs ? STAIRS : '',
+                ...Object.values(DETAIL),
+              ]
+            : [],
+        ),
+      ),
+    ].filter(Boolean);
+    const looks = new Map(
+      await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)),
+    );
     // open maps: painted trees built in code (trees.ts), with variations, in place of KayKit's
-    if (terrainTex) { await loadPaint(); swapTrees(looks); swapProps(looks, true); } // and the painted objects (props.ts)
+    if (terrainTex) {
+      await loadPaint();
+      swapTrees(looks);
+      swapProps(looks, true);
+    } // and the painted objects (props.ts)
     // extra ability gestures (KayKit Rig_Medium, same bones as the units): scripts/assets/anim-pack.mjs
     const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
-    const s = new BattleScene(host, grid, models, { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene }, pixel, looks, pack, await terrainTex);
+    const s = new BattleScene(
+      host,
+      grid,
+      models,
+      { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene },
+      pixel,
+      looks,
+      pack,
+      await terrainTex,
+    );
     s.ambience = (await ambience).mount(s.scene);
     s.sync(state);
     return s;
@@ -366,12 +516,17 @@ export class BattleScene {
     const t = tileAt(this.grid, p);
     // on the ramp the unit stands midway up the climb; in deep water, lowered like the drawing (cursor and markers do not float)
     const drop = (t.depth ?? 0) >= 2 && !(this.raised ??= raisedDeep(this.grid)).has(posKey(p)) ? DEEP_DROP : 0;
-    return new THREE.Vector3(p.x - this.grid.width / 2 + 0.5, (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step, p.y - this.grid.height / 2 + 0.5);
+    return new THREE.Vector3(
+      p.x - this.grid.width / 2 + 0.5,
+      (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step,
+      p.y - this.grid.height / 2 + 0.5,
+    );
   }
 
   // where the unit stands: the tile, lower in shallow water and swimming in deep (markers and cursor follow in world(), on the surface)
   private stand(p: Pos): THREE.Vector3 {
-    const w = this.world(p), d = tileAt(this.grid, p).depth ?? 0;
+    const w = this.world(p),
+      d = tileAt(this.grid, p).depth ?? 0;
     return d ? w.setY(w.y - (d >= 2 ? SWIM : WADE) * this.step) : w;
   }
 
@@ -384,7 +539,8 @@ export class BattleScene {
 
   // height of the drawn ground at world point (x, z), inside tile p
   private surfaceY(p: Pos, x: number, z: number) {
-    const w = this.world(p), s = this.slope(p);
+    const w = this.world(p),
+      s = this.slope(p);
     return s ? w.y + s.x * (x - w.x) + s.z * (z - w.z) : w.y;
   }
 
@@ -400,10 +556,14 @@ export class BattleScene {
   // ramp); at the ramp's side there is half a level of corner, and the step arcs over it instead of passing through.
   // The duration is the flat step's (the rule says it is walking, and the footstep sound counts on that)
   private walkY(from: Pos, to: Pos, k: number) {
-    const a = this.stand(from), b = this.stand(to);
-    const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
-    const ea = this.surfaceY(from, mx, mz), eb = this.surfaceY(to, mx, mz);
-    if (Math.abs(ea - eb) < 0.01) return this.surfaceY(k < 0.5 ? from : to, a.x + (b.x - a.x) * k, a.z + (b.z - a.z) * k);
+    const a = this.stand(from),
+      b = this.stand(to);
+    const mx = (a.x + b.x) / 2,
+      mz = (a.z + b.z) / 2;
+    const ea = this.surfaceY(from, mx, mz),
+      eb = this.surfaceY(to, mx, mz);
+    if (Math.abs(ea - eb) < 0.01)
+      return this.surfaceY(k < 0.5 ? from : to, a.x + (b.x - a.x) * k, a.z + (b.z - a.z) * k);
     const lift = Math.max(0, Math.max(ea, eb) - (a.y + b.y) / 2);
     return a.y + (b.y - a.y) * k + 4 * lift * k * (1 - k);
   }
@@ -418,7 +578,9 @@ export class BattleScene {
       o.position.y = -box.max.y * (this.step / size.y);
       return prepare(new THREE.Group().add(o));
     };
-    const top = norm(pieces.top), side = norm(pieces.side), stone = norm(pieces.stone);
+    const top = norm(pieces.top),
+      side = norm(pieces.side),
+      stone = norm(pieces.stone);
     const list = () => ({ at: [] as THREE.Vector3[], tiles: [] as Pos[] });
     const batch = { top: list(), stoneTop: list(), side: list(), stone: list() };
     const walls: { x: number; z: number; top: number; color: string }[] = []; // smooth side walls of the edge
@@ -435,7 +597,10 @@ export class BattleScene {
     this.levels = levels;
     const smooth = !!this.terrainTex;
     const river = smooth ? riverOf(this.grid, levels) : null;
-    const outside = smooth && EXTEND === 'textura' ? riverOutside(this.grid, this.step, levels, river) : new Map<string, WaterLevel>();
+    const outside =
+      smooth && EXTEND === 'textura'
+        ? riverOutside(this.grid, this.step, levels, river)
+        : new Map<string, WaterLevel>();
     const looks = this.lookBatches(edge, walls, levels);
     for (const [i, tile] of this.grid.tiles.entries()) {
       const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
@@ -452,21 +617,37 @@ export class BattleScene {
         } else if (wall) batch.stone.at.push(at);
         // a dirt block surrounded on all four sides never shows: out of the scene (they were most of the triangles on the 20x20);
         // at the edge, the smooth side takes the dirt's place
-        else if (!edge(p) && !NEIGHBORS.every(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) >= k)) batch.side.at.push(at);
+        else if (!edge(p) && !NEIGHBORS.every(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) >= k))
+          batch.side.at.push(at);
       }
-      if (!tile.look && edge(p)) walls.push({ x: w.x, z: w.z, top: tile.h * this.step, color: WALL_COLOR[tile.terrain] });
-      const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: markTexture('frame') }));
+      if (!tile.look && edge(p))
+        walls.push({ x: w.x, z: w.z, top: tile.h * this.step, color: WALL_COLOR[tile.terrain] });
+      const mark = new THREE.Mesh(
+        markGeo,
+        new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: markTexture('frame') }),
+      );
       mark.position.set(w.x, w.y + 0.02, w.z);
       mark.visible = false;
       this.scene.add(mark);
       this.marks.set(posKey(p), mark);
       // charge danger: its own layer, under the turn's markers (the player's choice stays on top)
-      const danger = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: DANGER[0], transparent: true, opacity: DANGER[1], depthWrite: false }));
+      const danger = new THREE.Mesh(
+        markGeo,
+        new THREE.MeshBasicMaterial({ color: DANGER[0], transparent: true, opacity: DANGER[1], depthWrite: false }),
+      );
       danger.position.set(w.x, w.y + 0.015, w.z);
       danger.visible = false;
       this.scene.add(danger);
       this.danger.set(posKey(p), danger);
-      const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: MARK.path[0], transparent: true, opacity: MARK.path[1], depthWrite: false }));
+      const dot = new THREE.Mesh(
+        dotGeo,
+        new THREE.MeshBasicMaterial({
+          color: MARK.path[0],
+          transparent: true,
+          opacity: MARK.path[1],
+          depthWrite: false,
+        }),
+      );
       dot.position.set(w.x, w.y + 0.03, w.z);
       dot.visible = false;
       this.scene.add(dot);
@@ -479,14 +660,33 @@ export class BattleScene {
     looks.build();
     if (smooth) {
       const inner = (p: Pos, x: number, z: number) => {
-        const lv = levels.get(posKey(p)), t = tileAt(this.grid, p);
-        return lv ? lv.bed : this.rock(t) ? (t.h + 3) * this.step : this.ground(t) ? this.surfaceY(p, x, z) : (t.h + 1) * this.step;
+        const lv = levels.get(posKey(p)),
+          t = tileAt(this.grid, p);
+        return lv
+          ? lv.bed
+          : this.rock(t)
+            ? (t.h + 3) * this.step
+            : this.ground(t)
+              ? this.surfaceY(p, x, z)
+              : (t.h + 1) * this.step;
       };
-      this.scene.add(buildTerrain(this.grid, { step: this.step, inner, outside, levels, river, extend: EXTEND === 'textura', tex: this.terrainTex! }));
+      this.scene.add(
+        buildTerrain(this.grid, {
+          step: this.step,
+          inner,
+          outside,
+          levels,
+          river,
+          extend: EXTEND === 'textura',
+          tex: this.terrainTex!,
+        }),
+      );
       const picks = this.grid.tiles.flatMap((t, i) => {
         const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
         if (t.look === 'bridge') return [{ p, at: this.world(p) }];
-        return this.ground(t) && !levels.has(posKey(p)) ? [{ p, at: this.rock(t) ? this.world(p).setY((t.h + 3) * this.step) : this.world(p) }] : [];
+        return this.ground(t) && !levels.has(posKey(p))
+          ? [{ p, at: this.rock(t) ? this.world(p).setY((t.h + 3) * this.step) : this.world(p) }]
+          : [];
       });
       this.scene.add(buildBridges(this.grid, this.step, this.terrainTex!.wood, this.terrainTex!.bark));
       this.buildBorder(levels);
@@ -497,7 +697,10 @@ export class BattleScene {
     if (levels.size) {
       this.water = new Water(this.scene, this.grid, levels, this.step, river);
       // the outside river is a continuous strip with current (terrain.ts buildStream), not stepped water tiles
-      if (outside.size) { this.stream = buildStream(this.grid, this.step, levels, river); this.scene.add(...this.stream.meshes); }
+      if (outside.size) {
+        this.stream = buildStream(this.grid, this.step, levels, river);
+        this.scene.add(...this.stream.meshes);
+      }
       this.tileTops.push(this.water.surface); // touching the water picks its tile, not the bed way down below
     }
     this.buildCorpses();
@@ -513,10 +716,21 @@ export class BattleScene {
     this.buildWalls(walls);
     this.focus.set(0, STEP, 0);
     // transparent only to enter the transparent queue, after the water (renderOrder -1): without it the water tinted the frame
-    const frame = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', depthTest: MARKER.frameDepthTest, depthWrite: false, transparent: true }));
+    const frame = new THREE.Mesh(
+      new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({
+        color: '#ffffff',
+        depthTest: MARKER.frameDepthTest,
+        depthWrite: false,
+        transparent: true,
+      }),
+    );
     frame.position.y = MARKER.frameY;
     frame.name = 'frame';
-    const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 4).rotateX(Math.PI), new THREE.MeshBasicMaterial({ color: '#ffcf4a', depthTest: false }));
+    const arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.16, 0.3, 4).rotateX(Math.PI),
+      new THREE.MeshBasicMaterial({ color: '#ffcf4a', depthTest: false }),
+    );
     arrow.name = 'arrow';
     arrow.renderOrder = 11; // the arrow stays above everything (even behind a wall it shows where the cursor is); the frame does not
     this.cursor.add(frame, arrow);
@@ -546,13 +760,21 @@ export class BattleScene {
     this.scene.add(mesh);
   }
 
-  private lookBatches(edge: (p: Pos) => boolean, walls: { x: number; z: number; top: number; color: string }[], water: Map<string, WaterLevel>) {
+  private lookBatches(
+    edge: (p: Pos) => boolean,
+    walls: { x: number; z: number; top: number; color: string }[],
+    water: Map<string, WaterLevel>,
+  ) {
     const norm = (name: string, height: number) => {
       const o = this.lookPieces.get(name)!.clone();
       const size = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
       const box = new THREE.Box3().setFromObject(o);
       o.scale.set(1 / size.x, height / size.y, 1 / size.z);
-      o.position.set(-(box.min.x + box.max.x) / 2 / size.x, -box.max.y * (height / size.y), -(box.min.z + box.max.z) / 2 / size.z);
+      o.position.set(
+        -(box.min.x + box.max.x) / 2 / size.x,
+        -box.max.y * (height / size.y),
+        -(box.min.z + box.max.z) / 2 / size.z,
+      );
       return prepare(new THREE.Group().add(o));
     };
     const batches = new Map<string, { piece: THREE.Object3D; at: THREE.Matrix4[]; tiles?: Pos[] }>();
@@ -560,7 +782,15 @@ export class BattleScene {
       const key = `${name}@${height}${tile ? '#' : ''}`;
       let b = batches.get(key);
       // height 0: piece as it came (the scale is already in the matrix)
-      if (!b) batches.set(key, (b = { piece: height ? norm(name, height) : prepare(this.lookPieces.get(name)!.clone()), at: [], tiles: tile && [] }));
+      if (!b)
+        batches.set(
+          key,
+          (b = {
+            piece: height ? norm(name, height) : prepare(this.lookPieces.get(name)!.clone()),
+            at: [],
+            tiles: tile && [],
+          }),
+        );
       b.at.push(m);
       if (tile) b.tiles!.push(tile);
     };
@@ -572,7 +802,10 @@ export class BattleScene {
       // maps the height is already the ground's. Pieceless wall on top: two levels above the tile, as without a look; with a piece
       // (column, crate, barrel), the piece is what blocks and the tile stays at ground level.
       const wall = tile.terrain === 'wall';
-      const h = look.canopy && wall ? Math.min(...neighbors(this.grid, p).map((n) => tileAt(this.grid, n).h)) : tile.h + (wall && !look.prop ? 2 : 0);
+      const h =
+        look.canopy && wall
+          ? Math.min(...neighbors(this.grid, p).map((n) => tileAt(this.grid, n).h))
+          : tile.h + (wall && !look.prop ? 2 : 0);
       // water: the top block is the bed (waterLevels: on shallow where the feet step, on deep way below); the surface, lower
       // on deep than on shallow (the step at the bank says "it is deep here"), is drawn in water.ts
       const top = tile.look === 'water' ? water.get(posKey(p))!.bed : (h + 1) * this.step;
@@ -581,8 +814,10 @@ export class BattleScene {
       const onEdge = edge(p);
       const slab = look.side && !onEdge ? Math.min(1, top) : this.step;
       const m = new THREE.Matrix4().makeTranslation(w.x, top, w.z);
-      if (tile.ramp && !look.stairs) { // stairs: flat top, the piece goes in buildStairs
-        const rise = tile.ramp[1] * this.step, f = FACING[tile.ramp[0]];
+      if (tile.ramp && !look.stairs) {
+        // stairs: flat top, the piece goes in buildStairs
+        const rise = tile.ramp[1] * this.step,
+          f = FACING[tile.ramp[0]];
         // y' = y * (height + rise) / height + rise * (half step toward the ramp + 1/2)
         m.set(1, 0, 0, w.x, f.x * rise, (slab + rise) / slab, f.y * rise, top + rise / 2, 0, 0, 1, w.z, 0, 0, 0, 1);
       }
@@ -595,20 +830,43 @@ export class BattleScene {
       if (!look.side) {
         // bridge: the bed below, if water passes under the plank (the surface comes from water.ts)
         const under = water.get(posKey(p));
-        if (under && !this.terrainTex) put(LOOK.water.top, 1, new THREE.Matrix4().makeTranslation(w.x, under.bed, w.z).scale(new THREE.Vector3(1, under.bed, 1)));
+        if (under && !this.terrainTex)
+          put(
+            LOOK.water.top,
+            1,
+            new THREE.Matrix4().makeTranslation(w.x, under.bed, w.z).scale(new THREE.Vector3(1, under.bed, 1)),
+          );
         y = 0;
       }
-      if (painted) { /* smooth terrain ground */ } else if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
-      else for (; y > 0; y -= 1) if (!this.buried(p, y)) put(column, 1, new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)));
-      if (look.prop && tile.terrain !== 'forest') { // forest tile tree: buildTrees
+      if (painted) {
+        /* smooth terrain ground */
+      } else if (onEdge) walls.push({ x: w.x, z: w.z, top: y, color: WALL_COLOR[tile.look!] });
+      else
+        for (; y > 0; y -= 1)
+          if (!this.buried(p, y))
+            put(
+              column,
+              1,
+              new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)),
+            );
+      if (look.prop && tile.terrain !== 'forest') {
+        // forest tile tree: buildTrees
         // painted object (props.ts): the variation comes from the position, as with the trees
-        const prop = variant(this.lookPieces, look.prop, hash(p.x, p.y, 6)), box = pieceBox(this.lookPieces.get(prop)!);
+        const prop = variant(this.lookPieces, look.prop, hash(p.x, p.y, 6)),
+          box = pieceBox(this.lookPieces.get(prop)!);
         // propW: ground piece (spikes) measured by width, to fit the tile; the others by height (1.1 = the tree)
-        const k = look.propW ? look.propW / Math.max(box.max.x - box.min.x, box.max.z - box.min.z) : (look.propH ?? 1.1) / (box.max.y - box.min.y);
-        put(prop, 0, new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)));
+        const k = look.propW
+          ? look.propW / Math.max(box.max.x - box.min.x, box.max.z - box.min.z)
+          : (look.propH ?? 1.1) / (box.max.y - box.min.y);
+        put(
+          prop,
+          0,
+          new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)),
+        );
       }
       // debris on top of the bridge (walkable cover): the caravan remains over the planks (props.ts), only on open maps
-      if (tile.terrain === 'rubble' && tile.look === 'bridge' && this.lookPieces.has(DEBRIS)) put(variant(this.lookPieces, DEBRIS, hash(p.x, p.y, 6)), 0, new THREE.Matrix4().makeTranslation(w.x, top, w.z));
+      if (tile.terrain === 'rubble' && tile.look === 'bridge' && this.lookPieces.has(DEBRIS))
+        put(variant(this.lookPieces, DEBRIS, hash(p.x, p.y, 6)), 0, new THREE.Matrix4().makeTranslation(w.x, top, w.z));
     };
     const build = () => {
       for (const b of batches.values()) this.instanced(b.piece, b.at, b.tiles);
@@ -643,7 +901,12 @@ export class BattleScene {
   // Caravan bodies: knight and rogue alternating, still on the last frame of the death animation, darkened, with a
   // dark stain on the ground; draw by tile for the rotation
   private buildCorpses() {
-    const stain = new THREE.MeshBasicMaterial({ color: '#2a0f0a', transparent: true, opacity: 0.55, depthWrite: false });
+    const stain = new THREE.MeshBasicMaterial({
+      color: '#2a0f0a',
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+    });
     this.grid.tiles.forEach((t, i) => {
       if (t.look !== 'corpse') return;
       const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
@@ -673,8 +936,12 @@ export class BattleScene {
       body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
       this.scene.add(body);
       // stain with an irregular edge (brushstroke), not a disc
-      const blot = new THREE.CircleGeometry(0.42, 14).rotateX(-Math.PI / 2), bp = blot.getAttribute('position');
-      for (let k = 1; k < bp.count; k++) { const r = 0.7 + 0.5 * hash(p.x + (k % 14) * 0.37, p.y, 9); bp.setXYZ(k, bp.getX(k) * r, 0, bp.getZ(k) * r); }
+      const blot = new THREE.CircleGeometry(0.42, 14).rotateX(-Math.PI / 2),
+        bp = blot.getAttribute('position');
+      for (let k = 1; k < bp.count; k++) {
+        const r = 0.7 + 0.5 * hash(p.x + (k % 14) * 0.37, p.y, 9);
+        bp.setXYZ(k, bp.getX(k) * r, 0, bp.getZ(k) * r);
+      }
       const spot = new THREE.Mesh(blot, stain);
       spot.position.set(w.x + 0.08, w.y + 0.012, w.z - 0.05);
       spot.scale.set(1, 1, 0.7);
@@ -694,14 +961,20 @@ export class BattleScene {
   // Discreet dotted line on the edge of the battlefield (Nov 13, Fernando's request): follows the ground height of each
   // edge tile (on water, the surface), with a step where the height changes
   private buildBorder(levels: Map<string, WaterLevel>) {
-    const { width: W, height: H } = this.grid, pts: THREE.Vector3[] = [];
+    const { width: W, height: H } = this.grid,
+      pts: THREE.Vector3[] = [];
     const yAt = (p: Pos, x: number, z: number) => (levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.04;
     const side = (cells: Pos[], edge: (p: Pos, k: number) => [number, number]) => {
       const line: THREE.Vector3[] = [];
-      for (const p of cells) for (let k = 0; k <= 4; k++) { const [x, z] = edge(p, k / 4); line.push(new THREE.Vector3(x, yAt(p, x, z), z)); }
+      for (const p of cells)
+        for (let k = 0; k <= 4; k++) {
+          const [x, z] = edge(p, k / 4);
+          line.push(new THREE.Vector3(x, yAt(p, x, z), z));
+        }
       for (let i = 1; i < line.length; i++) pts.push(line[i - 1], line[i]);
     };
-    const X = (x: number) => x - W / 2, Z = (z: number) => z - H / 2;
+    const X = (x: number) => x - W / 2,
+      Z = (z: number) => z - H / 2;
     const row = (y: number) => Array.from({ length: W }, (_, x) => ({ x, y }));
     const col = (x: number) => Array.from({ length: H }, (_, y) => ({ x, y }));
     side(row(0), (p, k) => [X(p.x + k), Z(0) + 0.01]);
@@ -709,13 +982,27 @@ export class BattleScene {
     side(col(0), (p, k) => [X(0) + 0.01, Z(p.y + k)]);
     side(col(W - 1), (p, k) => [X(W) - 0.01, Z(p.y + k)]);
     const g = new THREE.BufferGeometry().setFromPoints(pts);
-    const line = new THREE.LineSegments(g, new THREE.LineDashedMaterial({ color: '#f4ecd8', dashSize: 0.14, gapSize: 0.11, transparent: true, opacity: 0.45, depthWrite: false }));
+    const line = new THREE.LineSegments(
+      g,
+      new THREE.LineDashedMaterial({
+        color: '#f4ecd8',
+        dashSize: 0.14,
+        gapSize: 0.11,
+        transparent: true,
+        opacity: 0.45,
+        depthWrite: false,
+      }),
+    );
     line.computeLineDistances();
     line.renderOrder = 2;
     this.scene.add(line);
   }
 
-  private instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
+  private instanced(
+    piece: THREE.Object3D,
+    at: (THREE.Vector3 | THREE.Matrix4)[],
+    tiles?: Pos[],
+  ): THREE.InstancedMesh[] {
     const out: THREE.InstancedMesh[] = [];
     if (!at.length) return out;
     piece.updateMatrixWorld(true);
@@ -724,7 +1011,12 @@ export class BattleScene {
       const src = o as THREE.Mesh;
       if (!src.isMesh) return;
       const inst = new THREE.InstancedMesh(src.geometry, this.textured(src.material as THREE.Material), at.length);
-      at.forEach((p, i) => inst.setMatrixAt(i, (p instanceof THREE.Matrix4 ? m.copy(p) : m.makeTranslation(p.x, p.y, p.z)).multiply(src.matrixWorld)));
+      at.forEach((p, i) =>
+        inst.setMatrixAt(
+          i,
+          (p instanceof THREE.Matrix4 ? m.copy(p) : m.makeTranslation(p.x, p.y, p.z)).multiply(src.matrixWorld),
+        ),
+      );
       inst.castShadow = inst.receiveShadow = true;
       if (tiles) {
         inst.userData.tiles = tiles;
@@ -740,8 +1032,13 @@ export class BattleScene {
   // tree (2x2 first, then 2x1): drawing only, each tile is still a tree in the rules. The group uses the widest model
   // among its tiles'; rotation and size vary by position. The crown gets the cutout (cutMaterial).
   private buildTrees(legacy: THREE.Object3D) {
-    const g = this.grid, taken = new Set<string>();
-    const free = (x: number, y: number, h: number) => inBounds(g, { x, y }) && !taken.has(posKey({ x, y })) && tileAt(g, { x, y }).terrain === 'forest' && tileAt(g, { x, y }).h === h;
+    const g = this.grid,
+      taken = new Set<string>();
+    const free = (x: number, y: number, h: number) =>
+      inBounds(g, { x, y }) &&
+      !taken.has(posKey({ x, y })) &&
+      tileAt(g, { x, y }).terrain === 'forest' &&
+      tileAt(g, { x, y }).h === h;
     // map without a per-tile look (Skirmish) uses the POC tree; the rest, the look's piece
     const modelOf = (p: Pos) => {
       const look = tileAt(g, p).look;
@@ -756,34 +1053,69 @@ export class BattleScene {
         const t = tileAt(g, { x, y });
         // big half-tile tree (half.ts): a single tree, the size of its square
         if (t.tree && !taken.has(posKey({ x, y })) && modelOf({ x, y })) {
-          const n = t.tree, name = modelOf({ x, y })!;
+          const n = t.tree,
+            name = modelOf({ x, y })!;
           for (let dy = 0; dy < n; dy++) for (let dx = 0; dx < n; dx++) taken.add(posKey({ x: x + dx, y: y + dy }));
           const box = boxOf(name);
           const k = Math.min((n * (1 + 0.5 * hash(x, y, 4))) / (box.max.y - box.min.y), (n * 0.95) / width(box));
           const c = this.world({ x, y }).add(new THREE.Vector3((n - 1) / 2, 0, (n - 1) / 2));
-          const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
+          const m = new THREE.Matrix4()
+            .makeRotationY(hash(x, y, 2) * Math.PI * 2)
+            .scale(new THREE.Vector3(k, k, k))
+            .setPosition(c.x, c.y - box.min.y * k, c.z);
           if (!batches.has(name)) batches.set(name, []);
           batches.get(name)!.push(m);
           continue;
         }
         if (!free(x, y, t.h)) continue;
-        const group = free(x + 1, y, t.h) && free(x, y + 1, t.h) && free(x + 1, y + 1, t.h) ? [[0, 0], [1, 0], [0, 1], [1, 1]]
-          : free(x + 1, y, t.h) ? [[0, 0], [1, 0]] : free(x, y + 1, t.h) ? [[0, 0], [0, 1]] : [[0, 0]];
+        const group =
+          free(x + 1, y, t.h) && free(x, y + 1, t.h) && free(x + 1, y + 1, t.h)
+            ? [
+                [0, 0],
+                [1, 0],
+                [0, 1],
+                [1, 1],
+              ]
+            : free(x + 1, y, t.h)
+              ? [
+                  [0, 0],
+                  [1, 0],
+                ]
+              : free(x, y + 1, t.h)
+                ? [
+                    [0, 0],
+                    [0, 1],
+                  ]
+                : [[0, 0]];
         const tiles = group.map(([dx, dy]) => ({ x: x + dx, y: y + dy }));
         for (const p of tiles) taken.add(posKey(p));
         const names = tiles.map(modelOf).filter((n): n is string => n !== null);
         if (!names.length) continue;
         // the tree variation comes from the position (painted.ts variant): different species and sizes side by side. The draw 16
         // was chosen looking at Ash Wood: 2 tall pines, 4 skirted ones and 2 old trees among the 14 (with 5 it came out 1 pine)
-        const name = variant(this.lookPieces, names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)), hash(x, y, 16));
-        const box = boxOf(name), size = TREE_SIZE[tiles.length], tall = (pieceOf(name).userData.tall as number | undefined) ?? 1; // pine: taller than the tile's ceiling
+        const name = variant(
+          this.lookPieces,
+          names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)),
+          hash(x, y, 16),
+        );
+        const box = boxOf(name),
+          size = TREE_SIZE[tiles.length],
+          tall = (pieceOf(name).userData.tall as number | undefined) ?? 1; // pine: taller than the tile's ceiling
         // more varied size (Nov 13, "trees of different sizes"): from 75% to 135% of the tile size
         // the painted tree's foot (flare and roots, userData.foot) stays on the flat core of its tile: on the edge slope
         // (terrain.ts, 1/6 of the tile) the root hung in the air
         const foot = (0.4 * Math.sqrt(tiles.length)) / ((pieceOf(name).userData.foot as number | undefined) ?? 0.01);
-        const k = Math.min(Math.min((size.h * tall) / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1)), foot);
-        const c = tiles.reduce((s: THREE.Vector3, p) => s.add(this.world(p)), new THREE.Vector3()).divideScalar(tiles.length);
-        const m = new THREE.Matrix4().makeRotationY(hash(x, y, 2) * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(c.x, c.y - box.min.y * k, c.z);
+        const k = Math.min(
+          Math.min((size.h * tall) / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1)),
+          foot,
+        );
+        const c = tiles
+          .reduce((s: THREE.Vector3, p) => s.add(this.world(p)), new THREE.Vector3())
+          .divideScalar(tiles.length);
+        const m = new THREE.Matrix4()
+          .makeRotationY(hash(x, y, 2) * Math.PI * 2)
+          .scale(new THREE.Vector3(k, k, k))
+          .setPosition(c.x, c.y - box.min.y * k, c.z);
         if (!batches.has(name)) batches.set(name, []);
         batches.get(name)!.push(m);
       }
@@ -793,7 +1125,8 @@ export class BattleScene {
         inst.material = this.cutMaterial(inst.material as THREE.MeshStandardMaterial);
         // the pixel art normal pass swaps everyone's material; the tree uses its own, with the same cutout, and only
         // returns the normal (without this the outline of the cut crown showed up over the unit)
-        inst.onBeforeRender = (_r, scene) => void (this.cuts.normals.value = (scene as THREE.Scene).overrideMaterial ? 1 : 0);
+        inst.onBeforeRender = (_r, scene) =>
+          void (this.cuts.normals.value = (scene as THREE.Scene).overrideMaterial ? 1 : 0);
         this.hasTrees = true;
       }
     }
@@ -802,25 +1135,42 @@ export class BattleScene {
   // Crown cutout: discards the piece of the tree that is in front (closer to the camera) of a protected point and
   // within `w` of it on screen; the hole's edge comes out checkered, in the 16-bit way. Points in camera coordinates,
   // updated every frame (updateCuts). With `cutNormals`, it returns the normal like pixel art's MeshNormalMaterial.
-  private readonly cuts = { points: { value: Array.from({ length: CUT_MAX }, () => new THREE.Vector4()) }, count: { value: 0 }, normals: { value: 0 } };
+  private readonly cuts = {
+    points: { value: Array.from({ length: CUT_MAX }, () => new THREE.Vector4()) },
+    count: { value: 0 },
+    normals: { value: 0 },
+  };
   private hasTrees = false;
   private cutMaterial(src: THREE.MeshStandardMaterial) {
     const m = src.clone();
     m.allowOverride = false;
     m.customProgramCacheKey = () => `copa${CUT_MAX}`;
     m.onBeforeCompile = (s) => {
-      Object.assign(s.uniforms, { cutPoints: this.cuts.points, cutCount: this.cuts.count, cutNormals: this.cuts.normals });
+      Object.assign(s.uniforms, {
+        cutPoints: this.cuts.points,
+        cutCount: this.cuts.count,
+        cutNormals: this.cuts.normals,
+      });
       s.fragmentShader = s.fragmentShader
-        .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`)
-        .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+        .replace(
+          'void main() {',
+          `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`,
+        )
+        .replace(
+          '#include <clipping_planes_fragment>',
+          `#include <clipping_planes_fragment>
           vec3 viewPos = -vViewPosition;
           for (int i = 0; i < ${CUT_MAX}; i++) {
             if (i >= cutCount) break;
             vec4 c = cutPoints[i];
             float d = distance(viewPos.xy, c.xy);
             if (viewPos.z > c.z + 0.3 && d < c.w && (d < c.w * 0.7 || mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0)) discard;
-          }`)
-        .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n  if (cutNormals > 0.5) gl_FragColor = vec4(normalize(normal) * 0.5 + 0.5, 1.0);');
+          }`,
+        )
+        .replace(
+          '#include <dithering_fragment>',
+          '#include <dithering_fragment>\n  if (cutNormals > 0.5) gl_FragColor = vec4(normalize(normal) * 0.5 + 0.5, 1.0);',
+        );
     };
     return m;
   }
@@ -828,7 +1178,8 @@ export class BattleScene {
   // protected cutout points: each unit's body, the cursor and the marked tiles (Move's and Act's)
   private marked: THREE.Vector3[] = [];
   private updateCuts() {
-    const pts = this.cuts.points.value, view = this.camera.matrixWorldInverse;
+    const pts = this.cuts.points.value,
+      view = this.camera.matrixWorldInverse;
     let n = 0;
     const add = (x: number, y: number, z: number, r: number) => {
       if (n >= CUT_MAX) return;
@@ -836,7 +1187,8 @@ export class BattleScene {
       pts[n++].set(TMP.x, TMP.y, TMP.z, r);
     };
     for (const v of this.units.values()) {
-      const h = unitHeight(v.def), p = v.holder.position;
+      const h = unitHeight(v.def),
+        p = v.holder.position;
       if (v.holder.visible) add(p.x, p.y + h * 0.6, p.z, Math.max(0.75, h * 0.75));
     }
     if (this.cursor.visible) add(this.cursor.position.x, this.cursor.position.y + 0.3, this.cursor.position.z, 0.8);
@@ -848,7 +1200,8 @@ export class BattleScene {
   // its top, and so is the tile. They were most of the triangles on maps with a per-tile look (1.2 million on Beacon Hill);
   // cutting them pays for the bigger trees and the details (Nov 13). Water is left out: the other front may make it transparent
   private buried(p: Pos, y: number) {
-    const solid = (t: Tile) => !t.depth && !!t.look && t.look !== 'water' && t.look !== 'bridge' && !LOOK[t.look].canopy;
+    const solid = (t: Tile) =>
+      !t.depth && !!t.look && t.look !== 'water' && t.look !== 'bridge' && !LOOK[t.look].canopy;
     if (!solid(tileAt(this.grid, p))) return false;
     return NEIGHBORS.every(([dx, dy]) => {
       const q = { x: p.x + dx, y: p.y + dy };
@@ -864,13 +1217,20 @@ export class BattleScene {
     const at: THREE.Matrix4[] = [];
     for (const [i, t] of this.grid.tiles.entries()) {
       if (!t.ramp || !t.look || !LOOK[t.look].stairs) continue;
-      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) }, w = this.world(p), f = FACING[t.ramp[0]];
+      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) },
+        w = this.world(p),
+        f = FACING[t.ramp[0]];
       const rise = t.ramp[1] * this.step;
       // the piece climbs toward -z: the rotation takes -z to the ramp direction; its center (z = 2) goes to the tile center. Sunk
       // 1 of the 8 steps: each step's corner sits on the ramp plane or below, and the marker, ring and cursor (lying
       // on that plane) do not vanish behind the steps
-      at.push(new THREE.Matrix4().makeRotationY(Math.atan2(-f.x, -f.y)).setPosition(w.x, w.y - rise / 2 - rise / 8, w.z)
-        .multiply(new THREE.Matrix4().makeScale(0.5, rise / 4, 0.25)).multiply(new THREE.Matrix4().makeTranslation(0, 0, -2)));
+      at.push(
+        new THREE.Matrix4()
+          .makeRotationY(Math.atan2(-f.x, -f.y))
+          .setPosition(w.x, w.y - rise / 2 - rise / 8, w.z)
+          .multiply(new THREE.Matrix4().makeScale(0.5, rise / 4, 0.25))
+          .multiply(new THREE.Matrix4().makeTranslation(0, 0, -2)),
+      );
     }
     if (at.length) this.instanced(prepare(this.lookPieces.get(STAIRS)!.clone()), at);
   }
@@ -885,11 +1245,18 @@ export class BattleScene {
       const box = pieceBox(this.lookPieces.get(DETAIL[kind])!);
       const k = size / Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
       // base on the ground, sunk 15% of the piece's height: a settled rock, not a landed one
-      at[kind].push(new THREE.Matrix4().makeRotationY(turn * Math.PI * 2).scale(new THREE.Vector3(k, k, k)).setPosition(x, y - (box.min.y + 0.15 * (box.max.y - box.min.y)) * k, z));
+      at[kind].push(
+        new THREE.Matrix4()
+          .makeRotationY(turn * Math.PI * 2)
+          .scale(new THREE.Vector3(k, k, k))
+          .setPosition(x, y - (box.min.y + 0.15 * (box.max.y - box.min.y)) * k, z),
+      );
     };
-    const natural = (t: { look?: string; depth?: number }) => !t.depth && (GREEN.has(t.look ?? '') || ROCKY.has(t.look ?? ''));
+    const natural = (t: { look?: string; depth?: number }) =>
+      !t.depth && (GREEN.has(t.look ?? '') || ROCKY.has(t.look ?? ''));
     for (const [i, t] of g.tiles.entries()) {
-      const p = { x: i % g.width, y: Math.floor(i / g.width) }, w = this.world(p);
+      const p = { x: i % g.width, y: Math.floor(i / g.width) },
+        w = this.world(p);
       if (!natural(t) || t.terrain === 'wall') continue;
       // ravine: the neighbor is 1 level or more higher at the corner between the two. The rock sits against the wall, near
       // one of the corners (0.45 or more from the center, outside the unit's ring), and the taller one gets another in the middle of the wall
@@ -898,22 +1265,36 @@ export class BattleScene {
         if (!inBounds(g, q) || hash(p.x, p.y, 3 + d) > 0.55) continue;
         const u = tileAt(g, q);
         if (!natural(u) && !(u.terrain === 'wall' && ROCKY.has(u.look ?? ''))) continue;
-        const ex = w.x + f.x / 2, ez = w.z + f.y / 2;
-        const low = this.surfaceY(p, ex, ez), high = u.terrain === 'wall' ? (u.h + 3) * this.step : this.surfaceY(q, ex, ez);
+        const ex = w.x + f.x / 2,
+          ez = w.z + f.y / 2;
+        const low = this.surfaceY(p, ex, ez),
+          high = u.terrain === 'wall' ? (u.h + 3) * this.step : this.surfaceY(q, ex, ez);
         if (high - low < this.step * 0.9) continue;
         const side = (hash(p.x, p.y, 7 + d) < 0.5 ? -1 : 1) * (0.26 + 0.14 * hash(p.x, p.y, 11 + d));
-        const x = ex + f.y * side, z = ez + f.x * side;
+        const x = ex + f.y * side,
+          z = ez + f.x * side;
         put('rock', x, this.surfaceY(p, x, z), z, 0.2 + 0.08 * hash(p.x, p.y, 13 + d), hash(p.x, p.y, 17 + d));
-        if (high - low >= this.step * 1.9) put('boulder', ex - f.y * side * 0.5, low + (high - low) * 0.4, ez - f.x * side * 0.5, 0.26 + 0.08 * hash(p.x, p.y, 19 + d), hash(p.x, p.y, 23 + d));
+        if (high - low >= this.step * 1.9)
+          put(
+            'boulder',
+            ex - f.y * side * 0.5,
+            low + (high - low) * 0.4,
+            ez - f.x * side * 0.5,
+            0.26 + 0.08 * hash(p.x, p.y, 19 + d),
+            hash(p.x, p.y, 23 + d),
+          );
       }
       // tuft or pebble at a tile corner (~0.5 from the center): breaks the top's stamp without looking like an obstacle
       if (t.terrain !== 'floor' || hash(p.x, p.y, 29) > 0.4) continue;
-      const cx = w.x + (hash(p.x, p.y, 31) < 0.5 ? -0.36 : 0.36), cz = w.z + (hash(p.x, p.y, 37) < 0.5 ? -0.36 : 0.36);
+      const cx = w.x + (hash(p.x, p.y, 31) < 0.5 ? -0.36 : 0.36),
+        cz = w.z + (hash(p.x, p.y, 37) < 0.5 ? -0.36 : 0.36);
       const green = GREEN.has(t.look ?? '');
       // grass tuft only on block maps: on the smooth terrain it did not match the ground photo (Nov 13, Fernando's request)
-      if (!(green && this.terrainTex)) put(green ? 'tuft' : 'pebble', cx, this.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
+      if (!(green && this.terrainTex))
+        put(green ? 'tuft' : 'pebble', cx, this.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
     }
-    for (const kind of Object.keys(at) as (keyof typeof DETAIL)[]) this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
+    for (const kind of Object.keys(at) as (keyof typeof DETAIL)[])
+      this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
   }
 
   // Dotted line of the longest range (Nov 13, Fernando's request: "around the character the range of
@@ -924,35 +1305,64 @@ export class BattleScene {
   setRangeRing(r: { center: Pos; range: number } | null) {
     const key = r ? `${posKey(r.center)}:${r.range}` : '';
     if (this.ring?.key === key) return;
-    if (this.ring) { this.scene.remove(this.ring.mesh); this.ring.mesh.geometry.dispose(); (this.ring.mesh.material as THREE.Material).dispose(); this.ring = null; }
+    if (this.ring) {
+      this.scene.remove(this.ring.mesh);
+      this.ring.mesh.geometry.dispose();
+      (this.ring.mesh.material as THREE.Material).dispose();
+      this.ring = null;
+    }
     if (!r || r.range < 1) return;
-    const { width: W, height: H } = this.grid, pos: number[] = [];
+    const { width: W, height: H } = this.grid,
+      pos: number[] = [];
     const inside = (p: Pos) => inBounds(this.grid, p) && dist(p, r.center) <= r.range;
-    const yAt = (p: Pos, x: number, z: number) => (this.levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.05;
+    const yAt = (p: Pos, x: number, z: number) =>
+      (this.levels.get(posKey(p))?.surface ?? this.surfaceY(p, x, z)) + 0.05;
     // flat little dash lying on the ground (WebGL's 1 px line barely showed): 2 triangles from `a` to `b`, 0.07 wide
     const dash = (p: Pos, ax: number, az: number, bx: number, bz: number) => {
-      const nx = -(bz - az), nz = bx - ax, k = 0.035 / Math.hypot(nx, nz);
+      const nx = -(bz - az),
+        nz = bx - ax,
+        k = 0.035 / Math.hypot(nx, nz);
       const v = (x: number, z: number, side: number) => [x + nx * k * side, yAt(p, x, z), z + nz * k * side];
-      const a1 = v(ax, az, 1), a2 = v(ax, az, -1), b1 = v(bx, bz, 1), b2 = v(bx, bz, -1);
+      const a1 = v(ax, az, 1),
+        a2 = v(ax, az, -1),
+        b1 = v(bx, bz, 1),
+        b2 = v(bx, bz, -1);
       pos.push(...a1, ...a2, ...b1, ...b1, ...a2, ...b2);
     };
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const p = { x, y };
-      if (!inside(p)) continue;
-      // each side of the tile that touches an outside tile becomes 3 little dashes (they follow ramp and step)
-      for (const [dx, dy, ax, az, bx, bz] of [[0, -1, 0, 0, 1, 0], [0, 1, 0, 1, 1, 1], [-1, 0, 0, 0, 0, 1], [1, 0, 1, 0, 1, 1]] as const) {
-        if (inside({ x: x + dx, y: y + dy })) continue;
-        for (let k = 0; k < 3; k++) {
-          const t0 = (k + 0.2) / 3, t1 = (k + 0.8) / 3;
-          const at = (t: number) => [x + ax + (bx - ax) * t - W / 2, y + az + (bz - az) * t - H / 2];
-          const [x0, z0] = at(t0), [x1, z1] = at(t1);
-          dash(p, x0, z0, x1, z1);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const p = { x, y };
+        if (!inside(p)) continue;
+        // each side of the tile that touches an outside tile becomes 3 little dashes (they follow ramp and step)
+        for (const [dx, dy, ax, az, bx, bz] of [
+          [0, -1, 0, 0, 1, 0],
+          [0, 1, 0, 1, 1, 1],
+          [-1, 0, 0, 0, 0, 1],
+          [1, 0, 1, 0, 1, 1],
+        ] as const) {
+          if (inside({ x: x + dx, y: y + dy })) continue;
+          for (let k = 0; k < 3; k++) {
+            const t0 = (k + 0.2) / 3,
+              t1 = (k + 0.8) / 3;
+            const at = (t: number) => [x + ax + (bx - ax) * t - W / 2, y + az + (bz - az) * t - H / 2];
+            const [x0, z0] = at(t0),
+              [x1, z1] = at(t1);
+            dash(p, x0, z0, x1, z1);
+          }
         }
       }
-    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+    const mesh = new THREE.Mesh(
+      g,
+      new THREE.MeshBasicMaterial({
+        color: '#ffd27a',
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
     mesh.renderOrder = 11;
     this.scene.add(mesh);
     this.ring = { key, mesh };
@@ -962,14 +1372,28 @@ export class BattleScene {
   // where it hits (the blocking tile, sightBlock). Rebuilt on every cursor change; few vertices
   private trajectory: THREE.Group | null = null;
   setTrajectory(t: { from: Pos; to: Pos; block: Pos | null } | null) {
-    if (this.trajectory) { this.scene.remove(this.trajectory); this.trajectory.traverse((o) => (o as THREE.Mesh).geometry?.dispose()); this.trajectory = null; }
+    if (this.trajectory) {
+      this.scene.remove(this.trajectory);
+      this.trajectory.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+      this.trajectory = null;
+    }
     if (!t) return;
     const eye = (p: Pos) => this.stand(p).add(new THREE.Vector3(0, unitHeight('soldier') * 0.7, 0));
-    const a = eye(t.from), b = eye(t.to);
-    const cut = t.block ? (() => { const w = this.world(t.block); const k = Math.hypot(w.x - a.x, w.z - a.z) / Math.max(1e-3, Math.hypot(b.x - a.x, b.z - a.z)); return a.clone().lerp(b, k); })() : b;
+    const a = eye(t.from),
+      b = eye(t.to);
+    const cut = t.block
+      ? (() => {
+          const w = this.world(t.block);
+          const k = Math.hypot(w.x - a.x, w.z - a.z) / Math.max(1e-3, Math.hypot(b.x - a.x, b.z - a.z));
+          return a.clone().lerp(b, k);
+        })()
+      : b;
     const seg = (p: THREE.Vector3, q: THREE.Vector3, color: string) => {
       const len = p.distanceTo(q);
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, len, 6).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthTest: false }));
+      const m = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.025, 0.025, len, 6).rotateX(Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthTest: false }),
+      );
       m.position.copy(p).lerp(q, 0.5);
       m.lookAt(q);
       m.renderOrder = 12;
@@ -1043,10 +1467,16 @@ export class BattleScene {
       mixer = new THREE.AnimationMixer(body);
       // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
       const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
-      clips = [...gltf.animations, ...this.packClips.map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has)))];
+      clips = [
+        ...gltf.animations,
+        ...this.packClips.map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has))),
+      ];
     } else {
       // the Beacon has no model: a glowing crystal, to read from afar which is the target to protect
-      const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.32), new THREE.MeshStandardMaterial({ color: '#7ff3ff', emissive: '#2bb8d6', emissiveIntensity: 1.2 }));
+      const crystal = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.32),
+        new THREE.MeshStandardMaterial({ color: '#7ff3ff', emissive: '#2bb8d6', emissiveIntensity: 1.2 }),
+      );
       crystal.position.y = 0.55;
       crystal.castShadow = true;
       holder.add(crystal, new THREE.PointLight('#7ff3ff', 2, 3));
@@ -1055,18 +1485,30 @@ export class BattleScene {
     const ground = new THREE.Group();
     // white arrow on the ground for the unit's front (white: the team color vanished on marked tiles), only on maps where direction counts: from above the unit's face is hardly readable
     if (u.facing !== undefined) {
-      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 3).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff' }));
+      const arrow = new THREE.Mesh(
+        new THREE.ConeGeometry(0.16, 0.3, 3).rotateX(Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: '#ffffff' }),
+      );
       arrow.position.set(0, 0.05, 0.5);
       arrow.scale.y = 0.3;
       ground.add(arrow);
     }
     // team-colored ring on the ground: the side reads even when the model looks alike
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthWrite: false, transparent: true, opacity: 0.9 }));
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthWrite: false, transparent: true, opacity: 0.9 }),
+    );
     ring.position.y = 0.04;
     ring.scale.setScalar(UNIT_DEFS[u.def].size ?? 1); // big unit: the ring surrounds the whole square
     // bar of 0.12 height (full 0.08): with 0.06 it partly vanished in the 2 px pixel art
-    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(0.7, MARKER.barHalf * 2), new THREE.MeshBasicMaterial({ color: '#1a1020', depthTest: false }));
-    const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.08), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthTest: false }));
+    const barBg = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.7, MARKER.barHalf * 2),
+      new THREE.MeshBasicMaterial({ color: '#1a1020', depthTest: false }),
+    );
+    const bar = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.66, 0.08),
+      new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthTest: false }),
+    );
     bar.position.z = 0.001;
     const barHolder = new THREE.Group().add(barBg, bar);
     barHolder.position.y = barYOf(u.def);
@@ -1076,12 +1518,28 @@ export class BattleScene {
     holder.add(ground, barHolder);
     // stage boss: golden crown above the bar, so the "take down the boss" objective shows on the map
     if (UNIT_DEFS[u.def].boss) {
-      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.2, 5), new THREE.MeshBasicMaterial({ color: '#f2c14e' }));
+      const crown = new THREE.Mesh(
+        new THREE.ConeGeometry(0.14, 0.2, 5),
+        new THREE.MeshBasicMaterial({ color: '#f2c14e' }),
+      );
       crown.position.y = barYOf(u.def) + 0.22;
       holder.add(crown);
     }
     this.scene.add(holder);
-    const view: UnitView = { holder, mixer, clips, current: null, bar, hp: u.hp, def: u.def, aura: null, body, mats, flash: 0, ground };
+    const view: UnitView = {
+      holder,
+      mixer,
+      clips,
+      current: null,
+      bar,
+      hp: u.hp,
+      def: u.def,
+      aura: null,
+      body,
+      mats,
+      flash: 0,
+      ground,
+    };
     this.play(view, 'Idle');
     return view;
   }
@@ -1093,7 +1551,9 @@ export class BattleScene {
     await this.wait(TIMING.jumpCrouch);
     this.play(v, 'Jump_Idle');
     const c = Math.max(a.y, b.y) + 0.4 * this.step - (a.y + b.y) / 2;
-    await this.animate(jumpAirMs(levels), (k) => v.holder.position.lerpVectors(a, b, k).setY(a.y + (b.y - a.y) * k + 4 * c * k * (1 - k)));
+    await this.animate(jumpAirMs(levels), (k) =>
+      v.holder.position.lerpVectors(a, b, k).setY(a.y + (b.y - a.y) * k + 4 * c * k * (1 - k)),
+    );
     this.play(v, 'Jump_Land', true, 0.67 / (TIMING.jumpLand / 1000));
     await this.wait(TIMING.jumpLand);
   }
@@ -1148,10 +1608,17 @@ export class BattleScene {
       v.holder.getObjectByName('bar')?.removeFromParent();
       v.ground.visible = false;
       if (v.aura) v.aura.visible = false;
-      for (const m of v.mats) { m.color.multiplyScalar(0.55); m.emissive.setScalar(0); }
+      for (const m of v.mats) {
+        m.color.multiplyScalar(0.55);
+        m.emissive.setScalar(0);
+      }
       this.fallen.set(id, v.holder);
     }
-    for (const [id, h] of this.fallen) if (alive.has(id)) { this.scene.remove(h); this.fallen.delete(id); }
+    for (const [id, h] of this.fallen)
+      if (alive.has(id)) {
+        this.scene.remove(h);
+        this.fallen.delete(id);
+      }
     const enemies = state.units.filter((u) => u.team === 'enemy');
     for (const u of state.units) {
       let v = this.units.get(u.id);
@@ -1160,7 +1627,10 @@ export class BattleScene {
         this.units.set(u.id, v);
         // spawns looking to the far side
         const foe = u.team === 'hero' ? enemies[0] : state.units.find((x) => x.team === 'hero');
-        if (foe) { v.holder.position.copy(this.unitWorld(u)); this.face(v, foe.pos); }
+        if (foe) {
+          v.holder.position.copy(this.unitWorld(u));
+          this.face(v, foe.pos);
+        }
       }
       v.holder.position.copy(this.unitWorld(u));
       // map with direction (FFT study): the model looks where the state says, after each animation and undo
@@ -1209,7 +1679,7 @@ export class BattleScene {
       const glow = m.userData.glow as { color: THREE.Color; intensity: number } | undefined;
       if (tint) m.emissive.set(tint);
       else if (glow) m.emissive.copy(glow.color);
-      m.emissiveIntensity = tint ? TINT_GLOW : glow?.intensity ?? 0;
+      m.emissiveIntensity = tint ? TINT_GLOW : (glow?.intensity ?? 0);
     }
   }
 
@@ -1221,7 +1691,8 @@ export class BattleScene {
   pop(unitId: string) {
     const v = this.units.get(unitId);
     if (!v?.body) return;
-    const body = v.body, base = body.scale.y;
+    const body = v.body,
+      base = body.scale.y;
     void this.animate(TIMING.pop, (k) => {
       const s = Math.sin(Math.PI * k);
       body.position.y = s * 0.18;
@@ -1238,16 +1709,26 @@ export class BattleScene {
     this.frozenUntil = this.t + TIMING.hitStop;
     for (const m of v.mats) m.emissive.set('#ffffff');
     const flash = ++v.flash;
-    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k))).then(() => flash === v.flash && this.glowBack(v.mats, v.def));
+    void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k))).then(
+      () => flash === v.flash && this.glowBack(v.mats, v.def),
+    );
     await this.wait(TIMING.hitStop);
-    if (v.body) void this.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * 0.07 * (1 - k)));
+    if (v.body)
+      void this.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * 0.07 * (1 - k)));
   }
 
   private float(unitId: string, text: string, cls: string) {
     const v = this.units.get(unitId);
     if (!v) return;
-    const p = v.holder.position.clone().setY(v.holder.position.y + 1.3).project(this.camera);
-    const node = el('div', { class: `float ${cls}`, style: `left:${((p.x + 1) / 2) * 100}%;top:${((1 - p.y) / 2) * 100}%` }, text);
+    const p = v.holder.position
+      .clone()
+      .setY(v.holder.position.y + 1.3)
+      .project(this.camera);
+    const node = el(
+      'div',
+      { class: `float ${cls}`, style: `left:${((p.x + 1) / 2) * 100}%;top:${((1 - p.y) / 2) * 100}%` },
+      text,
+    );
     this.floats.append(node);
     setTimeout(() => node.remove(), TIMING.float);
   }
@@ -1265,10 +1746,13 @@ export class BattleScene {
         this.play(v, 'Walking_A', false, 1.25);
         const n = e.path.length - 1;
         for (let i = 1; i <= n; i++) {
-          const a = this.stand(e.path[i - 1]), b = this.stand(e.path[i]);
+          const a = this.stand(e.path[i - 1]),
+            b = this.stand(e.path[i]);
           this.face(v, e.path[i]);
           // jumps when the standing height changes or flies a gap (the same math as the Jump and the footstep sound, stepMs); a study ramp is flat
-          const dh = rampLink(this.grid, e.path[i - 1], e.path[i]) ? 0 : standH(tileAt(this.grid, e.path[i])) - standH(tileAt(this.grid, e.path[i - 1]));
+          const dh = rampLink(this.grid, e.path[i - 1], e.path[i])
+            ? 0
+            : standH(tileAt(this.grid, e.path[i])) - standH(tileAt(this.grid, e.path[i - 1]));
           const tiles = dist(e.path[i - 1], e.path[i]);
           if (isJump(dh, tiles)) {
             await this.jump(v, a, b, Math.max(Math.abs(dh), tiles));
@@ -1276,8 +1760,16 @@ export class BattleScene {
             continue;
           }
           // starts on the 1st tile and brakes on the last (sine curve), constant step in the middle: leaves like a unit on rails
-          const ease = (k: number) => (n === 1 ? (1 - Math.cos(Math.PI * k)) / 2 : i === 1 ? 1 - Math.cos((Math.PI / 2) * k) : i === n ? Math.sin((Math.PI / 2) * k) : k);
-          const from = e.path[i - 1], to = e.path[i];
+          const ease = (k: number) =>
+            n === 1
+              ? (1 - Math.cos(Math.PI * k)) / 2
+              : i === 1
+                ? 1 - Math.cos((Math.PI / 2) * k)
+                : i === n
+                  ? Math.sin((Math.PI / 2) * k)
+                  : k;
+          const from = e.path[i - 1],
+            to = e.path[i];
           const ramp = !!(tileAt(this.grid, from).ramp || tileAt(this.grid, to).ramp);
           await this.animate(TIMING.step, (k) => {
             v.holder.position.lerpVectors(a, b, ease(k));
@@ -1287,7 +1779,8 @@ export class BattleScene {
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
-        if (!samePos(this.posOf(v), e.target)) await this.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
+        if (!samePos(this.posOf(v), e.target))
+          await this.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
         if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
         const look = lookOf(e.ability);
         this.play(v, look.clip, true);
@@ -1296,10 +1789,19 @@ export class BattleScene {
         const to = this.world(e.target).setY(this.world(e.target).y + 0.4);
         if (look.fx === 'dash') {
           // charge: advances half a tile and returns, like FFT's quick lunge
-          const a = v.holder.position.clone(), b = a.clone().lerp(this.world(e.target), 0.5);
+          const a = v.holder.position.clone(),
+            b = a.clone().lerp(this.world(e.target), 0.5);
           await this.animate(TIMING.lunge, (k) => v.holder.position.lerpVectors(a, b, Math.sin(Math.PI * k)));
         }
-        await playFx(this.scene, (ms, step) => this.animate(ms, step), look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
+        await playFx(
+          this.scene,
+          (ms, step) => this.animate(ms, step),
+          look.fx,
+          from,
+          to,
+          ABILITIES[e.ability].radius,
+          TIMING.projectile,
+        );
         this.play(v, 'Idle'); // the gesture plays once and stuck on the last frame until the unit acted again (Nov 13 review)
       } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall' || e.k === 'spike') {
         v.hp -= e.dmg;
@@ -1323,12 +1825,15 @@ export class BattleScene {
         // heal flashes green, without the strike's pause or shake: the same signal, with another meaning
         for (const m of v.mats) m.emissive.set('#5dff8a');
         const flash = ++v.flash;
-        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k)))).then(() => flash === v.flash && this.glowBack(v.mats, v.def));
+        void this.animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k)))).then(
+          () => flash === v.flash && this.glowBack(v.mats, v.def),
+        );
         this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `+${e.amount}`, 'heal');
         await this.wait(TIMING.hit);
       } else if (e.k === 'push') {
-        const a = v.holder.position.clone(), b = this.stand(e.to);
+        const a = v.holder.position.clone(),
+          b = this.stand(e.to);
         await this.animate(TIMING.push, (k) => v.holder.position.lerpVectors(a, b, k));
       } else if (e.k === 'charge') {
         // starts charging: the long spell gesture (each ability's own effect comes in the animation block)
@@ -1359,9 +1864,15 @@ export class BattleScene {
   pick(clientX: number, clientY: number): Pos | null {
     const r = this.renderer.domElement.getBoundingClientRect();
     const ray = new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1), this.camera);
+    ray.setFromCamera(
+      new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1),
+      this.camera,
+    );
     const holders = [...this.units.values()];
-    for (const hit of ray.intersectObjects(holders.map((v) => v.holder), true)) {
+    for (const hit of ray.intersectObjects(
+      holders.map((v) => v.holder),
+      true,
+    )) {
       for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) {
         const unit = holders.find((v) => v.holder === o);
         if (unit) return this.posOf(unit);
@@ -1377,7 +1888,10 @@ export class BattleScene {
     const v = this.units.get(unitId);
     if (!v) return null;
     const c = this.renderer.domElement;
-    const p = v.holder.position.clone().setY(v.holder.position.y + unitHeight(v.def) / 2).project(this.camera);
+    const p = v.holder.position
+      .clone()
+      .setY(v.holder.position.y + unitHeight(v.def) / 2)
+      .project(this.camera);
     // 0.5 tile per occupied tile: covers the team ring on the ground (radius 0.44) and the body from any angle
     const r = (0.5 * (UNIT_DEFS[v.def].size ?? 1) * c.clientHeight) / (this.camera.top - this.camera.bottom);
     return { x: ((p.x + 1) / 2) * c.clientWidth, y: ((1 - p.y) / 2) * c.clientHeight, r };
@@ -1399,8 +1913,13 @@ export class BattleScene {
     // `heroi`: the camera always stays on the heroes' side (over the attacker's shoulder; when the enemy attacks, behind the hero)
     const cam = ACTION_CAMS[CAM_NAME === 'heroi' ? (enemy ? 'costas' : 'ombro') : CAM_NAME];
     if (!cam) return;
-    this.camSaved = { viewH: this.camSaved?.viewH ?? this.viewH, yaw: this.camSaved?.yaw ?? this.yawTarget, pair: `${posKey(from)}>${posKey(to)}` };
-    const a = this.world(from), b = this.world(to);
+    this.camSaved = {
+      viewH: this.camSaved?.viewH ?? this.viewH,
+      yaw: this.camSaved?.yaw ?? this.yawTarget,
+      pair: `${posKey(from)}>${posKey(to)}`,
+    };
+    const a = this.world(from),
+      b = this.world(to);
     // the camera turns around the strike by the option's `turn`, always a little to the side, so the close unit does not cover the other
     let goal = Math.atan2(a.x - b.x, a.z - b.z) + cam.turn;
     while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
@@ -1411,10 +1930,19 @@ export class BattleScene {
     this.camera.near = cam.clip ? CAM_DIST - cam.clip - 0.5 * a.distanceTo(b) : 0.1;
     // `xcom` aims at the middle of the two at the usual height; the low-camera ones aim at the units' height, otherwise the
     // highest tile fell out of frame
-    this.focusGoal = cam.lift ? a.clone().lerp(b, cam.aim).setY(Math.max(a.y, b.y) + cam.lift) : this.focusGoal;
+    this.focusGoal = cam.lift
+      ? a
+          .clone()
+          .lerp(b, cam.aim)
+          .setY(Math.max(a.y, b.y) + cam.lift)
+      : this.focusGoal;
     if (!cam.lift) this.focusOn(from, to);
-    const h0 = this.viewH, h1 = Math.max(Math.min(ZOOM.min, cam.zoom[0]), Math.min(h0, cam.zoom[0] + a.distanceTo(b) * cam.zoom[1]));
-    await this.animate(420, (k) => { this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k); this.frameView(); });
+    const h0 = this.viewH,
+      h1 = Math.max(Math.min(ZOOM.min, cam.zoom[0]), Math.min(h0, cam.zoom[0] + a.distanceTo(b) * cam.zoom[1]));
+    await this.animate(420, (k) => {
+      this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k);
+      this.frameView();
+    });
   }
   private async endActionCam() {
     const s = this.camSaved;
@@ -1425,7 +1953,10 @@ export class BattleScene {
     this.camera.near = 0.1;
     if (this.focusGoal) this.focusGoal.y = STEP;
     const h0 = this.viewH;
-    await this.animate(380, (k) => { this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k); this.frameView(); });
+    await this.animate(380, (k) => {
+      this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k);
+      this.frameView();
+    });
   }
 
   // back to the whole-map framing
@@ -1510,7 +2041,8 @@ export class BattleScene {
   }
 
   private resize() {
-    const w = this.host.clientWidth, h = this.host.clientHeight;
+    const w = this.host.clientWidth,
+      h = this.host.clientHeight;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
     this.frameView();
@@ -1519,18 +2051,28 @@ export class BattleScene {
   // camera frame by view height (viewH), without redoing the draw targets: it is what the action camera's zoom
   // calls every frame (it changed viewH and nothing happened, because only the resize applied it)
   private frameView() {
-    const w = this.host.clientWidth, h = this.host.clientHeight;
+    const w = this.host.clientWidth,
+      h = this.host.clientHeight;
     const a = w / h;
     // portrait phone: opens the frame until the width shows the whole map (pinch to adjust)
     const viewH = a < 1 ? (this.viewH * 1.15) / a : this.viewH;
     // centers the map in the free space between the top HUD and the bottom one, not in the middle of the screen
     const off = ((this.insets.bottom - this.insets.top) / 2) * (viewH / h);
-    Object.assign(this.camera, { left: (-viewH * a) / 2, right: (viewH * a) / 2, top: viewH / 2 - off, bottom: -viewH / 2 - off });
+    Object.assign(this.camera, {
+      left: (-viewH * a) / 2,
+      right: (viewH * a) / 2,
+      top: viewH / 2 - off,
+      bottom: -viewH / 2 - off,
+    });
     this.camera.updateProjectionMatrix();
   }
 
   private placeCamera() {
-    const off = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)).multiplyScalar(CAM_DIST);
+    const off = new THREE.Vector3(
+      Math.sin(this.yaw) * Math.cos(this.pitch),
+      Math.sin(this.pitch),
+      Math.cos(this.yaw) * Math.cos(this.pitch),
+    ).multiplyScalar(CAM_DIST);
     this.camera.position.copy(this.focus).add(off);
     this.camera.lookAt(this.focus);
     this.camera.updateMatrixWorld();
@@ -1539,8 +2081,11 @@ export class BattleScene {
     const block = ((this.camera.top - this.camera.bottom) / this.renderer.domElement.height) * this.pixel.size;
     const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
     const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
-    const px = this.camera.position.dot(right), py = this.camera.position.dot(up);
-    this.camera.position.addScaledVector(right, Math.round(px / block) * block - px).addScaledVector(up, Math.round(py / block) * block - py);
+    const px = this.camera.position.dot(right),
+      py = this.camera.position.dot(up);
+    this.camera.position
+      .addScaledVector(right, Math.round(px / block) * block - px)
+      .addScaledVector(up, Math.round(py / block) * block - py);
     this.camera.updateMatrixWorld();
   }
 
@@ -1548,10 +2093,19 @@ export class BattleScene {
   // resources. Pixel art draws the scene more than once per frame: info sums everything and zeroes only at the start of the frame.
   private perf = { frames: 0, since: performance.now() };
   stats() {
-    const now = performance.now(), ms = now - this.perf.since, frames = this.perf.frames;
+    const now = performance.now(),
+      ms = now - this.perf.since,
+      frames = this.perf.frames;
     this.perf = { frames: 0, since: now };
     const info = this.renderer.info;
-    return { fps: (frames * 1000) / ms, ms: frames ? ms / frames : 0, calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures };
+    return {
+      fps: (frames * 1000) / ms,
+      ms: frames ? ms / frames : 0,
+      calls: info.render.calls,
+      triangles: info.render.triangles,
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+    };
   }
 
   private frame() {
@@ -1573,10 +2127,12 @@ export class BattleScene {
     if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
     // dt*30: arrives in ~0.1 s, fast so as not to delay whoever holds the arrow, smooth for the eye to follow
     this.cursor.position.lerp(this.cursorGoal, Math.min(1, dt * 30));
-    this.cursor.getObjectByName('arrow')!.position.y = MARKER.arrowY + Math.sin(performance.now() / 250) * MARKER.arrowBob;
+    this.cursor.getObjectByName('arrow')!.position.y =
+      MARKER.arrowY + Math.sin(performance.now() / 250) * MARKER.arrowBob;
     // marked tiles breathe (±20% of opacity, ~1.9 s cycle): the map looks alive and the area reads without a strong blink
     const breath = 0.8 + 0.2 * Math.sin(performance.now() / 300);
-    for (const m of this.marks.values()) if (m.visible) (m.material as THREE.MeshBasicMaterial).opacity = m.userData.base * breath;
+    for (const m of this.marks.values())
+      if (m.visible) (m.material as THREE.MeshBasicMaterial).opacity = m.userData.base * breath;
     // strong strike shake: shifts the focus only in this frame, vanishes by itself (nothing accumulates in the real focus)
     const s = this.t < this.shakeUntil ? 0.12 * ((this.shakeUntil - this.t) / TIMING.shake) : 0;
     const jitter = new THREE.Vector3(Math.sin(this.t * 0.09) * s, 0, Math.cos(this.t * 0.13) * s);
@@ -1588,7 +2144,9 @@ export class BattleScene {
       if (this.t >= this.frozenUntil) v.mixer?.update(dt * fast);
       this.tiltGround(v);
       // health bar always facing the camera
-      v.holder.getObjectByName('bar')!.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
+      v.holder
+        .getObjectByName('bar')!
+        .quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
     }
     this.water?.update(this.t, this.units.values());
     if (this.stream) this.stream.time.value = this.t / 1000;

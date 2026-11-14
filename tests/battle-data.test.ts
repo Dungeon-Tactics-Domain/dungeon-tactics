@@ -5,7 +5,8 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 // completeness test: forgotten or inconsistent data shows up here, not in the middle of a battle
 describe('ability and unit data', () => {
   it('every ability of every unit exists', () => {
-    for (const u of Object.values(UNIT_DEFS)) for (const a of u.abilities) expect(ABILITIES[a], `${u.id} → ${a}`).toBeDefined();
+    for (const u of Object.values(UNIT_DEFS))
+      for (const a of u.abilities) expect(ABILITIES[a], `${u.id} → ${a}`).toBeDefined();
   });
 
   it('each hero has 4 abilities or more and fits the 6-slot bar (move + abilities + end)', () => {

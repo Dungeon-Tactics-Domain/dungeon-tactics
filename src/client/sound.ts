@@ -27,10 +27,34 @@ export function parseSound(raw: unknown): SoundSettings {
   return { music: pct(r.music, DEFAULT_SOUND.music), sfx: pct(r.sfx, DEFAULT_SOUND.sfx) };
 }
 
-export type Sfx = 'cursor' | 'confirm' | 'cancel' | 'step' | 'swing' | 'throw' | 'hit' | 'miss' | 'heal' | 'charge' | 'spell' | 'fire' | 'die';
+export type Sfx =
+  | 'cursor'
+  | 'confirm'
+  | 'cancel'
+  | 'step'
+  | 'swing'
+  | 'throw'
+  | 'hit'
+  | 'miss'
+  | 'heal'
+  | 'charge'
+  | 'spell'
+  | 'fire'
+  | 'die';
 const FILE: Record<Sfx, string> = {
-  cursor: 'click', confirm: 'confirm', cancel: 'cancel', step: 'step', swing: 'swing', throw: 'throw', hit: 'hit', miss: 'miss',
-  heal: 'heal', charge: 'charge', spell: 'spell', fire: 'fireball', die: 'die',
+  cursor: 'click',
+  confirm: 'confirm',
+  cancel: 'cancel',
+  step: 'step',
+  swing: 'swing',
+  throw: 'throw',
+  hit: 'hit',
+  miss: 'miss',
+  heal: 'heal',
+  charge: 'charge',
+  spell: 'spell',
+  fire: 'fireball',
+  die: 'die',
 };
 
 let settings = parseSound(store.json(SOUND_KEY));
@@ -73,7 +97,10 @@ const fadeTick = () => {
 
 // page opened by automation (Playwright from the test sessions): no music, even with a saved volume (Nov 13, Fernando's
 // request: "mute the tabs you open, that music can't keep playing in the background"); `?musica=1` turns it on to test sound
-const AUTOMATED = typeof navigator !== 'undefined' && navigator.webdriver && !(typeof location !== 'undefined' && new URLSearchParams(location.search).has('musica'));
+const AUTOMATED =
+  typeof navigator !== 'undefined' &&
+  navigator.webdriver &&
+  !(typeof location !== 'undefined' && new URLSearchParams(location.search).has('musica'));
 const applyMusic = () => {
   if (!ctx) return;
   const want = settings.music && !AUTOMATED ? (track ?? 'battle') : null;
@@ -99,12 +126,16 @@ function unlock() {
   ctx = new AudioContext();
   applyMusic();
 }
-if (typeof addEventListener !== 'undefined') for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, unlock, { once: true, capture: true });
+if (typeof addEventListener !== 'undefined')
+  for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, unlock, { once: true, capture: true });
 
 const load = (name: string) => {
   let p = buffers.get(name);
   if (!p) {
-    p = fetch(`/sfx/${name}.mp3`).then((r) => r.arrayBuffer()).then((b) => ctx!.decodeAudioData(b)).catch(() => null);
+    p = fetch(`/sfx/${name}.mp3`)
+      .then((r) => r.arrayBuffer())
+      .then((b) => ctx!.decodeAudioData(b))
+      .catch(() => null);
     buffers.set(name, p);
   }
   return p;

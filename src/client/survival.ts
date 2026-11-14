@@ -13,15 +13,20 @@ export const SURVIVE_TURNS = 40;
 // 1.5x HP (before 2x): without the reinforcement, downing everyone before the end was the common path and the mode became any battle;
 // with the x1.75 damage, 2x left the heroes at 9%
 const TOUGH = 1.5;
-const tough =(base: string): DevUnit => {
+const tough = (base: string): DevUnit => {
   const u = unitFrom(base);
   return { ...u, hp: Math.round(u.hp * TOUGH) };
 };
 
 // grass tiles on Ash Wood's hero side (rows 6 and 7, below the river), surrounding the start on both flanks
-const AMBUSH = [{ x: 1, y: 7 }, { x: 6, y: 6 }, { x: 9, y: 7 }, { x: 11, y: 6 }];
+const AMBUSH = [
+  { x: 1, y: 7 },
+  { x: 6, y: 6 },
+  { x: 9, y: 7 },
+  { x: 11, y: 6 },
+];
 
-export const turnsLeft =(state: BattleState) => Math.max(0, SURVIVE_TURNS - state.turnsPlayed);
+export const turnsLeft = (state: BattleState) => Math.max(0, SURVIVE_TURNS - state.turnsPlayed);
 // Record (to give a reason to replay): how many turns the party held out in the best game, up to SURVIVE_TURNS. Kept in the
 // browser; the saved value is a trust boundary (integer between 0 and SURVIVE_TURNS, otherwise 0).
 export const BEST_KEY = 'dt:amanhecer';
@@ -31,25 +36,32 @@ export function parseBest(raw: unknown): number {
 }
 export const survived = (state: BattleState) => Math.min(state.turnsPlayed, SURVIVE_TURNS);
 
-export const survivalGoal =(say: (pt: string, en: string) => string) =>
+export const survivalGoal = (say: (pt: string, en: string) => string) =>
   say(`Resista até o amanhecer: ${SURVIVE_TURNS} turnos!`, `Hold out until dawn: ${SURVIVE_TURNS} turns!`);
 
 // `turns`: only the measurement (tests/survival.test.ts) overrides it, to find the number of turns that gives the right difficulty
 export function survivalScenario(turns = SURVIVE_TURNS): Scenario {
-  const s = buildDevScenario({
-    map: 'ash_wood',
-    heroes: ['warrior', 'archer', 'mage', 'rogue'].map((b) => unitFrom(b)),
-    enemies: ['brute', 'skeleton_archer', 'dark_mage', 'brute'].map(tough),
-  }, SURVIVAL_ID, ['Até o amanhecer', 'Until Dawn']);
+  const s = buildDevScenario(
+    {
+      map: 'ash_wood',
+      heroes: ['warrior', 'archer', 'mage', 'rogue'].map((b) => unitFrom(b)),
+      enemies: ['brute', 'skeleton_archer', 'dark_mage', 'brute'].map(tough),
+    },
+    SURVIVAL_ID,
+    ['Até o amanhecer', 'Until Dawn'],
+  );
   // ambush: the enemies are already born on this side of the river, around the party. Born on the other side, heroes who just passed the
   // turn won 100% (waiting costs little, the turn counter runs and the enemies never even arrived; measured on Nov 13)
   let k = 0;
   s.spawns = s.spawns.map((sp) => (sp.team === 'enemy' ? { ...sp, ...AMBUSH[k++] } : sp));
   // the custom rule replaces the default entirely (which loses without a Lighthouse): hence it repeats fallen heroes and downed enemies
   s.rules = {
-    outcome: (st) => !st.units.some((u) => u.team === 'hero') ? 'defeat'
-      : !st.units.some((u) => u.team === 'enemy') || st.turnsPlayed >= turns ? 'victory'
-      : 'ongoing',
+    outcome: (st) =>
+      !st.units.some((u) => u.team === 'hero')
+        ? 'defeat'
+        : !st.units.some((u) => u.team === 'enemy') || st.turnsPlayed >= turns
+          ? 'victory'
+          : 'ongoing',
   };
   return s;
 }

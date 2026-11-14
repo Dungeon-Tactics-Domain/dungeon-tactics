@@ -7,11 +7,18 @@ import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
 // warrior next to a soldier (1 tile above), with room to move; the warrior is the current actor
-const duel = (seed = HIT_SEED) => new Battle(flat(6, 3), stateOf([
-  { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 1 },
-  { id: 'b', def: 'beacon', team: 'hero', x: 0, y: 0 },
-  { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 1 },
-], seed));
+const duel = (seed = HIT_SEED) =>
+  new Battle(
+    flat(6, 3),
+    stateOf(
+      [
+        { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 1 },
+        { id: 'b', def: 'beacon', team: 'hero', x: 0, y: 0 },
+        { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 1 },
+      ],
+      seed,
+    ),
+  );
 
 describe('player turn', () => {
   it('moves in parts up to the movement (Nov 13) and acts once, in any order', () => {
@@ -173,11 +180,16 @@ describe('a broken save does not crash the game', () => {
 describe('save with a big unit (Nov 13 review)', () => {
   it('rejects a Colossus with a tile off the map or on top of another unit', () => {
     const base = Battle.start(SCENARIOS.skirmish, 1).state;
-    const st = { ...base, units: [
-      { id: 'h', def: 'warrior', team: 'hero' as const, pos: { x: 0, y: 7 }, hp: 42, ct: 0, facing: 2 },
-      { id: 'b', def: 'beacon', team: 'hero' as const, pos: { x: 3, y: 7 }, hp: 50, ct: 0 },
-      { id: 'c', def: 'colossus', team: 'enemy' as const, pos: { x: 0, y: 0 }, hp: 160, ct: 0, facing: 0 },
-    ], turn: { actor: 'h', moved: false, usedAbility: null }, charges: [] };
+    const st = {
+      ...base,
+      units: [
+        { id: 'h', def: 'warrior', team: 'hero' as const, pos: { x: 0, y: 7 }, hp: 42, ct: 0, facing: 2 },
+        { id: 'b', def: 'beacon', team: 'hero' as const, pos: { x: 3, y: 7 }, hp: 50, ct: 0 },
+        { id: 'c', def: 'colossus', team: 'enemy' as const, pos: { x: 0, y: 0 }, hp: 160, ct: 0, facing: 0 },
+      ],
+      turn: { actor: 'h', moved: false, usedAbility: null },
+      charges: [],
+    };
     const copy = () => JSON.parse(JSON.stringify(st));
     expect(parseBattleState(copy())).not.toBeNull();
     const out = copy();
@@ -193,7 +205,11 @@ describe('save with a big unit (Nov 13 review)', () => {
 describe('counterattack', () => {
   const g = flat(6, 3);
   it('melee: hitting and moving away draws a counter for half damage; staying adjacent does not', () => {
-    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 }, { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 0 }]); // the Beacon: without it the battle ends on the hit
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 0 },
+    ]); // the Beacon: without it the battle ends on the hit
     s.turn = { actor: 'a', moved: false, usedAbility: null };
     s.rng = HIT_SEED;
     const b = new Battle(g, s);
@@ -209,7 +225,11 @@ describe('counterattack', () => {
   });
 
   it('an archer who shoots another archer and then moves takes the ranged counter', () => {
-    const s = stateOf([{ id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 }, { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 3, y: 1 }, { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 2 }]);
+    const s = stateOf([
+      { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
+      { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 3, y: 1 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 2 },
+    ]);
     s.turn = { actor: 'a', moved: false, usedAbility: null };
     const b = new Battle(g, s);
     b.act(UNIT_DEFS.archer.abilities[0], at(3, 1));

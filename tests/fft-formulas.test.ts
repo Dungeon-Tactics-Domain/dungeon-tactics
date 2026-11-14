@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { critXa, fallDamage, hitPercent, longbowMaxRange, RAW, stat, turnCt, weaponDamage } from '../src/shared/battle/fft/formulas.ts';
+import {
+  critXa,
+  fallDamage,
+  hitPercent,
+  longbowMaxRange,
+  RAW,
+  stat,
+  turnCt,
+  weaponDamage,
+} from '../src/shared/battle/fft/formulas.ts';
 import { CLASSES } from '../src/shared/battle/fft/data.ts';
 
 // FFT reference study (Fernando's request, Nov 11). Each example below comes from the Battle Mechanics Handbook v6.1 by
@@ -59,7 +68,7 @@ describe('FFT: physical attack hit chance (BMG 1.4)', () => {
   it('from the front, class, shield, accessory and weapon count', () => {
     expect(hitPercent(100, ev, 'front')).toBe(64); // [100 * 95 * 90 * 75 * 100 / 10^8] = 64.125
   });
-  it('from the side, class evasion doesn\'t count', () => {
+  it("from the side, class evasion doesn't count", () => {
     expect(hitPercent(100, ev, 'side')).toBe(67); // [100 * 90 * 75 * 100 / 10^6] = 67.5
   });
   it('from behind only the accessory counts', () => {

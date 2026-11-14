@@ -5,15 +5,21 @@ import { ITEMS, SLOTS, type Loadout, type Slot } from '../shared/battle/equipmen
 
 export const CHEST_KEY = 'dt:bau';
 export const EQUIP_KEY = 'dt:equip';
-export interface Chest { gold: number; items: string[] }
+export interface Chest {
+  gold: number;
+  items: string[];
+}
 export type Equip = Record<string, Loadout>;
 
 export const VICTORY_GOLD = 150; // winning a stage yields 150 (the old 3-star maximum x 50) (initial number; the 1st act shop costs 100 to 240)
 
 export function parseChest(raw: unknown): Chest {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  const gold = Number.isInteger(r.gold) && (r.gold as number) >= 0 && (r.gold as number) <= 999999 ? (r.gold as number) : 0;
-  const items = Array.isArray(r.items) ? r.items.filter((i): i is string => typeof i === 'string' && Object.hasOwn(ITEMS, i)).slice(0, 99) : [];
+  const gold =
+    Number.isInteger(r.gold) && (r.gold as number) >= 0 && (r.gold as number) <= 999999 ? (r.gold as number) : 0;
+  const items = Array.isArray(r.items)
+    ? r.items.filter((i): i is string => typeof i === 'string' && Object.hasOwn(ITEMS, i)).slice(0, 99)
+    : [];
   return { gold, items };
 }
 
@@ -46,7 +52,13 @@ export function sell(chest: Chest, id: string): Chest | null {
 }
 
 // equips `id` (from the chest) in its slot on unit `base`, returning to the chest what was there; `id` null only unequips
-export function equip(chest: Chest, eq: Equip, base: string, slot: Slot, id: string | null): { chest: Chest; eq: Equip } | null {
+export function equip(
+  chest: Chest,
+  eq: Equip,
+  base: string,
+  slot: Slot,
+  id: string | null,
+): { chest: Chest; eq: Equip } | null {
   if (id && (ITEMS[id]?.slot !== slot || !chest.items.includes(id))) return null;
   const items = [...chest.items];
   if (id) items.splice(items.indexOf(id), 1);

@@ -47,7 +47,10 @@ export const longestRange = (b: Battle) => Math.max(0, ...abilitiesOf(b).map((id
 // take the cursor: a 2nd Enter after moving would undo the step by accident
 export function startScreen(b: Battle): Screen {
   // already moved and not yet acted: Act (the rest of the movement is left for after the hit)
-  return { k: 'menu', index: b.reach().size && !b.state.turn.moved ? 0 : commandEnabled(b, 'act') ? 1 : b.reach().size ? 0 : 2 };
+  return {
+    k: 'menu',
+    index: b.reach().size && !b.state.turn.moved ? 0 : commandEnabled(b, 'act') ? 1 : b.reach().size ? 0 : 2,
+  };
 }
 
 // moves up or down the menu skipping what's grayed out, wrapping around as in FFT

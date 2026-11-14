@@ -8,7 +8,7 @@ describe('AI with no target in range', () => {
   const grid = flat(20, 20);
   const beacon = { id: 'beacon', def: 'beacon', team: 'hero' as const, x: 2, y: 17 };
 
-  it('the enemy advances toward the beacon even when entering a hero\'s range', () => {
+  it("the enemy advances toward the beacon even when entering a hero's range", () => {
     const soldier = { id: 'e', def: 'soldier', team: 'enemy' as const, x: 14, y: 4 };
     const state = stateOf([soldier, beacon, { id: 'h', def: 'rogue', team: 'hero', x: 10, y: 9 }]);
     const plan = chooseTurn(grid, state, 'e');
@@ -18,7 +18,11 @@ describe('AI with no target in range', () => {
   });
 
   it('the hero goes to meet the enemy, but does not leave the beacon', () => {
-    const state = stateOf([{ id: 'h', def: 'rogue', team: 'hero', x: 4, y: 15 }, beacon, { id: 'e', def: 'soldier', team: 'enemy', x: 16, y: 2 }]);
+    const state = stateOf([
+      { id: 'h', def: 'rogue', team: 'hero', x: 4, y: 15 },
+      beacon,
+      { id: 'e', def: 'soldier', team: 'enemy', x: 16, y: 2 },
+    ]);
     const plan = chooseTurn(grid, state, 'h');
     const at = plan.moveTo ?? { x: 4, y: 15 };
     expect(dist(at, beacon)).toBeLessThanOrEqual(GUARD_RADIUS);

@@ -25,18 +25,42 @@ export interface Attacker {
   sp: number;
   brave: number;
 }
-export type WeaponKind = 'fist' | 'sword' | 'knife' | 'axe' | 'staff' | 'rod' | 'spear' | 'crossbow' | 'longbow' | 'knight_sword' | 'katana';
+export type WeaponKind =
+  | 'fist'
+  | 'sword'
+  | 'knife'
+  | 'axe'
+  | 'staff'
+  | 'rod'
+  | 'spear'
+  | 'crossbow'
+  | 'longbow'
+  | 'knight_sword'
+  | 'katana';
 
 // Damage of the ATTACK command by weapon type, as [minimum, maximum] (BMG 2.1). Only axe, flail and bag roll.
 export function weaponDamage(kind: WeaponKind, u: Attacker, wp: number): [number, number] {
   const fixed = (xa: number): [number, number] => [xa * wp, xa * wp];
   switch (kind) {
-    case 'fist': { const d = trunc((u.pa * u.brave) / 100) * u.pa; return [d, d]; }
-    case 'sword': case 'rod': case 'spear': case 'crossbow': return fixed(u.pa);
-    case 'knife': case 'longbow': return fixed(trunc((u.pa + u.sp) / 2));
-    case 'knight_sword': case 'katana': return fixed(trunc((u.pa * u.brave) / 100));
-    case 'staff': return fixed(u.ma);
-    case 'axe': return [wp, u.pa * wp];
+    case 'fist': {
+      const d = trunc((u.pa * u.brave) / 100) * u.pa;
+      return [d, d];
+    }
+    case 'sword':
+    case 'rod':
+    case 'spear':
+    case 'crossbow':
+      return fixed(u.pa);
+    case 'knife':
+    case 'longbow':
+      return fixed(trunc((u.pa + u.sp) / 2));
+    case 'knight_sword':
+    case 'katana':
+      return fixed(trunc((u.pa * u.brave) / 100));
+    case 'staff':
+      return fixed(u.ma);
+    case 'axe':
+      return [wp, u.pa * wp];
   }
 }
 
@@ -58,15 +82,19 @@ export function hitPercent(base: number, ev: Evasion, side: Side): number {
   return side === 'side' ? trunc((base * rest) / 1e6) : trunc((base * (100 - ev.c) * rest) / 1e8);
 }
 
-
 // Spell hit chance in % (BMG 1.4): only the magical shield and accessory count, from any side
-export const magicHitPercent = (base: number, shield: number, accessory: number) => trunc((base * (100 - shield) * (100 - accessory)) / 10000);
+export const magicHitPercent = (base: number, shield: number, accessory: number) =>
+  trunc((base * (100 - shield) * (100 - accessory)) / 10000);
 
 // Damage or healing spell by faith (BMG 3.4): [(MA * caster's faith * target's faith * Q) / 10000]
-export const faithMagic = (ma: number, casterFaith: number, targetFaith: number, q: number) => trunc((ma * casterFaith * targetFaith * q) / 10000);
+export const faithMagic = (ma: number, casterFaith: number, targetFaith: number, q: number) =>
+  trunc((ma * casterFaith * targetFaith * q) / 10000);
 
 // Wish (BMG 3.3): heals the target RU{user's MaxHP * 2/5} and takes RU{MaxHP * 1/5} from the user
-export const wish = (casterMaxHp: number): [heal: number, cost: number] => [roundUp(casterMaxHp * 2, 5), roundUp(casterMaxHp, 5)];
+export const wish = (casterMaxHp: number): [heal: number, cost: number] => [
+  roundUp(casterMaxHp * 2, 5),
+  roundUp(casterMaxHp, 5),
+];
 
 // The Knight's stat breaks (BMG 3.6): base hit = PA + 50, before evasion
 export const statBreakBase = (pa: number) => pa + 50;
@@ -75,7 +103,8 @@ export const statBreakBase = (pa: number) => pa + 50;
 export { turnCt } from '../turn-queue.ts';
 
 // Fall from a push: it only hurts what exceeds the Jump, RU{(fall - Jump) * MaxHP / 10} (BMG 6.5)
-export const fallDamage = (fall: number, jump: number, maxHp: number) => (fall > jump ? roundUp((fall - jump) * maxHp, 10) : 0);
+export const fallDamage = (fall: number, jump: number, maxHp: number) =>
+  fall > jump ? roundUp((fall - jump) * maxHp, 10) : 0;
 
 // Longbow: max range 5 + [(shooter height - target height) / 2] (BMG 6.9)
 export const longbowMaxRange = (shooterH: number, targetH: number) => 5 + trunc((shooterH - targetH) / 2);

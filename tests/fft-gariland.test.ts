@@ -25,13 +25,25 @@ describe('FFT Gariland: map (fft-map-json, MAP022)', () => {
   it('floor of each tile with the counts from the file (surface_type) and 23 ramps; drawing only (Nov 12)', () => {
     const count: Record<string, number> = {};
     for (const t of g.tiles) count[t.look!] = (count[t.look!] ?? 0) + 1;
-    expect(count).toEqual({ grass: 25, stone: 42, water: 38, roof: 23, wood: 7, bridge: 5, box: 5, chimney: 3, tree: 2 });
+    expect(count).toEqual({
+      grass: 25,
+      stone: 42,
+      water: 38,
+      roof: 23,
+      wood: 7,
+      bridge: 5,
+      box: 5,
+      chimney: 3,
+      tree: 2,
+    });
     expect(g.tiles.filter((t) => t.ramp).length).toBe(23);
     expect(tileAt(g, { x: 4, y: 2 }).ramp).toEqual([0, 2]); // roof rises toward +y up to the ridge at height 8
   });
 
   it('only the two trees are not walkable', () => {
-    const blocked = g.tiles.flatMap((t, i) => (TERRAIN[t.terrain].walkable ? [] : [`${i % g.width},${Math.floor(i / g.width)}`]));
+    const blocked = g.tiles.flatMap((t, i) =>
+      TERRAIN[t.terrain].walkable ? [] : [`${i % g.width},${Math.floor(i / g.width)}`],
+    );
     expect(blocked).toEqual(['2,0', '8,3']);
   });
 });
@@ -63,15 +75,21 @@ describe('FFT Gariland: level 1 units (BMG 7.1 and 7.4)', () => {
 
 describe('FFT Gariland: rules in the engine', () => {
   const b = () => Battle.start(GARILAND, 1);
-  const put = (battle: Battle, id: string, x: number, y: number) => { battle.state.units.find((u) => u.id === id)!.pos = { x, y }; };
+  const put = (battle: Battle, id: string, x: number, y: number) => {
+    battle.state.units.find((u) => u.id === id)!.pos = { x, y };
+  };
 
   it('5 per side: Ramza, Delita and 3 cadets against 4 Squires and 1 Chemist', () => {
-    const defs = (team: string) => GARILAND.spawns.filter((s) => s.team === team).map((s) => s.def).sort();
+    const defs = (team: string) =>
+      GARILAND.spawns
+        .filter((s) => s.team === team)
+        .map((s) => s.def)
+        .sort();
     expect(defs('hero')).toEqual(['fft_chemist', 'fft_delita', 'fft_ramza', 'fft_squire', 'fft_squire']);
     expect(defs('enemy')).toEqual(['fft_chemist', 'fft_squire', 'fft_squire', 'fft_squire', 'fft_squire']);
   });
 
-  it('front hit chance = 100 minus the target\'s class evasion: 95% on the Squire, 90% on Ramza; Charge is not evaded', () => {
+  it("front hit chance = 100 minus the target's class evasion: 95% on the Squire, 90% on Ramza; Charge is not evaded", () => {
     const battle = b();
     put(battle, 'ramza', 2, 5);
     put(battle, 'e-squire-1', 3, 5);
@@ -79,9 +97,15 @@ describe('FFT Gariland: rules in the engine', () => {
     // facing each other (Nov 12: the study gained facing; before, the hit chance was always the front one)
     battle.state.units.find((u) => u.id === 'ramza')!.facing = 1;
     battle.state.units.find((u) => u.id === 'e-squire-1')!.facing = 3;
-    expect(previewAbility(battle.grid, battle.state, 'ramza', 'fft_ramza_attack', { x: 3, y: 5 }).targets[0].chance).toBe(95);
-    expect(previewAbility(battle.grid, battle.state, 'ramza', 'fft_ramza_dash', { x: 3, y: 5 }).targets[0].chance).toBe(100);
-    expect(previewAbility(battle.grid, battle.state, 'e-squire-1', 'fft_squire_attack', { x: 2, y: 5 }).targets[0].chance).toBe(90);
+    expect(
+      previewAbility(battle.grid, battle.state, 'ramza', 'fft_ramza_attack', { x: 3, y: 5 }).targets[0].chance,
+    ).toBe(95);
+    expect(previewAbility(battle.grid, battle.state, 'ramza', 'fft_ramza_dash', { x: 3, y: 5 }).targets[0].chance).toBe(
+      100,
+    );
+    expect(
+      previewAbility(battle.grid, battle.state, 'e-squire-1', 'fft_squire_attack', { x: 2, y: 5 }).targets[0].chance,
+    ).toBe(90);
   });
 
   it('Jump 3: climbs 3 height in one step, not 4', () => {
@@ -101,7 +125,7 @@ describe('FFT Gariland: rules in the engine', () => {
     expect(battle.state.units.find((u) => u.id === actor.id)!.ct).toBeGreaterThanOrEqual(42);
   });
 
-  it('victory on defeating all enemies; with no target to protect it\'s not a defeat', () => {
+  it("victory on defeating all enemies; with no target to protect it's not a defeat", () => {
     const battle = b();
     expect(battle.state.outcome).toBe('ongoing');
     battle.state.units = battle.state.units.filter((u) => u.team === 'hero');

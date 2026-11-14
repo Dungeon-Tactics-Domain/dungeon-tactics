@@ -23,10 +23,16 @@ describe('movement', () => {
 
   it('each class jumps its own (UnitDef.jump): the Rogue climbs and drops 2, the Warrior does not', () => {
     const g = gridOf(['....'], ['0247']); // 2 climbs, 3 does not
-    expect(keys(reachable(g, stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual(['1,0', '2,0']);
+    expect(keys(reachable(g, stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual([
+      '1,0',
+      '2,0',
+    ]);
     expect(keys(reachable(g, stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual([]);
     const down = gridOf(['...'], ['420']);
-    expect(keys(reachable(down, stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual(['1,0', '2,0']);
+    expect(keys(reachable(down, stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]), 'a'))).toEqual([
+      '1,0',
+      '2,0',
+    ]);
   });
 
   it('FFT gap ([Jump/2] tiles): jump 2 flies over 1 tile of deep water, jump 1 only swims across; wall and big drop block', () => {
@@ -73,7 +79,11 @@ describe('movement', () => {
   it('pathTo returns the path tiles without the starting one, in order', () => {
     const g = flat(5, 1);
     const s = stateOf([{ id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 }]);
-    expect(pathTo(reachable(g, s, 'a'), { x: 3, y: 0 })).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }]);
+    expect(pathTo(reachable(g, s, 'a'), { x: 3, y: 0 })).toEqual([
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: 0 },
+    ]);
     expect(pathTo(reachable(g, s, 'a'), { x: 4, y: 0 })).toBeNull();
   });
 
@@ -100,7 +110,16 @@ describe('line of sight', () => {
 
   it('is symmetric and the diagonal works', () => {
     const g = gridOf(['.....', '.#...', '.....', '.....']);
-    for (const [a, b] of [[{ x: 0, y: 0 }, { x: 4, y: 3 }], [{ x: 0, y: 3 }, { x: 4, y: 0 }]] as const) {
+    for (const [a, b] of [
+      [
+        { x: 0, y: 0 },
+        { x: 4, y: 3 },
+      ],
+      [
+        { x: 0, y: 3 },
+        { x: 4, y: 0 },
+      ],
+    ] as const) {
       expect(lineOfSight(g, a, b)).toBe(lineOfSight(g, b, a));
     }
   });
@@ -126,13 +145,33 @@ describe('ability range', () => {
 describe('findings from the Nov 13 review', () => {
   it('passing through an ally leaves no hole in the path', () => {
     const g = flat(4, 1);
-    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 'b', def: 'archer', team: 'hero', x: 1, y: 0 }]);
-    expect(pathTo(reachable(g, s, 'a'), { x: 3, y: 0 })).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }]);
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+      { id: 'b', def: 'archer', team: 'hero', x: 1, y: 0 },
+    ]);
+    expect(pathTo(reachable(g, s, 'a'), { x: 3, y: 0 })).toEqual([
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: 0 },
+    ]);
   });
 
   it('line of sight works the same in both directions', () => {
     const g = gridOf(['...', '.#.', '...']);
-    for (const [a, b] of [[{ x: 0, y: 0 }, { x: 2, y: 1 }], [{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 1, y: 0 }, { x: 2, y: 2 }]]) {
+    for (const [a, b] of [
+      [
+        { x: 0, y: 0 },
+        { x: 2, y: 1 },
+      ],
+      [
+        { x: 0, y: 2 },
+        { x: 2, y: 0 },
+      ],
+      [
+        { x: 1, y: 0 },
+        { x: 2, y: 2 },
+      ],
+    ]) {
       expect(lineOfSight(g, a, b)).toBe(lineOfSight(g, b, a));
     }
   });

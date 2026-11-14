@@ -37,7 +37,7 @@ describe('AI vs AI in the 1st battle (20x20)', () => {
     expect(runs.some((r) => r.outcome === 'defeat')).toBe(true);
   });
 
-  it('counts the heroes\' turns separately', () => {
+  it("counts the heroes' turns separately", () => {
     for (const r of runs) {
       expect(r.heroTurns).toBeGreaterThan(0);
       expect(r.heroTurns).toBeLessThan(r.turns);

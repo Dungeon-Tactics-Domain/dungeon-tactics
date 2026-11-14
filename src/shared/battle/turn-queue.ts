@@ -10,7 +10,8 @@ import { UNIT_DEFS } from './units.ts';
 export const TURN_THRESHOLD = 100;
 // CT at the end of the turn (BMG 1.1): moving and acting costs 100, only one of the two 80, neither 60 ("Wait" gives the turn back sooner);
 // what is left over never exceeds 60. Replaces the Oct 25 "100 plus the ability delay".
-export const turnCt = (ct: number, moved: boolean, acted: boolean) => Math.min(60, ct - (moved && acted ? 100 : moved || acted ? 80 : 60));
+export const turnCt = (ct: number, moved: boolean, acted: boolean) =>
+  Math.min(60, ct - (moved && acted ? 100 : moved || acted ? 80 : 60));
 
 interface Slot {
   id: string;
@@ -29,7 +30,9 @@ function advance(slots: Slot[]): Slot {
 }
 
 const slotsOf = (state: BattleState): Slot[] => {
-  const all = state.units.map((u) => ({ id: u.id, team: u.team, ct: u.ct, speed: rulesOf(state).speed?.(u) ?? UNIT_DEFS[u.def].speed })).filter((s) => s.speed > 0);
+  const all = state.units
+    .map((u) => ({ id: u.id, team: u.team, ct: u.ct, speed: rulesOf(state).speed?.(u) ?? UNIT_DEFS[u.def].speed }))
+    .filter((s) => s.speed > 0);
   return [...all.filter((s) => s.team === 'enemy'), ...all.filter((s) => s.team === 'hero')];
 };
 
@@ -54,7 +57,9 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
       state.turn = { actor: ready.id, moved: false, usedAbility: null };
       return events;
     }
-    const toTurn = slots.length ? Math.min(...slots.map((s) => Math.ceil((TURN_THRESHOLD - s.ct) / s.speed))) : Infinity;
+    const toTurn = slots.length
+      ? Math.min(...slots.map((s) => Math.ceil((TURN_THRESHOLD - s.ct) / s.speed)))
+      : Infinity;
     const toCharge = state.charges.length ? Math.min(...state.charges.map((c) => c.ticks)) : Infinity;
     if (toTurn === Infinity && toCharge === Infinity) return events;
     // re-read the units: a charge that fired may have killed someone
@@ -68,14 +73,24 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     }
     gain(toCharge - 1);
     for (const c of state.charges) c.ticks -= toCharge;
-    const due = listOrder(state, state.charges.filter((c) => c.ticks <= 0));
+    const due = listOrder(
+      state,
+      state.charges.filter((c) => c.ticks <= 0),
+    );
     state.charges = state.charges.filter((c) => c.ticks > 0);
     for (const c of due) {
       if (!state.units.some((u) => u.id === c.unit)) continue; // the charger died
       const followed = c.follow && state.units.find((u) => u.id === c.follow);
       const caster = state.units.find((u) => u.id === c.unit)!;
       // followed large unit: its tile nearest to the caster (the corner one could be out of range); 1 tile: the same
-      const out = resolveAbility(grid, state, c.unit, c.ability, followed ? nearestTile(followed, caster.pos) : c.target, true);
+      const out = resolveAbility(
+        grid,
+        state,
+        c.unit,
+        c.ability,
+        followed ? nearestTile(followed, caster.pos) : c.target,
+        true,
+      );
       // nobody hit (the target left): the charge is lost
       const landed = out.some((e) => e.k !== 'attack');
       events.push(...(landed ? out : [{ k: 'fizzle' as const, unit: c.unit, ability: c.ability }]));
@@ -109,7 +124,11 @@ export function previewOrder(state: BattleState, n: number): QueueEntry[] {
     current.ct = turnCt(current.ct, true, true);
   }
   while (order.length < n && (slots.length || charges.length)) {
-    const toTurn = slots.some((s) => s.ct >= TURN_THRESHOLD) ? 0 : slots.length ? Math.min(...slots.map((s) => Math.ceil((TURN_THRESHOLD - s.ct) / s.speed))) : Infinity;
+    const toTurn = slots.some((s) => s.ct >= TURN_THRESHOLD)
+      ? 0
+      : slots.length
+        ? Math.min(...slots.map((s) => Math.ceil((TURN_THRESHOLD - s.ct) / s.speed)))
+        : Infinity;
     const toCharge = charges.length ? Math.min(...charges.map((c) => c.ticks)) : Infinity;
     if (toCharge <= toTurn) {
       for (const s of slots) s.ct += (toCharge - 1) * s.speed;

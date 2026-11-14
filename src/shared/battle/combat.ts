@@ -1,5 +1,18 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
-import { FACING, TERRAIN, canStand, dist, inBounds, isDeep, samePos, sideOf, standH, tileAt, type Grid, type Side } from './grid.ts';
+import {
+  FACING,
+  TERRAIN,
+  canStand,
+  dist,
+  inBounds,
+  isDeep,
+  samePos,
+  sideOf,
+  standH,
+  tileAt,
+  type Grid,
+  type Side,
+} from './grid.ts';
 import { MAX_JUMP, distTo, inAbilityRange, nearestTile, shotStop, unitAt } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
@@ -46,7 +59,7 @@ export interface Preview {
 
 // damage range with the user's equipment (UnitDef.power); without equipment it is the ability's range, and the roll does not change
 const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
-  const p = a.damage[1] > 0 ? UNIT_DEFS[actor.def].power ?? 0 : 0;
+  const p = a.damage[1] > 0 ? (UNIT_DEFS[actor.def].power ?? 0) : 0;
   return [a.damage[0] + p, a.damage[1] + p];
 };
 
@@ -71,7 +84,11 @@ function affected(state: BattleState, actor: UnitState, ability: AbilityDef, cen
   const u = unitAt(state, center);
   // the user is only a target of a support ability whose range starts at 0
   const self = u?.id === actor.id;
-  const wanted = u && (isHeal(ability) ? u.team === actor.team && (!self || (!!ability.ally && ability.range[0] === 0)) : !self && u.team !== actor.team);
+  const wanted =
+    u &&
+    (isHeal(ability)
+      ? u.team === actor.team && (!self || (!!ability.ally && ability.range[0] === 0))
+      : !self && u.team !== actor.team);
   return wanted ? [u] : [];
 }
 
@@ -82,12 +99,20 @@ const chargingBonus = (state: BattleState, ability: AbilityDef, target: UnitStat
   !ability.magic && state.charges.some((c) => c.unit === target.id) ? 1.5 : 1;
 
 // `charged`: it is the charge firing now; the cost (MP, stock) was already paid when it started
-export function previewAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos, charged = false): Preview {
+export function previewAbility(
+  grid: Grid,
+  state: BattleState,
+  actorId: string,
+  abilityId: string,
+  target: Pos,
+  charged = false,
+): Preview {
   const actor = state.units.find((u) => u.id === actorId);
   const ability = ABILITIES[abilityId];
   let center = ability && ability.range[1] === 0 && actor ? actor.pos : target;
   const fail = (reason: PreviewReason): Preview => ({ ok: false, reason, center, targets: [] });
-  if (!actor || !ability || !UNIT_DEFS[actor.def].abilities.includes(abilityId) || !inBounds(grid, center)) return fail('unknown');
+  if (!actor || !ability || !UNIT_DEFS[actor.def].abilities.includes(abilityId) || !inBounds(grid, center))
+    return fail('unknown');
   if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
   // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that already fired does not pass here:
   // whoever charges does not walk and a push does not enter deep water
@@ -107,12 +132,16 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? withPower(actor, ability);
   const targets = hit.map((u) => {
     // against a large unit, its tile nearest to the attacker (distance and height)
-    const at = nearestTile(u, actor.pos), from = nearestTile(actor, at);
+    const at = nearestTile(u, actor.pos),
+      from = nearestTile(actor, at);
     const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
     return {
       unit: u.id,
       side,
-      chance: isHeal(ability) ? 100 : rulesOf(state).hitChance?.(grid, state, actor, ability, u) ?? Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
+      chance: isHeal(ability)
+        ? 100
+        : (rulesOf(state).hitChance?.(grid, state, actor, ability, u) ??
+          Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0))),
       dmgMin: Math.floor(dmgMin * chargingBonus(state, ability, u)),
       dmgMax: Math.floor(dmgMax * chargingBonus(state, ability, u)),
       healMin: ability.heal[0],
@@ -139,16 +168,28 @@ export function counters(grid: Grid, state: BattleState, actorId: string, to: Po
     const actor = state.units.find((u) => u.id === actorId);
     const foe = state.units.find((u) => u.id === e.unit);
     if (!actor || !foe) continue;
-    if (!e.ranged && distTo(foe, to) <= 1) { left.push(e); continue; } // stayed adjacent: it can still retaliate if it leaves later
+    if (!e.ranged && distTo(foe, to) <= 1) {
+      left.push(e);
+      continue;
+    } // stayed adjacent: it can still retaliate if it leaves later
     const basic = basicOf(foe.def);
     // charged: the counter-attack pays no MP or stock
-    if (previewAbility(grid, state, foe.id, basic, actor.pos, true).ok) events.push(...resolveAbility(grid, state, foe.id, basic, actor.pos, true, 0.5));
+    if (previewAbility(grid, state, foe.id, basic, actor.pos, true).ok)
+      events.push(...resolveAbility(grid, state, foe.id, basic, actor.pos, true, 0.5));
   }
   state.turn.engaged = left;
   return events;
 }
 
-export function resolveAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos, charged = false, scale = 1): BattleEvent[] {
+export function resolveAbility(
+  grid: Grid,
+  state: BattleState,
+  actorId: string,
+  abilityId: string,
+  target: Pos,
+  charged = false,
+  scale = 1,
+): BattleEvent[] {
   const preview = previewAbility(grid, state, actorId, abilityId, target, charged);
   if (!preview.ok) return [];
   const actor = state.units.find((u) => u.id === actorId)!;
@@ -159,7 +200,10 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
   for (const t of preview.targets) {
     const unit = state.units.find((u) => u.id === t.unit)!;
     if (isHeal(ability)) {
-      if (ability.heal[1] === 0) { after?.(state, actor, ability, unit, events); continue; } // support without healing: only the effect
+      if (ability.heal[1] === 0) {
+        after?.(state, actor, ability, unit, events);
+        continue;
+      } // support without healing: only the effect
       let amount: number;
       [amount, state.rng] = rollInt(state.rng, ability.heal[0], ability.heal[1]);
       const healed = Math.min(amount, UNIT_DEFS[unit.def].hp - unit.hp);
@@ -175,7 +219,8 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
       continue;
     }
     let dmg: number;
-    [dmg, state.rng] = rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ...withPower(actor, ability));
+    [dmg, state.rng] =
+      rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ...withPower(actor, ability));
     dmg = Math.max(1, Math.floor(dmg * chargingBonus(state, ability, unit) * scale));
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
@@ -198,7 +243,9 @@ function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEv
   if (unit.hp > 0) return true;
   state.units = state.units.filter((u) => u !== unit);
   // the charge of whoever dies no longer fires; the one that followed the dead unit now aims at the tile where it was
-  state.charges = state.charges.filter((c) => c.unit !== unit.id).map((c) => (c.follow === unit.id ? { ...c, follow: null, target: unit.pos } : c));
+  state.charges = state.charges
+    .filter((c) => c.unit !== unit.id)
+    .map((c) => (c.follow === unit.id ? { ...c, follow: null, target: unit.pos } : c));
   events.push({ k: 'die', unit: unit.id });
   return false;
 }
@@ -221,7 +268,14 @@ export interface PushResult {
 // Pushes along the axis of greatest difference relative to the ability's center. If the victim is at the center (area), it moves away
 // from the user. Each tile is checked: wall, unit, edge and high step stop it (bump); going down is a fall, with damage
 // from 2 levels up. It does not change the state: the AI uses this to value pushes before choosing the move.
-export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, center: Pos, origin: Pos, steps: number): PushResult {
+export function simulatePush(
+  grid: Grid,
+  state: BattleState,
+  unit: UnitState,
+  center: Pos,
+  origin: Pos,
+  steps: number,
+): PushResult {
   const result: PushResult = { to: unit.pos, dmg: 0, events: [] };
   if ((UNIT_DEFS[unit.def].size ?? 1) > 1) return result; // a large unit does not move
   const from = samePos(unit.pos, center) ? origin : center;
@@ -236,8 +290,13 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
     const next = { x: cur.x + dx, y: cur.y + dy };
     // deep water holds a push like a wall (our assumption: the guide does not say what happens)
     // deep water holds a push like a wall (our assumption, kept when it started letting units enter, Nov 13)
-    const blocked = !inBounds(grid, next) || !canStand(tileAt(grid, next)) || isDeep(tileAt(grid, next)) || !!tileAt(grid, next).noStop || !!unitAt(state, next)
-      || standH(tileAt(grid, next)) - standH(tileAt(grid, cur)) > MAX_JUMP;
+    const blocked =
+      !inBounds(grid, next) ||
+      !canStand(tileAt(grid, next)) ||
+      isDeep(tileAt(grid, next)) ||
+      !!tileAt(grid, next).noStop ||
+      !!unitAt(state, next) ||
+      standH(tileAt(grid, next)) - standH(tileAt(grid, cur)) > MAX_JUMP;
     if (blocked) {
       result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });
       result.dmg += COMBAT.BUMP_DAMAGE;
@@ -246,7 +305,11 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
     const levels = standH(tileAt(grid, cur)) - standH(tileAt(grid, next));
     result.to = next;
     result.events.push({ k: 'push', unit: unit.id, to: next });
-    const dmg = levels <= 0 ? 0 : rulesOf(state).fallDamage?.(levels, unit.def) ?? Math.max(0, levels - COMBAT.FALL_FREE) * COMBAT.FALL_DAMAGE;
+    const dmg =
+      levels <= 0
+        ? 0
+        : (rulesOf(state).fallDamage?.(levels, unit.def) ??
+          Math.max(0, levels - COMBAT.FALL_FREE) * COMBAT.FALL_DAMAGE);
     if (dmg > 0) {
       result.events.push({ k: 'fall', unit: unit.id, levels, dmg });
       result.dmg += dmg;
@@ -259,7 +322,15 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
   return result;
 }
 
-function push(grid: Grid, state: BattleState, unit: UnitState, center: Pos, origin: Pos, steps: number, events: BattleEvent[]) {
+function push(
+  grid: Grid,
+  state: BattleState,
+  unit: UnitState,
+  center: Pos,
+  origin: Pos,
+  steps: number,
+  events: BattleEvent[],
+) {
   const r = simulatePush(grid, state, unit, center, origin, steps);
   unit.pos = r.to;
   events.push(...r.events);

@@ -49,19 +49,33 @@ const SKIRMISH: Scenario = {
 // by position (fixed: the same map always draws the same).
 function dressBeaconHill(grid: Grid, beacon: { x: number; y: number }): Grid {
   const tiles = grid.tiles.map((t, i) => {
-    const x = i % grid.width, y = Math.floor(i / grid.width);
+    const x = i % grid.width,
+      y = Math.floor(i / grid.width);
     const cold = x - y >= 7;
     const near = Math.abs(x - beacon.x) + Math.abs(y - beacon.y);
     const look =
-      t.terrain === 'wall' ? 'brick'
-      : t.terrain === 'forest' ? (cold ? ((x + y) % 2 ? 'bare1' : 'bare2') : ['tree', 'tree2', 'tree3', 'tree4'][(x * 7 + y * 3) % 4])
-      : near === 0 ? 'gold'
-      : near <= 2 ? 'sand'
-      // since the Nov 13 relief the common ground sits at 2: rock only from 3, otherwise the heroes' side turned to stone
-      : cold ? (t.h >= 3 ? 'snow_rock' : 'snow')
-      : t.h >= 4 ? 'summit'
-      : t.h >= 3 ? 'rock'
-      : 'grass';
+      t.terrain === 'wall'
+        ? 'brick'
+        : t.terrain === 'forest'
+          ? cold
+            ? (x + y) % 2
+              ? 'bare1'
+              : 'bare2'
+            : ['tree', 'tree2', 'tree3', 'tree4'][(x * 7 + y * 3) % 4]
+          : near === 0
+            ? 'gold'
+            : near <= 2
+              ? 'sand'
+              : // since the Nov 13 relief the common ground sits at 2: rock only from 3, otherwise the heroes' side turned to stone
+                cold
+                ? t.h >= 3
+                  ? 'snow_rock'
+                  : 'snow'
+                : t.h >= 4
+                  ? 'summit'
+                  : t.h >= 3
+                    ? 'rock'
+                    : 'grass';
     return { ...t, look };
   });
   return { ...grid, tiles };
@@ -113,55 +127,58 @@ export const FIRST_BATTLE: Scenario = {
   id: 'beacon_hill',
   name: 'Colina do Farol',
   en: 'Beacon Hill',
-  grid: withRamps(dressBeaconHill(
-    parseGrid(
-      [
-        '....................',
-        '..............T.....',
-        '....T......#........',
-        '...........#...T....',
-        '.......T............',
-        '..#.........T.......',
-        '..#....TT......##...',
-        '........T...........',
-        '.....T......#.......',
-        '............#...T...',
-        '...T................',
-        '......##......T.....',
-        '..........T.........',
-        '.T.......TT....#....',
-        '...............#....',
-        '......T.............',
-        '..T.........T.......',
-        '........#...........',
-        '....T...#......T....',
-        '....................',
-      ],
-      [
-        '22222222222221333333',
-        '11111111111112333333',
-        '11222221111111333333',
-        '11233321111112333333',
-        '11233321111111333333',
-        '11233311111111333333',
-        '11222213333331211111',
-        '11111123444431111111',
-        '11111123455431111111',
-        '01111123455431111111',
-        '00000123444431111111',
-        '21200000222221222222',
-        '22222100000111222222',
-        '22222222220000022222',
-        '22222222221220000022',
-        '22222222222221220000',
-        '22222222222222222122',
-        '22222222222233333333',
-        '33333222222233333333',
-        '33333222222233333333',
-      ],
+  grid: withRamps(
+    dressBeaconHill(
+      parseGrid(
+        [
+          '....................',
+          '..............T.....',
+          '....T......#........',
+          '...........#...T....',
+          '.......T............',
+          '..#.........T.......',
+          '..#....TT......##...',
+          '........T...........',
+          '.....T......#.......',
+          '............#...T...',
+          '...T................',
+          '......##......T.....',
+          '..........T.........',
+          '.T.......TT....#....',
+          '...............#....',
+          '......T.............',
+          '..T.........T.......',
+          '........#...........',
+          '....T...#......T....',
+          '....................',
+        ],
+        [
+          '22222222222221333333',
+          '11111111111112333333',
+          '11222221111111333333',
+          '11233321111112333333',
+          '11233321111111333333',
+          '11233311111111333333',
+          '11222213333331211111',
+          '11111123444431111111',
+          '11111123455431111111',
+          '01111123455431111111',
+          '00000123444431111111',
+          '21200000222221222222',
+          '22222100000111222222',
+          '22222222220000022222',
+          '22222222221220000022',
+          '22222222222221220000',
+          '22222222222222222122',
+          '22222222222233333333',
+          '33333222222233333333',
+          '33333222222233333333',
+        ],
+      ),
+      { x: 2, y: 15 }, // Beacon tile (spawn "beacon")
     ),
-    { x: 2, y: 15 }, // Beacon tile (spawn "beacon")
-  ), BEACON_RAMPS),
+    BEACON_RAMPS,
+  ),
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 2, y: 15 },
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 14 },
@@ -179,22 +196,23 @@ export const FIRST_BATTLE: Scenario = {
 // guard a raised altar at the back (from 3 to 4, in `CRYPT_H`); in the middle, a shallow-water canal (BMG 6.5: entering costs 2 movement) with
 // two bridges; columns, crates, barrels and the chest block; rubble is walkable cover; brick walls close passages.
 // One letter per tile says terrain, height and look (drawing only, the rules read the terrain, the height and the depth):
-const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number; spikes?: true }> = {
-  f: { terrain: 'floor', h: 1, look: 'crypt' },
-  d: { terrain: 'floor', h: 2, look: 'altar' },
-  // surface at 1 and foot at 0 (Nov 13): with the surface at 0 the foot sat at -1, 2 below the banks, and nobody entered the canal
-  w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
-  W: { terrain: 'floor', h: 0, look: 'water', depth: 2 }, // deep moat of the Crypt Heart: the bridges, or swimming without acting (Nov 13)
-  b: { terrain: 'floor', h: 1, look: 'bridge' },
-  B: { terrain: 'wall', h: 1, look: 'brick' },
-  p: { terrain: 'wall', h: 1, look: 'pillar' },
-  P: { terrain: 'wall', h: 2, look: 'pillar' },
-  c: { terrain: 'wall', h: 1, look: 'crates' },
-  r: { terrain: 'wall', h: 1, look: 'barrel' },
-  x: { terrain: 'wall', h: 2, look: 'chest' },
-  u: { terrain: 'rubble', h: 1, look: 'rubble' },
-  s: { terrain: 'floor', h: 1, look: 'spikes', spikes: true }, // night of Nov 12: pushing someone here hurts
-};
+const CRYPT_KEY: Record<string, { terrain: Tile['terrain']; h: number; look: string; depth?: number; spikes?: true }> =
+  {
+    f: { terrain: 'floor', h: 1, look: 'crypt' },
+    d: { terrain: 'floor', h: 2, look: 'altar' },
+    // surface at 1 and foot at 0 (Nov 13): with the surface at 0 the foot sat at -1, 2 below the banks, and nobody entered the canal
+    w: { terrain: 'floor', h: 0, look: 'water', depth: 1 },
+    W: { terrain: 'floor', h: 0, look: 'water', depth: 2 }, // deep moat of the Crypt Heart: the bridges, or swimming without acting (Nov 13)
+    b: { terrain: 'floor', h: 1, look: 'bridge' },
+    B: { terrain: 'wall', h: 1, look: 'brick' },
+    p: { terrain: 'wall', h: 1, look: 'pillar' },
+    P: { terrain: 'wall', h: 2, look: 'pillar' },
+    c: { terrain: 'wall', h: 1, look: 'crates' },
+    r: { terrain: 'wall', h: 1, look: 'barrel' },
+    x: { terrain: 'wall', h: 2, look: 'chest' },
+    u: { terrain: 'rubble', h: 1, look: 'rubble' },
+    s: { terrain: 'floor', h: 1, look: 'spikes', spikes: true }, // night of Nov 12: pushing someone here hurts
+  };
 const CRYPT_MAP = [
   'ddddddxddddddd',
   'dPdddddddddddP',
@@ -249,13 +267,18 @@ const CRYPT: Scenario = {
   id: 'flooded_crypt',
   name: 'Cripta Alagada',
   en: 'Flooded Crypt',
-  grid: withRamps({
-    width: CRYPT_MAP[0].length,
-    height: CRYPT_MAP.length,
-    // height per tile kept separately (Nov 13, "stages too flat"): altar at 4 levels, the middle drops 2 (you go down by the stairs
-    // at the sides) and the heroes' side sinks next to the Beacon. Water and bridge keep their own height
-    tiles: CRYPT_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(CRYPT_H[y][x]) }) }))),
-  }, CRYPT_RAMPS),
+  grid: withRamps(
+    {
+      width: CRYPT_MAP[0].length,
+      height: CRYPT_MAP.length,
+      // height per tile kept separately (Nov 13, "stages too flat"): altar at 4 levels, the middle drops 2 (you go down by the stairs
+      // at the sides) and the heroes' side sinks next to the Beacon. Water and bridge keep their own height
+      tiles: CRYPT_MAP.flatMap((row, y) =>
+        [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(CRYPT_H[y][x]) }) })),
+      ),
+    },
+    CRYPT_RAMPS,
+  ),
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 6, y: 13 },
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 5, y: 11 },
@@ -329,11 +352,16 @@ const HEART: Scenario = {
   id: 'crypt_heart',
   name: 'Coração da Cripta',
   en: 'Heart of the Crypt',
-  grid: withRamps({
-    width: HEART_MAP[0].length,
-    height: HEART_MAP.length,
-    tiles: HEART_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(HEART_H[y][x]) }) }))),
-  }, HEART_RAMPS),
+  grid: withRamps(
+    {
+      width: HEART_MAP[0].length,
+      height: HEART_MAP.length,
+      tiles: HEART_MAP.flatMap((row, y) =>
+        [...row].map((c, x) => ({ ...CRYPT_KEY[c], ...('wWb'.includes(c) ? {} : { h: Number(HEART_H[y][x]) }) })),
+      ),
+    },
+    HEART_RAMPS,
+  ),
   spawns: [
     { id: 'beacon', def: 'beacon', team: 'hero', x: 5, y: 13 },
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 11 },
@@ -427,7 +455,16 @@ const ASH_WOOD: Scenario = {
   // height of each tile on a separate map (Nov 13, Fernando's request: "stages too flat"; relief reference: Gariland
   // has 47% of neighbors with a drop of 2+, the Wood had 0%): the enemy camp on a plateau 3 levels above the river (4 in the corners),
   // steps of 1 that make ramps and drops of 2 that force you to go around. Water and bridge keep their own height.
-  grid: withRamps({ width: 12, height: 12, tiles: WOOD_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('WwbB'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) }))) }, WOOD_RAMPS),
+  grid: withRamps(
+    {
+      width: 12,
+      height: 12,
+      tiles: WOOD_MAP.flatMap((row, y) =>
+        [...row].map((c, x) => ({ ...WOOD_KEY[c], ...('WwbB'.includes(c) ? {} : { h: Number(WOOD_H[y][x]) }) })),
+      ),
+    },
+    WOOD_RAMPS,
+  ),
   spawns: [
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 3, y: 11 },
     { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 10 },
@@ -511,7 +548,16 @@ const FROST_PASS: Scenario = {
   id: 'frost_pass',
   name: 'Passo Gelado',
   en: 'Frost Pass',
-  grid: withRamps({ width: 12, height: 14, tiles: PASS_MAP.flatMap((row, y) => [...row].map((c, x) => ({ ...PASS_KEY[c], ...(c === 'i' ? {} : { h: Number(PASS_H[y][x]) }) }))) }, PASS_RAMPS),
+  grid: withRamps(
+    {
+      width: 12,
+      height: 14,
+      tiles: PASS_MAP.flatMap((row, y) =>
+        [...row].map((c, x) => ({ ...PASS_KEY[c], ...(c === 'i' ? {} : { h: Number(PASS_H[y][x]) }) })),
+      ),
+    },
+    PASS_RAMPS,
+  ),
   spawns: [
     { id: 'h-warrior', def: 'warrior', team: 'hero', x: 4, y: 13 },
     { id: 'h-archer', def: 'archer', team: 'hero', x: 5, y: 12 },
@@ -524,18 +570,34 @@ const FROST_PASS: Scenario = {
   ],
 };
 
-export const SCENARIOS: Record<string, Scenario> = Object.fromEntries([SKIRMISH, FIRST_BATTLE, CRYPT, HEART, ASH_WOOD, FROST_PASS].map((s) => [s.id, s]));
+export const SCENARIOS: Record<string, Scenario> = Object.fromEntries(
+  [SKIRMISH, FIRST_BATTLE, CRYPT, HEART, ASH_WOOD, FROST_PASS].map((s) => [s.id, s]),
+);
 
 // initial ct 0 for everyone: the opening order comes only from the speeds
 export function initialState(scenario: Scenario, seed: number): BattleState {
   return {
     scenario: scenario.id,
     units: scenario.spawns.map((s) => ({
-      id: s.id, def: s.def, team: s.team, pos: { x: s.x, y: s.y }, hp: UNIT_DEFS[s.def].hp, ct: 0,
+      id: s.id,
+      def: s.def,
+      team: s.team,
+      pos: { x: s.x, y: s.y },
+      hp: UNIT_DEFS[s.def].hp,
+      ct: 0,
       // direction on every map since Nov 13 (Fernando's request: "direction the character will look at the end of each turn and
       // the mechanics around it"): spawns facing the nearest enemy; the FFT study keeps its own. Counters, only on the sheet that asks for them
       // (the Beacon, which does not play, has no front or back)
-      ...(UNIT_DEFS[s.def].speed > 0 && { facing: scenario.rules?.facing ? (s.team === 'hero' ? 0 : 2) : faceNearest(s, scenario.spawns.filter((o) => o.team !== s.team)) }),
+      ...(UNIT_DEFS[s.def].speed > 0 && {
+        facing: scenario.rules?.facing
+          ? s.team === 'hero'
+            ? 0
+            : 2
+          : faceNearest(
+              s,
+              scenario.spawns.filter((o) => o.team !== s.team),
+            ),
+      }),
       ...(UNIT_DEFS[s.def].vars && { vars: { ...UNIT_DEFS[s.def].vars } }),
     })),
     rng: seed | 0,

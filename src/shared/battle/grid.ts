@@ -17,7 +17,6 @@ export const TERRAIN: Record<TerrainKind, { walkable: boolean; blocks: number; c
 const LOW = new Set(['crates', 'barrel', 'corpse', 'chest', 'rubble']);
 export const blocksOf = (t: Tile) => (t.look && LOW.has(t.look) ? 1 : TERRAIN[t.terrain].blocks);
 
-
 export interface Tile {
   terrain: TerrainKind;
   h: number;
@@ -94,16 +93,28 @@ export const posKey = (p: Pos) => `${p.x},${p.y}`;
 export const dist = (a: Pos, b: Pos) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
 // Directions of `UnitState.facing`, in turning order: +y, +x, -y, -x
-export const FACING: Pos[] = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }];
+export const FACING: Pos[] = [
+  { x: 0, y: 1 },
+  { x: 1, y: 0 },
+  { x: 0, y: -1 },
+  { x: -1, y: 0 },
+];
 
 // Where the attack comes from (BMG 1.4, diagram): the largest of the distances in front, to the side and behind the target wins; on a tie
 // the one more to the front wins (front over side, side over back). Tile height does not count. It used to be from the FFT study; since
 // Nov 13 it applies in the game (combat.ts, hit chance by side and back)
 export type Side = 'front' | 'side' | 'back';
 // direction of a newly spawned unit (or of an old save without direction): toward the nearest enemy; without an enemy, the first
-export const faceNearest = (from: Pos, foes: Pos[]) => (foes.length ? facingTo(from, foes.reduce((a, b) => (dist(from, b) < dist(from, a) ? b : a))) : 0);
+export const faceNearest = (from: Pos, foes: Pos[]) =>
+  foes.length
+    ? facingTo(
+        from,
+        foes.reduce((a, b) => (dist(from, b) < dist(from, a) ? b : a)),
+      )
+    : 0;
 export function sideOf(target: Pos, facing: Pos, attacker: Pos): Side {
-  const dx = attacker.x - target.x, dy = attacker.y - target.y;
+  const dx = attacker.x - target.x,
+    dy = attacker.y - target.y;
   const ahead = dx * facing.x + dy * facing.y;
   const lateral = Math.abs(dx * facing.y - dy * facing.x);
   if (ahead > 0 && ahead >= lateral) return 'front';
@@ -111,11 +122,17 @@ export function sideOf(target: Pos, facing: Pos, attacker: Pos): Side {
 }
 // direction from `from` to `to` along the axis of greatest difference (tie: the x axis, as in the push)
 export function facingTo(from: Pos, to: Pos): number {
-  const dx = to.x - from.x, dy = to.y - from.y;
+  const dx = to.x - from.x,
+    dy = to.y - from.y;
   return Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 1 : 3) : dy > 0 ? 0 : 2;
 }
 
-const DIRS: Pos[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+const DIRS: Pos[] = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+];
 export function neighbors(g: Grid, p: Pos): Pos[] {
   return DIRS.map((d) => ({ x: p.x + d.x, y: p.y + d.y })).filter((q) => inBounds(g, q));
 }

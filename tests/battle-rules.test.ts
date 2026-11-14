@@ -12,7 +12,10 @@ describe('scenario rules', () => {
     SCENARIOS.test_rules = { id: 'test_rules', name: '', en: '', grid, spawns: [], rules };
     return { ...stateOf(units), scenario: 'test_rules' };
   };
-  const duel = [{ id: 'a', def: 'warrior', team: 'hero' as const, x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy' as const, x: 2, y: 1 }];
+  const duel = [
+    { id: 'a', def: 'warrior', team: 'hero' as const, x: 1, y: 1 },
+    { id: 'b', def: 'soldier', team: 'enemy' as const, x: 2, y: 1 },
+  ];
 
   it('hit: the scenario rule replaces the distance, height and cover calculation', () => {
     const state = withRules({ hitChance: () => 42 }, duel);
@@ -35,14 +38,30 @@ describe('scenario rules', () => {
 
   it('fall: the rule says the damage of being pushed off', () => {
     const cliff = gridOf(['....'], ['5500']);
-    const pair = [{ id: 'a', def: 'warrior', team: 'hero' as const, x: 0, y: 0 }, { id: 'b', def: 'soldier', team: 'enemy' as const, x: 1, y: 0 }];
-    SCENARIOS.test_rules = { id: 'test_rules', name: '', en: '', grid: cliff, spawns: [], rules: { hitChance: () => 100, fallDamage: (levels: number) => levels * 2 } };
-    const fall = resolveAbility(cliff, { ...stateOf(pair), scenario: 'test_rules' }, 'a', 'shield_bash', { x: 1, y: 0 }).find((e) => e.k === 'fall');
+    const pair = [
+      { id: 'a', def: 'warrior', team: 'hero' as const, x: 0, y: 0 },
+      { id: 'b', def: 'soldier', team: 'enemy' as const, x: 1, y: 0 },
+    ];
+    SCENARIOS.test_rules = {
+      id: 'test_rules',
+      name: '',
+      en: '',
+      grid: cliff,
+      spawns: [],
+      rules: { hitChance: () => 100, fallDamage: (levels: number) => levels * 2 },
+    };
+    const fall = resolveAbility(cliff, { ...stateOf(pair), scenario: 'test_rules' }, 'a', 'shield_bash', {
+      x: 1,
+      y: 0,
+    }).find((e) => e.k === 'fall');
     expect(fall).toMatchObject({ levels: 5, dmg: 10 });
   });
 
   it('damage: the rule can roll the damage (FFT crit)', () => {
-    const state = withRules({ hitChance: () => 100, rollDamage: (_s: unknown, _a: unknown, _ab: unknown, rng: number) => [3, rng] }, duel);
+    const state = withRules(
+      { hitChance: () => 100, rollDamage: (_s: unknown, _a: unknown, _ab: unknown, rng: number) => [3, rng] },
+      duel,
+    );
     const hit = resolveAbility(grid, state, 'a', 'strike', { x: 2, y: 1 }).find((e) => e.k === 'hit');
     expect(hit).toMatchObject({ dmg: 3 });
   });

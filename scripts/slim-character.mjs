@@ -5,8 +5,25 @@ import { NodeIO } from '@gltf-transform/core';
 import { dedup, prune, resample } from '@gltf-transform/functions';
 
 // from the character itself; each ability's gesture is in CAST_CLIP (src/client/scene.ts)
-const KEEP = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Hit_A', 'Death_A', 'Cheer', 'Dodge_Forward', 'Throw', 'Hit_B', 'Jump_Idle', 'Death_B',
-  'Block', 'Spellcast_Long', 'Dodge_Backward', 'Unarmed_Melee_Attack_Kick', '2H_Melee_Attack_Spinning', '2H_Melee_Attack_Spin'];
+const KEEP = [
+  'Idle',
+  'Running_A',
+  'Spellcast_Shoot',
+  'Hit_A',
+  'Death_A',
+  'Cheer',
+  'Dodge_Forward',
+  'Throw',
+  'Hit_B',
+  'Jump_Idle',
+  'Death_B',
+  'Block',
+  'Spellcast_Long',
+  'Dodge_Backward',
+  'Unarmed_Melee_Attack_Kick',
+  '2H_Melee_Attack_Spinning',
+  '2H_Melee_Attack_Spin',
+];
 // from KayKit Character Animations 1.1 (Rig_Medium: same bones and same rest pose), copied bone by bone by name
 const PACK = ['Ranged_Magic_Summon', 'Waving', 'Skeletons_Taunt', 'Spawn_Ground'];
 const [src, out, drop, extra = ''] = process.argv.slice(2);
@@ -22,19 +39,33 @@ for (const a of root.listAnimations()) {
   a.dispose();
 }
 const bone = new Map(root.listNodes().map((n) => [n.getName(), n]));
-const copy = (x) => doc.createAccessor().setType(x.getType()).setArray(x.getArray().slice()).setBuffer(root.listBuffers()[0]);
-for (const f of extra.split(',').filter(Boolean)) for (const a of (await io.read(f)).getRoot().listAnimations()) {
-  if (!PACK.includes(a.getName())) continue;
-  const anim = doc.createAnimation(a.getName());
-  for (const c of a.listChannels()) {
-    const node = bone.get(c.getTargetNode().getName());
-    if (!node) continue;
-    const s = c.getSampler();
-    const t = doc.createAnimationSampler().setInput(copy(s.getInput())).setOutput(copy(s.getOutput())).setInterpolation(s.getInterpolation());
-    anim.addSampler(t).addChannel(doc.createAnimationChannel().setTargetNode(node).setTargetPath(c.getTargetPath()).setSampler(t));
+const copy = (x) =>
+  doc.createAccessor().setType(x.getType()).setArray(x.getArray().slice()).setBuffer(root.listBuffers()[0]);
+for (const f of extra.split(',').filter(Boolean))
+  for (const a of (await io.read(f)).getRoot().listAnimations()) {
+    if (!PACK.includes(a.getName())) continue;
+    const anim = doc.createAnimation(a.getName());
+    for (const c of a.listChannels()) {
+      const node = bone.get(c.getTargetNode().getName());
+      if (!node) continue;
+      const s = c.getSampler();
+      const t = doc
+        .createAnimationSampler()
+        .setInput(copy(s.getInput()))
+        .setOutput(copy(s.getOutput()))
+        .setInterpolation(s.getInterpolation());
+      anim
+        .addSampler(t)
+        .addChannel(doc.createAnimationChannel().setTargetNode(node).setTargetPath(c.getTargetPath()).setSampler(t));
+    }
   }
-}
 for (const n of root.listNodes()) if (DROP_NODES.includes(n.getName())) n.dispose();
 await doc.transform(resample(), prune(), dedup());
 await io.write(out, doc);
-console.log('animações:', root.listAnimations().map((a) => a.getName()).join(', '));
+console.log(
+  'animações:',
+  root
+    .listAnimations()
+    .map((a) => a.getName())
+    .join(', '),
+);

@@ -15,12 +15,19 @@ import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 // (BMG 1.1 and A.2). Since the Nov 12 decision ("Like FFT") only spells and Aimed Shot charge: Explosion 4 and follows the unit,
 // Aimed Shot 4 and targets the tile; a physical hit resolves immediately.
 const grid = flat(8, 8);
-const duel = (attacker: string, x = 3, y = 3) => new Battle(grid, stateOf([
-  { id: 'a', def: attacker, team: 'hero', x, y },
-  { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 3 },
-  { id: 'c', def: 'soldier', team: 'enemy', x: 7, y: 7 },
-  { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 7 }, // without the target to protect the game is an instant defeat
-], HIT_SEED));
+const duel = (attacker: string, x = 3, y = 3) =>
+  new Battle(
+    grid,
+    stateOf(
+      [
+        { id: 'a', def: attacker, team: 'hero', x, y },
+        { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 3 },
+        { id: 'c', def: 'soldier', team: 'enemy', x: 7, y: 7 },
+        { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 7 }, // without the target to protect the game is an instant defeat
+      ],
+      HIT_SEED,
+    ),
+  );
 // passes turns (without acting) until the charge resolves; returns all events
 function untilResolved(b: Battle): BattleEvent[] {
   const all: BattleEvent[] = [];
@@ -51,8 +58,11 @@ describe('charged actions', () => {
     expect(b.state.charges).toEqual([]);
   });
 
-  it('a physical hit resolves immediately; only spells, Aimed Shot and the Lancer\'s Jump charge (Nov 12 and Nov 13)', () => {
-    const charged = Object.values(ABILITIES).filter((a) => a.charge > 0 && !a.id.startsWith('fft_')).map((a) => a.id).sort();
+  it("a physical hit resolves immediately; only spells, Aimed Shot and the Lancer's Jump charge (Nov 12 and Nov 13)", () => {
+    const charged = Object.values(ABILITIES)
+      .filter((a) => a.charge > 0 && !a.id.startsWith('fft_'))
+      .map((a) => a.id)
+      .sort();
     expect(charged).toEqual(['aimed_shot', 'blast', 'gust', 'heal', 'lance_jump', 'shadow_wave']);
     expect(Object.values(ABILITIES).filter((a) => a.charge > 0 && !a.magic && !a.panel)).toEqual([]);
     expect(duel('warrior').act('heavy_strike', { x: 4, y: 3 })[0].k).toBe('attack');
@@ -85,17 +95,24 @@ describe('charged actions', () => {
     const b = duel('warrior');
     b.state.charges = [{ unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 }];
     const [lo, hi] = ABILITIES.strike.damage;
-    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: Math.floor(lo * 1.5), dmgMax: Math.floor(hi * 1.5) });
+    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({
+      dmgMin: Math.floor(lo * 1.5),
+      dmgMax: Math.floor(hi * 1.5),
+    });
     const m = duel('mage', 2, 3);
     m.state.charges = [{ unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 }];
-    expect(m.preview('firebolt', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: ABILITIES.firebolt.damage[0], dmgMax: ABILITIES.firebolt.damage[1] });
+    expect(m.preview('firebolt', { x: 4, y: 3 }).targets[0]).toMatchObject({
+      dmgMin: ABILITIES.firebolt.damage[0],
+      dmgMax: ABILITIES.firebolt.damage[1],
+    });
   });
 
   it('the AI turn brings the events of charges that resolve before the next turn', () => {
     const b = duel('mage', 1, 3);
     b.act('blast', { x: 4, y: 3 });
     const all: BattleEvent[] = [...b.endTurn()];
-    for (let i = 0; i < 6 && !all.some((e) => e.k === 'attack' && e.ability === 'blast'); i++) all.push(...playAiTurn(b));
+    for (let i = 0; i < 6 && !all.some((e) => e.k === 'attack' && e.ability === 'blast'); i++)
+      all.push(...playAiTurn(b));
     expect(all.some((e) => e.k === 'attack' && e.ability === 'blast')).toBe(true);
   });
 
@@ -108,13 +125,23 @@ describe('charged actions', () => {
     b.state.units[1].hp = 1;
     resolveAbility(b.grid, b.state, 'a', 'strike', { x: 4, y: 3 });
     expect(b.state.units.some((u) => u.id === 'b')).toBe(false);
-    expect(b.state.charges).toEqual([{ unit: 'a', ability: 'heavy_strike', target: { x: 4, y: 3 }, follow: null, ticks: 3 }]);
+    expect(b.state.charges).toEqual([
+      { unit: 'a', ability: 'heavy_strike', target: { x: 4, y: 3 }, follow: null, ticks: 3 },
+    ]);
     expect(() => previewOrder(b.state, 8)).not.toThrow();
   });
 
   it('save and load keeps the charges; a charge with a tick out of range is rejected', () => {
     const b = Battle.start(SCENARIOS.skirmish, 1);
-    b.state.charges = [{ unit: b.actor.id, ability: UNIT_DEFS[b.actor.def].abilities[0], target: { x: 2, y: 2 }, follow: null, ticks: 3 }];
+    b.state.charges = [
+      {
+        unit: b.actor.id,
+        ability: UNIT_DEFS[b.actor.def].abilities[0],
+        target: { x: 2, y: 2 },
+        follow: null,
+        ticks: 3,
+      },
+    ];
     expect(Battle.load(b.save())?.state.charges).toEqual(b.state.charges);
     const raw = JSON.parse(b.save());
     raw.state.charges[0].ticks = 500;

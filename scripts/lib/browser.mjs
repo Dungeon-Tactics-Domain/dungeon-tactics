@@ -4,6 +4,10 @@
 import { chromium } from 'playwright-core';
 
 export { chromium };
-export const openChrome = (opts) => chromium.launchPersistentContext(process.env.PW_PROFILE ?? '', {
-  channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'], ...opts,
-});
+export const openChrome = (opts) =>
+  chromium.launchPersistentContext(process.env.PW_PROFILE ?? '', {
+    channel: process.env.PW_CHANNEL ?? 'chrome',
+    headless: true,
+    args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    ...opts,
+  });

@@ -41,17 +41,30 @@ export const defaultGroup = (): Group => ({ members: STORY.map((m) => ({ ...m })
 // a recruit without a valid name, class or id disappears; up to 4 fielded, only ids that exist; with none fielded the default returns
 export function parseGroup(raw: unknown): Group {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  const list = Array.isArray(r.members) ? r.members.filter((m): m is Record<string, unknown> => !!m && typeof m === 'object') : [];
+  const list = Array.isArray(r.members)
+    ? r.members.filter((m): m is Record<string, unknown> => !!m && typeof m === 'object')
+    : [];
   const cls = (v: unknown, d: Job) => (JOBS.includes(v as Job) ? (v as Job) : d);
   const story = STORY.map((s) => ({ ...s, cls: cls(list.find((m) => m.id === s.id)?.cls, s.cls) }));
-  const recruits = list.filter((m) => typeof m.id === 'string' && /^r\d{1,3}$/.test(m.id) && typeof m.name === 'string'
-    && m.name.trim() && m.name.length <= NAME_MAX && JOBS.includes(m.cls as Job))
+  const recruits = list
+    .filter(
+      (m) =>
+        typeof m.id === 'string' &&
+        /^r\d{1,3}$/.test(m.id) &&
+        typeof m.name === 'string' &&
+        m.name.trim() &&
+        m.name.length <= NAME_MAX &&
+        JOBS.includes(m.cls as Job),
+    )
     .map((m) => ({ id: m.id as string, name: (m.name as string).trim(), cls: m.cls as Job, recruit: true }))
     .filter((m, i, a) => a.findIndex((o) => o.id === m.id) === i)
     .slice(0, GROUP_MAX - STORY.length);
   const members = [...story, ...recruits];
-  const deployed = (Array.isArray(r.deployed) ? r.deployed : []).filter((id, i, a): id is string =>
-    typeof id === 'string' && members.some((m) => m.id === id) && a.indexOf(id) === i).slice(0, DEPLOY_MAX);
+  const deployed = (Array.isArray(r.deployed) ? r.deployed : [])
+    .filter(
+      (id, i, a): id is string => typeof id === 'string' && members.some((m) => m.id === id) && a.indexOf(id) === i,
+    )
+    .slice(0, DEPLOY_MAX);
   return { members, deployed: deployed.length ? deployed : defaultGroup().deployed };
 }
 
@@ -69,25 +82,39 @@ export function recruit(g: Group, chest: Chest, cls: Job): { group: Group; chest
 }
 
 // dismisses a recruit (the story ones stay); their equipment returns to the chest
-export function dismiss(g: Group, eq: Equip, chest: Chest, id: string): { group: Group; eq: Equip; chest: Chest } | null {
+export function dismiss(
+  g: Group,
+  eq: Equip,
+  chest: Chest,
+  id: string,
+): { group: Group; eq: Equip; chest: Chest } | null {
   const m = g.members.find((x) => x.id === id);
   if (!m?.recruit) return null;
   const { [id]: gear, ...rest } = eq;
   const back = Object.values(gear ?? {}).filter((x): x is string => !!x);
   const deployed = g.deployed.filter((x) => x !== id);
   return {
-    group: { members: g.members.filter((x) => x.id !== id), deployed: deployed.length ? deployed : [g.members.find((x) => x.id !== id)!.id] },
-    eq: rest, chest: { ...chest, items: [...chest.items, ...back] },
+    group: {
+      members: g.members.filter((x) => x.id !== id),
+      deployed: deployed.length ? deployed : [g.members.find((x) => x.id !== id)!.id],
+    },
+    eq: rest,
+    chest: { ...chest, items: [...chest.items, ...back] },
   };
 }
 
-export const changeClass = (g: Group, id: string, cls: Job): Group =>
-  ({ ...g, members: g.members.map((m) => (m.id === id ? { ...m, cls } : m)) });
+export const changeClass = (g: Group, id: string, cls: Job): Group => ({
+  ...g,
+  members: g.members.map((m) => (m.id === id ? { ...m, cls } : m)),
+});
 
 // fields or removes from battle: at most 4 and never none; null if not possible
 export function toggleDeploy(g: Group, id: string): Group | null {
-  if (g.deployed.includes(id)) return g.deployed.length > 1 ? { ...g, deployed: g.deployed.filter((x) => x !== id) } : null;
-  return g.deployed.length < DEPLOY_MAX && g.members.some((m) => m.id === id) ? { ...g, deployed: [...g.deployed, id] } : null;
+  if (g.deployed.includes(id))
+    return g.deployed.length > 1 ? { ...g, deployed: g.deployed.filter((x) => x !== id) } : null;
+  return g.deployed.length < DEPLOY_MAX && g.members.some((m) => m.id === id)
+    ? { ...g, deployed: [...g.deployed, id] }
+    : null;
 }
 
 // Abilities unlocked at stage n: 2 in the 1st, 3 in the 2nd, all 4 from the 3rd on (the 1st stage teaches a little at a time and Odo's
@@ -97,9 +124,16 @@ export const learnedCount = (n: number) => Math.min(4, 2 + n);
 // who goes to the battle of stage n, with the unlocked abilities, the equipment and the protagonist (hero.ts) in place of the
 // story companion who has his starting class (the companion stays in the conversations)
 export function heroesFor(g: Group, n: number, hero: Hero | null = null, eq: Equip = {}): DevUnit[] {
-  return g.deployed.map((id) => g.members.find((m) => m.id === id)!).map((m) => {
-    const name = hero && m.id === hero.cls ? hero.name : m.name;
-    const u = unitFrom(m.cls, name);
-    return { ...u, ...(hero && m.id === hero.cls ? { en: hero.name } : {}), abilities: u.abilities.slice(0, learnedCount(n)), items: eq[m.id] };
-  });
+  return g.deployed
+    .map((id) => g.members.find((m) => m.id === id)!)
+    .map((m) => {
+      const name = hero && m.id === hero.cls ? hero.name : m.name;
+      const u = unitFrom(m.cls, name);
+      return {
+        ...u,
+        ...(hero && m.id === hero.cls ? { en: hero.name } : {}),
+        abilities: u.abilities.slice(0, learnedCount(n)),
+        items: eq[m.id],
+      };
+    });
 }

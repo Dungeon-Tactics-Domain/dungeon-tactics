@@ -16,8 +16,27 @@ import { choice, dialog, slider } from './dialog.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { LANG, abilityName, setLang, t, unitName, type Lang } from './i18n.ts';
 import { el } from './icons.ts';
-import { confirm, freshUi, highlights, hoverTile, selectMode, tapTile, type Highlights, type Ui } from './interaction.ts';
-import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, longestRange, startScreen, stepIndex, type Screen } from './command.ts';
+import {
+  confirm,
+  freshUi,
+  highlights,
+  hoverTile,
+  selectMode,
+  tapTile,
+  type Highlights,
+  type Ui,
+} from './interaction.ts';
+import {
+  COMMANDS,
+  abilitiesOf,
+  abilityEnabled,
+  canUndoMove,
+  commandEnabled,
+  longestRange,
+  startScreen,
+  stepIndex,
+  type Screen,
+} from './command.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { cycleUnit, gridStep, keyAction, keyHelp, type KeyAction } from './keyboard.ts';
 import { BattleScene, rampLink } from './scene.ts';
@@ -29,9 +48,26 @@ import { lookOf } from './fx.ts';
 import { jingle, setSound, setTrack, sfx, soundSettings, type Sfx } from './sound.ts';
 import { DEV_KEY, DEV_SCENARIO, buildDevScenario, parseSetup, problems, slotsOf } from './dev-roster.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
-import { BEST_KEY, SURVIVAL_ID, SURVIVE_TURNS, parseBest, survivalGoal, survivalScenario, survived, turnsLeft } from './survival.ts';
+import {
+  BEST_KEY,
+  SURVIVAL_ID,
+  SURVIVE_TURNS,
+  parseBest,
+  survivalGoal,
+  survivalScenario,
+  survived,
+  turnsLeft,
+} from './survival.ts';
 import { openDevMenu } from './dev-menu.ts';
-import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, learned, objectiveText, parseProgress } from './campaign.ts';
+import {
+  CAMPAIGN_KEY,
+  CHAPTERS,
+  chapterId,
+  chapterScenario,
+  learned,
+  objectiveText,
+  parseProgress,
+} from './campaign.ts';
 import { TEXT_KEY, talk, textSpeed, type TextSpeed } from './talk.ts';
 import { INTRO, WORLD, WORLD_KEY, afterNode, nodeOfChapter, parseWorld, partyFor } from './world.ts';
 import { openParty, openWorld } from './world-ui.ts';
@@ -52,7 +88,7 @@ const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (F
 // short turn list (next 4) by default: FFT does not leave the whole order on screen and the list covered the map (Nov 12)
 const QUEUE_KEY = 'dt:turnos';
 const FAST_KEY = 'dt:rapido'; // fast-forward button on stays on in the next battle
-const newBattle =() => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
+const newBattle = () => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
 
 class Game {
   private ui: Ui;
@@ -72,7 +108,12 @@ class Game {
   private roster: Record<string, { team: Team; def: string }> = {};
   private readonly teamOf = () => Object.fromEntries(Object.entries(this.roster).map(([id, u]) => [id, u.team]));
 
-  constructor(private battle: Battle, private readonly scene: BattleScene, host: HTMLElement, private pixel: PixelSettings) {
+  constructor(
+    private battle: Battle,
+    private readonly scene: BattleScene,
+    host: HTMLElement,
+    private pixel: PixelSettings,
+  ) {
     this.resetTally();
     this.ui = freshUi(battle);
     this.screen = startScreen(battle);
@@ -106,7 +147,15 @@ class Game {
       },
       hover: (x, y) => {
         const pos = this.scene.pick(x, y);
-        if (!pos || this.busy || !this.heroTurn || this.screen.k === 'facing' || this.screen.k === 'confirm' || samePos(pos, this.cursor)) return;
+        if (
+          !pos ||
+          this.busy ||
+          !this.heroTurn ||
+          this.screen.k === 'facing' ||
+          this.screen.k === 'confirm' ||
+          samePos(pos, this.cursor)
+        )
+          return;
         this.cursor = pos;
         sfx('cursor');
         this.update(this.screen.k === 'map' ? hoverTile(this.battle, this.ui, pos) : this.ui);
@@ -121,7 +170,8 @@ class Game {
     });
     addEventListener('keydown', (e) => this.onKey(e));
     // holding Enter or Space fast-forwards the battle (timing.ts); switching tabs releases it, otherwise it stayed fast-forwarded with no key held
-    const hold = (on: boolean) => (e: KeyboardEvent) => e.key === 'Enter' || e.key === ' ' ? (pace.key = on) : undefined;
+    const hold = (on: boolean) => (e: KeyboardEvent) =>
+      e.key === 'Enter' || e.key === ' ' ? (pace.key = on) : undefined;
     addEventListener('keydown', hold(true));
     addEventListener('keyup', hold(false));
     addEventListener('blur', () => (pace.key = false));
@@ -155,12 +205,18 @@ class Game {
   private pollPad() {
     requestAnimationFrame(() => this.pollPad());
     // the standalone battle is the backdrop of the title screen (and of the screens that leave it): it rotates while any is open
-    this.scene.setSpin(!!document.querySelector('.title-overlay') && !matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.scene.setSpin(
+      !!document.querySelector('.title-overlay') && !matchMedia('(prefers-reduced-motion: reduce)').matches,
+    );
     this.placeMenu();
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     pace.pad = !!gp?.buttons[0]?.pressed; // holding A (or x) fast-forwards the battle
     if (!gp) return;
-    const actions = padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, this.pad, performance.now());
+    const actions = padActions(
+      { buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] },
+      this.pad,
+      performance.now(),
+    );
     // 1st frame with a pad: only records what was already pressed (the A that entered the stage does not pick the 1st command)
     if (!this.padPrimed) return void (this.padPrimed = true);
     for (const a of actions) {
@@ -170,17 +226,24 @@ class Game {
         continue;
       }
       // only what is in view: the hidden Options section holds buttons that would take focus without showing
-      const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter((e) => e.offsetParent);
+      const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter(
+        (e) => e.offsetParent,
+      );
       const at = buttons.indexOf(document.activeElement as HTMLElement);
-      const range = document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range' ? document.activeElement : null;
-      if (a.k === 'cancel' || a.k === 'help') dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
+      const range =
+        document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range'
+          ? document.activeElement
+          : null;
+      if (a.k === 'cancel' || a.k === 'help')
+        dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
       else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
       else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
         // on the volume bar, left and right change the value (stepUp/Down do not fire 'input': it is dispatched by hand)
         if (a.dir === 'right') range.stepUp();
         else range.stepDown();
         range.dispatchEvent(new Event('input'));
-      } else if (a.k === 'cursor') buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+      } else if (a.k === 'cursor')
+        buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
     }
   }
 
@@ -190,7 +253,10 @@ class Game {
     const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
     this.fps.textContent = [
       `${s.fps.toFixed(0)} fps · ${s.ms.toFixed(1)} ms`,
-      t(`${s.calls} desenhos · ${(s.triangles / 1000).toFixed(1)} mil triângulos`, `${s.calls} draw calls · ${(s.triangles / 1000).toFixed(1)}k triangles`),
+      t(
+        `${s.calls} desenhos · ${(s.triangles / 1000).toFixed(1)} mil triângulos`,
+        `${s.calls} draw calls · ${(s.triangles / 1000).toFixed(1)}k triangles`,
+      ),
       t(`${s.geometries} geometrias · ${s.textures} texturas`, `${s.geometries} geometries · ${s.textures} textures`),
       ...(mem ? [`JS ${(mem.usedJSHeapSize / 1048576).toFixed(0)} MB`] : []),
     ].join('\n');
@@ -227,7 +293,8 @@ class Game {
     }
     if (a.k === 'wait') return this.chooseCommand(2);
     if (s.k === 'menu' || s.k === 'abilities') {
-      const list = s.k === 'menu' ? COMMANDS.map((c) => commandEnabled(b, c)) : abilitiesOf(b).map((id) => abilityEnabled(b, id));
+      const list =
+        s.k === 'menu' ? COMMANDS.map((c) => commandEnabled(b, c)) : abilitiesOf(b).map((id) => abilityEnabled(b, id));
       if (a.k === 'cursor' && (a.dir === 'up' || a.dir === 'down')) {
         sfx('cursor');
         this.screen = { ...s, index: stepIndex(s.index, a.dir === 'up' ? -1 : 1, list) };
@@ -333,7 +400,8 @@ class Game {
     if (s.k !== 'confirm' || this.busy) return;
     if (!yes) {
       sfx('cancel');
-      if (ABILITIES[s.ability].range[1] === 0) return this.back({ k: 'abilities', index: abilitiesOf(this.battle).indexOf(s.ability) });
+      if (ABILITIES[s.ability].range[1] === 0)
+        return this.back({ k: 'abilities', index: abilitiesOf(this.battle).indexOf(s.ability) });
       this.screen = { k: 'map', command: 'act' };
       return this.update(this.ui);
     }
@@ -366,7 +434,10 @@ class Game {
     this.pixel = p;
     store.set(PIXEL_KEY, JSON.stringify(p));
     this.scene.setPixel(p);
-    this.log = t(`Pixel art: ${p.size ? `${p.size} px` : 'desligado'}`, `Pixel art: ${p.size ? `${p.size} px` : 'off'}`);
+    this.log = t(
+      `Pixel art: ${p.size ? `${p.size} px` : 'desligado'}`,
+      `Pixel art: ${p.size ? `${p.size} px` : 'off'}`,
+    );
     this.update(this.ui);
   }
 
@@ -388,26 +459,57 @@ class Game {
 
   private update(ui: Ui) {
     this.ui = ui;
-    if (this.battle.state.scenario === SURVIVAL_ID) this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
+    if (this.battle.state.scenario === SURVIVAL_ID)
+      this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.screen;
     // on the menu and submenu only the acting unit's tile is marked; the range shows when choosing (like FFT)
-    const hl = !this.heroTurn || this.busy ? null : s.k === 'facing' ? this.facingMarks()
-      : s.k === 'map' || s.k === 'confirm' ? highlights(this.battle, ui) : { tiles: [{ pos: this.battle.actor.pos, kind: 'actor' as const }], path: null, preview: null };
+    const hl =
+      !this.heroTurn || this.busy
+        ? null
+        : s.k === 'facing'
+          ? this.facingMarks()
+          : s.k === 'map' || s.k === 'confirm'
+            ? highlights(this.battle, ui)
+            : { tiles: [{ pos: this.battle.actor.pos, kind: 'actor' as const }], path: null, preview: null };
     this.scene.setHighlights(hl);
     this.scene.setCursor(hl ? this.cursor : null);
     // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
     // it can be reached), to see where the strike reaches before moving
     const moving = s.k === 'map' && ui.mode.k === 'move';
-    const ringAt = !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving) ? null
-      : moving && this.battle.reach().has(posKey(this.cursor)) ? this.cursor : this.battle.actor.pos;
+    const ringAt =
+      !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving)
+        ? null
+        : moving && this.battle.reach().has(posKey(this.cursor))
+          ? this.cursor
+          : this.battle.actor.pos;
     this.scene.setRangeRing(ringAt ? { center: ringAt, range: longestRange(this.battle) } : null);
     // trajectory preview (Nov 13, "like Tactics Ogre"): when aiming a shot or spell that needs line of sight, the line runs from
     // the attacker to the cursor tile and turns red from where it hits
-    const aim = hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight ? this.cursor : null;
+    const aim =
+      hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight
+        ? this.cursor
+        : null;
     const from = this.battle.actor.pos;
     const magic = ui.mode.k === 'ability' && !!ABILITIES[ui.mode.id].magic;
-    this.scene.setTrajectory(aim && (aim.x !== from.x || aim.y !== from.y) ? { from, to: aim, block: shotStop(this.battle.grid, this.battle.state, from, aim, this.battle.actor.id, !magic)?.pos ?? null } : null);
-    this.hud.render({ battle: this.battle, screen: s, hl, busy: this.busy, log: this.log, acting: this.acting, cursor: this.cursor, ability: ui.mode.k === 'ability' ? ui.mode.id : null });
+    this.scene.setTrajectory(
+      aim && (aim.x !== from.x || aim.y !== from.y)
+        ? {
+            from,
+            to: aim,
+            block: shotStop(this.battle.grid, this.battle.state, from, aim, this.battle.actor.id, !magic)?.pos ?? null,
+          }
+        : null,
+    );
+    this.hud.render({
+      battle: this.battle,
+      screen: s,
+      hl,
+      busy: this.busy,
+      log: this.log,
+      acting: this.acting,
+      cursor: this.cursor,
+      ability: ui.mode.k === 'ability' ? ui.mode.id : null,
+    });
     const { top, bottom } = this.hud.insets();
     this.scene.setInsets(top, bottom);
     this.placeMenu(); // already in place on open: waiting for the next frame showed the menu in the corner for 1 frame
@@ -417,7 +519,8 @@ class Game {
   // FFT"). Runs every frame (pollPad) because the camera slides and rotates with the menu open. "Execute?" does not cover the target.
   private placeMenu() {
     if (!this.hud.menuOpen) return;
-    const b = this.battle, s = this.screen;
+    const b = this.battle,
+      s = this.screen;
     const foe = s.k === 'confirm' ? unitAt(b.state, s.target) : undefined;
     this.hud.place(this.scene.screenOf(b.actor.id), foe && foe.id !== b.actor.id ? this.scene.screenOf(foe.id) : null);
   }
@@ -437,21 +540,40 @@ class Game {
   // Sound for each event (before its animation): step by step, strike in the air, hit, miss, heal, charge, fall
   private sound(e: BattleEvent) {
     const MELEE = new Set(['slash', 'heavy', 'stab', 'impact', 'spin', 'dash', 'debuff']);
-    const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = { hit: 'hit', bump: 'hit', fall: 'hit', spike: 'hit', miss: 'miss', heal: 'heal', charge: 'charge', fizzle: 'miss', die: 'die' };
+    const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = {
+      hit: 'hit',
+      bump: 'hit',
+      fall: 'hit',
+      spike: 'hit',
+      miss: 'miss',
+      heal: 'heal',
+      charge: 'charge',
+      fizzle: 'miss',
+      die: 'die',
+    };
     if (e.k === 'move') {
       // step at the start of each tile walked; on a jump, the sound goes on landing (same timings as the scene, stepMs)
       const h = (i: number) => standH(tileAt(this.battle.grid, e.path[i]));
       let at = 0;
       for (let i = 1; i < e.path.length; i++) {
         // ramp: walking, at the step pace (the same as scene.ts)
-        const dh = rampLink(this.battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1), tiles = dist(e.path[i - 1], e.path[i]), ms = stepMs(dh, tiles);
+        const dh = rampLink(this.battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1),
+          tiles = dist(e.path[i - 1], e.path[i]),
+          ms = stepMs(dh, tiles);
         void this.scene.wait(at + (isJump(dh, tiles) ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
         at += ms;
       }
-    }
-    else if (e.k === 'attack') {
+    } else if (e.k === 'attack') {
       const fx = lookOf(e.ability).fx;
-      sfx(MELEE.has(fx) ? 'swing' : fx === 'fire' || fx === 'blast' ? 'fire' : ['heal', 'buff', 'wind'].includes(fx) ? 'spell' : 'throw');
+      sfx(
+        MELEE.has(fx)
+          ? 'swing'
+          : fx === 'fire' || fx === 'blast'
+            ? 'fire'
+            : ['heal', 'buff', 'wind'].includes(fx)
+              ? 'spell'
+              : 'throw',
+      );
     } else if (BY_EVENT[e.k]) sfx(BY_EVENT[e.k]!);
   }
 
@@ -467,16 +589,25 @@ class Game {
     if (e.k === 'move' && enemy) {
       const to = e.path.at(-1)!;
       this.scene.setCursor(to);
-      await show({ tiles: [{ pos: to, kind: 'target' }], path: e.path.slice(1), preview: null }, TIMING.enemyDestination); // without the dot under the walker
+      await show(
+        { tiles: [{ pos: to, kind: 'target' }], path: e.path.slice(1), preview: null },
+        TIMING.enemyDestination,
+      ); // without the dot under the walker
       this.scene.setCursor(null);
       this.sound(e);
     } else if (e.k === 'attack') {
       const a = ABILITIES[e.ability];
       const me = this.battle.state.units.find((u) => u.id === e.unit);
       if (me) this.scene.focusOn(me.pos, e.target);
-      const area =[e.target, ...this.allTiles().filter((p) => a.radius > 0 && dist(p, e.target) <= a.radius && !samePos(p, e.target))];
+      const area = [
+        e.target,
+        ...this.allTiles().filter((p) => a.radius > 0 && dist(p, e.target) <= a.radius && !samePos(p, e.target)),
+      ];
       this.hud.banner(abilityName(e.ability));
-      await show({ tiles: area.map((pos, i) => ({ pos, kind: i ? 'area' : 'target' })), path: null, preview: null }, TIMING.banner);
+      await show(
+        { tiles: area.map((pos, i) => ({ pos, kind: i ? 'area' : 'target' })), path: null, preview: null },
+        TIMING.banner,
+      );
       this.sound(e);
     }
   }
@@ -489,7 +620,10 @@ class Game {
   // tiles around the acting unit: the one it faces is highlighted (direction choice at the end of the turn)
   private facingMarks(): Highlights {
     const me = this.battle.actor;
-    const tiles = neighbors(this.battle.grid, me.pos).map((pos) => ({ pos, kind: facingTo(me.pos, pos) === me.facing ? 'target' as const : 'range' as const }));
+    const tiles = neighbors(this.battle.grid, me.pos).map((pos) => ({
+      pos,
+      kind: facingTo(me.pos, pos) === me.facing ? ('target' as const) : ('range' as const),
+    }));
     return { tiles: [...tiles, { pos: me.pos, kind: 'actor' }], path: null, preview: null };
   }
 
@@ -510,7 +644,9 @@ class Game {
     const id = unitAt(s, this.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit
     if (!id) return;
     const u = s.units.find((x) => x.id === id)!;
-    dialog('status', unitName(u.def), [el('dl', { class: 'keys' }, ...unitStatus(s, id).flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]))]);
+    dialog('status', unitName(u.def), [
+      el('dl', { class: 'keys' }, ...unitStatus(s, id).flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)])),
+    ]);
   }
 
   private save() {
@@ -592,8 +728,16 @@ class Game {
     if (!m) return [];
     const [id, s] = m;
     const name = unitName(this.roster[id].def);
-    return [el('p', { class: 'mvp' }, t(`Destaque: ${name} · ${s.dmg} de dano · ${s.kills} derrubado${s.kills === 1 ? '' : 's'}`,
-      `MVP: ${name} · ${s.dmg} damage · ${s.kills} ${s.kills === 1 ? 'takedown' : 'takedowns'}`))];
+    return [
+      el(
+        'p',
+        { class: 'mvp' },
+        t(
+          `Destaque: ${name} · ${s.dmg} de dano · ${s.kills} derrubado${s.kills === 1 ? '' : 's'}`,
+          `MVP: ${name} · ${s.dmg} damage · ${s.kills} ${s.kills === 1 ? 'takedown' : 'takedowns'}`,
+        ),
+      ),
+    ];
   }
 
   private restart() {
@@ -615,29 +759,93 @@ class Game {
     if (chapter !== null) return this.finishChapter(chapter, won);
     // Until Dawn: how many turns it lasted and the record (a new record gets highlighted, like the stage grade)
     // winning by downing everyone before dawn also counts as surviving the whole night (it used to save "record 20" on a victory)
-    const lasted = won ? SURVIVE_TURNS : survived(this.battle.state), best = parseBest(store.get(BEST_KEY));
+    const lasted = won ? SURVIVE_TURNS : survived(this.battle.state),
+      best = parseBest(store.get(BEST_KEY));
     // bar mission won: gold and item in the chest, and it leaves the bar (missions.ts)
     if (mission && won && !parseDone(store.json(MISSIONS_KEY)).includes(mission.id)) {
       const chest = parseChest(store.json(CHEST_KEY));
-      store.set(CHEST_KEY, JSON.stringify({ gold: chest.gold + mission.gold, items: mission.item ? [...chest.items, mission.item] : chest.items }));
+      store.set(
+        CHEST_KEY,
+        JSON.stringify({
+          gold: chest.gold + mission.gold,
+          items: mission.item ? [...chest.items, mission.item] : chest.items,
+        }),
+      );
       store.set(MISSIONS_KEY, JSON.stringify([...parseDone(store.json(MISSIONS_KEY)), mission.id]));
     }
     if (scenario.id === SURVIVAL_ID && lasted > best) store.set(BEST_KEY, String(lasted));
     const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
-      ...(scenario.id === SURVIVAL_ID ? [el('p', { class: lasted > best ? 'learned' : '' },
-        lasted > best ? t(`Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`, `New record: ${lasted} of ${SURVIVE_TURNS} turns!`)
-          : t(`Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`, `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`))] : []),
+      ...(scenario.id === SURVIVAL_ID
+        ? [
+            el(
+              'p',
+              { class: lasted > best ? 'learned' : '' },
+              lasted > best
+                ? t(
+                    `Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`,
+                    `New record: ${lasted} of ${SURVIVE_TURNS} turns!`,
+                  )
+                : t(
+                    `Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`,
+                    `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`,
+                  ),
+            ),
+          ]
+        : []),
       ...this.mvpLine(),
-      ...(mission && won ? [el('p', { class: 'mvp' }, t(`Recompensa: ${mission.gold} de ouro${mission.item ? ` e ${ITEMS[mission.item].name}` : ''} no baú.`, `Reward: ${mission.gold} gold${mission.item ? ` and ${ITEMS[mission.item].en}` : ''} in the chest.`))] : []),
-      el('p', {}, scenario.id === SURVIVAL_ID
-        ? (won ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.') : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.'))
-        : won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
-        : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.')),
+      ...(mission && won
+        ? [
+            el(
+              'p',
+              { class: 'mvp' },
+              t(
+                `Recompensa: ${mission.gold} de ouro${mission.item ? ` e ${ITEMS[mission.item].name}` : ''} no baú.`,
+                `Reward: ${mission.gold} gold${mission.item ? ` and ${ITEMS[mission.item].en}` : ''} in the chest.`,
+              ),
+            ),
+          ]
+        : []),
+      el(
+        'p',
+        {},
+        scenario.id === SURVIVAL_ID
+          ? won
+            ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.')
+            : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.')
+          : won
+            ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
+            : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.'),
+      ),
       // Title beside it: without it, leaving the standalone battle required reloading the page
-      el('div', { class: 'menu-actions' },
-        mission && won ? el('button', { type: 'button', class: 'primary', onclick: toWorld }, t('Voltar ao mapa', 'Back to map'))
-          : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
-        el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title'))),
+      el(
+        'div',
+        { class: 'menu-actions' },
+        mission && won
+          ? el('button', { type: 'button', class: 'primary', onclick: toWorld }, t('Voltar ao mapa', 'Back to map'))
+          : el(
+              'button',
+              {
+                type: 'button',
+                class: 'primary',
+                onclick: () => {
+                  d.close();
+                  this.restart();
+                },
+              },
+              t('Jogar de novo', 'Play again'),
+            ),
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'secondary',
+            onclick: () => {
+              location.search = '';
+            },
+          },
+          t('Título', 'Title'),
+        ),
+      ),
     ]);
     // Enter plays again (focus went to the X, and closing left the finished battle with no key to restart)
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
@@ -655,78 +863,288 @@ class Game {
       store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + VICTORY_GOLD }));
       await talk(CHAPTERS[n].outro, { hero: savedHero() });
     }
-    const d = dialog('result', won ? (last ? t('Fim da campanha!', 'Campaign complete!') : t('Fase vencida!', 'Stage cleared!')) : t('Derrota', 'Defeat'), [
-      ...(won ? [
-        ...this.mvpLine(),
-        el('p', { class: 'mvp' }, t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`)),
-        ...learned(n, savedHero(), savedGroup()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
-      // on the last stage there is no next battle: the map keeps only the epilogue, back to Vauclair
-      el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) || !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF) ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.') : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.')),
-      // victory returns to the world map (the next point is open); defeat retries right there or goes back to the map
-      el('div', { class: 'menu-actions' },
-        won ? el('button', { type: 'button', class: 'primary', onclick: () => { location.search = `?mundo&de=${nodeOfChapter(n)}`; } }, t('Voltar ao mapa', 'Back to the map'))
-          : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Tentar de novo', 'Try again')),
-        ...(won ? [] : [el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa', 'Map'))])),
-    ]);
+    const d = dialog(
+      'result',
+      won
+        ? last
+          ? t('Fim da campanha!', 'Campaign complete!')
+          : t('Fase vencida!', 'Stage cleared!')
+        : t('Derrota', 'Defeat'),
+      [
+        ...(won
+          ? [
+              ...this.mvpLine(),
+              el(
+                'p',
+                { class: 'mvp' },
+                t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`),
+              ),
+              ...learned(n, savedHero(), savedGroup()).map((x) =>
+                el(
+                  'p',
+                  { class: 'learned' },
+                  t(
+                    `${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`,
+                    `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`,
+                  ),
+                ),
+              ),
+            ]
+          : []),
+        // on the last stage there is no next battle: the map keeps only the epilogue, back to Vauclair
+        el(
+          'p',
+          {},
+          won
+            ? last
+              ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.')
+              : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')
+            : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) ||
+                !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF)
+              ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')
+              : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.'),
+        ),
+        // victory returns to the world map (the next point is open); defeat retries right there or goes back to the map
+        el(
+          'div',
+          { class: 'menu-actions' },
+          won
+            ? el(
+                'button',
+                {
+                  type: 'button',
+                  class: 'primary',
+                  onclick: () => {
+                    location.search = `?mundo&de=${nodeOfChapter(n)}`;
+                  },
+                },
+                t('Voltar ao mapa', 'Back to the map'),
+              )
+            : el(
+                'button',
+                {
+                  type: 'button',
+                  class: 'primary',
+                  onclick: () => {
+                    d.close();
+                    this.restart();
+                  },
+                },
+                t('Tentar de novo', 'Try again'),
+              ),
+          ...(won ? [] : [el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa', 'Map'))]),
+        ),
+      ],
+    );
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
   }
 
   // Options (Nov 13, Fernando's request: "the menu could take up more of the screen width, with subsections"): wide window
   // with the sections in a left column (vertical choice()) and one section at a time on the right, so nothing scrolls far
   private menu() {
-    const sections: [id: string, title: string, body: Node[]][] = [[
-      'jogo', t('Jogo', 'Game'), [
-      // in the campaign, the stage objective (no Beacon, boss); in the standalone battle, the usual one
-      el('p', {}, chapter !== null ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
-        : scenario.id === SURVIVAL_ID ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
-        : t('Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).', 'Goal: defeat the enemies and protect the Beacon (the blue crystal).')),
-      el('ul', { class: 'legend' },
-        el('li', {}, el('i', { class: 'sw move' }), t('Azul, moldura lisa: onde o herói pode andar', 'Blue, plain frame: where the hero can move')),
-        el('li', {}, el('i', { class: 'sw range' }), t('Laranja, listras: alcance da habilidade', 'Orange, stripes: ability range')),
-        el('li', {}, el('i', { class: 'sw blocked' }), t('Roxo, xis: no alcance, mas sem visão', 'Purple, cross: in range, but no sight')),
-        el('li', {}, el('i', { class: 'sw threat' }), t('Vermelho, listras: o que a unidade tocada alcança', 'Red, stripes: what the tapped unit can reach'))),
-      choice(t('Velocidade do texto das conversas', 'Dialogue text speed'), [['normal', t('Normal', 'Normal')], ['fast', t('Rápida', 'Fast')], ['instant', t('Instantânea', 'Instant')]] as [TextSpeed, string][], textSpeed(), (v) => store.set(TEXT_KEY, v)),
-    ]], [
-      'som', t('Som', 'Sound'), [
-      slider(t('Música', 'Music'), soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
-      slider(t('Efeitos', 'Effects'), soundSettings().sfx, (v) => setSound({ ...soundSettings(), sfx: v })),
-    ]], [
-      'video', t('Vídeo e efeitos', 'Video and effects'), [
-      choice(t('Tamanho do pixel', 'Pixel size'), [[0, t('Desligado', 'Off')], [2, '2 px'], [3, '3 px'], [4, '4 px']] as [PixelSize, string][], this.pixel.size, (size) => this.setPixel({ ...this.pixel, size })),
-      choice(t('Contorno', 'Outline'), [[true, t('Ligado', 'On')], [false, t('Desligado', 'Off')]], this.pixel.outline, (outline) => this.setPixel({ ...this.pixel, outline })),
-      choice(t('Paleta reduzida (16 bits)', 'Reduced palette (16-bit)'), [[false, t('Desligada', 'Off')], [true, t('Ligada', 'On')]], this.pixel.palette, (palette) => this.setPixel({ ...this.pixel, palette })),
-      choice(t('Câmera presa à grade de pixels', 'Camera locked to the pixel grid'), [[true, t('Ligada', 'On')], [false, t('Desligada', 'Off')]], this.pixel.snap, (snap) => this.setPixel({ ...this.pixel, snap })),
-    ]], [
-      'controles', t('Controles', 'Controls'), [
-      el('p', {}, t('Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, ombros giram a câmera, Start abre este menu.', 'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, shoulders rotate the camera, Start opens this menu.')),
-      el('dl', { class: 'keys' }, ...keyHelp().flatMap(([k, what]) => [el('dt', {}, k), el('dd', {}, what)])),
-    ]], [
-      'idioma', t('Idioma', 'Language'), [
-      choice(t('Idioma', 'Language'), [['pt', 'Português'], ['en', 'English']] as [Lang, string][], LANG, setLang),
-    ]]];
-    const panels = sections.map(([id, title, body]) => el('section', { class: 'menu-section', hidden: id !== 'jogo' }, el('h3', {}, title), ...body));
-    const nav = choice(t('Seções', 'Sections'), sections.map(([id, title]) => [id, title] as [string, string]), 'jogo',
-      (id) => panels.forEach((p, i) => (p.hidden = sections[i][0] !== id)));
+    const sections: [id: string, title: string, body: Node[]][] = [
+      [
+        'jogo',
+        t('Jogo', 'Game'),
+        [
+          // in the campaign, the stage objective (no Beacon, boss); in the standalone battle, the usual one
+          el(
+            'p',
+            {},
+            chapter !== null
+              ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
+              : scenario.id === SURVIVAL_ID
+                ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
+                : t(
+                    'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',
+                    'Goal: defeat the enemies and protect the Beacon (the blue crystal).',
+                  ),
+          ),
+          el(
+            'ul',
+            { class: 'legend' },
+            el(
+              'li',
+              {},
+              el('i', { class: 'sw move' }),
+              t('Azul, moldura lisa: onde o herói pode andar', 'Blue, plain frame: where the hero can move'),
+            ),
+            el(
+              'li',
+              {},
+              el('i', { class: 'sw range' }),
+              t('Laranja, listras: alcance da habilidade', 'Orange, stripes: ability range'),
+            ),
+            el(
+              'li',
+              {},
+              el('i', { class: 'sw blocked' }),
+              t('Roxo, xis: no alcance, mas sem visão', 'Purple, cross: in range, but no sight'),
+            ),
+            el(
+              'li',
+              {},
+              el('i', { class: 'sw threat' }),
+              t('Vermelho, listras: o que a unidade tocada alcança', 'Red, stripes: what the tapped unit can reach'),
+            ),
+          ),
+          choice(
+            t('Velocidade do texto das conversas', 'Dialogue text speed'),
+            [
+              ['normal', t('Normal', 'Normal')],
+              ['fast', t('Rápida', 'Fast')],
+              ['instant', t('Instantânea', 'Instant')],
+            ] as [TextSpeed, string][],
+            textSpeed(),
+            (v) => store.set(TEXT_KEY, v),
+          ),
+        ],
+      ],
+      [
+        'som',
+        t('Som', 'Sound'),
+        [
+          slider(t('Música', 'Music'), soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
+          slider(t('Efeitos', 'Effects'), soundSettings().sfx, (v) => setSound({ ...soundSettings(), sfx: v })),
+        ],
+      ],
+      [
+        'video',
+        t('Vídeo e efeitos', 'Video and effects'),
+        [
+          choice(
+            t('Tamanho do pixel', 'Pixel size'),
+            [
+              [0, t('Desligado', 'Off')],
+              [2, '2 px'],
+              [3, '3 px'],
+              [4, '4 px'],
+            ] as [PixelSize, string][],
+            this.pixel.size,
+            (size) => this.setPixel({ ...this.pixel, size }),
+          ),
+          choice(
+            t('Contorno', 'Outline'),
+            [
+              [true, t('Ligado', 'On')],
+              [false, t('Desligado', 'Off')],
+            ],
+            this.pixel.outline,
+            (outline) => this.setPixel({ ...this.pixel, outline }),
+          ),
+          choice(
+            t('Paleta reduzida (16 bits)', 'Reduced palette (16-bit)'),
+            [
+              [false, t('Desligada', 'Off')],
+              [true, t('Ligada', 'On')],
+            ],
+            this.pixel.palette,
+            (palette) => this.setPixel({ ...this.pixel, palette }),
+          ),
+          choice(
+            t('Câmera presa à grade de pixels', 'Camera locked to the pixel grid'),
+            [
+              [true, t('Ligada', 'On')],
+              [false, t('Desligada', 'Off')],
+            ],
+            this.pixel.snap,
+            (snap) => this.setPixel({ ...this.pixel, snap }),
+          ),
+        ],
+      ],
+      [
+        'controles',
+        t('Controles', 'Controls'),
+        [
+          el(
+            'p',
+            {},
+            t(
+              'Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, ombros giram a câmera, Start abre este menu.',
+              'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, shoulders rotate the camera, Start opens this menu.',
+            ),
+          ),
+          el('dl', { class: 'keys' }, ...keyHelp().flatMap(([k, what]) => [el('dt', {}, k), el('dd', {}, what)])),
+        ],
+      ],
+      [
+        'idioma',
+        t('Idioma', 'Language'),
+        [
+          choice(
+            t('Idioma', 'Language'),
+            [
+              ['pt', 'Português'],
+              ['en', 'English'],
+            ] as [Lang, string][],
+            LANG,
+            setLang,
+          ),
+        ],
+      ],
+    ];
+    const panels = sections.map(([id, title, body]) =>
+      el('section', { class: 'menu-section', hidden: id !== 'jogo' }, el('h3', {}, title), ...body),
+    );
+    const nav = choice(
+      t('Seções', 'Sections'),
+      sections.map(([id, title]) => [id, title] as [string, string]),
+      'jogo',
+      (id) => panels.forEach((p, i) => (p.hidden = sections[i][0] !== id)),
+    );
     nav.classList.add('menu-nav');
     const d = dialog('menu', t('Opções', 'Options'), [
       el('div', { class: 'menu-layout' }, nav, el('div', { class: 'menu-body' }, ...panels)),
-      el('div', { class: 'menu-actions' },
+      el(
+        'div',
+        { class: 'menu-actions' },
         // during the animation or the enemy turn the loop is still running the old battle
         // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
-        el('button', { type: 'button', class: 'secondary', disabled: this.busy, onclick: (e: Event) => {
-          const btn = e.currentTarget as HTMLButtonElement;
-          if (!btn.dataset.armed) {
-            btn.dataset.armed = '1';
-            btn.textContent = t('Toque de novo para reiniciar', 'Tap again to restart');
-            return;
-          }
-          d.close();
-          this.restart();
-        } }, t('Reiniciar batalha', 'Restart battle')),
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'secondary',
+            disabled: this.busy,
+            onclick: (e: Event) => {
+              const btn = e.currentTarget as HTMLButtonElement;
+              if (!btn.dataset.armed) {
+                btn.dataset.armed = '1';
+                btn.textContent = t('Toque de novo para reiniciar', 'Tap again to restart');
+                return;
+              }
+              d.close();
+              this.restart();
+            },
+          },
+          t('Reiniciar batalha', 'Restart battle'),
+        ),
         el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa da campanha', 'Campaign map')),
         // exit to the title (in the standalone battle the campaign map is not where the person came from)
-        el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title')),
-        el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); void devMenu(); } }, t('Desenvolvedor', 'Developer'))),
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'secondary',
+            onclick: () => {
+              location.search = '';
+            },
+          },
+          t('Título', 'Title'),
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'secondary',
+            onclick: () => {
+              d.close();
+              void devMenu();
+            },
+          },
+          t('Desenvolvedor', 'Developer'),
+        ),
+      ),
     ]);
   }
 }
@@ -754,12 +1172,22 @@ async function boot() {
     if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) return toWorld();
     mission = m;
     setTrack('road');
-    scenario = missionScenario(m, parseProgress(store.get(CAMPAIGN_KEY)), savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
+    scenario = missionScenario(
+      m,
+      parseProgress(store.get(CAMPAIGN_KEY)),
+      savedHero(),
+      parseEquip(store.json(EQUIP_KEY)),
+      savedGroup(),
+    );
     SAVE_KEY = `dt:battle:${missionScenarioId(m.id)}`;
   }
   if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // world map: no battle assembled
   // stage that does not exist or is still locked (typed or saved address): goes back to the map instead of falling into a standalone battle
-  const allowed = camp !== null && camp !== '' && CHAPTERS[Number(camp)] !== undefined && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY));
+  const allowed =
+    camp !== null &&
+    camp !== '' &&
+    CHAPTERS[Number(camp)] !== undefined &&
+    Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY));
   if (camp !== null && !allowed) return toWorld();
   if (mission) {
     // already assembled above
@@ -799,7 +1227,13 @@ async function boot() {
   const saved = store.get(SAVE_KEY);
   const battle = (saved && Battle.load(saved)) || newBattle();
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
-  const scene = await BattleScene.create(host, battle.grid, battle.state, pixel, scenario.spawns.map((s) => s.def));
+  const scene = await BattleScene.create(
+    host,
+    battle.grid,
+    battle.state,
+    pixel,
+    scenario.spawns.map((s) => s.def),
+  );
   new Game(battle, scene, host, pixel);
   // campaign stage mood (dark crypt, Hill under the Veil, ridge at night): the same light as Until Dawn mode
   const light = chapter !== null ? CHAPTERS[chapter].light : undefined;
@@ -807,7 +1241,10 @@ async function boot() {
   // stage starting from zero: the opening conversation over the already assembled map
   // stage from zero: opening conversation and, on closing, the objective banner (like FFT's objective announcement)
   const n = chapter;
-  if (n !== null && !saved) void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() => announce(objectiveText(n, t)));
+  if (n !== null && !saved)
+    void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() =>
+      announce(objectiveText(n, t)),
+    );
   if (study === SURVIVAL_ID && !saved) announce(survivalGoal(t));
   // opening the game without a parameter shows the title screen over the standalone battle (which stays behind, already playable)
   if (camp === null && !study) titleScreen();
@@ -825,8 +1262,15 @@ function announce(text: string) {
 function confetti() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const colors = ['#f2c14e', '#4aa3ff', '#ff6b6b', '#7dffa8', '#ffffff'];
-  const box = el('div', { class: 'confetti', 'aria-hidden': 'true' }, ...Array.from({ length: 60 }, (_, i) =>
-    el('i', { style: `left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${Math.random() * 0.8}s;animation-duration:${1.6 + Math.random()}s` })));
+  const box = el(
+    'div',
+    { class: 'confetti', 'aria-hidden': 'true' },
+    ...Array.from({ length: 60 }, (_, i) =>
+      el('i', {
+        style: `left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${Math.random() * 0.8}s;animation-duration:${1.6 + Math.random()}s`,
+      }),
+    ),
+  );
   document.body.append(box);
   setTimeout(() => box.remove(), 3000);
 }
@@ -836,88 +1280,281 @@ function confetti() {
 // measured on Nov 13 (npm run sim, 300 seeds, AI x AI) with damage x1.75, direction and trees without passage: Hill 74%, Skirmish 85%, Crypt 79%, Crypt Heart 81% (before 61%, 40% and 60%; the Heart with the 2nd archer in place of the Brute, which with the gap dropped to 25%)
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
 function quickBattle() {
-  const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
-    el('div', { class: 'menu-actions camp-list' }, ...QUICK_MAPS.map((id) => el('button', {
-      type: 'button', class: id === 'beacon_hill' ? 'primary' : 'secondary',
-      onclick: () => {
-        d.close();
-        setTrack(null);
-        location.search = `?cenario=${id}`;
-      },
-    }, t(SCENARIOS[id].name, SCENARIOS[id].en))),
-    // mode with another rule: survive until dawn in Ash Wood (survival.ts)
-    el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); location.search = `?cenario=${SURVIVAL_ID}`; } },
-      t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood')
-        + (parseBest(store.get(BEST_KEY)) ? t(` (recorde ${parseBest(store.get(BEST_KEY))})`, ` (record ${parseBest(store.get(BEST_KEY))})`) : ''))),
-  ], { onBack: titleScreen });
+  const d = dialog(
+    'title',
+    t('Batalha avulsa', 'Quick battle'),
+    [
+      el(
+        'div',
+        { class: 'menu-actions camp-list' },
+        ...QUICK_MAPS.map((id) =>
+          el(
+            'button',
+            {
+              type: 'button',
+              class: id === 'beacon_hill' ? 'primary' : 'secondary',
+              onclick: () => {
+                d.close();
+                setTrack(null);
+                location.search = `?cenario=${id}`;
+              },
+            },
+            t(SCENARIOS[id].name, SCENARIOS[id].en),
+          ),
+        ),
+        // mode with another rule: survive until dawn in Ash Wood (survival.ts)
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'secondary',
+            onclick: () => {
+              d.close();
+              location.search = `?cenario=${SURVIVAL_ID}`;
+            },
+          },
+          t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood') +
+            (parseBest(store.get(BEST_KEY))
+              ? t(` (recorde ${parseBest(store.get(BEST_KEY))})`, ` (record ${parseBest(store.get(BEST_KEY))})`)
+              : ''),
+        ),
+      ),
+    ],
+    { onBack: titleScreen },
+  );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
 // Credits (summary; the full list, with each file's license, is public/CREDITS.txt). Back opens `back` (the title,
 // or nothing at the end of the campaign, where the map is already underneath).
 function credits(back: () => void = titleScreen) {
-  const d = dialog('title', t('Créditos', 'Credits'), [
-    el('ul', { class: 'legend' },
-      el('li', {}, t('Modelos 3D: KayKit, de Kay Lousberg (CC0)', '3D models: KayKit, by Kay Lousberg (CC0)')),
-      el('li', {}, t('Efeitos sonoros: Kenney, artisticdude, JaggedStone, Julien Matthey e outros do OpenGameArt (CC0)', 'Sound effects: Kenney, artisticdude, JaggedStone, Julien Matthey and others from OpenGameArt (CC0)')),
-      el('li', {}, t('Músicas (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD e Emma_MA. Vozes da campanha: compostas para o jogo', 'Music (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD and Emma_MA. Campaign voices: composed for the game')),
-      el('li', {}, t('Fontes: Tiny5 e Alegreya Sans (SIL Open Font License 1.1)', 'Fonts: Tiny5 and Alegreya Sans (SIL Open Font License 1.1)')),
-      el('li', {}, t('História, mapas e regras: Dungeon Tactics', 'Story, maps and rules: Dungeon Tactics'))),
-    el('p', {}, el('a', { href: '/CREDITS.txt', target: '_blank', rel: 'noopener' }, t('Lista completa, com a licença de cada arquivo', 'Full list, with each file\'s license'))),
-    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); back(); } }, t('Voltar', 'Back')),
-  ], { onBack: back });
+  const d = dialog(
+    'title',
+    t('Créditos', 'Credits'),
+    [
+      el(
+        'ul',
+        { class: 'legend' },
+        el('li', {}, t('Modelos 3D: KayKit, de Kay Lousberg (CC0)', '3D models: KayKit, by Kay Lousberg (CC0)')),
+        el(
+          'li',
+          {},
+          t(
+            'Efeitos sonoros: Kenney, artisticdude, JaggedStone, Julien Matthey e outros do OpenGameArt (CC0)',
+            'Sound effects: Kenney, artisticdude, JaggedStone, Julien Matthey and others from OpenGameArt (CC0)',
+          ),
+        ),
+        el(
+          'li',
+          {},
+          t(
+            'Músicas (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD e Emma_MA. Vozes da campanha: compostas para o jogo',
+            'Music (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD and Emma_MA. Campaign voices: composed for the game',
+          ),
+        ),
+        el(
+          'li',
+          {},
+          t(
+            'Fontes: Tiny5 e Alegreya Sans (SIL Open Font License 1.1)',
+            'Fonts: Tiny5 and Alegreya Sans (SIL Open Font License 1.1)',
+          ),
+        ),
+        el('li', {}, t('História, mapas e regras: Dungeon Tactics', 'Story, maps and rules: Dungeon Tactics')),
+      ),
+      el(
+        'p',
+        {},
+        el(
+          'a',
+          { href: '/CREDITS.txt', target: '_blank', rel: 'noopener' },
+          t('Lista completa, com a licença de cada arquivo', "Full list, with each file's license"),
+        ),
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          class: 'primary',
+          onclick: () => {
+            d.close();
+            back();
+          },
+        },
+        t('Voltar', 'Back'),
+      ),
+    ],
+    { onBack: back },
+  );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
 // How to play (night of Nov 12): the rules that change the decision, one line each, for whoever arrives without a tutorial (stage
 // 1 hints only cover move and act). Text checked against the engine rules (turn-queue, combat, grid).
 function howToPlay() {
-  const d = dialog('title', t('Como jogar', 'How to play'), [
-    el('ul', { class: 'legend' },
-      el('li', {}, t('A lista de turnos (canto de cima) mostra quem joga. Quem é mais rápido joga mais vezes.', 'The turn list (top corner) shows who acts. Faster units act more often.')),
-      el('li', {}, t('Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.', 'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.')),
-      el('li', {}, t('Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1. Com Salto 2 também se voa 1 casa de água funda ou de buraco.', 'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1. Jump 2 also clears 1 tile of deep water or a gap.')),
-      el('li', {}, t('Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles ou termina a vez em cima (passar por cima não fere).', 'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever is pushed onto them or ends a turn on them (walking over is safe).')),
-      el('li', {}, t('Na água funda só se anda ou espera.', 'In deep water you can only move or wait.')),
-      // a charge aimed at someone follows the unit (battle.ts follow): "get out of it" was wrong for the target (review of Nov 13)
-      el('li', {}, t('Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Se mirou alguém, a área anda junto: os vizinhos saem dela; o alvo só escapa saindo do alcance ou da vista de quem lança.', 'Charged abilities land later: the purple area shows where and the turn list shows when. If it targeted someone, the area moves with them: neighbours step out; the target only escapes by leaving the caster’s range or sight.')),
-      el('li', {}, t('Proteja o Farol (o cristal azul) quando houver um. Inimigo de coroa é o chefe: derrubá-lo vence a fase.', 'Protect the Beacon (the blue crystal) when there is one. A crowned enemy is the boss: bringing it down wins the stage.'))),
-    el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); titleScreen(); } }, t('Voltar', 'Back')),
-  ], { onBack: titleScreen });
+  const d = dialog(
+    'title',
+    t('Como jogar', 'How to play'),
+    [
+      el(
+        'ul',
+        { class: 'legend' },
+        el(
+          'li',
+          {},
+          t(
+            'A lista de turnos (canto de cima) mostra quem joga. Quem é mais rápido joga mais vezes.',
+            'The turn list (top corner) shows who acts. Faster units act more often.',
+          ),
+        ),
+        el(
+          'li',
+          {},
+          t(
+            'Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.',
+            'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.',
+          ),
+        ),
+        el(
+          'li',
+          {},
+          t(
+            'Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1. Com Salto 2 também se voa 1 casa de água funda ou de buraco.',
+            'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1. Jump 2 also clears 1 tile of deep water or a gap.',
+          ),
+        ),
+        el(
+          'li',
+          {},
+          t(
+            'Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles ou termina a vez em cima (passar por cima não fere).',
+            'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever is pushed onto them or ends a turn on them (walking over is safe).',
+          ),
+        ),
+        el('li', {}, t('Na água funda só se anda ou espera.', 'In deep water you can only move or wait.')),
+        // a charge aimed at someone follows the unit (battle.ts follow): "get out of it" was wrong for the target (review of Nov 13)
+        el(
+          'li',
+          {},
+          t(
+            'Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Se mirou alguém, a área anda junto: os vizinhos saem dela; o alvo só escapa saindo do alcance ou da vista de quem lança.',
+            'Charged abilities land later: the purple area shows where and the turn list shows when. If it targeted someone, the area moves with them: neighbours step out; the target only escapes by leaving the caster’s range or sight.',
+          ),
+        ),
+        el(
+          'li',
+          {},
+          t(
+            'Proteja o Farol (o cristal azul) quando houver um. Inimigo de coroa é o chefe: derrubá-lo vence a fase.',
+            'Protect the Beacon (the blue crystal) when there is one. A crowned enemy is the boss: bringing it down wins the stage.',
+          ),
+        ),
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          class: 'primary',
+          onclick: () => {
+            d.close();
+            titleScreen();
+          },
+        },
+        t('Voltar', 'Back'),
+      ),
+    ],
+    { onBack: titleScreen },
+  );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
 // Title screen (night of Nov 12): the game opened straight into a battle without saying what it was or that there was a campaign
 function titleScreen() {
   setTrack('title');
-  const go = (fn: () => void) => () => { d.close(); fn(); };
-  const d = dialog('title', 'Dungeon Tactics', [
-    el('p', { class: 'title-sub' }, t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes')),
-    el('div', { class: 'menu-actions camp-list' },
-      // Continue only shows with saved progress; New game erases campaign progress (the 2nd tap confirms)
-      // Continue says who and where (like FFT's save summary): whoever returns after days knows what will open
-      ...(parseWorld(store.get(WORLD_KEY)) > 0 ? [el('button', { type: 'button', class: 'primary', onclick: go(toWorld) }, t('Continuar', 'Continue'),
-        el('small', { class: 'continue-where' }, continueWhere()))] : []),
-      el('button', { type: 'button', class: parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary', onclick: (e: Event) => {
-        const btn = e.currentTarget as HTMLButtonElement;
-        // asks for the 2nd tap even with only the hero created (review of Nov 13: it erased the hero without asking)
-        if ((parseWorld(store.get(WORLD_KEY)) > 0 || savedHero()) && !btn.dataset.armed) {
-          btn.dataset.armed = '1';
-          btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
-          return;
-        }
-        for (const k of [WORLD_KEY, CAMPAIGN_KEY, 'dt:estrelas', HERO_KEY, GROUP_KEY, ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`)]) store.set(k, '');
-        d.close();
-        toWorld();
-      } }, t('Novo jogo', 'New game')),
-      el('button', { type: 'button', class: 'secondary', onclick: go(quickBattle) }, t('Batalha avulsa', 'Quick battle')),
-      el('button', { type: 'button', class: 'secondary', onclick: go(howToPlay) }, t('Como jogar', 'How to play')),
-      el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu(titleScreen)) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map')),
-      el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits'))),
-    el('p', { class: 'title-foot' }, t('Setas escolhem · Enter confirma', 'Arrows choose · Enter confirms'), ' · ',
-      // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
-      el('button', { type: 'button', class: 'title-lang', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português')),
-  ], { fixed: true }); // real title screen (Nov 13): does not close, and the map behind it is just scenery
+  const go = (fn: () => void) => () => {
+    d.close();
+    fn();
+  };
+  const d = dialog(
+    'title',
+    'Dungeon Tactics',
+    [
+      el(
+        'p',
+        { class: 'title-sub' },
+        t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes'),
+      ),
+      el(
+        'div',
+        { class: 'menu-actions camp-list' },
+        // Continue only shows with saved progress; New game erases campaign progress (the 2nd tap confirms)
+        // Continue says who and where (like FFT's save summary): whoever returns after days knows what will open
+        ...(parseWorld(store.get(WORLD_KEY)) > 0
+          ? [
+              el(
+                'button',
+                { type: 'button', class: 'primary', onclick: go(toWorld) },
+                t('Continuar', 'Continue'),
+                el('small', { class: 'continue-where' }, continueWhere()),
+              ),
+            ]
+          : []),
+        el(
+          'button',
+          {
+            type: 'button',
+            class: parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary',
+            onclick: (e: Event) => {
+              const btn = e.currentTarget as HTMLButtonElement;
+              // asks for the 2nd tap even with only the hero created (review of Nov 13: it erased the hero without asking)
+              if ((parseWorld(store.get(WORLD_KEY)) > 0 || savedHero()) && !btn.dataset.armed) {
+                btn.dataset.armed = '1';
+                btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
+                return;
+              }
+              for (const k of [
+                WORLD_KEY,
+                CAMPAIGN_KEY,
+                'dt:estrelas',
+                HERO_KEY,
+                GROUP_KEY,
+                ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`),
+              ])
+                store.set(k, '');
+              d.close();
+              toWorld();
+            },
+          },
+          t('Novo jogo', 'New game'),
+        ),
+        el(
+          'button',
+          { type: 'button', class: 'secondary', onclick: go(quickBattle) },
+          t('Batalha avulsa', 'Quick battle'),
+        ),
+        el('button', { type: 'button', class: 'secondary', onclick: go(howToPlay) }, t('Como jogar', 'How to play')),
+        el(
+          'button',
+          { type: 'button', class: 'secondary', onclick: go(() => void devMenu(titleScreen)) },
+          t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'),
+        ),
+        el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits')),
+      ),
+      el(
+        'p',
+        { class: 'title-foot' },
+        t('Setas escolhem · Enter confirma', 'Arrows choose · Enter confirms'),
+        ' · ',
+        // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
+        el(
+          'button',
+          { type: 'button', class: 'title-lang', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') },
+          LANG === 'pt' ? 'English' : 'Português',
+        ),
+      ),
+    ],
+    { fixed: true },
+  ); // real title screen (Nov 13): does not close, and the map behind it is just scenery
   d.overlay.classList.add('main-title');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
@@ -929,8 +1566,11 @@ function continueWhere(): string {
   return `${hero ? `${hero.name} · ` : ''}${t(w.name[0], w.name[1])}`;
 }
 
-const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
-const toWorld = () => { location.search = '?mundo'; };
+const chapterTitle = (n: number) =>
+  t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
+const toWorld = () => {
+  location.search = '?mundo';
+};
 const savedHero = () => parseHero(store.json(HERO_KEY));
 const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // player's group (group.ts): who goes, class and recruits
 
@@ -946,7 +1586,11 @@ function padToKeys(): () => void {
     requestAnimationFrame(poll);
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     if (!gp) return;
-    for (const a of padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, mem, performance.now())) {
+    for (const a of padActions(
+      { buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] },
+      mem,
+      performance.now(),
+    )) {
       const focused = document.activeElement;
       if (a.k === 'confirm') focused instanceof HTMLButtonElement ? focused.click() : key('Enter');
       else if (a.k === 'cancel') key('Escape');
@@ -954,7 +1598,9 @@ function padToKeys(): () => void {
     }
   };
   requestAnimationFrame(poll);
-  return () => { on = false; };
+  return () => {
+    on = false;
+  };
 }
 
 // World map (world.ts and world-ui.ts): a battle point opens the stage (replaying starts from zero); a story point plays the
@@ -991,9 +1637,16 @@ async function worldScreen(host: HTMLElement) {
     // an Enter reopened the epilogue on top
     if (finale) credits(() => undefined);
   };
-  let view = openWorld(host, { done, hero: hero.cls, enter, back: () => { location.search = ''; },
+  let view = openWorld(host, {
+    done,
+    hero: hero.cls,
+    enter,
+    back: () => {
+      location.search = '';
+    },
     party: () => openParty(partyFor(done, hero, savedGroup()).chapter, hero),
-    from: Number(new URLSearchParams(location.search).get('de') ?? -1) });
+    from: Number(new URLSearchParams(location.search).get('de') ?? -1),
+  });
 }
 
 void boot();

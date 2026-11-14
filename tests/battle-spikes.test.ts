@@ -10,11 +10,15 @@ const spiky = (...at: [number, number][]): Grid => {
   for (const [x, y] of at) tileAt(g, { x, y }).spikes = true;
   return g;
 };
-const units = (ax = 3, ay = 3) => stateOf([
-  { id: 'a', def: 'warrior', team: 'hero', x: ax, y: ay },
-  { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 3 },
-  { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 7 },
-], HIT_SEED);
+const units = (ax = 3, ay = 3) =>
+  stateOf(
+    [
+      { id: 'a', def: 'warrior', team: 'hero', x: ax, y: ay },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 3 },
+      { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 7 },
+    ],
+    HIT_SEED,
+  );
 
 describe('spikes', () => {
   it('pushed onto spikes takes their damage, added to the hit', () => {
@@ -24,7 +28,9 @@ describe('spikes', () => {
     const spike = events.find((e) => e.k === 'spike');
     expect(spike).toMatchObject({ unit: 'b', dmg: COMBAT.SPIKE_DAMAGE });
     const hit = events.find((e) => e.k === 'hit');
-    expect(b.state.units.find((u) => u.id === 'b')!.hp).toBe(hp - (hit && 'dmg' in hit ? hit.dmg : 0) - COMBAT.SPIKE_DAMAGE);
+    expect(b.state.units.find((u) => u.id === 'b')!.hp).toBe(
+      hp - (hit && 'dmg' in hit ? hit.dmg : 0) - COMBAT.SPIKE_DAMAGE,
+    );
   });
 
   it('ending the turn on top hurts; without spikes, nothing changes', () => {

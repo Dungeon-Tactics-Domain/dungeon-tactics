@@ -5,7 +5,22 @@ import { chromium } from './lib/browser.mjs';
 
 const base = process.argv[2];
 // ids after the URL redo only those portraits (the other PNG/WebP files stay as they are)
-const IDS = process.argv.length > 3 ? process.argv.slice(3) : ['mage', 'knight', 'barbarian', 'rogue', 'rogue_hooded', 'ranger', 'lancer', 'skeleton_mage', 'skeleton_minion', 'skeleton_rogue', 'skeleton_warrior'];
+const IDS =
+  process.argv.length > 3
+    ? process.argv.slice(3)
+    : [
+        'mage',
+        'knight',
+        'barbarian',
+        'rogue',
+        'rogue_hooded',
+        'ranger',
+        'lancer',
+        'skeleton_mage',
+        'skeleton_minion',
+        'skeleton_rogue',
+        'skeleton_warrior',
+      ];
 const page_html = `<!doctype html><html><body style="margin:0;background:transparent">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.186.1/build/three.module.js","three/addons/":"https://unpkg.com/three@0.186.1/examples/jsm/"}}</script>
 <script type="module">
@@ -31,7 +46,11 @@ window.shot = async (url) => {
 window.ready = true;
 </script></body></html>`;
 
-const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, args: ['--enable-unsafe-swiftshader', '--mute-audio'] });
+const browser = await chromium.launch({
+  channel: process.env.PW_CHANNEL ?? 'chrome',
+  headless: true,
+  args: ['--enable-unsafe-swiftshader', '--mute-audio'],
+});
 const page = await browser.newPage();
 await page.route(base + '/_portraits', (route) => route.fulfill({ contentType: 'text/html', body: page_html }));
 await page.goto(base + '/_portraits');

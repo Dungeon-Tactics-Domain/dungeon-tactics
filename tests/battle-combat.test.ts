@@ -12,7 +12,13 @@ const at = (x: number, y = 0) => ({ x, y });
 const chanceOf = (g: Grid, s: BattleState, ability: string, target: { x: number; y: number }) =>
   previewAbility(g, s, 'a', ability, target).targets[0]?.chance;
 const duel = (def: string, foeAt: number, foeDef = 'soldier', rng = 1) =>
-  stateOf([{ id: 'a', def, team: 'hero', x: 0, y: 0 }, { id: 'f', def: foeDef, team: 'enemy', x: foeAt, y: 0 }], rng);
+  stateOf(
+    [
+      { id: 'a', def, team: 'hero', x: 0, y: 0 },
+      { id: 'f', def: foeDef, team: 'enemy', x: foeAt, y: 0 },
+    ],
+    rng,
+  );
 
 describe('hit chance', () => {
   it('drops with distance (3 points per tile beyond the first)', () => {
@@ -41,7 +47,11 @@ describe('ability preview', () => {
   it('out of range gives the reason; without sight the shot stops at the obstacle and an empty tile is also valid (Nov 13)', () => {
     const g = flat(9, 1);
     expect(previewAbility(g, duel('archer', 8), 'a', 'shot', at(8))).toMatchObject({ ok: false, reason: 'range' });
-    expect(previewAbility(gridOf(['..#..']), duel('archer', 4), 'a', 'shot', at(4))).toMatchObject({ ok: true, center: at(2), targets: [] });
+    expect(previewAbility(gridOf(['..#..']), duel('archer', 4), 'a', 'shot', at(4))).toMatchObject({
+      ok: true,
+      center: at(2),
+      targets: [],
+    });
     expect(previewAbility(g, duel('archer', 3), 'a', 'shot', at(1))).toMatchObject({ ok: false, reason: 'range' });
     expect(previewAbility(flat(5, 1), duel('archer', 3), 'a', 'shot', at(2))).toMatchObject({ ok: true, targets: [] });
   });
@@ -67,12 +77,18 @@ describe('ability preview', () => {
     ]);
     const p = previewAbility(flat(6, 1), s, 'a', 'blast', at(4));
     expect(p.targets.map((t) => t.unit).sort()).toEqual(['ally', 'f']);
-    const spin = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 0 }, { id: 'f', def: 'soldier', team: 'enemy', x: 2, y: 0 }]);
+    const spin = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 0 },
+      { id: 'f', def: 'soldier', team: 'enemy', x: 2, y: 0 },
+    ]);
     expect(previewAbility(flat(4, 1), spin, 'a', 'spin', at(3)).targets.map((t) => t.unit)).toEqual(['f']); // centered on the user
   });
 
   it('shows the damage range', () => {
-    expect(previewAbility(flat(3, 1), duel('warrior', 1), 'a', 'strike', at(1)).targets[0]).toMatchObject({ dmgMin: ABILITIES.strike.damage[0], dmgMax: ABILITIES.strike.damage[1] });
+    expect(previewAbility(flat(3, 1), duel('warrior', 1), 'a', 'strike', at(1)).targets[0]).toMatchObject({
+      dmgMin: ABILITIES.strike.damage[0],
+      dmgMax: ABILITIES.strike.damage[1],
+    });
   });
 });
 
@@ -108,14 +124,26 @@ describe('resolving the ability', () => {
   });
 
   it('heal restores up to the max and never misses', () => {
-    const s = stateOf([{ id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 }, { id: 'w', def: 'warrior', team: 'hero', x: 2, y: 0, hp: 40 }], MISS_SEED);
+    const s = stateOf(
+      [
+        { id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 },
+        { id: 'w', def: 'warrior', team: 'hero', x: 2, y: 0, hp: 40 },
+      ],
+      MISS_SEED,
+    );
     const ev = resolveAbility(flat(3, 1), s, 'a', 'heal', at(2));
     expect(s.units[1].hp).toBe(42);
     expect(ev).toContainEqual({ k: 'heal', unit: 'w', amount: 2 });
   });
 
   it('killing removes the unit and announces it', () => {
-    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0, hp: 1 }], HIT_SEED);
+    const s = stateOf(
+      [
+        { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+        { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0, hp: 1 },
+      ],
+      HIT_SEED,
+    );
     const ev = resolveAbility(flat(3, 1), s, 'a', 'strike', at(1));
     expect(s.units.map((u) => u.id)).toEqual(['a']);
     expect(ev).toContainEqual({ k: 'die', unit: 'f' });
@@ -137,11 +165,14 @@ describe('push', () => {
     expect(wall.units[1].pos).toEqual(at(1));
     expect(ev.find((e) => e.k === 'bump')).toMatchObject({ unit: 'f', dmg: COMBAT.BUMP_DAMAGE });
 
-    const crowd = stateOf([
-      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
-      { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0 },
-      { id: 'g', def: 'soldier', team: 'enemy', x: 2, y: 0 },
-    ], HIT_SEED);
+    const crowd = stateOf(
+      [
+        { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+        { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0 },
+        { id: 'g', def: 'soldier', team: 'enemy', x: 2, y: 0 },
+      ],
+      HIT_SEED,
+    );
     bash(flat(5, 1), crowd);
     expect(crowd.units[1].pos).toEqual(at(1));
 
@@ -167,17 +198,26 @@ describe('push', () => {
   });
 
   it('whoever dies in the fall leaves the battle', () => {
-    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }, { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0, hp: 5 }], HIT_SEED);
+    const s = stateOf(
+      [
+        { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+        { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0, hp: 5 },
+      ],
+      HIT_SEED,
+    );
     const ev = bash(gridOf(['....'], ['3300']), s);
     expect(s.units).toHaveLength(1);
     expect(ev.some((e) => e.k === 'die' && e.unit === 'f')).toBe(true);
   });
 
   it('area push moves away from the blast center', () => {
-    const s = stateOf([
-      { id: 'a', def: 'mage', team: 'hero', x: 0, y: 2 },
-      { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 2 },
-    ], HIT_SEED);
+    const s = stateOf(
+      [
+        { id: 'a', def: 'mage', team: 'hero', x: 0, y: 2 },
+        { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 2 },
+      ],
+      HIT_SEED,
+    );
     resolveAbility(flat(8, 5), s, 'a', 'gust', at(3, 2));
     expect(s.units[1].pos).toEqual(at(5, 2)); // Gust: pushes 2 tiles, away from the caster
   });
@@ -204,7 +244,14 @@ describe('push with chance', () => {
     const pushed = (pushChance?: number) => {
       ABILITIES.test_push = { ...ABILITIES.shield_bash, id: 'test_push', pushChance };
       UNIT_DEFS.test_pusher = { ...UNIT_DEFS.warrior, id: 'test_pusher', abilities: ['test_push'] };
-      const state = stateOf([{ id: 'a', def: 'test_pusher', team: 'hero', x: 0, y: 0 }, { id: 'b', def: 'soldier', team: 'enemy', x: 1, y: 0 }, { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 0 }], HIT_SEED);
+      const state = stateOf(
+        [
+          { id: 'a', def: 'test_pusher', team: 'hero', x: 0, y: 0 },
+          { id: 'b', def: 'soldier', team: 'enemy', x: 1, y: 0 },
+          { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 0 },
+        ],
+        HIT_SEED,
+      );
       return resolveAbility(grid, state, 'a', 'test_push', { x: 1, y: 0 }).some((e) => e.k === 'push');
     };
     expect(pushed(0)).toBe(false);
@@ -216,8 +263,14 @@ describe('push with chance', () => {
 describe('facing in the game (Nov 13)', () => {
   it('a physical hit gains accuracy from the side and more from behind; magic ignores facing', () => {
     const g = flat(5, 3);
-    const s = stateOf([{ id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 }, { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 1 }]);
-    const shot = (facing: number) => { s.units[1].facing = facing; return previewAbility(g, s, 'a', 'shot', { x: 3, y: 1 }).targets[0]; };
+    const s = stateOf([
+      { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
+      { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 1 },
+    ]);
+    const shot = (facing: number) => {
+      s.units[1].facing = facing;
+      return previewAbility(g, s, 'a', 'shot', { x: 3, y: 1 }).targets[0];
+    };
     const front = shot(3); // facing -x, toward the archer
     expect(front.side).toBe('front');
     expect(shot(0).side).toBe('side');

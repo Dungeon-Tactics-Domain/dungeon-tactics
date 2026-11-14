@@ -15,7 +15,9 @@ describe('water levels', () => {
     expect(moat.deep).toBe(true);
     expect(moat.bed).toBeGreaterThan(0); // the bed does not go below the map base
     expect(moat.bed).toBeLessThan(moat.surface);
-    expect((SCENARIOS.crypt_heart.grid.tiles[3 * SCENARIOS.crypt_heart.grid.width].h + 1) * STEP - moat.surface).toBeCloseTo(DEEP_DROP * STEP);
+    expect(
+      (SCENARIOS.crypt_heart.grid.tiles[3 * SCENARIOS.crypt_heart.grid.width].h + 1) * STEP - moat.surface,
+    ).toBeCloseTo(DEEP_DROP * STEP);
   });
 
   it('bridge flush with the water has no water underneath; high bridge over the moat carries the neighbors water', () => {
@@ -26,7 +28,8 @@ describe('water levels', () => {
 
   it('wide bridge: the middle tile, which only touches land and bridge, carries the neighboring bridge water (Grove, 3 tiles)', () => {
     const wood = waterLevels(SCENARIOS.ash_wood.grid, STEP);
-    for (const k of ['2,4', '3,4', '4,4', '2,5', '3,5', '4,5']) expect(wood.get(k)).toMatchObject({ under: true, surface: wood.get('1,4')!.surface });
+    for (const k of ['2,4', '3,4', '4,4', '2,5', '3,5', '4,5'])
+      expect(wood.get(k)).toMatchObject({ under: true, surface: wood.get('1,4')!.surface });
   });
 
   it('river without rise and drop: the small deep stretch after the Grove ford sits at shallow height; the larger one stays low', () => {

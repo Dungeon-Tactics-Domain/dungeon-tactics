@@ -19,4 +19,6 @@ const wins = runs.filter((r) => r.outcome === 'victory').length;
 // Estimate (not measured with people): 15 s per hero turn (read, choose, confirm) and 2.5 s per enemy turn
 // (the client pauses add up to 1.3 s, plus the animation). Spec target: an 8 to 12 min battle.
 const minutes = mean((r) => (r.heroTurns * 15 + (r.turns - r.heroTurns) * 2.5) / 60);
-console.log(`${scenarioId} · ${n} sementes · vitória dos heróis ${((100 * wins) / n).toFixed(1)}% · turnos ${mean((r) => r.turns)} (heróis ${mean((r) => r.heroTurns)}) · ~${minutes} min · dano por golpe ${perHit} · dano por turno ${perTurn} · heróis vivos ${mean((r) => r.heroesAlive)} · inimigos vivos ${mean((r) => r.enemiesAlive)} · timeouts ${runs.filter((r) => r.outcome === 'timeout').length}`);
+console.log(
+  `${scenarioId} · ${n} sementes · vitória dos heróis ${((100 * wins) / n).toFixed(1)}% · turnos ${mean((r) => r.turns)} (heróis ${mean((r) => r.heroTurns)}) · ~${minutes} min · dano por golpe ${perHit} · dano por turno ${perTurn} · heróis vivos ${mean((r) => r.heroesAlive)} · inimigos vivos ${mean((r) => r.enemiesAlive)} · timeouts ${runs.filter((r) => r.outcome === 'timeout').length}`,
+);

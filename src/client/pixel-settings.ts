@@ -13,7 +13,12 @@ export const PIXEL_KEY = 'dt:pixel2';
 
 // normal 3D by default (Nov 13, Fernando's request: "make the pixelated look not the default"); pixel art stays in Options
 // and on the V key. The `phone` parameter is kept for the day the phone gets its own default
-export const defaultPixel = (_phone: boolean): PixelSettings => ({ size: 0, outline: true, palette: false, snap: true });
+export const defaultPixel = (_phone: boolean): PixelSettings => ({
+  size: 0,
+  outline: true,
+  palette: false,
+  snap: true,
+});
 
 const isSize = (v: unknown): v is PixelSize => PIXEL_SIZES.includes(v as PixelSize);
 
@@ -23,7 +28,12 @@ export function parsePixel(raw: unknown, phone: boolean): PixelSettings {
   if (!raw || typeof raw !== 'object') return d;
   const r = raw as Record<string, unknown>;
   const bool = (k: 'outline' | 'palette' | 'snap') => (typeof r[k] === 'boolean' ? (r[k] as boolean) : d[k]);
-  return { size: isSize(r.size) ? r.size : d.size, outline: bool('outline'), palette: bool('palette'), snap: bool('snap') };
+  return {
+    size: isSize(r.size) ? r.size : d.size,
+    outline: bool('outline'),
+    palette: bool('palette'),
+    snap: bool('snap'),
+  };
 }
 
 export const nextSize = (s: PixelSize): PixelSize => PIXEL_SIZES[(PIXEL_SIZES.indexOf(s) + 1) % PIXEL_SIZES.length];

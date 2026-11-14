@@ -10,8 +10,16 @@ describe('pixel art settings', () => {
   it('malformed browser save falls back to the default, field by field', () => {
     expect(parsePixel(null, false)).toEqual(defaultPixel(false));
     expect(parsePixel('lixo', false)).toEqual(defaultPixel(false));
-    expect(parsePixel({ size: 7, outline: 'sim', palette: true }, false)).toEqual({ ...defaultPixel(false), palette: true });
-    expect(parsePixel({ size: 0, outline: false, palette: false, snap: false, extra: 1 }, true)).toEqual({ size: 0, outline: false, palette: false, snap: false });
+    expect(parsePixel({ size: 7, outline: 'sim', palette: true }, false)).toEqual({
+      ...defaultPixel(false),
+      palette: true,
+    });
+    expect(parsePixel({ size: 0, outline: false, palette: false, snap: false, extra: 1 }, true)).toEqual({
+      size: 0,
+      outline: false,
+      palette: false,
+      snap: false,
+    });
   });
 
   it('quick shortcut cycles through the sizes and wraps around (Off, 2, 3, 4)', () => {

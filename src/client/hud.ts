@@ -20,7 +20,16 @@ import { TURN_THRESHOLD, previewOrder } from '../shared/battle/turn-queue.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { COMMANDS, abilitiesOf, abilityEnabled, canUndoMove, commandEnabled, swimming, type Command, type Screen } from './command.ts';
+import {
+  COMMANDS,
+  abilitiesOf,
+  abilityEnabled,
+  canUndoMove,
+  commandEnabled,
+  swimming,
+  type Command,
+  type Screen,
+} from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { UI_ICON, el, icon, iconButton, type Child } from './icons.ts';
 import { classOf } from './dev-roster.ts';
@@ -59,23 +68,43 @@ const range = (r: [number, number]) => (r[0] === r[1] ? `${r[0]}` : `${r[0]}–$
 // ability sheet (submenu and status window)
 export function abilityDetail(id: string): string {
   const a = ABILITIES[id];
-  const parts = [a.range[1] === 0 ? t('em volta de você', 'around you') : t(`alcance ${range(a.range)}`, `range ${range(a.range)}`)];
-  if (a.damage[1]) parts.push(t(`dano ${range(a.damage)}`, `damage ${range(a.damage)}`), t(`acerto ${a.accuracy}%`, `accuracy ${a.accuracy}%`));
+  const parts = [
+    a.range[1] === 0 ? t('em volta de você', 'around you') : t(`alcance ${range(a.range)}`, `range ${range(a.range)}`),
+  ];
+  if (a.damage[1])
+    parts.push(
+      t(`dano ${range(a.damage)}`, `damage ${range(a.damage)}`),
+      t(`acerto ${a.accuracy}%`, `accuracy ${a.accuracy}%`),
+    );
   if (a.heal[1]) parts.push(t(`cura ${range(a.heal)}`, `heals ${range(a.heal)}`));
   if (a.radius) parts.push(t(`área de raio ${a.radius} (pega aliados)`, `area of radius ${a.radius} (hits allies)`)); // radius 2 has existed since Shadow wave
   if (a.push) parts.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
   if (a.needsSight) parts.push(t('precisa de visão', 'needs sight'));
   if (a.heightRange) parts.push(t('+1 de alcance por nível acima', '+1 range per level above'));
-  if (a.cost) parts.push(t(`gasta ${a.cost[1]} de ${a.cost[0] === 'mp' ? 'MP' : 'estoque'}`, `costs ${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : 'stock'}`));
-  if (a.charge) parts.push(a.panel ? t(`carrega ${a.charge} tiques; mira a casa e erra se o alvo sair dela`, `charges ${a.charge} ticks; aims at the tile and misses if the target leaves`)
-    : t(`carrega ${a.charge} tiques e segue o alvo`, `charges ${a.charge} ticks and follows the target`));
+  if (a.cost)
+    parts.push(
+      t(
+        `gasta ${a.cost[1]} de ${a.cost[0] === 'mp' ? 'MP' : 'estoque'}`,
+        `costs ${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : 'stock'}`,
+      ),
+    );
+  if (a.charge)
+    parts.push(
+      a.panel
+        ? t(
+            `carrega ${a.charge} tiques; mira a casa e erra se o alvo sair dela`,
+            `charges ${a.charge} ticks; aims at the tile and misses if the target leaves`,
+          )
+        : t(`carrega ${a.charge} tiques e segue o alvo`, `charges ${a.charge} ticks and follows the target`),
+    );
   return parts.join(' · ');
 }
 
 // Text summary of what the last action did: the floating number vanishes in 1 s and the screen reader does not read it.
 // Whoever died has already left the state; the name comes from the scenario.
 export function eventLog(events: BattleEvent[], state: BattleState): string {
-  const name = (id: string) => unitName((state.units.find((u) => u.id === id) ?? SCENARIOS[state.scenario].spawns.find((s) => s.id === id))!.def);
+  const name = (id: string) =>
+    unitName((state.units.find((u) => u.id === id) ?? SCENARIOS[state.scenario].spawns.find((s) => s.id === id))!.def);
   // one sentence per action: charges that fire in the same interval bring several actions in a single list
   const out: string[] = [];
   let head = '';
@@ -93,16 +122,26 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
       head = `${name(e.unit)}: ${abilityName(e.ability)} → `;
     } else if (e.k === 'charge') {
       flush();
-      out.push(t(`${name(e.unit)} carrega ${abilityName(e.ability)}`, `${name(e.unit)} charges ${abilityName(e.ability)}`));
+      out.push(
+        t(`${name(e.unit)} carrega ${abilityName(e.ability)}`, `${name(e.unit)} charges ${abilityName(e.ability)}`),
+      );
     } else if (e.k === 'fizzle') {
       flush();
-      out.push(t(`${name(e.unit)}: ${abilityName(e.ability)} não achou o alvo`, `${name(e.unit)}: ${abilityName(e.ability)} found no target`));
+      out.push(
+        t(
+          `${name(e.unit)}: ${abilityName(e.ability)} não achou o alvo`,
+          `${name(e.unit)}: ${abilityName(e.ability)} found no target`,
+        ),
+      );
     } else if (e.k === 'hit') parts.push(`${name(e.unit)} −${e.dmg}`);
-    else if (e.k === 'miss') parts.push(t(`${name(e.unit)} errou (${e.chance}%)`, `missed ${name(e.unit)} (${e.chance}%)`));
+    else if (e.k === 'miss')
+      parts.push(t(`${name(e.unit)} errou (${e.chance}%)`, `missed ${name(e.unit)} (${e.chance}%)`));
     else if (e.k === 'heal') parts.push(`${name(e.unit)} +${e.amount}`);
     else if (e.k === 'bump') parts.push(t(`${name(e.unit)} bateu −${e.dmg}`, `${name(e.unit)} crashed −${e.dmg}`));
-    else if (e.k === 'fall') parts.push(t(`${name(e.unit)} caiu de altura −${e.dmg}`, `${name(e.unit)} fell −${e.dmg}`));
-    else if (e.k === 'spike') parts.push(t(`${name(e.unit)} nos espinhos −${e.dmg}`, `${name(e.unit)} on the spikes −${e.dmg}`));
+    else if (e.k === 'fall')
+      parts.push(t(`${name(e.unit)} caiu de altura −${e.dmg}`, `${name(e.unit)} fell −${e.dmg}`));
+    else if (e.k === 'spike')
+      parts.push(t(`${name(e.unit)} nos espinhos −${e.dmg}`, `${name(e.unit)} on the spikes −${e.dmg}`));
     else if (e.k === 'die') parts.push(t(`${name(e.unit)} caiu`, `${name(e.unit)} is down`));
   }
   flush();
@@ -111,8 +150,12 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
 
 // Status window sheet (like FFT's): what the unit is now. [label, value] rows; pure for the test.
 const INFO_LABEL: Record<string, () => string> = {
-  pa: () => t('Força (PA)', 'Physical attack (PA)'), ma: () => t('Magia (MA)', 'Magic attack (MA)'), brave: () => 'Brave',
-  faith: () => t('Fé', 'Faith'), weapon: () => t('Arma', 'Weapon'), shield: () => t('Escudo', 'Shield'),
+  pa: () => t('Força (PA)', 'Physical attack (PA)'),
+  ma: () => t('Magia (MA)', 'Magic attack (MA)'),
+  brave: () => 'Brave',
+  faith: () => t('Fé', 'Faith'),
+  weapon: () => t('Arma', 'Weapon'),
+  shield: () => t('Escudo', 'Shield'),
 };
 export function unitStatus(state: BattleState, unitId: string): [string, string][] {
   const u = state.units.find((x) => x.id === unitId)!;
@@ -130,38 +173,90 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
     [t('Movimento', 'Move'), String(def.move)],
     [t('Salto', 'Jump'), String(jumpOf(state, u.def))],
   );
-  for (const [k, v] of Object.entries(def.info ?? {})) rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);
+  for (const [k, v] of Object.entries(def.info ?? {}))
+    rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);
   const c = state.charges.find((x) => x.unit === u.id);
-  if (c) rows.push([t('Carregando', 'Charging'), t(`${abilityName(c.ability)}, sai em ${c.ticks} tiques`, `${abilityName(c.ability)}, goes off in ${c.ticks} ticks`)]);
+  if (c)
+    rows.push([
+      t('Carregando', 'Charging'),
+      t(
+        `${abilityName(c.ability)}, sai em ${c.ticks} tiques`,
+        `${abilityName(c.ability)}, goes off in ${c.ticks} ticks`,
+      ),
+    ]);
   // map cardinal points (our convention: grid row 0 is north)
-  if (u.facing !== undefined) rows.push([t('Olhando para', 'Facing'), [t('sul', 'south'), t('leste', 'east'), t('norte', 'north'), t('oeste', 'west')][u.facing]]);
+  if (u.facing !== undefined)
+    rows.push([
+      t('Olhando para', 'Facing'),
+      [t('sul', 'south'), t('leste', 'east'), t('norte', 'north'), t('oeste', 'west')][u.facing],
+    ]);
   rows.push([t('Habilidades', 'Abilities'), def.abilities.map(abilityName).join(', ') || '—']);
   return rows;
 }
 
 // Info on the tile under the cursor (FFT corner): position, height and floor type
 const LOOK_NAME: Record<string, () => string> = {
-  grass: () => t('grama', 'grass'), stone: () => t('pedra', 'stone'), water: () => t('água', 'water'), roof: () => t('telhado', 'roof'),
-  chimney: () => t('chaminé', 'chimney'), wood: () => t('madeira', 'wood'), bridge: () => t('ponte', 'bridge'), box: () => t('caixa', 'crate'), tree: () => t('árvore', 'tree'),
+  grass: () => t('grama', 'grass'),
+  stone: () => t('pedra', 'stone'),
+  water: () => t('água', 'water'),
+  roof: () => t('telhado', 'roof'),
+  chimney: () => t('chaminé', 'chimney'),
+  wood: () => t('madeira', 'wood'),
+  bridge: () => t('ponte', 'bridge'),
+  box: () => t('caixa', 'crate'),
+  tree: () => t('árvore', 'tree'),
   // Beacon Hill and Flooded Crypt (Nov 12)
-  rock: () => t('rocha', 'rock'), summit: () => t('topo de rocha', 'rock top'), sand: () => t('areia', 'sand'), gold: () => t('veio de ouro', 'gold vein'),
-  brick: () => t('muro de tijolo', 'brick wall'), snow: () => t('neve', 'snow'), snow_rock: () => t('rocha com neve', 'snowy rock'),
-  tree2: () => t('árvore', 'tree'), tree3: () => t('árvore', 'tree'), tree4: () => t('árvore', 'tree'), bare1: () => t('árvore seca', 'bare tree'), bare2: () => t('árvore seca', 'bare tree'),
-  crypt: () => t('piso de pedra', 'stone floor'), altar: () => t('altar', 'altar'), pillar: () => t('coluna', 'pillar'), crates: () => t('caixotes', 'crates'),
-  barrel: () => t('barril', 'barrel'), chest: () => t('baú', 'chest'), rubble: () => t('entulho', 'rubble'),
-  spikes: () => t('armadilha de espinhos', 'spike trap'), corpse: () => t('corpo', 'body'),
+  rock: () => t('rocha', 'rock'),
+  summit: () => t('topo de rocha', 'rock top'),
+  sand: () => t('areia', 'sand'),
+  gold: () => t('veio de ouro', 'gold vein'),
+  brick: () => t('muro de tijolo', 'brick wall'),
+  snow: () => t('neve', 'snow'),
+  snow_rock: () => t('rocha com neve', 'snowy rock'),
+  tree2: () => t('árvore', 'tree'),
+  tree3: () => t('árvore', 'tree'),
+  tree4: () => t('árvore', 'tree'),
+  bare1: () => t('árvore seca', 'bare tree'),
+  bare2: () => t('árvore seca', 'bare tree'),
+  crypt: () => t('piso de pedra', 'stone floor'),
+  altar: () => t('altar', 'altar'),
+  pillar: () => t('coluna', 'pillar'),
+  crates: () => t('caixotes', 'crates'),
+  barrel: () => t('barril', 'barrel'),
+  chest: () => t('baú', 'chest'),
+  rubble: () => t('entulho', 'rubble'),
+  spikes: () => t('armadilha de espinhos', 'spike trap'),
+  corpse: () => t('corpo', 'body'),
 };
-const TERRAIN_NAME: Record<string, () => string> = { floor: () => t('chão', 'ground'), forest: () => t('árvore', 'tree'), rubble: () => t('entulho (cobertura)', 'rubble (cover)'), wall: () => t('muro', 'wall') };
+const TERRAIN_NAME: Record<string, () => string> = {
+  floor: () => t('chão', 'ground'),
+  forest: () => t('árvore', 'tree'),
+  rubble: () => t('entulho (cobertura)', 'rubble (cover)'),
+  wall: () => t('muro', 'wall'),
+};
 export function tileInfo(grid: Grid, p: Pos): string {
   const tile = tileAt(grid, p);
-  const kind = tile.look ? LOOK_NAME[tile.look]?.() ?? tile.look : TERRAIN_NAME[tile.terrain]();
+  const kind = tile.look ? (LOOK_NAME[tile.look]?.() ?? tile.look) : TERRAIN_NAME[tile.terrain]();
   // shallow and deep water share the same drawing: the tile text is what says which is which (found looking at the Crypt Heart)
-  const blocked = (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable'))
-    + ((tile.depth ?? 0) >= 2 ? t(' · funda: não se age nela', ' · deep: no actions inside') : tile.depth === 1 ? t(' · rasa', ' · shallow') : '')
-    + (tile.spikes ? t(` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`, ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`) : '');
+  const blocked =
+    (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable')) +
+    ((tile.depth ?? 0) >= 2
+      ? t(' · funda: não se age nela', ' · deep: no actions inside')
+      : tile.depth === 1
+        ? t(' · rasa', ' · shallow')
+        : '') +
+    (tile.spikes
+      ? t(
+          ` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`,
+          ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`,
+        )
+      : '');
   // in shallow water the height one stands at counts (the one Jump compares), not the surface's
   const h = tile.depth === 1 ? standH(tile) : tile.h;
-  return t(`Casa ${p.x},${p.y} · altura ${h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`, `Tile ${p.x},${p.y} · height ${h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`);
+  return t(
+    `Casa ${p.x},${p.y} · altura ${h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`,
+    `Tile ${p.x},${p.y} · height ${h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`,
+  );
 }
 
 const REASON: Record<string, () => string> = {
@@ -173,17 +268,39 @@ const REASON: Record<string, () => string> = {
   water: () => t('Na água funda só dá para andar ou esperar', 'In deep water you can only move or wait'),
 };
 const COMMAND_NAME: Record<Command, () => string> = {
-  move: () => t('Mover', 'Move'), act: () => t('Agir', 'Act'), wait: () => t('Esperar', 'Wait'), status: () => 'Status',
+  move: () => t('Mover', 'Move'),
+  act: () => t('Agir', 'Act'),
+  wait: () => t('Esperar', 'Wait'),
+  status: () => 'Status',
 };
 
 // bar with label and number (HP, MP, CT), like the ones in FFT's unit panel. `change` marks in stripes the part
 // that the strike takes (loss) or the heal adds (gain), like the target bar in Tactics Ogre; the number comes along in the panel
-function gauge(cls: string, label: string, value: number, max: number, change?: { from: number; to: number; kind: 'loss' | 'gain' }) {
+function gauge(
+  cls: string,
+  label: string,
+  value: number,
+  max: number,
+  change?: { from: number; to: number; kind: 'loss' | 'gain' },
+) {
   const pct = (v: number) => Math.round(Math.max(0, Math.min(1, v / max)) * 100);
-  return el('div', { class: `gauge ${cls}` }, el('span', { class: 'gauge-label' }, label),
-    el('span', { class: 'gauge-bar' }, el('i', { style: `width:${pct(value)}%` }),
-      change ? el('b', { class: `gauge-change ${change.kind}`, style: `left:${pct(change.from)}%;width:${pct(change.to) - pct(change.from)}%` }) : null),
-    el('span', { class: 'gauge-num' }, `${Math.max(0, value)}/${max}`));
+  return el(
+    'div',
+    { class: `gauge ${cls}` },
+    el('span', { class: 'gauge-label' }, label),
+    el(
+      'span',
+      { class: 'gauge-bar' },
+      el('i', { style: `width:${pct(value)}%` }),
+      change
+        ? el('b', {
+            class: `gauge-change ${change.kind}`,
+            style: `left:${pct(change.from)}%;width:${pct(change.to) - pct(change.from)}%`,
+          })
+        : null,
+    ),
+    el('span', { class: 'gauge-num' }, `${Math.max(0, value)}/${max}`),
+  );
 }
 
 // Preview of a strike on each target (the one in "Execute?" and the one in the target panel when aiming): same calculation in both places.
@@ -211,19 +328,42 @@ export function forecast(b: Battle, ability: string, p: Preview): Forecast[] {
     const push = shove?.dmg ?? 0;
     // the push comes with every hit (without `pushChance`, which only the FFT study uses): it goes into the life after
     const sure = a.pushChance === undefined ? push : 0;
-    const after: [number, number] = heal ? [Math.min(max, u.hp + heal[0]), Math.min(max, u.hp + heal[1])]
-      : support ? [u.hp, u.hp] : [Math.max(0, u.hp - tg.dmgMax - sure), Math.max(0, u.hp - tg.dmgMin - sure)];
-    return { unit: u, chance: tg.chance, dmg: heal || support ? null : [tg.dmgMin, tg.dmgMax], heal, push,
-      spikes: !!shove?.events.some((e) => e.k === 'spike'), after, ally: !heal && !support && u.team === b.actor.team, support,
-      side: a.magic || heal || support ? 'front' : tg.side };
+    const after: [number, number] = heal
+      ? [Math.min(max, u.hp + heal[0]), Math.min(max, u.hp + heal[1])]
+      : support
+        ? [u.hp, u.hp]
+        : [Math.max(0, u.hp - tg.dmgMax - sure), Math.max(0, u.hp - tg.dmgMin - sure)];
+    return {
+      unit: u,
+      chance: tg.chance,
+      dmg: heal || support ? null : [tg.dmgMin, tg.dmgMax],
+      heal,
+      push,
+      spikes: !!shove?.events.some((e) => e.k === 'spike'),
+      after,
+      ally: !heal && !support && u.team === b.actor.team,
+      support,
+      side: a.magic || heal || support ? 'front' : tg.side,
+    };
   });
 }
 // "damage 9–12 · push +3", "hit 85% · damage 9–12 · push +3" or "heal 7–10"; and "life 25 → 10–13"
-const dmgText = (f: Forecast) => t(`dano ${range(f.dmg!)}`, `damage ${range(f.dmg!)}`)
-  + (f.push ? t(` · empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, ` · push +${f.push}${f.spikes ? ' (spikes!)' : ''}`) : '');
+const dmgText = (f: Forecast) =>
+  t(`dano ${range(f.dmg!)}`, `damage ${range(f.dmg!)}`) +
+  (f.push
+    ? t(` · empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, ` · push +${f.push}${f.spikes ? ' (spikes!)' : ''}`)
+    : '');
 // a physical strike from the side or behind says where the hit bonus comes from (combat.ts SIDE_BONUS/BACK_BONUS)
-const fromText = (f: Forecast) => (f.side === 'back' ? t(' (pelas costas)', ' (from behind)') : f.side === 'side' ? t(' (de lado)', ' (from the side)') : '');
-export const forecastText = (f: Forecast) => f.heal ? t(`cura ${range(f.heal)}`, `heals ${range(f.heal)}`) : `${t(`acerto ${f.chance}%`, `hit ${f.chance}%`)}${fromText(f)} · ${dmgText(f)}`;
+const fromText = (f: Forecast) =>
+  f.side === 'back'
+    ? t(' (pelas costas)', ' (from behind)')
+    : f.side === 'side'
+      ? t(' (de lado)', ' (from the side)')
+      : '';
+export const forecastText = (f: Forecast) =>
+  f.heal
+    ? t(`cura ${range(f.heal)}`, `heals ${range(f.heal)}`)
+    : `${t(`acerto ${f.chance}%`, `hit ${f.chance}%`)}${fromText(f)} · ${dmgText(f)}`;
 export const hpAfterText = (f: Forecast) => `${t('vida', 'HP')} ${f.unit.hp} → ${range(f.after)}`;
 
 // Preview strips in the Tactics Ogre style (Nov 13, Fernando's request; our design): one arrow strip per target,
@@ -237,41 +377,81 @@ export function strikeInfo(f: Forecast, ability: string): string[] {
   // ↶ and ⇥: the direction advantage (combat.ts SIDE_BONUS/BACK_BONUS), with the word alongside (never just the icon)
   if (f.side === 'back') out.push(t('↶ pelas costas', '↶ from behind'));
   else if (f.side === 'side') out.push(t('⇥ de lado', '⇥ from the side'));
-  if (f.push) out.push(t(`empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, `push +${f.push}${f.spikes ? ' (spikes!)' : ''}`));
+  if (f.push)
+    out.push(
+      t(`empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, `push +${f.push}${f.spikes ? ' (spikes!)' : ''}`),
+    );
   out.push(hpAfterText(f));
   if (f.ally) out.push(t('ALIADO!', 'ALLY!'));
   return out;
 }
 function strike(f: Forecast, ability: string) {
   const amount = f.heal ? `+${range(f.heal)}` : f.dmg ? `−${range(f.dmg)}` : null;
-  return el('div', { class: `strike${f.heal ? ' gain' : ''}${f.ally ? ' ally' : ''}` },
-    amount ? el('div', { class: 'strike-main' },
-      el('span', { class: 'strike-hp' }, t('Vida', 'HP')),
-      el('strong', { class: 'strike-pts' }, amount, el('small', {}, 'PTS')),
-      el('span', { class: 'strike-hit', title: t('Chance de acerto', 'Chance to hit') }, `⊕ ${f.chance}%`)) : null,
-    el('div', { class: 'strike-info' }, strikeInfo(f, ability).join(' · ')));
+  return el(
+    'div',
+    { class: `strike${f.heal ? ' gain' : ''}${f.ally ? ' ally' : ''}` },
+    amount
+      ? el(
+          'div',
+          { class: 'strike-main' },
+          el('span', { class: 'strike-hp' }, t('Vida', 'HP')),
+          el('strong', { class: 'strike-pts' }, amount, el('small', {}, 'PTS')),
+          el('span', { class: 'strike-hit', title: t('Chance de acerto', 'Chance to hit') }, `⊕ ${f.chance}%`),
+        )
+      : null,
+    el('div', { class: 'strike-info' }, strikeInfo(f, ability).join(' · ')),
+  );
 }
 function strikes(fs: Forecast[], ability: string) {
   const rest = fs.slice(STRIKES).map((o) => unitName(o.unit.def) + (o.ally ? t(' (aliado!)', ' (ally!)') : ''));
-  return [...fs.slice(0, STRIKES).map((f) => strike(f, ability)),
-    rest.length ? el('p', { class: 'strike-more' }, t(`+${rest.length} ${rest.length === 1 ? 'alvo' : 'alvos'}: `, `+${rest.length} ${rest.length === 1 ? 'target' : 'targets'}: `) + rest.join(', ')) : null]
-    .filter((x) => x !== null);
+  return [
+    ...fs.slice(0, STRIKES).map((f) => strike(f, ability)),
+    rest.length
+      ? el(
+          'p',
+          { class: 'strike-more' },
+          t(
+            `+${rest.length} ${rest.length === 1 ? 'alvo' : 'alvos'}: `,
+            `+${rest.length} ${rest.length === 1 ? 'target' : 'targets'}: `,
+          ) + rest.join(', '),
+        )
+      : null,
+  ].filter((x) => x !== null);
 }
 
 // Panel beside the character, like FFT's menu: to its right; with no room, to its left; always inside `area` (the part
 // of the screen free of the HUD). Centered on the character's height; if it would cover something in `avoid` (the turn list, the target of
 // "Execute?"), it moves down or up beside it until clear, as close as possible. `prefer` 'left' tries the left
 // first ("Execute?" avoids the target's side). Pure for the test.
-export interface Anchor { x: number; y: number; r: number } // character's center on screen and its half width, in px
-export interface Rect { left: number; top: number; right: number; bottom: number }
-export function placeBeside(a: Anchor, w: number, h: number, area: Rect, prefer: 'right' | 'left' = 'right', avoid: Rect[] = [], gap = 12) {
+export interface Anchor {
+  x: number;
+  y: number;
+  r: number;
+} // character's center on screen and its half width, in px
+export interface Rect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+export function placeBeside(
+  a: Anchor,
+  w: number,
+  h: number,
+  area: Rect,
+  prefer: 'right' | 'left' = 'right',
+  avoid: Rect[] = [],
+  gap = 12,
+) {
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
   const xs = { right: a.x + a.r + gap, left: a.x - a.r - gap - w };
   const fits = (s: 'right' | 'left') => xs[s] >= area.left && xs[s] + w <= area.right;
   const sides: ('right' | 'left')[] = prefer === 'right' ? ['right', 'left'] : ['left', 'right'];
-  const covers = (l: number, t: number) => avoid.some((o) => l < o.right && l + w > o.left && t < o.bottom && t + h > o.top);
+  const covers = (l: number, t: number) =>
+    avoid.some((o) => l < o.right && l + w > o.left && t < o.bottom && t + h > o.top);
   const mid = a.y - h / 2;
-  const tops = [mid, ...avoid.flatMap((o) => [o.bottom + gap, o.top - gap - h])].map((t) => clamp(t, area.top, area.bottom - h))
+  const tops = [mid, ...avoid.flatMap((o) => [o.bottom + gap, o.top - gap - h])]
+    .map((t) => clamp(t, area.top, area.bottom - h))
     .sort((p, q) => Math.abs(p - mid) - Math.abs(q - mid));
   for (const side of sides.filter(fits)) {
     const top = tops.find((t) => !covers(xs[side], t));
@@ -286,7 +466,9 @@ export function placeBeside(a: Anchor, w: number, h: number, area: Rect, prefer:
 export function portrait(def: string) {
   const model = modelOf(def);
   // tinted unit (UnitDef.tint, the Acolyte over the mage): the portrait gets the .tinted filter to match the character
-  return model ? el('img', { class: `portrait${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`, src: `/chars/${model}.webp`, alt: '' }) : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
+  return model
+    ? el('img', { class: `portrait${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`, src: `/chars/${model}.webp`, alt: '' })
+    : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
 }
 
 // side and, for those with their own name (campaign, developer menu), the class: "Rogue · hero"
@@ -300,16 +482,37 @@ function sideText(u: UnitState) {
 // that the strike takes or the heal adds, in stripes on the bar
 function unitPanel(state: BattleState, u: UnitState, f?: Forecast) {
   const def = UNIT_DEFS[u.def];
-  const change = !f || f.support ? undefined : f.heal ? { from: u.hp, to: f.after[1], kind: 'gain' as const } : { from: f.after[0], to: u.hp, kind: 'loss' as const };
+  const change =
+    !f || f.support
+      ? undefined
+      : f.heal
+        ? { from: u.hp, to: f.after[1], kind: 'gain' as const }
+        : { from: f.after[0], to: u.hp, kind: 'loss' as const };
   const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp, change)];
   if (u.vars?.mp !== undefined) rows.push(gauge('mp', 'MP', u.vars.mp, def.vars?.mp ?? u.vars.mp));
   if (def.speed > 0) rows.push(gauge('ct', 'CT', Math.min(u.ct, TURN_THRESHOLD), TURN_THRESHOLD));
   const charge = state.charges.find((c) => c.unit === u.id);
-  return el('div', { class: `panel unit-panel ${u.team}` }, portrait(u.def),
-    el('div', { class: 'unit-body' },
+  return el(
+    'div',
+    { class: `panel unit-panel ${u.team}` },
+    portrait(u.def),
+    el(
+      'div',
+      { class: 'unit-body' },
       el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, sideText(u))),
       ...rows,
-      charge ? el('p', { class: 'unit-note' }, t(`Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`, `Charging ${abilityName(charge.ability)} (${charge.ticks} ticks)`)) : null));
+      charge
+        ? el(
+            'p',
+            { class: 'unit-note' },
+            t(
+              `Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`,
+              `Charging ${abilityName(charge.ability)} (${charge.ticks} ticks)`,
+            ),
+          )
+        : null,
+    ),
+  );
 }
 
 // Top queue with the charge still to be confirmed (Nov 13, Fernando's request, like FFT's CT list): the spell
@@ -319,7 +522,7 @@ export function queueRows(b: Battle, pending: { ability: string; target: Pos } |
   const a = pending ? ABILITIES[pending.ability] : null;
   if (!pending || !a?.charge) return { rows: previewOrder(b.state, n), targets: new Set<string>(), at: -1 };
   const me = b.actor.id;
-  const follow = a.panel ? null : unitAt(b.state, pending.target)?.id ?? null;
+  const follow = a.panel ? null : (unitAt(b.state, pending.target)?.id ?? null);
   // the same charge that Battle.act would register (a new charge replaces the previous one of the same unit)
   const charge = { unit: me, ability: pending.ability, target: pending.target, follow, ticks: a.charge };
   const rows = previewOrder({ ...b.state, charges: [...b.state.charges.filter((c) => c.unit !== me), charge] }, 24);
@@ -352,12 +555,17 @@ export class BattleHud {
   private readonly root: HTMLElement;
 
   private readonly toolsMenu = el('div', { class: 'panel tools-menu', role: 'menu', hidden: true });
-  private readonly burger = iconButton(el('span', { class: 'burger-bars', 'aria-hidden': 'true' }), t('Menu', 'Menu'),
-    () => this.showTools(!!this.toolsMenu.hidden), { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' });
+  private readonly burger = iconButton(
+    el('span', { class: 'burger-bars', 'aria-hidden': 'true' }),
+    t('Menu', 'Menu'),
+    () => this.showTools(!!this.toolsMenu.hidden),
+    { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' },
+  );
   // closes on click outside or on any key press (Esc also goes back in the game; the action key keeps acting). The
   // key closes even with focus on the menu button, which keeps it after the click
   private readonly closeOutside = (e: Event) => {
-    if (e.type === 'keydown' || !(e.target instanceof Node && this.toolsMenu.parentElement?.contains(e.target))) this.showTools(false);
+    if (e.type === 'keydown' || !(e.target instanceof Node && this.toolsMenu.parentElement?.contains(e.target)))
+      this.showTools(false);
   };
   private showTools(open: boolean) {
     this.toolsMenu.hidden = !open;
@@ -368,12 +576,31 @@ export class BattleHud {
     }
   }
   private toolItem(glyph: Child, label: string, key: string, run: () => void, props: Record<string, unknown> = {}) {
-    return el('button', { type: 'button', class: 'item', role: 'menuitem', ...props, onclick: () => { this.showTools(false); run(); } },
-      el('span', { class: 'tool-label' }, el('span', { class: 'tool-glyph', 'aria-hidden': 'true' }, glyph), label), key ? hint(key) : null);
+    return el(
+      'button',
+      {
+        type: 'button',
+        class: 'item',
+        role: 'menuitem',
+        ...props,
+        onclick: () => {
+          this.showTools(false);
+          run();
+        },
+      },
+      el('span', { class: 'tool-label' }, el('span', { class: 'tool-glyph', 'aria-hidden': 'true' }, glyph), label),
+      key ? hint(key) : null,
+    );
   }
 
-  constructor(host: HTMLElement, private readonly act: HudActions) {
-    this.fastBtn = this.toolItem('»', t('Batalha rápida', 'Fast battle'), '', () => act.fast(), { role: 'menuitemcheckbox', 'aria-checked': 'false' });
+  constructor(
+    host: HTMLElement,
+    private readonly act: HudActions,
+  ) {
+    this.fastBtn = this.toolItem('»', t('Batalha rápida', 'Fast battle'), '', () => act.fast(), {
+      role: 'menuitemcheckbox',
+      'aria-checked': 'false',
+    });
     this.toolsMenu.append(
       this.toolItem(icon(UI_ICON.undo), t('Desfazer', 'Undo'), 'Z', () => act.undo()),
       this.toolItem('⟲', t('Girar à esquerda', 'Rotate left'), '⇧R', () => act.rotate(-1)),
@@ -381,13 +608,25 @@ export class BattleHud {
       this.toolItem(icon(UI_ICON.recenter), t('Ver o mapa inteiro', 'Show the whole map'), 'F', () => act.recenter()),
       this.toolItem(icon(UI_ICON.pixel), t('Tamanho do pixel', 'Pixel size'), 'V', () => act.pixel()),
       this.fastBtn,
-      this.toolItem(icon(UI_ICON.menu), t('Opções e ajuda', 'Options and help'), 'H', () => act.menu()));
-    this.root = el('div', { class: `hud${KEYS ? ' kbd' : ''}` },
-      this.tile, this.queue, this.help, this.bannerEl,
+      this.toolItem(icon(UI_ICON.menu), t('Opções e ajuda', 'Options and help'), 'H', () => act.menu()),
+    );
+    this.root = el(
+      'div',
+      { class: `hud${KEYS ? ' kbd' : ''}` },
+      this.tile,
+      this.queue,
+      this.help,
+      this.bannerEl,
       // a menu button (3 bars) on the HUD parchment in place of the row of 7 stone buttons (Nov 13, Fernando's request:
       // "crude and inconsistent"); the keys still work and show on each row
       el('div', { class: 'tools' }, this.burger, this.toolsMenu),
-      this.commands, this.abilities, this.confirmBox, this.active, this.strikesEl, this.target);
+      this.commands,
+      this.abilities,
+      this.confirmBox,
+      this.active,
+      this.strikesEl,
+      this.target,
+    );
     host.append(this.root);
   }
 
@@ -396,7 +635,10 @@ export class BattleHud {
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
     const hit = chargeDanger(b.state, b.grid.width, b.grid.height).get(posKey(v.cursor));
-    this.tile.textContent = b.over ? '' : tileInfo(b.grid, v.cursor) + (hit ? t(` · ⚠ ${abilityName(hit)} vai cair aqui`, ` · ⚠ ${abilityName(hit)} lands here`) : '');
+    this.tile.textContent = b.over
+      ? ''
+      : tileInfo(b.grid, v.cursor) +
+        (hit ? t(` · ⚠ ${abilityName(hit)} vai cair aqui`, ` · ⚠ ${abilityName(hit)} lands here`) : '');
     this.renderQueue(b, v.screen);
     this.help.textContent = this.helpText(v, heroTurn);
     this.renderCommands(v, open);
@@ -404,7 +646,7 @@ export class BattleHud {
     this.renderConfirm(v, open);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
-    const me = b.over ? undefined : actingUnit ?? b.actor;
+    const me = b.over ? undefined : (actingUnit ?? b.actor);
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me)] : []));
     // unit under the cursor (or the "Execute?" target)
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
@@ -421,8 +663,12 @@ export class BattleHud {
     // size of the panels that move with the character, measured once per draw (each frame's `place` only reads the cache);
     // the strips enter the bottom height so "Execute?" does not land on top of them
     const box = (e: HTMLElement) => ({ w: e.offsetWidth, h: e.offsetHeight });
-    this.sizes = { commands: box(this.commands), abilities: box(this.abilities), confirm: box(this.confirmBox),
-      bottom: Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight) };
+    this.sizes = {
+      commands: box(this.commands),
+      abilities: box(this.abilities),
+      confirm: box(this.confirmBox),
+      bottom: Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight),
+    };
   }
 
   private sizes = { commands: { w: 0, h: 0 }, abilities: { w: 0, h: 0 }, confirm: { w: 0, h: 0 }, bottom: 0 };
@@ -436,14 +682,31 @@ export class BattleHud {
   place(a: Anchor | null, target: Anchor | null = null) {
     if (!a || !this.menuOpen) return;
     // free: below the help line and the menu button (which stay at the top), above the bottom unit panels
-    const area = { left: 12, top: 72, right: this.root.clientWidth - 12, bottom: this.root.clientHeight - 24 - this.sizes.bottom };
+    const area = {
+      left: 12,
+      top: 72,
+      right: this.root.clientWidth - 12,
+      bottom: this.root.clientHeight - 24 - this.sizes.bottom,
+    };
     const q = this.queue.getBoundingClientRect();
     // the character on screen goes from ~1.5 half widths above the middle (health bar) to ~1.5 below (ring on the ground)
-    const avoid = [{ left: q.left, top: q.top, right: q.right, bottom: q.bottom },
-      ...(target ? [{ left: target.x - target.r, top: target.y - 1.5 * target.r, right: target.x + target.r, bottom: target.y + 1.5 * target.r }] : [])];
+    const avoid = [
+      { left: q.left, top: q.top, right: q.right, bottom: q.bottom },
+      ...(target
+        ? [
+            {
+              left: target.x - target.r,
+              top: target.y - 1.5 * target.r,
+              right: target.x + target.r,
+              bottom: target.y + 1.5 * target.r,
+            },
+          ]
+        : []),
+    ];
     const prefer = target && target.x > a.x ? 'left' : 'right';
     const put = (e: HTMLElement, left: number, top: number) => {
-      const l = `${Math.round(left)}px`, tp = `${Math.round(top)}px`;
+      const l = `${Math.round(left)}px`,
+        tp = `${Math.round(top)}px`;
       if (e.style.left !== l) e.style.left = l;
       if (e.style.top !== tp) e.style.top = tp;
     };
@@ -468,36 +731,74 @@ export class BattleHud {
   private helpText(v: HudView, heroTurn: boolean): string {
     const b = v.battle;
     if (b.over) return b.state.outcome === 'victory' ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat');
-    if (v.busy || !heroTurn) return v.log || (v.acting ? t(`Vez do inimigo: ${unitName(v.acting)}`, `Enemy turn: ${unitName(v.acting)}`) : '');
+    if (v.busy || !heroTurn)
+      return v.log || (v.acting ? t(`Vez do inimigo: ${unitName(v.acting)}`, `Enemy turn: ${unitName(v.acting)}`) : '');
     const s = v.screen;
     const say = (pt: string, en: string) => (v.log ? `${v.log} — ` : '') + t(pt, en);
-    if (s.k === 'menu') return swimming(b) ? say(`${unitName(b.actor.def)}: na água funda só dá para andar ou esperar.`, `${unitName(b.actor.def)}: in deep water you can only move or wait.`)
-      : say(`${unitName(b.actor.def)}: escolha um comando.`, `${unitName(b.actor.def)}: pick a command.`);
+    if (s.k === 'menu')
+      return swimming(b)
+        ? say(
+            `${unitName(b.actor.def)}: na água funda só dá para andar ou esperar.`,
+            `${unitName(b.actor.def)}: in deep water you can only move or wait.`,
+          )
+        : say(`${unitName(b.actor.def)}: escolha um comando.`, `${unitName(b.actor.def)}: pick a command.`);
     if (s.k === 'abilities') {
       const id = abilitiesOf(b)[s.index];
       return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
     }
-    if (s.k === 'map' && s.command === 'move') return t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.');
+    if (s.k === 'map' && s.command === 'move')
+      return t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.');
     if (s.k === 'map') {
       const p = v.hl?.preview;
-      return p && !p.ok ? REASON[p.reason ?? 'unknown']() : t('Escolha o alvo na área laranja (roxo: o tiro bate no caminho).', 'Pick the target in the orange area (purple: the shot hits something on the way).');
+      return p && !p.ok
+        ? REASON[p.reason ?? 'unknown']()
+        : t(
+            'Escolha o alvo na área laranja (roxo: o tiro bate no caminho).',
+            'Pick the target in the orange area (purple: the shot hits something on the way).',
+          );
     }
     if (s.k === 'confirm') return t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`);
-    return t('Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.', 'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.');
+    return t(
+      'Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.',
+      'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.',
+    );
   }
 
   private renderQueue(b: Battle, s: Screen) {
-    const { rows, targets, at } = b.over ? { rows: [], targets: new Set<string>(), at: -1 } : queueRows(b, s.k === 'confirm' ? s : null, QUEUE_SIZE);
+    const { rows, targets, at } = b.over
+      ? { rows: [], targets: new Set<string>(), at: -1 }
+      : queueRows(b, s.k === 'confirm' ? s : null, QUEUE_SIZE);
     // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
     const left = b.state.scenario === SURVIVAL_ID ? turnsLeft(b.state) : null;
     // with the charge in preview the short list hides nothing up to its row (the list disappears again on leaving "Execute?")
     this.queue.classList.toggle('preview', at >= 0);
-    this.queue.replaceChildren(el('li', { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined }, left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`)), ...rows.map(({ unit, charge }, i) => {
-      const u = b.state.units.find((x) => x.id === unit)!;
-      const label = i === at ? t(`⏳ ${abilityName(charge!)} sai aqui`, `⏳ ${abilityName(charge!)} goes off here`) : charge ? `${unitName(u.def)}: ${abilityName(charge)}` : unitName(u.def);
-      const mark = !charge && i > 0 && targets.has(unit) ? el('span', { class: 'queue-target' }, t('◎ alvo', '◎ target')) : null;
-      return el('li', { class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}` }, portrait(u.def), el('span', {}, label), mark);
-    }));
+    this.queue.replaceChildren(
+      el(
+        'li',
+        { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined },
+        left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`),
+      ),
+      ...rows.map(({ unit, charge }, i) => {
+        const u = b.state.units.find((x) => x.id === unit)!;
+        const label =
+          i === at
+            ? t(`⏳ ${abilityName(charge!)} sai aqui`, `⏳ ${abilityName(charge!)} goes off here`)
+            : charge
+              ? `${unitName(u.def)}: ${abilityName(charge)}`
+              : unitName(u.def);
+        const mark =
+          !charge && i > 0 && targets.has(unit) ? el('span', { class: 'queue-target' }, t('◎ alvo', '◎ target')) : null;
+        return el(
+          'li',
+          {
+            class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}`,
+          },
+          portrait(u.def),
+          el('span', {}, label),
+          mark,
+        );
+      }),
+    );
   }
 
   private renderCommands(v: HudView, open: boolean) {
@@ -508,11 +809,22 @@ export class BattleHud {
     const current = s.k === 'menu' ? s.index : 1;
     // moved and did not act: Move becomes "Undo move" (Esc also undoes), like Tactics Ogre
     const undo = canUndoMove(b);
-    this.commands.replaceChildren(...COMMANDS.map((c, i) => el('button', {
-      type: 'button', class: `item${i === current ? ' focus' : ''}`, role: 'menuitem', disabled: !commandEnabled(b, c),
-      onclick: () => this.act.command(i),
-    }, c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
-    c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null)));
+    this.commands.replaceChildren(
+      ...COMMANDS.map((c, i) =>
+        el(
+          'button',
+          {
+            type: 'button',
+            class: `item${i === current ? ' focus' : ''}`,
+            role: 'menuitem',
+            disabled: !commandEnabled(b, c),
+            onclick: () => this.act.command(i),
+          },
+          c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
+          c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null,
+        ),
+      ),
+    );
   }
 
   private renderAbilities(v: HudView, open: boolean) {
@@ -520,12 +832,28 @@ export class BattleHud {
     this.abilities.hidden = !open || s.k !== 'abilities';
     if (s.k !== 'abilities' || this.abilities.hidden) return;
     const b = v.battle;
-    this.abilities.replaceChildren(...abilitiesOf(b).map((id, i) => {
-      const a = ABILITIES[id];
-      const cost = a.cost ? `${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : t('un.', 'pcs')}` : a.charge ? t(`${a.charge} tiq.`, `${a.charge} tk`) : '';
-      return el('button', { type: 'button', class: `item${i === s.index ? ' focus' : ''}`, role: 'menuitem', disabled: !abilityEnabled(b, id), onclick: () => this.act.ability(i) },
-        el('span', {}, abilityName(id)), el('span', { class: 'item-cost' }, cost));
-    }));
+    this.abilities.replaceChildren(
+      ...abilitiesOf(b).map((id, i) => {
+        const a = ABILITIES[id];
+        const cost = a.cost
+          ? `${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : t('un.', 'pcs')}`
+          : a.charge
+            ? t(`${a.charge} tiq.`, `${a.charge} tk`)
+            : '';
+        return el(
+          'button',
+          {
+            type: 'button',
+            class: `item${i === s.index ? ' focus' : ''}`,
+            role: 'menuitem',
+            disabled: !abilityEnabled(b, id),
+            onclick: () => this.act.ability(i),
+          },
+          el('span', {}, abilityName(id)),
+          el('span', { class: 'item-cost' }, cost),
+        );
+      }),
+    );
   }
 
   // "Execute?" window: hit and effect on each target, life before → after, and Yes/No
@@ -535,15 +863,49 @@ export class BattleHud {
     if (s.k !== 'confirm' || this.confirmBox.hidden) return;
     const b = v.battle;
     const a = ABILITIES[s.ability];
-    const rows = forecast(b, s.ability, b.preview(s.ability, s.target)).map((f) => f.support
-      ? el('p', {}, `${unitName(f.unit.def)}: ${abilityDetail(s.ability)}`)
-      : el('p', {}, el('strong', {}, unitName(f.unit.def)), ` ${forecastText(f)} · ${hpAfterText(f)}${f.ally ? t(' · ALIADO!', ' · ALLY!') : ''}`));
-    if (a.charge) rows.push(el('p', { class: 'unit-note' }, a.panel ? t(`Sai em ${a.charge} tiques; se o alvo sair da casa, erra.`, `Goes off in ${a.charge} ticks; misses if the target leaves the tile.`)
-      : t(`Sai em ${a.charge} tiques e segue o alvo.`, `Goes off in ${a.charge} ticks and follows the target.`)));
-    this.confirmBox.replaceChildren(el('strong', {}, t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`)), ...rows,
-      el('div', { class: 'yes-no' },
-        el('button', { type: 'button', class: `item${s.yes ? ' focus' : ''}`, onclick: () => this.act.answer(true) }, t('Sim', 'Yes'), hint('Enter')),
-        el('button', { type: 'button', class: `item${s.yes ? '' : ' focus'}`, onclick: () => this.act.answer(false) }, t('Não', 'No'), hint('Esc'))));
+    const rows = forecast(b, s.ability, b.preview(s.ability, s.target)).map((f) =>
+      f.support
+        ? el('p', {}, `${unitName(f.unit.def)}: ${abilityDetail(s.ability)}`)
+        : el(
+            'p',
+            {},
+            el('strong', {}, unitName(f.unit.def)),
+            ` ${forecastText(f)} · ${hpAfterText(f)}${f.ally ? t(' · ALIADO!', ' · ALLY!') : ''}`,
+          ),
+    );
+    if (a.charge)
+      rows.push(
+        el(
+          'p',
+          { class: 'unit-note' },
+          a.panel
+            ? t(
+                `Sai em ${a.charge} tiques; se o alvo sair da casa, erra.`,
+                `Goes off in ${a.charge} ticks; misses if the target leaves the tile.`,
+              )
+            : t(`Sai em ${a.charge} tiques e segue o alvo.`, `Goes off in ${a.charge} ticks and follows the target.`),
+        ),
+      );
+    this.confirmBox.replaceChildren(
+      el('strong', {}, t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`)),
+      ...rows,
+      el(
+        'div',
+        { class: 'yes-no' },
+        el(
+          'button',
+          { type: 'button', class: `item${s.yes ? ' focus' : ''}`, onclick: () => this.act.answer(true) },
+          t('Sim', 'Yes'),
+          hint('Enter'),
+        ),
+        el(
+          'button',
+          { type: 'button', class: `item${s.yes ? '' : ' focus'}`, onclick: () => this.act.answer(false) },
+          t('Não', 'No'),
+          hint('Esc'),
+        ),
+      ),
+    );
   }
 
   banner(text: string | null) {

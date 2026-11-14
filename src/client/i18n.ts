@@ -11,7 +11,10 @@ export const LANG_KEY = 'dt:lang';
 export const pickLang = (saved: string | null, nav: string | undefined): Lang =>
   saved === 'pt' || saved === 'en' ? saved : /^pt\b/i.test(nav ?? '') ? 'pt' : 'en';
 
-export const LANG: Lang = pickLang(store.get(LANG_KEY), typeof navigator === 'undefined' ? undefined : navigator.language);
+export const LANG: Lang = pickLang(
+  store.get(LANG_KEY),
+  typeof navigator === 'undefined' ? undefined : navigator.language,
+);
 export const LOCALE = LANG === 'en' ? 'en-US' : 'pt-BR';
 if (typeof document !== 'undefined') document.documentElement.lang = LOCALE;
 

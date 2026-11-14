@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { SPEAKERS } from '../src/client/campaign.ts';
-import { ALL_CHAPTERS, WORLD, afterNode, chaptersOnMap, isOpen, nodeOfChapter, parseWorld, partyFor, step } from '../src/client/world.ts';
+import {
+  ALL_CHAPTERS,
+  WORLD,
+  afterNode,
+  chaptersOnMap,
+  isOpen,
+  nodeOfChapter,
+  parseWorld,
+  partyFor,
+  step,
+} from '../src/client/world.ts';
 
 describe('world map', () => {
   it('every stage has one point, once only, in campaign order; the rest is story with dialogue', () => {

@@ -1,26 +1,56 @@
 :root {
   /* dark fantasy in colors vivid enough for pixel art (spec: tone). Every color and size in the game comes from here */
-  --bg: #16111f; --fg: #f4ecff; --muted: #c9bddf; --accent: #ffcf4a; --on-accent: #1a1020;
-  --hero: #3d9bff; --enemy: #ff4d4d; --heal: #6fdc8c; --overlay: rgba(10, 6, 16, .8);
+  --bg: #16111f;
+  --fg: #f4ecff;
+  --muted: #c9bddf;
+  --accent: #ffcf4a;
+  --on-accent: #1a1020;
+  --hero: #3d9bff;
+  --enemy: #ff4d4d;
+  --heal: #6fdc8c;
+  --overlay: rgba(10, 6, 16, 0.8);
   /* RPG panel frame (Oct 25, Fernando's request: a button that looks like a game, not a web page):
      gradient stone, dark outline, gold trim and a light bevel on top/dark at the bottom, near-square corners.
      The gold trim gives 5.9:1 on the stone (minimum 3:1 for a control outline) */
-  --stone: #2c2342; --stone-lo: #1d1630; --edge: #07050c; --trim: #b8923f; --trim-hi: #ffdd7a;
-  --bevel-hi: rgba(255, 255, 255, .16); --bevel-lo: rgba(0, 0, 0, .5); --well: #110c1b;
-  --gold-btn: linear-gradient(#ffd75e, #e2a62b); --gold-trim: #7a5513; --star: #f2c14e; --star-ink: #9a6a0c; /* star on the parchment: 3.7:1 (large text) */
+  --stone: #2c2342;
+  --stone-lo: #1d1630;
+  --edge: #07050c;
+  --trim: #b8923f;
+  --trim-hi: #ffdd7a;
+  --bevel-hi: rgba(255, 255, 255, 0.16);
+  --bevel-lo: rgba(0, 0, 0, 0.5);
+  --well: #110c1b;
+  --gold-btn: linear-gradient(#ffd75e, #e2a62b);
+  --gold-trim: #7a5513;
+  --star: #f2c14e;
+  --star-ink: #9a6a0c; /* star on the parchment: 3.7:1 (large text) */
   --r: 3px; /* near-square corner: pixel art has no rounded corners */
-  --frame: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo), 0 3px 0 var(--edge);
+  --frame:
+    inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo),
+    0 3px 0 var(--edge);
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
-  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, .55);
+  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, 0.55);
   /* same colors as the scene markings (MARK in scene.ts), so the legend matches the map */
-  --mark-move: #6fc0ff; --mark-range: #ff7a3c; --mark-blocked: #b07ae0; --mark-threat: #ff2d55;
+  --mark-move: #6fc0ff;
+  --mark-range: #ff7a3c;
+  --mark-blocked: #b07ae0;
+  --mark-threat: #ff2d55;
   /* HUD parchment (Nov 12, in the spirit of FFT, our colors): dark ink gives 11:1 on the paper */
-  --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #655134; --focus: #9e2c0c; /* one shade darker (Nov 13, review): 4.7:1 also on --paper-lo, at the foot of the panels */
-  --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;
+  --paper: #efe3c4;
+  --paper-lo: #dccb9f;
+  --paper-hi: #fff7de;
+  --paper-edge: #5a3d1c;
+  --ink: #2b1f12;
+  --ink-muted: #655134;
+  --focus: #9e2c0c; /* one shade darker (Nov 13, review): 4.7:1 also on --paper-lo, at the foot of the panels */
+  --hp: #4fbf5a;
+  --mp: #4a8fe0;
+  --ct: #e8b030;
   --heal-ink: #1f7a3a; /* predicted heal in big numbers on the parchment: 4.2:1 on the paper, 3.3:1 at the foot of the gradient */
   /* translucent strip of the strike preview (Nov 13, Tactics Ogre style): dark enough for the damage pink to pass
      4.5:1 even over the bright sky (the strip at 80% over white lands near #3e3846) */
-  --strike: rgba(18, 10, 26, .8); --strike-dmg: #ffb8cf;
+  --strike: rgba(18, 10, 26, 0.8);
+  --strike-dmg: #ffb8cf;
   /* focus outside the parchment (menu button over the scene, map node, language on the title, dialogue box): the ink
      ring alone gives 2.5:1 on the dark background and 1.2:1 on the map sea; with the light halo hugging it, the ring
      exceeds 6.9:1 against the halo on any background */
@@ -28,443 +58,1898 @@
   --tap: 48px; /* touch target: >= 44 px (spec) with room for the thumb */
   --gap: 8px;
   --slot-w: 440px; /* bottom unit panels; the preview strips sit in the gap between the two */
-  --font: 'Alegreya Sans', system-ui, sans-serif; /* running text: legible at small sizes */
+  --font: "Alegreya Sans", system-ui, sans-serif; /* running text: legible at small sizes */
   /* titles, options, Confirm and queue: Cinzel (OFL), an inscriptional serif (Nov 13, Fernando found the Tiny5 pixel font
      "kind of crude" and asked for "a nicer serif font on the options with some shading"); the variable name stayed to avoid touching all the CSS */
-  --font-px: 'Cinzel', var(--font);
-  --fs-sm: 14px; --fs: 16px; --fs-lg: 20px; --fs-xl: 32px; /* xl: the hit chance of the strike preview */
+  --font-px: "Cinzel", var(--font);
+  --fs-sm: 14px;
+  --fs: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 32px; /* xl: the hit chance of the strike preview */
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: var(--fs)/1.3 var(--font); font-variant-ligatures: none; }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font: var(--fs) / 1.3 var(--font);
+  font-variant-ligatures: none;
+}
 /* full-screen game: no scrolling, text selection or browser double-tap zoom */
-body { overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
-#app { position: fixed; inset: 0; }
-.board { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
-.gi { width: 1.4em; height: 1.4em; fill: currentColor; flex: none; }
+body {
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+#app {
+  position: fixed;
+  inset: 0;
+}
+.board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  display: block;
+}
+.gi {
+  width: 1.4em;
+  height: 1.4em;
+  fill: currentColor;
+  flex: none;
+}
 
 /* windows on the HUD parchment (Nov 13, Fernando's choice: "everything in parchment", previously dark purple stone). One shade
    lighter than the battle panel (paper-hi → paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
-.dialog { border: 2px solid var(--paper-edge); border-radius: var(--r); color: var(--ink); background: linear-gradient(var(--paper-hi), var(--paper));
-  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
+.dialog {
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  color: var(--ink);
+  background: linear-gradient(var(--paper-hi), var(--paper));
+  box-shadow:
+    inset 0 0 0 2px var(--paper-hi),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+}
 /* buttons inside the window: light paper with an ink outline (the primary's gold stays); chosen = red border */
-.dialog button:not(.primary) { color: var(--ink); background: linear-gradient(var(--paper-hi), var(--paper-lo)); border-color: var(--paper-edge);
-  box-shadow: inset 0 0 0 1px var(--paper-hi), 0 2px 0 rgba(0, 0, 0, .3); }
-.dialog button:not(.primary):not(:disabled):active { box-shadow: inset 0 2px 0 rgba(0, 0, 0, .2); }
-.dialog button[aria-pressed='true']:not(.primary) { box-shadow: inset 0 0 0 3px var(--focus); font-weight: 800; }
-.dialog button:focus-visible { outline-color: var(--focus); }
+.dialog button:not(.primary) {
+  color: var(--ink);
+  background: linear-gradient(var(--paper-hi), var(--paper-lo));
+  border-color: var(--paper-edge);
+  box-shadow:
+    inset 0 0 0 1px var(--paper-hi),
+    0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.dialog button:not(.primary):not(:disabled):active {
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+.dialog button[aria-pressed="true"]:not(.primary) {
+  box-shadow: inset 0 0 0 3px var(--focus);
+  font-weight: 800;
+}
+.dialog button:focus-visible {
+  outline-color: var(--focus);
+}
 /* disabled on parchment: faded, like the menu row (.panel .item); the stone's dark grey looked like a pressed button */
-.dialog button:disabled { filter: none; opacity: .5; }
+.dialog button:disabled {
+  filter: none;
+  opacity: 0.5;
+}
 
 /* small labels in the text font (the pixel font at 12 px was unreadable); the pixel font stays on titles, Confirm and queue */
-button { font: 700 var(--fs-sm)/1.1 var(--font); color: var(--fg); min-height: var(--tap); min-width: var(--tap); border-radius: var(--r);
-  border: 2px solid var(--edge); background: linear-gradient(var(--stone), var(--stone-lo)); box-shadow: var(--frame);
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; touch-action: manipulation; }
-@media (hover: hover) { button:not(:disabled):hover { filter: brightness(1.18); } }
+button {
+  font: 700 var(--fs-sm) / 1.1 var(--font);
+  color: var(--fg);
+  min-height: var(--tap);
+  min-width: var(--tap);
+  border-radius: var(--r);
+  border: 2px solid var(--edge);
+  background: linear-gradient(var(--stone), var(--stone-lo));
+  box-shadow: var(--frame);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+@media (hover: hover) {
+  button:not(:disabled):hover {
+    filter: brightness(1.18);
+  }
+}
 /* pressed: inverted bevel and the button drops 2 px, like a key */
-button:not(:disabled):active { box-shadow: var(--frame-pressed); transform: translateY(2px); }
-button:disabled { filter: grayscale(.85) brightness(.65); cursor: default; }
-button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; } /* ink red: the gold vanished on the parchment (1.2:1) */
-button[aria-pressed='true'] { box-shadow: var(--frame), var(--glow); }
-.tools .burger:focus-visible, .world-node:focus-visible, .world-node.here, .main-title .title-lang:focus-visible, .panel.talk:focus-visible { box-shadow: var(--focus-halo); }
-button.primary { background: var(--gold-btn); color: var(--on-accent); font: 400 var(--fs-lg)/1 var(--font-px); flex: 1;
-  box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(255, 255, 255, .35), inset -4px -4px 0 0 rgba(0, 0, 0, .25), 0 3px 0 var(--edge); }
-button.primary:not(:disabled):active { box-shadow: inset 0 0 0 2px var(--gold-trim), inset 4px 4px 0 0 rgba(0, 0, 0, .25), inset -4px -4px 0 0 rgba(255, 255, 255, .35); }
-button.secondary { padding: 0 14px; }
-button.icon { padding: 0; font-size: var(--fs-lg); }
+button:not(:disabled):active {
+  box-shadow: var(--frame-pressed);
+  transform: translateY(2px);
+}
+button:disabled {
+  filter: grayscale(0.85) brightness(0.65);
+  cursor: default;
+}
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+} /* ink red: the gold vanished on the parchment (1.2:1) */
+button[aria-pressed="true"] {
+  box-shadow: var(--frame), var(--glow);
+}
+.tools .burger:focus-visible,
+.world-node:focus-visible,
+.world-node.here,
+.main-title .title-lang:focus-visible,
+.panel.talk:focus-visible {
+  box-shadow: var(--focus-halo);
+}
+button.primary {
+  background: var(--gold-btn);
+  color: var(--on-accent);
+  font: 400 var(--fs-lg) / 1 var(--font-px);
+  flex: 1;
+  box-shadow:
+    inset 0 0 0 2px var(--gold-trim),
+    inset 4px 4px 0 0 rgba(255, 255, 255, 0.35),
+    inset -4px -4px 0 0 rgba(0, 0, 0, 0.25),
+    0 3px 0 var(--edge);
+}
+button.primary:not(:disabled):active {
+  box-shadow:
+    inset 0 0 0 2px var(--gold-trim),
+    inset 4px 4px 0 0 rgba(0, 0, 0, 0.25),
+    inset -4px -4px 0 0 rgba(255, 255, 255, 0.35);
+}
+button.secondary {
+  padding: 0 14px;
+}
+button.icon {
+  padding: 0;
+  font-size: var(--fs-lg);
+}
 /* the button's display beat the hidden attribute: the rotate ↻ showed up on maps without direction (Nov 12) */
-button[hidden] { display: none; }
+button[hidden] {
+  display: none;
+}
 
 /* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Light
    parchment panel with dark ink and a brown frame, built here in CSS (nothing from the original art). Fixed positions on
    the PC's 1920x1080 screen, except the command menu, which moves beside the character (hud.ts place); mobile gets its
    own stage later. */
-.hud { position: absolute; inset: 0; pointer-events: none; font-size: var(--fs); }
-.panel { position: absolute; pointer-events: auto; margin: 0; padding: 8px 12px; color: var(--ink); border-radius: var(--r);
-  background: linear-gradient(var(--paper), var(--paper-lo)); border: 2px solid var(--paper-edge);
-  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
-.panel[hidden] { display: none; }
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-size: var(--fs);
+}
+.panel {
+  position: absolute;
+  pointer-events: auto;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--ink);
+  border-radius: var(--r);
+  background: linear-gradient(var(--paper), var(--paper-lo));
+  border: 2px solid var(--paper-edge);
+  box-shadow:
+    inset 0 0 0 2px var(--paper-hi),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+}
+.panel[hidden] {
+  display: none;
+}
 /* tile under the cursor and turn list: top left corner, like FFT */
-.tile-info { top: 12px; left: 12px; font-size: var(--fs-sm); }
-.queue { top: 56px; left: 12px; width: 230px; list-style: none; padding: 6px; display: grid; gap: 3px; }
-.queue.short li:nth-child(n + 6) { display: none; } /* title + 4 lines; L shows everything */
+.tile-info {
+  top: 12px;
+  left: 12px;
+  font-size: var(--fs-sm);
+}
+.queue {
+  top: 56px;
+  left: 12px;
+  width: 230px;
+  list-style: none;
+  padding: 6px;
+  display: grid;
+  gap: 3px;
+}
+.queue.short li:nth-child(n + 6) {
+  display: none;
+} /* title + 4 lines; L shows everything */
 /* charge in preview on "Execute?" (hud.ts queueRows): the list shows up to its row, which gets marked; the targets carry ◎ */
-.queue.preview li:nth-child(n) { display: flex; }
-.queue-target { margin-left: auto; font-weight: 700; color: var(--focus); }
-.queue-title { font: 400 var(--fs-sm)/1 var(--font-px); color: var(--ink-muted); padding: 2px 4px 4px; }
-.queue-row { display: flex; align-items: center; gap: 8px; padding: 2px 6px; font-size: var(--fs-sm); border-left: 5px solid var(--side); }
-.queue-row.hero { --side: var(--hero); }
-.queue-row.enemy { --side: var(--enemy); }
-.queue-row.now { background: rgba(255, 255, 255, .45); font-weight: 700; }
-.queue-row.charge { font-style: italic; color: var(--ink-muted); }
+.queue.preview li:nth-child(n) {
+  display: flex;
+}
+.queue-target {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--focus);
+}
+.queue-title {
+  font: 400 var(--fs-sm) / 1 var(--font-px);
+  color: var(--ink-muted);
+  padding: 2px 4px 4px;
+}
+.queue-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px;
+  font-size: var(--fs-sm);
+  border-left: 5px solid var(--side);
+}
+.queue-row.hero {
+  --side: var(--hero);
+}
+.queue-row.enemy {
+  --side: var(--enemy);
+}
+.queue-row.now {
+  background: rgba(255, 255, 255, 0.45);
+  font-weight: 700;
+}
+.queue-row.charge {
+  font-style: italic;
+  color: var(--ink-muted);
+}
 /* after .charge, which won by coming later and left the "fires here" row in faded italics (review of Nov 13) */
-.queue-row.pending { box-shadow: inset 0 0 0 2px var(--focus); font-weight: 700; font-style: normal; color: var(--ink); }
-.queue-row .portrait { width: 24px; height: 32px; }
+.queue-row.pending {
+  box-shadow: inset 0 0 0 2px var(--focus);
+  font-weight: 700;
+  font-style: normal;
+  color: var(--ink);
+}
+.queue-row .portrait {
+  width: 24px;
+  height: 32px;
+}
 /* what-to-do-now help and ability name banner: at the top, in the middle */
-.help { top: 12px; left: 50%; transform: translateX(-50%); max-width: 760px; text-align: center; font-size: var(--fs-sm); }
-.help:empty { display: none; }
-.banner { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 28px; font: 400 var(--fs-lg)/1 var(--font-px); }
+.help {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 760px;
+  text-align: center;
+  font-size: var(--fs-sm);
+}
+.help:empty {
+  display: none;
+}
+.banner {
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 28px;
+  font: 400 var(--fs-lg) / 1 var(--font-px);
+}
 /* camera tools and the menu: top right corner; the performance counter right below */
-.tools { position: absolute; top: 12px; right: 12px; pointer-events: auto; z-index: 2; } /* the open list goes over the counter and the command menu */
+.tools {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  pointer-events: auto;
+  z-index: 2;
+} /* the open list goes over the counter and the command menu */
 /* menu button on the same parchment as the panels, with 3 ink bars; open, it is sunken */
-.tools .burger { background: linear-gradient(var(--paper), var(--paper-lo)); border-color: var(--paper-edge); color: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); }
-.tools .burger[aria-expanded='true'] { box-shadow: inset 0 0 0 2px var(--paper-hi), inset 0 3px 0 rgba(0, 0, 0, .2); transform: translateY(2px); }
-.burger-bars, .burger-bars::before, .burger-bars::after { display: block; width: 22px; height: 3px; background: currentColor; border-radius: 1px; }
-.burger-bars { position: relative; }
-.burger-bars::before, .burger-bars::after { content: ''; position: absolute; left: 0; }
-.burger-bars::before { top: -7px; }
-.burger-bars::after { top: 7px; }
+.tools .burger {
+  background: linear-gradient(var(--paper), var(--paper-lo));
+  border-color: var(--paper-edge);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 2px var(--paper-hi),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+}
+.tools .burger[aria-expanded="true"] {
+  box-shadow:
+    inset 0 0 0 2px var(--paper-hi),
+    inset 0 3px 0 rgba(0, 0, 0, 0.2);
+  transform: translateY(2px);
+}
+.burger-bars,
+.burger-bars::before,
+.burger-bars::after {
+  display: block;
+  width: 22px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.burger-bars {
+  position: relative;
+}
+.burger-bars::before,
+.burger-bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+.burger-bars::before {
+  top: -7px;
+}
+.burger-bars::after {
+  top: 7px;
+}
 /* the list opens below the button, right-aligned, with the same rows as the command menu */
-.tools-menu { top: calc(var(--tap) + 8px); right: 0; width: 320px; padding: 6px; animation: menu-in 90ms ease-out; transform-origin: top; }
-.tools-menu .item { font: 400 var(--fs)/1 var(--font-px); min-height: 38px; }
-@media (hover: hover) { .tools-menu .item:hover { background: rgba(255, 255, 255, .5); filter: none; } }
-.tool-label { display: flex; align-items: center; gap: 10px; white-space: nowrap; margin-right: 16px; }
-.tool-glyph { width: 22px; display: inline-flex; justify-content: center; color: var(--ink-muted); font-size: var(--fs-lg); }
+.tools-menu {
+  top: calc(var(--tap) + 8px);
+  right: 0;
+  width: 320px;
+  padding: 6px;
+  animation: menu-in 90ms ease-out;
+  transform-origin: top;
+}
+.tools-menu .item {
+  font: 400 var(--fs) / 1 var(--font-px);
+  min-height: 38px;
+}
+@media (hover: hover) {
+  .tools-menu .item:hover {
+    background: rgba(255, 255, 255, 0.5);
+    filter: none;
+  }
+}
+.tool-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  margin-right: 16px;
+}
+.tool-glyph {
+  width: 22px;
+  display: inline-flex;
+  justify-content: center;
+  color: var(--ink-muted);
+  font-size: var(--fs-lg);
+}
 /* fast battle on: shows ✓ and the text "on", not just color */
-.tools-menu [aria-checked='true'] .tool-label::after { content: '✓'; color: var(--focus); font-weight: 700; }
-.fps { position: absolute; top: 72px; right: 12px; pointer-events: none; white-space: pre; text-align: right;
-  font: 12px/1.35 ui-monospace, Consolas, monospace; color: var(--fg); background: rgba(10, 6, 16, .55); padding: 4px 8px; border-radius: var(--r); }
-.fps[hidden] { display: none; }
+.tools-menu [aria-checked="true"] .tool-label::after {
+  content: "✓";
+  color: var(--focus);
+  font-weight: 700;
+}
+.fps {
+  position: absolute;
+  top: 72px;
+  right: 12px;
+  pointer-events: none;
+  white-space: pre;
+  text-align: right;
+  font:
+    12px / 1.35 ui-monospace,
+    Consolas,
+    monospace;
+  color: var(--fg);
+  background: rgba(10, 6, 16, 0.55);
+  padding: 4px 8px;
+  border-radius: var(--r);
+}
+.fps[hidden] {
+  display: none;
+}
 /* command menu, abilities submenu and "Execute?": beside the acting character, like FFT (Nov 13); left and top
    come from hud.ts (place), which follows the camera every frame. Hence no transform here: the open animations use it */
-.commands { display: grid; min-width: 220px; padding: 6px; } /* width set by the longest item: "Undo move" on one line */
-.commands .item { white-space: nowrap; }
-.abilities { width: 300px; padding: 6px; }
-.confirm { width: 420px; }
-.confirm strong { font: 400 var(--fs-lg)/1.2 var(--font-px); }
-.confirm p { margin: 6px 0 0; font-size: var(--fs-sm); }
-.yes-no { display: flex; gap: 6px; margin-top: 10px; }
-.panel .item { width: 100%; min-height: 40px; justify-content: space-between; position: relative; padding: 4px 10px 4px 28px;
-  background: transparent; border: none; box-shadow: none; color: var(--ink); font: 700 var(--fs-lg)/1 var(--font-px);
-  text-shadow: 0 1px 0 rgba(255, 248, 225, .9), 0 2px 3px rgba(60, 40, 15, .35); } /* engraved on the parchment: light below, soft shadow */
-.panel .item.focus { background: rgba(255, 255, 255, .5); }
+.commands {
+  display: grid;
+  min-width: 220px;
+  padding: 6px;
+} /* width set by the longest item: "Undo move" on one line */
+.commands .item {
+  white-space: nowrap;
+}
+.abilities {
+  width: 300px;
+  padding: 6px;
+}
+.confirm {
+  width: 420px;
+}
+.confirm strong {
+  font: 400 var(--fs-lg) / 1.2 var(--font-px);
+}
+.confirm p {
+  margin: 6px 0 0;
+  font-size: var(--fs-sm);
+}
+.yes-no {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.panel .item {
+  width: 100%;
+  min-height: 40px;
+  justify-content: space-between;
+  position: relative;
+  padding: 4px 10px 4px 28px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--ink);
+  font: 700 var(--fs-lg) / 1 var(--font-px);
+  text-shadow:
+    0 1px 0 rgba(255, 248, 225, 0.9),
+    0 2px 3px rgba(60, 40, 15, 0.35);
+} /* engraved on the parchment: light below, soft shadow */
+.panel .item.focus {
+  background: rgba(255, 255, 255, 0.5);
+}
 /* FFT's hand replaced by an arrow of ours marking the focused item */
-.panel .item.focus::before { content: '▶'; position: absolute; left: 8px; color: var(--focus); animation: nudge .6s steps(1, end) infinite; }
+.panel .item.focus::before {
+  content: "▶";
+  position: absolute;
+  left: 8px;
+  color: var(--focus);
+  animation: nudge 0.6s steps(1, end) infinite;
+}
 /* menus open instead of popping in (Nov 12, game feel): 90 ms, fast enough not to slow down whoever knows what they want;
    the submenu comes from the side of the menu it left (hud.ts sets .from-right when it opens to the left of the menu); the ability
    name banner opens from the middle */
-.commands:not([hidden]), .confirm:not([hidden]) { animation: menu-in 90ms ease-out; }
-.abilities { --slide: -24px; }
-.abilities.from-right { --slide: 24px; }
-.abilities:not([hidden]) { animation: menu-in-side 110ms ease-out; }
-.banner:not([hidden]) { animation: banner-in 120ms ease-out; }
-@keyframes menu-in { from { opacity: 0; transform: scaleY(.8); } }
-@keyframes menu-in-side { from { opacity: 0; transform: translateX(var(--slide)); } }
-@keyframes banner-in { from { transform: translateX(-50%) scaleX(.2); opacity: 0; } }
-@keyframes nudge { 50% { transform: translateX(3px); } }
-@media (prefers-reduced-motion: reduce) { .commands, .confirm, .abilities, .banner, .tools-menu, .panel .item.focus::before { animation: none !important; } }
-.panel .item:disabled { filter: none; opacity: .45; }
-.panel .item:not(:disabled):active { transform: none; box-shadow: none; }
-.item-cost { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
+.commands:not([hidden]),
+.confirm:not([hidden]) {
+  animation: menu-in 90ms ease-out;
+}
+.abilities {
+  --slide: -24px;
+}
+.abilities.from-right {
+  --slide: 24px;
+}
+.abilities:not([hidden]) {
+  animation: menu-in-side 110ms ease-out;
+}
+.banner:not([hidden]) {
+  animation: banner-in 120ms ease-out;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.8);
+  }
+}
+@keyframes menu-in-side {
+  from {
+    opacity: 0;
+    transform: translateX(var(--slide));
+  }
+}
+@keyframes banner-in {
+  from {
+    transform: translateX(-50%) scaleX(0.2);
+    opacity: 0;
+  }
+}
+@keyframes nudge {
+  50% {
+    transform: translateX(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .commands,
+  .confirm,
+  .abilities,
+  .banner,
+  .tools-menu,
+  .panel .item.focus::before {
+    animation: none !important;
+  }
+}
+.panel .item:disabled {
+  filter: none;
+  opacity: 0.45;
+}
+.panel .item:not(:disabled):active {
+  transform: none;
+  box-shadow: none;
+}
+.item-cost {
+  font: 400 var(--fs-sm) / 1 var(--font);
+  color: var(--ink-muted);
+}
 /* unit panels: the acting one bottom left, the one under the cursor bottom right */
-.active-slot, .target-slot { position: absolute; bottom: 12px; width: var(--slot-w); pointer-events: none; }
-.active-slot { left: 12px; }
-.target-slot { right: 12px; }
-.unit-panel { position: relative; display: flex; gap: 12px; border-left: 8px solid var(--side); }
-.unit-panel.hero { --side: var(--hero); }
-.unit-panel.enemy { --side: var(--enemy); }
-.portrait { width: 72px; height: 96px; object-fit: cover; flex: none; background: var(--paper-hi); border: 2px solid var(--paper-edge); }
-.portrait.tinted { filter: sepia(.4) hue-rotate(220deg) saturate(2) brightness(1.1); } /* Acolyte: the mage portrait with the character's violet glow (UnitDef.tint) */
-.portrait.gem { background: radial-gradient(circle, #bff7ff, #2bb8d6 60%, #0c4a5a); }
-.unit-body { flex: 1; display: grid; gap: 4px; align-content: start; }
-.unit-name { font: 400 var(--fs-lg)/1.1 var(--font-px); display: flex; align-items: baseline; gap: 8px; }
-.unit-side { font: 400 var(--fs-sm)/1 var(--font); color: var(--ink-muted); }
-.unit-note { margin: 0; font-size: var(--fs-sm); color: var(--ink-muted); }
-.gauge { display: grid; grid-template-columns: 40px 1fr 64px; align-items: center; gap: 8px; font-size: var(--fs-sm); }
-.gauge-label { font-weight: 700; }
-.gauge-bar { position: relative; height: 10px; background: var(--well); border: 1px solid var(--paper-edge); }
-.gauge-bar i { display: block; height: 100%; }
+.active-slot,
+.target-slot {
+  position: absolute;
+  bottom: 12px;
+  width: var(--slot-w);
+  pointer-events: none;
+}
+.active-slot {
+  left: 12px;
+}
+.target-slot {
+  right: 12px;
+}
+.unit-panel {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  border-left: 8px solid var(--side);
+}
+.unit-panel.hero {
+  --side: var(--hero);
+}
+.unit-panel.enemy {
+  --side: var(--enemy);
+}
+.portrait {
+  width: 72px;
+  height: 96px;
+  object-fit: cover;
+  flex: none;
+  background: var(--paper-hi);
+  border: 2px solid var(--paper-edge);
+}
+.portrait.tinted {
+  filter: sepia(0.4) hue-rotate(220deg) saturate(2) brightness(1.1);
+} /* Acolyte: the mage portrait with the character's violet glow (UnitDef.tint) */
+.portrait.gem {
+  background: radial-gradient(circle, #bff7ff, #2bb8d6 60%, #0c4a5a);
+}
+.unit-body {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+.unit-name {
+  font: 400 var(--fs-lg) / 1.1 var(--font-px);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.unit-side {
+  font: 400 var(--fs-sm) / 1 var(--font);
+  color: var(--ink-muted);
+}
+.unit-note {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.gauge {
+  display: grid;
+  grid-template-columns: 40px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+}
+.gauge-label {
+  font-weight: 700;
+}
+.gauge-bar {
+  position: relative;
+  height: 10px;
+  background: var(--well);
+  border: 1px solid var(--paper-edge);
+}
+.gauge-bar i {
+  display: block;
+  height: 100%;
+}
 /* strike preview on the target bar (hud.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
    green stripes, like Tactics Ogre. Stripe and the number "life 25 → 13–16" alongside: never color alone */
-.gauge-change { position: absolute; top: 0; bottom: 0; }
-.gauge-change.loss { background: repeating-linear-gradient(135deg, var(--enemy) 0 3px, var(--well) 3px 6px); animation: loss-blink 1s steps(2, jump-none) infinite; }
-.gauge-change.gain { background: repeating-linear-gradient(135deg, var(--heal) 0 3px, var(--well) 3px 6px); }
-@keyframes loss-blink { 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { .gauge-change { animation: none; } }
+.gauge-change {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.gauge-change.loss {
+  background: repeating-linear-gradient(135deg, var(--enemy) 0 3px, var(--well) 3px 6px);
+  animation: loss-blink 1s steps(2, jump-none) infinite;
+}
+.gauge-change.gain {
+  background: repeating-linear-gradient(135deg, var(--heal) 0 3px, var(--well) 3px 6px);
+}
+@keyframes loss-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gauge-change {
+    animation: none;
+  }
+}
 /* mirrored target panel (portrait on the right), like Tactics Ogre's status bar: attacker and target face each other */
-.target-slot .unit-panel { flex-direction: row-reverse; border-left: 2px solid var(--paper-edge); border-right: 8px solid var(--side); }
+.target-slot .unit-panel {
+  flex-direction: row-reverse;
+  border-left: 2px solid var(--paper-edge);
+  border-right: 8px solid var(--side);
+}
 /* strike preview strips (hud.ts strikes, Nov 13, Tactics Ogre style, our design): in the gap between the two
    bottom panels, anchored at the bottom and arrow-shaped pointing at the target panel. They stay inside the panel height (up to 3
    strips) so as not to cover the map; no click (the mouse passes through to the tiles below) */
-.strikes { position: absolute; bottom: 12px; left: calc(var(--slot-w) + 24px); right: calc(var(--slot-w) + 24px); display: grid; justify-items: end; align-content: end; gap: 4px; pointer-events: none; }
-.strike { max-width: 100%; padding: 4px 30px 5px 14px; color: var(--fg); background: var(--strike); border-left: 4px solid var(--strike-dmg);
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%); }
-.strike.gain { border-left-color: var(--heal); }
-.strike.ally { border-left-color: var(--accent); }
-.strike-main { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
-.strike-hp { font: 700 var(--fs-sm)/1 var(--font); color: var(--muted); }
-.strike-pts { font: 400 var(--fs-xl)/1 var(--font-px); color: var(--strike-dmg); font-variant-numeric: tabular-nums; }
-.strike.gain .strike-pts { color: var(--heal); }
-.strike-pts small { margin-left: 4px; font: 700 var(--fs-sm)/1 var(--font); }
-.strike-hit { margin-left: auto; font: 400 var(--fs-lg)/1 var(--font-px); }
-.strike-info { font-size: var(--fs-sm); color: var(--muted); }
-.strike.ally .strike-info { color: var(--accent); font-weight: 700; }
-.strike-more { margin: 0; padding: 2px 10px; font-size: var(--fs-sm); color: var(--fg); background: var(--strike); }
-.gauge.hp i { background: var(--hp); }
-.gauge.mp i { background: var(--mp); }
-.gauge.ct i { background: var(--ct); }
-.gauge-num { text-align: right; font-variant-numeric: tabular-nums; }
-
-.floats { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-/* damage number at FFT's rhythm (Nov 12): it jumps, holds still to be read and fades; 1.5 s = TIMING.float in timing.ts */
-.float { position: absolute; transform: translate(-50%, -50%); font: 400 26px/1 var(--font-px); text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; animation: pop 1.5s linear forwards; }
-.float.dmg { color: #ffd0c4; }
-.float.big { font-size: 38px; color: #ffb199; } /* strike of 25% of life or more (scene.ts): bigger and hotter */
-.float.miss { color: var(--muted); }
-.float.heal { color: var(--heal); }
-@keyframes pop {
-  0% { transform: translate(-50%, -50%) scale(.6); opacity: 0; }
-  8% { transform: translate(-50%, -140%) scale(1.15); opacity: 1; }
-  16% { transform: translate(-50%, -90%) scale(1); }
-  22% { transform: translate(-50%, -110%); }
-  28%, 75% { transform: translate(-50%, -100%); opacity: 1; }
-  100% { transform: translate(-50%, -130%); opacity: 0; }
+.strikes {
+  position: absolute;
+  bottom: 12px;
+  left: calc(var(--slot-w) + 24px);
+  right: calc(var(--slot-w) + 24px);
+  display: grid;
+  justify-items: end;
+  align-content: end;
+  gap: 4px;
+  pointer-events: none;
 }
-@media (prefers-reduced-motion: reduce) { .float { animation-duration: 1.6s; animation-timing-function: steps(1, end); } }
+.strike {
+  max-width: 100%;
+  padding: 4px 30px 5px 14px;
+  color: var(--fg);
+  background: var(--strike);
+  border-left: 4px solid var(--strike-dmg);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%);
+}
+.strike.gain {
+  border-left-color: var(--heal);
+}
+.strike.ally {
+  border-left-color: var(--accent);
+}
+.strike-main {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+.strike-hp {
+  font: 700 var(--fs-sm) / 1 var(--font);
+  color: var(--muted);
+}
+.strike-pts {
+  font: 400 var(--fs-xl) / 1 var(--font-px);
+  color: var(--strike-dmg);
+  font-variant-numeric: tabular-nums;
+}
+.strike.gain .strike-pts {
+  color: var(--heal);
+}
+.strike-pts small {
+  margin-left: 4px;
+  font: 700 var(--fs-sm) / 1 var(--font);
+}
+.strike-hit {
+  margin-left: auto;
+  font: 400 var(--fs-lg) / 1 var(--font-px);
+}
+.strike-info {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.strike.ally .strike-info {
+  color: var(--accent);
+  font-weight: 700;
+}
+.strike-more {
+  margin: 0;
+  padding: 2px 10px;
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  background: var(--strike);
+}
+.gauge.hp i {
+  background: var(--hp);
+}
+.gauge.mp i {
+  background: var(--mp);
+}
+.gauge.ct i {
+  background: var(--ct);
+}
+.gauge-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
-.overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: 16px; z-index: 10; }
-.dialog { padding: 14px 18px 18px; width: min(460px, 100%); max-height: 90dvh; overflow: auto; }
-.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
-.dialog h2, .dialog h3 { font-family: var(--font-px); margin: 0; }
-.dialog h2 { font-size: 24px; }
-.dialog h3 { font-size: var(--fs); margin: 16px 0 8px; color: var(--focus); }
-.dialog p, .dialog .keys dd, .dialog .choice-label, .dialog .title-sub, .dialog .party-class, .dialog .party-more, .dialog .party-bench, .dialog .dev-num { color: var(--ink-muted); }
-.dialog .sw { border-color: var(--ink); }
-.kbd .dialog .hint, .dialog .hint { color: var(--ink-muted); border-color: var(--ink-muted); }
-.dialog .primary { width: 100%; }
-.legend { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
-.legend li { display: flex; align-items: center; gap: 8px; }
-.sw { width: 20px; height: 20px; flex: none; border: 1px solid var(--fg); }
-.sw.move { background: var(--mark-move); }
-.sw.range { background: var(--mark-range); }
-.sw.blocked { background: var(--mark-blocked); }
-.sw.threat { background: var(--mark-threat); }
-.menu-actions { display: flex; flex-wrap: wrap; gap: var(--gap); margin-top: 16px; }
-.menu-actions button { flex: 1 1 40%; } /* 2 per row: with 5 in a row, "Developer" got cut off (review of Nov 13) */
+.floats {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* damage number at FFT's rhythm (Nov 12): it jumps, holds still to be read and fades; 1.5 s = TIMING.float in timing.ts */
+.float {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font: 400 26px / 1 var(--font-px);
+  text-shadow:
+    0 2px 0 #000,
+    2px 0 0 #000,
+    -2px 0 0 #000,
+    0 -2px 0 #000;
+  animation: pop 1.5s linear forwards;
+}
+.float.dmg {
+  color: #ffd0c4;
+}
+.float.big {
+  font-size: 38px;
+  color: #ffb199;
+} /* strike of 25% of life or more (scene.ts): bigger and hotter */
+.float.miss {
+  color: var(--muted);
+}
+.float.heal {
+  color: var(--heal);
+}
+@keyframes pop {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0;
+  }
+  8% {
+    transform: translate(-50%, -140%) scale(1.15);
+    opacity: 1;
+  }
+  16% {
+    transform: translate(-50%, -90%) scale(1);
+  }
+  22% {
+    transform: translate(-50%, -110%);
+  }
+  28%,
+  75% {
+    transform: translate(-50%, -100%);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -130%);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .float {
+    animation-duration: 1.6s;
+    animation-timing-function: steps(1, end);
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 10;
+}
+.dialog {
+  padding: 14px 18px 18px;
+  width: min(460px, 100%);
+  max-height: 90dvh;
+  overflow: auto;
+}
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+.dialog h2,
+.dialog h3 {
+  font-family: var(--font-px);
+  margin: 0;
+}
+.dialog h2 {
+  font-size: 24px;
+}
+.dialog h3 {
+  font-size: var(--fs);
+  margin: 16px 0 8px;
+  color: var(--focus);
+}
+.dialog p,
+.dialog .keys dd,
+.dialog .choice-label,
+.dialog .title-sub,
+.dialog .party-class,
+.dialog .party-more,
+.dialog .party-bench,
+.dialog .dev-num {
+  color: var(--ink-muted);
+}
+.dialog .sw {
+  border-color: var(--ink);
+}
+.kbd .dialog .hint,
+.dialog .hint {
+  color: var(--ink-muted);
+  border-color: var(--ink-muted);
+}
+.dialog .primary {
+  width: 100%;
+}
+.legend {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  display: grid;
+  gap: 6px;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sw {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1px solid var(--fg);
+}
+.sw.move {
+  background: var(--mark-move);
+}
+.sw.range {
+  background: var(--mark-range);
+}
+.sw.blocked {
+  background: var(--mark-blocked);
+}
+.sw.threat {
+  background: var(--mark-threat);
+}
+.menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+  margin-top: 16px;
+}
+.menu-actions button {
+  flex: 1 1 40%;
+} /* 2 per row: with 5 in a row, "Developer" got cut off (review of Nov 13) */
 /* menus beside the character over the fps counter, which covered the submenu */
-.commands, .abilities, .confirm { z-index: 1; }
-.choice { margin: 0 0 10px; }
-.choice-label { display: block; font-size: var(--fs-sm); color: var(--muted); margin-bottom: 4px; }
-.choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
-.choice-row button { flex: 1; min-width: 64px; }
+.commands,
+.abilities,
+.confirm {
+  z-index: 1;
+}
+.choice {
+  margin: 0 0 10px;
+}
+.choice-label {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.choice-row button {
+  flex: 1;
+  min-width: 64px;
+}
 
 /* key hint on the buttons, only on PC with a mouse (.hud.kbd) */
-.hint { display: none; }
-.kbd .hint { display: inline-block; font: 700 11px/1 system-ui, sans-serif; /* the game font does not have the ⇧ */ color: var(--muted); border: 1px solid var(--muted); border-radius: 2px; padding: 2px 4px; }
-.kbd .primary .hint { color: var(--on-accent); border-color: var(--on-accent); }
-.kbd .panel .hint { color: var(--ink-muted); border-color: var(--ink-muted); margin-left: 8px; }
-.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: var(--fs-sm); }
-.keys dt { font-weight: 800; white-space: nowrap; }
-.keys dd { margin: 0; color: var(--muted); }
+.hint {
+  display: none;
+}
+.kbd .hint {
+  display: inline-block;
+  font:
+    700 11px / 1 system-ui,
+    sans-serif; /* the game font does not have the ⇧ */
+  color: var(--muted);
+  border: 1px solid var(--muted);
+  border-radius: 2px;
+  padding: 2px 4px;
+}
+.kbd .primary .hint {
+  color: var(--on-accent);
+  border-color: var(--on-accent);
+}
+.kbd .panel .hint {
+  color: var(--ink-muted);
+  border-color: var(--ink-muted);
+  margin-left: 8px;
+}
+.keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  font-size: var(--fs-sm);
+}
+.keys dt {
+  font-weight: 800;
+  white-space: nowrap;
+}
+.keys dd {
+  margin: 0;
+  color: var(--muted);
+}
 /* volume bar (slider in dialog.ts): track in the ink highlight color, number in % alongside */
-.slider { display: block; margin: 0 0 14px; }
-.slider-row { display: flex; align-items: center; gap: 12px; }
-.slider input { flex: 1; min-height: var(--tap); margin: 0; accent-color: var(--focus); cursor: pointer; }
-.slider input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-.slider-value { min-width: 4ch; text-align: right; font: 400 var(--fs-lg)/1 var(--font-px); color: var(--ink); }
+.slider {
+  display: block;
+  margin: 0 0 14px;
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.slider input {
+  flex: 1;
+  min-height: var(--tap);
+  margin: 0;
+  accent-color: var(--focus);
+  cursor: pointer;
+}
+.slider input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.slider-value {
+  min-width: 4ch;
+  text-align: right;
+  font: 400 var(--fs-lg) / 1 var(--font-px);
+  color: var(--ink);
+}
 
 /* Options (Nov 13, Fernando's request: "something that takes up more of the screen width, with subsections"): sections in a column on the
    left and one at a time on the right; fixed height so the window does not jump when switching sections. On narrow screens, sections on top */
-.dialog.menu { width: min(1400px, 92vw); height: min(760px, 90dvh); display: grid; grid-template-rows: auto 1fr auto; }
-.menu-layout { display: grid; grid-template-columns: 240px 1fr; gap: 24px; min-height: 0; margin-top: 12px; }
-.menu-nav { margin: 0; padding-right: 24px; border-right: 2px solid var(--paper-lo); }
-.menu-nav .choice-label { display: none; } /* the group name stays in the aria-label: on screen, the sections themselves are enough */
-.menu-nav .choice-row { flex-direction: column; flex-wrap: nowrap; }
-.menu-nav .choice-row button { flex: none; justify-content: flex-start; padding: 0 16px; font: 400 var(--fs)/1 var(--font-px); }
-.menu-body { overflow: auto; min-height: 0; padding-right: 8px; }
-.menu-section h3 { margin-top: 0; font-size: var(--fs-lg); }
-.menu-section .legend { margin-bottom: 20px; }
-.menu-section .choice, .menu-section .slider { max-width: 560px; }
-.dialog.menu .menu-actions button { flex: 1 1 20%; } /* in the wide window all 4 fit on one row */
+.dialog.menu {
+  width: min(1400px, 92vw);
+  height: min(760px, 90dvh);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.menu-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  min-height: 0;
+  margin-top: 12px;
+}
+.menu-nav {
+  margin: 0;
+  padding-right: 24px;
+  border-right: 2px solid var(--paper-lo);
+}
+.menu-nav .choice-label {
+  display: none;
+} /* the group name stays in the aria-label: on screen, the sections themselves are enough */
+.menu-nav .choice-row {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.menu-nav .choice-row button {
+  flex: none;
+  justify-content: flex-start;
+  padding: 0 16px;
+  font: 400 var(--fs) / 1 var(--font-px);
+}
+.menu-body {
+  overflow: auto;
+  min-height: 0;
+  padding-right: 8px;
+}
+.menu-section h3 {
+  margin-top: 0;
+  font-size: var(--fs-lg);
+}
+.menu-section .legend {
+  margin-bottom: 20px;
+}
+.menu-section .choice,
+.menu-section .slider {
+  max-width: 560px;
+}
+.dialog.menu .menu-actions button {
+  flex: 1 1 20%;
+} /* in the wide window all 4 fit on one row */
 @media (max-width: 600px) {
-  .menu-layout { grid-template-columns: 1fr; }
-  .menu-nav { padding: 0 0 8px; border-right: none; border-bottom: 2px solid var(--paper-lo); }
-  .menu-nav .choice-row { flex-direction: row; flex-wrap: wrap; }
+  .menu-layout {
+    grid-template-columns: 1fr;
+  }
+  .menu-nav {
+    padding: 0 0 8px;
+    border-right: none;
+    border-bottom: 2px solid var(--paper-lo);
+  }
+  .menu-nav .choice-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
-
 /* Developer menu (Nov 12): wide for the two teams side by side on PC; on narrow screens, one below the other */
-.dialog.dev { width: min(980px, 100%); }
-.dev-teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--gap); }
-.dev-list { list-style: none; margin: 0 0 var(--gap); padding: 0; display: grid; gap: var(--gap); }
-.dev-unit { border: 1px solid var(--paper-edge); border-radius: var(--r); background: var(--paper-hi); padding: var(--gap); display: grid; gap: 6px; }
-.dev-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; }
-.dev-line select, .dev-line input[type=text] { flex: 1; min-width: 0; min-height: 36px; font: inherit; background: #fff; color: var(--ink); border: 1px solid var(--paper-edge); border-radius: var(--r); padding: 0 8px; }
-.dev-num { display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--muted); }
-.dev-num input { width: 84px; min-height: 32px; font: inherit; background: #fff; color: var(--ink); border: 1px solid var(--paper-edge); border-radius: var(--r); padding: 0 6px; }
-.dev-skills summary { cursor: pointer; color: var(--focus); font-size: var(--fs-sm); }
-.dev-skills { font-size: var(--fs-sm); }
-.dev-check { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--ink); }
-.dialog .dev-issues { color: var(--focus); margin: var(--gap) 0; }
-.dialog .dev-msg { color: var(--focus); min-height: 1em; }
+.dialog.dev {
+  width: min(980px, 100%);
+}
+.dev-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--gap);
+}
+.dev-list {
+  list-style: none;
+  margin: 0 0 var(--gap);
+  padding: 0;
+  display: grid;
+  gap: var(--gap);
+}
+.dev-unit {
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--r);
+  background: var(--paper-hi);
+  padding: var(--gap);
+  display: grid;
+  gap: 6px;
+}
+.dev-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: end;
+}
+.dev-line select,
+.dev-line input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--r);
+  padding: 0 8px;
+}
+.dev-num {
+  display: grid;
+  gap: 2px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.dev-num input {
+  width: 84px;
+  min-height: 32px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--r);
+  padding: 0 6px;
+}
+.dev-skills summary {
+  cursor: pointer;
+  color: var(--focus);
+  font-size: var(--fs-sm);
+}
+.dev-skills {
+  font-size: var(--fs-sm);
+}
+.dev-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 10px 2px 0;
+  color: var(--ink);
+}
+.dialog .dev-issues {
+  color: var(--focus);
+  margin: var(--gap) 0;
+}
+.dialog .dev-msg {
+  color: var(--focus);
+  min-height: 1em;
+}
 
 /* campaign dialogue box (talk.ts): at the bottom, wide, parchment like the rest of the HUD; the ▼ blinks when the sentence is done */
-.talk-overlay { place-items: end center; background: rgba(10, 6, 20, .35); padding-bottom: 24px; gap: 12px; align-content: end; }
-.talk-title { position: static; padding: 8px 28px; font: 400 var(--fs-lg)/1 var(--font-px); color: var(--ink); justify-self: center; animation: banner-in 160ms ease-out; }
-.panel.talk { position: relative; display: flex; gap: 16px; align-items: flex-start; text-align: left; width: min(860px, 100%); min-height: 132px; padding: 14px 40px 14px 14px; color: var(--ink); animation: menu-in 120ms ease-out; }
-.talk-face .portrait { width: 72px; height: 96px; }
-.talk-body { display: grid; gap: 6px; flex: 1; }
-.talk-name { font: 400 var(--fs-lg)/1 var(--font-px); color: var(--focus); }
-.talk-text { margin: 0; font: 400 var(--fs-lg)/1.35 var(--font); min-height: 3.6em; }
-.talk-next { position: absolute; right: 16px; bottom: 10px; color: var(--focus); visibility: hidden; }
-.talk.done .talk-next { visibility: visible; animation: nudge .6s steps(1, end) infinite; }
-@media (prefers-reduced-motion: reduce) { .talk-title, .panel.talk, .talk.done .talk-next { animation: none; } }
-.camp-list { flex-direction: column; } /* campaign stage list: one per row, full name */
-.camp-list > button { flex: none; width: 100%; padding: 10px 14px; text-align: left; }
-.dialog .mvp { font-weight: 700; color: var(--gold-trim); margin: 2px 0 10px; } /* battle highlight (tally.ts), at the end of the stage and of the standalone battle */
-.dialog .learned { font-weight: 700; color: var(--focus); margin: 2px 0; } /* new ability on winning the stage (campaign); .dialog in front to beat .dialog p */
+.talk-overlay {
+  place-items: end center;
+  background: rgba(10, 6, 20, 0.35);
+  padding-bottom: 24px;
+  gap: 12px;
+  align-content: end;
+}
+.talk-title {
+  position: static;
+  padding: 8px 28px;
+  font: 400 var(--fs-lg) / 1 var(--font-px);
+  color: var(--ink);
+  justify-self: center;
+  animation: banner-in 160ms ease-out;
+}
+.panel.talk {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  text-align: left;
+  width: min(860px, 100%);
+  min-height: 132px;
+  padding: 14px 40px 14px 14px;
+  color: var(--ink);
+  animation: menu-in 120ms ease-out;
+}
+.talk-face .portrait {
+  width: 72px;
+  height: 96px;
+}
+.talk-body {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+}
+.talk-name {
+  font: 400 var(--fs-lg) / 1 var(--font-px);
+  color: var(--focus);
+}
+.talk-text {
+  margin: 0;
+  font: 400 var(--fs-lg) / 1.35 var(--font);
+  min-height: 3.6em;
+}
+.talk-next {
+  position: absolute;
+  right: 16px;
+  bottom: 10px;
+  color: var(--focus);
+  visibility: hidden;
+}
+.talk.done .talk-next {
+  visibility: visible;
+  animation: nudge 0.6s steps(1, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .talk-title,
+  .panel.talk,
+  .talk.done .talk-next {
+    animation: none;
+  }
+}
+.camp-list {
+  flex-direction: column;
+} /* campaign stage list: one per row, full name */
+.camp-list > button {
+  flex: none;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+}
+.dialog .mvp {
+  font-weight: 700;
+  color: var(--gold-trim);
+  margin: 2px 0 10px;
+} /* battle highlight (tally.ts), at the end of the stage and of the standalone battle */
+.dialog .learned {
+  font-weight: 700;
+  color: var(--focus);
+  margin: 2px 0;
+} /* new ability on winning the stage (campaign); .dialog in front to beat .dialog p */
 /* title screen (main.ts, titleScreen): big name and the three doors of the game */
-.dialog.title { width: min(460px, 100%); text-align: center; }
-.dialog.title h2 { font-size: 38px; letter-spacing: 1px; }
-.title-sub { margin: 4px 0 14px; }
-.continue-where { font: 400 var(--fs) var(--font); opacity: .8; margin-left: 8px; } /* where Continue leads, on the same line */
-.dialog.title .legend { text-align: left; }
+.dialog.title {
+  width: min(460px, 100%);
+  text-align: center;
+}
+.dialog.title h2 {
+  font-size: 38px;
+  letter-spacing: 1px;
+}
+.title-sub {
+  margin: 4px 0 14px;
+}
+.continue-where {
+  font: 400 var(--fs) var(--font);
+  opacity: 0.8;
+  margin-left: 8px;
+} /* where Continue leads, on the same line */
+.dialog.title .legend {
+  text-align: left;
+}
 /* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the parchment menu
    at the bottom; does not close (dialog fixed) */
-.main-title .dialog.title { background: none; border: none; box-shadow: none; width: min(520px, 100%); overflow: visible; }
-.main-title .dialog-head { justify-content: center; }
-.main-title .dialog.title h2 { font-size: 64px; line-height: 1.05; color: var(--paper-hi); letter-spacing: 2px; margin: 0 0 4px;
-  text-shadow: 0 4px 0 var(--edge), 0 0 28px rgba(255, 207, 74, .55); animation: title-in 600ms ease-out; }
-.main-title .title-sub, .main-title .title-foot { color: var(--paper-hi); text-shadow: 0 2px 0 var(--edge), 0 0 8px var(--edge); }
-.main-title .title-foot { font-size: var(--fs-sm); margin: 14px 0 0; opacity: .85; }
-.main-title .title-lang { min-height: 32px; padding: 0 12px; font-size: var(--fs-sm); vertical-align: middle; }
+.main-title .dialog.title {
+  background: none;
+  border: none;
+  box-shadow: none;
+  width: min(520px, 100%);
+  overflow: visible;
+}
+.main-title .dialog-head {
+  justify-content: center;
+}
+.main-title .dialog.title h2 {
+  font-size: 64px;
+  line-height: 1.05;
+  color: var(--paper-hi);
+  letter-spacing: 2px;
+  margin: 0 0 4px;
+  text-shadow:
+    0 4px 0 var(--edge),
+    0 0 28px rgba(255, 207, 74, 0.55);
+  animation: title-in 600ms ease-out;
+}
+.main-title .title-sub,
+.main-title .title-foot {
+  color: var(--paper-hi);
+  text-shadow:
+    0 2px 0 var(--edge),
+    0 0 8px var(--edge);
+}
+.main-title .title-foot {
+  font-size: var(--fs-sm);
+  margin: 14px 0 0;
+  opacity: 0.85;
+}
+.main-title .title-lang {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: var(--fs-sm);
+  vertical-align: middle;
+}
 /* developer menu: the start and export buttons pinned to the bottom of the window, always in view (review of Nov 13: Start
    was below the fold) */
-.dialog.dev > .menu-actions, .dialog.dev .menu-actions:last-child { position: sticky; bottom: -18px; background: var(--paper); padding: 8px 0; border-top: 2px solid var(--paper-edge); }
-.main-title .menu-actions { background: linear-gradient(var(--paper-hi), var(--paper)); border: 2px solid var(--paper-edge); border-radius: var(--r);
-  box-shadow: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, .45); padding: 12px; }
-@keyframes title-in { from { opacity: 0; transform: translateY(-12px) scale(.96); } }
-@media (prefers-reduced-motion: reduce) { .main-title .dialog.title h2 { animation: none; } } /* Credits: left-aligned list even in the title's centered dialog */
-.dialog a { color: var(--focus); } /* link in the ink highlight color, underlined: not by color alone */
+.dialog.dev > .menu-actions,
+.dialog.dev .menu-actions:last-child {
+  position: sticky;
+  bottom: -18px;
+  background: var(--paper);
+  padding: 8px 0;
+  border-top: 2px solid var(--paper-edge);
+}
+.main-title .menu-actions {
+  background: linear-gradient(var(--paper-hi), var(--paper));
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  box-shadow:
+    inset 0 0 0 2px var(--paper-hi),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+  padding: 12px;
+}
+@keyframes title-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .main-title .dialog.title h2 {
+    animation: none;
+  }
+} /* Credits: left-aligned list even in the title's centered dialog */
+.dialog a {
+  color: var(--focus);
+} /* link in the ink highlight color, underlined: not by color alone */
 /* the rotating map behind is the title's art: no battle HUD on top and only the edges darkened */
-.title-overlay { background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%); }
-body:has(.title-overlay) .hud, body:has(.title-overlay) .fps { visibility: hidden; }
+.title-overlay {
+  background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%);
+}
+body:has(.title-overlay) .hud,
+body:has(.title-overlay) .fps {
+  visibility: hidden;
+}
 /* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye */
-body:has(.talk-overlay) .hud, body:has(.talk-overlay) .fps { visibility: hidden; }
+body:has(.talk-overlay) .hud,
+body:has(.talk-overlay) .fps {
+  visibility: hidden;
+}
 /* and on the result: the empty turn list and the help line behind the end dialog said nothing */
-body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hidden; }
+body:has(.result-overlay) .hud,
+body:has(.result-overlay) .fps {
+  visibility: hidden;
+}
 /* victory confetti (main.ts, confetti): on top of everything, takes no clicks */
-.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9; overflow: hidden; } /* behind the victory window (10): it covered the text */
-.confetti i { position: absolute; top: -12px; width: 8px; height: 12px; animation: fall linear forwards; }
-@keyframes fall { to { transform: translateY(105vh) rotate(540deg); } }
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9;
+  overflow: hidden;
+} /* behind the victory window (10): it covered the text */
+.confetti i {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 12px;
+  animation: fall linear forwards;
+}
+@keyframes fall {
+  to {
+    transform: translateY(105vh) rotate(540deg);
+  }
+}
 
 /* World map (world-ui.ts): full-screen parchment, diamond points (battle) and circle (story), dashed road,
    walking party portrait. Panels with the same parchment as the battle HUD. */
-.world { position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 40%, var(--paper-hi), var(--paper) 55%, var(--paper-lo)); overflow: hidden; }
-.world-map { position: absolute; inset: 64px 4% 120px; }
-.world-svg, .world-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.world {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, var(--paper-hi), var(--paper) 55%, var(--paper-lo));
+  overflow: hidden;
+}
+.world-map {
+  position: absolute;
+  inset: 64px 4% 120px;
+}
+.world-svg,
+.world-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
 /* illustrated map (Nov 13): textured sea, irregular coast, woods, mountains and snow; colors only for the art, outside the text */
-.world-map { border: 4px double var(--paper-edge); box-shadow: 0 0 0 3px var(--paper-lo), 0 6px 18px rgba(0, 0, 0, .35); overflow: hidden; }
-.world-art .sea { fill: #24505f; }
-.world-art .grain { fill: #000; opacity: .22; }
-.world-art .shallow { fill: none; stroke: #4d8a95; stroke-width: 22; vector-effect: non-scaling-stroke; opacity: .75; }
-.world-art .land { fill: #b8b483; stroke: #3d3423; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.world-art .plain { fill: #cdbf7c; opacity: .8; }
-.world-art .wood { fill: #5d7a3c; opacity: .55; }
-.world-art .ash { fill: #8f877b; opacity: .75; }
-.world-art .highland { fill: #9c8460; opacity: .65; }
-.world-art .snowfield { fill: #eef1ee; opacity: .7; }
-.world-art .river { fill: none; stroke: #3f7d97; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linecap: round; }
-.world-art .lake { fill: #2f6478; stroke: #3d3423; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
-.world-art .pine { fill: #2f5a2c; stroke: #1e3519; stroke-width: .6; vector-effect: non-scaling-stroke; }
-.world-art .leaf { fill: #4c7a34; stroke: #1e3519; stroke-width: .6; vector-effect: non-scaling-stroke; }
-.world-art .trunk { stroke: #4a3520; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
-.world-art .rock { fill: #8a6f4d; stroke: #3d3423; stroke-width: .8; vector-effect: non-scaling-stroke; }
-.world-art .shade { fill: #5e4a33; }
-.world-art .snow { fill: #f4f6f4; }
-.world-compass { position: absolute; left: 1.5%; bottom: 2%; /* on the left: the point panel covers the bottom right corner */ width: 84px; height: 84px; pointer-events: none; }
-.world-icon { position: absolute; width: 30px; height: 30px; transform: translate(10px, -110%); pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .35)); } /* to the right and above the point: above sits the party portrait */
-.world-icon path { stroke: #3d3423; stroke-width: 1.6; stroke-linejoin: round; fill: none; }
-.world-icon .wall { fill: #e6d6a8; }
-.world-icon .roof { stroke: #8e3b24; stroke-width: 3; }
-.world-icon .stone { fill: #a39c8e; }
-.world-icon .door { fill: #2c2418; }
-.world-icon .flame { fill: #e8a33a; }
-.world-compass circle { fill: none; stroke: #e9dcae; stroke-width: 1.5; opacity: .8; }
-.world-compass .star { fill: #e9dcae; stroke: #3d3423; stroke-width: 1.5; }
-.world-compass .star-shade { fill: #9c8a5c; }
-.world-compass text { fill: #e9dcae; font: 700 12px var(--font); }
-.world-title { position: absolute; left: 2%; top: 3%; padding: 6px 16px; background: var(--paper); color: var(--ink); border: 3px double var(--paper-edge); font: 400 clamp(16px, 2.2vw, 28px) var(--font-px); letter-spacing: .12em; box-shadow: 0 3px 0 rgba(0, 0, 0, .3); pointer-events: none; }
-.world-art .road { fill: none; stroke: var(--paper-edge); stroke-width: 3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; stroke-linecap: round; }
-.world-art .road.walked { stroke: #8e3b24; /* ink red: the gold vanished on the illustrated map's land */ stroke-dasharray: none; stroke-linejoin: round; }
-.world-node { position: absolute; width: 22px; height: 22px; min-width: 0; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 3px solid var(--paper-edge); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }
-.world-node.battle { background: #c0412b; transform: translate(-50%, -50%) rotate(45deg); border-radius: 3px; }
-.world-node.story { background: #3d6fb0; border-radius: 50%; }
-.world-node.done { border-color: #e2b23a; }
-.world-node:disabled { background: #6f6656; border-color: #4a4235; /* dark: the old beige was the color of the land */ filter: none; cursor: default; }
-.world-node.here { outline: 3px solid var(--focus); outline-offset: 3px; }
-.world-token { position: absolute; transform: translate(-50%, -110%); transition: left var(--walk-ms) ease-in-out, top var(--walk-ms) ease-in-out; pointer-events: none; animation: bob 1s ease-in-out infinite; }
-.world-token .portrait { width: 44px; height: 58px; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
-@keyframes bob { 50% { margin-top: -4px; } }
-.world-head { position: absolute; top: 12px; left: 12px; padding: 8px 14px; color: var(--ink); font: 400 var(--fs-lg)/1 var(--font-px); }
-.world-panel { position: absolute; right: 24px; bottom: 24px; width: min(360px, calc(100% - 48px)); padding: 12px 14px; color: var(--ink); display: grid; gap: 6px; }
-.world-place { font: 400 var(--fs-lg)/1.2 var(--font-px); }
-.world-kind { margin: 0; color: var(--ink-muted); font-size: var(--fs-sm); }
-.world-actions { display: flex; flex-wrap: wrap; gap: 8px; } /* in the city there are 5 buttons (Enter, Party, City, Shop, Title): on one row only Shop and Title got cut off */
-.world-actions .item { flex: 1 1 28%; justify-content: center; padding-left: 28px; }
-.world-help { position: absolute; left: 12px; bottom: 24px; margin: 0; padding: 8px 12px; color: var(--ink-muted); font-size: var(--fs-sm); }
-@media (prefers-reduced-motion: reduce) { .world-token { transition: none; animation: none; } }
+.world-map {
+  border: 4px double var(--paper-edge);
+  box-shadow:
+    0 0 0 3px var(--paper-lo),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.world-art .sea {
+  fill: #24505f;
+}
+.world-art .grain {
+  fill: #000;
+  opacity: 0.22;
+}
+.world-art .shallow {
+  fill: none;
+  stroke: #4d8a95;
+  stroke-width: 22;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.75;
+}
+.world-art .land {
+  fill: #b8b483;
+  stroke: #3d3423;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.world-art .plain {
+  fill: #cdbf7c;
+  opacity: 0.8;
+}
+.world-art .wood {
+  fill: #5d7a3c;
+  opacity: 0.55;
+}
+.world-art .ash {
+  fill: #8f877b;
+  opacity: 0.75;
+}
+.world-art .highland {
+  fill: #9c8460;
+  opacity: 0.65;
+}
+.world-art .snowfield {
+  fill: #eef1ee;
+  opacity: 0.7;
+}
+.world-art .river {
+  fill: none;
+  stroke: #3f7d97;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+.world-art .lake {
+  fill: #2f6478;
+  stroke: #3d3423;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+.world-art .pine {
+  fill: #2f5a2c;
+  stroke: #1e3519;
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+.world-art .leaf {
+  fill: #4c7a34;
+  stroke: #1e3519;
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+.world-art .trunk {
+  stroke: #4a3520;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+.world-art .rock {
+  fill: #8a6f4d;
+  stroke: #3d3423;
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+}
+.world-art .shade {
+  fill: #5e4a33;
+}
+.world-art .snow {
+  fill: #f4f6f4;
+}
+.world-compass {
+  position: absolute;
+  left: 1.5%;
+  bottom: 2%; /* on the left: the point panel covers the bottom right corner */
+  width: 84px;
+  height: 84px;
+  pointer-events: none;
+}
+.world-icon {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  transform: translate(10px, -110%);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+} /* to the right and above the point: above sits the party portrait */
+.world-icon path {
+  stroke: #3d3423;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  fill: none;
+}
+.world-icon .wall {
+  fill: #e6d6a8;
+}
+.world-icon .roof {
+  stroke: #8e3b24;
+  stroke-width: 3;
+}
+.world-icon .stone {
+  fill: #a39c8e;
+}
+.world-icon .door {
+  fill: #2c2418;
+}
+.world-icon .flame {
+  fill: #e8a33a;
+}
+.world-compass circle {
+  fill: none;
+  stroke: #e9dcae;
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+.world-compass .star {
+  fill: #e9dcae;
+  stroke: #3d3423;
+  stroke-width: 1.5;
+}
+.world-compass .star-shade {
+  fill: #9c8a5c;
+}
+.world-compass text {
+  fill: #e9dcae;
+  font: 700 12px var(--font);
+}
+.world-title {
+  position: absolute;
+  left: 2%;
+  top: 3%;
+  padding: 6px 16px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px double var(--paper-edge);
+  font: 400 clamp(16px, 2.2vw, 28px) var(--font-px);
+  letter-spacing: 0.12em;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+.world-art .road {
+  fill: none;
+  stroke: var(--paper-edge);
+  stroke-width: 3;
+  stroke-dasharray: 2 6;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+.world-art .road.walked {
+  stroke: #8e3b24; /* ink red: the gold vanished on the illustrated map's land */
+  stroke-dasharray: none;
+  stroke-linejoin: round;
+}
+.world-node {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--paper-edge);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+.world-node.battle {
+  background: #c0412b;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 3px;
+}
+.world-node.story {
+  background: #3d6fb0;
+  border-radius: 50%;
+}
+.world-node.done {
+  border-color: #e2b23a;
+}
+.world-node:disabled {
+  background: #6f6656;
+  border-color: #4a4235; /* dark: the old beige was the color of the land */
+  filter: none;
+  cursor: default;
+}
+.world-node.here {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.world-token {
+  position: absolute;
+  transform: translate(-50%, -110%);
+  transition:
+    left var(--walk-ms) ease-in-out,
+    top var(--walk-ms) ease-in-out;
+  pointer-events: none;
+  animation: bob 1s ease-in-out infinite;
+}
+.world-token .portrait {
+  width: 44px;
+  height: 58px;
+  border-radius: 6px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+@keyframes bob {
+  50% {
+    margin-top: -4px;
+  }
+}
+.world-head {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 8px 14px;
+  color: var(--ink);
+  font: 400 var(--fs-lg) / 1 var(--font-px);
+}
+.world-panel {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: min(360px, calc(100% - 48px));
+  padding: 12px 14px;
+  color: var(--ink);
+  display: grid;
+  gap: 6px;
+}
+.world-place {
+  font: 400 var(--fs-lg) / 1.2 var(--font-px);
+}
+.world-kind {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+}
+.world-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+} /* in the city there are 5 buttons (Enter, Party, City, Shop, Title): on one row only Shop and Title got cut off */
+.world-actions .item {
+  flex: 1 1 28%;
+  justify-content: center;
+  padding-left: 28px;
+}
+.world-help {
+  position: absolute;
+  left: 12px;
+  bottom: 24px;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-token {
+    transition: none;
+    animation: none;
+  }
+}
 
 /* Protagonist creation (create-ui.ts): a central parchment; 4 class cards with portrait and the sheet of the chosen one */
-.talk-overlay.dark { background: radial-gradient(circle at 50% 30%, rgba(90, 170, 255, .28), transparent 40%), rgba(8, 5, 14, .96); place-items: center; align-content: center; animation: beacon 4s ease-in-out infinite; }
+.talk-overlay.dark {
+  background: radial-gradient(circle at 50% 30%, rgba(90, 170, 255, 0.28), transparent 40%), rgba(8, 5, 14, 0.96);
+  place-items: center;
+  align-content: center;
+  animation: beacon 4s ease-in-out infinite;
+}
 /* opening (new game): big narration in the center, no frame, with the Beacon's blue glow pulsing behind */
-.talk-overlay.dark .panel.talk { background: none; border: none; box-shadow: none; color: var(--paper); text-align: center; min-height: 0; padding: 0 24px; }
-.talk-overlay.dark .talk-text { font-size: 24px; line-height: 1.5; max-width: 34em; margin: 0 auto; }
-.talk-overlay.dark .talk-next { color: var(--paper); }
-@keyframes beacon { 50% { background-color: rgba(8, 5, 14, .9); } }
-.overlay.create { background: rgba(8, 5, 14, .7); }
-.create-panel { position: relative; width: min(720px, 100%); max-height: 92dvh; overflow: auto; padding: 18px 22px; color: var(--ink); display: grid; gap: 10px; }
-.create-panel h2 { margin: 0; font: 400 28px/1.1 var(--font-px); }
-.create-name { font-weight: 700; }
-.create-panel input { font: 400 var(--fs-lg)/1.2 var(--font); padding: 8px 10px; border: 2px solid var(--paper-edge); background: var(--paper-hi); color: var(--ink); border-radius: 4px; }
-.create-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.create-card { display: grid; justify-items: center; gap: 6px; padding: 10px 6px; background: var(--paper-hi); color: var(--ink); border: 2px solid var(--paper-edge); box-shadow: none; }
-.create-card[aria-pressed="true"] { outline: 3px solid var(--focus); outline-offset: 2px; background: #fff; }
-.create-card .portrait { width: 72px; height: 96px; }
-.create-sheet { display: grid; gap: 4px; min-height: 9em; }
-.create-role { margin: 0; font-weight: 700; }
-.create-stats { margin: 0; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
-.create-skills { margin: 0; padding-left: 18px; font-size: var(--fs-sm); display: grid; gap: 2px; }
-.create-warn { margin: 0; color: var(--focus); min-height: 1.2em; }
-@media (max-width: 600px) { .create-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (prefers-reduced-motion: reduce) { .talk-overlay.dark { animation: none; } }
-.talk-overlay.dark .panel.talk:focus-visible { outline: none; } /* the whole scene is the button; the blinking ▼ already shows that it can continue */
+.talk-overlay.dark .panel.talk {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--paper);
+  text-align: center;
+  min-height: 0;
+  padding: 0 24px;
+}
+.talk-overlay.dark .talk-text {
+  font-size: 24px;
+  line-height: 1.5;
+  max-width: 34em;
+  margin: 0 auto;
+}
+.talk-overlay.dark .talk-next {
+  color: var(--paper);
+}
+@keyframes beacon {
+  50% {
+    background-color: rgba(8, 5, 14, 0.9);
+  }
+}
+.overlay.create {
+  background: rgba(8, 5, 14, 0.7);
+}
+.create-panel {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: 92dvh;
+  overflow: auto;
+  padding: 18px 22px;
+  color: var(--ink);
+  display: grid;
+  gap: 10px;
+}
+.create-panel h2 {
+  margin: 0;
+  font: 400 28px / 1.1 var(--font-px);
+}
+.create-name {
+  font-weight: 700;
+}
+.create-panel input {
+  font: 400 var(--fs-lg) / 1.2 var(--font);
+  padding: 8px 10px;
+  border: 2px solid var(--paper-edge);
+  background: var(--paper-hi);
+  color: var(--ink);
+  border-radius: 4px;
+}
+.create-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.create-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  background: var(--paper-hi);
+  color: var(--ink);
+  border: 2px solid var(--paper-edge);
+  box-shadow: none;
+}
+.create-card[aria-pressed="true"] {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  background: #fff;
+}
+.create-card .portrait {
+  width: 72px;
+  height: 96px;
+}
+.create-sheet {
+  display: grid;
+  gap: 4px;
+  min-height: 9em;
+}
+.create-role {
+  margin: 0;
+  font-weight: 700;
+}
+.create-stats {
+  margin: 0;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.create-skills {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-sm);
+  display: grid;
+  gap: 2px;
+}
+.create-warn {
+  margin: 0;
+  color: var(--focus);
+  min-height: 1.2em;
+}
+@media (max-width: 600px) {
+  .create-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .talk-overlay.dark {
+    animation: none;
+  }
+}
+.talk-overlay.dark .panel.talk:focus-visible {
+  outline: none;
+} /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 /* objective banner at the start of the stage (main.ts, announce): enters stretching, holds to be read, fades; takes no clicks */
-.announce { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 15; pointer-events: none; padding: 14px 36px;
-  font: 400 30px/1.2 var(--font-px); color: var(--paper-hi); text-align: center; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
-  background: linear-gradient(90deg, transparent, rgba(20, 12, 30, .88) 15%, rgba(20, 12, 30, .88) 85%, transparent);
-  text-shadow: 0 2px 0 #000; animation: announce 2.2s ease-out forwards; }
-@keyframes announce { 0% { opacity: 0; transform: translate(-50%, -50%) scaleX(.3); } 12% { opacity: 1; transform: translate(-50%, -50%) scaleX(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .announce { animation: none; } }
-.tile-info:empty { display: none; } /* end of battle: with no tile under the cursor, the empty box lost its meaning */
+.announce {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 15;
+  pointer-events: none;
+  padding: 14px 36px;
+  font: 400 30px / 1.2 var(--font-px);
+  color: var(--paper-hi);
+  text-align: center;
+  white-space: nowrap;
+  max-width: 92vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: linear-gradient(90deg, transparent, rgba(20, 12, 30, 0.88) 15%, rgba(20, 12, 30, 0.88) 85%, transparent);
+  text-shadow: 0 2px 0 #000;
+  animation: announce 2.2s ease-out forwards;
+}
+@keyframes announce {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(0.3);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .announce {
+    animation: none;
+  }
+}
+.tile-info:empty {
+  display: none;
+} /* end of battle: with no tile under the cursor, the empty box lost its meaning */
 
 /* Party screen on the map (world-ui.ts, openParty): one row per hero, portrait on the left */
-.dialog.party { width: min(560px, 100%); }
-.party-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.party-card { display: flex; gap: 12px; align-items: center; }
-.party-list .party-card { cursor: pointer; padding: 4px; border-radius: var(--r); }
-.party-list .party-card:hover, .party-list .party-card:focus-visible { background: rgba(255, 255, 255, .55); outline: 2px solid var(--focus); }
-.party-card .portrait { width: 48px; height: 64px; }
+.dialog.party {
+  width: min(560px, 100%);
+}
+.party-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.party-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.party-list .party-card {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--r);
+}
+.party-list .party-card:hover,
+.party-list .party-card:focus-visible {
+  background: rgba(255, 255, 255, 0.55);
+  outline: 2px solid var(--focus);
+}
+.party-card .portrait {
+  width: 48px;
+  height: 64px;
+}
 
-.party-stats, .party-skills { margin: 2px 0 0; font-size: var(--fs-sm); }
-.party-stats { font-variant-numeric: tabular-nums; }
-.world-tag { position: absolute; left: 50%; top: calc(100% + 26px); transform: translateX(-50%); white-space: nowrap; padding: 2px 8px; font: 400 var(--fs-sm)/1.2 var(--font-px); color: var(--paper-hi); background: rgba(20, 12, 30, .8); border-radius: 3px; } /* place name under the party on the map */
+.party-stats,
+.party-skills {
+  margin: 2px 0 0;
+  font-size: var(--fs-sm);
+}
+.party-stats {
+  font-variant-numeric: tabular-nums;
+}
+.world-tag {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 26px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 2px 8px;
+  font: 400 var(--fs-sm) / 1.2 var(--font-px);
+  color: var(--paper-hi);
+  background: rgba(20, 12, 30, 0.8);
+  border-radius: 3px;
+} /* place name under the party on the map */
 /* the speaker's portrait does a little hop when the voice changes (talk.ts) and fades out on entering a map point (world-ui.ts, FADE_MS) */
-.talk-face.pop { animation: face-pop 220ms ease-out; }
-@keyframes face-pop { 0% { transform: translateY(6px) scale(.92); opacity: .4; } }
-.fade-out { position: fixed; inset: 0; background: #08050e; z-index: 9; pointer-events: none; animation: fade-in 300ms ease-in forwards; }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .talk-face.pop, .fade-out { animation: none; } }
-.talk-keys { position: absolute; right: 40px; bottom: 8px; font-size: var(--fs-sm); color: var(--ink-muted); } .talk-overlay.dark .talk-keys { color: var(--paper-lo); right: 50%; transform: translateX(50%); bottom: -28px; } /* dialogue key hint (talk.ts) */
+.talk-face.pop {
+  animation: face-pop 220ms ease-out;
+}
+@keyframes face-pop {
+  0% {
+    transform: translateY(6px) scale(0.92);
+    opacity: 0.4;
+  }
+}
+.fade-out {
+  position: fixed;
+  inset: 0;
+  background: #08050e;
+  z-index: 9;
+  pointer-events: none;
+  animation: fade-in 300ms ease-in forwards;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .talk-face.pop,
+  .fade-out {
+    animation: none;
+  }
+}
+.talk-keys {
+  position: absolute;
+  right: 40px;
+  bottom: 8px;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.talk-overlay.dark .talk-keys {
+  color: var(--paper-lo);
+  right: 50%;
+  transform: translateX(50%);
+  bottom: -28px;
+} /* dialogue key hint (talk.ts) */
 /* Unit sheet (world-ui.ts, openSheet): two columns on PC so it fits without scrolling at 1280x720; one when narrow */
-.dialog.sheet { width: min(980px, 100%); }
-.sheet-cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0 28px; }
-.sheet-cols > div:first-child > .secondary { margin-top: 12px; }
-.sheet-cols h3:first-child { margin-top: 12px; }
-@media (max-width: 760px) { .sheet-cols { grid-template-columns: 1fr; } }
+.dialog.sheet {
+  width: min(980px, 100%);
+}
+.sheet-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 0 28px;
+}
+.sheet-cols > div:first-child > .secondary {
+  margin-top: 12px;
+}
+.sheet-cols h3:first-child {
+  margin-top: 12px;
+}
+@media (max-width: 760px) {
+  .sheet-cols {
+    grid-template-columns: 1fr;
+  }
+}
 /* Shop (world-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
    landed in a different column and the 9-item list ran past 900 px */
-.shop .keys { align-items: center; }
-.shop .keys dd { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.shop .keys button { min-height: 36px; min-width: 112px; }
+.shop .keys {
+  align-items: center;
+}
+.shop .keys dd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shop .keys button {
+  min-height: 36px;
+  min-width: 112px;
+}

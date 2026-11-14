@@ -14,8 +14,13 @@ const withWater = (g: Grid, cells: [x: number, y: number, depth: number][]) => {
 };
 
 describe('water', () => {
-  it('water costs 1 movement since Nov 13 (Fernando\'s choice: fewer restraints); with 4 points the Warrior crosses 4 tiles', () => {
-    const g = withWater(flat(8, 3), [[2, 1, 1], [3, 1, 1], [4, 1, 1], [5, 1, 1]]);
+  it("water costs 1 movement since Nov 13 (Fernando's choice: fewer restraints); with 4 points the Warrior crosses 4 tiles", () => {
+    const g = withWater(flat(8, 3), [
+      [2, 1, 1],
+      [3, 1, 1],
+      [4, 1, 1],
+      [5, 1, 1],
+    ]);
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }]);
     const reach = reachable(g, s, 'a');
     expect(reach.get('2,1')?.cost).toBe(1);
@@ -23,8 +28,11 @@ describe('water', () => {
     expect(reach.has('6,1')).toBe(false);
   });
 
-  it('deep (2 or more) allows entry since Nov 13 (Fernando\'s choice): costs 1 and jump 1 is enough, measured from the surface', () => {
-    const g = withWater(flat(5, 3), [[2, 1, 2], [3, 1, 2]]);
+  it("deep (2 or more) allows entry since Nov 13 (Fernando's choice): costs 1 and jump 1 is enough, measured from the surface", () => {
+    const g = withWater(flat(5, 3), [
+      [2, 1, 2],
+      [3, 1, 2],
+    ]);
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }]);
     const reach = reachable(g, s, 'a');
     expect(reach.get('2,1')?.cost).toBe(1);
@@ -33,13 +41,19 @@ describe('water', () => {
 
   it('in deep water you can only move or wait: no ability comes out of there', () => {
     const g = withWater(flat(5, 3), [[2, 1, 2]]);
-    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 2, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 3, y: 1 }]);
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 2, y: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 3, y: 1 },
+    ]);
     expect(previewAbility(g, s, 'a', 'strike', { x: 3, y: 1 })).toMatchObject({ ok: false, reason: 'water' });
-    const dry = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 }]);
+    const dry = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+    ]);
     expect(previewAbility(g, dry, 'a', 'strike', { x: 2, y: 1 }).ok).toBe(true); // from outside, a swimmer takes a normal hit
   });
 
-  it('shallow water does not lower whoever stands in it (Nov 13, Fernando\'s request): from a bank 1 above you go down and up with jump 1', () => {
+  it("shallow water does not lower whoever stands in it (Nov 13, Fernando's request): from a bank 1 above you go down and up with jump 1", () => {
     const g = withWater(flat(5, 1), [[2, 0, 1]]);
     g.tiles[3] = { ...g.tiles[3], h: 1 }; // bank 1 level above the water
     const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 2, y: 0 }]);
@@ -55,7 +69,10 @@ describe('water', () => {
 
   it('a push stops at deep water, like a wall (our assumption)', () => {
     const g = withWater(flat(5, 3), [[3, 1, 2]]);
-    const s = stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 }]);
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+    ]);
     const r = simulatePush(g, s, s.units[1], { x: 2, y: 1 }, { x: 1, y: 1 }, 2);
     expect(r.to).toEqual({ x: 2, y: 1 });
     expect(r.events[0]).toMatchObject({ k: 'bump' });
@@ -63,7 +80,12 @@ describe('water', () => {
 
   it('the AI measures distance on foot: it goes around instead of standing still behind deep water', () => {
     // wall of deep water between the two, with a gap below; in a straight line he is already "2 tiles away" and used not to move
-    const g = withWater(flat(5, 5), [[2, 0, 2], [2, 1, 2], [2, 2, 2], [2, 3, 2]]);
+    const g = withWater(flat(5, 5), [
+      [2, 0, 2],
+      [2, 1, 2],
+      [2, 2, 2],
+      [2, 3, 2],
+    ]);
     const s = stateOf([
       { id: 'a', def: 'soldier', team: 'enemy', x: 1, y: 1 },
       { id: 'b', def: 'warrior', team: 'hero', x: 3, y: 1 },

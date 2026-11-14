@@ -3,7 +3,15 @@ import { Battle } from '../src/shared/battle/battle.ts';
 import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { DEV_SCENARIO, buildDevScenario, defaultSetup, devClasses, parseSetup, problems, unitFrom } from '../src/client/dev-roster.ts';
+import {
+  DEV_SCENARIO,
+  buildDevScenario,
+  defaultSetup,
+  devClasses,
+  parseSetup,
+  problems,
+  unitFrom,
+} from '../src/client/dev-roster.ts';
 
 const say = (pt: string) => pt;
 
@@ -41,7 +49,7 @@ describe('developer menu: roster', () => {
     expect(parseSetup({ ...ok, heroes: [old] })?.heroes[0].jump).toBeUndefined();
   });
 
-  it('the edited Jump applies in battle; without it, the class\'s', () => {
+  it("the edited Jump applies in battle; without it, the class's", () => {
     const s = defaultSetup('beacon_hill');
     s.heroes[0] = { ...s.heroes[0], jump: 4 };
     const { jump: _, ...noJump } = s.heroes[1];

@@ -31,7 +31,15 @@ export interface DevSetup {
 export const DEV_KEY = 'dt:dev'; // cast saved in the browser
 export const DEV_SCENARIO = 'dev';
 // maps the menu offers: the game's and the Gariland relief (the map only: the study is loaded separately, see main.ts)
-export const DEV_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart', 'ash_wood', 'frost_pass', 'fft-gariland'];
+export const DEV_MAPS = [
+  'beacon_hill',
+  'skirmish',
+  'flooded_crypt',
+  'crypt_heart',
+  'ash_wood',
+  'frost_pass',
+  'fft-gariland',
+];
 // limits of the editable numbers: wide for testing, but without breaking the turn queue (speed 0 never plays)
 export const LIMITS = { hp: [1, 999], speed: [1, 50], move: [1, 12], jump: [1, 6] } as const;
 const MAX_TEAM = 12;
@@ -39,7 +47,8 @@ const MAX_TEAM = 12;
 // game classes and abilities (the FFT study's depend on the study's rules and are left out)
 const ours = (id: string) => !id.startsWith('fft_') && !id.startsWith('dev-');
 // large unit (size) is left out: the maps' starting tiles are 1 tile
-export const devClasses = () => Object.keys(UNIT_DEFS).filter((id) => ours(id) && id !== OBJECTIVE_DEF && !UNIT_DEFS[id].size);
+export const devClasses = () =>
+  Object.keys(UNIT_DEFS).filter((id) => ours(id) && id !== OBJECTIVE_DEF && !UNIT_DEFS[id].size);
 export const devAbilities = () => Object.keys(ABILITIES).filter(ours);
 
 export function unitFrom(base: string, name = UNIT_DEFS[base].name): DevUnit {
@@ -58,10 +67,14 @@ export function slotsOf(map: string): Record<Team, Spawn[]> & { objective: Spawn
 }
 
 // a map's default cast is whoever is born on it; in Gariland (study units) our classes come in rotation
-const FALLBACK: Record<Team, string[]> = { hero: ['warrior', 'archer', 'mage', 'rogue'], enemy: ['soldier', 'skeleton_archer', 'dark_mage', 'brute'] };
+const FALLBACK: Record<Team, string[]> = {
+  hero: ['warrior', 'archer', 'mage', 'rogue'],
+  enemy: ['soldier', 'skeleton_archer', 'dark_mage', 'brute'],
+};
 export function defaultSetup(map: string): DevSetup {
   const s = slotsOf(map);
-  const pick = (slots: Spawn[], team: Team) => slots.map((x, i) => unitFrom(ours(x.def) ? x.def : FALLBACK[team][i % 4]));
+  const pick = (slots: Spawn[], team: Team) =>
+    slots.map((x, i) => unitFrom(ours(x.def) ? x.def : FALLBACK[team][i % 4]));
   return { map, heroes: pick(s.hero, 'hero'), enemies: pick(s.enemy, 'enemy') };
 }
 
@@ -69,16 +82,27 @@ export function defaultSetup(map: string): DevSetup {
 export function problems(setup: DevSetup, say: (pt: string, en: string) => string): string[] {
   const out: string[] = [];
   const s = slotsOf(setup.map);
-  const sides: [DevUnit[], Spawn[], string, string][] = [[setup.heroes, s.hero, 'heróis', 'heroes'], [setup.enemies, s.enemy, 'inimigos', 'enemies']];
+  const sides: [DevUnit[], Spawn[], string, string][] = [
+    [setup.heroes, s.hero, 'heróis', 'heroes'],
+    [setup.enemies, s.enemy, 'inimigos', 'enemies'],
+  ];
   for (const [units, slots, pt, en] of sides) {
     if (!units.length) out.push(say(`Ponha ao menos 1 entre os ${pt}.`, `Add at least 1 of the ${en}.`));
-    if (units.length > slots.length) out.push(say(`O mapa tem ${slots.length} casas de partida para os ${pt}: tire ${units.length - slots.length}.`, `The map has ${slots.length} starting tiles for the ${en}: remove ${units.length - slots.length}.`));
-    for (const u of units) if (!u.abilities.length) out.push(say(`${u.name} está sem habilidade.`, `${u.name} has no ability.`));
+    if (units.length > slots.length)
+      out.push(
+        say(
+          `O mapa tem ${slots.length} casas de partida para os ${pt}: tire ${units.length - slots.length}.`,
+          `The map has ${slots.length} starting tiles for the ${en}: remove ${units.length - slots.length}.`,
+        ),
+      );
+    for (const u of units)
+      if (!u.abilities.length) out.push(say(`${u.name} está sem habilidade.`, `${u.name} has no ability.`));
   }
   return out;
 }
 
-const isInt = (v: unknown, [lo, hi]: readonly [number, number]) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
+const isInt = (v: unknown, [lo, hi]: readonly [number, number]) =>
+  Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
 
 // Trust boundary: the JSON comes from an imported file or the browser. Only the known format passes, nothing else.
 export function parseSetup(raw: unknown): DevSetup | null {
@@ -95,18 +119,37 @@ export function parseSetup(raw: unknown): DevSetup | null {
       if (typeof u.name !== 'string' || !u.name.trim() || u.name.length > 24) return null;
       if (!isInt(u.hp, LIMITS.hp) || !isInt(u.speed, LIMITS.speed) || !isInt(u.move, LIMITS.move)) return null;
       if (u.jump !== undefined && !isInt(u.jump, LIMITS.jump)) return null;
-      if (!Array.isArray(u.abilities) || u.abilities.length > 8 || !u.abilities.every((a) => typeof a === 'string' && devAbilities().includes(a))) return null;
-      units.push({ base: u.base, name: u.name.trim(), hp: u.hp as number, speed: u.speed as number, move: u.move as number, ...(u.jump !== undefined && { jump: u.jump as number }), abilities: [...new Set(u.abilities as string[])] });
+      if (
+        !Array.isArray(u.abilities) ||
+        u.abilities.length > 8 ||
+        !u.abilities.every((a) => typeof a === 'string' && devAbilities().includes(a))
+      )
+        return null;
+      units.push({
+        base: u.base,
+        name: u.name.trim(),
+        hp: u.hp as number,
+        speed: u.speed as number,
+        move: u.move as number,
+        ...(u.jump !== undefined && { jump: u.jump as number }),
+        abilities: [...new Set(u.abilities as string[])],
+      });
     }
     return units;
   };
-  const heroes = team(r.heroes), enemies = team(r.enemies);
+  const heroes = team(r.heroes),
+    enemies = team(r.enemies);
   return heroes && enemies ? { map: r.map, heroes, enemies } : null;
 }
 
 // Map without the Lighthouse (Gariland): no objective, last one standing wins; the default rule would give an instant defeat (no Lighthouse = lost)
 const lastStanding: Rules = {
-  outcome: (state) => (!state.units.some((u) => u.team === 'enemy') ? 'victory' : !state.units.some((u) => u.team === 'hero') ? 'defeat' : 'ongoing'),
+  outcome: (state) =>
+    !state.units.some((u) => u.team === 'enemy')
+      ? 'victory'
+      : !state.units.some((u) => u.team === 'hero')
+        ? 'defeat'
+        : 'ongoing',
 };
 
 // Turns the cast into a scenario: each unit becomes its own sheet (dev-h0, dev-e1…) with the figure of the starting class
@@ -116,7 +159,11 @@ const BASE: Record<string, string> = {};
 export const classOf = (def: string): string | undefined => BASE[def];
 
 // The campaign (campaign.ts) uses the same path with its own id and name per stage.
-export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, title: [string, string] = ['Desenvolvedor', 'Developer']): Scenario {
+export function buildDevScenario(
+  setup: DevSetup,
+  scenarioId = DEV_SCENARIO,
+  title: [string, string] = ['Desenvolvedor', 'Developer'],
+): Scenario {
   const base = SCENARIOS[setup.map];
   const s = slotsOf(setup.map);
   const spawns: Spawn[] = [...s.objective];
@@ -128,13 +175,33 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
       BASE[id] = u.base;
       // size comes from the class (the campaign's Colossus occupies 2x2 like the original)
       const b = bonusOf(u.items); // equipment: sum of general stats (equipment.ts), 0 without an item
-      UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), jump: (u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP) + b.jump,
-        ...(b.power && { power: b.power }), ...(b.hit && { hit: b.hit }), ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp + b.hp, speed: Math.max(1, u.speed + b.speed), move: u.move + b.move, abilities: [...u.abilities], model: modelOf(u.base) };
+      UNIT_DEFS[id] = {
+        ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),
+        jump: (u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP) + b.jump,
+        ...(b.power && { power: b.power }),
+        ...(b.hit && { hit: b.hit }),
+        ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }),
+        id,
+        name: u.name,
+        en,
+        hp: u.hp + b.hp,
+        speed: Math.max(1, u.speed + b.speed),
+        move: u.move + b.move,
+        abilities: [...u.abilities],
+        model: modelOf(u.base),
+      };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');
   add(setup.enemies, s.enemy, 'enemy', 'e');
-  const scenario: Scenario = { id: scenarioId, name: title[0], en: title[1], grid: base.grid, spawns, ...(!s.objective.length && { rules: lastStanding }) };
+  const scenario: Scenario = {
+    id: scenarioId,
+    name: title[0],
+    en: title[1],
+    grid: base.grid,
+    spawns,
+    ...(!s.objective.length && { rules: lastStanding }),
+  };
   SCENARIOS[scenarioId] = scenario;
   return scenario;
 }

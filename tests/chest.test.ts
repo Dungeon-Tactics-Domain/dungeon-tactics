@@ -6,7 +6,9 @@ describe('chest and equipment', () => {
   it('the save only accepts whole gold and known items in the right slot', () => {
     expect(parseChest({ gold: 120, items: ['iron_blade', 'nada', 3] })).toEqual({ gold: 120, items: ['iron_blade'] });
     expect(parseChest({ gold: -5 })).toEqual({ gold: 0, items: [] });
-    expect(parseEquip({ warrior: { weapon: 'iron_blade', armor: 'iron_blade' }, x: 'lixo' })).toEqual({ warrior: { weapon: 'iron_blade' } });
+    expect(parseEquip({ warrior: { weapon: 'iron_blade', armor: 'iron_blade' }, x: 'lixo' })).toEqual({
+      warrior: { weapon: 'iron_blade' },
+    });
   });
 
   it('comprar tira o ouro, vender devolve metade', () => {

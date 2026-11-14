@@ -32,11 +32,28 @@ const BODIES = 8; // units in the water with a foam collar
 const IDLE_MS = 1300; // standing in the water: a little nudge from time to time (it breathes)
 const WAKE_MS = 110; // walking in the water: wake
 // colors (sRGB; they become linear in the uniform): three depth bands, almost white foam
-const COLOR = { shallow: '#3aa6c4', mid: '#1f6fa3', deep: '#173d72', foam: '#eaf8ff', side: '#2a6ea3', drop: '#e8f8ff' };
+const COLOR = {
+  shallow: '#3aa6c4',
+  mid: '#1f6fa3',
+  deep: '#173d72',
+  foam: '#eaf8ff',
+  side: '#2a6ea3',
+  drop: '#e8f8ff',
+};
 const ALPHA = { shallow: 0.42, mid: 0.72, deep: 0.93 };
 
-const DIRS: [dx: number, dy: number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // north (-z), east (+x), south (+z), west (-x)
-const CORNERS: [dx: number, dy: number][] = [[1, -1], [1, 1], [-1, 1], [-1, -1]]; // NE, SE, SW, NW
+const DIRS: [dx: number, dy: number][] = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+]; // north (-z), east (+x), south (+z), west (-x)
+const CORNERS: [dx: number, dy: number][] = [
+  [1, -1],
+  [1, 1],
+  [-1, 1],
+  [-1, -1],
+]; // NE, SE, SW, NW
 
 // wave height at world (x, z): physics field (texture) + sway; used by the surface and by the top of the waterfall,
 // so both rise together
@@ -147,8 +164,17 @@ const FRAG_NORMAL = /* glsl */ `
 normal = normalize((viewMatrix * vec4(normalize(vec3(-2.5 * slope.x, 1.0, -2.5 * slope.y)), 0.0)).xyz);
 `;
 
-interface Body { pos: THREE.Vector3; wet: boolean; rippled: number; phase: number }
-interface Drop { p: THREE.Vector3; v: THREE.Vector3; floor: number }
+interface Body {
+  pos: THREE.Vector3;
+  wet: boolean;
+  rippled: number;
+  phase: number;
+}
+interface Drop {
+  p: THREE.Vector3;
+  v: THREE.Vector3;
+  floor: number;
+}
 
 // Water height field on a fine grid (FIELD x FIELD per tile), pure and without Three: only the water cells run. A neighboring cell
 // of another height (bank, waterfall step) reflects the wave; the current (fx, in cells per step) drags height and
@@ -159,7 +185,12 @@ export class WaveField {
   private readonly tmp: Float32Array;
   private readonly cells: Int32Array;
   awake = false;
-  constructor(readonly nx: number, readonly nz: number, private readonly lvl: Int32Array, private readonly fx: Float32Array) {
+  constructor(
+    readonly nx: number,
+    readonly nz: number,
+    private readonly lvl: Int32Array,
+    private readonly fx: Float32Array,
+  ) {
     this.h = new Float32Array(nx * nz);
     this.v = new Float32Array(nx * nz);
     this.tmp = new Float32Array(nx * nz);
@@ -168,11 +199,12 @@ export class WaveField {
 
   // sinks a disc of radius r (cells) at (cx, cz) (cells) by `depth` m, more in the middle
   poke(cx: number, cz: number, depth: number, r = 2) {
-    for (let z = Math.floor(cz - r); z <= cz + r; z++) for (let x = Math.floor(cx - r); x <= cx + r; x++) {
-      if (x < 0 || z < 0 || x >= this.nx || z >= this.nz || this.lvl[z * this.nx + x] < 0) continue;
-      const d2 = ((x + 0.5 - cx) ** 2 + (z + 0.5 - cz) ** 2) / (r * r);
-      if (d2 < 1) this.h[z * this.nx + x] -= depth * (1 - d2);
-    }
+    for (let z = Math.floor(cz - r); z <= cz + r; z++)
+      for (let x = Math.floor(cx - r); x <= cx + r; x++) {
+        if (x < 0 || z < 0 || x >= this.nx || z >= this.nz || this.lvl[z * this.nx + x] < 0) continue;
+        const d2 = ((x + 0.5 - cx) ** 2 + (z + 0.5 - cz) ** 2) / (r * r);
+        if (d2 < 1) this.h[z * this.nx + x] -= depth * (1 - d2);
+      }
     this.awake = true;
   }
 
@@ -180,7 +212,9 @@ export class WaveField {
     const { h, v, lvl, nx } = this;
     let energy = 0;
     for (const i of this.cells) {
-      const l = lvl[i], x = i % nx, hi = h[i];
+      const l = lvl[i],
+        x = i % nx,
+        hi = h[i];
       let lap = 0;
       if (x > 0 && lvl[i - 1] === l) lap += h[i - 1] - hi;
       if (x < nx - 1 && lvl[i + 1] === l) lap += h[i + 1] - hi;
@@ -190,11 +224,18 @@ export class WaveField {
     }
     // RELAX: the touch only sinks (does not give back the water around) and the closed bank keeps the volume; without this the water stayed
     // lower forever and the field never slept
-    for (const i of this.cells) { h[i] = (h[i] + v[i]) * RELAX; energy = Math.max(energy, Math.abs(h[i]) + Math.abs(v[i])); }
+    for (const i of this.cells) {
+      h[i] = (h[i] + v[i]) * RELAX;
+      energy = Math.max(energy, Math.abs(h[i]) + Math.abs(v[i]));
+    }
     this.advect(h);
     this.advect(v);
     // below 0.2 mm nobody sees it: zero it and sleep until the next touch
-    if (energy < 2e-4) { h.fill(0); v.fill(0); this.awake = false; }
+    if (energy < 2e-4) {
+      h.fill(0);
+      v.fill(0);
+      this.awake = false;
+    }
   }
 
   private advect(a: Float32Array) {
@@ -204,7 +245,8 @@ export class WaveField {
       const f = fx[i];
       if (!f) continue;
       const up = i - Math.sign(f); // cell the water comes from (same row: the river runs along x)
-      if (lvl[up] === lvl[i] && Math.floor(up / this.nx) === Math.floor(i / this.nx)) a[i] = tmp[i] + Math.abs(f) * (tmp[up] - tmp[i]);
+      if (lvl[up] === lvl[i] && Math.floor(up / this.nx) === Math.floor(i / this.nx))
+        a[i] = tmp[i] + Math.abs(f) * (tmp[up] - tmp[i]);
     }
   }
 }
@@ -222,9 +264,19 @@ export class Water {
   private acc = 0;
   private readonly m = new THREE.Matrix4();
 
-  constructor(scene: THREE.Scene, private readonly grid: Grid, private readonly levels: Map<string, WaterLevel>, step: number, river: River | null = null) {
-    const W = grid.width, H = grid.height;
-    const tiles = [...levels.keys()].map((k) => { const [x, y] = k.split(',').map(Number); return { x, y }; });
+  constructor(
+    scene: THREE.Scene,
+    private readonly grid: Grid,
+    private readonly levels: Map<string, WaterLevel>,
+    step: number,
+    river: River | null = null,
+  ) {
+    const W = grid.width,
+      H = grid.height;
+    const tiles = [...levels.keys()].map((k) => {
+      const [x, y] = k.split(',').map(Number);
+      return { x, y };
+    });
     // land = tile without water; a bridge flush with the water (no own level) lets the water through and gets no foam
     const land = (q: Pos) => inBounds(grid, q) && !levels.has(posKey(q)) && tileAt(grid, q).look !== 'bridge';
     // depth of each tile for the color: land 0 (the color lightens toward the bank), shallow 0.3, deep 1; outside the map, the
@@ -234,50 +286,78 @@ export class Water {
       return lv ? (lv.deep ? 1 : 0.3) : 0;
     };
     // current: only on the rows of the river crossing the map, from the spring (river.dir) to the other side
-    const flowOf = (p: Pos, lv: WaterLevel) => (river?.rows.includes(p.y) ? -river.dir * (lv.deep ? FLOW.deep : FLOW.shallow) : 0);
+    const flowOf = (p: Pos, lv: WaterLevel) =>
+      river?.rows.includes(p.y) ? -river.dir * (lv.deep ? FLOW.deep : FLOW.shallow) : 0;
 
     // physics field: level of each cell (surface mm; -1 without water) and current in cells per step
-    const nx = W * FIELD, nz = H * FIELD;
-    const lvl = new Int32Array(nx * nz).fill(-1), fx = new Float32Array(nx * nz);
+    const nx = W * FIELD,
+      nz = H * FIELD;
+    const lvl = new Int32Array(nx * nz).fill(-1),
+      fx = new Float32Array(nx * nz);
     for (const p of tiles) {
       const lv = levels.get(posKey(p))!;
-      for (let b = 0; b < FIELD; b++) for (let a = 0; a < FIELD; a++) {
-        const i = (p.y * FIELD + b) * nx + p.x * FIELD + a;
-        lvl[i] = Math.round(lv.surface * 1000);
-        fx[i] = (flowOf(p, lv) * FIELD) / HZ;
-      }
+      for (let b = 0; b < FIELD; b++)
+        for (let a = 0; a < FIELD; a++) {
+          const i = (p.y * FIELD + b) * nx + p.x * FIELD + a;
+          lvl[i] = Math.round(lv.surface * 1000);
+          fx[i] = (flowOf(p, lv) * FIELD) / HZ;
+        }
     }
     this.field = new WaveField(nx, nz, lvl, fx);
-    this.tex = new THREE.DataTexture(new Uint8Array(nx * nz).fill(128), nx, nz, THREE.RedFormat, THREE.UnsignedByteType);
+    this.tex = new THREE.DataTexture(
+      new Uint8Array(nx * nz).fill(128),
+      nx,
+      nz,
+      THREE.RedFormat,
+      THREE.UnsignedByteType,
+    );
     this.tex.magFilter = this.tex.minFilter = THREE.LinearFilter; // the wave between two cells comes out interpolated, with no steps
     this.tex.needsUpdate = true;
 
     // surface: SUB x SUB squares per tile, upward normal (see the top about pixel art)
-    const pos: number[] = [], nor: number[] = [], loc: number[] = [], edge: number[] = [], corner: number[] = [], dep: number[] = [], flow: number[] = [], idx: number[] = [];
+    const pos: number[] = [],
+      nor: number[] = [],
+      loc: number[] = [],
+      edge: number[] = [],
+      corner: number[] = [],
+      dep: number[] = [],
+      flow: number[] = [],
+      idx: number[] = [];
     const sides: THREE.BufferGeometry[] = [];
     for (const p of tiles) {
       const lv = levels.get(posKey(p))!;
       const e = DIRS.map(([dx, dy]) => +land({ x: p.x + dx, y: p.y + dy }));
       const c = CORNERS.map(([dx, dy]) => +land({ x: p.x + dx, y: p.y + dy }));
-      const f = flowOf(p, lv), base = pos.length / 3;
-      for (let b = 0; b <= SUB; b++) for (let a = 0; a <= SUB; a++) {
-        const u = p.x + a / SUB, v = p.y + b / SUB; // in tiles, 0 = map corner
-        // smooth depth: average of the 4 tiles whose middle surrounds the vertex (bilinear)
-        const fu = u - 0.5, fv = v - 0.5, i0 = Math.floor(fu), j0 = Math.floor(fv), tu = fu - i0, tv = fv - j0;
-        const d = (depthOf(i0, j0) * (1 - tu) + depthOf(i0 + 1, j0) * tu) * (1 - tv) + (depthOf(i0, j0 + 1) * (1 - tu) + depthOf(i0 + 1, j0 + 1) * tu) * tv;
-        pos.push(u - W / 2, lv.surface, v - H / 2);
-        nor.push(0, 1, 0);
-        loc.push(a / SUB, b / SUB);
-        edge.push(...e);
-        corner.push(...c);
-        // the tile's own weight counts: deep next to the bank stays deep in its middle
-        dep.push(Math.max(d, lv.deep ? 0.8 : 0.3) * (lv.deep ? 1 : Math.min(1, d / 0.3)));
-        flow.push(f, 0);
-      }
-      for (let b = 0; b < SUB; b++) for (let a = 0; a < SUB; a++) {
-        const v0 = base + b * (SUB + 1) + a;
-        idx.push(v0, v0 + SUB + 1, v0 + 1, v0 + 1, v0 + SUB + 1, v0 + SUB + 2);
-      }
+      const f = flowOf(p, lv),
+        base = pos.length / 3;
+      for (let b = 0; b <= SUB; b++)
+        for (let a = 0; a <= SUB; a++) {
+          const u = p.x + a / SUB,
+            v = p.y + b / SUB; // in tiles, 0 = map corner
+          // smooth depth: average of the 4 tiles whose middle surrounds the vertex (bilinear)
+          const fu = u - 0.5,
+            fv = v - 0.5,
+            i0 = Math.floor(fu),
+            j0 = Math.floor(fv),
+            tu = fu - i0,
+            tv = fv - j0;
+          const d =
+            (depthOf(i0, j0) * (1 - tu) + depthOf(i0 + 1, j0) * tu) * (1 - tv) +
+            (depthOf(i0, j0 + 1) * (1 - tu) + depthOf(i0 + 1, j0 + 1) * tu) * tv;
+          pos.push(u - W / 2, lv.surface, v - H / 2);
+          nor.push(0, 1, 0);
+          loc.push(a / SUB, b / SUB);
+          edge.push(...e);
+          corner.push(...c);
+          // the tile's own weight counts: deep next to the bank stays deep in its middle
+          dep.push(Math.max(d, lv.deep ? 0.8 : 0.3) * (lv.deep ? 1 : Math.min(1, d / 0.3)));
+          flow.push(f, 0);
+        }
+      for (let b = 0; b < SUB; b++)
+        for (let a = 0; a < SUB; a++) {
+          const v0 = base + b * (SUB + 1) + a;
+          idx.push(v0, v0 + SUB + 1, v0 + 1, v0 + 1, v0 + SUB + 1, v0 + SUB + 2);
+        }
       this.sides(p, lv, step, sides);
     }
     const g = new THREE.BufferGeometry();
@@ -295,7 +375,12 @@ export class Water {
     water.renderOrder = -1;
     water.name = 'agua';
     scene.add(water);
-    this.surface = pickTiles(tiles.map((p) => ({ p, at: new THREE.Vector3(p.x - W / 2 + 0.5, levels.get(posKey(p))!.surface, p.y - H / 2 + 0.5) })));
+    this.surface = pickTiles(
+      tiles.map((p) => ({
+        p,
+        at: new THREE.Vector3(p.x - W / 2 + 0.5, levels.get(posKey(p))!.surface, p.y - H / 2 + 0.5),
+      })),
+    );
     scene.add(this.surface);
     if (sides.length) {
       const wall = new THREE.Mesh(mergeGeometries(sides), this.fallMaterial());
@@ -305,7 +390,11 @@ export class Water {
       scene.add(wall);
     }
     // splash drops: little cubes (pixels, like the bits in fx.ts) in a single InstancedMesh, up to 64 in the air
-    this.drops = new THREE.InstancedMesh(new THREE.BoxGeometry(0.07, 0.07, 0.07), new THREE.MeshLambertMaterial({ color: COLOR.drop, emissive: '#3d7fa6' }), 64);
+    this.drops = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.07, 0.07, 0.07),
+      new THREE.MeshLambertMaterial({ color: COLOR.drop, emissive: '#3d7fa6' }),
+      64,
+    );
     this.drops.count = 0;
     this.drops.frustumCulled = false; // the drops move: the culling sphere computed once would go stale
     scene.add(this.drops);
@@ -316,16 +405,21 @@ export class Water {
   // (x ∝ √drop, like a jet); at the map edge it is the straight cut of the volume (it also goes down through the bed slice, one level, where
   // the scene's smooth side starts). 2 mm outward so it does not fight with the block face
   private sides(p: Pos, lv: WaterLevel, step: number, out: THREE.BufferGeometry[]) {
-    const x = p.x - this.grid.width / 2 + 0.5, z = p.y - this.grid.height / 2 + 0.5;
+    const x = p.x - this.grid.width / 2 + 0.5,
+      z = p.y - this.grid.height / 2 + 0.5;
     for (const [dx, dy] of DIRS) {
       const q = { x: p.x + dx, y: p.y + dy };
-      const inside = inBounds(this.grid, q), ql = this.levels.get(posKey(q));
+      const inside = inBounds(this.grid, q),
+        ql = this.levels.get(posKey(q));
       const front = !inside ? -Infinity : ql ? ql.surface : (tileAt(this.grid, q).h + 1) * step;
       const bottom = inside ? Math.max(front, lv.bed) : lv.bed - step;
       const drop = lv.surface - bottom;
       if (drop < 0.01) continue;
       const rows = inside ? 8 : 1;
-      const pos: number[] = [], uv: number[] = [], fall: number[] = [], idx: number[] = [];
+      const pos: number[] = [],
+        uv: number[] = [],
+        fall: number[] = [],
+        idx: number[] = [];
       for (let r = 0; r <= rows; r++) {
         const s = r / rows; // 0 at the top, 1 at the foot
         const out = 0.502 + (inside ? 0.22 * Math.sqrt(s) * Math.min(1, drop / step) : 0);
@@ -335,7 +429,10 @@ export class Water {
           uv.push(t + 0.5, 1 - s);
           fall.push(+inside);
         }
-        if (r < rows) { const v = r * 2; idx.push(v, v + 2, v + 1, v + 1, v + 2, v + 3); }
+        if (r < rows) {
+          const v = r * 2;
+          idx.push(v, v + 2, v + 1, v + 1, v + 2, v + 3);
+        }
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -348,22 +445,37 @@ export class Water {
   }
 
   private uniforms() {
-    return { uTime: this.time, uField: { value: this.tex }, uMap: { value: new THREE.Vector2(this.grid.width, this.grid.height) } };
+    return {
+      uTime: this.time,
+      uField: { value: this.tex },
+      uMap: { value: new THREE.Vector2(this.grid.width, this.grid.height) },
+    };
   }
 
   // Phong (lit): the per-phase light (setDaylight) and the units' shadow work on the water with no extra code
   private material() {
     // weak, narrow sun shine: white (the first value) made the whole river white with the camera facing the sun
-    const mat = new THREE.MeshPhongMaterial({ transparent: true, depthWrite: false, specular: '#2a3a44', shininess: 90 });
+    const mat = new THREE.MeshPhongMaterial({
+      transparent: true,
+      depthWrite: false,
+      specular: '#2a3a44',
+      shininess: 90,
+    });
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, this.uniforms(), {
         uBodies: { value: this.bodies },
-        uShallow: { value: new THREE.Color(COLOR.shallow) }, uMid: { value: new THREE.Color(COLOR.mid) }, uDeepColor: { value: new THREE.Color(COLOR.deep) }, uFoam: { value: new THREE.Color(COLOR.foam) },
+        uShallow: { value: new THREE.Color(COLOR.shallow) },
+        uMid: { value: new THREE.Color(COLOR.mid) },
+        uDeepColor: { value: new THREE.Color(COLOR.deep) },
+        uFoam: { value: new THREE.Color(COLOR.foam) },
       });
-      shader.vertexShader = VERT_HEAD + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${VERT_BODY}`);
-      shader.fragmentShader = FRAG_HEAD + shader.fragmentShader
-        .replace('#include <color_fragment>', `#include <color_fragment>\n${FRAG_COLOR}`)
-        .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>\n${FRAG_NORMAL}`);
+      shader.vertexShader =
+        VERT_HEAD + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${VERT_BODY}`);
+      shader.fragmentShader =
+        FRAG_HEAD +
+        shader.fragmentShader
+          .replace('#include <color_fragment>', `#include <color_fragment>\n${FRAG_COLOR}`)
+          .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>\n${FRAG_NORMAL}`);
     };
     mat.customProgramCacheKey = () => 'agua-volume';
     return mat;
@@ -372,15 +484,29 @@ export class Water {
   // waterfall: threads of foam that run down and foam at the foot, where it hits; the map-edge cut darkens toward the bottom. The top
   // rises and falls with the surface (same field), otherwise a gap opened when the wave reached the edge
   private fallMaterial() {
-    const mat = new THREE.MeshLambertMaterial({ color: COLOR.side, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    const mat = new THREE.MeshLambertMaterial({
+      color: COLOR.side,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
     mat.defines = { USE_UV: '' };
     mat.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, this.uniforms());
-      sh.vertexShader = `${WAVE_GLSL}\nattribute float aFall;\nvarying float vFall;\n` + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      sh.vertexShader =
+        `${WAVE_GLSL}\nattribute float aFall;\nvarying float vFall;\n` +
+        sh.vertexShader.replace(
+          '#include <begin_vertex>',
+          `#include <begin_vertex>
         vFall = aFall;
         vec2 wxz = (modelMatrix * vec4(transformed, 1.0)).xz;
-        transformed.y += step(0.999, uv.y) * (fieldH(wxz) + swellH(wxz));`);
-      sh.fragmentShader = 'uniform float uTime;\nvarying float vFall;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+        transformed.y += step(0.999, uv.y) * (fieldH(wxz) + swellH(wxz));`,
+        );
+      sh.fragmentShader =
+        'uniform float uTime;\nvarying float vFall;\n' +
+        sh.fragmentShader.replace(
+          '#include <map_fragment>',
+          `#include <map_fragment>
         // vertical threads: each with its own phase and strength (drawn by column)
         float col = floor(vUv.x * 14.0), rnd = fract(sin(col * 12.9898) * 43758.5453);
         float streak = fract(vUv.y * 2.0 + uTime * (1.2 + 0.8 * rnd) + rnd);
@@ -389,7 +515,8 @@ export class Water {
         vec3 cut = mix(vec3(0.09, 0.24, 0.45), diffuseColor.rgb, step(0.5, vUv.y)) * (1.0 + 0.6 * step(0.92, vUv.y));
         float foam = clamp(fallFoam, 0.0, 1.0) * vFall;
         diffuseColor.rgb = mix(mix(cut, diffuseColor.rgb * 1.15, vFall), vec3(0.92, 0.97, 1.0), foam);
-        diffuseColor.a = max(mix(0.85, 0.7, vFall), foam);`);
+        diffuseColor.a = max(mix(0.85, 0.7, vFall), foam);`,
+        );
     };
     mat.customProgramCacheKey = () => 'agua-cachoeira';
     return mat;
@@ -397,8 +524,13 @@ export class Water {
 
   private spray(at: THREE.Vector3, floor: number, n: number, power: number) {
     for (let i = 0; i < n && this.live.length < this.drops.instanceMatrix.count; i++) {
-      const a = Math.random() * Math.PI * 2, out = (0.4 + Math.random() * 0.8) * power;
-      this.live.push({ p: at.clone().setY(floor), v: new THREE.Vector3(Math.cos(a) * out, (1.4 + Math.random() * 1.4) * power, Math.sin(a) * out), floor });
+      const a = Math.random() * Math.PI * 2,
+        out = (0.4 + Math.random() * 0.8) * power;
+      this.live.push({
+        p: at.clone().setY(floor),
+        v: new THREE.Vector3(Math.cos(a) * out, (1.4 + Math.random() * 1.4) * power, Math.sin(a) * out),
+        floor,
+      });
     }
   }
 
@@ -427,7 +559,12 @@ export class Water {
       const b = this.seen.get(holder);
       if (!b) {
         // idle ones out of phase: two units in the water do not breathe together
-        this.seen.set(holder, { pos: pos.clone(), wet, rippled: t - Math.random() * IDLE_MS, phase: Math.random() * 6 });
+        this.seen.set(holder, {
+          pos: pos.clone(),
+          wet,
+          rippled: t - Math.random() * IDLE_MS,
+          phase: Math.random() * 6,
+        });
         continue;
       }
       // ground speed (m/s of the battle clock): jump down a step ~2.2, walk ~1.7, push ~3.8. The vertical does not
@@ -441,7 +578,8 @@ export class Water {
         this.poke(pos.x, pos.z, 0.07 + 0.07 * k, 0.3 + 0.1 * k);
         this.spray(pos, lv!.surface, 6 + Math.round(14 * k), 0.7 + 0.6 * k);
         b.rippled = t;
-      } else if (!wet && b.wet && !snap) this.poke(b.pos.x, b.pos.z, -0.04); // left: the water returns to the hole
+      } else if (!wet && b.wet && !snap)
+        this.poke(b.pos.x, b.pos.z, -0.04); // left: the water returns to the hole
       else if (wet && t - b.rippled >= (walking ? WAKE_MS : IDLE_MS)) {
         this.poke(pos.x, pos.z, walking ? 0.03 : 0.012, walking ? 0.25 : 0.22);
         b.rippled = t;
@@ -456,11 +594,15 @@ export class Water {
   }
 
   private simulate(dt: number) {
-    if (!this.field.awake) { this.acc = 0; return; }
+    if (!this.field.awake) {
+      this.acc = 0;
+      return;
+    }
     // at most 6 steps per frame: a stalled frame does not become an avalanche of steps
     this.acc = Math.min(this.acc + dt * HZ, 6);
     for (; this.acc >= 1; this.acc--) this.field.step();
-    const data = this.tex.image.data as Uint8Array, h = this.field.h;
+    const data = this.tex.image.data as Uint8Array,
+      h = this.field.h;
     for (let i = 0; i < h.length; i++) data[i] = Math.max(0, Math.min(255, Math.round(128 + (h[i] / AMP) * 127)));
     this.tex.needsUpdate = true;
   }

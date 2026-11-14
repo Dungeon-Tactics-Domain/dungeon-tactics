@@ -14,7 +14,10 @@ import { store } from './store.ts';
 export const TEXT_KEY = 'dt:texto';
 export type TextSpeed = 'normal' | 'fast' | 'instant';
 const CHAR_MS: Record<TextSpeed, number> = { normal: 28, fast: 10, instant: 0 };
-export const textSpeed = (): TextSpeed => { const v = store.get(TEXT_KEY); return v === 'fast' || v === 'instant' ? v : 'normal'; };
+export const textSpeed = (): TextSpeed => {
+  const v = store.get(TEXT_KEY);
+  return v === 'fast' || v === 'instant' ? v : 'normal';
+};
 
 export interface TalkOptions {
   title?: string; // strip above the box (stage or place name)
@@ -24,14 +27,27 @@ export interface TalkOptions {
 
 export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Promise<void> {
   return new Promise((done) => {
-    let i = 0, shown = 0, timer = 0;
+    let i = 0,
+      shown = 0,
+      timer = 0;
     const face = el('div', { class: 'talk-face' });
     const name = el('strong', { class: 'talk-name' });
     const text = el('p', { class: 'talk-text', 'aria-live': 'polite' });
-    const box = el('button', { type: 'button', class: 'panel talk' }, face, el('div', { class: 'talk-body' }, name, text), el('span', { class: 'talk-next', 'aria-hidden': 'true' }, '▼'),
+    const box = el(
+      'button',
+      { type: 'button', class: 'panel talk' },
+      face,
+      el('div', { class: 'talk-body' }, name, text),
+      el('span', { class: 'talk-next', 'aria-hidden': 'true' }, '▼'),
       // discreet hint: whoever didn't know Esc skipped the whole conversation went through line by line
-      el('span', { class: 'talk-keys' }, t('Enter segue · Esc pula', 'Enter next · Esc skip'))) as HTMLButtonElement;
-    const overlay = el('div', { class: `overlay talk-overlay${dark ? ' dark' : ''}` }, ...(title ? [el('div', { class: 'panel talk-title' }, title)] : []), box);
+      el('span', { class: 'talk-keys' }, t('Enter segue · Esc pula', 'Enter next · Esc skip')),
+    ) as HTMLButtonElement;
+    const overlay = el(
+      'div',
+      { class: `overlay talk-overlay${dark ? ' dark' : ''}` },
+      ...(title ? [el('div', { class: 'panel talk-title' }, title)] : []),
+      box,
+    );
     const full = () => (LANG === 'pt' ? lines[i].pt : lines[i].en);
     const typing = () => shown < full().length;
     const end = () => {

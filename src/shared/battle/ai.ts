@@ -120,7 +120,14 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
   return best;
 }
 
-function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos, attacking: boolean, walk: Map<string, number>): number {
+function positionScore(
+  grid: Grid,
+  state: BattleState,
+  actor: UnitState,
+  at: Pos,
+  attacking: boolean,
+  walk: Map<string, number>,
+): number {
   const tile = tileAt(grid, at);
   // spikes: ending the turn there costs their damage (grid.ts)
   // a spike that kills whoever ends the turn on it counts as their own death (Nov 13, review: the Brute with 5 life stopped there)
@@ -159,7 +166,10 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
     for (const id of UNIT_DEFS[actor.def].abilities) {
       for (const target of candidateTargets(grid, moved, me, ABILITIES[id])) {
         const s = attackScore(grid, moved, me, id, target);
-        if (s > attackBest) { attackBest = s; attack = { id, target }; }
+        if (s > attackBest) {
+          attackBest = s;
+          attack = { id, target };
+        }
       }
     }
     const score = attackBest + positionScore(grid, moved, me, spot, !!attack, walk);
@@ -186,10 +196,14 @@ function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Ma
     }
     return s;
   };
-  let best: Pos | null = null, bestScore = value(me.pos);
+  let best: Pos | null = null,
+    bestScore = value(me.pos);
   for (const step of reach.values()) {
     const v = value(step.pos);
-    if (v > bestScore + 0.5) { bestScore = v; best = step.pos; } // margin: it does not dance around for almost nothing
+    if (v > bestScore + 0.5) {
+      bestScore = v;
+      best = step.pos;
+    } // margin: it does not dance around for almost nothing
   }
   return best;
 }
@@ -207,10 +221,15 @@ export function playAiTurn(battle: Battle): BattleEvent[] {
   }
   // with direction: ends the turn facing the nearest enemy (our own choice; the FFT AI has no source)
   // whoever retreated may have died to the counter-attack: without an actor, no turning
-  if (!battle.over && battle.state.units.some((u) => u.id === battle.state.turn.actor) && battle.actor.facing !== undefined) {
+  if (
+    !battle.over &&
+    battle.state.units.some((u) => u.id === battle.state.turn.actor) &&
+    battle.actor.facing !== undefined
+  ) {
     const me = battle.actor;
     const foes = battle.state.units.filter((u) => u.team !== me.team);
-    if (foes.length) battle.face(facingTo(me.pos, foes.reduce((a, b) => (dist(me.pos, b.pos) < dist(me.pos, a.pos) ? b : a)).pos));
+    if (foes.length)
+      battle.face(facingTo(me.pos, foes.reduce((a, b) => (dist(me.pos, b.pos) < dist(me.pos, a.pos) ? b : a)).pos));
   }
   events.push(...battle.endTurn());
   return events;

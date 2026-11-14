@@ -4,7 +4,8 @@ import { cancel, freshUi, hoverTile, selectMode } from '../src/client/interactio
 import { Battle } from '../src/shared/battle/battle.ts';
 import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
 
-const key = (k: string, extra: Partial<KeyboardEvent> = {}) => keyAction({ key: k, code: '', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...extra });
+const key = (k: string, extra: Partial<KeyboardEvent> = {}) =>
+  keyAction({ key: k, code: '', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...extra });
 
 describe('game keys', () => {
   it('WASD and arrows move the cursor in the four screen directions', () => {
@@ -60,18 +61,30 @@ describe('cursor follows the camera', () => {
     // four turns return to the start
     expect(gridStep('up', START + 2 * Math.PI)).toEqual(gridStep('up', START));
     // straight camera (8 angles, Nov 13): each arrow moves straight on screen; at 0° "up" is -y
-    expect([gridStep('up', 0), gridStep('right', 0), gridStep('down', 0), gridStep('left', 0)]).toEqual([{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }]);
+    expect([gridStep('up', 0), gridStep('right', 0), gridStep('down', 0), gridStep('left', 0)]).toEqual([
+      { x: 0, y: -1 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: -1, y: 0 },
+    ]);
     expect(gridStep('up', Math.PI / 2)).toEqual({ x: -1, y: 0 });
   });
 });
 
 describe('cursor in battle', () => {
   const at = (x: number, y = 0) => ({ x, y });
-  const scene = () => new Battle(flat(8, 3), stateOf([
-    { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
-    { id: 'b', def: 'beacon', team: 'hero', x: 0, y: 0 },
-    { id: 'f', def: 'soldier', team: 'enemy', x: 4, y: 1 },
-  ], HIT_SEED));
+  const scene = () =>
+    new Battle(
+      flat(8, 3),
+      stateOf(
+        [
+          { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
+          { id: 'b', def: 'beacon', team: 'hero', x: 0, y: 0 },
+          { id: 'f', def: 'soldier', team: 'enemy', x: 4, y: 1 },
+        ],
+        HIT_SEED,
+      ),
+    );
 
   it('hovering the cursor over a tile marks the preview, with no invalid-tile warning', () => {
     const b = scene();

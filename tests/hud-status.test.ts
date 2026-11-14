@@ -10,7 +10,14 @@ describe('status window', () => {
   it('game unit: side, health, CT, speed, movement, jump and abilities', () => {
     const s = initialState(SCENARIOS.skirmish, 1);
     const rows = Object.fromEntries(unitStatus(s, 'h-warrior'));
-    expect(rows).toMatchObject({ Lado: 'herói', Vida: '42/42', CT: '0/100', Velocidade: '8', Movimento: '4', Salto: '1' });
+    expect(rows).toMatchObject({
+      Lado: 'herói',
+      Vida: '42/42',
+      CT: '0/100',
+      Velocidade: '8',
+      Movimento: '4',
+      Salto: '1',
+    });
     expect(rows.Habilidades).toBe('Golpe, Golpe pesado, Escudada, Giro');
     expect(rows.Brave).toBeUndefined();
   });
@@ -21,7 +28,14 @@ describe('status window', () => {
     ramza.vars!.pa = 1;
     s.charges = [{ unit: 'ramza', ability: 'fft_ramza_dash', target: { x: 7, y: 2 }, follow: null, ticks: 3 }];
     const rows = Object.fromEntries(unitStatus(s, 'ramza'));
-    expect(rows).toMatchObject({ Brave: '60', Fé: '60', Arma: 'broad sword', 'Força (PA)': '5 (+1)', Salto: '3', 'Olhando para': 'sul' });
+    expect(rows).toMatchObject({
+      Brave: '60',
+      Fé: '60',
+      Arma: 'broad sword',
+      'Força (PA)': '5 (+1)',
+      Salto: '3',
+      'Olhando para': 'sul',
+    });
     expect(rows.Carregando).toBe('Investida, sai em 3 tiques');
   });
 
@@ -39,7 +53,9 @@ describe('tile info', () => {
   });
 
   it('deep and shallow water (same drawing) are told apart by the text', () => {
-    expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 3 })).toBe('Casa 0,3 · altura 0 · água · funda: não se age nela');
+    expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 3 })).toBe(
+      'Casa 0,3 · altura 0 · água · funda: não se age nela',
+    );
     expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe('Casa 0,7 · altura 0 · água · rasa');
   });
 });

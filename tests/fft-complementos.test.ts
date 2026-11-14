@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { faithMagic, hitPercent, magicHitPercent, sideOf, statBreakBase, wish } from '../src/shared/battle/fft/formulas.ts';
+import {
+  faithMagic,
+  hitPercent,
+  magicHitPercent,
+  sideOf,
+  statBreakBase,
+  wish,
+} from '../src/shared/battle/fft/formulas.ts';
 import { CLASSES_BATTLE, GARILAND, POTION_STOCK, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { FIRST_BATTLE, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
@@ -14,7 +21,7 @@ import { seedWhere } from './battle-helpers.ts';
 registerFftStudy();
 
 describe('FFT: where the attack comes from (BMG 1.4, diagram)', () => {
-  it('reproduces the guide\'s 5x5 diagram, with the target in the center facing down', () => {
+  it("reproduces the guide's 5x5 diagram, with the target in the center facing down", () => {
     // rows top to bottom, as in the guide; X = the target
     const diagram = ['SBBBS', 'SSBSS', 'SSXSS', 'SFFFS', 'FFFFF'];
     const name = { S: 'side', B: 'back', F: 'front' } as const;
@@ -108,8 +115,26 @@ describe('FFT Gariland: facing', () => {
     const id = b.actor.id;
     playAiTurn(b);
     const me = at(b, id);
-    const foe = b.state.units.filter((u) => u.team !== me.team).reduce((a, c) => (Math.abs(c.pos.x - me.pos.x) + Math.abs(c.pos.y - me.pos.y) < Math.abs(a.pos.x - me.pos.x) + Math.abs(a.pos.y - me.pos.y) ? c : a));
-    expect(sideOf(me.pos, [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }][me.facing!], foe.pos)).toBe('front');
+    const foe = b.state.units
+      .filter((u) => u.team !== me.team)
+      .reduce((a, c) =>
+        Math.abs(c.pos.x - me.pos.x) + Math.abs(c.pos.y - me.pos.y) <
+        Math.abs(a.pos.x - me.pos.x) + Math.abs(a.pos.y - me.pos.y)
+          ? c
+          : a,
+      );
+    expect(
+      sideOf(
+        me.pos,
+        [
+          { x: 0, y: 1 },
+          { x: 1, y: 0 },
+          { x: 0, y: -1 },
+          { x: -1, y: 0 },
+        ][me.facing!],
+        foe.pos,
+      ),
+    ).toBe('front');
   });
 
   it('saving and loading keeps facing and counters; invalid facing is refused, a missing one (old save) is filled in', () => {
@@ -136,11 +161,20 @@ describe('FFT Gariland: missing abilities (BMG 3.3)', () => {
   };
 
   it('lists: Squire with Accumulate; Ramza also with Wish and Yell', () => {
-    expect(UNIT_DEFS.fft_squire.abilities).toEqual(['fft_squire_attack', 'fft_squire_stone', 'fft_squire_dash', 'fft_squire_accumulate']);
-    expect(UNIT_DEFS.fft_ramza.abilities.slice(3)).toEqual(['fft_ramza_accumulate', 'fft_ramza_wish', 'fft_ramza_yell']);
+    expect(UNIT_DEFS.fft_squire.abilities).toEqual([
+      'fft_squire_attack',
+      'fft_squire_stone',
+      'fft_squire_dash',
+      'fft_squire_accumulate',
+    ]);
+    expect(UNIT_DEFS.fft_ramza.abilities.slice(3)).toEqual([
+      'fft_ramza_accumulate',
+      'fft_ramza_wish',
+      'fft_ramza_yell',
+    ]);
   });
 
-  it('Accumulate gives PA +1 to the user: Ramza\'s sword goes from 20 to 24 in the preview and the strike', () => {
+  it("Accumulate gives PA +1 to the user: Ramza's sword goes from 20 to 24 in the preview and the strike", () => {
     const b = start();
     expect(b.preview('fft_ramza_attack', { x: 3, y: 5 }).targets[0]).toMatchObject({ dmgMin: 20, dmgMax: 20 });
     expect(b.act('fft_ramza_accumulate', { x: 2, y: 5 }).map((e) => e.k)).toEqual(['attack']);
@@ -199,13 +233,26 @@ describe('FFT basic classes (BMG 7.4): level 1 sheets', () => {
     expect([hp('fft_knight'), hp('fft_archer'), hp('fft_priest'), hp('fft_wizard')]).toEqual([57, 43, 37, 36]);
   });
 
-  it('attack: Knight\'s sword PA 6 * 4, bow [(5 + 6) / 2] * 4, staff MA 4 * 3, rod PA 3 * 3', () => {
-    expect([dmg('fft_knight_attack'), dmg('fft_archer_attack'), dmg('fft_priest_attack'), dmg('fft_wizard_attack')]).toEqual([[24, 24], [20, 20], [12, 12], [9, 9]]);
+  it("attack: Knight's sword PA 6 * 4, bow [(5 + 6) / 2] * 4, staff MA 4 * 3, rod PA 3 * 3", () => {
+    expect([
+      dmg('fft_knight_attack'),
+      dmg('fft_archer_attack'),
+      dmg('fft_priest_attack'),
+      dmg('fft_wizard_attack'),
+    ]).toEqual([
+      [24, 24],
+      [20, 20],
+      [12, 12],
+      [9, 9],
+    ]);
     expect(ABILITIES.fft_archer_attack.range).toEqual([3, 5]);
   });
 
   it('Charge +1 and +2 add K to PA and Speed in the bow formula (BMG 2.2)', () => {
-    expect([dmg('fft_archer_charge1'), dmg('fft_archer_charge2')]).toEqual([[24, 24], [28, 28]]); // [(6+7)/2]*4 e [(7+8)/2]*4
+    expect([dmg('fft_archer_charge1'), dmg('fft_archer_charge2')]).toEqual([
+      [24, 24],
+      [28, 28],
+    ]); // [(6+7)/2]*4 e [(7+8)/2]*4
   });
 
   it('Fire deals 30 in an area and Heal restores 20, each for 6 MP; 17 MP gives 2 uses', () => {
@@ -224,7 +271,7 @@ describe('FFT basic classes: rules in the engine', () => {
     return b;
   };
 
-  it('Knight\'s shield (10%) applies from front and side, not from behind: 81%, 90% and 100%', () => {
+  it("Knight's shield (10%) applies from front and side, not from behind: 81%, 90% and 100%", () => {
     const b = start();
     expect(chance(b, 'fft_knight_attack', 3, 5)).toBe(81); // [100 * 90 * 90 / 10000]
     at(b, 'e-knight').facing = 0;
@@ -242,7 +289,7 @@ describe('FFT basic classes: rules in the engine', () => {
     expect(at(b, 'e-knight').vars!.sp).toBe(-2);
   });
 
-  it('Power break removes 3 PA: the target\'s sword drops from 24 to 12', () => {
+  it("Power break removes 3 PA: the target's sword drops from 24 to 12", () => {
     const b = start();
     at(b, 'e-knight').vars!.pa = -3;
     b.state.turn.actor = 'e-knight';
@@ -258,7 +305,7 @@ describe('FFT basic classes: rules in the engine', () => {
     expect(b.preview('fft_wizard_fire', { x: 3, y: 5 }).reason).toBe('spent');
   });
 
-  it('AI doesn\'t cast area Heal on a wounded enemy (Nov 12: it healed enemies 4,701 times in 1,000 battles)', () => {
+  it("AI doesn't cast area Heal on a wounded enemy (Nov 12: it healed enemies 4,701 times in 1,000 battles)", () => {
     const b = Battle.start(CLASSES_BATTLE, 1);
     b.state.turn.actor = 'priest';
     b.state.units = b.state.units.filter((u) => ['priest', 'e-knight'].includes(u.id));

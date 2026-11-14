@@ -8,17 +8,29 @@ import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Big unit (night of Nov 12): the Colossus occupies 2x2 from the top-left tile, neither moves nor is pushed
 const grid = flat(8, 8);
-const scene = () => new Battle(grid, stateOf([
-  { id: 'a', def: 'warrior', team: 'hero', x: 3, y: 5 },
-  { id: 'big', def: 'colossus', team: 'enemy', x: 3, y: 3 },
-  { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 7 },
-], HIT_SEED));
+const scene = () =>
+  new Battle(
+    grid,
+    stateOf(
+      [
+        { id: 'a', def: 'warrior', team: 'hero', x: 3, y: 5 },
+        { id: 'big', def: 'colossus', team: 'enemy', x: 3, y: 3 },
+        { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 7 },
+      ],
+      HIT_SEED,
+    ),
+  );
 
 describe('big unit (2x2)', () => {
   it('the 4 tiles are its own: whoever is there is the Colossus, and nobody walks through them', () => {
     const b = scene();
     const big = b.state.units[1];
-    expect(footprint(big)).toEqual([{ x: 3, y: 3 }, { x: 4, y: 3 }, { x: 3, y: 4 }, { x: 4, y: 4 }]);
+    expect(footprint(big)).toEqual([
+      { x: 3, y: 3 },
+      { x: 4, y: 3 },
+      { x: 3, y: 4 },
+      { x: 4, y: 4 },
+    ]);
     for (const p of footprint(big)) expect(unitAt(b.state, p)?.id).toBe('big');
     const reach = [...reachable(grid, b.state, 'a').values()].map((s) => `${s.pos.x},${s.pos.y}`);
     expect(reach).not.toContain('3,4');
@@ -33,11 +45,17 @@ describe('big unit (2x2)', () => {
 
   it('a charged spell at max range of one of its tiles lands on the Colossus (it used to measure to the corner tile and fail)', () => {
     const g = flat(10, 10);
-    const b = new Battle(g, stateOf([
-      { id: 'm', def: 'mage', team: 'hero', x: 4, y: 9 },
-      { id: 'big', def: 'colossus', team: 'enemy', x: 3, y: 3 },
-      { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 9 },
-    ], HIT_SEED));
+    const b = new Battle(
+      g,
+      stateOf(
+        [
+          { id: 'm', def: 'mage', team: 'hero', x: 4, y: 9 },
+          { id: 'big', def: 'colossus', team: 'enemy', x: 3, y: 3 },
+          { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 9 },
+        ],
+        HIT_SEED,
+      ),
+    );
     expect(b.act('blast', { x: 4, y: 4 }).map((e) => e.k)).toEqual(['charge']);
     const out: string[] = [];
     for (let i = 0; i < 12 && b.state.charges.length; i++) out.push(...b.endTurn().map((e) => e.k));
@@ -48,7 +66,11 @@ describe('big unit (2x2)', () => {
   it('a push does not move the big unit', () => {
     const b = scene();
     const big = b.state.units[1];
-    expect(simulatePush(grid, b.state, big, { x: 3, y: 4 }, { x: 3, y: 5 }, 2)).toMatchObject({ to: big.pos, dmg: 0, events: [] });
+    expect(simulatePush(grid, b.state, big, { x: 3, y: 4 }, { x: 3, y: 5 }, 2)).toMatchObject({
+      to: big.pos,
+      dmg: 0,
+      events: [],
+    });
   });
 
   it('in stage 7 the boss is the Colossus, with the 4 tiles free on the summit', () => {

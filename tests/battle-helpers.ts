@@ -4,8 +4,10 @@ import type { BattleState, Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 // flat WxH ground grid, or built from ASCII lines (terrain and height)
-export const flat = (w: number, h: number): Grid => parseGrid(Array(h).fill('.'.repeat(w)), Array(h).fill('0'.repeat(w)));
-export const gridOf = (terrain: string[], heights?: string[]): Grid => parseGrid(terrain, heights ?? terrain.map((r) => '0'.repeat(r.length)));
+export const flat = (w: number, h: number): Grid =>
+  parseGrid(Array(h).fill('.'.repeat(w)), Array(h).fill('0'.repeat(w)));
+export const gridOf = (terrain: string[], heights?: string[]): Grid =>
+  parseGrid(terrain, heights ?? terrain.map((r) => '0'.repeat(r.length)));
 
 interface Spec {
   id: string;
@@ -20,7 +22,14 @@ interface Spec {
 export function stateOf(units: Spec[], rng = 1): BattleState {
   return {
     scenario: 'test',
-    units: units.map((u) => ({ id: u.id, def: u.def, team: u.team, pos: { x: u.x, y: u.y }, hp: u.hp ?? UNIT_DEFS[u.def].hp, ct: 0 })),
+    units: units.map((u) => ({
+      id: u.id,
+      def: u.def,
+      team: u.team,
+      pos: { x: u.x, y: u.y },
+      hp: u.hp ?? UNIT_DEFS[u.def].hp,
+      ct: 0,
+    })),
     rng,
     turn: { actor: units[0].id, moved: false, usedAbility: null },
     charges: [],

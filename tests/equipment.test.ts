@@ -8,8 +8,22 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 // Equipment (Nov 13): general stats added to the battle sheet
 describe('equipamento', () => {
   it('sums the items in each slot and ignores unknown items or items in the wrong slot', () => {
-    expect(bonusOf({ weapon: 'iron_blade', armor: 'chain_mail', accessory: 'swift_boots' })).toEqual({ hp: 12, power: 2, hit: 0, move: 1, jump: 0, speed: -1 });
-    expect(bonusOf({ weapon: 'chain_mail', armor: 'nada' })).toEqual({ hp: 0, power: 0, hit: 0, move: 0, jump: 0, speed: 0 });
+    expect(bonusOf({ weapon: 'iron_blade', armor: 'chain_mail', accessory: 'swift_boots' })).toEqual({
+      hp: 12,
+      power: 2,
+      hit: 0,
+      move: 1,
+      jump: 0,
+      speed: -1,
+    });
+    expect(bonusOf({ weapon: 'chain_mail', armor: 'nada' })).toEqual({
+      hp: 0,
+      power: 0,
+      hit: 0,
+      move: 0,
+      jump: 0,
+      speed: 0,
+    });
     expect(Object.values(ITEMS).every((i) => i.price > 0)).toBe(true);
   });
 

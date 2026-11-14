@@ -4,7 +4,15 @@ import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
 import { dist, posKey, samePos } from '../shared/battle/grid.ts';
-import { footprint, inAbilityRange, lineOfSight, nearestTile, pathTo, reachable, unitAt } from '../shared/battle/pathing.ts';
+import {
+  footprint,
+  inAbilityRange,
+  lineOfSight,
+  nearestTile,
+  pathTo,
+  reachable,
+  unitAt,
+} from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
@@ -29,10 +37,14 @@ const selfCentered = (id: string) => ABILITIES[id].range[1] === 0;
 function hasTarget(b: Battle, id: string): boolean {
   const heal = ABILITIES[id].heal[1] > 0;
   // any tile of the unit (the large one occupies 4; only one of them may be in range)
-  return b.state.units.some((u) => footprint(u).some((p) => b.preview(id, p).targets.some((tg) => {
-    const hit = b.state.units.find((x) => x.id === tg.unit)!;
-    return heal === (hit.team === b.actor.team);
-  })));
+  return b.state.units.some((u) =>
+    footprint(u).some((p) =>
+      b.preview(id, p).targets.some((tg) => {
+        const hit = b.state.units.find((x) => x.id === tg.unit)!;
+        return heal === (hit.team === b.actor.team);
+      }),
+    ),
+  );
 }
 
 // not moved yet: Move; already moved: the first ability that has a target from here (no target, none: picking Stab
@@ -45,10 +57,16 @@ export function defaultMode(b: Battle): Mode {
 }
 
 const allowed = (b: Battle, m: Mode) =>
-  m.k === 'idle' || (m.k === 'move' ? b.reach().size > 0 : !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.includes(m.id));
+  m.k === 'idle' ||
+  (m.k === 'move' ? b.reach().size > 0 : !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.includes(m.id));
 
 // ability centered on the user is born with the target already marked: there's no tile to choose
-const withMode = (b: Battle, mode: Mode): Ui => ({ mode, pending: mode.k === 'ability' && selfCentered(mode.id) ? b.actor.pos : null, inspect: null, invalid: false });
+const withMode = (b: Battle, mode: Mode): Ui => ({
+  mode,
+  pending: mode.k === 'ability' && selfCentered(mode.id) ? b.actor.pos : null,
+  inspect: null,
+  invalid: false,
+});
 
 export const freshUi = (b: Battle): Ui => withMode(b, defaultMode(b));
 export const selectMode = (b: Battle, ui: Ui, mode: Mode): Ui => (allowed(b, mode) ? withMode(b, mode) : ui);
@@ -57,7 +75,8 @@ export function tapTile(b: Battle, ui: Ui, pos: Pos): Ui {
   const other = unitAt(b.state, pos);
   const mode = ui.mode;
   if (mode.k === 'move' && b.reach().has(posKey(pos))) return { ...ui, pending: pos, inspect: null, invalid: false };
-  if (mode.k === 'ability' && !selfCentered(mode.id) && b.preview(mode.id, pos).ok) return { ...ui, pending: pos, inspect: null, invalid: false };
+  if (mode.k === 'ability' && !selfCentered(mode.id) && b.preview(mode.id, pos).ok)
+    return { ...ui, pending: pos, inspect: null, invalid: false };
   if (other && other.id !== b.actor.id) return { ...withMode(b, mode), inspect: other.id };
   // tapping your own hero clears the choice; so does an empty tile that doesn't work, but it warns
   return { ...withMode(b, mode), invalid: !other && mode.k !== 'idle' };
@@ -95,7 +114,9 @@ function threat(b: Battle, unitId: string): Pos[] {
   const def = UNIT_DEFS[u.def];
   if (!def.abilities.length) return [];
   const spots = [u.pos, ...[...reachable(b.grid, b.state, unitId).values()].map((s) => s.pos)];
-  return allTiles(b).filter((t) => def.abilities.some((a) => spots.some((s) => inAbilityRange(b.grid, ABILITIES[a], s, t))));
+  return allTiles(b).filter((t) =>
+    def.abilities.some((a) => spots.some((s) => inAbilityRange(b.grid, ABILITIES[a], s, t))),
+  );
 }
 
 export function highlights(b: Battle, ui: Ui): Highlights {
@@ -103,7 +124,8 @@ export function highlights(b: Battle, ui: Ui): Highlights {
   const mark = (pos: Pos, kind: TileKind) => tiles.set(posKey(pos), { pos, kind });
   let path: Pos[] | null = null;
   let preview: Preview | null = null;
-  if (ui.inspect && b.state.units.some((u) => u.id === ui.inspect)) for (const p of threat(b, ui.inspect)) mark(p, 'threat');
+  if (ui.inspect && b.state.units.some((u) => u.id === ui.inspect))
+    for (const p of threat(b, ui.inspect)) mark(p, 'threat');
   if (ui.mode.k === 'move') {
     const reach = b.reach();
     for (const s of reach.values()) mark(s.pos, 'move');
@@ -119,7 +141,8 @@ export function highlights(b: Battle, ui: Ui): Highlights {
     }
     if (ui.pending) {
       preview = b.preview(a.id, ui.pending);
-      for (const t of allTiles(b)) if (a.radius > 0 && dist(t, preview.center) <= a.radius && !samePos(t, from)) mark(t, 'area');
+      for (const t of allTiles(b))
+        if (a.radius > 0 && dist(t, preview.center) <= a.radius && !samePos(t, from)) mark(t, 'area');
     }
   }
   if (ui.pending) mark(ui.pending, 'target');
@@ -139,7 +162,8 @@ export function chargeDanger(state: BattleState, width: number, height: number):
     const r = ABILITIES[c.ability].radius;
     for (let y = center.y - r; y <= center.y + r; y++)
       for (let x = center.x - r; x <= center.x + r; x++)
-        if (x >= 0 && y >= 0 && x < width && y < height && dist({ x, y }, center) <= r) out.set(posKey({ x, y }), c.ability);
+        if (x >= 0 && y >= 0 && x < width && y < height && dist({ x, y }, center) <= r)
+          out.set(posKey({ x, y }), c.ability);
   }
   return out;
 }

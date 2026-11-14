@@ -10,16 +10,23 @@ import { MeshoptDecoder, MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 
 // clothes tone: the Rogue's green (hue 80–170°) becomes wine red, so the Ranger and the Rogue are not confused from above
-const HUE = 355, GREEN = [80, 170];
+const HUE = 355,
+  GREEN = [80, 170];
 const BOW = 'assets/kaykit/armas-de-fantasia/Assets/gltf/bow_A_withString.gltf';
 const BOW_IDLE = ['assets/kaykit/animacoes/Animations/gltf/Rig_Medium/Rig_Medium_CombatRanged.glb', 'Ranged_Bow_Idle'];
 
 await MeshoptDecoder.ready;
 await MeshoptEncoder.ready;
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
+const io = new NodeIO()
+  .registerExtensions(ALL_EXTENSIONS)
+  .registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
 const doc = await io.read('public/models/rogue.glb');
 const root = doc.getRoot();
-const node = (name) => root.listNodes().find((n) => n.getName() === name) ?? (() => { throw new Error(`sem o nó ${name}: o rogue.glb mudou?`); })();
+const node = (name) =>
+  root.listNodes().find((n) => n.getName() === name) ??
+  (() => {
+    throw new Error(`sem o nó ${name}: o rogue.glb mudou?`);
+  })();
 
 for (const name of ['Knife', 'Knife_Offhand', 'Rogue_Hood']) node(name).dispose();
 
@@ -37,28 +44,51 @@ bow.setRotation([0, -Math.SQRT1_2, 0, Math.SQRT1_2]);
 const idle = root.listAnimations().find((a) => a.getName() === 'Idle');
 for (const c of idle.listChannels()) c.dispose();
 for (const s of idle.listSamplers()) s.dispose();
-const ranged = (await io.read(BOW_IDLE[0])).getRoot().listAnimations().find((a) => a.getName() === BOW_IDLE[1]);
+const ranged = (await io.read(BOW_IDLE[0]))
+  .getRoot()
+  .listAnimations()
+  .find((a) => a.getName() === BOW_IDLE[1]);
 const buf = root.listBuffers()[0];
 const copy = (x) => doc.createAccessor().setType(x.getType()).setArray(x.getArray().slice()).setBuffer(buf);
 for (const c of ranged.listChannels()) {
   const target = root.listNodes().find((n) => n.getName() === c.getTargetNode().getName());
   if (!target) continue;
   const s = c.getSampler();
-  const sampler = doc.createAnimationSampler().setInput(copy(s.getInput())).setOutput(copy(s.getOutput())).setInterpolation(s.getInterpolation());
-  idle.addSampler(sampler).addChannel(doc.createAnimationChannel().setTargetNode(target).setTargetPath(c.getTargetPath()).setSampler(sampler));
+  const sampler = doc
+    .createAnimationSampler()
+    .setInput(copy(s.getInput()))
+    .setOutput(copy(s.getOutput()))
+    .setInterpolation(s.getInterpolation());
+  idle
+    .addSampler(sampler)
+    .addChannel(
+      doc.createAnimationChannel().setTargetNode(target).setTargetPath(c.getTargetPath()).setSampler(sampler),
+    );
 }
 
 // clothes tinted in the palette texture (pixel by pixel, only the greens); the bow has its own texture and does not change
-const tex = root.listMaterials().find((m) => m.getName() === 'rogue_texture').getBaseColorTexture();
-const { data, info } = await sharp(Buffer.from(tex.getImage())).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+const tex = root
+  .listMaterials()
+  .find((m) => m.getName() === 'rogue_texture')
+  .getBaseColorTexture();
+const { data, info } = await sharp(Buffer.from(tex.getImage()))
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
 for (let i = 0; i < data.length; i += 4) {
   const [r, g, b] = [data[i] / 255, data[i + 1] / 255, data[i + 2] / 255];
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b),
+    d = max - min;
   if (d < 0.08) continue; // gray, white and black stay
   const h = (max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
   if (h < GREEN[0] || h > GREEN[1]) continue;
   // same lightness and saturation (HSV), only the hue changes
-  const s = d / max, f = (n) => { const k = (n + HUE / 60) % 6; return max - max * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  const s = d / max,
+    f = (n) => {
+      const k = (n + HUE / 60) % 6;
+      return max - max * s * Math.max(0, Math.min(k, 4 - k, 1));
+    };
   [data[i], data[i + 1], data[i + 2]] = [f(5), f(3), f(1)].map((x) => Math.round(x * 255));
 }
 tex.setImage(new Uint8Array(await sharp(data, { raw: info }).png().toBuffer()));

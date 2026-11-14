@@ -12,15 +12,17 @@ painted.color.setScalar(1.35); // the blotch texture darkens by 25% on average
 painted.userData.procedural = true; // no detail.ts grain and with mipmaps (prepare and Ambience.material respect this)
 
 let loading: Promise<void> | null = null;
-export const loadPaint = () => (loading ??= new THREE.TextureLoader().loadAsync('/tex/paint.jpg').then((t) => {
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  painted.map = t;
-  painted.needsUpdate = true;
-}));
+export const loadPaint = () =>
+  (loading ??= new THREE.TextureLoader().loadAsync('/tex/paint.jpg').then((t) => {
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.colorSpace = THREE.SRGBColorSpace;
+    painted.map = t;
+    painted.needsUpdate = true;
+  }));
 
 // box of the piece above ground (painted ones state theirs; KayKit ones are measured)
-export const boxOf = (o: THREE.Object3D): THREE.Box3 => (o.userData.box as THREE.Box3 | undefined) ?? new THREE.Box3().setFromObject(o);
+export const boxOf = (o: THREE.Object3D): THREE.Box3 =>
+  (o.userData.box as THREE.Box3 | undefined) ?? new THREE.Box3().setFromObject(o);
 
 // variations of a piece: `name`, `name~1`, `name~2`... in the same piece map; `r` (0 to 1) picks one
 export function variant(pieces: Map<string, THREE.Object3D>, name: string, r: number): string {
@@ -39,12 +41,14 @@ export const rng = (seed: number) => {
 };
 // cheap noise from -1 to 1, fixed by the seed
 export const noise3 = (x: number, y: number, z: number, s: number) =>
-  0.65 * Math.sin(x * 2.1 + s) * Math.sin(y * 2.7 + s * 1.3) * Math.sin(z * 2.3 + s * 0.7) + 0.35 * Math.sin(x * 4.7 + s * 2) * Math.sin(y * 5.3 + s) * Math.sin(z * 4.1 + s * 3);
+  0.65 * Math.sin(x * 2.1 + s) * Math.sin(y * 2.7 + s * 1.3) * Math.sin(z * 2.3 + s * 0.7) +
+  0.35 * Math.sin(x * 4.7 + s * 2) * Math.sin(y * 5.3 + s) * Math.sin(z * 4.1 + s * 3);
 
 // color on the tone scale (dark to light), t from 0 to 1; always returns the same object (copy before storing)
 const RAMP = new THREE.Color();
 export function ramp(stops: THREE.Color[], t: number): THREE.Color {
-  const k = THREE.MathUtils.clamp(t, 0, 1) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(k));
+  const k = THREE.MathUtils.clamp(t, 0, 1) * (stops.length - 1),
+    i = Math.min(stops.length - 2, Math.floor(k));
   // step between one tone and the next, with a short transition: tone masses, like paint, instead of a gradient
   return RAMP.copy(stops[i]).lerp(stops[i + 1], THREE.MathUtils.smoothstep(k - i, 0.3, 0.7));
 }
@@ -52,15 +56,28 @@ export function ramp(stops: THREE.Color[], t: number): THREE.Color {
 // UV per face (box projection): the texture does not stretch in any direction; per-face normals (faceted, like the units)
 export function boxUV(g: THREE.BufferGeometry, scale = 0.8, facet = true): THREE.BufferGeometry {
   const src = g.index ? g.toNonIndexed() : g;
-  const p = src.getAttribute('position'), uv = new Float32Array(p.count * 2);
-  const a = V(), b = V(), c = V(), n = V();
+  const p = src.getAttribute('position'),
+    uv = new Float32Array(p.count * 2);
+  const a = V(),
+    b = V(),
+    c = V(),
+    n = V();
   for (let i = 0; i < p.count; i += 3) {
-    a.fromBufferAttribute(p, i); b.fromBufferAttribute(p, i + 1); c.fromBufferAttribute(p, i + 2);
+    a.fromBufferAttribute(p, i);
+    b.fromBufferAttribute(p, i + 1);
+    c.fromBufferAttribute(p, i + 2);
     n.subVectors(b, a).cross(c.sub(a));
-    const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
+    const ax = Math.abs(n.x),
+      ay = Math.abs(n.y),
+      az = Math.abs(n.z);
     for (let k = 0; k < 3; k++) {
-      const x = p.getX(i + k), y = p.getY(i + k), z = p.getZ(i + k);
-      uv.set(ay >= ax && ay >= az ? [x * scale, z * scale] : ax >= az ? [z * scale, y * scale] : [x * scale, y * scale], (i + k) * 2);
+      const x = p.getX(i + k),
+        y = p.getY(i + k),
+        z = p.getZ(i + k);
+      uv.set(
+        ay >= ax && ay >= az ? [x * scale, z * scale] : ax >= az ? [z * scale, y * scale] : [x * scale, y * scale],
+        (i + k) * 2,
+      );
     }
   }
   src.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
@@ -68,7 +85,10 @@ export function boxUV(g: THREE.BufferGeometry, scale = 0.8, facet = true): THREE
   return src;
 }
 
-export interface Ring { p: THREE.Vector3; r: number }
+export interface Ring {
+  p: THREE.Vector3;
+  r: number;
+}
 interface TubeOpts {
   flat?: boolean; // lying rings (upright trunk); without this, each ring faces along the path (branch, root)
   shape?: (a: number, i: number) => number; // radius factor by angle and ring (buttress, branch tip)
@@ -76,25 +96,44 @@ interface TubeOpts {
   v?: number; // texture repeats per meter along the tube
 }
 // tube of rings along a path, with smooth normals; each vertex's color comes from `tint`
-export function tube(rings: Ring[], sides: number, tint: (p: THREE.Vector3, i: number, a: number) => THREE.Color, o: TubeOpts = {}): THREE.BufferGeometry {
-  const pos: number[] = [], col: number[] = [], uv: number[] = [], idx: number[] = [];
-  const q = new THREE.Quaternion(), v = V(), tan = V();
+export function tube(
+  rings: Ring[],
+  sides: number,
+  tint: (p: THREE.Vector3, i: number, a: number) => THREE.Color,
+  o: TubeOpts = {},
+): THREE.BufferGeometry {
+  const pos: number[] = [],
+    col: number[] = [],
+    uv: number[] = [],
+    idx: number[] = [];
+  const q = new THREE.Quaternion(),
+    v = V(),
+    tan = V();
   let len = 0;
   rings.forEach((ring, i) => {
     if (i) len += ring.p.distanceTo(rings[i - 1].p);
-    if (!o.flat) q.setFromUnitVectors(UP, tan.subVectors(rings[Math.min(rings.length - 1, i + 1)].p, rings[Math.max(0, i - 1)].p).normalize());
+    if (!o.flat)
+      q.setFromUnitVectors(
+        UP,
+        tan.subVectors(rings[Math.min(rings.length - 1, i + 1)].p, rings[Math.max(0, i - 1)].p).normalize(),
+      );
     for (let j = 0; j <= sides; j++) {
-      const a = ((j % sides) / sides) * Math.PI * 2, r = ring.r * (o.shape?.(a, i) ?? 1);
-      v.set(Math.cos(a) * r, o.lift?.(a, i) ?? 0, Math.sin(a) * r).applyQuaternion(q).add(ring.p);
+      const a = ((j % sides) / sides) * Math.PI * 2,
+        r = ring.r * (o.shape?.(a, i) ?? 1);
+      v.set(Math.cos(a) * r, o.lift?.(a, i) ?? 0, Math.sin(a) * r)
+        .applyQuaternion(q)
+        .add(ring.p);
       pos.push(v.x, v.y, v.z);
       const c = tint(v, i, a);
       col.push(c.r, c.g, c.b);
       uv.push(j / sides, len * (o.v ?? 1));
     }
-    if (i) for (let j = 0; j < sides; j++) {
-      const a = (i - 1) * (sides + 1) + j, c = a + sides + 1;
-      idx.push(a, c, a + 1, a + 1, c, c + 1);
-    }
+    if (i)
+      for (let j = 0; j < sides; j++) {
+        const a = (i - 1) * (sides + 1) + j,
+          c = a + sides + 1;
+        idx.push(a, c, a + 1, a + 1, c, c + 1);
+      }
   });
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -105,11 +144,29 @@ export function tube(rings: Ring[], sides: number, tint: (p: THREE.Vector3, i: n
   return g.toNonIndexed();
 }
 
-interface LumpOpts { rough?: number; under?: number; detail?: number; uv?: number; facet?: boolean }
+interface LumpOpts {
+  rough?: number;
+  under?: number;
+  detail?: number;
+  uv?: number;
+  facet?: boolean;
+}
 // mass crumpled by noise (crown tuft, rock, sack): few-face ball, flatter below (`under`)
-export function lump(at: THREE.Vector3, rx: number, ry: number, rz: number, seed: number, tint: (p: THREE.Vector3, d: THREE.Vector3) => THREE.Color, o: LumpOpts = {}): THREE.BufferGeometry {
+export function lump(
+  at: THREE.Vector3,
+  rx: number,
+  ry: number,
+  rz: number,
+  seed: number,
+  tint: (p: THREE.Vector3, d: THREE.Vector3) => THREE.Color,
+  o: LumpOpts = {},
+): THREE.BufferGeometry {
   const g = new THREE.IcosahedronGeometry(1, o.detail ?? 1);
-  const p = g.getAttribute('position'), nor = g.getAttribute('normal'), d = V(), v = V(), col = new Float32Array(p.count * 3);
+  const p = g.getAttribute('position'),
+    nor = g.getAttribute('normal'),
+    d = V(),
+    v = V(),
+    col = new Float32Array(p.count * 3);
   for (let i = 0; i < p.count; i++) {
     d.fromBufferAttribute(p, i).normalize();
     const k = 1 + (o.rough ?? 0.28) * noise3(d.x, d.y, d.z, seed);
@@ -117,19 +174,34 @@ export function lump(at: THREE.Vector3, rx: number, ry: number, rz: number, seed
     p.setXYZ(i, v.x, v.y, v.z);
     tint(v, d).toArray(col, i * 3);
     // smooth normal (the stretched ball's): the mass catches light as a single volume and the painted tone rules
-    if (!o.facet) { v.set(d.x / rx, d.y / ry, d.z / rz).normalize(); nor.setXYZ(i, v.x, v.y, v.z); }
+    if (!o.facet) {
+      v.set(d.x / rx, d.y / ry, d.z / rz).normalize();
+      nor.setXYZ(i, v.x, v.y, v.z);
+    }
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   return boxUV(g, o.uv, !!o.facet);
 }
 
 // painted box: one color per face (top, sides, bottom), rotated and put in place
-export function slab(w: number, h: number, d: number, at: THREE.Vector3, top: THREE.Color, side: THREE.Color, turn = 0, tilt = 0): THREE.BufferGeometry {
+export function slab(
+  w: number,
+  h: number,
+  d: number,
+  at: THREE.Vector3,
+  top: THREE.Color,
+  side: THREE.Color,
+  turn = 0,
+  tilt = 0,
+): THREE.BufferGeometry {
   const g = new THREE.BoxGeometry(w, h, d).toNonIndexed();
-  const n = g.getAttribute('normal'), col = new Float32Array(n.count * 3);
+  const n = g.getAttribute('normal'),
+    col = new Float32Array(n.count * 3);
   for (let i = 0; i < n.count; i++) {
     const y = n.getY(i);
-    RAMP.copy(y > 0.5 ? top : side).multiplyScalar(y < -0.5 ? 0.45 : y > 0.5 ? 1 : 0.72 + 0.28 * Math.abs(n.getX(i))).toArray(col, i * 3);
+    RAMP.copy(y > 0.5 ? top : side)
+      .multiplyScalar(y < -0.5 ? 0.45 : y > 0.5 ? 1 : 0.72 + 0.28 * Math.abs(n.getX(i)))
+      .toArray(col, i * 3);
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   g.rotateZ(tilt).rotateY(turn).translate(at.x, at.y, at.z);
@@ -137,7 +209,12 @@ export function slab(w: number, h: number, d: number, at: THREE.Vector3, top: TH
 }
 
 // joins the parts into a single mesh, with the box above ground (width w, height h) for whoever measures and scales
-export function piece(parts: THREE.BufferGeometry[], w: number, h: number, extra: Record<string, unknown> = {}): THREE.Group {
+export function piece(
+  parts: THREE.BufferGeometry[],
+  w: number,
+  h: number,
+  extra: Record<string, unknown> = {},
+): THREE.Group {
   const g = mergeGeometries(parts);
   for (const p of parts) p.dispose();
   const mesh = new THREE.Mesh(g, painted);

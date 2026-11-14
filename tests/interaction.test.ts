@@ -5,12 +5,22 @@ import { HIT_SEED, flat, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
 // current archer with a soldier at shooting range and an ally beside
-const scene = () => new Battle(flat(8, 3), stateOf([
-  { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
-  { id: 'b', def: 'beacon', team: 'hero', x: 0, y: 0 },
-  { id: 'f', def: 'soldier', team: 'enemy', x: 4, y: 1 },
-], HIT_SEED));
-const kinds = (b: Battle, ui: ReturnType<typeof freshUi>, kind: string) => highlights(b, ui).tiles.filter((t) => t.kind === kind).map((t) => t.pos);
+const scene = () =>
+  new Battle(
+    flat(8, 3),
+    stateOf(
+      [
+        { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
+        { id: 'b', def: 'beacon', team: 'hero', x: 0, y: 0 },
+        { id: 'f', def: 'soldier', team: 'enemy', x: 4, y: 1 },
+      ],
+      HIT_SEED,
+    ),
+  );
+const kinds = (b: Battle, ui: ReturnType<typeof freshUi>, kind: string) =>
+  highlights(b, ui)
+    .tiles.filter((t) => t.kind === kind)
+    .map((t) => t.pos);
 
 describe('two-step touch', () => {
   it('starts in Move and shows the reachable tiles', () => {
@@ -46,11 +56,17 @@ describe('two-step touch', () => {
   });
 
   it('after moving with no target in reach, no ability is selected', () => {
-    const b = new Battle(flat(12, 1), stateOf([
-      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
-      { id: 'b', def: 'beacon', team: 'hero', x: 1, y: 0 },
-      { id: 'f', def: 'soldier', team: 'enemy', x: 11, y: 0 },
-    ], HIT_SEED));
+    const b = new Battle(
+      flat(12, 1),
+      stateOf(
+        [
+          { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+          { id: 'b', def: 'beacon', team: 'hero', x: 1, y: 0 },
+          { id: 'f', def: 'soldier', team: 'enemy', x: 11, y: 0 },
+        ],
+        HIT_SEED,
+      ),
+    );
     confirm(b, tapTile(b, freshUi(b), at(2)));
     expect(defaultMode(b)).toEqual({ k: 'idle' });
   });

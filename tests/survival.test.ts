@@ -16,7 +16,9 @@ describe('Until Dawn mode', () => {
     expect(turnsLeft({ ...st, turnsPlayed: SURVIVE_TURNS - 1 })).toBe(1);
     expect(outcome({ ...st, turnsPlayed: SURVIVE_TURNS })).toBe('victory');
     expect(outcome({ ...st, units: st.units.filter((u) => u.team !== 'enemy') })).toBe('victory');
-    expect(outcome({ ...st, turnsPlayed: SURVIVE_TURNS, units: st.units.filter((u) => u.team !== 'hero') })).toBe('defeat');
+    expect(outcome({ ...st, turnsPlayed: SURVIVE_TURNS, units: st.units.filter((u) => u.team !== 'hero') })).toBe(
+      'defeat',
+    );
   });
 
   it('the saved record only accepts valid turns', () => {
@@ -33,23 +35,30 @@ describe('Until Dawn mode', () => {
     expect(simulate(survivalScenario(), 5).turns).toBeGreaterThan(1);
   });
 
-  it.skipIf(!RUNS)('measurement', () => {
-    for (const turns of [SURVIVE_TURNS - 8, SURVIVE_TURNS, SURVIVE_TURNS + 8]) {
-      let won = 0, dawn = 0;
-      for (let seed = 1; seed <= RUNS; seed++) {
-        const r = simulate(survivalScenario(turns), seed);
-        if (r.outcome === 'victory') won++;
-        if (r.outcome === 'victory' && r.turns >= turns) dawn++;
+  it.skipIf(!RUNS)(
+    'measurement',
+    () => {
+      for (const turns of [SURVIVE_TURNS - 8, SURVIVE_TURNS, SURVIVE_TURNS + 8]) {
+        let won = 0,
+          dawn = 0;
+        for (let seed = 1; seed <= RUNS; seed++) {
+          const r = simulate(survivalScenario(turns), seed);
+          if (r.outcome === 'victory') won++;
+          if (r.outcome === 'victory' && r.turns >= turns) dawn++;
+        }
+        console.log(
+          `Até o amanhecer, ${turns} turnos: heróis ${((won / RUNS) * 100).toFixed(1)}% (amanhecer ${((dawn / RUNS) * 100).toFixed(1)}%)`,
+        );
       }
-      console.log(`Até o amanhecer, ${turns} turnos: heróis ${((won / RUNS) * 100).toFixed(1)}% (amanhecer ${((dawn / RUNS) * 100).toFixed(1)}%)`);
-    }
-    // idle heroes (they only pass the turn) against the AI: if this wins more than fighting, the mode rewards standing still
-    let still = 0;
-    for (let seed = 1; seed <= RUNS; seed++) {
-      const b = Battle.start(survivalScenario(), seed);
-      while (!b.over && b.state.turnsPlayed < 400) b.actor.team === 'hero' ? b.endTurn() : playAiTurn(b);
-      if (b.state.outcome === 'victory') still++;
-    }
-    console.log(`Até o amanhecer, heróis parados: ${((still / RUNS) * 100).toFixed(1)}%`);
-  }, 600_000);
+      // idle heroes (they only pass the turn) against the AI: if this wins more than fighting, the mode rewards standing still
+      let still = 0;
+      for (let seed = 1; seed <= RUNS; seed++) {
+        const b = Battle.start(survivalScenario(), seed);
+        while (!b.over && b.state.turnsPlayed < 400) b.actor.team === 'hero' ? b.endTurn() : playAiTurn(b);
+        if (b.state.outcome === 'victory') still++;
+      }
+      console.log(`Até o amanhecer, heróis parados: ${((still / RUNS) * 100).toFixed(1)}%`);
+    },
+    600_000,
+  );
 });

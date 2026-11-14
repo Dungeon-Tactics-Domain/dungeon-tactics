@@ -17,12 +17,20 @@ export const emptyMemory = (): PadMemory => ({ held: {}, last: {} });
 const DEAD = 0.5; // analog: less than this is gamepad noise
 // held d-pad repeats like a key: 1st repeat after 300 ms, then every 120 ms (FFT's cursor
 // moves tile by tile; repeating faster overshot the target)
-const FIRST_REPEAT = 300, REPEAT = 120;
+const FIRST_REPEAT = 300,
+  REPEAT = 120;
 
 const PRESS: Record<number, KeyAction> = {
-  0: { k: 'confirm' }, 1: { k: 'cancel' }, 2: { k: 'status' }, 3: { k: 'info' },
-  4: { k: 'rotate', dir: -1 }, 5: { k: 'rotate', dir: 1 }, 6: { k: 'zoom', factor: 1.15 }, 7: { k: 'zoom', factor: 1 / 1.15 },
-  8: { k: 'undo' }, 9: { k: 'help' },
+  0: { k: 'confirm' },
+  1: { k: 'cancel' },
+  2: { k: 'status' },
+  3: { k: 'info' },
+  4: { k: 'rotate', dir: -1 },
+  5: { k: 'rotate', dir: 1 },
+  6: { k: 'zoom', factor: 1.15 },
+  7: { k: 'zoom', factor: 1 / 1.15 },
+  8: { k: 'undo' },
+  9: { k: 'help' },
 };
 const DPAD: Record<number, ScreenDir> = { 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
 
@@ -32,7 +40,8 @@ export function padActions(pad: PadState, mem: PadMemory, now: number): KeyActio
   const dirs: ScreenDir[] = [];
   for (const [i, dir] of Object.entries(DPAD)) if (pad.buttons[Number(i)]) dirs.push(dir);
   const [x = 0, y = 0] = pad.axes;
-  if (Math.abs(x) > DEAD || Math.abs(y) > DEAD) dirs.push(Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : y > 0 ? 'down' : 'up');
+  if (Math.abs(x) > DEAD || Math.abs(y) > DEAD)
+    dirs.push(Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : y > 0 ? 'down' : 'up');
   const active = new Set<string>();
   for (const [i, action] of Object.entries(PRESS)) {
     const key = `b${i}`;

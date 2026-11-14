@@ -5,7 +5,11 @@ describe('battle rng', () => {
   it('the same seed gives the same sequence', () => {
     const run = (seed: number) => {
       let s = seed;
-      return Array.from({ length: 5 }, () => { const [v, n] = nextRng(s); s = n; return v; });
+      return Array.from({ length: 5 }, () => {
+        const [v, n] = nextRng(s);
+        s = n;
+        return v;
+      });
     };
     expect(run(7)).toEqual(run(7));
     expect(run(7)).not.toEqual(run(8));

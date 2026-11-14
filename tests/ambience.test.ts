@@ -6,7 +6,8 @@ import { chapterScenario } from '../src/client/campaign.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
 // distance to the board edge, as in ambience.ts (map centered on the origin)
-const out = (x: number, z: number, w: number, h: number) => Math.hypot(Math.max(Math.abs(x) - w / 2, 0), Math.max(Math.abs(z) - h / 2, 0));
+const out = (x: number, z: number, w: number, h: number) =>
+  Math.hypot(Math.max(Math.abs(x) - w / 2, 0), Math.max(Math.abs(z) - h / 2, 0));
 
 describe('board surroundings', () => {
   it('weather comes from the map, also in campaign stages (which reuse the base map grid)', () => {
@@ -22,19 +23,24 @@ describe('board surroundings', () => {
       const grid = SCENARIOS[id].grid;
       const mood = MOODS[kindOf(grid)];
       // fake model: a 1-unit cube with its base on the ground (the real scene uses the KayKit glTFs)
-      const box = () => new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial());
+      const box = () =>
+        new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial());
       const amb = new Ambience(grid, mood, new Map(mood.props.map((p) => [p.model, box()])));
       let checked = 0;
-      const v = new THREE.Vector3(), m = new THREE.Matrix4();
+      const v = new THREE.Vector3(),
+        m = new THREE.Matrix4();
       amb.root.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if (!mesh.isMesh || (mesh.material as THREE.Material).transparent) return; // fog and rays are transparent, they don't block
-        if (mesh.name === 'extensao') { // outer tiles: never above the nearest edge tile (same height in front doesn't hide a unit)
-          const step = grid.levelHeight ?? 0.5, ext = mesh as THREE.InstancedMesh;
+        if (mesh.name === 'extensao') {
+          // outer tiles: never above the nearest edge tile (same height in front doesn't hide a unit)
+          const step = grid.levelHeight ?? 0.5,
+            ext = mesh as THREE.InstancedMesh;
           for (let i = 0; i < ext.count; i++) {
             ext.getMatrixAt(i, m);
             v.setFromMatrixPosition(m);
-            const ci = Math.floor(v.x + grid.width / 2), cj = Math.floor(v.z + grid.height / 2);
+            const ci = Math.floor(v.x + grid.width / 2),
+              cj = Math.floor(v.z + grid.height / 2);
             const ring = Math.max(-ci, -cj, ci - grid.width + 1, cj - grid.height + 1);
             const top = v.y + new THREE.Vector3().setFromMatrixScale(m).y / 2;
             expect(top).toBeLessThanOrEqual((extH(grid, ci, cj, ring) + 1) * step + 1e-6); // the lowest tile nearby: the camera looks diagonally

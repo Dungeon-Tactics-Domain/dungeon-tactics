@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { abilityEnabled, canUndoMove, commandEnabled, longestRange, startScreen, stepIndex } from '../src/client/command.ts';
+import {
+  abilityEnabled,
+  canUndoMove,
+  commandEnabled,
+  longestRange,
+  startScreen,
+  stepIndex,
+} from '../src/client/command.ts';
 import { emptyMemory, padActions } from '../src/client/gamepad.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -7,16 +14,26 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // FFT-style interface (Nov 12): command menu and gamepad
-const duel = () => new Battle(flat(6, 6), stateOf([
-  { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
-  { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
-  { id: 'beacon', def: 'beacon', team: 'hero', x: 5, y: 5 },
-]));
+const duel = () =>
+  new Battle(
+    flat(6, 6),
+    stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+      { id: 'beacon', def: 'beacon', team: 'hero', x: 5, y: 5 },
+    ]),
+  );
 
 describe('command menu', () => {
   it('dotted line: the range of the farthest-reaching ability', () => {
     expect(longestRange(duel())).toBe(Math.max(...UNIT_DEFS.warrior.abilities.map((id) => ABILITIES[id].range[1])));
-    const archer = new Battle(flat(6, 6), stateOf([{ id: 'a', def: 'archer', team: 'hero', x: 1, y: 1 }, { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 4 }]));
+    const archer = new Battle(
+      flat(6, 6),
+      stateOf([
+        { id: 'a', def: 'archer', team: 'hero', x: 1, y: 1 },
+        { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 4 },
+      ]),
+    );
     expect(longestRange(archer)).toBe(6); // Shot: 2 to 6
   });
 
@@ -32,7 +49,7 @@ describe('command menu', () => {
   });
 
   // Nov 13, Fernando's request, as in Tactics Ogre: after moving and before acting, Move becomes "Desfazer movimento" (undo move)
-  it('moved and didn\'t act: Move undoes the movement (for free), without the menu cursor landing on it', () => {
+  it("moved and didn't act: Move undoes the movement (for free), without the menu cursor landing on it", () => {
     const b = duel();
     expect(canUndoMove(b)).toBe(false);
     b.move({ x: 2, y: 2 });
@@ -72,7 +89,10 @@ describe('command menu', () => {
 });
 
 describe('controle', () => {
-  const pad = (buttons: number[], axes: number[] = [0, 0]) => ({ buttons: Array.from({ length: 16 }, (_, i) => buttons.includes(i)), axes });
+  const pad = (buttons: number[], axes: number[] = [0, 0]) => ({
+    buttons: Array.from({ length: 16 }, (_, i) => buttons.includes(i)),
+    axes,
+  });
 
   it('A confirms and B cancels only on press, not while held', () => {
     const mem = emptyMemory();

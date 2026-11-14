@@ -6,7 +6,14 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 export const UNIT_HEIGHT = { default: 0.85, brute: 1.05, colossus: 2 }; // the Brute is bigger so it reads from afar that it hits hard; the Colossus takes 2x2
 // by model, not by id: the campaign and developer-menu Brute has its own sheet (camp1-e0...) and came out small
 // half tile (half.ts): the ½ sheet is twice the size of the original, because each tile became 2x2
-export const unitHeight = (def: string): number => (def.endsWith(HALF) ? 2 * unitHeight(baseDef(def)) : (UNIT_DEFS[def]?.size ?? 1) > 1 ? UNIT_HEIGHT.colossus : modelOf(def) === MODEL.brute ? UNIT_HEIGHT.brute : UNIT_HEIGHT.default);
+export const unitHeight = (def: string): number =>
+  def.endsWith(HALF)
+    ? 2 * unitHeight(baseDef(def))
+    : (UNIT_DEFS[def]?.size ?? 1) > 1
+      ? UNIT_HEIGHT.colossus
+      : modelOf(def) === MODEL.brute
+        ? UNIT_HEIGHT.brute
+        : UNIT_HEIGHT.default;
 
 // height of each unit's health bar (and crown): the default or, for whoever is taller than that (the Colossus), just above the head
 export const barYOf = (def: string) => Math.max(MARKER.barY, unitHeight(def) + 0.3);
@@ -26,9 +33,18 @@ export const MARKER = {
 // big skeleton); the Archer uses `ranger` (the wine-colored Rogue, no knives and with a bow: scripts/assets/ranger.mjs). The study
 // unit carries its model in its own sheet. The scene and the HUD (portraits) use the same map.
 const MODEL: Record<string, string> = {
-  warrior: 'knight', archer: 'ranger', mage: 'mage', rogue: 'rogue_hooded',
-  soldier: 'skeleton_warrior', skeleton_archer: 'skeleton_rogue', dark_mage: 'skeleton_mage', brute: 'barbarian',
-  minion: 'skeleton_minion', colossus: 'skeleton_warrior', lancer: 'lancer', // Lancer: the Knight without cape or shield, in teal-green steel, with a spear (scripts/assets/lancer.mjs)
-   acolyte: 'mage', veil_knight: 'knight', // Acolyte and Veil Knight: units with their own glow (UnitDef.tint)
+  warrior: 'knight',
+  archer: 'ranger',
+  mage: 'mage',
+  rogue: 'rogue_hooded',
+  soldier: 'skeleton_warrior',
+  skeleton_archer: 'skeleton_rogue',
+  dark_mage: 'skeleton_mage',
+  brute: 'barbarian',
+  minion: 'skeleton_minion',
+  colossus: 'skeleton_warrior',
+  lancer: 'lancer', // Lancer: the Knight without cape or shield, in teal-green steel, with a spear (scripts/assets/lancer.mjs)
+  acolyte: 'mage',
+  veil_knight: 'knight', // Acolyte and Veil Knight: units with their own glow (UnitDef.tint)
 };
 export const modelOf = (def: string): string => MODEL[baseDef(def)] ?? UNIT_DEFS[def].model ?? ''; // '' = no model (the Beacon)

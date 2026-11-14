@@ -19,10 +19,16 @@ const SPEAR_IDLE = ['assets/kaykit/animacoes/Animations/gltf/Rig_Medium/Rig_Medi
 
 await MeshoptDecoder.ready;
 await MeshoptEncoder.ready;
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
+const io = new NodeIO()
+  .registerExtensions(ALL_EXTENSIONS)
+  .registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
 const doc = await io.read('public/models/knight.glb');
 const root = doc.getRoot();
-const node = (name) => root.listNodes().find((n) => n.getName() === name) ?? (() => { throw new Error(`sem o nó ${name}: o knight.glb mudou?`); })();
+const node = (name) =>
+  root.listNodes().find((n) => n.getName() === name) ??
+  (() => {
+    throw new Error(`sem o nó ${name}: o knight.glb mudou?`);
+  })();
 
 for (const name of ['1H_Sword', 'Round_Shield', 'Knight_Cape']) node(name).dispose();
 
@@ -37,22 +43,40 @@ node('handslot.r').addChild(spear);
 const idle = root.listAnimations().find((a) => a.getName() === 'Idle');
 for (const c of idle.listChannels()) c.dispose();
 for (const s of idle.listSamplers()) s.dispose();
-const twoHands = (await io.read(SPEAR_IDLE[0])).getRoot().listAnimations().find((a) => a.getName() === SPEAR_IDLE[1]);
+const twoHands = (await io.read(SPEAR_IDLE[0]))
+  .getRoot()
+  .listAnimations()
+  .find((a) => a.getName() === SPEAR_IDLE[1]);
 const buf = root.listBuffers()[0];
 const copy = (x) => doc.createAccessor().setType(x.getType()).setArray(x.getArray().slice()).setBuffer(buf);
 for (const c of twoHands.listChannels()) {
   const target = root.listNodes().find((n) => n.getName() === c.getTargetNode().getName());
   if (!target) continue;
   const s = c.getSampler();
-  const sampler = doc.createAnimationSampler().setInput(copy(s.getInput())).setOutput(copy(s.getOutput())).setInterpolation(s.getInterpolation());
-  idle.addSampler(sampler).addChannel(doc.createAnimationChannel().setTargetNode(target).setTargetPath(c.getTargetPath()).setSampler(sampler));
+  const sampler = doc
+    .createAnimationSampler()
+    .setInput(copy(s.getInput()))
+    .setOutput(copy(s.getOutput()))
+    .setInterpolation(s.getInterpolation());
+  idle
+    .addSampler(sampler)
+    .addChannel(
+      doc.createAnimationChannel().setTargetNode(target).setTargetPath(c.getTargetPath()).setSampler(sampler),
+    );
 }
 
 // armor tinted in the palette texture (pixel by pixel, only the mid grays); the spear has its own texture and does not change
-const tex = root.listMaterials().find((m) => m.getName() === 'knight_texture').getBaseColorTexture();
-const { data, info } = await sharp(Buffer.from(tex.getImage())).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+const tex = root
+  .listMaterials()
+  .find((m) => m.getName() === 'knight_texture')
+  .getBaseColorTexture();
+const { data, info } = await sharp(Buffer.from(tex.getImage()))
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
 for (let i = 0; i < data.length; i += 4) {
-  const max = Math.max(data[i], data[i + 1], data[i + 2]), min = Math.min(data[i], data[i + 1], data[i + 2]);
+  const max = Math.max(data[i], data[i + 1], data[i + 2]),
+    min = Math.min(data[i], data[i + 1], data[i + 2]);
   if (max - min > 20 || max < 50 || max > 235) continue; // color (skin, leather), black and white (eyes) stay
   for (let c = 0; c < 3; c++) data[i + c] = Math.round(data[i + c] * STEEL[c]);
 }

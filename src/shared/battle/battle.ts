@@ -1,5 +1,14 @@
 import { ABILITIES } from './abilities.ts';
-import { basicOf, checkOutcome, counters, isRanged, previewAbility, resolveAbility, spikeAtTurnEnd, type Preview } from './combat.ts';
+import {
+  basicOf,
+  checkOutcome,
+  counters,
+  isRanged,
+  previewAbility,
+  resolveAbility,
+  spikeAtTurnEnd,
+  type Preview,
+} from './combat.ts';
 import { FACING, canStand, faceNearest, facingTo, inBounds, posKey, samePos, tileAt, type Grid } from './grid.ts';
 import { pathTo, reachable, unitAt, type Step } from './pathing.ts';
 import { SCENARIOS, initialState, type Scenario } from './scenarios.ts';
@@ -96,14 +105,18 @@ export class Battle {
     if (this.over || this.state.turn.usedAbility || !this.preview(abilityId, target).ok) return [];
     // declaring a charge rolls no die: undo costs nothing (Nov 13, review; the roll comes when it fires)
     this.remember(ABILITIES[abilityId].charge === 0);
-    if (this.actor.facing !== undefined && !samePos(target, this.actor.pos)) this.actor.facing = facingTo(this.actor.pos, target); // turns toward the target
+    if (this.actor.facing !== undefined && !samePos(target, this.actor.pos))
+      this.actor.facing = facingTo(this.actor.pos, target); // turns toward the target
     const ability = ABILITIES[abilityId];
     let events: BattleEvent[];
     if (ability.charge > 0) {
       // slow action: pays the cost now and joins the queue; a new charge replaces the previous one of the same unit
       if (ability.cost) this.actor.vars![ability.cost[0]] -= ability.cost[1];
-      const follow = ability.panel ? null : unitAt(this.state, target)?.id ?? null;
-      this.state.charges = [...this.state.charges.filter((c) => c.unit !== this.actor.id), { unit: this.actor.id, ability: abilityId, target, follow, ticks: ability.charge }];
+      const follow = ability.panel ? null : (unitAt(this.state, target)?.id ?? null);
+      this.state.charges = [
+        ...this.state.charges.filter((c) => c.unit !== this.actor.id),
+        { unit: this.actor.id, ability: abilityId, target, follow, ticks: ability.charge },
+      ];
       events = [{ k: 'charge', unit: this.actor.id, ability: abilityId, target }];
     } else {
       events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
@@ -114,8 +127,16 @@ export class Battle {
         for (const e of events) {
           if (e.k !== 'hit' && e.k !== 'miss') continue;
           const foe = this.state.units.find((u) => u.id === e.unit);
-          if (!foe || foe.team === this.actor.team || !basicOf(foe.def) || UNIT_DEFS[foe.def].speed === 0 || isRanged(basicOf(foe.def)) !== ranged) continue; // the Beacon does not retaliate
-          if (!(this.state.turn.engaged ?? []).some((x) => x.unit === foe.id)) (this.state.turn.engaged ??= []).push({ unit: foe.id, ranged });
+          if (
+            !foe ||
+            foe.team === this.actor.team ||
+            !basicOf(foe.def) ||
+            UNIT_DEFS[foe.def].speed === 0 ||
+            isRanged(basicOf(foe.def)) !== ranged
+          )
+            continue; // the Beacon does not retaliate
+          if (!(this.state.turn.engaged ?? []).some((x) => x.unit === foe.id))
+            (this.state.turn.engaged ??= []).push({ unit: foe.id, ranged });
         }
       }
     }
@@ -197,14 +218,18 @@ export function parseBattleState(raw: unknown): BattleState | null {
   const ids = new Set<string>();
   const cells = new Set<string>();
   for (const u of raw.units) {
-    if (!isObj(u) || typeof u.id !== 'string' || typeof u.def !== 'string' || !Object.hasOwn(UNIT_DEFS, u.def)) return null;
+    if (!isObj(u) || typeof u.id !== 'string' || typeof u.def !== 'string' || !Object.hasOwn(UNIT_DEFS, u.def))
+      return null;
     if (u.team !== 'hero' && u.team !== 'enemy') return null;
     if (!isObj(u.pos) || !isInt(u.pos.x) || !isInt(u.pos.y)) return null;
     const pos = { x: u.pos.x, y: u.pos.y };
     // all the unit's tiles (a large one occupies 2x2 from `pos`): inside the map, walkable and empty (Nov 13,
     // review: only the corner tile was checked, and a Colossus covered the Beacon or left the map)
     const size = UNIT_DEFS[u.def].size ?? 1;
-    const tiles = Array.from({ length: size * size }, (_, i) => ({ x: pos.x + (i % size), y: pos.y + Math.floor(i / size) }));
+    const tiles = Array.from({ length: size * size }, (_, i) => ({
+      x: pos.x + (i % size),
+      y: pos.y + Math.floor(i / size),
+    }));
     if (!tiles.every((p) => inBounds(grid, p) && canStand(tileAt(grid, p)) && !cells.has(`${p.x},${p.y}`))) return null;
     if (!isInt(u.hp) || u.hp < 1 || u.hp > UNIT_DEFS[u.def].hp || !isInt(u.ct) || Math.abs(u.ct) > 10000) return null;
     if (ids.has(u.id)) return null;
@@ -224,37 +249,97 @@ export function parseBattleState(raw: unknown): BattleState | null {
         vars[k] = v;
       }
     } else if (u.vars !== undefined) return null;
-    units.push({ id: u.id, def: u.def, team: u.team, pos, hp: u.hp, ct: u.ct, ...(u.facing !== undefined && { facing: u.facing as number }), ...(vars && { vars }) });
+    units.push({
+      id: u.id,
+      def: u.def,
+      team: u.team,
+      pos,
+      hp: u.hp,
+      ct: u.ct,
+      ...(u.facing !== undefined && { facing: u.facing as number }),
+      ...(vars && { vars }),
+    });
   }
-  for (const u of units) if (UNIT_DEFS[u.def].speed > 0) u.facing ??= faceNearest(u.pos, units.filter((o) => o.team !== u.team).map((o) => o.pos));
+  for (const u of units)
+    if (UNIT_DEFS[u.def].speed > 0)
+      u.facing ??= faceNearest(
+        u.pos,
+        units.filter((o) => o.team !== u.team).map((o) => o.pos),
+      );
   const t = raw.turn;
   if (!isObj(t) || typeof t.actor !== 'string' || typeof t.moved !== 'boolean') return null;
   const actor = units.find((u) => u.id === t.actor);
   if (!actor) return null;
   let usedAbility: string | null = null;
   if (t.usedAbility !== null) {
-    if (typeof t.usedAbility !== 'string' || !Object.hasOwn(ABILITIES, t.usedAbility) || !UNIT_DEFS[actor.def].abilities.includes(t.usedAbility)) return null;
+    if (
+      typeof t.usedAbility !== 'string' ||
+      !Object.hasOwn(ABILITIES, t.usedAbility) ||
+      !UNIT_DEFS[actor.def].abilities.includes(t.usedAbility)
+    )
+      return null;
     usedAbility = t.usedAbility;
   }
   if (!Array.isArray(raw.charges) || raw.charges.length > MAX_UNITS) return null;
   const charges: Charge[] = [];
   for (const c of raw.charges) {
-    if (!isObj(c) || typeof c.unit !== 'string' || typeof c.ability !== 'string' || !isInt(c.ticks) || c.ticks < 1 || c.ticks > 99) return null;
+    if (
+      !isObj(c) ||
+      typeof c.unit !== 'string' ||
+      typeof c.ability !== 'string' ||
+      !isInt(c.ticks) ||
+      c.ticks < 1 ||
+      c.ticks > 99
+    )
+      return null;
     const caster = units.find((u) => u.id === c.unit);
-    if (!caster || !UNIT_DEFS[caster.def].abilities.includes(c.ability) || charges.some((x) => x.unit === c.unit)) return null;
-    if (!isObj(c.target) || !isInt(c.target.x) || !isInt(c.target.y) || !inBounds(grid, { x: c.target.x, y: c.target.y })) return null;
+    if (!caster || !UNIT_DEFS[caster.def].abilities.includes(c.ability) || charges.some((x) => x.unit === c.unit))
+      return null;
+    if (
+      !isObj(c.target) ||
+      !isInt(c.target.x) ||
+      !isInt(c.target.y) ||
+      !inBounds(grid, { x: c.target.x, y: c.target.y })
+    )
+      return null;
     if (c.follow !== null && (typeof c.follow !== 'string' || !units.some((u) => u.id === c.follow))) return null;
-    charges.push({ unit: c.unit, ability: c.ability, target: { x: c.target.x, y: c.target.y }, follow: c.follow, ticks: c.ticks });
+    charges.push({
+      unit: c.unit,
+      ability: c.ability,
+      target: { x: c.target.x, y: c.target.y },
+      follow: c.follow,
+      ticks: c.ticks,
+    });
   }
   if (t.spent !== undefined && (!isInt(t.spent) || t.spent < 0 || t.spent > 99)) return null;
   const engaged: { unit: string; ranged: boolean }[] = [];
   if (t.engaged !== undefined) {
     if (!Array.isArray(t.engaged) || t.engaged.length > MAX_UNITS) return null;
     for (const e of t.engaged) {
-      if (!isObj(e) || typeof e.unit !== 'string' || typeof e.ranged !== 'boolean' || !units.some((u) => u.id === e.unit)) return null;
+      if (
+        !isObj(e) ||
+        typeof e.unit !== 'string' ||
+        typeof e.ranged !== 'boolean' ||
+        !units.some((u) => u.id === e.unit)
+      )
+        return null;
       engaged.push({ unit: e.unit, ranged: e.ranged });
     }
   }
-  const turn = { actor: actor.id, moved: t.moved, usedAbility, ...(t.spent !== undefined && { spent: t.spent as number }), ...(t.engaged !== undefined && { engaged }) };
-  return { scenario: raw.scenario, units, rng: raw.rng, turn, charges, outcome: raw.outcome, turnsPlayed: raw.turnsPlayed };
+  const turn = {
+    actor: actor.id,
+    moved: t.moved,
+    usedAbility,
+    ...(t.spent !== undefined && { spent: t.spent as number }),
+    ...(t.engaged !== undefined && { engaged }),
+  };
+  return {
+    scenario: raw.scenario,
+    units,
+    rng: raw.rng,
+    turn,
+    charges,
+    outcome: raw.outcome,
+    turnsPlayed: raw.turnsPlayed,
+  };
 }

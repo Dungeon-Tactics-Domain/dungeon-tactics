@@ -4,8 +4,14 @@
 // Pure and tested; the Game gathers the events on each animation. Saving and reopening mid-battle resets the tally (it lives only in memory).
 import type { BattleEvent, Team } from '../shared/battle/types.ts';
 
-export interface Score { dmg: number; kills: number }
-export interface Tally { by: string | null; scores: Record<string, Score> }
+export interface Score {
+  dmg: number;
+  kills: number;
+}
+export interface Tally {
+  by: string | null;
+  scores: Record<string, Score>;
+}
 
 export const emptyTally = (): Tally => ({ by: null, scores: {} });
 

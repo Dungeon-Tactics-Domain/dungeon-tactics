@@ -14,13 +14,17 @@ const names = [];
 function wrap(doc, name) {
   const sc = doc.getRoot().listScenes()[0];
   const w = doc.createNode(name);
-  for (const c of sc.listChildren()) { sc.removeChild(c); w.addChild(c); }
+  for (const c of sc.listChildren()) {
+    sc.removeChild(c);
+    w.addChild(c);
+  }
   sc.addChild(w);
   return w;
 }
 const nameOf = (f) => path.basename(f).replace(/(\.gltf)?\.(gltf|glb)$/, '');
 
-wrap(base, nameOf(inputs[0])); names.push(nameOf(inputs[0]));
+wrap(base, nameOf(inputs[0]));
+names.push(nameOf(inputs[0]));
 for (const f of inputs.slice(1)) {
   const doc = await io.read(f);
   const name = nameOf(f);
@@ -30,7 +34,10 @@ for (const f of inputs.slice(1)) {
 }
 // after the merge each extra scene brings its wrapped node: move it to the first scene
 for (const sc of base.getRoot().listScenes().slice(1)) {
-  for (const c of sc.listChildren()) { sc.removeChild(c); scene.addChild(c); }
+  for (const c of sc.listChildren()) {
+    sc.removeChild(c);
+    scene.addChild(c);
+  }
   sc.dispose();
 }
 // GLB accepts only one buffer: moves all accessors to the first

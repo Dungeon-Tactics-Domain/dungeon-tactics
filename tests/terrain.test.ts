@@ -5,8 +5,10 @@ import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
 // Smooth terrain and outer river (Nov 13): Ash Wood river starts on the right (the ford, higher) and exits on the left, lower
 describe('outer terrain and river', () => {
-  const grid = SCENARIOS.ash_wood.grid, step = 0.5;
-  const levels = waterLevels(grid, step), river = riverOf(grid, levels)!;
+  const grid = SCENARIOS.ash_wood.grid,
+    step = 0.5;
+  const levels = waterLevels(grid, step),
+    river = riverOf(grid, levels)!;
 
   it('the Grove river crosses the map and starts on the ford side', () => {
     expect(river.rows).toEqual([4, 5]);
@@ -27,6 +29,9 @@ describe('outer terrain and river', () => {
 
   it('the bank on the source side rises with the water (the water is never above the surrounding ground)', () => {
     const out = riverOutside(grid, step, levels, river);
-    for (let k = 0; k < EXT_RING; k++) expect(outerTop(grid, step, river, grid.width + k, 6)).toBeGreaterThanOrEqual(out.get(`${grid.width + k},5`)!.surface - 1e-6);
+    for (let k = 0; k < EXT_RING; k++)
+      expect(outerTop(grid, step, river, grid.width + k, 6)).toBeGreaterThanOrEqual(
+        out.get(`${grid.width + k},5`)!.surface - 1e-6,
+      );
   });
 });

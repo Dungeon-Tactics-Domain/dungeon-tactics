@@ -21,7 +21,8 @@ describe('game maps', () => {
   // walkable low cover (the `B` tile used to come out with height 0 from the relief map: a hole in the middle of the bridge)
   it('Grove bridge: 3 tiles wide at the same height, with walkable low rubble in the middle', () => {
     const g = SCENARIOS.ash_wood.grid;
-    for (const y of [4, 5]) for (const x of [2, 3, 4]) expect(tileAt(g, { x, y }), `${x},${y}`).toMatchObject({ look: 'bridge', h: 1 });
+    for (const y of [4, 5])
+      for (const x of [2, 3, 4]) expect(tileAt(g, { x, y }), `${x},${y}`).toMatchObject({ look: 'bridge', h: 1 });
     const rubble = tileAt(g, { x: 3, y: 4 });
     expect(rubble.terrain).toBe('rubble');
     expect(canStand(rubble)).toBe(true);
@@ -37,7 +38,8 @@ describe('game maps', () => {
       s.grid.tiles.forEach((t, i) => {
         if (!t.ramp) return;
         total++;
-        const p = { x: i % s.grid.width, y: Math.floor(i / s.grid.width) }, f = FACING[t.ramp[0]];
+        const p = { x: i % s.grid.width, y: Math.floor(i / s.grid.width) },
+          f = FACING[t.ramp[0]];
         const up = { x: p.x + f.x, y: p.y + f.y };
         const where = `${s.id} ${p.x},${p.y}`;
         expect(t.terrain === 'floor' && !t.depth && !t.spikes && t.ramp[1] === 1, where).toBe(true);

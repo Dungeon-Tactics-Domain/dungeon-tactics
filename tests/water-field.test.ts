@@ -3,8 +3,14 @@ import { WaveField } from '../src/client/water.ts';
 
 // 20x5 water strip with land in the last column; optional current
 const strip = (flow = 0) => {
-  const nx = 21, nz = 5, lvl = new Int32Array(nx * nz).fill(0), fx = new Float32Array(nx * nz).fill(flow);
-  for (let z = 0; z < nz; z++) { lvl[z * nx + nx - 1] = -1; fx[z * nx + nx - 1] = 0; }
+  const nx = 21,
+    nz = 5,
+    lvl = new Int32Array(nx * nz).fill(0),
+    fx = new Float32Array(nx * nz).fill(flow);
+  for (let z = 0; z < nz; z++) {
+    lvl[z * nx + nx - 1] = -1;
+    fx[z * nx + nx - 1] = 0;
+  }
   return new WaveField(nx, nz, lvl, fx);
 };
 
@@ -21,9 +27,22 @@ describe('water wave field', () => {
   });
 
   it('the current drags the wave in the water direction', () => {
-    const still = strip(), flowing = strip(-0.1); // -x
-    for (const f of [still, flowing]) { f.poke(10, 2.5, 0.08); for (let i = 0; i < 30; i++) f.step(); }
-    const center = (f: WaveField) => { let s = 0, w = 0; for (let x = 0; x < 20; x++) { const a = Math.abs(f.h[2 * 21 + x]); s += a * x; w += a; } return s / w; };
+    const still = strip(),
+      flowing = strip(-0.1); // -x
+    for (const f of [still, flowing]) {
+      f.poke(10, 2.5, 0.08);
+      for (let i = 0; i < 30; i++) f.step();
+    }
+    const center = (f: WaveField) => {
+      let s = 0,
+        w = 0;
+      for (let x = 0; x < 20; x++) {
+        const a = Math.abs(f.h[2 * 21 + x]);
+        s += a * x;
+        w += a;
+      }
+      return s / w;
+    };
     expect(center(flowing)).toBeLessThan(center(still) - 1);
   });
 });
