@@ -18,6 +18,10 @@ const SETTLE_MS = 3000; // page time between load and shot: the camera eases in 
 const VIDEO = { width: 1280, height: 720 };
 const LEAD_S = 0.5; // a clip starts this long before the first step: the settled scene, then the action
 const HOLD_MS = 1200; // and runs this long after the last one: the numbers fade and the camera comes back
+// a step plays and settles in seconds even on software WebGL (idle() stops at 600 frames); one that never ends fails
+// the spec instead of hanging the batch. Wall clock in --video, page clock for the shot after the steps
+const playLimit = (spec) => TIMEOUT * Math.max(1, spec.steps?.length ?? 0);
+const stuck = 'the steps did not finish in time';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -104,7 +108,14 @@ try {
         errors.push(...(await page.evaluate(() => window.__sandbox.problems)));
         await page.evaluate(() => window.__sandbox.idle());
         const from = Math.max(0, (Date.now() - born) / 1000 - LEAD_S);
-        if (!errors.length) errors.push(...(await page.evaluate((s) => window.__sandbox.play(s), spec.steps ?? [])));
+        if (!errors.length) {
+          let timer;
+          const late = new Promise((_, no) => {
+            timer = setTimeout(() => no(new Error(stuck)), playLimit(spec));
+          });
+          const play = page.evaluate((s) => window.__sandbox.play(s), spec.steps ?? []);
+          errors.push(...(await Promise.race([play, late]).finally(() => clearTimeout(timer))));
+        }
         await page.waitForTimeout(HOLD_MS);
         if (errors.length) throw new Error(errors.join('; '));
         await context.close(); // the video file is complete only once its context closes
@@ -132,7 +143,10 @@ try {
               (p) => (played = p),
               (e) => (played = [e.message]),
             );
-          while (!played) await page.clock.runFor(100);
+          for (let t = 0; !played; t += 100) {
+            if (t > playLimit(spec)) throw new Error(stuck);
+            await page.clock.runFor(100);
+          }
           errors.push(...played);
         }
       }
