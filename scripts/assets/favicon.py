@@ -1,153 +1,49 @@
-# Site icon (= the Telegram group photo): the logo's W (Grenze Gotisch 700, gold→lava gradient as in the game) over a half-lava half-dark background, with a gold frame in the WoW logo style
-# python -I scripts/assets/favicon.py <GrenzeGotisch-700.ttf> public   (font: Google Fonts, OFL; needs Pillow and fontTools)
-import math, random, sys
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageChops
-from fontTools.ttLib import TTFont
-from fontTools.pens.svgPathPen import SVGPathPen
-from fontTools.pens.transformPen import TransformPen
-from fontTools.pens.boundsPen import BoundsPen
+# Site icon: a sword planted in a raised isometric tile, the board piece of the game, in the gold and stone of the interface.
+# One list of shapes draws both the vector public/favicon.svg and the raster public/favicon.ico (32 and 48 px).
+# python -I scripts/assets/favicon.py public   (needs Pillow)
+import sys
+from PIL import Image, ImageDraw
 
-font_path, out = sys.argv[1:3]
-S = 1024
-cx = cy = S / 2
-random.seed(3)
+out = sys.argv[1]
+INK = '#16111f'  # --bg of style.css: the outline keeps the icon readable on light and dark tabs
+STROKE = 2.5  # in the 64-unit box; thinner lines vanish at 16 px
 
-def grad(size, stops):  # vertical gradient
-    w, h = size
-    img = Image.new('RGB', (w, h))
-    px = img.load()
-    for y in range(h):
-        t = min(max(y / (h - 1), stops[0][0]), stops[-1][0])
-        for i in range(len(stops) - 1):
-            (t0, c0), (t1, c1) = stops[i], stops[i + 1]
-            if t0 <= t <= t1:
-                k = (t - t0) / (t1 - t0)
-                c = tuple(int(c0[j] + (c1[j] - c0[j]) * k) for j in range(3))
-                break
-        for x in range(w):
-            px[x, y] = c
-    return img
+SHAPES = [  # (kind, points or circle, fill) in a 64x64 box, drawn in order
+    ('poly', [(6, 36), (32, 49), (32, 59), (6, 46)], '#8a6a33'),  # left face of the tile
+    ('poly', [(58, 36), (32, 49), (32, 59), (58, 46)], '#5e4622'),  # right face, in shade
+    ('poly', [(32, 23), (58, 36), (32, 49), (6, 36)], '#ffcf4a'),  # top face (--accent)
+    ('poly', [(28.5, 21), (35.5, 21), (35.5, 38), (32, 43), (28.5, 38)], '#e8eef5'),  # blade, point in the tile
+    ('poly', [(30, 9), (34, 9), (34, 18), (30, 18)], '#7a5513'),  # grip (--gold-trim)
+    ('poly', [(21, 17), (43, 17), (43, 22), (21, 22)], '#ffdd7a'),  # cross-guard (--trim-hi)
+    ('circle', (32, 7, 3.5), '#ffdd7a'),  # pommel
+]
 
-# background: dark on top, lava rising from below, with glowing veins and embers
-bg = grad((S, S), [(0, (10, 4, 6)), (0.45, (30, 8, 6)), (0.75, (120, 30, 8)), (1, (255, 110, 30))])
-veios = Image.new('L', (S, S), 0)
-d = ImageDraw.Draw(veios)
-for _ in range(22):
-    x, y, rx, ry = random.uniform(0, S), random.uniform(S * 0.62, S * 1.05), random.uniform(60, 160), random.uniform(18, 45)
-    d.ellipse((x - rx, y - ry, x + rx, y + ry), fill=random.randint(90, 200))
-veios = veios.filter(ImageFilter.GaussianBlur(22))
-bg = Image.composite(Image.new('RGB', (S, S), (255, 170, 60)), bg, veios)
-brasas = Image.new('L', (S, S), 0)
-d = ImageDraw.Draw(brasas)
-for _ in range(70):
-    x, y, r = random.uniform(0, S), random.uniform(S * 0.2, S), random.uniform(1.5, 4)
-    d.ellipse((x - r, y - r, x + r, y + r), fill=random.randint(140, 255))
-bg = Image.composite(Image.new('RGB', (S, S), (255, 200, 110)), bg, brasas.filter(ImageFilter.GaussianBlur(1)))
-# dark vignette at the edges
-vin = Image.new('L', (S, S), 0)
-ImageDraw.Draw(vin).ellipse((-S * 0.1, -S * 0.1, S * 1.1, S * 1.1), fill=255)
-bg = Image.composite(bg, Image.new('RGB', (S, S), (0, 0, 0)), vin.filter(ImageFilter.GaussianBlur(90)))
-
-# frame: thick gold ring with bevel (light on top, dark at the bottom), inner fillet and rivets
-def ring(r_out, r_in):
-    m = Image.new('L', (S, S), 0)
-    dd = ImageDraw.Draw(m)
-    dd.ellipse((cx - r_out, cy - r_out, cx + r_out, cy + r_out), fill=255)
-    dd.ellipse((cx - r_in, cy - r_in, cx + r_in, cy + r_in), fill=0)
-    return m
-ouro = grad((S, S), [(0, (255, 244, 180)), (0.35, (240, 190, 70)), (0.6, (170, 105, 25)), (1, (255, 214, 102))])
-ouro_esc = grad((S, S), [(0, (120, 70, 15)), (1, (60, 30, 5))])
-R = S * 0.47
-bg = Image.composite(ouro_esc, bg, ring(R + 6, R - 52).filter(ImageFilter.GaussianBlur(1)))  # dark shadow/edge
-bg = Image.composite(ouro, bg, ring(R, R - 44))
-bg = Image.composite(ouro.transpose(Image.FLIP_TOP_BOTTOM), bg, ring(R - 14, R - 30))  # inverted bevel in the middle of the ring
-bg = Image.composite(ouro, bg, ring(R - 60, R - 68))  # thin inner fillet
-d = ImageDraw.Draw(bg)
-for k in range(8):
-    a = k * math.pi / 4 + math.pi / 8
-    x, y = cx + (R - 22) * math.cos(a), cy + (R - 22) * math.sin(a)
-    d.ellipse((x - 9, y - 9, x + 9, y + 9), fill=(110, 60, 10))
-    d.ellipse((x - 6, y - 7, x + 5, y + 4), fill=(255, 236, 160))
-
-# the W: logo gradient (light gold → gold → lava), dark outline and lava glow behind
-font = ImageFont.truetype(font_path, int(S * 0.62))
-m = Image.new('L', (S, S), 0)
-ImageDraw.Draw(m).text((cx, cy + S * 0.02), 'W', font=font, anchor='mm', fill=255)
-glow = m.filter(ImageFilter.MaxFilter(15)).filter(ImageFilter.GaussianBlur(28))
-bg = Image.composite(Image.new('RGB', (S, S), (255, 120, 30)), bg, Image.eval(glow, lambda v: int(v * 0.9)))
-borda = m.filter(ImageFilter.MaxFilter(13))
-bg = Image.composite(Image.new('RGB', (S, S), (30, 8, 2)), bg, borda)
-letra = grad((S, S), [(0.2, (255, 242, 160)), (0.45, (255, 214, 102)), (0.8, (255, 138, 58))])
-bg = Image.composite(letra, bg, m)
-# highlight on top of the letter
-topo = ImageChops.multiply(m, grad((S, S), [(0, (255, 255, 255)), (0.42, (255, 255, 255)), (0.5, (0, 0, 0)), (1, (0, 0, 0))]).convert('L'))
-bg = Image.composite(Image.new('RGB', (S, S), (255, 252, 225)), bg, Image.eval(topo.filter(ImageFilter.GaussianBlur(2)), lambda v: int(v * 0.35)))
-
-# tab: round with a transparent background (16, 32 and 48 in the same .ico); iPhone: square, iOS does not accept transparency
-# cropped at the outer edge of the frame, so the W fills as much of the tab as possible
-B = int(R + 7)
-redondo = bg.crop((int(cx) - B, int(cy) - B, int(cx) + B, int(cy) + B)).convert('RGBA')
-c = Image.new('L', redondo.size, 0)
-ImageDraw.Draw(c).ellipse((0, 0, 2 * B - 1, 2 * B - 1), fill=255)
-redondo.putalpha(c)
-redondo.save(f'{out}/favicon.ico', sizes=[(16, 16), (32, 32), (48, 48)])
-bg.resize((180, 180), Image.LANCZOS).save(f'{out}/apple-touch-icon.png', optimize=True)
-
-# the same art as vector SVG (public/warlock-wars.svg), for use in the interface: the W becomes a <path> (does not depend on the font in the browser)
-tt = TTFont(font_path)
-gs = tt.getGlyphSet()
-g = tt.getBestCmap()[ord('W')]
-k = S * 0.62 / tt['head'].unitsPerEm
-bp = BoundsPen(gs)
-gs[g].draw(bp)
-x0, y0, x1, y1 = bp.bounds
-bx, by = m.getbbox()[0], m.getbbox()[1]  # same position as the PNG's W: corner of the outline drawn by PIL
-pen = SVGPathPen(gs, ntos=lambda v: f'{v:.1f}'.rstrip('0').rstrip('.'))
-gs[g].draw(TransformPen(pen, (k, 0, 0, -k, bx - x0 * k, by + y1 * k)))
-wpath = pen.getCommands()
-
-random.seed(3)  # same veins and embers as the PNG
-veios_svg = ''.join(f'<ellipse cx="{x:.0f}" cy="{y:.0f}" rx="{rx:.0f}" ry="{ry:.0f}" fill-opacity="{a / 255:.2f}"/>' for x, y, rx, ry, a in
-                    [(random.uniform(0, S), random.uniform(S * 0.62, S * 1.05), random.uniform(60, 160), random.uniform(18, 45), random.randint(90, 200)) for _ in range(22)])
-brasas_svg = ''.join(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="{r:.1f}" fill-opacity="{a / 255:.2f}"/>' for x, y, r, a in
-                     [(random.uniform(0, S), random.uniform(S * 0.2, S), random.uniform(1.5, 4), random.randint(140, 255)) for _ in range(70)])
-
-def lin(id, stops, flip=False):
-    y1_, y2_ = (S, 0) if flip else (0, S)
-    st = ''.join(f'<stop offset="{o}" stop-color="rgb{c}"/>' for o, c in stops)
-    return f'<linearGradient id="{id}" gradientUnits="userSpaceOnUse" x1="0" y1="{y1_}" x2="0" y2="{y2_}">{st}</linearGradient>'
-OURO = [(0, (255, 244, 180)), (0.35, (240, 190, 70)), (0.6, (170, 105, 25)), (1, (255, 214, 102))]
-def anel(r_out, r_in, paint):
-    return f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{(r_out + r_in) / 2:.1f}" fill="none" stroke="{paint}" stroke-width="{r_out - r_in:.1f}"/>'
-rebites = ''
-for i in range(8):
-    a = i * math.pi / 4 + math.pi / 8
-    x, y = cx + (R - 22) * math.cos(a), cy + (R - 22) * math.sin(a)
-    rebites += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="9" fill="#6e3c0a"/><ellipse cx="{x - 0.5:.1f}" cy="{y - 1.5:.1f}" rx="5.5" ry="5.5" fill="#ffeca0"/>'
-svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="{cx - B:.0f} {cy - B:.0f} {2 * B} {2 * B}">
-<!-- Warlock Wars: gerado por scripts/assets/favicon.py; W da fonte Grenze Gotisch Bold (SIL OFL 1.1) -->
-<defs>
-{lin('fundo', [(0, (10, 4, 6)), (0.45, (30, 8, 6)), (0.75, (120, 30, 8)), (1, (255, 110, 30))])}
-{lin('ouro', OURO)}{lin('ouroInv', OURO, True)}{lin('ouroEsc', [(0, (120, 70, 15)), (1, (60, 30, 5))])}
-{lin('letra', [(0.2, (255, 242, 160)), (0.45, (255, 214, 102)), (0.8, (255, 138, 58))])}
-<linearGradient id="topo" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="{S}"><stop offset="0.42" stop-color="#fffce1" stop-opacity=".35"/><stop offset="0.5" stop-color="#fffce1" stop-opacity="0"/></linearGradient>
-<radialGradient id="vinheta" cx="{cx:.0f}" cy="{cy:.0f}" r="{S * 0.6:.0f}" gradientUnits="userSpaceOnUse"><stop offset="0.7" stop-opacity="0"/><stop offset="1" stop-opacity=".85"/></radialGradient>
-<filter id="veio" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
-<filter id="brilho" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="28"/></filter>
-<clipPath id="disco"><circle cx="{cx:.0f}" cy="{cy:.0f}" r="{B}"/></clipPath>
-<path id="w" d="{wpath}"/>
-</defs>
-<g clip-path="url(#disco)">
-<rect x="0" y="0" width="{S}" height="{S}" fill="url(#fundo)"/>
-<g fill="rgb(255,170,60)" filter="url(#veio)">{veios_svg}</g>
-<g fill="rgb(255,200,110)">{brasas_svg}</g>
-<rect x="0" y="0" width="{S}" height="{S}" fill="url(#vinheta)"/>
-{anel(R + 6, R - 52, 'url(#ouroEsc)')}{anel(R, R - 44, 'url(#ouro)')}{anel(R - 14, R - 30, 'url(#ouroInv)')}{anel(R - 60, R - 68, 'url(#ouro)')}
-{rebites}
-<use href="#w" fill="rgb(255,120,30)" stroke="rgb(255,120,30)" stroke-width="14" stroke-linejoin="round" opacity=".9" filter="url(#brilho)"/>
-<use href="#w" fill="url(#letra)" stroke="rgb(30,8,2)" stroke-width="12" stroke-linejoin="round" paint-order="stroke"/>
-<use href="#w" fill="url(#topo)"/>
-</g>
+pts = lambda p: ' '.join(f'{x:g},{y:g}' for x, y in p)
+body = ''.join(
+    f'<polygon points="{pts(s)}" fill="{c}"/>' if k == 'poly' else f'<circle cx="{s[0]:g}" cy="{s[1]:g}" r="{s[2]:g}" fill="{c}"/>'
+    for k, s, c in SHAPES
+)
+svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<!-- Dungeon Tactics: generated by scripts/assets/favicon.py -->
+<g stroke="{INK}" stroke-width="{STROKE:g}" stroke-linejoin="round">{body}</g>
 </svg>
 '''
-open(f'{out}/warlock-wars.svg', 'w', encoding='utf-8', newline='\n').write(svg)
+open(f'{out}/favicon.svg', 'w', encoding='utf-8', newline='\n').write(svg)
+
+# raster: drawn at 16x and scaled down, so the edges come out smooth at 32 and 48 px
+K = 16
+img = Image.new('RGBA', (64 * K, 64 * K), (0, 0, 0, 0))
+d = ImageDraw.Draw(img)
+w = round(STROKE * K)
+for k, s, c in SHAPES:
+    if k == 'poly':
+        p = [(x * K, y * K) for x, y in s]
+        d.polygon(p, fill=c)
+        d.line(p + p[:2], fill=INK, width=w, joint='curve')  # closed outline centred on the edge, like the SVG stroke
+    else:
+        x, y, r = (v * K for v in s)
+        o, i = r + w / 2, r - w / 2  # outline centred on the edge: ink disc, then the fill inside it
+        d.ellipse((x - o, y - o, x + o, y + o), fill=INK)
+        d.ellipse((x - i, y - i, x + i, y + i), fill=c)
+big = img.resize((256, 256), Image.LANCZOS)
+big.save(f'{out}/favicon.ico', sizes=[(32, 32), (48, 48)])
