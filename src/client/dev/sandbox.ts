@@ -30,6 +30,7 @@ import {
   rewind,
   type SceneSpec,
   type Step,
+  sideAngle,
   specUrl,
   storageFor,
 } from './sandbox-spec.ts';
@@ -137,6 +138,15 @@ export function install(game: Game, scene: BattleScene) {
     marked[2][0],
     marked[3][0],
   ];
+  // a fixed camera (bench) stays where the spec put it: the game's slides to whoever acts are dropped
+  const focus = scene.focusOn.bind(scene);
+  let fixed = false;
+  scene.focusOn = (p, also) => {
+    if (!fixed) focus(p, also);
+  };
+  // and frames the focus in the middle of the page, not of the space the (hidden) HUD leaves
+  const insets = scene.setInsets.bind(scene);
+  scene.setInsets = (top, bottom) => insets(fixed ? 0 : top, fixed ? 0 : bottom);
   // visibility, not display: the panels keep their size, so the camera frames the map the same with or without the HUD
   const style = document.head.appendChild(document.createElement('style'));
 
@@ -183,16 +193,24 @@ export function install(game: Game, scene: BattleScene) {
       }
     }
     const c = s.camera;
-    if (c?.angle !== undefined) {
+    const angle = c?.angle ?? (c?.fixed === 'side' ? profile() : undefined);
+    if (angle !== undefined) {
       const at = Math.round((scene.heading - Math.PI / 4) / (Math.PI / 4));
-      for (let i = at; i !== c.angle; i += Math.sign(c.angle - at)) scene.rotate(Math.sign(c.angle - at) as 1 | -1);
+      for (let i = at; i !== angle; i += Math.sign(angle - at)) scene.rotate(Math.sign(angle - at) as 1 | -1);
     }
     if (c?.zoom !== undefined) {
       scene.resetView(); // whole map, then closer: the same number gives the same framing on any page
       scene.zoom(1 / c.zoom);
     }
+    // side: low, cutting what stands more than 4 tiles in front (trees, cliffs); three-quarter: the game's own 32°. Held
+    // before the focus, which then aims at the ground's height
+    if (c?.fixed) {
+      scene.hold(c.fixed === 'side' ? 12 : 32, c.fixed === 'side' ? 4 : undefined);
+      fixed = true;
+      scene.setInsets(0, 0);
+    }
     // a split tile's middle lies between its corner cells
-    if (c?.focus) scene.focusOn(c.focus, k > 1 ? { x: c.focus.x + k - 1, y: c.focus.y + k - 1 } : undefined);
+    if (c?.focus) focus(c.focus, k > 1 ? { x: c.focus.x + k - 1, y: c.focus.y + k - 1 } : undefined);
     if (c?.action) {
       const from = battle.state.units.find((u) => u.id === c.action!.from);
       if (from) void scene.actionCam(from.pos, c.action.to, from.team === 'enemy');
@@ -209,6 +227,16 @@ export function install(game: Game, scene: BattleScene) {
     if (s.pixel !== undefined) scene.setPixel({ ...defaultPixel(false), size: s.pixel });
     if (s.daylight !== undefined) scene.setDaylight(s.daylight);
     return p;
+  }
+
+  // the line of the spec's first move or act, from where its unit stands now, so a side view sees it in profile
+  function profile(): number {
+    const st = spec.steps?.find((x) => 'move' in x || 'act' in x);
+    const go = st && ('move' in st ? { unit: st.move.unit, to: st.move.to } : 'act' in st ? st.act : null);
+    const u = go && battle.state.units.find((x) => x.id === go.unit);
+    if (!go || !u) return 7;
+    const k = subOf(battle.grid);
+    return sideAngle({ x: u.pos.x / k, y: u.pos.y / k }, 'to' in go ? go.to : go.target);
   }
 
   const api: SandboxApi = {

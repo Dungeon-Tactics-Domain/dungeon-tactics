@@ -24,6 +24,7 @@ import {
   playStep,
   readParam,
   rewind,
+  sideAngle,
   specParam,
   specUrl,
   storageFor,
@@ -512,11 +513,12 @@ describe('clip specs on a split map', () => {
 });
 
 describe('bench fields', () => {
-  it('accepts loop, timing, speed and pause steps', () => {
+  it('accepts loop, timing, speed, a fixed camera and pause steps', () => {
     const raw = {
       loop: true,
       timing: { hitStop: 160, jumpCrouch: 380 },
       speed: 0.25,
+      camera: { fixed: 'side', focus: { x: 1, y: 1 } },
       steps: [{ pause: 500 }, { wait: { unit: 'a' } }],
     };
     expect(parseSpec(raw)).toEqual({ spec: raw, problems: [] });
@@ -528,9 +530,12 @@ describe('bench fields', () => {
         loop: 'yes',
         timing: { hitStp: 160, shake: 0, jumpLand: '300' },
         speed: 0,
+        camera: { fixed: 'top', action: { from: 'a', to: { x: 1, y: 1 } } },
         steps: [{ pause: -1 }, { pause: 500, wait: { unit: 'a' } }],
       }).problems,
     ).toEqual([
+      'camera.fixed must be "side" or "three-quarter"',
+      'camera.fixed turns the action camera off: drop action',
       'steps[0].pause must be ms from 0 to 60000',
       'steps[1] must be one of { move }, { act }, { wait } or { pause }',
       'loop must be true or false',
@@ -554,6 +559,11 @@ describe('bench fields', () => {
     expect(readParam('{"seed":2}')).toEqual({ json: '{"seed":2}' });
     expect(readParam('bench/walk.json')).toEqual({ file: '/scripts/sandbox/bench/walk.json' });
     expect(() => readParam('not base64!')).toThrow();
+  });
+
+  it('looks across the first line for a side view', () => {
+    expect(sideAngle({ x: 2, y: 6 }, { x: 5, y: 6 })).toBe(7);
+    expect(sideAngle({ x: 9, y: 3 }, { x: 9, y: 1 })).toBe(1);
   });
 
   it('rewinds the battle to where it started, so a loop plays the same round again', () => {

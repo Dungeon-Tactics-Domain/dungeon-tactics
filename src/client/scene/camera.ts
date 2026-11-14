@@ -88,7 +88,8 @@ export class CameraRig {
   focusOn(p: Pos, also?: Pos) {
     // with `also`, centers between the two (attacker and target): the strike never happens off-screen or behind the HUD
     const w = also ? this.space.world(p).lerp(this.space.world(also), 0.5) : this.space.world(p);
-    this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
+    // held (bench): at the body's height on that ground, since a low camera shows height almost as it is
+    this.focusGoal = new THREE.Vector3(w.x, this.held ? w.y + 0.5 * this.k : STEP, w.z);
   }
 
   // Action camera (Nov 13, Fernando's request: "when a character is going to attack, an action cam like XCOM"): turns to
@@ -99,7 +100,7 @@ export class CameraRig {
     if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
     // `heroi`: the camera always stays on the heroes' side (over the attacker's shoulder; when the enemy attacks, behind the hero)
     const cam = ACTION_CAMS[CAM_NAME === 'hero' ? (enemy ? 'behind' : 'shoulder') : CAM_NAME];
-    if (!cam) return;
+    if (!cam || this.held) return;
     this.camSaved = {
       viewH: this.camSaved?.viewH ?? this.viewH,
       yaw: this.camSaved?.yaw ?? this.yawTarget,
@@ -145,6 +146,16 @@ export class CameraRig {
       this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k);
       this.frameView();
     });
+  }
+
+  // Sandbox bench (dev/sandbox.ts): a fixed tilt in degrees and no action camera, so a body is always seen from the same
+  // angle; `clip` cuts what stands more than that many tiles in front of the focus, as the low action cameras do. null lets go
+  private held = false;
+  hold(pitch: number | null, clip?: number) {
+    this.held = pitch !== null;
+    this.pitchTarget = pitch === null ? PITCH : THREE.MathUtils.degToRad(pitch);
+    this.camera.near = clip ? CAM_DIST - clip * this.k : 0.1;
+    this.frameView();
   }
 
   // back to the whole-map framing

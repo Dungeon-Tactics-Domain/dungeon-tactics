@@ -245,6 +245,11 @@ export class BattleScene {
     return this.cam.actionCam(from, to, enemy);
   }
 
+  // sandbox bench: a fixed tilt and no action camera (CameraRig.hold)
+  hold(pitch: number | null, clip?: number) {
+    this.cam.hold(pitch, clip);
+  }
+
   // back to the whole-map framing
   resetView() {
     this.cam.resetView();

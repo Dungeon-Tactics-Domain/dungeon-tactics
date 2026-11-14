@@ -50,6 +50,7 @@ export interface CameraSpec {
   zoom?: number; // 1 = the whole map, 2 = twice as close
   focus?: Pos; // tile in the middle of the view
   action?: { from: string; to: Pos }; // the strike camera, from that unit to the tile
+  fixed?: 'side' | 'three-quarter'; // bench: this tilt the whole time, no action camera and no slide to whoever acts
 }
 // One played step (gameplay clips): the unit gets the turn if it does not have it, then walks, acts or ends its turn
 export type Step =
@@ -177,12 +178,16 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
     if (!isObj(c)) p.push('camera must be an object');
     else {
       for (const k of Object.keys(c))
-        if (!['angle', 'zoom', 'focus', 'action'].includes(k)) p.push(`camera: unknown key "${k}"`);
+        if (!['angle', 'zoom', 'focus', 'action', 'fixed'].includes(k)) p.push(`camera: unknown key "${k}"`);
       if (c.angle !== undefined && !isInt(c.angle, 0, 7)) p.push('camera.angle must be 0-7');
       if (c.zoom !== undefined && !(typeof c.zoom === 'number' && c.zoom > 0)) p.push('camera.zoom must be > 0');
       if (c.focus !== undefined && !isPos(c.focus)) p.push('camera.focus must be { x, y }');
       if (c.action !== undefined && !(isObj(c.action) && typeof c.action.from === 'string' && isPos(c.action.to)))
         p.push('camera.action must be { from: unit id, to: { x, y } }');
+      if (c.fixed !== undefined && c.fixed !== 'side' && c.fixed !== 'three-quarter')
+        p.push('camera.fixed must be "side" or "three-quarter"');
+      if (c.fixed !== undefined && c.action !== undefined)
+        p.push('camera.fixed turns the action camera off: drop action');
     }
   }
   if (r.hide !== undefined && !(Array.isArray(r.hide) && r.hide.every((h) => HIDDEN.has(h))))
@@ -430,6 +435,10 @@ export function playStep(b: Battle, step: Step): { events: BattleEvent[]; proble
 // Loop: the battle back where it started (positions, HP, facing, the dead alive again, the same dice), as a fresh Battle on
 // that state, so no undo history carries over from the round before
 export const rewind = (b: Battle, start: BattleState) => Object.assign(b, new Battle(b.grid, structuredClone(start)));
+
+// camera.fixed "side" with no angle: the view across the first step's line, so the body is seen in profile
+// (angle 7 looks along the columns, for a move along a row; angle 1 the other way)
+export const sideAngle = (from: Pos, to: Pos) => (Math.abs(to.x - from.x) >= Math.abs(to.y - from.y) ? 7 : 1);
 
 // ?sandbox= holds the spec in one of three forms (docs/sandbox.md): JSON as is (percent-encoded), the name of a spec file
 // under scripts/sandbox/ ending in .json (base64url has no "."), or base64url JSON
