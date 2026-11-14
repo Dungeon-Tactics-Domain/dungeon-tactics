@@ -1,0 +1,3 @@
+# Mechanical commits that git blame should skip (GitHub reads this file).
+# style: format the codebase with biome
+822760116832eb881f45647a5d6773ee18378d4a
