@@ -36,6 +36,9 @@ export interface Tile {
   // Tree that occupies a square of `tree` x `tree` tiles (half tile, half.ts): it sits on the top-left tile; the other
   // tiles of the square are forest without a drawing of their own. Drawing only: the rule reads the terrain of each tile
   tree?: number;
+  // Object of the tile (crate, barrel, body, column) drawn over a `span` x `span` square from this cell, and none on a cell
+  // with 0 (half.ts: the whole tile's object on the top-left cell of its 4). Drawing only; without it, 1
+  span?: number;
 }
 
 // Map immutable during the battle: it stays outside the BattleState (the state keeps only the scenario id).
@@ -44,7 +47,11 @@ export interface Grid {
   height: number;
   tiles: Tile[];
   levelHeight?: number; // height of one level in the drawing, in tiles; only the FFT study map sets it (finer levels)
+  // cells per whole tile on each side: 2 on a map split into half tiles (half.ts), where the rules still read ranges,
+  // radii, pushes and hit-chance distance in whole tiles. Without it, 1
+  sub?: number;
 }
+export const subOf = (g: Grid) => g.sub ?? 1;
 
 const SYMBOL: Record<string, TerrainKind> = { '.': 'floor', T: 'forest', '#': 'wall' };
 

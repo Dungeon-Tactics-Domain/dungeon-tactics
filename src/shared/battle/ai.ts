@@ -1,11 +1,23 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import type { Battle } from './battle.ts';
 import { basicOf, COMBAT, previewAbility, simulatePush } from './combat.ts';
-import { canStand, dist, facingTo, type Grid, neighbors, posKey, standH, stepCost, TERRAIN, tileAt } from './grid.ts';
-import { distTo, footprint, jumpOf, leaps, reachable, type Step } from './pathing.ts';
+import {
+  canStand,
+  dist,
+  facingTo,
+  type Grid,
+  neighbors,
+  posKey,
+  standH,
+  stepCost,
+  subOf,
+  TERRAIN,
+  tileAt,
+} from './grid.ts';
+import { cellsOf, footprint, gap, jumpOf, leaps, reachable, type Step } from './pathing.ts';
 import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
-import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
+import { isObjective, UNIT_DEFS } from './units.ts';
 
 // Initial weights from Oct 25 (in "expected life points"): the AI is greedy for one turn and has no rolls, so with the same
 // situation it plays the same. The player sees its reach; the intent only shows on its turn (spec).
@@ -60,7 +72,7 @@ function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId
     // a charge that aims at the tile (panel, the Aimed Shot): whoever plays before it fires probably leaves and the hit lands on
     // nothing (Nov 12). A spell with charge follows the unit (abilities.ts) and loses nothing from this
     const leaves = ability.panel && u.ct + UNIT_DEFS[u.def].speed * ability.charge >= TURN_THRESHOLD ? W.ESCAPE : 1;
-    total += (foe ? expected * (u.def === OBJECTIVE_DEF ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY) * leaves;
+    total += (foe ? expected * (isObjective(u.def) ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY) * leaves;
   }
   return total;
 }
@@ -93,7 +105,7 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
   const queue: { p: Pos; cost: number }[] = [];
   for (const o of state.units) {
     if (o.team === actor.team) continue;
-    const cost = o.def === OBJECTIVE_DEF ? -W.OBJECTIVE_PULL : 0;
+    const cost = isObjective(o.def) ? -W.OBJECTIVE_PULL * subOf(grid) : 0;
     if ((best.get(posKey(o.pos)) ?? Infinity) <= cost) continue;
     best.set(posKey(o.pos), cost);
     queue.push({ p: o.pos, cost });
@@ -129,6 +141,8 @@ function positionScore(
   walk: Map<string, number>,
 ): number {
   const tile = tileAt(grid, at);
+  // the weights are per whole tile: on the split map (half.ts) the cells between the corners are counted back in tiles
+  const tiles = (d: number) => d / subOf(grid);
   // spikes: ending the turn there costs their damage (grid.ts)
   // a spike that kills whoever ends the turn on it counts as their own death (Nov 13, review: the Brute with 5 life stopped there)
   const spike = !tile.spikes ? 0 : actor.hp <= COMBAT.SPIKE_DAMAGE ? 1000 : COMBAT.SPIKE_DAMAGE;
@@ -136,18 +150,19 @@ function positionScore(
   let nearest = Infinity;
   for (const o of state.units) {
     if (o.team === actor.team) {
-      if (!attacking && o.def === OBJECTIVE_DEF) score -= W.GUARD * Math.max(0, dist(at, o.pos) - GUARD_RADIUS);
+      if (!attacking && isObjective(o.def)) score -= W.GUARD * Math.max(0, tiles(dist(at, o.pos)) - GUARD_RADIUS);
       continue;
     }
-    nearest = Math.min(nearest, dist(at, o.pos) - (o.def === OBJECTIVE_DEF ? W.OBJECTIVE_PULL : 0));
+    nearest = Math.min(nearest, tiles(dist(at, o.pos)) - (isObjective(o.def) ? W.OBJECTIVE_PULL : 0));
     const def = UNIT_DEFS[o.def];
     if (!attacking || def.speed === 0 || !def.abilities.length) continue;
-    const reach = def.move + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
-    if (dist(at, o.pos) <= reach) score -= W.THREAT * Math.max(...def.abilities.map((a) => avg(ABILITIES[a].damage)));
+    const reach = tiles(def.move) + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
+    if (tiles(dist(at, o.pos)) <= reach)
+      score -= W.THREAT * Math.max(...def.abilities.map((a) => avg(ABILITIES[a].damage)));
   }
   // on foot when there is a path; in a straight line only if no enemy is reachable by walking
   const walked = walk.get(posKey(at));
-  if (walked !== undefined) nearest = walked;
+  if (walked !== undefined) nearest = tiles(walked);
   return score - (attacking ? W.APPROACH : W.ADVANCE) * (Number.isFinite(nearest) ? nearest : 0);
 }
 
@@ -190,7 +205,7 @@ function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Ma
     if (spot === me.pos) return s;
     for (const e of state.turn.engaged ?? []) {
       const foe = state.units.find((u) => u.id === e.unit);
-      if (!foe || (!e.ranged && distTo(foe, spot) <= 1)) continue;
+      if (!foe || (!e.ranged && gap(footprint(foe), cellsOf(spot, UNIT_DEFS[me.def].size ?? 1)) <= 1)) continue;
       const p = previewAbility(grid, state, foe.id, basicOf(foe.def), me.pos, true);
       if (p.ok && p.targets[0]) s -= (p.targets[0].chance / 100) * ((p.targets[0].dmgMin + p.targets[0].dmgMax) / 4);
     }

@@ -1,42 +1,24 @@
-// Half tile (Nov 13, Fernando's request: "the characters occupy a square of 4 tiles 2x2, but movement is 1 tile at a time;
-// I want to test it like this"; later: "trees can be 3, 4, 5 wide… many kinds of tree"). Test version
-// (?scenario=half, Wood): the map is divided into half-tiles (each tile becomes 2x2), each unit becomes a 2x2 token with
-// movement and ranges doubled, and the Wood gets trees 3 to 5 half-tiles wide and crates and bodies
-// scattered around. It only exists for whoever calls registerHalf (the client with ?scenario=half), like the FFT study.
-import { ABILITIES } from './abilities.ts';
+// Half tile (Nov 13, Fernando's request: "the characters occupy a square of 4 tiles 2x2, but movement is 1 tile at a time";
+// later: "trees can be 3, 4, 5 wide… many kinds of tree"). Since Nov 14 ("the half-tile movement mechanic still doesn't exist",
+// looking at stage 0) every game battle is played this way: `halve` divides the map into cells (each tile becomes 2x2, Grid.sub
+// = 2) and each unit into a 2x2 token that walks 1 cell at a time. Abilities stay as written, in whole tiles: the rules
+// measure them in cells (pathing.ts farCells), so ranges, areas, pushes and hit chance answer as on the whole map.
+// The test map (?scenario=half, Wood) adds trees 3 to 5 cells wide and crates and bodies scattered around.
 import { FACING, type Grid, posKey, type Tile, tileAt } from './grid.ts';
 import { SCENARIOS, type Scenario } from './scenarios.ts';
 import type { Pos } from './types.ts';
-import { UNIT_DEFS } from './units.ts';
+import { HALF, UNIT_DEFS } from './units.ts';
 
-export const HALF = '½';
+export { baseDef, HALF } from './units.ts';
 export const HALF_ID = 'ash_wood_half';
-export const baseDef = (def: string) => (def.endsWith(HALF) ? def.slice(0, -HALF.length) : def);
+const SUB = 2;
 
-// range in half-tiles: melee stays 1 (two squares side by side are 1 half-tile apart), the rest doubles
-const twice = (r: number) => (r <= 1 ? r : r * 2);
-
-function registerDefs() {
-  for (const a of Object.values(ABILITIES)) {
-    if (a.id.endsWith(HALF) || ABILITIES[a.id + HALF]) continue;
-    ABILITIES[a.id + HALF] = {
-      ...a,
-      id: a.id + HALF,
-      range: [twice(a.range[0]), twice(a.range[1])],
-      radius: a.radius * 2,
-      push: a.push * 2,
-    };
-  }
-  for (const d of Object.values(UNIT_DEFS)) {
-    if (d.id.endsWith(HALF) || UNIT_DEFS[d.id + HALF]) continue;
-    UNIT_DEFS[d.id + HALF] = {
-      ...d,
-      id: d.id + HALF,
-      size: (d.size ?? 1) * 2,
-      move: d.move * 2,
-      abilities: d.abilities.map((a) => a + HALF),
-    };
-  }
+// the token of a sheet: the square doubles (a 2x2 boss becomes 4x4) and so does the movement, now counted in cells. Always
+// rebuilt: the campaign sheets (dev-h0, dev-e0…) change from stage to stage under the same id
+function halfDef(id: string): string {
+  const d = UNIT_DEFS[id];
+  UNIT_DEFS[id + HALF] = { ...d, id: id + HALF, size: (d.size ?? 1) * SUB, move: d.move * SUB };
+  return id + HALF;
 }
 
 // each tile becomes 2x2 half-tiles; the ramp stays only on the half-tile next to the upper tile (the other is flat)
@@ -48,16 +30,9 @@ function split(g: Grid): Grid {
     for (let x = 0; x < W; x++) {
       const t = tileAt(g, { x: x >> 1, y: y >> 1 });
       const c: Tile = { ...t };
-      // the tile's object (crate, barrel, body) stays only on the top-left half-tile: otherwise it became 4 identical ones. The crate and
-      // the barrel still block the whole square; the body only occupies its own
-      const corner = x % 2 === 0 && y % 2 === 0;
-      if (!corner && PROPS.has(t.look ?? '')) {
-        c.look = 'sand';
-        if (t.look === 'corpse') {
-          c.terrain = 'floor';
-          delete c.noStop;
-        }
-      }
+      // the tile's object (crate, barrel, body) is drawn once, over its 4 cells: otherwise it became 4 small ones. The rule
+      // keeps the whole tile: the crate and the barrel block its 4 cells and nobody stops on any cell of the body
+      c.span = x % 2 === 0 && y % 2 === 0 ? SUB : 0;
       if (t.ramp) {
         const f = FACING[t.ramp[0]];
         const nearHigh =
@@ -66,11 +41,10 @@ function split(g: Grid): Grid {
       }
       tiles.push(c);
     }
-  return { width: W, height: H, tiles, levelHeight: (g.levelHeight ?? 0.5) * 2 };
+  return { width: W, height: H, tiles, levelHeight: (g.levelHeight ?? 0.5) * 2, sub: SUB };
 }
 
 const TREE_LOOKS = ['tree', 'tree2', 'tree3', 'tree4'];
-const PROPS = new Set(['crates', 'barrel', 'corpse']);
 
 // Wood trees in half-tiles: the old ones become trees of 2; plus some of 3 to 5 on grass tiles, away from the
 // road, the water and where the units spawn, each one only if the path from the heroes to the enemies stays open
@@ -166,10 +140,10 @@ function scatterProps(g: Grid, spawns: Pos[]): void {
   let s = 777;
   const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const kinds: Partial<Tile>[] = [
-    { terrain: 'wall', look: 'crates' },
-    { terrain: 'wall', look: 'barrel' },
-    { terrain: 'floor', look: 'corpse', noStop: true },
-    { terrain: 'floor', look: 'corpse', noStop: true },
+    { terrain: 'wall', look: 'crates', span: 1 },
+    { terrain: 'wall', look: 'barrel', span: 1 },
+    { terrain: 'floor', look: 'corpse', noStop: true, span: 1 },
+    { terrain: 'floor', look: 'corpse', noStop: true, span: 1 },
   ];
   let placed = 0;
   for (let tries = 0; tries < 600 && placed < 14; tries++) {
@@ -182,18 +156,28 @@ function scatterProps(g: Grid, spawns: Pos[]): void {
   }
 }
 
-// Wood in half-tiles; registers the tokens and the scenario (client with ?scenario=half)
-export function registerHalf(): Scenario {
-  registerDefs();
-  const base = SCENARIOS.ash_wood;
-  const grid = split(base.grid);
-  const spawns = base.spawns.map((sp) => ({ ...sp, def: sp.def + HALF, x: sp.x * 2, y: sp.y * 2 }));
-  const anchors = spawns.map((sp) => ({ x: sp.x, y: sp.y }));
-  const hero = spawns.find((sp) => sp.team === 'hero')!,
-    foe = spawns.find((sp) => sp.team === 'enemy')!;
-  plantTrees(grid, anchors, hero, foe);
-  scatterProps(grid, anchors);
-  const sc: Scenario = { id: HALF_ID, name: `${base.name} (meia casa)`, en: `${base.en} (half tiles)`, grid, spawns };
-  SCENARIOS[HALF_ID] = sc;
+// The battle in half tiles: the map split, the spawns on the cell of their tile's corner, each sheet as its token and the
+// scenario's own rules (boss, last one standing, dawn). Registered under `<id>½`, so a whole-tile save never opens on it
+export function halve(base: Scenario): Scenario {
+  const sc: Scenario = {
+    ...base,
+    id: base.id + HALF,
+    grid: split(base.grid),
+    spawns: base.spawns.map((sp) => ({ ...sp, def: halfDef(sp.def), x: sp.x * SUB, y: sp.y * SUB })),
+  };
+  SCENARIOS[sc.id] = sc;
   return sc;
+}
+
+// Wood in half-tiles with the big trees and the scattered props (client with ?scenario=half)
+export function registerHalf(): Scenario {
+  const sc = halve(SCENARIOS.ash_wood);
+  const anchors = sc.spawns.map((sp) => ({ x: sp.x, y: sp.y }));
+  const hero = sc.spawns.find((sp) => sp.team === 'hero')!,
+    foe = sc.spawns.find((sp) => sp.team === 'enemy')!;
+  plantTrees(sc.grid, anchors, hero, foe);
+  scatterProps(sc.grid, anchors);
+  const test: Scenario = { ...sc, id: HALF_ID, name: `${sc.name} (meia casa)`, en: `${sc.en} (half tiles)` };
+  SCENARIOS[HALF_ID] = test;
+  return test;
 }

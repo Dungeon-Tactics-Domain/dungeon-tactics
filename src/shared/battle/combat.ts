@@ -10,15 +10,29 @@ import {
   samePos,
   sideOf,
   standH,
+  subOf,
   TERRAIN,
   tileAt,
 } from './grid.ts';
-import { distTo, inAbilityRange, MAX_JUMP, nearestTile, shotStop, unitAt } from './pathing.ts';
+import {
+  aimEnds,
+  areaOf,
+  cellsOf,
+  closest,
+  footprint,
+  gap,
+  inAbilityRange,
+  inArea,
+  MAX_JUMP,
+  shotStop,
+  unitAt,
+  wholeTiles,
+} from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, UnitState } from './types.ts';
-import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
+import { baseDef, isObjective, UNIT_DEFS } from './units.ts';
 
 // Initial numbers from Oct 25; they can be measured in the simulation (scripts/battle-sim.ts), which is optional.
 export const COMBAT = {
@@ -65,11 +79,13 @@ const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
 
 // healing and support abilities target an ally and never miss
 const isHeal = (a: AbilityDef) => a.heal[1] > 0 || !!a.ally;
+// swimming: the whole square in deep water (a token with a foot on the bank still acts)
+const inDeep = (grid: Grid, u: UnitState) => footprint(u).every((c) => isDeep(tileAt(grid, c)));
 
 // `side`: where the hit catches the target (sideOf); magic ignores direction (in FFT it only goes through the magic shield)
 export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, side: Side = 'front'): number {
   if (isHeal(ability)) return 100;
-  const d = dist(from, to);
+  const d = wholeTiles(grid, dist(from, to)); // on the split map, the whole tiles the cells stand for
   const dh = standH(tileAt(grid, from)) - standH(tileAt(grid, to));
   // cover only counts against ranged attackers: melee sees the whole target
   const cover = d > 1 && TERRAIN[tileAt(grid, to).terrain].cover ? COMBAT.COVER_PENALTY : 0;
@@ -78,9 +94,12 @@ export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, s
   return Math.max(COMBAT.MIN_CHANCE, Math.min(COMBAT.MAX_CHANCE, raw));
 }
 
-function affected(state: BattleState, actor: UnitState, ability: AbilityDef, center: Pos): UnitState[] {
-  const inArea = state.units.filter((u) => u.id !== actor.id && distTo(u, center) <= ability.radius);
-  if (ability.radius > 0) return inArea; // an area hits everyone, allies included
+function affected(grid: Grid, state: BattleState, actor: UnitState, ability: AbilityDef, center: Pos): UnitState[] {
+  // an area hits everyone, allies included
+  if (ability.radius > 0) {
+    const area = areaOf(grid, state, center);
+    return state.units.filter((u) => u.id !== actor.id && inArea(grid, area, ability.radius, footprint(u)));
+  }
   const u = unitAt(state, center);
   // the user is only a target of a support ability whose range starts at 0
   const self = u?.id === actor.id;
@@ -116,24 +135,23 @@ export function previewAbility(
   if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
   // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that already fired does not pass here:
   // whoever charges does not walk and a push does not enter deep water
-  if (!charged && isDeep(tileAt(grid, actor.pos))) return fail('water');
+  if (!charged && inDeep(grid, actor)) return fail('water');
   // a large unit measures range and sight from its tile nearest to the target (for whoever occupies 1 tile it is the same)
-  const from = nearestTile(actor, center);
-  if (!inAbilityRange(grid, ability, from, center)) return fail('range');
+  const [from, to] = aimEnds(grid, state, actor, center);
+  if (!inAbilityRange(grid, ability, from, to)) return fail('range');
   // Without sight the shot fires anyway and stops at the first obstacle on the path (Nov 13, Fernando's request: "must allow the
   // attack and the guy loses the attack"); the area, if any, explodes there. And attacking empty ground is allowed (Nov 13): the hit fires
   // without a target. The AI only picks attacks with a target (attackScore adds zero without a target)
   // a model on the path only blocks what flies straight (arrow, knife): magic passes over heads
-  const stop = ability.needsSight ? shotStop(grid, state, from, center, actor.id, !ability.magic) : null;
+  const stop = ability.needsSight ? shotStop(grid, state, from, to, actor.id, !ability.magic) : null;
   if (stop) center = stop.pos;
   // hit a model on the path: it takes the hit, whichever side it is on (without area: only it)
   const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;
-  const hit = blocker && ability.radius === 0 ? [blocker] : affected(state, actor, ability, center);
+  const hit = blocker && ability.radius === 0 ? [blocker] : affected(grid, state, actor, ability, center);
   const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? withPower(actor, ability);
   const targets = hit.map((u) => {
     // against a large unit, its tile nearest to the attacker (distance and height)
-    const at = nearestTile(u, actor.pos),
-      from = nearestTile(actor, at);
+    const [from, at] = closest(footprint(actor), footprint(u));
     const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
     return {
       unit: u.id,
@@ -168,7 +186,7 @@ export function counters(grid: Grid, state: BattleState, actorId: string, to: Po
     const actor = state.units.find((u) => u.id === actorId);
     const foe = state.units.find((u) => u.id === e.unit);
     if (!actor || !foe) continue;
-    if (!e.ranged && distTo(foe, to) <= 1) {
+    if (!e.ranged && gap(footprint(foe), cellsOf(to, UNIT_DEFS[actor.def].size ?? 1)) <= 1) {
       left.push(e);
       continue;
     } // stayed adjacent: it can still retaliate if it leaves later
@@ -253,7 +271,7 @@ function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEv
 // End of the turn on spikes (grid.ts): hurts whoever plays now. No roll (the hash of games without spikes does not change)
 export function spikeAtTurnEnd(grid: Grid, state: BattleState): BattleEvent[] {
   const actor = state.units.find((u) => u.id === state.turn.actor);
-  if (!actor || !tileAt(grid, actor.pos).spikes) return [];
+  if (!actor || !footprint(actor).some((c) => tileAt(grid, c).spikes)) return [];
   const events: BattleEvent[] = [{ k: 'spike', unit: actor.id, dmg: COMBAT.SPIKE_DAMAGE }];
   hurt(state, actor, COMBAT.SPIKE_DAMAGE, events);
   return events;
@@ -268,6 +286,8 @@ export interface PushResult {
 // Pushes along the axis of greatest difference relative to the ability's center. If the victim is at the center (area), it moves away
 // from the user. Each tile is checked: wall, unit, edge and high step stop it (bump); going down is a fall, with damage
 // from 2 levels up. It does not change the state: the AI uses this to value pushes before choosing the move.
+// On the split map (half.ts) the token is pushed `steps` whole tiles in cells, its whole square checked on each cell; the
+// direction goes from the middle of the squares and the height of a square is its highest cell
 export function simulatePush(
   grid: Grid,
   state: BattleState,
@@ -277,32 +297,37 @@ export function simulatePush(
   steps: number,
 ): PushResult {
   const result: PushResult = { to: unit.pos, dmg: 0, events: [] };
-  if ((UNIT_DEFS[unit.def].size ?? 1) > 1) return result; // a large unit does not move
-  const from = samePos(unit.pos, center) ? origin : center;
-  let dx = unit.pos.x - from.x;
-  let dy = unit.pos.y - from.y;
+  const size = UNIT_DEFS[unit.def].size ?? 1;
+  if ((UNIT_DEFS[baseDef(unit.def)].size ?? 1) > 1) return result; // a large unit does not move
+  const cells = (p: Pos) => cellsOf(p, size);
+  // twice the middle of the square, so it stays whole
+  const mid = (p: Pos, n: number) => ({ x: 2 * p.x + n - 1, y: 2 * p.y + n - 1 });
+  const sub = subOf(grid);
+  const from = cells(unit.pos).some((c) => samePos(c, center)) ? mid(origin, sub) : mid(center, sub);
+  let dx = mid(unit.pos, size).x - from.x;
+  let dy = mid(unit.pos, size).y - from.y;
   if (dx === 0 && dy === 0) return result;
   const horizontal = Math.abs(dx) >= Math.abs(dy);
   dx = horizontal ? Math.sign(dx) : 0;
   dy = horizontal ? 0 : Math.sign(dy);
-  for (let i = 0; i < steps; i++) {
+  const height = (p: Pos) => Math.max(...cells(p).map((c) => standH(tileAt(grid, c))));
+  for (let i = 0; i < steps * sub; i++) {
     const cur = result.to;
     const next = { x: cur.x + dx, y: cur.y + dy };
-    // deep water holds a push like a wall (our assumption: the guide does not say what happens)
     // deep water holds a push like a wall (our assumption, kept when it started letting units enter, Nov 13)
     const blocked =
-      !inBounds(grid, next) ||
-      !canStand(tileAt(grid, next)) ||
-      isDeep(tileAt(grid, next)) ||
-      !!tileAt(grid, next).noStop ||
-      !!unitAt(state, next) ||
-      standH(tileAt(grid, next)) - standH(tileAt(grid, cur)) > MAX_JUMP;
+      cells(next).some((c) => {
+        if (!inBounds(grid, c)) return true;
+        const t = tileAt(grid, c),
+          o = unitAt(state, c);
+        return !canStand(t) || isDeep(t) || !!t.noStop || (!!o && o.id !== unit.id);
+      }) || height(next) - height(cur) > MAX_JUMP;
     if (blocked) {
       result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });
       result.dmg += COMBAT.BUMP_DAMAGE;
       return result;
     }
-    const levels = standH(tileAt(grid, cur)) - standH(tileAt(grid, next));
+    const levels = height(cur) - height(next);
     result.to = next;
     result.events.push({ k: 'push', unit: unit.id, to: next });
     const dmg =
@@ -314,7 +339,9 @@ export function simulatePush(
       result.events.push({ k: 'fall', unit: unit.id, levels, dmg });
       result.dmg += dmg;
     }
-    if (tileAt(grid, next).spikes) {
+    // spikes hurt when the square reaches them, not again on each cell over the same patch
+    const spiky = (p: Pos) => cells(p).some((c) => tileAt(grid, c).spikes);
+    if (spiky(next) && (size === 1 || !spiky(cur))) {
       result.events.push({ k: 'spike', unit: unit.id, dmg: COMBAT.SPIKE_DAMAGE });
       result.dmg += COMBAT.SPIKE_DAMAGE;
     }
@@ -341,11 +368,11 @@ function push(
 export function checkOutcome(state: BattleState): Outcome {
   const custom = rulesOf(state).outcome;
   if (custom) return custom(state);
-  const heroes = state.units.filter((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF);
+  const heroes = state.units.filter((u) => u.team === 'hero' && !isObjective(u.def));
   // only a map that was born with a Beacon loses by it (Nov 13, review: Wood and Pass in the standalone Battle lost on the 1st turn);
   // a test state outside the list counts as a map with a Beacon
-  const hadObjective = SCENARIOS[state.scenario]?.spawns.some((s) => s.def === OBJECTIVE_DEF) ?? true;
-  const objective = state.units.some((u) => u.def === OBJECTIVE_DEF);
+  const hadObjective = SCENARIOS[state.scenario]?.spawns.some((s) => isObjective(s.def)) ?? true;
+  const objective = state.units.some((u) => isObjective(u.def));
   if ((hadObjective && !objective) || heroes.length === 0) return 'defeat';
   if (!state.units.some((u) => u.team === 'enemy')) return 'victory';
   return 'ongoing';

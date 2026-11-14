@@ -12,6 +12,7 @@ import {
   samePos,
   standH,
   stepCost,
+  subOf,
   TERRAIN,
   tileAt,
 } from './grid.ts';
@@ -29,16 +30,45 @@ const EYE = 1;
 
 // Large unit (UnitDef.size, night of Nov 12: the boss that occupies 2x2): `pos` is the top-left tile of the square.
 // Every "who is on this tile" question goes through here, so walking, blocking and aiming apply to all 4 tiles.
-export function footprint(u: UnitState): Pos[] {
-  const size = UNIT_DEFS[u.def].size ?? 1;
+export function cellsOf(p: Pos, size: number): Pos[] {
   const out: Pos[] = [];
-  for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: u.pos.x + dx, y: u.pos.y + dy });
+  for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: p.x + dx, y: p.y + dy });
   return out;
 }
+export const footprint = (u: UnitState): Pos[] => cellsOf(u.pos, UNIT_DEFS[u.def].size ?? 1);
 // distance to the unit's nearest tile (range, area and hit chance against the large boss)
 export const distTo = (u: UnitState, p: Pos) => Math.min(...footprint(u).map((f) => dist(f, p)));
 export const nearestTile = (u: UnitState, p: Pos): Pos =>
   footprint(u).reduce((a, b) => (dist(b, p) < dist(a, p) ? b : a));
+// tiles between two groups of tiles (two units side by side: 1), and their closest pair [in a, in b]
+export const gap = (a: Pos[], b: Pos[]) => Math.min(...a.flatMap((p) => b.map((q) => dist(p, q))));
+export const closest = (a: Pos[], b: Pos[]): [Pos, Pos] =>
+  a.flatMap((p) => b.map((q): [Pos, Pos] => [p, q])).reduce((x, y) => (dist(y[0], y[1]) < dist(x[0], x[1]) ? y : x));
+
+// Half tiles (Nov 14, Fernando: half-tile movement in the real battles): abilities keep their ranges and radii in whole
+// tiles and the split map (Grid.sub) measures them in cells between the two squares. Two units D whole tiles apart are
+// 2D-1 cells apart along a line and 2D-2 on a diagonal, so these keep every whole-tile answer (tests/half-tiles.test.ts)
+export const farCells = (g: Grid, r: number) => (r <= 0 ? 0 : subOf(g) * (r - 1) + 1);
+export const nearCells = (g: Grid, r: number) => Math.max(r, subOf(g) * (r - 1));
+// whole tiles that `d` cells stand for (the inverse of farCells): the distance the hit chance counts
+export const wholeTiles = (g: Grid, d: number) => Math.ceil((d + subOf(g) - 1) / subOf(g));
+
+// Area of an ability aimed at `center`: on the split map, the square of the unit standing there (or the 2x2 from the cell, on
+// empty ground), the same as the whole tile it stands for; on a whole map, the tile itself
+export const areaOf = (grid: Grid, state: BattleState, center: Pos): Pos[] => {
+  if (subOf(grid) === 1) return [center];
+  const u = unitAt(state, center);
+  return u ? footprint(u) : cellsOf(center, subOf(grid));
+};
+// The two cells range and sight are measured between when `actor` aims at `center`: its cell nearest to the tile; on the split
+// map, against a unit, the closest cells of the two squares, whichever of its 4 cells was picked (an adjacent token stays
+// adjacent for the minimum range)
+export const aimEnds = (grid: Grid, state: BattleState, actor: UnitState, center: Pos): [Pos, Pos] => {
+  const u = subOf(grid) > 1 ? unitAt(state, center) : undefined;
+  return u ? closest(footprint(actor), footprint(u)) : [nearestTile(actor, center), center];
+};
+export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[]) =>
+  gap(area, cells) <= farCells(grid, radius);
 
 export const unitAt = (state: BattleState, p: Pos): UnitState | undefined =>
   state.units.find((u) => footprint(u).some((f) => samePos(f, p)));
@@ -84,10 +114,11 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
 
 // Search by the cost of each step (1, or 2 in shallow water; the gap, 1 per tile flown) up to def.move points. Passes through allies, never enemies; the result does not include
 // the starting tile or occupied tiles, so the client can paint only where you can stop.
-// Whoever occupies more than one tile and walks (half tile, Nov 13: the models occupy 2x2 and walk 1 at a time; half.ts): the search is
-// by the top-left corner. It fits if all the tiles of the square are walkable, none is a body to stop on, no other unit is there and
-// they differ by at most 1 level; the square's height is the highest, and the step follows the jump. Cost: that
-// of the most expensive tile entering the square. No gap for now
+// Whoever occupies more than one tile and walks (half tile: the tokens occupy 2x2 and walk 1 cell at a time; half.ts): the
+// search is by the top-left corner. It fits if all the cells of the square are walkable, none holds an enemy and they differ by at
+// most the jump (a square across a step of 2 is the middle of the jump of whoever jumps 2); the square's height is the highest, and
+// the step follows the jump by the surface, deep water included (it enters, like the 1-tile unit). Cost: 1 per cell. The gap flies
+// over the cells between the two squares, up to [jump/2] whole tiles, like `leaps`
 function reachableBig(
   grid: Grid,
   state: BattleState,
@@ -96,10 +127,10 @@ function reachableBig(
   jump: number,
 ): Map<string, Step> {
   const size = UNIT_DEFS[unit.def].size!;
-  const cells = (p: Pos) => {
-    const out: Pos[] = [];
-    for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: p.x + dx, y: p.y + dy });
-    return out;
+  const cells = (p: Pos) => cellsOf(p, size);
+  const foe = (c: Pos) => {
+    const o = unitAt(state, c);
+    return !!o && o.id !== unit.id && o.team !== unit.team; // passes through allies, never enemies
   };
   const heightOf = (p: Pos): number | null => {
     let lo = Infinity,
@@ -107,16 +138,21 @@ function reachableBig(
     for (const c of cells(p)) {
       if (!inBounds(grid, c)) return null;
       const t = tileAt(grid, c);
-      if (!canStand(t) || isDeep(t)) return null;
-      const o = unitAt(state, c);
-      if (o && o.id !== unit.id && o.team !== unit.team) return null; // passes through allies, never enemies
+      if (!canStand(t) || foe(c)) return null;
       lo = Math.min(lo, t.h);
       hi = Math.max(hi, t.h);
     }
-    return hi - lo > 1 ? null : hi;
+    return hi - lo > jump ? null : hi;
   };
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
   const queue: Pos[] = [unit.pos];
+  const visit = (n: Pos, next: number, cur: Pos) => {
+    const k = posKey(n);
+    if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) return;
+    seen.set(k, { pos: n, cost: next, from: posKey(cur) });
+    queue.push(n);
+  };
+  const flyMax = subOf(grid) * Math.floor(jump / 2);
   for (let i = 0; i < queue.length; i++) {
     const cur = queue[i];
     const cost = seen.get(posKey(cur))!.cost;
@@ -125,11 +161,24 @@ function reachableBig(
       const n = { x: cur.x + d.x, y: cur.y + d.y };
       const h = heightOf(n);
       if (h === null || Math.abs(h - h0) > jump) continue;
-      const next = cost + Math.max(...cells(n).map((c) => stepCost(tileAt(grid, c))));
-      const k = posKey(n);
-      if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
-      seen.set(k, { pos: n, cost: next, from: posKey(cur) });
-      queue.push(n);
+      visit(n, cost + Math.max(...cells(n).map((c) => stepCost(tileAt(grid, c)))), cur);
+      // gap: `g` lines of cells past the square's edge are flown over (deep water or lower than both ends; a wall or an enemy
+      // blocks) and the square lands right after them, never higher and never in deep water
+      const edge = { x: cur.x + (d.x > 0 ? size - 1 : 0), y: cur.y + (d.y > 0 ? size - 1 : 0) };
+      const strip: Pos[] = [];
+      for (let g = 1; g <= flyMax; g++) {
+        const line = Array.from({ length: size }, (_, k) => ({
+          x: edge.x + d.x * g + (d.x ? 0 : k),
+          y: edge.y + d.y * g + (d.y ? 0 : k),
+        }));
+        if (line.some((c) => !inBounds(grid, c) || !TERRAIN[tileAt(grid, c).terrain].walkable || foe(c))) break;
+        strip.push(...line);
+        const land = { x: cur.x + d.x * (size + g), y: cur.y + d.y * (size + g) };
+        const hl = heightOf(land);
+        if (hl === null || hl > h0 || h0 - hl > jump || cells(land).some((c) => isDeep(tileAt(grid, c)))) continue;
+        const low = Math.min(h0, hl);
+        if (strip.every((c) => standH(tileAt(grid, c)) < low)) visit(land, cost + size + g, cur);
+      }
     }
   }
   for (const step of seen.values()) {
@@ -304,13 +353,13 @@ export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
   }
 }
 
-// max range against a tile: +1 per level above the target for whoever has heightRange
+// max range against a tile: +1 per level above the target for whoever has heightRange (in cells on the split map)
 export function maxRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): number {
   const up = ability.heightRange ? Math.max(0, standH(tileAt(grid, from)) - standH(tileAt(grid, to))) : 0;
-  return ability.range[1] + up;
+  return farCells(grid, ability.range[1] + up);
 }
 
 export function inAbilityRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): boolean {
   const d = dist(from, to);
-  return d >= ability.range[0] && d <= maxRange(grid, ability, from, to);
+  return d >= nearCells(grid, ability.range[0]) && d <= maxRange(grid, ability, from, to);
 }

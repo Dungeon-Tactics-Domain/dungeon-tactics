@@ -27,3 +27,9 @@ export const UNIT_DEFS: Record<string, UnitDef> = Object.fromEntries(UNIT_LIST.m
 
 // the target to protect in the 1st battle; defeat comes from its fall or from the death of all heroes
 export const OBJECTIVE_DEF = 'beacon';
+
+// Half tiles (half.ts): every sheet of a split map is a copy named `<id>½` (2x2 token, movement in cells). The rules that ask
+// "which sheet is this" read the original through baseDef
+export const HALF = '½';
+export const baseDef = (def: string) => (def.endsWith(HALF) ? def.slice(0, -HALF.length) : def);
+export const isObjective = (def: string) => baseDef(def) === OBJECTIVE_DEF;
