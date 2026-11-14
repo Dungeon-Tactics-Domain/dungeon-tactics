@@ -450,3 +450,9 @@ body:has(.result-overlay) .hud, body:has(.result-overlay) .fps { visibility: hid
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .talk-face.pop, .fade-out { animation: none; } }
 .talk-keys { position: absolute; right: 40px; bottom: 8px; font-size: var(--fs-sm); color: var(--ink-muted); } .talk-overlay.dark .talk-keys { color: var(--paper-lo); right: 50%; transform: translateX(50%); bottom: -28px; } /* dialogue key hint (talk.ts) */
+/* Unit sheet (world-ui.ts, openSheet): two columns on PC so it fits without scrolling at 1280x720; one when narrow */
+.dialog.sheet { width: min(980px, 100%); }
+.sheet-cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0 28px; }
+.sheet-cols > div:first-child > .secondary { margin-top: 12px; }
+.sheet-cols h3:first-child { margin-top: 12px; }
+@media (max-width: 760px) { .sheet-cols { grid-template-columns: 1fr; } }

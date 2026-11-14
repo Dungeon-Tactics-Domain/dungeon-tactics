@@ -5,7 +5,7 @@ import { foesText } from './campaign.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { unitFrom } from './dev-roster.ts';
-import { dialog } from './dialog.ts';
+import { choice, dialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { abilityDetail, portrait } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
@@ -197,10 +197,13 @@ export function openShop(back?: () => void) {
 // Unit sheet (like the FFT formation status screen): numbers, each ability with what it does (the ones still to come are
 // marked), the 3 equipment slots and the party actions: class, go or not to battle, and dismiss (recruits only).
 // Esc/✕ goes back to the list
-function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
+// `at`: the button that had focus before the sheet rebuilt itself (every action closes and reopens the dialog): focus
+// returns to the same place instead of jumping to the top, otherwise equipping by keyboard restarted the Tab walk each time
+function openSheet(m: Member, n: number, hero: Hero | null, back: () => void, at = -1) {
   const u = unitOf(m, n, hero);
   const def = UNIT_DEFS[m.cls];
-  const again = (x: Member) => { d.close(); openSheet(x, n, hero, back); };
+  const buttons = () => [...d.overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+  const again = (x: Member) => { const i = buttons().indexOf(document.activeElement as HTMLButtonElement); d.close(); openSheet(x, n, hero, back, i); };
   const row = (k: string, v: string | number) => [el('dt', {}, k), el('dd', {}, String(v))];
   const later = def.abilities.filter((a) => !u.abilities.includes(a));
   const eq = loadEquip(), chest = loadChest(), mine = eq[m.id] ?? {};
@@ -238,7 +241,9 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
     d.close();
     back();
   };
-  const d = dialog('party', u.name, [
+  // two columns on PC (13/11, design system): who the unit is and the decisions on the left, what it knows and wears on
+  // the right; in one column the sheet was 927 px inside a 644 px dialog and equipment sat below the fold
+  const d = dialog('party sheet', u.name, [el('div', { class: 'sheet-cols' }, el('div', {},
     el('div', { class: 'party-card' }, portrait(m.cls), el('div', {},
       el('strong', {}, unitName(m.cls)),
       el('dl', { class: 'keys' },
@@ -252,8 +257,10 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
     ...(!going && g.deployed.length >= DEPLOY_MAX ? [el('p', {}, t(`Já vão ${DEPLOY_MAX}: deixe alguém no acampamento antes.`, `${DEPLOY_MAX} already go: leave someone at camp first.`))] : []),
     // class change (like FFT's Job): the numbers and abilities become those of the new class; the equipment stays
     el('h3', {}, t('Classe', 'Class')),
-    el('div', { class: 'menu-actions' }, ...JOBS.map((c) => el('button', { type: 'button', class: 'secondary', disabled: c === m.cls,
-      'aria-pressed': String(c === m.cls), onclick: () => setClass(c) }, c === m.cls ? `✓ ${unitName(c)}` : unitName(c)))),
+    choice(t('Trocar muda os números e as habilidades; o equipamento fica.', 'Changing swaps stats and abilities; equipment stays.'),
+      JOBS.map((c) => [c, unitName(c)]), m.cls, (c) => c !== m.cls && setClass(c)),
+    el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); back(); } }, t('Voltar ao grupo', 'Back to party'))),
+  el('div', {},
     el('h3', {}, t('Habilidades', 'Abilities')),
     el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a))),
       ...later.flatMap((a) => row(abilityName(a), t('aprende mais adiante na jornada', 'learned later on the journey')))),
@@ -264,10 +271,9 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
       ...(mine[slot] ? [el('button', { type: 'button', class: 'secondary', onclick: () => put(slot, null) }, t('Tirar', 'Remove'))] : []),
       ...[...new Set(chest.items.filter((id) => ITEMS[id].slot === slot))].map((id) =>
         el('button', { type: 'button', class: 'secondary', title: itemStats(ITEMS[id]), onclick: () => put(slot, id) }, t(`Equipar ${itemName(ITEMS[id])}`, `Equip ${itemName(ITEMS[id])}`))))])),
-    ...(chest.items.length ? [] : [el('p', {}, t('O baú está vazio: compre na Loja do mapa com o ouro das vitórias.', 'The chest is empty: buy at the map Shop with gold from victories.'))]),
-    el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); back(); } }, t('Voltar ao grupo', 'Back to party')),
-  ], { onBack: back });
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+    ...(chest.items.length ? [] : [el('p', {}, t('O baú está vazio: compre na Loja do mapa com o ouro das vitórias.', 'The chest is empty: buy at the map Shop with gold from victories.'))])))],
+  { onBack: back });
+  (buttons()[at] ?? d.overlay.querySelector<HTMLButtonElement>('.primary')!).focus();
 }
 
 export interface WorldOptions {
