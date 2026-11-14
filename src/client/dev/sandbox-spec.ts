@@ -2,13 +2,14 @@
 // (dev/sandbox.ts) and the Node CLI (scripts/sandbox.mjs), so no DOM or Three here. Every check returns readable
 // problems instead of a silent default: a typo in a spec must fail the shot, not produce a different picture.
 import { ABILITIES } from '../../shared/battle/abilities.ts';
-import type { Battle } from '../../shared/battle/battle.ts';
+import { Battle } from '../../shared/battle/battle.ts';
 import type { PreviewReason } from '../../shared/battle/combat.ts';
 import { canStand, type Grid, inBounds, posKey, subOf, tileAt } from '../../shared/battle/grid.ts';
 import { footprint } from '../../shared/battle/pathing.ts';
 import type { Spawn } from '../../shared/battle/scenarios.ts';
-import type { BattleEvent, Pos, Team, UnitState } from '../../shared/battle/types.ts';
+import type { BattleEvent, BattleState, Pos, Team, UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { TIMING } from '../timing.ts';
 
 // HUD parts that `hide` accepts, by the class the HUD gives them (hud.ts, talk.ts, dialog.ts, main.ts)
 export const PANELS = {
@@ -54,7 +55,8 @@ export interface CameraSpec {
 export type Step =
   | { move: { unit: string; to: Pos } }
   | { act: { unit: string; ability: string; target: Pos } }
-  | { wait: { unit: string; facing?: number } };
+  | { wait: { unit: string; facing?: number } }
+  | { pause: number }; // ms of battle clock (slows down and stops with `speed` and pause)
 export interface SceneSpec {
   name?: string; // CLI: output file name (default: the spec file name)
   scenario?: string; // map or study id (?scenario=)
@@ -74,6 +76,9 @@ export interface SceneSpec {
   pixel?: 0 | 2 | 3 | 4;
   daylight?: number; // 0 night to 1 day (the light the Until Dawn mode and dark stages use)
   steps?: Step[]; // played in order by __sandbox.play (the CLI plays them after the scene settles)
+  loop?: boolean; // bench: the page plays the steps by itself, then rewinds the scene and plays them again, forever
+  timing?: Partial<Record<keyof typeof TIMING, number>>; // bench: TIMING values for this page only
+  speed?: number; // bench: battle clock rate, 0.25 is slow motion
 }
 
 const KEYS = [
@@ -95,6 +100,9 @@ const KEYS = [
   'pixel',
   'daylight',
   'steps',
+  'loop',
+  'timing',
+  'speed',
 ];
 const HIDDEN = new Set<string>([...Object.keys(PANELS), 'all', 'marks']);
 
@@ -186,6 +194,19 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
     if (!Array.isArray(r.steps)) p.push('steps must be a list');
     else r.steps.forEach((st, i) => p.push(...stepShape(st, `steps[${i}]`)));
   }
+  if (r.loop !== undefined && typeof r.loop !== 'boolean') p.push('loop must be true or false');
+  if (r.loop && !(Array.isArray(r.steps) && r.steps.length)) p.push('loop needs steps to play');
+  if (r.timing !== undefined) {
+    if (!isObj(r.timing)) p.push('timing must map a TIMING name to ms');
+    else
+      for (const [k, v] of Object.entries(r.timing)) {
+        if (!(k in TIMING)) p.push(`timing: unknown key "${k}" (one of ${Object.keys(TIMING).join(', ')})`);
+        // > 0: shake, jumpCrouch and jumpLand divide
+        else if (!(typeof v === 'number' && v > 0 && v <= 10000)) p.push(`timing.${k} must be ms above 0, up to 10000`);
+      }
+  }
+  if (r.speed !== undefined && !(typeof r.speed === 'number' && r.speed > 0 && r.speed <= 4))
+    p.push('speed must be above 0, up to 4 (pause with __sandbox.pause)');
   return { spec: p.length ? {} : (r as SceneSpec), problems: p };
 }
 
@@ -196,7 +217,10 @@ const STEP_KEYS: Record<string, string[]> = {
 };
 function stepShape(st: unknown, at: string): string[] {
   const kinds = isObj(st) ? Object.keys(st) : [];
-  if (kinds.length !== 1 || !STEP_KEYS[kinds[0]]) return [`${at} must be one of { move }, { act } or { wait }`];
+  if (kinds.length === 1 && kinds[0] === 'pause')
+    return isInt((st as { pause: unknown }).pause, 0, 60000) ? [] : [`${at}.pause must be ms from 0 to 60000`];
+  if (kinds.length !== 1 || !STEP_KEYS[kinds[0]])
+    return [`${at} must be one of { move }, { act }, { wait } or { pause }`];
   const k = kinds[0];
   const v = (st as Record<string, unknown>)[k];
   if (!isObj(v)) return [`${at}.${k} must be an object`];
@@ -378,6 +402,7 @@ const WHY: Record<PreviewReason, string> = {
 // become the corner cell of their square (as `inCells` does), and the problems name them as written
 export function playStep(b: Battle, step: Step): { events: BattleEvent[]; problem: string | null } {
   const fail = (problem: string) => ({ events: [], problem });
+  if ('pause' in step) return { events: [], problem: null }; // the page waits it out on the battle clock
   const k = subOf(b.grid),
     cell = (p: Pos) => ({ x: p.x * k, y: p.y * k });
   const s = 'move' in step ? step.move : 'act' in step ? step.act : step.wait;
@@ -401,3 +426,22 @@ export function playStep(b: Battle, step: Step): { events: BattleEvent[]; proble
   if (step.wait.facing !== undefined) b.face(step.wait.facing);
   return { events: b.endTurn(), problem: null };
 }
+
+// Loop: the battle back where it started (positions, HP, facing, the dead alive again, the same dice), as a fresh Battle on
+// that state, so no undo history carries over from the round before
+export const rewind = (b: Battle, start: BattleState) => Object.assign(b, new Battle(b.grid, structuredClone(start)));
+
+// ?sandbox= holds the spec in one of three forms (docs/sandbox.md): JSON as is (percent-encoded), the name of a spec file
+// under scripts/sandbox/ ending in .json (base64url has no "."), or base64url JSON
+export function readParam(v: string): { json: string } | { file: string } {
+  if (v.trimStart().startsWith('{')) return { json: v };
+  if (/^[\w-]+(\/[\w-]+)*\.json$/.test(v)) return { file: `/scripts/sandbox/${v}` };
+  const bytes = Uint8Array.from(atob(v.replaceAll('-', '+').replaceAll('_', '/')), (c) => c.charCodeAt(0));
+  return { json: new TextDecoder().decode(bytes) };
+}
+// the base64url form of a spec, for an address that needs no escaping
+export const specParam = (spec: SceneSpec) =>
+  btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(spec))))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');

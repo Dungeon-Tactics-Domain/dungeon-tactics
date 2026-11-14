@@ -45,4 +45,6 @@ export const jumpAirMs = (dh: number) => TIMING.jumpAir + TIMING.jumpPerLevel * 
 // On mobile (no key to hold) the ⏩ button toggles it (`toggle`, Fernando's choice on Nov 12).
 export const pace = { key: false, pad: false, toggle: false };
 export const FAST = 3;
-export const speed = () => (pace.key || pace.pad || pace.toggle ? FAST : 1);
+// the sandbox bench's slow motion and pause (dev/sandbox.ts); the game never changes them
+export const bench = { scale: 1, paused: false };
+export const speed = () => (pace.key || pace.pad || pace.toggle ? FAST : 1) * (bench.paused ? 0 : bench.scale);

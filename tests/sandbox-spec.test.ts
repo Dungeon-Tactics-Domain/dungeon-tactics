@@ -22,12 +22,15 @@ import {
   patchUnits,
   placementProblems,
   playStep,
+  readParam,
+  rewind,
+  specParam,
   specUrl,
   storageFor,
 } from '../src/client/dev/sandbox-spec.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
-import { halve } from '../src/shared/battle/half.ts';
+import { halfDef, halve } from '../src/shared/battle/half.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -293,8 +296,8 @@ describe('steps', () => {
         ],
       }).problems,
     ).toEqual([
-      'steps[0] must be one of { move }, { act } or { wait }',
-      'steps[1] must be one of { move }, { act } or { wait }',
+      'steps[0] must be one of { move }, { act }, { wait } or { pause }',
+      'steps[1] must be one of { move }, { act }, { wait } or { pause }',
       'steps[2].move: unknown key "speed"',
       'steps[2].move.unit must be a unit id',
       'steps[2].move.to must be { x, y }',
@@ -455,45 +458,113 @@ const CLIPS = {
   ],
 } as const;
 
+// A spec staged as the page does on the split map (stage: halve, inCells, castOf; apply: patchUnits without the removed
+// units, actor; play: playStep), its steps told in whole tiles with the height walked on; '|' between steps, so a charge
+// shows on the act and its blast on the wait
+function staged(raw: unknown) {
+  const spec = parseSpec(raw).spec;
+  const sc = halve(SCENARIOS[spec.scenario!]);
+  const cells = inCells(spec, 2);
+  cells.add = cells.add?.map((a) => ({ ...a, def: halfDef(a.def) }));
+  const cast = castOf(sc.spawns, cells);
+  const b = Battle.start({ ...sc, spawns: cast.spawns }, spec.seed ?? 1);
+  const kept = Object.entries(cells.units ?? {}).filter(([, u]) => !u.remove);
+  const units = patchUnits(b.state.units, Object.fromEntries(kept));
+  b.state.units = units.units;
+  const p = [...cast.problems, ...units.problems, ...placementProblems(b.grid, b.state.units)];
+  const turn = giveTurn(b, spec.actor ?? b.state.units.find((u) => u.team === 'hero')!.id, true);
+  if (turn) p.push(turn);
+  const w = (q: { x: number; y: number }) => `${q.x / 2},${q.y / 2}`;
+  const said = (e: BattleEvent) =>
+    e.k === 'move'
+      ? `move ${e.unit} ${e.path.map((q) => `${w(q)} h${tileAt(b.grid, q).h}`).join(' > ')}`
+      : e.k === 'attack' || e.k === 'charge'
+        ? `${e.k} ${e.unit} ${e.ability}`
+        : e.k === 'hit'
+          ? `hit ${e.unit} ${e.dmg}`
+          : e.k === 'push'
+            ? `push ${e.unit} ${w(e.to)}`
+            : e.k === 'fall'
+              ? `fall ${e.unit} ${e.levels} ${e.dmg}`
+              : `${e.k} ${e.unit}`;
+  const play = () =>
+    spec.steps!.flatMap((step, i) => {
+      const r = playStep(b, step);
+      if (r.problem) p.push(r.problem);
+      return [...(i ? ['|'] : []), ...r.events.map(said)];
+    });
+  return { b, p, play };
+}
+
 describe('clip specs on a split map', () => {
   for (const [name, [want, raw]] of Object.entries(CLIPS))
     it(`plays ${name} as on whole tiles`, () => {
-      const spec = parseSpec(raw).spec;
-      const sc = halve(SCENARIOS[spec.scenario!]);
-      const cells = inCells(spec, 2);
-      const cast = castOf(sc.spawns, cells);
-      const b = Battle.start({ ...sc, spawns: cast.spawns }, spec.seed ?? 1);
-      const units = patchUnits(b.state.units, cells.units ?? {});
-      b.state.units = units.units;
-      const p = [...cast.problems, ...units.problems, ...placementProblems(b.grid, b.state.units)];
-      const turn = giveTurn(b, spec.actor!, true);
-      if (turn) p.push(turn);
-      const w = (q: { x: number; y: number }) => `${q.x / 2},${q.y / 2}`;
-      const said = (e: BattleEvent) =>
-        e.k === 'move'
-          ? `move ${e.unit} ${e.path.map((q) => `${w(q)} h${tileAt(b.grid, q).h}`).join(' > ')}`
-          : e.k === 'attack' || e.k === 'charge'
-            ? `${e.k} ${e.unit} ${e.ability}`
-            : e.k === 'hit'
-              ? `hit ${e.unit} ${e.dmg}`
-              : e.k === 'push'
-                ? `push ${e.unit} ${w(e.to)}`
-                : e.k === 'fall'
-                  ? `fall ${e.unit} ${e.levels} ${e.dmg}`
-                  : `${e.k} ${e.unit}`;
-      // '|' between steps, so a charge shows on the act and its blast on the wait
-      const told = spec.steps!.flatMap((step, i) => {
-        const r = playStep(b, step);
-        if (r.problem) p.push(r.problem);
-        return [...(i ? ['|'] : []), ...r.events.map(said)];
-      });
+      const { p, play } = staged(raw);
+      expect(play()).toEqual(want);
       expect(p).toEqual([]);
-      expect(told).toEqual(want);
     });
 
   // the camera shakes on a strike of 25% of life or more: the heavy hit must reach it
   it('keeps the heavy hit at a quarter of the life or more', () => {
     const hit = CLIPS['heavy-hit'][0][1].split(' ');
     expect(Number(hit[2]) / UNIT_DEFS.soldier.hp).toBeGreaterThanOrEqual(0.25);
+  });
+});
+
+describe('bench fields', () => {
+  it('accepts loop, timing, speed and pause steps', () => {
+    const raw = {
+      loop: true,
+      timing: { hitStop: 160, jumpCrouch: 380 },
+      speed: 0.25,
+      steps: [{ pause: 500 }, { wait: { unit: 'a' } }],
+    };
+    expect(parseSpec(raw)).toEqual({ spec: raw, problems: [] });
+  });
+
+  it('names every bad bench value', () => {
+    expect(
+      parseSpec({
+        loop: 'yes',
+        timing: { hitStp: 160, shake: 0, jumpLand: '300' },
+        speed: 0,
+        steps: [{ pause: -1 }, { pause: 500, wait: { unit: 'a' } }],
+      }).problems,
+    ).toEqual([
+      'steps[0].pause must be ms from 0 to 60000',
+      'steps[1] must be one of { move }, { act }, { wait } or { pause }',
+      'loop must be true or false',
+      expect.stringContaining('timing: unknown key "hitStp" (one of enemyStart, '),
+      'timing.shake must be ms above 0, up to 10000',
+      'timing.jumpLand must be ms above 0, up to 10000',
+      'speed must be above 0, up to 4 (pause with __sandbox.pause)',
+    ]);
+    expect(parseSpec({ loop: true }).problems).toEqual(['loop needs steps to play']);
+  });
+
+  it('plays a pause step as no event', () => {
+    expect(playStep(Battle.start(SCENARIOS.ash_wood, 1), { pause: 300 })).toEqual({ events: [], problem: null });
+  });
+
+  it('reads the spec as JSON, base64url JSON or a spec file name', () => {
+    const spec = { scenario: 'ash_wood', units: { 'h-mage': { x: 1, y: 2 } }, name: 'ação' };
+    const b64 = specParam(spec);
+    expect(b64).toMatch(/^[\w-]+$/);
+    expect(JSON.parse((readParam(b64) as { json: string }).json)).toEqual(spec);
+    expect(readParam('{"seed":2}')).toEqual({ json: '{"seed":2}' });
+    expect(readParam('bench/walk.json')).toEqual({ file: '/scripts/sandbox/bench/walk.json' });
+    expect(() => readParam('not base64!')).toThrow();
+  });
+
+  it('rewinds the battle to where it started, so a loop plays the same round again', () => {
+    const { b, p, play } = staged(death);
+    const start = structuredClone(b.state);
+    const first = play();
+    expect(b.state.units.some((u) => u.id === 'e-soldier')).toBe(false);
+    rewind(b, start);
+    expect(b.state).toEqual(start);
+    expect(b.canUndo).toBe(false);
+    expect(play()).toEqual(first);
+    expect(p).toEqual([]);
   });
 });

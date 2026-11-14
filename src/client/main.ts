@@ -846,7 +846,7 @@ async function boot() {
   if (!sel) return; // went back to the map
   // localhost ?sandbox=<spec>: a battle staged for screenshots (docs/sandbox.md); its own chunk, never fetched online
   const sandbox = LOCAL && param('sandbox') !== null ? await import('./dev/sandbox.ts') : null;
-  const staged = sandbox?.stage(sel.scenario);
+  const staged = await sandbox?.stage(sel.scenario);
   // its own save key: acting in a staged battle must not overwrite the real one
   const run = staged ? { ...sel, scenario: staged.scenario, saveKey: 'dt:battle:sandbox' } : sel;
   const { scenario, chapter, study } = run;

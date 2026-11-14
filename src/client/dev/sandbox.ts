@@ -14,6 +14,7 @@ import type { Game } from '../main.ts';
 import { defaultPixel } from '../pixel-settings.ts';
 import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
+import { bench, TIMING } from '../timing.ts';
 import {
   castOf,
   giveTurn,
@@ -25,6 +26,8 @@ import {
   patchUnits,
   placementProblems,
   playStep,
+  readParam,
+  rewind,
   type SceneSpec,
   type Step,
   specUrl,
@@ -40,6 +43,9 @@ interface SandboxApi {
   list(): unknown;
   idle(): Promise<void>;
   play(steps: Step | Step[]): Promise<string[]>;
+  pause(): void;
+  step(): Promise<void>; // one frame of the battle clock, then paused again
+  resume(): void;
 }
 declare global {
   interface Window {
@@ -47,16 +53,22 @@ declare global {
   }
 }
 
-// a hand-typed address may carry broken JSON: it becomes a problem, not a page that never boots
-const read = (() => {
+// a hand-typed address may carry broken JSON: it becomes a problem, not a page that never boots. A spec file name is
+// fetched from the dev server, which serves the project's files (in stage, not at the top: a top-level await here made the
+// build split modules shared with the game into chunks of their own)
+async function readSpec(): Promise<{ spec: SceneSpec; problems: string[] }> {
   try {
-    return parseSpec(JSON.parse(param('sandbox') || '{}'));
+    const at = readParam(param('sandbox') || '{}');
+    if ('json' in at) return parseSpec(JSON.parse(at.json));
+    const file = await fetch(at.file);
+    return file.ok ? parseSpec(await file.json()) : { spec: {}, problems: [`?sandbox=: no spec file ${at.file}`] };
   } catch {
-    return { spec: {}, problems: ['?sandbox= is not valid JSON'] };
+    return { spec: {}, problems: ['?sandbox= is not JSON, base64url JSON or a spec file name ending in .json'] };
   }
-})();
-const spec = read.spec;
-const problems = [...read.problems];
+}
+let spec: SceneSpec = {};
+const problems: string[] = [];
+const asked = param('scenario');
 let battle: Battle;
 let view: BattleScene;
 let castFits = true;
@@ -64,7 +76,16 @@ let castFits = true;
 // Before the scene exists: the spec's cast on the map, its dice, and a hero on the turn (otherwise the AI would play
 // the opening enemy turn while the shot is taken). A cast that does not fit falls back to the map's own. On a split map
 // the spec's whole tiles become cells and an added sheet becomes its token, as `halve` does for the map's own spawns.
-export function stage(base: Scenario): { scenario: Scenario; battle: Battle } {
+export async function stage(base: Scenario): Promise<{ scenario: Scenario; battle: Battle }> {
+  const read = await readSpec();
+  spec = read.spec;
+  problems.push(...read.problems);
+  // the page's map comes from the address (boot.ts), so a spec that names another one is an error, not a different map
+  if (spec.scenario && spec.scenario !== asked)
+    problems.push(`scenario: the address opens "${asked ?? '(none)'}", the spec says "${spec.scenario}"`);
+  // this page's pace (bench): the TIMING the scene and the game read, and the battle clock's rate
+  Object.assign(TIMING, spec.timing);
+  bench.scale = spec.speed ?? 1;
   const k = subOf(base.grid);
   const cells = inCells(spec, k);
   // a token sheet copied from list() (soldier½) stays as it is
@@ -236,6 +257,10 @@ export function install(game: Game, scene: BattleScene) {
       const bad = [...shape, ...offMap(battle.grid, { steps: list })];
       if (bad.length) return bad;
       for (const [i, step] of list.entries()) {
+        if ('pause' in step) {
+          await view.wait(step.pause);
+          continue;
+        }
         const id = 'move' in step ? step.move.unit : 'act' in step ? step.act.unit : step.wait.unit;
         // an enemy's walk shows its destination first, as on the AI turn
         const enemy = battle.state.units.find((u) => u.id === id)?.team === 'enemy';
@@ -246,14 +271,51 @@ export function install(game: Game, scene: BattleScene) {
       }
       return [];
     },
+    // bench: the battle clock stops (walks, strikes, waits, water); the camera's easing and the damage numbers' CSS do not
+    pause: () => void (bench.paused = true),
+    resume: () => void (bench.paused = false),
+    // the scene's frame was requested before this call, so it runs first in the next frame, and then the clock stops again
+    async step() {
+      bench.paused = false;
+      await new Promise((r) => requestAnimationFrame(r));
+      bench.paused = true;
+    },
   };
   window.__sandbox = api;
   // the cast was already placed when the scene loaded; a cast that did not fit is not tried again, and a unit the spec
   // removed is already gone, so the live patch only touches the ones left
   const kept = spec.units && Object.fromEntries(Object.entries(spec.units).filter(([, u]) => !u.remove));
-  problems.push(...apply({ ...spec, units: castFits ? kept : undefined }));
+  const again = { ...spec, units: castFits ? kept : undefined };
+  problems.push(...apply(again));
+  const start = structuredClone(battle.state);
   api.ready = true;
   if (problems.length) console.error(`sandbox: ${problems.join('; ')}`);
+  // the lab embeds the page from another port, so it cannot reach __sandbox: it hears the problems and posts the controls
+  const tell = () => parent !== window && parent.postMessage({ sandbox: 'problems', problems }, '*');
+  tell();
+  addEventListener('message', (e) => {
+    if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(e.origin)) return;
+    const m = (e.data as { sandbox?: unknown } | null)?.sandbox;
+    if (m === 'pause' || m === 'step' || m === 'resume') void api[m]();
+  });
+  // loop (bench): the page plays the steps by itself, waits 1.5 s of battle clock, rewinds to the scene as it loaded and
+  // plays again. The CLI drops `loop` and plays the steps itself
+  if (spec.loop && !problems.length)
+    void (async () => {
+      for (;;) {
+        await idle();
+        const bad = await api.play(spec.steps ?? []);
+        if (bad.length) {
+          problems.push(...bad);
+          console.error(`sandbox: ${bad.join('; ')}`);
+          return tell();
+        }
+        await view.wait(1500);
+        rewind(battle, start);
+        scene.sync(battle.state);
+        apply({ ...again, units: undefined, screen: again.screen ?? 'menu' });
+      }
+    })();
 }
 
 // Settled: every unit holds the same place on screen for 10 frames in a row (the camera eases toward its goal and never

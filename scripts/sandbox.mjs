@@ -49,7 +49,11 @@ for (const arg of positionals) {
     const raw = JSON.parse(await readFile(file, 'utf8'));
     const list = Array.isArray(raw) ? raw : [raw];
     list.forEach((r, i) => {
-      const { spec, problems } = parseSpec(r);
+      // a bench spec's loop never ends: the CLI plays its steps once, itself
+      const {
+        spec: { loop: _loop, ...spec },
+        problems,
+      } = parseSpec(r);
       const name = spec.name ?? basename(file, extname(file)) + (list.length > 1 ? `-${i + 1}` : '');
       if (values.video && spec.path) problems.push('--video needs a battle (scenario or stage), not a path');
       if (problems.length) {
