@@ -250,6 +250,13 @@ export class BattleScene {
     this.cam.hold(pitch, clip);
   }
 
+  // sandbox arena: no surroundings, fog or particles, only the board on a plain background
+  bare() {
+    this.ambience?.dispose();
+    this.ambience = null;
+    (this.scene.background as THREE.Color).set('#4a4a52');
+  }
+
   // back to the whole-map framing
   resetView() {
     this.cam.resetView();

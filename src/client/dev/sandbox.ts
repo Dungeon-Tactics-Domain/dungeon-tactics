@@ -3,7 +3,7 @@
 // The map, the cast, the dice and the language are fixed when the page loads (`stage`); everything else changes live (`apply`).
 import { Battle } from '../../shared/battle/battle.ts';
 import { subOf } from '../../shared/battle/grid.ts';
-import { HALF, halfDef } from '../../shared/battle/half.ts';
+import { HALF, halfDef, halve } from '../../shared/battle/half.ts';
 import { SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
@@ -15,6 +15,7 @@ import { defaultPixel } from '../pixel-settings.ts';
 import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
 import { bench, TIMING } from '../timing.ts';
+import { ARENA } from './arena.ts';
 import {
   castOf,
   giveTurn,
@@ -70,6 +71,7 @@ async function readSpec(): Promise<{ spec: SceneSpec; problems: string[] }> {
 let spec: SceneSpec = {};
 const problems: string[] = [];
 const asked = param('scenario');
+const arena = asked === ARENA.id;
 let battle: Battle;
 let view: BattleScene;
 let castFits = true;
@@ -77,16 +79,21 @@ let castFits = true;
 // Before the scene exists: the spec's cast on the map, its dice, and a hero on the turn (otherwise the AI would play
 // the opening enemy turn while the shot is taken). A cast that does not fit falls back to the map's own. On a split map
 // the spec's whole tiles become cells and an added sheet becomes its token, as `halve` does for the map's own spawns.
-export async function stage(base: Scenario): Promise<{ scenario: Scenario; battle: Battle }> {
+export async function stage(selected: Scenario): Promise<{ scenario: Scenario; battle: Battle }> {
   const read = await readSpec();
   spec = read.spec;
   problems.push(...read.problems);
   // the page's map comes from the address (boot.ts), so a spec that names another one is an error, not a different map
   if (spec.scenario && spec.scenario !== asked)
     problems.push(`scenario: the address opens "${asked ?? '(none)'}", the spec says "${spec.scenario}"`);
+  // the arena is for the body only: no turn list
+  if (arena) spec.hide = [...new Set([...(spec.hide ?? []), 'queue' as const])];
   // this page's pace (bench): the TIMING the scene and the game read, and the battle clock's rate
   Object.assign(TIMING, spec.timing);
   bench.scale = spec.speed ?? 1;
+  // the arena is registered whole too: the scene finds a split map's mood through it (ambience.ts kindOf)
+  if (arena) SCENARIOS[ARENA.id] = ARENA;
+  const base = arena ? halve(ARENA) : selected;
   const k = subOf(base.grid);
   const cells = inCells(spec, k);
   // a token sheet copied from list() (soldier½) stays as it is
@@ -147,6 +154,7 @@ export function install(game: Game, scene: BattleScene) {
   // and frames the focus in the middle of the page, not of the space the (hidden) HUD leaves
   const insets = scene.setInsets.bind(scene);
   scene.setInsets = (top, bottom) => insets(fixed ? 0 : top, fixed ? 0 : bottom);
+  if (arena) scene.bare();
   // visibility, not display: the panels keep their size, so the camera frames the map the same with or without the HUD
   const style = document.head.appendChild(document.createElement('style'));
 

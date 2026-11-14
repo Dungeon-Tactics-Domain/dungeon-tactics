@@ -13,6 +13,7 @@ import meleeMiss from '../scripts/sandbox/clips/melee-miss.json';
 import shieldBashFall from '../scripts/sandbox/clips/shield-bash-fall.json';
 import walkFlat from '../scripts/sandbox/clips/walk-flat.json';
 import frostPass from '../scripts/sandbox/frost-pass-ambush.json';
+import { ARENA } from '../src/client/dev/arena.ts';
 import {
   castOf,
   giveTurn,
@@ -464,6 +465,7 @@ const CLIPS = {
 // shows on the act and its blast on the wait
 function staged(raw: unknown) {
   const spec = parseSpec(raw).spec;
+  SCENARIOS.arena = ARENA; // as the page registers it
   const sc = halve(SCENARIOS[spec.scenario!]);
   const cells = inCells(spec, 2);
   cells.add = cells.add?.map((a) => ({ ...a, def: halfDef(a.def) }));
@@ -576,5 +578,13 @@ describe('bench fields', () => {
     expect(b.canUndo).toBe(false);
     expect(play()).toEqual(first);
     expect(p).toEqual([]);
+  });
+});
+
+describe('arena', () => {
+  it('keeps the steps out of reach for a unit that jumps less', () => {
+    const { b } = staged({ scenario: 'arena', add: [{ id: 'w', def: 'warrior', team: 'hero', x: 3, y: 0 }] });
+    // the warrior jumps 1: the step up 2 is too high
+    expect(playStep(b, { move: { unit: 'w', to: { x: 4, y: 0 } } }).problem).toBe('w cannot reach 4,0');
   });
 });
