@@ -40,6 +40,7 @@ import { DEBRIS, LITTER, swapProps } from './props.ts';
 import { CameraRig } from './scene/camera.ts';
 import { Marks } from './scene/marks.ts';
 import { rampLink, TileSpace } from './scene/space.ts';
+import { Timeline } from './scene/timeline.ts';
 import { param } from './store.ts';
 import {
   buildStream,
@@ -214,13 +215,6 @@ interface UnitView {
   ground: THREE.Group; // ring and front arrow, lying on the ramp (tiltGround)
 }
 
-interface Anim {
-  start: number;
-  dur: number;
-  step: (k: number) => void;
-  done: () => void;
-}
-
 // KayKit textures are palettes: with mipmap the low-resolution render blends neighboring colors (learned in the POC)
 function prepare(o: THREE.Object3D) {
   o.traverse((m) => {
@@ -253,10 +247,9 @@ export class BattleScene {
   private readonly tileTops: THREE.Object3D[] = [];
   private readonly marks: Marks;
   private readonly units = new Map<string, UnitView>();
-  private readonly anims: Anim[] = [];
   private readonly floats: HTMLElement;
   private readonly clock = new THREE.Clock();
-  private t = 0; // battle clock in ms (speeds up with speed())
+  private readonly time = new Timeline();
   private frozenUntil = 0; // hit-stop: units stay still until here
   private shakeUntil = 0; // strong strike: the camera shakes until here
   private readonly onResize = () => this.resize();
@@ -1295,7 +1288,6 @@ export class BattleScene {
     this.marks.setHighlights(h);
   }
 
-  // Everything in the battle runs on the battle clock (`t`), which goes 3 times faster while the speed-up button is held
   // The unit's own glow (UnitDef.tint, the Acolyte over the mage): emissive, because the material color multiplies the
   // texture and on a dark unit it did not show (tested on Nov 13). Strike and heal use the same emissive to flash, so
   // they return to it at the end; without tint, to the material's factory glow (before it zeroed and put out the skeletons' eyes)
@@ -1310,7 +1302,7 @@ export class BattleScene {
   }
 
   private animate(dur: number, step: (k: number) => void): Promise<void> {
-    return new Promise((done) => this.anims.push({ start: this.t, dur, step, done }));
+    return this.time.animate(dur, step);
   }
 
   // start of the turn: the unit hops (rises and stretches a little), so the eye finds whoever is playing
@@ -1327,12 +1319,12 @@ export class BattleScene {
   }
 
   wait(ms: number): Promise<void> {
-    return this.animate(ms, () => {});
+    return this.time.wait(ms);
   }
 
   // Impact: everything stops for an instant (hit-stop), the target flashes white and then shakes, with the shake fading
   private async impact(v: UnitView) {
-    this.frozenUntil = this.t + TIMING.hitStop;
+    this.frozenUntil = this.time.t + TIMING.hitStop;
     for (const m of v.mats) m.emissive.set('#ffffff');
     const flash = ++v.flash;
     void this.animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k))).then(
@@ -1434,7 +1426,7 @@ export class BattleScene {
         // strong strike (25% of health or more): the screen shakes and the number comes out bigger. With 30%, none of 10 strikes in a
         // Skirmish went through (measured Nov 12): the effect must show up now and then, not never
         const big = e.dmg >= UNIT_DEFS[v.def].hp * 0.25;
-        if (big) this.shakeUntil = this.t + TIMING.hitStop + TIMING.shake;
+        if (big) this.shakeUntil = this.time.t + TIMING.hitStop + TIMING.shake;
         await this.impact(v);
         this.setBar(v, TIMING.hpDrain);
         this.float(e.unit, `-${e.dmg}`, big ? 'dmg big' : 'dmg');
@@ -1627,30 +1619,23 @@ export class BattleScene {
     this.renderer.info.reset();
     const dt = this.clock.getDelta();
     const fast = speed();
-    this.t += dt * 1000 * fast;
-    for (const a of [...this.anims]) {
-      const k = Math.min(1, (this.t - a.start) / a.dur);
-      a.step(k);
-      if (k < 1) continue;
-      this.anims.splice(this.anims.indexOf(a), 1);
-      a.done();
-    }
+    this.time.tick(dt * 1000 * fast);
     this.cam.update(dt);
     this.marks.update(dt);
-    const s = this.t < this.shakeUntil ? 0.12 * ((this.shakeUntil - this.t) / TIMING.shake) : 0;
-    this.cam.place(this.pixel, s, this.t);
+    const s = this.time.t < this.shakeUntil ? 0.12 * ((this.shakeUntil - this.time.t) / TIMING.shake) : 0;
+    this.cam.place(this.pixel, s, this.time.t);
     if (this.hasTrees) this.updateCuts();
     for (const v of this.units.values()) {
-      if (this.t >= this.frozenUntil) v.mixer?.update(dt * fast);
+      if (this.time.t >= this.frozenUntil) v.mixer?.update(dt * fast);
       this.tiltGround(v);
       // health bar always facing the camera
       v.holder
         .getObjectByName('bar')!
         .quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
     }
-    this.water?.update(this.t, this.units.values());
-    if (this.stream) this.stream.time.value = this.t / 1000;
-    this.ambience?.update(this.t, this.camera);
+    this.water?.update(this.time.t, this.units.values());
+    if (this.stream) this.stream.time.value = this.time.t / 1000;
+    this.ambience?.update(this.time.t, this.camera);
     this.renderer.shadowMap.needsUpdate = true;
     this.composer.render();
   }
