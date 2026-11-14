@@ -68,6 +68,18 @@ export function parseGrid(terrain: string[], heights: string[]): Grid {
   return { width, height, tiles };
 }
 
+// Ramps (Nov 13, Fernando's request: "more diagonal tiles… it's not Minecraft"): drawing only, the rules do not read `ramp`
+// (the jump still follows the standing height). One letter per tile says where the ground rises (v > ^ <, FACING order) to the
+// neighbor 1 level above; a dot is a flat tile. Hand-picked on the passages and slopes with a step of 1 (test in scenario-maps).
+const RAMP_DIR: Record<string, number> = { v: 0, '>': 1, '^': 2, '<': 3 };
+export function withRamps(grid: Grid, overlay: string[]): Grid {
+  const tiles = grid.tiles.map((t, i) => {
+    const d = RAMP_DIR[overlay[Math.floor(i / grid.width)][i % grid.width]];
+    return d === undefined ? t : { ...t, ramp: [d, 1] as [number, number] };
+  });
+  return { ...grid, tiles };
+}
+
 // height of whoever is on the tile (in water, the tile minus the depth, BMG 6.5)
 // shallow water does not lower whoever is standing (Nov 13, Fernando's request: "there is water over the rock and I can't get down"):
 // with the foot 1 below the surface, the ford had to climb 1 level and ended up above the river; it only costs 2 movement and the
