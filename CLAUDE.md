@@ -18,8 +18,9 @@ src/shared/battle/  battle rules, no DOM or Three.js
   half.ts           half-tile test mode (?scenario=half); fft/ is a reference study, not the game
 src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), campaign (stages and
                     lines), world (nodes, towns, rumors), quests, party (story members, recruit names)
-src/client/         browser: main.ts (game loop and screens), scene.ts (Three.js renderer and the scene's public API), hud.ts, world-ui.ts (map, towns, party),
+src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, world-ui.ts (map, towns, party),
                     group.ts (party rules), campaign.ts (stage rules), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
+  game/             what opens around the battle: boot (URL to scenario), title, options, end screens, world map flow
   scene/            the parts BattleScene composes: board, marks (tile marks, cursor), units, camera, space (tile to world), timeline
 scripts/            battle-sim.ts (optional simulator), assets/ (texture and model generators)
 tests/              Vitest: rules and pure client functions
