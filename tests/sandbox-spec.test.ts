@@ -352,6 +352,15 @@ describe('playStep', () => {
     expect(() => b.reach()).not.toThrow();
   });
 
+  it('plays a shot with no clear line, stopping at the first unit on its path', () => {
+    const b = start();
+    b.state.units.find((u) => u.id === 'e-soldier')!.pos = { x: 5, y: 6 };
+    b.state.units.find((u) => u.id === 'h-warrior')!.pos = { x: 5, y: 8 };
+    const { events, problem } = playStep(b, { act: { unit: 'h-archer', ability: 'shot', target: { x: 5, y: 6 } } });
+    expect(problem).toBeNull();
+    expect(events.find((e) => e.k === 'hit' || e.k === 'miss')).toMatchObject({ unit: 'h-warrior' });
+  });
+
   it('wait turns the unit and passes the turn on', () => {
     const b = start();
     playStep(b, { wait: { unit: 'h-mage', facing: 3 } });
