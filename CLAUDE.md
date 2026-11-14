@@ -43,6 +43,7 @@ npm run smoke                     # headless Chrome opens the built title, a bat
 npx wrangler deploy               # publish dist/ to https://dungeon-tactics.fernandorffdev.com
 npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 npm run sandbox -- scripts/sandbox --sheet   # screenshots from scene specs: map, units, camera, hidden HUD (docs/sandbox.md)
+npm run sandbox -- scripts/sandbox/clips --video --out clips   # gameplay clips (WebM + MP4) of the scripted steps
 ```
 
 ## Workflow
