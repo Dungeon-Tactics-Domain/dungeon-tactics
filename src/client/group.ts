@@ -2,7 +2,9 @@
 // docs/game-design/towns-party-equipment.md, delivery 5). Pure and tested; the screens live in world-ui.ts.
 // The 4 from the story never leave; recruits are hired at the Bar with gold and can be dismissed. Anyone can change class
 // among the unlocked ones (JOBS), and up to 4 go to battle (the maps' starting tiles). The default party assembles exactly the
-// measured cast of each stage, so the campaign curve doesn't change for whoever doesn't touch the party.
+// measured cast of each stage, so the campaign curve doesn't change for whoever doesn't touch the party. The story members and
+// the recruit names are data in src/content/party.ts.
+import { RECRUIT_NAMES, STORY } from '../content/party.ts';
 import type { Chest, Equip } from './chest.ts';
 import { type DevUnit, unitFrom } from './dev-roster.ts';
 import { HERO_CLASSES, type Hero, NAME_MAX } from './hero.ts';
@@ -25,15 +27,6 @@ export const GROUP_KEY = 'dt:party';
 export const GROUP_MAX = 8; // design cap (section 3)
 export const DEPLOY_MAX = 4; // the maps have 4 hero starting tiles
 export const RECRUIT_COST = 200; // initial number: a victory gives 150, the 1st act shop costs 100 to 240
-
-const STORY: Member[] = [
-  { id: 'warrior', name: 'Bran', cls: 'warrior', recruit: false },
-  { id: 'archer', name: 'Tess', cls: 'archer', recruit: false },
-  { id: 'mage', name: 'Odo', cls: 'mage', recruit: false },
-  { id: 'rogue', name: 'Lia', cls: 'rogue', recruit: false },
-];
-// names of the recruits, in order (no draw: the same party gives the same names)
-const NAMES = ['Ivo', 'Nina', 'Caio', 'Vera', 'Rui', 'Duda', 'Téo', 'Mira', 'Saulo', 'Bia', 'Otto', 'Lena'];
 
 export const defaultGroup = (): Group => ({ members: STORY.map((m) => ({ ...m })), deployed: STORY.map((m) => m.id) });
 
@@ -74,7 +67,7 @@ export function recruit(g: Group, chest: Chest, cls: Job): { group: Group; chest
   const used = new Set(g.members.map((m) => m.id));
   let k = 1;
   while (used.has(`r${k}`)) k++;
-  const name = NAMES.find((n) => !g.members.some((m) => m.name === n)) ?? `Recruta ${k}`;
+  const name = RECRUIT_NAMES.find((n) => !g.members.some((m) => m.name === n)) ?? `Recruta ${k}`;
   const m: Member = { id: `r${k}`, name, cls, recruit: true };
   // joins the fielded party if there's still room in the battle
   const deployed = g.deployed.length < DEPLOY_MAX ? [...g.deployed, m.id] : g.deployed;
