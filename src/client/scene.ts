@@ -37,7 +37,8 @@ import { barYOf, MARKER, modelOf, unitHeight } from './markers.ts';
 import { loadPaint, boxOf as pieceBox, variant } from './painted.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { DEBRIS, LITTER, swapProps } from './props.ts';
-import { rampLink, STEP, TileSpace } from './scene/space.ts';
+import { CameraRig } from './scene/camera.ts';
+import { rampLink, TileSpace } from './scene/space.ts';
 import { param } from './store.ts';
 import {
   buildStream,
@@ -53,43 +54,6 @@ import { isJump, jumpAirMs, speed, TIMING } from './timing.ts';
 import { swapTrees } from './trees.ts';
 import { Water } from './water.ts';
 import type { WaterLevel } from './water-levels.ts';
-
-const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
-// Action cameras to compare (Nov 13, Fernando's request: "test several action cam options like over the shoulder,
-// from behind the enemy, etc"): `?camera=<name>` picks one; without the parameter `hero` applies (his pick on Nov 13,
-// after seeing the prints of all of them), which alternates `shoulder` and `behind` to stay always on the heroes' side.
-// turn: rotation around the target from the strike line (0 = behind the attacker, π = behind the target); pitch: tilt
-// in degrees (32 = the game's; low = camera near the ground); zoom: view height, base + per tile of distance; aim: where
-// the camera aims between the attacker (0) and the target (1); lift: how much the focus rises off the ground, so the unit is not at the edge;
-// clip: with the camera low, whatever sits between it and the units (outside forest, ravine, tree) would cover the strike, so everything
-// more than `clip` tiles in front of the focus stops being drawn (the camera's clipping plane) while it lasts
-interface ActionCam {
-  turn: number;
-  pitch: number;
-  zoom: [base: number, perTile: number];
-  aim: number;
-  lift: number;
-  clip?: number;
-}
-const ACTION_CAMS: Record<string, ActionCam | null> = {
-  xcom: { turn: 0.35, pitch: 32, zoom: [4, 0.9], aim: 0.5, lift: 0 },
-  shoulder: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // over the shoulder of the attacker
-  behind: { turn: Math.PI - 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.4, lift: 0.45, clip: 3.2 }, // from behind the enemy
-  side: { turn: Math.PI / 2, pitch: 16, zoom: [2.6, 0.95], aim: 0.5, lift: 0.4, clip: 3 }, // the two in profile
-  top: { turn: 0.35, pitch: 60, zoom: [4.2, 0.9], aim: 0.5, lift: 0 }, // from above, tactical
-  none: null, // no action camera
-}; // and `hero`, which alternates between `shoulder` and `behind` (actionCam)
-const CAM_DIST = 30; // camera distance to the focus (orthographic: it only decides what sits in front of the clipping plane)
-const camAsked = param('camera');
-const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'hero';
-const ZOOM = { min: 4, max: 16 };
-const ZOOM_START = 1.5;
-// portrait phone: at most ~9.5 tiles wide when opening. On the 20x20 the whole map left the tile at ~20 px, small
-// for a finger (touch target ≥ 44 px); the camera follows the hero of the turn and the recenter button shows everything
-const PORTRAIT_START = 8.3;
-// PC: opens with ~10 of view height (before up to 16, almost the whole map and the unit at ~30 px at 1280x720). FFT shows
-// few tiles and big units; the camera follows the cursor and whoever acts, and F still shows the whole map (Nov 12)
-const PC_START = 10;
 
 // marker colors; the meaning also goes in HUD text (never color alone)
 // Veil purple: the area of a spell being charged stays lit until it goes off (the text goes on the tile under the cursor, hud.ts)
@@ -344,14 +308,13 @@ function prepare(o: THREE.Object3D) {
 export class BattleScene {
   private readonly renderer = new THREE.WebGLRenderer({ antialias: false });
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+  private readonly cam: CameraRig;
+  private readonly camera: THREE.OrthographicCamera;
   private readonly composer = new EffectComposer(this.renderer);
   private readonly renderPass: RenderPass; // no pixel art
   private readonly pixelPass: RenderPixelatedPass;
   private readonly palettePass = new ShaderPass(PALETTE_SHADER);
   private pixel: PixelSettings;
-  private readonly focus = new THREE.Vector3();
-  private focusGoal: THREE.Vector3 | null = null; // where the camera slides to (hero of the turn, recenter)
   private readonly tileTops: THREE.Object3D[] = [];
   private readonly marks = new Map<string, THREE.Mesh>();
   private readonly pathDots = new Map<string, THREE.Mesh>();
@@ -367,14 +330,7 @@ export class BattleScene {
   private shakeUntil = 0; // strong strike: the camera shakes until here
   private readonly cursorGoal = new THREE.Vector3();
   private readonly onResize = () => this.resize();
-  private viewH: number;
-  private readonly fitView: number; // zoom at which the whole map fits the width
   private readonly space: TileSpace;
-  private insets = { top: 0, bottom: 0 }; // px covered by the HUD at the top and bottom
-  private yaw = Math.PI / 4;
-  private pitch = PITCH; // only the action camera changes it (ACTION_CAMS)
-  private pitchTarget = PITCH;
-  private yawTarget = Math.PI / 4;
   private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
   private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
   private water: Water | null = null; // only on maps with water
@@ -410,12 +366,8 @@ export class BattleScene {
     host.append(this.renderer.domElement);
     this.floats = el('div', { class: 'floats', 'aria-hidden': 'true' });
     host.append(this.floats);
-    // fitView: the map diagonal (it shows as a diamond) plus half a tile on each side fits the portrait phone width.
-    // Starts 1.5x closer: with the whole map the tile was ~45x24 px, small for a finger (mobile audit of Oct 25);
-    // the camera goes to the hero of the turn, and the recenter button goes back to the whole map
-    this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
-    this.viewH =
-      innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, PC_START);
+    this.cam = new CameraRig(host, this.renderer.domElement, this.space, (ms, step) => this.animate(ms, step));
+    this.camera = this.cam.camera;
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
     // the palette comes after the sRGB output; it toggles without rebuilding the chain
@@ -647,7 +599,6 @@ export class BattleScene {
       for (const layer of [this.marks, this.danger, this.pathDots]) this.space.lay(layer.get(posKey(p))!, p);
     }
     this.buildWalls(walls);
-    this.focus.set(0, STEP, 0);
     // transparent only to enter the transparent queue, after the water (renderOrder -1): without it the water tinted the frame
     const frame = new THREE.Mesh(
       new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2),
@@ -1374,7 +1325,7 @@ export class BattleScene {
 
   // rotation to where the camera is going (not the mid-animation one): WASD already walks right after R
   get heading(): number {
-    return this.yawTarget;
+    return this.cam.heading;
   }
 
   private makeUnit(u: UnitState): UnitView {
@@ -1715,7 +1666,7 @@ export class BattleScene {
       } else if (e.k === 'attack') {
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
         if (!samePos(this.posOf(v), e.target))
-          await this.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
+          await this.cam.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
         if (ABILITIES[e.ability].range[1] > 0) this.face(v, target?.pos ?? e.target);
         const look = lookOf(e.ability);
         this.play(v, look.clip, true);
@@ -1786,7 +1737,7 @@ export class BattleScene {
         await this.wait(TIMING.die);
       }
     }
-    await this.endActionCam();
+    await this.cam.endActionCam();
     this.sync(state);
   }
 
@@ -1834,70 +1785,12 @@ export class BattleScene {
 
   // slides the camera to the tile (the hero of the turn), without changing the zoom
   focusOn(p: Pos, also?: Pos) {
-    // with `also`, centers between the two (attacker and target): the strike never happens off-screen or behind the HUD
-    const w = also ? this.space.world(p).lerp(this.space.world(also), 0.5) : this.space.world(p);
-    this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
-  }
-
-  // Action camera (Nov 13, Fernando's request: "when a character is going to attack, an action cam like XCOM"): turns to
-  // get behind the attacker, comes close and frames the attacker and the target; goes back to what it was after the sequence
-  private camSaved: { viewH: number; yaw: number; pair: string } | null = null;
-  async actionCam(from: Pos, to: Pos, enemy = false) {
-    // counterattack (the target returns the strike in the same sequence): the camera stays where it is, without turning around mid-strike
-    if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
-    // `heroi`: the camera always stays on the heroes' side (over the attacker's shoulder; when the enemy attacks, behind the hero)
-    const cam = ACTION_CAMS[CAM_NAME === 'hero' ? (enemy ? 'behind' : 'shoulder') : CAM_NAME];
-    if (!cam) return;
-    this.camSaved = {
-      viewH: this.camSaved?.viewH ?? this.viewH,
-      yaw: this.camSaved?.yaw ?? this.yawTarget,
-      pair: `${posKey(from)}>${posKey(to)}`,
-    };
-    const a = this.space.world(from),
-      b = this.space.world(to);
-    // the camera turns around the strike by the option's `turn`, always a little to the side, so the close unit does not cover the other
-    let goal = Math.atan2(a.x - b.x, a.z - b.z) + cam.turn;
-    while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
-    while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
-    this.yawTarget = goal;
-    this.pitchTarget = THREE.MathUtils.degToRad(cam.pitch);
-    // the close unit stays at half distance in front of the focus: the cut retreats with it, otherwise it vanished on the long shot
-    this.camera.near = cam.clip ? CAM_DIST - cam.clip - 0.5 * a.distanceTo(b) : 0.1;
-    // `xcom` aims at the middle of the two at the usual height; the low-camera ones aim at the units' height, otherwise the
-    // highest tile fell out of frame
-    this.focusGoal = cam.lift
-      ? a
-          .clone()
-          .lerp(b, cam.aim)
-          .setY(Math.max(a.y, b.y) + cam.lift)
-      : this.focusGoal;
-    if (!cam.lift) this.focusOn(from, to);
-    const h0 = this.viewH,
-      h1 = Math.max(Math.min(ZOOM.min, cam.zoom[0]), Math.min(h0, cam.zoom[0] + a.distanceTo(b) * cam.zoom[1]));
-    await this.animate(420, (k) => {
-      this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k);
-      this.frameView();
-    });
-  }
-  private async endActionCam() {
-    const s = this.camSaved;
-    if (!s) return;
-    this.camSaved = null;
-    this.yawTarget = s.yaw;
-    this.pitchTarget = PITCH;
-    this.camera.near = 0.1;
-    if (this.focusGoal) this.focusGoal.y = STEP;
-    const h0 = this.viewH;
-    await this.animate(380, (k) => {
-      this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k);
-      this.frameView();
-    });
+    this.cam.focusOn(p, also);
   }
 
   // back to the whole-map framing
   resetView() {
-    this.viewH = this.fitView;
-    this.focusGoal = new THREE.Vector3(0, STEP, 0);
+    this.cam.resetView();
     this.resize();
   }
 
@@ -1908,19 +1801,11 @@ export class BattleScene {
 
   // dragging moves the focus on the ground, in the finger's direction (the map follows the finger)
   pan(dx: number, dy: number) {
-    const k = (this.camera.top - this.camera.bottom) / this.renderer.domElement.clientHeight;
-    const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-    const fwd = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
-    this.focusGoal = null; // the finger takes over: stops the automatic slide
-    this.focus.addScaledVector(right, -dx * k).addScaledVector(fwd, (dy * k) / Math.sin(this.pitch));
-    const lim = Math.max(this.grid.width, this.grid.height) / 2;
-    this.focus.x = THREE.MathUtils.clamp(this.focus.x, -lim, lim);
-    this.focus.z = THREE.MathUtils.clamp(this.focus.z, -lim, lim);
+    this.cam.pan(dx, dy);
   }
 
   zoom(factor: number) {
-    // the cap follows the map: on the 20x20 the whole map asks for more than the 8x8's 16
-    this.viewH = THREE.MathUtils.clamp(this.viewH * factor, ZOOM.min, Math.max(ZOOM.max, this.fitView));
+    this.cam.zoom(factor);
     this.resize();
   }
 
@@ -1943,15 +1828,13 @@ export class BattleScene {
   }
 
   setInsets(top: number, bottom: number) {
-    if (top === this.insets.top && bottom === this.insets.bottom) return;
-    this.insets = { top, bottom };
-    this.resize();
+    if (this.cam.setInsets(top, bottom)) this.resize();
   }
 
   // 8 angles, every 45° (Nov 13, Fernando's request: "the camera must have 8 angles"); gridStep finds the closest axis
   // to each key at any rotation, so the arrows keep walking on the grid
   rotate(dir: 1 | -1) {
-    this.yawTarget += (dir * Math.PI) / 4;
+    this.cam.rotate(dir);
   }
 
   // Light of the Until Dawn mode (survival.ts): k = 0 is moonlit night (blue and weak), k = 1 is the rising sun (warm, at
@@ -1967,12 +1850,9 @@ export class BattleScene {
     this.ambience?.setDaylight(k); // last: the surroundings fog rules the background color
   }
 
-  // Title screen background: the camera slowly rotates around the map. On stopping, it goes back to the nearest eighth of a turn
-  // (one of the rotate's 8 angles).
-  private spinning = false;
+  // title screen background: the camera slowly rotates around the map
   setSpin(on: boolean) {
-    if (this.spinning && !on) this.yawTarget = Math.round(this.yawTarget / (Math.PI / 4)) * (Math.PI / 4);
-    this.spinning = on;
+    this.cam.setSpin(on);
   }
 
   private resize() {
@@ -1980,48 +1860,7 @@ export class BattleScene {
       h = this.host.clientHeight;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
-    this.frameView();
-  }
-
-  // camera frame by view height (viewH), without redoing the draw targets: it is what the action camera's zoom
-  // calls every frame (it changed viewH and nothing happened, because only the resize applied it)
-  private frameView() {
-    const w = this.host.clientWidth,
-      h = this.host.clientHeight;
-    const a = w / h;
-    // portrait phone: opens the frame until the width shows the whole map (pinch to adjust)
-    const viewH = a < 1 ? (this.viewH * 1.15) / a : this.viewH;
-    // centers the map in the free space between the top HUD and the bottom one, not in the middle of the screen
-    const off = ((this.insets.bottom - this.insets.top) / 2) * (viewH / h);
-    Object.assign(this.camera, {
-      left: (-viewH * a) / 2,
-      right: (viewH * a) / 2,
-      top: viewH / 2 - off,
-      bottom: -viewH / 2 - off,
-    });
-    this.camera.updateProjectionMatrix();
-  }
-
-  private placeCamera() {
-    const off = new THREE.Vector3(
-      Math.sin(this.yaw) * Math.cos(this.pitch),
-      Math.sin(this.pitch),
-      Math.cos(this.yaw) * Math.cos(this.pitch),
-    ).multiplyScalar(CAM_DIST);
-    this.camera.position.copy(this.focus).add(off);
-    this.camera.lookAt(this.focus);
-    this.camera.updateMatrixWorld();
-    // locks the camera to the pixel grid: without this the ground "boils" when the camera moves (same idea as Warlock)
-    if (!this.pixel.snap || !this.pixel.size) return;
-    const block = ((this.camera.top - this.camera.bottom) / this.renderer.domElement.height) * this.pixel.size;
-    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
-    const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
-    const px = this.camera.position.dot(right),
-      py = this.camera.position.dot(up);
-    this.camera.position
-      .addScaledVector(right, Math.round(px / block) * block - px)
-      .addScaledVector(up, Math.round(py / block) * block - py);
-    this.camera.updateMatrixWorld();
+    this.cam.frameView();
   }
 
   // Performance counter numbers (Fernando's request, Nov 12): frames and average time since the last reading, and Three's
@@ -2056,10 +1895,7 @@ export class BattleScene {
       this.anims.splice(this.anims.indexOf(a), 1);
       a.done();
     }
-    if (this.spinning) this.yawTarget += dt * 0.15; // ~42 s per revolution: you can see the map without getting dizzy
-    this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
-    this.pitch += (this.pitchTarget - this.pitch) * Math.min(1, dt * 10);
-    if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
+    this.cam.update(dt);
     // dt*30: arrives in ~0.1 s, fast so as not to delay whoever holds the arrow, smooth for the eye to follow
     this.cursor.position.lerp(this.cursorGoal, Math.min(1, dt * 30));
     this.cursor.getObjectByName('arrow')!.position.y =
@@ -2068,12 +1904,8 @@ export class BattleScene {
     const breath = 0.8 + 0.2 * Math.sin(performance.now() / 300);
     for (const m of this.marks.values())
       if (m.visible) (m.material as THREE.MeshBasicMaterial).opacity = m.userData.base * breath;
-    // strong strike shake: shifts the focus only in this frame, vanishes by itself (nothing accumulates in the real focus)
     const s = this.t < this.shakeUntil ? 0.12 * ((this.shakeUntil - this.t) / TIMING.shake) : 0;
-    const jitter = new THREE.Vector3(Math.sin(this.t * 0.09) * s, 0, Math.cos(this.t * 0.13) * s);
-    this.focus.add(jitter);
-    this.placeCamera();
-    this.focus.sub(jitter);
+    this.cam.place(this.pixel, s, this.t);
     if (this.hasTrees) this.updateCuts();
     for (const v of this.units.values()) {
       if (this.t >= this.frozenUntil) v.mixer?.update(dt * fast);

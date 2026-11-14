@@ -1,0 +1,245 @@
+// Battle camera: orthographic, orbiting a focus point on the ground at FFT's tilt. Owns the zoom, the rotation in 45° steps, the
+// slide to whoever acts, the finger pan, the title spin and the action camera on the strike. It only moves the camera: the
+// scene renders and calls update/place every frame.
+import * as THREE from 'three';
+import { posKey } from '../../shared/battle/grid.ts';
+import type { Pos } from '../../shared/battle/types.ts';
+import type { PixelSettings } from '../pixel-settings.ts';
+import { param } from '../store.ts';
+import { STEP, type TileSpace } from './space.ts';
+
+const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
+// Action cameras to compare (Nov 13, Fernando's request: "test several action cam options like over the shoulder,
+// from behind the enemy, etc"): `?camera=<name>` picks one; without the parameter `hero` applies (his pick on Nov 13,
+// after seeing the prints of all of them), which alternates `shoulder` and `behind` to stay always on the heroes' side.
+// turn: rotation around the target from the strike line (0 = behind the attacker, π = behind the target); pitch: tilt
+// in degrees (32 = the game's; low = camera near the ground); zoom: view height, base + per tile of distance; aim: where
+// the camera aims between the attacker (0) and the target (1); lift: how much the focus rises off the ground, so the unit is not at the edge;
+// clip: with the camera low, whatever sits between it and the units (outside forest, ravine, tree) would cover the strike, so everything
+// more than `clip` tiles in front of the focus stops being drawn (the camera's clipping plane) while it lasts
+interface ActionCam {
+  turn: number;
+  pitch: number;
+  zoom: [base: number, perTile: number];
+  aim: number;
+  lift: number;
+  clip?: number;
+}
+const ACTION_CAMS: Record<string, ActionCam | null> = {
+  xcom: { turn: 0.35, pitch: 32, zoom: [4, 0.9], aim: 0.5, lift: 0 },
+  shoulder: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // over the shoulder of the attacker
+  behind: { turn: Math.PI - 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.4, lift: 0.45, clip: 3.2 }, // from behind the enemy
+  side: { turn: Math.PI / 2, pitch: 16, zoom: [2.6, 0.95], aim: 0.5, lift: 0.4, clip: 3 }, // the two in profile
+  top: { turn: 0.35, pitch: 60, zoom: [4.2, 0.9], aim: 0.5, lift: 0 }, // from above, tactical
+  none: null, // no action camera
+}; // and `hero`, which alternates between `shoulder` and `behind` (actionCam)
+const CAM_DIST = 30; // camera distance to the focus (orthographic: it only decides what sits in front of the clipping plane)
+const camAsked = param('camera');
+const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'hero';
+const ZOOM = { min: 4, max: 16 };
+const ZOOM_START = 1.5;
+// portrait phone: at most ~9.5 tiles wide when opening. On the 20x20 the whole map left the tile at ~20 px, small
+// for a finger (touch target ≥ 44 px); the camera follows the hero of the turn and the recenter button shows everything
+const PORTRAIT_START = 8.3;
+// PC: opens with ~10 of view height (before up to 16, almost the whole map and the unit at ~30 px at 1280x720). FFT shows
+// few tiles and big units; the camera follows the cursor and whoever acts, and F still shows the whole map (Nov 12)
+const PC_START = 10;
+
+export class CameraRig {
+  readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+  private readonly focus = new THREE.Vector3();
+  private focusGoal: THREE.Vector3 | null = null; // where the camera slides to (hero of the turn, recenter)
+  private viewH: number;
+  private readonly fitView: number; // zoom at which the whole map fits the width
+  private insets = { top: 0, bottom: 0 }; // px covered by the HUD at the top and bottom
+  private yaw = Math.PI / 4;
+  private pitch = PITCH; // only the action camera changes it (ACTION_CAMS)
+  private pitchTarget = PITCH;
+  private yawTarget = Math.PI / 4;
+
+  // `animate` runs on the scene's battle clock, so the action camera speeds up with the rest of the battle
+  constructor(
+    private readonly host: HTMLElement,
+    private readonly canvas: HTMLCanvasElement,
+    private readonly space: TileSpace,
+    private readonly animate: (dur: number, step: (k: number) => void) => Promise<void>,
+  ) {
+    const grid = space.grid;
+    // fitView: the map diagonal (it shows as a diamond) plus half a tile on each side fits the portrait phone width.
+    // Starts 1.5x closer: with the whole map the tile was ~45x24 px, small for a finger (mobile audit of Oct 25);
+    // the camera goes to the hero of the turn, and the recenter button goes back to the whole map
+    this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
+    this.viewH =
+      innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, PC_START);
+    this.focus.set(0, STEP, 0);
+  }
+
+  // rotation to where the camera is going (not the mid-animation one): WASD already walks right after R
+  get heading(): number {
+    return this.yawTarget;
+  }
+
+  // slides the camera to the tile (the hero of the turn), without changing the zoom
+  focusOn(p: Pos, also?: Pos) {
+    // with `also`, centers between the two (attacker and target): the strike never happens off-screen or behind the HUD
+    const w = also ? this.space.world(p).lerp(this.space.world(also), 0.5) : this.space.world(p);
+    this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
+  }
+
+  // Action camera (Nov 13, Fernando's request: "when a character is going to attack, an action cam like XCOM"): turns to
+  // get behind the attacker, comes close and frames the attacker and the target; goes back to what it was after the sequence
+  private camSaved: { viewH: number; yaw: number; pair: string } | null = null;
+  async actionCam(from: Pos, to: Pos, enemy = false) {
+    // counterattack (the target returns the strike in the same sequence): the camera stays where it is, without turning around mid-strike
+    if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
+    // `heroi`: the camera always stays on the heroes' side (over the attacker's shoulder; when the enemy attacks, behind the hero)
+    const cam = ACTION_CAMS[CAM_NAME === 'hero' ? (enemy ? 'behind' : 'shoulder') : CAM_NAME];
+    if (!cam) return;
+    this.camSaved = {
+      viewH: this.camSaved?.viewH ?? this.viewH,
+      yaw: this.camSaved?.yaw ?? this.yawTarget,
+      pair: `${posKey(from)}>${posKey(to)}`,
+    };
+    const a = this.space.world(from),
+      b = this.space.world(to);
+    // the camera turns around the strike by the option's `turn`, always a little to the side, so the close unit does not cover the other
+    let goal = Math.atan2(a.x - b.x, a.z - b.z) + cam.turn;
+    while (goal - this.yawTarget > Math.PI) goal -= Math.PI * 2;
+    while (goal - this.yawTarget < -Math.PI) goal += Math.PI * 2;
+    this.yawTarget = goal;
+    this.pitchTarget = THREE.MathUtils.degToRad(cam.pitch);
+    // the close unit stays at half distance in front of the focus: the cut retreats with it, otherwise it vanished on the long shot
+    this.camera.near = cam.clip ? CAM_DIST - cam.clip - 0.5 * a.distanceTo(b) : 0.1;
+    // `xcom` aims at the middle of the two at the usual height; the low-camera ones aim at the units' height, otherwise the
+    // highest tile fell out of frame
+    this.focusGoal = cam.lift
+      ? a
+          .clone()
+          .lerp(b, cam.aim)
+          .setY(Math.max(a.y, b.y) + cam.lift)
+      : this.focusGoal;
+    if (!cam.lift) this.focusOn(from, to);
+    const h0 = this.viewH,
+      h1 = Math.max(Math.min(ZOOM.min, cam.zoom[0]), Math.min(h0, cam.zoom[0] + a.distanceTo(b) * cam.zoom[1]));
+    await this.animate(420, (k) => {
+      this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k);
+      this.frameView();
+    });
+  }
+  async endActionCam() {
+    const s = this.camSaved;
+    if (!s) return;
+    this.camSaved = null;
+    this.yawTarget = s.yaw;
+    this.pitchTarget = PITCH;
+    this.camera.near = 0.1;
+    if (this.focusGoal) this.focusGoal.y = STEP;
+    const h0 = this.viewH;
+    await this.animate(380, (k) => {
+      this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k);
+      this.frameView();
+    });
+  }
+
+  // back to the whole-map framing
+  resetView() {
+    this.viewH = this.fitView;
+    this.focusGoal = new THREE.Vector3(0, STEP, 0);
+  }
+
+  // dragging moves the focus on the ground, in the finger's direction (the map follows the finger)
+  pan(dx: number, dy: number) {
+    const k = (this.camera.top - this.camera.bottom) / this.canvas.clientHeight;
+    const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+    const fwd = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    this.focusGoal = null; // the finger takes over: stops the automatic slide
+    this.focus.addScaledVector(right, -dx * k).addScaledVector(fwd, (dy * k) / Math.sin(this.pitch));
+    const lim = Math.max(this.space.grid.width, this.space.grid.height) / 2;
+    this.focus.x = THREE.MathUtils.clamp(this.focus.x, -lim, lim);
+    this.focus.z = THREE.MathUtils.clamp(this.focus.z, -lim, lim);
+  }
+
+  zoom(factor: number) {
+    // the cap follows the map: on the 20x20 the whole map asks for more than the 8x8's 16
+    this.viewH = THREE.MathUtils.clamp(this.viewH * factor, ZOOM.min, Math.max(ZOOM.max, this.fitView));
+  }
+
+  // false when nothing changed (the scene skips the resize)
+  setInsets(top: number, bottom: number): boolean {
+    if (top === this.insets.top && bottom === this.insets.bottom) return false;
+    this.insets = { top, bottom };
+    return true;
+  }
+
+  // 8 angles, every 45° (Nov 13, Fernando's request: "the camera must have 8 angles"); gridStep finds the closest axis
+  // to each key at any rotation, so the arrows keep walking on the grid
+  rotate(dir: 1 | -1) {
+    this.yawTarget += (dir * Math.PI) / 4;
+  }
+
+  // Title screen background: the camera slowly rotates around the map. On stopping, it goes back to the nearest eighth of a turn
+  // (one of the rotate's 8 angles).
+  private spinning = false;
+  setSpin(on: boolean) {
+    if (this.spinning && !on) this.yawTarget = Math.round(this.yawTarget / (Math.PI / 4)) * (Math.PI / 4);
+    this.spinning = on;
+  }
+
+  // camera frame by view height (viewH), without redoing the draw targets: it is what the action camera's zoom
+  // calls every frame (it changed viewH and nothing happened, because only the resize applied it)
+  frameView() {
+    const w = this.host.clientWidth,
+      h = this.host.clientHeight;
+    const a = w / h;
+    // portrait phone: opens the frame until the width shows the whole map (pinch to adjust)
+    const viewH = a < 1 ? (this.viewH * 1.15) / a : this.viewH;
+    // centers the map in the free space between the top HUD and the bottom one, not in the middle of the screen
+    const off = ((this.insets.bottom - this.insets.top) / 2) * (viewH / h);
+    Object.assign(this.camera, {
+      left: (-viewH * a) / 2,
+      right: (viewH * a) / 2,
+      top: viewH / 2 - off,
+      bottom: -viewH / 2 - off,
+    });
+    this.camera.updateProjectionMatrix();
+  }
+
+  // eases the rotation, tilt and focus toward their goals (real time, not the battle clock)
+  update(dt: number) {
+    if (this.spinning) this.yawTarget += dt * 0.15; // ~42 s per revolution: you can see the map without getting dizzy
+    this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
+    this.pitch += (this.pitchTarget - this.pitch) * Math.min(1, dt * 10);
+    if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
+  }
+
+  // `shake` (0 = none) and `t` (battle clock, ms) come from the scene's strong-strike shake
+  place(pixel: PixelSettings, shake: number, t: number) {
+    // strong strike shake: shifts the focus only in this frame, vanishes by itself (nothing accumulates in the real focus)
+    const jitter = new THREE.Vector3(Math.sin(t * 0.09) * shake, 0, Math.cos(t * 0.13) * shake);
+    this.focus.add(jitter);
+    this.placeCamera(pixel);
+    this.focus.sub(jitter);
+  }
+
+  private placeCamera(pixel: PixelSettings) {
+    const off = new THREE.Vector3(
+      Math.sin(this.yaw) * Math.cos(this.pitch),
+      Math.sin(this.pitch),
+      Math.cos(this.yaw) * Math.cos(this.pitch),
+    ).multiplyScalar(CAM_DIST);
+    this.camera.position.copy(this.focus).add(off);
+    this.camera.lookAt(this.focus);
+    this.camera.updateMatrixWorld();
+    // locks the camera to the pixel grid: without this the ground "boils" when the camera moves (same idea as Warlock)
+    if (!pixel.snap || !pixel.size) return;
+    const block = ((this.camera.top - this.camera.bottom) / this.canvas.height) * pixel.size;
+    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+    const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
+    const px = this.camera.position.dot(right),
+      py = this.camera.position.dot(up);
+    this.camera.position
+      .addScaledVector(right, Math.round(px / block) * block - px)
+      .addScaledVector(up, Math.round(py / block) * block - py);
+    this.camera.updateMatrixWorld();
+  }
+}
