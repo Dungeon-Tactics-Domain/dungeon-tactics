@@ -87,7 +87,7 @@ export const keyHelp = (): [string, string][] => [
   ['Z', t('desfazer', 'undo')],
   ['T', t('virar a unidade da vez', 'turn the active unit')],
   ['P', t('Esperar: termina o turno; quem fez menos joga antes de novo (sem ter agido, pede P de novo)', 'Wait: ends the turn; doing less brings the next turn sooner (without acting, asks for P again)')],
-  ['R · Shift+R', t('girar a câmera 90°', 'rotate the camera 90°')],
+  ['R · Shift+R', t('girar a câmera 45°', 'rotate the camera 45°')],
   ['Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
   ['F', t('ver o mapa inteiro', 'show the whole map')],
   ['V', t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)')],
