@@ -1,4 +1,4 @@
-# python -I resize-img.py <entrada> <saida> <tamanho> [qualidade]  (JPG se a saída for .jpg; PNG mantém alfa)
+# python -I resize-img.py <input> <output> <size> [quality]  (JPG if the output is .jpg; PNG keeps alpha)
 import sys
 from PIL import Image
 src, dst, size = sys.argv[1], sys.argv[2], int(sys.argv[3])

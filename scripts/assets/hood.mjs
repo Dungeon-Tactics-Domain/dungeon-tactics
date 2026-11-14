@@ -1,12 +1,12 @@
-// Capuz como chapéu (issue #107): copia o capuz da cabeça da Ladina encapuzada (Rogue_Head_Hooded) para o rogue.glb como a malha
-// Rogue_Hood, skinada só no osso da cabeça como as outras. O capuz original abraça só a cabeça dela: 20% maior e 7 cm mais alto
-// ele cobre o cabelo das outras cabeças; onde ainda encostava (o topete do Cavaleiro), a metade de cima da casca é empurrada para fora
-// (embaixo não: o rabo de cavalo da Ladina e o coque do Mago esticariam o capuz até o pescoço).
-// Só acrescenta ao GLB (o resto do arquivo fica igual). Rodar uma vez: node scripts/assets/hood.mjs
+// Hood as a hat (issue #107): copies the hood from the hooded Rogue's head (Rogue_Head_Hooded) into rogue.glb as the mesh
+// Rogue_Hood, skinned only to the head bone like the others. The original hood hugs only her head: 20% bigger and 7 cm higher
+// it covers the hair of the other heads; where it still touched (the Knight's tuft), the top half of the shell is pushed outward
+// (not the bottom: the Rogue's ponytail and the Mage's bun would stretch the hood down to the neck).
+// It only appends to the GLB (the rest of the file stays the same). Run once: node scripts/assets/hood.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const SCALE = 1.2, LIFT = 0.07, GAP = 0.03;
-const CENTER = [0, 1.62, 0]; // meio da cabeça, no espaço do modelo (y para cima)
+const CENTER = [0, 1.62, 0]; // middle of the head, in model space (y up)
 const HEADS = { mage: ['Mage_Head'], knight: ['Knight_Head'], barbarian: ['Barbarian_Head'], rogue: ['Rogue_Head'], skeleton_mage: ['Skeleton_Mage_Skull'],
   skeleton_minion: ['Skeleton_Minion_Head'], skeleton_rogue: ['Skeleton_Rogue_Head'], skeleton_warrior: ['Skeleton_Warrior_Head'] };
 
@@ -17,7 +17,7 @@ function open(path) {
   const len = b.readUInt32LE(12);
   return { j: JSON.parse(b.subarray(20, 20 + len).toString()), bin: b.subarray(28 + len) };
 }
-// bytes de cada elemento do accessor (respeita o byteStride das views intercaladas)
+// bytes of each accessor element (respects the byteStride of interleaved views)
 function elements({ j, bin }, a) {
   const acc = j.accessors[a], view = j.bufferViews[acc.bufferView];
   const size = SIZE[acc.componentType] * COMP[acc.type], stride = view.byteStride ?? size, start = (view.byteOffset ?? 0) + (acc.byteOffset ?? 0);
@@ -29,7 +29,7 @@ const prim = (g, name) => g.j.meshes[g.j.nodes.find((n) => n.name === name).mesh
 const src = open('public/models/rogue_hooded.glb');
 const p = prim(src, 'Rogue_Head_Hooded');
 const tri = elements(src, p.indices).map((e) => e.readUInt16LE(0));
-// ilhas da malha (vértices ligados por triângulo): o rosto e as sobrancelhas ficam; o capuz são as ilhas de 144, 44, 42, 7 e 7 vértices
+// mesh islands (vertices connected by triangle): the face and eyebrows stay; the hood is the islands of 144, 44, 42, 7 and 7 vertices
 const up = [...Array(src.j.accessors[p.attributes.POSITION].count).keys()];
 const root = (v) => (up[v] === v ? v : (up[v] = root(up[v])));
 for (let i = 0; i < tri.length; i += 3) for (const v of [tri[i + 1], tri[i + 2]]) up[root(v)] = root(tri[i]);
@@ -41,7 +41,7 @@ const keep = up.keys().filter(isHood).toArray();
 if (keep.length !== 244) throw new Error(`capuz com ${keep.length} vértices (esperado 244): o modelo mudou?`);
 const map = new Map(keep.map((v, i) => [v, i]));
 
-// pontos de todas as cabeças, para empurrar a casca para fora onde encosta
+// points of all the heads, to push the shell outward where it touches
 const heads = Object.entries(HEADS).flatMap(([id, names]) => {
   const g = open(`public/models/${id}.glb`);
   return names.flatMap((n) => elements(g, prim(g, n).attributes.POSITION).map(vec3));
@@ -60,7 +60,7 @@ const out = keep.map((v) => {
   return [d[0] + CENTER[0], d[1] + CENTER[1] + LIFT, d[2] + CENTER[2]];
 });
 
-// acrescenta: uma view por atributo (posição nova; normal, UV, ossos e pesos copiados), índices novos, malha e nó filho do Rig
+// appends: one view per attribute (new position; normal, UV, bones and weights copied), new indices, mesh and child node of the Rig
 const dst = open('public/models/rogue.glb');
 const { j } = dst;
 if (j.nodes.some((n) => n.name === 'Rogue_Hood')) throw new Error('rogue.glb já tem o Rogue_Hood');

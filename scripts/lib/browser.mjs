@@ -1,6 +1,6 @@
-// Chrome sem janela dos scripts headless, com WebGL por software.
-// PW_PROFILE: pasta de perfil persistente (opcional; sem ela, um perfil temporário). PW_CHANNEL: 'chrome' (padrão) ou 'chromium'
-// (precisa de `npx playwright-core install chromium`).
+// Windowless Chrome for the headless scripts, with software WebGL.
+// PW_PROFILE: persistent profile folder (optional; without it, a temporary profile). PW_CHANNEL: 'chrome' (default) or 'chromium'
+// (needs `npx playwright-core install chromium`).
 import { chromium } from 'playwright-core';
 
 export { chromium };

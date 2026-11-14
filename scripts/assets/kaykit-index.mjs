@@ -1,11 +1,11 @@
-// Gera assets/kaykit/INDICE.md: cada pack com nº de modelos, arquivos e tamanho, e o nome de cada modelo por pasta.
-// node scripts/assets/kaykit-index.mjs  (rode de novo sempre que um pack entrar, sair ou mudar)
+// Generates assets/kaykit/INDICE.md: each pack with number of models, files and size, and the name of each model per folder.
+// node scripts/assets/kaykit-index.mjs  (run again whenever a pack is added, removed or changed)
 import { readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = 'assets/kaykit';
 const isModel = (f) => /\.(gltf|glb)$/i.test(f);
-// alguns packs KayKit nomeiam o glb como "nome.gltf.glb"; o nome do modelo é o que vem antes
+// some KayKit packs name the glb "name.gltf.glb"; the model name is what comes before
 const modelName = (f) => f.replace(/(\.gltf)?\.(gltf|glb)$/i, '');
 
 function walk(dir, out = []) {

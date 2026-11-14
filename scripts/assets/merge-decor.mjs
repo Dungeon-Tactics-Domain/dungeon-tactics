@@ -1,5 +1,5 @@
-// Junta vários .gltf/.glb num só GLB: cada modelo vira um nó de topo com o nome do arquivo (sem extensão).
-// node scripts/assets/merge-decor.mjs <saida.glb> <entrada1> <entrada2> ...
+// Merges several .gltf/.glb files into a single GLB: each model becomes a top-level node named after the file (without extension).
+// node scripts/assets/merge-decor.mjs <output.glb> <input1> <input2> ...
 import { NodeIO } from '@gltf-transform/core';
 import { dedup, prune, getBounds, mergeDocuments } from '@gltf-transform/functions';
 import path from 'node:path';
@@ -10,7 +10,7 @@ const base = await io.read(inputs[0]);
 const scene = base.getRoot().listScenes()[0];
 const names = [];
 
-// Embrulha o conteúdo da cena de `doc` num nó chamado `name`, na origem.
+// Wraps the scene content of `doc` in a node called `name`, at the origin.
 function wrap(doc, name) {
   const sc = doc.getRoot().listScenes()[0];
   const w = doc.createNode(name);
@@ -28,12 +28,12 @@ for (const f of inputs.slice(1)) {
   mergeDocuments(base, doc);
   names.push(name);
 }
-// após o merge cada cena extra traz o seu nó embrulhado: move para a primeira cena
+// after the merge each extra scene brings its wrapped node: move it to the first scene
 for (const sc of base.getRoot().listScenes().slice(1)) {
   for (const c of sc.listChildren()) { sc.removeChild(c); scene.addChild(c); }
   sc.dispose();
 }
-// GLB aceita um s� buffer: leva todos os accessors para o primeiro
+// GLB accepts only one buffer: moves all accessors to the first
 const [buf, ...extra] = base.getRoot().listBuffers();
 for (const a of base.getRoot().listAccessors()) a.setBuffer(buf);
 extra.forEach((b) => b.dispose());

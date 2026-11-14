@@ -1,5 +1,5 @@
-// Teste de fumaça do site publicado (só estático): node scripts/smoke.mjs https://dungeon-tactics.fernandorffdev.com
-// Confere a página, o bundle que ela aponta, o sprite de ícones e um modelo 3D: o que falta aqui deixa a tela branca.
+// Smoke test of the published site (static only): node scripts/smoke.mjs https://dungeon-tactics.fernandorffdev.com
+// Checks the page, the bundle it points to, the icon sprite and a 3D model: whatever is missing here leaves a blank screen.
 const base = (process.argv[2] ?? 'http://localhost:4173').replace(/\/$/, '');
 
 function fail(msg) {

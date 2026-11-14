@@ -1,13 +1,13 @@
-// Corta um personagem KayKit para o jogo: só as animações usadas e sem as armas extras.
-// node scripts/slim-character.mjs <entrada.glb> public/models/<id>.glb [nós a remover] [glbs do pacote de animações]
-// (listas separadas por vírgula; nós a remover vazio = o padrão)
+// Trims a KayKit character for the game: only the animations used and no extra weapons.
+// node scripts/slim-character.mjs <input.glb> public/models/<id>.glb [nodes to remove] [glbs from the animation pack]
+// (comma-separated lists; empty nodes to remove = the default)
 import { NodeIO } from '@gltf-transform/core';
 import { dedup, prune, resample } from '@gltf-transform/functions';
 
-// do próprio boneco; o gesto de cada habilidade está em CAST_CLIP (src/client/scene.ts)
+// from the character itself; each ability's gesture is in CAST_CLIP (src/client/scene.ts)
 const KEEP = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Hit_A', 'Death_A', 'Cheer', 'Dodge_Forward', 'Throw', 'Hit_B', 'Jump_Idle', 'Death_B',
   'Block', 'Spellcast_Long', 'Dodge_Backward', 'Unarmed_Melee_Attack_Kick', '2H_Melee_Attack_Spinning', '2H_Melee_Attack_Spin'];
-// do KayKit Character Animations 1.1 (Rig_Medium: mesmos ossos e mesma pose de repouso), copiados osso a osso pelo nome
+// from KayKit Character Animations 1.1 (Rig_Medium: same bones and same rest pose), copied bone by bone by name
 const PACK = ['Ranged_Magic_Summon', 'Waving', 'Skeletons_Taunt', 'Spawn_Ground'];
 const [src, out, drop, extra = ''] = process.argv.slice(2);
 const DROP_NODES = (drop || 'Spellbook,Spellbook_open,1H_Wand').split(',');
@@ -16,7 +16,7 @@ const doc = await io.read(src);
 const root = doc.getRoot();
 for (const a of root.listAnimations()) {
   if (KEEP.includes(a.getName())) continue;
-  // os samplers soltos seguram os dados da animação; sem isso o prune não remove nada
+  // loose samplers hold the animation data; without this prune removes nothing
   for (const c of a.listChannels()) c.dispose();
   for (const s of a.listSamplers()) s.dispose();
   a.dispose();

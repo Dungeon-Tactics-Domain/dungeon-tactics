@@ -1,10 +1,10 @@
-// Gera public/chars/<id>.png renderizando cada personagem (pose Idle) num navegador sem janela.
-// Precisa do servidor local rodando (npm run dev) para servir /models: node scripts/portraits.mjs http://localhost:5173 [ids...]
+// Generates public/chars/<id>.png by rendering each character (Idle pose) in a headless browser.
+// Needs the local server running (npm run dev) to serve /models: node scripts/portraits.mjs http://localhost:5173 [ids...]
 import { writeFileSync } from 'node:fs';
 import { chromium } from './lib/browser.mjs';
 
 const base = process.argv[2];
-// ids depois da URL refazem só esses retratos (os outros PNG/WebP ficam como estão)
+// ids after the URL redo only those portraits (the other PNG/WebP files stay as they are)
 const IDS = process.argv.length > 3 ? process.argv.slice(3) : ['mage', 'knight', 'barbarian', 'rogue', 'rogue_hooded', 'ranger', 'lancer', 'skeleton_mage', 'skeleton_minion', 'skeleton_rogue', 'skeleton_warrior'];
 const page_html = `<!doctype html><html><body style="margin:0;background:transparent">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.186.1/build/three.module.js","three/addons/":"https://unpkg.com/three@0.186.1/examples/jsm/"}}</script>
@@ -15,7 +15,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 const r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
 r.setSize(240, 320); r.outputColorSpace = THREE.SRGBColorSpace; document.body.append(r.domElement);
 window.shot = async (url) => {
-  const g = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url); // bonecos comprimidos com meshopt desde 13/11
+  const g = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url); // characters compressed with meshopt since Nov 13
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight('#fff4e8', '#3a2018', 2.2));
   const key = new THREE.DirectionalLight('#ffffff', 2.4); key.position.set(2, 4, 5); scene.add(key);
