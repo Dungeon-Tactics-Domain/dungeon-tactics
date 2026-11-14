@@ -477,7 +477,7 @@ export class Water {
           .replace('#include <color_fragment>', `#include <color_fragment>\n${FRAG_COLOR}`)
           .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>\n${FRAG_NORMAL}`);
     };
-    mat.customProgramCacheKey = () => 'agua-volume';
+    mat.customProgramCacheKey = () => 'water-volume';
     return mat;
   }
 
@@ -518,7 +518,7 @@ export class Water {
         diffuseColor.a = max(mix(0.85, 0.7, vFall), foam);`,
         );
     };
-    mat.customProgramCacheKey = () => 'agua-cachoeira';
+    mat.customProgramCacheKey = () => 'water-waterfall';
     return mat;
   }
 

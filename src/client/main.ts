@@ -945,7 +945,7 @@ class Game {
   private menu() {
     const sections: [id: string, title: string, body: Node[]][] = [
       [
-        'jogo',
+        'game',
         t('Jogo', 'Game'),
         [
           // in the campaign, the stage objective (no Beacon, boss); in the standalone battle, the usual one
@@ -1002,7 +1002,7 @@ class Game {
         ],
       ],
       [
-        'som',
+        'sound',
         t('Som', 'Sound'),
         [
           slider(t('Música', 'Music'), soundSettings().music, (music) => setSound({ ...soundSettings(), music })),
@@ -1054,7 +1054,7 @@ class Game {
         ],
       ],
       [
-        'controles',
+        'controls',
         t('Controles', 'Controls'),
         [
           el(
@@ -1069,7 +1069,7 @@ class Game {
         ],
       ],
       [
-        'idioma',
+        'language',
         t('Idioma', 'Language'),
         [
           choice(
@@ -1085,12 +1085,12 @@ class Game {
       ],
     ];
     const panels = sections.map(([id, title, body]) =>
-      el('section', { class: 'menu-section', hidden: id !== 'jogo' }, el('h3', {}, title), ...body),
+      el('section', { class: 'menu-section', hidden: id !== 'game' }, el('h3', {}, title), ...body),
     );
     const nav = choice(
       t('Seções', 'Sections'),
       sections.map(([id, title]) => [id, title] as [string, string]),
-      'jogo',
+      'game',
       (id) => panels.forEach((p, i) => (p.hidden = sections[i][0] !== id)),
     );
     nav.classList.add('menu-nav');

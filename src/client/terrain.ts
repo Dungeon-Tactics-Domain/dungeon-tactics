@@ -216,7 +216,7 @@ export function buildStream(
     const m = new THREE.Mesh(g, mat);
     m.renderOrder = -1; // together with the map water: markers and cursor on top
     m.receiveShadow = true;
-    m.name = 'rio-de-fora';
+    m.name = 'outer-river';
     return m;
   });
   return { meshes, time };
