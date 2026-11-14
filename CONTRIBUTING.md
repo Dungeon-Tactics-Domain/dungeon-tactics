@@ -9,6 +9,7 @@ Requirements: Node 24 and npm.
 ```bash
 npm ci
 npm run dev         # http://localhost:5173
+npm run lint        # biome lint and formatting check
 npm run typecheck   # client, tests and scripts
 npx vitest run      # tests
 npx vite build      # production build in dist/
@@ -50,7 +51,7 @@ test(battle): cover enemies blocking 2x2 movers
 
 ## From change to live game
 
-1. Commit on `master`. Every commit passes `npm run typecheck`, `npx vitest run` and `npx vite build`.
+1. Commit on `master`. Every commit passes `npm run lint`, `npm run typecheck`, `npx vitest run` and `npx vite build` (`npm run format` fixes lint and formatting).
 2. Push. GitHub Actions runs the same checks (`.github/workflows/ci.yml`).
 3. Publish with `npx wrangler deploy` and confirm that https://dungeon-tactics.fernandorffdev.com serves the new `index-*.js`. The deploy workflow can also be started by hand from GitHub Actions.
 

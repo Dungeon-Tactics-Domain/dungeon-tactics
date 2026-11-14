@@ -29,6 +29,7 @@ assets/             source packs (KayKit, sounds); not shipped
 ```bash
 npm ci
 npm run dev                       # http://localhost:5173 (the "dungeon-tactics" launch config uses port 5181)
+npm run lint                      # biome: lint and formatting check (npm run format fixes)
 npm run typecheck                 # client, tests and scripts
 npx vitest run                    # tests
 npx vite build                    # production build in dist/
@@ -38,7 +39,7 @@ npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 
 ## Workflow
 
-- **Straight to `master`.** No feature branches or pull requests while the project is solo. Every commit passes the gates (`npm run typecheck`, `npx vitest run`, `npx vite build`); new tests and browser checks are the agent's call.
+- **Straight to `master`.** No feature branches or pull requests while the project is solo. Every commit passes the gates (`npm run lint`, `npm run typecheck`, `npx vitest run`, `npx vite build`; `npm run format` fixes lint and formatting); new tests and browser checks are the agent's call.
 - **Commits** follow [Conventional Commits in English](CONTRIBUTING.md#commit-convention): `type(scope): summary` (≤ 72 chars, imperative), atomic, the *why* in the body, no merge commits, no `Co-Authored-By` or tool signatures.
 - **Publish after each block** with `npx wrangler deploy` and check that the served `index-*.js` matches `dist/assets`. There is one environment only; the deploy workflow runs manually.
 - **Parallel agent sessions** (3D models, design system) work on their own branch; the main session brings their commits onto `master` with rebase or cherry-pick.
