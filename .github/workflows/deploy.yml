@@ -1,11 +1,11 @@
-# Jogo no ar em https://dungeon-tactics.fernandorffdev.com. Só por disparo manual desde 13/11: os commits vão direto no
-# master e a publicação é feita à mão (npx wrangler deploy); sem o segredo da Cloudflare, o disparo a cada push só falhava
-name: Produção
+# Game live at https://dungeon-tactics.fernandorffdev.com. Manual trigger only since Nov 13: commits go straight to
+# master and publishing is done by hand (npx wrangler deploy); without the Cloudflare secret, the trigger on every push only failed
+name: Production
 
 on:
   workflow_dispatch:
 
-# um deploy por vez, sem cancelar o que já começou
+# one deploy at a time, without cancelling one that already started
 concurrency:
   group: producao
   cancel-in-progress: false
@@ -30,8 +30,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # o index-*.js servido tem que ser o deste build (cache ou deploy pela metade aparecem aqui)
-      - name: Conferir a versão servida
+      # the served index-*.js must be this build's (cache or a half-done deploy show up here)
+      - name: Check the served version
         run: |
           esperado=$(ls dist/assets | grep -E '^index-.*\.js$')
           for i in $(seq 1 30); do curl -s https://dungeon-tactics.fernandorffdev.com/ | grep -q "$esperado" && exit 0; sleep 5; done

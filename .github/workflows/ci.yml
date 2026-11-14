@@ -1,4 +1,4 @@
-# Checagens de todo pull request e de todo envio para o master: tipos, testes e build
+# Checks for every pull request and every push to master: types, tests and build
 name: CI
 
 on:

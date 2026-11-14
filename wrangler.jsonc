@@ -1,5 +1,5 @@
 {
-  // Só arquivos estáticos (o dist do Vite): a batalha roda inteira no navegador, sem Worker nem Durable Objects (25/10)
+  // Static files only (the Vite dist): the whole battle runs in the browser, with no Worker or Durable Objects (Oct 25)
   "name": "dungeon-tactics",
   "workers_dev": false,
   "compatibility_date": "2026-10-01",
