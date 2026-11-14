@@ -74,7 +74,7 @@ export const CHAPTERS: Chapter[] = [
       L('tess', 'Então ele que venha buscar. Formação!', 'Then let him come and take them. Formation!'),
       L('hero', 'Ninguém encosta na caravana. Comigo!', 'No one touches the caravan. With me!'),
       // dicas da 1ª fase: o jogo ainda não tem tutorial; quem abre a campanha aprende o básico aqui
-      L('narr', 'Dica: na sua vez, Mover anda até uma casa clara e Agir usa uma habilidade. Dá para fazer os dois, em qualquer ordem.', 'Tip: on your turn, Move walks to a lit tile and Act uses an ability. You can do both, in any order.'),
+      L('narr', 'Dica: na sua vez, Mover anda até uma casa marcada e Agir usa uma habilidade. Dá para fazer os dois, em qualquer ordem.', 'Tip: on your turn, Move walks to a lit tile and Act uses an ability. You can do both, in any order.'),
       L('narr', 'Dica: no rio fundo só se nada: quem está nele não ataca. A ponte e o vau raso são mais seguros; toda água gasta mais movimento. Segure Enter (ou ligue a Batalha rápida no menu do canto) para a vez do inimigo passar rápido.', 'Tip: in the deep river you can only swim: whoever is in it cannot attack. The bridge and the shallow ford are safer; all water costs more movement. Hold Enter (or turn on Fast battle in the corner menu) to speed up the enemy turn.'),
     ],
     outro: [

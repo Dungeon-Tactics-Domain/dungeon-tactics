@@ -455,7 +455,7 @@ export class BattleHud {
       const id = abilitiesOf(b)[s.index];
       return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
     }
-    if (s.k === 'map' && s.command === 'move') return t('Mover: escolha uma casa clara.', 'Move: pick a highlighted tile.');
+    if (s.k === 'map' && s.command === 'move') return t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.');
     if (s.k === 'map') {
       const p = v.hl?.preview;
       return p && !p.ok ? REASON[p.reason ?? 'unknown']() : t('Escolha o alvo na área laranja (roxo: o tiro bate no caminho).', 'Pick the target in the orange area (purple: the shot hits something on the way).');

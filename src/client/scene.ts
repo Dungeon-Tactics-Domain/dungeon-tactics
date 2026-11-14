@@ -47,11 +47,53 @@ const PC_START = 10;
 // cores das marcações; o significado também vai em texto no HUD (nunca só a cor)
 // roxo do Véu: a área de uma magia carregando fica acesa até ela sair (o texto vai na casa sob o cursor, hud.ts)
 const DANGER: [string, number] = ['#9b4dff', 0.4];
-const MARK: Record<TileKind | 'path', [color: string, opacity: number]> = {
-  // movimento branco (12/11): o azul de antes sumia na água azul dos mapas novos
-  actor: ['#ffd479', 0.75], move: ['#ffffff', 0.5], range: ['#ff6a3c', 0.5], blocked: ['#6b3a8c', 0.6],
-  threat: ['#ff2d55', 0.32], area: ['#ffb020', 0.6], target: ['#fff2a0', 0.85], path: ['#1e6fff', 0.95],
+// Marca estilizada (13/11, pedido do Fernando: "tá muito branco esse preview… algo mais estilizado e menos brancão"; o
+// quadrado branco chapado virava um tapete no Bosque): moldura fina na cor do tipo com um fio escuro por fora (lê na
+// grama, na terra e na água: o azul de 12/11 sumia na água por ser um quadrado cheio), miolo fraco e um desenho por
+// tipo, porque cor nunca é o único sinal: liso (andar), cheio (casa escolhida, quem age, área do golpe), listras
+// (alcance do golpe, ameaça) e xis (tiro barrado)
+type MarkPattern = 'frame' | 'solid' | 'hatch' | 'cross';
+const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?: MarkPattern]> = {
+  actor: ['#ffd479', 0.95, 'solid'], move: ['#6fc0ff', 0.95, 'frame'], range: ['#ff7a3c', 0.95, 'hatch'], blocked: ['#b07ae0', 0.95, 'cross'],
+  threat: ['#ff2d55', 0.6, 'hatch'], area: ['#ffb020', 1, 'solid'], target: ['#fff2a0', 1, 'solid'], path: ['#1e6fff', 0.95],
 };
+const markTextures = new Map<MarkPattern, THREE.CanvasTexture>();
+// textura branca (a cor vem do material) com o desenho da marca; uma por desenho, feita na primeira vez
+function markTexture(p: MarkPattern): THREE.CanvasTexture {
+  let t = markTextures.get(p);
+  if (t) return t;
+  const S = 64, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d')!;
+  g.fillStyle = `rgba(255,255,255,${p === 'solid' ? 0.42 : 0.08})`; // miolo
+  g.fillRect(4, 4, S - 8, S - 8);
+  if (p === 'hatch' || p === 'cross') {
+    g.save();
+    g.beginPath();
+    g.rect(7, 7, S - 14, S - 14);
+    g.clip();
+    g.strokeStyle = 'rgba(255,255,255,0.6)';
+    g.lineWidth = 4;
+    g.beginPath();
+    if (p === 'hatch') for (let k = -S; k < S; k += 16) { g.moveTo(k, S); g.lineTo(k + S, 0); }
+    else { g.moveTo(10, 10); g.lineTo(S - 10, S - 10); g.moveTo(S - 10, 10); g.lineTo(10, S - 10); }
+    g.stroke();
+    g.restore();
+  }
+  g.strokeStyle = 'rgba(0,0,0,0.6)'; // fio escuro por fora
+  g.lineWidth = 2;
+  g.strokeRect(1, 1, S - 2, S - 2);
+  g.strokeStyle = '#ffffff'; // moldura
+  g.lineWidth = 5;
+  g.strokeRect(4.5, 4.5, S - 9, S - 9);
+  t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  // sem mipmap: a casa aparece deitada (metade da altura) e o mipmap borrava a moldura para dentro, deixando o miolo leitoso
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
+  markTextures.set(p, t);
+  return t;
+}
 const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
 // Peças de cada aparência de casa (Tile.look), em public/models: cubo do topo e cubo da coluna embaixo. Ponte não tem
 // coluna (fica a água por baixo); árvore põe o modelo da floresta em cima. Mapeamento do orquestrador em 12/11 (montagem
@@ -390,7 +432,7 @@ export class BattleScene {
         else if (!edge(p) && !NEIGHBORS.every(([dx, dy]) => columnTop({ x: p.x + dx, y: p.y + dy }) >= k)) batch.side.at.push(at);
       }
       if (!tile.look && edge(p)) walls.push({ x: w.x, z: w.z, top: tile.h * this.step, color: WALL_COLOR[tile.terrain] });
-      const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
+      const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: markTexture('frame') }));
       mark.position.set(w.x, w.y + 0.02, w.z);
       mark.visible = false;
       this.scene.add(mark);
@@ -1086,6 +1128,7 @@ export class BattleScene {
       m.userData.base = MARK[kind][1]; // opacidade de partida do pulso (frame)
       mat.color.set(MARK[kind][0]);
       mat.opacity = MARK[kind][1];
+      mat.map = markTexture(MARK[kind][2] ?? 'frame');
       m.visible = true;
     }
     for (const p of h.path ?? []) this.pathDots.get(posKey(p))!.visible = true;
