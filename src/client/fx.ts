@@ -69,11 +69,7 @@ const LOOKS: Record<string, AbilityLook> = {
   fire: { clip: 'Ranged_Magic_Shoot', charge: MAGIC_CHARGE, fx: 'blast' },
   cure: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'heal' },
 };
-// '½': half-tile ability (half.ts) uses the original's gesture
-export const lookOf = (id: string): AbilityLook => {
-  const b = id.replace(/½$/, '');
-  return LOOKS[b] ?? LOOKS[b.split('_').slice(2).join('_')] ?? LOOKS.strike;
-};
+export const lookOf = (id: string): AbilityLook => LOOKS[id] ?? LOOKS[id.split('_').slice(2).join('_')] ?? LOOKS.strike;
 
 // effect colors: light, not theme paint (the HUD follows the :root variables; this is inside the 3D scene)
 const COLOR: Record<FxKind, string> = {

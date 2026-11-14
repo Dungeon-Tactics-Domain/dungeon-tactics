@@ -168,7 +168,7 @@ export class BattleScene {
     return s;
   }
 
-  setRangeRing(r: { center: Pos; range: number } | null) {
+  setRangeRing(r: { from: Pos[]; range: number } | null) {
     this.marks.setRangeRing(r);
   }
 
@@ -187,7 +187,7 @@ export class BattleScene {
 
   // Puts each unit where the state says (creates whoever is missing, removes whoever died). Called on open, after each animation and on undo.
   sync(state: BattleState) {
-    const hot = chargeDanger(state, this.grid.width, this.grid.height);
+    const hot = chargeDanger(this.grid, state);
     this.marks.showDanger(hot);
     this.units.sync(state);
   }

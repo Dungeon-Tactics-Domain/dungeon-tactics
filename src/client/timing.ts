@@ -30,11 +30,14 @@ export const TIMING = {
 };
 
 // Duration of a path step: walking on the flat, jump (crouch, flight, landing) when the height changes or it flies a gap.
-// `dh` in levels, `tiles` tiles between the two ends (2 across the gap). The scene animates with this and the game times the footstep sound
+// `dh` in levels, `tiles` whole tiles between the two ends (2 across the gap; a cell of the split map is 0.5, and walks in half the time,
+// so a whole tile takes the same on both maps). The scene animates with this and the game times the footstep sound
 // with this, so the two don't drift apart.
 export const isJump = (dh: number, tiles = 1) => dh !== 0 || tiles > 1;
 export const stepMs = (dh: number, tiles = 1) =>
-  isJump(dh, tiles) ? TIMING.jumpCrouch + jumpAirMs(Math.max(Math.abs(dh), tiles)) + TIMING.jumpLand : TIMING.step;
+  isJump(dh, tiles)
+    ? TIMING.jumpCrouch + jumpAirMs(Math.max(Math.abs(dh), tiles)) + TIMING.jumpLand
+    : TIMING.step * tiles;
 export const jumpAirMs = (dh: number) => TIMING.jumpAir + TIMING.jumpPerLevel * (Math.abs(dh) - 1);
 
 // Holding Enter, Space or A (gamepad) speeds up everything in battle (steps, hits, waits) 3 times; releasing goes back to the FFT

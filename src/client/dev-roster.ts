@@ -8,7 +8,7 @@ import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import type { Rules } from '../shared/battle/rules.ts';
 import { SCENARIOS, type Scenario, type Spawn } from '../shared/battle/scenarios.ts';
 import type { Team } from '../shared/battle/types.ts';
-import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
+import { baseDef, OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
 import { modelOf } from './markers.ts';
 
 export interface DevUnit {
@@ -156,7 +156,7 @@ const lastStanding: Rules = {
 // and occupies the map's starting tiles in order. Registers the sheets and the scenario in the engine's lists.
 // origin class of each sheet assembled here (dev-h0 → warrior): the HUD shows "Bran · Guerreiro"
 const BASE: Record<string, string> = {};
-export const classOf = (def: string): string | undefined => BASE[def];
+export const classOf = (def: string): string | undefined => BASE[baseDef(def)]; // the half-tile token too (half.ts)
 
 // The campaign (campaign.ts) uses the same path with its own id and name per stage.
 export function buildDevScenario(

@@ -4,10 +4,10 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { dist, facingTo, inBounds, neighbors, posKey, samePos, standH, tileAt } from '../shared/battle/grid.ts';
-import { shotStop, unitAt } from '../shared/battle/pathing.ts';
+import { dist, facingTo, inBounds, neighbors, posKey, samePos, standH, subOf, tileAt } from '../shared/battle/grid.ts';
+import { cellsOf, farCells, shotStop, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
-import { OBJECTIVE_DEF } from '../shared/battle/units.ts';
+import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { CAMPAIGN_KEY, CHAPTERS, objectiveText, parseProgress } from './campaign.ts';
 import { CHEST_KEY, parseChest, VICTORY_GOLD } from './chest.ts';
 import {
@@ -466,7 +466,14 @@ export class Game {
         : moving && this.battle.reach().has(posKey(this.cursor))
           ? this.cursor
           : this.battle.actor.pos;
-    this.scene.setRangeRing(ringAt ? { center: ringAt, range: longestRange(this.battle) } : null);
+    this.scene.setRangeRing(
+      ringAt
+        ? {
+            from: cellsOf(ringAt, UNIT_DEFS[this.battle.actor.def].size ?? 1),
+            range: farCells(this.battle.grid, longestRange(this.battle)),
+          }
+        : null,
+    );
     // trajectory preview (Nov 13, "like Tactics Ogre"): when aiming a shot or spell that needs line of sight, the line runs from
     // the attacker to the cursor tile and turns red from where it hits
     const aim =
@@ -542,7 +549,7 @@ export class Game {
       for (let i = 1; i < e.path.length; i++) {
         // ramp: walking, at the step pace (the same as scene/units.ts)
         const dh = rampLink(this.battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1),
-          tiles = dist(e.path[i - 1], e.path[i]),
+          tiles = dist(e.path[i - 1], e.path[i]) / subOf(this.battle.grid),
           ms = stepMs(dh, tiles);
         void this.scene.wait(at + (isJump(dh, tiles) ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
         at += ms;
@@ -787,8 +794,7 @@ export class Game {
       won,
       mvp: won ? this.mvpLine() : [],
       heroesFell:
-        this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) ||
-        !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF),
+        this.battle.state.units.some((u) => isObjective(u.def)) || !scenario.spawns.some((s) => isObjective(s.def)),
       restart: () => this.restart(),
     });
   }
@@ -817,8 +823,10 @@ async function boot() {
   // its own save key: acting in a staged battle must not overwrite the real one
   const run = staged ? { ...sel, scenario: staged.scenario, saveKey: 'dt:battle:sandbox' } : sel;
   const { scenario, chapter, study } = run;
-  const saved = staged ? null : store.get(sel.saveKey);
-  const battle = staged?.battle ?? ((saved && Battle.load(saved)) || newBattle(scenario));
+  // a save of another scenario (a whole-tile one, from before the half tiles of Nov 14) starts the battle over
+  const loaded = staged ? null : Battle.load(store.get(sel.saveKey) ?? '');
+  const saved = loaded?.state.scenario === scenario.id;
+  const battle = staged?.battle ?? (saved ? loaded : newBattle(scenario));
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(
     host,

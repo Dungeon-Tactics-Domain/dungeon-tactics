@@ -1,5 +1,4 @@
-import { baseDef, HALF } from '../shared/battle/half.ts';
-import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { baseDef, HALF, UNIT_DEFS } from '../shared/battle/units.ts';
 
 // Height of the markers around each unit, in meters from the top of the tile. Pure so the test can check the
 // order (ground < unit < health bar < cursor arrow), which the scene only applies.

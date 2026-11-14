@@ -18,7 +18,7 @@ import { rulesOf } from '../shared/battle/rules.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { previewOrder, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
-import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { baseDef, UNIT_DEFS } from '../shared/battle/units.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -170,7 +170,7 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
   rows.push(
     ['CT', `${Math.max(0, Math.min(u.ct, TURN_THRESHOLD))}/${TURN_THRESHOLD}`], // the panel already capped it at 100; Status showed 108/100
     [t('Velocidade', 'Speed'), `${rulesOf(state).speed?.(u) ?? def.speed}${bonus('sp')}`],
-    [t('Movimento', 'Move'), String(def.move)],
+    [t('Movimento', 'Move'), String(UNIT_DEFS[baseDef(u.def)].move)], // in whole tiles, also on the split map (half.ts)
     [t('Salto', 'Jump'), String(jumpOf(state, u.def))],
   );
   for (const [k, v] of Object.entries(def.info ?? {}))
@@ -631,7 +631,7 @@ export class BattleHud {
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
-    const hit = chargeDanger(b.state, b.grid.width, b.grid.height).get(posKey(v.cursor));
+    const hit = chargeDanger(b.grid, b.state).get(posKey(v.cursor));
     this.tile.textContent = b.over
       ? ''
       : tileInfo(b.grid, v.cursor) +

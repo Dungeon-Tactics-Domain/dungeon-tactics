@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
-import { dist, samePos, standH, tileAt } from '../../shared/battle/grid.ts';
+import { dist, samePos, standH, subOf, tileAt } from '../../shared/battle/grid.ts';
 import { footprint } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
@@ -13,7 +13,7 @@ import { chargeAura, lookOf, playFx } from '../fx.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import { barYOf, MARKER, modelOf, unitHeight } from '../markers.ts';
-import { isJump, jumpAirMs, TIMING } from '../timing.ts';
+import { isJump, jumpAirMs, stepMs, TIMING } from '../timing.ts';
 import { type Board, prepare } from './board.ts';
 import type { CameraRig } from './camera.ts';
 import { rampLink, type TileSpace } from './space.ts';
@@ -414,7 +414,7 @@ export class Units {
           const dh = rampLink(this.space.grid, e.path[i - 1], e.path[i])
             ? 0
             : standH(tileAt(this.space.grid, e.path[i])) - standH(tileAt(this.space.grid, e.path[i - 1]));
-          const tiles = dist(e.path[i - 1], e.path[i]);
+          const tiles = dist(e.path[i - 1], e.path[i]) / subOf(this.space.grid);
           if (isJump(dh, tiles)) {
             await this.jump(v, a, b, Math.max(Math.abs(dh), tiles));
             if (i < n) this.play(v, 'Walking_A', false, 1.25);
@@ -432,7 +432,7 @@ export class Units {
           const from = e.path[i - 1],
             to = e.path[i];
           const ramp = !!(tileAt(this.space.grid, from).ramp || tileAt(this.space.grid, to).ramp);
-          await this.time.animate(TIMING.step, (k) => {
+          await this.time.animate(stepMs(0, tiles), (k) => {
             v.holder.position.lerpVectors(a, b, ease(k));
             if (ramp) v.holder.position.y = this.space.walkY(from, to, ease(k));
           });

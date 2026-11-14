@@ -3,7 +3,7 @@
 // battle; the stages and lines are data in src/content/campaign.ts. Pure and tested; the dialogue screen lives in talk.ts.
 import { SPEAKERS, STAGES } from '../content/campaign.ts';
 import type { Scenario } from '../shared/battle/scenarios.ts';
-import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
+import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import type { Equip } from './chest.ts';
 import { buildDevScenario, type DevSetup, type DevUnit, slotsOf, unitFrom } from './dev-roster.ts';
 import { defaultGroup, type Group, heroesFor } from './group.ts';
@@ -76,13 +76,13 @@ export function chapterScenario(
   );
   if (CHAPTERS[n].boss) {
     UNIT_DEFS[s.spawns.find((sp) => sp.id === 'e0')!.def].boss = true;
-    const beacon = s.spawns.some((sp) => sp.def === OBJECTIVE_DEF);
+    const beacon = s.spawns.some((sp) => isObjective(sp.def));
     s.rules = {
       outcome: (state) =>
         !state.units.some((u) => u.id === 'e0')
           ? 'victory'
-          : !state.units.some((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF) ||
-              (beacon && !state.units.some((u) => u.def === OBJECTIVE_DEF))
+          : !state.units.some((u) => u.team === 'hero' && !isObjective(u.def)) ||
+              (beacon && !state.units.some((u) => isObjective(u.def)))
             ? 'defeat'
             : 'ongoing',
     };

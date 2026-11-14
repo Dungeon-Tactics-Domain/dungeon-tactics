@@ -95,3 +95,4 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 13/11 | Gates are the only mandatory check before `master`; the design system rules the interface | lean process for one developer |
 | 14/11 | Code under the MIT licence (assets keep theirs); README, architecture overview and media for the portfolio; repository public at the end of the cleanup | the project is a portfolio piece |
 | 14/11 | Game content lives in `src/content` as typed data; labs change content first, the engine only for a new mechanic | the narrative and mechanics labs tune data without touching the rules |
+| 14/11 | Every game battle in half tiles: units are 2x2 tokens that step 1 half-tile at a time; abilities keep their whole-tile numbers | Fernando's request ("the half-tile movement mechanic still doesn't exist"); the maps stay written in whole tiles and are split on load |

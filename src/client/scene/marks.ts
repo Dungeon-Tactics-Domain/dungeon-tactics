@@ -1,7 +1,8 @@
 // Everything drawn on the board to read a choice: tile marks of each kind, the charge danger, the path dots, the keyboard
 // cursor, the dotted range ring and the shot trajectory. It only draws what the scene passes in.
 import * as THREE from 'three';
-import { dist, inBounds, posKey } from '../../shared/battle/grid.ts';
+import { inBounds, posKey } from '../../shared/battle/grid.ts';
+import { gap } from '../../shared/battle/pathing.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import type { Highlights, TileKind } from '../interaction.ts';
 import { MARKER, unitHeight } from '../markers.ts';
@@ -182,8 +183,9 @@ export class Marks {
   // their longest-hitting skill should show as dotted, and while they see the movement preview too"): outline of the tiles within `range`
   // steps of `center` (the same distance as the rule), at each tile's ground height. Only rebuilds when it changes
   private ring: { key: string; mesh: THREE.Mesh } | null = null;
-  setRangeRing(r: { center: Pos; range: number } | null) {
-    const key = r ? `${posKey(r.center)}:${r.range}` : '';
+  // `from`: the cells of the unit (a token occupies 2x2); `range` in cells
+  setRangeRing(r: { from: Pos[]; range: number } | null) {
+    const key = r ? `${posKey(r.from[0])}:${r.range}` : '';
     if (this.ring?.key === key) return;
     if (this.ring) {
       this.scene.remove(this.ring.mesh);
@@ -194,7 +196,7 @@ export class Marks {
     if (!r || r.range < 1) return;
     const { width: W, height: H } = this.space.grid,
       pos: number[] = [];
-    const inside = (p: Pos) => inBounds(this.space.grid, p) && dist(p, r.center) <= r.range;
+    const inside = (p: Pos) => inBounds(this.space.grid, p) && gap(r.from, [p]) <= r.range;
     const yAt = (p: Pos, x: number, z: number) =>
       (this.space.levels.get(posKey(p))?.surface ?? this.space.surfaceY(p, x, z)) + 0.05;
     // flat little dash lying on the ground (WebGL's 1 px line barely showed): 2 triangles from `a` to `b`, 0.07 wide

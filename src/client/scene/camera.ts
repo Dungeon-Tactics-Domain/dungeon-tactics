@@ -2,7 +2,7 @@
 // slide to whoever acts, the finger pan, the title spin and the action camera on the strike. It only moves the camera: the
 // scene renders and calls update/place every frame.
 import * as THREE from 'three';
-import { posKey } from '../../shared/battle/grid.ts';
+import { posKey, subOf } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import type { PixelSettings } from '../pixel-settings.ts';
 import { param } from '../store.ts';
@@ -51,6 +51,8 @@ export class CameraRig {
   private focusGoal: THREE.Vector3 | null = null; // where the camera slides to (hero of the turn, recenter)
   private viewH: number;
   private readonly fitView: number; // zoom at which the whole map fits the width
+  // world units per whole tile: 2 on the split map (half.ts), where every distance in this file is twice as long
+  private readonly k: number;
   private insets = { top: 0, bottom: 0 }; // px covered by the HUD at the top and bottom
   private yaw = Math.PI / 4;
   private pitch = PITCH; // only the action camera changes it (ACTION_CAMS)
@@ -65,12 +67,15 @@ export class CameraRig {
     private readonly animate: (dur: number, step: (k: number) => void) => Promise<void>,
   ) {
     const grid = space.grid;
+    this.k = subOf(grid);
     // fitView: the map diagonal (it shows as a diamond) plus half a tile on each side fits the portrait phone width.
     // Starts 1.5x closer: with the whole map the tile was ~45x24 px, small for a finger (mobile audit of Oct 25);
     // the camera goes to the hero of the turn, and the recenter button goes back to the whole map
     this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
     this.viewH =
-      innerWidth < innerHeight ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START) : Math.min(this.fitView, PC_START);
+      innerWidth < innerHeight
+        ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START * this.k)
+        : Math.min(this.fitView, PC_START * this.k);
     this.focus.set(0, STEP, 0);
   }
 
@@ -109,18 +114,19 @@ export class CameraRig {
     this.yawTarget = goal;
     this.pitchTarget = THREE.MathUtils.degToRad(cam.pitch);
     // the close unit stays at half distance in front of the focus: the cut retreats with it, otherwise it vanished on the long shot
-    this.camera.near = cam.clip ? CAM_DIST - cam.clip - 0.5 * a.distanceTo(b) : 0.1;
+    this.camera.near = cam.clip ? CAM_DIST - cam.clip * this.k - 0.5 * a.distanceTo(b) : 0.1;
     // `xcom` aims at the middle of the two at the usual height; the low-camera ones aim at the units' height, otherwise the
     // highest tile fell out of frame
     this.focusGoal = cam.lift
       ? a
           .clone()
           .lerp(b, cam.aim)
-          .setY(Math.max(a.y, b.y) + cam.lift)
+          .setY(Math.max(a.y, b.y) + cam.lift * this.k)
       : this.focusGoal;
     if (!cam.lift) this.focusOn(from, to);
     const h0 = this.viewH,
-      h1 = Math.max(Math.min(ZOOM.min, cam.zoom[0]), Math.min(h0, cam.zoom[0] + a.distanceTo(b) * cam.zoom[1]));
+      base = cam.zoom[0] * this.k,
+      h1 = Math.max(Math.min(ZOOM.min * this.k, base), Math.min(h0, base + a.distanceTo(b) * cam.zoom[1]));
     await this.animate(420, (k) => {
       this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k);
       this.frameView();
@@ -161,7 +167,11 @@ export class CameraRig {
 
   zoom(factor: number) {
     // the cap follows the map: on the 20x20 the whole map asks for more than the 8x8's 16
-    this.viewH = THREE.MathUtils.clamp(this.viewH * factor, ZOOM.min, Math.max(ZOOM.max, this.fitView));
+    this.viewH = THREE.MathUtils.clamp(
+      this.viewH * factor,
+      ZOOM.min * this.k,
+      Math.max(ZOOM.max * this.k, this.fitView),
+    );
   }
 
   // false when nothing changed (the scene skips the resize)

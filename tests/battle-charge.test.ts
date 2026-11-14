@@ -39,11 +39,11 @@ describe('charged actions', () => {
   it('the charge area lights up where it will land and follows the unit (chargeDanger, warning to leave the area)', () => {
     const b = duel('mage', 1, 3);
     b.act('blast', { x: 4, y: 3 });
-    const area = [...chargeDanger(b.state, 8, 8).keys()].sort();
+    const area = [...chargeDanger(grid, b.state).keys()].sort();
     expect(area).toEqual(['3,3', '4,2', '4,3', '4,4', '5,3'].sort());
     const moved = { ...b.state, units: b.state.units.map((u) => (u.id === 'b' ? { ...u, pos: { x: 6, y: 6 } } : u)) };
-    expect(chargeDanger(moved, 8, 8).has('6,6')).toBe(true);
-    expect(chargeDanger(moved, 8, 8).has('4,3')).toBe(false);
+    expect(chargeDanger(grid, moved).has('6,6')).toBe(true);
+    expect(chargeDanger(grid, moved).has('4,3')).toBe(false);
   });
 
   it('declaring does not hit right away: it enters the queue and resolves later, with the hit', () => {

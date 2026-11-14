@@ -454,19 +454,24 @@ export class Board {
               1,
               new THREE.Matrix4().makeTranslation(w.x, y, w.z).scale(new THREE.Vector3(1, Math.min(1, y), 1)),
             );
-      if (look.prop && tile.terrain !== 'forest') {
+      // the whole tile's object on the split map (Tile.span): once, the size of its 4 cells
+      const span = tile.span ?? 1;
+      if (look.prop && tile.terrain !== 'forest' && span > 0) {
         // forest tile tree: buildTrees
         // painted object (props.ts): the variation comes from the position, as with the trees
         const prop = variant(this.lookPieces, look.prop, hash(p.x, p.y, 6)),
           box = pieceBox(this.lookPieces.get(prop)!);
         // propW: ground piece (spikes) measured by width, to fit the tile; the others by height (1.1 = the tree)
-        const k = look.propW
-          ? look.propW / Math.max(box.max.x - box.min.x, box.max.z - box.min.z)
-          : (look.propH ?? 1.1) / (box.max.y - box.min.y);
+        const k =
+          span *
+          (look.propW
+            ? look.propW / Math.max(box.max.x - box.min.x, box.max.z - box.min.z)
+            : (look.propH ?? 1.1) / (box.max.y - box.min.y));
+        const c = (span - 1) / 2;
         put(
           prop,
           0,
-          new THREE.Matrix4().makeTranslation(w.x, top - box.min.y * k, w.z).scale(new THREE.Vector3(k, k, k)),
+          new THREE.Matrix4().makeTranslation(w.x + c, top - box.min.y * k, w.z + c).scale(new THREE.Vector3(k, k, k)),
         );
       }
       // debris on top of the bridge (walkable cover): the caravan remains over the planks (props.ts), only on open maps
@@ -511,7 +516,7 @@ export class Board {
       depthWrite: false,
     });
     this.grid.tiles.forEach((t, i) => {
-      if (t.look !== 'corpse') return;
+      if (t.look !== 'corpse' || t.span === 0) return; // split map: one body per whole tile (Tile.span)
       const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
       const gltf = this.models.get(CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length]);
       if (!gltf) return;
@@ -524,7 +529,7 @@ export class Board {
         mesh.material = this.shaded(mat);
       });
       const b = new THREE.Box3().setFromObject(body);
-      body.scale.setScalar(unitHeight('soldier') / (b.max.y - b.min.y));
+      body.scale.setScalar(((t.span ?? 1) * unitHeight('soldier')) / (b.max.y - b.min.y));
       const clip = [...gltf.animations, ...this.packClips].find((c) => c.name === 'Death_A');
       if (clip) {
         const mixer = new THREE.AnimationMixer(body);
@@ -535,7 +540,7 @@ export class Board {
         mixer.update(clip.duration);
       }
       const w = this.space.world(p);
-      body.position.copy(w);
+      body.position.copy(w).add(new THREE.Vector3(((t.span ?? 1) - 1) / 2, 0, ((t.span ?? 1) - 1) / 2));
       body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
       this.scene.add(body);
       // stain with an irregular edge (brushstroke), not a disc

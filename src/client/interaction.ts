@@ -3,10 +3,13 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
-import { dist, posKey, samePos } from '../shared/battle/grid.ts';
+import { type Grid, posKey, samePos } from '../shared/battle/grid.ts';
 import {
+  aimEnds,
+  areaOf,
   footprint,
   inAbilityRange,
+  inArea,
   lineOfSight,
   nearestTile,
   pathTo,
@@ -114,8 +117,10 @@ function threat(b: Battle, unitId: string): Pos[] {
   const def = UNIT_DEFS[u.def];
   if (!def.abilities.length) return [];
   const spots = [u.pos, ...[...reachable(b.grid, b.state, unitId).values()].map((s) => s.pos)];
+  // from the square's cell nearest to the tile, like the rule (a token occupies 2x2 cells)
+  const from = (s: Pos, t: Pos) => nearestTile({ ...u, pos: s }, t);
   return allTiles(b).filter((t) =>
-    def.abilities.some((a) => spots.some((s) => inAbilityRange(b.grid, ABILITIES[a], s, t))),
+    def.abilities.some((a) => spots.some((s) => inAbilityRange(b.grid, ABILITIES[a], from(s, t), t))),
   );
 }
 
@@ -132,17 +137,20 @@ export function highlights(b: Battle, ui: Ui): Highlights {
     if (ui.pending) path = pathTo(reach, ui.pending);
   } else if (ui.mode.k === 'ability') {
     const a = ABILITIES[ui.mode.id];
-    const from = b.actor.pos;
+    const own = footprint(b.actor);
     if (!selfCentered(a.id)) {
+      // measured from the actor's cell nearest to the tile, like the rule (previewAbility)
       for (const t of allTiles(b)) {
-        if (!inAbilityRange(b.grid, a, from, t)) continue;
-        mark(t, a.needsSight && !lineOfSight(b.grid, from, t) ? 'blocked' : 'range');
+        const [from, to] = aimEnds(b.grid, b.state, b.actor, t);
+        if (!inAbilityRange(b.grid, a, from, to)) continue;
+        mark(t, a.needsSight && !lineOfSight(b.grid, from, to) ? 'blocked' : 'range');
       }
     }
     if (ui.pending) {
       preview = b.preview(a.id, ui.pending);
+      const area = areaOf(b.grid, b.state, preview.center);
       for (const t of allTiles(b))
-        if (a.radius > 0 && dist(t, preview.center) <= a.radius && !samePos(t, from)) mark(t, 'area');
+        if (a.radius > 0 && inArea(b.grid, area, a.radius, [t]) && !own.some((p) => samePos(p, t))) mark(t, 'area');
     }
   }
   if (ui.pending) mark(ui.pending, 'target');
@@ -152,18 +160,17 @@ export function highlights(b: Battle, ui: Ui): Highlights {
 
 // Tiles the queued charges will hit (night of Nov 12): a charged spell follows the unit (follow) and the Aimed Shot's
 // stays on its tile; the area is the ability's radius around it. The scene paints it purple and the HUD says it in text, to give time to leave.
-export function chargeDanger(state: BattleState, width: number, height: number): Map<string, string> {
+export function chargeDanger(grid: Grid, state: BattleState): Map<string, string> {
   const out = new Map<string, string>(); // tile -> ability that lands on it
   for (const c of state.charges) {
     // same calculation as the charge when leaving (turn-queue.ts): large unit followed, its tile closest to the caster
     const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
     const caster = state.units.find((u) => u.id === c.unit);
     const center = followed ? (caster ? nearestTile(followed, caster.pos) : followed.pos) : c.target;
-    const r = ABILITIES[c.ability].radius;
-    for (let y = center.y - r; y <= center.y + r; y++)
-      for (let x = center.x - r; x <= center.x + r; x++)
-        if (x >= 0 && y >= 0 && x < width && y < height && dist({ x, y }, center) <= r)
-          out.set(posKey({ x, y }), c.ability);
+    const r = ABILITIES[c.ability].radius,
+      area = areaOf(grid, state, center);
+    for (let y = 0; y < grid.height; y++)
+      for (let x = 0; x < grid.width; x++) if (inArea(grid, area, r, [{ x, y }])) out.set(posKey({ x, y }), c.ability);
   }
   return out;
 }
