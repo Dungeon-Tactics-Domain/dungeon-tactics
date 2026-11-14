@@ -1,23 +1,23 @@
-# Índice dos sons de RPG
+# RPG sound index
 
-Lista gerada uma vez, a partir das pastas, quando o pacote entrou (21/10/2026). O que é o pacote, de onde veio e a situação da licença: [README.md](README.md). Visão geral de todos os assets do jogo: [docs/ASSETS.md](../../docs/ASSETS.md).
+List generated once from the folders when the package was added (21/10/2026). What the package is, where it came from and the state of its licence: [README.md](README.md). Overview of all the game assets: [docs/ASSETS.md](../../docs/ASSETS.md).
 
-Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote. Os nomes estão sem a extensão.
+Every file is a `.wav` and keeps the package's original folder structure. Names are listed without the extension.
 
-| Categoria | Arquivos | Tamanho |
+| Category | Files | Size |
 |---|---:|---:|
-| [Magias: Human](#magias-human) | 47 | 4,5 MB |
-| [Magias: Orc](#magias-orc) | 25 | 2,5 MB |
-| [Magias: NightElf](#magias-nightelf) | 39 | 3,1 MB |
-| [Magias: Undead](#magias-undead) | 42 | 3,5 MB |
-| [Magias: Demon](#magias-demon) | 5 | 0,7 MB |
-| [Magias: Other](#magias-other) | 46 | 3,7 MB |
-| [Magias: Items (itens)](#magias-items-itens) | 12 | 1,1 MB |
-| [Armas e projéteis](#armas-e-projéteis) | 162 | 6,5 MB |
-| [Combate de unidades](#combate-de-unidades) | 154 | 5,1 MB |
-| **Total** | **532** | **30,6 MB** |
+| [Spells: Human](#spells-human) | 47 | 4.5 MB |
+| [Spells: Orc](#spells-orc) | 25 | 2.5 MB |
+| [Spells: NightElf](#spells-nightelf) | 39 | 3.1 MB |
+| [Spells: Undead](#spells-undead) | 42 | 3.5 MB |
+| [Spells: Demon](#spells-demon) | 5 | 0.7 MB |
+| [Spells: Other](#spells-other) | 46 | 3.7 MB |
+| [Spells: Items](#spells-items) | 12 | 1.1 MB |
+| [Weapons and projectiles](#weapons-and-projectiles) | 162 | 6.5 MB |
+| [Unit combat](#unit-combat) | 154 | 5.1 MB |
+| **Total** | **532** | **30.6 MB** |
 
-## Magias: Human
+## Spells: Human
 
 - `Abilities/Spells/Human/AerialShackles/` (1): MagicLariatLoop1
 - `Abilities/Spells/Human/Avatar/` (1): Avatar
@@ -50,7 +50,7 @@ Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote.
 - `Abilities/Spells/Human/StormBolt/` (2): StormBoltLaunch, ThunderBoltMissileDeath
 - `Abilities/Spells/Human/Thunderclap/` (1): ThunderclapCaster
 
-## Magias: Orc
+## Spells: Orc
 
 - `Abilities/Spells/Orc/AncestralSpirit/` (1): AncestralSpirit
 - `Abilities/Spells/Orc/BattleStations/` (1): OrcBurrowBattleStationsWhat1
@@ -74,7 +74,7 @@ Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote.
 - `Abilities/Spells/Orc/Voodoo/` (1): BigBadVoodooSpellBirth1
 - `Abilities/Spells/Orc/WindWalk/` (1): WindWalk
 
-## Magias: NightElf
+## Spells: NightElf
 
 - `Abilities/Spells/NightElf/Barkskin/` (1): BarkSkinTarget1
 - `Abilities/Spells/NightElf/BattleRoar/` (1): BattleRoar
@@ -102,7 +102,7 @@ Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote.
 - `Abilities/Spells/NightElf/Uproot/` (1): Uproot
 - `Abilities/Spells/NightElf/shadowstrike/` (2): ShadowStrikeBirth1, ShadowStrikeMissile1
 
-## Magias: Undead
+## Spells: Undead
 
 - `Abilities/Spells/Undead/AbsorbMana/` (1): AbsorbMana
 - `Abilities/Spells/Undead/AntiMagicShell/` (1): AntiMagicShellBirth1
@@ -133,12 +133,12 @@ Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote.
 - `Abilities/Spells/Undead/Unsummon/` (1): CityscapeCrystalShield1
 - `Abilities/Spells/Undead/Web/` (2): WebMissileLaunch1, WebTarget1
 
-## Magias: Demon
+## Spells: Demon
 
 - `Abilities/Spells/Demon/RainOfFire/` (4): RainOfFireLoop1, RainOfFireTarget1, RainOfFireTarget2, RainOfFireTarget3
 - `Abilities/Spells/Demon/SoulPreservation/` (1): SoulPreservation
 
-## Magias: Other
+## Spells: Other
 
 - `Abilities/Spells/Other/ANrl/` (1): FountainOfLifeLoop1
 - `Abilities/Spells/Other/ANsa/` (1): SacrificeUnit
@@ -173,7 +173,7 @@ Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote.
 - `Abilities/Spells/Other/Transmute/` (1): AlchemistTransmuteDeath1
 - `Abilities/Spells/Other/Volcano/` (2): VolcanicRockLaunch1, VolcanoLoop
 
-## Magias: Items (itens)
+## Spells: Items
 
 - `Abilities/Spells/Items/AIam/` (1): Tomes
 - `Abilities/Spells/Items/AIco/` (1): CharmTarget1
@@ -186,7 +186,7 @@ Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote.
 - `Abilities/Spells/Items/SpellShieldAmulet/` (1): SpellShieldImpact1
 - `Abilities/Spells/Items/WandOfNeutralization/` (1): WandOfNeutralization
 
-## Armas e projéteis
+## Weapons and projectiles
 
 - `Abilities/Weapons/AncestralGuardianMissile/` (2): AncestralGuardianHit1, AncestralGuardianMissileLaunch
 - `Abilities/Weapons/AncientProtectorMissile/` (6): AncientProtectorMissileHit1, AncientProtectorMissileHit2, AncientProtectorMissileHit3, AncientProtectorMissileLaunch1, AncientProtectorMissileLaunch2, AncientProtectorMissileLaunch3
@@ -238,6 +238,6 @@ Todos os arquivos são `.wav` e seguem a estrutura de pastas original do pacote.
 - `Abilities/Weapons/huntermissile/` (3): HeadHunterMissileHit1, HeadHunterMissileHit2, HeadHunterMissileLaunch
 - `Abilities/Weapons/snapMissile/` (1): SnapDragonMissileLaunch1
 
-## Combate de unidades
+## Unit combat
 
 - `Sound/Units/Combat/` (154): AxeMediumChopWood1, AxeMediumChopWood2, AxeMediumChopWood3, AxeMediumChopWood4, EtherealHeavyHit1, EtherealHeavyHit2, EtherealHeavyHit3, EtherealMediumHit1, EtherealMediumHit2, EtherealMediumHit3, MetalHeavyBashFlesh1, MetalHeavyBashFlesh2, MetalHeavyBashFlesh3, MetalHeavyBashMetal1, MetalHeavyBashMetal2, MetalHeavyBashMetal3, MetalHeavyBashStone1, MetalHeavyBashStone2, MetalHeavyBashStone3, MetalHeavyBashWood1, MetalHeavyBashWood2, MetalHeavyBashWood3, MetalHeavyChopFlesh1, MetalHeavyChopFlesh2, MetalHeavyChopFlesh3, MetalHeavyChopMetal1, MetalHeavyChopMetal2, MetalHeavyChopMetal3, MetalHeavyChopStone1, MetalHeavyChopStone2, MetalHeavyChopStone3, MetalHeavyChopWood1, MetalHeavyChopWood2, MetalHeavyChopWood3, MetalHeavySliceFlesh1, MetalHeavySliceFlesh2, MetalHeavySliceFlesh3, MetalHeavySliceMetal1, MetalHeavySliceMetal2, MetalHeavySliceMetal3, MetalHeavySliceStone1, MetalHeavySliceStone2, MetalHeavySliceStone3, MetalHeavySliceWood1, MetalHeavySliceWood2, MetalHeavySliceWood3, MetalLightChopFlesh1, MetalLightChopFlesh2, MetalLightChopFlesh3, MetalLightChopMetal1, MetalLightChopMetal2, MetalLightChopMetal3, MetalLightChopStone1, MetalLightChopStone2, MetalLightChopStone3, MetalLightChopWood1, MetalLightChopWood2, MetalLightChopWood3, MetalLightSliceFlesh1, MetalLightSliceFlesh2, MetalLightSliceFlesh3, MetalLightSliceMetal1, MetalLightSliceMetal2, MetalLightSliceMetal3, MetalLightSliceStone1, MetalLightSliceStone2, MetalLightSliceStone3, MetalLightSliceWood1, MetalLightSliceWood2, MetalLightSliceWood3, MetalMediumBashFlesh1, MetalMediumBashFlesh2, MetalMediumBashFlesh3, MetalMediumBashMetal1, MetalMediumBashMetal2, MetalMediumBashMetal3, MetalMediumBashStone1, MetalMediumBashStone2, MetalMediumBashStone3, MetalMediumBashWood1, MetalMediumBashWood2, MetalMediumBashWood3, MetalMediumChopFlesh1, MetalMediumChopFlesh2, MetalMediumChopFlesh3, MetalMediumChopMetal1, MetalMediumChopMetal2, MetalMediumChopMetal3, MetalMediumChopStone1, MetalMediumChopStone2, MetalMediumChopStone3, MetalMediumChopWood1, MetalMediumChopWood2, MetalMediumChopWood3, MetalMediumSliceFlesh1, MetalMediumSliceFlesh2, MetalMediumSliceFlesh3, MetalMediumSliceMetal1, MetalMediumSliceMetal2, MetalMediumSliceMetal3, MetalMediumSliceStone1, MetalMediumSliceStone2, MetalMediumSliceStone3, MetalMediumSliceWood1, MetalMediumSliceWood2, MetalMediumSliceWood3, RockHeavyBashFlesh1, RockHeavyBashFlesh2, RockHeavyBashFlesh3, RockHeavyBashMetal1, RockHeavyBashMetal2, RockHeavyBashMetal3, RockHeavyBashStone1, RockHeavyBashStone2, RockHeavyBashStone3, RockHeavyBashWood1, RockHeavyBashWood2, RockHeavyBashWood3, WoodHeavyBashFlesh1, WoodHeavyBashFlesh2, WoodHeavyBashFlesh3, WoodHeavyBashMetal1, WoodHeavyBashMetal2, WoodHeavyBashMetal3, WoodHeavyBashStone1, WoodHeavyBashStone2, WoodHeavyBashStone3, WoodHeavyBashWood1, WoodHeavyBashWood2, WoodHeavyBashWood3, WoodLightBashFlesh1, WoodLightBashFlesh2, WoodLightBashFlesh3, WoodLightBashMetal1, WoodLightBashMetal2, WoodLightBashMetal3, WoodLightBashStone1, WoodLightBashStone2, WoodLightBashStone3, WoodLightBashWood1, WoodLightBashWood2, WoodLightBashWood3, WoodMediumBashFlesh1, WoodMediumBashFlesh2, WoodMediumBashFlesh3, WoodMediumBashMetal1, WoodMediumBashMetal2, WoodMediumBashMetal3, WoodMediumBashStone1, WoodMediumBashStone2, WoodMediumBashStone3, WoodMediumBashWood1, WoodMediumBashWood2, WoodMediumBashWood3

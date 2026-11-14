@@ -42,8 +42,8 @@ interface Mood {
   light?: { sky: number; sun: number; at: [number, number, number] };
 }
 
-const F = 'floresta/',
-  M = 'masmorra/';
+const F = 'forest/',
+  M = 'dungeon/';
 export const MOODS: Record<Kind, Mood> = {
   // Ash Wood (Nov 13, Fernando's request: "darker... low and directional light, rays between the crowns, dense forest and taller
   // on the 4 sides, closed-forest backdrop"): dark green fog, weak sky and low sun from the side (long shadows)

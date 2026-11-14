@@ -14,8 +14,8 @@ import sharp from 'sharp';
 // armor tone: the Knight's gray becomes teal steel, so the Lancer and the Warrior are not confused from above.
 // Without the cape almost no red is left on the character, and the belt and boots have the skin's hue: tinting by color caught the face
 const STEEL = [0.56, 0.86, 0.9];
-const SPEAR = 'assets/kaykit/armas-de-fantasia/Assets/gltf/spear_A.gltf';
-const SPEAR_IDLE = ['assets/kaykit/animacoes/Animations/gltf/Rig_Medium/Rig_Medium_CombatMelee.glb', 'Melee_2H_Idle'];
+const SPEAR = 'assets/kaykit/fantasy-weapons/Assets/gltf/spear_A.gltf';
+const SPEAR_IDLE = ['assets/kaykit/animations/Animations/gltf/Rig_Medium/Rig_Medium_CombatMelee.glb', 'Melee_2H_Idle'];
 
 await MeshoptDecoder.ready;
 await MeshoptEncoder.ready;

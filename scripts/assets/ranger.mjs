@@ -1,7 +1,7 @@
 // Ranger with its own character (Nov 13, Fernando's request: "the archer has the same skin as the rogue, it should use another skin and use
 // a bow as a weapon"). KayKit Adventurers only has 5 characters and all are already used, so the Ranger is the Rogue (rogue.glb) without the
 // two knives and without the hood, with the green clothes tinted (the hooded Rogue stays green) and the KayKit Fantasy
-// Weapons Bits bow_A_withString attached to the left hand bone (handslot.l), the hand that holds the bow in the Ranged_Bow_* gestures of animacoes.glb.
+// Weapons Bits bow_A_withString attached to the left hand bone (handslot.l), the hand that holds the bow in the Ranged_Bow_* gestures of animations.glb.
 // Run once: node scripts/assets/ranger.mjs (generates public/models/ranger.glb; rogue.glb does not change, the fallen bodies use it)
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
@@ -12,8 +12,8 @@ import sharp from 'sharp';
 // clothes tone: the Rogue's green (hue 80–170°) becomes wine red, so the Ranger and the Rogue are not confused from above
 const HUE = 355,
   GREEN = [80, 170];
-const BOW = 'assets/kaykit/armas-de-fantasia/Assets/gltf/bow_A_withString.gltf';
-const BOW_IDLE = ['assets/kaykit/animacoes/Animations/gltf/Rig_Medium/Rig_Medium_CombatRanged.glb', 'Ranged_Bow_Idle'];
+const BOW = 'assets/kaykit/fantasy-weapons/Assets/gltf/bow_A_withString.gltf';
+const BOW_IDLE = ['assets/kaykit/animations/Animations/gltf/Rig_Medium/Rig_Medium_CombatRanged.glb', 'Ranged_Bow_Idle'];
 
 await MeshoptDecoder.ready;
 await MeshoptEncoder.ready;

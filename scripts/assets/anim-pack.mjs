@@ -1,10 +1,10 @@
 // Merges into a single glb the KayKit Character Animations 1.1 (Rig_Medium) clips that the abilities use (Nov 12, one
 // gesture per ability, FFT style). The characters share the same bones: the scene applies the clips by bone name.
-// node scripts/assets/anim-pack.mjs  →  public/models/animacoes.glb
+// node scripts/assets/anim-pack.mjs  →  public/models/animations.glb
 import { NodeIO } from '@gltf-transform/core';
 import { dedup, prune, resample } from '@gltf-transform/functions';
 
-const DIR = 'assets/kaykit/animacoes/Animations/gltf/Rig_Medium/';
+const DIR = 'assets/kaykit/animations/Animations/gltf/Rig_Medium/';
 const WANT = {
   'Rig_Medium_CombatMelee.glb': [
     'Melee_1H_Attack_Chop',
@@ -71,7 +71,7 @@ for (const [file, names] of Object.entries(WANT)) {
   }
 }
 await doc.transform(resample(), prune({ keepLeaves: true }), dedup());
-await io.write('public/models/animacoes.glb', doc);
+await io.write('public/models/animations.glb', doc);
 console.log(
   'clipes:',
   doc

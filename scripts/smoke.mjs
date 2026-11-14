@@ -17,5 +17,5 @@ const html = await (await get('/')).text();
 if (!html.includes('<title>Dungeon Tactics</title>')) fail('a página não é a do Dungeon Tactics');
 const bundle = html.match(/\/assets\/index-[\w-]+\.js/)?.[0];
 if (!bundle) fail('a página não aponta para o bundle /assets/index-*.js');
-for (const path of [bundle, '/icons.svg', '/models/knight.glb', '/models/poc/quadrado/dirt.gltf']) await get(path);
+for (const path of [bundle, '/icons.svg', '/models/knight.glb', '/models/poc/square/dirt.gltf']) await get(path);
 console.log('SMOKE OK', base, bundle);

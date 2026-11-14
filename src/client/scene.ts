@@ -167,47 +167,47 @@ const LOOK: Record<
   string,
   { top: string; side: string | null; prop?: string; propH?: number; propW?: number; canopy?: true; stairs?: true }
 > = {
-  grass: { top: 'blocos/grass', side: 'blocos/dirt' },
-  stone: { top: 'blocos/gravel', side: 'blocos/stone' },
+  grass: { top: 'blocks/grass', side: 'blocks/dirt' },
+  stone: { top: 'blocks/gravel', side: 'blocks/stone' },
   // water: the top piece is the gravel bed (where the unit steps), seen through the water.ts surface (Nov 13)
-  water: { top: 'blocos/gravel', side: 'blocos/stone_dark' },
-  roof: { top: 'blocos/bricks_B', side: 'blocos/bricks_A' },
-  chimney: { top: 'blocos/stone_dark', side: 'blocos/bricks_A' },
-  wood: { top: 'blocos/wood', side: 'blocos/wood' },
-  bridge: { top: 'blocos/wood', side: null },
-  box: { top: 'masmorra/box_large', side: 'blocos/stone' },
-  tree: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_1_A_Color1', canopy: true },
+  water: { top: 'blocks/gravel', side: 'blocks/stone_dark' },
+  roof: { top: 'blocks/bricks_B', side: 'blocks/bricks_A' },
+  chimney: { top: 'blocks/stone_dark', side: 'blocks/bricks_A' },
+  wood: { top: 'blocks/wood', side: 'blocks/wood' },
+  bridge: { top: 'blocks/wood', side: null },
+  box: { top: 'dungeon/box_large', side: 'blocks/stone' },
+  tree: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_1_A_Color1', canopy: true },
   // Lighthouse Hill (Nov 12, proposal approved by Fernando): rock on the hill, sand and gold on the Lighthouse mound, brick
   // walls, four varied trees and the enemies' side in the snow (read from afar which side each team starts on)
-  rock: { top: 'blocos/stone', side: 'blocos/stone' },
-  summit: { top: 'blocos/stone_dark', side: 'blocos/stone' },
-  sand: { top: 'blocos/sand_with_grass', side: 'blocos/dirt' },
-  gold: { top: 'blocos/stone_with_gold', side: 'blocos/stone' },
-  brick: { top: 'blocos/bricks_B', side: 'blocos/bricks_A' },
-  snow: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt' },
-  snow_rock: { top: 'blocos/snow', side: 'blocos/stone' },
-  tree2: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_2_A_Color1' },
-  tree3: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_3_A_Color1' },
-  tree4: { top: 'blocos/grass', side: 'blocos/dirt', prop: 'floresta/Tree_4_A_Color1' },
-  bare1: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt', prop: 'floresta/Tree_Bare_1_A_Color1' },
-  bare2: { top: 'blocos/dirt_with_snow', side: 'blocos/dirt', prop: 'floresta/Tree_Bare_2_A_Color1' },
+  rock: { top: 'blocks/stone', side: 'blocks/stone' },
+  summit: { top: 'blocks/stone_dark', side: 'blocks/stone' },
+  sand: { top: 'blocks/sand_with_grass', side: 'blocks/dirt' },
+  gold: { top: 'blocks/stone_with_gold', side: 'blocks/stone' },
+  brick: { top: 'blocks/bricks_B', side: 'blocks/bricks_A' },
+  snow: { top: 'blocks/dirt_with_snow', side: 'blocks/dirt' },
+  snow_rock: { top: 'blocks/snow', side: 'blocks/stone' },
+  tree2: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_2_A_Color1' },
+  tree3: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_3_A_Color1' },
+  tree4: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_4_A_Color1' },
+  bare1: { top: 'blocks/dirt_with_snow', side: 'blocks/dirt', prop: 'forest/Tree_Bare_1_A_Color1' },
+  bare2: { top: 'blocks/dirt_with_snow', side: 'blocks/dirt', prop: 'forest/Tree_Bare_2_A_Color1' },
   // Flooded Crypt (Nov 12, closed map with the dungeon pieces): gravel floor, dark altar, and tiles that block
   // with a column, crates, barrel or chest on top; the debris is walkable cover. propH = piece height in tiles.
-  crypt: { top: 'blocos/gravel', side: 'blocos/stone_dark', stairs: true },
-  altar: { top: 'blocos/stone_dark', side: 'blocos/stone_dark', stairs: true },
-  pillar: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/pillar', propH: 2 },
-  crates: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/crates_stacked', propH: 1 },
-  barrel: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/barrel_large', propH: 0.8 },
-  chest: { top: 'blocos/stone_dark', side: 'blocos/stone_dark', prop: 'masmorra/chest_gold', propH: 0.6 },
-  rubble: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/rubble_half', propH: 0.4 },
-  spikes: { top: 'blocos/gravel', side: 'blocos/stone_dark', prop: 'masmorra/floor_tile_big_spikes', propW: 0.95 },
+  crypt: { top: 'blocks/gravel', side: 'blocks/stone_dark', stairs: true },
+  altar: { top: 'blocks/stone_dark', side: 'blocks/stone_dark', stairs: true },
+  pillar: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/pillar', propH: 2 },
+  crates: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/crates_stacked', propH: 1 },
+  barrel: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/barrel_large', propH: 0.8 },
+  chest: { top: 'blocks/stone_dark', side: 'blocks/stone_dark', prop: 'dungeon/chest_gold', propH: 0.6 },
+  rubble: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/rubble_half', propH: 0.4 },
+  spikes: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/floor_tile_big_spikes', propW: 0.95 },
   // fallen body: the ground is the terrain's and the body is a unit at the end of the death animation (buildCorpses)
-  corpse: { top: 'blocos/dirt', side: 'blocos/dirt' },
+  corpse: { top: 'blocks/dirt', side: 'blocks/dirt' },
 };
 // caravan body units (knight and rogue, the ones guarding the cargo)
 const CORPSE_MODELS = ['knight', 'rogue'];
 // dungeon stairs: 2 wide, 4 deep and 4 high, climbing toward -z (checked on the file's vertices)
-const STAIRS = 'masmorra/stairs_modular_center';
+const STAIRS = 'dungeon/stairs_modular_center';
 // Ramp and the tile on top it climbs to: the step between the two is walking, not a jump (Nov 13, Fernando's request: "when
 // going down the ramp the units are going down jumping; ramps must be walked down"). walkY follows the sloped ground
 export function rampLink(grid: Grid, a: Pos, b: Pos): boolean {
@@ -220,7 +220,7 @@ export function rampLink(grid: Grid, a: Pos, b: Pos): boolean {
 const PLAIN_UNITS = param('units') === 'plain';
 // walls without a piece that the smooth terrain draws as a stone hill (brick stays as blocks: it is construction)
 const MOUND = new Set(['rock', 'snow_rock', 'summit', 'snow']);
-const UNDER = 'blocos/stone_dark'; // column under the bridge water and the map skirt
+const UNDER = 'blocks/stone_dark'; // column under the bridge water and the map skirt
 
 // Map base as a block (Fernando's requests, Nov 12, looking at FFT's board): all columns end on the same
 // ground (y = 0), and the edge sides, from each tile's floor down, are a flat color pulled from the floor above that
@@ -284,10 +284,10 @@ const CUT_MAX = 64;
 // Details that break the grid (Nov 13, "it's not Minecraft"): rocks at the foot of ravines, tufts and pebbles at the corners of
 // tiles, away from the unit's ring (0.44 from the center). Pieces from KayKit's forest pack (same texture as the trees)
 const DETAIL = {
-  rock: 'floresta/Rock_1_A_Color1',
-  boulder: 'floresta/Rock_3_A_Color1',
-  pebble: 'floresta/Rock_2_A_Color1',
-  tuft: 'floresta/Grass_1_A_Color1',
+  rock: 'forest/Rock_1_A_Color1',
+  boulder: 'forest/Rock_3_A_Color1',
+  pebble: 'forest/Rock_2_A_Color1',
+  tuft: 'forest/Grass_1_A_Color1',
 };
 const GREEN = new Set(['grass', 'sand', 'tree', 'tree2', 'tree3', 'tree4']); // ground that gets a grass tuft
 const ROCKY = new Set(['rock', 'summit', 'snow', 'snow_rock', 'bare1', 'bare2']); // ground that gets a pebble
@@ -464,7 +464,7 @@ export class BattleScene {
       ...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean)),
     ];
     const [top, side, stone, tree, ...loaded] = await Promise.all([
-      ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/quadrado/${n}.gltf`)),
+      ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/square/${n}.gltf`)),
       loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // the tree in the block pack is a cube of leaves
       ...defs.map((d) => loader.loadAsync(`/models/${d}.glb`)),
     ]);
@@ -496,7 +496,7 @@ export class BattleScene {
       swapProps(looks, true);
     } // and the painted objects (props.ts)
     // extra ability gestures (KayKit Rig_Medium, same bones as the units): scripts/assets/anim-pack.mjs
-    const pack = (await loader.loadAsync('/models/animacoes.glb')).animations;
+    const pack = (await loader.loadAsync('/models/animations.glb')).animations;
     const s = new BattleScene(
       host,
       grid,

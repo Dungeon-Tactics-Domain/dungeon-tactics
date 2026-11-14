@@ -1,5 +1,5 @@
 // Gesture and effect of each ability (Nov 12, Fernando's request: animations with the same role as FFT's). Each row gives the
-// unit's clip (KayKit; the Rig_Medium pack ones come from public/models/animacoes.glb) and the effect, made only of simple
+// unit's clip (KayKit; the Rig_Medium pack ones come from public/models/animations.glb) and the effect, made only of simple
 // Three shapes (nothing copied from the original game). The scene calls `playFx` on impact and `chargeAura` while charging.
 import * as THREE from 'three';
 

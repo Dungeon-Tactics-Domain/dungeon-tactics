@@ -8,12 +8,12 @@
 // goes down (title -4.4 dB, road -1.7 dB) and whatever was quieter stays at 1 (crypt stays 1.4 dB below, snow and boss 0.6).
 // The map file already has +2.2 dB baked in at conversion (limiter at 0.95) to reach the target without exceeding 1.
 export const TRACKS = {
-  title: { file: 'titulo.ogg', gain: 0.6 },
-  world: { file: 'mapa.ogg', gain: 0.97 },
-  road: { file: 'estrada.ogg', gain: 0.82 },
-  crypt: { file: 'cripta.ogg', gain: 1 },
-  snow: { file: 'neve.ogg', gain: 1 },
-  boss: { file: 'chefe.ogg', gain: 1 },
+  title: { file: 'title.ogg', gain: 0.6 },
+  world: { file: 'map.ogg', gain: 0.97 },
+  road: { file: 'road.ogg', gain: 0.82 },
+  crypt: { file: 'crypt.ogg', gain: 1 },
+  snow: { file: 'snow.ogg', gain: 1 },
+  boss: { file: 'boss.ogg', gain: 1 },
   // standalone battle (no campaign stage): the same file as before
   battle: { file: 'battle.mp3', gain: 1 },
 } satisfies Record<string, { file: string; gain: number }>;

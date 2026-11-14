@@ -12,39 +12,39 @@ models/ranger.glb and chars/ranger.webp (the Archer, since Nov 13, 2026)
   The Rogue from KayKit Adventurers Character Pack 1.0 without the knives and the hood, tinted clothes, and
   "Ranged_Bow_Idle" in place of Idle (KayKit Character Animations 1.1, Rig_Medium_CombatRanged), assembled by scripts/assets/ranger.mjs.
   The bow is the bow_A_withString from: KayKit Fantasy Weapons Bits 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0
-  https://kaylousberg.itch.io/fantasy-weapons-bits - licence read in the pack's LICENSE.txt (assets/kaykit/armas-de-fantasia): "License: (Creative Commons Zero, CC0)".
+  https://kaylousberg.itch.io/fantasy-weapons-bits - licence read in the pack's LICENSE.txt (assets/kaykit/fantasy-weapons): "License: (Creative Commons Zero, CC0)".
 models/lancer.glb and chars/lancer.webp (the Lancer, since Nov 13, 2026)
   KayKit Adventurers (the Knight, without sword, shield and cape, armour tinted teal steel), the "spear_A" spear from
   KayKit Fantasy Weapons Bits 1.0 and the "Melee_2H_Idle" gesture in place of Idle (KayKit Character Animations 1.1,
   Rig_Medium_CombatMelee), assembled by scripts/assets/lancer.mjs. All CC0.
 chars/*.webp (the other 9 portraits)
   Rendered from the characters themselves by scripts/portraits.mjs.
-models/animacoes.glb (ability gestures: one- and two-handed strikes, bow, magic, use item, walk and jump)
+models/animations.glb (ability gestures: one- and two-handed strikes, bow, magic, use item, walk and jump)
   KayKit Character Animations 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
-  Rig_Medium clips merged and mesh-free by scripts/assets/anim-pack.mjs. Licence read in the pack's LICENSE.txt (assets/kaykit/animacoes): "License: (Creative Commons Zero, CC0)".
+  Rig_Medium clips merged and mesh-free by scripts/assets/anim-pack.mjs. Licence read in the pack's LICENSE.txt (assets/kaykit/animations): "License: (Creative Commons Zero, CC0)".
 
 == 3D models: map pieces ==
-models/poc/quadrado/ (dirt_with_grass, dirt, stone .gltf + .bin and block_bits_texture.png), ground, dirt and wall of the maps
-models/blocos/ (grass, dirt, gravel, stone, stone_dark, water, wood, bricks_A, bricks_B, snow, dirt_with_snow, stone_with_gold, sand_with_grass .gltf + .bin, block_bits_texture.png and LICENSE.txt), per-tile pieces of the Gariland and Beacon Hill maps
+models/poc/square/ (dirt_with_grass, dirt, stone .gltf + .bin and block_bits_texture.png), ground, dirt and wall of the maps
+models/blocks/ (grass, dirt, gravel, stone, stone_dark, water, wood, bricks_A, bricks_B, snow, dirt_with_snow, stone_with_gold, sand_with_grass .gltf + .bin, block_bits_texture.png and LICENSE.txt), per-tile pieces of the Gariland and Beacon Hill maps
   KayKit Block Bits 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/block-bits (files copied unchanged)
-  Licence read in the pack's LICENSE.txt (copy in models/blocos/LICENSE.txt): "Creative Commons Zero, CC0".
+  Licence read in the pack's LICENSE.txt (copy in models/blocks/LICENSE.txt): "Creative Commons Zero, CC0".
 models/poc/hex/ (tree_single_A .gltf + .bin and hexagons_medieval.png), tree of the forest tile
   KayKit Medieval Hexagon Pack 1.0, by Kay Lousberg (www.kaylousberg.com), CC0
   https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0 (files copied unchanged)
   Licence read in the pack's LICENSE.txt: "License: (Creative Commons Zero, CC0)".
-models/floresta/ (Tree_1_A, Tree_1_B, Tree_2_A, Tree_2_C, Tree_3_A, Tree_4_A, Tree_4_B, Tree_Bare_1_A, Tree_Bare_2_A, Rock_1_A, Rock_2_A, Rock_3_A, Grass_1_A, Bush_2_A, all "_Color1" .gltf + .bin, forest_texture.png and LICENSE.txt), trees, rocks, bush and grass tufts
+models/forest/ (Tree_1_A, Tree_1_B, Tree_2_A, Tree_2_C, Tree_3_A, Tree_4_A, Tree_4_B, Tree_Bare_1_A, Tree_Bare_2_A, Rock_1_A, Rock_2_A, Rock_3_A, Grass_1_A, Bush_2_A, all "_Color1" .gltf + .bin, forest_texture.png and LICENSE.txt), trees, rocks, bush and grass tufts
   KayKit Forest Nature Pack 1.0 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-forest
-  Licence read in the pack's LICENSE.txt (copy in models/floresta/LICENSE.txt): "Creative Commons Zero, CC0".
-models/masmorra/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half, floor_tile_big_spikes, stairs_modular_center, wall, wall_arched, wall_broken, column, torch_mounted .gltf + .bin, dungeon_texture.png and LICENSE.txt)
+  Licence read in the pack's LICENSE.txt (copy in models/forest/LICENSE.txt): "Creative Commons Zero, CC0".
+models/dungeon/ (box_large, pillar, crates_stacked, barrel_large, chest_gold, rubble_half, floor_tile_big_spikes, stairs_modular_center, wall, wall_arched, wall_broken, column, torch_mounted .gltf + .bin, dungeon_texture.png and LICENSE.txt)
   KayKit Dungeon Pack 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-dungeon-pack
-  Licence read in the pack's LICENSE.txt (copy in models/masmorra/LICENSE.txt): "Creative Commons Zero, CC0".
+  Licence read in the pack's LICENSE.txt (copy in models/dungeon/LICENSE.txt): "Creative Commons Zero, CC0".
 
 assets/kaykit/ (outside public/, does not go to the live game; library for contributors)
   All the free KayKit packs, by Kay Lousberg (www.kaylousberg.com), CC0 - https://github.com/KayKit-Game-Assets and https://kaylousberg.itch.io (FREE versions)
   Only the glTFs, unchanged; list and links in assets/kaykit/README.md. Licence read in each pack's LICENSE.txt: "License: (Creative Commons Zero, CC0)"
   (Holiday Bits without a licence in the zip: read on the page, "Creative Commons Zero v1.0 Universal").
-assets/sons-rpg/ (outside public/, does not go to the live game)
-  532 RPG sound effects. Origin and licence: source not recorded (see assets/sons-rpg/README.md). Nothing from there may go to public/ before the origin and a free licence are found.
+assets/rpg-sounds/ (outside public/, does not go to the live game)
+  532 RPG sound effects. Origin and licence: source not recorded (see assets/rpg-sounds/README.md). Nothing from there may go to public/ before the origin and a free licence are found.
 
 == Textures ==
 tex/grass.jpg, tex/leaves.jpg, tex/cliff.jpg, tex/dirt.jpg, tex/snow.jpg, tex/bark.jpg, tex/paint.jpg, tex/wood.jpg (terrain, trees, objects and bridge)
@@ -82,17 +82,17 @@ Victory and defeat fanfares and campaign speech blips: notes generated in the br
 
 == Music ==
 Campaign music (Nov 13, 2026): OpenGameArt tracks, all CC0 (licence read on each one's page), converted to .ogg by ffmpeg (the snow one trimmed to the first 75 s with a fade, the map one with +2.2 dB). Gain per track in src/client/music.ts.
-music/titulo.ogg (title screen)
+music/title.ogg (title screen)
   CodeManu, "A Legend Will Rise (Orchestral)" - https://opengameart.org/content/a-legend-will-rise-orchestral
-music/mapa.ogg (world map)
+music/map.ogg (world map)
   TAD, "Once Upon a Time (loop)" - https://opengameart.org/content/once-upon-a-time-loop
-music/estrada.ogg (road stages)
+music/road.ogg (road stages)
   cynicmusic, "Battle Theme B for RPG" - https://opengameart.org/content/battle-theme-b-for-rpg
-music/cripta.ogg (crypt)
+music/crypt.ogg (crypt)
   nene, "Evil Approach" - https://opengameart.org/content/evil-approach
-music/neve.ogg (snow)
+music/snow.ogg (snow)
   FAINOD, "A Long Winter at Home (Classical)" - https://opengameart.org/content/a-long-winter-at-home-classical-fainod
-music/chefe.ogg (bosses)
+music/boss.ogg (bosses)
   cynicmusic, "Sinister Boss Appears!" - https://opengameart.org/content/sinister-boss-appears
 music/battle.mp3 (standalone battle)
   Emma_MA, "Determined Pursuit (epic orchestra loop)" - https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
