@@ -29,6 +29,8 @@ const LIST: UnitDef[] = [
   { id: 'soldier', name: 'Soldado', en: 'Soldier', hp: 45, speed: 8, move: 4, abilities: ['strike', 'shield_bash'] },
   { id: 'skeleton_archer', name: 'Arqueiro esqueleto', en: 'Skeleton archer', hp: 33, speed: 10, move: 4, abilities: ['shot', 'dagger'] },
   { id: 'dark_mage', name: 'Mago sombrio', en: 'Dark mage', hp: 30, speed: 7, move: 3, abilities: ['firebolt', 'blast'] },
+  // Lanceiro (13/11, classe nova para recrutar e trocar; fora do elenco fixo da campanha): salta 3 níveis e alcança 2 casas
+  { id: 'lancer', name: 'Lanceiro', en: 'Lancer', hp: 38, speed: 9, move: 4, jump: 3, abilities: ['lance', 'sweep', 'lance_jump'] },
   { id: 'brute', name: 'Bruto', en: 'Brute', hp: 82, speed: 5, move: 3, abilities: ['cleave', 'slam'] },
   // Lacaio (12/11, campanha): pouca vida e muita velocidade, vem em bando e cai num golpe; números iniciais, medidos na
   // dificuldade das fases da campanha (tests/campaign.test.ts)

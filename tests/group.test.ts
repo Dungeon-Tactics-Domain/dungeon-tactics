@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from '../src/client/campaign.ts';
 import { DEPLOY_MAX, GROUP_MAX, RECRUIT_COST, changeClass, defaultGroup, dismiss, heroesFor, parseGroup, recruit, toggleDeploy } from '../src/client/group.ts';
+import { previewAbility } from '../src/shared/battle/combat.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { flat, stateOf } from './battle-helpers.ts';
 
 // Recrutamento e troca de classe (13/11, entrega 5 do desenho do grupo como no FFT)
 describe('grupo', () => {
@@ -51,5 +53,15 @@ describe('grupo', () => {
     const g = parseGroup({ members: [{ id: 'warrior', cls: 'rogue' }, { id: 'r2', name: 'Ivo', cls: 'mage' }, { id: 'x', name: 'Hack', cls: 'mage' }, { id: 'r3', name: 'Zé', cls: 'brute' }], deployed: ['r2', 'r2', 'nada', 'warrior'] });
     expect(g.members.map((m) => `${m.id}:${m.cls}`)).toEqual(['warrior:rogue', 'archer:archer', 'mage:mage', 'rogue:rogue', 'r2:mage']);
     expect(g.deployed).toEqual(['r2', 'warrior']);
+  });
+
+  it('Lanceiro (classe nova): entra por recrutamento, salta 3 e a lança alcança 2 casas', () => {
+    const r = recruit(defaultGroup(), { gold: 500, items: [] }, 'lancer')!;
+    const g = toggleDeploy(toggleDeploy(r.group, 'archer')!, 'r1')!;
+    const lancer = heroesFor(g, 6).at(-1)!;
+    expect(lancer).toMatchObject({ base: 'lancer', jump: 3, abilities: ['lance', 'sweep', 'lance_jump'] });
+    expect(parseGroup(JSON.parse(JSON.stringify(g))).members.at(-1)?.cls).toBe('lancer');
+    const s = stateOf([{ id: 'l', def: 'lancer', team: 'hero', x: 1, y: 1 }, { id: 'e', def: 'soldier', team: 'enemy', x: 3, y: 1 }]);
+    expect(previewAbility(flat(6, 6), s, 'l', 'lance', { x: 3, y: 1 }).ok).toBe(true);
   });
 });

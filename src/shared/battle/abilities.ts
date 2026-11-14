@@ -57,6 +57,12 @@ const LIST: AbilityDef[] = [
   A({ id: 'shadow_wave', name: 'Onda sombria', en: 'Shadow wave', range: [2, 5], heightRange: true, needsSight: true, radius: 2, damage: [10, 16], accuracy: 85, charge: 6, magic: true }),
   A({ id: 'cleave', name: 'Machadada', en: 'Cleave', range: [1, 1], damage: [18, 24], accuracy: 80 }),
   A({ id: 'slam', name: 'Pancada', en: 'Slam', range: [1, 1], damage: [7, 10], accuracy: 85, push: 2 }),
+  // Lanceiro (13/11, 1ª classe nova do desenho do grupo, docs/game-design/cidades-grupo-equipamento.md): a lança alcança 2
+  // casas; o Salto cai do alto na casa mirada depois da carga (como o Jump do Dragoon do FFT, em stats gerais: carga que
+  // mira a casa e erra se o alvo sair). Números iniciais, sem medir (pedido do Fernando: só implementar as mecânicas)
+  A({ id: 'lance', name: 'Estocada longa', en: 'Long thrust', range: [1, 2], damage: [11, 16], accuracy: 90 }),
+  A({ id: 'sweep', name: 'Derrubar', en: 'Sweep', range: [1, 2], damage: [5, 7], accuracy: 85, push: 1 }),
+  A({ id: 'lance_jump', name: 'Salto', en: 'Jump', range: [2, 4], damage: [19, 26], accuracy: 85, charge: 4, panel: true }),
 ];
 
 export const ABILITIES: Record<string, AbilityDef> = Object.fromEntries(LIST.map((a) => [a.id, a]));

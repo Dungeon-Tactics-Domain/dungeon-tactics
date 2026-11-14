@@ -40,6 +40,7 @@ export const ABILITY_ICON: Record<string, string> = {
   firebolt: 'fire-ray', blast: 'meteor-impact', gust: 'wind-slap', heal: 'chalice-drops',
   stab: 'knife-thrust', throwing_knife: 'split-arrows', trip: 'snail', deathblow: 'skull-crossed-bones',
   cleave: 'flail', slam: 'knockout',
+  lance: 'knife-thrust', sweep: 'ricochet', lance_jump: 'meteor-impact',
 };
 // habilidades do estudo do FFT (ids `fft_<unidade>_<habilidade>`): o desenho sai do nome da habilidade, sem ícone novo
 const STUDY_ICON: Record<string, string> = {

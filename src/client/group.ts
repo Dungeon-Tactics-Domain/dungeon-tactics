@@ -1,16 +1,20 @@
 // Grupo do jogador (13/11, pedido do Fernando: "recrutamento e troca de classe", como a formação do FFT; desenho em
 // docs/game-design/cidades-grupo-equipamento.md, entrega 5). Puro e testado; as telas ficam em world-ui.ts.
 // Os 4 da história nunca saem; recrutados se contratam no Bar com ouro e se dispensam. Qualquer um troca de classe
-// entre as 4 liberadas, e até 4 vão à batalha (as casas de partida dos mapas). O grupo padrão monta exatamente o
+// entre as liberadas (JOBS), e até 4 vão à batalha (as casas de partida dos mapas). O grupo padrão monta exatamente o
 // elenco medido de cada fase, então a curva da campanha não muda para quem não mexe no grupo.
 import type { Chest, Equip } from './chest.ts';
 import { unitFrom, type DevUnit } from './dev-roster.ts';
-import { HERO_CLASSES, NAME_MAX, type Hero, type HeroClass } from './hero.ts';
+import { HERO_CLASSES, NAME_MAX, type Hero } from './hero.ts';
+
+// classes do grupo: as 4 do protagonista e as novas, que só entram por recrutamento e troca de classe (desenho, seção 4)
+export const JOBS = [...HERO_CLASSES, 'lancer'] as const;
+export type Job = (typeof JOBS)[number];
 
 export interface Member {
   id: string; // chave do equipamento (dt:equip); os da história usam a classe de partida, como o save antigo
   name: string;
-  cls: HeroClass;
+  cls: Job;
   recruit: boolean;
 }
 export interface Group {
@@ -38,11 +42,11 @@ export const defaultGroup = (): Group => ({ members: STORY.map((m) => ({ ...m })
 export function parseGroup(raw: unknown): Group {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const list = Array.isArray(r.members) ? r.members.filter((m): m is Record<string, unknown> => !!m && typeof m === 'object') : [];
-  const cls = (v: unknown, d: HeroClass) => (HERO_CLASSES.includes(v as HeroClass) ? (v as HeroClass) : d);
+  const cls = (v: unknown, d: Job) => (JOBS.includes(v as Job) ? (v as Job) : d);
   const story = STORY.map((s) => ({ ...s, cls: cls(list.find((m) => m.id === s.id)?.cls, s.cls) }));
   const recruits = list.filter((m) => typeof m.id === 'string' && /^r\d{1,3}$/.test(m.id) && typeof m.name === 'string'
-    && m.name.trim() && m.name.length <= NAME_MAX && HERO_CLASSES.includes(m.cls as HeroClass))
-    .map((m) => ({ id: m.id as string, name: (m.name as string).trim(), cls: m.cls as HeroClass, recruit: true }))
+    && m.name.trim() && m.name.length <= NAME_MAX && JOBS.includes(m.cls as Job))
+    .map((m) => ({ id: m.id as string, name: (m.name as string).trim(), cls: m.cls as Job, recruit: true }))
     .filter((m, i, a) => a.findIndex((o) => o.id === m.id) === i)
     .slice(0, GROUP_MAX - STORY.length);
   const members = [...story, ...recruits];
@@ -52,7 +56,7 @@ export function parseGroup(raw: unknown): Group {
 }
 
 // contrata um recrutado da classe pedida: custa ouro, respeita o teto; null se não dá
-export function recruit(g: Group, chest: Chest, cls: HeroClass): { group: Group; chest: Chest } | null {
+export function recruit(g: Group, chest: Chest, cls: Job): { group: Group; chest: Chest } | null {
   if (g.members.length >= GROUP_MAX || chest.gold < RECRUIT_COST) return null;
   const used = new Set(g.members.map((m) => m.id));
   let k = 1;
@@ -77,7 +81,7 @@ export function dismiss(g: Group, eq: Equip, chest: Chest, id: string): { group:
   };
 }
 
-export const changeClass = (g: Group, id: string, cls: HeroClass): Group =>
+export const changeClass = (g: Group, id: string, cls: Job): Group =>
   ({ ...g, members: g.members.map((m) => (m.id === id ? { ...m, cls } : m)) });
 
 // escala ou tira da batalha: no máximo 4 e nunca nenhum; null se não dá
