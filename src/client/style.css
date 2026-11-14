@@ -13,7 +13,7 @@
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
   --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, .55);
   /* same colors as the scene markings (MARK in scene.ts), so the legend matches the map */
-  --mark-move: #ffffff; --mark-range: #ff6a3c; --mark-blocked: #6b3a8c; --mark-threat: #ff2d55;
+  --mark-move: #6fc0ff; --mark-range: #ff7a3c; --mark-blocked: #b07ae0; --mark-threat: #ff2d55;
   /* HUD parchment (Nov 12, in the spirit of FFT, our colors): dark ink gives 11:1 on the paper */
   --paper: #efe3c4; --paper-lo: #dccb9f; --paper-hi: #fff7de; --paper-edge: #5a3d1c; --ink: #2b1f12; --ink-muted: #655134; --focus: #9e2c0c; /* one shade darker (Nov 13, review): 4.7:1 also on --paper-lo, at the foot of the panels */
   --hp: #4fbf5a; --mp: #4a8fe0; --ct: #e8b030;

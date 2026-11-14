@@ -681,10 +681,10 @@ class Game {
         : scenario.id === SURVIVAL_ID ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
         : t('Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).', 'Goal: defeat the enemies and protect the Beacon (the blue crystal).')),
       el('ul', { class: 'legend' },
-        el('li', {}, el('i', { class: 'sw move' }), t('Branco: onde o herói pode andar', 'White: where the hero can move')),
-        el('li', {}, el('i', { class: 'sw range' }), t('Laranja: alcance da habilidade', 'Orange: ability range')),
-        el('li', {}, el('i', { class: 'sw blocked' }), t('Roxo: no alcance, mas sem visão', 'Purple: in range, but no sight')),
-        el('li', {}, el('i', { class: 'sw threat' }), t('Vermelho: o que a unidade tocada alcança', 'Red: what the tapped unit can reach'))),
+        el('li', {}, el('i', { class: 'sw move' }), t('Azul, moldura lisa: onde o herói pode andar', 'Blue, plain frame: where the hero can move')),
+        el('li', {}, el('i', { class: 'sw range' }), t('Laranja, listras: alcance da habilidade', 'Orange, stripes: ability range')),
+        el('li', {}, el('i', { class: 'sw blocked' }), t('Roxo, xis: no alcance, mas sem visão', 'Purple, cross: in range, but no sight')),
+        el('li', {}, el('i', { class: 'sw threat' }), t('Vermelho, listras: o que a unidade tocada alcança', 'Red, stripes: what the tapped unit can reach'))),
       choice(t('Velocidade do texto das conversas', 'Dialogue text speed'), [['normal', t('Normal', 'Normal')], ['fast', t('Rápida', 'Fast')], ['instant', t('Instantânea', 'Instant')]] as [TextSpeed, string][], textSpeed(), (v) => store.set(TEXT_KEY, v)),
     ]], [
       'som', t('Som', 'Sound'), [
