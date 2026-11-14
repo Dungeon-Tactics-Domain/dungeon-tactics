@@ -4,7 +4,7 @@ import type { Scenario } from '../../shared/battle/scenarios.ts';
 import { objectiveText } from '../campaign.ts';
 import { choice, dialog, slider } from '../dialog.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
-import { el } from '../icons.ts';
+import { button, el } from '../icons.ts';
 import { keyHelp } from '../keyboard.ts';
 import type { PixelSettings, PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
@@ -185,50 +185,30 @@ export function optionsMenu(o: OptionsContext) {
       { class: 'menu-actions' },
       // during the animation or the enemy turn the loop is still running the old battle
       // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'secondary',
-          disabled: o.busy,
-          onclick: (e: Event) => {
-            const btn = e.currentTarget as HTMLButtonElement;
-            if (!btn.dataset.armed) {
-              btn.dataset.armed = '1';
-              btn.textContent = t('Toque de novo para reiniciar', 'Tap again to restart');
-              return;
-            }
-            d.close();
-            o.restart();
-          },
-        },
+      button(
+        'secondary',
         t('Reiniciar batalha', 'Restart battle'),
+        (e: Event) => {
+          const btn = e.currentTarget as HTMLButtonElement;
+          if (!btn.dataset.armed) {
+            btn.dataset.armed = '1';
+            btn.textContent = t('Toque de novo para reiniciar', 'Tap again to restart');
+            return;
+          }
+          d.close();
+          o.restart();
+        },
+        { disabled: o.busy },
       ),
-      el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa da campanha', 'Campaign map')),
+      button('secondary', t('Mapa da campanha', 'Campaign map'), toWorld),
       // exit to the title (in the standalone battle the campaign map is not where the person came from)
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'secondary',
-          onclick: () => {
-            location.search = '';
-          },
-        },
-        t('Título', 'Title'),
-      ),
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'secondary',
-          onclick: () => {
-            d.close();
-            void devMenu();
-          },
-        },
-        t('Desenvolvedor', 'Developer'),
-      ),
+      button('secondary', t('Título', 'Title'), () => {
+        location.search = '';
+      }),
+      button('secondary', t('Desenvolvedor', 'Developer'), () => {
+        d.close();
+        void devMenu();
+      }),
     ),
   ]);
 }

@@ -31,7 +31,7 @@ import {
 } from './command.ts';
 import { classOf } from './dev-roster.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
+import { button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { SURVIVAL_ID, turnsLeft } from './survival.ts';
@@ -576,20 +576,17 @@ export class BattleHud {
     }
   }
   private toolItem(glyph: Child, label: string, key: string, run: () => void, props: Record<string, unknown> = {}) {
-    return el(
-      'button',
-      {
-        type: 'button',
-        class: 'item',
-        role: 'menuitem',
-        ...props,
-        onclick: () => {
-          this.showTools(false);
-          run();
-        },
+    return button(
+      'item',
+      [
+        el('span', { class: 'tool-label' }, el('span', { class: 'tool-glyph', 'aria-hidden': 'true' }, glyph), label),
+        key ? hint(key) : null,
+      ],
+      () => {
+        this.showTools(false);
+        run();
       },
-      el('span', { class: 'tool-label' }, el('span', { class: 'tool-glyph', 'aria-hidden': 'true' }, glyph), label),
-      key ? hint(key) : null,
+      { role: 'menuitem', ...props },
     );
   }
 
@@ -811,17 +808,14 @@ export class BattleHud {
     const undo = canUndoMove(b);
     this.commands.replaceChildren(
       ...COMMANDS.map((c, i) =>
-        el(
-          'button',
-          {
-            type: 'button',
-            class: `item${i === current ? ' focus' : ''}`,
-            role: 'menuitem',
-            disabled: !commandEnabled(b, c),
-            onclick: () => this.act.command(i),
-          },
-          c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
-          c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null,
+        button(
+          `item${i === current ? ' focus' : ''}`,
+          [
+            c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
+            c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null,
+          ],
+          () => this.act.command(i),
+          { role: 'menuitem', disabled: !commandEnabled(b, c) },
         ),
       ),
     );
@@ -840,17 +834,11 @@ export class BattleHud {
           : a.charge
             ? t(`${a.charge} tiq.`, `${a.charge} tk`)
             : '';
-        return el(
-          'button',
-          {
-            type: 'button',
-            class: `item${i === s.index ? ' focus' : ''}`,
-            role: 'menuitem',
-            disabled: !abilityEnabled(b, id),
-            onclick: () => this.act.ability(i),
-          },
-          el('span', {}, abilityName(id)),
-          el('span', { class: 'item-cost' }, cost),
+        return button(
+          `item${i === s.index ? ' focus' : ''}`,
+          [el('span', {}, abilityName(id)), el('span', { class: 'item-cost' }, cost)],
+          () => this.act.ability(i),
+          { role: 'menuitem', disabled: !abilityEnabled(b, id) },
         );
       }),
     );
@@ -892,18 +880,8 @@ export class BattleHud {
       el(
         'div',
         { class: 'yes-no' },
-        el(
-          'button',
-          { type: 'button', class: `item${s.yes ? ' focus' : ''}`, onclick: () => this.act.answer(true) },
-          t('Sim', 'Yes'),
-          hint('Enter'),
-        ),
-        el(
-          'button',
-          { type: 'button', class: `item${s.yes ? '' : ' focus'}`, onclick: () => this.act.answer(false) },
-          t('Não', 'No'),
-          hint('Esc'),
-        ),
+        button(`item${s.yes ? ' focus' : ''}`, [t('Sim', 'Yes'), hint('Enter')], () => this.act.answer(true)),
+        button(`item${s.yes ? '' : ' focus'}`, [t('Não', 'No'), hint('Esc')], () => this.act.answer(false)),
       ),
     );
   }

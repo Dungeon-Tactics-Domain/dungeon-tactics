@@ -6,7 +6,7 @@ import { CHAPTERS, learned } from '../campaign.ts';
 import { VICTORY_GOLD } from '../chest.ts';
 import { dialog } from '../dialog.ts';
 import { abilityName, t } from '../i18n.ts';
-import { el } from '../icons.ts';
+import { button, el } from '../icons.ts';
 import type { Mission } from '../missions.ts';
 import { SURVIVE_TURNS } from '../survival.ts';
 import { nodeOfChapter } from '../world.ts';
@@ -87,30 +87,14 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, mission, res
       'div',
       { class: 'menu-actions' },
       mission && won
-        ? el('button', { type: 'button', class: 'primary', onclick: toWorld }, t('Voltar ao mapa', 'Back to map'))
-        : el(
-            'button',
-            {
-              type: 'button',
-              class: 'primary',
-              onclick: () => {
-                d.close();
-                restart();
-              },
-            },
-            t('Jogar de novo', 'Play again'),
-          ),
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'secondary',
-          onclick: () => {
-            location.search = '';
-          },
-        },
-        t('Título', 'Title'),
-      ),
+        ? button('primary', t('Voltar ao mapa', 'Back to map'), toWorld)
+        : button('primary', t('Jogar de novo', 'Play again'), () => {
+            d.close();
+            restart();
+          }),
+      button('secondary', t('Título', 'Title'), () => {
+        location.search = '';
+      }),
     ),
   ]);
   // Enter plays again (focus went to the X, and closing left the finished battle with no key to restart)
@@ -172,30 +156,14 @@ export function stageEndScreen({ n, won, mvp, heroesFell, restart }: StageEnd) {
         'div',
         { class: 'menu-actions' },
         won
-          ? el(
-              'button',
-              {
-                type: 'button',
-                class: 'primary',
-                onclick: () => {
-                  location.search = `?world&from=${nodeOfChapter(n)}`;
-                },
-              },
-              t('Voltar ao mapa', 'Back to the map'),
-            )
-          : el(
-              'button',
-              {
-                type: 'button',
-                class: 'primary',
-                onclick: () => {
-                  d.close();
-                  restart();
-                },
-              },
-              t('Tentar de novo', 'Try again'),
-            ),
-        ...(won ? [] : [el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa', 'Map'))]),
+          ? button('primary', t('Voltar ao mapa', 'Back to the map'), () => {
+              location.search = `?world&from=${nodeOfChapter(n)}`;
+            })
+          : button('primary', t('Tentar de novo', 'Try again'), () => {
+              d.close();
+              restart();
+            }),
+        ...(won ? [] : [button('secondary', t('Mapa', 'Map'), toWorld)]),
       ),
     ],
   );

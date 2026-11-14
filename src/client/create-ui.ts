@@ -6,7 +6,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { HERO_CLASSES, type Hero, type HeroClass, NAME_MAX, parseHero } from './hero.ts';
 import { abilityDetail, portrait } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { el } from './icons.ts';
+import { button, el } from './icons.ts';
 import { sfx } from './sound.ts';
 
 // one sentence on each class's role in the party (what changes in practice, not the lore)
@@ -39,19 +39,13 @@ export function createHero(host: HTMLElement): Promise<Hero> {
       'aria-label': t('Nome do protagonista', 'Protagonist name'),
     }) as HTMLInputElement;
     const cards = HERO_CLASSES.map((c) =>
-      el(
-        'button',
-        { type: 'button', class: 'create-card', 'aria-pressed': 'false', 'data-cls': c, onclick: () => pick(c) },
-        portrait(c),
-        el('strong', {}, unitName(c)),
-      ),
+      button('create-card', [portrait(c), el('strong', {}, unitName(c))], () => pick(c), {
+        'aria-pressed': 'false',
+        'data-cls': c,
+      }),
     );
     const sheet = el('div', { class: 'create-sheet' });
-    const startBtn = el(
-      'button',
-      { type: 'button', class: 'primary', onclick: () => start() },
-      t('Começar a jornada', 'Begin the journey'),
-    );
+    const startBtn = button('primary', t('Começar a jornada', 'Begin the journey'), () => start());
     const warn = el('p', { class: 'create-warn', role: 'status' });
     const root = el(
       'div',

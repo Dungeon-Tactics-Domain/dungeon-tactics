@@ -28,7 +28,7 @@ import {
 import type { Hero } from './hero.ts';
 import { abilityDetail, portrait } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { el } from './icons.ts';
+import { button, el } from './icons.ts';
 import { MISSIONS, MISSIONS_KEY, parseDone } from './missions.ts';
 import { sfx } from './sound.ts';
 import { store } from './store.ts';
@@ -285,42 +285,18 @@ function openTown(i: number, party: () => void) {
     el(
       'div',
       { class: 'menu-actions camp-list' },
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'primary',
-          onclick: () => {
-            d.close();
-            openShop(again);
-          },
-        },
-        t('Loja: comprar e vender equipamento', 'Shop: buy and sell equipment'),
-      ),
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'secondary',
-          onclick: () => {
-            d.close();
-            openBar(i, again);
-          },
-        },
-        t('Bar: ouvir os boatos', 'Tavern: hear the rumors'),
-      ),
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'secondary',
-          onclick: () => {
-            d.close();
-            party();
-          },
-        },
-        t('Grupo: classe, equipamento e quem vai', 'Party: class, equipment and who goes'),
-      ),
+      button('primary', t('Loja: comprar e vender equipamento', 'Shop: buy and sell equipment'), () => {
+        d.close();
+        openShop(again);
+      }),
+      button('secondary', t('Bar: ouvir os boatos', 'Tavern: hear the rumors'), () => {
+        d.close();
+        openBar(i, again);
+      }),
+      button('secondary', t('Grupo: classe, equipamento e quem vai', 'Party: class, equipment and who goes'), () => {
+        d.close();
+        party();
+      }),
     ),
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
@@ -367,17 +343,9 @@ function openBar(i: number, back: () => void) {
                     `Reward: ${m.gold} gold${m.item ? ` and ${ITEMS[m.item].en}` : ''}`,
                   ),
                 ),
-                el(
-                  'button',
-                  {
-                    type: 'button',
-                    class: 'secondary',
-                    onclick: () => {
-                      location.search = `?quest=${m.id}`;
-                    },
-                  },
-                  t('Aceitar', 'Accept'),
-                ),
+                button('secondary', t('Aceitar', 'Accept'), () => {
+                  location.search = `?quest=${m.id}`;
+                }),
               ),
             ),
           )
@@ -398,23 +366,19 @@ function openBar(i: number, back: () => void) {
         'div',
         { class: 'menu-actions' },
         ...JOBS.map((c) =>
-          el(
-            'button',
-            {
-              type: 'button',
-              class: 'secondary',
-              disabled: !!why,
-              onclick: () => {
-                const r = recruit(loadGroup(), loadChest(), c);
-                if (!r) return void sfx('cancel');
-                saveGroup(r.group);
-                store.set(CHEST_KEY, JSON.stringify(r.chest));
-                sfx('confirm');
-                d.close();
-                openBar(i, back);
-              },
-            },
+          button(
+            'secondary',
             t(`Recrutar ${unitName(c)}`, `Recruit ${unitName(c)}`),
+            () => {
+              const r = recruit(loadGroup(), loadChest(), c);
+              if (!r) return void sfx('cancel');
+              saveGroup(r.group);
+              store.set(CHEST_KEY, JSON.stringify(r.chest));
+              sfx('confirm');
+              d.close();
+              openBar(i, back);
+            },
+            { disabled: !!why },
           ),
         ),
       ),
@@ -448,17 +412,13 @@ export function openShop(back?: () => void) {
             'dd',
             {},
             `${itemStats(it)} · ${it.price} ${t('de ouro', 'gold')} `,
-            el(
-              'button',
-              {
-                type: 'button',
-                class: 'secondary',
-                disabled: chest.gold < it.price,
-                onclick: () => save(buy(chest, it.id)),
-              },
+            button(
+              'secondary',
               chest.gold < it.price
                 ? t(`Faltam ${it.price - chest.gold}`, `${it.price - chest.gold} short`)
                 : t('Comprar', 'Buy'),
+              () => save(buy(chest, it.id)),
+              { disabled: chest.gold < it.price },
             ),
           ),
         ]),
@@ -474,11 +434,7 @@ export function openShop(back?: () => void) {
                 'dd',
                 {},
                 `${Math.floor(ITEMS[id].price / 2)} ${t('de ouro', 'gold')} `,
-                el(
-                  'button',
-                  { type: 'button', class: 'secondary', onclick: () => save(sell(chest, id)) },
-                  t('Vender', 'Sell'),
-                ),
+                button('secondary', t('Vender', 'Sell'), () => save(sell(chest, id))),
               ),
             ]),
           )
@@ -577,19 +533,13 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void, at
           el(
             'div',
             { class: 'menu-actions' },
-            el(
-              'button',
-              {
-                type: 'button',
-                class: 'primary',
-                onclick: deploy,
-                disabled: !going && g.deployed.length >= DEPLOY_MAX,
-              },
+            button(
+              'primary',
               going ? t('Deixar no acampamento', 'Leave at camp') : t('Levar à batalha', 'Bring to battle'),
+              deploy,
+              { disabled: !going && g.deployed.length >= DEPLOY_MAX },
             ),
-            ...(m.recruit
-              ? [el('button', { type: 'button', class: 'secondary', onclick: fire }, t('Dispensar', 'Dismiss'))]
-              : []),
+            ...(m.recruit ? [button('secondary', t('Dispensar', 'Dismiss'), fire)] : []),
           ),
           ...(!going && g.deployed.length >= DEPLOY_MAX
             ? [
@@ -614,18 +564,10 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void, at
             m.cls,
             (c) => c !== m.cls && setClass(c),
           ),
-          el(
-            'button',
-            {
-              type: 'button',
-              class: 'secondary',
-              onclick: () => {
-                d.close();
-                back();
-              },
-            },
-            t('Voltar ao grupo', 'Back to party'),
-          ),
+          button('secondary', t('Voltar ao grupo', 'Back to party'), () => {
+            d.close();
+            back();
+          }),
         ),
         el(
           'div',
@@ -652,20 +594,13 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void, at
                 mine[slot]
                   ? `${itemName(ITEMS[mine[slot]!])} (${itemStats(ITEMS[mine[slot]!])}) `
                   : t('vazio ', 'empty '),
-                ...(mine[slot]
-                  ? [
-                      el(
-                        'button',
-                        { type: 'button', class: 'secondary', onclick: () => put(slot, null) },
-                        t('Tirar', 'Remove'),
-                      ),
-                    ]
-                  : []),
+                ...(mine[slot] ? [button('secondary', t('Tirar', 'Remove'), () => put(slot, null))] : []),
                 ...[...new Set(chest.items.filter((id) => ITEMS[id].slot === slot))].map((id) =>
-                  el(
-                    'button',
-                    { type: 'button', class: 'secondary', title: itemStats(ITEMS[id]), onclick: () => put(slot, id) },
+                  button(
+                    'secondary',
                     t(`Equipar ${itemName(ITEMS[id])}`, `Equip ${itemName(ITEMS[id])}`),
+                    () => put(slot, id),
+                    { title: itemStats(ITEMS[id]) },
                   ),
                 ),
               ),
@@ -733,13 +668,9 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   const place = el('strong', { class: 'world-place' });
   const kindText = el('p', { class: 'world-kind' });
   const foes = el('p', { class: 'world-kind' }); // how many enemies and the boss (only on battle nodes)
-  const enterBtn = el('button', { type: 'button', class: 'item focus', onclick: () => go() }, t('Entrar', 'Enter'));
+  const enterBtn = button('item focus', t('Entrar', 'Enter'), () => go());
   // only in towns (WorldNode.town): the town menu, like the FFT towns
-  const townBtn = el(
-    'button',
-    { type: 'button', class: 'item', hidden: true, onclick: () => openTown(at, opts.party) },
-    t('Cidade', 'Town'),
-  );
+  const townBtn = button('item', t('Cidade', 'Town'), () => openTown(at, opts.party), { hidden: true });
   const panel = el(
     'div',
     { class: 'panel world-panel', 'aria-live': 'polite' },
@@ -750,10 +681,10 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
       'div',
       { class: 'world-actions' },
       enterBtn,
-      el('button', { type: 'button', class: 'item', onclick: () => opts.party() }, t('Grupo', 'Party')),
+      button('item', t('Grupo', 'Party'), () => opts.party()),
       townBtn,
-      el('button', { type: 'button', class: 'item', onclick: () => openShop() }, t('Loja', 'Shop')),
-      el('button', { type: 'button', class: 'item', onclick: back }, t('Título', 'Title')),
+      button('item', t('Loja', 'Shop'), () => openShop()),
+      button('item', t('Título', 'Title'), back),
     ),
   );
   const root = el(

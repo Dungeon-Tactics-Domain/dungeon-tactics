@@ -8,7 +8,7 @@ import { dialog } from '../dialog.ts';
 import { GROUP_KEY } from '../group.ts';
 import { HERO_KEY } from '../hero.ts';
 import { LANG, setLang, t } from '../i18n.ts';
-import { el } from '../icons.ts';
+import { button, el } from '../icons.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
@@ -38,35 +38,23 @@ function quickBattle() {
         'div',
         { class: 'menu-actions camp-list' },
         ...QUICK_MAPS.map((id) =>
-          el(
-            'button',
-            {
-              type: 'button',
-              class: id === 'beacon_hill' ? 'primary' : 'secondary',
-              onclick: () => {
-                d.close();
-                setTrack(null);
-                location.search = `?scenario=${id}`;
-              },
-            },
-            t(SCENARIOS[id].name, SCENARIOS[id].en),
-          ),
+          button(id === 'beacon_hill' ? 'primary' : 'secondary', t(SCENARIOS[id].name, SCENARIOS[id].en), () => {
+            d.close();
+            setTrack(null);
+            location.search = `?scenario=${id}`;
+          }),
         ),
         // mode with another rule: survive until dawn in Ash Wood (survival.ts)
-        el(
-          'button',
-          {
-            type: 'button',
-            class: 'secondary',
-            onclick: () => {
-              d.close();
-              location.search = `?scenario=${SURVIVAL_ID}`;
-            },
-          },
+        button(
+          'secondary',
           t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood') +
             (parseBest(store.get(BEST_KEY))
               ? t(` (recorde ${parseBest(store.get(BEST_KEY))})`, ` (record ${parseBest(store.get(BEST_KEY))})`)
               : ''),
+          () => {
+            d.close();
+            location.search = `?scenario=${SURVIVAL_ID}`;
+          },
         ),
       ),
     ],
@@ -121,18 +109,10 @@ export function credits(back: () => void = titleScreen) {
           t('Lista completa, com a licença de cada arquivo', "Full list, with each file's license"),
         ),
       ),
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'primary',
-          onclick: () => {
-            d.close();
-            back();
-          },
-        },
-        t('Voltar', 'Back'),
-      ),
+      button('primary', t('Voltar', 'Back'), () => {
+        d.close();
+        back();
+      }),
     ],
     { onBack: back },
   );
@@ -200,18 +180,10 @@ function howToPlay() {
           ),
         ),
       ),
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'primary',
-          onclick: () => {
-            d.close();
-            titleScreen();
-          },
-        },
-        t('Voltar', 'Back'),
-      ),
+      button('primary', t('Voltar', 'Back'), () => {
+        d.close();
+        titleScreen();
+      }),
     ],
     { onBack: titleScreen },
   );
@@ -241,53 +213,44 @@ export function titleScreen() {
         // Continue says who and where (like FFT's save summary): whoever returns after days knows what will open
         ...(parseWorld(store.get(WORLD_KEY)) > 0
           ? [
-              el(
-                'button',
-                { type: 'button', class: 'primary', onclick: go(toWorld) },
-                t('Continuar', 'Continue'),
-                el('small', { class: 'continue-where' }, continueWhere()),
+              button(
+                'primary',
+                [t('Continuar', 'Continue'), el('small', { class: 'continue-where' }, continueWhere())],
+                go(toWorld),
               ),
             ]
           : []),
-        el(
-          'button',
-          {
-            type: 'button',
-            class: parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary',
-            onclick: (e: Event) => {
-              const btn = e.currentTarget as HTMLButtonElement;
-              // asks for the 2nd tap even with only the hero created (review of Nov 13: it erased the hero without asking)
-              if ((parseWorld(store.get(WORLD_KEY)) > 0 || savedHero()) && !btn.dataset.armed) {
-                btn.dataset.armed = '1';
-                btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
-                return;
-              }
-              for (const k of [
-                WORLD_KEY,
-                CAMPAIGN_KEY,
-                HERO_KEY,
-                GROUP_KEY,
-                ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`),
-              ])
-                store.set(k, '');
-              d.close();
-              toWorld();
-            },
-          },
+        button(
+          parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary',
           t('Novo jogo', 'New game'),
+          (e: Event) => {
+            const btn = e.currentTarget as HTMLButtonElement;
+            // asks for the 2nd tap even with only the hero created (review of Nov 13: it erased the hero without asking)
+            if ((parseWorld(store.get(WORLD_KEY)) > 0 || savedHero()) && !btn.dataset.armed) {
+              btn.dataset.armed = '1';
+              btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
+              return;
+            }
+            for (const k of [
+              WORLD_KEY,
+              CAMPAIGN_KEY,
+              HERO_KEY,
+              GROUP_KEY,
+              ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`),
+            ])
+              store.set(k, '');
+            d.close();
+            toWorld();
+          },
         ),
-        el(
-          'button',
-          { type: 'button', class: 'secondary', onclick: go(quickBattle) },
-          t('Batalha avulsa', 'Quick battle'),
-        ),
-        el('button', { type: 'button', class: 'secondary', onclick: go(howToPlay) }, t('Como jogar', 'How to play')),
-        el(
-          'button',
-          { type: 'button', class: 'secondary', onclick: go(() => void devMenu(titleScreen)) },
+        button('secondary', t('Batalha avulsa', 'Quick battle'), go(quickBattle)),
+        button('secondary', t('Como jogar', 'How to play'), go(howToPlay)),
+        button(
+          'secondary',
           t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'),
+          go(() => void devMenu(titleScreen)),
         ),
-        el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits')),
+        button('secondary', t('Créditos', 'Credits'), go(credits)),
       ),
       el(
         'p',
@@ -295,11 +258,7 @@ export function titleScreen() {
         t('Setas escolhem · Enter confirma', 'Arrows choose · Enter confirms'),
         ' · ',
         // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
-        el(
-          'button',
-          { type: 'button', class: 'title-lang', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') },
-          LANG === 'pt' ? 'English' : 'Português',
-        ),
+        button('title-lang', LANG === 'pt' ? 'English' : 'Português', () => setLang(LANG === 'pt' ? 'en' : 'pt')),
       ),
     ],
     { fixed: true },

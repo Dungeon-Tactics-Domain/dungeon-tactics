@@ -21,18 +21,22 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return e;
 }
 
+// button of the design system: `primary` (gold, the one that continues the flow), `secondary` (paper) or `item` (menu row);
+// several children = label + key hint
+export const button = (
+  cls: string,
+  label: Child | Child[],
+  onclick: (e: Event) => void,
+  props: Record<string, unknown> = {},
+) => el('button', { type: 'button', class: cls, onclick, ...props }, ...[label].flat());
+
 // icon-only button: the name becomes title and aria-label (screen reader and long press on mobile); several children = icon + key hint
 export const iconButton = (
   child: Child | Child[],
   name: string,
   onclick: () => void,
   props: Record<string, unknown> = {},
-) =>
-  el(
-    'button',
-    { type: 'button', class: 'icon', title: name, 'aria-label': name, onclick, ...props },
-    ...[child].flat(),
-  );
+) => button('icon', child, onclick, { title: name, 'aria-label': name, ...props });
 
 // sprite symbol → <svg> at font size; decorative (the name goes on the button that contains it)
 export function icon(id: string): SVGSVGElement {

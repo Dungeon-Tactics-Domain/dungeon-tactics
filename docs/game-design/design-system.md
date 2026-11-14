@@ -6,7 +6,7 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 
 **Reading copy:** Design System artifact at https://claude.ai/artifact/RR7xTnyBPxE7GyUd1XysSK (Fernando's choice, Nov 13). Change a token or this document: republish `project/tokens.json` and `project/README.md` there.
 
-**Source of truth:** the `:root` of `src/client/style.css` (tokens) and the functions in `hud.ts`, `dialog.ts` and `icons.ts` (pieces). This document describes; if it disagrees with the code, the code wins and the document is fixed in the same commit.
+**Source of truth:** the `:root` of `src/client/style.css` (tokens) and the functions in `hud.ts`, `dialog.ts` and `icons.ts` (pieces). Every text button goes through `button(cls, label, onclick, props)` in `icons.ts`; the stylesheet is grouped by piece, one `/* ---- … ---- */` section each. This document describes; if it disagrees with the code, the code wins and the document is fixed in the same commit.
 
 **Rules of use**
 
@@ -105,15 +105,15 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | Piece | Lives in | States | Used in |
 |---|---|---|---|
 | **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, place panel on the map, dialogue box, creation |
-| **Menu row** `.panel .item` | `style.css` | N transparent · H and F 50% white background with pulsing ▶ (`.focus`) · P no shift · D 45% opacity | commands, abilities, Yes/No, corner list, map actions |
+| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H and F 50% white background (`--row-hi`) with pulsing ▶ (`.focus`) · P no shift · D 45% opacity | commands, abilities, Yes/No, corner list, map actions |
 | **Bar** `gauge()` | `hud.ts` | value + number; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
 | **Unit panel** `unitPanel()` | `hud.ts` | hero/enemy by side stripe and side text; mirrored for the target | bottom left and right |
 | **Portrait** `portrait()` | `hud.ts` | 72×96 (panel, dialogue, creation), 48×64 (party), 44×58 (map), 24×32 (queue) | everywhere with a face |
 | **Place beside** `placeBeside()` | `hud.ts` (pure, tested) | right; no room, left; slides vertically | menu beside the unit |
 | **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary); `fixed` does not close; `onBack` goes back | title, Options, Status, How to play, Credits, Party, Sheet, Shop, Tavern, Town, stage end, Developer |
-| **Primary button** `button.primary` | `style.css` | N gold · H lighter · F ink ring · P inverted bevel and 2 px down · D faded 50% | one per dialog: the action that continues the flow |
-| **Regular button** `button.secondary` | `style.css` | N paper with outline · H lighter · F ring · P sinks · D faded 50% · S 3 px ink border and bold | secondary actions, `choice()` options |
-| **Icon button** `iconButton()` | `icons.ts` | like the regular one; name in `title` and `aria-label` | dialog ✕, menu button (3 bars) |
+| **Primary button** `button('primary', …)` | `icons.ts`, `style.css` | N gold · H lighter · F ink ring · P inverted bevel and 2 px down · D faded 50% | one per dialog: the action that continues the flow |
+| **Regular button** `button('secondary', …)` | `icons.ts`, `style.css` | N paper with outline · H lighter · F ring · P sinks · D faded 50% · S 3 px ink border and bold | secondary actions, `choice()` options |
+| **Icon button** `iconButton()` (a `button('icon', …)` named by `title` and `aria-label`) | `icons.ts` | like the regular one; name in `title` and `aria-label` | dialog ✕, menu button (3 bars) |
 | **Exclusive choice** `choice()` | `dialog.ts` | S through `aria-pressed`; applies at once, no Save | Options (sections, pixel, language, text), class on the Sheet |
 | **Value bar** `slider()` | `dialog.ts` | native range input, steps of 5%, number beside it | volume |
 | **Definition list** `.keys` | `style.css` | text | keys, sheet numbers, abilities, shop |

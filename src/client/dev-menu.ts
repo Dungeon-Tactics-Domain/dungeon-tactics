@@ -21,7 +21,7 @@ import {
 } from './dev-roster.ts';
 import { choice, dialog } from './dialog.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { el } from './icons.ts';
+import { button, el } from './icons.ts';
 import { store } from './store.ts';
 
 const mapName = (id: string) => t(SCENARIOS[id].name, SCENARIOS[id].en);
@@ -99,19 +99,15 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
         { class: 'dev-line' },
         cls,
         name,
-        el(
-          'button',
-          {
-            type: 'button',
-            class: 'secondary',
-            'aria-label': t(`Tirar ${u.name}`, `Remove ${u.name}`),
-            onclick: () => {
-              list.splice(i, 1);
-              save();
-              render();
-            },
-          },
+        button(
+          'secondary',
           '✕',
+          () => {
+            list.splice(i, 1);
+            save();
+            render();
+          },
+          { 'aria-label': t(`Tirar ${u.name}`, `Remove ${u.name}`) },
         ),
       ),
       el(
@@ -132,19 +128,15 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
       { class: 'dev-team' },
       el('h3', {}, `${title} · ${list.length}/${slots}`),
       el('ol', { class: 'dev-list' }, ...list.map((u, i) => unitRow(u, list, i))),
-      el(
-        'button',
-        {
-          type: 'button',
-          class: 'secondary',
-          disabled: list.length >= slots,
-          onclick: () => {
-            list.push(unitFrom(first));
-            save();
-            render();
-          },
-        },
+      button(
+        'secondary',
         t('+ Adicionar', '+ Add'),
+        () => {
+          list.push(unitFrom(first));
+          save();
+          render();
+        },
+        { disabled: list.length >= slots },
       ),
     );
 
@@ -221,35 +213,23 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
       el(
         'div',
         { class: 'menu-actions' },
-        el(
-          'button',
-          {
-            type: 'button',
-            class: 'primary',
-            disabled: issues.length > 0,
-            onclick: () => {
-              save();
-              d.close();
-              start(setup);
-            },
-          },
+        button(
+          'primary',
           t('Começar batalha', 'Start battle'),
-        ),
-        el('button', { type: 'button', class: 'secondary', onclick: exportJson }, t('Exportar', 'Export')),
-        el('button', { type: 'button', class: 'secondary', onclick: importJson }, t('Importar', 'Import')),
-        el(
-          'button',
-          {
-            type: 'button',
-            class: 'secondary',
-            onclick: () => {
-              setup = defaultSetup(setup.map);
-              save();
-              render();
-            },
+          () => {
+            save();
+            d.close();
+            start(setup);
           },
-          t('Voltar ao padrão do mapa', 'Reset to map default'),
+          { disabled: issues.length > 0 },
         ),
+        button('secondary', t('Exportar', 'Export'), exportJson),
+        button('secondary', t('Importar', 'Import'), importJson),
+        button('secondary', t('Voltar ao padrão do mapa', 'Reset to map default'), () => {
+          setup = defaultSetup(setup.map);
+          save();
+          render();
+        }),
       ),
     );
   }
