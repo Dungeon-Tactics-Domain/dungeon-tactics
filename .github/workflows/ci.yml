@@ -1,4 +1,4 @@
-# Checks for every pull request and every push to master: types, tests and build
+# Checks for every pull request and every push to master: lint and format, types, tests and build
 name: CI
 
 on:
@@ -16,6 +16,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
       - run: npx vitest run
       - run: npx vite build
