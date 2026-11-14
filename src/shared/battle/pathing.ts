@@ -36,8 +36,6 @@ export function cellsOf(p: Pos, size: number): Pos[] {
   return out;
 }
 export const footprint = (u: UnitState): Pos[] => cellsOf(u.pos, UNIT_DEFS[u.def].size ?? 1);
-// distance to the unit's nearest tile (range, area and hit chance against the large boss)
-export const distTo = (u: UnitState, p: Pos) => Math.min(...footprint(u).map((f) => dist(f, p)));
 // standing height of a square with its corner on `p`: its highest cell (a token straddling a step stands on the upper side)
 export const squareH = (grid: Grid, p: Pos, size: number) =>
   Math.max(...cellsOf(p, size).map((c) => standH(tileAt(grid, c))));
