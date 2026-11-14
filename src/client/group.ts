@@ -1,30 +1,30 @@
-// Grupo do jogador (13/11, pedido do Fernando: "recrutamento e troca de classe", como a formação do FFT; desenho em
-// docs/game-design/cidades-grupo-equipamento.md, entrega 5). Puro e testado; as telas ficam em world-ui.ts.
-// Os 4 da história nunca saem; recrutados se contratam no Bar com ouro e se dispensam. Qualquer um troca de classe
-// entre as liberadas (JOBS), e até 4 vão à batalha (as casas de partida dos mapas). O grupo padrão monta exatamente o
-// elenco medido de cada fase, então a curva da campanha não muda para quem não mexe no grupo.
+// Player party (Nov 13, Fernando's request: "recruitment and class change", like the FFT formation; design in
+// docs/game-design/cidades-grupo-equipamento.md, delivery 5). Pure and tested; the screens live in world-ui.ts.
+// The 4 from the story never leave; recruits are hired at the Bar with gold and can be dismissed. Anyone can change class
+// among the unlocked ones (JOBS), and up to 4 go to battle (the maps' starting tiles). The default party assembles exactly the
+// measured cast of each stage, so the campaign curve doesn't change for whoever doesn't touch the party.
 import type { Chest, Equip } from './chest.ts';
 import { unitFrom, type DevUnit } from './dev-roster.ts';
 import { HERO_CLASSES, NAME_MAX, type Hero } from './hero.ts';
 
-// classes do grupo: as 4 do protagonista e as novas, que só entram por recrutamento e troca de classe (desenho, seção 4)
+// party classes: the protagonist's 4 and the new ones, which only join via recruitment and class change (design, section 4)
 export const JOBS = [...HERO_CLASSES, 'lancer'] as const;
 export type Job = (typeof JOBS)[number];
 
 export interface Member {
-  id: string; // chave do equipamento (dt:equip); os da história usam a classe de partida, como o save antigo
+  id: string; // equipment key (dt:equip); the story ones use the starting class, like the old save
   name: string;
   cls: Job;
   recruit: boolean;
 }
 export interface Group {
   members: Member[];
-  deployed: string[]; // ids de quem vai à batalha, na ordem das casas de partida
+  deployed: string[]; // ids of who goes to battle, in the order of the starting tiles
 }
 export const GROUP_KEY = 'dt:grupo';
-export const GROUP_MAX = 8; // teto do desenho (seção 3)
-export const DEPLOY_MAX = 4; // os mapas têm 4 casas de partida de herói
-export const RECRUIT_COST = 200; // número inicial: uma vitória dá 150, a loja do 1º ato custa 100 a 240
+export const GROUP_MAX = 8; // design cap (section 3)
+export const DEPLOY_MAX = 4; // the maps have 4 hero starting tiles
+export const RECRUIT_COST = 200; // initial number: a victory gives 150, the 1st act shop costs 100 to 240
 
 const STORY: Member[] = [
   { id: 'warrior', name: 'Bran', cls: 'warrior', recruit: false },
@@ -32,13 +32,13 @@ const STORY: Member[] = [
   { id: 'mage', name: 'Odo', cls: 'mage', recruit: false },
   { id: 'rogue', name: 'Lia', cls: 'rogue', recruit: false },
 ];
-// nomes dos recrutados, na ordem (sem sorteio: o mesmo grupo dá os mesmos nomes)
+// names of the recruits, in order (no draw: the same party gives the same names)
 const NAMES = ['Ivo', 'Nina', 'Caio', 'Vera', 'Rui', 'Duda', 'Téo', 'Mira', 'Saulo', 'Bia', 'Otto', 'Lena'];
 
 export const defaultGroup = (): Group => ({ members: STORY.map((m) => ({ ...m })), deployed: STORY.map((m) => m.id) });
 
-// fronteira de confiança: o grupo salvo vem do navegador. Os da história voltam sempre (com a classe salva, se válida);
-// recrutado sem nome, classe ou id válido some; até 4 escalados, só ids que existem; sem escalado volta o padrão
+// trust boundary: the saved party comes from the browser. The story ones always come back (with the saved class, if valid);
+// a recruit without a valid name, class or id disappears; up to 4 fielded, only ids that exist; with none fielded the default returns
 export function parseGroup(raw: unknown): Group {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const list = Array.isArray(r.members) ? r.members.filter((m): m is Record<string, unknown> => !!m && typeof m === 'object') : [];
@@ -55,7 +55,7 @@ export function parseGroup(raw: unknown): Group {
   return { members, deployed: deployed.length ? deployed : defaultGroup().deployed };
 }
 
-// contrata um recrutado da classe pedida: custa ouro, respeita o teto; null se não dá
+// hires a recruit of the requested class: costs gold, respects the cap; null if not possible
 export function recruit(g: Group, chest: Chest, cls: Job): { group: Group; chest: Chest } | null {
   if (g.members.length >= GROUP_MAX || chest.gold < RECRUIT_COST) return null;
   const used = new Set(g.members.map((m) => m.id));
@@ -63,12 +63,12 @@ export function recruit(g: Group, chest: Chest, cls: Job): { group: Group; chest
   while (used.has(`r${k}`)) k++;
   const name = NAMES.find((n) => !g.members.some((m) => m.name === n)) ?? `Recruta ${k}`;
   const m: Member = { id: `r${k}`, name, cls, recruit: true };
-  // entra escalado se ainda há vaga na batalha
+  // joins the fielded party if there's still room in the battle
   const deployed = g.deployed.length < DEPLOY_MAX ? [...g.deployed, m.id] : g.deployed;
   return { group: { members: [...g.members, m], deployed }, chest: { ...chest, gold: chest.gold - RECRUIT_COST } };
 }
 
-// dispensa um recrutado (os da história ficam); o equipamento dele volta ao baú
+// dismisses a recruit (the story ones stay); their equipment returns to the chest
 export function dismiss(g: Group, eq: Equip, chest: Chest, id: string): { group: Group; eq: Equip; chest: Chest } | null {
   const m = g.members.find((x) => x.id === id);
   if (!m?.recruit) return null;
@@ -84,18 +84,18 @@ export function dismiss(g: Group, eq: Equip, chest: Chest, id: string): { group:
 export const changeClass = (g: Group, id: string, cls: Job): Group =>
   ({ ...g, members: g.members.map((m) => (m.id === id ? { ...m, cls } : m)) });
 
-// escala ou tira da batalha: no máximo 4 e nunca nenhum; null se não dá
+// fields or removes from battle: at most 4 and never none; null if not possible
 export function toggleDeploy(g: Group, id: string): Group | null {
   if (g.deployed.includes(id)) return g.deployed.length > 1 ? { ...g, deployed: g.deployed.filter((x) => x !== id) } : null;
   return g.deployed.length < DEPLOY_MAX && g.members.some((m) => m.id === id) ? { ...g, deployed: [...g.deployed, id] } : null;
 }
 
-// Habilidades liberadas na fase n: 2 na 1ª, 3 na 2ª, as 4 da 3ª em diante (a 1ª fase ensina pouco de cada vez e a Cura
-// do Odo chega no meio da campanha). Vale para a classe atual de cada um
+// Abilities unlocked at stage n: 2 in the 1st, 3 in the 2nd, all 4 from the 3rd on (the 1st stage teaches a little at a time and Odo's
+// Heal arrives mid-campaign). Applies to each one's current class
 export const learnedCount = (n: number) => Math.min(4, 2 + n);
 
-// quem vai à batalha da fase n, com as habilidades liberadas, o equipamento e o protagonista (hero.ts) no lugar do
-// companheiro da história que tem a classe de partida dele (o companheiro segue nas conversas)
+// who goes to the battle of stage n, with the unlocked abilities, the equipment and the protagonist (hero.ts) in place of the
+// story companion who has his starting class (the companion stays in the conversations)
 export function heroesFor(g: Group, n: number, hero: Hero | null = null, eq: Equip = {}): DevUnit[] {
   return g.deployed.map((id) => g.members.find((m) => m.id === id)!).map((m) => {
     const name = hero && m.id === hero.cls ? hero.name : m.name;

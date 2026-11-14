@@ -1,14 +1,14 @@
-// Árvores pintadas, feitas por código (13/11, pedidos do Fernando: "árvores na vibe do terreno", depois "combinem com o
-// chão pintado, se encaixem no terreno, muitos tipos e tamanhos, inclusive pinheiros altos e troncos grandes" como nas
-// matas do FFT; desenho nosso, nada copiado). Nos mapas abertos cada modelo de árvore do KayKit vira um conjunto de
-// variações montadas aqui: folhosa de copa em tufos, árvore velha de tronco grosso, pinheiro de saias, pinheiro alto de
-// tronco nu, árvore seca e moita. O tronco abre numa saia com sapopemas e raízes que mergulham no chão (a peça desce
-// abaixo de y = 0). Peça de altura 1, uma malha e um material (painted.ts); quem chama escala e sorteia a variação.
+// Painted trees, built in code (Nov 13, Fernando's requests: "trees in the vibe of the terrain", then "matching the
+// painted ground, fitting into the terrain, many types and sizes, including tall pines and big trunks" as in the
+// FFT forests; our own design, nothing copied). On open maps each KayKit tree model becomes a set of
+// variations assembled here: tufted-crown broadleaf, old thick-trunked tree, skirted pine, tall bare-trunk pine, dead tree
+// and bush. The trunk opens into a flare with buttresses and roots that dive into the ground (the piece goes down
+// below y = 0). Piece of height 1, one mesh and one material (painted.ts); the caller scales and picks the variation.
 import * as THREE from 'three';
 import { V, lump, piece, ramp, rng, tones, tube, type Ring } from './painted.ts';
 
 const BARK = tones('#2e2016', '#523b27', '#77593c', '#9c8059');
-const ASH = tones('#2a2622', '#4d4740', '#746c62', '#9a9287'); // madeira seca
+const ASH = tones('#2a2622', '#4d4740', '#746c62', '#9a9287'); // dry wood
 const MOSS = new THREE.Color('#3d4f24');
 const LEAF = {
   green: tones('#0f2616', '#1c4020', '#2c5c24', '#44792b', '#6f9c3a'),
@@ -16,13 +16,13 @@ const LEAF = {
   teal: tones('#0c211c', '#163a2a', '#245438', '#3c7446', '#679a5c'),
   fir: tones('#091a14', '#122e20', '#1c432d', '#2f603c', '#568756'),
 };
-const LEAF_UV = 2.2; // manchas da tinta miúdas na copa: leem como tufos de folha
+const LEAF_UV = 2.2; // tiny paint patches on the crown: they read as leaf tufts
 type Pal = THREE.Color[];
 type Rnd = () => number;
 
 interface TrunkOpts { r: number; th: number; roots: number; lean: number; bark: Pal; taper?: number; lite?: boolean; reach?: number }
-// Tronco de pé com a saia larga no chão e uma sapopema por raiz; cada raiz sai da sapopema, corre rente ao chão e
-// mergulha na terra. Devolve o centro do tronco em cada altura (galhos e copa partem dele)
+// Upright trunk with a wide flare at the ground and one buttress per root; each root leaves the buttress, runs along the ground and
+// dives into the soil. Returns the trunk center at each height (branches and crown start from it)
 function trunk(parts: THREE.BufferGeometry[], rnd: Rnd, o: TrunkOpts) {
   const dir = rnd() * Math.PI * 2, bend = (rnd() - 0.5) * 0.05, seed = rnd() * 50, moss = rnd() < 0.6 ? rnd() * 6 : -1;
   const center = (y: number) => {
@@ -30,11 +30,11 @@ function trunk(parts: THREE.BufferGeometry[], rnd: Rnd, o: TrunkOpts) {
     return V(Math.cos(dir) * lean + s, y, Math.sin(dir) * lean - s);
   };
   const roots = Array.from({ length: o.roots }, (_, k) => (k / o.roots) * Math.PI * 2 + rnd() * 0.9);
-  const flare = Math.max(0.035, o.r * 0.7); // altura em que a saia some
+  const flare = Math.max(0.035, o.r * 0.7); // height at which the flare fades out
   const ys = o.lite ? [-0.12, 0, flare * 1.4, o.th * 0.55, o.th] : [-0.12, 0, flare * 0.5, flare * 1.2, flare * 2.2, o.th * 0.45, o.th * 0.75, o.th];
   const radius = (y: number) => o.r * (1 - (o.taper ?? 0.26) * (Math.max(0, y) / o.th)) * (1 + 0.5 * Math.exp(-Math.max(0, y) / flare)) * (y < 0 ? 1.12 : 1);
   const bark = (p: THREE.Vector3, _i: number, a: number) => {
-    // faixas de tom ao longo do tronco (a pincelada), mais claro para cima, escuro no pé; musgo de um lado, perto do chão
+    // tone bands along the trunk (the brushstroke), lighter going up, dark at the foot; moss on one side, near the ground
     const c = ramp(o.bark, 0.3 + 0.2 * Math.sin(a * 3 + seed) + 0.12 * Math.sin(a * 7 + seed * 1.7 + p.y * 14) + 0.28 * Math.min(1, p.y / 0.35) - (p.y < 0.02 ? 0.12 : 0));
     return moss < 0 ? c : c.lerp(MOSS, 0.75 * THREE.MathUtils.clamp(1 - p.y / (flare * 3), 0, 1) * Math.max(0, Math.sin(a + moss)));
   };
@@ -43,7 +43,7 @@ function trunk(parts: THREE.BufferGeometry[], rnd: Rnd, o: TrunkOpts) {
     shape: (a, i) => 1 + (o.lite ? 0 : 0.45) * Math.exp(-Math.max(0, ys[i]) / flare) * Math.max(0, ...roots.map((r) => Math.max(0, Math.cos(a - r)) ** 4)),
   }));
   for (const a of o.lite ? [] : roots) {
-    if (rnd() < 0.2) continue; // nem toda sapopema vira raiz à mostra
+    if (rnd() < 0.2) continue; // not every buttress becomes a visible root
     const reach = Math.min(o.reach ?? 0.17, o.r * (2.6 + rnd() * 1.4)), side = (rnd() - 0.5) * o.r * 1.6;
     const at = (d: number, s: number, y: number) => V(Math.cos(a) * d - Math.sin(a) * s, y, Math.sin(a) * d + Math.cos(a) * s);
     const rings: Ring[] = [
@@ -58,7 +58,7 @@ function trunk(parts: THREE.BufferGeometry[], rnd: Rnd, o: TrunkOpts) {
   return center;
 }
 
-// galho curvo de `from` a `to`, afinando
+// curved branch from `from` to `to`, tapering
 function limb(parts: THREE.BufferGeometry[], from: THREE.Vector3, to: THREE.Vector3, r0: number, r1: number, bark: Pal, rnd: Rnd) {
   const mid = from.clone().lerp(to, 0.5).add(V((rnd() - 0.5) * 0.05, 0.035, (rnd() - 0.5) * 0.05));
   const curve = new THREE.QuadraticBezierCurve3(from, mid, to), s = rnd() * 9;
@@ -66,11 +66,11 @@ function limb(parts: THREE.BufferGeometry[], from: THREE.Vector3, to: THREE.Vect
   parts.push(tube(rings, 5, (p, i, a) => ramp(bark, 0.42 + 0.2 * Math.sin(a * 2 + s) + i * 0.05), { v: 2 }));
 }
 
-// luz pintada da copa: cada tufo é claro em cima e escuro embaixo, e a copa inteira clareia para o alto
+// painted crown light: each tuft is light on top and dark below, and the whole crown brightens toward the top
 const leafTint = (pal: Pal, c: THREE.Vector3, ry: number, lo: number, hi: number, jit: number) => (p: THREE.Vector3, d: THREE.Vector3) =>
   ramp(pal, 0.12 + 0.52 * THREE.MathUtils.clamp(((p.y - c.y) / ry) * 0.5 + 0.5, 0, 1) ** 1.6 + 0.28 * THREE.MathUtils.clamp((p.y - lo) / (hi - lo), 0, 1) + jit + 0.05 * Math.sin(d.x * 9 + d.z * 7 + jit * 40));
 
-// fecha a peça com 1 de altura; a largura é a da copa (a saia e as raízes ficam de fora da medida)
+// closes the piece at height 1; the width is the crown's (the flare and roots are left out of the measure)
 function finish(parts: THREE.BufferGeometry[], extra: Record<string, unknown> = {}): THREE.Group {
   let top = 0;
   for (const g of parts) { g.computeBoundingBox(); top = Math.max(top, g.boundingBox!.max.y); }
@@ -83,20 +83,20 @@ function finish(parts: THREE.BufferGeometry[], extra: Record<string, unknown> = 
       else if (p.getY(i) > -0.06) foot = Math.max(foot, Math.hypot(p.getX(i), p.getZ(i)));
     }
   }
-  // foot: raio do pé (a saia e as raízes até onde mergulham); a cena não deixa passar do miolo plano da casa da árvore
+  // foot: radius of the foot (the flare and roots down to where they dive); the scene does not let it exceed the flat core of the tree's tile
   return piece(parts, w * 2, 1, { foot, ...extra });
 }
 
 interface LeafOpts { r: number; th: number; spread: number; pal: Pal; top?: number; squash?: number; limbs?: number; roots?: number; stubs?: number; tall?: number; lite?: boolean; reach?: number }
-// Folhosa: tronco, galhos que abrem em leque, um miolo grande de copa e um tufo na ponta de cada galho, com um menor por
-// fora e os do topo. `lite` (a mata dos arredores, centenas de árvores): menos tufos, sem galhos nem raízes à mostra
+// Broadleaf: trunk, branches fanning out, a big crown core and a tuft at the end of each branch, with a smaller one on the
+// outside and at the top. `lite` (the surrounding forest, hundreds of trees): fewer tufts, no visible branches or roots
 function broadleaf(seed: number, o: LeafOpts): THREE.Group {
   const rnd = rng(seed), parts: THREE.BufferGeometry[] = [], lite = !!o.lite;
   const center = trunk(parts, rnd, { r: o.r, th: o.th, roots: o.roots ?? 3 + Math.floor(rnd() * 3), lean: 0.03 + rnd() * 0.05, bark: BARK, lite, reach: o.reach });
   const top = center(o.th), n = lite ? 3 : (o.limbs ?? 4 + Math.floor(rnd() * 2)), squash = o.squash ?? 0.78, crown = o.top ?? 0.5;
   const tuft = (c: THREE.Vector3, r: number, detail = 1) =>
     parts.push(lump(c, r, r * squash, r, rnd() * 99, leafTint(o.pal, c, r * squash, o.th - 0.02, o.th + crown, (rnd() - 0.5) * 0.14), { detail, rough: detail > 1 ? 0.36 : 0.28, uv: LEAF_UV }));
-  tuft(V(top.x, o.th + crown * 0.5, top.z), o.spread * 0.74, lite ? 1 : 2); // o miolo
+  tuft(V(top.x, o.th + crown * 0.5, top.z), o.spread * 0.74, lite ? 1 : 2); // the core
   const a0 = rnd() * Math.PI * 2;
   for (let k = 0; k < n; k++) {
     const a = a0 + (k / n) * Math.PI * 2 + (rnd() - 0.5) * 0.7, reach = o.spread * (0.55 + rnd() * 0.25);
@@ -105,7 +105,7 @@ function broadleaf(seed: number, o: LeafOpts): THREE.Group {
     tuft(end.clone().add(V(0, r * 0.2, 0)), r);
     if (lite) continue;
     limb(parts, center(o.th * 0.86), end, o.r * 0.55, o.r * 0.2, BARK, rnd);
-    // tufo menor por fora e mais baixo: a copa não vira uma bola só
+    // smaller tuft on the outside and lower: the crown does not become a single ball
     const b = a + (rnd() - 0.5) * 1.2;
     tuft(V(end.x + Math.cos(b) * r * 0.8, end.y - r * 0.25 + rnd() * r * 0.3, end.z + Math.sin(b) * r * 0.8), r * (0.5 + rnd() * 0.2));
   }
@@ -113,13 +113,13 @@ function broadleaf(seed: number, o: LeafOpts): THREE.Group {
     const tip = V(top.x + (rnd() - 0.5) * 0.08, o.th + crown * 0.84, top.z + (rnd() - 0.5) * 0.08);
     tuft(tip, o.spread * (0.44 + rnd() * 0.1));
     tuft(V(tip.x + (rnd() - 0.5) * 0.16, tip.y + o.spread * 0.26, tip.z + (rnd() - 0.5) * 0.16), o.spread * 0.3);
-    // tufinhos na beira da copa: o contorno fica recortado, de folhagem, e não liso
+    // little tufts at the crown edge: the outline gets ragged, leafy, not smooth
     for (let k = 0; k < 5; k++) {
       const a = rnd() * Math.PI * 2, d = o.spread * (0.85 + rnd() * 0.3);
       tuft(V(top.x + Math.cos(a) * d, o.th + crown * (0.2 + rnd() * 0.5), top.z + Math.sin(a) * d), o.spread * (0.2 + rnd() * 0.08));
     }
   }
-  // tocos de galho quebrado no tronco nu (pinheiro alto)
+  // broken branch stubs on the bare trunk (tall pine)
   for (let k = 0; k < (lite ? 0 : (o.stubs ?? 0)); k++) {
     const y = o.th * (0.35 + 0.5 * rnd()), a = rnd() * Math.PI * 2, from = center(y);
     limb(parts, from, from.clone().add(V(Math.cos(a) * 0.09, 0.03, Math.sin(a) * 0.09)), o.r * 0.4, o.r * 0.12, ASH, rnd);
@@ -128,7 +128,7 @@ function broadleaf(seed: number, o: LeafOpts): THREE.Group {
 }
 
 interface FirOpts { r: number; R: number; tiers: number; base: number; pal: Pal; tall?: number; lite?: boolean }
-// Pinheiro: tronco reto e saias de ramos, cada uma com as pontas caídas e recortadas, mais clara na ponta e escura por baixo
+// Pine: straight trunk and skirts of boughs, each with drooping, ragged tips, lighter at the tip and dark underneath
 function fir(seed: number, o: FirOpts): THREE.Group {
   const rnd = rng(seed), parts: THREE.BufferGeometry[] = [], tiers = o.lite ? Math.ceil(o.tiers * 0.7) : o.tiers;
   const center = trunk(parts, rnd, { r: o.r, th: 0.93, roots: 3 + Math.floor(rnd() * 2), lean: rnd() * 0.04, bark: BARK, taper: 0.9, lite: o.lite, reach: 0.12 });
@@ -149,7 +149,7 @@ function fir(seed: number, o: FirOpts): THREE.Group {
   return finish(parts, o.tall ? { tall: o.tall } : {});
 }
 
-// Árvore seca: só tronco e galhos que se dividem
+// Dead tree: just trunk and forking branches
 function dead(seed: number, lite: boolean): THREE.Group {
   const rnd = rng(seed), parts: THREE.BufferGeometry[] = [];
   const th = 0.42 + rnd() * 0.1, r = 0.05 + rnd() * 0.02;
@@ -167,7 +167,7 @@ function dead(seed: number, lite: boolean): THREE.Group {
   return finish(parts);
 }
 
-// Moita: tufos baixos, sem tronco
+// Bush: low tufts, no trunk
 function shrub(seed: number, pal: Pal, lite: boolean): THREE.Group {
   const rnd = rng(seed), parts: THREE.BufferGeometry[] = [], n = lite ? 3 : 4 + Math.floor(rnd() * 3);
   for (let k = 0; k < n; k++) {
@@ -179,12 +179,12 @@ function shrub(seed: number, pal: Pal, lite: boolean): THREE.Group {
 
 type Make = (seed: number, lite: boolean) => THREE.Group;
 const oak = (pal: Pal, o: Partial<LeafOpts> = {}): Make => (s, lite) => broadleaf(s, { r: 0.065, th: 0.4, spread: 0.36, pal, lite, ...o });
-const old: Make = (s, lite) => broadleaf(s, { r: 0.09, th: 0.36, spread: 0.42, pal: LEAF.green, roots: 5, limbs: 5, lite }); // tronco grosso
-const pine: Make = (s, lite) => broadleaf(s, { r: 0.045, th: 0.62, spread: 0.2, top: 0.36, squash: 0.5, pal: LEAF.fir, limbs: 4, stubs: 3, tall: 1.6, reach: 0.11, lite }); // alto, tronco nu
+const old: Make = (s, lite) => broadleaf(s, { r: 0.09, th: 0.36, spread: 0.42, pal: LEAF.green, roots: 5, limbs: 5, lite }); // thick trunk
+const pine: Make = (s, lite) => broadleaf(s, { r: 0.045, th: 0.62, spread: 0.2, top: 0.36, squash: 0.5, pal: LEAF.fir, limbs: 4, stubs: 3, tall: 1.6, reach: 0.11, lite }); // tall, bare trunk
 const spruce = (o: Partial<FirOpts> = {}): Make => (s, lite) => fir(s, { r: 0.05, R: 0.2, tiers: 7, base: 0.2, pal: LEAF.fir, tall: 1.5, lite, ...o });
 const bush = (pal: Pal): Make => (s, lite) => shrub(s, pal, lite);
-// Variações por modelo do KayKit (o nome diz onde a peça é usada: LOOK em scene.ts e MOODS em ambience.ts). Todo
-// conjunto mistura espécies: a mata do Bosque tem folhosa, árvore velha e pinheiro lado a lado
+// Variations per KayKit model (the name says where the piece is used: LOOK in scene.ts and MOODS in ambience.ts). Every
+// set mixes species: Ash Wood forest has broadleaf, old tree and pine side by side
 const SETS: [RegExp, Make[]][] = [
   [/Bush/, [bush(LEAF.green), bush(LEAF.olive), bush(LEAF.teal)]],
   [/Tree_Bare/, [dead, dead, dead]],
@@ -194,8 +194,8 @@ const SETS: [RegExp, Make[]][] = [
   [/Tree_/, [oak(LEAF.green), oak(LEAF.teal, { spread: 0.4, th: 0.36 }), old, pine]],
 ];
 
-// troca as peças de árvore do KayKit pelas feitas aqui: `nome` e as variações `nome~1`, `nome~2`… (painted.ts variant).
-// `lite`: versão de poucos triângulos, para as centenas de árvores dos arredores
+// swaps the KayKit tree pieces for the ones built here: `name` and the variations `name~1`, `name~2`... (painted.ts variant).
+// `lite`: low-triangle version, for the hundreds of trees in the surroundings
 export function swapTrees(pieces: Map<string, THREE.Object3D>, lite = false) {
   for (const name of [...pieces.keys()]) {
     const set = SETS.find(([re]) => re.test(name))?.[1];

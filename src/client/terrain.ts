@@ -1,25 +1,25 @@
-// Terreno liso (13/11, escolha do Fernando em múltipla escolha: "terreno liso de verdade" no lugar dos blocos KayKit, que
-// "parecem Minecraft"; texturas CC0 do Poly Haven em public/tex). Uma malha só para o chão de todos os mapas abertos (as
-// criptas seguem em blocos): cada casa fica plana no meio (onde ficam boneco, marca e cursor) e o degrau vira encosta no
-// terço da borda. A mesma malha continua EXT_RING casas para fora (a extensão), escurecendo até o preto total, e o rio que
-// cruza o mapa segue por fora: nasce mais alto de um lado e sai mais baixo do outro, em cascatas. Só desenho: as regras
-// continuam lendo a altura de cada casa (grid.ts).
+// Smooth terrain (Nov 13, Fernando's pick in multiple choice: "truly smooth terrain" instead of the KayKit blocks, which
+// "look like Minecraft"; CC0 Poly Haven textures in public/tex). A single mesh for the ground of every open map (crypts
+// stay block-based): each tile is flat in the middle (where unit, marker and cursor sit) and the step becomes a slope in the
+// outer third. The same mesh continues EXT_RING tiles outward (the extension), darkening to full black, and the river that
+// crosses the map continues outside: it starts higher on one side and exits lower on the other, in cascades. Visuals only: the rules
+// keep reading each tile's height (grid.ts).
 import * as THREE from 'three';
 import { posKey, tileAt, type Grid, type Tile } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { WADE, type WaterLevel } from './water-levels.ts';
 
-// extensão em volta do mapa (pedido do Fernando, 13/11): escurece em EXT_FADE blocos e vai ao preto total nos EXT_DARK
-// seguintes; árvores e objetos de fora somem no preto no mesmo trecho (neblina dos arredores, ambience.ts)
+// extension around the map (Fernando's request, Nov 13): darkens over EXT_FADE blocks and goes to full black over the next EXT_DARK;
+// outside trees and objects vanish into the black over the same stretch (surrounding fog, ambience.ts)
 export const EXT_FADE = 2, EXT_DARK = 4, EXT_RING = EXT_FADE + EXT_DARK;
-// tom de cada anel de fora: escurece logo na 1ª casa depois da borda e chega ao preto total no 4º (13/11, pedido do
-// Fernando: "o sombreamento começa no último tile da borda e escurece mais forte e mais rápido"); antes ia até o 6º
+// tone of each outer ring: darkens right at the 1st tile past the edge and reaches full black at the 4th (Nov 13, Fernando's
+// request: "the shading starts at the last edge tile and darkens stronger and faster"); before, it went up to the 6th
 const TONES = [1, 0.4, 0.16, 0.05, 0];
 export const extTone = (ring: number) => TONES[Math.min(ring, TONES.length - 1)];
-const SUB = 6; // subdivisões por casa: o meio (4 de 6) fica plano e a encosta ocupa 1/3 de casa em volta de cada borda
-const RISE = 0.5; // quanto o lado da nascente sobe (em níveis) a cada 2 casas para fora, junto com a água
+const SUB = 6; // subdivisions per tile: the middle (4 of 6) stays flat and the slope takes 1/3 of a tile around each edge
+const RISE = 0.5; // how much the spring side rises (in levels) every 2 tiles outward, along with the water
 
-// pintura de cada aparência de casa: grama, folhas, terra, neve e pedra (a pedra também entra sozinha nas encostas)
+// paint of each tile look: grass, leaves, dirt, snow and stone (stone also appears by itself on slopes)
 type Paint = [grass: number, leaves: number, dirt: number, snow: number, stone: number];
 export const PAINT: Record<string, Paint> = {
   grass: [1, 0, 0, 0, 0], tree: [0.5, 0.5, 0, 0, 0], tree2: [0.6, 0.4, 0, 0, 0], tree3: [0.6, 0.4, 0, 0, 0], tree4: [0.6, 0.4, 0, 0, 0],
@@ -28,8 +28,8 @@ export const PAINT: Record<string, Paint> = {
   rock: [0, 0, 0, 0, 1], summit: [0, 0, 0, 0, 1], gold: [0, 0, 0.3, 0, 0.7], stone: [0, 0, 0.4, 0, 0.6],
 };
 
-// altura (h) da casa mais baixa do tabuleiro a até `ring` casas de (i, j): a extensão nunca passa dela, porque a câmera
-// olha na diagonal e uma coluna alta na frente de um boneco numa casa baixa tapava meio boneco (revisão de 13/11)
+// height (h) of the lowest tile on the board within `ring` tiles of (i, j): the extension never goes above it, because the camera
+// looks diagonally and a tall column in front of a unit on a low tile hid half the unit (Nov 13 review)
 export const extH = (g: Grid, i: number, j: number, ring: number) => {
   let h = Infinity;
   for (let b = j - ring; b <= j + ring; b++) for (let a = i - ring; a <= i + ring; a++) {
@@ -39,8 +39,8 @@ export const extH = (g: Grid, i: number, j: number, ring: number) => {
 };
 export const ringOf = (g: Grid, i: number, j: number) => Math.max(-i, -j, i - g.width + 1, j - g.height + 1);
 
-// rio que cruza o mapa de um lado ao outro (linhas com água nas duas bordas). dir 1: a nascente fica à direita (x >= W),
-// o lado onde a água da borda está mais alta (no Bosque, o vau)
+// river crossing the map from one side to the other (rows with water on both edges). dir 1: the spring is on the right (x >= W),
+// the side where the edge water is higher (in Ash Wood, the ford)
 export interface River { rows: number[]; dir: 1 | -1 }
 export function riverOf(grid: Grid, levels: Map<string, WaterLevel>): River | null {
   const W = grid.width;
@@ -50,32 +50,32 @@ export function riverOf(grid: Grid, levels: Map<string, WaterLevel>): River | nu
   return { rows, dir: levels.get(`${W - 1},${y}`)!.surface >= levels.get(`0,${y}`)!.surface ? 1 : -1 };
 }
 
-// quanto o chão de fora sobe no lado da nascente (em níveis): o rio "vem do alto", e a margem sobe junto com a água
+// how much the outside ground rises on the spring side (in levels): the river "comes from above", and the bank rises with the water
 const riseAt = (grid: Grid, river: River | null, i: number) => {
   if (!river) return 0;
   const k = river.dir > 0 ? i - grid.width + 1 : -i;
-  return k > 0 ? Math.ceil(k / 2) * RISE : 0; // para cima: a margem fica acima da corredeira contínua (streamAt)
+  return k > 0 ? Math.ceil(k / 2) * RISE : 0; // upward: the bank stays above the continuous rapids (streamAt)
 };
 
-// topo do chão de fora em (i, j), em metros
+// top of the outside ground at (i, j), in meters
 export const outerTop = (grid: Grid, step: number, river: River | null, i: number, j: number) =>
   (extH(grid, i, j, ringOf(grid, i, j)) + 1 + riseAt(grid, river, i)) * step;
 
 const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-// Rio de fora (13/11, pedido do Fernando: "a cachoeira retona está tosca… água mais fluida… água descendo pelo morro"):
-// superfície contínua em `u` (casas, contínuo; fora do tabuleiro), plana na 1ª metade de cada par de casas e descendo em
-// corredeira na 2ª, RISE nível por par. Sobe do lado da nascente e desce do outro; null fora das linhas do rio
+// Outside river (Nov 13, Fernando's request: "the cascade looks crude... more fluid water... water running down the hill"):
+// continuous surface in `u` (tiles, continuous; outside the board), flat on the 1st half of each pair of tiles and dropping as
+// rapids on the 2nd, RISE levels per pair. Rises on the spring side and drops on the other; null outside the river rows
 export function streamAt(grid: Grid, step: number, levels: Map<string, WaterLevel>, river: River | null, u: number, j: number): number | null {
   if (!river || !river.rows.includes(j) || (u >= 0 && u < grid.width)) return null;
   const right = u >= grid.width;
   const lv = levels.get(`${right ? grid.width - 1 : 0},${j}`)!;
-  const k = right ? u - grid.width : -u; // distância da borda, em casas
+  const k = right ? u - grid.width : -u; // distance from the edge, in tiles
   const up = (right ? 1 : -1) === river.dir ? 1 : -1;
   return lv.surface + up * (Math.floor(k / 2) + smooth(0.5, 1, (k / 2) % 1)) * RISE * step;
 }
 
-// casas de fora com água (o meio de cada uma), para o chão e as árvores dos arredores saberem onde é rio
+// outside tiles with water (the middle of each), so the ground and the surrounding trees know where the river is
 export function riverOutside(grid: Grid, step: number, levels: Map<string, WaterLevel>, river: River | null): Map<string, WaterLevel> {
   const out = new Map<string, WaterLevel>();
   if (!river) return out;
@@ -89,8 +89,8 @@ export function riverOutside(grid: Grid, step: number, levels: Map<string, Water
   return out;
 }
 
-// Malha do rio de fora: uma faixa por lado, com correnteza animada (listras que andam a favor da água) e espuma onde a
-// descida é mais forte; escurece com a extensão até o preto, como o chão. `time` anda no relógio da batalha (scene.ts)
+// Outside river mesh: one strip per side, with animated current (stripes moving with the water) and foam where the
+// drop is steepest; darkens with the extension down to black, like the ground. `time` runs on the battle clock (scene.ts)
 export function buildStream(grid: Grid, step: number, levels: Map<string, WaterLevel>, river: River | null): { meshes: THREE.Mesh[]; time: { value: number } } {
   const time = { value: 0 };
   if (!river) return { meshes: [], time };
@@ -113,7 +113,7 @@ export function buildStream(grid: Grid, step: number, levels: Map<string, WaterL
     }
     for (let b = 0; b < nv; b++) for (let a = 0; a < nu; a++) {
       const v = b * (nu + 1) + a;
-      // a faixa da esquerda corre para -x: a ordem dos vértices vira para a face continuar para cima
+      // the left strip flows toward -x: the vertex order flips so the face keeps pointing up
       if (side > 0) idx.push(v, v + nu + 1, v + 1, v + 1, v + nu + 1, v + nu + 2);
       else idx.push(v, v + 1, v + nu + 1, v + 1, v + nu + 2, v + nu + 1);
     }
@@ -124,7 +124,7 @@ export function buildStream(grid: Grid, step: number, levels: Map<string, WaterL
     g.setAttribute('aSlope', new THREE.Float32BufferAttribute(slope, 1));
     g.setIndex(idx);
     g.computeVertexNormals();
-    // a água corre da nascente para fora: do lado da nascente, para a borda (k diminui); do outro, para longe (k aumenta)
+    // water flows from the spring outward: on the spring side, toward the edge (k decreases); on the other, away (k increases)
     const dir = side === river.dir ? 1 : -1;
     const mat = new THREE.MeshLambertMaterial({ color: '#1d4f7a', vertexColors: true, transparent: true, opacity: 0.92, depthWrite: false });
     mat.onBeforeCompile = (sh) => {
@@ -139,7 +139,7 @@ export function buildStream(grid: Grid, step: number, levels: Map<string, WaterL
         diffuseColor.a = mix(diffuseColor.a, 1.0, foam);`);
     };
     const m = new THREE.Mesh(g, mat);
-    m.renderOrder = -1; // junto da água do mapa: marcas e cursor por cima
+    m.renderOrder = -1; // together with the map water: markers and cursor on top
     m.receiveShadow = true;
     m.name = 'rio-de-fora';
     return m;
@@ -149,8 +149,8 @@ export function buildStream(grid: Grid, step: number, levels: Map<string, WaterL
 
 const VERT_HEAD = 'attribute vec4 aW; attribute float aStone; varying vec4 vW; varying float vStone; varying vec3 vWPos; varying vec3 vWN;\n';
 const FRAG_HEAD = 'uniform sampler2D tGrass; uniform sampler2D tLeaves; uniform sampler2D tDirt; uniform sampler2D tSnow; uniform sampler2D tCliff;\nvarying vec4 vW; varying float vStone; varying vec3 vWPos; varying vec3 vWN;\n';
-// mistura das texturas: o chão pela pintura da casa; a pedra nas encostas (pela inclinação) e onde a casa é de pedra, em
-// projeção pelos três eixos para não esticar no barranco. 0,35 = uma textura de 512 px a cada ~3 casas
+// texture blend: the ground by the tile paint; stone on slopes (by steepness) and where the tile is stone, in
+// triplanar projection so it does not stretch on cliffs. 0.35 = one 512 px texture every ~3 tiles
 const FRAG_MIX = `
 vec2 tuv = vWPos.xz * 0.35;
 vec3 tg = texture2D(tGrass, tuv).rgb, tl = texture2D(tLeaves, tuv * 1.3).rgb, td = texture2D(tDirt, tuv).rgb, ts = texture2D(tSnow, tuv).rgb;
@@ -158,7 +158,7 @@ vec3 base = (tg * vW.x + tl * vW.y + td * vW.z + ts * vW.w) / max(vW.x + vW.y + 
 vec3 tn = normalize(vWN), an = abs(tn);
 vec3 cl = (texture2D(tCliff, vWPos.zy * 0.45).rgb * an.x + texture2D(tCliff, vWPos.xy * 0.45).rgb * an.z + texture2D(tCliff, vWPos.xz * 0.45).rgb * an.y) / (an.x + an.y + an.z);
 float rocky = max(1.0 - smoothstep(0.5, 0.82, tn.y), vStone);
-// manchas de sol no chão, como no FFT (13/11, "pintado, tipo FFT"): ruído largo tirado da própria grama, só no plano
+// sun patches on the ground, as in FFT (Nov 13, "painted, FFT-like"): wide noise taken from the grass itself, only on the plane
 float dap = smoothstep(0.55, 0.62, dot(texture2D(tGrass, vWPos.xz * 0.045 + 0.3).rgb, vec3(0.333)) * 1.6);
 base = mix(base, base * vec3(1.45, 1.32, 0.72), dap * 0.55 * (1.0 - rocky) * vW.x);
 diffuseColor.rgb *= mix(base, cl, rocky);
@@ -174,27 +174,27 @@ export function loadTerrainTextures(): Promise<TerrainTextures> {
     t.anisotropy = 4;
     return t;
   };
-  // wood e bark: a ponte de verdade (bridge.ts)
+  // wood and bark: the real bridge (bridge.ts)
   return Promise.all(['grass', 'leaves', 'dirt', 'snow', 'cliff', 'wood', 'bark'].map(one)).then(([grass, leaves, dirt, snow, cliff, wood, bark]) => ({ grass, leaves, dirt, snow, cliff, wood, bark }));
 }
 
 export interface TerrainOptions {
   step: number;
-  // altura do chão (metros) no ponto (x, z) do mundo dentro da casa p: o meio de cada casa, a rampa, o leito da água
+  // ground height (meters) at world point (x, z) inside tile p: the middle of each tile, the ramp, the water bed
   inner: (p: Pos, x: number, z: number) => number;
-  outside: Map<string, WaterLevel>; // água de fora (riverOutside): o chão ali é o leito
+  outside: Map<string, WaterLevel>; // outside water (riverOutside): the ground there is the bed
   levels: Map<string, WaterLevel>;
   river: River | null;
-  extend: boolean; // com a extensão em volta (EXT_RING casas); sem ela, só o tabuleiro
+  extend: boolean; // with the extension around (EXT_RING tiles); without it, only the board
   tex: TerrainTextures;
 }
 
 export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
   const W = grid.width, H = grid.height, R = o.extend ? EXT_RING : 0;
-  const NX = (W + 2 * R) * SUB, NZ = (H + 2 * R) * SUB; // sub-casas
+  const NX = (W + 2 * R) * SUB, NZ = (H + 2 * R) * SUB; // sub-tiles
   const raw = new Float32Array(NX * NZ), paint = new Float32Array(NX * NZ * 5), tone = new Float32Array(NX * NZ);
   for (let b = 0; b < NZ; b++) for (let a = 0; a < NX; a++) {
-    const u = (a + 0.5) / SUB - R, v = (b + 0.5) / SUB - R; // em casas, 0 = canto do tabuleiro
+    const u = (a + 0.5) / SUB - R, v = (b + 0.5) / SUB - R; // in tiles, 0 = board corner
     const i = Math.floor(u), j = Math.floor(v), c = b * NX + a;
     const x = u - W / 2, z = v - H / 2;
     const inside = i >= 0 && j >= 0 && i < W && j < H;
@@ -203,11 +203,11 @@ export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
     const flowing = wet ? streamAt(grid, o.step, o.levels, o.river, u, j) : null;
     raw[c] = inside ? o.inner({ x: i, y: j }, x, z) : wet && flowing !== null ? flowing - (wet.surface - wet.bed) : outerTop(grid, o.step, o.river, i, j);
     const ring = inside ? 0 : ringOf(grid, i, j);
-    // escurece de 1 até 0,12 nos EXT_FADE primeiros anéis e vai ao preto total nos EXT_DARK seguintes
+    // darkens from 1 down to 0.12 over the first EXT_FADE rings and goes to full black over the next EXT_DARK
     tone[c] = extTone(ring);
     paint.set(wet ? PAINT.water : PAINT[edge.look ?? 'grass'] ?? PAINT.grass, c * 5);
   }
-  // vértice = média das até 4 sub-casas em volta: a borda entre duas alturas vira encosta, o meio da casa fica plano
+  // vertex = average of up to 4 surrounding sub-tiles: the edge between two heights becomes a slope, the middle of the tile stays flat
   const VX = NX + 1, VZ = NZ + 1;
   const pos = new Float32Array(VX * VZ * 3), col = new Float32Array(VX * VZ * 3), w4 = new Float32Array(VX * VZ * 4), st = new Float32Array(VX * VZ);
   for (let b = 0; b < VZ; b++) for (let a = 0; a < VX; a++) {
@@ -250,7 +250,7 @@ export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
   return mesh;
 }
 
-// casas do tabuleiro para o toque e o mouse (o raio acerta a casa, não a encosta): um quadrado invisível no meio de cada
+// board tiles for touch and mouse (the ray hits the tile, not the slope): an invisible square in the middle of each
 export function pickTiles(tiles: { p: Pos; at: THREE.Vector3 }[]): THREE.InstancedMesh {
   const m = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }), tiles.length);
   tiles.forEach((t, n) => m.setMatrixAt(n, new THREE.Matrix4().makeTranslation(t.at.x, t.at.y, t.at.z)));

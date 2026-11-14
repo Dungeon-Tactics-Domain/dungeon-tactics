@@ -1,6 +1,6 @@
-// Campanha "Cinzas do Farol" (noite de 12/11: o Fernando pediu uma campanha com várias fases, história, diálogo e
-// sons de fala). História nossa. Cada fase é um elenco do menu de desenvolvedor (dev-roster.ts) num mapa do jogo, com
-// falas antes e depois da batalha. Puro e testado; a tela das falas fica em talk.ts.
+// Campaign "Ashes of the Lighthouse" (night of Nov 12: Fernando asked for a campaign with several stages, story, dialogue and
+// speech sounds). Our own story. Each stage is a cast from the developer menu (dev-roster.ts) on a game map, with
+// lines before and after the battle. Pure and tested; the dialogue screen lives in talk.ts.
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
@@ -17,15 +17,15 @@ export interface Line {
 }
 export interface Chapter {
   title: [string, string];
-  song: SongId; // música da fase (music.ts)
-  boss?: true; // vence ao derrubar o 1º inimigo da lista (chapterScenario)
-  light?: number; // clima da fase (BattleScene.setDaylight: 0 noite, 1 sol nascendo); sem isto, a luz de sempre
+  song: SongId; // stage music (music.ts)
+  boss?: true; // wins by downing the 1st enemy in the list (chapterScenario)
+  light?: number; // stage mood (BattleScene.setDaylight: 0 night, 1 sunrise); without it, the usual light
   setup: DevSetup;
   intro: Line[];
   outro: Line[];
 }
 
-// Quem fala: nome, boneco do retrato e tom do bipe de fala (Hz). Tons diferentes para cada voz se reconhecer sem ler o nome.
+// Who speaks: name, portrait figure and speech beep pitch (Hz). Each voice gets a different pitch so it's recognizable without reading the name.
 export const SPEAKERS = {
   bran: { name: 'Bran', def: 'warrior', pitch: 150 },
   tess: { name: 'Tess', def: 'archer', pitch: 330 },
@@ -33,31 +33,31 @@ export const SPEAKERS = {
   lia: { name: 'Lia', def: 'rogue', pitch: 420 },
   vesper: { name: 'Vesper', def: 'dark_mage', pitch: 110 },
   shade: { name: 'A Sombra', en: 'The Shade', def: 'dark_mage', pitch: 80 },
-  // os inimigos da fase 1 são esqueletos na tela (o Soldado usa o boneco de esqueleto): quem fala é o capitão deles
+  // the stage 1 enemies are skeletons on screen (the Soldier uses the skeleton figure): the speaker is their captain
   merc: { name: 'Capitão de ossos', en: 'Bone captain', def: 'soldier', pitch: 180 },
   narr: { name: '', def: 'beacon', pitch: 220 },
-  // o protagonista criado pelo jogador: nome e boneco trocados na hora (talk.ts recebe o herói salvo)
+  // the protagonist created by the player: name and figure swapped on the fly (talk.ts receives the saved hero)
   hero: { name: 'Você', en: 'You', def: 'warrior', pitch: 240 },
 } as const;
 
-export const CAMPAIGN_KEY = 'dt:campanha'; // quantas fases já foram vencidas
+export const CAMPAIGN_KEY = 'dt:campanha'; // how many stages were already won
 
-// Os heróis aprendem uma habilidade por fase vencida (2 na 1ª, 3 na 2ª, as 4 da 3ª em diante): a 1ª fase ensina pouco de
-// cada vez e a Cura do Odo chega no meio da campanha, quando os inimigos apertam
+// The heroes learn one ability per stage won (2 in the 1st, 3 in the 2nd, all 4 from the 3rd on): the 1st stage teaches a little of
+// each at a time and Odo's Heal arrives mid-campaign, when the enemies press
 const party = (n: number): DevUnit[] => heroesFor(defaultGroup(), n).map(({ items: _, ...u }) => u);
-// habilidades que cada herói ganha ao passar da fase n para a n+1 (para o aviso no fim da fase)
-// (do grupo escalado, com a classe atual de cada um)
+// abilities each hero gains when going from stage n to n+1 (for the notice at the end of the stage)
+// (of the fielded party, with each one's current class)
 export const learned = (n: number, hero: Hero | null = null, group: Group = defaultGroup()) => n + 1 >= CHAPTERS.length ? [] : heroesFor(group, n + 1, hero)
   .map((u, i) => ({ name: u.name, abilities: u.abilities.filter((a) => !heroesFor(group, n, hero)[i].abilities.includes(a)) }))
   .filter((x) => x.abilities.length);
 const foe = (base: string, patch: Partial<DevUnit> = {}): DevUnit => ({ ...unitFrom(base), ...patch });
-// Vesper cresce a cada encontro (fuga na fase 4, luta final na 5). Elencos medidos em 12/11 (MEDIR=300 no
-// tests/campaign.test.ts, IA nos dois lados): vitória dos heróis 81% → 74% → 57% → 44% → 42% no Ato I e 40% → 19% no Ato II desde o dano x1,75, a direção, as árvores sem passagem e o vão só para baixo (13/11, batalhas de 35 a 54 turnos, antes 50 a 75; a fase 3 caiu a 16% e voltou com 2 arqueiros e 2 Lacaios de 28 de vida, a 5 subiu a 60% e voltou com o Vesper de 105). Antes disso, 83% → 72% → 66% → 39% → 30% e 56% → 31%, com o salto por classe, o vão e a água rasa (sem o vão, a fase 2 dava 76% e a 4, 40%): o Soldado da fase 2 e o do Passo com 60 de vida, Soldado no lugar do Lacaio e os 2 arqueiros inteiros na Cripta, Guarda da cripta com 45, Vesper da fase 5 com 70 e o Vigia do cume com 33. Antes: 83% → 71% → 47% → 42% → 35% no Ato I (Colina com relevo desde 13/11, e o Vesper da fase 5 de 95 para 85 de vida: no relevo novo com 95 dava 29%, com 80 dava 40%; Cripta com relevo e um Arqueiro novato e Coração com relevo desde 13/11) (com os espinhos da Cripta; a fase 4 no mapa próprio, Coração da Cripta, com o fosso fundo: com o Lacaio dava 57%, com Soldado inteiro 15%, por isso o Guarda de 32 de vida e o Vesper com 90) e 47% → 26% no Ato II (Passo com relevo em zigue-zague desde 13/11: com ele a fase 7 caía a 4% com o cume no 5 e a 14% no 4, por isso o Vigia do cume, um arqueiro com 20 de vida; antes 39% → 21%; o Cume com o Cavaleiro do Véu no lugar do Soldado; com o Acólito no Passo no lugar do Mago sombrio; como 4º inimigo, no lugar do Lacaio, a fase caía a 8%) (4, 5 e 7 são de chefe; na 7, o Colosso 2x2 com 300 de vida), caindo fase a fase
-// (a 1ª, no Bosque, ensina). Medido de novo depois do ajuste do Tiro mirado na IA (ai.ts, W.ESCAPE).
-// Com as habilidades liberadas aos poucos, de novo em 12/11. Lacaio sozinho avança e morre cedo (cada um facilita
-// muito) e Soldado inteiro no lugar dele dificulta muito: o Recruta (Soldado com 25 de vida) fica no meio.
-// O que mais pesa: arqueiro esqueleto (na Colina, trocar o arqueiro por um Lacaio leva a fase de 67% a 98%) e a
-// velocidade do Vesper (8 → 9 vale mais que 15 de vida).
+// Vesper grows with each encounter (escape in stage 4, final fight in 5). Casts measured on Nov 12 (MEDIR=300 in
+// tests/campaign.test.ts, AI on both sides): hero win rate 81% → 74% → 57% → 44% → 42% in Act I and 40% → 19% in Act II since the x1.75 damage, the facing, the passage-less trees and the gap only downward (Nov 13, battles of 35 to 54 turns, before 50 to 75; stage 3 fell to 16% and came back with 2 archers and 2 Minions of 28 HP, stage 5 rose to 60% and came back with Vesper at 105). Before that, 83% → 72% → 66% → 39% → 30% and 56% → 31%, with the class jump, the gap and the shallow water (without the gap, stage 2 gave 76% and stage 4, 40%): the stage 2 Soldier and the Pass one with 60 HP, Soldier in place of the Minion and the 2 archers whole in the Crypt, Crypt Guard with 45, stage 5 Vesper with 70 and the summit Lookout with 33. Before that: 83% → 71% → 47% → 42% → 35% in Act I (Hill with relief since Nov 13, and the stage 5 Vesper from 95 to 85 HP: on the new relief at 95 it gave 29%, at 80 it gave 40%; Crypt with relief and a new Novice Archer, and Heart with relief since Nov 13) (with the Crypt spikes; stage 4 on its own map, Heart of the Crypt, with the deep moat: with the Minion it gave 57%, with a whole Soldier 15%, hence the Guard with 32 HP and Vesper with 90) and 47% → 26% in Act II (Pass with zigzag relief since Nov 13: with it stage 7 fell to 4% with the summit at 5 and 14% at 4, hence the summit Lookout, an archer with 20 HP; before 39% → 21%; the Summit with the Veil Knight in place of the Soldier; with the Acolyte in the Pass in place of the Dark Mage; as the 4th enemy, in place of the Minion, the stage fell to 8%) (4, 5 and 7 are boss stages; in 7, the 2x2 Colossus with 300 HP), falling stage by stage
+// (the 1st, in Ash Wood, teaches). Measured again after the Aimed Shot adjustment in the AI (ai.ts, W.ESCAPE).
+// With the abilities unlocked gradually, again on Nov 12. A lone Minion advances and dies early (each one makes it
+// much easier) and a whole Soldier in its place makes it much harder: the Recruit (Soldier with 25 HP) sits in the middle.
+// What weighs most: skeleton archer (on the Hill, swapping the archer for a Minion takes the stage from 67% to 98%) and
+// Vesper's speed (8 → 9 is worth more than 15 HP).
 const vesper = (hp: number, speed: number, abilities = ['firebolt', 'blast']) => foe('dark_mage', { name: 'Vesper', hp, speed, abilities });
 
 const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
@@ -74,7 +74,7 @@ export const CHAPTERS: Chapter[] = [
       L('merc', 'Nada pessoal. O mago sombrio quer os cristais que vocês levam.', 'Nothing personal. The dark mage wants the crystals you\'re carrying.'),
       L('tess', 'Então ele que venha buscar. Formação!', 'Then let him come and take them. Formation!'),
       L('hero', 'Ninguém encosta na caravana. Comigo!', 'No one touches the caravan. With me!'),
-      // dicas da 1ª fase: o jogo ainda não tem tutorial; quem abre a campanha aprende o básico aqui
+      // stage 1 hints: the game has no tutorial yet; whoever opens the campaign learns the basics here
       L('narr', 'Dica: na sua vez, Mover anda até uma casa marcada e Agir usa uma habilidade. Dá para fazer os dois, em qualquer ordem.', 'Tip: on your turn, Move walks to a lit tile and Act uses an ability. You can do both, in any order.'),
       L('narr', 'Dica: no rio fundo só se nada: quem está nele não ataca. A ponte e o vau raso são mais seguros; toda água gasta mais movimento. Segure Enter (ou ligue a Batalha rápida no menu do canto) para a vez do inimigo passar rápido.', 'Tip: in the deep river you can only swim: whoever is in it cannot attack. The bridge and the shallow ford are safer; all water costs more movement. Hold Enter (or turn on Fast battle in the corner menu) to speed up the enemy turn.'),
     ],
@@ -104,7 +104,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Cripta Alagada', 'The Flooded Crypt'],
     song: 'crypt',
-    light: 0.5, // debaixo do lago: meia-luz azulada ("cheiro de vela apagada")
+    light: 0.5, // under the lake: bluish half-light ("smell of a snuffed candle")
     setup: { map: 'flooded_crypt', heroes: party(2), enemies: [foe('skeleton_archer'), foe('skeleton_archer'), foe('minion', { hp: 28 }), foe('minion', { hp: 28 })] },
     intro: [
       L('narr', 'Água até os joelhos, pilares caídos e o cheiro de vela apagada.', 'Knee-deep water, fallen pillars and the smell of snuffed candles.'),
@@ -121,7 +121,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Coração da Cripta', 'The Heart of the Crypt'],
     song: 'boss',
-    light: 0.35, // mais fundo, mais escuro
+    light: 0.35, // deeper, darker
     boss: true,
     setup: { map: 'crypt_heart', heroes: party(3), enemies: [vesper(90, 9), foe('dark_mage'), foe('skeleton_archer'), foe('soldier', { name: 'Guarda da cripta', en: 'Crypt guard', hp: 45 })] },
     intro: [
@@ -141,7 +141,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['O Último Farol', 'The Last Beacon'],
     song: 'boss',
-    light: 0.3, // "o Véu já desce pela Colina": a mesma Colina da fase 2, agora no escuro
+    light: 0.3, // "the Veil already descends over the Hill": the same Hill as stage 2, now in the dark
     boss: true,
     setup: { map: 'beacon_hill', heroes: party(4), enemies: [vesper(105, 9, ['firebolt', 'shadow_wave']), foe('brute'), foe('skeleton_archer'), foe('soldier')] },
     intro: [
@@ -161,7 +161,7 @@ export const CHAPTERS: Chapter[] = [
       L('tess', 'Esperem. Se acabou... por que o Passo Gelado ainda brilha roxo lá em cima?', 'Wait. If it is over... why is Frost Pass still glowing purple up there?'),
     ],
   },
-  // Ato II (noite de 12/11): o Véu recuou para as montanhas, e quem chamava os mortos não era só o Vesper
+  // Act II (night of Nov 12): the Veil retreated to the mountains, and whoever called the dead wasn't only Vesper
   {
     title: ['O Passo Gelado', 'Frost Pass'],
     song: 'snow',
@@ -183,7 +183,7 @@ export const CHAPTERS: Chapter[] = [
   {
     title: ['A Sombra no Cume', 'The Shade on the Summit'],
     song: 'boss',
-    light: 0.15, // noite no cume; o sol nasce só no fim da conversa de saída
+    light: 0.15, // night on the summit; the sun rises only at the end of the exit conversation
     boss: true,
     setup: { map: 'frost_pass', heroes: party(6), enemies: [foe('colossus', { name: 'A Sombra', en: 'The Shade', hp: 300 }), foe('skeleton_archer', { name: 'Vigia do cume', en: 'Summit lookout', hp: 33 }), foe('veil_knight'), foe('minion')] },
     intro: [
@@ -206,10 +206,10 @@ export const CHAPTERS: Chapter[] = [
 ];
 
 export const chapterId = (n: number) => `camp${n}`;
-// Fase de chefe (boss: true, o 1º inimigo da lista, id e0): derrubar o chefe vence, mesmo com outros de pé; perder todos
-// os heróis (ou o Farol, se houver) perde. Pede outra tática: abrir caminho até ele em vez de limpar o mapa.
-// `eq`: equipamento salvo de cada membro (chest.ts) e `group`: quem vai à batalha (group.ts); a medição da dificuldade
-// roda sem os dois (o grupo da história, sem itens)
+// Boss stage (boss: true, the 1st enemy in the list, id e0): downing the boss wins, even with others still standing; losing all
+// heroes (or the Lighthouse, if there is one) loses. Calls for another tactic: cut a path to him instead of clearing the map.
+// `eq`: each member's saved equipment (chest.ts) and `group`: who goes to battle (group.ts); the difficulty measurement
+// runs without both (the story party, no items)
 export function chapterScenario(n: number, hero: Hero | null = null, eq: Equip = {}, group: Group = defaultGroup()): Scenario {
   const s = buildDevScenario({ ...CHAPTERS[n].setup, heroes: heroesFor(group, n, hero, eq) }, chapterId(n), CHAPTERS[n].title);
   if (CHAPTERS[n].boss) {
@@ -224,7 +224,7 @@ export function chapterScenario(n: number, hero: Hero | null = null, eq: Equip =
   return s;
 }
 
-// o que espera na fase, para o painel do mapa (FFT mostra o inimigo antes de entrar): "4 inimigos · chefe: Vesper"
+// what awaits in the stage, for the map panel (FFT shows the enemy before entering): "4 enemies · boss: Vesper"
 export function foesText(n: number, say: (pt: string, en: string) => string): string {
   const c = CHAPTERS[n];
   const count = c.setup.enemies.length;
@@ -232,7 +232,7 @@ export function foesText(n: number, say: (pt: string, en: string) => string): st
   return say(`${count} inimigos${boss ? ` · chefe: ${boss.name}` : ''}`, `${count} enemies${boss ? ` · boss: ${boss.en ?? boss.name}` : ''}`);
 }
 
-// objetivo da fase em uma frase, anunciado no começo da batalha (como a faixa de objetivo do FFT)
+// stage objective in one sentence, announced at the start of the battle (like FFT's objective banner)
 export function objectiveText(n: number, say: (pt: string, en: string) => string): string {
   const c = CHAPTERS[n];
   const beacon = slotsOf(c.setup.map).objective.length > 0;
@@ -243,7 +243,7 @@ export function objectiveText(n: number, say: (pt: string, en: string) => string
   return beacon ? say('Derrote os inimigos e proteja o Farol!', 'Defeat the enemies and protect the Beacon!') : say('Derrote todos os inimigos!', 'Defeat every enemy!');
 }
 
-// progresso salvo no navegador (fronteira de confiança): inteiro entre 0 e o número de fases, senão 0
+// progress saved in the browser (trust boundary): integer between 0 and the number of stages, otherwise 0
 export function parseProgress(raw: unknown): number {
   const n = Number(raw);
   return Number.isInteger(n) && n >= 0 && n <= CHAPTERS.length ? n : 0;

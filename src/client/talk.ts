@@ -1,6 +1,6 @@
-// Caixa de fala da campanha: retrato, nome e o texto aparecendo letra a letra com o bipe de quem fala. Clique, Enter,
-// Espaço ou A completam a frase e, completa, passam para a próxima; Esc pula a conversa toda. É um botão dentro de um
-// .overlay, então o teclado, o mouse e o controle (main.ts aperta o botão em foco) chegam pelo mesmo clique.
+// Campaign speech box: portrait, name and the text appearing letter by letter with the speaker's beep. Click, Enter,
+// Space or A complete the sentence and, once complete, move to the next; Esc skips the whole conversation. It's a button inside an
+// .overlay, so keyboard, mouse and gamepad (main.ts presses the focused button) arrive through the same click.
 import { SPEAKERS, type Line } from './campaign.ts';
 import type { Hero } from './hero.ts';
 import { portrait } from './hud.ts';
@@ -9,17 +9,17 @@ import { el } from './icons.ts';
 import { blip } from './sound.ts';
 import { store } from './store.ts';
 
-// Velocidade do texto (menu, dt:texto): Normal ~35 letras por segundo, no ritmo de quem lê devagar sem cansar quem lê rápido;
-// Rápida ~3 vezes isso; Instantânea mostra a frase inteira (pedido comum em RPG tático, noite de 12/11)
+// Text speed (menu, dt:texto): Normal ~35 letters per second, the pace of someone reading slowly without tiring fast readers;
+// Fast ~3 times that; Instant shows the whole sentence (a common request in tactical RPGs, night of Nov 12)
 export const TEXT_KEY = 'dt:texto';
 export type TextSpeed = 'normal' | 'fast' | 'instant';
 const CHAR_MS: Record<TextSpeed, number> = { normal: 28, fast: 10, instant: 0 };
 export const textSpeed = (): TextSpeed => { const v = store.get(TEXT_KEY); return v === 'fast' || v === 'instant' ? v : 'normal'; };
 
 export interface TalkOptions {
-  title?: string; // faixa acima da caixa (nome da fase ou do lugar)
-  hero?: Hero | null; // o protagonista: nome e retrato das falas de 'hero' (sem herói, "Você" com o Guerreiro)
-  dark?: true; // tela quase preta atrás (abertura da história)
+  title?: string; // strip above the box (stage or place name)
+  hero?: Hero | null; // the protagonist: name and portrait of the 'hero' lines (without a hero, "You" with the Warrior)
+  dark?: true; // nearly black screen behind (story opening)
 }
 
 export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Promise<void> {
@@ -29,7 +29,7 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
     const name = el('strong', { class: 'talk-name' });
     const text = el('p', { class: 'talk-text', 'aria-live': 'polite' });
     const box = el('button', { type: 'button', class: 'panel talk' }, face, el('div', { class: 'talk-body' }, name, text), el('span', { class: 'talk-next', 'aria-hidden': 'true' }, '▼'),
-      // dica discreta: quem não sabia que Esc pulava a conversa inteira passava fala por fala
+      // discreet hint: whoever didn't know Esc skipped the whole conversation went through line by line
       el('span', { class: 'talk-keys' }, t('Enter segue · Esc pula', 'Enter next · Esc skip'))) as HTMLButtonElement;
     const overlay = el('div', { class: `overlay talk-overlay${dark ? ' dark' : ''}` }, ...(title ? [el('div', { class: 'panel talk-title' }, title)] : []), box);
     const full = () => (LANG === 'pt' ? lines[i].pt : lines[i].en);
@@ -43,15 +43,15 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
     const show = () => {
       const base = SPEAKERS[lines[i].who];
       const who = lines[i].who === 'hero' && hero ? { ...base, name: hero.name, en: hero.name, def: hero.cls } : base;
-      // quem fala mudou: o retrato dá um pulinho (reinicia a animação do CSS)
+      // speaker changed: the portrait does a little hop (restarts the CSS animation)
       if (i === 0 || lines[i - 1].who !== lines[i].who) {
         face.classList.remove('pop');
         void face.offsetWidth;
         face.classList.add('pop');
       }
       face.replaceChildren(portrait(who.def));
-      name.textContent = LANG === 'en' && 'en' in who ? who.en : who.name; // nomes próprios são iguais nas duas línguas
-      name.hidden = face.hidden = !who.name; // narrador: sem retrato nem nome
+      name.textContent = LANG === 'en' && 'en' in who ? who.en : who.name; // proper names are the same in both languages
+      name.hidden = face.hidden = !who.name; // narrator: no portrait or name
       shown = 0;
       text.textContent = '';
       box.classList.remove('done');
@@ -60,7 +60,7 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
         const s = full();
         shown++;
         text.textContent = s.slice(0, shown);
-        // uma letra sim, outra não (na rápida, 1 em 4): bipe sem metralhar
+        // every other letter (on fast, 1 in 4): beep without machine-gunning
         if (shown % (textSpeed() === 'fast' ? 4 : 2) === 1 && /\p{L}/u.test(s[shown - 1])) blip(who.pitch);
         if (!typing()) {
           clearInterval(timer);
@@ -68,7 +68,7 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
         }
       }, CHAR_MS[textSpeed()] || 1);
       if (!CHAR_MS[textSpeed()]) {
-        // instantânea: a frase inteira de uma vez, com um bipe só para marcar quem fala
+        // instant: the whole sentence at once, with a single beep to mark who speaks
         clearInterval(timer);
         shown = full().length;
         text.textContent = full();
@@ -86,7 +86,7 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
       else end();
     });
     const onEsc = (e: KeyboardEvent) => {
-      // Enter ou Espaço seguro (o jeito de acelerar a vez do inimigo) repetiria o clique e pularia as falas sem leitura
+      // held Enter or Space (the way to speed up the enemy's turn) would repeat the click and skip the lines unread
       if (e.repeat && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
         e.stopPropagation();

@@ -1,6 +1,6 @@
-// Menu de comandos no jeito do FFT (pedido do Fernando, 12/11: "recrie a interface do mesmo jeito da do final fantasy
-// tactics"): Mover · Agir · Esperar · Status, com o submenu das habilidades em Agir. Puro (sem DOM): o que cada tela do
-// turno mostra e o que vem depois de cada tecla. O Game executa; o HUD só desenha.
+// Command menu FFT style (Fernando's request, Nov 12: "recreate the interface the same way as Final Fantasy
+// Tactics"): Move · Act · Wait · Status, with the abilities submenu under Act. Pure (no DOM): what each turn
+// screen shows and what follows each key. The Game executes; the HUD only draws.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { isDeep, tileAt } from '../shared/battle/grid.ts';
@@ -10,8 +10,8 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 export type Command = 'move' | 'act' | 'wait' | 'status';
 export const COMMANDS: Command[] = ['move', 'act', 'wait', 'status'];
 
-// Telas do turno do herói, na ordem do FFT: menu → (submenu de Agir) → mapa (escolher casa) → "Executar?" → menu.
-// Esperar leva à escolha de direção (todo mapa desde 13/11).
+// Hero turn screens, in FFT order: menu → (Act submenu) → map (pick tile) → "Execute?" → menu.
+// Wait leads to the facing choice (every map since Nov 13).
 export type Screen =
   | { k: 'menu'; index: number }
   | { k: 'abilities'; index: number }
@@ -19,13 +19,13 @@ export type Screen =
   | { k: 'confirm'; ability: string; target: Pos; yes: boolean }
   | { k: 'facing' };
 
-// Andou e ainda não agiu: a linha Mover vira "Desfazer movimento" e o Esc no menu desfaz (13/11, pedido do Fernando,
-// como no Tactics Ogre). Andar não sorteia nada, então desfazer é de graça; depois de agir, só o Z (que gasta um desfazer)
-// desde 13/11 também depois de agir ("depois de atacar e mover pode desfazer o movimento"), se o último passo foi andar
-// sem levar contra-ataque (Battle.lastFree)
+// Moved and not yet acted: the Move row becomes "Undo move" and Esc in the menu undoes it (Nov 13, Fernando's request,
+// like Tactics Ogre). Moving draws nothing random, so undoing is free; after acting, only Z (which spends an undo)
+// since Nov 13 also after acting ("after attacking and moving you can undo the move"), if the last step was a move
+// that took no counterattack (Battle.lastFree)
 export const canUndoMove = (b: Battle) => b.state.turn.moved && b.lastFree && b.canUndo;
 
-// na água funda só se anda ou espera (13/11, escolha do Fernando; a regra está em previewAbility)
+// in deep water you can only move or wait (Nov 13, Fernando's choice; the rule is in previewAbility)
 export const swimming = (b: Battle) => isDeep(tileAt(b.grid, b.actor.pos));
 
 export function commandEnabled(b: Battle, c: Command): boolean {
@@ -34,23 +34,23 @@ export function commandEnabled(b: Battle, c: Command): boolean {
   return true;
 }
 
-// habilidade que dá para escolher agora: sem estoque ou MP fica apagada, como no FFT
+// ability you can pick right now: without stock or MP it's grayed out, as in FFT
 export function abilityEnabled(b: Battle, id: string): boolean {
   const cost = ABILITIES[id].cost;
   return !cost || (b.actor.vars?.[cost[0]] ?? 0) >= cost[1];
 }
 export const abilitiesOf = (b: Battle) => UNIT_DEFS[b.actor.def].abilities;
-// alcance da habilidade que vai mais longe (o pontilhado em volta de quem joga)
+// range of the farthest-reaching ability (the dotted line around the player)
 export const longestRange = (b: Battle) => Math.max(0, ...abilitiesOf(b).map((id) => ABILITIES[id].range[1]));
 
-// onde o cursor do menu começa: Mover se ainda dá para andar, senão Agir, senão Esperar. O "Desfazer movimento" não
-// pega o cursor: o 2º Enter depois de andar desfaria o passo sem querer
+// where the menu cursor starts: Move if you can still move, otherwise Act, otherwise Wait. "Undo move" doesn't
+// take the cursor: a 2nd Enter after moving would undo the step by accident
 export function startScreen(b: Battle): Screen {
-  // já andou e ainda não agiu: Agir (o resto do movimento fica para depois do golpe)
+  // already moved and not yet acted: Act (the rest of the movement is left for after the hit)
   return { k: 'menu', index: b.reach().size && !b.state.turn.moved ? 0 : commandEnabled(b, 'act') ? 1 : b.reach().size ? 0 : 2 };
 }
 
-// sobe ou desce no menu pulando o que está apagado, dando a volta como no FFT
+// moves up or down the menu skipping what's grayed out, wrapping around as in FFT
 export function stepIndex(index: number, dir: 1 | -1, enabled: boolean[]): number {
   for (let k = 1; k <= enabled.length; k++) {
     const i = (index + dir * k + enabled.length * k) % enabled.length;

@@ -1,4 +1,4 @@
-// Preferências guardadas no navegador. localStorage pode falhar (aba anônima, dados bloqueados): cai para a memória e vale só nesta aba.
+// Preferences stored in the browser. localStorage can fail (incognito tab, blocked data): falls back to memory and is valid only in this tab.
 const memory = new Map<string, string>();
 
 export const store = {
@@ -14,10 +14,10 @@ export const store = {
     try {
       localStorage.setItem(k, v);
     } catch {
-      // só na memória
+      // memory only
     }
   },
-  // Ausente ou sintaxe inválida = null; cada consumidor valida o formato antes de usar.
+  // Missing or invalid syntax = null; each consumer validates the format before using.
   json(k: string): unknown {
     try {
       return JSON.parse(store.get(k) ?? 'null');

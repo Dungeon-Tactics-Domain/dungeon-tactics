@@ -1,7 +1,7 @@
-// Menu de desenvolvedor (pedido do Fernando, 12/11: "criar um menu de desenvolvedor para ir construindo os personagens,
-// fazendo as parties e ir escolhendo qual mapa participar"). Puro: monta, valida e transforma o elenco num cenário.
-// Decisões dele (múltipla escolha, 12/11): edita classe, nome e números; monta heróis e inimigos; as unidades ocupam as
-// casas de partida do mapa; salva no navegador e exporta/importa JSON.
+// Developer menu (Fernando's request, Nov 12: "create a developer menu to go building the characters,
+// making the parties and choosing which map to take part in"). Pure: assembles, validates and turns the cast into a scenario.
+// His decisions (multiple choice, Nov 12): edits class, name and numbers; builds heroes and enemies; the units occupy the
+// map's starting tiles; saves in the browser and exports/imports JSON.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { bonusOf, type Loadout } from '../shared/battle/equipment.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
@@ -12,14 +12,14 @@ import { OBJECTIVE_DEF, UNIT_DEFS } from '../shared/battle/units.ts';
 import { modelOf } from './markers.ts';
 
 export interface DevUnit {
-  base: string; // classe de partida (id em UNIT_DEFS): dá o boneco e os números iniciais
+  base: string; // starting class (id in UNIT_DEFS): gives the figure and the initial numbers
   name: string;
-  en?: string; // nome em inglês, quando o nome é traduzível (Recruta, A Sombra); o menu de desenvolvedor não usa
+  en?: string; // English name, when the name is translatable (Recruta, A Sombra); the developer menu doesn't use it
   hp: number;
   speed: number;
   move: number;
-  jump?: number; // Salto (13/11); opcional para os elencos salvos antes dele abrirem iguais (sem ele, o da classe)
-  items?: Loadout; // equipamento (13/11, equipment.ts): soma na ficha da batalha
+  jump?: number; // Jump (Nov 13); optional so casts saved before it open the same (without it, the class's)
+  items?: Loadout; // equipment (Nov 13, equipment.ts): adds to the battle sheet
   abilities: string[];
 }
 export interface DevSetup {
@@ -28,17 +28,17 @@ export interface DevSetup {
   enemies: DevUnit[];
 }
 
-export const DEV_KEY = 'dt:dev'; // elenco salvo no navegador
+export const DEV_KEY = 'dt:dev'; // cast saved in the browser
 export const DEV_SCENARIO = 'dev';
-// mapas que o menu oferece: os do jogo e o relevo de Gariland (só o mapa: o estudo é carregado à parte, ver main.ts)
+// maps the menu offers: the game's and the Gariland relief (the map only: the study is loaded separately, see main.ts)
 export const DEV_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart', 'ash_wood', 'frost_pass', 'fft-gariland'];
-// limites dos números editáveis: largos para testar, mas sem quebrar a fila de turnos (velocidade 0 nunca joga)
+// limits of the editable numbers: wide for testing, but without breaking the turn queue (speed 0 never plays)
 export const LIMITS = { hp: [1, 999], speed: [1, 50], move: [1, 12], jump: [1, 6] } as const;
 const MAX_TEAM = 12;
 
-// classes e habilidades do jogo (as do estudo FFT dependem das regras do estudo e ficam de fora)
+// game classes and abilities (the FFT study's depend on the study's rules and are left out)
 const ours = (id: string) => !id.startsWith('fft_') && !id.startsWith('dev-');
-// unidade grande (size) fica de fora: as casas de partida dos mapas são de 1 casa
+// large unit (size) is left out: the maps' starting tiles are 1 tile
 export const devClasses = () => Object.keys(UNIT_DEFS).filter((id) => ours(id) && id !== OBJECTIVE_DEF && !UNIT_DEFS[id].size);
 export const devAbilities = () => Object.keys(ABILITIES).filter(ours);
 
@@ -47,7 +47,7 @@ export function unitFrom(base: string, name = UNIT_DEFS[base].name): DevUnit {
   return { base, name, hp: d.hp, speed: d.speed, move: d.move, jump: d.jump ?? MAX_JUMP, abilities: [...d.abilities] };
 }
 
-// casas de partida do mapa por lado (o Farol à parte: é o objetivo, não entra na party)
+// map starting tiles per side (the Lighthouse aside: it's the objective, not part of the party)
 export function slotsOf(map: string): Record<Team, Spawn[]> & { objective: Spawn[] } {
   const spawns = SCENARIOS[map]?.spawns ?? [];
   return {
@@ -57,7 +57,7 @@ export function slotsOf(map: string): Record<Team, Spawn[]> & { objective: Spawn
   };
 }
 
-// o elenco padrão de um mapa é quem já nasce nele; em Gariland (unidades do estudo) entram as nossas classes em rodízio
+// a map's default cast is whoever is born on it; in Gariland (study units) our classes come in rotation
 const FALLBACK: Record<Team, string[]> = { hero: ['warrior', 'archer', 'mage', 'rogue'], enemy: ['soldier', 'skeleton_archer', 'dark_mage', 'brute'] };
 export function defaultSetup(map: string): DevSetup {
   const s = slotsOf(map);
@@ -65,7 +65,7 @@ export function defaultSetup(map: string): DevSetup {
   return { map, heroes: pick(s.hero, 'hero'), enemies: pick(s.enemy, 'enemy') };
 }
 
-// O que impede de começar, em texto para o jogador (vazio = pode começar)
+// What prevents starting, as text for the player (empty = can start)
 export function problems(setup: DevSetup, say: (pt: string, en: string) => string): string[] {
   const out: string[] = [];
   const s = slotsOf(setup.map);
@@ -80,7 +80,7 @@ export function problems(setup: DevSetup, say: (pt: string, en: string) => strin
 
 const isInt = (v: unknown, [lo, hi]: readonly [number, number]) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
 
-// Fronteira de confiança: o JSON vem de arquivo importado ou do navegador. Só passa o formato conhecido, nada mais.
+// Trust boundary: the JSON comes from an imported file or the browser. Only the known format passes, nothing else.
 export function parseSetup(raw: unknown): DevSetup | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -104,18 +104,18 @@ export function parseSetup(raw: unknown): DevSetup | null {
   return heroes && enemies ? { map: r.map, heroes, enemies } : null;
 }
 
-// Mapa sem o Farol (Gariland): sem objetivo, vence quem sobrar; a regra padrão daria derrota na hora (sem Farol = perdeu)
+// Map without the Lighthouse (Gariland): no objective, last one standing wins; the default rule would give an instant defeat (no Lighthouse = lost)
 const lastStanding: Rules = {
   outcome: (state) => (!state.units.some((u) => u.team === 'enemy') ? 'victory' : !state.units.some((u) => u.team === 'hero') ? 'defeat' : 'ongoing'),
 };
 
-// Transforma o elenco num cenário: cada unidade vira uma ficha própria (dev-h0, dev-e1…) com o boneco da classe de partida
-// e ocupa as casas de partida do mapa na ordem. Registra as fichas e o cenário nas listas do motor.
-// classe de origem de cada ficha montada aqui (dev-h0 → warrior): o HUD mostra "Bran · Guerreiro"
+// Turns the cast into a scenario: each unit becomes its own sheet (dev-h0, dev-e1…) with the figure of the starting class
+// and occupies the map's starting tiles in order. Registers the sheets and the scenario in the engine's lists.
+// origin class of each sheet assembled here (dev-h0 → warrior): the HUD shows "Bran · Guerreiro"
 const BASE: Record<string, string> = {};
 export const classOf = (def: string): string | undefined => BASE[def];
 
-// A campanha (campaign.ts) usa o mesmo caminho com id e nome próprios por fase.
+// The campaign (campaign.ts) uses the same path with its own id and name per stage.
 export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, title: [string, string] = ['Desenvolvedor', 'Developer']): Scenario {
   const base = SCENARIOS[setup.map];
   const s = slotsOf(setup.map);
@@ -123,11 +123,11 @@ export function buildDevScenario(setup: DevSetup, scenarioId = DEV_SCENARIO, tit
   const add = (units: DevUnit[], slots: Spawn[], team: Team, tag: string) =>
     units.slice(0, slots.length).forEach((u, i) => {
       const id = `${scenarioId}-${tag}${i}`;
-      // nome sem mudar = o da classe nas duas línguas; nome próprio (Bran, Vesper) é igual nas duas; en só se vier no elenco
+      // unchanged name = the class's in both languages; own name (Bran, Vesper) is the same in both; en only if it comes in the cast
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
       BASE[id] = u.base;
-      // o tamanho vem da classe (o Colosso da campanha ocupa 2x2 como o original)
-      const b = bonusOf(u.items); // equipamento: soma de stats gerais (equipment.ts), 0 sem item
+      // size comes from the class (the campaign's Colossus occupies 2x2 like the original)
+      const b = bonusOf(u.items); // equipment: sum of general stats (equipment.ts), 0 without an item
       UNIT_DEFS[id] = { ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }), jump: (u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP) + b.jump,
         ...(b.power && { power: b.power }), ...(b.hit && { hit: b.hit }), ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }), id, name: u.name, en, hp: u.hp + b.hp, speed: Math.max(1, u.speed + b.speed), move: u.move + b.move, abilities: [...u.abilities], model: modelOf(u.base) };
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });

@@ -1,5 +1,5 @@
-// Idioma do jogo: português ou inglês. Lido uma vez ao carregar; trocar grava e recarrega a página (herdado do Warlock).
-// Texto curto: t('pt', 'en') no ponto de uso. Nomes de unidade e habilidade: o campo `en` ao lado do pt em src/shared/battle.
+// Game language: Portuguese or English. Read once on load; switching saves and reloads the page (inherited from the Warlock).
+// Short text: t('pt', 'en') at the point of use. Unit and ability names: the `en` field beside the pt in src/shared/battle.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { store } from './store.ts';
@@ -7,7 +7,7 @@ import { store } from './store.ts';
 export type Lang = 'pt' | 'en';
 export const LANG_KEY = 'dt:lang';
 
-// escolha salva vale; sem ela, navegador em português (pt, pt-BR, pt-PT) abre em português e o resto em inglês
+// saved choice wins; without it, a Portuguese browser (pt, pt-BR, pt-PT) opens in Portuguese and the rest in English
 export const pickLang = (saved: string | null, nav: string | undefined): Lang =>
   saved === 'pt' || saved === 'en' ? saved : /^pt\b/i.test(nav ?? '') ? 'pt' : 'en';
 

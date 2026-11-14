@@ -1,5 +1,5 @@
-// O que o toque faz na batalha, sem DOM nem Three (testável): modo da barra, casa escolhida esperando o Confirmar e
-// unidade em inspeção. A cena e o HUD só desenham o que `highlights` devolve.
+// What touch does in battle, without DOM or Three (testable): bar mode, chosen tile waiting for Confirm and
+// unit under inspection. The scene and the HUD only draw what `highlights` returns.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
@@ -11,9 +11,9 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 export type Mode = { k: 'move' } | { k: 'ability'; id: string } | { k: 'idle' };
 export interface Ui {
   mode: Mode;
-  pending: Pos | null; // casa escolhida; só vira ação no Confirmar (spec: 2º toque escolhe, botão executa)
-  inspect: string | null; // unidade tocada para ver vida e ameaça
-  invalid: boolean; // o último toque caiu numa casa que não serve: o cartão avisa em vez de ficar mudo
+  pending: Pos | null; // chosen tile; only becomes an action on Confirm (spec: 2nd tap picks, button executes)
+  inspect: string | null; // unit tapped to see HP and threat
+  invalid: boolean; // the last tap landed on a tile that doesn't work: the card warns instead of staying silent
 }
 export type TileKind = 'actor' | 'move' | 'range' | 'blocked' | 'threat' | 'area' | 'target';
 export interface Highlights {
@@ -24,22 +24,22 @@ export interface Highlights {
 
 const selfCentered = (id: string) => ABILITIES[id].range[1] === 0;
 
-// alguma casa com unidade aceita a habilidade daqui e ela pega quem deve (inimigo, ou aliado na cura): uma área
-// que só pegaria o aliado ao lado não conta como alvo
+// some tile with a unit accepts the ability from here and it hits who it should (enemy, or ally for healing): an area
+// that would only hit the ally next to it doesn't count as a target
 function hasTarget(b: Battle, id: string): boolean {
   const heal = ABILITIES[id].heal[1] > 0;
-  // qualquer casa da unidade (a grande ocupa 4; só uma delas pode estar no alcance)
+  // any tile of the unit (the large one occupies 4; only one of them may be in range)
   return b.state.units.some((u) => footprint(u).some((p) => b.preview(id, p).targets.some((tg) => {
     const hit = b.state.units.find((x) => x.id === tg.unit)!;
     return heal === (hit.team === b.actor.team);
   })));
 }
 
-// sem andar ainda: Mover; já andou: a primeira habilidade que tem alvo daqui (sem alvo, nenhuma: escolher a Facada
-// longe de todo mundo só pedia um toque impossível)
+// not moved yet: Move; already moved: the first ability that has a target from here (no target, none: picking Stab
+// far from everyone only asked for an impossible tap)
 export function defaultMode(b: Battle): Mode {
   if (b.over) return { k: 'idle' };
-  if (b.reach().size && !b.state.turn.moved) return { k: 'move' }; // já andou: o padrão é agir (o resto do movimento fica para depois)
+  if (b.reach().size && !b.state.turn.moved) return { k: 'move' }; // already moved: the default is to act (the rest of the movement is left for after)
   const id = !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.find((a) => hasTarget(b, a));
   return id ? { k: 'ability', id } : { k: 'idle' };
 }
@@ -47,7 +47,7 @@ export function defaultMode(b: Battle): Mode {
 const allowed = (b: Battle, m: Mode) =>
   m.k === 'idle' || (m.k === 'move' ? b.reach().size > 0 : !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.includes(m.id));
 
-// habilidade centrada em quem usa já nasce com o alvo marcado: não há casa para escolher
+// ability centered on the user is born with the target already marked: there's no tile to choose
 const withMode = (b: Battle, mode: Mode): Ui => ({ mode, pending: mode.k === 'ability' && selfCentered(mode.id) ? b.actor.pos : null, inspect: null, invalid: false });
 
 export const freshUi = (b: Battle): Ui => withMode(b, defaultMode(b));
@@ -59,15 +59,15 @@ export function tapTile(b: Battle, ui: Ui, pos: Pos): Ui {
   if (mode.k === 'move' && b.reach().has(posKey(pos))) return { ...ui, pending: pos, inspect: null, invalid: false };
   if (mode.k === 'ability' && !selfCentered(mode.id) && b.preview(mode.id, pos).ok) return { ...ui, pending: pos, inspect: null, invalid: false };
   if (other && other.id !== b.actor.id) return { ...withMode(b, mode), inspect: other.id };
-  // tocar no próprio herói limpa a escolha; casa vazia que não serve também, mas avisa
+  // tapping your own hero clears the choice; so does an empty tile that doesn't work, but it warns
   return { ...withMode(b, mode), invalid: !other && mode.k !== 'idle' };
 }
 
-// Cursor do teclado: passar por cima já mostra a prévia (caminho ou % de acerto), como no FFT; Enter executa.
-// Casa que não serve só limpa a escolha: aviso a cada passo do cursor seria barulho.
+// Keyboard cursor: hovering already shows the preview (path or hit %), as in FFT; Enter executes.
+// A tile that doesn't work only clears the choice: a warning on every cursor step would be noise.
 export const hoverTile = (b: Battle, ui: Ui, pos: Pos): Ui => ({ ...tapTile(b, ui, pos), invalid: false });
 
-// Esc: primeiro solta a casa marcada e a inspeção; de novo, volta da habilidade para Mover (se ainda não andou)
+// Esc: first releases the marked tile and the inspection; again, goes back from the ability to Move (if not moved yet)
 export function cancel(b: Battle, ui: Ui): Ui {
   if (ui.pending || ui.inspect) return { ...withMode(b, ui.mode), pending: null };
   if (ui.mode.k === 'ability' && !b.state.turn.moved) return withMode(b, { k: 'move' });
@@ -77,7 +77,7 @@ export function cancel(b: Battle, ui: Ui): Ui {
 export function confirm(b: Battle, ui: Ui): { events: BattleEvent[]; ui: Ui } {
   if (!ui.pending || ui.mode.k === 'idle') return { events: [], ui };
   const events = ui.mode.k === 'move' ? b.move(ui.pending) : b.act(ui.mode.id, ui.pending);
-  // quem anda pode cair no contra-ataque (13/11): sem ator, o Ui fica como estava e o jogo passa a vez
+  // whoever moves may fall into the counterattack (Nov 13): without an actor, the Ui stays as it was and the game passes the turn
   const alive = b.state.units.some((u) => u.id === b.state.turn.actor);
   return { events, ui: events.length && alive ? freshUi(b) : ui };
 }
@@ -88,8 +88,8 @@ function allTiles(b: Battle): Pos[] {
   return out;
 }
 
-// O que a unidade pode atingir no próximo turno dela: andar e depois usar qualquer habilidade (sem conferir visão;
-// é o "alcance do inimigo" do pilar de puzzle, um aviso largo e não a previsão exata)
+// What the unit can hit on its next turn: move and then use any ability (without checking sight;
+// it's the "enemy range" of the puzzle pillar, a wide warning and not the exact prediction)
 function threat(b: Battle, unitId: string): Pos[] {
   const u = b.state.units.find((x) => x.id === unitId)!;
   const def = UNIT_DEFS[u.def];
@@ -127,12 +127,12 @@ export function highlights(b: Battle, ui: Ui): Highlights {
   return { tiles: [...tiles.values()], path, preview };
 }
 
-// Casas que as cargas na fila vão atingir (noite de 12/11): a magia com carga segue a unidade (follow) e a do Tiro mirado
-// fica na casa; a área é o raio da habilidade em volta. A cena pinta de roxo e o HUD diz em texto, para dar tempo de sair.
+// Tiles the queued charges will hit (night of Nov 12): a charged spell follows the unit (follow) and the Aimed Shot's
+// stays on its tile; the area is the ability's radius around it. The scene paints it purple and the HUD says it in text, to give time to leave.
 export function chargeDanger(state: BattleState, width: number, height: number): Map<string, string> {
-  const out = new Map<string, string>(); // casa -> habilidade que cai nela
+  const out = new Map<string, string>(); // tile -> ability that lands on it
   for (const c of state.charges) {
-    // mesma conta da carga ao sair (turn-queue.ts): unidade grande seguida, a casa dela mais perto de quem lança
+    // same calculation as the charge when leaving (turn-queue.ts): large unit followed, its tile closest to the caster
     const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
     const caster = state.units.find((u) => u.id === c.unit);
     const center = followed ? (caster ? nearestTile(followed, caster.pos) : followed.pos) : c.target;

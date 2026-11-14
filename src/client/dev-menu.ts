@@ -1,6 +1,6 @@
-// Tela do menu de desenvolvedor (pedido do Fernando, 12/11): escolhe o mapa, monta heróis e inimigos (classe, nome,
-// vida, velocidade, movimento e habilidades), salva no navegador, exporta e importa JSON e começa a batalha.
-// As regras do elenco ficam em dev-roster.ts (puro, testado); aqui só a tela.
+// Developer menu screen (Fernando's request, Nov 12): picks the map, builds heroes and enemies (class, name,
+// HP, speed, movement and abilities), saves in the browser, exports and imports JSON and starts the battle.
+// The cast rules live in dev-roster.ts (pure, tested); here it's only the screen.
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -19,7 +19,7 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
 
   const number = (label: string, value: number, [lo, hi]: readonly [number, number], set: (v: number) => void) => {
     const input = el('input', { type: 'number', min: String(lo), max: String(hi), value: String(value), 'aria-label': label }) as HTMLInputElement;
-    // fora dos limites volta para o mais perto: o JSON salvo nunca fica inválido
+    // out of limits goes back to the nearest: the saved JSON never becomes invalid
     input.addEventListener('change', () => {
       const v = Math.min(hi, Math.max(lo, Math.round(Number(input.value) || lo)));
       input.value = String(v);
@@ -36,9 +36,9 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
     };
     const cls = el('select', { 'aria-label': t('Classe', 'Class') },
       ...devClasses().map((id) => el('option', { value: id, ...(id === u.base && { selected: '' }) }, unitName(id)))) as HTMLSelectElement;
-    // trocar a classe recomeça os números e as habilidades pelos da classe (o nome fica, se foi mudado)
+    // changing the class restarts the numbers and abilities from the class's (the name stays, if it was changed)
     cls.addEventListener('change', () => {
-      const now = list[i]; // o nome pode ter mudado depois do último desenho da linha
+      const now = list[i]; // the name may have changed since the row was last drawn
       const keepName = now.name !== UNIT_DEFS[now.base].name;
       edit(unitFrom(cls.value, keepName ? now.name : UNIT_DEFS[cls.value].name), true);
     });
@@ -48,7 +48,7 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
       el('summary', {}, t(`Habilidades (${u.abilities.length})`, `Abilities (${u.abilities.length})`)),
       ...devAbilities().map((id) => {
         const box = el('input', { type: 'checkbox', ...(u.abilities.includes(id) && { checked: '' }) }) as HTMLInputElement;
-        // a ordem da lista é a do menu de habilidades; a 1ª marcada é o ataque básico
+        // the list order is the ability menu's; the 1st checked is the basic attack
         box.addEventListener('change', () => edit({ abilities: box.checked ? [...list[i].abilities, id] : list[i].abilities.filter((a) => a !== id) }, true));
         return el('label', { class: 'dev-check' }, box, abilityName(id));
       }));
@@ -99,7 +99,7 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
     const issues = problems(setup, t);
     body.replaceChildren(
       choice(t('Mapa', 'Map'), DEV_MAPS.filter((m) => SCENARIOS[m]).map((m) => [m, mapName(m)] as [string, string]), setup.map, (map) => {
-        // trocar de mapa mantém as parties e só corta o que não cabe nas casas de partida do mapa novo
+        // switching maps keeps the parties and only cuts what doesn't fit the new map's starting tiles
         const s = slotsOf(map);
         setup = { map, heroes: setup.heroes.slice(0, s.hero.length), enemies: setup.enemies.slice(0, s.enemy.length) };
         save();

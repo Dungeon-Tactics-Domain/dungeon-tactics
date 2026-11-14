@@ -1,6 +1,6 @@
-// Baú do grupo e equipamento de cada um (13/11, entrega 2 do desenho docs/game-design/cidades-grupo-equipamento.md):
-// ouro e itens guardados no navegador; o equipamento fica pela classe base (cada classe é uma pessoa na campanha). Puro e
-// testado; os valores salvos são fronteira de confiança (parseChest/parseEquip recusam o que não conhecem).
+// Party chest and each member's equipment (Nov 13, delivery 2 of the design docs/game-design/cidades-grupo-equipamento.md):
+// gold and items stored in the browser; equipment is kept per base class (each class is one person in the campaign). Pure and
+// tested; the saved values are a trust boundary (parseChest/parseEquip reject what they don't know).
 import { ITEMS, SLOTS, type Loadout, type Slot } from '../shared/battle/equipment.ts';
 
 export const CHEST_KEY = 'dt:bau';
@@ -8,7 +8,7 @@ export const EQUIP_KEY = 'dt:equip';
 export interface Chest { gold: number; items: string[] }
 export type Equip = Record<string, Loadout>;
 
-export const VICTORY_GOLD = 150; // vencer uma fase rende 150 (o antigo máximo de 3 estrelas x 50) (número inicial; a loja do 1º ato custa 100 a 240)
+export const VICTORY_GOLD = 150; // winning a stage yields 150 (the old 3-star maximum x 50) (initial number; the 1st act shop costs 100 to 240)
 
 export function parseChest(raw: unknown): Chest {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
@@ -32,20 +32,20 @@ export function parseEquip(raw: unknown): Equip {
   return out;
 }
 
-// compra: tira o ouro e põe o item no baú; null se não tem ouro
+// purchase: takes the gold and puts the item in the chest; null if there's no gold
 export function buy(chest: Chest, id: string): Chest | null {
   const it = ITEMS[id];
   return it && chest.gold >= it.price ? { gold: chest.gold - it.price, items: [...chest.items, id] } : null;
 }
 
-// venda: metade do preço, como nas lojas do FFT; só o que está no baú (o equipado precisa ser tirado antes)
+// sale: half the price, as in the FFT shops; only what's in the chest (the equipped one must be unequipped first)
 export function sell(chest: Chest, id: string): Chest | null {
   const i = chest.items.indexOf(id);
   if (i < 0) return null;
   return { gold: chest.gold + Math.floor(ITEMS[id].price / 2), items: chest.items.filter((_, k) => k !== i) };
 }
 
-// equipa `id` (do baú) no espaço dele na unidade `base`, devolvendo ao baú o que estava ali; `id` null só tira
+// equips `id` (from the chest) in its slot on unit `base`, returning to the chest what was there; `id` null only unequips
 export function equip(chest: Chest, eq: Equip, base: string, slot: Slot, id: string | null): { chest: Chest; eq: Equip } | null {
   if (id && (ITEMS[id]?.slot !== slot || !chest.items.includes(id))) return null;
   const items = [...chest.items];

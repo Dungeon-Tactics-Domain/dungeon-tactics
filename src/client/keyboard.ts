@@ -1,5 +1,5 @@
-// Teclado no estilo do Final Fantasy Tactics (pedido do Fernando, 25/10): jogar tudo sem mouse. Só traduz tecla em
-// ação e direção da tela em passo na grade; quem executa é o Game (main.ts). Puro e testado.
+// Keyboard in the style of Final Fantasy Tactics (Fernando's request, Oct 25): play everything without a mouse. Only translates key into
+// action and screen direction into a grid step; the Game (main.ts) executes. Pure and tested.
 import type { BattleState, Pos } from '../shared/battle/types.ts';
 import { t } from './i18n.ts';
 
@@ -24,7 +24,7 @@ export type KeyAction =
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
-const SLOTS = 7; // Mover + 6 habilidades: a barra mais longa de hoje (o Ramza do estudo do FFT)
+const SLOTS = 7; // Move + 6 abilities: today's longest bar (the FFT study's Ramza)
 
 const DIRS: Record<string, ScreenDir> = {
   w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right',
@@ -32,42 +32,42 @@ const DIRS: Record<string, ScreenDir> = {
 const SIMPLE: Record<string, KeyAction> = {
   enter: { k: 'confirm' }, ' ': { k: 'confirm' }, escape: { k: 'cancel' }, backspace: { k: 'cancel' },
   z: { k: 'undo' }, t: { k: 'face' }, c: { k: 'status' }, f3: { k: 'fps' }, p: { k: 'wait' }, f: { k: 'recenter' }, h: { k: 'help' }, '?': { k: 'help' }, i: { k: 'info' }, v: { k: 'pixel' }, l: { k: 'turns' },
-  // Q afasta e E aproxima: mesma mão do WASD
+  // Q zooms out and E zooms in: same hand as WASD
   q: { k: 'zoom', factor: ZOOM_STEP }, e: { k: 'zoom', factor: 1 / ZOOM_STEP },
 };
 
 type KeyInput = Pick<KeyboardEvent, 'key' | 'shiftKey' | 'ctrlKey' | 'altKey' | 'metaKey'>;
 
-// Ctrl/Alt/Cmd ficam com o navegador (Ctrl+R recarrega, Ctrl+W fecha a aba); a tecla vale em minúscula ou maiúscula
+// Ctrl/Alt/Cmd stay with the browser (Ctrl+R reloads, Ctrl+W closes the tab); the key works in lower or upper case
 export function keyAction(e: KeyInput): KeyAction | null {
   if (e.ctrlKey || e.altKey || e.metaKey) return null;
   const k = e.key.toLowerCase();
   if (DIRS[k]) return { k: 'cursor', dir: DIRS[k] };
   if (k === 'tab') return { k: 'cycle', dir: e.shiftKey ? -1 : 1 };
-  // R gira para a direita; Shift+R para a esquerda (o toque tem os dois botões)
+  // R rotates right; Shift+R left (touch has both buttons)
   if (k === 'r') return { k: 'rotate', dir: e.shiftKey ? -1 : 1 };
   const n = Number(k);
   if (Number.isInteger(n) && n >= 1 && n <= SLOTS) return { k: 'slot', index: n - 1 };
   return SIMPLE[k] ?? null;
 }
 
-// O mapa aparece em losango, então nenhum eixo da grade aponta reto para cima. Cada tecla pega o eixo mais perto da
-// diagonal dela na tela, girada 45° no sentido do relógio (W = cima-direita, D = baixo-direita, S = baixo-esquerda,
-// A = cima-esquerda): as quatro caem em eixos diferentes e acompanham a câmera quando ela gira.
+// The map appears as a diamond, so no grid axis points straight up. Each key takes the axis closest to its
+// diagonal on screen, rotated 45° clockwise (W = up-right, D = down-right, S = down-left,
+// A = up-left): the four land on different axes and follow the camera when it rotates.
 export function gridStep(dir: ScreenDir, yaw: number): Pos {
-  const up = { x: -Math.sin(yaw), y: -Math.cos(yaw) }; // "para cima na tela" medido no chão (mesmas contas do pan da cena)
+  const up = { x: -Math.sin(yaw), y: -Math.cos(yaw) }; // "up on screen" measured on the ground (same math as the scene's pan)
   const right = { x: Math.cos(yaw), y: -Math.sin(yaw) };
-  // 8 ângulos (13/11): com a câmera reta (0°, 90°…) o mapa não fica em losango e cada seta anda reto na tela (pedido do
-  // Fernando: "quando muda o ângulo da câmera os controles devem mudar os direcionais"); na diagonal, a regra de cima
+  // 8 angles (Nov 13): with the camera straight (0°, 90°…) the map isn't a diamond and each arrow walks straight on screen (request
+  // from Fernando: "when the camera angle changes the controls should change the directionals"); on the diagonal, the up rule
   const diamond = Math.round(yaw / (Math.PI / 4)) % 2 !== 0;
   const [a, b] = diamond ? { up: [1, 1], right: [-1, 1], down: [-1, -1], left: [1, -1] }[dir] : { up: [1, 0], right: [0, 1], down: [-1, 0], left: [0, -1] }[dir];
   const vx = a * up.x + b * right.x;
   const vy = a * up.y + b * right.y;
-  // Math.sign(0) é 0, e o "|| 0" troca o -0 por 0
+  // Math.sign(0) is 0, and the "|| 0" swaps -0 for 0
   return Math.abs(vx) > Math.abs(vy) ? { x: Math.sign(vx), y: 0 } : { x: 0, y: Math.sign(vy) || 0 };
 }
 
-// Tab: a próxima unidade viva na ordem da lista (para ler vida e ameaça de cada uma)
+// Tab: the next living unit in list order (to read each one's HP and threat)
 export function cycleUnit(state: BattleState, from: Pos, dir: 1 | -1): Pos {
   const units = state.units;
   const i = units.findIndex((u) => u.pos.x === from.x && u.pos.y === from.y);
@@ -75,7 +75,7 @@ export function cycleUnit(state: BattleState, from: Pos, dir: 1 | -1): Pos {
   return units[next].pos;
 }
 
-// Lista da tela de ajuda: [teclas, o que fazem]
+// Help screen list: [keys, what they do]
 export const keyHelp = (): [string, string][] => [
   ['W A S D · ← ↑ → ↓', t('no menu, sobe e desce; no mapa, anda o cursor de casa em casa (segue a câmera)', 'in the menu, up and down; on the map, move the cursor tile by tile (follows the camera)')],
   [t('Enter · Espaço', 'Enter · Space'), t('andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º Enter age; no fim do turno, confirma a direção; seguro, acelera a batalha 3 vezes', 'move to the tile under the cursor; on a target, asks "Execute?" and the 2nd Enter acts; at turn end, confirms the facing; held, speeds the battle up 3 times')],

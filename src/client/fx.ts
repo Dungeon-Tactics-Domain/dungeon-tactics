@@ -1,17 +1,17 @@
-// Gesto e efeito de cada habilidade (12/11, pedido do Fernando: animações com o mesmo papel das do FFT). Cada linha diz o
-// clipe do boneco (KayKit; os do pacote Rig_Medium vêm de public/models/animacoes.glb) e o efeito, feito só com formas
-// simples do Three (nada copiado do jogo original). A cena chama `playFx` no impacto e `chargeAura` enquanto carrega.
+// Gesture and effect of each ability (Nov 12, Fernando's request: animations with the same role as FFT's). Each row gives the
+// unit's clip (KayKit; the Rig_Medium pack ones come from public/models/animacoes.glb) and the effect, made only of simple
+// Three shapes (nothing copied from the original game). The scene calls `playFx` on impact and `chargeAura` while charging.
 import * as THREE from 'three';
 
 export type FxKind = 'slash' | 'heavy' | 'stab' | 'arrow' | 'knife' | 'rock' | 'flask' | 'fire' | 'blast' | 'wind' | 'heal' | 'buff' | 'debuff' | 'impact' | 'spin' | 'dash';
 export interface AbilityLook {
-  clip: string; // gesto ao agir (ou ao soltar a carga)
-  charge?: string; // gesto em laço enquanto carrega
+  clip: string; // gesture when acting (or when releasing the charge)
+  charge?: string; // looping gesture while charging
   fx: FxKind;
 }
 
 const MAGIC_CHARGE = 'Ranged_Magic_Spellcasting', BOW_CHARGE = 'Ranged_Bow_Aiming_Idle';
-// chave: id da habilidade do jogo, ou o fim do id do estudo (fft_<unidade>_<habilidade>), ou o id inteiro do estudo
+// key: game ability id, or the end of the study id (fft_<unit>_<ability>), or the whole study id
 const LOOKS: Record<string, AbilityLook> = {
   strike: { clip: 'Melee_1H_Attack_Chop', fx: 'slash' },
   heavy_strike: { clip: 'Melee_2H_Attack_Chop', fx: 'heavy' },
@@ -23,7 +23,7 @@ const LOOKS: Record<string, AbilityLook> = {
   dagger: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
   firebolt: { clip: 'Ranged_Magic_Shoot', fx: 'fire' },
   blast: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'blast' },
-  shadow_wave: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'blast' }, // efeito da Explosão: é o que desenha a área inteira
+  shadow_wave: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'blast' }, // Explosion effect: it is what draws the whole area
   gust: { clip: 'Ranged_Magic_Shoot', charge: MAGIC_CHARGE, fx: 'wind' },
   heal: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'heal' },
   stab: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
@@ -34,8 +34,8 @@ const LOOKS: Record<string, AbilityLook> = {
   slam: { clip: 'Melee_Unarmed_Attack_Punch_A', fx: 'impact' },
   lance: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
   sweep: { clip: '2H_Melee_Attack_Spin', fx: 'impact' },
-  lance_jump: { clip: 'Melee_2H_Attack_Chop', charge: 'Jump_Idle', fx: 'heavy' }, // carrega "no ar" e cai com o golpe
-  // estudo do FFT
+  lance_jump: { clip: 'Melee_2H_Attack_Chop', charge: 'Jump_Idle', fx: 'heavy' }, // charges "in the air" and lands with the strike
+  // FFT study
   attack: { clip: 'Melee_1H_Attack_Chop', fx: 'slash' },
   fft_archer_attack: { clip: 'Ranged_Bow_Release', fx: 'arrow' },
   fft_chemist_attack: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
@@ -52,10 +52,10 @@ const LOOKS: Record<string, AbilityLook> = {
   fire: { clip: 'Ranged_Magic_Shoot', charge: MAGIC_CHARGE, fx: 'blast' },
   cure: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'heal' },
 };
-// '½': habilidade da meia casa (half.ts) usa o gesto da original
+// '½': half-tile ability (half.ts) uses the original's gesture
 export const lookOf = (id: string): AbilityLook => { const b = id.replace(/½$/, ''); return LOOKS[b] ?? LOOKS[b.split('_').slice(2).join('_')] ?? LOOKS.strike; };
 
-// cores dos efeitos: luz, não tinta do tema (o HUD segue as variáveis do :root; isto é dentro da cena 3D)
+// effect colors: light, not theme paint (the HUD follows the :root variables; this is inside the 3D scene)
 const COLOR: Record<FxKind, string> = {
   slash: '#ffffff', heavy: '#ffe08a', stab: '#e8f4ff', arrow: '#f2e3c4', knife: '#d8e2ec', rock: '#8a7e70', flask: '#7fe0ff',
   fire: '#ff7a2a', blast: '#ff9a3c', wind: '#cfefff', heal: '#7dffa8', buff: '#ffd34a', debuff: '#b07dff', impact: '#d6c7a8', spin: '#ffffff', dash: '#d6c7a8',
@@ -70,12 +70,12 @@ function spawn(scene: THREE.Scene, mesh: THREE.Object3D) {
   scene.add(mesh);
   return () => {
     scene.remove(mesh);
-    // peça com várias partes (a flecha e a faca): libera cada uma
+    // piece with several parts (the arrow and the knife): releases each one
     mesh.traverse((o) => { const m = o as THREE.Mesh; if (!m.isMesh) return; m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
   };
 }
 
-// Pedacinhos (cubos, como pixels; 0,11 de lado para ler na câmera de cima) que sobem, caem ou espirram a partir de `at`
+// Little bits (cubes, like pixels; 0.11 per side to read from the top camera) that rise, fall or splash from `at`
 async function bits(scene: THREE.Scene, tween: Tween, at: THREE.Vector3, color: string, mode: 'up' | 'down' | 'burst', spread: number, ms: number) {
   const geo = new THREE.BoxGeometry(0.11, 0.11, 0.11);
   const list = Array.from({ length: 14 }, (_, i) => {
@@ -104,7 +104,7 @@ async function bits(scene: THREE.Scene, tween: Tween, at: THREE.Vector3, color: 
   geo.dispose();
 }
 
-// anel que abre no chão (explosão, vento, giro)
+// ring that opens on the ground (explosion, wind, spin)
 async function ring(scene: THREE.Scene, tween: Tween, at: THREE.Vector3, color: string, radius: number, ms: number) {
   const m = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 24).rotateX(-Math.PI / 2), glow(color));
   m.position.copy(at);
@@ -116,7 +116,7 @@ async function ring(scene: THREE.Scene, tween: Tween, at: THREE.Vector3, color: 
   done();
 }
 
-// arco de corte no alvo
+// slash arc on the target
 async function arc(scene: THREE.Scene, tween: Tween, at: THREE.Vector3, from: THREE.Vector3, color: string, size: number, ms: number) {
   const m = new THREE.Mesh(new THREE.TorusGeometry(0.5 * size, 0.06 * size, 3, 14, Math.PI * 0.9), glow(color));
   m.position.copy(at);
@@ -129,8 +129,8 @@ async function arc(scene: THREE.Scene, tween: Tween, at: THREE.Vector3, from: TH
   done();
 }
 
-// projétil de `from` até `to`, reto ou em arco (pedra e frasco sobem como no arremesso)
-// `spin`: voltas por segundo em torno do próprio eixo (a faca gira no ar; a flecha não)
+// projectile from `from` to `to`, straight or arced (rock and flask rise as in a throw)
+// `spin`: turns per second around its own axis (the knife spins in the air; the arrow does not)
 async function fly(scene: THREE.Scene, tween: Tween, from: THREE.Vector3, to: THREE.Vector3, geo: THREE.BufferGeometry | THREE.Object3D, color: string, height: number, ms: number, spin = 0) {
   const m = geo instanceof THREE.Object3D ? geo : new THREE.Mesh(geo, glow(color, 1));
   const done = spawn(scene, m);
@@ -142,8 +142,8 @@ async function fly(scene: THREE.Scene, tween: Tween, from: THREE.Vector3, to: TH
   done();
 }
 
-// Flecha e faca de verdade no ar (13/11, pedido do Fernando: "a faca arremessada deve ser um projétil de faca, e a flecha
-// um projétil de flecha"): peças simples apontando para +z (o lookAt mira o alvo)
+// Real arrow and knife in the air (Nov 13, Fernando's request: "the thrown knife must be a knife projectile, and the arrow
+// an arrow projectile"): simple pieces pointing to +z (lookAt aims at the target)
 function arrowModel(): THREE.Group {
   const g = new THREE.Group();
   const wood = new THREE.MeshLambertMaterial({ color: '#8a6a44' }), iron = new THREE.MeshLambertMaterial({ color: '#c9d2da' }), feather = new THREE.MeshLambertMaterial({ color: '#e8e1cf', side: THREE.DoubleSide });
@@ -161,7 +161,7 @@ function knifeModel(): THREE.Group {
   return g;
 }
 
-// Efeito da habilidade do gesto até o impacto (espera o projétil chegar); o que vem depois do impacto não segura a fila
+// Ability effect from the gesture to the impact (waits for the projectile to arrive); what comes after the impact does not hold up the queue
 export async function playFx(scene: THREE.Scene, tween: Tween, kind: FxKind, from: THREE.Vector3, to: THREE.Vector3, radius: number, travel: number) {
   const c = COLOR[kind];
   const after = (p: Promise<void>) => void p;
@@ -183,7 +183,7 @@ export async function playFx(scene: THREE.Scene, tween: Tween, kind: FxKind, fro
   }
 }
 
-// Aura no chão de quem está carregando (como o brilho de quem conjura no FFT): fica até a carga sair ou ser desfeita
+// Aura on the ground of whoever is charging (like the glow of a caster in FFT): stays until the charge goes off or is undone
 export function chargeAura(magic: boolean): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.56, 6).rotateX(-Math.PI / 2), glow(magic ? '#7fc4ff' : '#ffb347', 0.85));
   m.position.y = 0.06;

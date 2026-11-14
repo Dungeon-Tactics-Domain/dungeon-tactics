@@ -1,7 +1,7 @@
-// Missões do bar (13/11, entrega 4 do desenho docs/game-design/cidades-grupo-equipamento.md): batalhas extras fora da
-// linha da campanha, aceitas no bar de uma cidade, com o grupo atual contra inimigos próprios num mapa já existente.
-// Vencer dá ouro e um item ao baú (chest.ts) e tira a missão do bar. Números iniciais: as missões são opcionais e não
-// entram na curva medida da campanha.
+// Bar missions (Nov 13, delivery 4 of the design docs/game-design/cidades-grupo-equipamento.md): extra battles outside the
+// campaign line, accepted at a town's bar, with the current party against their own enemies on an existing map.
+// Winning gives gold and an item to the chest (chest.ts) and removes the mission from the bar. Initial numbers: the missions are optional and are not
+// part of the campaign's measured curve.
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import { CHAPTERS } from './campaign.ts';
 import type { Equip } from './chest.ts';
@@ -12,11 +12,11 @@ import type { Hero } from './hero.ts';
 export const MISSIONS_KEY = 'dt:missoes';
 export interface Mission {
   id: string;
-  town: string; // id do ponto de cidade (world.ts)
+  town: string; // id of the town node (world.ts)
   name: [string, string];
-  text: [string, string]; // o pedido, como o dono do bar conta
+  text: [string, string]; // the request, as the bar owner tells it
   map: string;
-  enemies: string[]; // classes dos inimigos
+  enemies: string[]; // classes of the enemies
   gold: number;
   item?: string; // equipment.ts
 }
@@ -33,14 +33,14 @@ export const MISSIONS: Mission[] = [
     map: 'frost_pass', enemies: ['veil_knight', 'acolyte', 'skeleton_archer', 'minion'], gold: 300, item: 'spring_greaves' },
 ];
 
-// missões já vencidas (save no navegador; só ids conhecidos)
+// missions already won (save in the browser; known ids only)
 export function parseDone(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string' && MISSIONS.some((m) => m.id === id)) : [];
 }
 
 export const missionScenarioId = (id: string) => `missao-${id}`;
 
-// o grupo da fase mais avançada já aberta (com o protagonista e o equipamento), contra os inimigos da missão
+// the party of the most advanced open stage (with the protagonist and equipment), against the mission's enemies
 export function missionScenario(m: Mission, progress: number, hero: Hero | null, eq: Equip, group: Group = defaultGroup()): Scenario {
   return buildDevScenario({ map: m.map, heroes: heroesFor(group, Math.min(progress, CHAPTERS.length - 1), hero, eq), enemies: m.enemies.map((b) => unitFrom(b)) },
     missionScenarioId(m.id), m.name);

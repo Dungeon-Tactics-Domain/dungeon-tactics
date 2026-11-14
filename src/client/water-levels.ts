@@ -1,20 +1,20 @@
-// Alturas da água no desenho (13/11), à parte de water.ts para ser pura (sem Three) e testada, como markers.ts.
+// Water heights in the drawing (Nov 13), apart from water.ts so it is pure (no Three) and testable, like markers.ts.
 import { neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 
-// quanto a superfície da água funda fica abaixo da rasa, em níveis (só desenho; a regra lê depth). 0,8 desde 13/11, pedido
-// do Fernando ("mais profundidade da água perto da ponte"): com 0,45 o rio fundo parecia rente à margem e a ponte quase sem vão
+// how much the deep water surface sits below the shallow one, in levels (visuals only; the rules read depth). 0.8 since Nov 13, Fernando's request
+// ("more water depth near the bridge"): with 0.45 the deep river looked flush with the bank and the bridge had almost no gap
 export const DEEP_DROP = 0.8;
-export const WADE = 0.45; // quanto o boneco afunda na água rasa, em níveis: água pela cintura (13/11: com 0,3 as pernas quase não apareciam na água transparente; a regra o põe 1 abaixo da margem)
-// quanto o boneco afunda na água funda, em níveis abaixo da superfície: nadando, só cabeça e ombros de fora (13/11, a
-// funda passou a deixar entrar). O leito dela fica mais alto que os pés, mas some na água escura (opaca 93%)
+export const WADE = 0.45; // how much the unit sinks in shallow water, in levels: waist-deep water (Nov 13: with 0.3 the legs barely showed in the transparent water; the rule puts it 1 below the bank)
+// how much the unit sinks in deep water, in levels below the surface: swimming, only head and shoulders out (Nov 13, when
+// deep water started to allow entry). Its bed sits higher than the feet, but disappears in the dark water (93% opaque)
 export const SWIM = 0.75;
-const DEEP_BED = 1; // leito da funda, em níveis abaixo da superfície: some na cor escura, só não pode ficar à vista
+const DEEP_BED = 1; // deep bed, in levels below the surface: it vanishes into the dark color, it just must not be in view
 
-// Rio sem sobe e desce (13/11, pedido do Fernando: "a água pode descer como uma cachoeira, mas não subir e descer como
-// nessa ponte de pedra"): a funda fica DEEP_DROP abaixo da rasa, então um trecho fundo pequeno depois do vau fazia a água
-// subir no vau e descer de novo. Cada trecho fundo ligado (pontes separam) que encosta em água rasa e não é o maior do mapa
-// fica na altura da rasa; o maior continua baixo e o vau desce para ele como cachoeira. Só desenho: a regra lê depth.
+// River without ups and downs (Nov 13, Fernando's request: "the water can drop like a waterfall, but not rise and fall like
+// on that stone bridge"): the deep water sits DEEP_DROP below the shallow, so a small deep stretch after the ford made the water
+// rise at the ford and drop again. Each connected deep stretch (bridges separate them) that touches shallow water and is not the largest on the map
+// stays at the shallow height; the largest stays low and the ford drops to it like a waterfall. Visuals only: the rules read depth.
 export function raisedDeep(grid: Grid): Set<string> {
   const deep = (p: Pos) => { const t = tileAt(grid, p); return t.look === 'water' && (t.depth ?? 0) >= 2; };
   const seen = new Set<string>(), parts: { tiles: string[]; shallow: boolean }[] = [];
@@ -41,8 +41,8 @@ export function raisedDeep(grid: Grid): Set<string> {
 
 export interface WaterLevel { surface: number; bed: number; deep: boolean; under?: true }
 
-// Altura da superfície e do leito de cada casa de água e de cada ponte com água por baixo. O leito da rasa fica onde
-// stand() põe os pés (WADE), para ninguém flutuar nem atravessar o chão.
+// Surface and bed height of each water tile and each bridge with water underneath. The shallow bed sits where
+// stand() puts the feet (WADE), so nobody floats or clips through the ground.
 export function waterLevels(grid: Grid, step: number): Map<string, WaterLevel> {
   const out = new Map<string, WaterLevel>();
   const bed = (surface: number, deep: boolean) => (deep ? Math.max(0.02, surface - DEEP_BED * step) : surface - WADE * step);
@@ -54,18 +54,18 @@ export function waterLevels(grid: Grid, step: number): Map<string, WaterLevel> {
     const surface = (t.h + 1 - (deep && !raised.has(posKey(at(i))) ? DEEP_DROP : 0)) * step;
     out.set(posKey(at(i)), { surface, bed: bed(surface, deep), deep });
   });
-  // ponte: a água passa por baixo na altura das vizinhas. Com a tábua rente à água (Cripta Alagada) não há vão e fica de fora
+  // bridge: water passes underneath at the height of its neighbors. With the plank flush with the water (Flooded Crypt) there is no gap and it is left out
   grid.tiles.forEach((t, i) => {
     if (t.look !== 'bridge') return;
     const near = neighbors(grid, at(i)).map((q) => out.get(posKey(q))).filter((l): l is WaterLevel => !!l && !l.under);
     if (!near.length) return;
     const surface = Math.min(...near.map((l) => l.surface));
-    if (surface > t.h * step - 0.01) return; // a tábua ocupa de h a h+1 nível
+    if (surface > t.h * step - 0.01) return; // the plank takes up from h to h+1 level
     const deep = near.some((l) => l.deep);
     out.set(posKey(at(i)), { surface, bed: bed(surface, deep), deep, under: true });
   });
-  // ponte larga (13/11, a do Bosque passou a 3 casas): a casa do meio só encosta em terra e em outras casas de ponte, e
-  // pega a água da ponte vizinha; sem isso o terreno desenhava um quadrado de chão na altura das tábuas
+  // wide bridge (Nov 13, Ash Wood one became 3 tiles wide): the middle tile only touches land and other bridge tiles, and
+  // picks up the neighboring bridge's water; without this the terrain drew a square of ground at plank height
   for (let grew = true; grew;) {
     grew = false;
     grid.tiles.forEach((t, i) => {

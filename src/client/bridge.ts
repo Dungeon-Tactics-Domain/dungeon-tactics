@@ -1,18 +1,18 @@
-// Ponte de verdade (13/11, pedido do Fernando: "uma ponte bem feita, com texturas, escadinha, madeira correta com placas
-// de madeira e cordinhas dos lados"): nos mapas abertos, cada grupo de casas de ponte (Tile.look 'bridge') vira tábuas
-// soltas com fresta, duas vigas por baixo, postes nos cantos e no meio, corda nos dois lados e escadinha nas pontas que
-// descem até a margem. Texturas pintadas, nossas (public/tex/wood.jpg, bark.jpg; scripts/assets/paint-textures.py). Só desenho: a casa da ponte continua
-// com a altura dela na regra, e o topo das tábuas fica exatamente nessa altura (o boneco pisa nelas).
+// Real bridge (Nov 13, Fernando's request: "a well-made bridge, with textures, little stairs, proper wood with wooden boards
+// and little ropes on the sides"): on open maps, each group of bridge tiles (Tile.look 'bridge') becomes loose planks
+// with gaps, two beams underneath, posts at the corners and in the middle, rope on both sides and little stairs at the ends that
+// go down to the bank. Our own painted textures (public/tex/wood.jpg, bark.jpg; scripts/assets/paint-textures.py). Visuals only: the bridge tile keeps
+// its height in the rules, and the top of the planks sits exactly at that height (the unit steps on them).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { inBounds, neighbors, posKey, tileAt, type Grid } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
 
-const PLANK = 0.19; // profundidade de cada tábua, com 0,03 de fresta
-const DECK = 0.07; // espessura da tábua
-const RAIL = 0.55; // altura da corda de cima acima das tábuas
+const PLANK = 0.19; // depth of each plank, with a 0.03 gap
+const DECK = 0.07; // plank thickness
+const RAIL = 0.55; // height of the top rope above the planks
 
-// caixa com o UV numa faixa da textura (uma tábua da foto), para a tábua não ficar com a foto inteira espremida
+// box with the UV on a strip of the texture (one plank from the photo), so the plank does not get the whole photo squeezed in
 function plankBox(w: number, h: number, d: number, shift: number) {
   const g = new THREE.BoxGeometry(w, h, d);
   const uv = g.getAttribute('uv');
@@ -20,7 +20,7 @@ function plankBox(w: number, h: number, d: number, shift: number) {
   return g;
 }
 
-// corda com barriga entre dois postes
+// sagging rope between two posts
 function rope(a: THREE.Vector3, b: THREE.Vector3, sag: number) {
   const mid = a.clone().lerp(b, 0.5).add(new THREE.Vector3(0, -sag, 0));
   return new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(a, mid, b), 12, 0.018, 5);
@@ -37,7 +37,7 @@ export function buildBridges(grid: Grid, step: number, wood: THREE.Texture, bark
   grid.tiles.forEach((_, i) => {
     const start = { x: i % grid.width, y: Math.floor(i / grid.width) };
     if (!isBridge(start) || seen.has(posKey(start))) return;
-    // grupo de casas de ponte ligadas
+    // group of connected bridge tiles
     const comp: Pos[] = [], queue = [start];
     seen.add(posKey(start));
     while (queue.length) {
@@ -48,10 +48,10 @@ export function buildBridges(grid: Grid, step: number, wood: THREE.Texture, bark
     const x0 = Math.min(...comp.map((p) => p.x)), x1 = Math.max(...comp.map((p) => p.x)) + 1;
     const z0 = Math.min(...comp.map((p) => p.y)), z1 = Math.max(...comp.map((p) => p.y)) + 1;
     const top = (tileAt(grid, comp[0]).h + 1) * step;
-    // atravessa no sentido em que a ponte encosta em terra seca nas duas pontas (no Bosque, de norte a sul)
+    // crosses in the direction where the bridge touches dry land at both ends (in Ash Wood, north to south)
     const dry = (p: Pos) => inBounds(grid, p) && !tileAt(grid, p).depth && tileAt(grid, p).look !== 'bridge';
     const alongZ = dry({ x: x0, y: z0 - 1 }) || dry({ x: x0, y: z1 });
-    // eixos locais: `a` ao longo da travessia, `c` de lado; tudo em coordenadas do mundo (mapa centrado na origem)
+    // local axes: `a` along the crossing, `c` sideways; everything in world coordinates (map centered at the origin)
     const [a0, a1, c0, c1] = alongZ ? [z0, z1, x0, x1] : [x0, x1, z0, z1];
     const at = (a: number, c: number, y: number) => (alongZ ? new THREE.Vector3(c - grid.width / 2, y, a - grid.height / 2) : new THREE.Vector3(a - grid.width / 2, y, c - grid.height / 2));
     const put = (g: THREE.BufferGeometry, a: number, c: number, y: number, list: THREE.BufferGeometry[], turn = 0) => {
@@ -60,29 +60,29 @@ export function buildBridges(grid: Grid, step: number, wood: THREE.Texture, bark
       list.push(g.translate(p.x, p.y, p.z));
     };
     const width = c1 - c0 - 0.1, mid = (c0 + c1) / 2;
-    // margem de cada ponta: a casa vizinha e quanto ela fica abaixo das tábuas
+    // bank at each end: the neighboring tile and how far it sits below the planks
     const bank = (dir: number) => {
       const nb = alongZ ? { x: Math.floor(mid), y: dir < 0 ? z0 - 1 : z1 } : { x: dir < 0 ? x0 - 1 : x1, y: Math.floor(mid) };
       return inBounds(grid, nb) ? { nb, drop: top - (tileAt(grid, nb).h + 1) * step } : null;
     };
-    // Margem na altura das tábuas (13/11, o Fernando viu a ponte "não se conectando direito na parte de cima"): o terreno
-    // liso arredonda a beirada (a encosta ocupa 1/6 da casa, terrain.ts SUB) e a ponte acabava no ar antes de tocar o
-    // chão. Nessa ponta as tábuas e as vigas avançam um quarto de casa para cima da margem, até o trecho plano
+    // Bank at plank height (Nov 13, Fernando saw the bridge "not connecting right at the top"): the smooth terrain
+    // rounds the edge (the slope takes 1/6 of a tile, terrain.ts SUB) and the bridge ended in the air before touching the
+    // ground. At this end the planks and beams extend a quarter tile over the bank, up to the flat stretch
     const LAND = 0.26, over = (dir: number) => { const b = bank(dir); return b && dry(b.nb) && Math.abs(b.drop) < 0.08 ? LAND : 0; };
     const s0 = a0 - over(-1), s1 = a1 + over(1);
-    // tábuas soltas, com fresta e um tico de torto cada uma
+    // loose planks, with gaps and each a touch crooked
     for (let a = s0 + 0.02; a + PLANK <= s1; a += PLANK + 0.03) {
       put(plankBox(width * (0.96 + 0.04 * rnd()), DECK, PLANK, rnd() * 4), a + PLANK / 2, mid + (rnd() - 0.5) * 0.06, top - DECK / 2 - rnd() * 0.012, planks, (rnd() - 0.5) * 0.05);
     }
-    // duas vigas por baixo, de ponta a ponta
+    // two beams underneath, end to end
     for (const c of c1 - c0 >= 3 ? [c0 + 0.25, mid, c1 - 0.25] : [c0 + 0.25, c1 - 0.25]) put(plankBox(0.14, 0.14, s1 - s0 + 0.3, 0), (s0 + s1) / 2, c, top - DECK - 0.07, beams, Math.PI / 2);
-    // escadinha em cada ponta: da altura das tábuas até a margem, para fora da ponte (no terço da casa vizinha)
+    // little stairs at each end: from plank height down to the bank, outward from the bridge (in the neighboring tile's third)
     for (const [end, dir] of [[a0, -1], [a1, 1]] as const) {
       const b = bank(dir);
       if (!b || b.drop < 0.08) continue;
       const { nb, drop } = b, ground = top - drop;
-      // margem em rampa até a ponte (13/11, pedido do Fernando: "a escada da ponte deve ser uma rampa que ocupa um tile
-      // inteiro"): tábuas inclinadas cobrindo a casa toda, da altura das tábuas até o chão na outra ponta
+      // bank as a ramp up to the bridge (Nov 13, Fernando's request: "the bridge stairs must be a ramp taking up one whole
+      // tile"): inclined planks covering the whole tile, from plank height down to the ground at the other end
       if (tileAt(grid, nb).ramp) {
         const pitch = Math.atan2(drop, 1);
         for (let a = 0.02; a + PLANK <= 1; a += PLANK + 0.03) {
@@ -96,18 +96,18 @@ export function buildBridges(grid: Grid, step: number, wood: THREE.Texture, bark
       for (let k = 1; k <= n; k++) {
         const y = top - (drop * k) / (n + 0.5);
         put(plankBox(width * 0.9, DECK, run + 0.02, rnd() * 4), end + dir * (k - 0.5) * run, mid, y - DECK / 2, planks);
-        // pé de cada degrau até o chão
+        // foot of each step down to the ground
         put(plankBox(0.08, y - ground + 0.05, 0.08, 0), end + dir * (k - 0.5) * run, c0 + 0.2, (y + ground) / 2 - 0.03, beams);
         put(plankBox(0.08, y - ground + 0.05, 0.08, 0), end + dir * (k - 0.5) * run, c1 - 0.2, (y + ground) / 2 - 0.03, beams);
       }
     }
-    // postes a cada casa nos dois lados, descendo até a água, e corda em cima e no meio entre eles
+    // posts every tile on both sides, going down to the water, and rope on top and in the middle between them
     const stations: number[] = [];
     for (let a = a0; a <= a1 + 1e-6; a += 1) stations.push(a);
-    // Corrimão destruído (13/11, pedido do Fernando: "um dos corrimãos ao lado destruído, para poder pular no rio"): na
-    // ponte larga, o lado de c1 perde os postes do meio (sobra um toco) e as cordas; a corda arrebentada fica pendurada
-    // nos postes das pontas. Só desenho: a regra nunca barrou o pulo da ponte para a água
-    // ponytail: vale para toda ponte de 3 ou mais casas de largura; se outra ponte larga precisar do corrimão inteiro, vira dado da casa
+    // Destroyed railing (Nov 13, Fernando's request: "one of the side railings destroyed, so you can jump into the river"): on the
+    // wide bridge, the c1 side loses the middle posts (a stump remains) and the ropes; the snapped rope hangs
+    // from the end posts. Visuals only: the rules never blocked jumping from the bridge into the water
+    // ponytail: applies to every bridge 3 or more tiles wide; if another wide bridge needs the full railing, it becomes tile data
     const broken = c1 - c0 >= 3 ? 1 : -1;
     [c0 + 0.04, c1 - 0.04].forEach((c, side) => {
       const tops: THREE.Vector3[] = [], mids: THREE.Vector3[] = [];

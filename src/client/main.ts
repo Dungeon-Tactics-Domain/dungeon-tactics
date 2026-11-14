@@ -1,5 +1,5 @@
-// Entrada do jogo: liga a batalha (regras), a cena (Three), o HUD (DOM) e o toque. Dono do laço de turno: o jogador age
-// pelo HUD; na vez do inimigo a IA joga sozinha, uma unidade por vez, com pausa para dar para ler.
+// Game entry point: wires the battle (rules), the scene (Three), the HUD (DOM) and touch input. Owns the turn loop: the player acts
+// through the HUD; on the enemy turn the AI plays on its own, one unit at a time, with a pause so it can be read.
 import { HALF_ID, registerHalf } from '../shared/battle/half.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
@@ -39,35 +39,35 @@ import { GROUP_KEY, parseGroup } from './group.ts';
 import { HERO_KEY, parseHero } from './hero.ts';
 import { createHero } from './create-ui.ts';
 
-// a batalha que o jogo abre e onde ela fica salva; o estudo do FFT troca os dois no boot (save à parte)
+// the battle the game opens and where it is saved; the FFT study swaps both at boot (separate save)
 let scenario = FIRST_BATTLE;
-let mission: Mission | null = null; // missão do bar em jogo (missions.ts)
+let mission: Mission | null = null; // bar mission in play (missions.ts)
 let SAVE_KEY = 'dt:battle';
-let chapter: number | null = null; // fase da campanha em jogo (null = batalha avulsa)
-// Teste (só em localhost): ?auto=1 faz a IA jogar pelos heróis também, para conferir fim de fase, vitória e volta ao
-// mapa sem jogar à mão (noite de 12/11). No ar nada muda.
+let chapter: number | null = null; // campaign stage in play (null = standalone battle)
+// Test (localhost only): ?auto=1 makes the AI play the heroes too, to check stage end, victory and return to the
+// map without playing by hand (night of Nov 12). Nothing changes in production.
 const AUTO = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('auto');
 
-const FPS_KEY = 'dt:fps'; // contador de desempenho ligado (1) ou não (0); começa ligado (pedido do Fernando, 12/11)
-// lista de turnos curta (os próximos 4) por padrão: o FFT não deixa a ordem inteira na tela e a lista cobria o mapa (12/11)
+const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (Fernando's request, Nov 12)
+// short turn list (next 4) by default: FFT does not leave the whole order on screen and the list covered the map (Nov 12)
 const QUEUE_KEY = 'dt:turnos';
-const FAST_KEY = 'dt:rapido'; // botão ⏩ ligado fica ligado na próxima batalha
+const FAST_KEY = 'dt:rapido'; // fast-forward button on stays on in the next battle
 const newBattle =() => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
 
 class Game {
   private ui: Ui;
-  // tela do turno do herói no jeito do FFT (command.ts): menu → submenu → mapa → "Executar?" → menu; Esperar → direção
+  // hero turn screen in the FFT style (command.ts): menu -> submenu -> map -> "Execute?" -> menu; Wait -> direction
   private screen: Screen;
   private busy = false;
   private log = '';
   private acting: string | null = null;
-  private cursor: Pos; // casa do cursor (teclado, mouse e controle andam o mesmo cursor)
+  private cursor: Pos; // cursor tile (keyboard, mouse and gamepad move the same cursor)
   private readonly hud: BattleHud;
   private readonly input: TouchInput;
   private readonly pad = emptyMemory();
   private padPrimed = false;
   private readonly fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
-  // placar da batalha (tally.ts) para o destaque no fim; lado e ficha de cada unidade guardados no começo (morto sai do estado)
+  // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)
   private tally = emptyTally();
   private roster: Record<string, { team: Team; def: string }> = {};
   private readonly teamOf = () => Object.fromEntries(Object.entries(this.roster).map(([id, u]) => [id, u.team]));
@@ -99,7 +99,7 @@ class Game {
         const pos = this.scene.pick(x, y);
         if (!pos || this.busy || !this.heroTurn) return;
         if (this.screen.k === 'facing') return this.faceTo(pos);
-        // no mapa a casa já está escolhida pelo passar do mouse (ou pelo 1º toque): o clique nela confirma
+        // on the map the tile is already chosen by mouse hover (or the 1st tap): clicking it confirms
         if (this.screen.k === 'map' && this.ui.pending && samePos(pos, this.ui.pending)) return void this.mapConfirm();
         this.cursor = pos;
         this.update(this.screen.k === 'map' ? tapTile(this.battle, this.ui, pos) : this.ui);
@@ -114,13 +114,13 @@ class Game {
       pan: (dx, dy) => scene.pan(dx, dy),
       zoom: (f) => scene.zoom(f),
     });
-    // botão direito cancela, como o "voltar" do FFT
+    // right button cancels, like FFT's "back"
     canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       this.runKey({ k: 'cancel' });
     });
     addEventListener('keydown', (e) => this.onKey(e));
-    // Enter ou Espaço seguro acelera a batalha (timing.ts); trocar de aba solta, senão ficava acelerado sem tecla
+    // holding Enter or Space fast-forwards the battle (timing.ts); switching tabs releases it, otherwise it stayed fast-forwarded with no key held
     const hold = (on: boolean) => (e: KeyboardEvent) => e.key === 'Enter' || e.key === ' ' ? (pace.key = on) : undefined;
     addEventListener('keydown', hold(true));
     addEventListener('keyup', hold(false));
@@ -130,38 +130,38 @@ class Game {
     this.hud.setQueueFull(store.get(QUEUE_KEY) === 'all');
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
-    // contador de desempenho: o texto muda 2 vezes por segundo, não a cada quadro (custo quase zero)
+    // performance counter: the text changes 2 times per second, not every frame (almost zero cost)
     setInterval(() => this.showFps(), 500);
     requestAnimationFrame(() => this.pollPad());
     this.update(this.ui);
-    void this.runEnemies(); // o save pode ter parado na vez do inimigo
+    void this.runEnemies(); // the save may have stopped on the enemy turn
   }
 
-  // Teclado (pedido do Fernando, 25/10): toda ação tem tecla. A tradução tecla → ação é pura (keyboard.ts).
-  // Com um diálogo aberto, as teclas são dele (Esc fecha, Tab anda entre os botões).
+  // Keyboard (Fernando's request, Oct 25): every action has a key. The key -> action translation is pure (keyboard.ts).
+  // With a dialog open, the keys belong to it (Esc closes, Tab moves between buttons).
   private onKey(e: KeyboardEvent) {
     if (document.querySelector('.overlay')) return;
     const a = keyAction(e);
     if (!a) return;
-    // confirmar só no aperto: quem segura Enter para acelerar o inimigo não escolhe o 1º comando do herói sem querer
+    // confirm only on press: holding Enter to speed up the enemy must not pick the hero's 1st command by accident
     if (e.repeat && a.k === 'confirm') return void e.preventDefault();
-    e.preventDefault(); // Tab não pula de botão, Espaço não rola, F3 não abre a busca do navegador
+    e.preventDefault(); // Tab does not jump between buttons, Space does not scroll, F3 does not open the browser search
     (document.activeElement as HTMLElement | null)?.blur();
     this.runKey(a);
   }
 
-  // Controle (gamepad.ts): lê o primeiro controle a cada quadro e manda as ações pelo mesmo caminho do teclado. Com um
-  // diálogo aberto, o controle anda entre os botões dele (A aperta, B fecha).
+  // Gamepad (gamepad.ts): reads the first pad every frame and sends actions through the same path as the keyboard. With a
+  // dialog open, the pad moves between its buttons (A presses, B closes).
   private pollPad() {
     requestAnimationFrame(() => this.pollPad());
-    // a batalha avulsa é o fundo da tela de título (e das telas que saem dela): gira enquanto alguma está aberta
+    // the standalone battle is the backdrop of the title screen (and of the screens that leave it): it rotates while any is open
     this.scene.setSpin(!!document.querySelector('.title-overlay') && !matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.placeMenu();
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
-    pace.pad = !!gp?.buttons[0]?.pressed; // A (ou ×) seguro acelera a batalha
+    pace.pad = !!gp?.buttons[0]?.pressed; // holding A (or x) fast-forwards the battle
     if (!gp) return;
     const actions = padActions({ buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] }, this.pad, performance.now());
-    // 1º quadro com controle: só registra o que já vinha apertado (o A que entrou na fase não escolhe o 1º comando)
+    // 1st frame with a pad: only records what was already pressed (the A that entered the stage does not pick the 1st command)
     if (!this.padPrimed) return void (this.padPrimed = true);
     for (const a of actions) {
       const overlay = document.querySelector<HTMLElement>('.overlay');
@@ -169,14 +169,14 @@ class Game {
         this.runKey(a);
         continue;
       }
-      // só o que está à vista: a seção escondida das Opções guarda botões que pegariam o foco sem aparecer
+      // only what is in view: the hidden Options section holds buttons that would take focus without showing
       const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter((e) => e.offsetParent);
       const at = buttons.indexOf(document.activeElement as HTMLElement);
       const range = document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range' ? document.activeElement : null;
       if (a.k === 'cancel' || a.k === 'help') dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
       else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
       else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
-        // na barra de volume, esquerda e direita mudam o valor (stepUp/Down não avisam: o 'input' vai à mão)
+        // on the volume bar, left and right change the value (stepUp/Down do not fire 'input': it is dispatched by hand)
         if (a.dir === 'right') range.stepUp();
         else range.stepDown();
         range.dispatchEvent(new Event('input'));
@@ -198,7 +198,7 @@ class Game {
 
   private runKey(a: KeyAction) {
     const b = this.battle;
-    // câmera, ajuda, status e contador valem sempre, inclusive na vez do inimigo
+    // camera, help, status and counter always work, including on the enemy turn
     if (a.k === 'rotate') return this.scene.rotate(a.dir);
     if (a.k === 'zoom') return this.scene.zoom(a.factor);
     if (a.k === 'recenter') return this.scene.resetView();
@@ -220,7 +220,7 @@ class Game {
     if (a.k === 'face') return this.face();
     const s = this.screen;
     if (a.k === 'slot') {
-      // atalho de número: 1 = Mover, 2 em diante = as habilidades na ordem do submenu
+      // number shortcut: 1 = Move, 2 onwards = the abilities in submenu order
       if (a.index === 0) return this.chooseCommand(0);
       if (commandEnabled(b, 'act')) return this.chooseAbility(a.index - 1);
       return;
@@ -235,7 +235,7 @@ class Game {
       }
       if (a.k === 'confirm') return s.k === 'menu' ? this.chooseCommand(s.index) : this.chooseAbility(s.index);
       if (a.k === 'cancel' && s.k === 'abilities') return this.back({ k: 'menu', index: 1 });
-      // Esc, B ou botão direito no menu depois de andar (sem ter agido): desfaz o movimento, como no Tactics Ogre
+      // Esc, B or right button on the menu after moving (without having acted): undoes the move, like Tactics Ogre
       if (a.k === 'cancel' && canUndoMove(b)) return this.undo();
       return;
     }
@@ -257,7 +257,7 @@ class Game {
       else if (a.k === 'cancel') this.back({ k: 'menu', index: 2 });
       return;
     }
-    // mapa: escolher a casa
+    // map: choose the tile
     if (a.k === 'cursor') {
       const step = gridStep(a.dir, this.scene.heading);
       const next = { x: this.cursor.x + step.x, y: this.cursor.y + step.y };
@@ -265,7 +265,7 @@ class Game {
     } else if (a.k === 'cycle') this.moveCursor(cycleUnit(b.state, this.cursor, a.dir));
     else if (a.k === 'confirm') void this.mapConfirm();
     else if (a.k === 'cancel') {
-      // volta para onde veio: Mover → menu; habilidade → submenu, na mesma habilidade
+      // goes back to where it came from: Move -> menu; ability -> submenu, on the same ability
       const m = this.ui.mode;
       this.back(m.k === 'ability' ? { k: 'abilities', index: abilitiesOf(b).indexOf(m.id) } : { k: 'menu', index: 0 });
     }
@@ -278,12 +278,12 @@ class Game {
     this.update(freshUi(this.battle));
   }
 
-  // comando do menu (clique, Enter, A do controle ou atalho)
+  // menu command (click, Enter, pad A or shortcut)
   private chooseCommand(index: number) {
     const b = this.battle;
     const c = COMMANDS[index];
     if (this.busy || !this.heroTurn || !c || !commandEnabled(b, c)) return;
-    if (c === 'move' && canUndoMove(b)) return this.undo(); // a linha Mover virou "Desfazer movimento"
+    if (c === 'move' && canUndoMove(b)) return this.undo(); // the Move row became "Undo move"
     sfx('confirm');
     if (c === 'status') return this.status();
     if (c === 'wait') return void this.endTurn();
@@ -297,7 +297,7 @@ class Game {
     this.update(hoverTile(b, selectMode(b, this.ui, { k: 'move' }), this.cursor));
   }
 
-  // habilidade do submenu: vai para o mapa escolher o alvo; centrada em quem usa vai direto ao "Executar?"
+  // submenu ability: goes to the map to choose the target; self-centered goes straight to "Execute?"
   private chooseAbility(index: number) {
     const b = this.battle;
     const id = abilitiesOf(b)[index];
@@ -313,7 +313,7 @@ class Game {
     this.update(hoverTile(b, ui, this.cursor));
   }
 
-  // confirmar no mapa: Mover anda na hora (como no FFT); Agir abre o "Executar?"
+  // confirm on the map: Move walks at once (like FFT); Act opens "Execute?"
   private async mapConfirm() {
     const p = this.ui.pending;
     const m = this.ui.mode;
@@ -341,7 +341,7 @@ class Game {
     await this.execute();
   }
 
-  // executa o que o Ui tem marcado (andar ou agir) e volta ao menu, no próximo comando que vale
+  // runs what the Ui has marked (move or act) and returns to the menu, on the next command that applies
   private async execute() {
     const { events, ui } = confirm(this.battle, this.ui);
     if (!events.length) return;
@@ -349,7 +349,7 @@ class Game {
     await this.animate(events);
     this.save();
     if (this.battle.over) return this.finish();
-    // caiu no contra-ataque ao se afastar: a vez passa sozinha
+    // fell to a counterattack while retreating: the turn passes by itself
     if (!this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor)) {
       const ev = this.battle.endTurn();
       if (ev.length) await this.animate(ev);
@@ -373,11 +373,11 @@ class Game {
   private moveCursor(p: Pos) {
     sfx('cursor');
     this.cursor = p;
-    this.scene.focusOn(p); // a câmera acompanha o cursor, como no FFT
+    this.scene.focusOn(p); // the camera follows the cursor, like FFT
     this.update(hoverTile(this.battle, this.ui, p));
   }
 
-  // cursor volta para quem age (começo do turno, depois de agir, desfazer)
+  // cursor goes back to the acting unit (start of turn, after acting, undo)
   private cursorToActor() {
     this.cursor = this.battle.actor.pos;
   }
@@ -390,19 +390,19 @@ class Game {
     this.ui = ui;
     if (this.battle.state.scenario === SURVIVAL_ID) this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.screen;
-    // no menu e no submenu só a casa de quem joga fica marcada; o alcance aparece ao escolher (como no FFT)
+    // on the menu and submenu only the acting unit's tile is marked; the range shows when choosing (like FFT)
     const hl = !this.heroTurn || this.busy ? null : s.k === 'facing' ? this.facingMarks()
       : s.k === 'map' || s.k === 'confirm' ? highlights(this.battle, ui) : { tiles: [{ pos: this.battle.actor.pos, kind: 'actor' as const }], path: null, preview: null };
     this.scene.setHighlights(hl);
     this.scene.setCursor(hl ? this.cursor : null);
-    // pontilhado do maior alcance: no menu em volta de quem joga; mirando o movimento, em volta da casa sob o cursor (se
-    // der para chegar nela), para ver de onde o golpe alcança antes de andar
+    // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
+    // it can be reached), to see where the strike reaches before moving
     const moving = s.k === 'map' && ui.mode.k === 'move';
     const ringAt = !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving) ? null
       : moving && this.battle.reach().has(posKey(this.cursor)) ? this.cursor : this.battle.actor.pos;
     this.scene.setRangeRing(ringAt ? { center: ringAt, range: longestRange(this.battle) } : null);
-    // prévia da trajetória (13/11, "como no Tactics Ogre"): mirando um tiro ou magia que precisa de visão, a linha vai de
-    // quem ataca até a casa do cursor e fica vermelha a partir de onde bate
+    // trajectory preview (Nov 13, "like Tactics Ogre"): when aiming a shot or spell that needs line of sight, the line runs from
+    // the attacker to the cursor tile and turns red from where it hits
     const aim = hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight ? this.cursor : null;
     const from = this.battle.actor.pos;
     const magic = ui.mode.k === 'ability' && !!ABILITIES[ui.mode.id].magic;
@@ -410,11 +410,11 @@ class Game {
     this.hud.render({ battle: this.battle, screen: s, hl, busy: this.busy, log: this.log, acting: this.acting, cursor: this.cursor, ability: ui.mode.k === 'ability' ? ui.mode.id : null });
     const { top, bottom } = this.hud.insets();
     this.scene.setInsets(top, bottom);
-    this.placeMenu(); // já no lugar ao abrir: esperar o próximo quadro mostrava o menu 1 quadro no canto
+    this.placeMenu(); // already in place on open: waiting for the next frame showed the menu in the corner for 1 frame
   }
 
-  // Menu de comandos, submenu e "Executar?" ao lado de quem joga (13/11, pedido do Fernando: "do lado do boneco igual no
-  // FFT"). Roda a cada quadro (pollPad) porque a câmera desliza e gira com o menu aberto. O "Executar?" não cobre o alvo.
+  // Command menu, submenu and "Execute?" beside the acting unit (Nov 13, Fernando's request: "beside the character like in
+  // FFT"). Runs every frame (pollPad) because the camera slides and rotates with the menu open. "Execute?" does not cover the target.
   private placeMenu() {
     if (!this.hud.menuOpen) return;
     const b = this.battle, s = this.screen;
@@ -432,18 +432,18 @@ class Game {
     this.busy = false;
   }
 
-  // Passos do FFT antes de cada evento: o inimigo mostra para onde vai antes de andar, e todo golpe mostra o nome da
-  // habilidade numa faixa no alto com a área atingida marcada (tempos em timing.ts)
-  // Som de cada evento (antes da animação dele): passos casa a casa, golpe no ar, acerto, erro, cura, carga, queda
+  // FFT steps before each event: the enemy shows where it is going before moving, and every strike shows the ability name
+  // in a banner at the top with the hit area marked (timings in timing.ts)
+  // Sound for each event (before its animation): step by step, strike in the air, hit, miss, heal, charge, fall
   private sound(e: BattleEvent) {
     const MELEE = new Set(['slash', 'heavy', 'stab', 'impact', 'spin', 'dash', 'debuff']);
     const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = { hit: 'hit', bump: 'hit', fall: 'hit', spike: 'hit', miss: 'miss', heal: 'heal', charge: 'charge', fizzle: 'miss', die: 'die' };
     if (e.k === 'move') {
-      // passo no começo de cada casa andada; no pulo, o som vai na aterrissagem (mesmos tempos da cena, stepMs)
+      // step at the start of each tile walked; on a jump, the sound goes on landing (same timings as the scene, stepMs)
       const h = (i: number) => standH(tileAt(this.battle.grid, e.path[i]));
       let at = 0;
       for (let i = 1; i < e.path.length; i++) {
-        // rampa: andando, no tempo do passo (o mesmo de scene.ts)
+        // ramp: walking, at the step pace (the same as scene.ts)
         const dh = rampLink(this.battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1), tiles = dist(e.path[i - 1], e.path[i]), ms = stepMs(dh, tiles);
         void this.scene.wait(at + (isJump(dh, tiles) ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
         at += ms;
@@ -456,8 +456,8 @@ class Game {
   }
 
   private async beforeEvent(e: BattleEvent, enemy: boolean) {
-    // os passos do inimigo tocam depois do cursor mostrar o destino, junto da caminhada
-    // o som do golpe sai junto do gesto, depois da faixa com o nome (13/11, revisão: tocava ~0,9 s antes)
+    // the enemy's steps play after the cursor shows the destination, along with the walk
+    // the strike sound comes out with the gesture, after the name banner (Nov 13, review: it played ~0.9 s earlier)
     if (!(e.k === 'move' && enemy) && e.k !== 'attack') this.sound(e);
     const show = async (hl: Highlights, ms: number) => {
       this.scene.setHighlights(hl);
@@ -467,7 +467,7 @@ class Game {
     if (e.k === 'move' && enemy) {
       const to = e.path.at(-1)!;
       this.scene.setCursor(to);
-      await show({ tiles: [{ pos: to, kind: 'target' }], path: e.path.slice(1), preview: null }, TIMING.enemyDestination); // sem o ponto embaixo de quem anda
+      await show({ tiles: [{ pos: to, kind: 'target' }], path: e.path.slice(1), preview: null }, TIMING.enemyDestination); // without the dot under the walker
       this.scene.setCursor(null);
       this.sound(e);
     } else if (e.k === 'attack') {
@@ -486,7 +486,7 @@ class Game {
     return Array.from({ length: g.width * g.height }, (_, i) => ({ x: i % g.width, y: Math.floor(i / g.width) }));
   }
 
-  // casas em volta de quem joga: a que ele encara em destaque (escolha de direção no fim do turno)
+  // tiles around the acting unit: the one it faces is highlighted (direction choice at the end of the turn)
   private facingMarks(): Highlights {
     const me = this.battle.actor;
     const tiles = neighbors(this.battle.grid, me.pos).map((pos) => ({ pos, kind: facingTo(me.pos, pos) === me.facing ? 'target' as const : 'range' as const }));
@@ -495,8 +495,8 @@ class Game {
 
   private faceTo(p: Pos) {
     const me = this.battle.actor;
-    // clique no próprio boneco ou na direção que ele já encara confirma e passa a vez (revisão de 13/11: só com mouse
-    // não havia como terminar o turno, o clique só girava)
+    // clicking the unit itself or the direction it already faces confirms and passes the turn (review of Nov 13: with only a mouse
+    // there was no way to end the turn, the click only rotated)
     if (samePos(p, me.pos) || facingTo(me.pos, p) === me.facing) return void this.endTurn();
     sfx('cursor');
     this.battle.face(facingTo(me.pos, p));
@@ -504,10 +504,10 @@ class Game {
     this.update(this.ui);
   }
 
-  // janela de status da unidade sob o cursor (ou de quem joga), com dialog() como os outros diálogos
+  // status window of the unit under the cursor (or of the acting unit), with dialog() like the other dialogs
   private status() {
     const s = this.battle.state;
-    const id = unitAt(s, this.cursor)?.id ?? this.battle.actor?.id; // qualquer casa da unidade grande
+    const id = unitAt(s, this.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit
     if (!id) return;
     const u = s.units.find((x) => x.id === id)!;
     dialog('status', unitName(u.def), [el('dl', { class: 'keys' }, ...unitStatus(s, id).flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]))]);
@@ -518,13 +518,13 @@ class Game {
   }
 
   private async endTurn() {
-    // mapa com direção: antes de passar a vez, escolher para onde olhar (como no FFT)
+    // map with direction: before passing the turn, choose where to look (like FFT)
     if (this.screen.k !== 'facing' && this.heroTurn && this.battle.actor.facing !== undefined) {
       this.screen = { k: 'facing' };
       this.cursorToActor();
       return this.update(this.ui);
     }
-    // cargas que saem antes do próximo turno (de heróis ou inimigos) tocam aqui
+    // charges that fire before the next turn (heroes' or enemies') play here
     const events = this.battle.endTurn();
     if (events.length) await this.animate(events);
     this.save();
@@ -540,10 +540,10 @@ class Game {
       this.update(this.ui);
       await this.scene.wait(TIMING.enemyStart);
       await this.animate(playAiTurn(this.battle), true);
-      // o estado já passou a vez (talvez para um herói): segue travado durante a pausa, senão o toque ou a tecla dessa
-      // janela valia e era apagado logo depois pelo freshUi (achado pelo teste só de teclado, 25/10)
+      // the state has already passed the turn (maybe to a hero): stays locked during the pause, otherwise the tap or key of this
+      // window counted and was erased right after by freshUi (found by the keyboard-only test, Oct 25)
       this.busy = true;
-      this.update(this.ui); // mostra o resumo ainda com o nome de quem agiu
+      this.update(this.ui); // shows the summary still with the name of who acted
       await this.scene.wait(TIMING.enemyAfter);
       this.save();
     }
@@ -559,7 +559,7 @@ class Game {
     if (this.battle.over) this.finish();
   }
 
-  // gira a unidade da vez 90° no sentido do relógio: é a escolha de para onde olhar antes de passar a vez (todo mapa desde 13/11)
+  // rotates the acting unit 90 degrees clockwise: it is the choice of where to look before passing the turn (every map since Nov 13)
   private face() {
     const f = this.battle.actor.facing;
     if (this.busy || !this.heroTurn || f === undefined) return;
@@ -572,12 +572,12 @@ class Game {
   private undo() {
     if (!this.battle.undo()) return;
     sfx('cancel');
-    this.log = ''; // a linha de ajuda mostrava a ação desfeita (revisão de 13/11)
+    this.log = ''; // the help line showed the undone action (review of Nov 13)
     this.screen = startScreen(this.battle);
     this.scene.sync(this.battle.state);
     this.save();
     this.cursorToActor();
-    this.scene.focusOn(this.battle.actor.pos); // a câmera tinha ido atrás do cursor até o destino: volta para quem joga
+    this.scene.focusOn(this.battle.actor.pos); // the camera had followed the cursor to the destination: goes back to the acting unit
     this.update(freshUi(this.battle));
   }
 
@@ -586,7 +586,7 @@ class Game {
     this.roster = Object.fromEntries(this.battle.state.units.map((u) => [u.id, { team: u.team, def: u.def }]));
   }
 
-  // "Destaque: Bran · 48 de dano · 2 derrubados" (o herói que mais derrubou; empate pelo dano), como o fecho do FFT
+  // "Highlight: Bran · 48 damage · 2 downed" (the hero who downed the most; tie broken by damage), like FFT's closing
   private mvpLine(): HTMLElement[] {
     const m = mvp(this.tally, this.teamOf(), 'hero');
     if (!m) return [];
@@ -613,10 +613,10 @@ class Game {
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
     if (won) confetti();
     if (chapter !== null) return this.finishChapter(chapter, won);
-    // Até o amanhecer: quantos turnos aguentou e o recorde (novo recorde ganha destaque, como a nota da fase)
-    // vencer derrubando todos antes do amanhecer também é aguentar a noite inteira (antes gravava "recorde 20" numa vitória)
+    // Until Dawn: how many turns it lasted and the record (a new record gets highlighted, like the stage grade)
+    // winning by downing everyone before dawn also counts as surviving the whole night (it used to save "record 20" on a victory)
     const lasted = won ? SURVIVE_TURNS : survived(this.battle.state), best = parseBest(store.get(BEST_KEY));
-    // missão do bar vencida: ouro e item no baú, e ela sai do bar (missions.ts)
+    // bar mission won: gold and item in the chest, and it leaves the bar (missions.ts)
     if (mission && won && !parseDone(store.json(MISSIONS_KEY)).includes(mission.id)) {
       const chest = parseChest(store.json(CHEST_KEY));
       store.set(CHEST_KEY, JSON.stringify({ gold: chest.gold + mission.gold, items: mission.item ? [...chest.items, mission.item] : chest.items }));
@@ -633,24 +633,24 @@ class Game {
         ? (won ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.') : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.'))
         : won ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
         : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.')),
-      // Título ao lado: sem ele, sair da batalha avulsa pedia recarregar a página
+      // Title beside it: without it, leaving the standalone battle required reloading the page
       el('div', { class: 'menu-actions' },
         mission && won ? el('button', { type: 'button', class: 'primary', onclick: toWorld }, t('Voltar ao mapa', 'Back to map'))
           : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Jogar de novo', 'Play again')),
         el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title'))),
     ]);
-    // Enter joga de novo (o foco ia para o ✕, e fechar deixava a batalha acabada sem tecla para recomeçar)
+    // Enter plays again (focus went to the X, and closing left the finished battle with no key to restart)
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
   }
 
-  // Fim de fase da campanha: vitória libera a próxima e toca a conversa de saída; derrota oferece tentar de novo
+  // Campaign stage end: victory unlocks the next and plays the exit conversation; defeat offers to try again
   private async finishChapter(n: number, won: boolean) {
     const last = n === CHAPTERS.length - 1;
     if (won) {
       store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
       store.set(WORLD_KEY, String(afterNode(nodeOfChapter(n), parseWorld(store.get(WORLD_KEY)))));
-      // ouro fixo por vitória (baú do grupo, chest.ts), para a loja; sem estrelas desde 13/11 (pedido do Fernando: "tire
-      // a mecânica das estrelas… isso vai ser o próximo Final Fantasy Tactics", sem pegada de puzzle)
+      // fixed gold per victory (party chest, chest.ts), for the shop; no stars since Nov 13 (Fernando's request: "remove
+      // the stars mechanic... this will be the next Final Fantasy Tactics", no puzzle feel)
       const chest = parseChest(store.json(CHEST_KEY));
       store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + VICTORY_GOLD }));
       await talk(CHAPTERS[n].outro, { hero: savedHero() });
@@ -660,9 +660,9 @@ class Game {
         ...this.mvpLine(),
         el('p', { class: 'mvp' }, t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`)),
         ...learned(n, savedHero(), savedGroup()).map((x) => el('p', { class: 'learned' }, t(`${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`, `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`)))] : []),
-      // na última fase não há batalha seguinte: o mapa guarda só o epílogo, de volta a Vauclair
+      // on the last stage there is no next battle: the map keeps only the epilogue, back to Vauclair
       el('p', {}, won ? (last ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.') : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')) : this.battle.state.units.some((u) => u.def === OBJECTIVE_DEF) || !scenario.spawns.some((s) => s.def === OBJECTIVE_DEF) ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.') : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.')),
-      // vitória volta ao mapa mundial (o próximo ponto está aberto); derrota tenta de novo ali mesmo ou volta ao mapa
+      // victory returns to the world map (the next point is open); defeat retries right there or goes back to the map
       el('div', { class: 'menu-actions' },
         won ? el('button', { type: 'button', class: 'primary', onclick: () => { location.search = `?mundo&de=${nodeOfChapter(n)}`; } }, t('Voltar ao mapa', 'Back to the map'))
           : el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); this.restart(); } }, t('Tentar de novo', 'Try again')),
@@ -671,12 +671,12 @@ class Game {
     d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
   }
 
-  // Opções (13/11, pedido do Fernando: "o menu pode ser algo que ocupa mais a largura da tela, com subseções"): janela
-  // larga com as seções numa coluna à esquerda (choice() vertical) e uma seção por vez à direita, para nada rolar longe
+  // Options (Nov 13, Fernando's request: "the menu could take up more of the screen width, with subsections"): wide window
+  // with the sections in a left column (vertical choice()) and one section at a time on the right, so nothing scrolls far
   private menu() {
     const sections: [id: string, title: string, body: Node[]][] = [[
       'jogo', t('Jogo', 'Game'), [
-      // na campanha, o objetivo da fase (sem Farol, de chefe); na batalha avulsa, o de sempre
+      // in the campaign, the stage objective (no Beacon, boss); in the standalone battle, the usual one
       el('p', {}, chapter !== null ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
         : scenario.id === SURVIVAL_ID ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
         : t('Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).', 'Goal: defeat the enemies and protect the Beacon (the blue crystal).')),
@@ -711,8 +711,8 @@ class Game {
     const d = dialog('menu', t('Opções', 'Options'), [
       el('div', { class: 'menu-layout' }, nav, el('div', { class: 'menu-body' }, ...panels)),
       el('div', { class: 'menu-actions' },
-        // durante a animação ou a vez do inimigo o laço ainda está rodando a batalha antiga
-        // o 1º toque só pergunta: reiniciar apaga a batalha salva e não tem volta (auditoria mobile de 25/10)
+        // during the animation or the enemy turn the loop is still running the old battle
+        // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
         el('button', { type: 'button', class: 'secondary', disabled: this.busy, onclick: (e: Event) => {
           const btn = e.currentTarget as HTMLButtonElement;
           if (!btn.dataset.armed) {
@@ -724,15 +724,15 @@ class Game {
           this.restart();
         } }, t('Reiniciar batalha', 'Restart battle')),
         el('button', { type: 'button', class: 'secondary', onclick: toWorld }, t('Mapa da campanha', 'Campaign map')),
-        // saída para o título (na Batalha avulsa o mapa da campanha não é de onde a pessoa veio)
+        // exit to the title (in the standalone battle the campaign map is not where the person came from)
         el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = ''; } }, t('Título', 'Title')),
         el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); void devMenu(); } }, t('Desenvolvedor', 'Developer'))),
     ]);
   }
 }
 
-// Menu de desenvolvedor (12/11): carrega o estudo do FFT à parte só para oferecer o relevo de Gariland como mapa. Começar
-// salva o elenco, apaga a batalha de desenvolvedor anterior e reabre o jogo nela (o boot monta o cenário).
+// Developer menu (Nov 12): loads the FFT study separately just to offer Gariland's terrain as a map. Starting
+// saves the roster, erases the previous developer battle and reopens the game on it (boot builds the scenario).
 async function devMenu(onBack?: () => void) {
   (await import('../shared/battle/fft/gariland.ts')).registerFftStudy();
   openDevMenu(() => {
@@ -743,11 +743,11 @@ async function devMenu(onBack?: () => void) {
 
 async function boot() {
   const host = document.getElementById('app')!;
-  // Estudo de referência do FFT (11/11): não é conteúdo do jogo. Só abre com o parâmetro e vem num pedaço separado do
-  // build (import dinâmico), então nada dele vai no pacote que o jogador baixa.
+  // FFT reference study (Nov 11): not game content. Only opens with the parameter and comes in a separate chunk of the
+  // build (dynamic import), so none of it goes into the package the player downloads.
   const study = new URLSearchParams(location.search).get('cenario');
   const camp = new URLSearchParams(location.search).get('campanha');
-  // missão do bar (missions.ts): só as ainda não vencidas; endereço de missão desconhecida ou vencida volta ao mapa
+  // bar mission (missions.ts): only the ones not yet won; unknown or won mission address goes back to the map
   const mis = new URLSearchParams(location.search).get('missao');
   if (mis !== null) {
     const m = MISSIONS.find((x) => x.id === mis);
@@ -757,14 +757,14 @@ async function boot() {
     scenario = missionScenario(m, parseProgress(store.get(CAMPAIGN_KEY)), savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
     SAVE_KEY = `dt:battle:${missionScenarioId(m.id)}`;
   }
-  if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // mapa mundial: sem batalha montada
-  // fase inexistente ou ainda fechada (endereço digitado ou salvo): volta ao mapa em vez de cair numa batalha avulsa
+  if (new URLSearchParams(location.search).has('mundo')) return void worldScreen(host); // world map: no battle assembled
+  // stage that does not exist or is still locked (typed or saved address): goes back to the map instead of falling into a standalone battle
   const allowed = camp !== null && camp !== '' && CHAPTERS[Number(camp)] !== undefined && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY));
   if (camp !== null && !allowed) return toWorld();
   if (mission) {
-    // já montada acima
+    // already assembled above
   } else if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
-    // fase da campanha: só abre se já foi liberada (vencer a anterior); cada fase tem o próprio save
+    // campaign stage: only opens if already unlocked (beat the previous one); each stage has its own save
     chapter = Number(camp);
     setTrack(CHAPTERS[chapter].song);
     scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
@@ -775,24 +775,24 @@ async function boot() {
     scenario = SCENARIOS[study];
     SAVE_KEY = `dt:battle:${study}`;
   } else if (study === DEV_SCENARIO) {
-    // batalha do menu de desenvolvedor: o elenco salvo vira o cenário (sem elenco válido, volta para a batalha padrão)
+    // battle from the developer menu: the saved roster becomes the scenario (no valid roster, goes back to the default battle)
     const setup = parseSetup(store.json(DEV_KEY));
-    // elenco com problema (time vazio, unidade sem habilidade) quebrava a batalha (13/11, revisão): cai na padrão
+    // roster with a problem (empty team, unit without ability) broke the battle (Nov 13, review): falls back to the default
     if (setup && !problems(setup, t).length) {
       if (setup.map.startsWith('fft-')) (await import('../shared/battle/fft/gariland.ts')).registerFftStudy();
       scenario = buildDevScenario(setup);
       SAVE_KEY = `dt:battle:${DEV_SCENARIO}`;
     }
   } else if (study === 'meia') {
-    // meia casa (13/11, versão de teste: bonecos 2x2 andando de 1 em 1, árvores de 3 a 5; half.ts)
+    // half tile (Nov 13, test version: 2x2 characters walking 1 at a time, trees of 3 to 5; half.ts)
     scenario = registerHalf();
     SAVE_KEY = `dt:battle:${HALF_ID}`;
   } else if (study === SURVIVAL_ID) {
-    // a regra própria (vence no amanhecer) só existe depois de montar o cenário: montar antes de carregar o save
+    // the own rule (wins at dawn) only exists after the scenario is assembled: assemble before loading the save
     scenario = survivalScenario();
     SAVE_KEY = `dt:battle:${SURVIVAL_ID}`;
   } else if (study && SCENARIOS[study]) {
-    // outros mapas do jogo pelo mesmo parâmetro (ex.: ?cenario=flooded_crypt), com save próprio
+    // other game maps through the same parameter (e.g. ?cenario=flooded_crypt), with their own save
     scenario = SCENARIOS[study];
     SAVE_KEY = `dt:battle:${study}`;
   }
@@ -801,19 +801,19 @@ async function boot() {
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(host, battle.grid, battle.state, pixel, scenario.spawns.map((s) => s.def));
   new Game(battle, scene, host, pixel);
-  // clima da fase da campanha (cripta escura, Colina sob o Véu, cume à noite): a mesma luz do modo Até o amanhecer
+  // campaign stage mood (dark crypt, Hill under the Veil, ridge at night): the same light as Until Dawn mode
   const light = chapter !== null ? CHAPTERS[chapter].light : undefined;
   if (light !== undefined) scene.setDaylight(light);
-  // fase começando do zero: a conversa de abertura por cima do mapa já montado
-  // fase do zero: conversa de abertura e, ao fechar, a faixa do objetivo (como o anúncio de objetivo do FFT)
+  // stage starting from zero: the opening conversation over the already assembled map
+  // stage from zero: opening conversation and, on closing, the objective banner (like FFT's objective announcement)
   const n = chapter;
   if (n !== null && !saved) void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() => announce(objectiveText(n, t)));
   if (study === SURVIVAL_ID && !saved) announce(survivalGoal(t));
-  // abrir o jogo sem parâmetro mostra a tela de título por cima da batalha avulsa (que fica ao fundo, já jogável)
+  // opening the game without a parameter shows the title screen over the standalone battle (which stays behind, already playable)
   if (camp === null && !study) titleScreen();
 }
 
-// Faixa grande no meio da tela por 2 s (objetivo no começo da fase); some sozinha e não pega clique
+// Large banner in the middle of the screen for 2 s (objective at the start of the stage); disappears by itself and does not take clicks
 function announce(text: string) {
   sfx('confirm');
   const box = el('div', { class: 'announce', role: 'status' }, text);
@@ -821,7 +821,7 @@ function announce(text: string) {
   setTimeout(() => box.remove(), 2200);
 }
 
-// Vitória: papel picado caindo por 2,5 s (DOM e CSS, sem custo no quadro do 3D); some sozinho. Com movimento reduzido, nada.
+// Victory: confetti falling for 2.5 s (DOM and CSS, no cost in the 3D frame); disappears by itself. With reduced motion, nothing.
 function confetti() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const colors = ['#f2c14e', '#4aa3ff', '#ff6b6b', '#7dffa8', '#ffffff'];
@@ -831,9 +831,9 @@ function confetti() {
   setTimeout(() => box.remove(), 3000);
 }
 
-// Batalha avulsa: os mapas com Farol (Bosque e Passo são da campanha). Toda escolha abre pela URL, cada uma com o próprio
-// save: a Colina ao fundo do título é só cenário desde a tela de título fixa (13/11), não se joga por ela
-// medido em 13/11 (npm run sim, 300 sementes, IA x IA) com dano x1,75, direção e árvores sem passagem: Colina 74%, Escaramuça 85%, Cripta 79%, Coração da Cripta 81% (antes 61%, 40% e 60%; o Coração com o 2º arqueiro no lugar do Bruto, que com o vão caía a 25%)
+// Standalone battle: the maps with a Beacon (Ash Wood and Pass belong to the campaign). Every choice opens by URL, each with its own
+// save: the Hill behind the title is just scenery since the fixed title screen (Nov 13), it is not played through it
+// measured on Nov 13 (npm run sim, 300 seeds, AI x AI) with damage x1.75, direction and trees without passage: Hill 74%, Skirmish 85%, Crypt 79%, Crypt Heart 81% (before 61%, 40% and 60%; the Heart with the 2nd archer in place of the Brute, which with the gap dropped to 25%)
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
 function quickBattle() {
   const d = dialog('title', t('Batalha avulsa', 'Quick battle'), [
@@ -845,7 +845,7 @@ function quickBattle() {
         location.search = `?cenario=${id}`;
       },
     }, t(SCENARIOS[id].name, SCENARIOS[id].en))),
-    // modo com outra regra: resistir até o amanhecer no Bosque (survival.ts)
+    // mode with another rule: survive until dawn in Ash Wood (survival.ts)
     el('button', { type: 'button', class: 'secondary', onclick: () => { d.close(); location.search = `?cenario=${SURVIVAL_ID}`; } },
       t('Até o amanhecer: resistir no Bosque', 'Until Dawn: hold out in the Wood')
         + (parseBest(store.get(BEST_KEY)) ? t(` (recorde ${parseBest(store.get(BEST_KEY))})`, ` (record ${parseBest(store.get(BEST_KEY))})`) : ''))),
@@ -853,8 +853,8 @@ function quickBattle() {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// Créditos (resumo; a lista completa, com licença de cada arquivo, é o public/CREDITS.txt). Voltar abre `back` (o título,
-// ou nada no fim da campanha, onde o mapa já está por baixo).
+// Credits (summary; the full list, with each file's license, is public/CREDITS.txt). Back opens `back` (the title,
+// or nothing at the end of the campaign, where the map is already underneath).
 function credits(back: () => void = titleScreen) {
   const d = dialog('title', t('Créditos', 'Credits'), [
     el('ul', { class: 'legend' },
@@ -869,8 +869,8 @@ function credits(back: () => void = titleScreen) {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// Como jogar (noite de 12/11): as regras que mudam a decisão, uma linha cada, para quem chega sem tutorial (as dicas da
-// fase 1 só cobrem mover e agir). Texto conferido contra as regras do motor (turn-queue, combat, grid).
+// How to play (night of Nov 12): the rules that change the decision, one line each, for whoever arrives without a tutorial (stage
+// 1 hints only cover move and act). Text checked against the engine rules (turn-queue, combat, grid).
 function howToPlay() {
   const d = dialog('title', t('Como jogar', 'How to play'), [
     el('ul', { class: 'legend' },
@@ -879,7 +879,7 @@ function howToPlay() {
       el('li', {}, t('Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda. O Salto diz quantos níveis cada um sobe ou desce por passo: o Ladino e o Lacaio 2, os outros 1. Com Salto 2 também se voa 1 casa de água funda ou de buraco.', 'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more. Jump says how many levels each unit climbs or drops per step: the Rogue and the Minion 2, the rest 1. Jump 2 also clears 1 tile of deep water or a gap.')),
       el('li', {}, t('Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles ou termina a vez em cima (passar por cima não fere).', 'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever is pushed onto them or ends a turn on them (walking over is safe).')),
       el('li', {}, t('Na água funda só se anda ou espera.', 'In deep water you can only move or wait.')),
-      // a carga mirada em alguém segue a unidade (battle.ts follow): "saia dela" estava errado para o alvo (revisão de 13/11)
+      // a charge aimed at someone follows the unit (battle.ts follow): "get out of it" was wrong for the target (review of Nov 13)
       el('li', {}, t('Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Se mirou alguém, a área anda junto: os vizinhos saem dela; o alvo só escapa saindo do alcance ou da vista de quem lança.', 'Charged abilities land later: the purple area shows where and the turn list shows when. If it targeted someone, the area moves with them: neighbours step out; the target only escapes by leaving the caster’s range or sight.')),
       el('li', {}, t('Proteja o Farol (o cristal azul) quando houver um. Inimigo de coroa é o chefe: derrubá-lo vence a fase.', 'Protect the Beacon (the blue crystal) when there is one. A crowned enemy is the boss: bringing it down wins the stage.'))),
     el('button', { type: 'button', class: 'primary', onclick: () => { d.close(); titleScreen(); } }, t('Voltar', 'Back')),
@@ -887,20 +887,20 @@ function howToPlay() {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// Tela de título (noite de 12/11): o jogo abria direto numa batalha sem dizer o que era nem que havia campanha
+// Title screen (night of Nov 12): the game opened straight into a battle without saying what it was or that there was a campaign
 function titleScreen() {
   setTrack('title');
   const go = (fn: () => void) => () => { d.close(); fn(); };
   const d = dialog('title', 'Dungeon Tactics', [
     el('p', { class: 'title-sub' }, t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes')),
     el('div', { class: 'menu-actions camp-list' },
-      // Continuar só aparece com progresso salvo; Novo jogo apaga o progresso da campanha (o 2º toque confirma)
-      // Continuar diz quem e onde (como o resumo do save no FFT): quem volta depois de dias sabe o que vai abrir
+      // Continue only shows with saved progress; New game erases campaign progress (the 2nd tap confirms)
+      // Continue says who and where (like FFT's save summary): whoever returns after days knows what will open
       ...(parseWorld(store.get(WORLD_KEY)) > 0 ? [el('button', { type: 'button', class: 'primary', onclick: go(toWorld) }, t('Continuar', 'Continue'),
         el('small', { class: 'continue-where' }, continueWhere()))] : []),
       el('button', { type: 'button', class: parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary', onclick: (e: Event) => {
         const btn = e.currentTarget as HTMLButtonElement;
-        // pede o 2º toque também com só o herói criado (revisão de 13/11: apagava o herói sem perguntar)
+        // asks for the 2nd tap even with only the hero created (review of Nov 13: it erased the hero without asking)
         if ((parseWorld(store.get(WORLD_KEY)) > 0 || savedHero()) && !btn.dataset.armed) {
           btn.dataset.armed = '1';
           btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
@@ -915,14 +915,14 @@ function titleScreen() {
       el('button', { type: 'button', class: 'secondary', onclick: go(() => void devMenu(titleScreen)) }, t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map')),
       el('button', { type: 'button', class: 'secondary', onclick: go(credits) }, t('Créditos', 'Credits'))),
     el('p', { class: 'title-foot' }, t('Setas escolhem · Enter confirma', 'Arrows choose · Enter confirms'), ' · ',
-      // idioma direto no título (revisão de 13/11: só dava pelo menu de dentro da batalha)
+      // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
       el('button', { type: 'button', class: 'title-lang', onclick: () => setLang(LANG === 'pt' ? 'en' : 'pt') }, LANG === 'pt' ? 'English' : 'Português')),
-  ], { fixed: true }); // tela de título de verdade (13/11): não fecha, e o mapa atrás é só cenário
+  ], { fixed: true }); // real title screen (Nov 13): does not close, and the map behind it is just scenery
   d.overlay.classList.add('main-title');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// "Ayla · Colina do Farol": o protagonista salvo e o próximo ponto aberto do mapa
+// "Ayla · Beacon Hill": the saved protagonist and the next open point on the map
 function continueWhere(): string {
   const w = WORLD[Math.min(parseWorld(store.get(WORLD_KEY)), WORLD.length - 1)];
   const hero = savedHero();
@@ -932,10 +932,10 @@ function continueWhere(): string {
 const chapterTitle = (n: number) => t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
 const toWorld = () => { location.search = '?mundo'; };
 const savedHero = () => parseHero(store.json(HERO_KEY));
-const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // grupo do jogador (group.ts): quem vai, classe e recrutados
+const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // player's group (group.ts): who goes, class and recruits
 
-// Controle na abertura e na criação (antes do mapa, que tem o próprio): A aperta o botão em foco ou vira Enter, o
-// direcional vira seta e B vira Esc, pelo mesmo tradutor da batalha. Devolve a função que para o laço.
+// Gamepad on the intro and creation (before the map, which has its own): A presses the focused button or becomes Enter, the
+// d-pad becomes arrows and B becomes Esc, through the same translator as the battle. Returns the function that stops the loop.
 function padToKeys(): () => void {
   let on = true;
   const mem = emptyMemory();
@@ -957,10 +957,10 @@ function padToKeys(): () => void {
   return () => { on = false; };
 }
 
-// Mapa mundial (world.ts e world-ui.ts): ponto de batalha abre a fase (rejogar começa do zero); ponto de história toca a
-// conversa ali mesmo e libera o seguinte. A fase só abre pela URL se já estiver liberada (boot), por isso o mapa libera antes.
+// World map (world.ts and world-ui.ts): a battle point opens the stage (replaying starts from zero); a story point plays the
+// conversation right there and unlocks the next. The stage only opens by URL if already unlocked (boot), hence the map unlocks first.
 async function worldScreen(host: HTMLElement) {
-  // jogo novo (sem herói salvo): a abertura da história e a criação do protagonista antes do mapa
+  // new game (no saved hero): the story intro and the protagonist creation before the map
   let hero = savedHero();
   if (!hero) {
     setTrack('title');
@@ -981,14 +981,14 @@ async function worldScreen(host: HTMLElement) {
       return;
     }
     await talk(node.scene!, { title: t(node.name[0], node.name[1]), hero });
-    // 1ª vez no epílogo: a jornada acabou, os créditos fecham a campanha (rever o epílogo depois não repete)
+    // 1st time on the epilogue: the journey is over, the credits close the campaign (revisiting the epilogue later does not repeat)
     const finale = i === WORLD.length - 1 && i >= done;
     done = afterNode(i, done);
-    // nos créditos do fim, Voltar só fecha: o mapa já está aberto por baixo (o título por cima dele não tinha batalha ao fundo)
+    // on the end credits, Back only closes: the map is already open underneath (the title on top of it had no battle behind)
     store.set(WORLD_KEY, String(done));
     view = view.refresh(done, i);
-    // créditos depois de atualizar o mapa (13/11, revisão): antes, o refresh puxava o foco para o Entrar atrás dos créditos e
-    // um Enter reabria o epílogo por cima
+    // credits after refreshing the map (Nov 13, review): before, the refresh pulled focus to Enter behind the credits and
+    // an Enter reopened the epilogue on top
     if (finale) credits(() => undefined);
   };
   let view = openWorld(host, { done, hero: hero.cls, enter, back: () => { location.search = ''; },

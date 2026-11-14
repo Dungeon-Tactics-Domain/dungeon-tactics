@@ -1,6 +1,6 @@
-// Tela do mapa mundial (world.ts tem as regras): pergaminho com a estrada, os pontos e o retrato do grupo, que anda de
-// ponto em ponto. Setas (ou A D W S) andam, Enter entra, Esc volta ao título; clique num ponto aberto anda até ele.
-// Painel do lugar no canto de baixo à direita, como o nome do lugar no mapa do FFT; arte e texto nossos.
+// Worldmap screen (world.ts has the rules): a parchment with the road, the nodes and the party portrait, which walks from
+// node to node. Arrows (or A D W S) walk, Enter enters, Esc goes back to the title; clicking an open node walks to it.
+// Place panel in the bottom-right corner, like the place name on the FFT map; art and text are ours.
 import { foesText } from './campaign.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -19,21 +19,21 @@ import { WORLD, isOpen, step } from './world.ts';
 import { DEPLOY_MAX, GROUP_KEY, GROUP_MAX, JOBS, RECRUIT_COST, changeClass, dismiss, learnedCount, parseGroup, recruit, toggleDeploy, type Group, type Member } from './group.ts';
 import type { Hero } from './hero.ts';
 
-const WALK_MS = 320; // um trecho de estrada; o CSS usa o mesmo valor (--walk-ms)
-const FADE_MS = 300; // escurecer antes de entrar no ponto; o CSS usa o mesmo valor (.fade-out)
+const WALK_MS = 320; // one stretch of road; the CSS uses the same value (--walk-ms)
+const FADE_MS = 300; // fade to dark before entering the node; the CSS uses the same value (.fade-out)
 
-// Mapa ilustrado (13/11, pedido do Fernando: "um mapa mundial na vibe" de um mapa de fantasia em pergaminho; só a vibe,
-// desenho nosso): mar com textura, um continente de costa irregular com halo de água rasa, matas, montanhas com face de
-// sombra e neve no alto, a terra cinza da Estrada de Cinzas, rio das montanhas ao lago e ao mar, ilhas, rosa dos ventos e
-// cartela com o nome. viewBox 0–100 esticado na tela (os pontos ficam em % do desenho), então cada símbolo é desenhado
-// ~2,2x mais estreito em x do que em y (a área do mapa tem ~2,2:1 no PC 16:9) para não sair achatado.
+// Illustrated map (Nov 13, Fernando's request: "a worldmap with the vibe" of a fantasy parchment map; vibe only,
+// our own drawing): textured sea, a continent with an irregular coast and a shallow-water halo, forests, mountains with a
+// shaded face and snow on top, the gray land of the Ash Road, a river from the mountains to the lake and the sea, islands, compass rose and
+// name cartouche. viewBox 0-100 stretched over the screen (nodes sit at % of the drawing), so each symbol is drawn
+// ~2.2x narrower in x than in y (the map area is ~2.2:1 on a 16:9 PC) so it doesn't come out squashed.
 const NODE_CLEAR = (x: number, y: number, dx: number, dy: number) => WORLD.every((w) => Math.abs(w.x - x) > dx || Math.abs(w.y - y) > dy);
 const LAND = 'M4 62 C2 50, 8 40, 16 36 C22 26, 30 30, 38 22 C44 12, 56 8, 66 10 C76 4, 90 2, 97 8 L97 60 C94 70, 86 74, 82 84 C76 94, 62 90, 52 94 C42 98, 30 96, 20 95 C10 94, 4 88, 5 78 Z';
-const ISLES = [[9, 14, 4, 5], [30, 7, 3, 2.5], [70, 97, 4, 2]]; // nenhuma no canto de baixo à direita: é da rosa dos ventos
+const ISLES = [[9, 14, 4, 5], [30, 7, 3, 2.5], [70, 97, 4, 2]]; // none in the bottom-right corner: that's the compass rose's spot
 const FORESTS: [number, number, number, number, number][] = [[12, 58, 8, 12, 46], [34, 80, 8, 8, 30], [45, 44, 6, 7, 20], [68, 72, 9, 9, 34], [89, 54, 7, 12, 36], [22, 42, 6, 6, 18]];
 const PEAKS = [[64, 16], [72, 11], [80, 9], [91, 7], [95, 19], [84, 24], [76, 20], [93, 34], [86, 40], [95, 48], [62, 24], [97, 28]];
-// Desenho de cada lugar ao lado do ponto (13/11, mesmo pedido do mapa ilustrado): casas na vila, tenda no acampamento,
-// porta de pedra nas criptas, torre com chama nos faróis, bandeira no cume. Fora do SVG esticado para não deformar.
+// Drawing of each place beside its node (Nov 13, same request as the illustrated map): houses in the village, tent in the camp,
+// stone door at the crypts, tower with a flame at the lighthouses, flag at the summit. Outside the stretched SVG so it isn't deformed.
 const HOUSES = '<path class="wall" d="M3 28V17l7-6 7 6v11Z M15 28V19l7-6 7 6v9Z" /><path class="roof" d="M1 18l9-8 9 8 M13 20l9-8 9 8" />';
 const CRYPT = '<path class="stone" d="M4 29V12a12 12 0 0 1 24 0v17Z" /><path class="door" d="M11 29V17a5 5 0 0 1 10 0v12Z" />';
 const TOWER = '<path class="stone" d="M11 29l2-18h6l2 18Z M10 11h12v-3H10Z" /><path class="flame" d="M16 1c3 3 3 5 0 7c-3-2-3-4 0-7Z" />';
@@ -43,7 +43,7 @@ const PLACE_ICON: Record<string, string> = {
   cume: '<path class="stone" d="M2 30L16 10l14 20Z" /><path class="roof" d="M16 10V1" /><path class="flame" d="M16 1h9l-3 3 3 3h-9Z" />',
 };
 const terrain = (done: number) => {
-  let s = 7; // sorteio fixo: o mapa sai igual toda vez
+  let s = 7; // fixed seed: the map comes out the same every time
   const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const trees = FORESTS.flatMap(([cx, cy, rx, ry, n]) => Array.from({ length: n }, () => {
     const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd());
@@ -93,12 +93,12 @@ const terrain = (done: number) => {
 ${WORLD.filter((w) => PLACE_ICON[w.id]).map((w) => `<svg class="world-icon" viewBox="0 0 32 32" style="left:${w.x}%;top:${w.y}%" aria-hidden="true">${PLACE_ICON[w.id]}</svg>`).join('')}`;
 };
 
-// Tela Grupo (como a formação do FFT): todos do grupo, quem vai à próxima batalha (até 4) e quem fica no acampamento,
-// com retrato, classe e números; cada linha abre a ficha. `n`: a próxima fase (as habilidades liberadas).
-// 13/11, entrega 5 do desenho (docs/game-design/cidades-grupo-equipamento.md): recrutados e troca de classe
+// Party screen (like the FFT formation): everyone in the party, who goes to the next battle (up to 4) and who stays in camp,
+// with portrait, class and numbers; each row opens the sheet. `n`: the next stage (the unlocked abilities).
+// Nov 13, delivery 5 of the design (docs/game-design/cidades-grupo-equipamento.md): recruits and class change
 const loadGroup = () => parseGroup(store.json(GROUP_KEY));
 const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
-// nome na tela: o protagonista entra no lugar do companheiro da história com a classe de partida dele (group.ts)
+// name on screen: the protagonist takes the place of the story companion with that companion's starting class (group.ts)
 const shown = (m: Member, hero: Hero | null) => (hero && m.id === hero.cls ? hero.name : m.name);
 const unitOf = (m: Member, n: number, hero: Hero | null) => { const u = unitFrom(m.cls, shown(m, hero)); return { ...u, abilities: u.abilities.slice(0, learnedCount(n)) }; };
 
@@ -127,7 +127,7 @@ export function openParty(n: number, hero: Hero | null) {
 
 const SLOT_NAME: Record<Slot, () => string> = { weapon: () => t('Arma', 'Weapon'), armor: () => t('Armadura', 'Armor'), accessory: () => t('Acessório', 'Accessory') };
 const itemName = (it: ItemDef) => t(it.name, it.en);
-// "+2 dano · +8 acerto": só o que o item muda, nas palavras da ficha
+// "+2 damage · +8 accuracy": only what the item changes, in the sheet's wording
 export function itemStats(it: ItemDef): string {
   const parts: [number | undefined, string, string][] = [[it.hp, 'vida', 'HP'], [it.power, 'dano', 'damage'], [it.hit, 'acerto', 'hit'], [it.move, 'movimento', 'move'], [it.jump, 'salto', 'jump'], [it.speed, 'velocidade', 'speed']];
   return parts.filter(([v]) => v).map(([v, pt, en]) => `${v! > 0 ? '+' : ''}${v} ${t(pt, en)}`).join(' · ');
@@ -135,7 +135,7 @@ export function itemStats(it: ItemDef): string {
 const loadChest = () => parseChest(store.json(CHEST_KEY));
 const loadEquip = () => parseEquip(store.json(EQUIP_KEY));
 
-// Menu da cidade (13/11, entrega 3): Loja, Bar com boatos e Grupo, em pergaminho por cima do mapa; Esc volta ao mapa
+// Town menu (Nov 13, delivery 3): Shop, Bar with rumors and Party, as parchment over the map; Esc goes back to the map
 function openTown(i: number, party: () => void) {
   const w = WORLD[i];
   const again = () => openTown(i, party);
@@ -153,13 +153,13 @@ function openBar(i: number, back: () => void) {
   const open = MISSIONS.filter((m) => m.town === WORLD[i].id && !done.includes(m.id));
   const d = dialog('party', t('Bar', 'Tavern'), [el('ul', { class: 'legend' }, ...rumors.map(([pt, en]) => el('li', {}, `“${t(pt, en)}”`))),
     el('h3', {}, t('Missões', 'Quests')),
-    // missão: batalha extra com o grupo atual; vencer dá ouro e item (missions.ts)
+    // mission: extra battle with the current party; winning gives gold and an item (missions.ts)
     ...(open.length ? open.map((m) => el('div', { class: 'party-card' }, el('div', {},
       el('strong', {}, t(m.name[0], m.name[1])), el('p', {}, t(m.text[0], m.text[1])),
       el('p', { class: 'party-stats' }, t(`Recompensa: ${m.gold} de ouro${m.item ? ` e ${ITEMS[m.item].name}` : ''}`, `Reward: ${m.gold} gold${m.item ? ` and ${ITEMS[m.item].en}` : ''}`)),
       el('button', { type: 'button', class: 'secondary', onclick: () => { location.search = `?missao=${m.id}`; } }, t('Aceitar', 'Accept')))))
       : [el('p', {}, t('Nenhuma missão por agora.', 'No quests for now.'))]),
-    // recrutar (entrega 5): uma pessoa de uma das 4 classes por ouro, até o teto do grupo
+    // recruit (delivery 5): one person of any of the 4 classes for gold, up to the party cap
     el('h3', {}, t('Recrutar', 'Recruit')),
     el('p', {}, t(`${RECRUIT_COST} de ouro cada · ouro no baú: ${loadChest().gold} · grupo ${loadGroup().members.length} de ${GROUP_MAX}`,
       `${RECRUIT_COST} gold each · gold in chest: ${loadChest().gold} · party ${loadGroup().members.length} of ${GROUP_MAX}`)),
@@ -176,7 +176,7 @@ function openBar(i: number, back: () => void) {
   ], { onBack: back });
 }
 
-// Loja (13/11, entrega 2: provisória no mapa até as cidades): compra com o ouro do baú, vende pela metade (como no FFT)
+// Shop (Nov 13, delivery 2: provisional on the map until the towns): buy with the chest gold, sell for half (as in FFT)
 export function openShop(back?: () => void) {
   const chest = loadChest();
   const save = (c: ReturnType<typeof buy>) => { if (!c) return void sfx('cancel'); store.set(CHEST_KEY, JSON.stringify(c)); sfx('confirm'); d.close(); openShop(back); };
@@ -194,9 +194,9 @@ export function openShop(back?: () => void) {
   ], { onBack: back });
 }
 
-// Ficha da unidade (como a tela de status da formação do FFT): números, cada habilidade com o que faz (as que ainda vêm
-// marcadas), os 3 espaços de equipamento e as ações do grupo: classe, ir ou não à batalha e dispensar (só recrutados).
-// Esc/✕ volta à lista
+// Unit sheet (like the FFT formation status screen): numbers, each ability with what it does (the ones still to come are
+// marked), the 3 equipment slots and the party actions: class, go or not to battle, and dismiss (recruits only).
+// Esc/✕ goes back to the list
 function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
   const u = unitOf(m, n, hero);
   const def = UNIT_DEFS[m.cls];
@@ -206,7 +206,7 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
   const eq = loadEquip(), chest = loadChest(), mine = eq[m.id] ?? {};
   const b = bonusOf(mine);
   const g = loadGroup(), going = g.deployed.includes(m.id);
-  // número com o equipamento: "42 (+6)"
+  // number with the equipment: "42 (+6)"
   const withB = (v: number, plus: number) => (plus ? `${v + plus} (${plus > 0 ? '+' : ''}${plus})` : String(v));
   const put = (slot: Slot, id: string | null) => {
     const r = equip(loadChest(), loadEquip(), m.id, slot, id);
@@ -250,7 +250,7 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
         going ? t('Deixar no acampamento', 'Leave at camp') : t('Levar à batalha', 'Bring to battle')),
       ...(m.recruit ? [el('button', { type: 'button', class: 'secondary', onclick: fire }, t('Dispensar', 'Dismiss'))] : [])),
     ...(!going && g.deployed.length >= DEPLOY_MAX ? [el('p', {}, t(`Já vão ${DEPLOY_MAX}: deixe alguém no acampamento antes.`, `${DEPLOY_MAX} already go: leave someone at camp first.`))] : []),
-    // troca de classe (como o Job do FFT): os números e as habilidades passam a ser os da classe nova; o equipamento fica
+    // class change (like FFT's Job): the numbers and abilities become those of the new class; the equipment stays
     el('h3', {}, t('Classe', 'Class')),
     el('div', { class: 'menu-actions' }, ...JOBS.map((c) => el('button', { type: 'button', class: 'secondary', disabled: c === m.cls,
       'aria-pressed': String(c === m.cls), onclick: () => setClass(c) }, c === m.cls ? `✓ ${unitName(c)}` : unitName(c)))),
@@ -258,7 +258,7 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
     el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a))),
       ...later.flatMap((a) => row(abilityName(a), t('aprende mais adiante na jornada', 'learned later on the journey')))),
     el('h3', {}, t('Equipamento', 'Equipment')),
-    // cada espaço: o item de agora e os do baú que cabem nele (Equipar); Tirar devolve ao baú
+    // each slot: the current item and the chest items that fit it (Equip); Unequip returns it to the chest
     el('dl', { class: 'keys' }, ...SLOTS.flatMap((slot) => [el('dt', {}, SLOT_NAME[slot]()), el('dd', {},
       mine[slot] ? `${itemName(ITEMS[mine[slot]!])} (${itemStats(ITEMS[mine[slot]!])}) ` : t('vazio ', 'empty '),
       ...(mine[slot] ? [el('button', { type: 'button', class: 'secondary', onclick: () => put(slot, null) }, t('Tirar', 'Remove'))] : []),
@@ -271,44 +271,44 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void) {
 }
 
 export interface WorldOptions {
-  done: number; // pontos já passados (world.ts)
-  hero: string; // ficha do retrato que anda no mapa
+  done: number; // points already passed (world.ts)
+  hero: string; // sheet of the portrait that walks on the map
   enter: (i: number) => void;
   back: () => void;
-  party: () => void; // tela do grupo (main.ts), como a formação do FFT
-  from?: number; // ponto de onde o grupo vem (fase recém-vencida): abre ali e anda sozinho até o próximo aberto
+  party: () => void; // party screen (main.ts), like the FFT formation
+  from?: number; // node the party comes from (just-won stage): opens there and walks on its own to the next open one
 }
 
 export interface WorldView {
   root: HTMLElement;
-  // troca este mapa por um novo; quem chama passa a guardar o novo (senão o 2º refresh duplicava o mapa). `from`: de onde o
-  // grupo sai (a história recém-vista); sem ele, o `from` antigo repetia a caminhada da última vitória a cada história
+  // swaps this map for a new one; the caller now holds the new one (otherwise the 2nd refresh duplicated the map). `from`: where the
+  // party leaves from (the story just seen); without it, the old `from` repeated the walk of the last victory on every story
   refresh: (done: number, from?: number) => WorldView;
 }
 
 export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   const { done, hero, enter, back } = opts;
-  // começa no ponto mais avançado aberto (o próximo a fazer)
+  // starts at the most advanced open node (the next one to do)
   const goal = Math.min(done, WORLD.length - 1);
   let at = opts.from !== undefined && opts.from >= 0 && opts.from < goal ? opts.from : goal;
   let walking = false;
   const tag = el('span', { class: 'world-tag' });
-  // nome do lugar logo abaixo do retrato: o olho não precisa ir ao painel do canto para saber onde o grupo está
+  // place name right below the portrait: the eye needn't go to the corner panel to know where the party is
   const token = el('div', { class: 'world-token', 'aria-hidden': 'true' }, portrait(hero), tag);
   const nodes = WORLD.map((w, i) => {
     const kind = w.chapter !== undefined ? 'battle' : 'story';
     return el('button', {
       type: 'button', class: `world-node ${kind}${i < done ? ' done' : ''}`, style: `left:${w.x}%;top:${w.y}%`,
-      // title: com o mouse, o nome aparece sem precisar andar até o ponto (fechado também, para dar vontade de chegar)
+      // title: with the mouse, the name shows without walking to the node (closed ones too, to make you want to reach it)
       disabled: !isOpen(i, done), 'aria-label': t(w.name[0], w.name[1]), title: t(w.name[0], w.name[1]), onclick: () => void walkTo(i),
-      onmouseenter: () => isOpen(i, done) && sfx('cursor'), // som de cursor ao passar por um ponto aberto, como nos menus
+      onmouseenter: () => isOpen(i, done) && sfx('cursor'), // cursor sound when hovering an open node, like in the menus
     });
   });
   const place = el('strong', { class: 'world-place' });
   const kindText = el('p', { class: 'world-kind' });
-  const foes = el('p', { class: 'world-kind' }); // quantos inimigos e o chefe (só nos pontos de batalha)
+  const foes = el('p', { class: 'world-kind' }); // how many enemies and the boss (only on battle nodes)
   const enterBtn = el('button', { type: 'button', class: 'item focus', onclick: () => go() }, t('Entrar', 'Enter'));
-  // só nas cidades (WorldNode.town): o menu da cidade, como as cidades do FFT
+  // only in towns (WorldNode.town): the town menu, like the FFT towns
   const townBtn = el('button', { type: 'button', class: 'item', hidden: true, onclick: () => openTown(at, opts.party) }, t('Cidade', 'Town'));
   const panel = el('div', { class: 'panel world-panel', 'aria-live': 'polite' }, place, kindText, foes, el('div', { class: 'world-actions' }, enterBtn,
     el('button', { type: 'button', class: 'item', onclick: () => opts.party() }, t('Grupo', 'Party')),
@@ -336,7 +336,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     foes.textContent = w.chapter !== undefined ? foesText(w.chapter, t) : '';
     foes.hidden = w.chapter === undefined;
   };
-  // anda um trecho por vez até o ponto pedido, com passo e pausa curta em cada um (o olho segue o caminho)
+  // walks one stretch at a time to the requested node, with a step and a short pause at each (the eye follows the path)
   async function walkTo(target: number) {
     if (walking || target === at) return;
     walking = true;
@@ -348,7 +348,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     }
     walking = false;
   }
-  // entrar: a tela escurece antes (transição de cena, como no FFT); a história abre por cima do escuro e ele some depois
+  // enter: the screen fades to dark first (scene transition, as in FFT); the story opens over the dark and it fades out afterwards
   const go = () => {
     if (walking) return;
     sfx('confirm');
@@ -368,11 +368,11 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     if (dir) {
       e.preventDefault();
       const next = step(at, dir, done);
-      if (next === at) sfx('cancel'); // ponta da estrada ou ponto ainda fechado
+      if (next === at) sfx('cancel'); // end of the road or node still closed
       else void walkTo(next);
     } else if (k === 'enter' || k === ' ') {
-      // com o foco em outro botão do mapa (Título, Grupo), deixa o clique dele acontecer (revisão de 13/11: Enter no
-      // Título abria a fase)
+      // with focus on another map button (Title, Party), lets its click happen (Nov 13 review: Enter on
+      // Title opened the stage)
       const f = document.activeElement;
       if (f instanceof HTMLButtonElement && f !== enterBtn && root.contains(f)) return;
       e.preventDefault();
@@ -380,10 +380,10 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     } else if (k === 'escape') back();
     else if (k === 'g') opts.party();
   });
-  // controle: o mesmo tradutor da batalha (gamepad.ts). Direcional anda, A entra, B volta; com uma conversa aberta,
-  // A aperta o botão em foco (a caixa de fala), como na batalha
+  // gamepad: the same translator as the battle (gamepad.ts). D-pad walks, A enters, B goes back; with a conversation open,
+  // A presses the focused button (the speech box), as in battle
   const mem = emptyMemory();
-  let primed = false; // o 1º quadro só registra o que já estava apertado: o A que começou a jornada não entra no 1º ponto
+  let primed = false; // the 1st frame only records what was already pressed: the A that started the journey doesn't enter the 1st node
   const poll = () => {
     if (!root.isConnected) return;
     requestAnimationFrame(poll);
@@ -408,8 +408,8 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   root.style.setProperty('--walk-ms', `${WALK_MS}ms`);
   show();
   enterBtn.focus();
-  // volta de uma vitória: o grupo anda até o ponto que acabou de abrir (o avanço na jornada fica visível). Rejogar uma fase
-  // antiga não abre nada: o grupo fica onde jogou, em vez de atravessar o mapa inteiro sozinho
+  // back from a victory: the party walks to the node that just opened (progress in the journey is visible). Replaying an
+  // old stage opens nothing: the party stays where it played, instead of crossing the whole map on its own
   if (at === goal - 1) setTimeout(() => void walkTo(goal), 500);
   return { root, refresh: (newDone: number, from?: number) => { root.remove(); return openWorld(host, { ...opts, done: newDone, from }); } };
 }

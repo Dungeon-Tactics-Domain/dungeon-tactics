@@ -1,12 +1,12 @@
-// Toque e mouse no mapa: toque curto escolhe a casa, arrastar com um dedo move a câmera, dois dedos (ou a roda) dão zoom.
+// Touch and mouse on the map: a short tap picks the tile, dragging with one finger moves the camera, two fingers (or the wheel) zoom.
 export interface TouchHandlers {
   tap(x: number, y: number, mouse: boolean): void;
-  hover?(x: number, y: number): void; // só o mouse, sem botão apertado: o PC usa como o cursor do teclado
+  hover?(x: number, y: number): void; // mouse only, no button pressed: the PC uses it like the keyboard cursor
   pan(dx: number, dy: number): void;
   zoom(factor: number): void;
 }
 
-// acima disto o dedo arrastou, não tocou (8 px: o toque de um polegar escorrega uns 3 a 5 px)
+// above this the finger dragged, didn't tap (8 px: a thumb tap slips about 3 to 5 px)
 const TAP_SLOP = 8;
 
 export class TouchInput {
@@ -19,7 +19,7 @@ export class TouchInput {
   constructor(target: HTMLElement, h: TouchHandlers) {
     const opts = { signal: this.ac.signal };
     target.addEventListener('pointerdown', (e) => {
-      // só o botão principal toca e arrasta (13/11, revisão): o direito virava toque e confirmava o andar em vez de voltar
+      // only the primary button taps and drags (Nov 13, review): the right one became a tap and confirmed the move instead of going back
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       target.setPointerCapture(e.pointerId);
       this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -27,7 +27,7 @@ export class TouchInput {
         this.downAt = { x: e.clientX, y: e.clientY };
         this.dragged = false;
       } else {
-        this.dragged = true; // segundo dedo: é pinça, nunca toque
+        this.dragged = true; // second finger: it's a pinch, never a tap
         const [a, b] = [...this.pointers.values()];
         this.pinch = Math.hypot(a.x - b.x, a.y - b.y);
       }

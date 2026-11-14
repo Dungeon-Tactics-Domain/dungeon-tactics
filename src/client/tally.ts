@@ -1,7 +1,7 @@
-// Placar da batalha para o destaque no fim (noite de 12/11): dano causado e inimigos derrubados por unidade. Lê os
-// eventos na ordem em que a cena toca: tudo depois de um "attack" é de quem atacou (golpe, batida, queda e espinho do
-// empurrão), até o próximo "attack". Só conta dano no outro lado (espinho no fim da própria vez não é mérito de ninguém).
-// Puro e testado; o Game junta os eventos a cada animação. Salvar e reabrir no meio zera o placar (fica só na memória).
+// Battle tally for the highlight at the end (night of Nov 12): damage dealt and enemies downed per unit. Reads the
+// events in the order the scene plays them: everything after an "attack" belongs to whoever attacked (hit, crash, fall and push
+// spike), until the next "attack". Only counts damage to the other side (a spike at the end of one's own turn is nobody's merit).
+// Pure and tested; the Game gathers the events on each animation. Saving and reopening mid-battle resets the tally (it lives only in memory).
 import type { BattleEvent, Team } from '../shared/battle/types.ts';
 
 export interface Score { dmg: number; kills: number }
@@ -10,8 +10,8 @@ export interface Tally { by: string | null; scores: Record<string, Score> }
 export const emptyTally = (): Tally => ({ by: null, scores: {} });
 
 export function addEvents(t: Tally, events: BattleEvent[], team: Record<string, Team>): void {
-  // espinho sem empurrão logo antes (de quem terminou a vez em cima dele) é mérito de ninguém, nem a morte que vem dele;
-  // sem isto ia para quem atacou por último, talvez turnos antes (achado da revisão de 13/11)
+  // spike with no push right before (from whoever ended their turn on it) is nobody's merit, nor is the death that comes from it;
+  // without this it went to whoever attacked last, maybe turns earlier (finding from the Nov 13 review)
   const ownFault = new Set<string>();
   events.forEach((e, i) => {
     const prev = events[i - 1];
@@ -27,7 +27,7 @@ export function addEvents(t: Tally, events: BattleEvent[], team: Record<string, 
   }
 }
 
-// quem do time mais fez: mais derrubados, empate pelo dano; null se ninguém do time pontuou
+// who on the team did the most: most downed, tie broken by damage; null if nobody on the team scored
 export function mvp(t: Tally, team: Record<string, Team>, side: Team): [id: string, s: Score] | null {
   const list = Object.entries(t.scores).filter(([id, s]) => team[id] === side && (s.dmg > 0 || s.kills > 0));
   list.sort(([, a], [, b]) => b.kills - a.kills || b.dmg - a.dmg);

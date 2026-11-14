@@ -1,7 +1,7 @@
-// Controle (Gamepad API do navegador, pedido do Fernando de 12/11). Traduz o estado dos botões em ações de teclado
-// (KeyAction), para o Game tratar controle, teclado e mouse do mesmo jeito. Puro: o laço que lê o controle fica no Game.
-// Mapeamento "standard" do navegador, igual no Xbox e no PlayStation: 0 = A / ×, 1 = B / ○, 2 = X / □, 3 = Y / △,
-// 4 e 5 = ombros, 6 e 7 = gatilhos, 8 = Back / Select, 9 = Start, 12 a 15 = direcional.
+// Gamepad (browser Gamepad API, Fernando's request of Nov 12). Translates the button state into keyboard actions
+// (KeyAction), so the Game treats gamepad, keyboard and mouse the same way. Pure: the loop that reads the gamepad lives in the Game.
+// The browser's "standard" mapping, the same on Xbox and PlayStation: 0 = A / ×, 1 = B / ○, 2 = X / □, 3 = Y / △,
+// 4 and 5 = bumpers, 6 and 7 = triggers, 8 = Back / Select, 9 = Start, 12 to 15 = d-pad.
 import type { KeyAction, ScreenDir } from './keyboard.ts';
 
 export interface PadState {
@@ -9,14 +9,14 @@ export interface PadState {
   axes: number[];
 }
 export interface PadMemory {
-  held: Partial<Record<string, number>>; // desde quando (ms) cada entrada está apertada, para repetir
-  last: Partial<Record<string, number>>; // quando repetiu pela última vez
+  held: Partial<Record<string, number>>; // since when (ms) each input has been pressed, for repeating
+  last: Partial<Record<string, number>>; // when it last repeated
 }
 export const emptyMemory = (): PadMemory => ({ held: {}, last: {} });
 
-const DEAD = 0.5; // analógico: menos que isso é ruído do controle
-// direcional segurado repete como uma tecla: 1ª repetição depois de 300 ms, depois a cada 120 ms (o cursor do FFT
-// anda casa a casa; repetir mais rápido passava do alvo)
+const DEAD = 0.5; // analog: less than this is gamepad noise
+// held d-pad repeats like a key: 1st repeat after 300 ms, then every 120 ms (FFT's cursor
+// moves tile by tile; repeating faster overshot the target)
 const FIRST_REPEAT = 300, REPEAT = 120;
 
 const PRESS: Record<number, KeyAction> = {
@@ -26,7 +26,7 @@ const PRESS: Record<number, KeyAction> = {
 };
 const DPAD: Record<number, ScreenDir> = { 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
 
-// Ações deste quadro: botão vale ao apertar (não enquanto segura); direção (direcional ou analógico) repete segurando.
+// This frame's actions: a button counts on press (not while held); direction (d-pad or analog) repeats while held.
 export function padActions(pad: PadState, mem: PadMemory, now: number): KeyAction[] {
   const out: KeyAction[] = [];
   const dirs: ScreenDir[] = [];

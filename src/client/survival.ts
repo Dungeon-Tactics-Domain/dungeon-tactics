@@ -1,29 +1,29 @@
-// Modo "Até o amanhecer" (noite de 12/11, pedido de modos novos): na Batalha avulsa, os 4 heróis resistem no Bosque
-// das Cinzas a inimigos mais fortes que eles até a fila chegar a SURVIVE_TURNS turnos (de todos, como a lista de turnos
-// conta). Derrubar todos também vence. Fica fora da campanha: fase nova no meio mudaria os saves e a ordem do mapa.
+// "Until dawn" mode (night of Nov 12, request for new modes): in the standalone Battle, the 4 heroes hold out in the Ash
+// Ash Wood against enemies stronger than they are until the queue reaches SURVIVE_TURNS turns (of everyone, as the turn list
+// counts). Downing everyone also wins. Kept outside the campaign: a new stage in the middle would change the saves and the map order.
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
 import { buildDevScenario, unitFrom, type DevUnit } from './dev-roster.ts';
 
 export const SURVIVAL_ID = 'survival';
-// medido em 13/11 (MEDIR=300, IA nos dois lados) depois do dano x1,75 e da direção: com vida 1,5x e 40 turnos os heróis
-// vencem 30% e parados vencem 16%; com 36 turnos, parados (48%) venciam mais que lutando (43%), e com vida 2x e 28 turnos
-// parados venciam 99% (a batalha encurtou e os inimigos não chegavam a tempo). Antes do dano novo: vida 2x e 64 turnos
+// measured on Nov 13 (MEDIR=300, AI on both sides) after the x1.75 damage and the facing: with 1.5x HP and 40 turns the heroes
+// win 30% and idle ones win 16%; with 36 turns, idle (48%) won more than fighting (43%), and with 2x HP and 28 turns
+// idle won 99% (the battle got shorter and the enemies didn't arrive in time). Before the new damage: 2x HP and 64 turns
 export const SURVIVE_TURNS = 40;
-// vida 1,5x (antes 2x): sem o reforço, derrubar todos antes do fim era o caminho comum e o modo virava uma batalha qualquer;
-// com o dano x1,75, 2x deixava os heróis em 9%
+// 1.5x HP (before 2x): without the reinforcement, downing everyone before the end was the common path and the mode became any battle;
+// with the x1.75 damage, 2x left the heroes at 9%
 const TOUGH = 1.5;
 const tough =(base: string): DevUnit => {
   const u = unitFrom(base);
   return { ...u, hp: Math.round(u.hp * TOUGH) };
 };
 
-// casas de grama no lado dos heróis do Bosque (linhas 6 e 7, abaixo do rio), cercando a largada pelos dois flancos
+// grass tiles on Ash Wood's hero side (rows 6 and 7, below the river), surrounding the start on both flanks
 const AMBUSH = [{ x: 1, y: 7 }, { x: 6, y: 6 }, { x: 9, y: 7 }, { x: 11, y: 6 }];
 
 export const turnsLeft =(state: BattleState) => Math.max(0, SURVIVE_TURNS - state.turnsPlayed);
-// Recorde (para ter motivo de rejogar): quantos turnos o grupo aguentou na melhor partida, até SURVIVE_TURNS. Fica no
-// navegador; o valor salvo é fronteira de confiança (inteiro entre 0 e SURVIVE_TURNS, senão 0).
+// Record (to give a reason to replay): how many turns the party held out in the best game, up to SURVIVE_TURNS. Kept in the
+// browser; the saved value is a trust boundary (integer between 0 and SURVIVE_TURNS, otherwise 0).
 export const BEST_KEY = 'dt:amanhecer';
 export function parseBest(raw: unknown): number {
   const n = Number(raw);
@@ -34,18 +34,18 @@ export const survived = (state: BattleState) => Math.min(state.turnsPlayed, SURV
 export const survivalGoal =(say: (pt: string, en: string) => string) =>
   say(`Resista até o amanhecer: ${SURVIVE_TURNS} turnos!`, `Hold out until dawn: ${SURVIVE_TURNS} turns!`);
 
-// `turns`: só a medição (tests/survival.test.ts) troca, para achar o número de turnos que dá a dificuldade certa
+// `turns`: only the measurement (tests/survival.test.ts) overrides it, to find the number of turns that gives the right difficulty
 export function survivalScenario(turns = SURVIVE_TURNS): Scenario {
   const s = buildDevScenario({
     map: 'ash_wood',
     heroes: ['warrior', 'archer', 'mage', 'rogue'].map((b) => unitFrom(b)),
     enemies: ['brute', 'skeleton_archer', 'dark_mage', 'brute'].map(tough),
   }, SURVIVAL_ID, ['Até o amanhecer', 'Until Dawn']);
-  // emboscada: os inimigos já nascem deste lado do rio, em volta do grupo. Nascendo do outro lado, heróis que só passavam a
-  // vez venciam 100% (esperar custa pouco, o contador de turnos corre e os inimigos nem chegavam; medido em 13/11)
+  // ambush: the enemies are already born on this side of the river, around the party. Born on the other side, heroes who just passed the
+  // turn won 100% (waiting costs little, the turn counter runs and the enemies never even arrived; measured on Nov 13)
   let k = 0;
   s.spawns = s.spawns.map((sp) => (sp.team === 'enemy' ? { ...sp, ...AMBUSH[k++] } : sp));
-  // a regra própria troca a padrão inteira (que perde sem Farol): por isso repete heróis caídos e inimigos derrubados
+  // the custom rule replaces the default entirely (which loses without a Lighthouse): hence it repeats fallen heroes and downed enemies
   s.rules = {
     outcome: (st) => !st.units.some((u) => u.team === 'hero') ? 'defeat'
       : !st.units.some((u) => u.team === 'enemy') || st.turnsPlayed >= turns ? 'victory'

@@ -1,7 +1,7 @@
-// Mapa mundial da campanha (noite de 12/11, pedido do Fernando: "personagem andando pelo mapa... mapa mundial... cada
-// ponto é um mapa sendo de história ou batalha"). No jeito do mapa do FFT: pontos ligados por uma estrada, o grupo anda
-// de ponto em ponto e entra no escolhido. Puro e testado; a tela fica em world-ui.ts.
-// Os pontos vêm em ordem: vencer (batalha) ou ver (história) um ponto libera o seguinte. Rejogar o que já passou vale.
+// Campaign worldmap (night of Nov 12, Fernando's request: "character walking on the map... worldmap... each
+// node is a map, either story or battle"). FFT map style: nodes linked by a road, the party walks
+// node to node and enters the chosen one. Pure and tested; the screen lives in world-ui.ts.
+// Nodes come in order: winning (battle) or seeing (story) a node unlocks the next one. Replaying what's already passed is allowed.
 import { CHAPTERS, type Line } from './campaign.ts';
 import type { DevUnit } from './dev-roster.ts';
 import { defaultGroup, heroesFor, type Group } from './group.ts';
@@ -10,18 +10,18 @@ import type { Hero } from './hero.ts';
 export interface WorldNode {
   id: string;
   name: [string, string];
-  x: number; // posição no mapa, em % da largura e da altura do desenho
+  x: number; // position on the map, in % of the drawing's width and height
   y: number;
-  chapter?: number; // ponto de batalha: a fase da campanha (campaign.ts)
-  scene?: Line[]; // ponto de história: a conversa que toca ao entrar
-  // cidade (13/11, entrega 3 do desenho docs/game-design/cidades-grupo-equipamento.md): menu com Loja, Bar e Grupo;
-  // `rumors` são os boatos do bar, que contam a história e dão dica (pt, en)
+  chapter?: number; // battle node: the campaign stage (campaign.ts)
+  scene?: Line[]; // story node: the conversation that plays on entering
+  // town (Nov 13, delivery 3 of the design docs/game-design/cidades-grupo-equipamento.md): menu with Shop, Bar and Party;
+  // `rumors` are the bar's rumors, which tell the story and give hints (pt, en)
   town?: { rumors: [string, string][] };
 }
 
 const L = (who: Line['who'], pt: string, en: string): Line => ({ who, pt, en });
 
-// Abertura da história (jogo novo, tela escura, antes da criação do protagonista)
+// Story opening (new game, dark screen, before the protagonist is created)
 export const INTRO: Line[] = [
   L('narr', 'Há cem anos, os magos do vale ergueram os Faróis: cristais azuis que empurram para longe o Véu, a névoa onde os mortos não descansam.', 'A hundred years ago, the valley mages raised the Beacons: blue crystals that push back the Veil, the mist where the dead never rest.'),
   L('narr', 'Enquanto os Faróis brilham, o vale dorme em paz. Mas neste outono, um a um, eles começaram a se apagar.', 'While the Beacons shine, the valley sleeps in peace. But this autumn, one by one, they began to go dark.'),
@@ -88,35 +88,35 @@ export const WORLD: WorldNode[] = [
   },
 ];
 
-export const WORLD_KEY = 'dt:mundo'; // quantos pontos já foram vencidos ou vistos, em ordem
+export const WORLD_KEY = 'dt:mundo'; // how many nodes were already won or seen, in order
 
-// fronteira de confiança: o número salvo no navegador só vale entre 0 e o total de pontos
+// trust boundary: the number saved in the browser is only valid between 0 and the total number of nodes
 export function parseWorld(raw: unknown): number {
   const n = Number(raw);
   return Number.isInteger(n) && n >= 0 && n <= WORLD.length ? n : 0;
 }
 
-// ponto aberto: os já passados e o próximo
+// open node: the ones already passed and the next one
 export const isOpen = (i: number, done: number) => i <= Math.min(done, WORLD.length - 1);
 
-// progresso depois de passar pelo ponto i (nunca anda para trás ao rejogar um antigo)
+// progress after passing node i (never goes backwards when replaying an old one)
 export const afterNode = (i: number, done: number) => Math.max(done, i + 1);
 
 export const nodeOfChapter = (n: number) => WORLD.findIndex((w) => w.chapter === n);
 
-// próximo ponto aberto na direção pedida (setas do teclado, direcional do controle); parado nas pontas
+// next open node in the requested direction (keyboard arrows, gamepad d-pad); stops at the ends
 export function step(i: number, dir: 1 | -1, done: number): number {
   const j = i + dir;
   return j >= 0 && j < WORLD.length && isOpen(j, done) ? j : i;
 }
 
-// Grupo da próxima batalha (tela Grupo do mapa): as habilidades já liberadas e quem fica de fora para o protagonista entrar
+// Party for the next battle (map's Party screen): the unlocked abilities and who stays out so the protagonist can join
 export function partyFor(done: number, hero: Hero | null, group: Group = defaultGroup()): { units: DevUnit[]; benched: string | null; chapter: number } {
   const next = WORLD.slice(done).find((w) => w.chapter !== undefined)?.chapter ?? CHAPTERS.length - 1;
   const benched = hero ? group.members.find((m) => m.id === hero.cls)?.name ?? null : null;
   return { units: heroesFor(group, next, hero), benched, chapter: next };
 }
 
-// toda fase da campanha tem um ponto no mapa, uma vez só (o teste confere)
+// every campaign stage has a node on the map, exactly once (the test checks)
 export const chaptersOnMap = () => WORLD.filter((w) => w.chapter !== undefined).map((w) => w.chapter!).sort((a, b) => a - b);
 export const ALL_CHAPTERS = CHAPTERS.map((_, i) => i);

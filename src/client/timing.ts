@@ -1,44 +1,44 @@
-// Tempos do fluxo de turno, em ms, todos juntos para ajustar o ritmo num lugar só (pedido do Fernando, 12/11: fluxo e
-// tempos parecidos com o Final Fantasy Tactics). Não há fonte de tempo de animação do FFT: os novos são estimativa.
-// Especificação e valores anteriores: docs/medicoes/fluxo-fft-2026-11-12.md.
-// 13/11, pedido do Fernando ("andar lento… animações de pulo bem realistas… game feel mais lento, não quero animações
-// rápidas"): o ritmo todo ficou ~40% mais lento que o de 12/11 (valor de antes ao lado), andar é a passo e todo degrau é um
-// pulo em 3 partes. Segurar Enter continua acelerando 3 vezes.
+// Turn-flow timings, in ms, all together to adjust the pace in one place (Fernando's request, Nov 12: flow and
+// timings similar to Final Fantasy Tactics). There's no source for FFT's animation timings: the new ones are estimates.
+// Specification and previous values: docs/medicoes/fluxo-fft-2026-11-12.md.
+// Nov 13, Fernando's request ("slow walking… very realistic jump animations… slower game feel, I don't want fast
+// animations"): the whole pace got ~40% slower than Nov 12's (previous value alongside), walking is at a walk and every step is a
+// jump in 3 parts. Holding Enter still speeds things up 3 times.
 export const TIMING = {
-  enemyStart: 650, // 450: câmera chega e o jogador vê de quem é a vez
-  enemyDestination: 650, // 500: cursor e caminho no destino do inimigo antes de ele andar
-  step: 600, // 200: uma casa andada a passo (Walking_A), não correndo
-  jumpCrouch: 300, // novo: agacha e toma impulso (Jump_Start) antes de sair do chão
-  jumpAir: 450, // novo: voo em arco num degrau de 1 nível (Jump_Idle)...
-  jumpPerLevel: 90, // novo: ...e mais isto por nível a mais de altura
-  jumpLand: 300, // novo: aterrissa e se recompõe (Jump_Land) antes do próximo passo
-  banner: 900, // 700: faixa com o nome da habilidade e a área marcada antes do golpe
-  windup: 520, // 380: do gesto ao impacto
-  projectile: 420, // 280: voo de flecha, faca e bola de fogo até o alvo (pedra e frasco em arco levam 1,4x)
-  lunge: 380, // 260: avanço e volta da Investida
-  hit: 480, // 320: golpe que acertou, até o próximo evento
-  hpDrain: 450, // 300: barra de vida descendo; cabe dentro do `hit` para o sync do fim não cortar a descida
-  crash: 320, // 220: batida e queda
-  push: 260, // 140: uma casa empurrada
-  die: 1000, // 700: queda de quem morre
-  float: 1500, // 1200: número de dano pula, fica parado para ler e some (o mesmo valor vai no CSS, animação pop da .float)
-  enemyAfter: 450, // 250: respiro entre um inimigo e o próximo
-  hitStop: 110, // 90: tudo para no impacto, o alvo pisca branco; é o que dá peso ao golpe
-  shake: 280, // 220: o alvo treme depois da pausa e o tremor vai sumindo
-  pop: 320, // 240: pulinho de quem começa a vez
-  blink: 110, // 80: cada aceso/apagado de quem morre (3 piscadas)
+  enemyStart: 650, // 450: camera arrives and the player sees whose turn it is
+  enemyDestination: 650, // 500: cursor and path at the enemy's destination before it moves
+  step: 600, // 200: one tile walked at a walk (Walking_A), not running
+  jumpCrouch: 300, // new: crouches and takes a run-up (Jump_Start) before leaving the ground
+  jumpAir: 450, // new: arcing flight on a 1-level step (Jump_Idle)...
+  jumpPerLevel: 90, // new: ...plus this per extra level of height
+  jumpLand: 300, // new: lands and recovers (Jump_Land) before the next step
+  banner: 900, // 700: banner with the ability name and the marked area before the hit
+  windup: 520, // 380: from the gesture to the impact
+  projectile: 420, // 280: arrow, knife and fireball flight to the target (arcing rock and flask take 1.4x)
+  lunge: 380, // 260: the Charge's advance and return
+  hit: 480, // 320: a hit that landed, until the next event
+  hpDrain: 450, // 300: health bar draining; fits inside `hit` so the end sync doesn't cut the drain
+  crash: 320, // 220: crash and fall
+  push: 260, // 140: one tile pushed
+  die: 1000, // 700: fall of whoever dies
+  float: 1500, // 1200: damage number pops, holds to be read and fades (the same value is in the CSS, .float's pop animation)
+  enemyAfter: 450, // 250: breather between one enemy and the next
+  hitStop: 110, // 90: everything stops at the impact, the target flashes white; this is what gives the hit weight
+  shake: 280, // 220: the target shakes after the pause and the shaking fades
+  pop: 320, // 240: little hop of whoever starts their turn
+  blink: 110, // 80: each on/off of whoever dies (3 blinks)
 };
 
-// Duração de um passo do caminho: andar no plano, pulo (agacha, voo, aterrissa) quando muda de altura ou voa um vão.
-// `dh` em níveis, `tiles` casas entre as duas pontas (2 no vão). A cena anima com isto e o jogo marca o som dos passos
-// com isto, para os dois não se desencontrarem.
+// Duration of a path step: walking on the flat, jump (crouch, flight, landing) when the height changes or it flies a gap.
+// `dh` in levels, `tiles` tiles between the two ends (2 across the gap). The scene animates with this and the game times the footstep sound
+// with this, so the two don't drift apart.
 export const isJump = (dh: number, tiles = 1) => dh !== 0 || tiles > 1;
 export const stepMs = (dh: number, tiles = 1) => (isJump(dh, tiles) ? TIMING.jumpCrouch + jumpAirMs(Math.max(Math.abs(dh), tiles)) + TIMING.jumpLand : TIMING.step);
 export const jumpAirMs = (dh: number) => TIMING.jumpAir + TIMING.jumpPerLevel * (Math.abs(dh) - 1);
 
-// Segurar Enter, Espaço ou A (controle) acelera tudo da batalha (passos, golpes, esperas) 3 vezes; soltar volta ao ritmo
-// do FFT. Pedido do Fernando (12/11): batalha mais responsiva sem perder o ritmo de leitura de quem não tem pressa.
-// No celular (sem tecla para segurar) o botão ⏩ liga e desliga (`toggle`, escolha do Fernando em 12/11).
+// Holding Enter, Space or A (gamepad) speeds up everything in battle (steps, hits, waits) 3 times; releasing goes back to the FFT
+// pace. Fernando's request (Nov 12): a more responsive battle without losing the reading pace for those in no hurry.
+// On mobile (no key to hold) the ⏩ button toggles it (`toggle`, Fernando's choice on Nov 12).
 export const pace = { key: false, pad: false, toggle: false };
 export const FAST = 3;
 export const speed = () => (pace.key || pace.pad || pace.toggle ? FAST : 1);

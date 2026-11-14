@@ -1,6 +1,6 @@
-// Criação do protagonista (hero.ts tem as regras): nome e classe, com retrato, números e habilidades de cada classe à
-// vista para escolher sabendo o que muda. Setas trocam a classe, Enter (fora do campo de nome) começa.
-// Peça própria porque nenhuma das existentes (dialog, choice) mostra retrato e ficha lado a lado; estilo pelas variáveis do :root.
+// Protagonist creation (hero.ts has the rules): name and class, with each class's portrait, numbers and abilities in
+// view so you choose knowing what changes. Arrows switch class, Enter (outside the name field) starts.
+// Own piece because none of the existing ones (dialog, choice) shows portrait and sheet side by side; style via the :root variables.
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { HERO_CLASSES, NAME_MAX, parseHero, type Hero, type HeroClass } from './hero.ts';
@@ -9,7 +9,7 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { sfx } from './sound.ts';
 
-// uma frase do papel de cada classe no grupo (o que muda na prática, não o lore)
+// one sentence on each class's role in the party (what changes in practice, not the lore)
 const ROLE: Record<HeroClass, () => string> = {
   warrior: () => t('Aguenta a linha de frente; mais adiante, empurra inimigos com a Escudada.', 'Holds the front line; later on, shoves enemies with Shield bash.'),
   archer: () => t('Acerta de longe; do alto alcança ainda mais.', 'Hits from afar; from high ground it reaches even farther.'),
@@ -20,7 +20,7 @@ const ROLE: Record<HeroClass, () => string> = {
 export function createHero(host: HTMLElement): Promise<Hero> {
   return new Promise((done) => {
     let cls: HeroClass = 'warrior';
-    // nome sugerido já preenchido: quem joga só com o controle não tem como digitar; o teclado troca à vontade
+    // suggested name already filled in: whoever plays with only the gamepad can't type; the keyboard changes it freely
     const name = el('input', { id: 'hero-name', type: 'text', maxlength: String(NAME_MAX), value: 'Ayla', placeholder: t('Seu nome', 'Your name'), 'aria-label': t('Nome do protagonista', 'Protagonist name') }) as HTMLInputElement;
     const cards = HERO_CLASSES.map((c) => el('button', { type: 'button', class: 'create-card', 'aria-pressed': 'false', 'data-cls': c, onclick: () => pick(c) }, portrait(c), el('strong', {}, unitName(c))));
     const sheet = el('div', { class: 'create-sheet' });
@@ -56,14 +56,14 @@ export function createHero(host: HTMLElement): Promise<Hero> {
       done(hero);
     }
     const onKey = (e: KeyboardEvent) => {
-      // tecla de verdade com o campo em foco é digitação; as setas do controle (evento sintético) trocam a classe mesmo assim
+      // a real key with the field focused is typing; the gamepad arrows (synthetic event) switch class anyway
       const typing = e.isTrusted && document.activeElement === name;
       if (e.key === 'Enter') {
         e.preventDefault();
-        // o mesmo aperto não pode chegar ao mapa, que registra o ouvinte dele assim que a criação termina (revisão de 13/11:
-        // um Enter começava a jornada e já entrava em Vauclair)
+        // the same press must not reach the map, which registers its listener as soon as creation ends (Nov 13 review:
+        // one Enter started the journey and already entered Vauclair)
         e.stopPropagation();
-        // Enter numa carta de classe escolhe a classe dela antes de começar (revisão de 13/11: começava com a anterior)
+        // Enter on a class card picks that class before starting (Nov 13 review: it started with the previous one)
         const f = document.activeElement;
         if (f instanceof HTMLElement && f.dataset.cls) pick(f.dataset.cls as HeroClass);
         return start();

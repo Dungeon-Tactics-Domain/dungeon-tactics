@@ -1,12 +1,12 @@
-// Músicas do jogo (13/11, pedido do Fernando: "pegue pacote de músicas grátis para esse tipo de RPG e use elas em vez
-// das que você criou"): arquivos .ogg de faixas CC0 do OpenGameArt em public/music/, em laço. Autores, links e licença
-// em public/CREDITS.txt e docs/ASSETS.md. Quem toca é o sound.ts; aqui ficam só o arquivo e o ganho de cada faixa.
+// Game music (Nov 13, Fernando's request: "grab a pack of free music for this kind of RPG and use it instead
+// of the ones you made"): .ogg files of CC0 tracks from OpenGameArt in public/music/, looping. Authors, links and license
+// in public/CREDITS.txt and docs/ASSETS.md. sound.ts plays them; here only the file and each track's gain live.
 //
-// Ganho por faixa (medido em 13/11 com o volumedetect do ffmpeg, média de cada arquivo): as faixas novas têm volumes
-// bem diferentes (título -12,9 dB, estrada -15,6, mapa -17,0, neve e chefe -17,8, cripta -18,7). O alvo é o da música da
-// batalha avulsa, -17,3 dB, que já estava no nível certo; o HTMLAudioElement não passa de 1, então quem estava mais alto
-// desce (título -4,4 dB, estrada -1,7 dB) e quem estava mais baixo fica em 1 (cripta fica 1,4 dB abaixo, neve e chefe 0,6).
-// O arquivo do mapa já tem +2,2 dB gravados na conversão (limitador a 0,95) para chegar ao alvo sem passar de 1.
+// Gain per track (measured Nov 13 with ffmpeg's volumedetect, average of each file): the new tracks have very
+// different volumes (title -12.9 dB, road -15.6, map -17.0, snow and boss -17.8, crypt -18.7). The target is that of the
+// standalone battle music, -17.3 dB, which was already at the right level; the HTMLAudioElement can't exceed 1, so whatever was louder
+// goes down (title -4.4 dB, road -1.7 dB) and whatever was quieter stays at 1 (crypt stays 1.4 dB below, snow and boss 0.6).
+// The map file already has +2.2 dB baked in at conversion (limiter at 0.95) to reach the target without exceeding 1.
 export const TRACKS = {
   title: { file: 'titulo.ogg', gain: 0.6 },
   world: { file: 'mapa.ogg', gain: 0.97 },
@@ -14,7 +14,7 @@ export const TRACKS = {
   crypt: { file: 'cripta.ogg', gain: 1 },
   snow: { file: 'neve.ogg', gain: 1 },
   boss: { file: 'chefe.ogg', gain: 1 },
-  // batalha avulsa (sem fase da campanha): o mesmo arquivo de antes
+  // standalone battle (no campaign stage): the same file as before
   battle: { file: 'battle.mp3', gain: 1 },
 } satisfies Record<string, { file: string; gain: number }>;
 export type SongId = keyof typeof TRACKS;

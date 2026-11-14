@@ -1,14 +1,14 @@
-// Textura por cima dos modelos KayKit (13/11, pedido do Fernando: "falta textura nas árvores e nos bonecos"): as peças são
-// de cor lisa (uma paleta), então uma textura CC0 do terreno (terrain.ts) entra como granulado, projetada pelos três eixos
-// do próprio modelo. Só muda o tom em volta da cor de cada peça, sem trocar a cor. Vale para as peças KayKit que sobraram
-// nos mapas abertos (muros de tijolo, caixa de Gariland); árvores e objetos pintados (painted.ts) não passam por aqui, e
-// os bonecos levam só o sombreado (força 0).
+// Texture over the KayKit models (Nov 13, Fernando's request: "the trees and the units lack texture"): the pieces are
+// flat-colored (one palette), so a CC0 terrain texture (terrain.ts) comes in as grain, projected along the three axes
+// of the model itself. It only shifts the tone around each piece's color, without replacing the color. Applies to the KayKit pieces left over
+// on open maps (brick walls, Gariland's crate); painted trees and objects (painted.ts) do not go through here, and
+// units get only the shading (strength 0).
 import type * as THREE from 'three';
 
 export interface DetailTextures { leaves: THREE.Texture; dirt: THREE.Texture }
 
-// posição e normal no mundo (com a instância): a escala do arquivo varia de modelo para modelo, e medida no arquivo a
-// textura saía tão miúda que sumia
+// world position and normal (with the instance): the file scale varies from model to model, and measured in the file the
+// texture came out so tiny it vanished
 const DET_VERT = `#include <begin_vertex>
 vec4 dw = vec4(transformed, 1.0); vec3 dnw = objectNormal;
 #ifdef USE_INSTANCING
@@ -16,11 +16,11 @@ dw = instanceMatrix * dw; dnw = mat3(instanceMatrix) * dnw;
 #endif
 vDPos = (modelMatrix * dw).xyz; vDN = mat3(modelMatrix) * dnw;`;
 
-// `scale`: repetições da textura por metro
+// `scale`: texture repeats per meter
 export function addDetail(sh: THREE.WebGLProgramParametersWithUniforms, tex: DetailTextures, scale: number, strength = 0.75) {
   sh.vertexShader = 'varying vec3 vDPos; varying vec3 vDN;\n' + sh.vertexShader.replace('#include <begin_vertex>', DET_VERT);
-  // força 0 (bonecos e corpos, 13/11: o Fernando achou o granulado em cima deles "zoado"): só um sombreado leve, o lado
-  // um pouco mais escuro que o alto, sem textura nenhuma
+  // strength 0 (units and bodies, Nov 13: Fernando found the grain on them "ugly"): only a light shading, the side
+  // slightly darker than the top, with no texture at all
   if (!strength) {
     sh.fragmentShader = 'varying vec3 vDPos; varying vec3 vDN;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n  diffuseColor.rgb *= 0.74 + 0.26 * smoothstep(-0.6, 0.9, normalize(vDN).y);');
     return;
@@ -36,8 +36,8 @@ export function addDetail(sh: THREE.WebGLProgramParametersWithUniforms, tex: Det
       float green = smoothstep(0.02, 0.12, diffuseColor.g - max(diffuseColor.r, diffuseColor.b));
       float lum = dot(mix(dirt, leaf, green), vec3(0.299, 0.587, 0.114));
       diffuseColor.rgb *= mix(1.0, 0.35 + 1.4 * lum, ${strength.toFixed(2)});
-      // sombreado (13/11, "os objetos também precisam ser sombreados"): a face virada para baixo e as de lado escurecem,
-      // como oclusão do ambiente; sem isso a peça KayKit parecia acesa por igual no Bosque escuro
+      // shading (Nov 13, "objects also need to be shaded"): the downward-facing and side faces darken,
+      // like ambient occlusion; without it the KayKit piece looked evenly lit in the dark Ash Wood
       diffuseColor.rgb *= 0.5 + 0.5 * smoothstep(-0.6, 0.9, normalize(vDN).y);
     }`);
 }
