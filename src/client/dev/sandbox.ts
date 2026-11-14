@@ -248,8 +248,10 @@ export function install(game: Game, scene: BattleScene) {
     },
   };
   window.__sandbox = api;
-  // the cast was already placed when the scene loaded; a cast that did not fit is not tried again
-  problems.push(...apply(castFits ? spec : { ...spec, units: undefined }));
+  // the cast was already placed when the scene loaded; a cast that did not fit is not tried again, and a unit the spec
+  // removed is already gone, so the live patch only touches the ones left
+  const kept = spec.units && Object.fromEntries(Object.entries(spec.units).filter(([, u]) => !u.remove));
+  problems.push(...apply({ ...spec, units: castFits ? kept : undefined }));
   api.ready = true;
   if (problems.length) console.error(`sandbox: ${problems.join('; ')}`);
 }
