@@ -73,7 +73,7 @@ for (const [file, names] of Object.entries(WANT)) {
 await doc.transform(resample(), prune({ keepLeaves: true }), dedup());
 await io.write('public/models/animations.glb', doc);
 console.log(
-  'clipes:',
+  'clips:',
   doc
     .getRoot()
     .listAnimations()

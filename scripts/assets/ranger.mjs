@@ -25,7 +25,7 @@ const root = doc.getRoot();
 const node = (name) =>
   root.listNodes().find((n) => n.getName() === name) ??
   (() => {
-    throw new Error(`sem o nó ${name}: o rogue.glb mudou?`);
+    throw new Error(`no node ${name}: did rogue.glb change?`);
   })();
 
 for (const name of ['Knife', 'Knife_Offhand', 'Rogue_Hood']) node(name).dispose();
@@ -96,4 +96,4 @@ tex.setImage(new Uint8Array(await sharp(data, { raw: info }).png().toBuffer()));
 // keepLeaves: IK nodes without a mesh are targets of the animations
 await doc.transform(prune({ keepLeaves: true }), unpartition(), meshopt({ encoder: MeshoptEncoder }));
 await io.write('public/models/ranger.glb', doc);
-console.log('public/models/ranger.glb', root.listNodes().length, 'nós');
+console.log('public/models/ranger.glb', root.listNodes().length, 'nodes');

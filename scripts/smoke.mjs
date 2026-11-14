@@ -14,8 +14,8 @@ async function get(path) {
 }
 
 const html = await (await get('/')).text();
-if (!html.includes('<title>Dungeon Tactics</title>')) fail('a página não é a do Dungeon Tactics');
+if (!html.includes('<title>Dungeon Tactics</title>')) fail('the page is not Dungeon Tactics');
 const bundle = html.match(/\/assets\/index-[\w-]+\.js/)?.[0];
-if (!bundle) fail('a página não aponta para o bundle /assets/index-*.js');
+if (!bundle) fail('the page does not point to the /assets/index-*.js bundle');
 for (const path of [bundle, '/icons.svg', '/models/knight.glb', '/models/poc/square/dirt.gltf']) await get(path);
 console.log('SMOKE OK', base, bundle);

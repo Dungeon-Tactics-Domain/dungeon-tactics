@@ -52,16 +52,16 @@ const SYMBOL: Record<string, TerrainKind> = { '.': 'floor', T: 'forest', '#': 'w
 export function parseGrid(terrain: string[], heights: string[]): Grid {
   const height = terrain.length;
   const width = terrain[0]?.length ?? 0;
-  if (heights.length !== height) throw new Error('altura: número de linhas difere do terreno');
+  if (heights.length !== height) throw new Error('height: row count differs from the terrain');
   const tiles: Tile[] = [];
   for (let y = 0; y < height; y++) {
-    if (terrain[y].length !== width) throw new Error(`largura da linha ${y} difere da primeira`);
-    if (heights[y].length !== width) throw new Error(`altura: largura da linha ${y} difere do terreno`);
+    if (terrain[y].length !== width) throw new Error(`width of row ${y} differs from the first`);
+    if (heights[y].length !== width) throw new Error(`height: width of row ${y} differs from the terrain`);
     for (let x = 0; x < width; x++) {
       const kind = SYMBOL[terrain[y][x]];
-      if (!kind) throw new Error(`símbolo desconhecido '${terrain[y][x]}' em ${x},${y}`);
+      if (!kind) throw new Error(`unknown symbol '${terrain[y][x]}' at ${x},${y}`);
       const h = Number(heights[y][x]);
-      if (!Number.isInteger(h)) throw new Error(`altura inválida '${heights[y][x]}' em ${x},${y}`);
+      if (!Number.isInteger(h)) throw new Error(`invalid height '${heights[y][x]}' at ${x},${y}`);
       tiles.push({ terrain: kind, h });
     }
   }

@@ -51,7 +51,7 @@ for (const v of up.keys()) size.set(root(v), (size.get(root(v)) ?? 0) + 1);
 const isHood = (v) => [144, 44, 42, 7].includes(size.get(root(v)));
 const shell = (v) => size.get(root(v)) === 144;
 const keep = up.keys().filter(isHood).toArray();
-if (keep.length !== 244) throw new Error(`capuz com ${keep.length} vértices (esperado 244): o modelo mudou?`);
+if (keep.length !== 244) throw new Error(`hood with ${keep.length} vertices (expected 244): did the model change?`);
 const map = new Map(keep.map((v, i) => [v, i]));
 
 // points of all the heads, to push the shell outward where it touches
@@ -86,7 +86,7 @@ const out = keep.map((v) => {
 // appends: one view per attribute (new position; normal, UV, bones and weights copied), new indices, mesh and child node of the Rig
 const dst = open('public/models/rogue.glb');
 const { j } = dst;
-if (j.nodes.some((n) => n.name === 'Rogue_Hood')) throw new Error('rogue.glb já tem o Rogue_Hood');
+if (j.nodes.some((n) => n.name === 'Rogue_Hood')) throw new Error('rogue.glb already has the Rogue_Hood');
 const chunks = [dst.bin];
 let offset = dst.bin.length;
 function add(buf, acc) {
@@ -154,5 +154,5 @@ glb.writeUInt32LE(0x004e4942, 24 + json.length);
 bin.copy(glb, 28 + json.length);
 writeFileSync('public/models/rogue.glb', glb);
 console.log(
-  `Rogue_Hood: ${keep.length} vértices, ${idx.length / 3} triângulos; ${pushed} vértices da casca empurrados para fora`,
+  `Rogue_Hood: ${keep.length} vertices, ${idx.length / 3} triangles; ${pushed} shell vertices pushed outward`,
 );

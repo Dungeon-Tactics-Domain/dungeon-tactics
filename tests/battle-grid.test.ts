@@ -13,10 +13,10 @@ describe('grid', () => {
   });
 
   it('rejects a line of different width, an unknown symbol and heights that do not match', () => {
-    expect(() => parseGrid(['..', '...'], ['00', '000'])).toThrow(/largura/);
-    expect(() => parseGrid(['.?'], ['00'])).toThrow(/símbolo/);
-    expect(() => parseGrid(['..'], ['0'])).toThrow(/altura/);
-    expect(() => parseGrid(['..'], ['0x'])).toThrow(/altura/);
+    expect(() => parseGrid(['..', '...'], ['00', '000'])).toThrow(/width/);
+    expect(() => parseGrid(['.?'], ['00'])).toThrow(/symbol/);
+    expect(() => parseGrid(['..'], ['0'])).toThrow(/height/);
+    expect(() => parseGrid(['..'], ['0x'])).toThrow(/height/);
   });
 
   it('neighbors are 4 directions and stay within bounds', () => {

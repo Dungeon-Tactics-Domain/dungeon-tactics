@@ -112,9 +112,9 @@ for (const path of ICONS) {
   symbols.push(`<symbol id="${path.split('/')[1]}" viewBox="0 0 512 512">${inner}</symbol>`);
 }
 const ids = symbols.map((s) => s.match(/id="([^"]+)"/)[1]);
-if (new Set(ids).size !== ids.length) throw new Error('id repetido no sprite');
+if (new Set(ids).size !== ids.length) throw new Error('repeated id in the sprite');
 writeFileSync(
   new URL('../../public/icons.svg', import.meta.url),
   `<svg xmlns="http://www.w3.org/2000/svg">\n${symbols.join('\n')}\n</svg>\n`,
 );
-console.log(`${symbols.length} ícones em public/icons.svg`);
+console.log(`${symbols.length} icons in public/icons.svg`);

@@ -27,7 +27,7 @@ const root = doc.getRoot();
 const node = (name) =>
   root.listNodes().find((n) => n.getName() === name) ??
   (() => {
-    throw new Error(`sem o nó ${name}: o knight.glb mudou?`);
+    throw new Error(`no node ${name}: did knight.glb change?`);
   })();
 
 for (const name of ['1H_Sword', 'Round_Shield', 'Knight_Cape']) node(name).dispose();
@@ -85,4 +85,4 @@ tex.setImage(new Uint8Array(await sharp(data, { raw: info }).png().toBuffer()));
 // keepLeaves: IK nodes without a mesh are targets of the animations
 await doc.transform(prune({ keepLeaves: true }), unpartition(), meshopt({ encoder: MeshoptEncoder }));
 await io.write('public/models/lancer.glb', doc);
-console.log('public/models/lancer.glb', root.listNodes().length, 'nós');
+console.log('public/models/lancer.glb', root.listNodes().length, 'nodes');

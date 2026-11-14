@@ -95,7 +95,7 @@ describe('campaign Beacon Ashes', () => {
           turns += r.turns;
         }
         console.log(
-          `${n + 1}. ${c.title[0]}: heróis ${((wins / RUNS) * 100).toFixed(1)}% · ${(turns / RUNS).toFixed(0)} turnos`,
+          `${n + 1}. ${c.title[1]}: heroes ${((wins / RUNS) * 100).toFixed(1)}% · ${(turns / RUNS).toFixed(0)} turns`,
         );
       });
     },

@@ -49,7 +49,7 @@ describe('Until Dawn mode', () => {
           if (r.outcome === 'victory' && r.turns >= turns) dawn++;
         }
         console.log(
-          `Até o amanhecer, ${turns} turnos: heróis ${((won / RUNS) * 100).toFixed(1)}% (amanhecer ${((dawn / RUNS) * 100).toFixed(1)}%)`,
+          `Until Dawn, ${turns} turns: heroes ${((won / RUNS) * 100).toFixed(1)}% (dawn ${((dawn / RUNS) * 100).toFixed(1)}%)`,
         );
       }
       // idle heroes (they only pass the turn) against the AI: if this wins more than fighting, the mode rewards standing still
@@ -59,7 +59,7 @@ describe('Until Dawn mode', () => {
         while (!b.over && b.state.turnsPlayed < 400) b.actor.team === 'hero' ? b.endTurn() : playAiTurn(b);
         if (b.state.outcome === 'victory') still++;
       }
-      console.log(`Até o amanhecer, heróis parados: ${((still / RUNS) * 100).toFixed(1)}%`);
+      console.log(`Until Dawn, idle heroes: ${((still / RUNS) * 100).toFixed(1)}%`);
     },
     600_000,
   );

@@ -49,7 +49,7 @@ await base.transform(prune(), dedup());
 await io.write(out, base);
 
 const dup = names.filter((n, i) => names.indexOf(n) !== i);
-if (dup.length) throw new Error(`nomes duplicados: ${dup}`);
+if (dup.length) throw new Error(`duplicate names: ${dup}`);
 for (const n of scene.listChildren()) {
   const b = getBounds(n);
   const f = (v) => v.map((x) => +x.toFixed(3)).join(',');

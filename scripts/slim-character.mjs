@@ -63,7 +63,7 @@ for (const n of root.listNodes()) if (DROP_NODES.includes(n.getName())) n.dispos
 await doc.transform(resample(), prune(), dedup());
 await io.write(out, doc);
 console.log(
-  'animações:',
+  'animations:',
   root
     .listAnimations()
     .map((a) => a.getName())
