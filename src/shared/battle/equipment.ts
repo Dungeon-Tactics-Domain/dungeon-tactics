@@ -1,16 +1,16 @@
-// Equipamento (13/11, pedido do Fernando: "equipamentos, lojas… igual ao FFT"; desenho em
-// docs/game-design/cidades-grupo-equipamento.md). Item é dado com stats gerais, iguais contra tudo (regra do projeto):
-// soma na ficha da batalha, nunca regra "o item X contra a habilidade Y". Números iniciais, a medir antes de virarem loja.
+// Equipment (Nov 13, Fernando's request: "equipment, shops… just like FFT"; design in
+// docs/game-design/cidades-grupo-equipamento.md). An item is data with general stats, equal against everything (project rule):
+// it adds to the battle sheet, never a rule "item X against ability Y". Initial numbers, to be measured before they become a shop.
 export type Slot = 'weapon' | 'armor' | 'accessory';
 export interface ItemDef {
   id: string;
   name: string;
   en: string;
   slot: Slot;
-  price: number; // ouro na loja (vender devolve metade)
-  hp?: number; // vida máxima
-  power?: number; // soma nas duas pontas da faixa de dano de toda habilidade que fere
-  hit?: number; // pontos de acerto
+  price: number; // gold in the shop (selling returns half)
+  hp?: number; // max life
+  power?: number; // added to both ends of the damage range of every ability that hurts
+  hit?: number; // hit points
   move?: number;
   jump?: number;
   speed?: number;
@@ -33,7 +33,7 @@ export const SLOTS: Slot[] = ['weapon', 'armor', 'accessory'];
 export type Loadout = Partial<Record<Slot, string>>;
 export interface Bonus { hp: number; power: number; hit: number; move: number; jump: number; speed: number }
 
-// soma dos itens equipados; item desconhecido ou no espaço errado não conta (o save é fronteira de confiança)
+// sum of the equipped items; an unknown item or one in the wrong slot does not count (the save is a trust boundary)
 export function bonusOf(loadout: Loadout | undefined): Bonus {
   const b: Bonus = { hp: 0, power: 0, hit: 0, move: 0, jump: 0, speed: 0 };
   for (const slot of SLOTS) {

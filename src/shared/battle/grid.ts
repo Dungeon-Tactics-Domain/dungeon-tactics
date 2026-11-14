@@ -2,18 +2,18 @@ import type { Pos } from './types.ts';
 
 export type TerrainKind = 'floor' | 'forest' | 'rubble' | 'wall';
 
-// Poucos terrenos de propósito (spec, 25/10). `blocks` é quanto o terreno sobe acima da altura da casa para a linha de
-// visão: floresta tapa quem está no mesmo nível, mas quem está no alto enxerga por cima (é o que valoriza arqueiro e ladino).
+// Few terrains on purpose (spec, Oct 25). `blocks` is how far the terrain rises above the tile height for the line of
+// sight: forest hides whoever is on the same level, but whoever is up high sees over it (which is what makes archer and rogue valuable).
 export const TERRAIN: Record<TerrainKind, { walkable: boolean; blocks: number; cover: boolean }> = {
   floor: { walkable: true, blocks: 0, cover: false },
-  // árvore não se atravessa nem se pisa (13/11, pedido do Fernando: "árvores não devem ser passáveis"); continua tapando
-  // a visão. O entulho da cripta, que era "floresta" para ser cobertura pisável, virou terreno próprio
+  // a tree can be neither crossed nor stepped on (Nov 13, Fernando's request: "trees must not be passable"); it still blocks
+  // sight. The crypt rubble, which was "forest" to be walkable cover, became its own terrain
   forest: { walkable: false, blocks: 2, cover: true },
-  rubble: { walkable: true, blocks: 1, cover: true }, // baixo, como os objetos de LOW (o da ponte do Bosque não tem `look` de entulho)
+  rubble: { walkable: true, blocks: 1, cover: true }, // low, like the LOW objects (the one on the Wood bridge has no rubble `look`)
   wall: { walkable: false, blocks: 4, cover: false },
 };
-// objeto baixo em cima da casa (caixote, barril, corpo, baú, entulho): barra a visão só 1 nível acima do chão, não os 4 de
-// um muro (13/11, pedido do Fernando: o arqueiro no morro não atirava por cima dos caixotes e corpos da estrada)
+// low object on top of the tile (crate, barrel, corpse, chest, rubble): blocks sight only 1 level above the ground, not the 4 of
+// a wall (Nov 13, Fernando's request: the archer on the hill could not shoot over the crates and bodies on the road)
 const LOW = new Set(['crates', 'barrel', 'corpse', 'chest', 'rubble']);
 export const blocksOf = (t: Tile) => (t.look && LOW.has(t.look) ? 1 : TERRAIN[t.terrain].blocks);
 
@@ -21,35 +21,35 @@ export const blocksOf = (t: Tile) => (t.look && LOW.has(t.look) ? 1 : TERRAIN[t.
 export interface Tile {
   terrain: TerrainKind;
   h: number;
-  // Só desenho (12/11, mapa de Gariland com as peças KayKit): as regras não leem. `look` escolhe as peças da casa na cena;
-  // `ramp` inclina o topo, subindo `rise` níveis na direção FACING[dir]. Mapa sem os dois é desenhado como antes.
+  // Drawing only (Nov 12, Gariland map with the KayKit pieces): the rules do not read it. `look` picks the tile's pieces in the scene;
+  // `ramp` tilts the top, rising `rise` levels in the direction FACING[dir]. A map without both is drawn as before.
   look?: string;
   ramp?: [dir: number, rise: number];
-  // Água (BMG 6.5; decisão do Fernando de 12/11): profundidade em níveis. 1 = rasa, 2 ou mais = funda
-  // (não dá para entrar nem parar). Quem está na água fica mais baixo: altura da casa menos a profundidade.
+  // Water (BMG 6.5; Fernando's decision of Nov 12): depth in levels. 1 = shallow, 2 or more = deep
+  // (cannot be entered or stopped on). Whoever is in the water stands lower: tile height minus the depth.
   depth?: number;
-  // Espinhos (noite de 12/11, regra nossa, não do FFT): quem termina a vez em cima ou é empurrado para cá leva
-  // COMBAT.SPIKE_DAMAGE. Andar por cima não fere. Dá uso tático aos empurrões (combat.ts) e a IA já valoriza pelo dano.
+  // Spikes (night of Nov 12, our own rule, not FFT): whoever ends their turn on it or is pushed onto it takes
+  // COMBAT.SPIKE_DAMAGE. Walking over it does not hurt. It gives pushes a tactical use (combat.ts) and the AI already values it for the damage.
   spikes?: true;
-  // Corpo no chão (13/11, pedido do Fernando: "obstáculos tipo o corpo no chão devem ser atravessáveis, o personagem só não
-  // pode ficar em cima"): passa por cima, mas não para nem é empurrado para lá
+  // Body on the ground (Nov 13, Fernando's request: "obstacles like the body on the ground must be passable, the character just
+  // cannot stay on top"): you can pass over it, but not stop or be pushed onto it
   noStop?: true;
-  // Árvore que ocupa um quadrado de `tree` x `tree` casas (meia casa, half.ts): fica na casa de cima à esquerda; as outras
-  // casas do quadrado são floresta sem desenho próprio. Só desenho: a regra lê o terreno de cada casa
+  // Tree that occupies a square of `tree` x `tree` tiles (half tile, half.ts): it sits on the top-left tile; the other
+  // tiles of the square are forest without a drawing of their own. Drawing only: the rule reads the terrain of each tile
   tree?: number;
 }
 
-// Mapa imutável durante a batalha: fica fora do BattleState (o estado guarda só o id do cenário).
+// Map immutable during the battle: it stays outside the BattleState (the state keeps only the scenario id).
 export interface Grid {
   width: number;
   height: number;
   tiles: Tile[];
-  levelHeight?: number; // altura de um nível no desenho, em casas; só o mapa de estudo do FFT informa (níveis mais finos)
+  levelHeight?: number; // height of one level in the drawing, in tiles; only the FFT study map sets it (finer levels)
 }
 
 const SYMBOL: Record<string, TerrainKind> = { '.': 'floor', T: 'forest', '#': 'wall' };
 
-// Formato ASCII: uma grade de terreno (`.` chão, `T` floresta, `#` parede) e outra de alturas (dígito 0 a 9), mesma forma.
+// ASCII format: one terrain grid (`.` floor, `T` forest, `#` wall) and another of heights (digit 0 to 9), same shape.
 export function parseGrid(terrain: string[], heights: string[]): Grid {
   const height = terrain.length;
   const width = terrain[0]?.length ?? 0;
@@ -69,38 +69,38 @@ export function parseGrid(terrain: string[], heights: string[]): Grid {
   return { width, height, tiles };
 }
 
-// altura de quem está na casa (na água, a casa menos a profundidade, BMG 6.5)
-// água rasa não rebaixa quem está de pé (13/11, pedido do Fernando: "tem água por cima da pedra e não consigo descer"):
-// com o pé 1 abaixo da superfície, o vau precisava subir 1 nível e ficava acima do rio; ela só custa 2 de movimento e o
-// boneco afundado é só desenho (WADE). Na funda quem nada fica na profundidade (pior no acerto, alcance e visão)
+// height of whoever is on the tile (in water, the tile minus the depth, BMG 6.5)
+// shallow water does not lower whoever is standing (Nov 13, Fernando's request: "there is water over the rock and I can't get down"):
+// with the foot 1 below the surface, the ford had to climb 1 level and ended up above the river; it only costs 2 movement and the
+// sunken model is drawing only (WADE). In deep water the swimmer sits at the depth (worse for hit chance, range and sight)
 export const standH = (t: Tile) => t.h - (isDeep(t) ? t.depth! : 0);
-// Água funda (2 ou mais). No FFT só entra quem nada (BMG 6.5); aqui todos entram desde 13/11 (escolha do Fernando:
-// "entra, mas não age dentro"): custa 2 como a rasa, quem está nela só anda ou espera (previewAbility) e o empurrão
-// continua parando na beira (simulatePush). O salto para entrar e sair mede pela superfície (t.h), não pelo fundo:
-// medindo pelo fundo, a margem ficava 2 níveis acima e só o Salto 2 entrava
+// Deep water (2 or more). In FFT only swimmers enter (BMG 6.5); here everyone enters since Nov 13 (Fernando's choice:
+// "enters, but does not act inside"): costs 2 like shallow, whoever is in it only walks or waits (previewAbility) and a push
+// still stops at the edge (simulatePush). The jump to enter and leave is measured by the surface (t.h), not the bottom:
+// measured by the bottom, the bank was 2 levels above and only Jump 2 got in
 export const isDeep = (t: Tile) => (t.depth ?? 0) >= 2;
-// dá para parar na casa: pisável (a água funda também, desde 13/11)
+// you can stop on the tile: walkable (deep water too, since Nov 13)
 export const canStand = (t: Tile) => TERRAIN[t.terrain].walkable;
-// pontos de movimento para entrar na casa: 1 em tudo, água também (13/11, escolha do Fernando: "menos constraints de
-// movimento para permitir mais estratégias"; antes a água custava 2, do BMG 6.5). Fica como função para o dia em que
-// algum terreno voltar a custar mais
+// movement points to enter the tile: 1 for everything, water too (Nov 13, Fernando's choice: "fewer movement constraints
+// to allow more strategies"; water used to cost 2, from BMG 6.5). It stays a function for the day
+// some terrain costs more again
 export const stepCost = (_t: Tile) => 1;
 
 export const inBounds = (g: Grid, p: Pos) => p.x >= 0 && p.y >= 0 && p.x < g.width && p.y < g.height;
 export const tileAt = (g: Grid, p: Pos): Tile => g.tiles[p.y * g.width + p.x];
 export const samePos = (a: Pos, b: Pos) => a.x === b.x && a.y === b.y;
 export const posKey = (p: Pos) => `${p.x},${p.y}`;
-// distância em passos de grade (4 direções), a mesma do movimento
+// distance in grid steps (4 directions), the same as movement
 export const dist = (a: Pos, b: Pos) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
-// Direções de `UnitState.facing`, na ordem de um giro: +y, +x, -y, -x
+// Directions of `UnitState.facing`, in turning order: +y, +x, -y, -x
 export const FACING: Pos[] = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }];
 
-// De onde o ataque vem (BMG 1.4, diagrama): vale a maior entre as distâncias à frente, de lado e atrás do alvo; no empate
-// ganha a mais à frente (frente sobre lado, lado sobre costas). A altura das casas não conta. Era do estudo do FFT; desde
-// 13/11 vale no jogo (combat.ts, acerto pelo lado e pelas costas)
+// Where the attack comes from (BMG 1.4, diagram): the largest of the distances in front, to the side and behind the target wins; on a tie
+// the one more to the front wins (front over side, side over back). Tile height does not count. It used to be from the FFT study; since
+// Nov 13 it applies in the game (combat.ts, hit chance by side and back)
 export type Side = 'front' | 'side' | 'back';
-// direção de quem nasce (ou de save antigo sem direção): para o inimigo mais perto; sem inimigo, a primeira
+// direction of a newly spawned unit (or of an old save without direction): toward the nearest enemy; without an enemy, the first
 export const faceNearest = (from: Pos, foes: Pos[]) => (foes.length ? facingTo(from, foes.reduce((a, b) => (dist(from, b) < dist(from, a) ? b : a))) : 0);
 export function sideOf(target: Pos, facing: Pos, attacker: Pos): Side {
   const dx = attacker.x - target.x, dy = attacker.y - target.y;
@@ -109,7 +109,7 @@ export function sideOf(target: Pos, facing: Pos, attacker: Pos): Side {
   if (ahead > 0 && ahead >= lateral) return 'front';
   return ahead < 0 && -ahead > lateral ? 'back' : 'side';
 }
-// direção de `from` para `to` pelo eixo de maior diferença (empate: o eixo x, como no empurrão)
+// direction from `from` to `to` along the axis of greatest difference (tie: the x axis, as in the push)
 export function facingTo(from: Pos, to: Pos): number {
   const dx = to.x - from.x, dy = to.y - from.y;
   return Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 1 : 3) : dy > 0 ? 0 : 2;

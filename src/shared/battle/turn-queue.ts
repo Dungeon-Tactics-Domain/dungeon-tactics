@@ -5,11 +5,11 @@ import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Charge } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
-// Fila do FFT (spec de 25/10; regras do FFT em todos os mapas desde 12/11, pedido do Fernando): cada unidade ganha
-// `speed` de CT por tique e age ao chegar em TURN_THRESHOLD. Fonte: Battle Mechanics Handbook v6.1 (BMG), 1.1 e A.2.
+// FFT queue (Oct 25 spec; FFT rules on every map since Nov 12, Fernando's request): each unit gains
+// `speed` CT per tick and acts on reaching TURN_THRESHOLD. Source: Battle Mechanics Handbook v6.1 (BMG), 1.1 and A.2.
 export const TURN_THRESHOLD = 100;
-// CT ao fim do turno (BMG 1.1): mover e agir custa 100, só um dos dois 80, nenhum 60 ("Esperar" devolve a vez mais cedo);
-// o que sobra nunca passa de 60. Substitui o "100 mais o atraso da habilidade" de 25/10.
+// CT at the end of the turn (BMG 1.1): moving and acting costs 100, only one of the two 80, neither 60 ("Wait" gives the turn back sooner);
+// what is left over never exceeds 60. Replaces the Oct 25 "100 plus the ability delay".
 export const turnCt = (ct: number, moved: boolean, acted: boolean) => Math.min(60, ct - (moved && acted ? 100 : moved || acted ? 80 : 60));
 
 interface Slot {
@@ -18,8 +18,8 @@ interface Slot {
   speed: number;
 }
 
-// Avança os tiques até alguém chegar ao limite e devolve quem age. Com várias em 100 ou mais, age a primeira da lista
-// de personagens, não a de maior CT (BMG A.2); no FFT os inimigos são numerados antes, então a lista põe inimigos primeiro.
+// Advances the ticks until someone reaches the limit and returns who acts. With several at 100 or more, the first in the
+// character list acts, not the one with the highest CT (BMG A.2); in FFT the enemies are numbered first, so the list puts enemies first.
 function advance(slots: Slot[]): Slot {
   if (!slots.some((s) => s.ct >= TURN_THRESHOLD)) {
     const ticks = Math.min(...slots.map((s) => Math.ceil((TURN_THRESHOLD - s.ct) / s.speed)));
@@ -33,7 +33,7 @@ const slotsOf = (state: BattleState): Slot[] => {
   return [...all.filter((s) => s.team === 'enemy'), ...all.filter((s) => s.team === 'hero')];
 };
 
-// ordem da lista de personagens (inimigos antes, BMG A.2), para resolver cargas que saem no mesmo tique
+// character list order (enemies first, BMG A.2), to resolve charges that fire on the same tick
 const listOrder = (state: BattleState, charges: Charge[]) => {
   const rank = (id: string) => {
     const i = state.units.findIndex((u) => u.id === id);
@@ -42,9 +42,9 @@ const listOrder = (state: BattleState, charges: Charge[]) => {
   return [...charges].sort((a, b) => rank(a.unit) - rank(b.unit));
 };
 
-// Abre o próximo turno seguindo as fases de cada tique do FFT (BMG A.2): S+ (as cargas descontam 1), SR (as que chegam a 0
-// saem, se quem carrega está vivo), C+ (todos ganham CT) e CR (quem chegou a 100 joga). Devolve os eventos das cargas
-// que saíram no caminho, para o cliente animar; para se uma delas acabar a batalha.
+// Opens the next turn following the phases of each FFT tick (BMG A.2): S+ (charges count down 1), SR (those that reach 0
+// fire, if the charger is alive), C+ (everyone gains CT) and CR (whoever reached 100 plays). Returns the events of the charges
+// that fired along the way, for the client to animate; stops if one of them ends the battle.
 export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
   const events: BattleEvent[] = [];
   for (;;) {
@@ -57,7 +57,7 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     const toTurn = slots.length ? Math.min(...slots.map((s) => Math.ceil((TURN_THRESHOLD - s.ct) / s.speed))) : Infinity;
     const toCharge = state.charges.length ? Math.min(...state.charges.map((c) => c.ticks)) : Infinity;
     if (toTurn === Infinity && toCharge === Infinity) return events;
-    // relê as unidades: uma carga que saiu pode ter matado alguém
+    // re-read the units: a charge that fired may have killed someone
     const gain = (ticks: number) => {
       for (const s of slotsOf(state)) state.units.find((u) => u.id === s.id)!.ct += ticks * s.speed;
     };
@@ -71,12 +71,12 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     const due = listOrder(state, state.charges.filter((c) => c.ticks <= 0));
     state.charges = state.charges.filter((c) => c.ticks > 0);
     for (const c of due) {
-      if (!state.units.some((u) => u.id === c.unit)) continue; // quem carregava morreu
+      if (!state.units.some((u) => u.id === c.unit)) continue; // the charger died
       const followed = c.follow && state.units.find((u) => u.id === c.follow);
       const caster = state.units.find((u) => u.id === c.unit)!;
-      // unidade grande seguida: a casa dela mais perto de quem lança (a de canto podia estar fora do alcance); 1 casa: a mesma
+      // followed large unit: its tile nearest to the caster (the corner one could be out of range); 1 tile: the same
       const out = resolveAbility(grid, state, c.unit, c.ability, followed ? nearestTile(followed, caster.pos) : c.target, true);
-      // sem ninguém atingido (o alvo saiu dali): a carga se perde
+      // nobody hit (the target left): the charge is lost
       const landed = out.some((e) => e.k !== 'attack');
       events.push(...(landed ? out : [{ k: 'fizzle' as const, unit: c.unit, ability: c.ability }]));
       if (state.outcome !== 'ongoing') return events;
@@ -85,7 +85,7 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
   }
 }
 
-// Cobra o custo do turno do ator pelo que ele fez (BMG 1.1)
+// Charges the actor's turn cost for what it did (BMG 1.1)
 export function finishTurn(state: BattleState): void {
   const actor = state.units.find((u) => u.id === state.turn.actor);
   if (actor) actor.ct = turnCt(actor.ct, state.turn.moved, !!state.turn.usedAbility);
@@ -94,11 +94,11 @@ export function finishTurn(state: BattleState): void {
 
 export interface QueueEntry {
   unit: string;
-  charge?: string; // a habilidade carregada que sai neste ponto da fila
+  charge?: string; // the charged ability that fires at this point of the queue
 }
 
-// Os próximos `n` na fila do topo da tela, começando por quem joga agora, com as cargas no ponto em que saem (como a
-// lista de turnos do FFT). Projeção: supõe que cada um anda e age (custo 100, o maior) e não muda o estado.
+// The next `n` in the queue at the top of the screen, starting with whoever plays now, with the charges at the point where they fire (like the
+// FFT turn list). A projection: assumes each one walks and acts (cost 100, the highest) and does not change the state.
 export function previewOrder(state: BattleState, n: number): QueueEntry[] {
   const slots = slotsOf(state);
   const charges = listOrder(state, state.charges).map((c) => ({ ...c }));

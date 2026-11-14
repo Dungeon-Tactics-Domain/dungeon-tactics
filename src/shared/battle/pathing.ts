@@ -4,22 +4,22 @@ import { rulesOf } from './rules.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
-// Salto de quem não diz o seu (UnitDef.jump): subir ou descer mais que isso num passo bloqueia (spec, 25/10). Desde 13/11
-// cada classe pode ter o seu, como no FFT; o estudo do FFT troca pela regra própria (rules.jump)
+// Jump of whoever does not state its own (UnitDef.jump): climbing or descending more than this in one step is blocked (spec, Oct 25). Since Nov 13
+// each class may have its own, as in FFT; the FFT study swaps it for its own rule (rules.jump)
 export const MAX_JUMP = 1;
 export const jumpOf = (state: BattleState, def: string) => rulesOf(state).jump?.(def) ?? UNIT_DEFS[def]?.jump ?? MAX_JUMP;
-// Altura dos olhos e do ponto de mira acima do chão da casa, em níveis. Com blocks do terreno decide quem enxerga por cima.
+// Height of the eyes and the aim point above the tile floor, in levels. Together with the terrain's blocks it decides who sees over.
 const EYE = 1;
 
-// Unidade grande (UnitDef.size, noite de 12/11: o chefe que ocupa 2x2): `pos` é a casa de cima à esquerda do quadrado.
-// Toda pergunta "quem está nesta casa" passa por aqui, então andar, bloquear e mirar valem para as 4 casas.
+// Large unit (UnitDef.size, night of Nov 12: the boss that occupies 2x2): `pos` is the top-left tile of the square.
+// Every "who is on this tile" question goes through here, so walking, blocking and aiming apply to all 4 tiles.
 export function footprint(u: UnitState): Pos[] {
   const size = UNIT_DEFS[u.def].size ?? 1;
   const out: Pos[] = [];
   for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: u.pos.x + dx, y: u.pos.y + dy });
   return out;
 }
-// distância até a casa mais perto da unidade (alcance, área e acerto contra o chefe grande)
+// distance to the unit's nearest tile (range, area and hit chance against the large boss)
 export const distTo = (u: UnitState, p: Pos) => Math.min(...footprint(u).map((f) => dist(f, p)));
 export const nearestTile = (u: UnitState, p: Pos): Pos => footprint(u).reduce((a, b) => (dist(b, p) < dist(a, p) ? b : a));
 
@@ -28,13 +28,13 @@ export const unitAt = (state: BattleState, p: Pos): UnitState | undefined => sta
 export interface Step {
   pos: Pos;
   cost: number;
-  from: string | null; // chave da casa anterior
-  path?: Pos[]; // caminho desde a casa de saída (sem ela), montado antes de tirar as casas ocupadas
+  from: string | null; // key of the previous tile
+  path?: Pos[]; // path from the starting tile (without it), built before removing the occupied tiles
 }
 
-// Pulo por cima de vão, como no FFT (13/11, pedido do Fernando; BMG: o vão vai até [Jump/2] casas): em linha reta, por
-// cima de casas onde não se fica de pé (água funda) ou mais baixas que as duas pontas; parede no meio bloqueia. Pousa no
-// mesmo nível ou até `jump` níveis abaixo (o FFT não deixa pousar mais alto). `over` são as casas voadas, cada uma conta 1 ponto de movimento. Salto 1 não voa nada.
+// Leap over a gap, as in FFT (Nov 13, Fernando's request; BMG: the gap goes up to [Jump/2] tiles): in a straight line, over
+// tiles where you cannot stand (deep water) or that are lower than both ends; a wall in the middle blocks. Lands on the
+// same level or up to `jump` levels below (FFT does not let you land higher). `over` are the tiles flown over, each counts 1 movement point. Jump 1 flies over nothing.
 export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos[] }[] {
   const out: { to: Pos; over: Pos[] }[] = [];
   const h0 = standH(tileAt(grid, from));
@@ -48,9 +48,9 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
       if (!TERRAIN[g.terrain].walkable) break;
       over.push(mid);
       const land = tileAt(grid, to);
-      // pouso no mesmo nível ou abaixo, até `jump` níveis (13/11: o tutorial do FFT não deixa o vão pousar mais alto que a
-      // saída; antes pousava até `jump` acima)
-      if (!canStand(land) || isDeep(land) || standH(land) > h0 || h0 - standH(land) > jump) continue; // pousar na funda: é só entrar a nado
+      // landing on the same level or below, up to `jump` levels (Nov 13: the FFT tutorial does not let the gap land higher than the
+      // start; it used to land up to `jump` above)
+      if (!canStand(land) || isDeep(land) || standH(land) > h0 || h0 - standH(land) > jump) continue; // landing in deep water: it is just swimming in
       const low = Math.min(h0, standH(land));
       if (over.every((p) => { const t = tileAt(grid, p); return !canStand(t) || standH(t) < low; })) out.push({ to, over: [...over] });
     }
@@ -58,12 +58,12 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
   return out;
 }
 
-// Busca pelo custo de cada passo (1, ou 2 na água rasa; o vão, 1 por casa voada) até def.move pontos. Passa por aliado, nunca por inimigo; o resultado não inclui
-// a casa de saída nem casas ocupadas, para o cliente poder pintar só onde dá para parar.
-// Quem ocupa mais de uma casa e anda (meia casa, 13/11: os bonecos ocupam 2x2 e andam de 1 em 1; half.ts): a busca é
-// pelo canto de cima à esquerda. Cabe se todas as casas do quadrado são de pisar, sem parar em corpo, sem outra unidade e
-// com no máximo 1 nível de diferença entre elas; a altura do quadrado é a mais alta, e o passo segue o salto. Custo: o
-// da casa mais cara que entra no quadrado. Sem vão por enquanto
+// Search by the cost of each step (1, or 2 in shallow water; the gap, 1 per tile flown) up to def.move points. Passes through allies, never enemies; the result does not include
+// the starting tile or occupied tiles, so the client can paint only where you can stop.
+// Whoever occupies more than one tile and walks (half tile, Nov 13: the models occupy 2x2 and walk 1 at a time; half.ts): the search is
+// by the top-left corner. It fits if all the tiles of the square are walkable, none is a body to stop on, no other unit is there and
+// they differ by at most 1 level; the square's height is the highest, and the step follows the jump. Cost: that
+// of the most expensive tile entering the square. No gap for now
 function reachableBig(grid: Grid, state: BattleState, unit: UnitState, budget: number, jump: number): Map<string, Step> {
   const size = UNIT_DEFS[unit.def].size!;
   const cells = (p: Pos) => { const out: Pos[] = []; for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: p.x + dx, y: p.y + dy }); return out; };
@@ -74,7 +74,7 @@ function reachableBig(grid: Grid, state: BattleState, unit: UnitState, budget: n
       const t = tileAt(grid, c);
       if (!canStand(t) || isDeep(t)) return null;
       const o = unitAt(state, c);
-      if (o && o.id !== unit.id && o.team !== unit.team) return null; // passa por aliado, nunca por inimigo
+      if (o && o.id !== unit.id && o.team !== unit.team) return null; // passes through allies, never enemies
       lo = Math.min(lo, t.h); hi = Math.max(hi, t.h);
     }
     return hi - lo > 1 ? null : hi;
@@ -102,12 +102,12 @@ function reachableBig(grid: Grid, state: BattleState, unit: UnitState, budget: n
     step.path = path;
   }
   seen.delete(posKey(unit.pos));
-  // para só onde o quadrado inteiro está livre (aliado no caminho, sim; em cima, não) e sem corpo embaixo
+  // stop only where the whole square is free (an ally on the path, yes; on top, no) and with no body underneath
   for (const [k, step] of seen) if (cells(step.pos).some((c) => { const o = unitAt(state, c); return (o && o.id !== unit.id) || tileAt(grid, c).noStop; })) seen.delete(k);
   return seen;
 }
 
-// `budget`: pontos de movimento que sobram no turno (o movimento todo, se ausente)
+// `budget`: movement points left in the turn (the whole movement, if absent)
 export function reachable(grid: Grid, state: BattleState, unitId: string, budget?: number): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
   budget ??= UNIT_DEFS[unit.def].move;
@@ -121,17 +121,17 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
     for (const n of neighbors(grid, cur)) {
       const k = posKey(n);
       const to = tileAt(grid, n);
-      // se algum terreno custar mais que 1: o caminho mais barato pode chegar depois, então a casa é revista quando sai mais barata
+      // if some terrain costs more than 1: the cheapest path may arrive later, so the tile is revisited when it comes out cheaper
       const next = cost + stepCost(to);
       if (next > budget || (seen.get(k)?.cost ?? Infinity) <= next) continue;
-      // o salto mede pela superfície (t.h): entrar e sair da água funda é a mesma subida da margem (grid.ts, isDeep)
+      // the jump is measured by the surface (t.h): entering and leaving deep water is the same climb as the bank (grid.ts, isDeep)
       if (!canStand(to) || Math.abs(to.h - tileAt(grid, cur).h) > jump) continue;
       const other = unitAt(state, n);
       if (other && other.team !== unit.team) continue;
       seen.set(k, { pos: n, cost: next, from: posKey(cur) });
       queue.push(n);
     }
-    // vão: cada casa voada conta 1, mais a casa onde pousa; inimigo embaixo do voo bloqueia, como no caminho a pé
+    // gap: each tile flown counts 1, plus the tile where it lands; an enemy under the flight blocks, as on the walking path
     for (const { to: n, over } of leaps(grid, cur, jump)) {
       const k = posKey(n);
       const next = cost + over.length + stepCost(tileAt(grid, n));
@@ -141,8 +141,8 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
       queue.push(n);
     }
   }
-  // o caminho de cada casa sai antes de tirar as ocupadas (13/11, revisão): passar por aliado apagava a casa dele e o
-  // pathTo devolvia um caminho com buraco, que a cena desenhava como pulo de 2 a 4 casas
+  // each tile's path is built before removing the occupied ones (Nov 13, review): passing through an ally erased its tile and
+  // pathTo returned a path with a hole, which the scene drew as a jump of 2 to 4 tiles
   for (const step of seen.values()) {
     const path: Pos[] = [];
     for (let s: Step | undefined = step; s?.from; s = seen.get(s.from)) path.unshift(s.pos);
@@ -153,23 +153,23 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
   return seen;
 }
 
-// Caminho até `target`, sem a casa inicial (montado pelo `reachable`, passando por aliados); null se não alcança.
+// Path to `target`, without the starting tile (built by `reachable`, passing through allies); null if unreachable.
 export function pathTo(reach: Map<string, Step>, target: Pos): Pos[] | null {
   return reach.get(posKey(target))?.path ?? null;
 }
 
-// Linha de visão na grade: percorre as casas entre os dois pontos (Bresenham) e compara a altura da linha, que vai do olho
-// de quem olha até o ponto de mira do alvo, com o topo de cada casa (altura + o quanto o terreno tapa). Roda sem Three e é
-// determinística, ao contrário da amostragem 3D da POC.
+// Line of sight on the grid: walks the tiles between the two points (Bresenham) and compares the height of the line, which goes from the eye
+// of the viewer to the target's aim point, with the top of each tile (height + how much the terrain blocks). Runs without Three and is
+// deterministic, unlike the POC's 3D sampling.
 export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
   return sightBlock(grid, from, to) === null;
 }
 
-// a primeira casa que barra a linha de visão (null se passa livre): a prévia da trajetória mostra onde o tiro bate
-// (13/11, pedido do Fernando, "como no Tactics Ogre"). A mesma conta de sempre: a linha é traçada da casa de menor índice
-// Onde o tiro para, saindo de quem atira (13/11, pedido do Fernando: "a prévia do projétil não avisou que ia bater no meu
-// aliado"): o primeiro obstáculo do terreno (como sightBlock) ou o primeiro boneco no caminho, aliado ou inimigo, se a
-// linha passa abaixo da cabeça dele (UNIT_TALL níveis acima do chão). null se chega ao alvo
+// the first tile that blocks the line of sight (null if it passes free): the trajectory preview shows where the shot lands
+// (Nov 13, Fernando's request, "like Tactics Ogre"). The same calculation as always: the line is traced from the lowest-index tile
+// Where the shot stops, leaving the shooter (Nov 13, Fernando's request: "the projectile preview did not warn that it would hit my
+// ally"): the first terrain obstacle (like sightBlock) or the first model on the path, ally or enemy, if the
+// line passes below its head (UNIT_TALL levels above the ground). null if it reaches the target
 const UNIT_TALL = 1.6;
 export function shotStop(grid: Grid, state: BattleState, from: Pos, to: Pos, shooter: string, units = true): { pos: Pos; unit: string | null } | null {
   const total = dist(from, to);
@@ -194,14 +194,14 @@ export function shotStop(grid: Grid, state: BattleState, from: Pos, to: Pos, sho
 }
 
 export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
-  // traça sempre da casa de menor índice para a de maior (13/11, revisão): o Bresenham desempata a quina conforme o
-  // sentido, e um arqueiro levava tiro de onde não conseguia responder (5 a 6% dos pares). Olho e mira têm a mesma altura
-  // acima do chão, então trocar as pontas não muda a linha
+  // always traces from the lowest-index tile to the highest (Nov 13, review): Bresenham breaks the corner tie depending on the
+  // direction, and an archer got shot from where it could not answer (5 to 6% of pairs). Eye and aim have the same height
+  // above the ground, so swapping the ends does not change the line
   const [a, b] = from.y * grid.width + from.x <= to.y * grid.width + to.x ? [from, to] : [to, from];
   const total = dist(a, b);
   if (total <= 1) return null;
-  // quem nada na funda mira e é mirado da superfície (revisão de 13/11): com a altura do fundo, a linha passava por baixo do
-  // chão vizinho e quem estava na água ficava invisível a 3 casas ou mais; o acerto continua pior pela altura (standH)
+  // whoever swims in deep water aims and is aimed at from the surface (Nov 13 review): with the bottom height, the line passed under the
+  // neighboring ground and whoever was in the water became invisible at 3 tiles or more; the hit chance is still worse because of height (standH)
   const sight = (p: Pos) => { const t = tileAt(grid, p); return isDeep(t) ? t.h : standH(t); };
   const eye = sight(a) + EYE;
   const aim = sight(b) + EYE;
@@ -215,13 +215,13 @@ export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
     if (e2 <= dx) { err += dx; y += sy; }
     if (x === b.x && y === b.y) return null;
     const t = tileAt(grid, { x, y });
-    // fração pelo avanço em passos de grade, não pelo índice do laço, que na diagonal anda 1 casa por iteração
+    // fraction by the advance in grid steps, not by the loop index, which on the diagonal moves 1 tile per iteration
     const frac = dist(a, { x, y }) / total;
     if (t.h + blocksOf(t) > eye + (aim - eye) * frac) return { x, y };
   }
 }
 
-// alcance máximo contra uma casa: +1 por nível acima do alvo para quem tem heightRange
+// max range against a tile: +1 per level above the target for whoever has heightRange
 export function maxRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): number {
   const up = ability.heightRange ? Math.max(0, standH(tileAt(grid, from)) - standH(tileAt(grid, to))) : 0;
   return ability.range[1] + up;

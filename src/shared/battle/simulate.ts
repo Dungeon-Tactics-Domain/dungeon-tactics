@@ -6,14 +6,14 @@ import type { BattleEvent, Outcome } from './types.ts';
 export interface SimResult {
   outcome: Outcome | 'timeout';
   turns: number;
-  heroTurns: number; // só os dos heróis: é o que o jogador gasta pensando (base da estimativa de minutos)
+  heroTurns: number; // heroes' only: it is what the player spends thinking (basis of the minutes estimate)
   heroesAlive: number;
   enemiesAlive: number;
   events: BattleEvent[];
 }
 
-// IA contra IA até acabar ou bater no teto de turnos (a batalha nunca pode travar). Base do balanceamento por
-// simulação (spec: número só muda depois de medido em várias sementes).
+// AI against AI until it ends or hits the turn cap (the battle must never hang). Basis of balancing by
+// simulation (optional: a number can be measured over several seeds before it changes).
 export function simulate(scenario: Scenario, seed: number, maxTurns = 400): SimResult {
   const battle = Battle.start(scenario, seed);
   const events: BattleEvent[] = [];

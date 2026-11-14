@@ -3,19 +3,19 @@ import type { Grid } from './grid.ts';
 import { SCENARIOS } from './scenarios.ts';
 import type { BattleEvent, BattleState, Outcome, UnitState } from './types.ts';
 
-// Regras que um cenário pode trocar (11/11). Existe para o estudo de referência do FFT rodar no mesmo motor sem tocar
-// nas regras do jogo: cenário sem `rules` usa a regra padrão de cada módulo. Cada campo é opcional e substitui uma só conta.
+// Rules a scenario can swap (Nov 11). It exists so the FFT reference study runs on the same engine without touching
+// the game rules: a scenario without `rules` uses each module's default rule. Each field is optional and replaces a single calculation.
 export interface Rules {
-  hitChance?(grid: Grid, state: BattleState, actor: UnitState, ability: AbilityDef, target: UnitState): number; // % de acerto
+  hitChance?(grid: Grid, state: BattleState, actor: UnitState, ability: AbilityDef, target: UnitState): number; // hit chance %
   rollDamage?(state: BattleState, actor: UnitState, ability: AbilityDef, rng: number): [dmg: number, rng: number];
-  fallDamage?(levels: number, def: string): number; // dano de cair `levels` níveis empurrado
-  jump?(def: string): number; // níveis que a unidade sobe ou desce por passo
+  fallDamage?(levels: number, def: string): number; // damage from being pushed down `levels` levels
+  jump?(def: string): number; // levels the unit climbs or descends per step
   outcome?(state: BattleState): Outcome;
-  facing?: true; // as unidades têm direção (UnitState.facing): viram ao andar e ao agir, e o jogador escolhe ao fim do turno
-  speed?(unit: UnitState): number; // CT ganho por tique
-  damage?(actor: UnitState, ability: AbilityDef): [min: number, max: number]; // faixa de dano mostrada na prévia e usada pela IA
-  after?(state: BattleState, actor: UnitState, ability: AbilityDef, target: UnitState, events: BattleEvent[]): void; // efeito extra depois de acertar ou curar o alvo
+  facing?: true; // units have a direction (UnitState.facing): they turn when walking and acting, and the player chooses at the end of the turn
+  speed?(unit: UnitState): number; // CT gained per tick
+  damage?(actor: UnitState, ability: AbilityDef): [min: number, max: number]; // damage range shown in the preview and used by the AI
+  after?(state: BattleState, actor: UnitState, ability: AbilityDef, target: UnitState, events: BattleEvent[]): void; // extra effect after hitting or healing the target
 }
 
-// `?.`: estado de teste usa um cenário que não está na lista
+// `?.`: a test state uses a scenario that is not in the list
 export const rulesOf = (state: BattleState): Rules => SCENARIOS[state.scenario]?.rules ?? {};

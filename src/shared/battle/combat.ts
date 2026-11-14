@@ -7,29 +7,29 @@ import { SCENARIOS } from './scenarios.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
 
-// Números iniciais de 25/10; só mudam depois de medidos na simulação (scripts/battle-sim.ts).
+// Initial numbers from Oct 25; they can be measured in the simulation (scripts/battle-sim.ts), which is optional.
 export const COMBAT = {
-  DIST_PENALTY: 3, // pontos de acerto perdidos por casa além da primeira
-  HEIGHT_BONUS: 5, // pontos por nível acima (ganha) ou abaixo (perde) do alvo
-  COVER_PENALTY: 20, // alvo em terreno com cobertura, contra ataque à distância
-  MIN_CHANCE: 5, // nunca certeza nem impossível: o dado sempre existe
+  DIST_PENALTY: 3, // hit points lost per tile beyond the first
+  HEIGHT_BONUS: 5, // points per level above (gains) or below (loses) the target
+  COVER_PENALTY: 20, // target on terrain with cover, against a ranged attack
+  MIN_CHANCE: 5, // never certain nor impossible: the die always exists
   MAX_CHANCE: 95,
-  // batida, queda e espinhos x1,75 junto com o dano das habilidades (13/11, "danos muito baixos deixando a batalha lenta"):
-  // antes 3, 5 e 6
-  BUMP_DAMAGE: 5, // empurrão parado por parede, unidade, borda ou degrau alto
-  FALL_FREE: 1, // queda de até 1 nível é só um degrau
-  FALL_DAMAGE: 9, // por nível além do degrau livre
-  SPIKE_DAMAGE: 10, // casa de espinhos (grid.ts): o mesmo que um golpe fraco
-  // golpe físico pelo lado e pelas costas (13/11, direção no jogo, como o FFT: lá o lado tira a evasão de classe e as
-  // costas tiram também a do escudo). Nosso acerto não tem evasão: vira bônus. Números iniciais, medidos na campanha
+  // bump, fall and spikes x1.75 together with the abilities' damage (Nov 13, "very low damage making the battle slow"):
+  // previously 3, 5 and 6
+  BUMP_DAMAGE: 5, // push stopped by a wall, unit, edge or high step
+  FALL_FREE: 1, // a fall of up to 1 level is just a step
+  FALL_DAMAGE: 9, // per level beyond the free step
+  SPIKE_DAMAGE: 10, // spikes tile (grid.ts): the same as a weak hit
+  // physical hit from the side and from behind (Nov 13, direction in the game, like FFT: there the side removes the class evasion and the
+  // back removes the shield's too). Our hit chance has no evasion: it becomes a bonus. Initial numbers, measured in the campaign
   SIDE_BONUS: 15,
   BACK_BONUS: 30,
 };
 
 export interface TargetPreview {
   unit: string;
-  chance: number; // % de acerto; cura sempre 100
-  side: Side; // de onde o golpe pega o alvo (frente sem direção); a interface diz "pelas costas" / "de lado"
+  chance: number; // hit chance %; healing is always 100
+  side: Side; // where the hit catches the target (front without direction); the interface says "from behind" / "from the side"
   dmgMin: number;
   dmgMax: number;
   healMin: number;
@@ -40,25 +40,25 @@ export type PreviewReason = 'unknown' | 'range' | 'sight' | 'no-target' | 'spent
 export interface Preview {
   ok: boolean;
   reason?: PreviewReason;
-  center: Pos; // casa de onde a habilidade age (a do alvo, ou a de quem usa quando é centrada)
+  center: Pos; // tile the ability acts from (the target's, or the user's when it is centered)
   targets: TargetPreview[];
 }
 
-// faixa de dano com o equipamento de quem usa (UnitDef.power); sem equipamento é a faixa da habilidade, e o sorteio não muda
+// damage range with the user's equipment (UnitDef.power); without equipment it is the ability's range, and the roll does not change
 const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
   const p = a.damage[1] > 0 ? UNIT_DEFS[actor.def].power ?? 0 : 0;
   return [a.damage[0] + p, a.damage[1] + p];
 };
 
-// cura e habilidade de apoio miram aliado e não erram
+// healing and support abilities target an ally and never miss
 const isHeal = (a: AbilityDef) => a.heal[1] > 0 || !!a.ally;
 
-// `side`: de onde o golpe pega o alvo (sideOf); magia não olha a direção (no FFT ela só passa pelo escudo mágico)
+// `side`: where the hit catches the target (sideOf); magic ignores direction (in FFT it only goes through the magic shield)
 export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, side: Side = 'front'): number {
   if (isHeal(ability)) return 100;
   const d = dist(from, to);
   const dh = standH(tileAt(grid, from)) - standH(tileAt(grid, to));
-  // cobertura só vale contra quem ataca de longe: o corpo a corpo enxerga o alvo por inteiro
+  // cover only counts against ranged attackers: melee sees the whole target
   const cover = d > 1 && TERRAIN[tileAt(grid, to).terrain].cover ? COMBAT.COVER_PENALTY : 0;
   const flank = ability.magic ? 0 : side === 'back' ? COMBAT.BACK_BONUS : side === 'side' ? COMBAT.SIDE_BONUS : 0;
   const raw = ability.accuracy - COMBAT.DIST_PENALTY * Math.max(0, d - 1) + COMBAT.HEIGHT_BONUS * dh - cover + flank;
@@ -67,21 +67,21 @@ export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, s
 
 function affected(state: BattleState, actor: UnitState, ability: AbilityDef, center: Pos): UnitState[] {
   const inArea = state.units.filter((u) => u.id !== actor.id && distTo(u, center) <= ability.radius);
-  if (ability.radius > 0) return inArea; // área atinge todo mundo, aliado inclusive
+  if (ability.radius > 0) return inArea; // an area hits everyone, allies included
   const u = unitAt(state, center);
-  // quem usa só é alvo de habilidade de apoio cujo alcance começa em 0
+  // the user is only a target of a support ability whose range starts at 0
   const self = u?.id === actor.id;
   const wanted = u && (isHeal(ability) ? u.team === actor.team && (!self || (!!ability.ally && ability.range[0] === 0)) : !self && u.team !== actor.team);
   return wanted ? [u] : [];
 }
 
-// O que a habilidade faria se confirmada, sem mexer no estado: a interface mostra isto antes do Confirmar (pilar "sorte com leitura").
-// Quem está carregando leva 50% a mais de ataque físico (BMG 6, estado Charging: PA * 3/2). Nosso dano não sai do PA:
-// o bônus vai no dano inteiro (adaptação).
+// What the ability would do if confirmed, without touching the state: the interface shows this before Confirm (pillar "readable luck").
+// Whoever is charging takes 50% more physical attack (BMG 6, Charging status: PA * 3/2). Our damage does not come from PA:
+// the bonus goes on the whole damage (adaptation).
 const chargingBonus = (state: BattleState, ability: AbilityDef, target: UnitState) =>
   !ability.magic && state.charges.some((c) => c.unit === target.id) ? 1.5 : 1;
 
-// `charged`: é a carga saindo agora; o custo (MP, estoque) já foi pago quando ela começou
+// `charged`: it is the charge firing now; the cost (MP, stock) was already paid when it started
 export function previewAbility(grid: Grid, state: BattleState, actorId: string, abilityId: string, target: Pos, charged = false): Preview {
   const actor = state.units.find((u) => u.id === actorId);
   const ability = ABILITIES[abilityId];
@@ -89,24 +89,24 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   const fail = (reason: PreviewReason): Preview => ({ ok: false, reason, center, targets: [] });
   if (!actor || !ability || !UNIT_DEFS[actor.def].abilities.includes(abilityId) || !inBounds(grid, center)) return fail('unknown');
   if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
-  // na água funda só se anda ou espera (13/11, escolha do Fernando; grid.ts isDeep). A carga que já saiu não passa aqui:
-  // quem carrega não anda e o empurrão não entra na funda
+  // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that already fired does not pass here:
+  // whoever charges does not walk and a push does not enter deep water
   if (!charged && isDeep(tileAt(grid, actor.pos))) return fail('water');
-  // unidade grande mede alcance e visão da casa dela mais perto do alvo (para quem ocupa 1 casa é a mesma)
+  // a large unit measures range and sight from its tile nearest to the target (for whoever occupies 1 tile it is the same)
   const from = nearestTile(actor, center);
   if (!inAbilityRange(grid, ability, from, center)) return fail('range');
-  // Sem visão o tiro sai assim mesmo e para no primeiro obstáculo do caminho (13/11, pedido do Fernando: "deve permitir o
-  // ataque e o cara perde o ataque"); a área, se houver, explode ali. E atacar o chão vazio vale (13/11): o golpe sai
-  // sem alvo. A IA só escolhe ataque com alvo (attackScore soma zero sem alvo)
-  // boneco no caminho só barra o que voa reto (flecha, faca): magia passa por cima das cabeças
+  // Without sight the shot fires anyway and stops at the first obstacle on the path (Nov 13, Fernando's request: "must allow the
+  // attack and the guy loses the attack"); the area, if any, explodes there. And attacking empty ground is allowed (Nov 13): the hit fires
+  // without a target. The AI only picks attacks with a target (attackScore adds zero without a target)
+  // a model on the path only blocks what flies straight (arrow, knife): magic passes over heads
   const stop = ability.needsSight ? shotStop(grid, state, from, center, actor.id, !ability.magic) : null;
   if (stop) center = stop.pos;
-  // bateu num boneco no caminho: ele leva o golpe, seja de que lado for (sem área: só ele)
+  // hit a model on the path: it takes the hit, whichever side it is on (without area: only it)
   const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;
   const hit = blocker && ability.radius === 0 ? [blocker] : affected(state, actor, ability, center);
   const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? withPower(actor, ability);
   const targets = hit.map((u) => {
-    // contra unidade grande, a casa dela mais perto de quem ataca (distância e altura)
+    // against a large unit, its tile nearest to the attacker (distance and height)
     const at = nearestTile(u, actor.pos), from = nearestTile(actor, at);
     const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
     return {
@@ -122,16 +122,16 @@ export function previewAbility(grid: Grid, state: BattleState, actorId: string, 
   return { ok: true, center, targets };
 }
 
-// Aplica a habilidade no estado (muda units e rng) e devolve os eventos para o cliente animar.
-// Ordem dos sorteios, por unidade atingida na ordem da lista: acerto, depois dano. Mudar a ordem muda o hash dos testes.
-// `scale`: fração do dano (o contra-ataque sai com metade, counters)
-// ataque básico da unidade (a 1ª habilidade): é ele que sai no contra-ataque; à distância se alcança mais de 1 casa
+// Applies the ability to the state (changes units and rng) and returns the events for the client to animate.
+// Order of the rolls, per unit hit in list order: hit, then damage. Changing the order changes the tests' hash.
+// `scale`: fraction of the damage (the counter-attack comes out at half, counters)
+// the unit's basic attack (the 1st ability): it is the one that fires on the counter-attack; ranged if it reaches more than 1 tile
 export const basicOf = (def: string) => UNIT_DEFS[def].abilities[0];
 export const isRanged = (abilityId: string) => ABILITIES[abilityId].range[1] > 1;
 
-// Contra-ataque (13/11, pedido do Fernando; metade do dano, escolha dele): quem foi atacado neste turno revida quando o
-// atacante anda, com o ataque básico e metade do dano, antes de ele sair da casa. Corpo a corpo só revida se ele se
-// afastar (termina a mais de 1 casa); à distância revida a qualquer passo. Cada atacado revida uma vez por turno
+// Counter-attack (Nov 13, Fernando's request; half damage, his choice): whoever was attacked this turn retaliates when the
+// attacker walks, with the basic attack and half the damage, before it leaves the tile. Melee only retaliates if it moves
+// away (ends more than 1 tile away); ranged retaliates at any step. Each attacked unit retaliates once per turn
 export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos): BattleEvent[] {
   const events: BattleEvent[] = [];
   const left: { unit: string; ranged: boolean }[] = [];
@@ -139,9 +139,9 @@ export function counters(grid: Grid, state: BattleState, actorId: string, to: Po
     const actor = state.units.find((u) => u.id === actorId);
     const foe = state.units.find((u) => u.id === e.unit);
     if (!actor || !foe) continue;
-    if (!e.ranged && distTo(foe, to) <= 1) { left.push(e); continue; } // ficou do lado: ainda pode revidar se sair depois
+    if (!e.ranged && distTo(foe, to) <= 1) { left.push(e); continue; } // stayed adjacent: it can still retaliate if it leaves later
     const basic = basicOf(foe.def);
-    // charged: o contra-ataque não paga MP nem estoque
+    // charged: the counter-attack pays no MP or stock
     if (previewAbility(grid, state, foe.id, basic, actor.pos, true).ok) events.push(...resolveAbility(grid, state, foe.id, basic, actor.pos, true, 0.5));
   }
   state.turn.engaged = left;
@@ -159,7 +159,7 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
   for (const t of preview.targets) {
     const unit = state.units.find((u) => u.id === t.unit)!;
     if (isHeal(ability)) {
-      if (ability.heal[1] === 0) { after?.(state, actor, ability, unit, events); continue; } // apoio sem cura: só o efeito
+      if (ability.heal[1] === 0) { after?.(state, actor, ability, unit, events); continue; } // support without healing: only the effect
       let amount: number;
       [amount, state.rng] = rollInt(state.rng, ability.heal[0], ability.heal[1]);
       const healed = Math.min(amount, UNIT_DEFS[unit.def].hp - unit.hp);
@@ -181,7 +181,7 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
     if (!hurt(state, unit, dmg, events)) continue;
     after?.(state, actor, ability, unit, events);
     if (ability.push === 0) continue;
-    // empurrão com chance sorteia depois do dano; sem `pushChance` não há sorteio (a ordem dos sorteios do jogo não muda)
+    // a push with a chance rolls after the damage; without `pushChance` there is no roll (the game's roll order does not change)
     if (ability.pushChance !== undefined) {
       [roll, state.rng] = nextRng(state.rng);
       if (roll * 100 >= ability.pushChance) continue;
@@ -192,18 +192,18 @@ export function resolveAbility(grid: Grid, state: BattleState, actorId: string, 
   return events;
 }
 
-// tira vida; devolve false se a unidade morreu (e sai da lista)
+// removes life; returns false if the unit died (and leaves the list)
 function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEvent[]): boolean {
   unit.hp -= dmg;
   if (unit.hp > 0) return true;
   state.units = state.units.filter((u) => u !== unit);
-  // a carga de quem morre não sai mais; a que seguia quem morreu passa a mirar a casa onde ele estava
+  // the charge of whoever dies no longer fires; the one that followed the dead unit now aims at the tile where it was
   state.charges = state.charges.filter((c) => c.unit !== unit.id).map((c) => (c.follow === unit.id ? { ...c, follow: null, target: unit.pos } : c));
   events.push({ k: 'die', unit: unit.id });
   return false;
 }
 
-// Fim da vez em cima de espinhos (grid.ts): fere quem joga agora. Sem sorteio (o hash das partidas sem espinhos não muda)
+// End of the turn on spikes (grid.ts): hurts whoever plays now. No roll (the hash of games without spikes does not change)
 export function spikeAtTurnEnd(grid: Grid, state: BattleState): BattleEvent[] {
   const actor = state.units.find((u) => u.id === state.turn.actor);
   if (!actor || !tileAt(grid, actor.pos).spikes) return [];
@@ -214,16 +214,16 @@ export function spikeAtTurnEnd(grid: Grid, state: BattleState): BattleEvent[] {
 
 export interface PushResult {
   to: Pos;
-  dmg: number; // batida e queda somadas
-  events: BattleEvent[]; // push, bump e fall, na ordem
+  dmg: number; // bump and fall added together
+  events: BattleEvent[]; // push, bump and fall, in order
 }
 
-// Empurra pelo eixo de maior diferença em relação ao centro da habilidade. Se a vítima está no centro (área), afasta
-// de quem usou. Cada casa é conferida: parede, unidade, borda e degrau alto param (batida); descer é queda, com dano
-// de 2 níveis para cima. Não muda o estado: a IA usa isto para valorizar empurrões antes de escolher a jogada.
+// Pushes along the axis of greatest difference relative to the ability's center. If the victim is at the center (area), it moves away
+// from the user. Each tile is checked: wall, unit, edge and high step stop it (bump); going down is a fall, with damage
+// from 2 levels up. It does not change the state: the AI uses this to value pushes before choosing the move.
 export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, center: Pos, origin: Pos, steps: number): PushResult {
   const result: PushResult = { to: unit.pos, dmg: 0, events: [] };
-  if ((UNIT_DEFS[unit.def].size ?? 1) > 1) return result; // unidade grande não sai do lugar
+  if ((UNIT_DEFS[unit.def].size ?? 1) > 1) return result; // a large unit does not move
   const from = samePos(unit.pos, center) ? origin : center;
   let dx = unit.pos.x - from.x;
   let dy = unit.pos.y - from.y;
@@ -234,8 +234,8 @@ export function simulatePush(grid: Grid, state: BattleState, unit: UnitState, ce
   for (let i = 0; i < steps; i++) {
     const cur = result.to;
     const next = { x: cur.x + dx, y: cur.y + dy };
-    // água funda segura o empurrão como uma parede (suposição nossa: o guia não diz o que acontece)
-    // a água funda segura o empurrão como parede (suposição nossa, mantida quando ela passou a deixar entrar, 13/11)
+    // deep water holds a push like a wall (our assumption: the guide does not say what happens)
+    // deep water holds a push like a wall (our assumption, kept when it started letting units enter, Nov 13)
     const blocked = !inBounds(grid, next) || !canStand(tileAt(grid, next)) || isDeep(tileAt(grid, next)) || !!tileAt(grid, next).noStop || !!unitAt(state, next)
       || standH(tileAt(grid, next)) - standH(tileAt(grid, cur)) > MAX_JUMP;
     if (blocked) {
@@ -266,13 +266,13 @@ function push(grid: Grid, state: BattleState, unit: UnitState, center: Pos, orig
   if (r.dmg > 0) hurt(state, unit, r.dmg, events);
 }
 
-// Vitória: sem inimigos. Derrota: o alvo a proteger caiu ou todos os heróis morreram.
+// Victory: no enemies. Defeat: the target to protect fell or all heroes died.
 export function checkOutcome(state: BattleState): Outcome {
   const custom = rulesOf(state).outcome;
   if (custom) return custom(state);
   const heroes = state.units.filter((u) => u.team === 'hero' && u.def !== OBJECTIVE_DEF);
-  // perde pelo Farol só quem nasceu com ele (13/11, revisão: Bosque e Passo pela Batalha avulsa perdiam no 1º turno);
-  // estado de teste fora da lista conta como mapa com Farol
+  // only a map that was born with a Beacon loses by it (Nov 13, review: Wood and Pass in the standalone Battle lost on the 1st turn);
+  // a test state outside the list counts as a map with a Beacon
   const hadObjective = SCENARIOS[state.scenario]?.spawns.some((s) => s.def === OBJECTIVE_DEF) ?? true;
   const objective = state.units.some((u) => u.def === OBJECTIVE_DEF);
   if ((hadObjective && !objective) || heroes.length === 0) return 'defeat';

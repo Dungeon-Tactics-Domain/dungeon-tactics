@@ -7,29 +7,29 @@ import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Charge, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
-// Desfazer por batalha (spec: valor inicial 3, a medir). Só vale dentro do turno atual: depois de terminar o turno o
-// inimigo já agiu e a informação nova não volta.
+// Undo per battle (spec: initial value 3, to be measured). It only counts within the current turn: after the turn ends the
+// enemy has already acted and the new information does not come back.
 export const UNDO_LIMIT = 3;
-const SAVE_VERSION = 2; // 2 (12/11): cargas no estado; save antigo começa do zero
+const SAVE_VERSION = 2; // 2 (Nov 12): charges in the state; an old save starts from scratch
 const MAX_UNITS = 64;
 
-// O que o desfazer restaura: tudo menos o sorteio. Se o rng voltasse, atacar de novo repetiria o mesmo dado
-// e desfazer viraria "tentar até acertar" (pilar 3: nunca erro escondido, mas também nunca dado repetido).
+// What undo restores: everything except the RNG. If the rng came back, attacking again would repeat the same die
+// and undo would become "try until it hits" (pillar 3: never a hidden miss, but also never a repeated die).
 type Frame = Omit<BattleState, 'rng'>;
 interface Entry {
   before: Frame;
-  paid: boolean; // ataque sorteou dado: desfazer custa um; mover não revela nada e sai de graça
+  paid: boolean; // the attack rolled a die: undoing costs one; moving reveals nothing and is free
 }
 
-// Agregado da batalha: dono do estado, do histórico de desfazer e do salvar. As regras ficam em funções puras
-// (combat, pathing, turn-queue); aqui só mora o que tem ciclo de vida.
+// Battle aggregate: owner of the state, the undo history and the save. The rules live in pure functions
+// (combat, pathing, turn-queue); only what has a lifecycle lives here.
 export class Battle {
   readonly grid: Grid;
   state: BattleState;
   undosLeft: number;
   private history: Entry[];
 
-  // campos explícitos (sem propriedade de parâmetro): o Node só remove tipos ao rodar os scripts de simulação
+  // explicit fields (no parameter properties): Node only strips types when running the simulation scripts
   constructor(grid: Grid, state: BattleState, undosLeft = UNDO_LIMIT, history: Entry[] = []) {
     this.grid = grid;
     this.state = state;
@@ -49,7 +49,7 @@ export class Battle {
   get over(): boolean {
     return this.state.outcome !== 'ongoing';
   }
-  // o último passo foi de graça (andar sem levar nada): o menu oferece "Desfazer movimento", também depois de agir
+  // the last step was free (walking without taking anything): the menu offers "Undo move", also after acting
   get lastFree(): boolean {
     const last = this.history.at(-1);
     return !!last && !last.paid;
@@ -59,8 +59,8 @@ export class Battle {
     return !!last && (!last.paid || this.undosLeft > 0);
   }
 
-  // desde 13/11 dá para andar depois de começar a carregar (pedido do Fernando: "pode se mover para jogar ela mais longe"):
-  // a carga não se desfaz e sai de onde a unidade estiver
+  // since Nov 13 you can walk after starting to charge (Fernando's request: "can move to throw it farther"):
+  // the charge is not undone and fires from wherever the unit is
   reach(): Map<string, Step> {
     const left = UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0);
     return this.over || left <= 0 ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
@@ -78,43 +78,43 @@ export class Battle {
     const from = this.actor.pos;
     const id = this.actor.id;
     const hit = counters(this.grid, this.state, id, to);
-    // levou contra-ataque: esse movimento não se desfaz (13/11, pedido do Fernando: "só não pode desfazer o movimento se o
-    // personagem tomar dano ou cair numa armadilha")
+    // took a counter-attack: this move cannot be undone (Nov 13, Fernando's request: "you can only not undo the move if the
+    // character takes damage or falls into a trap")
     if (hit.length) this.history = [];
     this.state.outcome = checkOutcome(this.state);
-    if (!this.state.units.some((u) => u.id === id) || this.over) return hit; // caiu no contra-ataque: não chega a sair
+    if (!this.state.units.some((u) => u.id === id) || this.over) return hit; // died to the counter-attack: it never gets to leave
     this.state.turn.spent = (this.state.turn.spent ?? 0) + reach.get(posKey(to))!.cost;
-    // com direção, quem anda termina olhando para onde ia
+    // with direction, whoever walks ends up looking where they were going
     if (this.actor.facing !== undefined) this.actor.facing = facingTo(path.at(-2) ?? from, to);
     this.actor.pos = to;
     this.state.turn.moved = true;
-    // o evento leva a casa de saída na frente (13/11): sem ela a animação começava no 1º passo e o boneco "teletransportava"
+    // the event carries the starting tile in front (Nov 13): without it the animation began at the 1st step and the model "teleported"
     return [...hit, { k: 'move', unit: this.actor.id, path: [from, ...path] }];
   }
 
   act(abilityId: string, target: Pos): BattleEvent[] {
     if (this.over || this.state.turn.usedAbility || !this.preview(abilityId, target).ok) return [];
-    // declarar carga não sorteia dado: desfazer não gasta (13/11, revisão; o sorteio vem quando ela sai)
+    // declaring a charge rolls no die: undo costs nothing (Nov 13, review; the roll comes when it fires)
     this.remember(ABILITIES[abilityId].charge === 0);
-    if (this.actor.facing !== undefined && !samePos(target, this.actor.pos)) this.actor.facing = facingTo(this.actor.pos, target); // vira para o alvo
+    if (this.actor.facing !== undefined && !samePos(target, this.actor.pos)) this.actor.facing = facingTo(this.actor.pos, target); // turns toward the target
     const ability = ABILITIES[abilityId];
     let events: BattleEvent[];
     if (ability.charge > 0) {
-      // ação lenta: paga o custo agora e entra na fila; uma carga nova troca a anterior da mesma unidade
+      // slow action: pays the cost now and joins the queue; a new charge replaces the previous one of the same unit
       if (ability.cost) this.actor.vars![ability.cost[0]] -= ability.cost[1];
       const follow = ability.panel ? null : unitAt(this.state, target)?.id ?? null;
       this.state.charges = [...this.state.charges.filter((c) => c.unit !== this.actor.id), { unit: this.actor.id, ability: abilityId, target, follow, ticks: ability.charge }];
       events = [{ k: 'charge', unit: this.actor.id, ability: abilityId, target }];
     } else {
       events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
-      // quem levou o golpe e pode revidar do mesmo jeito (corpo a corpo ou à distância) fica de olho: se o ator andar
-      // depois, contra-ataca (counters)
+      // whoever took the hit and can retaliate the same way (melee or ranged) keeps watch: if the actor walks
+      // afterwards, it counter-attacks (counters)
       if (!(ability.heal[1] > 0 || ability.ally)) {
         const ranged = isRanged(abilityId);
         for (const e of events) {
           if (e.k !== 'hit' && e.k !== 'miss') continue;
           const foe = this.state.units.find((u) => u.id === e.unit);
-          if (!foe || foe.team === this.actor.team || !basicOf(foe.def) || UNIT_DEFS[foe.def].speed === 0 || isRanged(basicOf(foe.def)) !== ranged) continue; // o Farol não revida
+          if (!foe || foe.team === this.actor.team || !basicOf(foe.def) || UNIT_DEFS[foe.def].speed === 0 || isRanged(basicOf(foe.def)) !== ranged) continue; // the Beacon does not retaliate
           if (!(this.state.turn.engaged ?? []).some((x) => x.unit === foe.id)) (this.state.turn.engaged ??= []).push({ unit: foe.id, ranged });
         }
       }
@@ -123,12 +123,12 @@ export class Battle {
     return events;
   }
 
-  // Escolhe para onde a unidade da vez olha (só em cenário com direção). De graça e sem desfazer: não revela nada.
+  // Chooses where the current unit looks (only in a scenario with direction). Free and without undo: it reveals nothing.
   face(dir: number): void {
     if (!this.over && this.actor.facing !== undefined && FACING[dir]) this.actor.facing = dir;
   }
 
-  // devolve os eventos das cargas que saíram antes do próximo turno
+  // returns the events of the charges that fired before the next turn
   endTurn(): BattleEvent[] {
     this.history = [];
     if (this.over) return [];
@@ -154,7 +154,7 @@ export class Battle {
     return JSON.stringify({ v: SAVE_VERSION, state: this.state, undosLeft: this.undosLeft, history: this.history });
   }
 
-  // Salvo no navegador pode estar velho, editado ou quebrado: qualquer dúvida devolve null e o jogo começa do zero.
+  // A save in the browser may be old, edited or broken: any doubt returns null and the game starts from scratch.
   static load(json: string): Battle | null {
     let raw: unknown;
     try {
@@ -186,7 +186,7 @@ export class Battle {
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v);
 
-// Fronteira de confiança do save: reconstrói o estado só com campos conhecidos e confere limites (mapa, vida, duplicatas).
+// Save trust boundary: rebuilds the state only with known fields and checks limits (map, life, duplicates).
 export function parseBattleState(raw: unknown): BattleState | null {
   if (!isObj(raw) || typeof raw.scenario !== 'string' || !Object.hasOwn(SCENARIOS, raw.scenario)) return null;
   const grid = SCENARIOS[raw.scenario].grid;
@@ -201,8 +201,8 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (u.team !== 'hero' && u.team !== 'enemy') return null;
     if (!isObj(u.pos) || !isInt(u.pos.x) || !isInt(u.pos.y)) return null;
     const pos = { x: u.pos.x, y: u.pos.y };
-    // todas as casas da unidade (a grande ocupa 2x2 a partir de `pos`): dentro do mapa, pisáveis e sem ninguém (13/11,
-    // revisão: só a casa de canto era conferida, e um Colosso cobria o Farol ou saía do mapa)
+    // all the unit's tiles (a large one occupies 2x2 from `pos`): inside the map, walkable and empty (Nov 13,
+    // review: only the corner tile was checked, and a Colossus covered the Beacon or left the map)
     const size = UNIT_DEFS[u.def].size ?? 1;
     const tiles = Array.from({ length: size * size }, (_, i) => ({ x: pos.x + (i % size), y: pos.y + Math.floor(i / size) }));
     if (!tiles.every((p) => inBounds(grid, p) && canStand(tileAt(grid, p)) && !cells.has(`${p.x},${p.y}`))) return null;
@@ -210,8 +210,8 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (ids.has(u.id)) return null;
     ids.add(u.id);
     for (const p of tiles) cells.add(`${p.x},${p.y}`);
-    // direção: todo mapa tem desde 13/11; save de antes (sem ela) abre virado para o inimigo mais perto (preenchido
-    // depois do laço). Contadores só com as chaves da ficha
+    // direction: every map has it since Nov 13; an older save (without it) opens facing the nearest enemy (filled in
+    // after the loop). Counters only with the sheet's keys
     if (u.facing !== undefined && (!isInt(u.facing) || !FACING[u.facing])) return null;
     const defVars = UNIT_DEFS[u.def].vars;
     let vars: Record<string, number> | undefined;

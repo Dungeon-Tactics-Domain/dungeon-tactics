@@ -7,28 +7,28 @@ import { TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { OBJECTIVE_DEF, UNIT_DEFS } from './units.ts';
 
-// Pesos iniciais de 25/10 (em "pontos de vida esperados"): a IA é gulosa de um turno e sem sorteio, então com a mesma
-// situação joga igual. O jogador vê o alcance dela; a intenção só aparece na vez dela (spec).
+// Initial weights from Oct 25 (in "expected life points"): the AI is greedy for one turn and has no rolls, so with the same
+// situation it plays the same. The player sees its reach; the intent only shows on its turn (spec).
 const W = {
-  KILL: 8, // bônus por matar (vezes a chance)
-  OBJECTIVE: 1.5, // multiplica o valor de bater no alvo a proteger
-  FRIENDLY: 1.5, // multiplica o prejuízo de ferir aliado
-  CHARGE: 0.5, // por tique de carga (o alvo pode sair da casa); era 0,05 por ponto de atraso, 10 de atraso = 1 tique
+  KILL: 8, // bonus for killing (times the chance)
+  OBJECTIVE: 1.5, // multiplies the value of hitting the target to protect
+  FRIENDLY: 1.5, // multiplies the loss from hurting an ally
+  CHARGE: 0.5, // per charge tick (the target may leave the tile); it was 0.05 per delay point, 10 delay = 1 tick
   COVER: 1,
-  HEIGHT: 0.4, // por nível da casa
-  APPROACH: 0.35, // por casa de distância do alvo mais interessante
-  OBJECTIVE_PULL: 3, // quanto o alvo a proteger "puxa" os inimigos (como se estivesse mais perto)
-  THREAT: 0.25, // por ponto de dano médio de quem alcança a casa
-  ADVANCE: 1.2, // por casa de distância quando não há em quem bater neste turno
-  GUARD: 2, // por casa que o herói se afasta do alvo a proteger além do raio de guarda
-  // Tiro mirado (carga na casa) em quem joga antes de ela sair vale 40% (pode sair dali). Medido em 12/11 (1 000
-  // sementes): Colina 72,8% → 72,7% para os heróis, Escaramuça 45,2% → 43,7%. Valer para toda carga foi erro: a magia
-  // segue a unidade, e a IA deixava de usar a Explosão em quem é rápido (Colina caía para 64,1%)
+  HEIGHT: 0.4, // per tile level
+  APPROACH: 0.35, // per tile of distance from the most interesting target
+  OBJECTIVE_PULL: 3, // how much the target to protect "pulls" the enemies (as if it were closer)
+  THREAT: 0.25, // per point of average damage of whoever reaches the tile
+  ADVANCE: 1.2, // per tile of distance when there is nobody to hit this turn
+  GUARD: 2, // per tile the hero moves away from the target to protect beyond the guard radius
+  // Aimed Shot (charge on the tile) against whoever plays before it fires is worth 40% (they may leave). Measured on Nov 12 (1,000
+  // seeds): Hill 72.8% → 72.7% for the heroes, Skirmish 45.2% → 43.7%. Applying it to every charge was a mistake: the spell
+  // follows the unit, and the AI stopped using the Blast on fast targets (Hill dropped to 64.1%)
   ESCAPE: 0.4,
 };
-// Até onde o herói da IA sai de perto do alvo a proteger para ir ao encontro do inimigo. Medido em 11/11 no 20x20
-// (1 000 sementes): com 10 os heróis seguram a colina do meio e vencem 53,3%; com 7 ficam no descampado (29%) e sem
-// limite se espalham (41%). O resultado é sensível a este número: mudou o mapa, meça de novo.
+// How far the AI hero leaves the target to protect to go meet the enemy. Measured on Nov 11 on the 20x20
+// (1,000 seeds): with 10 the heroes hold the middle hill and win 53.3%; with 7 they stay in the open (29%) and with no
+// limit they spread out (41%). The result is sensitive to this number: if the map changed, measure again.
 export const GUARD_RADIUS = 10;
 
 export interface Plan {
@@ -48,30 +48,30 @@ function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId
     const u = state.units.find((x) => x.id === t.unit)!;
     const chance = t.chance / 100;
     if (ability.heal[1] > 0) {
-      // cura em área pega quem estiver nela: curar inimigo conta contra (nos mapas do jogo a cura só pega aliado)
+      // area healing catches whoever is in it: healing an enemy counts against (on the game maps healing only catches allies)
       const healed = chance * Math.min(avg(ability.heal), UNIT_DEFS[u.def].hp - u.hp);
       total += u.team === actor.team ? healed : -healed * W.FRIENDLY;
       continue;
     }
     const pushDmg = ability.push > 0 ? simulatePush(grid, state, u, p.center, actor.pos, ability.push).dmg : 0;
-    const dmg = (t.dmgMin + t.dmgMax) / 2; // da prévia: é a mesma faixa que o sorteio usa
+    const dmg = (t.dmgMin + t.dmgMax) / 2; // from the preview: it is the same range the roll uses
     const expected = chance * (Math.min(dmg + pushDmg, u.hp) + (dmg + pushDmg >= u.hp ? W.KILL : 0));
     const foe = u.team !== actor.team;
-    // carga que mira a casa (panel, o Tiro mirado): quem joga antes de ela sair provavelmente sai dali e o golpe cai no
-    // vazio (12/11). A magia com carga segue a unidade (abilities.ts) e não perde nada com isso
+    // a charge that aims at the tile (panel, the Aimed Shot): whoever plays before it fires probably leaves and the hit lands on
+    // nothing (Nov 12). A spell with charge follows the unit (abilities.ts) and loses nothing from this
     const leaves = ability.panel && u.ct + UNIT_DEFS[u.def].speed * ability.charge >= TURN_THRESHOLD ? W.ESCAPE : 1;
     total += (foe ? expected * (u.def === OBJECTIVE_DEF ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY) * leaves;
   }
   return total;
 }
 
-// onde a habilidade pode ser mirada: casa de cada unidade e, para área, as vizinhas (a explosão pode pegar de raspão)
+// where the ability can be aimed: each unit's tile and, for an area, the neighbors (the blast may graze)
 function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, ability: AbilityDef): Pos[] {
   if (ability.range[1] === 0) return [actor.pos];
   const out = new Map<string, Pos>();
   for (const u of state.units) {
     if (u.id === actor.id) continue;
-    // unidade grande: qualquer uma das casas dela (footprint); para quem ocupa 1 casa, a mesma ordem de antes
+    // large unit: any of its tiles (footprint); for whoever occupies 1 tile, the same order as before
     for (const f of footprint(u)) {
       out.set(posKey(f), f);
       if (ability.radius > 0) for (const n of neighbors(grid, f)) out.set(posKey(n), n);
@@ -80,13 +80,13 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
   return [...out.values()];
 }
 
-// Valor da casa. Atacando, pesa a ameaça (bater de um lugar seguro). Sem ninguém ao alcance, a ameaça não conta e a
-// distância pesa mais: no mapa 20x20 o inimigo fugia do alcance dos heróis em vez de avançar e a batalha não andava
-// (medido em 11/11: 28 dos 40 turnos inimigos sem atacar). O herói avança só até o raio de guarda do alvo a proteger.
-// Distância a pé de cada casa até o inimigo mais perto, em pontos de movimento (stepCost) e o salto é o de quem
-// anda (unidades no caminho não contam). Antes era a distância em linha reta: em Gariland, duas unidades em telhados
-// vizinhos se achavam "a 2 casas" e ninguém descia para dar a volta; com a água rasa (12/11) eram 35 batalhas travadas
-// em 1 000 no estudo das classes. Busca a partir dos inimigos: o custo de cada passo é o de entrar na casa de onde se vem.
+// Tile value. When attacking, it weighs the threat (hitting from a safe place). With nobody in reach, the threat does not count and the
+// distance weighs more: on the 20x20 map the enemy fled the heroes' reach instead of advancing and the battle did not move
+// (measured on Nov 11: 28 of 40 enemy turns without attacking). The hero advances only up to the guard radius of the target to protect.
+// On-foot distance from each tile to the nearest enemy, in movement points (stepCost), and the jump is that of whoever
+// walks (units on the path do not count). It used to be the straight-line distance: in Gariland, two units on neighboring
+// rooftops thought they were "2 tiles away" and nobody went down to go around; with shallow water (Nov 12) there were 35 stuck battles
+// in 1,000 in the class study. The search starts from the enemies: the cost of each step is that of entering the tile it comes from.
 function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, number> {
   const jump = jumpOf(state, actor.def);
   const best = new Map<string, number>();
@@ -105,11 +105,11 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
     for (const n of neighbors(grid, p)) {
       const t = tileAt(grid, n);
       const next = cost + stepCost(here);
-      if (!canStand(t) || Math.abs(t.h - here.h) > jump || (best.get(posKey(n)) ?? Infinity) <= next) continue; // salto pela superfície, como reachable
+      if (!canStand(t) || Math.abs(t.h - here.h) > jump || (best.get(posKey(n)) ?? Infinity) <= next) continue; // jump by the surface, like reachable
       best.set(posKey(n), next);
       queue.push({ p: n, cost: next });
     }
-    // vão (pathing.ts leaps): a regra é a mesma nos dois sentidos, então serve à busca que sai dos inimigos
+    // gap (pathing.ts leaps): the rule is the same in both directions, so it serves the search that starts from the enemies
     for (const { to: n, over } of leaps(grid, p, jump)) {
       const next = cost + over.length + stepCost(here);
       if ((best.get(posKey(n)) ?? Infinity) <= next) continue;
@@ -122,8 +122,8 @@ function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, 
 
 function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos, attacking: boolean, walk: Map<string, number>): number {
   const tile = tileAt(grid, at);
-  // espinhos: terminar a vez ali custa o dano deles (grid.ts)
-  // espinho que mata quem termina a vez nele conta como a própria morte (13/11, revisão: o Bruto com 5 de vida parava ali)
+  // spikes: ending the turn there costs their damage (grid.ts)
+  // a spike that kills whoever ends the turn on it counts as their own death (Nov 13, review: the Brute with 5 life stopped there)
   const spike = !tile.spikes ? 0 : actor.hp <= COMBAT.SPIKE_DAMAGE ? 1000 : COMBAT.SPIKE_DAMAGE;
   let score = (TERRAIN[tile.terrain].cover ? W.COVER : 0) + W.HEIGHT * standH(tile) - spike;
   let nearest = Infinity;
@@ -138,14 +138,14 @@ function positionScore(grid: Grid, state: BattleState, actor: UnitState, at: Pos
     const reach = def.move + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
     if (dist(at, o.pos) <= reach) score -= W.THREAT * Math.max(...def.abilities.map((a) => avg(ABILITIES[a].damage)));
   }
-  // a pé quando há caminho; em linha reta só se nenhum inimigo é alcançável andando
+  // on foot when there is a path; in a straight line only if no enemy is reachable by walking
   const walked = walk.get(posKey(at));
   if (walked !== undefined) nearest = walked;
   return score - (attacking ? W.APPROACH : W.ADVANCE) * (Number.isFinite(nearest) ? nearest : 0);
 }
 
-// Melhor jogada do turno: testa cada casa alcançável (e ficar parado) com cada habilidade e cada alvo, e escolhe a de
-// maior valor esperado (dano e morte esperados, ferir aliado e atraso contam contra, mais posição). Só lê o estado.
+// Best move of the turn: tests each reachable tile (and staying put) with each ability and each target, and picks the one with the
+// highest expected value (expected damage and kills, hurting an ally and delay count against, plus position). It only reads the state.
 export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan {
   const actor = state.units.find((u) => u.id === unitId)!;
   const spots = [actor.pos, ...[...reachable(grid, state, unitId).values()].map((s) => s.pos)];
@@ -155,7 +155,7 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
     const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: spot } : u)) };
     const me = moved.units.find((u) => u.id === unitId)!;
     let attack: Plan['ability'] = null;
-    let attackBest = 0; // atacar só vale se o saldo for positivo
+    let attackBest = 0; // attacking is only worth it if the balance is positive
     for (const id of UNIT_DEFS[actor.def].abilities) {
       for (const target of candidateTargets(grid, moved, me, ABILITIES[id])) {
         const s = attackScore(grid, moved, me, id, target);
@@ -168,9 +168,9 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
   return best;
 }
 
-// Recuo depois de agir: cada casa ainda alcançável vale a posição (positionScore, como quem ataca) menos o dano esperado
-// do contra-ataque que o passo provoca (metade do básico de quem foi atacado, pela chance de acerto); fica parado se nada
-// vale mais que a casa atual
+// Retreat after acting: each still-reachable tile is worth its position (positionScore, as for an attacker) minus the expected damage
+// of the counter-attack the step provokes (half of the basic attack of whoever was attacked, by the hit chance); it stays put if nothing
+// is worth more than the current tile
 function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Map<string, Step>): Pos | null {
   const me = state.units.find((u) => u.id === unitId)!;
   const walk = walkMap(grid, state, me);
@@ -189,24 +189,24 @@ function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Ma
   let best: Pos | null = null, bestScore = value(me.pos);
   for (const step of reach.values()) {
     const v = value(step.pos);
-    if (v > bestScore + 0.5) { bestScore = v; best = step.pos; } // margem: não fica dançando por quase nada
+    if (v > bestScore + 0.5) { bestScore = v; best = step.pos; } // margin: it does not dance around for almost nothing
   }
   return best;
 }
 
-// Joga o turno inteiro da unidade da vez (andar, agir e passar a vez) e devolve os eventos para o cliente animar.
+// Plays the whole turn of the current unit (walk, act and pass the turn) and returns the events for the client to animate.
 export function playAiTurn(battle: Battle): BattleEvent[] {
   const plan = chooseTurn(battle.grid, battle.state, battle.actor.id);
   const events: BattleEvent[] = [];
   if (plan.moveTo) events.push(...battle.move(plan.moveTo));
   if (plan.ability) events.push(...battle.act(plan.ability.id, plan.ability.target));
-  // com movimento sobrando depois de agir (13/11, movimento em partes), recua se a casa nova vale mais que o contra-ataque
+  // with movement left after acting (Nov 13, movement in parts), it retreats if the new tile is worth more than the counter-attack
   if (!battle.over && plan.ability) {
     const to = chooseRetreat(battle.grid, battle.state, battle.actor.id, battle.reach());
     if (to) events.push(...battle.move(to));
   }
-  // com direção: termina o turno de frente para o inimigo mais próximo (escolha nossa; a IA do FFT não tem fonte)
-  // quem recuou pode ter caído no contra-ataque: sem ator, nada de virar
+  // with direction: ends the turn facing the nearest enemy (our own choice; the FFT AI has no source)
+  // whoever retreated may have died to the counter-attack: without an actor, no turning
   if (!battle.over && battle.state.units.some((u) => u.id === battle.state.turn.actor) && battle.actor.facing !== undefined) {
     const me = battle.actor;
     const foes = battle.state.units.filter((u) => u.team !== me.team);

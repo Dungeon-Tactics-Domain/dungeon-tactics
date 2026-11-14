@@ -1,8 +1,8 @@
-// Meia casa (13/11, pedido do Fernando: "os bonecos ocupam um quadrado de 4 tiles 2x2, mas o movimento é de 1 em 1 tile;
-// quero testar assim"; depois: "as árvores podem ocupar 3, 4, 5 de largura… muitos tipos de árvore"). Versão de teste
-// (?cenario=meia, Bosque): o mapa é dividido em meias-casas (cada casa vira 2x2), cada unidade vira uma ficha de 2x2 com
-// o movimento e os alcances dobrados, e o Bosque ganha árvores de 3 a 5 meias-casas de largura e caixotes e corpos
-// espalhados. Só existe para quem chama registerHalf (o cliente com ?cenario=meia), como o estudo do FFT.
+// Half tile (Nov 13, Fernando's request: "the characters occupy a square of 4 tiles 2x2, but movement is 1 tile at a time;
+// I want to test it like this"; later: "trees can be 3, 4, 5 wide… many kinds of tree"). Test version
+// (?cenario=meia, Wood): the map is divided into half-tiles (each tile becomes 2x2), each unit becomes a 2x2 token with
+// movement and ranges doubled, and the Wood gets trees 3 to 5 half-tiles wide and crates and bodies
+// scattered around. It only exists for whoever calls registerHalf (the client with ?cenario=meia), like the FFT study.
 import { ABILITIES } from './abilities.ts';
 import { FACING, posKey, tileAt, type Grid, type Tile } from './grid.ts';
 import { SCENARIOS, type Scenario } from './scenarios.ts';
@@ -13,7 +13,7 @@ export const HALF = '½';
 export const HALF_ID = 'ash_wood_meia';
 export const baseDef = (def: string) => (def.endsWith(HALF) ? def.slice(0, -HALF.length) : def);
 
-// alcance em meias-casas: corpo a corpo continua 1 (dois quadrados lado a lado ficam a 1 meia-casa), o resto dobra
+// range in half-tiles: melee stays 1 (two squares side by side are 1 half-tile apart), the rest doubles
 const twice = (r: number) => (r <= 1 ? r : r * 2);
 
 function registerDefs() {
@@ -27,14 +27,14 @@ function registerDefs() {
   }
 }
 
-// cada casa vira 2x2 meias-casas; a rampa só fica na meia-casa encostada na casa de cima (a outra é plana)
+// each tile becomes 2x2 half-tiles; the ramp stays only on the half-tile next to the upper tile (the other is flat)
 function split(g: Grid): Grid {
   const W = g.width * 2, H = g.height * 2, tiles: Tile[] = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const t = tileAt(g, { x: x >> 1, y: y >> 1 });
     const c: Tile = { ...t };
-    // objeto da casa (caixote, barril, corpo) fica só na meia-casa de cima à esquerda: senão virava 4 iguais. O caixote e
-    // o barril continuam barrando o quadrado todo; o corpo só ocupa a dele
+    // the tile's object (crate, barrel, body) stays only on the top-left half-tile: otherwise it became 4 identical ones. The crate and
+    // the barrel still block the whole square; the body only occupies its own
     const corner = x % 2 === 0 && y % 2 === 0;
     if (!corner && PROPS.has(t.look ?? '')) { c.look = 'sand'; if (t.look === 'corpse') { c.terrain = 'floor'; delete c.noStop; } }
     if (t.ramp) {
@@ -50,14 +50,14 @@ function split(g: Grid): Grid {
 const TREE_LOOKS = ['tree', 'tree2', 'tree3', 'tree4'];
 const PROPS = new Set(['crates', 'barrel', 'corpse']);
 
-// Árvores do Bosque em meias-casas: as de antes viram árvores de 2; mais umas de 3 a 5 nas casas de grama, longe da
-// estrada, da água e de onde as unidades nascem, cada uma só se o caminho dos heróis aos inimigos continuar aberto
+// Wood trees in half-tiles: the old ones become trees of 2; plus some of 3 to 5 on grass tiles, away from the
+// road, the water and where the units spawn, each one only if the path from the heroes to the enemies stays open
 function plantTrees(g: Grid, spawns: Pos[], hero: Pos, foe: Pos): void {
   let s = 4242;
   const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
   const at = (p: Pos) => g.tiles[p.y * g.width + p.x];
   const W = g.width, H = g.height;
-  // árvores que já existiam: o quadrado de 2x2 de cada casa de floresta vira uma árvore só, de 2
+  // trees that already existed: the 2x2 square of each forest tile becomes a single tree, of 2
   for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) {
     const t = at({ x, y });
     if (t.terrain !== 'forest') continue;
@@ -69,13 +69,13 @@ function plantTrees(g: Grid, spawns: Pos[], hero: Pos, foe: Pos): void {
       const q = { x: p.x + dx, y: p.y + dy };
       if (q.x < 0 || q.y < 0 || q.x >= W || q.y >= H) continue;
       const t = at(q);
-      if (look.includes(t.look ?? '') || t.depth) return true; // a estrada (areia) pode encostar: a árvore só não fica em cima
+      if (look.includes(t.look ?? '') || t.depth) return true; // the road (sand) may touch: the tree just does not sit on top of it
     }
     return false;
   };
-  // sem encostar no quadrado 2x2 de quem nasce (1 meia-casa de folga)
+  // without touching the 2x2 square of whoever spawns (1 half-tile of slack)
   const spawnClose = (p: Pos, sz: number) => spawns.some((sp) => sp.x + 2 >= p.x - 1 && sp.x <= p.x + sz && sp.y + 2 >= p.y - 1 && sp.y <= p.y + sz);
-  // caminho aberto para quem ocupa 2x2 (sobe ou desce 1 nível por passo), de um herói até perto de um inimigo
+  // open path for whoever occupies 2x2 (climbs or descends 1 level per step), from a hero to near an enemy
   const open = () => {
     const ok = (p: Pos) => {
       if (p.x < 0 || p.y < 0 || p.x + 1 >= W || p.y + 1 >= H) return false;
@@ -97,12 +97,12 @@ function plantTrees(g: Grid, spawns: Pos[], hero: Pos, foe: Pos): void {
   };
   let placed = 0;
   for (let tries = 0; tries < 4000 && placed < 26; tries++) {
-    const sz = 3 + Math.floor(rnd() * 3); // 3, 4 ou 5 meias-casas de largura
+    const sz = 3 + Math.floor(rnd() * 3); // 3, 4 or 5 half-tiles wide
     const p = { x: Math.floor(rnd() * (W - sz)), y: Math.floor(rnd() * (H - sz)) };
     const cells: Pos[] = [];
     for (let dy = 0; dy < sz; dy++) for (let dx = 0; dx < sz; dx++) cells.push({ x: p.x + dx, y: p.y + dy });
     const h = at(p).h;
-    // árvore em encosta também (até 1 nível de diferença no quadrado): o mapa tem degraus em quase todo canto
+    // trees on slopes too (up to 1 level of difference in the square): the map has steps in almost every corner
     if (spawnClose(p, sz) || cells.some((c) => Math.abs(at(c).h - h) > 1 || near(c, ['bridge', 'water'], 1) || !['grass', undefined].includes(at(c).look) || at(c).terrain !== 'floor')) continue;
     const before = cells.map((c) => ({ ...at(c) }));
     cells.forEach((c, k) => {
@@ -116,7 +116,7 @@ function plantTrees(g: Grid, spawns: Pos[], hero: Pos, foe: Pos): void {
   }
 }
 
-// caixotes, barris e corpos espalhados pelos dois lados (um por meia-casa, longe da estrada e das nascentes)
+// crates, barrels and bodies scattered on both sides (one per half-tile, away from the road and the spawns)
 function scatterProps(g: Grid, spawns: Pos[]): void {
   let s = 777;
   const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
@@ -135,7 +135,7 @@ function scatterProps(g: Grid, spawns: Pos[]): void {
   }
 }
 
-// Bosque em meias-casas; registra as fichas e o cenário (cliente com ?cenario=meia)
+// Wood in half-tiles; registers the tokens and the scenario (client with ?cenario=meia)
 export function registerHalf(): Scenario {
   registerDefs();
   const base = SCENARIOS.ash_wood;
