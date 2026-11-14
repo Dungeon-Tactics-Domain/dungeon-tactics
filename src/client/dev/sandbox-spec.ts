@@ -374,15 +374,18 @@ const WHY: Record<PreviewReason, string> = {
 
 // One step through the same Battle calls the turn screen makes (interaction.ts `confirm` for move and act; `face` and
 // `endTurn` for wait, without the AI turns that follow in the game). A step that would do nothing is a named problem:
-// a clip must not record a step that silently failed
+// a clip must not record a step that silently failed. Its tiles are whole like the rest of the spec: on a split map they
+// become the corner cell of their square (as `inCells` does), and the problems name them as written
 export function playStep(b: Battle, step: Step): { events: BattleEvent[]; problem: string | null } {
   const fail = (problem: string) => ({ events: [], problem });
+  const k = subOf(b.grid),
+    cell = (p: Pos) => ({ x: p.x * k, y: p.y * k });
   const s = 'move' in step ? step.move : 'act' in step ? step.act : step.wait;
   if (b.over) return fail('the battle is already over');
   const turn = b.state.turn.actor === s.unit ? null : giveTurn(b, s.unit);
   if (turn) return fail(turn);
   if ('move' in step) {
-    const events = b.move(step.move.to);
+    const events = b.move(cell(step.move.to));
     if (!events.length) return fail(`${s.unit} cannot reach ${step.move.to.x},${step.move.to.y}`);
     // fell to a counter-attack on the way: the turn passes by itself, as in Game.execute
     if (!b.state.units.some((u) => u.id === s.unit)) events.push(...b.endTurn());
@@ -391,9 +394,9 @@ export function playStep(b: Battle, step: Step): { events: BattleEvent[]; proble
   if ('act' in step) {
     const { ability, target } = step.act;
     if (b.state.turn.usedAbility) return fail(`${s.unit} already acted this turn`);
-    const { ok, reason = 'unknown' } = b.preview(ability, target);
+    const { ok, reason = 'unknown' } = b.preview(ability, cell(target));
     if (!ok) return fail(`${s.unit} cannot use ${ability} on ${target.x},${target.y}: ${WHY[reason]}`);
-    return { events: b.act(ability, target), problem: null };
+    return { events: b.act(ability, cell(target)), problem: null };
   }
   if (step.wait.facing !== undefined) b.face(step.wait.facing);
   return { events: b.endTurn(), problem: null };

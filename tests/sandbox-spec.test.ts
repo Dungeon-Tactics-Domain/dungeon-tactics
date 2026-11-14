@@ -375,3 +375,34 @@ describe('playStep', () => {
     expect(b.actor.id).toBe('e-brute');
   });
 });
+
+// steps are whole tiles like the rest of the spec, played on the split map every game battle runs on (half.ts)
+describe('playStep on a split map', () => {
+  const start = () => Battle.start(halve(SCENARIOS.ash_wood), 1);
+  const at = (b: Battle, id: string) => b.state.units.find((u) => u.id === id)!;
+
+  it('walks to the corner cell of the whole tile', () => {
+    const b = start();
+    expect(playStep(b, { move: { unit: 'h-warrior', to: { x: 3, y: 9 } } }).problem).toBeNull();
+    expect(at(b, 'h-warrior').pos).toEqual({ x: 6, y: 18 });
+  });
+
+  it('aims at the whole tile', () => {
+    const b = start();
+    at(b, 'e-soldier').pos = { x: 10, y: 12 };
+    const { events, problem } = playStep(b, { act: { unit: 'h-archer', ability: 'shot', target: { x: 5, y: 6 } } });
+    expect(problem).toBeNull();
+    expect(events.find((e) => e.k === 'hit' || e.k === 'miss')).toMatchObject({ unit: 'e-soldier' });
+  });
+
+  it('names the tiles it refuses in whole tiles', () => {
+    const b = start();
+    expect(playStep(b, { move: { unit: 'h-warrior', to: { x: 3, y: 0 } } }).problem).toBe('h-warrior cannot reach 3,0');
+    expect(playStep(b, { act: { unit: 'h-archer', ability: 'shot', target: { x: 2, y: 0 } } }).problem).toBe(
+      'h-archer cannot use shot on 2,0: out of range',
+    );
+    expect(offMap(b.grid, { steps: [{ move: { unit: 'h-warrior', to: { x: 14, y: 0 } } }] })).toEqual([
+      'steps[0].move.to: 14,0 is outside the 12x12 map',
+    ]);
+  });
+});
