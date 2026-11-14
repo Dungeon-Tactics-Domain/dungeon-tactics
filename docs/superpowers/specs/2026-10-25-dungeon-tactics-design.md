@@ -1,50 +1,50 @@
-# Dungeon Tactics — desenho da 1ª fatia (25/10/2026)
+# Dungeon Tactics — design for slice 1 (Oct 25, 2026)
 
-Origem: grill de pilares com o Fernando em 25/10/2026 (decisões também na memória `visao-do-jogo.md`). Pilares e metas: [`docs/game-design/PILARES.md`](../../game-design/PILARES.md).
+Origin: pillars grill with Fernando on Oct 25, 2026 (decisions also in the memory `visao-do-jogo.md`). Pillars and goals: [`docs/game-design/PILARES.md`](../../game-design/PILARES.md).
 
-## O que é
+## What it is
 
-Tactics por turnos em grade quadrada com altura, mobile primeiro, pixel art SNES (shader sobre 3D Three.js). Referências: Final Fantasy Tactics (turno, altura), Into the Breach (planejar contra o que o inimigo alcança), D&D (classes, dado) e Darkest Dungeon (sensação; as peças dele ficam para depois).
+Turn-based tactics on a square grid with height, mobile first, SNES pixel art (shader over 3D Three.js). References: Final Fantasy Tactics (turns, height), Into the Breach (planning against what the enemy can reach), D&D (classes, dice) and Darkest Dungeon (feel; its pieces come later).
 
-## Decisões da 1ª fatia
+## Slice 1 decisions
 
-| Tema | Decisão |
+| Topic | Decision |
 |---|---|
-| Puzzle | Fila de turnos e alcance de cada inimigo sempre visíveis; o jogador planeja contra isso |
-| Objetivo da 1ª batalha | Proteger um alvo (NPC/torre) e matar todos os inimigos. Derrota: o alvo cai ou todos os heróis morrem. Chefe final muda para "derrotar o chefe" |
-| Grade | Quadrada |
-| Altura | +1 de alcance por nível acima; salto máximo de 1 nível; dano de queda (empurrão); linha de visão e cobertura (floresta/muros bloqueiam, altura revela; poucos tipos de cobertura na 1ª fatia) |
-| Heróis | 4: Guerreiro, Arqueiro, Mago, Ladino. Habilidades: 4 ou mais por herói; barra fixa de até 6 ícones (básico + especiais + mover); segurar o ícone mostra os detalhes |
-| Inimigos | Soldado, Arqueiro, Mago, Bruto (um por papel). IA avalia e escolhe a melhor jogada; o alcance fica visível, a intenção só na vez dela |
-| Acerto | Chance de acerto por distância, altura e cobertura, mostrada em % antes de confirmar; dano também varia. Dado sempre novo (o sorteio NÃO é refeito igual ao desfazer) |
-| Desfazer | Limitado por batalha (valor inicial 3, a medir); reiniciar a batalha em um toque |
-| Ordem de turno | Fila estilo FFT: velocidade da unidade; habilidade forte atrasa o próximo turno da unidade; fila visível no topo |
-| Batalha | 8 a 12 min, mapa ~20x20. Exige: salvar a batalha no meio, câmera com pinça e arrastar, desempenho no celular |
-| Toque | 1º toque escolhe o herói, 2º toque escolhe a casa (mostra caminho ou alcance), botão grande Confirmar executa; arrastar move a câmera, pinça dá zoom, girar câmera por botões |
-| Campanha | ~5 cenários (batalhas e conversas) em sequência, UMA bifurcação no meio que muda o próximo mapa e o final; termina com batalha de chefe |
-| Progressão | Nível (XP) e equipamento dos heróis, cartas de decisão entre batalhas; batalha vencível com o grupo da hora (sem grind obrigatório) |
-| Tom | Sombrio mas jogável: fantasia dark em cores vivas o bastante para o pixel art, texto curto, narrador |
-| Fora por ora | Morte permanente, estresse/aflições, expedição com recursos, vila (Darkest Dungeon). O estado do herói já nasce persistente entre batalhas para essas camadas poderem entrar sem refazer |
+| Puzzle | Turn queue and each enemy's reach always visible; the player plans against that |
+| Goal of the 1st battle | Protect a target (NPC/tower) and kill every enemy. Defeat: the target falls or all heroes die. The final boss changes this to "defeat the boss" |
+| Grid | Square |
+| Height | +1 range per level above; max jump of 1 level; fall damage (push); line of sight and cover (forest/walls block, height reveals; few cover types in slice 1) |
+| Heroes | 4: Warrior, Archer, Mage, Rogue. Abilities: 4 or more per hero; fixed bar of up to 6 icons (basic + specials + move); holding the icon shows the details |
+| Enemies | Soldier, Archer, Mage, Brute (one per role). The AI evaluates and picks the best move; the reach is visible, the intent only on its turn |
+| Hit chance | Hit chance by distance, height and cover, shown in % before confirming; damage also varies. Always a new die roll (the roll is NOT redone the same on undo) |
+| Undo | Limited per battle (initial value 3, to be measured); restart the battle in one tap |
+| Turn order | FFT-style queue: unit speed; a strong ability delays the unit's next turn; queue visible at the top |
+| Battle | 8 to 12 min, map ~20x20. Requires: saving the battle midway, camera with pinch and drag, performance on phones |
+| Touch | 1st tap picks the hero, 2nd tap picks the tile (shows path or range), big Confirm button executes; dragging moves the camera, pinch zooms, camera rotation by buttons |
+| Campaign | ~5 scenarios (battles and conversations) in sequence, ONE fork in the middle that changes the next map and the ending; ends with a boss battle |
+| Progression | Level (XP) and hero equipment, decision cards between battles; battle winnable with the party at hand (no mandatory grind) |
+| Tone | Dark but playable: dark fantasy in colours vivid enough for the pixel art, short text, narrator |
+| Out for now | Permadeath, stress/afflictions, expedition with resources, hamlet (Darkest Dungeon). The hero state is already born persistent between battles so these layers can come in without a rewrite |
 
-## Regras de projeto (valem para o código)
+## Project rules (apply to the code)
 
-- Efeito de habilidade sai de stats gerais e documentados (alcance, dano, empurrão, recarga); nada de "habilidade X faz Y com habilidade Z".
-- Número de balanceamento só muda depois de medido por simulação de batalhas (IA contra IA, várias sementes), meta: batalha vencível, sem solução única óbvia.
-- Determinismo: toda aleatoriedade passa por `rng.ts` com semente guardada no estado; o estado da batalha é serializável e clonável (base de salvar, desfazer, simulação e testes).
-- Mobile primeiro (a regra "celular fora de foco" do Warlock NÃO vale aqui): alvo de toque ≥ 44 px, tela de 393x852, sem hover obrigatório.
-- Todo texto visível em português e inglês (`t()`), imports no topo, comentários curtos em português explicando o porquê.
+- An ability's effect comes from general, documented stats (range, damage, push, cooldown); no "ability X does Y with ability Z".
+- A balance number only changes after being measured by battle simulation (AI vs AI, several seeds); goal: winnable battle, no obvious single solution.
+- Determinism: all randomness goes through `rng.ts` with the seed kept in the state; the battle state is serializable and cloneable (base of save, undo, simulation and tests).
+- Mobile first (the Warlock rule "phone out of focus" does NOT apply here): touch target ≥ 44 px, 393x852 screen, no mandatory hover.
+- All visible text in Portuguese and English (`t()`), imports at the top, short comments in Portuguese explaining why.
 
-## Arquitetura pretendida
+## Intended architecture
 
-- `src/shared/battle/` (lógica pura, sem DOM nem Three): `Grid` (casas, altura, cobertura), `Unit`, `TurnQueue`, `Abilities` (dados), `Pathing` (movimento, alcance, linha de visão), `Combat` (acerto, dano, queda), `Ai`, `BattleState` (serializável, clonável), `History` (desfazer limitado). Regra do Arthur: estado com dono claro, classe só quando há ciclo de vida real (ex.: `Battle` como agregado), composição no lugar de herança, dados para o resto.
-- `src/client/`: cena Three.js ortográfica com `RenderPixelatedPass`, entrada por toque, HUD (fila, barra de habilidades, % de acerto, Confirmar), i18n, som.
-- `src/shared/campaign/`: cenários em dados (batalha ou conversa), bifurcação, final.
-- Herdado do Warlock e a manter: i18n, store, helpers de UI (`dialog()`, `iconButton()`, `tabs()`, `choice()`, `searchFilter()`, `withTip`), `rng.ts`, CI/PR/docs. O que é do Warlock (sim, match, bots, magias, lava, worker de sala) sai para a quarentena `D:\_PARA-APAGAR`, nunca apagado.
+- `src/shared/battle/` (pure logic, no DOM or Three): `Grid` (tiles, height, cover), `Unit`, `TurnQueue`, `Abilities` (data), `Pathing` (movement, range, line of sight), `Combat` (hit, damage, fall), `Ai`, `BattleState` (serializable, cloneable), `History` (limited undo). Arthur's rule: state with a clear owner, a class only when there is a real lifecycle (e.g. `Battle` as the aggregate), composition instead of inheritance, data for the rest.
+- `src/client/`: orthographic Three.js scene with `RenderPixelatedPass`, touch input, HUD (queue, ability bar, hit %, Confirm), i18n, sound.
+- `src/shared/campaign/`: scenarios as data (battle or conversation), fork, ending.
+- Inherited from Warlock and to keep: i18n, store, UI helpers (`dialog()`, `iconButton()`, `tabs()`, `choice()`, `searchFilter()`, `withTip`), `rng.ts`, CI/PR/docs. What belongs to Warlock (sim, match, bots, spells, lava, room worker) goes to the quarantine `D:\_PARA-APAGAR`, never deleted.
 
-## A decidir (não bloqueia o começo)
+## To decide (does not block the start)
 
-- Lista exata de habilidades e números dos 4 heróis e 4 inimigos (decidir jogando a 1ª batalha).
-- Crítico (existe? quanto?).
-- Fórmula de velocidade e atraso por habilidade.
-- Cartas de decisão e itens da progressão.
-- Monetização (formato e preço das campanhas) e medição do pixel art no celular real.
+- Exact list of abilities and numbers for the 4 heroes and 4 enemies (decide by playing the 1st battle).
+- Crit (does it exist? how much?).
+- Speed formula and delay per ability.
+- Decision cards and progression items.
+- Monetization (format and price of campaigns) and measuring the pixel art on a real phone.

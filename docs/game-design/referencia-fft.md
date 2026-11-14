@@ -1,218 +1,218 @@
-# Referência: Final Fantasy Tactics (PS1, 1997)
+# Reference: Final Fantasy Tactics (PS1, 1997)
 
-Estudo de referência pedido pelo Fernando em 11/11/2026 para começar o balanceamento. Uso interno: não é conteúdo do jogo. Os nomes próprios do FFT aparecem só aqui e no cenário de estudo (`src/shared/battle/fft/`), que não entra no pacote principal do jogo.
+Reference study requested by Fernando on Nov 11, 2026 to start balancing. Internal use: not game content. FFT proper names appear only here and in the study scenario (`src/shared/battle/fft/`), which is not part of the game's main package.
 
-**Regra deste documento:** todo número tem fonte. O que não tem fonte está marcado como **não confirmado** ou **suposição do estudo**.
+**Rule of this document:** every number has a source. What has no source is marked **unconfirmed** or **study assumption**.
 
-## Fontes
+## Sources
 
-| Sigla | O que é | Link | Como foi lida |
+| Abbrev. | What it is | Link | How it was read |
 |---|---|---|---|
-| BMG | *Battle Mechanics Handbook* v6.1, de Aerostar (2004) | https://www.video-games-museum.com/en/faqs/Playstation/26882-Final-Fantasy-Tactics.pdf | PDF baixado e texto extraído em 11/11; cada número abaixo foi conferido no texto |
-| MAPA | Dados do mapa 022 já extraídos em JSON (repositório `fft-map-json`) | https://raw.githubusercontent.com/rainbowbismuth/fft-map-json/master/data/MAP022.json | Arquivo baixado em 11/11 e lido por script |
-| NOMES | Lista de nomes de mapa do FFTPatcher (`hex="16"` = Magic City Gariland; 0x16 = 22) | https://github.com/Glain/FFTPatcher | Lido por um subagente de pesquisa; não reabri |
-| CoN | Guia da batalha no Caves of Narshe | https://www.cavesofnarshe.com/fft/walkthrough?battle=2 | Lido por um subagente de pesquisa; não reabri |
-| FAQ | FAQ/Walkthrough do PS1 (v1.2, 2005) | https://www.video-games-museum.com/en/faqs/Playstation/26872-Final-Fantasy-Tactics.pdf | Lido por um subagente de pesquisa; não reabri |
+| BMG | *Battle Mechanics Handbook* v6.1, by Aerostar (2004) | https://www.video-games-museum.com/en/faqs/Playstation/26882-Final-Fantasy-Tactics.pdf | PDF downloaded and text extracted on Nov 11; each number below was checked against the text |
+| MAPA | Data of map 022 already extracted as JSON (`fft-map-json` repository) | https://raw.githubusercontent.com/rainbowbismuth/fft-map-json/master/data/MAP022.json | File downloaded on Nov 11 and read by script |
+| NOMES | Map name list from FFTPatcher (`hex="16"` = Magic City Gariland; 0x16 = 22) | https://github.com/Glain/FFTPatcher | Read by a research subagent; not reopened |
+| CoN | Guide to the battle at the Caves of Narshe | https://www.cavesofnarshe.com/fft/walkthrough?battle=2 | Read by a research subagent; not reopened |
+| FAQ | PS1 FAQ/Walkthrough (v1.2, 2005) | https://www.video-games-museum.com/en/faqs/Playstation/26872-Final-Fantasy-Tactics.pdf | Read by a research subagent; not reopened |
 
-Não abriram (bloqueio): `ffhacktics.com` (403), `gamefaqs.gamespot.com` (403), `finalfantasy.fandom.com` (402), `web.archive.org`. Por isso quase tudo de mecânica vem de uma fonte só, o BMG, sem segunda conferência.
+Did not open (blocked): `ffhacktics.com` (403), `gamefaqs.gamespot.com` (403), `finalfantasy.fandom.com` (402), `web.archive.org`. Because of that, almost all mechanics come from a single source, the BMG, without a second check.
 
-Notação do BMG: `[x]` descarta o resto da divisão; `(a..b)` é um inteiro sorteado, com os dois extremos; `RU{x/y}` arredonda para cima.
+BMG notation: `[x]` drops the remainder of the division; `(a..b)` is a drawn integer, both ends included; `RU{x/y}` rounds up.
 
-## Ordem de turno (BMG 1.1 e apêndice A.2)
+## Turn order (BMG 1.1 and appendix A.2)
 
-- A cada tique, cada unidade ganha CT igual ao seu Speed. Quem chega a **100 ou mais** tem o turno.
-- CT ao fim do turno:
+- On every tick, each unit gains CT equal to its Speed. Whoever reaches **100 or more** has the turn.
+- CT at the end of the turn:
 
-| O que a unidade fez | Novo CT |
+| What the unit did | New CT |
 |---|---|
-| Moveu e agiu | CT − 100 |
-| Só moveu | CT − 80 |
-| Só agiu | CT − 80 |
-| Nem moveu nem agiu | CT − 60 |
+| Moved and acted | CT − 100 |
+| Only moved | CT − 80 |
+| Only acted | CT − 80 |
+| Neither moved nor acted | CT − 60 |
 
-- Se o novo CT passar de 60, vira 60.
-- Empate (mais de uma unidade com CT ≥ 100): age primeiro quem tem o menor número na lista de personagens. Os inimigos são numerados primeiro; os do jogador, pela casa em que foram postos.
-- Habilidade carregada: tem um CTR (tiques até resolver). Escudeiro e Químico não têm nenhuma.
-- Haste e Slow: `[Speed × 3/2]` e metade. Lido por subagente (BMG 5.2 e 5.3), não reabri.
+- If the new CT is above 60, it becomes 60.
+- Tie (more than one unit with CT ≥ 100): the one with the lowest number in the character list acts first. Enemies are numbered first; the player's, by the tile where they were placed.
+- Charged ability: it has a CTR (ticks until it resolves). Squire and Chemist have none.
+- Haste and Slow: `[Speed × 3/2]` and half. Read by a subagent (BMG 5.2 and 5.3), not reopened.
 
-## Dano do ataque por arma (BMG 2.1)
+## Attack damage by weapon (BMG 2.1)
 
-| Arma | Dano |
+| Weapon | Damage |
 |---|---|
-| Punho | `[(PA × Brave) / 100] × PA` |
-| Espada, vara, lança, besta | `PA × WP` |
-| Faca, arco longo | `[(PA + Speed) / 2] × WP` |
-| Espada de cavaleiro, katana | `[(PA × Brave) / 100] × WP` |
-| Cajado | `MA × WP` |
-| Machado, mangual, saco | `(1..PA) × WP` |
-| Arma de fogo | `WP × WP` |
+| Fist | `[(PA × Brave) / 100] × PA` |
+| Sword, rod, spear, crossbow | `PA × WP` |
+| Knife, longbow | `[(PA + Speed) / 2] × WP` |
+| Knight's sword, katana | `[(PA × Brave) / 100] × WP` |
+| Staff | `MA × WP` |
+| Axe, flail, bag | `(1..PA) × WP` |
+| Gun | `WP × WP` |
 
-- Só punho, espada de cavaleiro e katana usam Brave. Lido por subagente, não reabri: fórmulas de cloth, instrumento, dicionário e arma de fogo mágica.
-- **Crítico:** cerca de 5% dos ataques ("approximately" no guia; o valor exato é não confirmado). O atributo vira `XA + (1..XA) − 1` antes de multiplicar pela arma: o dano fica entre o normal e quase o dobro. Empurra 1 casa em 50% das vezes (lido por subagente, não reabri).
-- Alcance vertical do corpo a corpo: 1 casa, até 2 de altura vindo de baixo e 3 vindo de cima (BMG B.1, na tabela das facas).
+- Only fist, knight's sword and katana use Brave. Read by a subagent, not reopened: formulas for cloth, instrument, dictionary and magic gun.
+- **Critical:** about 5% of attacks ("approximately" in the guide; the exact value is unconfirmed). The attribute becomes `XA + (1..XA) − 1` before multiplying by the weapon: the damage falls between normal and almost double. Pushes back 1 tile 50% of the time (read by a subagent, not reopened).
+- Vertical range of melee: 1 tile, up to 2 in height coming from below and 3 coming from above (BMG B.1, in the knife table).
 
-## Dano mágico (BMG 3.2, 3.4 e 3.5)
+## Magic damage (BMG 3.2, 3.4 and 3.5)
 
-Reaberto no guia em 12/11 para o cenário `fft-classes`.
+Reopened in the guide on Nov 12 for the `fft-classes` scenario.
 
-- Dano: `[(MA × Faith do conjurador × Faith do alvo × Q) / 10000]`, com Q fixo por magia (BMG 3.4: Fire, Ice e Bolt 14; Fire 2 18; Fire 3 24; Cure 14, Cure 2 20, Cure 3 30).
-- **Fire** (BMG 3.3): dano com Q 14, alcance 4, área 2 (o alvo e as casas vizinhas), 6 de MP, carga de 4 tiques, pode ser evitada pela evasão mágica. **Cure:** a mesma conta para curar, mesmo alcance, área, MP e carga; não é evitada.
-- Acerto de magia (BMG 1.4): `[base × (100 − escudo mágico) × (100 − acessório mágico) / 10000]`, de qualquer lado. Exemplo do guia: Flare contra escudo mágico de 15% e manto de 30% acerta 59%.
-- Acerto de magia de status: `[Faith/100 × Faith/100 × (MA + Y)]`, com Y fixo por magia (lido por subagente, não reabri).
-- **Ação lenta** (BMG 1.1 e A.1): magia e Carga só resolvem depois de N tiques ("CTR"); quem é alvo pode sair da casa nesse meio-tempo, e quem carrega leva mais dano (`XA × 3/2`, BMG 3.2).
+- Damage: `[(MA × caster's Faith × target's Faith × Q) / 10000]`, with Q fixed per spell (BMG 3.4: Fire, Ice and Bolt 14; Fire 2 18; Fire 3 24; Cure 14, Cure 2 20, Cure 3 30).
+- **Fire** (BMG 3.3): damage with Q 14, range 4, area 2 (the target and the neighboring tiles), 6 MP, 4-tick charge, can be avoided by magic evasion. **Cure:** the same formula to heal, same range, area, MP and charge; it is not evaded.
+- Spell hit chance (BMG 1.4): `[base × (100 − magic shield) × (100 − magic accessory) / 10000]`, from either side. Guide example: Flare against a 15% magic shield and a 30% mantle hits 59%.
+- Status spell hit chance: `[Faith/100 × Faith/100 × (MA + Y)]`, with Y fixed per spell (read by a subagent, not reopened).
+- **Slow action** (BMG 1.1 and A.1): spells and Charge only resolve after N ticks ("CTR"); whoever is the target can leave the tile in the meantime, and whoever is charging takes more damage (`XA × 3/2`, BMG 3.2).
 
-## Carga do Arqueiro (BMG 2.2)
+## Archer's Charge (BMG 2.2)
 
-- Charge +K soma K ao PA e ao Speed na conta da arma. Arco longo: `[((PA + K) + (Speed + K)) / 2] × WP`.
-- Tiques de carga: +1 em 4, +2 em 5, +3 em 6, +4 em 8, +5 em 10, +7 em 14, +10 em 20, +20 em 35. A carga mira a casa, não a unidade.
+- Charge +K adds K to PA and Speed in the weapon formula. Longbow: `[((PA + K) + (Speed + K)) / 2] × WP`.
+- Charge ticks: +1 in 4, +2 in 5, +3 in 6, +4 in 8, +5 in 10, +7 in 14, +10 in 20, +20 in 35. The charge aims at the tile, not the unit.
 
-## Battle Skill do Cavaleiro (BMG 3.6)
+## Knight's Battle Skill (BMG 3.6)
 
-- Quebra de atributo: acerto `(PA + 50)%` antes da evasão física (frente, lado, costas). Speed Break tira 2 de Speed; Power Break, 3 de PA; Mind Break, 3 de MA; Magic Break, metade do MP.
-- Quebra de equipamento: acerto `(PA + WP + K)%`, com K 45 (elmo), 40 (armadura), 55 (escudo) e 30 (arma). Se o alvo não tem a peça, vira um ATTACK.
+- Attribute break: hit chance `(PA + 50)%` before physical evasion (front, side, back). Speed Break takes 2 Speed; Power Break, 3 PA; Mind Break, 3 MA; Magic Break, half the MP.
+- Equipment break: hit chance `(PA + WP + K)%`, with K 45 (helmet), 40 (armor), 55 (shield) and 30 (weapon). If the target does not have the piece, it becomes an ATTACK.
 
-## Acerto e evasão (BMG 1.4)
+## Hit chance and evasion (BMG 1.4)
 
-Acerto base do ataque físico: 100%. A posição do atacante decide quais evasões do alvo contam:
+Base hit chance of the physical attack: 100%. The attacker's position decides which of the target's evasions count:
 
-| Posição | Acerto em % |
+| Position | Hit chance in % |
 |---|---|
-| De frente | `[base × (100 − classe) × (100 − escudo) × (100 − acessório) × (100 − arma) / 10^8]` |
-| De lado | `[base × (100 − escudo) × (100 − acessório) × (100 − arma) / 10^6]` |
-| Pelas costas | `[base × (100 − acessório) / 100]` |
+| From the front | `[base × (100 − class) × (100 − shield) × (100 − accessory) × (100 − weapon) / 10^8]` |
+| From the side | `[base × (100 − shield) × (100 − accessory) × (100 − weapon) / 10^6]` |
+| From behind | `[base × (100 − accessory) / 100]` |
 
-- A evasão da arma só conta com a reação Weapon Guard.
-- Frente, lado ou costas: vale a maior entre a distância à frente, de lado e atrás do alvo; no empate, frente vence lado e lado vence costas; a altura das casas não conta. Reaberto em 12/11 e fixado no teste com o diagrama 5x5 do guia (`tests/fft-complementos.test.ts`).
-- Escudeiro e Químico: evasão de classe 5%. Ramza: 10%. Sem escudo nem acessório no começo, o acerto é 95% de frente e 100% de lado ou pelas costas: **em Gariland a direção quase não muda o acerto**; ela pesa com escudo (o Cavaleiro: 81% de frente, 90% de lado, 100% pelas costas, contas deste estudo).
-- Exemplo do guia: de lado, escudo de 40% e manto de 40% deixam 36% de acerto.
-- **Para onde a unidade vira ao andar e ao atacar, e como a IA escolhe a direção ao fim do turno: não confirmado** (o guia não trata).
+- The weapon's evasion only counts with the Weapon Guard reaction.
+- Front, side or back: the greatest of the distances in front of, beside and behind the target wins; on a tie, front beats side and side beats back; tile height does not count. Reopened on Nov 12 and fixed in the test with the guide's 5x5 diagram (`tests/fft-complementos.test.ts`).
+- Squire and Chemist: class evasion 5%. Ramza: 10%. With no shield or accessory at the start, the hit chance is 95% from the front and 100% from the side or behind: **in Gariland the direction barely changes the hit chance**; it matters with a shield (the Knight: 81% front, 90% side, 100% behind, calculations of this study).
+- Guide example: from the side, a 40% shield and a 40% mantle leave a 36% hit chance.
+- **Which way the unit turns when walking and attacking, and how the AI chooses the direction at the end of the turn: unconfirmed** (the guide does not cover it).
 
-## Altura e movimento (BMG 6.5, 6.9 e 7.4)
+## Height and movement (BMG 6.5, 6.9 and 7.4)
 
-- Move é quantas casas a unidade anda; Jump é quanto de altura ela sobe num passo. O guia dá um exemplo de subida (Jump 3 sobe 3). **Regra de descida voluntária: não confirmado.**
-- Vão horizontal que a unidade salta: `[Jump / 2]` casas.
-- Dano de queda (empurrão): `RU{((queda − Jump) × HP máximo) / 10}`, só quando a queda passa do Jump.
-- Arco longo: alcance de 3 a `5 + [(altura do atirador − altura do alvo) / 2]`. Besta e arma de fogo não têm esse bônus.
+- Move is how many tiles the unit walks; Jump is how much height it climbs in one step. The guide gives an example of climbing (Jump 3 climbs 3). **Rule for voluntary descent: unconfirmed.**
+- Horizontal gap the unit leaps: `[Jump / 2]` tiles.
+- Fall damage (knockback): `RU{((fall − Jump) × max HP) / 10}`, only when the fall exceeds the Jump.
+- Longbow: range 3 to `5 + [(shooter's height − target's height) / 2]`. Crossbow and gun do not have this bonus.
 
-## Zodíaco (BMG 1.3)
+## Zodiac (BMG 1.3)
 
-Lido por subagente, não reabri; o estudo não usa.
+Read by a subagent, not reopened; the study does not use it.
 
-- Multiplicadores sobre o atributo: bom ×1,25, ruim ×0,75, melhor ×1,5, pior ×0,5. Não afeta evasão.
-- **Tabela por signo: não confirmado** (saiu desalinhada na extração do PDF).
+- Multipliers on the attribute: good ×1.25, bad ×0.75, best ×1.5, worst ×0.5. Does not affect evasion.
+- **Table per sign: unconfirmed** (it came out misaligned in the PDF extraction).
 
-## Como os stats nascem (BMG 7.1)
+## How the stats are born (BMG 7.1)
 
-- `stat = [valor bruto × multiplicador da classe / 1 638 400]`, mínimo 1. Vale para HP, MP, Speed, PA e MA.
-- Valores brutos no nível 1:
+- `stat = [raw value × class multiplier / 1,638,400]`, minimum 1. Applies to HP, MP, Speed, PA and MA.
+- Raw values at level 1:
 
-| Gênero | Speed | PA | MA | HP | MP |
+| Gender | Speed | PA | MA | HP | MP |
 |---|---|---|---|---|---|
-| Masculino | 98 304 | 81 920 | 65 536 | 491 520 a 524 287 | 229 376 a 245 759 |
-| Feminino | 98 304 | 65 536 | 81 920 | 458 752 a 491 519 | 245 760 a 262 143 |
+| Male | 98,304 | 81,920 | 65,536 | 491,520 to 524,287 | 229,376 to 245,759 |
+| Female | 98,304 | 65,536 | 81,920 | 458,752 to 491,519 | 245,760 to 262,143 |
 
-- Exemplo do próprio guia: Escudeira nível 1 tem 28 ou 29 de HP e 11 de MP.
-- Todo recruta vem com Clothes (HP +5) e Leather Hat (HP +8): +13 de HP.
-- Crescimento por nível: `bônus bruto = [bruto / (C + nível)]`, com C da classe (lido por subagente, não reabri).
-- Brave e Faith de unidade gerada no começo do jogo: 45 a 74 (BMG 6.10). **Brave e Faith do Ramza: não confirmado.**
+- The guide's own example: a level 1 female Squire has 28 or 29 HP and 11 MP.
+- Every recruit comes with Clothes (HP +5) and Leather Hat (HP +8): +13 HP.
+- Growth per level: `raw bonus = [raw / (C + level)]`, with C from the class (read by a subagent, not reopened).
+- Brave and Faith of a unit generated at the start of the game: 45 to 74 (BMG 6.10). **Ramza's Brave and Faith: unconfirmed.**
 
 ## Classes (BMG 7.4)
 
-| Classe | Move | Jump | Evasão | HP | MP | Speed | PA | MA |
+| Class | Move | Jump | Evasion | HP | MP | Speed | PA | MA |
 |---|---|---|---|---|---|---|---|---|
-| Escudeiro genérico | 4 | 3 | 5% | 100 | 75 | 100 | 90 | 80 |
-| Químico | 3 | 3 | 5% | 80 | 75 | 100 | 75 | 80 |
-| Escudeiro do Ramza (capítulo 1) | 4 | 3 | 10% | 125 | 105 | 107 | 111 | 102 |
-| Cavaleiro | 3 | 3 | 10% | 120 | 80 | 100 | 120 | 80 |
-| Arqueiro | 3 | 3 | 10% | 100 | 65 | 100 | 110 | 80 |
-| Mago Branco (Priest) | 3 | 3 | 5% | 80 | 120 | 110 | 90 | 110 |
-| Mago Negro (Wizard) | 3 | 3 | 5% | 75 | 120 | 100 | 60 | 150 |
+| Generic Squire | 4 | 3 | 5% | 100 | 75 | 100 | 90 | 80 |
+| Chemist | 3 | 3 | 5% | 80 | 75 | 100 | 75 | 80 |
+| Ramza's Squire (chapter 1) | 4 | 3 | 10% | 125 | 105 | 107 | 111 | 102 |
+| Knight | 3 | 3 | 10% | 120 | 80 | 100 | 120 | 80 |
+| Archer | 3 | 3 | 10% | 100 | 65 | 100 | 110 | 80 |
+| White Mage (Priest) | 3 | 3 | 5% | 80 | 120 | 110 | 90 | 110 |
+| Black Mage (Wizard) | 3 | 3 | 5% | 75 | 120 | 100 | 60 | 150 |
 
-As cinco últimas colunas são os multiplicadores da classe. Equipamento: o Escudeiro usa faca, espada, machado e mangual; o Químico, faca e arma de fogo; os dois usam chapéu, roupa e acessório, sem escudo. O Cavaleiro usa espada, escudo, elmo e armadura; o Arqueiro, besta, arco e escudo; o Mago Branco, cajado; o Mago Negro, vara.
+The last five columns are the class multipliers. Equipment: the Squire uses knife, sword, axe and flail; the Chemist, knife and gun; both use hat, clothes and accessory, no shield. The Knight uses sword, shield, helmet and armor; the Archer, crossbow, bow and shield; the White Mage, staff; the Black Mage, rod.
 
-### Nível 1 calculado (homem, HP bruto no meio da faixa)
+### Level 1 calculated (male, raw HP in the middle of the range)
 
-Cálculo deste estudo com a fórmula acima; o guia só mostra o da Escudeira.
+Calculation of this study with the formula above; the guide only shows the female Squire's.
 
-| Unidade | HP (com os +13) | PA | Speed | Arma | Dano do ataque |
+| Unit | HP (with the +13) | PA | Speed | Weapon | Attack damage |
 |---|---|---|---|---|---|
-| Escudeiro | 43 | 4 | 6 | Broad Sword (WP 4) | 16 |
-| Químico | 37 | 3 | 6 | Dagger (WP 3) | 12 |
+| Squire | 43 | 4 | 6 | Broad Sword (WP 4) | 16 |
+| Chemist | 37 | 3 | 6 | Dagger (WP 3) | 12 |
 | Ramza | 51 | 5 | 6 | Broad Sword (WP 4) | 20 |
-| Cavaleiro | 57 (37 + elmo e armadura de couro, 10 cada) | 6 | 6 | Broad Sword (WP 4) e Escutcheon | 24 |
-| Arqueiro | 43 | 5 | 6 | Long Bow (WP 4), alcance 3 a 5 | 20; Carga +1 24, +2 28 |
-| Mago Branco | 37 | 4 | 6 | Oak Staff (WP 3), MA 4 | 12; Cura 20 (Faith 60) |
-| Mago Negro | 36 | 3 | 6 | Rod (WP 3), MA 6 | 9; Fogo 30 (Faith 60) |
+| Knight | 57 (37 + leather helmet and armor, 10 each) | 6 | 6 | Broad Sword (WP 4) and Escutcheon | 24 |
+| Archer | 43 | 5 | 6 | Long Bow (WP 4), range 3 to 5 | 20; Charge +1 24, +2 28 |
+| White Mage | 37 | 4 | 6 | Oak Staff (WP 3), MA 4 | 12; Cure 20 (Faith 60) |
+| Black Mage | 36 | 3 | 6 | Rod (WP 3), MA 6 | 9; Fire 30 (Faith 60) |
 
-Nas quatro classes novas, o equipamento (a arma e a armadura mais baratas que cada uma usa) e a Faith 60 são **suposição do estudo**. MP no nível 1: 17 nos dois magos (dá 2 magias de 6).
+For the four new classes, the equipment (the cheapest weapon and armor each one uses) and Faith 60 are a **study assumption**. MP at level 1: 17 for both mages (enough for 2 spells of 6).
 
-## Armas do começo (BMG B.1 e B.2)
+## Starting weapons (BMG B.1 and B.2)
 
-| Arma | Poder (WP) | Evasão | Preço |
+| Weapon | Power (WP) | Evasion | Price |
 |---|---|---|---|
 | Dagger | 3 | 0 | 100 |
 | Mythril Knife | 4 | 5 | 500 |
 | Broad Sword | 4 | 5 | 200 |
 | Long Sword | 5 | 10 | 500 |
-| Escutcheon (escudo) | evasão 10 | mágica 3 | 400 |
+| Escutcheon (shield) | evasion 10 | magic 3 | 400 |
 | Long Bow | 4 | 0 | 800 |
 | Oak Staff | 3 | 15 | 120 |
 | Rod | 3 | 20 | 200 |
-| Leather Helmet, Leather Armor | HP +10 cada | | 200 cada |
+| Leather Helmet, Leather Armor | HP +10 each | | 200 each |
 
-Outra fonte (FAQ do Overated, lida por subagente) dá 5% de evasão para a Dagger; fica como divergência.
+Another source (the Overated FAQ, read by a subagent) gives 5% evasion for the Dagger; kept as a divergence.
 
-## Habilidades do Escudeiro (BMG 3.3)
+## Squire abilities (BMG 3.3)
 
-| Habilidade | Alcance | Efeito | Custo |
+| Ability | Range | Effect | Cost |
 |---|---|---|---|
-| Accumulate | o próprio | PA +1, sempre acerta | 300 JP |
-| Dash | 1 casa, 1 de altura | Dano `PA × (1..4)`, empurra em ~50%, não pode ser evitada | 75 JP |
-| Throw Stone | 4 casas | Dano `PA × (1..2)`, empurra em ~50%, pode ser evitada | 90 JP |
-| Heal | 1 casa, 2 de altura | Cura Darkness, Silence e Poison | 150 JP |
+| Accumulate | self | PA +1, always hits | 300 JP |
+| Dash | 1 tile, 1 in height | Damage `PA × (1..4)`, pushes back ~50%, cannot be evaded | 75 JP |
+| Throw Stone | 4 tiles | Damage `PA × (1..2)`, pushes back ~50%, can be evaded | 90 JP |
+| Heal | 1 tile, 2 in height | Cures Darkness, Silence and Poison | 150 JP |
 
-As do Ramza (Guts, BMG 3.3, reabertas em 12/11):
+Ramza's (Guts, BMG 3.3, reopened on Nov 12):
 
-| Habilidade | Alcance | Efeito | Custo |
+| Ability | Range | Effect | Cost |
 |---|---|---|---|
-| Yell | 3 casas | Speed +1 no alvo, sempre acerta | 200 JP |
-| Cheer Up | 3 casas | Brave +5 no alvo | 200 JP |
-| Wish | 1 casa, 3 de altura | Cura `RU{HP máximo de quem usa × 2/5}` no alvo e tira `RU{HP máximo × 1/5}` de quem usa | 0 JP |
+| Yell | 3 tiles | Speed +1 on the target, always hits | 200 JP |
+| Cheer Up | 3 tiles | Brave +5 on the target | 200 JP |
+| Wish | 1 tile, 3 in height | Heals `RU{user's max HP × 2/5}` on the target and takes `RU{max HP × 1/5}` from the user | 0 JP |
 | Scream | | Brave +10, PA +1, MA +1, Speed +1 | 500 JP |
 
-**Quais habilidades cada unidade já tem aprendidas na 1ª batalha: não confirmado.** **O que o Wish faz quando o custo passa da vida de quem usa: não confirmado.**
+**Which abilities each unit already has learned in the 1st battle: unconfirmed.** **What Wish does when the cost exceeds the user's health: unconfirmed.**
 
-## Itens do Químico (BMG 2.5)
+## Chemist items (BMG 2.5)
 
-- Alcance 4 com linha de visão para quem tem Throw Item (todo Químico tem); 1 para os outros. Cada uso gasta 1 item do estoque.
+- Range 4 with line of sight for whoever has Throw Item (every Chemist has it); 1 for the others. Each use spends 1 item from the stock.
 
-| Item | Efeito | Custo |
+| Item | Effect | Cost |
 |---|---|---|
-| Potion | Cura 30 HP | 30 JP |
-| Hi-Potion | Cura 70 HP | 200 JP |
-| X-Potion | Cura 150 HP | 300 JP |
-| Phoenix Down | Tira o estado Dead e devolve (1..20) HP | 90 JP |
-| Antidote, Eye Drop, Echo Grass | Curam Poison, Darkness e Silence | 70, 80 e 120 JP |
+| Potion | Heals 30 HP | 30 JP |
+| Hi-Potion | Heals 70 HP | 200 JP |
+| X-Potion | Heals 150 HP | 300 JP |
+| Phoenix Down | Removes the Dead status and restores (1..20) HP | 90 JP |
+| Antidote, Eye Drop, Echo Grass | Cure Poison, Darkness and Silence | 70, 80 and 120 JP |
 
-**Estoque inicial de itens do jogador e do Químico inimigo: não confirmado.**
+**Starting item stock of the player and of the enemy Chemist: unconfirmed.**
 
-## A batalha de Gariland
+## The Gariland battle
 
-| Dado | Valor | Fonte |
+| Data | Value | Source |
 |---|---|---|
-| Vitória | Derrotar todos os inimigos | CoN |
-| Derrota | **Não confirmado** (nenhuma fonte aberta diz "Ramza caído = fim") | |
-| Inimigos | 4 Escudeiros e 1 Químico | CoN e FAQ |
-| Nível, gênero, equipamento e habilidades dos inimigos | **Não confirmado** | |
-| Lado do jogador | Ramza, Delita como convidado (Escudeiro, controlado pelo jogo) e cadetes; "Party Slots: 4" | CoN |
-| Quantos cadetes e de quais classes | **Não confirmado** (o FAQ fala em dois Químicos entre os cadetes) | FAQ |
-| Recompensa | Mythril Knife, Phoenix Down, Potion e 2 000 Gil | CoN |
-| Dica dos guias | O Químico inimigo cura os Escudeiros: é o alvo prioritário; um rio divide o campo | CoN e FAQ |
-| Duração típica em turnos | **Não confirmado** | |
+| Victory | Defeat all enemies | CoN |
+| Defeat | **Unconfirmed** (no open source says "Ramza down = game over") | |
+| Enemies | 4 Squires and 1 Chemist | CoN and FAQ |
+| Level, gender, equipment and abilities of the enemies | **Unconfirmed** | |
+| Player side | Ramza, Delita as a guest (Squire, controlled by the game) and cadets; "Party Slots: 4" | CoN |
+| How many cadets and of which classes | **Unconfirmed** (the FAQ mentions two Chemists among the cadets) | FAQ |
+| Reward | Mythril Knife, Phoenix Down, Potion and 2,000 Gil | CoN |
+| Guides' tip | The enemy Chemist heals the Squires: it is the priority target; a river divides the field | CoN and FAQ |
+| Typical duration in turns | **Unconfirmed** | |
 
-### O mapa (MAPA)
+### The map (MAPA)
 
-- Mapa 022, 10 de largura por 15 de profundidade. Altura de cada casa (linha = y de 0 a 14, coluna = x de 0 a 9):
+- Map 022, 10 wide by 15 deep. Height of each tile (row = y from 0 to 14, column = x from 0 to 9):
 
 ```
  2  2  5  2  0  0  0  0  2  3
@@ -232,43 +232,43 @@ As do Ramza (Guts, BMG 3.3, reabertas em 12/11):
  8  9  8  7  4  0  0  0  2  3
 ```
 
-- Não pisáveis: só duas casas, as árvores em (2,0) e (8,3).
-- Água (profundidade 1) nas casas de altura 0 do canal; o arquivo as marca como pisáveis. A regra de movimento vem do BMG 6.5 (ver a linha Água em "Fidelidade do cenário de estudo").
-- Casas de partida no arquivo, 4 por lado: (7,1), (8,1), (5,1), (3,1) de um lado e (8,12), (7,12), (4,12), (3,12) do outro. O arquivo chama os lados de "Player 1" e "Player 2" e não diz quem ocupa cada casa; **se são as casas da batalha da história: não confirmado.**
+- Not walkable: only two tiles, the trees at (2,0) and (8,3).
+- Water (depth 1) on the height-0 tiles of the channel; the file marks them as walkable. The movement rule comes from BMG 6.5 (see the Water row in "Fidelity of the study scenario").
+- Starting tiles in the file, 4 per side: (7,1), (8,1), (5,1), (3,1) on one side and (8,12), (7,12), (4,12), (3,12) on the other. The file calls the sides "Player 1" and "Player 2" and does not say who occupies each; **whether they are the story battle's tiles: unconfirmed.**
 
-## Fidelidade do cenário de estudo
+## Fidelity of the study scenario
 
-O que os cenários `fft-gariland` e `fft-classes` reproduzem e o que simplificam (atualizado em 12/11).
+What the `fft-gariland` and `fft-classes` scenarios reproduce and what they simplify (updated Nov 12).
 
-| Item | No estudo | Fidelidade |
+| Item | In the study | Fidelity |
 |---|---|---|
-| Alturas e casas não pisáveis | Iguais ao arquivo | Alta |
-| Rampas | Na regra viram degraus (vale a borda de baixo); no desenho, desde 12/11, o topo inclina pelo slope_type e slope_height do arquivo (as 2 rampas de canto ficam planas) | Média |
-| Água | Desde 12/11, água corrente rasa (`depth: 1`) pela regra do BMG 6.5: andar custa 2, quem está nela fica 1 nível mais baixo; água de 2 ou mais bloqueia (não há no mapa). Empurrão para na água funda: suposição nossa. Relatório em `docs/medicoes/agua-2026-11-12.md` | Média: a regra é a do guia, o empurrão não tem fonte |
-| Telhados, pontes, chaminés, caixas, piso de pedra e de madeira | Desde 12/11, peça KayKit por casa pelo surface_type do arquivo (contagens iguais às do arquivo, fixadas em teste) | Média: o tipo de cada casa é fiel, as peças são as nossas |
-| Altura de um nível no desenho | 0,25 de casa, escolha visual | Sem fonte |
-| Stats, vida, dano, Move, Jump, CT | Pelas fórmulas e tabelas do BMG | Alta |
-| Acerto | Frente, lado e costas pelo diagrama do BMG, com evasão de classe e de escudo | Alta |
-| Direção | Nasce olhando para o outro lado; vira ao andar (para onde foi) e ao agir (para o alvo); o jogador escolhe ao fim do turno (botão ↻ ou tecla T); a IA termina olhando para o inimigo mais próximo | Regra de virar sem fonte |
-| Crítico | 5%, dano pela fórmula; sem o empurrão do crítico | Média |
-| Empurrão de Dash e Throw Stone | 50%, 1 casa | Alta |
-| Queda | Fórmula do BMG | Alta |
-| Batida ao ser empurrado contra obstáculo | 3 de dano, regra do nosso motor | Sem fonte no FFT |
-| Unidade caída | Sai da batalha (no FFT fica caída e pode ser revivida) | Baixa |
-| Accumulate, Yell, Wish | Pelas fórmulas do BMG; bônus de PA e Speed duram a batalha | Alta |
-| Wish com pouca vida | Quem usa fica com 1 de vida | Suposição |
-| Phoenix Down, Heal, Cheer Up, Scream, estados | Fora | Não reproduzido |
-| Poções | 4 por Químico | Suposição |
-| Magia e Carga | Desde 12/11, ação com carga de verdade: Fogo e Cura 4 tiques, Carga +1 e +2 4 e 5 (BMG 3.3, 2.2 e A.2); quem carrega fica sem evasão e leva +50% (BMG 6). Fogo e Cura seguem a unidade (não confirmado); a Carga mira a casa | Alta |
-| Quebras do Cavaleiro | Só Speed Break e Power Break (as de equipamento pedem equipamento no motor) | Média |
-| Arco longo | Alcance 3 a 5, sem o ganho por altura do BMG 6.9 | Média |
-| Faith e Brave | 60 para todos | Suposição |
-| Linha de visão de pedra e poção | Não exigida | Suposição |
-| Alcance vertical do corpo a corpo | Sem limite | Não reproduzido |
-| Elenco do jogador | Ramza, Delita, 2 Escudeiros e 1 Químico, todos controlados por quem joga | Suposição |
-| Ficha do Delita | Escudeiro genérico | Suposição |
-| Inimigos | Nível 1, homens, Escudeiros com Broad Sword e Químico com Dagger | Suposição |
-| Habilidades | Todo Escudeiro tem Throw Stone, Dash e Accumulate; o Ramza também Wish e Yell; Químico tem Potion | Suposição |
-| `fft-classes` | Uma unidade de cada classe por lado, no mapa de Gariland e nas casas de partida do arquivo | Bancada, não é batalha do FFT |
-| Casas de partida | As 4 do arquivo por lado; a 5ª de cada lado foi escolhida por perto | Suposição |
-| Derrota | Todos os heróis caídos | Suposição |
+| Heights and non-walkable tiles | Same as the file | High |
+| Ramps | In the rules they become steps (the lower edge counts); in the drawing, since Nov 12, the top slopes per the file's slope_type and slope_height (the 2 corner ramps stay flat) | Medium |
+| Water | Since Nov 12, shallow flowing water (`depth: 1`) by the BMG 6.5 rule: walking costs 2, whoever is in it sits 1 level lower; water of 2 or more blocks (none on the map). Knockback stopping in deep water: our assumption. Report in `docs/medicoes/agua-2026-11-12.md` | Medium: the rule is the guide's, the knockback has no source |
+| Roofs, bridges, chimneys, crates, stone and wood floor | Since Nov 12, one KayKit piece per tile by the file's surface_type (counts equal to the file's, fixed in a test) | Medium: each tile's type is faithful, the pieces are ours |
+| Height of one level in the drawing | 0.25 of a tile, visual choice | No source |
+| Stats, health, damage, Move, Jump, CT | By the BMG formulas and tables | High |
+| Hit chance | Front, side and back by the BMG diagram, with class and shield evasion | High |
+| Direction | Starts facing away; turns when walking (where it went) and when acting (toward the target); the player chooses at the end of the turn (↻ button or T key); the AI ends facing the nearest enemy | Turning rule without a source |
+| Critical | 5%, damage by the formula; no critical knockback | Medium |
+| Dash and Throw Stone knockback | 50%, 1 tile | High |
+| Fall | BMG formula | High |
+| Hit when pushed against an obstacle | 3 damage, our engine's rule | No source in FFT |
+| Fallen unit | Leaves the battle (in FFT it stays down and can be revived) | Low |
+| Accumulate, Yell, Wish | By the BMG formulas; PA and Speed bonuses last the battle | High |
+| Wish with low health | The user is left with 1 health | Assumption |
+| Phoenix Down, Heal, Cheer Up, Scream, statuses | Out | Not reproduced |
+| Potions | 4 per Chemist | Assumption |
+| Magic and Charge | Since Nov 12, an action with a real charge: Fire and Cure 4 ticks, Charge +1 and +2 4 and 5 (BMG 3.3, 2.2 and A.2); whoever charges has no evasion and takes +50% (BMG 6). Fire and Cure follow the unit (unconfirmed); Charge aims at the tile | High |
+| Knight's breaks | Only Speed Break and Power Break (the equipment ones need equipment in the engine) | Medium |
+| Longbow | Range 3 to 5, without the height gain of BMG 6.9 | Medium |
+| Faith and Brave | 60 for everyone | Assumption |
+| Line of sight for stone and potion | Not required | Assumption |
+| Vertical range of melee | No limit | Not reproduced |
+| Player cast | Ramza, Delita, 2 Squires and 1 Chemist, all controlled by the player | Assumption |
+| Delita's sheet | Generic Squire | Assumption |
+| Enemies | Level 1, men, Squires with Broad Sword and Chemist with Dagger | Assumption |
+| Abilities | Every Squire has Throw Stone, Dash and Accumulate; Ramza also Wish and Yell; Chemist has Potion | Assumption |
+| `fft-classes` | One unit of each class per side, on the Gariland map and the file's starting tiles | Test bench, not an FFT battle |
+| Starting tiles | The file's 4 per side; the 5th of each side was chosen nearby | Assumption |
+| Defeat | All heroes down | Assumption |

@@ -1,91 +1,91 @@
-# Dungeon Tactics, 1ª fatia — plano de implementação
+# Dungeon Tactics, slice 1 — implementation plan
 
-> Para quem executa: use superpowers:executing-plans. Passos com checkbox.
+> For the executor: use superpowers:executing-plans. Steps with checkboxes.
 
-**Goal:** a primeira batalha jogável (4 heróis contra 4 inimigos, proteger um alvo) no celular, com motor de regras testado e simulado.
+**Goal:** the first playable battle (4 heroes against 4 enemies, protect a target) on a phone, with a tested and simulated rules engine.
 
-**Architecture:** `src/shared/battle/` é lógica pura. `BattleState` é só dado (JSON-friendly, inclui o estado do sorteio); funções puras (`grid`, `pathing`, `combat`, `turn-queue`, `ai`) operam sobre ele; uma única classe, `Battle`, é o agregado com ciclo de vida (estado + desfazer + salvar). O cliente (`src/client/`) tem uma classe por recurso com ciclo de vida (`BattleScene` dona do WebGL, `BattleHud` dona do DOM do HUD, `TouchInput` dona dos ouvintes) e uma máquina de interação pura e testável (`interaction.ts`).
+**Architecture:** `src/shared/battle/` is pure logic. `BattleState` is just data (JSON-friendly, includes the random-roll state); pure functions (`grid`, `pathing`, `combat`, `turn-queue`, `ai`) operate on it; a single class, `Battle`, is the aggregate with a lifecycle (state + undo + save). The client (`src/client/`) has one class per resource with a lifecycle (`BattleScene` owns WebGL, `BattleHud` owns the HUD DOM, `TouchInput` owns the listeners) and a pure, testable interaction machine (`interaction.ts`).
 
-**Tech Stack:** TypeScript estrito, Vite, Three.js 0.186 (câmera ortográfica + `RenderPixelatedPass`), Vitest.
+**Tech Stack:** strict TypeScript, Vite, Three.js 0.186 (orthographic camera + `RenderPixelatedPass`), Vitest.
 
-**Spec:** `docs/superpowers/specs/2026-10-25-dungeon-tactics-design.md` · pilares: `docs/game-design/PILARES.md`.
+**Spec:** `docs/superpowers/specs/2026-10-25-dungeon-tactics-design.md` · pillars: `docs/game-design/PILARES.md`.
 
 ## Global Constraints
 
-- Celular primeiro: tela 393x852, alvo de toque ≥ 44 px, sem hover obrigatório.
-- Sorteio só por `rng.ts` com semente; estado da batalha serializável e clonável (`structuredClone`).
-- Desfazer NÃO repete o sorteio; limite inicial 3 por batalha (`UNDO_LIMIT`, a medir).
-- Todo texto visível em `t('pt','en')`; imports no topo; comentários curtos em português explicando o porquê.
-- Efeito de habilidade sai de stats gerais (alcance, dano, empurrão, atraso); nenhuma regra "X faz Y com Z".
-- Sem commit, sem push, nada apagado (quarentena em `D:\_PARA-APAGAR\dungeon-tactics-warlock-2026-10-25`).
-- Números iniciais (velocidade, atraso, dano, acerto) marcados como "inicial, 25/10": a decidir jogando e simulando.
+- Phone first: 393x852 screen, touch target ≥ 44 px, no mandatory hover.
+- Randomness only through `rng.ts` with a seed; battle state serializable and cloneable (`structuredClone`).
+- Undo does NOT repeat the roll; initial limit 3 per battle (`UNDO_LIMIT`, to be measured).
+- All visible text in `t('pt','en')`; imports at the top; short comments in Portuguese explaining why.
+- An ability's effect comes from general stats (range, damage, push, delay); no "X does Y with Z" rule.
+- No commit, no push, nothing deleted (quarantine in `D:\_PARA-APAGAR\dungeon-tactics-warlock-2026-10-25`).
+- Initial numbers (speed, delay, damage, hit) marked "initial, Oct 25": to be decided by playing and simulating.
 
 ## Review Focus
 
-- Desfazer depois de um ataque sorteia o PRÓXIMO valor, não o mesmo (teste `undo-keeps-rng`).
-- Save corrompido/torto não derruba o jogo: `parseBattleState` devolve `null` (teste com JSON torto).
-- Empurrão contra parede, unidade, borda ou degrau alto para sem sair do lugar e causa dano de batida.
-- Unidade morta some da fila e não bloqueia casa; morte do alvo protegido encerra a batalha como derrota.
-- Batalha IA contra IA sempre termina (teto de turnos) em todas as sementes.
+- Undo after an attack rolls the NEXT value, not the same one (test `undo-keeps-rng`).
+- A corrupted/crooked save does not crash the game: `parseBattleState` returns `null` (test with crooked JSON).
+- A push against a wall, unit, edge or high step stops without moving and causes impact damage.
+- A dead unit leaves the queue and does not block a tile; the death of the protected target ends the battle as a defeat.
+- AI vs AI battle always ends (turn cap) on every seed.
 
 ## File structure
 
-| Arquivo | Responsabilidade |
+| File | Responsibility |
 |---|---|
-| `src/shared/battle/rng.ts` | `nextRng(s): [valor, s']`, `rollInt`, mulberry32 sem closure (salvável) |
+| `src/shared/battle/rng.ts` | `nextRng(s): [value, s']`, `rollInt`, closure-free mulberry32 (saveable) |
 | `src/shared/battle/types.ts` | `Pos`, `Team`, `UnitState`, `BattleState`, `BattleEvent`, `Cmd` |
-| `src/shared/battle/grid.ts` | `Grid` (altura, terreno), `parseGrid(ascii)` |
-| `src/shared/battle/abilities.ts` | `AbilityDef` e tabela de habilidades (dados) |
-| `src/shared/battle/units.ts` | `UnitDef` (estatísticas, habilidades) dos 4 heróis e 4 inimigos |
+| `src/shared/battle/grid.ts` | `Grid` (height, terrain), `parseGrid(ascii)` |
+| `src/shared/battle/abilities.ts` | `AbilityDef` and ability table (data) |
+| `src/shared/battle/units.ts` | `UnitDef` (stats, abilities) of the 4 heroes and 4 enemies |
 | `src/shared/battle/pathing.ts` | `reachable`, `pathTo`, `lineOfSight`, `inAbilityRange` |
-| `src/shared/battle/combat.ts` | `previewAbility`, `resolveAbility`, empurrão e queda |
+| `src/shared/battle/combat.ts` | `previewAbility`, `resolveAbility`, push and fall |
 | `src/shared/battle/turn-queue.ts` | `advanceToNextActor`, `previewOrder`, `endTurnCost` |
 | `src/shared/battle/ai.ts` | `chooseTurn(state, unitId)` |
-| `src/shared/battle/battle.ts` | classe `Battle` (agregado), `parseBattleState` |
-| `src/shared/battle/scenarios.ts` | mapa e unidades da 1ª batalha |
-| `scripts/battle-sim.ts` | simulação IA×IA em várias sementes |
-| `src/client/*` | cena, toque, HUD, interação (marco 2) |
+| `src/shared/battle/battle.ts` | `Battle` class (aggregate), `parseBattleState` |
+| `src/shared/battle/scenarios.ts` | map and units of the 1st battle |
+| `scripts/battle-sim.ts` | AI vs AI simulation over several seeds |
+| `src/client/*` | scene, touch, HUD, interaction (milestone 2) |
 
-## Marco 1 — motor (cada tarefa: teste que falha, código mínimo, teste verde)
+## Milestone 1 — engine (each task: failing test, minimal code, green test)
 
-### Task 1: rng com estado salvável
-- Test `tests/battle-rng.test.ts`: mesma semente → mesma sequência; `nextRng` não muda o argumento; estado salvo continua a sequência.
-- Produz: `nextRng(state:number): [number, number]`, `rollInt(state, min, max): [number, number]`.
+### Task 1: rng with saveable state
+- Test `tests/battle-rng.test.ts`: same seed → same sequence; `nextRng` does not change its argument; a saved state continues the sequence.
+- Produces: `nextRng(state:number): [number, number]`, `rollInt(state, min, max): [number, number]`.
 
-### Task 2: grade e terreno
-- Test `tests/battle-grid.test.ts`: `parseGrid` lê terreno `.`/`T`/`#` e alturas; rejeita linhas de largura diferente e símbolo desconhecido; `neighbors` 4 direções dentro dos limites.
-- Produz: `Grid { width, height, tile(p) }`, `parseGrid(terrain: string[], heights: string[]): Grid`.
+### Task 2: grid and terrain
+- Test `tests/battle-grid.test.ts`: `parseGrid` reads terrain `.`/`T`/`#` and heights; rejects rows of different width and unknown symbols; `neighbors` 4 directions within bounds.
+- Produces: `Grid { width, height, tile(p) }`, `parseGrid(terrain: string[], heights: string[]): Grid`.
 
-### Task 3: caminhos e linha de visão
-- Test `tests/battle-pathing.test.ts`: salto máximo 1; parede e inimigo bloqueiam; passa por aliado mas não para nele; custo = passos; alcance +1 por nível acima; floresta/parede entre dois bloqueiam visão, altura revela.
-- Produz: `reachable(state, unitId): Map<string, number>`, `pathTo`, `lineOfSight(grid, a, b)`, `rangeMax(grid, ability, from, to)`.
+### Task 3: paths and line of sight
+- Test `tests/battle-pathing.test.ts`: max jump 1; wall and enemy block; passes through an ally but does not stop on it; cost = steps; range +1 per level above; forest/wall between two block sight, height reveals.
+- Produces: `reachable(state, unitId): Map<string, number>`, `pathTo`, `lineOfSight(grid, a, b)`, `rangeMax(grid, ability, from, to)`.
 
-### Task 4: combate
-- Test `tests/battle-combat.test.ts`: chance cai com a distância, sobe com altura, cai com cobertura (floresta), nunca fora de 5–95; dano varia entre mínimo e máximo; empurrão para em parede/unidade/borda com dano de batida; queda de ≥ 2 níveis causa dano; morte remove a unidade.
-- Produz: `previewAbility(state, actorId, abilityId, target): Preview`, `resolveAbility(state, actorId, abilityId, target, rng): BattleEvent[]`.
+### Task 4: combat
+- Test `tests/battle-combat.test.ts`: chance falls with distance, rises with height, falls with cover (forest), never outside 5–95; damage varies between minimum and maximum; push stops at wall/unit/edge with impact damage; a fall of ≥ 2 levels causes damage; death removes the unit.
+- Produces: `previewAbility(state, actorId, abilityId, target): Preview`, `resolveAbility(state, actorId, abilityId, target, rng): BattleEvent[]`.
 
-### Task 5: fila de turnos estilo FFT
-- Test `tests/battle-turn-queue.test.ts`: mais veloz age primeiro e mais vezes; habilidade forte atrasa o próximo turno; `previewOrder` não muda o estado; morto sai; alvo protegido (sem velocidade) nunca age.
-- Produz: `startNextTurn(state): void`, `previewOrder(state, n): string[]`, `finishTurn(state, usedAbility?)`.
+### Task 5: FFT-style turn queue
+- Test `tests/battle-turn-queue.test.ts`: the faster unit acts first and more often; a strong ability delays the next turn; `previewOrder` does not change the state; dead leaves; protected target (no speed) never acts.
+- Produces: `startNextTurn(state): void`, `previewOrder(state, n): string[]`, `finishTurn(state, usedAbility?)`.
 
-### Task 6: Battle (agregado), desfazer, salvar
-- Test `tests/battle-battle.test.ts`: `undo-keeps-rng`; mover é desfeito de graça, ataque custa 1; limite de desfazer; clone independente; `save`/`load` ida e volta igual; `parseBattleState` rejeita JSON torto; hash de uma batalha com semente.
-- Produz: `class Battle { state; move(to); act(abilityId, target); endTurn(); undo(); restart(); save(): string; static load(json): Battle | null }`.
+### Task 6: Battle (aggregate), undo, save
+- Test `tests/battle-battle.test.ts`: `undo-keeps-rng`; moving is undone for free, an attack costs 1; undo limit; independent clone; `save`/`load` round trip equal; `parseBattleState` rejects crooked JSON; hash of a seeded battle.
+- Produces: `class Battle { state; move(to); act(abilityId, target); endTurn(); undo(); restart(); save(): string; static load(json): Battle | null }`.
 
-### Task 7: IA e simulação
-- Test `tests/battle-sim.test.ts`: IA contra IA em ≥ 10 sementes termina abaixo do teto de turnos; relatório com turnos médios e vitórias dos heróis.
-- Produz: `chooseTurn`, `scripts/battle-sim.ts`.
+### Task 7: AI and simulation
+- Test `tests/battle-sim.test.ts`: AI vs AI on ≥ 10 seeds ends below the turn cap; report with average turns and hero wins.
+- Produces: `chooseTurn`, `scripts/battle-sim.ts`.
 
-## Marco 2 — cliente mobile e quarentena
+## Milestone 2 — mobile client and quarantine
 
-### Task 8: quarentena do Warlock
-- Mover (nunca apagar) código, testes e scripts do Warlock para `D:\_PARA-APAGAR\dungeon-tactics-warlock-2026-10-25`; consertar `package.json`, `vite.config.ts`, `tests/setup.ts`, `index.html`; gates verdes.
+### Task 8: Warlock quarantine
+- Move (never delete) the Warlock code, tests and scripts to `D:\_PARA-APAGAR\dungeon-tactics-warlock-2026-10-25`; fix `package.json`, `vite.config.ts`, `tests/setup.ts`, `index.html`; gates green.
 
-### Task 9: máquina de interação
-- Test `tests/battle-interaction.test.ts`: toque no herói seleciona; toque numa casa alcançável mostra caminho; Confirmar executa; toque fora cancela; ataque mostra % antes de confirmar.
+### Task 9: interaction machine
+- Test `tests/battle-interaction.test.ts`: tapping the hero selects; tapping a reachable tile shows the path; Confirm executes; tapping outside cancels; an attack shows the % before confirming.
 
-### Task 10: cena, entrada de toque, HUD
-- `battle-scene.ts`, `touch-input.ts`, `battle-hud.ts`, `main.ts`, `style.css`. Verificação no navegador a 393x852.
+### Task 10: scene, touch input, HUD
+- `battle-scene.ts`, `touch-input.ts`, `battle-hud.ts`, `main.ts`, `style.css`. Verification in the browser at 393x852.
 
-## Marco 3 — 1ª batalha jogável
-- `units.ts`/`scenarios.ts` completos (mapa 20x20, 4 heróis, 4 inimigos, IA que escolhe a melhor jogada), simulação ajustada.
+## Milestone 3 — 1st playable battle
+- `units.ts`/`scenarios.ts` complete (20x20 map, 4 heroes, 4 enemies, AI that picks the best move), tuned simulation.
