@@ -1,0 +1,16 @@
+{
+  "scenario": "frost_pass",
+  "seed": 7,
+  "lang": "en",
+  "format": "webp",
+  "actor": "h-warrior",
+  "units": {
+    "e-soldier": { "x": 4, "y": 10, "facing": 0 },
+    "e-brute": { "x": 6, "y": 10, "facing": 0 },
+    "e-archer": { "x": 8, "y": 9, "facing": 0, "hp": 5 }
+  },
+  "screen": "menu",
+  "cursor": { "x": 6, "y": 10 },
+  "camera": { "angle": 3, "zoom": 1.3, "focus": { "x": 5, "y": 11 } },
+  "hide": ["fps"]
+}

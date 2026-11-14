@@ -7,6 +7,7 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "smoke": "node scripts/smoke-game.mjs",
+    "sandbox": "node scripts/sandbox.mjs",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.scripts.json",
     "build": "vite build",
     "dev": "vite",
