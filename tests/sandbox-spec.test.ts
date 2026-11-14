@@ -4,11 +4,13 @@ import battleUi from '../scripts/sandbox/battle-ui.json';
 import frostPass from '../scripts/sandbox/frost-pass-ambush.json';
 import {
   castOf,
+  giveTurn,
   inCells,
   offMap,
   parseSpec,
   patchUnits,
   placementProblems,
+  playStep,
   specUrl,
   storageFor,
 } from '../src/client/dev/sandbox-spec.ts';
@@ -250,5 +252,102 @@ describe('specs on a split map', () => {
       'b: tile 1,1 is taken by a',
       'c: tile 3,4 is outside the 4x4 map',
     ]);
+  });
+});
+
+describe('steps', () => {
+  it('accepts move, act and wait steps', () => {
+    const steps = [
+      { move: { unit: 'h-rogue', to: { x: 1, y: 2 } } },
+      { act: { unit: 'h-rogue', ability: 'stab', target: { x: 1, y: 1 } } },
+      { wait: { unit: 'h-rogue', facing: 2 } },
+      { wait: { unit: 'h-rogue' } },
+    ];
+    expect(parseSpec({ steps }).problems).toEqual([]);
+  });
+
+  it('names every malformed step', () => {
+    expect(
+      parseSpec({
+        steps: [
+          { walk: { unit: 'a' } },
+          { move: { unit: 'a', to: { x: 1, y: 2 } }, wait: { unit: 'a' } },
+          { move: { to: { x: -1, y: 0 }, speed: 2 } },
+          { act: { unit: 'a', ability: 'fireball', target: 3 } },
+          { wait: { unit: 'a', facing: 4 } },
+          { wait: 'a' },
+        ],
+      }).problems,
+    ).toEqual([
+      'steps[0] must be one of { move }, { act } or { wait }',
+      'steps[1] must be one of { move }, { act } or { wait }',
+      'steps[2].move: unknown key "speed"',
+      'steps[2].move.unit must be a unit id',
+      'steps[2].move.to must be { x, y }',
+      'steps[3].act: unknown ability "fireball"',
+      'steps[3].act.target must be { x, y }',
+      'steps[4].wait.facing must be 0-3',
+      'steps[5].wait must be an object',
+    ]);
+    expect(parseSpec({ steps: {} }).problems).toEqual(['steps must be a list']);
+  });
+
+  it('names the step tiles outside the map', () => {
+    const steps = [
+      { move: { unit: 'a', to: { x: 5, y: 0 } } },
+      { act: { unit: 'a', ability: 'shot', target: { x: 0, y: 9 } } },
+    ];
+    expect(offMap(flat(4, 4), { steps })).toEqual([
+      'steps[0].move.to: 5,0 is outside the 4x4 map',
+      'steps[1].act.target: 0,9 is outside the 4x4 map',
+    ]);
+  });
+});
+
+describe('playStep', () => {
+  // Ash Wood as it loads: the warrior on 3,11 and the archer on 5,10; the soldier on 2,0, across the river
+  const start = () => Battle.start(SCENARIOS.ash_wood, 1);
+
+  it('walks the unit there, giving it the turn first', () => {
+    const b = start();
+    const { events, problem } = playStep(b, { move: { unit: 'h-warrior', to: { x: 3, y: 9 } } });
+    expect(problem).toBeNull();
+    expect(b.actor.id).toBe('h-warrior');
+    expect(b.actor.pos).toEqual({ x: 3, y: 9 });
+    expect(events.at(-1)).toMatchObject({ k: 'move', unit: 'h-warrior' });
+  });
+
+  it('acts, then refuses a second act in the same turn', () => {
+    const b = start();
+    b.state.units.find((u) => u.id === 'e-soldier')!.pos = { x: 5, y: 6 };
+    const shot = { act: { unit: 'h-archer', ability: 'shot', target: { x: 5, y: 6 } } };
+    expect(playStep(b, shot).events[0]).toMatchObject({ k: 'attack', unit: 'h-archer', ability: 'shot' });
+    expect(playStep(b, shot)).toEqual({ events: [], problem: 'h-archer already acted this turn' });
+  });
+
+  it('says why a step cannot be played instead of doing nothing', () => {
+    const b = start();
+    expect(playStep(b, { move: { unit: 'h-warrior', to: { x: 3, y: 0 } } }).problem).toBe('h-warrior cannot reach 3,0');
+    expect(playStep(b, { act: { unit: 'h-warrior', ability: 'shot', target: { x: 3, y: 9 } } }).problem).toBe(
+      'h-warrior cannot use shot on 3,9: not one of its abilities',
+    );
+    expect(playStep(b, { act: { unit: 'h-archer', ability: 'shot', target: { x: 2, y: 0 } } }).problem).toBe(
+      'h-archer cannot use shot on 2,0: out of range',
+    );
+    expect(playStep(b, { wait: { unit: 'ghost' } }).problem).toBe('"ghost" is not a unit that plays on this map');
+  });
+
+  it('wait turns the unit and passes the turn on', () => {
+    const b = start();
+    playStep(b, { wait: { unit: 'h-mage', facing: 3 } });
+    expect(b.state.units.find((u) => u.id === 'h-mage')!.facing).toBe(3);
+    expect(b.actor.id).not.toBe('h-mage');
+  });
+
+  it('gives the scene its actor only among heroes that play', () => {
+    const b = start();
+    expect(giveTurn(b, 'e-brute', true)).toBe('"e-brute" is not a hero that plays on this map');
+    expect(giveTurn(b, 'e-brute')).toBeNull();
+    expect(b.actor.id).toBe('e-brute');
   });
 });

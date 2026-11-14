@@ -1,10 +1,12 @@
 // Scene spec of the sandbox (docs/sandbox.md): what a scripted screenshot opens and shows. Pure, shared by the page
 // (dev/sandbox.ts) and the Node CLI (scripts/sandbox.mjs), so no DOM or Three here. Every check returns readable
 // problems instead of a silent default: a typo in a spec must fail the shot, not produce a different picture.
+import { ABILITIES } from '../../shared/battle/abilities.ts';
+import type { Battle } from '../../shared/battle/battle.ts';
 import { canStand, type Grid, inBounds, posKey, subOf, tileAt } from '../../shared/battle/grid.ts';
 import { footprint } from '../../shared/battle/pathing.ts';
 import type { Spawn } from '../../shared/battle/scenarios.ts';
-import type { Pos, Team, UnitState } from '../../shared/battle/types.ts';
+import type { BattleEvent, Pos, Team, UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 
 // HUD parts that `hide` accepts, by the class the HUD gives them (hud.ts, talk.ts, dialog.ts, main.ts)
@@ -47,6 +49,11 @@ export interface CameraSpec {
   focus?: Pos; // tile in the middle of the view
   action?: { from: string; to: Pos }; // the strike camera, from that unit to the tile
 }
+// One played step (gameplay clips): the unit gets the turn if it does not have it, then walks, acts or ends its turn
+export type Step =
+  | { move: { unit: string; to: Pos } }
+  | { act: { unit: string; ability: string; target: Pos } }
+  | { wait: { unit: string; facing?: number } };
 export interface SceneSpec {
   name?: string; // CLI: output file name (default: the spec file name)
   scenario?: string; // map or study id (?scenario=)
@@ -65,6 +72,7 @@ export interface SceneSpec {
   hide?: Hidden[];
   pixel?: 0 | 2 | 3 | 4;
   daylight?: number; // 0 night to 1 day (the light the Until Dawn mode and dark stages use)
+  steps?: Step[]; // played in order by __sandbox.play (the CLI plays them after the scene settles)
 }
 
 const KEYS = [
@@ -85,6 +93,7 @@ const KEYS = [
   'hide',
   'pixel',
   'daylight',
+  'steps',
 ];
 const HIDDEN = new Set<string>([...Object.keys(PANELS), 'all', 'marks']);
 
@@ -172,7 +181,33 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   if (r.pixel !== undefined && ![0, 2, 3, 4].includes(r.pixel as number)) p.push('pixel must be 0, 2, 3 or 4');
   if (r.daylight !== undefined && !(typeof r.daylight === 'number' && r.daylight >= 0 && r.daylight <= 1))
     p.push('daylight must be between 0 and 1');
+  if (r.steps !== undefined) {
+    if (!Array.isArray(r.steps)) p.push('steps must be a list');
+    else r.steps.forEach((st, i) => p.push(...stepShape(st, `steps[${i}]`)));
+  }
   return { spec: p.length ? {} : (r as SceneSpec), problems: p };
+}
+
+const STEP_KEYS: Record<string, string[]> = {
+  move: ['unit', 'to'],
+  act: ['unit', 'ability', 'target'],
+  wait: ['unit', 'facing'],
+};
+function stepShape(st: unknown, at: string): string[] {
+  const kinds = isObj(st) ? Object.keys(st) : [];
+  if (kinds.length !== 1 || !STEP_KEYS[kinds[0]]) return [`${at} must be one of { move }, { act } or { wait }`];
+  const k = kinds[0];
+  const v = (st as Record<string, unknown>)[k];
+  if (!isObj(v)) return [`${at}.${k} must be an object`];
+  const p: string[] = [];
+  for (const key of Object.keys(v)) if (!STEP_KEYS[k].includes(key)) p.push(`${at}.${k}: unknown key "${key}"`);
+  if (typeof v.unit !== 'string') p.push(`${at}.${k}.unit must be a unit id`);
+  if (k === 'move' && !isPos(v.to)) p.push(`${at}.move.to must be { x, y }`);
+  if (k === 'act' && !(typeof v.ability === 'string' && ABILITIES[v.ability]))
+    p.push(`${at}.act: unknown ability "${String(v.ability)}"`);
+  if (k === 'act' && !isPos(v.target)) p.push(`${at}.act.target must be { x, y }`);
+  if (k === 'wait' && v.facing !== undefined && !isInt(v.facing, 0, 3)) p.push(`${at}.wait.facing must be 0-3`);
+  return p;
 }
 
 // Address of the page a spec opens; the spec rides along in ?sandbox= so a reload shows the same scene
@@ -277,6 +312,13 @@ export function offMap(grid: Grid, spec: SceneSpec): string[] {
     ['camera.focus', spec.camera?.focus],
     ['camera.action.to', spec.camera?.action?.to],
     ['screen.target', typeof c === 'object' ? c.target : undefined],
+    ...(spec.steps ?? []).map((st, i): [string, Pos | undefined] =>
+      'move' in st
+        ? [`steps[${i}].move.to`, st.move.to]
+        : 'act' in st
+          ? [`steps[${i}].act.target`, st.act.target]
+          : ['', undefined],
+    ),
   ];
   return at.flatMap(([name, p]) =>
     p && !inBounds(grid, { x: p.x * k, y: p.y * k })
@@ -307,4 +349,49 @@ export function placementProblems(grid: Grid, units: UnitState[]): string[] {
       taken.set(posKey(f), u.id);
     }
   return [...new Set(p)];
+}
+
+// Puts the unit on the turn as if the queue had reached it. Only units that play (the Beacon never has a turn); the
+// scene's actor must be a hero (`heroes`), so the AI never plays the opening turn, while a step may move an enemy
+export function giveTurn(b: Battle, id: string, heroes = false): string | null {
+  const u = b.state.units.find((x) => x.id === id);
+  if (!u || UNIT_DEFS[u.def].speed <= 0 || (heroes && u.team !== 'hero'))
+    return `"${id}" is not a ${heroes ? 'hero' : 'unit'} that plays on this map`;
+  b.state.turn = { actor: u.id, moved: false, usedAbility: null };
+  return null;
+}
+
+const WHY: Record<string, string> = {
+  unknown: 'not one of its abilities',
+  range: 'out of range',
+  sight: 'no line of sight',
+  'no-target': 'nobody to hit there',
+  spent: 'cannot pay its cost',
+  water: 'it stands in deep water',
+};
+
+// One step through the same Battle calls the turn screen makes (interaction.ts `confirm` for move and act; `face` and
+// `endTurn` for wait, without the AI turns that follow in the game). A step that would do nothing is a named problem:
+// a clip must not record a step that silently failed
+export function playStep(b: Battle, step: Step): { events: BattleEvent[]; problem: string | null } {
+  const fail = (problem: string) => ({ events: [], problem });
+  const s = 'move' in step ? step.move : 'act' in step ? step.act : step.wait;
+  if (b.over) return fail('the battle is already over');
+  const turn = b.state.turn.actor === s.unit ? null : giveTurn(b, s.unit);
+  if (turn) return fail(turn);
+  if ('move' in step) {
+    const events = b.move(step.move.to);
+    return events.length
+      ? { events, problem: null }
+      : fail(`${s.unit} cannot reach ${step.move.to.x},${step.move.to.y}`);
+  }
+  if ('act' in step) {
+    const { ability, target } = step.act;
+    if (b.state.turn.usedAbility) return fail(`${s.unit} already acted this turn`);
+    const { ok, reason = 'unknown' } = b.preview(ability, target);
+    if (!ok) return fail(`${s.unit} cannot use ${ability} on ${target.x},${target.y}: ${WHY[reason] ?? reason}`);
+    return { events: b.act(ability, target), problem: null };
+  }
+  if (step.wait.facing !== undefined) b.face(step.wait.facing);
+  return { events: b.endTurn(), problem: null };
 }

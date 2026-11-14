@@ -16,6 +16,7 @@ import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
 import {
   castOf,
+  giveTurn,
   inCells,
   offMap,
   PANELS,
@@ -23,7 +24,9 @@ import {
   parseSpec,
   patchUnits,
   placementProblems,
+  playStep,
   type SceneSpec,
+  type Step,
   specUrl,
   storageFor,
 } from './sandbox-spec.ts';
@@ -36,6 +39,7 @@ interface SandboxApi {
   load(spec: SceneSpec): string[];
   list(): unknown;
   idle(): Promise<void>;
+  play(steps: Step | Step[]): Promise<string[]>;
 }
 declare global {
   interface Window {
@@ -82,10 +86,8 @@ export function stage(base: Scenario): { scenario: Scenario; battle: Battle } {
 // a hero that plays: the Beacon is on the heroes' side but never has a turn
 const acts = (u: UnitState) => u.team === 'hero' && UNIT_DEFS[u.def].speed > 0;
 function takeTurn(id: string): string | null {
-  const u = battle.state.units.find((x) => x.id === id);
-  if (!u || !acts(u)) return `actor: "${id}" is not a hero that plays on this map`;
-  battle.state.turn = { actor: u.id, moved: false, usedAbility: null };
-  return null;
+  const p = giveTurn(battle, id, true);
+  return p && `actor: ${p}`;
 }
 
 export function install(game: Game, scene: BattleScene) {
@@ -226,6 +228,24 @@ export function install(game: Game, scene: BattleScene) {
       map: { width: battle.grid.width / subOf(battle.grid), height: battle.grid.height / subOf(battle.grid) },
     }),
     idle,
+    // Gameplay clips: each step goes through the Battle call the turn screen makes and the game's own animation (action
+    // camera, numbers, shake), then waits for the scene to settle. Stops at the first step that cannot be played
+    async play(steps) {
+      const list = Array.isArray(steps) ? steps : [steps];
+      const { problems: shape } = parseSpec({ steps: list });
+      const bad = [...shape, ...offMap(battle.grid, { steps: list })];
+      if (bad.length) return bad;
+      for (const [i, step] of list.entries()) {
+        const id = 'move' in step ? step.move.unit : 'act' in step ? step.act.unit : step.wait.unit;
+        // an enemy's walk shows its destination first, as on the AI turn
+        const enemy = battle.state.units.find((u) => u.id === id)?.team === 'enemy';
+        const { events, problem } = playStep(battle, step);
+        if (problem) return [`steps[${i}]: ${problem}`];
+        await game.playStep(events, enemy);
+        await idle();
+      }
+      return [];
+    },
   };
   window.__sandbox = api;
   // the cast was already placed when the scene loaded; a cast that did not fit is not tried again

@@ -331,6 +331,14 @@ export class Game {
     this.update(ui);
   }
 
+  // sandbox: a scripted step's events played like a confirmed command, then the turn menu of whoever plays now
+  async playStep(events: BattleEvent[], enemy: boolean) {
+    await this.animate(events, enemy);
+    this.screen = startScreen(this.battle);
+    this.cursorToActor();
+    this.update(freshUi(this.battle));
+  }
+
   private back(screen: Screen) {
     sfx('cancel');
     this.screen = screen;
