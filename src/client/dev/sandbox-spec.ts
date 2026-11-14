@@ -205,7 +205,7 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
     if (!isObj(r.timing)) p.push('timing must map a TIMING name to ms');
     else
       for (const [k, v] of Object.entries(r.timing)) {
-        if (!(k in TIMING)) p.push(`timing: unknown key "${k}" (one of ${Object.keys(TIMING).join(', ')})`);
+        if (!Object.hasOwn(TIMING, k)) p.push(`timing: unknown key "${k}" (one of ${Object.keys(TIMING).join(', ')})`);
         // > 0: shake, jumpCrouch and jumpLand divide
         else if (!(typeof v === 'number' && v > 0 && v <= 10000)) p.push(`timing.${k} must be ms above 0, up to 10000`);
       }
