@@ -5,7 +5,7 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
-import { dist, type Grid, posKey } from '../src/shared/battle/grid.ts';
+import { canStand, dist, type Grid, posKey, tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { cellsOf, reachable } from '../src/shared/battle/pathing.ts';
 import { initialState, MAPS, type Scenario } from '../src/shared/battle/scenarios.ts';
@@ -73,6 +73,41 @@ describe('half tiles: abilities measure the same as on whole tiles', () => {
         }
       expect(diff).toEqual([]);
     });
+  }
+});
+
+describe('half tiles: line of sight on the game maps', () => {
+  // the walls, trees and slopes of the real maps: a cell-by-cell line slipped through corners the whole map blocks
+  const sighted = Object.keys(ABILITIES).filter((id) => ABILITIES[id].needsSight);
+  for (const map of MAPS) {
+    it(`${map.id}: the shots that pass and stop are the same`, () => {
+      const hm = halve({ ...map, spawns: [] });
+      const g = map.grid;
+      const diff: string[] = [];
+      for (let ay = 0; ay < g.height; ay += 3)
+        for (let ax = 0; ax < g.width; ax += 3) {
+          const A = { x: ax, y: ay };
+          if (!canStand(tileAt(g, A))) continue;
+          for (let y = 0; y < g.height; y++)
+            for (let x = 0; x < g.width; x++) {
+              const B = { x, y };
+              if (posKey(B) === posKey(A) || !canStand(tileAt(g, B))) continue;
+              const s = stateOf([
+                { id: 'a', def: 't-all', team: 'hero', ...A },
+                { id: 'b', def: 'soldier', team: 'enemy', ...B },
+              ]);
+              const hs = halfState(s);
+              for (const id of sighted) {
+                const say = (p: ReturnType<typeof previewAbility>) =>
+                  p.ok ? p.targets.map((t) => `${t.unit}:${t.chance}`).join(',') : 'out';
+                const w = say(previewAbility(g, s, 'a', id, B));
+                const h = say(previewAbility(hm.grid, hs, 'a', id, cell(B)));
+                if (w !== h) diff.push(`${id} ${posKey(A)} -> ${posKey(B)} whole ${w} half ${h}`);
+              }
+            }
+        }
+      expect(diff.slice(0, 5)).toEqual([]);
+    }, 30000);
   }
 });
 

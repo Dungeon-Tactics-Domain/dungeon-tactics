@@ -14,6 +14,7 @@ import {
   nearestTile,
   pathTo,
   reachable,
+  sightEnds,
   unitAt,
 } from '../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
@@ -143,7 +144,7 @@ export function highlights(b: Battle, ui: Ui): Highlights {
       for (const t of allTiles(b)) {
         const [from, to] = aimEnds(b.grid, b.state, b.actor, t);
         if (!inAbilityRange(b.grid, a, from, to)) continue;
-        mark(t, a.needsSight && !lineOfSight(b.grid, from, to) ? 'blocked' : 'range');
+        mark(t, a.needsSight && !lineOfSight(b.grid, ...sightEnds(b.grid, b.state, b.actor, t)) ? 'blocked' : 'range');
       }
     }
     if (ui.pending) {

@@ -25,6 +25,7 @@ import {
   inArea,
   MAX_JUMP,
   shotStop,
+  sightEnds,
   unitAt,
   wholeTiles,
 } from './pathing.ts';
@@ -143,7 +144,9 @@ export function previewAbility(
   // attack and the guy loses the attack"); the area, if any, explodes there. And attacking empty ground is allowed (Nov 13): the hit fires
   // without a target. The AI only picks attacks with a target (attackScore adds zero without a target)
   // a model on the path only blocks what flies straight (arrow, knife): magic passes over heads
-  const stop = ability.needsSight ? shotStop(grid, state, from, to, actor.id, !ability.magic) : null;
+  const stop = ability.needsSight
+    ? shotStop(grid, state, ...sightEnds(grid, state, actor, center), actor.id, !ability.magic)
+    : null;
   if (stop) center = stop.pos;
   // hit a model on the path: it takes the hit, whichever side it is on (without area: only it)
   const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;

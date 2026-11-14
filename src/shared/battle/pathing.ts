@@ -273,6 +273,52 @@ export function lineOfSight(grid: Grid, from: Pos, to: Pos): boolean {
 // ally"): the first terrain obstacle (like sightBlock) or the first model on the path, ally or enemy, if the
 // line passes below its head (UNIT_TALL levels above the ground). null if it reaches the target
 const UNIT_TALL = 1.6;
+// whoever swims in deep water aims and is aimed at from the surface (Nov 13 review): with the bottom height, the line passed under the
+// neighboring ground and whoever was in the water became invisible at 3 tiles or more; the hit chance is still worse because of height (standH)
+const sightH = (grid: Grid, cells: Pos[]) =>
+  Math.max(
+    ...cells
+      .filter((p) => inBounds(grid, p))
+      .map((p) => {
+        const t = tileAt(grid, p);
+        return isDeep(t) ? t.h : standH(t);
+      }),
+  );
+
+// The tiles between two ends (Bresenham), each with the fraction of the way it sits at. On the split map the line walks in
+// whole-tile strides from square corner to square corner and probes each sub x sub square (Nov 14): a cell-by-cell line
+// slipped through corners the whole map blocks and changed which shots pass (measured on Beacon Hill and Ash Wood)
+function* sightLine(grid: Grid, a: Pos, b: Pos): Generator<{ pos: Pos; cells: Pos[]; frac: number }> {
+  const k = subOf(grid);
+  const nx = Math.round(Math.abs(b.x - a.x) / k),
+    ny = Math.round(Math.abs(b.y - a.y) / k);
+  const total = nx + ny;
+  if (total <= 1) return;
+  const sx = a.x < b.x ? k : -k,
+    sy = a.y < b.y ? k : -k;
+  let i = 0,
+    j = 0,
+    err = nx - ny;
+  for (;;) {
+    const e2 = 2 * err;
+    if (e2 >= -ny) {
+      err -= ny;
+      i++;
+    }
+    if (e2 <= nx) {
+      err += nx;
+      j++;
+    }
+    if (i === nx && j === ny) return;
+    // fraction by the advance in grid steps, not by the loop index, which on the diagonal moves 1 tile per iteration
+    const pos = { x: a.x + i * sx, y: a.y + j * sy };
+    yield { pos, cells: cellsOf(pos, k).filter((c) => inBounds(grid, c)), frac: (i + j) / total };
+  }
+}
+
+// Where the shot stops, leaving the shooter (Nov 13, Fernando's request: "the projectile preview did not warn that it would hit my
+// ally"): the first terrain obstacle (like sightBlock) or the first model on the path, ally or enemy, if the
+// line passes below its head (UNIT_TALL levels above the ground). null if it reaches the target
 export function shotStop(
   grid: Grid,
   state: BattleState,
@@ -281,80 +327,43 @@ export function shotStop(
   shooter: string,
   units = true,
 ): { pos: Pos; unit: string | null } | null {
-  const total = dist(from, to);
-  if (total <= 1) return null;
-  const sight = (p: Pos) => {
-    const t = tileAt(grid, p);
-    return isDeep(t) ? t.h : standH(t);
-  };
-  const eye = sight(from) + EYE,
-    aim = sight(to) + EYE;
-  let x = from.x,
-    y = from.y;
-  const dx = Math.abs(to.x - from.x),
-    dy = -Math.abs(to.y - from.y);
-  const sx = from.x < to.x ? 1 : -1,
-    sy = from.y < to.y ? 1 : -1;
-  let err = dx + dy;
-  for (;;) {
-    const e2 = 2 * err;
-    if (e2 >= dy) {
-      err += dy;
-      x += sx;
-    }
-    if (e2 <= dx) {
-      err += dx;
-      y += sy;
-    }
-    if (x === to.x && y === to.y) return null;
-    const p = { x, y },
-      t = tileAt(grid, p);
-    const line = eye + (aim - eye) * (dist(from, p) / total);
-    if (t.h + blocksOf(t) > line) return { pos: p, unit: null };
-    const u = units ? unitAt(state, p) : undefined;
-    if (u && u.id !== shooter && sight(p) + UNIT_TALL > line) return { pos: p, unit: u.id };
+  const k = subOf(grid);
+  const eye = sightH(grid, cellsOf(from, k)) + EYE,
+    aim = sightH(grid, cellsOf(to, k)) + EYE;
+  // the target's own token can overlap the last square probed when it stands between tiles (a whole-map colossus still blocks)
+  const target = k > 1 ? unitAt(state, to)?.id : undefined;
+  for (const { pos, cells, frac } of sightLine(grid, from, to)) {
+    const line = eye + (aim - eye) * frac;
+    if (Math.max(...cells.map((c) => blockTop(grid, c))) > line) return { pos, unit: null };
+    if (!units) continue;
+    const u = cells.map((c) => unitAt(state, c)).find((u) => u && u.id !== shooter && u.id !== target);
+    if (u && sightH(grid, cells) + UNIT_TALL > line) return { pos, unit: u.id };
   }
+  return null;
 }
+
+const blockTop = (grid: Grid, p: Pos) => {
+  const t = tileAt(grid, p);
+  return t.h + blocksOf(t);
+};
 
 export function sightBlock(grid: Grid, from: Pos, to: Pos): Pos | null {
   // always traces from the lowest-index tile to the highest (Nov 13, review): Bresenham breaks the corner tie depending on the
   // direction, and an archer got shot from where it could not answer (5 to 6% of pairs). Eye and aim have the same height
   // above the ground, so swapping the ends does not change the line
   const [a, b] = from.y * grid.width + from.x <= to.y * grid.width + to.x ? [from, to] : [to, from];
-  const total = dist(a, b);
-  if (total <= 1) return null;
-  // whoever swims in deep water aims and is aimed at from the surface (Nov 13 review): with the bottom height, the line passed under the
-  // neighboring ground and whoever was in the water became invisible at 3 tiles or more; the hit chance is still worse because of height (standH)
-  const sight = (p: Pos) => {
-    const t = tileAt(grid, p);
-    return isDeep(t) ? t.h : standH(t);
-  };
-  const eye = sight(a) + EYE;
-  const aim = sight(b) + EYE;
-  let x = a.x,
-    y = a.y;
-  const dx = Math.abs(b.x - a.x),
-    dy = -Math.abs(b.y - a.y);
-  const sx = a.x < b.x ? 1 : -1,
-    sy = a.y < b.y ? 1 : -1;
-  let err = dx + dy;
-  for (;;) {
-    const e2 = 2 * err;
-    if (e2 >= dy) {
-      err += dy;
-      x += sx;
-    }
-    if (e2 <= dx) {
-      err += dx;
-      y += sy;
-    }
-    if (x === b.x && y === b.y) return null;
-    const t = tileAt(grid, { x, y });
-    // fraction by the advance in grid steps, not by the loop index, which on the diagonal moves 1 tile per iteration
-    const frac = dist(a, { x, y }) / total;
-    if (t.h + blocksOf(t) > eye + (aim - eye) * frac) return { x, y };
-  }
+  const k = subOf(grid);
+  const eye = sightH(grid, cellsOf(a, k)) + EYE;
+  const aim = sightH(grid, cellsOf(b, k)) + EYE;
+  for (const { pos, cells, frac } of sightLine(grid, a, b))
+    if (Math.max(...cells.map((c) => blockTop(grid, c))) > eye + (aim - eye) * frac) return pos;
+  return null;
 }
+
+// ends of a line of sight: on the split map from the corner of the shooter's square to the corner of the target's (or the
+// aimed cell), so the whole-tile strides of sightLine retrace the whole map's line; elsewhere from the shooter's nearest tile
+export const sightEnds = (grid: Grid, state: BattleState, actor: UnitState, center: Pos): [Pos, Pos] =>
+  subOf(grid) > 1 ? [actor.pos, unitAt(state, center)?.pos ?? center] : [nearestTile(actor, center), center];
 
 // max range against a tile: +1 per level above the target for whoever has heightRange (in cells on the split map)
 export function maxRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): number {

@@ -5,7 +5,7 @@ import { ABILITIES } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { dist, facingTo, inBounds, neighbors, posKey, samePos, subOf } from '../shared/battle/grid.ts';
-import { cellsOf, farCells, shotStop, squareH, unitAt } from '../shared/battle/pathing.ts';
+import { cellsOf, farCells, shotStop, sightEnds, squareH, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { CAMPAIGN_KEY, CHAPTERS, objectiveText, parseProgress } from './campaign.ts';
@@ -496,7 +496,14 @@ export class Game {
         ? {
             from,
             to: aim,
-            block: shotStop(this.battle.grid, this.battle.state, from, aim, this.battle.actor.id, !magic)?.pos ?? null,
+            block:
+              shotStop(
+                this.battle.grid,
+                this.battle.state,
+                ...sightEnds(this.battle.grid, this.battle.state, this.battle.actor, aim),
+                this.battle.actor.id,
+                !magic,
+              )?.pos ?? null,
           }
         : null,
     );
