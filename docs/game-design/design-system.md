@@ -34,7 +34,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 |---|---|---|
 | Panel | `--paper-hi` `--paper` `--paper-lo` `--paper-edge` | top, middle and foot of the blue gradient of panels and dialogs; light frame |
 | Ink | `--ink` `--ink-muted` `--ink-off` `--ink-shadow` `--focus` | text, muted text, disabled row text, the hard dark text shadow, yellow highlight/focus/link |
-| Focus row | `--focus-band` `--row-hi` | menu row under focus (lighter blue band), row under hover |
+| Focus row | `--focus-band` `--row-hi` `--row-off` | menu row under focus (lighter blue band), row under hover, disabled row (sunken dark band, focused or not) |
 | Dark scene | `--bg` `--fg` `--muted` `--overlay` | page background, text over the scene, veil behind dialogs |
 | Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the panels (almost unused today), bar background |
 | Primary | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button (brighter blue; the names stayed from the gold one), battle highlight (yellow) |
@@ -54,11 +54,11 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | `--ink` | 7.8 | 9.3 | 15.3 | 4.5 ✓ |
 | `--ink-muted` | 5.6 | 6.7 | — | 4.5 ✓ |
 | `--focus` / `--accent` (titles, names, battle highlight) | 6.0 | 7.2 | — | 4.5 ✓ |
-| `--ink-off` (disabled row; the kit's `#8592b4` gave 2.7, raised to `#b4bedc`) | 4.5 | — | — | 4.5 ✓ |
+| `--ink-off` (disabled row; the kit's `#8592b4` gave 2.7, raised to `#b4bedc`) on its `--row-off` band | 6.8 (4.5 without the band) | 7.6 | 9.7 | 4.5 ✓ |
 
 | Other pair | Value | Bar |
 |---|---|---|
-| `--ink` on `--focus-band` (top / foot) | 5.3 / 6.3 | ✓ (every text in a focused row and in the queue's current row turns `--ink`: on the band `--ink-muted` gives 3.8, `--focus` 4.1, `--ink-off` 3.1) |
+| `--ink` on `--focus-band` (top / foot) | 5.3 / 6.3 | ✓ (every text in a focused row and in the queue's current row turns `--ink`: on the band `--ink-muted` gives 3.8, `--focus` 4.1, `--ink-off` 3.1, so a focused disabled row keeps its `--row-off` band and `--ink-off` text and shows only the ▶) |
 | `--on-accent` on `--gold-btn` (top / foot) | 4.9 / 6.7 | ✓ |
 | `--ink` on `--paper-white` (fields) | 13.0 | ✓ |
 | `--fg` on `--bg` | 17.4 | ✓ |
@@ -118,7 +118,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | Piece | Lives in | States | Used in |
 |---|---|---|---|
 | **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, place panel on the map, dialogue box, creation |
-| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) | commands, abilities, Yes/No, corner list, map actions |
+| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) on the sunken `--row-off` band, also when focused (▶ but no `--focus-band`) | commands, abilities, Yes/No, corner list, map actions |
 | **Bar** `gauge()` | `hud.ts` | value + number; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
 | **Unit panel** `unitPanel()` | `hud.ts` | hero/enemy by side stripe and side text; mirrored for the target | bottom left and right |
 | **Portrait** `portrait()` | `hud.ts` | 72×96 (panel, dialogue, creation), 48×64 (party), 44×58 (map), 24×32 (queue) | everywhere with a face |
@@ -147,7 +147,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 
 ### Disabled
 
-- One look: buttons in dialogs faded to 50%; menu rows in `--ink-off` without the text shadow (4.5:1, still readable); no dark grey.
+- One look: buttons in dialogs faded to 50%; menu rows in `--ink-off` without the text shadow on a sunken `--row-off` band (6.8:1, still readable; the band also tells a focused disabled row from a focused active one); no dark grey.
 - A disabled button says why in its own text or in the line above it ("20 short", "Party is full: dismiss someone on their sheet").
 
 ## 3. Input
