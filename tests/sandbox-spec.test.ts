@@ -317,6 +317,15 @@ describe('specs on a split map', () => {
       'c: tile 3,4 is outside the 4x4 map',
     ]);
   });
+
+  it('rejects a token placed between tiles that differ, where the game never stops one', () => {
+    halve(SCENARIOS.ash_wood);
+    const g = split(4, 4);
+    for (const i of [2, 3, 10, 11]) g.tiles[i].h = 1; // the tile at 1,0 a level up
+    const unit = (id: string, x: number) => stateOf([{ id, def: 'soldier½', team: 'enemy', x, y: 0 }]).units[0];
+    expect(placementProblems(g, [unit('a', 1)])).toEqual(['a: 0.5,0 is not on even ground']);
+    expect(placementProblems(g, [unit('b', 4)])).toEqual([]);
+  });
 });
 
 describe('steps', () => {

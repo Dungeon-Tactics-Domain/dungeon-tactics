@@ -5,10 +5,10 @@ import { ABILITIES } from '../../shared/battle/abilities.ts';
 import { Battle } from '../../shared/battle/battle.ts';
 import type { PreviewReason } from '../../shared/battle/combat.ts';
 import { canStand, type Grid, inBounds, posKey, subOf, tileAt } from '../../shared/battle/grid.ts';
-import { footprint } from '../../shared/battle/pathing.ts';
+import { footprint, restsOn } from '../../shared/battle/pathing.ts';
 import type { Spawn } from '../../shared/battle/scenarios.ts';
 import type { BattleEvent, BattleState, Pos, Team, UnitState } from '../../shared/battle/types.ts';
-import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { baseDef, UNIT_DEFS } from '../../shared/battle/units.ts';
 import { TIMING } from '../timing.ts';
 
 // HUD parts that `hide` accepts, by the class the HUD gives them (hud.ts, talk.ts, dialog.ts, main.ts)
@@ -366,8 +366,8 @@ export function offMap(grid: Grid, spec: SceneSpec): string[] {
   );
 }
 
-// Where a unit may stand: every tile of its footprint inside the map, walkable, not a pass-through tile, and nobody
-// else on it (deep water is allowed: the rules let a unit stand there). Named in whole tiles like the spec, once per tile
+// Where a unit may stand: every tile of its footprint inside the map, walkable, not a pass-through tile, nobody
+// else on it and, for a token, even ground (deep water is allowed: the rules let a unit stand there). Named in whole tiles like the spec, once per tile
 export function placementProblems(grid: Grid, units: UnitState[]): string[] {
   const p: string[] = [];
   const k = subOf(grid),
@@ -387,6 +387,15 @@ export function placementProblems(grid: Grid, units: UnitState[]): string[] {
       if (other) p.push(`${u.id}: tile ${at} is taken by ${other}`);
       taken.set(posKey(f), u.id);
     }
+  // a token stops only on even ground (restsOn), so a spec cannot start one where the game never leaves it
+  for (const u of units)
+    if (
+      k > 1 &&
+      (UNIT_DEFS[baseDef(u.def)].size ?? 1) === 1 &&
+      footprint(u).every((f) => inBounds(grid, f)) &&
+      !restsOn(grid, u.pos, k)
+    )
+      p.push(`${u.id}: ${u.pos.x / k},${u.pos.y / k} is not on even ground`);
   return [...new Set(p)];
 }
 
