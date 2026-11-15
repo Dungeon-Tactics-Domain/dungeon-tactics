@@ -67,7 +67,7 @@ export function homeScreen() {
 // The town (fixed for now: only the party grows): the existing Shop, Tavern and Party windows, the quest, and the older
 // modes behind one button (the frozen Beacon Ashes campaign, quick battles, credits). Over the spinning backdrop battle
 export function townScreen() {
-  setTrack('title');
+  setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
   const i = WORLD.findIndex((w) => w.id === CRAWL_TOWN);
   const go = (fn: () => void) => () => {
     d.close();
