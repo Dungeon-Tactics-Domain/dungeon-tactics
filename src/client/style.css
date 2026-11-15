@@ -2305,6 +2305,9 @@ p.gold strong::before,
   padding-left: 46px;
   white-space: nowrap;
 }
+.dialog .command-list .continue-where {
+  margin-left: auto; /* at the row's right end, like the kit's values */
+}
 .dialog .command-list > button:focus::before {
   left: 14px;
 }
@@ -2324,7 +2327,10 @@ p.gold strong::before,
   background: none;
 }
 .town-menu .dialog.title {
-  width: min(422px, 100%);
+  /* the kit's 422 px, wider when a row needs it: Continue the expedition carries its floor on the same line */
+  width: max-content;
+  min-width: min(422px, 100%);
+  max-width: 100%;
   padding: 0 0 8px;
   text-align: left;
 }
@@ -2344,7 +2350,8 @@ p.gold strong::before,
 @media (min-width: 901px) {
   body:has(.town-menu) .overlay:not(.town-menu) {
     place-items: start end;
-    padding: var(--inset) calc(422px + 2 * var(--inset)) var(--inset) var(--inset);
+    /* clear of the menu at its widest (432 px with Continue the expedition and its floor, in English) */
+    padding: var(--inset) calc(440px + 2 * var(--inset)) var(--inset) var(--inset);
     background: none;
     pointer-events: none;
   }
