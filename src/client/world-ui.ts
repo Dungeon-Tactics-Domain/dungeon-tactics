@@ -3,6 +3,7 @@
 // Place panel in the bottom-right corner, like the place name on the FFT map; art and text are ours.
 
 import { bonusOf, ITEMS, type ItemDef, SLOTS, type Slot } from '../shared/battle/equipment.ts';
+import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { foesText } from './campaign.ts';
@@ -213,8 +214,8 @@ export function openParty(n: number, hero: Hero | null) {
           'p',
           { class: 'party-stats' },
           t(
-            `Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move} · Salto ${u.jump}`,
-            `HP ${u.hp} · Speed ${u.speed} · Move ${u.move} · Jump ${u.jump}`,
+            `Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move * SUB} · Salto ${(u.jump ?? MAX_JUMP) * SUB}`,
+            `HP ${u.hp} · Speed ${u.speed} · Move ${u.move * SUB} · Jump ${(u.jump ?? MAX_JUMP) * SUB}`,
           ),
         ),
         el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · ')),
@@ -265,8 +266,8 @@ export function itemStats(it: ItemDef): string {
     [it.hp, 'vida', 'HP'],
     [it.power, 'dano', 'damage'],
     [it.hit, 'acerto', 'hit'],
-    [it.move, 'movimento', 'move'],
-    [it.jump, 'salto', 'jump'],
+    [it.move && it.move * SUB, 'movimento', 'move'], // in half tiles, like every Move and Jump on screen
+    [it.jump && it.jump * SUB, 'salto', 'jump'],
     [it.speed, 'velocidade', 'speed'],
   ];
   return parts
@@ -523,8 +524,8 @@ function openSheet(m: Member, n: number, hero: Hero | null, back: () => void, at
                 { class: 'keys' },
                 ...row(t('Vida', 'HP'), withB(u.hp, b.hp)),
                 ...row(t('Velocidade', 'Speed'), withB(u.speed, b.speed)),
-                ...row(t('Movimento', 'Move'), withB(u.move, b.move)),
-                ...row(t('Salto', 'Jump'), withB(u.jump ?? def.jump ?? MAX_JUMP, b.jump)),
+                ...row(t('Movimento', 'Move'), withB(u.move * SUB, b.move * SUB)),
+                ...row(t('Salto', 'Jump'), withB((u.jump ?? def.jump ?? MAX_JUMP) * SUB, b.jump * SUB)),
                 ...(b.power ? row(t('Dano', 'Damage'), `+${b.power}`) : []),
                 ...(b.hit ? row(t('Acerto', 'Hit'), `+${b.hit}`) : []),
               ),

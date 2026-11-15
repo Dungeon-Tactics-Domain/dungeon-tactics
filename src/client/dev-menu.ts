@@ -2,6 +2,7 @@
 // HP, speed, movement and abilities), saves in the browser, exports and imports JSON and starts the battle.
 // The cast rules live in dev-roster.ts (pure, tested); here it's only the screen.
 
+import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -31,18 +32,26 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
   const body = el('div', { class: 'dev-body' });
   const save = () => store.set(DEV_KEY, JSON.stringify(setup));
 
-  const number = (label: string, value: number, [lo, hi]: readonly [number, number], set: (v: number) => void) => {
+  // `k`: the step on screen; Move and Jump show in half tiles like the battle (Nov 15), the cast keeps whole tiles
+  const number = (
+    label: string,
+    value: number,
+    [lo, hi]: readonly [number, number],
+    set: (v: number) => void,
+    k = 1,
+  ) => {
     const input = el('input', {
       type: 'number',
-      min: String(lo),
-      max: String(hi),
-      value: String(value),
+      min: String(lo * k),
+      max: String(hi * k),
+      step: String(k),
+      value: String(value * k),
       'aria-label': label,
     }) as HTMLInputElement;
     // out of limits goes back to the nearest: the saved JSON never becomes invalid
     input.addEventListener('change', () => {
-      const v = Math.min(hi, Math.max(lo, Math.round(Number(input.value) || lo)));
-      input.value = String(v);
+      const v = Math.min(hi, Math.max(lo, Math.round((Number(input.value) || lo * k) / k)));
+      input.value = String(v * k);
       set(v);
     });
     return el('label', { class: 'dev-num' }, el('span', {}, label), input);
@@ -115,8 +124,14 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
         { class: 'dev-line' },
         number(t('Vida', 'HP'), u.hp, LIMITS.hp, (hp) => edit({ hp })),
         number(t('Velocidade', 'Speed'), u.speed, LIMITS.speed, (speed) => edit({ speed })),
-        number(t('Movimento', 'Move'), u.move, LIMITS.move, (move) => edit({ move })),
-        number(t('Salto', 'Jump'), u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP, LIMITS.jump, (jump) => edit({ jump })),
+        number(t('Movimento', 'Move'), u.move, LIMITS.move, (move) => edit({ move }), SUB),
+        number(
+          t('Salto', 'Jump'),
+          u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP,
+          LIMITS.jump,
+          (jump) => edit({ jump }),
+          SUB,
+        ),
       ),
       skills,
     );

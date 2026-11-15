@@ -11,7 +11,8 @@ import { HALF, UNIT_DEFS } from './units.ts';
 
 export { baseDef, HALF } from './units.ts';
 export const HALF_ID = 'ash_wood_half';
-const SUB = 2;
+// cells per tile side; also what the screens multiply Move and Jump by, to show the numbers the battle spends (Nov 15)
+export const SUB = 2;
 
 // the token of a sheet: the square doubles (a 2x2 boss becomes 4x4) and so does the movement, now counted in cells. Always
 // rebuilt: the campaign sheets (dev-h0, dev-e0…) change from stage to stage under the same id

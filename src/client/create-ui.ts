@@ -1,6 +1,8 @@
 // Protagonist creation (hero.ts has the rules): name and class, with each class's portrait, numbers and abilities in
 // view so you choose knowing what changes. Arrows switch class, Enter (outside the name field) starts.
 // Own piece because none of the existing ones (dialog, choice) shows portrait and sheet side by side; style via the :root variables.
+
+import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { HERO_CLASSES, type Hero, type HeroClass, NAME_MAX, parseHero } from './hero.ts';
@@ -73,8 +75,8 @@ export function createHero(host: HTMLElement): Promise<Hero> {
           'p',
           { class: 'create-stats' },
           t(
-            `Vida ${d.hp} · Velocidade ${d.speed} · Movimento ${d.move} · Salto ${d.jump ?? MAX_JUMP}`,
-            `HP ${d.hp} · Speed ${d.speed} · Move ${d.move} · Jump ${d.jump ?? MAX_JUMP}`,
+            `Vida ${d.hp} · Velocidade ${d.speed} · Movimento ${d.move * SUB} · Salto ${(d.jump ?? MAX_JUMP) * SUB}`,
+            `HP ${d.hp} · Speed ${d.speed} · Move ${d.move * SUB} · Jump ${(d.jump ?? MAX_JUMP) * SUB}`,
           ),
         ),
         el(
