@@ -55,7 +55,7 @@ export async function selectBattle(): Promise<BattleSelection | null> {
   let room: CrawlRoom | null = null;
   if (roomAt !== null) {
     // an expedition room (crawl.ts): only one the party may enter now, so a reload or a typed address cannot replay a
-    // cleared room for its heal; anything else goes back home (the expedition map)
+    // cleared room for its heal; anything else goes back home (the town)
     const exp = savedExpedition();
     const map = exp && expeditionMap(exp.seed);
     const node = Number(roomAt);

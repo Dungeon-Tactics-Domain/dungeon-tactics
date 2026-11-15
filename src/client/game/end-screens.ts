@@ -135,7 +135,7 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, restart }: B
           ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
           : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.'),
     ),
-    // the way home beside it (the town, or the expedition map): without it, leaving the battle required reloading the page
+    // the way home beside it (the town): without it, leaving the battle required reloading the page
     el(
       'div',
       { class: 'menu-actions' },

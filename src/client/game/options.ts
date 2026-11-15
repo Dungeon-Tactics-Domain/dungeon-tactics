@@ -210,7 +210,7 @@ export function optionsMenu(o: OptionsContext) {
         },
         { disabled: o.busy },
       ),
-      // home: the town or the expedition map (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
+      // home: the town (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
       button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
         const btn = e.currentTarget as HTMLButtonElement;
         if (o.room && !btn.dataset.armed) {

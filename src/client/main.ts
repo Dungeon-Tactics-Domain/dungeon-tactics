@@ -893,8 +893,8 @@ async function boot() {
   sandbox?.install(game, scene);
   // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
   if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
-  // without a battle parameter the title (or, with ?home, the town or the expedition in progress) opens over the
-  // standalone battle, which stays behind as spinning scenery (Nov 15, Fernando: the game opens in the town, no world map)
+  // without a battle parameter the title (or, with ?home, the town; ?home=expedition, the expedition map) opens over
+  // the standalone battle, which stays behind as spinning scenery (Nov 15, Fernando: the game opens in the town)
   if (sel.title) (param('home') !== null ? homeScreen : titleScreen)();
 }
 
