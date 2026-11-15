@@ -1,9 +1,9 @@
-import { ABILITIES, type AbilityDef } from './abilities.ts';
+import { ABILITIES, type AbilityDef, defaultLock } from './abilities.ts';
 import type { Battle } from './battle.ts';
 import { basicOf, COMBAT, previewAbility, simulatePush } from './combat.ts';
 import { canStand, dist, facingTo, type Grid, neighbors, posKey, stepCost, subOf, TERRAIN, tileAt } from './grid.ts';
 import { cellsOf, footprint, gap, jumpOf, leaps, reachable, type Step, squareH, squareMoves } from './pathing.ts';
-import { TURN_THRESHOLD } from './turn-queue.ts';
+import { chargeAim, TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { isObjective, UNIT_DEFS } from './units.ts';
 
@@ -25,6 +25,9 @@ const W = {
   // seeds): Hill 72.8% → 72.7% for the heroes, Skirmish 45.2% → 43.7%. Applying it to every charge was a mistake: the spell
   // follows the unit, and the AI stopped using the Blast on fast targets (Hill dropped to 64.1%)
   ESCAPE: 0.4,
+  // per expected life point a queued charge would take on the tile (Nov 15, Fernando: the enemies leave the line of fire or
+  // hide behind cover and allies); initial weight, unmeasured
+  LINE: 1,
 };
 // How far the AI hero leaves the target to protect to go meet the enemy. Measured on Nov 11 on the 20x20
 // (1,000 seeds): with 10 the heroes hold the middle hill and win 53.3%; with 7 they stay in the open (29%) and with no
@@ -39,9 +42,18 @@ export interface Plan {
 
 const avg = ([lo, hi]: [number, number]) => (lo + hi) / 2;
 
-function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId: string, target: Pos): number {
+// `charged`: a charge already started (it paid its cost); `tile`: locked on the tile, so whoever plays first may leave it
+function attackScore(
+  grid: Grid,
+  state: BattleState,
+  actor: UnitState,
+  abilityId: string,
+  target: Pos,
+  charged = false,
+  tile = defaultLock(ABILITIES[abilityId]) === 'tile',
+): number {
   const ability = ABILITIES[abilityId];
-  const p = previewAbility(grid, state, actor.id, abilityId, target);
+  const p = previewAbility(grid, state, actor.id, abilityId, target, charged);
   if (!p.ok) return -Infinity;
   let total = -W.CHARGE * ability.charge;
   for (const t of p.targets) {
@@ -58,9 +70,10 @@ function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId
     const dmg = (t.dmgMin + t.dmgMax) / 2; // from the preview: it is the same range the roll uses
     const expected = chance * (Math.min(dmg + pushDmg, u.hp) + (dmg + pushDmg >= u.hp ? W.KILL : 0));
     const foe = u.team !== actor.team;
-    // a charge that aims at the tile (panel, the Aimed Shot): whoever plays before it fires probably leaves and the hit lands on
-    // nothing (Nov 12). A spell with charge follows the unit (abilities.ts) and loses nothing from this
-    const leaves = ability.panel && u.ct + UNIT_DEFS[u.def].speed * ability.charge >= TURN_THRESHOLD ? W.ESCAPE : 1;
+    // a charge locked on the tile (the Aimed Shot's default): whoever plays before it fires probably leaves and the hit lands on
+    // nothing (Nov 12). One locked on the character follows the unit and loses nothing from this
+    const leaves =
+      tile && ability.charge && u.ct + UNIT_DEFS[u.def].speed * ability.charge >= TURN_THRESHOLD ? W.ESCAPE : 1;
     total += (foe ? expected * (isObjective(u.def) ? W.OBJECTIVE : 1) : -expected * W.FRIENDLY) * leaves;
   }
   return total;
@@ -168,7 +181,26 @@ function positionScore(
   // on foot when there is a path; in a straight line only if no enemy is reachable by walking
   const walked = walk.get(posKey(at));
   if (walked !== undefined) nearest = tiles(walked);
-  return score - (attacking ? W.APPROACH : W.ADVANCE) * (Number.isFinite(nearest) ? nearest : 0);
+  return (
+    score -
+    (attacking ? W.APPROACH : W.ADVANCE) * (Number.isFinite(nearest) ? nearest : 0) -
+    W.LINE * inLine(grid, state, actor)
+  );
+}
+
+// Life the queued charges of others would take from `actor` where it stands, traced as when they fire (turn-queue.ts): off a
+// locked tile, out of range, behind cover or behind an ally a physical shot stops on, it takes nothing. Its own side's
+// charges count too, at the half friendly fire leaves
+function inLine(grid: Grid, state: BattleState, actor: UnitState): number {
+  let lost = 0;
+  for (const c of state.charges) {
+    if (c.unit === actor.id) continue;
+    const t = previewAbility(grid, state, c.unit, c.ability, chargeAim(state, c), true).targets.find(
+      (x) => x.unit === actor.id,
+    );
+    if (t) lost += (t.chance / 100) * avg([t.dmgMin, t.dmgMax]);
+  }
+  return lost;
 }
 
 // Best move of the turn: tests each reachable tile (and staying put) with each ability and each target, and picks the one with the
@@ -204,9 +236,13 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
 function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Map<string, Step>): Pos | null {
   const me = state.units.find((u) => u.id === unitId)!;
   const walk = walkMap(grid, state, me);
+  // its own charge goes off from where it ends up (Nov 15): a step that loses the shot (range, sight, an ally in the way) costs it
+  const own = state.charges.find((c) => c.unit === unitId);
   const value = (spot: Pos) => {
     const moved = { ...state, units: state.units.map((u) => (u === me ? { ...u, pos: spot } : u)) };
-    let s = positionScore(grid, moved, moved.units.find((u) => u.id === unitId)!, spot, true, walk);
+    const at = moved.units.find((u) => u.id === unitId)!;
+    let s = positionScore(grid, moved, at, spot, true, walk);
+    if (own) s += attackScore(grid, moved, at, own.ability, chargeAim(moved, own), true, own.follow === null);
     if (spot === me.pos) return s;
     for (const e of state.turn.engaged ?? []) {
       const foe = state.units.find((u) => u.id === e.unit);
