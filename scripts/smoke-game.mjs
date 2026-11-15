@@ -38,6 +38,15 @@ const PAGES = [
       document.querySelectorAll('.title-overlay .camp-list button').length === 5,
   },
   {
+    // with a save the title adds Continue, named after where it opens. Read at load, a circular import left the
+    // expedition's key undefined and Continue never showed. The pages share one profile: saved pages go after the bare ones
+    name: 'title with a save',
+    path: '/',
+    seed: WORN,
+    ready: '.title-overlay [role=dialog] button.primary .continue-where',
+    check: () => document.querySelectorAll('.title-overlay .camp-list button').length === 6,
+  },
+  {
     name: 'expedition map',
     path: '/?home',
     seed: WORN,

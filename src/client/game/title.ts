@@ -15,10 +15,6 @@ import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
 import { jumpHelp } from '../town-ui.ts';
 import { CRAWL_KEY, homeLabel, homeScreen, ROOM_KEY, townScreen } from './crawl.ts';
 
-// the saves a game is made of: the party, its chest and equipment, the expedition and the room in play. Continue shows
-// when any is saved; New game erases them all
-const PROGRESS = [GROUP_KEY, CHEST_KEY, EQUIP_KEY, CRAWL_KEY, ROOM_KEY];
-
 // Developer menu (Nov 12): loads the FFT study separately just to offer Gariland's terrain as a map. Starting
 // saves the roster, erases the previous developer battle and reopens the game on it (boot builds the scenario).
 export async function devMenu(onBack?: () => void) {
@@ -194,7 +190,10 @@ function howToPlay() {
 // game and Continue lead to the town (crawl.ts), the dungeon loop's home; there is no world map or campaign
 export function titleScreen() {
   setTrack('title');
-  const saved = PROGRESS.some((k) => store.get(k));
+  // the saves a game is made of: the party, its chest and equipment, the expedition and the room in play. Continue shows
+  // when any is saved; New game erases them all. Read here, not at load: crawl.ts imports this module back
+  const progress = [GROUP_KEY, CHEST_KEY, EQUIP_KEY, CRAWL_KEY, ROOM_KEY];
+  const saved = progress.some((k) => store.get(k));
   const go = (fn: () => void) => () => {
     d.close();
     fn();
@@ -224,7 +223,7 @@ export function titleScreen() {
             btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
             return;
           }
-          for (const k of PROGRESS) store.set(k, '');
+          for (const k of progress) store.set(k, '');
           d.close();
           townScreen();
         }),
