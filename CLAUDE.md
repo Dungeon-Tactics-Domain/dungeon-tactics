@@ -15,7 +15,7 @@ src/shared/battle/  battle rules, no DOM or Three.js
   battle.ts         Battle: owns the state, limited undo (dice never roll back), validated save/load
   ai.ts             greedy one-turn AI; simulate.ts plays AI against AI
   units.ts, abilities.ts, equipment.ts, scenarios.ts   types and registries (UNIT_DEFS, ABILITIES, ITEMS, SCENARIOS)
-  half.ts           half-tile test mode (?scenario=half); fft/ is a reference study, not the game
+  half.ts           half tiles: every game battle is split on load (halve), plus the ?scenario=half test map; fft/ is a reference study, not the game, and the only battle left on whole tiles
 src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), campaign (stages and
                     lines), world (nodes, towns, rumors), quests, party (story members, recruit names)
 src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, world-ui.ts (map, towns, party),
@@ -100,5 +100,6 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 14/11 | Every game battle in half tiles: units are 2x2 tokens that step 1 half-tile at a time; abilities keep their whole-tile numbers | Fernando's request ("the half-tile movement mechanic still doesn't exist"); the maps stay written in whole tiles and are split on load |
 | 15/11 | A push never ends on uneven ground: a token left half over a drop falls onto the lower tile; otherwise it goes back to where it last rested and takes the bump | Fernando: "it tie-breaks by making the guy fall, or hit a wall"; 6 to 16% of the pushes from a stop between tiles left the token hovering |
 | 15/11 | Jump counts in half tiles like the move: a token with jump J flies a gap of up to J cells, 1 movement point per cell, and lands level past it; climbing and dropping stay in height levels | Fernando: "the move and jump values double; 1 per half tile"; a 1-cell hop landed half inside a trench |
+| 15/11 | No whole-tile battle left in the game: the client halves every battle, the developer battle on the Gariland map included; only the FFT study keeps whole tiles. Whole-map rules stay for tests, the simulator and the study | Fernando: remove the whole-tile mode; the half-tile mode is the real game |
 | 15/11 | Swappable interface themes: a theme is a block of `:root[data-theme]` tokens chosen in Options (`dt:theme`). FFT Classic (blue panels, light text, Alegreya Sans hosted in `public/fonts`) is the default and only theme; the parchment look was removed | Fernando's request: FFT Classic as the first theme, more themes later; "pode retirar" about the parchment |
 | 15/11 | Ability icons: the 32 px pixel-art set from the design lab (`public/ui/fft/atlas-32.png`), shown at 1:1 and crisp; game-icons symbol as the fallback; AI-generated, licence to be confirmed before launch | Fernando approved the set in the lab (FFT theme plan, block 2) |

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS, chapterScenario } from '../src/client/campaign.ts';
+import { buildDevScenario, defaultSetup } from '../src/client/dev-roster.ts';
 import { confirm, freshUi, selectMode, tapTile } from '../src/client/interaction.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
+import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { canStand, dist, FACING, type Grid, posKey, type Tile, tileAt, withRamps } from '../src/shared/battle/grid.ts';
 import { halve, registerHalf } from '../src/shared/battle/half.ts';
 import { cellsOf, reachable, restsOn, squareMoves } from '../src/shared/battle/pathing.ts';
@@ -552,6 +554,13 @@ describe('half tiles: whole battles', () => {
     expect(checkOutcome(s)).toBe('ongoing');
     expect(checkOutcome({ ...s, units: s.units.filter((u) => !u.def.startsWith('beacon')) })).toBe('defeat');
   });
+
+  it('a developer battle on the Gariland map plays on half tiles', () => {
+    // Nov 15, Fernando: no whole-tile battle left in the game; the developer menu's Gariland map was the last one
+    registerFftStudy();
+    const sc = halve(buildDevScenario(defaultSetup('fft-gariland')));
+    expect(simulate(sc, 3).outcome).not.toBe('timeout');
+  }, 30000);
 
   it('every campaign stage plays to the end on half tiles', () => {
     for (let n = 0; n < CHAPTERS.length; n++) {

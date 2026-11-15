@@ -1,6 +1,7 @@
 // What the page opens, read from the URL: a campaign stage, a bar mission, a study or developer battle, another map, the
 // world map, or the standalone battle behind the title. Also the save readers the screens share.
 import { Battle } from '../../shared/battle/battle.ts';
+import { subOf } from '../../shared/battle/grid.ts';
 import { HALF, HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from '../campaign.ts';
@@ -39,8 +40,6 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   let mission: Mission | null = null;
   let saveKey = 'dt:battle';
   let chapter: number | null = null;
-  // every game battle is played in half tiles (Nov 14, half.ts); the FFT study keeps its own tiles and the test map is already split
-  let whole = false;
   // FFT reference study (Nov 11): not game content. Only opens with the parameter and comes in a separate chunk of the
   // build (dynamic import), so none of it goes into the package the player downloads.
   const study = param('scenario');
@@ -88,16 +87,13 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     fft.registerFftStudy();
     scenario = SCENARIOS[study];
     saveKey = `dt:battle:${study}`;
-    whole = true;
   } else if (study === DEV_SCENARIO) {
     // battle from the developer menu: the saved roster becomes the scenario (no valid roster, goes back to the default battle)
     const setup = parseSetup(store.json(DEV_KEY));
     // roster with a problem (empty team, unit without ability) broke the battle (Nov 13, review): falls back to the default
     if (setup && !problems(setup, t).length) {
-      if (setup.map.startsWith('fft-')) {
-        (await import('../../shared/battle/fft/gariland.ts')).registerFftStudy();
-        whole = true;
-      }
+      // the Gariland map only: our classes fight on it in half tiles like on any other map
+      if (setup.map.startsWith('fft-')) (await import('../../shared/battle/fft/gariland.ts')).registerFftStudy();
       scenario = buildDevScenario(setup);
       saveKey = `dt:battle:${DEV_SCENARIO}`;
     }
@@ -105,7 +101,6 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     // half tile (Nov 13, test version: 2x2 characters walking 1 at a time, trees of 3 to 5; half.ts)
     scenario = registerHalf();
     saveKey = `dt:battle:${HALF_ID}`;
-    whole = true;
   } else if (study === SURVIVAL_ID) {
     // the own rule (wins at dawn) only exists after the scenario is assembled: assemble before loading the save
     scenario = survivalScenario();
@@ -115,6 +110,8 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     scenario = SCENARIOS[study];
     saveKey = `dt:battle:${study}`;
   }
-  if (!whole) scenario = halve(scenario);
+  // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left in the game): only the FFT
+  // study keeps its own whole tiles, and the test map comes split already
+  if (!scenario.id.startsWith('fft-') && subOf(scenario.grid) === 1) scenario = halve(scenario);
   return { scenario, mission, saveKey, chapter, study, title: camp === null && !study };
 }
