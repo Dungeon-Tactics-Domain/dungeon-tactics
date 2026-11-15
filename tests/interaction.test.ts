@@ -13,7 +13,7 @@ import { squareUnder } from '../src/client/scene/space.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { posKey } from '../src/shared/battle/grid.ts';
-import { halve } from '../src/shared/battle/half.ts';
+import { halfDef, halve } from '../src/shared/battle/half.ts';
 import { cellsOf, footprint } from '../src/shared/battle/pathing.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
@@ -229,6 +229,61 @@ describe('the square of a 2x2 token', () => {
     const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'strike' }), far);
     expect(ui.pending).toEqual(far);
     expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 4, y: 0 }, 2)));
+  });
+
+  // a split map 12 whole tiles wide and `rows` deep
+  const aimAt = (units: { id: string; def: string; team: 'hero' | 'enemy'; x: number; y: number }[], rows = 1) =>
+    new Battle(
+      halve({ id: 't-aim1', name: 't', en: 't', grid: gridOf(Array(rows).fill('............')), spawns: [] }).grid,
+      stateOf(units, HIT_SEED),
+    );
+
+  it('aiming at empty ground marks only the aimed half-tile cell', () => {
+    const b = aimAt([{ id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 }]);
+    const cell = { x: 7, y: 1 };
+    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), cell);
+    expect(ui.pending).toEqual(cell);
+    expect(of(b, ui, 'target')).toEqual(keys([cell]));
+  });
+
+  it('an empty cell whose whole tile the rule lands on a token marks that token, the one the forecast hits', () => {
+    // the soldier straddles two map tiles (cells 5 and 6); cell 7 is empty, but its tile's corner (6) is the soldier's
+    const b = aimAt([
+      { id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 },
+      { id: 'f', def: halfDef('soldier'), team: 'enemy', x: 5, y: 0 },
+    ]);
+    const cell = { x: 7, y: 1 };
+    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), cell);
+    expect(b.preview('shot', cell).targets.map((t) => t.unit)).toEqual(['f']);
+    expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 5, y: 0 }, 2)));
+  });
+
+  it('an area aimed at empty ground keeps one target cell and marks the rest of its area', () => {
+    const b = aimAt([{ id: 'm', def: halfDef('mage'), team: 'hero', x: 0, y: 0 }], 3);
+    const cell = { x: 9, y: 3 };
+    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'blast' }), cell);
+    expect(of(b, ui, 'target')).toEqual(keys([cell]));
+    // the rest of the aimed whole tile is area, and so is the ring of radius 1 around it
+    for (const c of [
+      { x: 8, y: 2 },
+      { x: 9, y: 2 },
+      { x: 8, y: 3 },
+      { x: 10, y: 3 },
+      { x: 7, y: 2 },
+    ])
+      expect(of(b, ui, 'area').has(posKey(c))).toBe(true);
+  });
+
+  it('aiming at any cell of the Colossus marks its whole body', () => {
+    const b = aimAt(
+      [
+        { id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 },
+        { id: 'c', def: halfDef('colossus'), team: 'enemy', x: 6, y: 0 },
+      ],
+      2,
+    );
+    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), { x: 9, y: 3 });
+    expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 6, y: 0 }, 4)));
   });
 
   it('the facing marks sit beside each side of the square, none under it', () => {

@@ -171,9 +171,19 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
     const fits = !!at && reach.has(posKey(at));
     if (at && !samePos(at, b.actor.pos))
       for (const c of cellsOf(at, size)) if (inBounds(b.grid, c)) mark(c, fits ? 'target' : 'nogo');
-  } else if (ui.pending)
-    for (const c of areaOf(b.grid, b.state, aimTile(b.grid, b.state, ui.pending))) mark(c, 'target'); // the aimed whole tile: all 4 cells of a token
+  } else if (ui.pending) {
+    const { pos, size: s } = aimMark(b.grid, b.state, ui.pending);
+    for (const c of cellsOf(pos, s)) mark(c, 'target');
+  }
   return { tiles: [...tiles.values()], path, preview, size };
+}
+
+// The square an aim at `p` marks, as corner and cells per side (Nov 15, Fernando: the aim mark is one half-tile cell, and the
+// whole body of the unit it lands on, not a 2x2 whole tile on empty ground). The rule aims at the whole tile (aimTile), so a
+// token on that tile's corner is the one hit even from an empty cell beside it: the mark shows that body
+export function aimMark(grid: Grid, state: BattleState, p: Pos): { pos: Pos; size: number } {
+  const u = unitAt(state, aimTile(grid, state, p));
+  return u ? { pos: u.pos, size: UNIT_DEFS[u.def].size ?? 1 } : { pos: p, size: 1 };
 }
 
 // Direction choice at the end of the turn: the tiles beside each side of the acting unit's square, the faced side marked
