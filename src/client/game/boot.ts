@@ -22,7 +22,6 @@ export interface BattleSelection {
   mission: Mission | null; // bar mission in play (missions.ts)
   saveKey: string;
   chapter: number | null; // campaign stage in play (null = standalone battle)
-  study: string | null; // the ?scenario= asked for
   title: boolean; // no parameter: the title screen opens over the standalone battle
 }
 
@@ -140,5 +139,5 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left, the FFT study included);
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
-  return { scenario, mission, saveKey, chapter, study, title: camp === null && !study && crawl === null };
+  return { scenario, mission, saveKey, chapter, title: camp === null && !study && crawl === null };
 }

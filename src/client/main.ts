@@ -59,16 +59,7 @@ import { rampLink } from './scene/space.ts';
 import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, sfx } from './sound.ts';
 import { param, store } from './store.ts';
-import {
-  BEST_KEY,
-  isSurvival,
-  parseBest,
-  SURVIVAL_ID,
-  SURVIVE_TURNS,
-  survivalGoal,
-  survived,
-  turnsLeft,
-} from './survival.ts';
+import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
 import { talk } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
@@ -874,13 +865,13 @@ async function boot() {
   const host = document.getElementById('app')!;
   const sel = await selectBattle();
   if (sel === 'world') return void worldScreen(host); // world map: no battle assembled
-  if (!sel) return; // went back to the map
+  if (!sel) return; // went back to the map or the title
   // localhost ?sandbox=<spec>: a battle staged for screenshots (docs/sandbox.md); its own chunk, never fetched online
   const sandbox = LOCAL && param('sandbox') !== null ? await import('./dev/sandbox.ts') : null;
   const staged = await sandbox?.stage(sel.scenario);
   // its own save key: acting in a staged battle must not overwrite the real one
   const run = staged ? { ...sel, scenario: staged.scenario, saveKey: 'dt:battle:sandbox' } : sel;
-  const { scenario, chapter, study } = run;
+  const { scenario, chapter } = run;
   // a save of another scenario (a whole-tile one, from before the half tiles of Nov 14) starts the battle over
   const loaded = staged ? null : Battle.load(store.get(sel.saveKey) ?? '');
   const saved = loaded?.state.scenario === scenario.id;
@@ -905,7 +896,8 @@ async function boot() {
     void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() =>
       announce(objectiveText(n, t)),
     );
-  if (study === SURVIVAL_ID && !saved && !sandbox) announce(survivalGoal(t));
+  // by the battle in play, not the address: a stage, quest or crawl room opened with ?scenario=survival is not one
+  if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
   // opening the game without a parameter shows the title screen over the standalone battle (which stays behind, already playable)
   if (sel.title) titleScreen();
 }
