@@ -18,6 +18,7 @@ const browser = (init: Record<string, string> = {}) => {
     m,
     getItem: (k: string) => m.get(k) ?? null,
     setItem: (k: string, v: string) => void m.set(k, v),
+    saved: (k: string) => m.get(k) ?? null,
     removeItem: (k: string) => void m.delete(k),
     key: (i: number) => [...m.keys()][i] ?? null,
     get length() {
@@ -25,8 +26,22 @@ const browser = (init: Record<string, string> = {}) => {
     },
   };
 };
+// like store.ts: every write lands in the tab's memory, the browser refuses the keys `full` names, and get falls back on
+// memory; only `saved` tells a refused write
+const fullBrowser = (init: Record<string, string>, full: (k: string) => boolean) => {
+  const s = browser(init);
+  const mem = new Map<string, string>();
+  return {
+    ...s,
+    getItem: (k: string) => s.m.get(k) ?? mem.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      mem.set(k, v);
+      if (!full(k)) s.m.set(k, v);
+    },
+  };
+};
 const party = (gold: number) => ({ 'dt:party': '{"deployed":["mage"]}', 'dt:chest': `{"gold":${gold}}` });
-const live = (s: ReturnType<typeof browser>, k: string) => s.m.get(k) || null;
+const live = (s: { m: Map<string, string> }, k: string) => s.m.get(k) || null;
 
 describe('save slots', () => {
   it('New game keeps the game in play in its slot and starts a clean one, listed at once', () => {
@@ -83,9 +98,9 @@ describe('save slots', () => {
   });
 
   it('a full browser storage stops the change before the live game is touched', () => {
-    const s = browser(party(150));
-    const full = { ...s, setItem: (k: string, v: string) => k !== SAVES_KEY && s.setItem(k, v) };
-    expect(newGame(full, 1000)).toBe(false);
+    // the manifest was never written: the tab's memory alone would say it was
+    const s = fullBrowser(party(150), (k) => k === SAVES_KEY);
+    expect(newGame(s, 1000)).toBe(false);
     expect(live(s, 'dt:chest')).toBe('{"gold":150}');
   });
 

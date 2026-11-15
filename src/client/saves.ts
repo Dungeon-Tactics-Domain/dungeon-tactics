@@ -24,7 +24,8 @@ export interface Manifest {
   active: number | null; // the slot the live keys belong to
   slots: Slot[];
 }
-type Saves = Pick<Storage, 'getItem' | 'setItem'>;
+// `saved` reads what the browser kept, without store.ts's in-tab memory: a write the full storage refused shows there
+type Saves = Pick<Storage, 'getItem' | 'setItem'> & { saved(k: string): string | null };
 
 const json = (v: string | null | undefined): unknown => {
   try {
@@ -50,7 +51,7 @@ export function parseManifest(raw: unknown): Manifest {
 }
 
 // the live game's keys, without the cleared ones ('' is how the game clears a save)
-export const snapshot = (s: Saves): Data =>
+export const snapshot = (s: Pick<Storage, 'getItem'>): Data =>
   Object.fromEntries(
     SLOT_KEYS.flatMap((k) => {
       const v = s.getItem(k);
@@ -65,7 +66,7 @@ const nextId = (m: Manifest) => Math.max(0, ...m.slots.map((x) => x.id)) + 1;
 
 // The manifest as it stands now: the active slot holds the live game (its stored copy is older), and live progress with
 // no slot (the single save from before the slots, or a town reached by its address) becomes a new active slot
-export function readSaves(s: Saves): Manifest {
+export function readSaves(s: Pick<Storage, 'getItem'>): Manifest {
   const m = parseManifest(json(s.getItem(SAVES_KEY)));
   const live = snapshot(s);
   if (m.active !== null) return { ...m, slots: m.slots.map((x) => (x.id === m.active ? { ...x, data: live } : x)) };
@@ -79,7 +80,7 @@ export function readSaves(s: Saves): Manifest {
 function write(s: Saves, m: Manifest) {
   const v = JSON.stringify(m);
   s.setItem(SAVES_KEY, v);
-  return s.getItem(SAVES_KEY) === v;
+  return s.saved(SAVES_KEY) === v;
 }
 
 // New game: the live game stays in its slot and a clean game starts in a new slot, listed at once (a fresh town writes nothing)

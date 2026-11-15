@@ -9,7 +9,7 @@ import { store } from '../store.ts';
 import { homeScreen, savedRoom, townScreen } from './crawl.ts';
 
 // through store, so a blocked browser storage still plays in this tab's memory like every other save
-const live = { getItem: store.get, setItem: store.set };
+const live = { getItem: store.get, setItem: store.set, saved: store.saved };
 const full = () =>
   alert(
     t(

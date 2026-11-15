@@ -88,6 +88,15 @@ export const store = {
     // the save slot's last-played time (saves.ts), for the Continue list
     if (PROGRESS_KEYS.includes(k)) store.set(PLAYED_KEY, String(Date.now()));
   },
+  // What the browser kept, without this tab's memory: set falls back to memory silently, so a write a full storage refused
+  // only shows here (no storage at all: the memory is all there is)
+  saved(k: string): string | null {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return memory.get(k) ?? null;
+    }
+  },
   // Missing or invalid syntax = null; each consumer validates the format before using.
   json(k: string): unknown {
     try {
