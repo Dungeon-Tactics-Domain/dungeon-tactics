@@ -50,22 +50,22 @@ export const faceSize = (frameSize: number): number =>
 // the speaker's sheet goes by the model drawn on the map (modelOf), so the hero's class and the Acolyte find theirs
 export const faceOf = (def: string, from: Record<string, Face> = FACES): Face | undefined => from[modelOf(def)];
 
-// one frame wide box over the whole strip, at faceSize. Not decoded yet (a cold first line): the KayKit portrait stands
-// in until it is, so the frame is never empty; a failed image leaves portrait() for good
-function faceSheet(def: string, f: Face) {
+// one frame wide box over the whole strip, at faceSize, or at the size the CSS of `cls` gives (the battle HUD's smaller
+// faces): the strip fills the box's height and moves by a fraction of its own width. Not decoded yet (a cold first line):
+// the KayKit portrait stands in until it is, so the frame is never empty; a failed image leaves portrait() for good
+export function faceSheet(def: string, f: Face, cls = '') {
   const size = faceSize(f.frameSize);
   const strip = el('img', {
     class: `face-strip${size > f.frameSize ? ' enlarged' : ''}${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`,
     src: `/chars/${f.sheet}`,
     alt: '',
   }) as HTMLImageElement;
-  const box = el('span', { class: 'face-sheet' }, strip);
-  box.style.width = box.style.height = `${size}px`;
-  strip.style.width = `${f.frames * size}px`;
+  const box = el('span', { class: `face-sheet${cls ? ` ${cls}` : ''}` }, strip);
+  if (!cls) box.style.width = box.style.height = `${size}px`;
   const first = strip.complete ? box : portrait(def);
   if (first !== box) strip.addEventListener('load', () => first.replaceWith(box), { once: true });
   strip.addEventListener('error', () => box.replaceWith(portrait(def)), { once: true });
-  return { node: first, show: (n: number) => (strip.style.translate = `${-n * size}px 0`) };
+  return { node: first, show: (n: number) => (strip.style.translate = `${(-n * 100) / f.frames}% 0`) };
 }
 
 export interface TalkOptions {
