@@ -170,8 +170,9 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
   rows.push(
     ['CT', `${Math.max(0, Math.min(u.ct, TURN_THRESHOLD))}/${TURN_THRESHOLD}`], // the panel already capped it at 100; Status showed 108/100
     [t('Velocidade', 'Speed'), `${rulesOf(state).speed?.(u) ?? def.speed}${bonus('sp')}`],
-    [t('Movimento', 'Move'), String(UNIT_DEFS[baseDef(u.def)].move)], // in whole tiles, also on the split map (half.ts)
-    [t('Salto', 'Jump'), String(jumpOf(state, u.def))],
+    // in half tiles on the split map, the points the game spends (Nov 15, Fernando: "the move and jump values double")
+    [t('Movimento', 'Move'), String(def.move)],
+    [t('Salto', 'Jump'), String(jumpOf(state, u.def) * ((def.size ?? 1) / (UNIT_DEFS[baseDef(u.def)].size ?? 1)))],
   );
   for (const [k, v] of Object.entries(def.info ?? {}))
     rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cursorInfo, tileInfo, unitStatus } from '../src/client/hud.ts';
 import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
+import { halve } from '../src/shared/battle/half.ts';
 import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
@@ -39,6 +40,12 @@ describe('status window', () => {
       'Olhando para': 'sul',
     });
     expect(rows.Carregando).toBe('Investida, sai em 3 tiques');
+  });
+
+  it('a half-tile token shows Move and Jump in cells, doubled (Nov 15)', () => {
+    const s = initialState(halve(SCENARIOS.skirmish), 1);
+    expect(Object.fromEntries(unitStatus(s, 'h-warrior'))).toMatchObject({ Movimento: '8', Salto: '2' });
+    expect(Object.fromEntries(unitStatus(initialState(halve(GARILAND), 1), 'ramza')).Salto).toBe('6');
   });
 
   it('Chemist shows the potion stock', () => {
