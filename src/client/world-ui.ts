@@ -324,7 +324,7 @@ function openBar(i: number, back: () => void) {
         ? open.map((m) =>
             el(
               'div',
-              { class: 'party-card' },
+              { class: 'quest' },
               el(
                 'div',
                 {},
@@ -396,7 +396,12 @@ export function openShop(back?: () => void) {
     'party shop',
     t('Loja', 'Shop'),
     [
-      el('p', { class: 'mvp' }, t(`Ouro no baú: ${chest.gold}`, `Gold in chest: ${chest.gold}`)),
+      el(
+        'p',
+        { class: 'gold' },
+        el('span', { class: 'result-label' }, t('Ouro no baú', 'Gold in chest')),
+        el('strong', {}, String(chest.gold)),
+      ),
       el(
         'dl',
         { class: 'keys' },
@@ -663,13 +668,13 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
   const place = el('strong', { class: 'world-place' });
   const kindText = el('p', { class: 'world-kind' });
   const foes = el('p', { class: 'world-kind' }); // how many enemies and the boss (only on battle nodes)
-  const enterBtn = button('item focus', t('Entrar', 'Enter'), () => go());
+  const enterBtn = button('item', t('Entrar', 'Enter'), () => go());
   // only in towns (WorldNode.town): the town menu, like the FFT towns
   const townBtn = button('item', t('Cidade', 'Town'), () => openTown(at, opts.party), { hidden: true });
   const panel = el(
     'div',
     { class: 'panel world-panel', 'aria-live': 'polite' },
-    place,
+    el('div', { class: 'panel-head' }, place),
     kindText,
     foes,
     el(

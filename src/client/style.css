@@ -388,11 +388,39 @@ button[hidden],
 .camp-list {
   flex-direction: column;
 } /* campaign stage list: one per row, full name */
-.camp-list > button {
+/* a list of places to go (title, quick battle, town) is a menu like the battle's (Nov 15, theme screens): bare rows, the
+   real focus draws the lighter band, the yellow line and the ▶ (keyboard, mouse and gamepad move the same focus) */
+.dialog .camp-list {
+  gap: 0;
+}
+.dialog .camp-list > button {
+  position: relative;
   flex: none;
   width: 100%;
-  padding: 10px 14px;
+  min-height: 48px;
+  justify-content: flex-start;
+  padding: 0 14px 0 40px;
   text-align: left;
+  font: 500 var(--fs-lg) / 1.2 var(--font-title);
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+.dialog .camp-list > button:hover {
+  background: var(--row-hi);
+}
+.dialog .camp-list > button:focus {
+  outline: none;
+  background: var(--focus-band);
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+.dialog .camp-list > button:focus::before {
+  content: "▶";
+  position: absolute;
+  left: 12px;
+  font-size: var(--fs);
+  color: var(--focus);
+  animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 .dialog .learned {
   font-weight: 700;
@@ -505,7 +533,7 @@ button[hidden],
 }
 .choice-row button {
   flex: 1;
-  min-width: 64px;
+  min-width: max-content; /* the chosen one's ✓ ran past the frame at 1280; a long row wraps instead */
 }
 .keys {
   display: grid;
@@ -1129,7 +1157,11 @@ button[hidden],
   .abilities,
   .banner,
   .tools-menu,
-  .panel .item.focus::before {
+  .panel .item.focus::before,
+  .dialog .camp-list > button:focus::before,
+  .world-actions .item:focus::before,
+  .world-actions:not(:focus-within) .item:first-child::before,
+  .party-list .party-card:focus::before {
     animation: none;
   }
 }
@@ -1766,10 +1798,8 @@ body:has(.result-overlay) .fps {
 .world-map {
   position: absolute;
   inset: 64px 4% 120px;
-  border: 4px double var(--paper-edge);
-  box-shadow:
-    0 0 0 3px var(--paper-lo),
-    0 6px 18px rgba(0, 0, 0, 0.35);
+  border: 2px solid var(--paper-edge); /* the panels' frame (Nov 15), around the drawing */
+  box-shadow: var(--paper-frame);
   overflow: hidden;
 }
 .world-svg,
@@ -1923,12 +1953,14 @@ body:has(.result-overlay) .fps {
   left: 2%;
   top: 3%;
   padding: 6px 16px;
-  background: var(--paper);
+  background: linear-gradient(var(--paper-hi), var(--paper));
   color: var(--ink);
-  border: 3px double var(--paper-edge);
+  text-shadow: var(--ink-shadow);
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
   font: 400 clamp(16px, 2.2vw, 28px) var(--font-title);
   letter-spacing: 0.12em;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: var(--paper-frame);
   pointer-events: none;
 }
 .world-art .road {
@@ -2010,29 +2042,48 @@ body:has(.result-overlay) .fps {
   position: absolute;
   right: 24px;
   bottom: 24px;
-  width: min(360px, calc(100% - 48px));
-  padding: 12px 14px;
+  width: min(380px, calc(100% - 48px));
+  padding: 0 0 6px;
   color: var(--ink);
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 .world-place {
   font: 400 var(--fs-lg) / 1.2 var(--font-title);
 }
 .world-kind {
-  margin: 0;
+  margin: 0 14px;
   color: var(--ink-muted);
   font-size: var(--fs-sm);
 }
+/* the place's commands as menu rows in two columns (a town has 5: Enter, Party, Town, Shop, Title), focused by the real
+   focus like the window lists */
 .world-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap);
-} /* in the city there are 5 buttons (Enter, Party, City, Shop, Title): on one row only Shop and Title got cut off */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
 .world-actions .item {
-  flex: 1 1 28%;
-  justify-content: center;
-  padding-left: 36px;
+  min-height: 44px;
+  font-size: var(--fs);
+}
+.world-actions .item:hover {
+  background: var(--row-hi);
+}
+.world-actions .item:focus,
+.world-actions:not(:focus-within) .item:first-child {
+  outline: none;
+  background: var(--focus-band);
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+/* with the focus elsewhere (a node clicked, a window just closed) Enter still enters, so the band rests on it */
+.world-actions .item:focus::before,
+.world-actions:not(:focus-within) .item:first-child::before {
+  content: "▶";
+  position: absolute;
+  left: 10px;
+  font-size: var(--fs);
+  color: var(--focus);
+  animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 .world-help {
   position: absolute;
@@ -2101,14 +2152,30 @@ body:has(.result-overlay) .fps {
   align-items: center;
 }
 .party-list .party-card {
+  position: relative;
   cursor: pointer;
-  padding: 4px;
+  padding: 4px 8px 4px 36px; /* room for the ▶ */
   border-radius: var(--r);
 }
-.party-list .party-card:hover,
-.party-list .party-card:focus-visible {
+/* hover and focus as the menu rows: the band, its yellow line and the ▶; the muted text turns --ink there (4.3:1 on the
+   hover band, under the 4.5 bar) */
+.party-list .party-card:hover {
   background: var(--row-hi);
-  outline: 2px solid var(--focus);
+}
+.party-list .party-card:focus {
+  outline: none;
+  background: var(--focus-band);
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+.party-list .party-card:focus::before {
+  content: "▶";
+  position: absolute;
+  left: 10px;
+  color: var(--focus);
+  animation: nudge var(--t-nudge) steps(1, end) infinite;
+}
+.party-list .party-card:is(:hover, :focus) :is(.party-class, p) {
+  color: var(--ink);
 }
 .party-card .portrait {
   width: 48px;
@@ -2126,6 +2193,19 @@ body:has(.result-overlay) .fps {
 .dialog.sheet {
   width: min(980px, 100%);
 }
+/* who the unit is, as the HUD's unit panel: the hero's side stripe and the 96x128 portrait */
+.sheet .party-card {
+  padding: 8px 12px;
+  border-left: 6px solid var(--hero);
+  background: color-mix(in srgb, var(--shade) 25%, transparent);
+}
+.sheet .party-card .portrait {
+  width: 96px;
+  height: 128px;
+}
+.sheet .party-card strong {
+  font-size: var(--fs-lg);
+}
 .sheet-cols {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
@@ -2142,10 +2222,60 @@ body:has(.result-overlay) .fps {
     grid-template-columns: 1fr;
   }
 }
+/* Tavern quests (world-ui.ts, openBar): each a sunken card with a yellow edge, Accept at its right foot */
+.quest {
+  padding: 8px 12px;
+  margin: 0 0 8px;
+  border-left: 4px solid var(--focus);
+  background: color-mix(in srgb, var(--shade) 25%, transparent);
+}
+.quest p {
+  margin: 4px 0;
+}
+.quest button {
+  display: flex;
+  margin-left: auto;
+}
+/* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin */
+.dialog .gold {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+.gold strong {
+  font-size: var(--fs-lg);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.gold strong::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--ink) 55%, transparent) 0 15%,
+    var(--ct) 45%,
+    var(--orb-gold)
+  );
+  box-shadow: 0 0 0 1px var(--edge);
+}
 /* Shop (world-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
-   landed in a different column and the 9-item list ran past 900 px */
+   landed in a different column and the 9-item list ran past 900 px. Rows split by a faint line, as in the kit's list */
 .shop .keys {
   align-items: center;
+  gap: 0;
+}
+.shop .keys dt {
+  padding-right: 12px;
+}
+.shop .keys > * {
+  padding: 4px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--paper-edge) 20%, transparent);
 }
 .shop .keys dd {
   display: flex;
