@@ -2,6 +2,7 @@
 // Space or A complete the sentence and, once complete, move to the next; Esc skips the whole conversation. It's a button inside an
 // .overlay, so keyboard, mouse and gamepad (main.ts presses the focused button) arrive through the same click.
 
+import faces from '../content/faces.json';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { type Line, SPEAKERS } from './campaign.ts';
 import type { Hero } from './hero.ts';
@@ -22,9 +23,9 @@ export const textSpeed = (): TextSpeed => {
   return v === 'fast' || v === 'instant' ? v : 'normal';
 };
 
-// Painted face sheets (public/chars/px, faces.json): one strip of square frames per model, all read from the file so a new
-// sheet needs no code. While the text types the mouth goes neutral, then mouthFrames up and back (neutral, talk1, talk2,
-// talk1 for [1, 2]) and rests on frame 0. An empty list is a still portrait. `expressions` (shout, hurt…) is kept for later.
+// Painted face sheets (public/chars/px, described in src/content/faces.json and bundled, so the box never waits on the
+// network): one strip of square frames per model, all read from the data so a new sheet needs no code. `expressions`
+// (shout, hurt…) is kept for later. An empty mouthFrames list is a still portrait.
 export interface Face {
   sheet: string;
   frames: number;
@@ -32,62 +33,39 @@ export interface Face {
   mouthFrames: number[];
   expressions?: Record<string, number>;
 }
+const FACES: Record<string, Face> = faces;
 const MOUTH_MS = 180; // Fernando's pace for the final sheets: slower than 8 Hz, the mouth reads as speech, not chatter
-export const mouthFrame = (mouth: readonly number[], elapsedMs: number): number => {
-  if (!mouth.length) return 0;
-  const cycle = [0, ...mouth, ...mouth.slice(0, -1).reverse()];
+// frame on screen: neutral unless a talking face is still typing; the mouth opens from the line's first instant
+// (talk1, talk2, talk1, neutral for [1, 2]), so even a line that types in under one frame shows it open
+export const mouthFrame = (mouth: readonly number[], elapsedMs: number, typing = true): number => {
+  if (!typing || !mouth.length) return 0;
+  const cycle = [...mouth, ...mouth.slice(0, -1).reverse(), 0];
   return cycle[Math.floor(elapsedMs / MOUTH_MS) % cycle.length];
 };
-// shown size: the nearest whole ratio of the frame to 128 px (256 → 128, 64 → 128), so pixelated scaling keeps every pixel
-// whole; 128 fits the dialogue box beside 3 lines of text from 1280x720 up
+// shown size: the nearest whole ratio of the frame to 128 px (128 as is, the 64 px skeletons at 2x), so an enlarged sheet
+// stays crisp with pixelated scaling; 128 fits the dialogue box beside 3 lines of text from 1280x720 up
 const FACE_PX = 128;
 export const faceSize = (frameSize: number): number =>
   frameSize >= FACE_PX ? frameSize / Math.round(frameSize / FACE_PX) : frameSize * Math.round(FACE_PX / frameSize);
-
-// faces.json is a file the browser fetches: rebuilt entry by entry, a bad one is dropped and that speaker keeps portrait()
-const int = (v: unknown, max: number): v is number => Number.isInteger(v) && (v as number) > 0 && (v as number) <= max;
-export function parseFaces(raw: unknown): Record<string, Face> {
-  const out: Record<string, Face> = {};
-  if (!raw || typeof raw !== 'object') return out;
-  for (const [id, f] of Object.entries(raw as Record<string, Partial<Face>>)) {
-    if (!f || typeof f.sheet !== 'string' || !/^px\/[\w-]+\.png$/.test(f.sheet)) continue;
-    if (!int(f.frames, 64) || !int(f.frameSize, 512) || !Array.isArray(f.mouthFrames)) continue;
-    const frames = f.frames;
-    const frame = (n: unknown) => Number.isInteger(n) && (n as number) >= 0 && (n as number) < frames;
-    if (!f.mouthFrames.every(frame)) continue;
-    const face: Face = { sheet: f.sheet, frames, frameSize: f.frameSize, mouthFrames: [...f.mouthFrames] };
-    if (f.expressions && typeof f.expressions === 'object')
-      face.expressions = Object.fromEntries(Object.entries(f.expressions).filter(([, n]) => frame(n)));
-    out[id] = face;
-  }
-  return out;
-}
 // the speaker's sheet goes by the model drawn on the map (modelOf), so the hero's class and the Acolyte find theirs
-export const faceOf = (def: string, faces: Record<string, Face>): Face | undefined => faces[modelOf(def)];
+export const faceOf = (def: string, from: Record<string, Face> = FACES): Face | undefined => from[modelOf(def)];
 
-let facesFile: Promise<Record<string, Face>> | undefined;
-// fetched once; any failure means no sheets (every speaker keeps portrait())
-const loadFaces = () =>
-  (facesFile ??= fetch('/chars/px/faces.json')
-    .then((r) => (r.ok ? r.json() : null))
-    .then(parseFaces)
-    .catch(() => ({})));
-// fetched while the map builds: talk() opens its box without a wait, before a key can reach the battle behind it
-if (typeof document !== 'undefined') void loadFaces();
-
-// one frame wide box over the whole strip, at faceSize; a failed image swaps itself for portrait()
+// one frame wide box over the whole strip, at faceSize. Not decoded yet (a cold first line): the KayKit portrait stands
+// in until it is, so the frame is never empty; a failed image leaves portrait() for good
 function faceSheet(def: string, f: Face) {
   const size = faceSize(f.frameSize);
   const strip = el('img', {
-    class: `face-strip${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`,
+    class: `face-strip${size > f.frameSize ? ' enlarged' : ''}${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`,
     src: `/chars/${f.sheet}`,
     alt: '',
   }) as HTMLImageElement;
   const box = el('span', { class: 'face-sheet' }, strip);
   box.style.width = box.style.height = `${size}px`;
   strip.style.width = `${f.frames * size}px`;
+  const first = strip.complete ? box : portrait(def);
+  if (first !== box) strip.addEventListener('load', () => first.replaceWith(box), { once: true });
   strip.addEventListener('error', () => box.replaceWith(portrait(def)), { once: true });
-  return { box, show: (n: number) => (strip.style.translate = `${-n * size}px 0`) };
+  return { node: first, show: (n: number) => (strip.style.translate = `${-n * size}px 0`) };
 }
 
 export interface TalkOptions {
@@ -96,10 +74,16 @@ export interface TalkOptions {
   dark?: true; // nearly black screen behind (story opening)
 }
 
-export async function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Promise<void> {
-  const faces = await loadFaces();
+export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Promise<void> {
   // reduced motion: the face stays still, like the portrait hop
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const speaker = (l: Line) => {
+    const base = SPEAKERS[l.who];
+    return l.who === 'hero' && hero ? { ...base, name: hero.name, en: hero.name, def: hero.cls } : base;
+  };
+  // every sheet of the conversation starts loading with it, so later lines find theirs decoded
+  for (const sheet of new Set(lines.map((l) => faceOf(speaker(l).def)?.sheet)))
+    if (sheet) new Image().src = `/chars/${sheet}`;
   return new Promise((done) => {
     let i = 0,
       shown = 0,
@@ -138,17 +122,16 @@ export async function talk(lines: Line[], { title, hero, dark }: TalkOptions = {
       done();
     };
     const show = () => {
-      const base = SPEAKERS[lines[i].who];
-      const who = lines[i].who === 'hero' && hero ? { ...base, name: hero.name, en: hero.name, def: hero.cls } : base;
+      const who = speaker(lines[i]);
       // speaker changed: the portrait does a little hop (restarts the CSS animation)
       if (i === 0 || lines[i - 1].who !== lines[i].who) {
         face.classList.remove('pop');
         void face.offsetWidth;
         face.classList.add('pop');
       }
-      const sheet = faceOf(who.def, faces);
+      const sheet = faceOf(who.def);
       const drawn = sheet && faceSheet(who.def, sheet);
-      face.replaceChildren(drawn ? drawn.box : portrait(who.def));
+      face.replaceChildren(drawn ? drawn.node : portrait(who.def));
       const talking = still ? [] : (sheet?.mouthFrames ?? []);
       mouth = drawn?.show;
       const start = performance.now();
@@ -167,6 +150,7 @@ export async function talk(lines: Line[], { title, hero, dark }: TalkOptions = {
         if (typing()) mouth?.(mouthFrame(talking, performance.now() - start));
         else finish();
       }, CHAR_MS[textSpeed()] || 1);
+      mouth?.(mouthFrame(talking, 0)); // open from the first instant, before the first letter's tick
       if (!CHAR_MS[textSpeed()]) {
         // instant: the whole sentence at once, with a single beep to mark who speaks
         shown = full().length;

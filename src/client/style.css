@@ -1574,8 +1574,8 @@ body:has(.result-overlay) .fps {
     animation: none;
   }
 }
-/* painted face sheet in the dialogue box (talk.ts, faceSheet): a box one frame wide over the strip, moved frame by frame;
-   whole-ratio size and pixelated so every pixel stays whole */
+/* painted face sheet in the dialogue box (talk.ts, faceSheet): a box one frame wide over the strip, moved frame by frame
+   at a whole-ratio size; only an enlarged sheet (the 64 px skeletons) scales pixelated, the painted 128 px ones scale smooth */
 .face-sheet {
   display: block;
   overflow: hidden;
@@ -1587,8 +1587,20 @@ body:has(.result-overlay) .fps {
   display: block;
   height: 100%;
   max-width: none;
+}
+.face-strip.enlarged {
   image-rendering: pixelated;
 }
+/* a portrait in the face's place (no sheet, sheet still loading or failed) takes the face's height, and the face's width
+   stays reserved: neither the box nor the text jumps when the sheet arrives */
+.talk-face {
+  min-width: 132px;
+}
+.talk-face .portrait {
+  display: block;
+  width: 99px;
+  height: 132px;
+} /* 132 = the face's 128 plus its 2 px border; block, so no baseline gap below it */
 /* the speaker's portrait does a little hop when the voice changes (talk.ts) and fades out on entering a map point (world-ui.ts, FADE_MS) */
 .talk-face.pop {
   animation: face-pop 220ms ease-out;
