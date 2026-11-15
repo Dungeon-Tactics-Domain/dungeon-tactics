@@ -347,7 +347,10 @@ button[hidden],
   background: var(--mark-threat);
 }
 .sw.nogo {
-  background: var(--mark-nogo);
+  /* the map mark's cross: the plain swatch was the same red as the threat's (Nov 14 review) */
+  background:
+    linear-gradient(45deg, transparent 40%, var(--paper) 40% 60%, transparent 60%),
+    linear-gradient(-45deg, transparent 40%, var(--paper) 40% 60%, transparent 60%), var(--mark-nogo);
 }
 .choice {
   margin: 0 0 10px;

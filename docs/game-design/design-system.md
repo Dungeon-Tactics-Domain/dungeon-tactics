@@ -117,7 +117,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Exclusive choice** `choice()` | `dialog.ts` | S through `aria-pressed`; applies at once, no Save | Options (sections, pixel, language, text), class on the Sheet |
 | **Value bar** `slider()` | `dialog.ts` | native range input, steps of 5%, number beside it | volume |
 | **Definition list** `.keys` | `style.css` | text | keys, sheet numbers, abilities, shop |
-| **Legend** `.legend` + `.sw` | `style.css` | text + colour swatch | tile marks, tavern rumours |
+| **Legend** `.legend` + `.sw` | `style.css` | text + colour swatch; `.sw.nogo` also draws the mark's cross, its red is close to the threat's | tile marks, tavern rumours |
 | **Dialogue box** `talk()` | `talk.ts` | letter by letter; ▼ blinks when done; `dark` for the opening | conversations and narration |
 | **Class card** `.create-card` | `create-ui.ts` | S ink ring and white background | protagonist creation |
 | **Map node** `.world-node` | `world-ui.ts` | battle red diamond · story blue circle · done gold border · D dark grey · here: ring with halo | world map |
