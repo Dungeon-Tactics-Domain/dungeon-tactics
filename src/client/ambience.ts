@@ -8,6 +8,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { type Grid, tileAt } from '../shared/battle/grid.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { HALF } from '../shared/battle/units.ts';
+import { roomTheme } from '../shared/crawl/generate.ts';
 import { boxOf, loadPaint, variant } from './painted.ts';
 import { swapProps } from './props.ts';
 import { param } from './store.ts';
@@ -154,10 +155,14 @@ const KIND: Record<string, Kind> = {
   crypt_heart: 'crypt',
   frost_pass: 'frost',
 };
+// crawl rooms (src/shared/crawl) have a new id per seed: the theme that ends it picks the mood
+const ROOM_KIND: Record<string, Kind> = { dungeon: 'crypt', forest: 'forest', mountain: 'frost' };
 export const kindOf = (grid: Grid): Kind => {
   const id = Object.keys(SCENARIOS).find((k) => SCENARIOS[k].grid === grid) ?? '';
   // half tiles (half.ts): the split map `<id>½` is drawn with the mood of the whole one it came from
-  return id.endsWith(HALF) ? kindOf(SCENARIOS[id.slice(0, -HALF.length)].grid) : (KIND[id] ?? 'field');
+  return id.endsWith(HALF)
+    ? kindOf(SCENARIOS[id.slice(0, -HALF.length)].grid)
+    : (KIND[id] ?? ROOM_KIND[roomTheme(id)] ?? 'field');
 };
 // ground color that continues each edge tile (the river goes on outside the map, so does Beacon Hill's snow)
 const EDGE: Record<string, string> = {

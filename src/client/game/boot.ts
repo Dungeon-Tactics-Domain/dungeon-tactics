@@ -4,6 +4,7 @@ import { Battle } from '../../shared/battle/battle.ts';
 import { subOf } from '../../shared/battle/grid.ts';
 import { HALF, HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
+import { generateRoom } from '../../shared/crawl/generate.ts';
 import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from '../campaign.ts';
 import { EQUIP_KEY, parseEquip } from '../chest.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
@@ -44,6 +45,7 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   // build (dynamic import), so none of it goes into the package the player downloads.
   const study = param('scenario');
   const camp = param('stage');
+  const crawl = param('crawl');
   // bar mission (missions.ts): only the ones not yet won; unknown or won mission address goes back to the map
   const mis = param('quest');
   if (mis !== null) {
@@ -82,6 +84,17 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     setTrack(CHAPTERS[chapter].song);
     scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
     saveKey = `dt:battle:${chapterId(chapter)}`;
+  } else if (crawl !== null) {
+    // a dungeon crawl room (Nov 15, the new loop apart from Beacon Ashes): rebuilt from the seed in the address, so one
+    // save serves every room and resumes only the room its id names (seed, depth, boss, theme and generator version);
+    // registered whole too, where the scene finds its mood (ambience.ts kindOf)
+    scenario = generateRoom(Number(crawl) | 0, {
+      depth: Number(param('depth')),
+      boss: param('boss') === '1',
+      theme: param('theme') ?? undefined,
+    });
+    SCENARIOS[scenario.id] = scenario;
+    saveKey = 'dt:battle:crawl';
   } else if (study === 'fft-gariland' || study === 'fft-classes') {
     const fft = await import('../../shared/battle/fft/gariland.ts');
     fft.registerFftStudy();
@@ -114,5 +127,5 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left, the FFT study included);
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
-  return { scenario, mission, saveKey, chapter, study, title: camp === null && !study };
+  return { scenario, mission, saveKey, chapter, study, title: camp === null && !study && crawl === null };
 }

@@ -22,6 +22,13 @@ const PAGES = [
       [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl')),
   },
   {
+    // a generated dungeon crawl room with the 2x2 boss (src/shared/crawl)
+    name: 'crawl',
+    path: '/?crawl=1&boss=1',
+    ready: '.panel.commands[role=menu] button',
+    check: () => !!document.querySelector('.panel.queue'),
+  },
+  {
     name: 'world',
     path: '/?world',
     // a saved hero skips the new-game intro and the hero creation, which come before the map
