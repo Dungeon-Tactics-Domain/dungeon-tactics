@@ -204,6 +204,11 @@ export class BattleScene {
     return this.time.wait(ms);
   }
 
+  // the battle clock in ms (speeds up with the battle): the HUD faces' expressions time out on it
+  get now(): number {
+    return this.time.t;
+  }
+
   // plays the events on the units (Units.playEvents), then the camera comes back and the state is drawn as it ended
   async playEvents(events: BattleEvent[], state: BattleState, before?: (e: BattleEvent) => Promise<void>) {
     await this.units.playEvents(events, state, before);

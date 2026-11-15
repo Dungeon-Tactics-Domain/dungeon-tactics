@@ -15,8 +15,9 @@ import {
   squareH,
   unitAt,
 } from '../shared/battle/pathing.ts';
-import type { BattleEvent, Pos, Team } from '../shared/battle/types.ts';
+import type { BattleEvent, Pos, Team, UnitState } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
+import { battleFace, expressionAt, faceCues, frameOf, type Mood } from './battle-face.ts';
 import { CAMPAIGN_KEY, CHAPTERS, objectiveText, parseProgress } from './campaign.ts';
 import { CHEST_KEY, parseChest, VICTORY_GOLD } from './chest.ts';
 import {
@@ -60,7 +61,7 @@ import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
-import { talk } from './talk.ts';
+import { faceSheet, talk } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
@@ -101,6 +102,11 @@ export class Game {
     private readonly sel: BattleSelection,
   ) {
     this.resetTally();
+    // every painted face of the battle starts loading with it, so the HUD's redraws find them decoded (like talk())
+    for (const u of battle.state.units) {
+      const f = battleFace(u.def);
+      if (f) new Image().src = `/chars/${f.sheet}`;
+    }
     this.ui = freshUi(battle);
     this.screen = startScreen(battle);
     this.cursor = battle.actor.pos;
@@ -196,6 +202,7 @@ export class Game {
       !!document.querySelector('.title-overlay') && !matchMedia('(prefers-reduced-motion: reduce)').matches,
     );
     this.placeMenu();
+    this.hud.showFaces();
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     pace.pad = !!gp?.buttons[0]?.pressed; // holding A (or x) fast-forwards the battle
     if (!gp) return;
@@ -550,6 +557,7 @@ export class Game {
       acting: this.acting,
       cursor: this.cursor,
       ability: ui.mode.k === 'ability' ? ui.mode.id : null,
+      face: (u) => this.expression(u),
     });
     const { top, bottom } = this.hud.insets();
     this.scene.setInsets(top, bottom);
@@ -566,11 +574,29 @@ export class Game {
     this.hud.place(this.scene.screenOf(b.actor.id), foe && foe.id !== b.actor.id ? this.scene.screenOf(foe.id) : null);
   }
 
+  // the face of each unit in the HUD: a mood that events started (battle-face.ts), else wounded or neutral by its life
+  private moods = new Map<string, Mood[]>();
+  private expression(u: UnitState) {
+    return expressionAt(this.moods.get(u.id) ?? [], this.scene.now, u.hp, UNIT_DEFS[u.def].hp);
+  }
+
   private async animate(events: BattleEvent[], enemy = false) {
     addEvents(this.tally, events, this.teamOf());
     this.busy = true;
     this.update(this.ui);
-    await this.scene.playEvents(events, this.battle.state, (e) => this.beforeEvent(e, enemy));
+    // the faces react as each event plays, after its banner: a unit's new moods replace the ones it had
+    // the roster keeps the fallen; the state, whoever was born mid-battle (Until Dawn)
+    const defOf = (id: string) => this.battle.state.units.find((u) => u.id === id)?.def ?? this.roster[id]?.def ?? '';
+    const cues = faceCues(events, (id) => UNIT_DEFS[defOf(id)]?.hp ?? 0);
+    await this.scene.playEvents(events, this.battle.state, async (e) => {
+      await this.beforeEvent(e, enemy);
+      const now = this.scene.now;
+      for (const [id, m] of cues[events.indexOf(e)])
+        this.moods.set(id, [
+          ...(m.from ? (this.moods.get(id) ?? []) : []),
+          { ...m, from: now + m.from, until: now + m.until },
+        ]);
+    });
     this.hud.banner(null);
     this.log = eventLog(events, this.battle.state) || this.log;
     this.busy = false;
@@ -768,12 +794,22 @@ export class Game {
     if (!m) return [];
     const [id, s] = m;
     const { def } = this.roster[id];
-    return [mvpCard(def, unitName(def), s.dmg, s.kills)];
+    const card = mvpCard(def, unitName(def), s.dmg, s.kills);
+    // on a victory the highlight hero smiles with its painted face (fallen: wounded); the card is the face left on screen
+    const f = battleFace(def);
+    const u = this.battle.state.units.find((x) => x.id === id);
+    if (f && this.battle.state.outcome === 'victory') {
+      const { node, show } = faceSheet(def, f, 'battle-face portrait');
+      show(frameOf(f, expressionAt([], 0, u?.hp ?? 0, UNIT_DEFS[def].hp, !!u)));
+      card.querySelector('.portrait')?.replaceWith(node);
+    }
+    return [card];
   }
 
   private restart() {
     this.battle = newBattle(this.sel.scenario);
     this.resetTally();
+    this.moods.clear();
     this.log = '';
     this.screen = startScreen(this.battle);
     this.scene.sync(this.battle.state);

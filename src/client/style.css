@@ -1746,8 +1746,17 @@ body:has(.result-overlay) .fps {
   height: 100%;
   max-width: none;
 }
-.face-strip.enlarged {
+.face-strip.enlarged,
+.battle-face .face-strip {
   image-rendering: pixelated;
+}
+/* the painted face in the battle HUD (hud.ts face, battle-face.ts) and on the victory card: one square frame at 64 px,
+   half the 128 px paint, so it stays crisp; in the turn list .queue-row .portrait keeps it at 48 (36 below 1600 px).
+   It is also a .portrait, for the frame, the side colour and the acting unit's glow */
+.battle-face,
+.hud .unit-panel .battle-face {
+  width: 64px;
+  height: 64px;
 }
 /* a portrait in the face's place (no sheet, sheet still loading or failed) takes the face's height, and the face's width
    stays reserved: neither the box nor the text jumps when the sheet arrives */

@@ -19,6 +19,7 @@ import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { previewOrder, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { baseDef, UNIT_DEFS } from '../shared/battle/units.ts';
+import { battleFace, type Expression, frameOf } from './battle-face.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -35,6 +36,7 @@ import { abilityIcon, button, type Child, el, icon, iconButton, UI_ICON } from '
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
+import { type Face, faceSheet } from './talk.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
@@ -57,6 +59,7 @@ export interface HudView {
   acting: string | null; // def of the enemy playing now (the state has already passed the turn when the animation plays)
   cursor: Pos; // tile under the cursor (keyboard, mouse or gamepad)
   ability: string | null; // ability being aimed on the map (the strike preview on the target panel)
+  face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
 }
 
 const QUEUE_SIZE = 8;
@@ -532,7 +535,7 @@ function classText(u: UnitState) {
 }
 
 // unit panel (the acting one bottom left, the one under the cursor bottom right, mirrored)
-function unitPanel(state: BattleState, u: UnitState) {
+function unitPanel(state: BattleState, u: UnitState, pic: HTMLElement) {
   const def = UNIT_DEFS[u.def];
   const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp)];
   if (u.vars?.mp !== undefined) rows.push(gauge('mp', 'MP', u.vars.mp, def.vars?.mp ?? u.vars.mp));
@@ -541,7 +544,7 @@ function unitPanel(state: BattleState, u: UnitState) {
   return el(
     'div',
     { class: `panel unit-panel ${u.team}` },
-    portrait(u.def),
+    pic,
     el(
       'div',
       { class: 'unit-body' },
@@ -693,6 +696,8 @@ export class BattleHud {
     const open = heroTurn && !v.busy;
     // `size` is set only while choosing where to move: the square the unit would stand on
     this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
+    this.faces = [];
+    this.expression = v.face;
     this.renderQueue(b, v.screen);
     this.help.textContent = this.helpText(v, heroTurn);
     this.renderCommands(v, open);
@@ -701,7 +706,7 @@ export class BattleHud {
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
-    this.active.replaceChildren(...(me ? [unitPanel(b.state, me)] : []));
+    this.active.replaceChildren(...(me ? [unitPanel(b.state, me, this.face(me))] : []));
     // the turn list ends a gap above the acting panel, whose height changes with the screen width; a charge's row stays in view
     this.queue.style.maxHeight = `calc(100% - 56px - 2 * var(--inset) - ${this.active.offsetHeight}px)`;
     this.queue.querySelector('.pending')?.scrollIntoView({ block: 'nearest' });
@@ -715,7 +720,7 @@ export class BattleHud {
     const fs = open && ability && v.hl?.preview?.ok ? forecast(b, ability, v.hl.preview) : [];
     const main = fs.find((f) => f.unit.id === found?.id) ?? fs[0];
     const other = main ? undefined : found?.id !== me?.id ? found : undefined;
-    this.target.replaceChildren(...(other ? [unitPanel(b.state, other)] : []));
+    this.target.replaceChildren(...(other ? [unitPanel(b.state, other, this.face(other))] : []));
     this.strikesEl.replaceChildren(...(main ? strikes([main, ...fs.filter((f) => f !== main)], ability!) : []));
     // size of the panels that move with the character, measured once per draw (each frame's `place` only reads the cache);
     // the strips enter the bottom height so "Execute?" does not land on top of them
@@ -726,6 +731,27 @@ export class BattleHud {
       confirm: box(this.confirmBox),
       bottom: Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight),
     };
+  }
+
+  // Painted faces (battle-face.ts) in the unit panels and the turn list, drawn with the dialogue box's sheet at the size
+  // .battle-face gives; a unit without a sheet keeps its portrait. The expression changes on the battle clock without a
+  // redraw: Game calls showFaces every frame, and only a face whose frame changed is moved
+  private faces: { u: UnitState; f: Face; show: (n: number) => void; n: number }[] = [];
+  private expression: HudView['face'] = () => 'neutral';
+  private face(u: UnitState) {
+    const f = battleFace(u.def);
+    if (!f) return portrait(u.def);
+    const { node, show } = faceSheet(u.def, f, 'battle-face portrait');
+    const n = frameOf(f, this.expression(u));
+    show(n);
+    this.faces.push({ u, f, show, n });
+    return node;
+  }
+  showFaces() {
+    for (const face of this.faces) {
+      const n = frameOf(face.f, this.expression(face.u));
+      if (n !== face.n) face.show((face.n = n));
+    }
   }
 
   private sizes = { commands: { w: 0, h: 0 }, abilities: { w: 0, h: 0 }, confirm: { w: 0, h: 0 }, bottom: 0 };
@@ -858,7 +884,7 @@ export class BattleHud {
             class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}`,
           },
           el('span', { class: 'queue-n' }, i === 0 ? t('AGORA', 'NOW') : String(i)),
-          portrait(u.def),
+          this.face(u),
           el('span', { class: 'queue-name' }, label),
           mark,
         );
