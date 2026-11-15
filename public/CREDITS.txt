@@ -114,7 +114,7 @@ music/battle.mp3 (standalone battle)
 == Ability icons (ui/fft/atlas-32.png and atlas-32.json, since Nov 15, 2026) ==
   24 pixel-art icons of 32 px (the 22 abilities, Move and Wait), approved by Fernando in the design lab on Nov 15.
   AI-generated in the design lab (dungeon-tactics-lab), reduced to 32 px there; generator and its licence terms still to be
-  confirmed before launch. No art from Final Fantasy Tactics or any other game.
+  confirmed before launch.
   The game-icons.net on-target symbol above stands in for an ability without a cell or when the image fails to load.
 
 == Fonts (shipped in public/fonts) ==

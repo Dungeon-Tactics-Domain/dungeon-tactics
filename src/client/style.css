@@ -669,9 +669,13 @@ button[hidden],
 .queue.short li:nth-child(n + 6) {
   display: none;
 } /* title + 4 rows; L shows everything */
-/* charge in preview on "Execute?" (hud.ts queueRows): the list shows up to its row, which gets marked; the targets carry ◎ */
+/* charge in preview on "Execute?" (hud.ts queueRows): the list shows up to its row, which gets marked; the targets carry ◎.
+   The rows after it act once the charge has fired, so the short list leaves them out: 8 rows of the column did not fit */
 .queue.preview li:nth-child(n) {
   display: grid;
+}
+.queue.short.preview .queue-row.pending ~ li:nth-child(n + 6) {
+  display: none;
 }
 .queue-target {
   font-size: var(--fs-sm);
@@ -928,6 +932,14 @@ button[hidden],
   .hud .unit-panel .portrait {
     width: 72px;
     height: 96px;
+  }
+  /* the column's rows shrink with the panel, so a charge preview of 5 rows still fits at 1280x720 */
+  .queue {
+    max-height: calc(100% - 56px - 160px);
+  }
+  .queue-row .portrait {
+    width: 36px;
+    height: 36px;
   }
 }
 .orb {

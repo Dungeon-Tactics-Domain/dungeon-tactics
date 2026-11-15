@@ -953,7 +953,7 @@ export class BattleHud {
     this.confirmBox.replaceChildren(
       el(
         'strong',
-        { class: 'panel-head confirm-title' },
+        { class: 'panel-head' },
         abilityIcon(s.ability),
         t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`),
       ),
