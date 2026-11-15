@@ -61,7 +61,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 
 | Other pair | Value | Bar |
 |---|---|---|
-| `--ink` on `--focus-band` (top / foot) | 5.3 / 6.3 | ✓ (every text in a focused row and in the queue's current row turns `--ink`: on the band `--ink-muted` gives 3.8, `--focus` 4.1, `--ink-off` 3.1, so a focused disabled row keeps its `--row-off` band and `--ink-off` text and shows only the ▶) |
+| `--ink` on `--focus-band` (top / foot) | 5.3 / 6.3 | ✓ (every text in a focused row turns `--ink`; the queue's current row has no band since Nov 15, its NOW is `--focus` on the panel: on the band `--ink-muted` gives 3.8, `--focus` 4.1, `--ink-off` 3.1, so a focused disabled row keeps its `--row-off` band and `--ink-off` text and shows only the ▶) |
 | `--on-accent` on `--gold-btn` (top / foot) | 4.9 / 6.7 | ✓ |
 | `--ink` on `--paper-white` (fields) | 13.0 | ✓ |
 | `--fg` on `--bg` | 17.4 | ✓ |
@@ -88,7 +88,7 @@ Minimum text: 16 px (the key hint, 11 px, and the fps counter and the map compas
 | `--gap` | 8 px | default gap between pieces; multiples of 4 (4, 6, 8, 12, 16, 24) |
 | `--tap` | 44 px | minimum button height |
 | `--r` | 2 px | corner of everything |
-| `--slot-w` | 440 px | bottom unit panels |
+| `--slot-w` | `min(672px, 35vw)` | bottom unit panels (the lab kit's 35% of 1920; 448 px at 1280) |
 | `--frame` / `--frame-pressed` | bevel with a steel trim | button outside the panels |
 | `--glow` | yellow glow | selected button outside the panels |
 | `--focus-halo` | 2 px of `#0a1028` | focus outside the panels (see Focus) |
@@ -122,11 +122,12 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 |---|---|---|---|
 | **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, place panel on the map, dialogue box, creation |
 | **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) on the sunken `--row-off` band, also when focused (▶ but no `--focus-band`) | commands, abilities, Yes/No, corner list, map actions; in the command menu and submenu the row is 60 px tall with a 32 px marker (atlas icon, or an orb for Act and Status) before the name, and Act shows S (`.picked`: sunken band, yellow edge and ▸) while the submenu is open |
-| **Bar** `gauge()` | `hud.ts` | value + number; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
-| **Unit panel** `unitPanel()` | `hud.ts` | hero/enemy by side stripe and side text; mirrored for the target | bottom left and right |
+| **Bar** `gauge()` | `hud.ts` | uppercase label, 10 px bar with a dark edge and a light gloss over the fill (`--bar`), number at `--fs`; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
+| **Unit panel** `unitPanel()` | `hud.ts` | `--slot-w` wide, 6 px side stripe, 96×128 portrait (72×96 below 1600 px), name with the side in uppercase after ● (hero) or ◆ (enemy), a class line for units with their own name, bars; mirrored for the target | bottom left and right |
 | **Menu head** `.panel-head` | `style.css`, `hud.ts` (`menuHead`) | N only: the menu name over a faint band and a line; `aria-hidden`, the menu's `aria-label` says it | command menu (Commands, 422 px), submenu (Abilities, 460 px), "Execute?" (title with the ability icon, 460 px) |
 | **Ability icon** `abilityIcon(id)` | `icons.ts`, `style.css` | 32×32 at 1:1 (`image-rendering: pixelated`), the atlas cell of the ability (`atlasCell`, pure and tested against the atlas .json) over the game-icons `on-target` symbol: no cell (FFT study abilities, a new ability) or an image that fails shows the symbol; faded 50% in a disabled row | abilities submenu, Move and Wait rows of the command menu, "Execute?" title |
-| **Portrait** `portrait()` | `hud.ts` | 72×96 (panel, dialogue, creation), 48×64 (party), 44×58 (map), 24×32 (queue) | everywhere with a face |
+| **Portrait** `portrait()` | `hud.ts` | 96×128 (unit panel; 72×96 below 1600 px), 72×96 (dialogue, creation), 48×64 (party), 44×58 (map), 48×48 (queue, cropped from the top); sizes set by the container, `portrait()` itself unchanged | everywhere with a face |
+| **Turn list** `.queue` (`renderQueue`) | `hud.ts`, `style.css` | a 132 px column (the lab kit's narrow queue, a little wider for the charge rows): title, then per row the number (NOW in `--focus` for the one acting), the portrait framed in its side colour (yellow with a glow for NOW) and the name after ● or ◆; charge rows in muted italics, the "goes off here" row with a yellow outline, ◎ target in `--focus`; 4 rows by default (L shows all, stopping above the acting unit's panel) | top left, under the tile line |
 | **Place beside** `placeBeside()` | `hud.ts` (pure, tested) | right; no room, left; slides vertically | menu beside the unit |
 | **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary); `fixed` does not close; `onBack` goes back | title, Options, Status, How to play, Credits, Party, Sheet, Shop, Tavern, Town, stage end, Developer |
 | **Primary button** `button('primary', …)` | `icons.ts`, `style.css` | N bright blue · H lighter · F yellow ring · P inverted bevel and 2 px down · D faded 50% | one per dialog: the action that continues the flow |

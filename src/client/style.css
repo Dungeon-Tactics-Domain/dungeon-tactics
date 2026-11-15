@@ -84,7 +84,10 @@
   --tap: 44px; /* touch target: >= 44 px (spec) */
   --gap: 8px;
   --inset: 12px; /* panel margin to the screen edge */
-  --slot-w: 440px; /* bottom unit panels; the preview strips sit in the gap between the two */
+  --slot-w: min(
+    672px,
+    35vw
+  ); /* bottom unit panels: the lab kit's 35% of the 1920 screen; the strike preview sits beside the acting one */
   --font: "Alegreya Sans", "Segoe UI", system-ui, sans-serif; /* hosted in public/fonts (@font-face below) */
   --font-title: var(--font); /* titles, options and queue: FFT uses one plain letter, no title serif */
   --fs-xs: 12px; /* performance counter */
@@ -646,39 +649,45 @@ button[hidden],
 .tile-info:empty {
   display: none;
 } /* end of battle: with no tile under the cursor, the empty box lost its meaning */
+/* turn list as a narrow column (Nov 15, FFT theme block 2, the lab kit's ~5% of the screen, a little wider for the charge
+   rows): the number over the portrait, the name below it, the side by colour and by shape (● hero, ◆ enemy) */
 .queue {
   top: 56px;
   left: 12px;
-  width: 230px;
+  width: 132px;
+  max-height: calc(100% - 56px - 200px); /* the full list (L) stops above the acting unit's panel */
+  overflow: hidden;
   list-style: none;
   padding: 6px;
   display: grid;
-  gap: 3px;
+  gap: 6px;
 }
 .queue.short li:nth-child(n + 6) {
   display: none;
-} /* title + 4 lines; L shows everything */
+} /* title + 4 rows; L shows everything */
 /* charge in preview on "Execute?" (hud.ts queueRows): the list shows up to its row, which gets marked; the targets carry ◎ */
 .queue.preview li:nth-child(n) {
-  display: flex;
+  display: grid;
 }
 .queue-target {
-  margin-left: auto;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--focus);
 }
 .queue-title {
   font: 400 var(--fs-sm) / 1 var(--font-title);
   color: var(--ink-muted);
-  padding: 2px 4px 4px;
+  text-align: center;
+  padding: 2px 0;
 }
 .queue-row {
-  display: flex;
-  align-items: center;
-  gap: var(--gap);
-  padding: 2px 6px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 2px 2px 4px;
   font-size: var(--fs-sm);
-  border-left: 5px solid var(--side);
+  line-height: 1.15;
+  text-align: center;
 }
 .queue-row.hero {
   --side: var(--hero);
@@ -686,8 +695,22 @@ button[hidden],
 .queue-row.enemy {
   --side: var(--enemy);
 }
+.queue-n {
+  font-weight: 700;
+  line-height: 1;
+}
+.queue-row.now .queue-n {
+  color: var(--focus);
+  letter-spacing: 0.06em;
+}
+.queue-name::before {
+  content: "● ";
+  color: var(--side);
+}
+.queue-row.enemy .queue-name::before {
+  content: "◆ ";
+}
 .queue-row.now {
-  background: var(--focus-band);
   font-weight: 700;
 }
 .queue-row.charge {
@@ -702,8 +725,17 @@ button[hidden],
   color: var(--ink);
 }
 .queue-row .portrait {
-  width: 24px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
+  object-position: top;
+  border-color: var(--side);
+}
+/* the one acting now: yellow frame with a glow, and NOW in yellow above it */
+.queue-row.now .portrait {
+  border-color: var(--focus);
+  box-shadow:
+    0 0 0 1px var(--edge),
+    0 0 10px color-mix(in srgb, var(--focus) 60%, transparent);
 }
 /* what-to-do-now help and ability name banner: at the top, in the middle */
 .help {
@@ -869,6 +901,31 @@ button[hidden],
   content: "▸";
   color: var(--focus);
 }
+/* below 1600 px wide the kit's sizes (measured on 1920) left no room beside the unit: menu and submenu together are ~890 px,
+   and at 1280 they fell on top of it. Here the menu takes the width of its longest row and the rows shrink */
+@media (max-width: 1599px) {
+  .commands {
+    width: auto;
+  }
+  .abilities {
+    width: 320px;
+  }
+  .panel.commands .item,
+  .panel.abilities .item {
+    min-height: 44px;
+    padding-left: 40px;
+    gap: 10px;
+    font-size: var(--fs);
+  }
+  .panel.commands .item.focus::before,
+  .panel.abilities .item.focus::before {
+    left: 12px;
+  }
+  .hud .unit-panel .portrait {
+    width: 72px;
+    height: 96px;
+  }
+}
 .orb {
   width: 28px;
   height: 28px;
@@ -986,9 +1043,7 @@ button[hidden],
 }
 .panel .item.focus:not(:disabled),
 .panel .item.focus:not(:disabled) *,
-.panel .item.focus:not(:disabled) .tool-label::after,
-.queue-row.now,
-.queue-row.now .queue-target {
+.panel .item.focus:not(:disabled) .tool-label::after {
   color: var(--ink); /* on --focus-band the muted text, the yellow and --ink-off drop under 4.5:1 (3.1 to 4.1) */
 }
 .panel .item:not(:disabled):active {
@@ -1068,8 +1123,15 @@ button[hidden],
 .unit-panel {
   position: relative;
   display: flex;
-  gap: 12px;
-  border-left: 8px solid var(--side);
+  align-items: center;
+  gap: 18px;
+  padding: 14px 22px;
+  border-left: 6px solid var(--side);
+}
+/* the portrait at the lab kit's 128 px height, scoped here so the other portraits keep their size */
+.unit-panel .portrait {
+  width: 96px;
+  height: 128px;
 }
 .unit-panel.hero {
   --side: var(--hero);
@@ -1094,17 +1156,32 @@ button[hidden],
 .unit-body {
   flex: 1;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   align-content: start;
 }
 .unit-name {
-  font: 400 var(--fs-lg) / 1.1 var(--font-title);
+  font: 700 var(--fs-lg) / 1.1 var(--font-title);
   display: flex;
   align-items: baseline;
-  gap: var(--gap);
+  gap: 12px;
 }
+/* side in words and by shape (● hero, ◆ enemy), never by colour alone */
 .unit-side {
-  font: 400 var(--fs-sm) / 1 var(--font);
+  font: 500 var(--fs-sm) / 1 var(--font);
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.unit-side::before {
+  content: "● ";
+  color: var(--hero);
+}
+.enemy .unit-side::before {
+  content: "◆ ";
+  color: var(--enemy);
+}
+.unit-class {
+  margin-top: -4px;
   color: var(--ink-muted);
 }
 .unit-note {
@@ -1114,23 +1191,27 @@ button[hidden],
 }
 .gauge {
   display: grid;
-  grid-template-columns: 40px 1fr 64px;
+  grid-template-columns: 3.4em 1fr 4.6em;
   align-items: center;
   gap: var(--gap);
   font-size: var(--fs-sm);
 }
 .gauge-label {
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .gauge-bar {
   position: relative;
   height: 10px;
   background: var(--well);
-  border: 1px solid var(--paper-edge);
+  border: 1px solid var(--edge);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .gauge-bar i {
   display: block;
   height: 100%;
+  background: linear-gradient(color-mix(in srgb, var(--ink) 35%, transparent), transparent 60%), var(--bar);
 }
 /* strike preview on the target bar (hud.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
    green stripes, like Tactics Ogre. Stripe and the number "life 25 → 13–16" alongside: never color alone */
@@ -1160,7 +1241,7 @@ button[hidden],
 .target-slot .unit-panel {
   flex-direction: row-reverse;
   border-left: 2px solid var(--paper-edge);
-  border-right: 8px solid var(--side);
+  border-right: 6px solid var(--side);
 }
 /* strike preview strips (hud.ts strikes, Nov 13, Tactics Ogre style, our design): in the gap between the two
    bottom panels, anchored at the bottom and arrow-shaped pointing at the target panel. They stay inside the panel height (up to 3
@@ -1231,17 +1312,18 @@ button[hidden],
   color: var(--fg);
   background: var(--strike);
 }
-.gauge.hp i {
-  background: var(--hp);
+.gauge.hp {
+  --bar: var(--hp);
 }
-.gauge.mp i {
-  background: var(--mp);
+.gauge.mp {
+  --bar: var(--mp);
 }
-.gauge.ct i {
-  background: var(--ct);
+.gauge.ct {
+  --bar: var(--ct);
 }
 .gauge-num {
   text-align: right;
+  font-size: var(--fs);
   font-variant-numeric: tabular-nums;
 }
 

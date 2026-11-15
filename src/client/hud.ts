@@ -496,11 +496,10 @@ export function portrait(def: string) {
     : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
 }
 
-// side and, for those with their own name (campaign, developer menu), the class: "Rogue · hero"
-function sideText(u: UnitState) {
+// the class line, only for those with their own name (campaign, developer menu): "Rogue" under "Aria"
+function classText(u: UnitState) {
   const base = classOf(u.def);
-  const side = u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy');
-  return base && unitName(base) !== unitName(u.def) ? `${unitName(base)} · ${side}` : side;
+  return base && unitName(base) !== unitName(u.def) ? unitName(base) : null;
 }
 
 // unit panel (the acting one bottom left, the target's bottom right, mirrored); with `f`, the part of the life
@@ -524,7 +523,13 @@ function unitPanel(state: BattleState, u: UnitState, f?: Forecast) {
     el(
       'div',
       { class: 'unit-body' },
-      el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, sideText(u))),
+      el(
+        'strong',
+        { class: 'unit-name' },
+        unitName(u.def),
+        el('span', { class: 'unit-side' }, u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy')),
+      ),
+      classText(u) ? el('span', { class: 'unit-class' }, classText(u)) : null,
       ...rows,
       charge
         ? el(
@@ -825,8 +830,9 @@ export class BattleHud {
           {
             class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}`,
           },
+          el('span', { class: 'queue-n' }, i === 0 ? t('AGORA', 'NOW') : String(i)),
           portrait(u.def),
-          el('span', {}, label),
+          el('span', { class: 'queue-name' }, label),
           mark,
         );
       }),
