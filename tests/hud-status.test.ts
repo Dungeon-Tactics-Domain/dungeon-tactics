@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { tileInfo, unitStatus } from '../src/client/hud.ts';
+import { cursorInfo, tileInfo, unitStatus } from '../src/client/hud.ts';
 import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
+import { tileAt } from '../src/shared/battle/grid.ts';
 import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
+import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Status window and tile info (Nov 12, FFT style): what shows for each unit and tile
 registerFftStudy();
@@ -57,5 +59,24 @@ describe('tile info', () => {
       'Casa 0,3 · altura 0 · água · funda: não se age nela',
     );
     expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe('Casa 0,7 · altura 0 · água · rasa');
+  });
+});
+
+// a token's square is hit by a charge if any of its cells is in the area (combat.ts) and hurt by spikes on any cell (battle.ts)
+describe('cursor info for a square', () => {
+  const g = flat(8, 8);
+  tileAt(g, { x: 3, y: 2 }).spikes = true;
+  const state = stateOf([{ id: 'b', def: 'soldier', team: 'enemy', x: 6, y: 6 }], HIT_SEED);
+  state.charges = [{ unit: 'b', ability: 'strike', target: { x: 2, y: 3 }, follow: null, ticks: 3 }];
+
+  it('warns of a charge or spikes under any cell of the square, not only its corner', () => {
+    expect(cursorInfo(g, state, { x: 2, y: 2 })).toBe('Casa 2,2 · altura 0 · chão');
+    const square = cursorInfo(g, state, { x: 2, y: 2 }, 2);
+    expect(square).toContain('espinhos');
+    expect(square).toContain('vai cair aqui');
+  });
+
+  it('the part of the square off the map is ignored', () => {
+    expect(cursorInfo(g, state, { x: 7, y: 7 }, 2)).toBe('Casa 7,7 · altura 0 · chão');
   });
 });

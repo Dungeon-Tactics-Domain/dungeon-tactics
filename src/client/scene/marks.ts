@@ -340,7 +340,10 @@ export class Marks {
       m.userData.base = MARK[kind][1]; // starting opacity of the pulse (frame)
       mat.color.set(MARK[kind][0]);
       mat.opacity = MARK[kind][1];
-      mat.map = markTexture(MARK[kind][2] ?? 'frame');
+      // a destination over a charge's purple keeps only its frame: the solid core washed the purple out of a token's square
+      // (showDanger runs on sync, before the update that sets the marks)
+      const onDanger = kind === 'target' && this.danger.get(posKey(pos))!.visible;
+      mat.map = markTexture(onDanger ? 'frame' : (MARK[kind][2] ?? 'frame'));
       m.visible = true;
     }
     // a token's path runs through the middle of its square, not over its corner cell

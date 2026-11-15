@@ -12,8 +12,8 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { COMBAT, type Preview, simulatePush } from '../shared/battle/combat.ts';
-import { type Grid, posKey, standH, TERRAIN, tileAt } from '../shared/battle/grid.ts';
-import { jumpOf, unitAt } from '../shared/battle/pathing.ts';
+import { type Grid, inBounds, posKey, standH, TERRAIN, tileAt } from '../shared/battle/grid.ts';
+import { cellsOf, jumpOf, unitAt } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { previewOrder, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
@@ -256,6 +256,25 @@ export function tileInfo(grid: Grid, p: Pos): string {
   return t(
     `Casa ${p.x},${p.y} · altura ${h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`,
     `Tile ${p.x},${p.y} · height ${h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`,
+  );
+}
+
+// The tile line under the cursor. `size` > 1 (a token choosing where to stop): its whole square counts, because a charge hits
+// a token on any of its cells (combat.ts inArea over the footprint) and spikes hurt on any cell at the turn's end (battle.ts)
+export function cursorInfo(grid: Grid, state: BattleState, p: Pos, size = 1): string {
+  const square = cellsOf(p, size).filter((c) => inBounds(grid, c));
+  const danger = chargeDanger(grid, state);
+  const hit = square.map((c) => danger.get(posKey(c))).find((a) => a);
+  const spikes = !tileAt(grid, p).spikes && square.some((c) => tileAt(grid, c).spikes);
+  return (
+    tileInfo(grid, p) +
+    (spikes
+      ? t(
+          ` · espinhos sob a unidade: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez aqui`,
+          ` · spikes under the unit: −${COMBAT.SPIKE_DAMAGE} when ending a turn here`,
+        )
+      : '') +
+    (hit ? t(` · ⚠ ${abilityName(hit)} vai cair aqui`, ` · ⚠ ${abilityName(hit)} lands here`) : '')
   );
 }
 
@@ -631,11 +650,8 @@ export class BattleHud {
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
-    const hit = chargeDanger(b.grid, b.state).get(posKey(v.cursor));
-    this.tile.textContent = b.over
-      ? ''
-      : tileInfo(b.grid, v.cursor) +
-        (hit ? t(` · ⚠ ${abilityName(hit)} vai cair aqui`, ` · ⚠ ${abilityName(hit)} lands here`) : '');
+    // `size` is set only while choosing where to move: the square the unit would stand on
+    this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
     this.renderQueue(b, v.screen);
     this.help.textContent = this.helpText(v, heroTurn);
     this.renderCommands(v, open);
