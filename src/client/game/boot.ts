@@ -34,7 +34,8 @@ export const toWorld = () => {
 export const savedHero = () => parseHero(store.json(HERO_KEY));
 export const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // player's group (group.ts): who goes, class and recruits
 
-// 'world' for the world map; null when the address went back to the map (unknown, won or locked)
+// 'world' for the world map; null when the address went elsewhere: back to the map (unknown, won or locked) or to the
+// title (a crawl room that could not be built)
 export async function selectBattle(): Promise<BattleSelection | 'world' | null> {
   // the battle the game opens and where it is saved; the FFT study swaps both at boot (separate save)
   let scenario = FIRST_BATTLE;
@@ -88,11 +89,23 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     // a dungeon crawl room (Nov 15, the new loop apart from Beacon Ashes): rebuilt from the seed in the address, so one
     // save serves every room and resumes only the room its id names (seed, depth, boss, theme and generator version);
     // registered whole too, where the scene finds its mood (ambience.ts kindOf)
-    scenario = generateRoom(Number(crawl) | 0, {
-      depth: Number(param('depth')),
-      boss: param('boss') === '1',
-      theme: param('theme') ?? undefined,
-    });
+    const seed = Number(crawl) | 0;
+    const opts = { depth: Number(param('depth')), boss: param('boss') === '1', theme: param('theme') ?? undefined };
+    // a seed whose 200 layouts all fail (none of the 500 tested; 4 to 7 s each) moves on to the next one; a second failure
+    // means the rules, not the dice, so the page goes back to the title saying so instead of retrying for longer
+    let room: Scenario | null = null;
+    for (let s = seed; !room && s < seed + 2; s++)
+      try {
+        room = generateRoom(s, opts);
+      } catch (err) {
+        console.error(err);
+      }
+    if (!room) {
+      alert(t('Não deu para montar esta sala da masmorra.', 'This dungeon room could not be built.'));
+      location.search = '';
+      return null;
+    }
+    scenario = room;
     SCENARIOS[scenario.id] = scenario;
     saveKey = 'dt:battle:crawl';
   } else if (study === 'fft-gariland' || study === 'fft-classes') {

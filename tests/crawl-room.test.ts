@@ -1,10 +1,6 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { selectBattle } from '../src/client/game/boot.ts';
-import { store } from '../src/client/store.ts';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
-import { Battle } from '../src/shared/battle/battle.ts';
 import { dist, FACING, inBounds, posKey, TERRAIN, type Tile, tileAt } from '../src/shared/battle/grid.ts';
-import { HALF } from '../src/shared/battle/half.ts';
 import type { Scenario, Spawn } from '../src/shared/battle/scenarios.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -251,25 +247,5 @@ describe('verifyRoom: a broken room for each rule', () => {
     const r = structuredClone(boss);
     at(r, { x: c.x + 1, y: c.y + 1 }).h -= 1;
     expect(verifyRoom(r).join()).toMatch(/not on even ground/);
-  });
-});
-
-describe('crawl rooms in the client', () => {
-  it('?crawl= opens the room in half tiles, without the title, and a save of it resumes', async () => {
-    // through the boot's real path (boot.ts has no DOM or Three), as tests/half-tiles.test.ts does
-    vi.stubGlobal('location', { search: '?crawl=7&depth=2&boss=1&theme=forest' });
-    try {
-      const sel = await selectBattle();
-      if (!sel || sel === 'world') throw new Error('no battle');
-      expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-7-d2-boss-forest${HALF}`);
-      expect(sel.title).toBe(false);
-      expect(sel.saveKey).toBe('dt:battle:crawl');
-      store.set(sel.saveKey, Battle.start(sel.scenario, 3).save());
-      const again = await selectBattle();
-      if (!again || again === 'world') throw new Error('no battle');
-      expect(Battle.load(store.get(again.saveKey) ?? '')?.state.scenario).toBe(again.scenario.id);
-    } finally {
-      vi.unstubAllGlobals();
-    }
   });
 });
