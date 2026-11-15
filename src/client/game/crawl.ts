@@ -330,7 +330,9 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
       ? t('Expedição perdida', 'Expedition lost')
       : done
         ? t('Expedição concluída!', 'Expedition complete!')
-        : t('Sala vencida!', 'Room cleared!'),
+        : down
+          ? t(`Andar ${node.floor} vencido!`, `Floor ${node.floor} cleared!`)
+          : t('Sala vencida!', 'Room cleared!'),
     [
       ...mvp,
       el(
@@ -348,8 +350,8 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
               )
             : down
               ? t(
-                  'Quem ficou de pé recupera 25% da vida e quem caiu volta com 25%; ao descer ao próximo andar, todos recuperam mais 50%.',
-                  'Whoever stood recovers 25% of their life and the fallen come back at 25%; going down a floor, everyone recovers 50% more.',
+                  `Quem ficou de pé recupera 25% da vida e quem caiu volta com 25%; ao descer ao andar ${node.floor + 1}, todos recuperam mais 50%.`,
+                  `Whoever stood recovers 25% of their life and the fallen come back at 25%; going down to floor ${node.floor + 1}, everyone recovers 50% more.`,
                 )
               : t(
                   'Quem ficou de pé recupera 25% da vida; quem caiu volta com 25%.',
@@ -370,5 +372,7 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
     // Esc or ✕ goes the same way: closing only left the finished room on screen
     { onBack: home },
   );
+  // a cleared room and a won expedition get the victory's yellow title, like the battle's end window (end-screens.ts)
+  d.overlay.querySelector('.dialog')!.classList.add(next ? 'won' : 'lost');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
