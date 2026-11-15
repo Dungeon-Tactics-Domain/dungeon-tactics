@@ -21,7 +21,8 @@ export interface Tile {
   terrain: TerrainKind;
   h: number;
   // Drawing only (Nov 12, Gariland map with the KayKit pieces): the rules do not read it. `look` picks the tile's pieces in the scene;
-  // `ramp` tilts the top, rising `rise` levels in the direction FACING[dir]. A map without both is drawn as before.
+  // `ramp` tilts the top, rising `rise` levels in the direction FACING[dir]. A map without both is drawn as before. Only a
+  // token's stop reads `ramp` (pathing.ts restsOn: no ramp cell under a square between tiles).
   look?: string;
   ramp?: [dir: number, rise: number];
   // Water (BMG 6.5; Fernando's decision of Nov 12): depth in levels. 1 = shallow, 2 or more = deep
@@ -76,7 +77,7 @@ export function parseGrid(terrain: string[], heights: string[]): Grid {
 }
 
 // Ramps (Nov 13, Fernando's request: "more diagonal tiles… it's not Minecraft"): drawing only, the rules do not read `ramp`
-// (the jump still follows the standing height). One letter per tile says where the ground rises (v > ^ <, FACING order) to the
+// (the jump still follows the standing height) except where a token may stop (pathing.ts restsOn). One letter per tile says where the ground rises (v > ^ <, FACING order) to the
 // neighbor 1 level above; a dot is a flat tile. Hand-picked on the passages and slopes with a step of 1 (test in scenario-maps).
 const RAMP_DIR: Record<string, number> = { v: 0, '>': 1, '^': 2, '<': 3 };
 export function withRamps(grid: Grid, overlay: string[]): Grid {

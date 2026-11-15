@@ -14,6 +14,7 @@ import {
   stepCost,
   subOf,
   TERRAIN,
+  type Tile,
   tileAt,
 } from './grid.ts';
 import { rulesOf } from './rules.ts';
@@ -124,8 +125,9 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
 }
 
 // A square that walks (half tile: the tokens occupy 2x2 and walk 1 cell at a time; half.ts), by its top-left corner. It
-// fits if all the cells of the square are walkable, none holds an enemy and they differ by at
-// most the jump (a square across a step of 2 is the middle of the jump of whoever jumps 2); the square's height is the highest, and
+// passes if all the cells of the square are walkable, none holds an enemy and they differ by at
+// most the jump (a square across a step of 2 is the middle of the jump of whoever jumps 2; it stops only on even ground,
+// restsOn); the square's height is the highest, and
 // the step follows the jump by the surface, deep water included (it enters, like the 1-tile unit). Cost: 1 per cell. The gap flies
 // over the cells between the two squares, up to [jump/2] whole tiles, like `leaps`
 // One move of such a square from the corner `cur`, in FACING order, each step before its gaps: the corner it reaches and the
@@ -215,9 +217,10 @@ function reachableBig(
     step.path = path;
   }
   seen.delete(posKey(unit.pos));
-  // stop only where the whole square is free (an ally on the path, yes; on top, no) and with no body underneath
+  // stop only where the whole square is free (an ally on the path, yes; on top, no), with no body underneath and on even ground
   for (const [k, step] of seen)
     if (
+      !restsOn(grid, step.pos, size) ||
       cells(step.pos).some((c) => {
         const o = unitAt(state, c);
         return (o && o.id !== unit.id) || tileAt(grid, c).noStop;
@@ -225,6 +228,17 @@ function reachableBig(
     )
       seen.delete(k);
   return seen;
+}
+
+// Where a square may stop (Nov 14, Fernando: "it must not let the character stand still on a corner like that", a token
+// left hovering over a ledge): all its cells are the same ground (height, water, spikes, terrain), so it rests like one
+// whole tile. A ramp cell only under a square on its own whole tile: between tiles the token stood half a level above the
+// flat cells beside it. Crossing a step or a ramp on the way stays allowed (squareMoves)
+function restsOn(grid: Grid, p: Pos, size: number): boolean {
+  const k = subOf(grid);
+  const kind = (t: Tile) => `${t.h},${t.depth ?? 0},${!!t.spikes},${t.terrain}`;
+  const tiles = cellsOf(p, size).map((c) => tileAt(grid, c));
+  return tiles.every((t) => kind(t) === kind(tiles[0]) && (!t.ramp || (p.x % k === 0 && p.y % k === 0)));
 }
 
 // `budget`: movement points left in the turn (the whole movement, if absent)

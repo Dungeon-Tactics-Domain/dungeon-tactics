@@ -5,7 +5,7 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
-import { canStand, dist, type Grid, posKey, tileAt } from '../src/shared/battle/grid.ts';
+import { canStand, dist, type Grid, posKey, type Tile, tileAt, withRamps } from '../src/shared/battle/grid.ts';
 import { halve, registerHalf } from '../src/shared/battle/half.ts';
 import { cellsOf, jumpOf, reachable } from '../src/shared/battle/pathing.ts';
 import { initialState, MAPS, SCENARIOS, type Scenario } from '../src/shared/battle/scenarios.ts';
@@ -293,6 +293,69 @@ describe('half tiles: walking', () => {
     const half = reachable(hm.grid, stateOf([{ id: 'r', def: `rogue${HALF}`, team: 'hero', x: 6, y: 12 }]), 'r');
     expect(whole.get('3,8')?.cost).toBe(2);
     expect(half.get(posKey(cell({ x: 3, y: 8 })))?.cost).toBe(4);
+  });
+});
+
+describe('half tiles: where a token may stop', () => {
+  // Nov 14, Fernando, playing stage 0: "it must not let the character stand still on a corner like that" (a hero hovering
+  // over a ledge). A stop's 4 cells are the same ground; between tiles, no ramp cell under it
+  const even = (g: Grid, p: Pos) => {
+    const ts = cellsOf(p, 2).map((c) => tileAt(g, c));
+    const kind = (t: Tile) => `${t.h},${t.depth ?? 0},${!!t.spikes},${t.terrain}`;
+    return ts.every((t) => kind(t) === kind(ts[0]) && (!t.ramp || (p.x % 2 === 0 && p.y % 2 === 0)));
+  };
+  for (const map of MAPS) {
+    it(`${map.id}: every stop of every spawn is even ground`, () => {
+      const hm = halve(map);
+      const hs = initialState(hm, 1);
+      const bad = hs.units.flatMap((u) =>
+        [...reachable(hm.grid, hs, u.id).values()]
+          .filter((s) => !even(hm.grid, s.pos))
+          .map((s) => `${u.id} ${posKey(s.pos)}`),
+      );
+      expect(bad).toEqual([]);
+    });
+  }
+
+  // a warrior token (move 8 cells, jump 1) from the corner cell of a small split map
+  const reachOn = (whole: Grid, at: Pos = { x: 0, y: 0 }) =>
+    reachable(split(whole, 't-stops').grid, stateOf([{ id: 'u', def: `warrior${HALF}`, team: 'hero', ...at }]), 'u');
+
+  it('does not stop on a ledge corner or across a step, but walks over them', () => {
+    // the high tile (2,2) touches the square between tiles (3,3) at one corner; row 0 climbs a step of 1 at tile 2
+    const r = reachOn(gridOf(['...', '...', '...'], ['001', '000', '001']));
+    expect(r.has('3,3')).toBe(false); // 3 cells at 0, 1 at 1
+    expect(r.has('3,0')).toBe(false); // across the step
+    expect(r.has('4,0')).toBe(true); // on the step's tile, through the square across it
+    expect(r.get('4,0')?.path?.some((p) => posKey(p) === '3,0')).toBe(true);
+    expect(r.has('1,1')).toBe(true); // between flat tiles of one height it still stops
+  });
+
+  it('stops on a ramp only on its own tile', () => {
+    // tile (1,0) is a ramp up to (2,0); between it and the flat tile below, one cell is the slope
+    const r = reachOn(withRamps(gridOf(['...', '...'], ['001', '001']), ['.>.', '...']));
+    expect(r.has('2,0')).toBe(true);
+    expect(r.has('2,1')).toBe(false);
+    expect(r.has('3,0')).toBe(false); // ramp's top cell against the tile above
+  });
+
+  it('does not stop with one corner on spikes or in water', () => {
+    const whole = gridOf(['...', '...', '...']);
+    whole.tiles[4] = { ...whole.tiles[4], spikes: true };
+    whole.tiles[2] = { ...whole.tiles[2], depth: 1 };
+    whole.tiles[6] = { ...whole.tiles[6], depth: 2 };
+    const r = reachOn(whole);
+    expect(r.has('1,1')).toBe(false); // spikes on one corner
+    expect(r.has('2,2')).toBe(true); // on the spike tile, as on the whole map
+    expect(r.has('3,0')).toBe(false); // half in the shallow water
+    expect(r.has('4,0')).toBe(true);
+    expect(r.has('1,3')).toBe(false); // half in the deep water
+    expect(r.has('0,4')).toBe(true);
+  });
+
+  it('a token left on a corner can still walk off it', () => {
+    const r = reachOn(gridOf(['...', '...', '...'], ['001', '000', '001']), { x: 3, y: 3 });
+    expect(r.has('2,2')).toBe(true);
   });
 });
 
