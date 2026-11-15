@@ -756,6 +756,31 @@ button[hidden],
   box-shadow: var(--paper-frame);
   padding: 12px;
 }
+/* expedition map (game/crawl.ts, Nov 15): the title's look, wider, with the party on a panel and one room per button, its
+   enemies under its name */
+.crawl-map .dialog.title {
+  width: min(860px, 100%);
+}
+.crawl-map .dialog.title h2 {
+  font-size: 44px;
+}
+.crawl-map .legend {
+  background: linear-gradient(var(--paper-hi), var(--paper));
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  box-shadow: var(--paper-frame);
+  margin: 0;
+  padding: 10px 12px 10px 32px;
+}
+.crawl-row button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.crawl-row .continue-where {
+  margin-left: 0;
+}
 @keyframes title-in {
   from {
     opacity: 0;

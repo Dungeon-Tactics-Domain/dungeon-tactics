@@ -4,7 +4,12 @@
 // at ~12.8 enemy life per hero turn (a deduction from the Skirmish measure, not a measured room). Tune by playing.
 import type { CrawlTheme, RoomGroup } from '../../shared/crawl/generate.ts';
 
-// who enters the room: the four starting classes with their whole kit (the Beacon Ashes party stays with its campaign)
+// the town the game opens in (Nov 15, Fernando: no world map; the expedition leaves from it and comes back to it): the
+// Beacon Ashes village, its windows and rumors reused while the town has none of its own
+export const CRAWL_TOWN = 'vauclair';
+
+// who the room is laid out and checked for, and who enters a ?crawl room: the four starting classes with their whole kit;
+// an expedition puts the town's party on these spawns (game/crawl.ts castRoom)
 export const CRAWL_PARTY = ['warrior', 'archer', 'mage', 'rogue'];
 
 // one group per room, drawn among those of the room's depth (deeper than the table: the deepest)

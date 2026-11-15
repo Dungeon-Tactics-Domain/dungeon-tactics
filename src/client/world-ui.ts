@@ -175,9 +175,9 @@ const unitOf = (m: Member, n: number, hero: Hero | null) => {
   return { ...u, abilities: u.abilities.slice(0, learnedCount(n)) };
 };
 
-export function openParty(n: number, hero: Hero | null) {
+export function openParty(n: number, hero: Hero | null, back?: () => void) {
   const g = loadGroup();
-  const again = () => openParty(n, hero);
+  const again = () => openParty(n, hero, back);
   const card = (m: Member) => {
     const u = unitOf(m, n, hero),
       going = g.deployed.includes(m.id);
@@ -217,34 +217,39 @@ export function openParty(n: number, hero: Hero | null) {
     );
   };
   const benched = hero ? g.members.find((m) => m.id === hero.cls) : undefined;
-  const d = dialog('party', t('Grupo', 'Party'), [
-    el(
-      'p',
-      {},
-      t(
-        `${g.deployed.length} de ${DEPLOY_MAX} vão à batalha. Escolha alguém para trocar a classe ou quem vai.`,
-        `${g.deployed.length} of ${DEPLOY_MAX} go to battle. Pick someone to change class or who goes.`,
+  const d = dialog(
+    'party',
+    t('Grupo', 'Party'),
+    [
+      el(
+        'p',
+        {},
+        t(
+          `${g.deployed.length} de ${DEPLOY_MAX} vão à batalha. Escolha alguém para trocar a classe ou quem vai.`,
+          `${g.deployed.length} of ${DEPLOY_MAX} go to battle. Pick someone to change class or who goes.`,
+        ),
       ),
-    ),
-    el(
-      'ul',
-      { class: 'party-list' },
-      ...g.deployed.map((id) => g.members.find((m) => m.id === id)!).map(card),
-      ...g.members.filter((m) => !g.deployed.includes(m.id)).map(card),
-    ),
-    ...(benched
-      ? [
-          el(
-            'p',
-            { class: 'party-bench' },
-            t(
-              `${benched.name} fica no acampamento e segue nas conversas.`,
-              `${benched.name} stays at camp and keeps talking in the story.`,
+      el(
+        'ul',
+        { class: 'party-list' },
+        ...g.deployed.map((id) => g.members.find((m) => m.id === id)!).map(card),
+        ...g.members.filter((m) => !g.deployed.includes(m.id)).map(card),
+      ),
+      ...(benched
+        ? [
+            el(
+              'p',
+              { class: 'party-bench' },
+              t(
+                `${benched.name} fica no acampamento e segue nas conversas.`,
+                `${benched.name} stays at camp and keeps talking in the story.`,
+              ),
             ),
-          ),
-        ]
-      : []),
-  ]);
+          ]
+        : []),
+    ],
+    { onBack: back },
+  );
   d.overlay.querySelector<HTMLElement>('.party-card')?.focus();
 }
 
@@ -296,10 +301,11 @@ function openTown(i: number, party: () => void) {
   ]);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
-function openBar(i: number, back: () => void) {
+// `quests`: the campaign's bar quests (the crawl town leaves them out: they end on the world map)
+export function openBar(i: number, back: () => void, quests = true) {
   const rumors = WORLD[i].town?.rumors ?? [];
   const done = parseDone(store.json(MISSIONS_KEY));
-  const open = MISSIONS.filter((m) => m.town === WORLD[i].id && !done.includes(m.id));
+  const open = quests ? MISSIONS.filter((m) => m.town === WORLD[i].id && !done.includes(m.id)) : [];
   const gold = loadChest().gold;
   const why =
     loadGroup().members.length >= GROUP_MAX
@@ -318,33 +324,35 @@ function openBar(i: number, back: () => void) {
     t('Bar', 'Tavern'),
     [
       el('ul', { class: 'legend' }, ...rumors.map(([pt, en]) => el('li', {}, `“${t(pt, en)}”`))),
-      el('h3', {}, t('Missões', 'Quests')),
       // mission: extra battle with the current party; winning gives gold and an item (missions.ts)
-      ...(open.length
-        ? open.map((m) =>
-            el(
-              'div',
-              { class: 'quest' },
+      ...(quests ? [el('h3', {}, t('Missões', 'Quests'))] : []),
+      ...(!quests
+        ? []
+        : open.length
+          ? open.map((m) =>
               el(
                 'div',
-                {},
-                el('strong', {}, t(m.name[0], m.name[1])),
-                el('p', {}, t(m.text[0], m.text[1])),
+                { class: 'quest' },
                 el(
-                  'p',
-                  { class: 'party-stats' },
-                  t(
-                    `Recompensa: ${m.gold} de ouro${m.item ? ` e ${ITEMS[m.item].name}` : ''}`,
-                    `Reward: ${m.gold} gold${m.item ? ` and ${ITEMS[m.item].en}` : ''}`,
+                  'div',
+                  {},
+                  el('strong', {}, t(m.name[0], m.name[1])),
+                  el('p', {}, t(m.text[0], m.text[1])),
+                  el(
+                    'p',
+                    { class: 'party-stats' },
+                    t(
+                      `Recompensa: ${m.gold} de ouro${m.item ? ` e ${ITEMS[m.item].name}` : ''}`,
+                      `Reward: ${m.gold} gold${m.item ? ` and ${ITEMS[m.item].en}` : ''}`,
+                    ),
                   ),
+                  button('secondary', t('Aceitar', 'Accept'), () => {
+                    location.search = `?quest=${m.id}`;
+                  }),
                 ),
-                button('secondary', t('Aceitar', 'Accept'), () => {
-                  location.search = `?quest=${m.id}`;
-                }),
               ),
-            ),
-          )
-        : [el('p', {}, t('Nenhuma missão por agora.', 'No quests for now.'))]),
+            )
+          : [el('p', {}, t('Nenhuma missão por agora.', 'No quests for now.'))]),
       // recruit (delivery 5): one person of any of the 4 classes for gold, up to the party cap
       el('h3', {}, t('Recrutar', 'Recruit')),
       el(
@@ -371,7 +379,7 @@ function openBar(i: number, back: () => void) {
               store.set(CHEST_KEY, JSON.stringify(r.chest));
               sfx('confirm');
               d.close();
-              openBar(i, back);
+              openBar(i, back, quests);
             },
             { disabled: !!why },
           ),
@@ -684,7 +692,7 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
       button('item', t('Grupo', 'Party'), () => opts.party()),
       townBtn,
       button('item', t('Loja', 'Shop'), () => openShop()),
-      button('item', t('Título', 'Title'), back),
+      button('item', t('Cidade', 'Town'), back),
     ),
   );
   const root = el(

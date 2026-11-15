@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { selectBattle } from '../src/client/game/boot.ts';
+import { newBattle, selectBattle } from '../src/client/game/boot.ts';
+import { CRAWL_KEY, savedExpedition, settleRoom } from '../src/client/game/crawl.ts';
+import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { HALF } from '../src/shared/battle/half.ts';
+import { expeditionMap, openNodes, startExpedition } from '../src/shared/crawl/expedition.ts';
 import type * as Generate from '../src/shared/crawl/generate.ts';
 import { CRAWL_VERSION, type RoomOptions } from '../src/shared/crawl/generate.ts';
 
@@ -59,6 +62,45 @@ describe('crawl rooms in the client', () => {
     const location = open('?crawl=1');
     expect(await selectBattle()).toBeNull();
     expect(alert).toHaveBeenCalledOnce();
+    expect(location.search).toBe('');
+  });
+
+  it('?room= opens an open expedition room with the town party at its carried life; a closed one goes home', async () => {
+    const ids = parseGroup(null).deployed;
+    const exp = startExpedition(
+      21,
+      ids.map((id) => ({ id, max: 50 })),
+    );
+    exp.party[1].hp = 7;
+    store.set(CRAWL_KEY, JSON.stringify(exp));
+    const map = expeditionMap(21);
+    const node = openNodes(map, [])[0];
+    open(`?room=${node}`);
+    const sel = await selectBattle();
+    if (!sel || sel === 'world') throw new Error('no battle');
+    expect(sel.saveKey).toBe('dt:battle:expedition');
+    expect(sel.title).toBe(false);
+    expect(sel.room?.node).toBe(node);
+    expect(Object.values(sel.room?.heroes ?? {}).map((h) => h.id)).toEqual(ids);
+    expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-${map[node].seed}-d1-dungeon${HALF}`);
+    const b = newBattle(sel.scenario, sel.room);
+    expect(b.state.units.find((u) => u.id === 'h1')?.hp).toBe(7);
+    expect(b.state.units.filter((u) => u.team === 'hero')).toHaveLength(ids.length);
+
+    // won with Lia (h3) fallen and the rest as they entered: +25% (ceil 12.5) for whoever stood, 25% for her
+    b.state.units = b.state.units.filter((u) => u.team === 'hero' && u.id !== 'h3');
+    settleRoom(sel.room!, true, b.state);
+    const after = savedExpedition();
+    expect(after?.path).toEqual([node]);
+    expect(after?.party.map((h) => h.hp)).toEqual([50, 7 + 13, 50, 13]);
+    // a defeat ends it
+    settleRoom({ ...sel.room!, node: openNodes(map, [node])[0] }, false, b.state);
+    expect(savedExpedition()).toBeNull();
+
+    store.set(CRAWL_KEY, JSON.stringify(exp));
+    const closed = map.findIndex((n) => n.floor === 2);
+    const location = open(`?room=${closed}`);
+    expect(await selectBattle()).toBeNull();
     expect(location.search).toBe('');
   });
 });

@@ -34,9 +34,9 @@ import {
 import { dialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, savedHero, selectBattle } from './game/boot.ts';
+import { finishRoom, homeScreen } from './game/crawl.ts';
 import { battleEndScreen, confetti, mvpCard, stageEndScreen } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
-import { titleScreen } from './game/title.ts';
 import { worldScreen } from './game/world-screen.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
@@ -807,7 +807,7 @@ export class Game {
   }
 
   private restart() {
-    this.battle = newBattle(this.sel.scenario);
+    this.battle = newBattle(this.sel.scenario, this.sel.room);
     this.resetTally();
     this.moods.clear();
     this.log = '';
@@ -825,6 +825,7 @@ export class Game {
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
     if (won) confetti();
     if (chapter !== null) return this.finishChapter(chapter, won);
+    if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, this.mvpLine());
     // Until Dawn: how many turns it lasted and the record (a new record gets highlighted, like the stage grade)
     // winning by downing everyone before dawn also counts as surviving the whole night (it used to save "record 20" on a victory)
     const lasted = won ? SURVIVE_TURNS : survived(this.battle.state),
@@ -902,7 +903,7 @@ async function boot() {
   // a save of another scenario (a whole-tile one, from before the half tiles of Nov 14) starts the battle over
   const loaded = staged ? null : Battle.load(store.get(sel.saveKey) ?? '');
   const saved = loaded?.state.scenario === scenario.id;
-  const battle = staged?.battle ?? (saved ? loaded : newBattle(scenario));
+  const battle = staged?.battle ?? (saved ? loaded : newBattle(scenario, run.room));
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(
     host,
@@ -925,8 +926,9 @@ async function boot() {
     );
   // by the battle in play, not the address: a stage, quest or crawl room opened with ?scenario=survival is not one
   if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
-  // opening the game without a parameter shows the title screen over the standalone battle (which stays behind, already playable)
-  if (sel.title) titleScreen();
+  // opening the game without a parameter shows the town (or the expedition in progress) over the standalone battle, which
+  // stays behind as spinning scenery (Nov 15, Fernando: the game opens in the town, no world map)
+  if (sel.title) homeScreen();
 }
 
 // Large banner in the middle of the screen for 2 s (objective at the start of the stage); disappears by itself and does not take clicks

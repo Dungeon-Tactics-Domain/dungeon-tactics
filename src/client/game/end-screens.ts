@@ -134,7 +134,7 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, mission, res
             d.close();
             restart();
           }),
-      button('secondary', t('Título', 'Title'), () => {
+      button('secondary', t('Cidade', 'Town'), () => {
         location.search = '';
       }),
     ),

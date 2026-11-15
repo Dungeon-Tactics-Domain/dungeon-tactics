@@ -4,7 +4,8 @@ import { Battle } from '../../shared/battle/battle.ts';
 import { subOf } from '../../shared/battle/grid.ts';
 import { HALF, HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
-import { generateRoom } from '../../shared/crawl/generate.ts';
+import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
+import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
 import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from '../campaign.ts';
 import { EQUIP_KEY, parseEquip } from '../chest.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
@@ -15,6 +16,7 @@ import { MISSIONS, MISSIONS_KEY, type Mission, missionScenario, missionScenarioI
 import { setTrack } from '../sound.ts';
 import { param, RENAMED_QUESTS, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
+import { type CrawlRoom, castRoom, savedExpedition } from './crawl.ts';
 
 // the battle the page opens: the scenario, where it is saved and what it belongs to
 export interface BattleSelection {
@@ -22,10 +24,31 @@ export interface BattleSelection {
   mission: Mission | null; // bar mission in play (missions.ts)
   saveKey: string;
   chapter: number | null; // campaign stage in play (null = standalone battle)
-  title: boolean; // no parameter: the title screen opens over the standalone battle
+  title: boolean; // no parameter: the town (or the expedition in progress) opens over the standalone battle
+  room: CrawlRoom | null; // expedition room in play (crawl.ts): who stands on each hero spawn and their life
 }
 
-export const newBattle = (scenario: Scenario) => Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
+// a new battle, with the expedition party's life carried in; Options -> Restart goes through here too, so restarting a
+// room does not refill the party
+export function newBattle(scenario: Scenario, room: CrawlRoom | null = null): Battle {
+  const b = Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
+  for (const u of b.state.units) u.hp = (room && Object.hasOwn(room.heroes, u.id) && room.heroes[u.id].hp) || u.hp;
+  return b;
+}
+
+// A crawl room from its seed; a seed whose 200 layouts all fail (none of the 500 tested; 4 to 7 s each) moves on to the
+// next one; a second failure means the rules, not the dice, so the page goes back home saying so instead of retrying
+function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
+  for (let s = seed; s < seed + 2; s++)
+    try {
+      return generateRoom(s, opts);
+    } catch (err) {
+      console.error(err);
+    }
+  alert(t('Não deu para montar esta sala da masmorra.', 'This dungeon room could not be built.'));
+  location.search = '';
+  return null;
+}
 
 export const toWorld = () => {
   location.search = '?world';
@@ -46,6 +69,8 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   const study = param('scenario');
   const camp = param('stage');
   const crawl = param('crawl');
+  const roomAt = param('room');
+  let room: CrawlRoom | null = null;
   // bar mission (missions.ts): only the ones not yet won; unknown or won mission address goes back to the map
   const mis = param('quest');
   if (mis !== null) {
@@ -84,27 +109,29 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     setTrack(CHAPTERS[chapter].song);
     scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
     saveKey = `dt:battle:${chapterId(chapter)}`;
+  } else if (roomAt !== null) {
+    // an expedition room (crawl.ts): only one the party may enter now, so a reload or a typed address cannot replay a
+    // cleared room for its heal; anything else goes back home (the expedition map)
+    const exp = savedExpedition();
+    const map = exp && expeditionMap(exp.seed);
+    const node = Number(roomAt);
+    if (!exp || !map || roomAt === '' || !openNodes(map, exp.path).includes(node)) {
+      location.search = '';
+      return null;
+    }
+    const built = crawlRoom(map[node].seed, { depth: map[node].floor, boss: map[node].boss });
+    if (!built) return null;
+    SCENARIOS[built.id] = built;
+    ({ scenario, room } = castRoom(built, exp, node));
+    saveKey = 'dt:battle:expedition';
   } else if (crawl !== null) {
     // a dungeon crawl room (Nov 15, the new loop apart from Beacon Ashes): rebuilt from the seed in the address, so one
     // save serves every room and resumes only the room its id names (seed, depth, boss, theme and generator version);
     // registered whole too, where the scene finds its mood (ambience.ts kindOf)
-    const seed = Number(crawl) | 0;
     const opts = { depth: Number(param('depth')), boss: param('boss') === '1', theme: param('theme') ?? undefined };
-    // a seed whose 200 layouts all fail (none of the 500 tested; 4 to 7 s each) moves on to the next one; a second failure
-    // means the rules, not the dice, so the page goes back to the title saying so instead of retrying for longer
-    let room: Scenario | null = null;
-    for (let s = seed; !room && s < seed + 2; s++)
-      try {
-        room = generateRoom(s, opts);
-      } catch (err) {
-        console.error(err);
-      }
-    if (!room) {
-      alert(t('Não deu para montar esta sala da masmorra.', 'This dungeon room could not be built.'));
-      location.search = '';
-      return null;
-    }
-    scenario = room;
+    const built = crawlRoom(Number(crawl) | 0, opts);
+    if (!built) return null;
+    scenario = built;
     SCENARIOS[scenario.id] = scenario;
     saveKey = 'dt:battle:crawl';
   } else if (study === 'fft-gariland' || study === 'fft-classes') {
@@ -139,5 +166,5 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left, the FFT study included);
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
-  return { scenario, mission, saveKey, chapter, title: camp === null && !study && crawl === null };
+  return { scenario, mission, saveKey, chapter, title: camp === null && !study && crawl === null && !room, room };
 }

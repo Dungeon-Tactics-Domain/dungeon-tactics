@@ -213,9 +213,10 @@ export function optionsMenu(o: OptionsContext) {
         },
         { disabled: o.busy },
       ),
-      button('secondary', t('Mapa da campanha', 'Campaign map'), toWorld),
-      // exit to the title (in the standalone battle the campaign map is not where the person came from)
-      button('secondary', t('Título', 'Title'), () => {
+      // the campaign map only from a campaign stage: the game opens in the town since Nov 15 (no world map)
+      ...(o.chapter !== null ? [button('secondary', t('Mapa da campanha', 'Campaign map'), toWorld)] : []),
+      // home: the town, or the expedition map when one is in progress (crawl.ts homeScreen)
+      button('secondary', t('Cidade', 'Town'), () => {
         location.search = '';
       }),
       button('secondary', t('Desenvolvedor', 'Developer'), () => {

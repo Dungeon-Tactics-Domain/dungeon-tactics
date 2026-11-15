@@ -15,6 +15,7 @@ import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
 import { parseWorld, WORLD, WORLD_KEY } from '../world.ts';
 import { savedHero, toWorld } from './boot.ts';
+import { townScreen } from './crawl.ts';
 
 // Developer menu (Nov 12): loads the FFT study separately just to offer Gariland's terrain as a map. Starting
 // saves the roster, erases the previous developer battle and reopens the game on it (boot builds the scenario).
@@ -188,7 +189,8 @@ function howToPlay() {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// Title screen (night of Nov 12): the game opened straight into a battle without saying what it was or that there was a campaign
+// Title screen (night of Nov 12): the game opened straight into a battle without saying what it was or that there was a campaign.
+// Since Nov 15 the game opens in the town (crawl.ts) and this is its "Other modes" window: the frozen campaign and the rest
 export function titleScreen() {
   setTrack('title');
   const go = (fn: () => void) => () => {
@@ -237,6 +239,7 @@ export function titleScreen() {
           },
         ),
         button('secondary', t('Batalha avulsa', 'Quick battle'), go(quickBattle)),
+        button('secondary', t('Voltar à cidade', 'Back to town'), go(townScreen)),
         button('secondary', t('Como jogar', 'How to play'), go(howToPlay)),
         button(
           'secondary',
