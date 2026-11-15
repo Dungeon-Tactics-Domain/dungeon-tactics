@@ -47,9 +47,10 @@ function attackScore(grid: Grid, state: BattleState, actor: UnitState, abilityId
   for (const t of p.targets) {
     const u = state.units.find((x) => x.id === t.unit)!;
     const chance = t.chance / 100;
-    if (ability.heal[1] > 0) {
-      // area healing catches whoever is in it: healing an enemy counts against (on the game maps healing only catches allies)
-      const healed = chance * Math.min(avg(ability.heal), UNIT_DEFS[u.def].hp - u.hp);
+    // the preview's own numbers: an enemy heals half and the undead take damage instead (Nov 15), so the Acolyte does
+    // not "heal" its skeletons
+    if (t.healMax > 0) {
+      const healed = chance * Math.min((t.healMin + t.healMax) / 2, UNIT_DEFS[u.def].hp - u.hp);
       total += u.team === actor.team ? healed : -healed * W.FRIENDLY;
       continue;
     }

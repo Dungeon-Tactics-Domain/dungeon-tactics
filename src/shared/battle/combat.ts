@@ -54,6 +54,10 @@ export const COMBAT = {
   // back removes the shield's too). Our hit chance has no evasion: it becomes a bonus. Initial numbers, measured in the campaign
   SIDE_BONUS: 15,
   BACK_BONUS: 30,
+  // Friendly fire (Nov 15, Fernando, "no exceptions"): a hit on the caster's own side, aimed or collateral, and a heal on
+  // the other side both land at half
+  FRIENDLY_FIRE: 0.5,
+  UNDEAD_HEAL: 0.5, // a heal on the undead hurts by this share of the amount instead (Nov 15, Fernando)
 };
 
 export interface TargetPreview {
@@ -80,8 +84,12 @@ const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
   return [a.damage[0] + p, a.damage[1] + p];
 };
 
-// healing and support abilities target an ally and never miss
+// healing and support abilities never miss
 const isHeal = (a: AbilityDef) => a.heal[1] > 0 || !!a.ally;
+// share of a hit (`heal` false) or of a heal that lands on `u`: half on the "wrong" side (COMBAT.FRIENDLY_FIRE)
+const sideShare = (actor: UnitState, u: UnitState, heal: boolean) =>
+  (u.team === actor.team) !== heal ? COMBAT.FRIENDLY_FIRE : 1;
+const healHurts = (a: AbilityDef, u: UnitState) => a.heal[1] > 0 && !!UNIT_DEFS[u.def].undead;
 // swimming: the whole square in deep water (a token with a foot on the bank still acts)
 const inDeep = (grid: Grid, u: UnitState) => footprint(u).every((c) => isDeep(tileAt(grid, c)));
 
@@ -104,13 +112,12 @@ function affected(grid: Grid, state: BattleState, actor: UnitState, ability: Abi
     return state.units.filter((u) => u.id !== actor.id && inArea(grid, area, ability.radius, footprint(u)));
   }
   const u = unitAt(state, center);
-  // the user is only a target of a support ability whose range starts at 0
+  // the user is only a target of a support ability whose range starts at 0. Hits and heals land on either side (Nov 15,
+  // Fernando: "allies can attack allies"), at half on the wrong one (sideShare); support only on its own (the FFT study)
   const self = u?.id === actor.id;
   const wanted =
     u &&
-    (isHeal(ability)
-      ? u.team === actor.team && (!self || (!!ability.ally && ability.range[0] === 0))
-      : !self && u.team !== actor.team);
+    (self ? !!ability.ally && ability.range[0] === 0 : !ability.ally || ability.heal[1] > 0 || u.team === actor.team);
   return wanted ? [u] : [];
 }
 
@@ -138,8 +145,8 @@ export function previewAbility(
   // on the split map any cell of a tile aims at that whole tile (Nov 14 review), so range, area, sight and push agree
   center = aimTile(grid, state, center);
   if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
-  // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that already fired does not pass here:
-  // whoever charges does not walk and a push does not enter deep water
+  // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that fires does not pass here:
+  // it was started on firm ground and goes off from wherever its caster walked to (Nov 15)
   if (!charged && inDeep(grid, actor)) return fail('water');
   // a large unit measures range and sight from its tile nearest to the target (for whoever occupies 1 tile it is the same)
   const [from, to] = aimEnds(grid, state, actor, center);
@@ -160,6 +167,9 @@ export function previewAbility(
     // against a large unit, its tile nearest to the attacker (distance and height)
     const [from, at] = closest(footprint(actor), footprint(u));
     const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
+    const hurts = healHurts(ability, u);
+    const dmg = (d: number) => Math.floor(d * chargingBonus(state, ability, u) * sideShare(actor, u, false));
+    const heal = (h: number) => (hurts ? 0 : Math.floor(h * sideShare(actor, u, true)));
     return {
       unit: u.id,
       side,
@@ -167,10 +177,10 @@ export function previewAbility(
         ? 100
         : (rulesOf(state).hitChance?.(grid, state, actor, ability, u) ??
           Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0))),
-      dmgMin: Math.floor(dmgMin * chargingBonus(state, ability, u)),
-      dmgMax: Math.floor(dmgMax * chargingBonus(state, ability, u)),
-      healMin: ability.heal[0],
-      healMax: ability.heal[1],
+      dmgMin: hurts ? Math.floor(ability.heal[0] * COMBAT.UNDEAD_HEAL) : dmg(dmgMin),
+      dmgMax: hurts ? Math.floor(ability.heal[1] * COMBAT.UNDEAD_HEAL) : dmg(dmgMax),
+      healMin: heal(ability.heal[0]),
+      healMax: heal(ability.heal[1]),
     };
   });
   return { ok: true, center, targets };
@@ -231,7 +241,14 @@ export function resolveAbility(
       } // support without healing: only the effect
       let amount: number;
       [amount, state.rng] = rollInt(state.rng, ability.heal[0], ability.heal[1]);
-      const healed = Math.min(amount, UNIT_DEFS[unit.def].hp - unit.hp);
+      // the same single roll either way, so the dice order does not change
+      if (healHurts(ability, unit)) {
+        const dmg = Math.max(1, Math.floor(amount * COMBAT.UNDEAD_HEAL));
+        events.push({ k: 'hit', unit: unit.id, dmg, chance: 100 });
+        if (hurt(state, unit, dmg, events)) after?.(state, actor, ability, unit, events);
+        continue;
+      }
+      const healed = Math.min(Math.floor(amount * sideShare(actor, unit, true)), UNIT_DEFS[unit.def].hp - unit.hp);
       unit.hp += healed;
       events.push({ k: 'heal', unit: unit.id, amount: healed });
       after?.(state, actor, ability, unit, events);
@@ -246,7 +263,7 @@ export function resolveAbility(
     let dmg: number;
     [dmg, state.rng] =
       rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ...withPower(actor, ability));
-    dmg = Math.max(1, Math.floor(dmg * chargingBonus(state, ability, unit) * scale));
+    dmg = Math.max(1, Math.floor(dmg * chargingBonus(state, ability, unit) * scale * sideShare(actor, unit, false)));
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
     after?.(state, actor, ability, unit, events);

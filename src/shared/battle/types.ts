@@ -33,8 +33,11 @@ export interface TurnState {
 
 export type Outcome = 'ongoing' | 'victory' | 'defeat';
 
-// Action with charge (FFT slow action, BMG 1.1 and A.2): declared on the turn, fires when `ticks` reaches 0. It aims at the tile
-// (`follow` null) or follows the unit that was on it.
+// Where a charge is locked once aimed (Nov 15, Fernando): the tile, or the character standing on it
+export type Lock = 'tile' | 'unit';
+
+// Action with charge (FFT slow action, BMG 1.1 and A.2): declared on the turn, fires when `ticks` reaches 0. `follow` is the
+// lock: null on the tile, else the unit it follows. The shot is traced when it fires, from where the caster stands then
 export interface Charge {
   unit: string;
   ability: string;

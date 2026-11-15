@@ -1,8 +1,8 @@
 import { resolveAbility } from './combat.ts';
-import type { Grid } from './grid.ts';
-import { nearestTile } from './pathing.ts';
+import { type Grid, samePos } from './grid.ts';
+import { aimTile, nearestTile } from './pathing.ts';
 import { rulesOf } from './rules.ts';
-import type { BattleEvent, BattleState, Charge } from './types.ts';
+import type { BattleEvent, BattleState, Charge, Pos } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
 // FFT queue (Oct 25 spec; FFT rules on every map since Nov 12, Fernando's request): each unit gains
@@ -80,24 +80,24 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     state.charges = state.charges.filter((c) => c.ticks > 0);
     for (const c of due) {
       if (!state.units.some((u) => u.id === c.unit)) continue; // the charger died
-      const followed = c.follow && state.units.find((u) => u.id === c.follow);
-      const caster = state.units.find((u) => u.id === c.unit)!;
-      // followed large unit: its tile nearest to the caster (the corner one could be out of range); 1 tile: the same
-      const out = resolveAbility(
-        grid,
-        state,
-        c.unit,
-        c.ability,
-        followed ? nearestTile(followed, caster.pos) : c.target,
-        true,
-      );
-      // nobody hit (the target left): the charge is lost
-      const landed = out.some((e) => e.k !== 'attack');
+      // the shot is traced now, from where the caster stands (Nov 15): one who walked behind cover has it stop there
+      const aim = aimTile(grid, state, chargeAim(state, c));
+      const out = resolveAbility(grid, state, c.unit, c.ability, aim, true);
+      // nobody hit (the target left) and nothing in the way: the charge is lost. A shot stopped short still shows where
+      const landed = out.some((e) => e.k !== 'attack') || (out[0]?.k === 'attack' && !samePos(out[0].target, aim));
       events.push(...(landed ? out : [{ k: 'fizzle' as const, unit: c.unit, ability: c.ability }]));
       if (state.outcome !== 'ongoing') return events;
     }
     gain(1);
   }
+}
+
+// Where a charge aims when it fires: the locked tile, or the followed unit's tile nearest to its caster (a large unit's
+// corner one could be out of range; 1 tile: the same)
+export function chargeAim(state: BattleState, c: Charge): Pos {
+  const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
+  const caster = state.units.find((u) => u.id === c.unit);
+  return followed ? (caster ? nearestTile(followed, caster.pos) : followed.pos) : c.target;
 }
 
 // Charges the actor's turn cost for what it did (BMG 1.1)

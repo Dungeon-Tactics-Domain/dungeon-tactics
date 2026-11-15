@@ -41,6 +41,7 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 10,
     move: 4,
     abilities: ['shot', 'dagger'],
+    undead: true,
   },
   {
     id: 'dark_mage',
@@ -74,6 +75,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 5,
     jump: 2,
     abilities: ['stab', 'trip'],
+    undead: true,
   },
   // Veil Acolyte (night of Nov 12, Act II): heals allies, so taking it down first is the choice the stage asks for (the
   // target-priority "puzzle"). Little life and a mage's attack; initial numbers, measured in the Frost Pass stage
@@ -110,6 +112,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 0,
     abilities: ['shadow_wave', 'blast'],
     size: 2,
+    undead: true,
   },
   // 50 life (was 35): with the enemy AI really advancing (Nov 11) the beacon fell early; 8x8 over 1,000 seeds: 33.7% → 62.8%
   { id: 'beacon', name: 'Farol', en: 'Beacon', hp: 50, speed: 0, move: 0, abilities: [] },

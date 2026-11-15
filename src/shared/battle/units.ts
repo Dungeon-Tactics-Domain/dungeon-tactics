@@ -17,6 +17,7 @@ export interface UnitDef {
   vars?: Record<string, number>; // counters the unit is born with (see UnitState.vars); only the study scenario uses it
   model?: string; // model in public/models; only the study scenario sets it, the game units are in the scene map
   tint?: string; // the model's own glow color, drawing only: a unit that shares the model with another (the Acolyte uses the mage)
+  undead?: true; // a heal hurts it by half its amount instead of healing (Nov 15, Fernando: "healing a skeleton deals damage")
   size?: number;
   power?: number; // extra damage on every ability that hurts (equipment, equipment.ts); without it, 0
   hit?: number; // extra hit points (equipment); without it, 0 // side of the occupied square (2 = 2x2, pathing.ts footprint); without it, 1 tile. A large unit does not walk nor get pushed

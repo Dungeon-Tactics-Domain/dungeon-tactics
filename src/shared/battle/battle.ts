@@ -1,4 +1,4 @@
-import { ABILITIES } from './abilities.ts';
+import { ABILITIES, defaultLock } from './abilities.ts';
 import {
   basicOf,
   checkOutcome,
@@ -24,7 +24,7 @@ import {
 import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
-import type { BattleEvent, BattleState, Charge, Pos, UnitState } from './types.ts';
+import type { BattleEvent, BattleState, Charge, Lock, Pos, UnitState } from './types.ts';
 import { HALF, UNIT_DEFS } from './units.ts';
 
 // Undo per battle (spec: initial value 3, to be measured). It only counts within the current turn: after the turn ends the
@@ -69,18 +69,19 @@ export class Battle {
   get over(): boolean {
     return this.state.outcome !== 'ongoing';
   }
-  // the last step was free (walking without taking anything): the menu offers "Undo move", also after acting
+  // the last step was free (walking without taking anything): the menu offers "Undo move", also after acting. Starting a
+  // charge is free too but is no walk: after "move, charge", Move must stay Move (Nov 15)
   get lastFree(): boolean {
     const last = this.history.at(-1);
-    return !!last && !last.paid;
+    return !!last && !last.paid && last.before.turn.usedAbility === this.state.turn.usedAbility;
   }
   get canUndo(): boolean {
     const last = this.history.at(-1);
     return !!last && (!last.paid || this.undosLeft > 0);
   }
 
-  // since Nov 13 you can walk after starting to charge (Fernando's request: "can move to throw it farther"):
-  // the charge is not undone and fires from wherever the unit is
+  // since Nov 13 you can walk after starting to charge (Fernando's request: "can move to throw it farther"): the charge is
+  // not undone and fires from wherever the unit is; since Nov 15 starting it costs half of what is left (act)
   reach(): Map<string, Step> {
     const left = UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0);
     return this.over || left <= 0 ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
@@ -112,7 +113,8 @@ export class Battle {
     return [...hit, { k: 'move', unit: this.actor.id, path: [from, ...path] }];
   }
 
-  act(abilityId: string, target: Pos): BattleEvent[] {
+  // `lock`: where a charge stays aimed, picked by the player after the aim (Nov 15); without it, the ability's default
+  act(abilityId: string, target: Pos, lock?: Lock): BattleEvent[] {
     if (this.over || this.state.turn.usedAbility || !this.preview(abilityId, target).ok) return [];
     // declaring a charge rolls no die: undo costs nothing (Nov 13, review; the roll comes when it fires)
     this.remember(ABILITIES[abilityId].charge === 0);
@@ -123,7 +125,10 @@ export class Battle {
     if (ability.charge > 0) {
       // slow action: pays the cost now and joins the queue; a new charge replaces the previous one of the same unit
       if (ability.cost) this.actor.vars![ability.cost[0]] -= ability.cost[1];
-      const follow = ability.panel ? null : (unitAt(this.state, target)?.id ?? null);
+      // it may still walk, with half of what is left, rounded down (Nov 15, Fernando: "loses half, rounded up")
+      const left = Math.max(0, UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0));
+      this.state.turn.spent = (this.state.turn.spent ?? 0) + Math.ceil(left / 2);
+      const follow = (lock ?? defaultLock(ability)) === 'unit' ? (unitAt(this.state, target)?.id ?? null) : null;
       this.state.charges = [
         ...this.state.charges.filter((c) => c.unit !== this.actor.id),
         { unit: this.actor.id, ability: abilityId, target, follow, ticks: ability.charge },

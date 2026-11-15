@@ -9,7 +9,7 @@ import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { previewOrder } from '../src/shared/battle/turn-queue.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
+import { flat, gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Charged actions (Nov 12, FFT turn rules on all maps): declared on the turn, resolves after N ticks
 // (BMG 1.1 and A.2). Since the Nov 12 decision ("Like FFT") only spells and Aimed Shot charge: Explosion 4 and follows the unit,
@@ -146,6 +146,106 @@ describe('charged actions', () => {
     const raw = JSON.parse(b.save());
     raw.state.charges[0].ticks = 500;
     expect(Battle.load(JSON.stringify(raw))).toBeNull();
+  });
+});
+
+// Fernando's charge rules of Nov 15: a charge started at the turn's opening still lets the caster walk with half of what is
+// left (rounded down: it loses half, rounded up), the player locks it on the tile or on the character, and the shot is traced
+// when it fires, from wherever the caster stands then
+describe('charge rules (Nov 15)', () => {
+  // 8 movement points, so the table goes past Fernando's example (5 left: loses 3, keeps 2)
+  UNIT_DEFS.test_caster = { ...UNIT_DEFS.mage, id: 'test_caster', move: 8 };
+  const caster = (spent: number) => {
+    const b = duel('test_caster', 1, 3);
+    b.state.turn.spent = spent;
+    return b;
+  };
+
+  it('starting a charge costs half of the movement left, rounded up', () => {
+    // [left, kept]
+    const table = [
+      [0, 0],
+      [1, 0],
+      [2, 1],
+      [3, 1],
+      [4, 2],
+      [5, 2],
+      [6, 3],
+      [7, 3],
+      [8, 4],
+    ];
+    for (const [left, kept] of table) {
+      const b = caster(8 - left);
+      b.act('blast', { x: 4, y: 3 });
+      expect(8 - (b.state.turn.spent ?? 0), `${left} left`).toBe(kept);
+    }
+  });
+
+  it('it walks with what is kept; moving then charging leaves Move on the menu, not "Undo move"', () => {
+    const b = caster(0);
+    b.act('blast', { x: 4, y: 3 });
+    expect(Math.max(...[...b.reach().values()].map((s) => s.cost))).toBe(4);
+    const m = caster(0);
+    m.move({ x: 1, y: 4 });
+    m.act('blast', { x: 4, y: 3 });
+    expect(m.lastFree).toBe(false); // the last step is the charge: "Undo move" would undo it instead
+    expect(m.reach().size).toBeGreaterThan(0);
+  });
+
+  it('locked on the character it follows the unit; locked on the tile it hits whoever stands there', () => {
+    // Aimed Shot aims at the tile by default; locked on the character, it follows
+    const shot = duel('archer', 1, 3);
+    shot.act('aimed_shot', { x: 4, y: 3 }, 'unit');
+    expect(shot.state.charges[0].follow).toBe('b');
+    shot.state.units[1].pos = { x: 4, y: 5 };
+    expect(untilResolved(shot).find((e) => e.k === 'attack')).toMatchObject({ target: { x: 4, y: 5 } });
+    // Blast follows by default; locked on the tile, it stays: the target leaves and another one steps in
+    const blast = duel('mage', 1, 3);
+    blast.act('blast', { x: 4, y: 3 }, 'tile');
+    expect(blast.state.charges[0].follow).toBeNull();
+    blast.state.units[1].pos = { x: 6, y: 6 };
+    blast.state.units[2].pos = { x: 4, y: 3 };
+    const out = untilResolved(blast);
+    const struck = out.filter((e) => e.k === 'hit' || e.k === 'miss').map((e) => (e as { unit: string }).unit);
+    expect(out.find((e) => e.k === 'attack')).toMatchObject({ target: { x: 4, y: 3 } });
+    expect(struck).toEqual(['c']);
+  });
+
+  it('the shot is traced when it fires: a caster who walked behind a wall has it stop on the wall', () => {
+    const g = gridOf(['........', '........', '........', '........', '.##.....', '........']);
+    const b = new Battle(
+      g,
+      stateOf(
+        [
+          { id: 'a', def: 'archer', team: 'hero', x: 0, y: 3 },
+          { id: 'b', def: 'soldier', team: 'enemy', x: 3, y: 3 },
+          { id: 'beacon', def: 'beacon', team: 'hero', x: 7, y: 0 },
+        ],
+        HIT_SEED,
+      ),
+    );
+    b.act('aimed_shot', { x: 3, y: 3 }, 'unit');
+    expect(b.move({ x: 0, y: 5 }).length).toBeGreaterThan(0);
+    const out = untilResolved(b);
+    const at = (out.find((e) => e.k === 'attack') as { target: { x: number; y: number } }).target;
+    expect(g.tiles[at.y * g.width + at.x].terrain).toBe(g.tiles[4 * g.width + 1].terrain); // the wall
+    expect(out.some((e) => (e.k === 'hit' || e.k === 'miss') && e.unit === 'b')).toBe(false);
+  });
+
+  it('save and load keep the lock and the movement the charge left', () => {
+    const b = Battle.start(SCENARIOS.skirmish, 1);
+    const me = b.actor;
+    const foe = b.state.units.find((u) => u.team !== me.team)!;
+    b.state.turn.spent = 3;
+    b.state.charges = [
+      { unit: me.id, ability: UNIT_DEFS[me.def].abilities[0], target: foe.pos, follow: foe.id, ticks: 2 },
+    ];
+    const back = Battle.load(b.save())!;
+    expect(back.state.charges).toEqual(b.state.charges);
+    expect(back.state.turn.spent).toBe(3);
+    const raw = JSON.parse(b.save());
+    raw.state.charges[0].follow = 'nobody';
+    expect(Battle.load(JSON.stringify(raw))).toBeNull(); // a lock on a unit that is not there: the save is refused
   });
 });
 

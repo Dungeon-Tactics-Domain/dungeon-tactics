@@ -56,17 +56,18 @@ describe('ability preview', () => {
     expect(previewAbility(flat(5, 1), duel('archer', 3), 'a', 'shot', at(2))).toMatchObject({ ok: true, targets: [] });
   });
 
-  it('damage targets an enemy, heal targets an ally', () => {
+  it('damage and heal land on either side; the wrong side gets half (Nov 15, battle-friendly-fire.test.ts)', () => {
     const s = stateOf([
       { id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 },
       { id: 'ally', def: 'rogue', team: 'hero', x: 2, y: 0 },
       { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 0 },
     ]);
     const g = flat(5, 1);
-    expect(previewAbility(g, s, 'a', 'firebolt', at(2)).targets).toEqual([]); // an ally is not a damage target: it lands on empty ground
-    expect(previewAbility(g, s, 'a', 'firebolt', at(3)).ok).toBe(true);
-    expect(previewAbility(g, s, 'a', 'heal', at(2)).ok).toBe(true);
-    expect(previewAbility(g, s, 'a', 'heal', at(3)).targets).toEqual([]); // heal on an enemy: it lands on empty ground
+    expect(previewAbility(g, s, 'a', 'firebolt', at(2)).targets.map((t) => t.unit)).toEqual(['ally']);
+    expect(previewAbility(g, s, 'a', 'firebolt', at(3)).targets.map((t) => t.unit)).toEqual(['f']);
+    expect(previewAbility(g, s, 'a', 'heal', at(2)).targets.map((t) => t.unit)).toEqual(['ally']);
+    expect(previewAbility(g, s, 'a', 'heal', at(3)).targets.map((t) => t.unit)).toEqual(['f']);
+    expect(previewAbility(g, s, 'a', 'heal', at(0)).ok).toBe(false); // never the caster itself (range starts at 1)
   });
 
   it('area hits everyone inside it, allies too, and never the user', () => {

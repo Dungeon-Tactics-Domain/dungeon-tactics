@@ -181,6 +181,7 @@ export function buildDevScenario(
         ...(b.power && { power: b.power }),
         ...(b.hit && { hit: b.hit }),
         ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }),
+        ...(UNIT_DEFS[u.base].undead && { undead: true as const }), // heals hurt the class's skeletons in every cast too
         id,
         name: u.name,
         en,
