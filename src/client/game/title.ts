@@ -2,18 +2,16 @@
 // credits and the developer menu. Each window goes back to the title with Esc or Back; the title itself never closes (the
 // map behind it is just scenery).
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
-import { CHEST_KEY, EQUIP_KEY } from '../chest.ts';
 import { openDevMenu } from '../dev-menu.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
-import { GROUP_KEY } from '../group.ts';
 import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
 import { jumpHelp } from '../town-ui.ts';
-import { CRAWL_KEY, homeLabel, homeScreen, ROOM_KEY, savedExpedition, savedRoom, townScreen } from './crawl.ts';
+import { openSaves, savedGames, startNewGame } from './saves-ui.ts';
 
 // Developer menu (Nov 12): loads the FFT study separately just to offer Gariland's terrain as a map. Starting
 // saves the roster, erases the previous developer battle and reopens the game on it (boot builds the scenario).
@@ -199,13 +197,8 @@ function howToPlay() {
 // game and Continue lead to the town (crawl.ts), the dungeon loop's home; there is no world map or campaign
 export function titleScreen() {
   setTrack('title');
-  // the saves a game is made of: the party, its chest and equipment, the expedition and the room in play. Continue shows
-  // when one of them holds a real save (an object, or an expedition that parses); New game erases them all. Read here,
-  // not at load: crawl.ts imports this module back
-  const progress = [GROUP_KEY, CHEST_KEY, EQUIP_KEY, CRAWL_KEY, ROOM_KEY];
-  const isObject = (k: string) => typeof store.json(k) === 'object' && store.json(k) !== null;
-  const saved = !!savedExpedition() || [GROUP_KEY, CHEST_KEY, EQUIP_KEY].some(isObject);
-  const room = savedRoom();
+  // read here, not at load: crawl.ts imports this module back
+  const saved = savedGames().length;
   const go = (fn: () => void) => () => {
     d.close();
     fn();
@@ -217,8 +210,8 @@ export function titleScreen() {
       el(
         'div',
         { class: 'menu-actions camp-list' },
-        // Continue only shows with saved progress and says where it opens (the room in play, else the town, which offers
-        // to continue the expedition), like FFT's save summary; New game erases the progress (the 2nd tap confirms)
+        // Continue only shows with a saved game and opens the list of them (saves-ui.ts); New game starts a new save
+        // slot and keeps the others (Fernando, Nov 15: it used to erase the progress)
         ...(saved
           ? [
               button(
@@ -228,24 +221,16 @@ export function titleScreen() {
                   el(
                     'small',
                     { class: 'continue-where' },
-                    room === null ? homeLabel() : t('Sala da masmorra', 'Dungeon room'),
+                    saved === 1
+                      ? t('1 jogo salvo', '1 saved game')
+                      : t(`${saved} jogos salvos`, `${saved} saved games`),
                   ),
                 ],
-                go(() => (room === null ? homeScreen() : void (location.search = `?room=${room}`))),
+                go(() => openSaves(titleScreen)),
               ),
             ]
           : []),
-        button(saved ? 'secondary' : 'primary', t('Novo jogo', 'New game'), (e: Event) => {
-          const btn = e.currentTarget as HTMLButtonElement;
-          if (saved && !btn.dataset.armed) {
-            btn.dataset.armed = '1';
-            btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
-            return;
-          }
-          for (const k of progress) store.set(k, '');
-          d.close();
-          townScreen();
-        }),
+        button(saved ? 'secondary' : 'primary', t('Novo jogo', 'New game'), go(startNewGame)),
         button('secondary', t('Batalha avulsa', 'Quick battle'), go(quickBattle)),
         button('secondary', t('Como jogar', 'How to play'), go(howToPlay)),
         button(

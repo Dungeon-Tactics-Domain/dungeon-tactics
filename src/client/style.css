@@ -689,6 +689,30 @@ button[hidden],
 .camp-list > button:is(:hover, :focus) .continue-where {
   color: var(--ink);
 }
+/* Continue's saved games (saves-ui.ts, Nov 15): the load row and its Delete side by side as menu rows of the window
+   list, the face before who goes and the where-gold-when line; scrolls past a screenful. Delete keeps its width when its
+   2nd-tap text shows, so the rows do not jump */
+.save-slots .dialog.title {
+  width: min(760px, 100%);
+}
+.dialog .save-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12em;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.dialog .camp-list > .save-load {
+  min-height: 76px;
+  gap: 12px;
+}
+.save-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.save-text .continue-where {
+  margin-left: 0;
+}
 /* Credits: left-aligned list even in the title's centered dialog */
 .dialog.title .legend {
   text-align: left;
