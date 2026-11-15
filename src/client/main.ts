@@ -145,8 +145,7 @@ export class Game {
           samePos(pos, this.cursor)
         )
           return;
-        this.cursor = pos;
-        sfx('cursor');
+        this.cursor = pos; // no blip on tiles: it piled up and stuttered when sweeping the mouse or the stick (Fernando, Nov 15)
         this.update(this.screen.k === 'map' ? hoverTile(this.battle, this.ui, pos) : this.ui);
       },
       pan: (dx, dy) => scene.pan(dx, dy),
@@ -456,7 +455,6 @@ export class Game {
   }
 
   private moveCursor(p: Pos) {
-    sfx('cursor');
     this.cursor = p;
     this.scene.focusOn(p); // the camera follows the cursor, like FFT
     this.update(hoverTile(this.battle, this.ui, p));
