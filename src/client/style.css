@@ -951,10 +951,10 @@ button[hidden],
     inset -3px -4px 6px var(--bevel-lo),
     0 0 0 2px var(--edge);
 }
-.orb.blue {
+.orb.act {
   --orb: var(--orb-blue);
 }
-.orb.gold {
+.orb.status {
   --orb: var(--orb-gold);
 }
 .panel .item:disabled .orb {
