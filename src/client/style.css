@@ -1767,7 +1767,60 @@ body:has(.result-overlay) .fps {
   width: 64px;
   height: 64px;
 }
-/* a portrait in the face's place (no sheet, sheet still loading or failed) takes the face's height, and the face's width
+/* the face held on one expression outside the battle (hud.ts stillFace: result cards, party, tavern): 64 px, .big 128,
+   whole ratios of the 128 px paint; not a .portrait, whose party sizes (48x64, 96x128) would crop it */
+.still-face {
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+.still-face.big {
+  width: 128px;
+  height: 128px;
+}
+.still-face .face-strip {
+  image-rendering: pixelated;
+}
+/* hero cards on the result window (end-screens.ts heroCards): each card is a container, so the face keeps 128 px where
+   the card is wide enough (the lab mock-up's 280 px cards) and halves to 64 in the 560 px window with 4 heroes */
+.result-heroes {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+.result-hero {
+  flex: 1 1 110px;
+  container-type: inline-size;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border-top: 4px solid var(--hero);
+  background: color-mix(in srgb, var(--shade) 25%, transparent);
+}
+/* label and number over a full-width bar: in the 4-across cards the gauge's usual one row left the bar ~15 px */
+.result-hero .gauge {
+  justify-self: stretch;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  row-gap: 2px;
+}
+.result-hero .gauge-bar {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+.result-hero.fallen .still-face {
+  filter: grayscale(1) brightness(0.7);
+}
+@container (max-width: 160px) {
+  .result-hero .still-face.big {
+    width: 64px;
+    height: 64px;
+  }
+} /* a portrait in the face's place (no sheet, sheet still loading or failed) takes the face's height, and the face's width
    stays reserved: neither the box nor the text jumps when the sheet arrives */
 .talk-face {
   min-width: 132px;

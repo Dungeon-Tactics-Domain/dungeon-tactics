@@ -308,7 +308,7 @@ const menuHead = (...text: Child[]) => el('div', { class: 'panel-head', 'aria-hi
 
 // bar with label and number (HP, MP, CT), like the ones in FFT's unit panel. `change` marks in stripes the part
 // that the strike takes (loss) or the heal adds (gain), like the target bar in Tactics Ogre; the number comes along in the panel
-function gauge(
+export function gauge(
   cls: string,
   label: string,
   value: number,
@@ -530,6 +530,16 @@ export function portrait(def: string) {
   return model
     ? el('img', { class: `portrait${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`, src: `/chars/${model}.webp`, alt: '' })
     : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
+}
+
+// the painted face held on one expression outside the battle (result cards, party, tavern): 64 px, `big` 128, whole
+// ratios of the 128 px paint so it stays crisp; a class without a sheet keeps portrait()
+export function stillFace(def: string, expr: Expression, big = false) {
+  const f = battleFace(def);
+  if (!f) return portrait(def);
+  const { node, show } = faceSheet(def, f, `still-face${big ? ' big' : ''}`);
+  show(frameOf(f, expr));
+  return node;
 }
 
 // the class line, only for those with their own name (the party, developer menu): "Rogue" under "Lia"

@@ -16,8 +16,8 @@ import {
   unitAt,
 } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team, UnitState } from '../shared/battle/types.ts';
-import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { battleFace, expressionAt, faceCues, frameOf, type Mood } from './battle-face.ts';
+import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
+import { battleFace, endExpression, expressionAt, faceCues, frameOf, type Mood } from './battle-face.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -33,7 +33,7 @@ import { dialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom, homeScreen } from './game/crawl.ts';
-import { battleEndScreen, confetti, mvpCard } from './game/end-screens.ts';
+import { battleEndScreen, confetti, heroCards, mvpCard } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
@@ -794,15 +794,28 @@ export class Game {
     const [id, s] = m;
     const { def } = this.roster[id];
     const card = mvpCard(def, unitName(def), s.dmg, s.kills);
-    // on a victory the highlight hero smiles with its painted face (fallen: wounded); the card is the face left on screen
+    // on a victory the highlight hero shows its painted face as on its hero card (endExpression); the card is the face left on screen
     const f = battleFace(def);
     const u = this.battle.state.units.find((x) => x.id === id);
     if (f && this.battle.state.outcome === 'victory') {
       const { node, show } = faceSheet(def, f, 'battle-face portrait');
-      show(frameOf(f, expressionAt([], 0, u?.hp ?? 0, UNIT_DEFS[def].hp, !!u)));
+      show(frameOf(f, endExpression(u?.hp ?? 0, UNIT_DEFS[def].hp, true)));
       card.querySelector('.portrait')?.replaceWith(node);
     }
     return [card];
+  }
+
+  // the result window's top: a card per hero who fought, then the highlight. The roster, not the state: the state drops
+  // the fallen, who get a card too (hp 0)
+  private resultCards(): HTMLElement[] {
+    const heroes = Object.entries(this.roster)
+      .filter(([, r]) => r.team === 'hero' && !isObjective(r.def))
+      .map(([id, { def }]) => ({
+        def,
+        hp: this.battle.state.units.find((u) => u.id === id)?.hp ?? 0,
+        max: UNIT_DEFS[def].hp,
+      }));
+    return [heroCards(heroes, this.battle.state.outcome === 'victory'), ...this.mvpLine()];
   }
 
   private restart() {
@@ -823,7 +836,7 @@ export class Game {
     jingle(won);
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
     if (won) confetti();
-    if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, this.mvpLine());
+    if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, this.resultCards());
     // Until Dawn: how many turns it lasted and the record (a new record gets highlighted, like the stage grade)
     // winning by downing everyone before dawn also counts as surviving the whole night (it used to save "record 20" on a victory)
     const lasted = won ? SURVIVE_TURNS : survived(this.battle.state),
@@ -834,7 +847,7 @@ export class Game {
       survival: isSurvival(scenario.id),
       lasted,
       best,
-      mvp: this.mvpLine(),
+      mvp: this.resultCards(),
       restart: () => this.restart(),
     });
   }

@@ -59,3 +59,8 @@ export function expressionAt(moods: readonly Mood[], now: number, hp: number, ma
   if (won) return 'smile';
   return hp < maxHp * WOUNDED ? 'wounded' : 'neutral';
 }
+
+// the face on the end-of-battle hero card: the fallen hurt (greyed by the card), under 30% of life wounded, the rest
+// smile on a victory and stay neutral on a defeat. Not expressionAt: there the victory smile beats wounded
+export const endExpression = (hp: number, maxHp: number, won: boolean): Expression =>
+  hp <= 0 ? 'hurt' : hp < maxHp * WOUNDED ? 'wounded' : won ? 'smile' : 'neutral';

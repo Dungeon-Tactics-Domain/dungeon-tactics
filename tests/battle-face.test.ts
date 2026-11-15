@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { battleFace, expressionAt, faceCues, frameOf } from '../src/client/battle-face.ts';
+import { battleFace, endExpression, expressionAt, faceCues, frameOf } from '../src/client/battle-face.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
@@ -139,5 +139,18 @@ describe('expressionAt: the face shown now', () => {
   });
   it('smiles on a victory, the surviving heroes', () => {
     expect(expressionAt([], 0, 5, 30, true)).toBe('smile');
+  });
+});
+
+describe('endExpression: the face on the end-of-battle card', () => {
+  it('hurts the fallen and wounds those under 30% of life, won or lost', () => {
+    for (const won of [true, false]) {
+      expect(endExpression(0, 30, won)).toBe('hurt');
+      expect(endExpression(8, 30, won)).toBe('wounded');
+    }
+  });
+  it('smiles for the healthy survivors of a victory and stays neutral on a defeat', () => {
+    expect(endExpression(9, 30, true)).toBe('smile');
+    expect(endExpression(30, 30, false)).toBe('neutral');
   });
 });

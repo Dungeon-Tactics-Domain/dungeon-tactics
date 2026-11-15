@@ -1,8 +1,10 @@
 // End-of-battle window of the standalone battle (Until Dawn record, play again, home) and the victory confetti; the
 // expedition rooms have their own (crawl.ts finishRoom). The game saves progress before opening it.
+import { endExpression } from '../battle-face.ts';
+import { classOf } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
-import { portrait } from '../hud.ts';
-import { t } from '../i18n.ts';
+import { gauge, portrait, stillFace } from '../hud.ts';
+import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { SURVIVE_TURNS } from '../survival.ts';
 import { goHome, homeLabel } from './crawl.ts';
@@ -47,6 +49,33 @@ export function mvpCard(def: string, name: string, dmg: number, kills: number): 
   );
 }
 
+// One card per hero who fought (the lab's result mock-up): the painted face as the battle left them (endExpression), name,
+// class and life. The fallen card is greyed and says so: colour is never the only signal
+export interface EndHero {
+  def: string;
+  hp: number; // 0 for the fallen
+  max: number;
+}
+export function heroCards(heroes: EndHero[], won: boolean): HTMLElement {
+  return el(
+    'ul',
+    { class: 'result-heroes' },
+    ...heroes.map(({ def, hp, max }) => {
+      const base = classOf(def);
+      // under the name: Fallen, else the class when the name is not it (expedition heroes)
+      const label = hp <= 0 ? t('Caído', 'Fallen') : base && unitName(base);
+      return el(
+        'li',
+        { class: `result-hero${hp <= 0 ? ' fallen' : ''}` },
+        stillFace(def, endExpression(hp, max, won), true),
+        el('strong', {}, unitName(def)),
+        ...(label ? [el('span', { class: 'result-label' }, label)] : []),
+        gauge('hp', t('Vida', 'HP'), hp, max),
+      );
+    }),
+  );
+}
+
 // What the battle gave, one row each after a glass orb like the command menu's: gold-coloured for records (the orb is
 // decoration: the text says it all)
 type Gain = [orb: 'gold' | 'blue', text: string];
@@ -70,7 +99,7 @@ export interface BattleEnd {
   survival: boolean; // Until Dawn: turns held and the record instead of the Beacon line
   lasted: number;
   best: number; // record before this battle
-  mvp: HTMLElement[]; // the highlight card (Game.mvpLine, mvpCard), empty when no hero scored
+  mvp: HTMLElement[]; // the hero cards and the highlight card (Game.resultCards: heroCards, mvpCard)
   restart: () => void;
 }
 
