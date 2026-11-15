@@ -36,6 +36,17 @@ export function dialog(cls: string, title: string, body: Node[], opts: { fixed?:
   addEventListener(
     'keydown',
     (e) => {
+      // up and down walk a window list (title, Quick battle, Town), as the title footer says; only the window holding focus
+      // moves, so a list behind another window stays put
+      const list = overlay.querySelector('.camp-list');
+      if ((e.code === 'ArrowUp' || e.code === 'ArrowDown') && list && overlay.contains(document.activeElement)) {
+        e.preventDefault();
+        const items = [...list.querySelectorAll<HTMLButtonElement>('button:not([disabled])')];
+        const at = items.indexOf(document.activeElement as HTMLButtonElement);
+        const step = e.code === 'ArrowUp' ? -1 : 1;
+        items[at < 0 ? (step > 0 ? 0 : items.length - 1) : (at + step + items.length) % items.length]?.focus();
+        return;
+      }
       if (e.code !== 'Escape') return;
       e.preventDefault();
       e.stopImmediatePropagation(); // Esc closes only the dialog: without this it reached the game and canceled the choice too

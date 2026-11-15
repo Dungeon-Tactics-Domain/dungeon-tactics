@@ -788,6 +788,9 @@ export function openWorld(host: HTMLElement, opts: WorldOptions): WorldView {
     for (const a of actions) {
       if (document.querySelector('.overlay')) {
         if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
+        // the d-pad walks the Town list like the arrow keys (dialog.ts)
+        else if (a.k === 'cursor' && (a.dir === 'up' || a.dir === 'down'))
+          dispatchEvent(new KeyboardEvent('keydown', { code: a.dir === 'up' ? 'ArrowUp' : 'ArrowDown' }));
         continue;
       }
       if (a.k === 'cursor') {
