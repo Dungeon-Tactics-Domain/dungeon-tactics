@@ -1,0 +1,66 @@
+import { describe, expect, it } from 'vitest';
+import { chargeFrom, chargeFromText, chargeLines } from '../src/client/charge-lines.ts';
+import { needsLock } from '../src/client/command.ts';
+import { confirm, freshUi } from '../src/client/interaction.ts';
+import { Battle } from '../src/shared/battle/battle.ts';
+import { gridOf, stateOf } from './battle-helpers.ts';
+
+// Charge lines and the lock step (Nov 15, Fernando): every charge keeps a line on screen, and while the charging unit picks
+// where to walk the line from that destination says where the shot would stop and whom it hits
+const grid = gridOf(['........', '........', '........', '.....#..', '........']);
+const battle = () =>
+  new Battle(
+    grid,
+    stateOf([
+      { id: 'a', def: 'archer', team: 'hero', x: 1, y: 1 },
+      { id: 'ally', def: 'soldier', team: 'hero', x: 3, y: 2 },
+      { id: 'foe', def: 'soldier', team: 'enemy', x: 5, y: 1 },
+      { id: 'm', def: 'dark_mage', team: 'enemy', x: 7, y: 4 },
+      { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 4 },
+    ]),
+  );
+
+describe('charge lines (Nov 15)', () => {
+  it('one line per charge, enemies included, to the followed unit or to the locked tile', () => {
+    const b = battle();
+    b.act('aimed_shot', { x: 5, y: 1 }, 'unit');
+    b.state.charges.push({ unit: 'm', ability: 'blast', target: { x: 3, y: 2 }, follow: null, ticks: 3 });
+    const lines = chargeLines(grid, b.state);
+    expect(lines.map((l) => [l.team, l.from.pos, l.to.pos])).toEqual([
+      ['hero', { x: 1, y: 1 }, { x: 5, y: 1 }],
+      ['enemy', { x: 7, y: 4 }, { x: 3, y: 2 }],
+    ]);
+    b.state.units.find((u) => u.id === 'foe')!.pos = { x: 6, y: 1 };
+    expect(chargeLines(grid, b.state)[0].to.pos).toEqual({ x: 6, y: 1 }); // the lock follows it
+  });
+
+  it('from a destination: where the shot stops and whom it hits, friendly fire flagged', () => {
+    const b = battle();
+    b.act('aimed_shot', { x: 5, y: 1 }, 'unit');
+    // straight along the row: it reaches the foe
+    expect(chargeFrom(b, { x: 1, y: 1 })).toMatchObject({
+      ok: true,
+      stop: null,
+      hits: [{ unit: 'foe', friendly: false }],
+    });
+    // from below the ally, the arrow stops on it, at half
+    expect(chargeFrom(b, { x: 1, y: 3 })).toMatchObject({
+      ok: true,
+      stop: { pos: { x: 3, y: 2 } },
+      hits: [{ unit: 'ally', friendly: true }],
+    });
+    expect(chargeFromText(b, { x: 1, y: 3 })).toContain('metade do dano');
+    // out of reach of the move: no sentence for a tile it cannot stop on
+    expect(chargeFromText(b, { x: 7, y: 0 })).toBe('');
+  });
+
+  it('a charge aimed at someone asks for the lock; the choice reaches the rule', () => {
+    const b = battle();
+    expect(needsLock(b, 'aimed_shot', { x: 5, y: 1 })).toBe(true);
+    expect(needsLock(b, 'aimed_shot', { x: 5, y: 3 })).toBe(false); // empty ground: only the tile
+    expect(needsLock(b, 'shot', { x: 5, y: 1 })).toBe(false); // no charge
+    const ui = { ...freshUi(b), mode: { k: 'ability' as const, id: 'aimed_shot' }, pending: { x: 5, y: 1 } };
+    confirm(b, ui, 'unit');
+    expect(b.state.charges[0].follow).toBe('foe');
+  });
+});

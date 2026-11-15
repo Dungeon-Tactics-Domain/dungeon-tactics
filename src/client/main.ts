@@ -1,7 +1,7 @@
 // Game entry point: wires the battle (rules), the scene (Three), the HUD (DOM) and touch input. Owns the turn loop: the player acts
 // through the HUD; on the enemy turn the AI plays on its own, one unit at a time, with a pause so it can be read.
 
-import { ABILITIES } from '../shared/battle/abilities.ts';
+import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
 import { dist, facingTo, inBounds, posKey, samePos, subOf } from '../shared/battle/grid.ts';
@@ -15,9 +15,10 @@ import {
   squareH,
   unitAt,
 } from '../shared/battle/pathing.ts';
-import type { BattleEvent, Pos, Team, UnitState } from '../shared/battle/types.ts';
+import type { BattleEvent, Lock, Pos, Team, UnitState } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, endExpression, expressionAt, faceCues, frameOf, type Mood } from './battle-face.ts';
+import { chargeFrom } from './charge-lines.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -25,6 +26,7 @@ import {
   canUndoMove,
   commandEnabled,
   longestRange,
+  needsLock,
   type Screen,
   startScreen,
   stepIndex,
@@ -110,6 +112,7 @@ export class Game {
       command: (i) => this.chooseCommand(i),
       ability: (i) => this.chooseAbility(i),
       answer: (yes) => void this.answer(yes),
+      lock: (on) => void this.pickLock(on),
       cancel: () => this.runKey({ k: 'cancel' }),
       rotate: (dir) => scene.rotate(dir),
       recenter: () => scene.resetView(),
@@ -293,10 +296,10 @@ export class Game {
     if (s.k === 'confirm') {
       if (a.k === 'cursor') {
         sfx('cursor');
-        this.screen = { ...s, yes: !s.yes };
+        this.screen = s.lock ? { ...s, lock: s.lock === 'unit' ? 'tile' : 'unit' } : { ...s, yes: !s.yes };
         return this.update(this.ui);
       }
-      if (a.k === 'confirm') return void this.answer(s.yes);
+      if (a.k === 'confirm') return void (s.lock ? this.pickLock(s.lock) : this.answer(s.yes));
       if (a.k === 'cancel') return void this.answer(false);
       return;
     }
@@ -411,6 +414,18 @@ export class Game {
   private async answer(yes: boolean) {
     const s = this.screen;
     if (s.k !== 'confirm' || this.busy) return;
+    // No on the lock step goes back to "Execute?"
+    if (!yes && s.lock) {
+      sfx('cancel');
+      this.screen = { ...s, lock: undefined };
+      return this.update(this.ui);
+    }
+    // a charge aimed at someone: one more step, where to lock it (Nov 15), starting on the ability's usual lock
+    if (yes && needsLock(this.battle, s.ability, s.target)) {
+      sfx('confirm');
+      this.screen = { ...s, lock: s.lock ?? defaultLock(ABILITIES[s.ability]) };
+      return this.update(this.ui);
+    }
     if (!yes) {
       sfx('cancel');
       if (ABILITIES[s.ability].range[1] === 0)
@@ -422,9 +437,16 @@ export class Game {
     await this.execute();
   }
 
+  // the lock step's choice (click, or Enter on the focused one): the charge starts locked there
+  private async pickLock(on: Lock) {
+    if (this.screen.k !== 'confirm' || !this.screen.lock || this.busy) return;
+    sfx('confirm');
+    await this.execute(on);
+  }
+
   // runs what the Ui has marked (move or act) and returns to the menu, on the next command that applies
-  private async execute() {
-    const { events, ui } = confirm(this.battle, this.ui);
+  private async execute(lock?: Lock) {
+    const { events, ui } = confirm(this.battle, this.ui, lock);
     if (!events.length) return;
     this.ui = ui;
     await this.animate(events);
@@ -494,6 +516,11 @@ export class Game {
               };
     const moving = s.k === 'map' && ui.mode.k === 'move';
     this.scene.setHighlights(hl);
+    // a charging unit picking where to walk sees its shot as it would fire from there (Nov 15, Fernando: "so the player
+    // knows where to stand"): the destination's square must fit, like the move itself
+    this.scene.setChargePreview(
+      hl && moving && this.battle.reach().has(posKey(this.cursor)) ? chargeFrom(this.battle, this.cursor) : null,
+    );
     // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square; aiming,
     // it frames what the target mark covers (one cell, or the body of the unit there)
     const framed =

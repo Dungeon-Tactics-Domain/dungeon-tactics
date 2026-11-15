@@ -4,7 +4,8 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { isDeep, tileAt } from '../shared/battle/grid.ts';
-import type { Pos } from '../shared/battle/types.ts';
+import { unitAt } from '../shared/battle/pathing.ts';
+import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
 export type Command = 'move' | 'act' | 'wait' | 'status';
@@ -16,8 +17,16 @@ export type Screen =
   | { k: 'menu'; index: number }
   | { k: 'abilities'; index: number }
   | { k: 'map'; command: 'move' | 'act' }
-  | { k: 'confirm'; ability: string; target: Pos; yes: boolean }
+  // `lock`: the 2nd step of a charge aimed at a unit, tile or character (Nov 15, Fernando), with the one in focus
+  | { k: 'confirm'; ability: string; target: Pos; yes: boolean; lock?: Lock }
   | { k: 'facing' };
+
+// "Execute?" on a charge aimed at someone asks next where to lock it: the tile, or that character (Nov 15). On empty ground
+// there is only the tile
+export function needsLock(b: Battle, ability: string, target: Pos): boolean {
+  const on = unitAt(b.state, target);
+  return ABILITIES[ability].charge > 0 && !!on && on.id !== b.actor.id;
+}
 
 // Moved and not yet acted: the Move row becomes "Undo move" and Esc in the menu undoes it (Nov 13, Fernando's request,
 // like Tactics Ogre). Moving draws nothing random, so undoing is free; after acting, only Z (which spends an undo)

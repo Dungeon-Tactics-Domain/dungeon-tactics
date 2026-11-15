@@ -17,9 +17,10 @@ import { cellsOf, jumpOf, unitAt } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { previewOrder, type QueueEntry, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
-import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
+import type { BattleEvent, BattleState, Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { baseDef, UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from './battle-face.ts';
+import { chargeFromText, chargeNote } from './charge-lines.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -43,6 +44,7 @@ export interface HudActions {
   command(index: number): void; // click on a command menu item
   ability(index: number): void; // click on a submenu ability
   answer(yes: boolean): void; // "Execute?" Yes or No
+  lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
   cancel(): void;
   rotate(dir: 1 | -1): void;
   recenter(): void;
@@ -94,14 +96,13 @@ export function abilityDetail(id: string): string {
         `costs ${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : 'stock'}`,
       ),
     );
+  // Nov 15: the player locks it on the tile or the character, and starting it costs half the movement left
   if (a.charge)
     parts.push(
-      a.panel
-        ? t(
-            `carrega ${a.charge} tiques; mira a casa e erra se o alvo sair dela`,
-            `charges ${a.charge} ticks; aims at the tile and misses if the target leaves`,
-          )
-        : t(`carrega ${a.charge} tiques e segue o alvo`, `charges ${a.charge} ticks and follows the target`),
+      t(
+        `carrega ${a.charge} tiques; trava na casa ou no personagem; começar gasta metade do movimento que sobra`,
+        `charges ${a.charge} ticks; locks on the tile or the character; starting it costs half the movement left`,
+      ),
     );
   return parts.join(' · ');
 }
@@ -870,7 +871,7 @@ export class BattleHud {
             'Mover: não dá para parar aqui; a unidade inteira precisa caber em chão livre e uniforme ao alcance.',
             'Move: cannot stop here; the whole unit must fit on free, even ground in reach.',
           )
-        : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.');
+        : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.') + chargeFromText(b, v.cursor);
     if (s.k === 'map') {
       const p = v.hl?.preview;
       return p && !p.ok
@@ -880,7 +881,13 @@ export class BattleHud {
             'Pick the target in the orange area (purple: the shot hits something on the way).',
           );
     }
-    if (s.k === 'confirm') return t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`);
+    if (s.k === 'confirm')
+      return s.lock
+        ? t(
+            `${abilityName(s.ability)}: travar no personagem ou na casa?`,
+            `${abilityName(s.ability)}: lock on the character or on the tile?`,
+          )
+        : t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`);
     return t(
       'Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.',
       'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.',
@@ -1015,33 +1022,32 @@ export class BattleHud {
             ` ${forecastText(f)} · ${hpAfterText(f)}${f.ally ? t(' · ALIADO!', ' · ALLY!') : ''}`,
           ),
     );
-    if (a.charge)
-      rows.push(
-        el(
-          'p',
-          { class: 'unit-note' },
-          a.panel
-            ? t(
-                `Sai em ${a.charge} tiques; se o alvo sair da casa, erra.`,
-                `Goes off in ${a.charge} ticks; misses if the target leaves the tile.`,
-              )
-            : t(`Sai em ${a.charge} tiques e segue o alvo.`, `Goes off in ${a.charge} ticks and follows the target.`),
-        ),
-      );
+    if (a.charge) rows.push(el('p', { class: 'unit-note' }, chargeNote(b, s)));
+    // the lock step (Nov 15): the same window, its two choices in place of Yes/No
+    const choices = s.lock
+      ? [
+          button(`item${s.lock === 'unit' ? ' focus' : ''}`, [t('No personagem', 'On the character')], () =>
+            this.act.lock('unit'),
+          ),
+          button(`item${s.lock === 'tile' ? ' focus' : ''}`, [t('Na casa', 'On the tile')], () =>
+            this.act.lock('tile'),
+          ),
+        ]
+      : [
+          button(`item${s.yes ? ' focus' : ''}`, [t('Sim', 'Yes'), hint('Enter')], () => this.act.answer(true)),
+          button(`item${s.yes ? '' : ' focus'}`, [t('Não', 'No'), hint('Esc')], () => this.act.answer(false)),
+        ];
     this.confirmBox.replaceChildren(
       el(
         'strong',
         { class: 'panel-head' },
         abilityIcon(s.ability),
-        t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`),
+        s.lock
+          ? t(`${abilityName(s.ability)}: travar onde?`, `${abilityName(s.ability)}: lock on?`)
+          : t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`),
       ),
       ...rows,
-      el(
-        'div',
-        { class: 'yes-no' },
-        button(`item${s.yes ? ' focus' : ''}`, [t('Sim', 'Yes'), hint('Enter')], () => this.act.answer(true)),
-        button(`item${s.yes ? '' : ' focus'}`, [t('Não', 'No'), hint('Esc')], () => this.act.answer(false)),
-      ),
+      el('div', { class: 'yes-no' }, ...choices),
     );
   }
 

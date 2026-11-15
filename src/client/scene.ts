@@ -13,6 +13,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import type { Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import { type Ambience, kindOf, loadAmbience } from './ambience.ts';
+import { type ChargeLine, chargeLines } from './charge-lines.ts';
 import { el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
@@ -21,6 +22,7 @@ import type { PixelSettings } from './pixel-settings.ts';
 import { swapProps } from './props.ts';
 import { Board, CORPSE_MODELS, lookPieceNames } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
+import { ChargeLines } from './scene/charge-lines.ts';
 import { Marks } from './scene/marks.ts';
 import { squareUnder, TileSpace } from './scene/space.ts';
 import { Timeline } from './scene/timeline.ts';
@@ -53,6 +55,7 @@ export class BattleScene {
   private pixel: PixelSettings;
   private readonly board: Board;
   private readonly marks: Marks;
+  private readonly chargeLines: ChargeLines;
   private readonly units: Units;
   private readonly floats: HTMLElement;
   private readonly clock = new THREE.Clock();
@@ -100,6 +103,7 @@ export class BattleScene {
     this.scene.add(sun);
     this.board = new Board(this.scene, this.space, models, pieces, lookPieces, packClips, terrainTex);
     this.marks = new Marks(this.scene, this.space, this.camera, this.board.hasTrees);
+    this.chargeLines = new ChargeLines(this.scene, this.space, this.camera);
     this.units = new Units(
       this.scene,
       this.space,
@@ -176,6 +180,16 @@ export class BattleScene {
     this.marks.setTrajectory(t);
   }
 
+  // every charge's line (sync keeps them, Nov 15); a method so the sandbox's `hide: marks` can hold it like the other marks
+  setChargeLines(lines: ChargeLine[] | null) {
+    this.chargeLines.set(lines);
+  }
+
+  // the acting unit's own charge as fired from the destination it is picking (charge-lines.ts chargeFrom)
+  setChargePreview(line: ChargeLine | null) {
+    this.chargeLines.setPreview(line);
+  }
+
   setCursor(p: Pos | null, size = 1, fits = true) {
     this.marks.setCursor(p, size, fits);
   }
@@ -189,6 +203,7 @@ export class BattleScene {
   sync(state: BattleState) {
     const hot = chargeDanger(this.grid, state);
     this.marks.showDanger(hot);
+    this.setChargeLines(chargeLines(this.grid, state));
     this.units.sync(state);
   }
 

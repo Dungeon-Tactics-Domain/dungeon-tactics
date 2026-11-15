@@ -2,7 +2,7 @@
 // unit under inspection. The scene and the HUD only draw what `highlights` returns.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import type { Preview } from '../shared/battle/combat.ts';
+import { type Preview, previewAbility } from '../shared/battle/combat.ts';
 import { FACING, type Grid, inBounds, posKey, samePos } from '../shared/battle/grid.ts';
 import {
   aimEnds,
@@ -19,7 +19,8 @@ import {
   sightEnds,
   unitAt,
 } from '../shared/battle/pathing.ts';
-import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
+import { chargeAim } from '../shared/battle/turn-queue.ts';
+import type { BattleEvent, BattleState, Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
 export type Mode = { k: 'move' } | { k: 'ability'; id: string } | { k: 'idle' };
@@ -100,9 +101,10 @@ export function cancel(b: Battle, ui: Ui): Ui {
   return ui;
 }
 
-export function confirm(b: Battle, ui: Ui): { events: BattleEvent[]; ui: Ui } {
+// `lock`: a charge's lock picked in the "Execute?" window (Nov 15)
+export function confirm(b: Battle, ui: Ui, lock?: Lock): { events: BattleEvent[]; ui: Ui } {
   if (!ui.pending || ui.mode.k === 'idle') return { events: [], ui };
-  const events = ui.mode.k === 'move' ? b.move(ui.pending) : b.act(ui.mode.id, ui.pending);
+  const events = ui.mode.k === 'move' ? b.move(ui.pending) : b.act(ui.mode.id, ui.pending, lock);
   // whoever moves may fall into the counterattack (Nov 13): without an actor, the Ui stays as it was and the game passes the turn
   const alive = b.state.units.some((u) => u.id === b.state.turn.actor);
   return { events, ui: events.length && alive ? freshUi(b) : ui };
@@ -221,10 +223,13 @@ export function facingHighlights(b: Battle): Highlights {
 export function chargeDanger(grid: Grid, state: BattleState): Map<string, string> {
   const out = new Map<string, string>(); // tile -> ability that lands on it
   for (const c of state.charges) {
-    // same calculation as the charge when leaving (turn-queue.ts): large unit followed, its tile closest to the caster
-    const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
-    const caster = state.units.find((u) => u.id === c.unit);
-    const center = followed ? (caster ? nearestTile(followed, caster.pos) : followed.pos) : c.target;
+    // same calculation as the charge when it fires (turn-queue.ts): the lock, and since Nov 15 the shot traced from where the
+    // caster stands, so a shot that will stop on a wall or a unit marks the area there
+    const aim = chargeAim(state, c);
+    const shot = state.units.some((u) => u.id === c.unit)
+      ? previewAbility(grid, state, c.unit, c.ability, aim, true)
+      : null;
+    const center = shot?.ok ? shot.center : aim;
     // a charge aimed at a cell lands on its whole tile, as when it fires (previewAbility)
     const r = ABILITIES[c.ability].radius,
       area = areaOf(grid, state, aimTile(grid, state, center));
