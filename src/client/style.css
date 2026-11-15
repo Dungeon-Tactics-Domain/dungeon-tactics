@@ -1161,7 +1161,8 @@ button[hidden],
   background: var(--paper-hi);
   border: 2px solid var(--paper-edge);
 }
-.portrait.tinted {
+.portrait.tinted,
+.face-strip.tinted {
   filter: sepia(0.4) hue-rotate(220deg) saturate(2) brightness(1.1);
 } /* Acolyte: the mage portrait with the character's violet glow (UnitDef.tint) */
 .portrait.gem {
@@ -1572,6 +1573,21 @@ body:has(.result-overlay) .fps {
   .talk.done .talk-next {
     animation: none;
   }
+}
+/* painted face sheet in the dialogue box (talk.ts, faceSheet): a box one frame wide over the strip, moved frame by frame;
+   whole-ratio size and pixelated so every pixel stays whole */
+.face-sheet {
+  display: block;
+  overflow: hidden;
+  background: var(--paper-hi);
+  border: 2px solid var(--paper-edge);
+  box-sizing: content-box;
+}
+.face-strip {
+  display: block;
+  height: 100%;
+  max-width: none;
+  image-rendering: pixelated;
 }
 /* the speaker's portrait does a little hop when the voice changes (talk.ts) and fades out on entering a map point (world-ui.ts, FADE_MS) */
 .talk-face.pop {

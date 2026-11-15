@@ -110,6 +110,7 @@ Minimum text: 16 px (the key hint, 11 px, and the fps counter and the map compas
 | Ability name banner, dialogue box | 120 ms (`--t-open`) | `banner-in`, `menu-in` |
 | Conversation title | 160 ms | `banner-in` |
 | Speaker portrait | 220 ms | `face-pop` |
+| Speaker mouth (painted face) | 180 ms per frame while the text types: neutral, talk1, talk2, talk1…; neutral when the sentence is out | `mouthFrame` in `talk.ts` (JS: it follows the typing, not a CSS loop) |
 | Fade when entering a node | 300 ms | `.fade-out` = `FADE_MS` in `world-ui.ts` |
 | Step on the world map | 320 ms | `--walk-ms` = `WALK_MS` |
 | Game title | 600 ms | `title-in` |
@@ -142,6 +143,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Value bar** `slider()` | `dialog.ts` | native range input, steps of 5%, number beside it | volume |
 | **Definition list** `.keys` | `style.css` | text | keys, sheet numbers, abilities, shop |
 | **Legend** `.legend` + `.sw` | `style.css` | text + colour swatch; `.sw.nogo` also draws the mark's cross, its red is close to the threat's | tile marks, tavern rumours |
+| **Painted face** `faceSheet()` | `talk.ts`, `.face-sheet` in `style.css` | one frame of the speaker's sheet (`public/chars/px/<model>.png`, read from `faces.json`) at 128×128, the nearest whole ratio of the frame (256 px shown at ½, 64 px at 2×), `image-rendering: pixelated`; neutral at rest; while typing, `mouthFrames` cycle; `[]` stays still; Instant text speed and reduced motion: no animation; no sheet, a bad `faces.json` entry or a failed image: `portrait()` | dialogue box only (the HUD, queue, party and map keep `portrait()`) |
 | **Dialogue box** `talk()` | `talk.ts` | letter by letter; ▼ blinks when done; `dark` for the opening | conversations and narration |
 | **Class card** `.create-card` | `create-ui.ts` | S yellow ring and `--focus-band` background | protagonist creation |
 | **Map node** `.world-node` | `world-ui.ts` | battle red diamond · story blue circle · done gold border · D dark grey · here: ring with halo | world map |
