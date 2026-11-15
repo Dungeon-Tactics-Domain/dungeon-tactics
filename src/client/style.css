@@ -76,15 +76,7 @@
   /* floating damage number: pale, and hotter on a strike of 25% of life or more */
   --float-dmg: #ffd0c4;
   --float-big: #ffb199;
-  --fade: #050a18; /* fade to black on entering a map point */
   --shade: #050a18; /* dark navy of the veils and tags over the scene; each piece sets its alpha with color-mix */
-  --map-ink: #3d3423; /* outlines drawn on the world map land */
-  /* map nodes: battle red, story blue, gold edge once done, dark grey when locked (the old beige was the colour of the land) */
-  --node-battle: #c0412b;
-  --node-story: #3d6fb0;
-  --node-done: #e2b23a;
-  --node-locked: #6f6656;
-  --node-locked-edge: #4a4235;
   --tap: 44px; /* touch target: >= 44 px (spec) */
   --gap: 8px;
   --inset: 12px; /* panel margin to the screen edge */
@@ -229,8 +221,6 @@ button[aria-pressed="true"] {
   box-shadow: var(--frame), var(--glow);
 }
 .tools .burger:focus-visible,
-.world-node:focus-visible,
-.world-node.here,
 .main-title .title-lang:focus-visible,
 .panel.talk:focus-visible {
   box-shadow: var(--focus-halo);
@@ -363,8 +353,7 @@ button[hidden],
 }
 .dialog p,
 .dialog .title-sub,
-.dialog .party-class,
-.dialog .party-bench {
+.dialog .party-class {
   color: var(--ink-muted);
 }
 .dialog .primary {
@@ -384,7 +373,7 @@ button[hidden],
 } /* 2 per row: with 5 in a row, "Developer" got cut off (review of Nov 13) */
 .camp-list {
   flex-direction: column;
-} /* campaign stage list: one per row, full name */
+} /* a list of places: one per row, full name */
 /* a list of places to go (title, quick battle, town) is a menu like the battle's (Nov 15, theme screens): bare rows, the
    real focus draws the lighter band, the yellow line and the ▶ (keyboard, mouse and gamepad move the same focus) */
 .dialog .camp-list {
@@ -1225,8 +1214,6 @@ button[hidden],
   .tools-menu,
   .panel .item.focus::before,
   .dialog .camp-list > button:focus::before,
-  .world-actions .item:focus::before,
-  .world-actions:not(:focus-within) .item:first-child::before,
   .party-list .party-card:focus::before,
   .menu-nav .choice-row button:focus-visible::before {
     animation: none;
@@ -1699,7 +1686,7 @@ body:has(.result-overlay) .fps {
 }
 
 /* ---- Dialogue box (talk.ts) and the opening narration ---- */
-/* campaign dialogue box (talk.ts): at the bottom, wide, the same panel as the rest of the HUD; the ▼ blinks when the sentence is done */
+/* dialogue box (talk.ts): at the bottom, wide, the same panel as the rest of the HUD; the ▼ blinks when the sentence is done */
 .talk-overlay {
   place-items: end center;
   background: color-mix(in srgb, var(--shade) 35%, transparent);
@@ -1795,7 +1782,7 @@ body:has(.result-overlay) .fps {
   width: 99px;
   height: 132px;
 } /* 132 = the face's 128 plus its 2 px border; block, so no baseline gap below it */
-/* the speaker's portrait does a little hop when the voice changes (talk.ts) and fades out on entering a map point (world-ui.ts, FADE_MS) */
+/* the speaker's portrait does a little hop when the voice changes (talk.ts) */
 .talk-face.pop {
   animation: face-pop 220ms ease-out;
 }
@@ -1864,356 +1851,8 @@ body:has(.result-overlay) .fps {
   outline: none;
 } /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 
-/* ---- World map (world-ui.ts) ---- */
-/* World map (world-ui.ts): full-screen blue backdrop around the illustrated map, diamond points (battle) and circle (story),
-   dashed road, walking party portrait. Panels with the same blue as the battle HUD. */
-.world {
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 40%, var(--paper-hi), var(--paper) 55%, var(--paper-lo));
-  overflow: hidden;
-}
-.world-map {
-  position: absolute;
-  inset: 64px 4% 120px;
-  border: 2px solid var(--paper-edge); /* the panels' frame (Nov 15), around the drawing */
-  box-shadow: var(--paper-frame);
-  overflow: hidden;
-}
-.world-svg,
-.world-art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-/* illustrated map (Nov 13): textured sea, irregular coast, woods, mountains and snow; colors only for the art, outside the text */
-.world-art .sea {
-  fill: #24505f;
-}
-.world-art .grain {
-  fill: #000;
-  opacity: 0.22;
-}
-.world-art .shallow {
-  fill: none;
-  stroke: #4d8a95;
-  stroke-width: 22;
-  vector-effect: non-scaling-stroke;
-  opacity: 0.75;
-}
-.world-art .land {
-  fill: #b8b483;
-  stroke: var(--map-ink);
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
-.world-art .plain {
-  fill: #cdbf7c;
-  opacity: 0.8;
-}
-.world-art .wood {
-  fill: #5d7a3c;
-  opacity: 0.55;
-}
-.world-art .ash {
-  fill: #8f877b;
-  opacity: 0.75;
-}
-.world-art .highland {
-  fill: #9c8460;
-  opacity: 0.65;
-}
-.world-art .snowfield {
-  fill: #eef1ee;
-  opacity: 0.7;
-}
-.world-art .river {
-  fill: none;
-  stroke: #3f7d97;
-  stroke-width: 3;
-  vector-effect: non-scaling-stroke;
-  stroke-linecap: round;
-}
-.world-art .lake {
-  fill: #2f6478;
-  stroke: var(--map-ink);
-  stroke-width: 1.2;
-  vector-effect: non-scaling-stroke;
-}
-.world-art .pine {
-  fill: #2f5a2c;
-  stroke: #1e3519;
-  stroke-width: 0.6;
-  vector-effect: non-scaling-stroke;
-}
-.world-art .leaf {
-  fill: #4c7a34;
-  stroke: #1e3519;
-  stroke-width: 0.6;
-  vector-effect: non-scaling-stroke;
-}
-.world-art .trunk {
-  stroke: #4a3520;
-  stroke-width: 1.4;
-  vector-effect: non-scaling-stroke;
-}
-.world-art .rock {
-  fill: #8a6f4d;
-  stroke: var(--map-ink);
-  stroke-width: 0.8;
-  vector-effect: non-scaling-stroke;
-}
-.world-art .shade {
-  fill: #5e4a33;
-}
-.world-art .snow {
-  fill: #f4f6f4;
-}
-.world-compass {
-  position: absolute;
-  left: 1.5%;
-  bottom: 2%; /* on the left: the point panel covers the bottom right corner */
-  width: 84px;
-  height: 84px;
-  pointer-events: none;
-}
-.world-icon {
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  transform: translate(10px, -110%);
-  pointer-events: none;
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
-} /* to the right and above the point: above sits the party portrait */
-.world-icon path {
-  stroke: var(--map-ink);
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-  fill: none;
-}
-.world-icon .wall {
-  fill: #e6d6a8;
-}
-.world-icon .roof {
-  stroke: #8e3b24;
-  stroke-width: 3;
-}
-.world-icon .stone {
-  fill: #a39c8e;
-}
-.world-icon .door {
-  fill: #2c2418;
-}
-.world-icon .flame {
-  fill: #e8a33a;
-}
-.world-compass circle {
-  fill: none;
-  stroke: #e9dcae;
-  stroke-width: 1.5;
-  opacity: 0.8;
-}
-.world-compass .star {
-  fill: #e9dcae;
-  stroke: var(--map-ink);
-  stroke-width: 1.5;
-}
-.world-compass .star-shade {
-  fill: #9c8a5c;
-}
-.world-compass text {
-  fill: #e9dcae;
-  font: 700 12px var(--font);
-}
-.world-title {
-  position: absolute;
-  left: 2%;
-  top: 3%;
-  padding: 6px 16px;
-  background: linear-gradient(var(--paper-hi), var(--paper));
-  color: var(--ink);
-  text-shadow: var(--ink-shadow);
-  border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  font: 400 clamp(16px, 2.2vw, 28px) var(--font-title);
-  letter-spacing: 0.12em;
-  box-shadow: var(--paper-frame);
-  pointer-events: none;
-}
-.world-art .road {
-  fill: none;
-  stroke: var(--map-ink); /* map ink, like the icons: the panel's light edge vanished on the land (1.5:1) */
-  stroke-width: 3;
-  stroke-dasharray: 2 6;
-  vector-effect: non-scaling-stroke;
-  stroke-linecap: round;
-}
-.world-art .road.walked {
-  stroke: #8e3b24; /* ink red: the gold vanished on the illustrated map's land */
-  stroke-dasharray: none;
-  stroke-linejoin: round;
-}
-.world-node {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  transform: translate(-50%, -50%);
-  border: 3px solid var(--edge); /* dark ring on the light land; the panel's light edge vanished there */
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-}
-.world-node.battle {
-  background: var(--node-battle);
-  transform: translate(-50%, -50%) rotate(45deg);
-  border-radius: var(--r);
-}
-.world-node.story {
-  background: var(--node-story);
-  border-radius: 50%;
-}
-.world-node.done {
-  border-color: var(--node-done);
-}
-.world-node:disabled {
-  background: var(--node-locked);
-  border-color: var(--node-locked-edge); /* dark: the old beige was the color of the land */
-  filter: none;
-  cursor: default;
-}
-.world-node.here {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-}
-.world-token {
-  position: absolute;
-  transform: translate(-50%, -110%);
-  transition:
-    left var(--walk-ms) ease-in-out,
-    top var(--walk-ms) ease-in-out;
-  pointer-events: none;
-  animation: bob 1s ease-in-out infinite;
-}
-.world-token .portrait {
-  width: 44px;
-  height: 58px;
-  border-radius: 6px;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-@keyframes bob {
-  50% {
-    margin-top: -4px;
-  }
-}
-.world-head {
-  position: absolute;
-  top: var(--inset);
-  left: var(--inset);
-  padding: 8px 14px;
-  color: var(--ink);
-  font: 400 var(--fs-lg) / 1 var(--font-title);
-}
-.world-panel {
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
-  width: min(380px, calc(100% - 48px));
-  padding: 0 0 6px;
-  color: var(--ink);
-  display: grid;
-  gap: 4px;
-}
-.world-place {
-  font: 400 var(--fs-lg) / 1.2 var(--font-title);
-}
-.world-kind {
-  margin: 0 14px;
-  color: var(--ink-muted);
-  font-size: var(--fs-sm);
-}
-/* the place's commands as menu rows in two columns (a town has 5: Enter, Party, Town, Shop, Title), focused by the real
-   focus like the window lists */
-.world-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.world-actions .item {
-  min-height: 44px;
-  font-size: var(--fs);
-}
-.world-actions .item:hover {
-  background: var(--row-hi);
-}
-.world-actions .item:focus,
-.world-actions:not(:focus-within) .item:first-child {
-  outline: none;
-  background: var(--focus-band);
-  box-shadow: inset 0 0 0 1px var(--focus);
-}
-/* with the focus elsewhere (a node clicked, a window just closed) Enter still enters, so the band rests on it */
-.world-actions .item:focus::before,
-.world-actions:not(:focus-within) .item:first-child::before {
-  content: "▶";
-  position: absolute;
-  left: 10px;
-  font-size: var(--fs);
-  color: var(--focus);
-  animation: nudge var(--t-nudge) steps(1, end) infinite;
-}
-.world-help {
-  position: absolute;
-  left: var(--inset);
-  bottom: 24px;
-  margin: 0;
-  padding: 8px 12px;
-  color: var(--ink-muted);
-  font-size: var(--fs-sm);
-}
-@media (prefers-reduced-motion: reduce) {
-  .world-token {
-    transition: none;
-    animation: none;
-  }
-}
-.world-tag {
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 26px);
-  transform: translateX(-50%);
-  white-space: nowrap;
-  padding: 2px 8px;
-  font: 400 var(--fs-sm) / 1.2 var(--font-title);
-  color: var(--fg);
-  background: var(--overlay);
-  border-radius: var(--r);
-} /* place name under the party on the map */
-.fade-out {
-  position: fixed;
-  inset: 0;
-  background: var(--fade);
-  z-index: 9;
-  pointer-events: none;
-  animation: fade-in 300ms ease-in forwards;
-}
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .fade-out {
-    animation: none;
-  }
-}
-
-/* ---- Party, unit sheet and shop (world-ui.ts) ---- */
-/* Party screen on the map (world-ui.ts, openParty): one row per hero, portrait on the left */
+/* ---- Party, unit sheet and shop (town-ui.ts) ---- */
+/* Party screen in the town (town-ui.ts, openParty): one row per hero, portrait on the left */
 .dialog.party {
   width: min(640px, 100%);
 } /* 560 px scrolled the pt Tavern by a few px once the text grew to 20 px (Nov 15) */
@@ -2267,7 +1906,7 @@ body:has(.result-overlay) .fps {
 .party-stats {
   font-variant-numeric: tabular-nums;
 }
-/* Unit sheet (world-ui.ts, openSheet): two columns on PC so it fits without scrolling at 1280x720; one when narrow */
+/* Unit sheet (town-ui.ts, openSheet): two columns on PC so it fits without scrolling at 1280x720; one when narrow */
 .dialog.sheet {
   width: min(980px, 100%);
 }
@@ -2300,20 +1939,6 @@ body:has(.result-overlay) .fps {
     grid-template-columns: 1fr;
   }
 }
-/* Tavern quests (world-ui.ts, openBar): each a sunken card with a yellow edge, Accept at its right foot */
-.quest {
-  padding: 8px 12px;
-  margin: 0 0 8px;
-  border-left: 4px solid var(--focus);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
-}
-.quest p {
-  margin: 4px 0;
-}
-.quest button {
-  display: flex;
-  margin-left: auto;
-}
 /* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin (`p.gold`: a bare
    `.gold` also caught the result window's gold orbs and took their margin) */
 .dialog p.gold {
@@ -2343,7 +1968,7 @@ p.gold strong::before {
   );
   box-shadow: 0 0 0 1px var(--edge);
 }
-/* Shop (world-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
+/* Shop (town-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
    landed in a different column and the 9-item list ran past 900 px. Rows split by a faint line, as in the kit's list */
 .shop .keys {
   gap: 0;
@@ -2367,88 +1992,6 @@ p.gold strong::before {
 .shop .keys button {
   min-height: 36px;
   min-width: 112px;
-}
-
-/* ---- Protagonist creation (create-ui.ts) ---- */
-/* Protagonist creation (create-ui.ts): a central panel; 4 class cards with portrait and the sheet of the chosen one */
-.overlay.create {
-  background: color-mix(in srgb, var(--shade) 70%, transparent);
-}
-.create-panel {
-  position: relative;
-  width: min(720px, 100%);
-  max-height: 92dvh;
-  overflow: auto;
-  padding: 18px 22px;
-  color: var(--ink);
-  display: grid;
-  gap: 10px;
-}
-.create-panel h2 {
-  margin: 0;
-  font: 400 28px / 1.1 var(--font-title);
-}
-.create-name {
-  font-weight: 700;
-}
-.create-panel input {
-  font: 400 var(--fs-lg) / 1.2 var(--font);
-  padding: 8px 10px;
-  border: 2px solid var(--paper-edge);
-  background: var(--paper-hi);
-  color: var(--ink);
-  border-radius: 4px;
-}
-.create-cards {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-.create-card {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 10px 6px;
-  background: var(--paper-hi);
-  color: var(--ink);
-  border: 2px solid var(--paper-edge);
-  box-shadow: none;
-}
-.create-card[aria-pressed="true"] {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-  background: var(--focus-band);
-}
-.create-sheet {
-  display: grid;
-  gap: 4px;
-  min-height: 9em;
-}
-.create-role {
-  margin: 0;
-  font-weight: 700;
-}
-.create-stats {
-  margin: 0;
-  color: var(--ink-muted);
-  font-variant-numeric: tabular-nums;
-}
-.create-skills {
-  margin: 0;
-  padding-left: 18px;
-  font-size: var(--fs-sm);
-  display: grid;
-  gap: 2px;
-}
-.create-warn {
-  margin: 0;
-  color: var(--focus);
-  min-height: 1.2em;
-}
-@media (max-width: 600px) {
-  .create-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* ---- Developer menu (dev-menu.ts) ---- */

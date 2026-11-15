@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { jumpHelp, statsLine } from '../src/client/create-ui.ts';
-import { itemStats } from '../src/client/world-ui.ts';
+import { itemStats, jumpHelp, statsLine } from '../src/client/town-ui.ts';
 import { ITEMS } from '../src/shared/battle/equipment.ts';
 import { SUB } from '../src/shared/battle/half.ts';
 import { MAX_JUMP } from '../src/shared/battle/pathing.ts';

@@ -7,7 +7,6 @@ import { HALF, halfDef, halve } from '../../shared/battle/half.ts';
 import { SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
-import { CHAPTERS } from '../campaign.ts';
 import { abilitiesOf, type Screen, startScreen } from '../command.ts';
 import { freshUi, hoverTile, selectMode, type Ui } from '../interaction.ts';
 import type { Game } from '../main.ts';
@@ -257,22 +256,16 @@ export function install(game: Game, scene: BattleScene) {
     spec,
     problems,
     apply,
-    // map, cast, seed and language only change on load: the page reopens with the new spec. In a dev browser the saves are
-    // the real ones: progress only goes up and an existing hero stays
+    // map, cast, seed and language only change on load: the page reopens with the new spec
     load(next) {
       const bad = parseSpec(next).problems;
       if (bad.length) return bad;
-      for (const [k, v] of Object.entries(storageFor(next))) {
-        const now = store.get(k);
-        if (now && (k === 'dt:hero' || (k === 'dt:campaign' && Number(now) >= Number(v)))) continue;
-        store.set(k, v);
-      }
+      for (const [k, v] of Object.entries(storageFor(next))) store.set(k, v);
       location.href = specUrl(next);
       return [];
     },
     list: () => ({
       scenarios: Object.keys(SCENARIOS),
-      stages: CHAPTERS.length,
       defs: Object.keys(UNIT_DEFS),
       panels: Object.keys(PANELS),
       actor: battle.actor.id,

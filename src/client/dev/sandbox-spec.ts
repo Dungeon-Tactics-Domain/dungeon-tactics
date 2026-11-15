@@ -62,9 +62,8 @@ export type Step =
 export interface SceneSpec {
   name?: string; // CLI: output file name (default: the spec file name)
   scenario?: string; // map or study id (?scenario=)
-  stage?: number; // campaign stage (?stage=), unlocked for the shot
   crawl?: { seed: number; depth?: number; boss?: boolean; theme?: string }; // a dungeon crawl room (?crawl=)
-  path?: string; // any other page (world map, title) with no staged battle, e.g. "/?world"
+  path?: string; // any other page (title, town) with no staged battle, e.g. "/?home"
   seed?: number; // battle dice; default 1
   lang?: 'pt' | 'en';
   viewport?: { width: number; height: number }; // CLI only
@@ -77,7 +76,7 @@ export interface SceneSpec {
   camera?: CameraSpec;
   hide?: Hidden[];
   pixel?: 0 | 2 | 3 | 4;
-  daylight?: number; // 0 night to 1 day (the light the Until Dawn mode and dark stages use)
+  daylight?: number; // 0 night to 1 day (the light the Until Dawn mode uses)
   steps?: Step[]; // played in order by __sandbox.play (the CLI plays them after the scene settles)
   loop?: boolean; // bench: the page plays the steps by itself, then rewinds the scene and plays them again, forever
   timing?: Partial<Record<keyof typeof TIMING, number>>; // bench: TIMING values for this page only
@@ -87,7 +86,6 @@ export interface SceneSpec {
 const KEYS = [
   'name',
   'scenario',
-  'stage',
   'path',
   'crawl',
   'seed',
@@ -123,12 +121,11 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   if (!isObj(raw)) return { spec: {}, problems: ['spec must be an object'] };
   const r = raw;
   for (const k of Object.keys(r)) if (!KEYS.includes(k)) p.push(`unknown key "${k}"`);
-  const opened = ['scenario', 'stage', 'crawl', 'path'].filter((k) => r[k] !== undefined);
-  if (opened.length > 1) p.push(`use only one of scenario, stage, crawl and path (got ${opened.join(', ')})`);
+  const opened = ['scenario', 'crawl', 'path'].filter((k) => r[k] !== undefined);
+  if (opened.length > 1) p.push(`use only one of scenario, crawl and path (got ${opened.join(', ')})`);
   if (r.name !== undefined && (typeof r.name !== 'string' || !/^[\w.-]+$/.test(r.name)))
     p.push('name: letters, digits, "-", "_" and "." only');
   if (r.scenario !== undefined && typeof r.scenario !== 'string') p.push('scenario must be a string');
-  if (r.stage !== undefined && !isInt(r.stage, 0)) p.push('stage must be an integer ≥ 0');
   if (r.path !== undefined && (typeof r.path !== 'string' || !r.path.startsWith('/'))) p.push('path must start with /');
   const room = r.crawl;
   if (
@@ -263,8 +260,7 @@ function stepShape(st: unknown, at: string): string[] {
 export function specUrl(spec: SceneSpec): string {
   if (spec.path) return spec.path;
   const q = new URLSearchParams();
-  if (spec.stage !== undefined) q.set('stage', String(spec.stage));
-  else if (spec.scenario) q.set('scenario', spec.scenario);
+  if (spec.scenario) q.set('scenario', spec.scenario);
   else if (spec.crawl) {
     q.set('crawl', String(spec.crawl.seed));
     if (spec.crawl.depth) q.set('depth', String(spec.crawl.depth));
@@ -275,13 +271,10 @@ export function specUrl(spec: SceneSpec): string {
   return `/?${q}`;
 }
 
-// Saves the page must find before it loads: the language (read once at import) and the stage unlocked (a locked stage
-// sends the page back to the world map); a world map path needs a hero, otherwise the new-game intro opens
+// Saves the page must find before it loads: the language (read once at import)
 export function storageFor(spec: SceneSpec): Record<string, string> {
   const out: Record<string, string> = {};
   if (spec.lang) out['dt:lang'] = spec.lang;
-  if (spec.stage !== undefined) out['dt:campaign'] = String(spec.stage);
-  if (spec.path?.includes('world')) out['dt:hero'] = JSON.stringify({ name: 'Sandbox', cls: 'warrior' });
   return out;
 }
 

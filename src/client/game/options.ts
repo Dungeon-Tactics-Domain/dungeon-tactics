@@ -1,7 +1,6 @@
 // Options window, opened from the battle's corner menu (H): sections Game, Sound, Video and effects, Controls and Language,
-// plus restart, map, title and developer at the foot. It reads and changes the battle only through OptionsContext.
+// plus restart, home and developer at the foot. It reads and changes the battle only through OptionsContext.
 import type { Scenario } from '../../shared/battle/scenarios.ts';
-import { objectiveText } from '../campaign.ts';
 import { choice, dialog, slider } from '../dialog.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
@@ -12,13 +11,10 @@ import { store } from '../store.ts';
 import { isSurvival, survivalGoal } from '../survival.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { getTheme, setTheme, THEMES } from '../theme.ts';
-import { toWorld } from './boot.ts';
-import { homeLabel } from './crawl.ts';
+import { goHome, homeLabel } from './crawl.ts';
 import { devMenu } from './title.ts';
 
 export interface OptionsContext {
-  chapter: number | null; // campaign stage in play: its objective goes in the Game section
-  campaign: boolean; // a campaign stage or a tavern quest: the campaign map is where it came from
   room: boolean; // an expedition room: leaving it loses the expedition (crawl.ts leftRoom)
   scenario: Scenario;
   busy: boolean; // animation or enemy turn running: restart is disabled
@@ -30,24 +26,22 @@ export interface OptionsContext {
 // Options (Nov 13, Fernando's request: "the menu could take up more of the screen width, with subsections"): wide window
 // with the sections in a left column (vertical choice()) and one section at a time on the right, so nothing scrolls far
 export function optionsMenu(o: OptionsContext) {
-  const { chapter, scenario } = o;
+  const { scenario } = o;
   const sections: [id: string, title: string, body: Node[]][] = [
     [
       'game',
       t('Jogo', 'Game'),
       [
-        // in the campaign, the stage objective (no Beacon, boss); in the standalone battle, the usual one
+        // Until Dawn's own goal; in any other battle, the usual one
         el(
           'p',
           {},
-          chapter !== null
-            ? t(`Objetivo: ${objectiveText(chapter, t)}`, `Goal: ${objectiveText(chapter, t)}`)
-            : isSurvival(scenario.id)
-              ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
-              : t(
-                  'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',
-                  'Goal: defeat the enemies and protect the Beacon (the blue crystal).',
-                ),
+          isSurvival(scenario.id)
+            ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
+            : t(
+                'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',
+                'Goal: defeat the enemies and protect the Beacon (the blue crystal).',
+              ),
         ),
         el(
           'ul',
@@ -216,8 +210,6 @@ export function optionsMenu(o: OptionsContext) {
         },
         { disabled: o.busy },
       ),
-      // the campaign map only from the campaign (a stage or a tavern quest): the game opens in the town since Nov 15
-      ...(o.campaign ? [button('secondary', t('Mapa da campanha', 'Campaign map'), toWorld)] : []),
       // home: the town or the expedition map (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
       button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
         const btn = e.currentTarget as HTMLButtonElement;
@@ -226,7 +218,7 @@ export function optionsMenu(o: OptionsContext) {
           btn.textContent = t('Toque de novo: perde a expedição', 'Tap again: the expedition is lost');
           return;
         }
-        location.search = '';
+        goHome();
       }),
       button('secondary', t('Desenvolvedor', 'Developer'), () => {
         d.close();

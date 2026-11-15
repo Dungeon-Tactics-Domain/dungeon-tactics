@@ -1,30 +1,22 @@
-// What the page opens, read from the URL: a campaign stage, a bar mission, a study or developer battle, another map, the
-// world map, or the standalone battle behind the title. Also the save readers the screens share.
+// What the page opens, read from the URL: an expedition room, a crawl room, a study or developer battle, another map, or
+// the standalone battle behind the title (and the town).
 import { Battle } from '../../shared/battle/battle.ts';
 import { subOf } from '../../shared/battle/grid.ts';
 import { HALF, HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
 import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
-import { CAMPAIGN_KEY, CHAPTERS, chapterId, chapterScenario, parseProgress } from '../campaign.ts';
-import { EQUIP_KEY, parseEquip } from '../chest.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
-import { GROUP_KEY, parseGroup } from '../group.ts';
-import { HERO_KEY, parseHero } from '../hero.ts';
 import { t } from '../i18n.ts';
-import { MISSIONS, MISSIONS_KEY, type Mission, missionScenario, missionScenarioId, parseDone } from '../missions.ts';
-import { setTrack } from '../sound.ts';
-import { param, RENAMED_QUESTS, store } from '../store.ts';
+import { param, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
-import { type CrawlRoom, castRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
+import { type CrawlRoom, castRoom, goHome, ROOM_KEY, savedExpedition } from './crawl.ts';
 
 // the battle the page opens: the scenario, where it is saved and what it belongs to
 export interface BattleSelection {
   scenario: Scenario;
-  mission: Mission | null; // bar mission in play (missions.ts)
   saveKey: string;
-  chapter: number | null; // campaign stage in play (null = standalone battle)
-  title: boolean; // no parameter: the town (or the expedition in progress) opens over the standalone battle
+  title: boolean; // no battle parameter: the title (or, with ?home, the town) opens over the standalone battle
   room: CrawlRoom | null; // expedition room in play (crawl.ts): who stands on each hero spawn and their life
 }
 
@@ -46,77 +38,29 @@ function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
       console.error(err);
     }
   alert(t('Não deu para montar esta sala da masmorra.', 'This dungeon room could not be built.'));
-  location.search = '';
+  goHome();
   return null;
 }
 
-export const toWorld = () => {
-  location.search = '?world';
-};
-export const savedHero = () => parseHero(store.json(HERO_KEY));
-export const savedGroup = () => parseGroup(store.json(GROUP_KEY)); // player's group (group.ts): who goes, class and recruits
-
-// 'world' for the world map; null when the address went elsewhere: back to the map (unknown, won or locked) or to the
-// title (a crawl room that could not be built)
-export async function selectBattle(): Promise<BattleSelection | 'world' | null> {
+// null when the address went home instead (a room that is not open, or a crawl room that could not be built)
+export async function selectBattle(): Promise<BattleSelection | null> {
   // the battle the game opens and where it is saved; the FFT study swaps both at boot (separate save)
   let scenario = FIRST_BATTLE;
-  let mission: Mission | null = null;
   let saveKey = 'dt:battle';
-  let chapter: number | null = null;
   // FFT reference study (Nov 11): not game content. Only opens with the parameter and comes in a separate chunk of the
   // build (dynamic import), so none of it goes into the package the player downloads.
   const study = param('scenario');
-  const camp = param('stage');
   const crawl = param('crawl');
   const roomAt = param('room');
   let room: CrawlRoom | null = null;
-  // bar mission (missions.ts): only the ones not yet won; unknown or won mission address goes back to the map
-  const mis = param('quest');
-  if (mis !== null) {
-    const m = MISSIONS.find((x) => x.id === (Object.hasOwn(RENAMED_QUESTS, mis) ? RENAMED_QUESTS[mis] : mis));
-    if (!m || parseDone(store.json(MISSIONS_KEY)).includes(m.id)) {
-      toWorld();
-      return null;
-    }
-    mission = m;
-    setTrack('road');
-    scenario = missionScenario(
-      m,
-      parseProgress(store.get(CAMPAIGN_KEY)),
-      savedHero(),
-      parseEquip(store.json(EQUIP_KEY)),
-      savedGroup(),
-    );
-    saveKey = `dt:battle:${missionScenarioId(m.id)}`;
-  }
-  if (param('world') !== null) return 'world'; // world map: no battle assembled
-  // stage that does not exist or is still locked (typed or saved address): goes back to the map instead of falling into a standalone battle
-  const allowed =
-    camp !== null &&
-    camp !== '' &&
-    CHAPTERS[Number(camp)] !== undefined &&
-    Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY));
-  if (camp !== null && !allowed) {
-    toWorld();
-    return null;
-  }
-  if (mission) {
-    // already assembled above
-  } else if (camp !== null && CHAPTERS[Number(camp)] && Number(camp) <= parseProgress(store.get(CAMPAIGN_KEY))) {
-    // campaign stage: only opens if already unlocked (beat the previous one); each stage has its own save
-    chapter = Number(camp);
-    setTrack(CHAPTERS[chapter].song);
-    scenario = chapterScenario(chapter, savedHero(), parseEquip(store.json(EQUIP_KEY)), savedGroup());
-    saveKey = `dt:battle:${chapterId(chapter)}`;
-  } else if (roomAt !== null) {
+  if (roomAt !== null) {
     // an expedition room (crawl.ts): only one the party may enter now, so a reload or a typed address cannot replay a
     // cleared room for its heal; anything else goes back home (the expedition map)
     const exp = savedExpedition();
     const map = exp && expeditionMap(exp.seed);
     const node = Number(roomAt);
     if (!exp || !map || roomAt === '' || !openNodes(map, exp.path).includes(node)) {
-      location.search = '';
+      goHome();
       return null;
     }
     const built = crawlRoom(map[node].seed, { depth: map[node].floor, boss: map[node].boss });
@@ -124,16 +68,16 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     // another room still saved: the party left it for this one, which loses the expedition (crawl.ts leftRoom, at home)
     const held = Battle.load(store.get(ROOM_KEY) ?? '')?.state.scenario;
     if (held && held !== `${built.id}${HALF}`) {
-      location.search = '';
+      goHome();
       return null;
     }
     SCENARIOS[built.id] = built;
     ({ scenario, room } = castRoom(built, exp, node));
     saveKey = ROOM_KEY;
   } else if (crawl !== null) {
-    // a dungeon crawl room (Nov 15, the new loop apart from Beacon Ashes): rebuilt from the seed in the address, so one
-    // save serves every room and resumes only the room its id names (seed, depth, boss, theme and generator version);
-    // registered whole too, where the scene finds its mood (ambience.ts kindOf)
+    // a dungeon crawl room (Nov 15): rebuilt from the seed in the address, so one save serves every room and resumes only
+    // the room its id names (seed, depth, boss, theme and generator version); registered whole too, where the scene finds
+    // its mood (ambience.ts kindOf)
     const opts = { depth: Number(param('depth')), boss: param('boss') === '1', theme: param('theme') ?? undefined };
     const built = crawlRoom(Number(crawl) | 0, opts);
     if (!built) return null;
@@ -172,5 +116,5 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left, the FFT study included);
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
-  return { scenario, mission, saveKey, chapter, title: camp === null && !study && crawl === null && !room, room };
+  return { scenario, saveKey, title: !study && crawl === null && !room, room };
 }

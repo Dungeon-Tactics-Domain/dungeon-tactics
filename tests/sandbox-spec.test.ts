@@ -78,8 +78,8 @@ describe('parseSpec', () => {
   it('names every problem instead of falling back to a default', () => {
     const { spec, problems } = parseSpec({
       scenari: 'ash_wood',
-      stage: 1,
-      path: '/?world',
+      crawl: { seed: 1 },
+      path: '/?home',
       units: { a: { x: 1 }, b: { facing: 4, hp: 0 } },
       add: [{ id: 'z', def: 'dragon', team: 'hero', x: 0, y: 0 }],
       screen: 'attack',
@@ -91,7 +91,7 @@ describe('parseSpec', () => {
     expect(spec).toEqual({});
     expect(problems).toEqual([
       'unknown key "scenari"',
-      'use only one of scenario, stage, crawl and path (got stage, path)',
+      'use only one of scenario, crawl and path (got crawl, path)',
       'units.a: give x and y together',
       'units.b: facing must be 0-3',
       'units.b: hp must be an integer ≥ 1',
@@ -142,14 +142,9 @@ describe('specUrl and storageFor', () => {
     ]);
   });
 
-  it('opens a stage and unlocks it before the page loads', () => {
-    expect(specUrl({ stage: 2 })).toMatch(/^\/\?stage=2&sandbox=/);
-    expect(storageFor({ stage: 2, lang: 'pt' })).toEqual({ 'dt:campaign': '2', 'dt:lang': 'pt' });
-  });
-
-  it('opens another page as is, with a hero for the world map', () => {
-    expect(specUrl({ path: '/?world' })).toBe('/?world');
-    expect(storageFor({ path: '/?world' })).toHaveProperty('dt:hero');
+  it('opens another page as is, with the language saved before it loads', () => {
+    expect(specUrl({ path: '/?home' })).toBe('/?home');
+    expect(storageFor({ path: '/?home', lang: 'pt' })).toEqual({ 'dt:lang': 'pt' });
   });
 });
 

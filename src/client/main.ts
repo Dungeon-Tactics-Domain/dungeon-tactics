@@ -16,10 +16,8 @@ import {
   unitAt,
 } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos, Team, UnitState } from '../shared/battle/types.ts';
-import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
+import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, frameOf, type Mood } from './battle-face.ts';
-import { CAMPAIGN_KEY, CHAPTERS, objectiveText, parseProgress } from './campaign.ts';
-import { CHEST_KEY, parseChest, VICTORY_GOLD } from './chest.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -33,11 +31,11 @@ import {
 } from './command.ts';
 import { dialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
-import { type BattleSelection, newBattle, savedHero, selectBattle } from './game/boot.ts';
+import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom, homeScreen } from './game/crawl.ts';
-import { battleEndScreen, confetti, mvpCard, stageEndScreen } from './game/end-screens.ts';
+import { battleEndScreen, confetti, mvpCard } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
-import { worldScreen } from './game/world-screen.ts';
+import { titleScreen } from './game/title.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
@@ -54,21 +52,19 @@ import {
   type Ui,
 } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction, keyAction } from './keyboard.ts';
-import { MISSIONS_KEY, parseDone } from './missions.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings, parsePixel } from './pixel-settings.ts';
 import { rampLink } from './scene/space.ts';
 import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
-import { faceSheet, talk } from './talk.ts';
+import { faceSheet } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
-import { afterNode, nodeOfChapter, parseWorld, WORLD_KEY } from './world.ts';
 
-// Test (localhost only): ?auto=1 makes the AI play the heroes too, to check stage end, victory and return to the
-// map without playing by hand (night of Nov 12). Nothing changes in production.
+// Test (localhost only): ?auto=1 makes the AI play the heroes too, to check the battle end and the way home without
+// playing by hand (night of Nov 12). Nothing changes in production.
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const AUTO = LOCAL && new URLSearchParams(location.search).has('auto');
 
@@ -819,29 +815,16 @@ export class Game {
   }
 
   private async finish() {
-    const { chapter, mission, scenario } = this.sel;
+    const { scenario } = this.sel;
     const won = this.battle.state.outcome === 'victory';
     jingle(won);
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
     if (won) confetti();
-    if (chapter !== null) return this.finishChapter(chapter, won);
     if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, this.mvpLine());
     // Until Dawn: how many turns it lasted and the record (a new record gets highlighted, like the stage grade)
     // winning by downing everyone before dawn also counts as surviving the whole night (it used to save "record 20" on a victory)
     const lasted = won ? SURVIVE_TURNS : survived(this.battle.state),
       best = parseBest(store.get(BEST_KEY));
-    // bar mission won: gold and item in the chest, and it leaves the bar (missions.ts)
-    if (mission && won && !parseDone(store.json(MISSIONS_KEY)).includes(mission.id)) {
-      const chest = parseChest(store.json(CHEST_KEY));
-      store.set(
-        CHEST_KEY,
-        JSON.stringify({
-          gold: chest.gold + mission.gold,
-          items: mission.item ? [...chest.items, mission.item] : chest.items,
-        }),
-      );
-      store.set(MISSIONS_KEY, JSON.stringify([...parseDone(store.json(MISSIONS_KEY)), mission.id]));
-    }
     if (isSurvival(scenario.id) && lasted > best) store.set(BEST_KEY, String(lasted));
     battleEndScreen({
       won,
@@ -849,29 +832,6 @@ export class Game {
       lasted,
       best,
       mvp: this.mvpLine(),
-      mission,
-      restart: () => this.restart(),
-    });
-  }
-
-  // Campaign stage end: victory unlocks the next and plays the exit conversation; defeat offers to try again
-  private async finishChapter(n: number, won: boolean) {
-    const { scenario } = this.sel;
-    if (won) {
-      store.set(CAMPAIGN_KEY, String(Math.max(parseProgress(store.get(CAMPAIGN_KEY)), n + 1)));
-      store.set(WORLD_KEY, String(afterNode(nodeOfChapter(n), parseWorld(store.get(WORLD_KEY)))));
-      // fixed gold per victory (party chest, chest.ts), for the shop; no stars since Nov 13 (Fernando's request: "remove
-      // the stars mechanic... this will be the next Final Fantasy Tactics", no puzzle feel)
-      const chest = parseChest(store.json(CHEST_KEY));
-      store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: chest.gold + VICTORY_GOLD }));
-      await talk(CHAPTERS[n].outro, { hero: savedHero() });
-    }
-    stageEndScreen({
-      n,
-      won,
-      mvp: won ? this.mvpLine() : [],
-      heroesFell:
-        this.battle.state.units.some((u) => isObjective(u.def)) || !scenario.spawns.some((s) => isObjective(s.def)),
       restart: () => this.restart(),
     });
   }
@@ -879,8 +839,6 @@ export class Game {
   // the Options window (game/options.ts), with what it shows and changes of this battle
   private menu() {
     optionsMenu({
-      chapter: this.sel.chapter,
-      campaign: this.sel.chapter !== null || this.sel.mission !== null,
       room: this.sel.room !== null,
       scenario: this.sel.scenario,
       busy: this.busy,
@@ -894,14 +852,13 @@ export class Game {
 async function boot() {
   const host = document.getElementById('app')!;
   const sel = await selectBattle();
-  if (sel === 'world') return void worldScreen(host); // world map: no battle assembled
-  if (!sel) return; // went back to the map or the title
+  if (!sel) return; // went home instead
   // localhost ?sandbox=<spec>: a battle staged for screenshots (docs/sandbox.md); its own chunk, never fetched online
   const sandbox = LOCAL && param('sandbox') !== null ? await import('./dev/sandbox.ts') : null;
   const staged = await sandbox?.stage(sel.scenario);
   // its own save key: acting in a staged battle must not overwrite the real one
   const run = staged ? { ...sel, scenario: staged.scenario, saveKey: 'dt:battle:sandbox' } : sel;
-  const { scenario, chapter } = run;
+  const { scenario } = run;
   // a save of another scenario (a whole-tile one, from before the half tiles of Nov 14) starts the battle over
   const loaded = staged ? null : Battle.load(store.get(sel.saveKey) ?? '');
   const saved = loaded?.state.scenario === scenario.id;
@@ -917,33 +874,20 @@ async function boot() {
     scenario.spawns.map((s) => s.def),
   );
   const game = new Game(battle, scene, host, pixel, run);
-  // campaign stage mood (dark crypt, Hill under the Veil, ridge at night): the same light as Until Dawn mode
-  const light = chapter !== null ? CHAPTERS[chapter].light : undefined;
-  if (light !== undefined) scene.setDaylight(light);
-  sandbox?.install(game, scene); // after the stage light, so the spec's daylight wins
-  // stage starting from zero: the opening conversation over the already assembled map
-  // stage from zero: opening conversation and, on closing, the objective banner (like FFT's objective announcement)
-  const n = chapter;
-  if (n !== null && !saved && !sandbox)
-    void talk(CHAPTERS[n].intro, { title: chapterTitle(n), hero: savedHero() }).then(() =>
-      announce(objectiveText(n, t)),
-    );
-  // by the battle in play, not the address: a stage, quest or crawl room opened with ?scenario=survival is not one
+  sandbox?.install(game, scene);
+  // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
   if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
-  // opening the game without a parameter shows the town (or the expedition in progress) over the standalone battle, which
-  // stays behind as spinning scenery (Nov 15, Fernando: the game opens in the town, no world map)
-  if (sel.title) homeScreen();
+  // without a battle parameter the title (or, with ?home, the town or the expedition in progress) opens over the
+  // standalone battle, which stays behind as spinning scenery (Nov 15, Fernando: the game opens in the town, no world map)
+  if (sel.title) (param('home') !== null ? homeScreen : titleScreen)();
 }
 
-// Large banner in the middle of the screen for 2 s (objective at the start of the stage); disappears by itself and does not take clicks
+// Large banner in the middle of the screen for 2 s (Until Dawn's goal at the start); disappears by itself and does not take clicks
 function announce(text: string) {
   sfx('confirm');
   const box = el('div', { class: 'announce', role: 'status' }, text);
   document.body.append(box);
   setTimeout(() => box.remove(), 2200);
 }
-
-const chapterTitle = (n: number) =>
-  t(`Capítulo ${n + 1} · ${CHAPTERS[n].title[0]}`, `Chapter ${n + 1} · ${CHAPTERS[n].title[1]}`);
 
 void boot();

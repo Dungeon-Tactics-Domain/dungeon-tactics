@@ -1,21 +1,23 @@
-// Title screen and the windows it opens: standalone battle, how to play, credits and the developer menu. Each one goes back to
-// the title with Esc or Back; the title itself never closes (the map behind it is just scenery).
+// Title screen and the windows it opens: new game and continue (both to the town), standalone battle, how to play,
+// credits and the developer menu. Each window goes back to the title with Esc or Back; the title itself never closes (the
+// map behind it is just scenery).
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
-import { CAMPAIGN_KEY, CHAPTERS, chapterId } from '../campaign.ts';
-import { jumpHelp } from '../create-ui.ts';
+import { CHEST_KEY, EQUIP_KEY } from '../chest.ts';
 import { openDevMenu } from '../dev-menu.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
 import { GROUP_KEY } from '../group.ts';
-import { HERO_KEY } from '../hero.ts';
 import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
-import { parseWorld, WORLD, WORLD_KEY } from '../world.ts';
-import { savedHero, toWorld } from './boot.ts';
-import { townScreen } from './crawl.ts';
+import { jumpHelp } from '../town-ui.ts';
+import { CRAWL_KEY, homeLabel, homeScreen, ROOM_KEY, townScreen } from './crawl.ts';
+
+// the saves a game is made of: the party, its chest and equipment, the expedition and the room in play. Continue shows
+// when any is saved; New game erases them all
+const PROGRESS = [GROUP_KEY, CHEST_KEY, EQUIP_KEY, CRAWL_KEY, ROOM_KEY];
 
 // Developer menu (Nov 12): loads the FFT study separately just to offer Gariland's terrain as a map. Starting
 // saves the roster, erases the previous developer battle and reopens the game on it (boot builds the scenario).
@@ -27,7 +29,7 @@ export async function devMenu(onBack?: () => void) {
   }, onBack);
 }
 
-// Standalone battle: the maps with a Beacon (Ash Wood and Pass belong to the campaign). Every choice opens by URL, each with its own
+// Standalone battle: the maps with a Beacon. Every choice opens by URL, each with its own
 // save: the Hill behind the title is just scenery since the fixed title screen (Nov 13), it is not played through it
 // measured on Nov 13 (npm run sim, 300 seeds, AI x AI) with damage x1.75, direction and trees without passage: Hill 74%, Skirmish 85%, Crypt 79%, Crypt Heart 81% (before 61%, 40% and 60%; the Heart with the 2nd archer in place of the Brute, which with the gap dropped to 25%)
 const QUICK_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart'];
@@ -65,9 +67,8 @@ function quickBattle() {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// Credits (summary; the full list, with each file's license, is public/CREDITS.txt). Back opens `back` (the title,
-// or nothing at the end of the campaign, where the map is already underneath).
-export function credits(back: () => void = titleScreen) {
+// Credits (summary; the full list, with each file's license, is public/CREDITS.txt)
+function credits() {
   const d = dialog(
     'title',
     t('Créditos', 'Credits'),
@@ -88,8 +89,8 @@ export function credits(back: () => void = titleScreen) {
           'li',
           {},
           t(
-            'Músicas (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD e Emma_MA. Vozes da campanha: compostas para o jogo',
-            'Music (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD and Emma_MA. Campaign voices: composed for the game',
+            'Músicas (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD e Emma_MA. Vozes dos diálogos: compostas para o jogo',
+            'Music (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD and Emma_MA. Dialogue voices: composed for the game',
           ),
         ),
         el(
@@ -110,10 +111,10 @@ export function credits(back: () => void = titleScreen) {
       ),
       button('primary', t('Voltar', 'Back'), () => {
         d.close();
-        back();
+        titleScreen();
       }),
     ],
-    { onBack: back },
+    { onBack: titleScreen },
   );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
@@ -189,10 +190,11 @@ function howToPlay() {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// Title screen (night of Nov 12): the game opened straight into a battle without saying what it was or that there was a campaign.
-// Since Nov 15 the game opens in the town (crawl.ts) and this is its "Other modes" window: the frozen campaign and the rest
+// Title screen (night of Nov 12): the game opened straight into a battle without saying what it was. Since Nov 15 New
+// game and Continue lead to the town (crawl.ts), the dungeon loop's home; there is no world map or campaign
 export function titleScreen() {
   setTrack('title');
+  const saved = PROGRESS.some((k) => store.get(k));
   const go = (fn: () => void) => () => {
     d.close();
     fn();
@@ -204,42 +206,29 @@ export function titleScreen() {
       el(
         'div',
         { class: 'menu-actions camp-list' },
-        // Continue only shows with saved progress; New game erases campaign progress (the 2nd tap confirms)
-        // Continue says who and where (like FFT's save summary): whoever returns after days knows what will open
-        ...(parseWorld(store.get(WORLD_KEY)) > 0
+        // Continue only shows with saved progress and says where it opens (the town or the expedition map), like FFT's
+        // save summary; New game erases the progress (the 2nd tap confirms)
+        ...(saved
           ? [
               button(
                 'primary',
-                [t('Continuar', 'Continue'), el('small', { class: 'continue-where' }, continueWhere())],
-                go(toWorld),
+                [t('Continuar', 'Continue'), el('small', { class: 'continue-where' }, homeLabel())],
+                go(homeScreen),
               ),
             ]
           : []),
-        button(
-          parseWorld(store.get(WORLD_KEY)) > 0 ? 'secondary' : 'primary',
-          t('Novo jogo', 'New game'),
-          (e: Event) => {
-            const btn = e.currentTarget as HTMLButtonElement;
-            // asks for the 2nd tap even with only the hero created (review of Nov 13: it erased the hero without asking)
-            if ((parseWorld(store.get(WORLD_KEY)) > 0 || savedHero()) && !btn.dataset.armed) {
-              btn.dataset.armed = '1';
-              btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
-              return;
-            }
-            for (const k of [
-              WORLD_KEY,
-              CAMPAIGN_KEY,
-              HERO_KEY,
-              GROUP_KEY,
-              ...CHAPTERS.map((_, n) => `dt:battle:${chapterId(n)}`),
-            ])
-              store.set(k, '');
-            d.close();
-            toWorld();
-          },
-        ),
+        button(saved ? 'secondary' : 'primary', t('Novo jogo', 'New game'), (e: Event) => {
+          const btn = e.currentTarget as HTMLButtonElement;
+          if (saved && !btn.dataset.armed) {
+            btn.dataset.armed = '1';
+            btn.textContent = t('Toque de novo: apaga o progresso', 'Tap again: erases progress');
+            return;
+          }
+          for (const k of PROGRESS) store.set(k, '');
+          d.close();
+          townScreen();
+        }),
         button('secondary', t('Batalha avulsa', 'Quick battle'), go(quickBattle)),
-        button('secondary', t('Voltar à cidade', 'Back to town'), go(townScreen)),
         button('secondary', t('Como jogar', 'How to play'), go(howToPlay)),
         button(
           'secondary',
@@ -261,11 +250,4 @@ export function titleScreen() {
   ); // real title screen (Nov 13): does not close, and the map behind it is just scenery
   d.overlay.classList.add('main-title');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
-}
-
-// "Ayla · Beacon Hill": the saved protagonist and the next open point on the map
-function continueWhere(): string {
-  const w = WORLD[Math.min(parseWorld(store.get(WORLD_KEY)), WORLD.length - 1)];
-  const hero = savedHero();
-  return `${hero ? `${hero.name} · ` : ''}${t(w.name[0], w.name[1])}`;
 }

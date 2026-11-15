@@ -600,7 +600,7 @@ describe('half tiles: whole battles', () => {
     vi.stubGlobal('location', { search: `?scenario=${DEV_SCENARIO}` });
     try {
       const sel = await selectBattle();
-      if (!sel || sel === 'world') throw new Error('no battle');
+      if (!sel) throw new Error('no battle');
       expect(sel.scenario.id).toBe(`${DEV_SCENARIO}${HALF}`);
       expect(subOf(sel.scenario.grid)).toBe(2);
       expect(sel.scenario.spawns.every((s) => s.def.endsWith(HALF))).toBe(true);

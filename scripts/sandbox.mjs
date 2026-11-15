@@ -55,7 +55,7 @@ for (const arg of positionals) {
         problems,
       } = parseSpec(r);
       const name = spec.name ?? basename(file, extname(file)) + (list.length > 1 ? `-${i + 1}` : '');
-      if (values.video && spec.path) problems.push('--video needs a battle (scenario or stage), not a path');
+      if (values.video && spec.path) problems.push('--video needs a battle (scenario or crawl), not a path');
       if (problems.length) {
         console.error(`FAIL ${name}: ${problems.join('; ')}`);
         process.exitCode = 1;

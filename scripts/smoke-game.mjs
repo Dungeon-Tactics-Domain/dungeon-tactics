@@ -1,5 +1,6 @@
 // Browser smoke test of the built game (dist/): npx vite build && npm run smoke
-// Opens the title, a battle and the world map in headless Chrome and fails on a missing screen, a console error or a failed request.
+// Opens the title, the town, an expedition and battles in headless Chrome and fails on a missing screen, a console error or a
+// failed request.
 import { preview } from 'vite';
 import { openChrome } from './lib/browser.mjs';
 
@@ -7,7 +8,7 @@ const PORT = 4173;
 const TIMEOUT = 60_000; // software WebGL on a CI runner takes a while to build the first frame
 
 // an expedition just started (src/shared/crawl/expedition.ts) with the default party worn down to 9 life: the map opens
-// at home and its first room (node 0 is always open first) must show the carried life, not a full bar
+// at home (?home) and its first room (node 0 is always open first) must show the carried life, not a full bar
 const WORN = {
   'dt:crawl': JSON.stringify({
     v: 'crawl3',
@@ -19,15 +20,26 @@ const WORN = {
 
 const PAGES = [
   {
-    // the game opens in the town (Nov 15): quest, shop, tavern, party and the older modes
-    name: 'town',
+    // the title: New game (no save yet, so no Continue), Quick battle, How to play, Developer, Credits and the language
+    name: 'title',
     path: '/',
     ready: '.title-overlay [role=dialog] button.primary',
-    check: () => document.querySelectorAll('.title-overlay [role=dialog] button').length >= 5,
+    check: () =>
+      !!document.querySelector('.title-overlay .title-foot') &&
+      document.querySelectorAll('.title-overlay .camp-list button').length === 5,
+  },
+  {
+    // home with no expedition: the town (Nov 15): quest, shop, tavern, party and the title
+    name: 'town',
+    path: '/?home',
+    ready: '.title-overlay [role=dialog] button.primary',
+    check: () =>
+      !document.querySelector('.title-overlay .title-foot') &&
+      document.querySelectorAll('.title-overlay .camp-list button').length === 5,
   },
   {
     name: 'expedition map',
-    path: '/',
+    path: '/?home',
     seed: WORN,
     ready: '.crawl-map [role=dialog] button.primary',
     check: () =>
@@ -60,14 +72,6 @@ const PAGES = [
     path: '/?crawl=1&boss=1',
     ready: '.panel.commands[role=menu] button',
     check: () => !!document.querySelector('.panel.queue'),
-  },
-  {
-    name: 'world',
-    path: '/?world',
-    // a saved hero skips the new-game intro and the hero creation, which come before the map
-    seed: { 'dt:hero': JSON.stringify({ name: 'Smoke', cls: 'warrior' }) },
-    ready: '.world-map .world-svg svg',
-    check: () => document.querySelectorAll('.world-node').length > 0 && !!document.querySelector('.world-panel'),
   },
 ];
 

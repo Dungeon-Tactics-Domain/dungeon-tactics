@@ -23,8 +23,7 @@ import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
-import { WORLD } from '../world.ts';
-import { openBar, openParty, openShop } from '../world-ui.ts';
+import { openBar, openParty, openShop } from '../town-ui.ts';
 import { titleScreen } from './title.ts';
 
 export const CRAWL_KEY = 'dt:crawl';
@@ -57,11 +56,17 @@ export function castRoom(room: Scenario, exp: Expedition, node: number): { scena
   return { scenario, room: { node, heroes } };
 }
 
+// home (?home): the town, or the expedition map while one is in progress (homeScreen), over the standalone battle; the bare
+// address is the title
+export const goHome = () => {
+  location.search = '?home';
+};
+
 // the way home: the expedition map while one is in progress, else the town
 export const homeLabel = () => (savedExpedition() ? t('Mapa da expedição', 'Expedition map') : t('Cidade', 'Town'));
 
 // A room still saved with no room in the address: the party left it before it ended (Options, a sibling room, the
-// bare address). Fernando, Nov 15: that loses the expedition like a defeat; only Restart retries the room for free
+// bare address and Continue). Fernando, Nov 15: that loses the expedition like a defeat; only Restart retries the room for free
 export function leftRoom() {
   if (!savedExpedition() || !store.get(ROOM_KEY)) return false;
   store.set(CRAWL_KEY, '');
@@ -69,7 +74,7 @@ export function leftRoom() {
   return true;
 }
 
-// what opens with no address: the expedition in progress, else the town
+// what ?home and the title's Continue open: the expedition in progress, else the town
 export function homeScreen() {
   if (leftRoom()) return lostScreen();
   const exp = savedExpedition();
@@ -77,18 +82,17 @@ export function homeScreen() {
   else townScreen();
 }
 
-// The town (fixed for now: only the party grows): the existing Shop, Tavern and Party windows, the quest, and the older
-// modes behind one button (the frozen Beacon Ashes campaign, quick battles, credits). Over the spinning backdrop battle
+// The town (fixed for now: only the party grows): the Shop, Tavern and Party windows, the quest, and the way back to the
+// title (quick battles, how to play, developer, credits). Over the spinning backdrop battle
 export function townScreen() {
   setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
-  const i = WORLD.findIndex((w) => w.id === CRAWL_TOWN);
   const go = (fn: () => void) => () => {
     d.close();
     fn();
   };
   const d = dialog(
     'title',
-    t(WORLD[i].name[0], WORLD[i].name[1]),
+    t(...CRAWL_TOWN),
     [
       el(
         'div',
@@ -103,25 +107,17 @@ export function townScreen() {
           t('Loja: comprar e vender equipamento', 'Shop: buy and sell equipment'),
           go(() => openShop(townScreen)),
         ),
-        // the campaign's quests stay out: they open battles that end on the world map
         button(
           'secondary',
-          t('Taverna: boatos e recrutar', 'Tavern: rumors and recruits'),
-          go(() => openBar(i, townScreen, false)),
+          t('Taverna: recrutar', 'Tavern: recruits'),
+          go(() => openBar(townScreen)),
         ),
         button(
           'secondary',
           t('Grupo: classe, equipamento e quem vai', 'Party: class, equipment and who goes'),
-          go(() => openParty(KIT, null, townScreen)),
+          go(() => openParty(townScreen)),
         ),
-        button(
-          'secondary',
-          t(
-            'Outros modos: campanha antiga, batalha avulsa, créditos',
-            'Other modes: old campaign, quick battle, credits',
-          ),
-          go(titleScreen),
-        ),
+        button('secondary', t('Tela de título', 'Title screen'), go(titleScreen)),
       ),
     ],
     { fixed: true },
@@ -270,7 +266,7 @@ export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
 // the window after the room: back to the map to go on, or to the town when the expedition ended
 export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mvp: HTMLElement[]) {
   const settled = settleRoom(room, won, state);
-  if (!settled) return void (location.search = '');
+  if (!settled) return goHome();
   const { next, done, node, down } = settled;
   const d = dialog(
     'result',
@@ -311,14 +307,12 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
         button(
           'primary',
           next && !done ? t('Seguir no mapa', 'On to the map') : t('Voltar à cidade', 'Back to town'),
-          () => {
-            location.search = '';
-          },
+          goHome,
         ),
       ),
     ].filter((n): n is HTMLElement => !!n),
     // Esc or ✕ goes home too: closing only left the finished room on screen
-    { onBack: () => void (location.search = '') },
+    { onBack: goHome },
   );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }

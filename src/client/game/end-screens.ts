@@ -1,18 +1,11 @@
-// End-of-battle windows: the standalone battle (Until Dawn record, mission reward, play again) and the campaign stage
-// (gold, learned abilities, back to the map or try again), plus the victory confetti. The game saves progress before
-// opening them; these only show it and offer the next step.
-import { ITEMS } from '../../shared/battle/equipment.ts';
-import { CHAPTERS, learned } from '../campaign.ts';
-import { VICTORY_GOLD } from '../chest.ts';
+// End-of-battle window of the standalone battle (Until Dawn record, play again, home) and the victory confetti; the
+// expedition rooms have their own (crawl.ts finishRoom). The game saves progress before opening it.
 import { dialog } from '../dialog.ts';
 import { portrait } from '../hud.ts';
-import { abilityName, t } from '../i18n.ts';
+import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
-import type { Mission } from '../missions.ts';
 import { SURVIVE_TURNS } from '../survival.ts';
-import { nodeOfChapter } from '../world.ts';
-import { savedGroup, savedHero, toWorld } from './boot.ts';
-import { homeLabel } from './crawl.ts';
+import { goHome, homeLabel } from './crawl.ts';
 
 // Victory: confetti falling for 2.5 s (DOM and CSS, no cost in the 3D frame); disappears by itself. With reduced motion, nothing.
 export function confetti() {
@@ -54,8 +47,8 @@ export function mvpCard(def: string, name: string, dmg: number, kills: number): 
   );
 }
 
-// What the battle gave, one row each after a glass orb like the command menu's: gold-coloured for gold and records, blue
-// for what was learned (the orb is decoration: the text says it all)
+// What the battle gave, one row each after a glass orb like the command menu's: gold-coloured for records (the orb is
+// decoration: the text says it all)
 type Gain = [orb: 'gold' | 'blue', text: string];
 const gainList = (rows: Gain[]) =>
   rows.length
@@ -78,11 +71,10 @@ export interface BattleEnd {
   lasted: number;
   best: number; // record before this battle
   mvp: HTMLElement[]; // the highlight card (Game.mvpLine, mvpCard), empty when no hero scored
-  mission: Mission | null; // bar mission in play: its reward shows on a victory
   restart: () => void;
 }
 
-export function battleEndScreen({ won, survival, lasted, best, mvp, mission, restart }: BattleEnd) {
+export function battleEndScreen({ won, survival, lasted, best, mvp, restart }: BattleEnd) {
   const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
     ...mvp,
     ...gainList([
@@ -102,17 +94,6 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, mission, res
             ] as Gain,
           ]
         : []),
-      ...(mission && won
-        ? [
-            [
-              'gold',
-              t(
-                `Recompensa: ${mission.gold} de ouro${mission.item ? ` e ${ITEMS[mission.item].name}` : ''} no baú.`,
-                `Reward: ${mission.gold} gold${mission.item ? ` and ${ITEMS[mission.item].en}` : ''} in the chest.`,
-              ),
-            ] as Gain,
-          ]
-        : []),
     ]),
     el(
       'p',
@@ -129,85 +110,14 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, mission, res
     el(
       'div',
       { class: 'menu-actions' },
-      mission && won
-        ? button('primary', t('Voltar ao mapa', 'Back to map'), toWorld)
-        : button('primary', t('Jogar de novo', 'Play again'), () => {
-            d.close();
-            restart();
-          }),
-      button('secondary', homeLabel(), () => {
-        location.search = '';
+      button('primary', t('Jogar de novo', 'Play again'), () => {
+        d.close();
+        restart();
       }),
+      button('secondary', homeLabel(), goHome),
     ),
   ]);
   outcome(d.overlay, won);
   // Enter plays again (focus went to the X, and closing left the finished battle with no key to restart)
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
-}
-
-export interface StageEnd {
-  n: number; // campaign stage
-  won: boolean;
-  mvp: HTMLElement[];
-  heroesFell: boolean; // defeat by losing the heroes (or a stage without a Beacon), not by the Beacon going dark
-  restart: () => void;
-}
-
-export function stageEndScreen({ n, won, mvp, heroesFell, restart }: StageEnd) {
-  const last = n === CHAPTERS.length - 1;
-  const d = dialog(
-    'result',
-    won
-      ? last
-        ? t('Fim da campanha!', 'Campaign complete!')
-        : t('Fase vencida!', 'Stage cleared!')
-      : t('Derrota', 'Defeat'),
-    [
-      ...(won
-        ? [
-            ...mvp,
-            ...gainList([
-              ['gold', t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`)],
-              ...learned(n, savedHero(), savedGroup()).map(
-                (x): Gain => [
-                  'blue',
-                  t(
-                    `${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`,
-                    `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`,
-                  ),
-                ],
-              ),
-            ]),
-          ]
-        : []),
-      // on the last stage there is no next battle: the map keeps only the epilogue, back to Vauclair
-      el(
-        'p',
-        {},
-        won
-          ? last
-            ? t('O epílogo espera em Vauclair, no mapa.', 'The epilogue awaits in Vauclair, on the map.')
-            : t('O caminho seguinte se abriu no mapa.', 'The next path opened on the map.')
-          : heroesFell
-            ? t('Os heróis caíram. A fase recomeça do início.', 'The heroes fell. The stage starts over.')
-            : t('O Farol se apagou. A fase recomeça do início.', 'The Beacon went dark. The stage starts over.'),
-      ),
-      // victory returns to the world map (the next point is open); defeat retries right there or goes back to the map
-      el(
-        'div',
-        { class: 'menu-actions' },
-        won
-          ? button('primary', t('Voltar ao mapa', 'Back to the map'), () => {
-              location.search = `?world&from=${nodeOfChapter(n)}`;
-            })
-          : button('primary', t('Tentar de novo', 'Try again'), () => {
-              d.close();
-              restart();
-            }),
-        ...(won ? [] : [button('secondary', t('Mapa', 'Map'), toWorld)]),
-      ),
-    ],
-  );
-  outcome(d.overlay, won);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }

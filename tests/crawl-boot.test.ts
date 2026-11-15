@@ -38,13 +38,13 @@ describe('crawl rooms in the client', () => {
   it('?crawl= opens the room in half tiles, without the title, and a save of it resumes', async () => {
     open('?crawl=7&depth=2&boss=1&theme=forest');
     const sel = await selectBattle();
-    if (!sel || sel === 'world') throw new Error('no battle');
+    if (!sel) throw new Error('no battle');
     expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-7-d2-boss-forest${HALF}`);
     expect(sel.title).toBe(false);
     expect(sel.saveKey).toBe('dt:battle:crawl');
     store.set(sel.saveKey, Battle.start(sel.scenario, 3).save());
     const again = await selectBattle();
-    if (!again || again === 'world') throw new Error('no battle');
+    if (!again) throw new Error('no battle');
     expect(Battle.load(store.get(again.saveKey) ?? '')?.state.scenario).toBe(again.scenario.id);
   });
 
@@ -52,18 +52,18 @@ describe('crawl rooms in the client', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     open('?crawl=3');
     const sel = await selectBattle();
-    if (!sel || sel === 'world') throw new Error('no battle');
+    if (!sel) throw new Error('no battle');
     expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-4-d1-dungeon${HALF}`);
   });
 
-  it('two seeds with no room go back to the title with a message, without throwing', async () => {
+  it('two seeds with no room go back home with a message, without throwing', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const alert = vi.fn();
     vi.stubGlobal('alert', alert);
     const location = open('?crawl=1');
     expect(await selectBattle()).toBeNull();
     expect(alert).toHaveBeenCalledOnce();
-    expect(location.search).toBe('');
+    expect(location.search).toBe('?home');
   });
 
   it('?room= opens an open expedition room with the town party at its carried life; a closed one goes home', async () => {
@@ -78,7 +78,7 @@ describe('crawl rooms in the client', () => {
     const node = openNodes(map, [])[0];
     open(`?room=${node}`);
     const sel = await selectBattle();
-    if (!sel || sel === 'world') throw new Error('no battle');
+    if (!sel) throw new Error('no battle');
     expect(sel.saveKey).toBe('dt:battle:expedition');
     expect(sel.title).toBe(false);
     expect(sel.room?.node).toBe(node);
@@ -108,7 +108,7 @@ describe('crawl rooms in the client', () => {
     const closed = map.findIndex((n) => n.floor === 2);
     const location = open(`?room=${closed}`);
     expect(await selectBattle()).toBeNull();
-    expect(location.search).toBe('');
+    expect(location.search).toBe('?home');
   });
 
   it('leaving a room before it ends loses the expedition; Restart keeps the life the party entered with', async () => {
@@ -123,7 +123,7 @@ describe('crawl rooms in the client', () => {
     const [node, sibling] = openNodes(expeditionMap(21), []);
     open(`?room=${node}`);
     const sel = await selectBattle();
-    if (!sel || sel === 'world') throw new Error('no battle');
+    if (!sel) throw new Error('no battle');
     const b = newBattle(sel.scenario, sel.room);
     store.set(ROOM_KEY, b.save()); // what main.ts boot saves on the room's first frame
     // Restart is free: a new battle of the same room, with the life the party entered with
@@ -133,7 +133,7 @@ describe('crawl rooms in the client', () => {
     // a sibling room goes home instead of opening, and home finds the room left behind: the expedition is lost
     const location = open(`?room=${sibling}`);
     expect(await selectBattle()).toBeNull();
-    expect(location.search).toBe('');
+    expect(location.search).toBe('?home');
     expect(leftRoom()).toBe(true);
     expect(savedExpedition()).toBeNull();
     expect(store.get(ROOM_KEY)).toBe('');
@@ -152,7 +152,7 @@ describe('crawl rooms in the client', () => {
     const node = openNodes(map, exp.path)[0];
     open(`?room=${node}`);
     const sel = await selectBattle();
-    if (!sel || sel === 'world') throw new Error('no battle');
+    if (!sel) throw new Error('no battle');
     expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-${map[node].seed}-d3-boss-dungeon${HALF}`);
     const b = newBattle(sel.scenario, sel.room);
     const foes = b.state.units.filter((u) => u.team === 'enemy');
@@ -160,7 +160,7 @@ describe('crawl rooms in the client', () => {
     expect(b.state.units.filter((u) => u.team === 'hero').map((u) => u.hp)).toEqual([20, 20, 20, 20]);
     store.set(sel.saveKey, b.save());
     const again = await selectBattle();
-    if (!again || again === 'world') throw new Error('no battle');
+    if (!again) throw new Error('no battle');
     expect(Battle.load(store.get(again.saveKey) ?? '')?.state.scenario).toBe(again.scenario.id);
   });
 });

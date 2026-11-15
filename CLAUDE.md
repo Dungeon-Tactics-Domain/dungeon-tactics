@@ -20,10 +20,10 @@ src/shared/crawl/   dungeon crawl: generate.ts (seeded room from the tables), ve
                     expedition.ts (floors of rooms from a seed, the life carried between rooms, the dt:crawl save)
 src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), campaign (stages and
                     lines; frozen), world (nodes, towns, rumors), quests, party (story members, recruit names), crawl/ (room tables)
-src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, world-ui.ts (map, towns, party),
+src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, town-ui.ts (party, tavern, shop),
                     group.ts (party rules), campaign.ts (stage rules), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
   game/             what opens around the battle: boot (URL to scenario), crawl (the town, the expedition map and its rooms),
-                    title (the old modes), options, end screens, world map flow
+                    title (new game, continue, quick battle, how to play, developer, credits), options, end screens
   scene/            the parts BattleScene composes: board, marks (tile marks, cursor), units, camera, space (tile to world), timeline
   dev/              localhost-only sandbox: battles staged from a scene spec, scripted through window.__sandbox (docs/sandbox.md)
 scripts/            battle-sim.ts (optional simulator), crawl-sheet.ts (crawl room screenshots), assets/ (texture and model generators)
@@ -42,7 +42,7 @@ npm run typecheck                 # client, tests and scripts
 npx vitest run                    # tests
 npm run coverage                  # tests with a coverage summary; lcov report in coverage/
 npx vite build                    # production build in dist/
-npm run smoke                     # headless Chrome opens the built town, the expedition map and a room, a battle and the world map
+npm run smoke                     # headless Chrome opens the built title, the town, the expedition map and a room, and battles
 npx wrangler deploy               # publish dist/ to https://dungeon-tactics.fernandorffdev.com
 npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 npm run sandbox -- scripts/sandbox --sheet   # screenshots from scene specs: map, units, camera, hidden HUD (docs/sandbox.md)
@@ -118,3 +118,4 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 15/11 | In an expedition room, Restart is a free retry with the life the party entered with; leaving the room before it ends (Options → Leave the room, another room, the bare address) loses the expedition like a defeat. A result from a room that is no longer open (another tab) is ignored | Fernando's answer of Nov 15 to the F2 review |
 | 15/11 | Map sizes are counted in half tiles. Crawl rooms grow to the size of Ash Wood: 24x24 half tiles, 28x28 for the boss. Each enemy still starts 10 to 14 half tiles from the nearest hero (the Colossus 16 to 20). The heroes start in a band of 4 half tiles with room behind them, there are 0 to 6 spikes, and the boss has 1 minion instead of 2 | Fernando: rooms "about the size of Ash Wood"; the Mechanics lab (descida.json) keeps the contact distance so a room stays at 5 to 8 hero turns, and the extra room is for flanking |
 | 15/11 | Crawl rooms drawn like Ash Wood: every theme on the smooth painted terrain with painted trees and props. The border is closed in places (trees, rock walls), a road crosses the room, and lone rocks are painted boulders. The dungeon theme is a cave (stone floor, stone-hill walls, the dark of the crypt without its block walls) | Fernando: the rooms looked crude, drawn as KayKit blocks, next to Ash Wood |
+| 15/11 | World map and Beacon Ashes campaign removed from the code; the game opens in the town: the title's New game (erases the party, chest, equipment and expedition saves) and Continue lead there, and every way home (`?home`) returns to it or to the expedition map. The town's Tavern only recruits; the protagonist creation went with the campaign, so a new game starts with the 4 story members | Fernando, Nov 15: "retire o lance do mapa mundial do código, não quero mais ver isso" |
