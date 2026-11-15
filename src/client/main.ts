@@ -33,7 +33,7 @@ import {
 import { dialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, savedHero, selectBattle } from './game/boot.ts';
-import { battleEndScreen, confetti, stageEndScreen } from './game/end-screens.ts';
+import { battleEndScreen, confetti, mvpCard, stageEndScreen } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
 import { worldScreen } from './game/world-screen.ts';
@@ -762,22 +762,13 @@ export class Game {
     this.roster = Object.fromEntries(this.battle.state.units.map((u) => [u.id, { team: u.team, def: u.def }]));
   }
 
-  // "Highlight: Bran · 48 damage · 2 downed" (the hero who downed the most; tie broken by damage), like FFT's closing
+  // the highlight card (mvpCard): the hero who downed the most, tie broken by damage, like FFT's closing
   private mvpLine(): HTMLElement[] {
     const m = mvp(this.tally, this.teamOf(), 'hero');
     if (!m) return [];
     const [id, s] = m;
-    const name = unitName(this.roster[id].def);
-    return [
-      el(
-        'p',
-        { class: 'mvp' },
-        t(
-          `Destaque: ${name} · ${s.dmg} de dano · ${s.kills} derrubado${s.kills === 1 ? '' : 's'}`,
-          `MVP: ${name} · ${s.dmg} damage · ${s.kills} ${s.kills === 1 ? 'takedown' : 'takedowns'}`,
-        ),
-      ),
-    ];
+    const { def } = this.roster[id];
+    return [mvpCard(def, unitName(def), s.dmg, s.kills)];
   }
 
   private restart() {

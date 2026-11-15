@@ -270,7 +270,7 @@ button[hidden],
 /* windows on the same blue as the HUD panels (Nov 15, FFT Classic). One shade lighter than the battle panel (paper-hi →
    paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
 .dialog {
-  padding: 14px 18px 18px;
+  padding: 0 18px 18px;
   width: min(460px, 100%);
   max-height: 90dvh;
   overflow: auto;
@@ -281,21 +281,34 @@ button[hidden],
   box-shadow: var(--paper-frame);
   text-shadow: var(--ink-shadow);
 }
-/* buttons inside the window: panel gradient with a light outline (the primary keeps its own colour); chosen = focus border */
+/* buttons inside the window: the lab kit's dark blue button with the steel trim and a drop shadow (the primary keeps its
+   brighter blue); both at --fs like the kit, the primary in bold */
 .dialog button:not(.primary) {
   color: var(--ink);
-  background: linear-gradient(var(--paper-hi), var(--paper-lo));
-  border-color: var(--paper-edge);
+  font: 500 var(--fs) / 1.1 var(--font);
+  background: linear-gradient(var(--stone), var(--stone-lo));
+  border-color: var(--trim);
   box-shadow:
-    inset 0 0 0 1px var(--paper-hi),
-    0 2px 0 rgba(0, 0, 0, 0.3);
+    0 0 0 1px var(--edge),
+    0 3px 0 var(--bevel-lo);
+}
+.dialog button.primary {
+  font: 700 var(--fs) / 1.1 var(--font-title);
 }
 .dialog button:not(.primary):not(:disabled):active {
-  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 0 0 1px var(--edge),
+    inset 0 2px 4px var(--bevel-lo);
 }
+/* chosen (choice()): the kit's lighter band, yellow border and a ✓, so it is not told by colour alone */
 .dialog button[aria-pressed="true"]:not(.primary) {
-  box-shadow: inset 0 0 0 3px var(--focus);
-  font-weight: 800;
+  background: var(--focus-band);
+  border-color: var(--focus);
+  font-weight: 700;
+}
+.dialog button[aria-pressed="true"]:not(.primary)::before {
+  content: "✓";
+  color: var(--focus);
 }
 .dialog button:focus-visible {
   outline-color: var(--focus);
@@ -314,11 +327,29 @@ button[hidden],
   padding: 16px;
   z-index: 10;
 }
+/* the window's name on the kit's head band (the battle menus' .panel-head): faint light band and a line under it */
 .dialog-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--gap);
+  margin: 0 -18px 12px;
+  padding: 4px 8px 4px 18px;
+  border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+/* ✕ on the band: a bare glyph like the kit's, no button frame */
+.dialog .dialog-head button.icon {
+  font-size: var(--fs-lg);
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+.dialog .dialog-head button.icon {
+  font-size: var(--fs-lg);
+}
+.dialog .dialog-head button.icon:hover {
+  background: var(--row-hi);
 }
 .dialog h2,
 .dialog h3 {
@@ -363,16 +394,63 @@ button[hidden],
   padding: 10px 14px;
   text-align: left;
 }
-.dialog .mvp {
-  font-weight: 700;
-  color: var(--accent);
-  margin: 2px 0 10px;
-} /* battle highlight (tally.ts), at the end of the stage and of the standalone battle */
 .dialog .learned {
   font-weight: 700;
   color: var(--focus);
   margin: 2px 0;
-} /* new ability on winning the stage (campaign); .dialog in front to beat .dialog p */
+} /* what is missing to recruit in the Tavern; .dialog in front to beat .dialog p */
+
+/* ---- End of battle: result window (game/end-screens.ts) ---- */
+/* composed from the HUD pieces (no lab mockup): the title big on the head band, yellow on a victory; the highlight as a
+   small unit panel; what was won as rows after a glass orb */
+.dialog.result {
+  width: min(560px, 100%);
+}
+.dialog.result h2 {
+  font-size: var(--fs-display);
+  letter-spacing: 1px;
+}
+.dialog.result.won h2 {
+  color: var(--focus);
+}
+.result-mvp {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  border-left: 6px solid var(--hero);
+  background: color-mix(in srgb, var(--shade) 25%, transparent);
+}
+.result-mvp > div {
+  display: grid;
+  gap: 2px;
+}
+.result-mvp strong {
+  font-size: var(--fs-lg);
+}
+.result-label {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.result-gains {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.result-gains li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+.result-gains .orb {
+  width: 20px;
+  height: 20px;
+}
 
 /* ---- Pieces inside dialogs: legend, choice, key list, value bar ---- */
 .legend {
@@ -568,6 +646,10 @@ button[hidden],
 }
 .main-title .dialog-head {
   justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
 }
 .main-title .dialog.title h2 {
   font-size: 64px;
@@ -951,10 +1033,12 @@ button[hidden],
     inset -3px -4px 6px var(--bevel-lo),
     0 0 0 2px var(--edge);
 }
-.orb.act {
+.orb.act,
+.orb.blue {
   --orb: var(--orb-blue);
 }
-.orb.status {
+.orb.status,
+.orb.gold {
   --orb: var(--orb-gold);
 }
 .panel .item:disabled .orb {

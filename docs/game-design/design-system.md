@@ -47,7 +47,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
 | Fade | `--fade` | black of the fade on entering a map point |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` | legend; same as `MARK` in `src/client/scene/marks.ts` |
-| Command orbs | `--orb-blue` `--orb-gold` `--orb-off` | glass orb before Act (blue) and Status (gold) in the command menu; `--orb-off` on a disabled row |
+| Command orbs | `--orb-blue` `--orb-gold` `--orb-off` | glass orb (`.orb` with `act`/`blue` or `status`/`gold`) before Act and Status in the command menu and before each row of the result window; `--orb-off` on a disabled row |
 | Theme art | `--ability-atlas` | the whole `url(...)` of the theme's 32 px ability icon atlas (`public/ui/fft/atlas-32.png`); CSS cannot join a path to a file name, so a theme with its own art redefines the full value |
 
 ### Contrast (measured on Nov 15, WCAG 2.1 formula, script over the CSS hex values; translucent colours blended over their worst background)
@@ -73,6 +73,9 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Menu head band (6% `--ink` over `--paper-hi`) / picked row (45% `--shade` over `--paper-hi`): `--ink` | 6.7 / 12.4 | ✓ (Nov 15) |
 | ◆ on `--enemy-paper` (not text, the word beside it carries the side): `--enemy-hi` / `--enemy` | 4.9 / 2.6 | hence `--enemy-hi` |
 | `--fg` on the place name tag over the map land | 11.9 | ✓ |
+| Window head band (6% `--ink` over `--paper-hi`): `--ink` / `--focus` (victory title) | 6.7 / 5.2 | ✓ (Nov 15) |
+| Regular button: `--ink` on `--stone` / `--stone-lo` | 13.0 / 15.3 | ✓ (Nov 15) |
+| Result highlight band (25% `--shade` over `--paper-hi`): `--ink-muted` | 7.3 | ✓ (Nov 15) |
 | `--focus` alone on the white sky | 1.4 | ✗ → hence `--focus-halo` (dark band: 18.8 on white, 13.5 against the ring) |
 
 ### Typography
@@ -135,9 +138,9 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Portrait** `portrait()` | `hud.ts` | 96×128 (unit panel; 72×96 below 1600 px), 99×132 in the dialogue box (the face's height), 72×96 (creation), 48×64 (party), 44×58 (map), 48×48 (queue, cropped from the top); sizes set by the container, `portrait()` itself unchanged | everywhere with a face |
 | **Turn list** `.queue` (`renderQueue`) | `hud.ts`, `style.css` | a 132 px column (the lab kit's narrow queue, a little wider for the charge rows): title, then per row the number (NOW in `--focus` for the one acting), the portrait framed in its side colour (yellow with a glow for NOW) and the name after ● or ◆; charge rows in muted italics, the "goes off here" row with a yellow outline, ◎ target in `--focus`; 4 rows by default (L shows all, scrolling within the column, which ends above the acting unit's panel: `hud.ts` sets its height from that panel's); on a charge preview the short list shows up to the "goes off here" row; below 1600 px the portraits are 36 px | top left, under the tile line |
 | **Place beside** `placeBeside()` | `hud.ts` (pure, tested) | right; no room, left; slides vertically | menu beside the unit |
-| **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary); `fixed` does not close; `onBack` goes back | title, Options, Status, How to play, Credits, Party, Sheet, Shop, Tavern, Town, stage end, Developer |
-| **Primary button** `button('primary', …)` | `icons.ts`, `style.css` | N bright blue · H lighter · F yellow ring · P inverted bevel and 2 px down · D faded 50% | one per dialog: the action that continues the flow |
-| **Regular button** `button('secondary', …)` | `icons.ts`, `style.css` | N panel gradient with a light outline · H lighter · F ring · P sinks · D faded 50% · S 3 px yellow border and bold | secondary actions, `choice()` options |
+| **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary); `fixed` does not close; `onBack` goes back. Since Nov 15 (theme screens) the title sits on the battle menus' head band (6% `--ink` over the panel, a light line under it) and the ✕ is a bare glyph on the band (H `--row-hi`) | title, Options, Status, How to play, Credits, Party, Sheet, Shop, Tavern, Town, stage end, Developer |
+| **Primary button** `button('primary', …)` | `icons.ts`, `style.css` | N bright blue, bold at `--fs` in windows · H lighter · F yellow ring · P inverted bevel and 2 px down · D faded 50% | one per dialog: the action that continues the flow |
+| **Regular button** `button('secondary', …)` | `icons.ts`, `style.css` | N the lab kit's dark blue (`--stone` → `--stone-lo`) with the steel trim (`--trim`) and a drop shadow, `--fs` weight 500 (Nov 15) · H lighter · F ring · P sinks · D faded 50% · S `--focus-band`, yellow border, bold and a ✓ before the label | secondary actions, `choice()` options |
 | **Icon button** `iconButton()` (a `button('icon', …)` named by `title` and `aria-label`) | `icons.ts` | like the regular one; name in `title` and `aria-label` | dialog ✕, menu button (3 bars) |
 | **Exclusive choice** `choice()` | `dialog.ts` | S through `aria-pressed`; applies at once, no Save | Options (sections, pixel, language, text), class on the Sheet |
 | **Value bar** `slider()` | `dialog.ts` | native range input, steps of 5%, number beside it | volume |
@@ -150,6 +153,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Form field** (text, select, number, checkbox, `details`) | `create-ui.ts`, `dev-menu.ts` | F the same yellow ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | protagonist name, Developer menu |
 | **Key hint** `.hint` | `style.css` | PC with keyboard only (`.kbd`) | menu rows and buttons |
 | **Strike preview** `strikes()` | `hud.ts`, `style.css` | one two-colour strip per target, up to 3, then "+N targets": the action half on the panel blue (ability icon, name, the big −dmg or +heal PTS in `--strike-dmg` or `--heal`, ⊕ hit chance) and the target half on its side's colour (`--enemy-paper` for an enemy, the panel blue for a hero): name and side, the life bar with the stripes (`gauge` `change`) and the `strikeInfo` line (direction, push, life after, ALLY! in `--accent`). While aiming it takes the target panel's place, beside the acting panel, up to 760 px wide | bottom, while aiming and on "Execute?" |
+| **Result window** `dialog('result won' / 'result lost')` | `game/end-screens.ts`, `style.css` | the title at `--fs-display` on the head band (`--focus` on a victory); the highlight as `mvpCard()` (a small unit panel: `portrait()`, MVP label, name, damage and takedowns, `--hero` side stripe on a 25% `--shade` band); what was won as `.result-gains` rows after a gold orb (gold, quest reward, record) or a blue orb (abilities learned); the flavour line; the actions (Nov 15, composed from the HUD pieces, no lab mockup) | standalone battle end, quest reward, Until Dawn record, stage cleared, campaign complete, defeat |
 | **Banner** `.banner` / `.announce` | `style.css` | enters, holds, leaves | ability name, stage objective |
 
 ### Focus
@@ -211,6 +215,8 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 ## 7. What was and was not checked
 
 Nov 15 (block 2, battle HUD in the lab kit's layout and the 32 px ability icons), in the repo's headless Chrome through the sandbox (`npm run sandbox`, muted), before and after the change, in `_notas/agentes/bloco2-evidencia/`: command menu with the abilities submenu (warrior and mage), aiming (one target, three targets with an ally; a heal and the game-icons fallback with a broken atlas path only after), "Execute?" (one target and a charged area spell, with the queue preview), at 1920×1080 in pt and en and at 1280×720 in en. Not checked: a 1280×720 shot in pt, the mobile widths, a disabled ability row with its icon on screen, the full turn list (L) at 1280×720.
+
+Nov 15 (theme screens, block C: end of battle), in the repo's headless Chrome through a script that opens each window over a battle (`dialog`/`end-screens.ts` called on the page, muted; pw-edge and pw-chrome refused the connection), before and after, in `_notas/agentes/tema-telas-evidencia/`: victory, quest reward, Until Dawn record, defeat, stage cleared, campaign complete and stage defeat, at 1920×1080 in pt and en and at 1280×720 in pt and en. Not checked: a real battle played to its end (the windows were opened by script with a fixed highlight), the confetti over the new window.
 
 Nov 15 (FFT Classic): title, credits, battle commands, abilities, corner menu, Status, Options (Game, Video, Controls), aiming, dialogue box, world map, town and party windows, opening and creation, at 1920×1080 in pt and en, in headless Chrome; the strike preview strips and 1280×720 were not opened.
 

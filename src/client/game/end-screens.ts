@@ -5,6 +5,7 @@ import { ITEMS } from '../../shared/battle/equipment.ts';
 import { CHAPTERS, learned } from '../campaign.ts';
 import { VICTORY_GOLD } from '../chest.ts';
 import { dialog } from '../dialog.ts';
+import { portrait } from '../hud.ts';
 import { abilityName, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import type { Mission } from '../missions.ts';
@@ -29,48 +30,85 @@ export function confetti() {
   setTimeout(() => box.remove(), 3000);
 }
 
+// Battle highlight (tally.ts) as a small unit card, like the HUD's unit panel: portrait, name and what the unit did
+export function mvpCard(def: string, name: string, dmg: number, kills: number): HTMLElement {
+  return el(
+    'div',
+    { class: 'result-mvp' },
+    portrait(def),
+    el(
+      'div',
+      {},
+      el('span', { class: 'result-label' }, t('Destaque', 'MVP')),
+      el('strong', {}, name),
+      el(
+        'span',
+        {},
+        t(
+          `${dmg} de dano · ${kills} derrubado${kills === 1 ? '' : 's'}`,
+          `${dmg} damage · ${kills} ${kills === 1 ? 'takedown' : 'takedowns'}`,
+        ),
+      ),
+    ),
+  );
+}
+
+// What the battle gave, one row each after a glass orb like the command menu's: gold-coloured for gold and records, blue
+// for what was learned (the orb is decoration: the text says it all)
+type Gain = [orb: 'gold' | 'blue', text: string];
+const gainList = (rows: Gain[]) =>
+  rows.length
+    ? [
+        el(
+          'ul',
+          { class: 'result-gains' },
+          ...rows.map(([orb, text]) => el('li', {}, el('span', { class: `orb ${orb}`, 'aria-hidden': 'true' }), text)),
+        ),
+      ]
+    : [];
+
 export interface BattleEnd {
   won: boolean;
   survival: boolean; // Until Dawn: turns held and the record instead of the Beacon line
   lasted: number;
   best: number; // record before this battle
-  mvp: HTMLElement[]; // the highlight line (Game.mvpLine)
+  mvp: HTMLElement[]; // the highlight card (Game.mvpLine, mvpCard), empty when no hero scored
   mission: Mission | null; // bar mission in play: its reward shows on a victory
   restart: () => void;
 }
 
 export function battleEndScreen({ won, survival, lasted, best, mvp, mission, restart }: BattleEnd) {
-  const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
-    ...(survival
-      ? [
-          el(
-            'p',
-            { class: lasted > best ? 'learned' : '' },
-            lasted > best
-              ? t(
-                  `Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`,
-                  `New record: ${lasted} of ${SURVIVE_TURNS} turns!`,
-                )
-              : t(
-                  `Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`,
-                  `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`,
-                ),
-          ),
-        ]
-      : []),
+  const d = dialog(`result ${won ? 'won' : 'lost'}`, won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
     ...mvp,
-    ...(mission && won
-      ? [
-          el(
-            'p',
-            { class: 'mvp' },
-            t(
-              `Recompensa: ${mission.gold} de ouro${mission.item ? ` e ${ITEMS[mission.item].name}` : ''} no baú.`,
-              `Reward: ${mission.gold} gold${mission.item ? ` and ${ITEMS[mission.item].en}` : ''} in the chest.`,
-            ),
-          ),
-        ]
-      : []),
+    ...gainList([
+      ...(survival
+        ? [
+            [
+              'gold',
+              lasted > best
+                ? t(
+                    `Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`,
+                    `New record: ${lasted} of ${SURVIVE_TURNS} turns!`,
+                  )
+                : t(
+                    `Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`,
+                    `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`,
+                  ),
+            ] as Gain,
+          ]
+        : []),
+      ...(mission && won
+        ? [
+            [
+              'gold',
+              t(
+                `Recompensa: ${mission.gold} de ouro${mission.item ? ` e ${ITEMS[mission.item].name}` : ''} no baú.`,
+                `Reward: ${mission.gold} gold${mission.item ? ` and ${ITEMS[mission.item].en}` : ''} in the chest.`,
+              ),
+            ] as Gain,
+          ]
+        : []),
+    ]),
     el(
       'p',
       {},
@@ -112,7 +150,7 @@ export interface StageEnd {
 export function stageEndScreen({ n, won, mvp, heroesFell, restart }: StageEnd) {
   const last = n === CHAPTERS.length - 1;
   const d = dialog(
-    'result',
+    `result ${won ? 'won' : 'lost'}`,
     won
       ? last
         ? t('Fim da campanha!', 'Campaign complete!')
@@ -122,21 +160,18 @@ export function stageEndScreen({ n, won, mvp, heroesFell, restart }: StageEnd) {
       ...(won
         ? [
             ...mvp,
-            el(
-              'p',
-              { class: 'mvp' },
-              t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`),
-            ),
-            ...learned(n, savedHero(), savedGroup()).map((x) =>
-              el(
-                'p',
-                { class: 'learned' },
-                t(
-                  `${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`,
-                  `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`,
-                ),
+            ...gainList([
+              ['gold', t(`+${VICTORY_GOLD} de ouro no baú do grupo`, `+${VICTORY_GOLD} gold in the party chest`)],
+              ...learned(n, savedHero(), savedGroup()).map(
+                (x): Gain => [
+                  'blue',
+                  t(
+                    `${x.name} aprendeu ${x.abilities.map(abilityName).join(' e ')}!`,
+                    `${x.name} learned ${x.abilities.map(abilityName).join(' and ')}!`,
+                  ),
+                ],
               ),
-            ),
+            ]),
           ]
         : []),
       // on the last stage there is no next battle: the map keeps only the epilogue, back to Vauclair
