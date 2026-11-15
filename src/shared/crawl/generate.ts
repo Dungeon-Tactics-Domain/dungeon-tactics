@@ -1,0 +1,177 @@
+// Procedural rooms for the dungeon crawl (Nov 15, Fernando: a new mode apart from Beacon Ashes, with rooms made by rules).
+// A room is a plain `Scenario` in whole tiles: heroes on one side, one enemy group on the other, height, water, ramps and
+// obstacles between them. The client splits it like any battle (half.ts). Pure and deterministic: the same seed and
+// options always give the same room, drawn only through rng.ts.
+import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../../content/crawl/rooms.ts';
+import { dist, FACING, type Tile } from '../battle/grid.ts';
+import { rollInt } from '../battle/rng.ts';
+import type { Scenario, Spawn } from '../battle/scenarios.ts';
+import type { Pos } from '../battle/types.ts';
+import { UNIT_DEFS } from '../battle/units.ts';
+import { FAR, NEAR, verifyRoom } from './verify.ts';
+
+// In every room id: a change that gives other rooms for the same seed bumps it, so a save of an older room starts over
+export const CRAWL_VERSION = 'crawl1';
+export interface RoomGroup {
+  name: [string, string];
+  depth: number;
+  enemies: string[];
+}
+export interface CrawlTheme {
+  name: [string, string];
+  floors: string[]; // floor look by height level (the last one for anything higher)
+  props: Partial<Tile>[]; // obstacles: a terrain and its look
+  hazard?: Partial<Tile>; // up to 3 spike tiles
+}
+export interface RoomOptions {
+  depth?: number;
+  boss?: boolean;
+  theme?: string;
+}
+// the theme ends the room id (the client picks the room's mood by it)
+export const roomTheme = (id: string) => (id.startsWith(`${CRAWL_VERSION}-`) ? id.slice(id.lastIndexOf('-') + 1) : '');
+
+// layouts drawn per room before giving up; 500 seeds needed at most a handful (tests/crawl-room.test.ts)
+const TRIES = 200;
+
+export const generateRoom = (seed: number, opts: RoomOptions = {}): Scenario => buildRoom(seed, opts).room;
+
+// The room and how many layouts it took: each one is drawn from the same seeded stream and kept only if verifyRoom passes
+export function buildRoom(seed: number, opts: RoomOptions = {}): { room: Scenario; tries: number } {
+  const depth = Math.min(99, Math.max(1, Math.trunc(opts.depth ?? 1) || 1));
+  const theme = opts.theme && Object.hasOwn(CRAWL_THEMES, opts.theme) ? opts.theme : 'dungeon';
+  let rng = seed | 0;
+  const int = (lo: number, hi: number) => {
+    const [v, next] = rollInt(rng, lo, hi);
+    rng = next;
+    return v;
+  };
+  const tier = Math.max(...CRAWL_GROUPS.filter((g) => g.depth <= depth).map((g) => g.depth));
+  const pool = CRAWL_GROUPS.filter((g) => g.depth === tier);
+  const group = opts.boss ? CRAWL_BOSS : pool[int(0, pool.length - 1)];
+  const id = `${CRAWL_VERSION}-${seed | 0}-d${depth}${opts.boss ? '-boss' : ''}-${theme}`;
+  for (let tries = 1; tries <= TRIES; tries++) {
+    const laid = layout(int, opts.boss ? 10 : 8, group.enemies, CRAWL_THEMES[theme]);
+    if (!laid) continue;
+    const room: Scenario = { id, name: group.name[0], en: group.name[1], ...laid };
+    if (!verifyRoom(room).length) return { room, tries };
+  }
+  throw new Error(`crawl: no room passed the checks for seed ${seed}`);
+}
+
+// One N x N layout (8 for a short room, 10 for the boss, as the lab proposes), or null when the units do not fit.
+// Heroes in a band of 2 rows at the bottom, enemies in rows 1 to 3; the border row stays empty
+function layout(int: (lo: number, hi: number) => number, N: number, enemies: string[], theme: CrawlTheme) {
+  const hero = int(0, 1);
+  const foe = hero + int(0, 1); // the enemy side may hold ground 1 level up, never more
+  const edge = Array.from({ length: N }, () => int(4, N - 3)); // where the enemy level ends, column by column
+  const tiles: Tile[] = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) tiles.push({ terrain: 'floor', h: y < edge[x] ? foe : hero });
+  const at = (p: Pos) => tiles[p.y * N + p.x];
+  const rect = (x0: number, y0: number, w: number, h: number) => {
+    const out: Tile[] = [];
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) out.push(at({ x, y }));
+    return out;
+  };
+  const middle = (h: number) => int(2, N - 2 - h); // a top row that keeps a feature between the two bands
+
+  // 1 or 2 mounds; a step up inside one makes a high point with drops of 2 on its far sides (the jump-2 shortcut)
+  for (let m = int(1, 2); m > 0; m--) {
+    const w = int(2, 3),
+      h = int(2, 3),
+      x0 = int(0, N - w),
+      y0 = middle(h);
+    for (const t of rect(x0, y0, w, h)) t.h = Math.min(3, t.h + 1);
+    if (int(0, 1) || at({ x: x0, y: y0 }).h < 2)
+      for (const t of rect(x0 + 1, y0 + 1, w - 1, h - 1)) t.h = Math.min(3, t.h + 1);
+  }
+  // a small pool on flat ground (at most 6 tiles: under 15%), sunk 1 level; deep 1 time in 4
+  if (int(0, 4) < 3) {
+    const w = int(1, 3),
+      h = int(1, 2),
+      pool = rect(int(0, N - w), middle(h), w, h),
+      depth = int(0, 3) ? 1 : 2;
+    if (pool.every((t) => t.h === pool[0].h))
+      for (const t of pool) Object.assign(t, { h: Math.max(0, t.h - 1), depth, look: 'water' });
+  }
+  // obstacles between the sides, then the place's spikes
+  for (let k = int(4, N - 2); k > 0; k--) {
+    const t = at({ x: int(0, N - 1), y: int(2, N - 3) });
+    if (!t.look) Object.assign(t, theme.props[int(0, theme.props.length - 1)]);
+  }
+  if (theme.hazard)
+    for (let k = int(0, 3); k > 0; k--) {
+      const t = at({ x: int(1, N - 2), y: int(2, N - 3) });
+      if (!t.look) Object.assign(t, theme.hazard);
+    }
+
+  // starting tiles: plain ground at the side's level, inside the border, not beside a drop of 2 or spikes
+  const near = (p: Pos) =>
+    FACING.map((f) => ({ x: p.x + f.x, y: p.y + f.y })).filter((q) => q.x >= 0 && q.y >= 0 && q.x < N && q.y < N);
+  const plain = (p: Pos, level: number) => {
+    const t = at(p);
+    return (
+      t.terrain === 'floor' &&
+      !t.depth &&
+      !t.spikes &&
+      t.h === level &&
+      near(p).every((q) => at(q).h > level - 2 && !at(q).spikes)
+    );
+  };
+  const band = (y0: number, y1: number, level: number) => {
+    const out: Pos[] = [];
+    for (let y = y0; y <= y1; y++) for (let x = 1; x < N - 1; x++) if (plain({ x, y }, level)) out.push({ x, y });
+    return out;
+  };
+  const pick = (from: Pos[], ok: (p: Pos) => boolean): Pos | null => {
+    const fit = from.filter(ok);
+    return fit.length ? fit[int(0, fit.length - 1)] : null;
+  };
+  const spawns: Spawn[] = [];
+  const taken: Pos[] = []; // every tile a unit stands on
+  for (const def of CRAWL_PARTY) {
+    const p = pick(band(N - 3, N - 2, hero), (q) => taken.every((t) => dist(q, t) >= 2));
+    if (!p) return null;
+    spawns.push({ id: `h-${def}`, def, team: 'hero', ...p });
+    taken.push(p);
+  }
+  const heroes = [...taken];
+  const gapTo = (tiles: Pos[]) => Math.min(...tiles.flatMap((p) => heroes.map((q) => dist(p, q))));
+  const square = (p: Pos, size: number) =>
+    Array.from({ length: size * size }, (_, k) => ({ x: p.x + (k % size), y: p.y + Math.floor(k / size) }));
+  const front = enemies.findIndex((d) => !UNIT_DEFS[d].size); // the one that meets the heroes first, NEAR to FAR away
+  for (const [i, def] of enemies.entries()) {
+    const size = UNIT_DEFS[def].size ?? 1;
+    // the Colossus on a dais at the back (rows 1 and 2), one level up: the lab's boss stands "at the back and high"
+    const from =
+      size > 1
+        ? band(1, 1, foe).filter((p) => p.x < N - 2 && square(p, 2).every((q) => plain(q, foe)))
+        : band(1, 3, foe);
+    const p = pick(from, (q) => {
+      const own = square(q, size);
+      const d = gapTo(own);
+      return d >= NEAR && (i !== front || d <= FAR) && own.every((o) => taken.every((t) => dist(o, t) >= 2));
+    });
+    if (!p) return null;
+    const own = square(p, size);
+    if (size > 1) for (const q of own) at(q).h = Math.min(3, foe + 1);
+    spawns.push({ id: `e${i}-${def}`, def, team: 'enemy', ...p });
+    taken.push(...own);
+  }
+
+  // ramps on half the steps of 1 between two plain tiles (drawing; the rules read only the height), never under a unit
+  for (let i = 0; i < tiles.length; i++) {
+    const p = { x: i % N, y: Math.floor(i / N) },
+      t = tiles[i];
+    if (t.terrain !== 'floor' || t.depth || t.spikes || taken.some((q) => dist(p, q) === 0)) continue;
+    const up = FACING.flatMap((f, d) => {
+      const q = { x: p.x + f.x, y: p.y + f.y };
+      if (q.x < 0 || q.y < 0 || q.x >= N || q.y >= N) return [];
+      const n = at(q);
+      return n.terrain === 'floor' && !n.depth && !n.spikes && n.h === t.h + 1 ? [d] : [];
+    });
+    if (up.length && int(0, 1)) t.ramp = [up[int(0, up.length - 1)], 1];
+  }
+  for (const t of tiles) t.look ??= theme.floors[Math.min(t.h, theme.floors.length - 1)];
+  return { grid: { width: N, height: N, tiles }, spawns };
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITY_LIST } from '../src/content/abilities.ts';
 import { SPEAKERS, STAGES } from '../src/content/campaign.ts';
+import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
 import { ITEM_LIST } from '../src/content/items.ts';
 import { RECRUIT_NAMES, STORY } from '../src/content/party.ts';
 import { MISSIONS } from '../src/content/quests.ts';
@@ -92,5 +93,27 @@ describe('campaign, world and quests', () => {
       for (const e of q.enemies) expect(UNIT_DEFS[e], `${q.id} → ${e}`).toBeDefined();
       if (q.item) expect(ITEMS[q.item], `${q.id} → ${q.item}`).toBeDefined();
     }
+  });
+});
+
+describe('crawl rooms', () => {
+  // the Mechanics lab's descent proposal (Nov 15): 1 to 3 enemies worth 64 to 102 life, depths 1 to 3, the boss 2x2
+  it('groups and the party use existing classes, within the lab numbers', () => {
+    for (const id of CRAWL_PARTY) expect(UNIT_DEFS[id]?.speed, id).toBeGreaterThan(0);
+    for (const g of CRAWL_GROUPS) {
+      const life = g.enemies.reduce((sum, e) => sum + UNIT_DEFS[e].hp, 0);
+      expect(g.enemies.length, g.name[1]).toBeGreaterThanOrEqual(1);
+      expect(g.enemies.length, g.name[1]).toBeLessThanOrEqual(3);
+      expect(life, g.name[1]).toBeGreaterThanOrEqual(64);
+      expect(life, g.name[1]).toBeLessThanOrEqual(102);
+    }
+    expect([...new Set(CRAWL_GROUPS.map((g) => g.depth))].sort()).toEqual([1, 2, 3]);
+    expect(CRAWL_BOSS.enemies.some((e) => UNIT_DEFS[e]?.size === 2)).toBe(true);
+  });
+
+  it('themes use known terrains', () => {
+    for (const th of Object.values(CRAWL_THEMES))
+      for (const p of [...th.props, ...(th.hazard ? [th.hazard] : [])])
+        expect(p.terrain && TERRAIN[p.terrain], `${th.name[1]} → ${p.look}`).toBeDefined();
   });
 });
