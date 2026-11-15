@@ -202,11 +202,6 @@ export function titleScreen() {
     'Dungeon Tactics',
     [
       el(
-        'p',
-        { class: 'title-sub' },
-        t('Táticas por turnos com bonecos de pixel', 'Turn-based tactics with pixel heroes'),
-      ),
-      el(
         'div',
         { class: 'menu-actions camp-list' },
         // Continue only shows with saved progress; New game erases campaign progress (the 2nd tap confirms)
