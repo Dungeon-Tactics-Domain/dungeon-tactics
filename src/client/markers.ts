@@ -14,7 +14,7 @@ export const unitHeight = (def: string): number =>
         ? UNIT_HEIGHT.brute
         : UNIT_HEIGHT.default;
 
-// height of each unit's health bar (and crown): the default or, for whoever is taller than that (the Colossus), just above the head
+// height of each unit's health bar: the default or, for whoever is taller than that (the Colossus), just above the head
 export const barYOf = (def: string) => Math.max(MARKER.barY, unitHeight(def) + 0.3);
 
 export const MARKER = {

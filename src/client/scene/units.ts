@@ -1,5 +1,5 @@
-// The battle's characters: loading each model with its own materials, the team ring, facing arrow, health bar and boss
-// crown, the animation clips, and playing the battle events on them (walk, jump, strike, hit, heal, push, charge, death).
+// The battle's characters: loading each model with its own materials, the team ring, facing arrow, health bar, the
+// animation clips, and playing the battle events on them (walk, jump, strike, hit, heal, push, charge, death).
 // Bodies of the fallen stay on the ground until the end of the battle.
 import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -205,15 +205,6 @@ export class Units {
     barBg.renderOrder = bar.renderOrder = 10;
     ground.add(ring);
     holder.add(ground, barHolder);
-    // boss: golden crown above the bar, so the "take down the boss" objective shows on the map
-    if (UNIT_DEFS[u.def].boss) {
-      const crown = new THREE.Mesh(
-        new THREE.ConeGeometry(0.14, 0.2, 5),
-        new THREE.MeshBasicMaterial({ color: '#f2c14e' }),
-      );
-      crown.position.y = barYOf(u.def) + 0.22;
-      holder.add(crown);
-    }
     this.scene.add(holder);
     const view: UnitView = {
       holder,
