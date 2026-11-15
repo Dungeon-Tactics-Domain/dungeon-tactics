@@ -135,10 +135,10 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   let path: Pos[] | null = null;
   let preview: Preview | null = null;
   const size = ui.mode.k === 'move' ? (UNIT_DEFS[b.actor.def].size ?? 1) : 1;
+  const reach = ui.mode.k === 'move' ? b.reach() : null; // not cached in Battle: worked out once per cursor change
   if (ui.inspect && b.state.units.some((u) => u.id === ui.inspect))
     for (const p of threat(b, ui.inspect)) mark(p, 'threat');
-  if (ui.mode.k === 'move') {
-    const reach = b.reach();
+  if (reach) {
     // every cell the unit's square can cover: a 2x2 token stops by its corner cell, and marking only the corners showed the
     // area half a tile off (Nov 14, Fernando on stage 0: "it needs a preview of the tiles the units will occupy in 2x2")
     for (const s of reach.values()) for (const c of cellsOf(s.pos, size)) mark(c, 'move');
@@ -163,12 +163,12 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   }
   if (!b.over) for (const c of footprint(b.actor)) mark(c, 'actor');
   // the choice goes over the actor's square: a 2x2 token stepping 1 cell overlaps where it stands
-  if (ui.mode.k === 'move') {
+  if (reach) {
     // the whole square where it would stop; only `reach` says whether it fits (a square on 4 marked cells may still
     // straddle a step too high, an ally or a body). A 1-cell unit marks only its chosen tile, as before the squares: the red
     // square under the cursor is for units bigger than one cell (Nov 14 review: not asked for whole tiles, nor FFT's feel)
     const at = size > 1 ? (ui.pending ?? cursor) : ui.pending;
-    const fits = !!at && b.reach().has(posKey(at));
+    const fits = !!at && reach.has(posKey(at));
     if (at && !samePos(at, b.actor.pos))
       for (const c of cellsOf(at, size)) if (inBounds(b.grid, c)) mark(c, fits ? 'target' : 'nogo');
   } else if (ui.pending)
