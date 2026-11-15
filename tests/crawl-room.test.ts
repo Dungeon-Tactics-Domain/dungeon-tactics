@@ -137,9 +137,9 @@ describe('crawl rooms: 500 seeds', () => {
     const first = built.slice(0, 25);
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-    expect(CRAWL_VERSION).toBe('crawl1');
+    expect(CRAWL_VERSION).toBe('crawl2');
     expect(first.map((b) => b.tries).join(' ')).toBe('1 2 2 5 1 1 4 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1');
-    expect((h >>> 0).toString(16)).toBe('19b3f86');
+    expect((h >>> 0).toString(16)).toBe('d8d8dd3a');
   });
 
   it('a room built again checks the same (verifyRoom keeps no state between rooms)', () => {

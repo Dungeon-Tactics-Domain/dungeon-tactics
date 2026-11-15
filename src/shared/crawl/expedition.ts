@@ -7,10 +7,10 @@ import { CRAWL_VERSION } from './generate.ts';
 
 export interface CrawlNode {
   floor: number; // 1 to CRAWL_RUN.floors; also the depth the room is drawn at
-  row: number; // the last row of a floor is its boss room
+  row: number; // the boss is one more row after the last floor's
   seed: number; // the room's seed for generateRoom
   boss: boolean;
-  next: number[]; // the rooms it leads to (all of the next row); none after the last boss
+  next: number[]; // the rooms it leads to (all of the next row); none after the boss
 }
 export interface CrawlHero {
   id: string; // party member id (the client's group)
@@ -34,8 +34,8 @@ export function expeditionMap(seed: number): CrawlNode[] {
   const nodes: CrawlNode[] = [];
   let prev: number[] = [];
   for (let floor = 1; floor <= CRAWL_RUN.floors; floor++)
-    for (let row = 0; row <= CRAWL_RUN.rows; row++) {
-      const boss = row === CRAWL_RUN.rows;
+    for (let row = 0; row < CRAWL_RUN.rows + (floor === CRAWL_RUN.floors ? 1 : 0); row++) {
+      const boss = row === CRAWL_RUN.rows; // only on the last floor: one boss at the end of the expedition
       const ids = Array.from({ length: boss ? 1 : int(...CRAWL_RUN.width) }, (_, k) => nodes.length + k);
       for (const p of prev) nodes[p].next = [...ids];
       for (const _ of ids) nodes.push({ floor, row, seed: int(0, 2 ** 31 - 1), boss, next: [] });
@@ -48,7 +48,7 @@ export function expeditionMap(seed: number): CrawlNode[] {
 export const openNodes = (map: CrawlNode[], path: number[]): number[] =>
   path.length ? map[path[path.length - 1]].next : map.flatMap((n, i) => (n.floor === 1 && n.row === 0 ? [i] : []));
 
-// the deepest boss is down: the expedition is won
+// the boss is down: the expedition is won
 export const cleared = (map: CrawlNode[], path: number[]) => path.length > 0 && !map[path[path.length - 1]].next.length;
 
 export const startExpedition = (seed: number, party: { id: string; max: number }[]): Expedition => ({
@@ -62,12 +62,12 @@ export const startExpedition = (seed: number, party: { id: string; max: number }
 const share = (max: number, pct: number) => Math.ceil((max * pct) / 100);
 
 // After a won room. `left`: each standing hero's life at the end, by member id; a hero missing from it fell and comes back
-// at 25% without the room heal (the lab's reading, kept in the F2 order). Clearing a boss that leads on is going down a
-// floor: +50% to everyone, the fallen included. A room that is not open changes nothing.
+// at 25% without the room heal (the lab's reading, kept in the F2 order). Clearing a floor's last row leads down a floor:
+// +50% to everyone, the fallen included. A room that is not open changes nothing.
 export function winRoom(exp: Expedition, node: number, left: Record<string, number>): Expedition {
   const map = expeditionMap(exp.seed);
   if (!openNodes(map, exp.path).includes(node)) return exp;
-  const down = map[node].boss && map[node].next.length > 0;
+  const down = map[node].next.some((n) => map[n].floor > map[node].floor);
   return {
     ...exp,
     path: [...exp.path, node],

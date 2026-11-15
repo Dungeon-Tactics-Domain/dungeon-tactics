@@ -22,10 +22,11 @@ export const CRAWL_GROUPS: RoomGroup[] = [
   { name: ['Acólito que cura', 'Healing acolyte'], depth: 3, enemies: ['soldier', 'acolyte'] },
   { name: ['Tropa do Véu', 'Veil troop'], depth: 3, enemies: ['veil_knight', 'acolyte', 'minion'] },
 ];
-// the boss room at any depth: the Colossus (2x2, does not walk) and two minions, 208 life, about 16 hero turns
+// the boss room at any depth: the Colossus (2x2, does not walk) and one minion, 184 life (Fernando, Nov 15: one boss, at
+// the end of the expedition, with the Colossus and one minion; the lab had proposed two, 208 life)
 export const CRAWL_BOSS: Omit<RoomGroup, 'depth'> = {
   name: ['Colosso de Ossos', 'Bone Colossus'],
-  enemies: ['colossus', 'minion', 'minion'],
+  enemies: ['colossus', 'minion'],
 };
 
 // Look only: the floor by height level and the obstacles of each place; rules unique to a place wait until the dungeon
@@ -62,13 +63,14 @@ export const CRAWL_THEMES: Record<string, CrawlTheme> = {
   },
 };
 
-// The expedition (Nov 15, F2): floors of short rooms the player picks a path through, each floor closed by the boss room
-// (the F2 order; the lab proposed 3 floors of 2 rooms with one boss at the end). Floor n draws its rooms at depth n. Heals in
-// % of max life, provisional until the camp exists: +25% after each won room for whoever stood (a fallen hero comes back at
-// 25% instead), +50% to everyone on going down a floor; never above the max (Fernando, Nov 15, decision 43)
+// The expedition (Nov 15, F2): floors of short rooms the player picks a path through and one boss room after the last
+// floor (Fernando, Nov 15: one boss, at the end of the expedition, not one per floor). Floor n draws its rooms at depth n,
+// the boss at the last floor's depth. Heals in % of max life, provisional until the camp exists: +25% after each won room
+// for whoever stood (a fallen hero comes back at 25% instead), +50% to everyone on going down a floor; never above the max
+// (Fernando, Nov 15, decision 43)
 export const CRAWL_RUN = {
   floors: 3,
-  rows: 2, // rows of rooms before the boss on each floor; the player clears one room per row
+  rows: 2, // rows of rooms on each floor; the player clears one room per row
   width: [2, 3] as [number, number], // rooms to pick from in a row
   roomHeal: 25,
   floorHeal: 50,

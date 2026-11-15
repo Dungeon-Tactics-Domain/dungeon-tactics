@@ -11,7 +11,7 @@ import { UNIT_DEFS } from '../battle/units.ts';
 import { FAR, NEAR, verifyRoom } from './verify.ts';
 
 // In every room id: a change that gives other rooms for the same seed bumps it, so a save of an older room starts over
-export const CRAWL_VERSION = 'crawl1';
+export const CRAWL_VERSION = 'crawl2';
 export interface RoomGroup {
   name: [string, string];
   depth: number;

@@ -173,9 +173,10 @@ export function expeditionScreen(exp: Expedition) {
       { disabled: !open.includes(i) },
     );
   };
+  // the boss is one more row, on the last floor only
   const rows = Array.from({ length: CRAWL_RUN.rows + 1 }, (_, r) =>
     map.flatMap((n, i) => (n.floor === floor && n.row === r ? [i] : [])),
-  );
+  ).filter((r) => r.length);
   const d = dialog(
     'title',
     t(`Masmorra · andar ${floor} de ${CRAWL_RUN.floors}`, `Dungeon · floor ${floor} of ${CRAWL_RUN.floors}`),
@@ -220,14 +221,15 @@ export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
   const next = won ? winRoom(exp, room.node, left) : null;
   const done = !!next && cleared(map, next.path);
   store.set(CRAWL_KEY, next && !done ? JSON.stringify(next) : '');
-  return { next, done, node: map[room.node] };
+  const node = map[room.node];
+  return { next, done, node, down: node.next.some((n) => map[n].floor > node.floor) };
 }
 
 // the window after the room: back to the map to go on, or to the town when the expedition ended
 export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mvp: HTMLElement[]) {
   const settled = settleRoom(room, won, state);
   if (!settled) return void (location.search = '');
-  const { next, done, node } = settled;
+  const { next, done, node, down } = settled;
   const d = dialog(
     'result',
     !next
@@ -247,10 +249,10 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
             )
           : done
             ? t(
-                'O chefe do último andar caiu. O grupo volta à cidade.',
-                'The last floor’s boss fell. The party returns to town.',
+                'O chefe da masmorra caiu. O grupo volta à cidade.',
+                'The dungeon’s boss fell. The party returns to town.',
               )
-            : node.boss
+            : down
               ? t(
                   'O grupo desce ao próximo andar: todos recuperam 50% da vida.',
                   'The party goes down a floor: everyone recovers 50% of their life.',

@@ -10,7 +10,7 @@ const TIMEOUT = 60_000; // software WebGL on a CI runner takes a while to build 
 // at home and its first room (node 0 is always open first) must show the carried life, not a full bar
 const WORN = {
   'dt:crawl': JSON.stringify({
-    v: 'crawl1',
+    v: 'crawl2',
     seed: 77,
     path: [],
     party: ['warrior', 'archer', 'mage', 'rogue'].map((id) => ({ id, max: 50, hp: 9 })),
@@ -31,7 +31,7 @@ const PAGES = [
     seed: WORN,
     ready: '.crawl-map [role=dialog] button.primary',
     check: () =>
-      document.querySelectorAll('.crawl-map .crawl-row button').length >= 5 &&
+      document.querySelectorAll('.crawl-map .crawl-row button').length >= 4 &&
       !!document.querySelector('.crawl-map .crawl-row button:disabled'),
   },
   {

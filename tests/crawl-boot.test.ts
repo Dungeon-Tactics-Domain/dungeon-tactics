@@ -108,7 +108,7 @@ describe('crawl rooms in the client', () => {
     expect(location.search).toBe('');
   });
 
-  it('a floor boss room opens with the Colossus and its battle saves and loads', async () => {
+  it('the boss room opens with the Colossus and its battle saves and loads', async () => {
     const ids = parseGroup(null).deployed;
     const map = expeditionMap(33);
     let exp = startExpedition(
@@ -121,10 +121,10 @@ describe('crawl rooms in the client', () => {
     open(`?room=${node}`);
     const sel = await selectBattle();
     if (!sel || sel === 'world') throw new Error('no battle');
-    expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-${map[node].seed}-d1-boss-dungeon${HALF}`);
+    expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-${map[node].seed}-d3-boss-dungeon${HALF}`);
     const b = newBattle(sel.scenario, sel.room);
     const foes = b.state.units.filter((u) => u.team === 'enemy');
-    expect(foes.map((u) => UNIT_DEFS[u.def].size)).toEqual([4, 2, 2]); // the 2x2 Colossus and two minions, in half tiles
+    expect(foes.map((u) => UNIT_DEFS[u.def].size)).toEqual([4, 2]); // the 2x2 Colossus and one minion, in half tiles
     expect(b.state.units.filter((u) => u.team === 'hero').map((u) => u.hp)).toEqual([20, 20, 20, 20]);
     store.set(sel.saveKey, b.save());
     const again = await selectBattle();
