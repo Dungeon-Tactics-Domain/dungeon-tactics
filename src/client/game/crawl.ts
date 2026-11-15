@@ -3,6 +3,7 @@
 // this file casts the town's party into the rooms and keeps the dt:crawl save.
 import { CRAWL_RUN, CRAWL_TOWN } from '../../content/crawl/rooms.ts';
 import { bonusOf } from '../../shared/battle/equipment.ts';
+import { HALF } from '../../shared/battle/half.ts';
 import type { Scenario } from '../../shared/battle/scenarios.ts';
 import type { BattleState } from '../../shared/battle/types.ts';
 import {
@@ -14,7 +15,7 @@ import {
   startExpedition,
   winRoom,
 } from '../../shared/crawl/expedition.ts';
-import { roomGroup } from '../../shared/crawl/generate.ts';
+import { roomGroup, roomId } from '../../shared/crawl/generate.ts';
 import { EQUIP_KEY, parseEquip } from '../chest.ts';
 import { buildDevScenario, slotsOf, unitFrom } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
@@ -70,6 +71,19 @@ export function leftRoom() {
   store.set(CRAWL_KEY, '');
   store.set(ROOM_KEY, '');
   return true;
+}
+
+// The open room whose battle is still saved: the title's Continue reopens it, because closing the tab is not leaving the
+// room (review of Nov 15); leaving through Options or the address still loses the expedition (leftRoom).
+// ponytail: matches the room built from the node's own seed; one built from the fallback seed (none of 500 tested) is
+// not found, so Continue goes home and the room counts as left
+export function savedRoom(): number | null {
+  const exp = savedExpedition();
+  const held = (store.json(ROOM_KEY) as { state?: { scenario?: unknown } } | null)?.state?.scenario;
+  if (!exp || typeof held !== 'string') return null;
+  const map = expeditionMap(exp.seed);
+  const id = (n: number) => roomId(map[n].seed, { depth: map[n].floor, boss: map[n].boss }) + HALF;
+  return openNodes(map, exp.path).find((n) => id(n) === held) ?? null;
 }
 
 // what ?home and the title's Continue open: the expedition in progress, else the town

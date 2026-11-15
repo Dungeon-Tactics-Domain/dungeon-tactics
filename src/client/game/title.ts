@@ -13,7 +13,7 @@ import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
 import { jumpHelp } from '../town-ui.ts';
-import { CRAWL_KEY, homeLabel, homeScreen, ROOM_KEY, townScreen } from './crawl.ts';
+import { CRAWL_KEY, homeLabel, homeScreen, ROOM_KEY, savedExpedition, savedRoom, townScreen } from './crawl.ts';
 
 // Developer menu (Nov 12): loads the FFT study separately just to offer Gariland's terrain as a map. Starting
 // saves the roster, erases the previous developer battle and reopens the game on it (boot builds the scenario).
@@ -191,9 +191,12 @@ function howToPlay() {
 export function titleScreen() {
   setTrack('title');
   // the saves a game is made of: the party, its chest and equipment, the expedition and the room in play. Continue shows
-  // when any is saved; New game erases them all. Read here, not at load: crawl.ts imports this module back
+  // when one of them holds a real save (an object, or an expedition that parses); New game erases them all. Read here,
+  // not at load: crawl.ts imports this module back
   const progress = [GROUP_KEY, CHEST_KEY, EQUIP_KEY, CRAWL_KEY, ROOM_KEY];
-  const saved = progress.some((k) => store.get(k));
+  const isObject = (k: string) => typeof store.json(k) === 'object' && store.json(k) !== null;
+  const saved = !!savedExpedition() || [GROUP_KEY, CHEST_KEY, EQUIP_KEY].some(isObject);
+  const room = savedRoom();
   const go = (fn: () => void) => () => {
     d.close();
     fn();
@@ -205,14 +208,21 @@ export function titleScreen() {
       el(
         'div',
         { class: 'menu-actions camp-list' },
-        // Continue only shows with saved progress and says where it opens (the town or the expedition map), like FFT's
-        // save summary; New game erases the progress (the 2nd tap confirms)
+        // Continue only shows with saved progress and says where it opens (the room in play, the expedition map or the
+        // town), like FFT's save summary; New game erases the progress (the 2nd tap confirms)
         ...(saved
           ? [
               button(
                 'primary',
-                [t('Continuar', 'Continue'), el('small', { class: 'continue-where' }, homeLabel())],
-                go(homeScreen),
+                [
+                  t('Continuar', 'Continue'),
+                  el(
+                    'small',
+                    { class: 'continue-where' },
+                    room === null ? homeLabel() : t('Sala da masmorra', 'Dungeon room'),
+                  ),
+                ],
+                go(() => (room === null ? homeScreen() : void (location.search = `?room=${room}`))),
               ),
             ]
           : []),

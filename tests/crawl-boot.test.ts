@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { newBattle, selectBattle } from '../src/client/game/boot.ts';
-import { CRAWL_KEY, leftRoom, ROOM_KEY, savedExpedition, settleRoom } from '../src/client/game/crawl.ts';
+import { CRAWL_KEY, leftRoom, ROOM_KEY, savedExpedition, savedRoom, settleRoom } from '../src/client/game/crawl.ts';
 import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -128,7 +128,8 @@ describe('crawl rooms in the client', () => {
     store.set(ROOM_KEY, b.save()); // what main.ts boot saves on the room's first frame
     // Restart is free: a new battle of the same room, with the life the party entered with
     expect(newBattle(sel.scenario, sel.room).state.units.find((u) => u.id === 'h0')?.hp).toBe(9);
-    // the same room again (a reload) resumes it
+    // the same room again (a reload, or the title's Continue after closing the tab) resumes it
+    expect(savedRoom()).toBe(node);
     expect(await selectBattle()).not.toBeNull();
     // a sibling room goes home instead of opening, and home finds the room left behind: the expedition is lost
     const location = open(`?room=${sibling}`);
@@ -136,6 +137,7 @@ describe('crawl rooms in the client', () => {
     expect(location.search).toBe('?home');
     expect(leftRoom()).toBe(true);
     expect(savedExpedition()).toBeNull();
+    expect(savedRoom()).toBeNull();
     expect(store.get(ROOM_KEY)).toBe('');
     expect(leftRoom()).toBe(false);
   });
