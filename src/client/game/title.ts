@@ -158,13 +158,22 @@ function howToPlay() {
           ),
         ),
         el('li', {}, t('Na água funda só se anda ou espera.', 'In deep water you can only move or wait.')),
-        // a charge aimed at someone follows the unit (battle.ts follow): "get out of it" was wrong for the target (review of Nov 13)
+        // the Nov 15 charge rules (battle.ts act, turn-queue.ts chargeAim): the lock is the player's and the shot is traced when it fires
         el(
           'li',
           {},
           t(
-            'Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Se mirou alguém, a área anda junto: os vizinhos saem dela; o alvo só escapa saindo do alcance ou da vista de quem lança.',
-            'Charged abilities land later: the purple area shows where and the turn list shows when. If it targeted someone, the area moves with them: neighbours step out; the target only escapes by leaving the caster’s range or sight.',
+            'Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Começar a carga gasta metade do movimento que sobrou. Mirando alguém, você trava no personagem (a mira segue ele) ou no chão. O tiro é traçado na hora de sair, de onde quem lança estiver, e para na primeira cobertura ou unidade no caminho; a linha mostra até onde vai. Fogo amigo fere pela metade.',
+            'Charged abilities land later: the purple area shows where and the turn list shows when. Starting a charge costs half the movement you have left. Aiming at someone, you lock it on the character (the aim follows them) or on the tile. The shot is traced when it fires, from where the caster stands, and stops at the first cover or unit in its way; the line shows how far it goes. Friendly fire hurts at half.',
+          ),
+        ),
+        // Nov 15 counters (combat.ts pendingCounters): they change where to walk after striking
+        el(
+          'li',
+          {},
+          t(
+            'Quem você golpeia sem carga contra-ataca pela metade cada vez que você se mover, neste turno e no próximo, se responde do mesmo jeito (de perto ou de longe) com golpe de alvo único: de perto quando você sai do alcance dele, de longe onde você parar. Ao mirar e ao escolher para onde andar, uma linha ou seta mostra quem contra-ataca.',
+            'Whoever you strike without a charge strikes back at half each time you move, this turn and your next, if it answers the same way (up close or from afar) with a single-target attack: up close when you leave its reach, from afar where you stop. Aiming and choosing where to walk, a line or arrow shows who strikes back.',
           ),
         ),
         el(
