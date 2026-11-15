@@ -193,18 +193,20 @@ export function previewAbility(
 // the unit's basic attack (the 1st ability): it is the one that fires on the counter-attack; ranged if it reaches more than 1 tile
 export const basicOf = (def: string) => UNIT_DEFS[def].abilities[0];
 export const isRanged = (abilityId: string) => ABILITIES[abilityId].range[1] > 1;
+// Nov 15, Fernando: only a single-target strike counters for now; an area one (the Colossus' Shadow Wave) never does
+const answersSingle = (def: string) => !!basicOf(def) && ABILITIES[basicOf(def)].radius === 0;
 
 // Who gains a counter when `actor` strikes `u` with `abilityId` (Nov 13): a unit of the other side that can strike back the
-// same way (melee against melee, ranged against ranged); not the Beacon, and not from a heal or a support ability
+// same way (melee against melee, ranged against ranged) with a single-target basic attack; not the Beacon, and not from a
+// heal or a support ability
 export function canCounter(actor: UnitState, abilityId: string, u: UnitState): boolean {
   const a = ABILITIES[abilityId];
-  const basic = basicOf(u.def);
   return (
     !(a.heal[1] > 0 || a.ally) &&
     u.team !== actor.team &&
-    !!basic &&
+    answersSingle(u.def) &&
     UNIT_DEFS[u.def].speed > 0 &&
-    isRanged(basic) === isRanged(abilityId)
+    isRanged(basicOf(u.def)) === isRanged(abilityId)
   );
 }
 
@@ -227,7 +229,7 @@ export function pendingCounters(grid: Grid, state: BattleState, actorId: string,
   const out: PendingCounter[] = [];
   for (const e of state.engaged ?? []) {
     const foe = e.by === actorId ? state.units.find((u) => u.id === e.unit) : undefined;
-    if (!foe) continue;
+    if (!foe || !answersSingle(foe.def)) continue; // an area one owed by a save from before the single-target rule
     if (!e.ranged && gap(footprint(foe), cellsOf(to, UNIT_DEFS[actor.def].size ?? 1)) <= 1) continue; // stays in reach
     const at = e.ranged ? to : actor.pos;
     // charged: the counter-attack pays no MP or stock

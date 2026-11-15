@@ -58,6 +58,20 @@ describe('opportunity counters (Nov 15)', () => {
     expect(ev.some((e) => (e.k === 'hit' || e.k === 'miss') && e.unit === 'a')).toBe(false);
   });
 
+  it('a unit whose basic attack hits an area never counters (Nov 15)', () => {
+    const s = stateOf([
+      { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
+      { id: 'c', def: 'colossus', team: 'enemy', x: 4, y: 1 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 7, y: 3 },
+    ]);
+    const b = new Battle(flat(8, 4), s);
+    b.act('shot', { x: 4, y: 1 });
+    expect(b.state.engaged).toBeUndefined(); // the Shadow Wave (radius 2) is its basic attack
+    // nor from a counter owed in an older save
+    b.state.engaged = [{ unit: 'c', by: 'a', ranged: true, turns: 2 }];
+    expect(pendingCounters(b.grid, b.state, 'a', { x: 0, y: 2 })).toEqual([]);
+  });
+
   it('the counters owed survive a save; an old save keeps its turn ones for that turn', () => {
     const s = Battle.start(SCENARIOS.skirmish, 1).state;
     const a = s.turn.actor;
