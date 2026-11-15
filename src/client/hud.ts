@@ -37,7 +37,7 @@ import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import { type Face, faceSheet } from './talk.ts';
-import { anchorScroll, pageStep, roundLength } from './turn-list.ts';
+import { anchorScroll, pageStep, twoRounds } from './turn-list.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
@@ -63,9 +63,9 @@ export interface HudView {
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
 }
 
-// rows of the queue projection the turn list reads: today's speeds (5 to 12) show 12 units in about 30 rows
+// rows of the queue projection the turn list reads: today's speeds (5 to 12) show 12 units twice in about 60 rows
 // (ponytail: a unit too slow to show within the cap is left off the list; raise it if a battle ever needs more)
-const QUEUE_CAP = 64;
+const QUEUE_CAP = 128;
 const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
 const hpText = (u: UnitState) => `${u.hp}/${UNIT_DEFS[u.def].hp}`;
@@ -584,14 +584,16 @@ function unitPanel(state: BattleState, u: UnitState, pic: HTMLElement) {
   );
 }
 
-// Turn list: every unit that plays, from the one acting now, until each has shown once (Nov 15, Fernando's decision), with
-// each queued charge where it fires and its ticks left (`ticks`). On the "Execute?" of an ability with a charge (Nov 13,
-// Fernando's request, like FFT's CT list) the spell goes in where it will fire (`at`) and whoever it hits goes in
-// `targets`, to see whether the target acts before it (and leaves the tile) or not.
-export function queueRows(b: Battle, pending: { ability: string; target: Pos } | null) {
-  const a = pending ? ABILITIES[pending.ability] : null;
+// Turn list: every unit that plays, from the one acting now, through this round and the next (Nov 15, Fernando's
+// decisions), with each queued charge where it fires and its ticks left (`ticks`). While aiming (`aim`: the Act map
+// and "Execute?", Nov 15) the one acting pays the turn cost of acting, after what it already did, instead of the usual
+// projection's cost of moving and acting; with a charge (Nov 13, Fernando's request, like FFT's CT list) the spell goes
+// in where it will fire (`at`) and whoever it hits goes in `targets`, to see whether the target acts before it (and
+// leaves the tile) or not. A copy of the queue: the state does not change, and cancelling the aim brings the usual list back
+export function queueRows(b: Battle, aim: { ability: string; target: Pos } | null) {
+  const a = aim ? ABILITIES[aim.ability] : null;
   const me = b.actor.id;
-  const preview = a?.charge ? pending : null;
+  const preview = a?.charge ? aim : null;
   // the same charge that Battle.act would register (a new charge replaces the previous one of the same unit)
   const charges =
     preview && a?.charge
@@ -606,12 +608,14 @@ export function queueRows(b: Battle, pending: { ability: string; target: Pos } |
           },
         ]
       : b.state.charges;
-  const all = previewOrder({ ...b.state, charges }, QUEUE_CAP).map((r): QueueEntry & { ticks?: number } =>
+  const now = aim ? { moved: b.state.turn.moved, acted: true } : undefined;
+  const all = previewOrder({ ...b.state, charges }, QUEUE_CAP, now).map((r): QueueEntry & { ticks?: number } =>
     r.charge ? { ...r, ticks: charges.find((c) => c.unit === r.unit && c.ability === r.charge)?.ticks } : r,
   );
   const at = preview ? all.findIndex((r) => r.unit === me && r.charge === preview.ability) : -1;
-  const targets = new Set(preview ? b.preview(preview.ability, preview.target).targets.map((tg) => tg.unit) : []);
-  return { rows: all.slice(0, roundLength(all)), targets, at };
+  const p = preview ? b.preview(preview.ability, preview.target) : null;
+  const targets = new Set(p?.ok ? p.targets.map((tg) => tg.unit) : []);
+  return { rows: twoRounds(all), targets, at };
 }
 
 export class BattleHud {
@@ -727,7 +731,7 @@ export class BattleHud {
     this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
     this.faces = [];
     this.expression = v.face;
-    this.renderQueue(b, v.screen);
+    this.renderQueue(b, v);
     this.help.textContent = this.helpText(v, heroTurn);
     this.renderCommands(v, open);
     this.renderAbilities(v, open);
@@ -883,10 +887,10 @@ export class BattleHud {
     );
   }
 
-  private renderQueue(b: Battle, s: Screen) {
-    const { rows, targets, at } = b.over
-      ? { rows: [], targets: new Set<string>(), at: -1 }
-      : queueRows(b, s.k === 'confirm' ? s : null);
+  private renderQueue(b: Battle, v: HudView) {
+    const s = v.screen;
+    const aim = s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : null;
+    const { rows, targets, at } = b.over ? { rows: [], targets: new Set<string>(), at: -1 } : queueRows(b, aim);
     // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
     const left = isSurvival(b.state.scenario) ? turnsLeft(b.state) : null;
     this.queueScroll = this.queue.scrollTop;
@@ -898,7 +902,7 @@ export class BattleHud {
         hint('PgUp PgDn'),
       ),
       // a charge row: the caster's face, the ability's icon and name, and the ticks until it goes off
-      ...rows.map(({ unit, charge, ticks }, i) => {
+      ...rows.map(({ unit, charge, ticks, round }, i) => {
         const u = b.state.units.find((x) => x.id === unit)!;
         const mark =
           !charge && i > 0 && targets.has(unit) ? el('span', { class: 'queue-target' }, t('◎ alvo', '◎ target')) : null;
@@ -920,6 +924,7 @@ export class BattleHud {
             ),
             el('span', { class: 'queue-name' }, charge ? abilityName(charge) : unitName(u.def)),
           ),
+          el('span', { class: 'queue-round', title: t(`Rodada ${round}`, `Round ${round}`) }, String(round)),
         );
       }),
     );

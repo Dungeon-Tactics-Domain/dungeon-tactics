@@ -114,14 +114,19 @@ export interface QueueEntry {
 
 // The next `n` in the queue at the top of the screen, starting with whoever plays now, with the charges at the point where they fire (like the
 // FFT turn list). A projection: assumes each one walks and acts (cost 100, the highest) and does not change the state.
-export function previewOrder(state: BattleState, n: number): QueueEntry[] {
+// `now` is what the one acting now does this turn, when known (the HUD's preview while aiming, Nov 15)
+export function previewOrder(
+  state: BattleState,
+  n: number,
+  now: { moved: boolean; acted: boolean } = { moved: true, acted: true },
+): QueueEntry[] {
   const slots = slotsOf(state);
   const charges = listOrder(state, state.charges).map((c) => ({ ...c }));
   const order: QueueEntry[] = [];
   const current = slots.find((s) => s.id === state.turn.actor);
   if (current) {
     order.push({ unit: current.id });
-    current.ct = turnCt(current.ct, true, true);
+    current.ct = turnCt(current.ct, now.moved, now.acted);
   }
   while (order.length < n && (slots.length || charges.length)) {
     const toTurn = slots.some((s) => s.ct >= TURN_THRESHOLD)

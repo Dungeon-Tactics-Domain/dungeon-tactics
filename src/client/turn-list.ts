@@ -16,6 +16,14 @@ export function roundLength(rows: QueueEntry[]): number {
   return n;
 }
 
+// The current round and the next (Fernando's decision, Nov 15): round 1 runs until every unit and queued charge has
+// shown once, round 2 until every unit has shown once more after it; each row carries its round for the list's mark
+export function twoRounds<T extends QueueEntry>(rows: T[]): (T & { round: 1 | 2 })[] {
+  const first = roundLength(rows);
+  const both = first + roundLength(rows.slice(first));
+  return rows.slice(0, both).map((r, i) => ({ ...r, round: i < first ? 1 : 2 }));
+}
+
 // The scroll that shows a row (`top`, `height` in the list's scroll space) in a view of `view` px scrolled to `scroll`,
 // moving as little as possible; a row taller than the view shows its top. Like scrollIntoView 'nearest', without
 // scrolling the page or the HUD around the list

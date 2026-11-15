@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { anchorScroll, keepInView, pageStep, roundLength } from '../src/client/turn-list.ts';
+import { anchorScroll, keepInView, pageStep, roundLength, twoRounds } from '../src/client/turn-list.ts';
 
 // Turn list showing every unit (Nov 15, Fernando's decision), scrolling within its column
 describe('turn list round', () => {
@@ -18,6 +18,30 @@ describe('turn list round', () => {
     // a charge is its own row, apart from its caster's turns
     expect(roundLength([{ unit: 'a' }, { unit: 'a', charge: 'blast' }, { unit: 'a' }])).toBe(2);
     expect(roundLength([])).toBe(0);
+  });
+});
+
+describe('turn list rounds', () => {
+  it('marks the current round and the next, and stops at the end of the next', () => {
+    const rows = [
+      { unit: 'a' },
+      { unit: 'b' },
+      { unit: 'c', charge: 'blast' },
+      { unit: 'a' },
+      { unit: 'c' },
+      { unit: 'a' },
+      { unit: 'b' },
+      { unit: 'c' },
+      { unit: 'a' },
+      { unit: 'b' },
+    ];
+    expect(twoRounds(rows).map((r) => r.round)).toEqual([1, 1, 1, 1, 1, 2, 2, 2]);
+    // a fired charge does not come back: round 2 waits only for the units
+    expect(twoRounds([{ unit: 'a' }, { unit: 'a', charge: 'x' }, { unit: 'a' }])).toEqual([
+      { unit: 'a', round: 1 },
+      { unit: 'a', charge: 'x', round: 1 },
+      { unit: 'a', round: 2 },
+    ]);
   });
 });
 

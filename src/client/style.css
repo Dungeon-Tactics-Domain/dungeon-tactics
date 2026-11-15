@@ -855,6 +855,22 @@ button[hidden],
   display: grid;
   min-width: 0;
 }
+/* the row's round, 1 for the current one and 2 for the next (Nov 15, Fernando's decision): a small tag on the face's
+   bottom right corner, so it takes no width from the name (at the row's end it cut "Skeleton archer" at 1280) */
+.queue-row {
+  position: relative;
+}
+.queue-round {
+  position: absolute;
+  left: 30px; /* row padding 4 + face 36, less the tag's overlap */
+  bottom: 1px;
+  font: 700 var(--fs-xs) / 1 var(--font);
+  color: var(--ink);
+  background: var(--paper-lo);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--r);
+  padding: 1px 3px;
+}
 /* one line each, so every row keeps the face's height and a long name ends in … instead of growing the row */
 .queue-n,
 .queue-name {
