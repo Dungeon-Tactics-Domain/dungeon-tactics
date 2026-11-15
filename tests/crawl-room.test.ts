@@ -5,7 +5,7 @@ import type { Scenario, Spawn } from '../src/shared/battle/scenarios.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { buildRoom, CRAWL_VERSION, generateRoom, type RoomOptions, roomTheme } from '../src/shared/crawl/generate.ts';
-import { FAR, NEAR, verifyRoom } from '../src/shared/crawl/verify.ts';
+import { startRange, verifyRoom } from '../src/shared/crawl/verify.ts';
 
 // Crawl rooms (Nov 15, the new dungeon loop): the generator keeps a layout only when verifyRoom passes, so a room coming
 // out says little by itself. The checks here are separate ones, written on whole tiles without the engine, plus a
@@ -50,7 +50,8 @@ describe('crawl rooms: 500 seeds', () => {
 
   it('rooms have the lab size, heights 0 to 3, little water and few spikes', () => {
     built.forEach(({ room }, i) => {
-      const n = optionsOf(i).boss ? 10 : 8;
+      // 24x24 half tiles (28x28 for the boss), written as 12x12 (14x14) whole tiles
+      const n = optionsOf(i).boss ? 14 : 12;
       expect([room.grid.width, room.grid.height], room.id).toEqual([n, n]);
       expect(room.grid.tiles.length).toBe(n * n);
       expect(
@@ -58,7 +59,7 @@ describe('crawl rooms: 500 seeds', () => {
         room.id,
       ).toBe(true);
       expect(room.grid.tiles.filter((t) => t.depth).length, room.id).toBeLessThanOrEqual(0.15 * n * n);
-      expect(room.grid.tiles.filter((t) => t.spikes).length, room.id).toBeLessThanOrEqual(3);
+      expect(room.grid.tiles.filter((t) => t.spikes).length, room.id).toBeLessThanOrEqual(6);
       expect(
         room.grid.tiles.some((t) => t.h >= 2),
         room.id,
@@ -85,7 +86,7 @@ describe('crawl rooms: 500 seeds', () => {
     expect(ramps).toBeGreaterThan(500);
   });
 
-  it('the party and one group of the room depth start on plain ground inside the border, 5 to 7 tiles apart', () => {
+  it('the party and one group of the room depth start on plain ground inside the border, at the lab distance', () => {
     built.forEach(({ room }, i) => {
       const o = optionsOf(i);
       const heroes = room.spawns.filter((s) => s.team === 'hero');
@@ -104,9 +105,13 @@ describe('crawl rooms: 500 seeds', () => {
           expect(t.h, `${room.id} ${s.id} flat`).toBe(tileAt(room.grid, s).h);
           expect(p.x > 0 && p.y > 0 && p.x < room.grid.width - 1 && p.y < room.grid.height - 1, s.id).toBe(true);
         }
-      const gaps = heroes.flatMap((h) => foes.flatMap((f) => tilesOf(f).map((p) => dist(h, p))));
-      expect(Math.min(...gaps), room.id).toBeGreaterThanOrEqual(NEAR);
-      expect(Math.min(...gaps), room.id).toBeLessThanOrEqual(FAR);
+      // each enemy 10 to 14 half tiles from the nearest hero, the Colossus 16 to 20
+      for (const f of foes) {
+        const d = Math.min(...heroes.flatMap((h) => tilesOf(f).map((p) => dist(h, p))));
+        const [lo, hi] = startRange(f.def);
+        expect(d, `${room.id} ${f.id}`).toBeGreaterThanOrEqual(lo);
+        expect(d, `${room.id} ${f.id}`).toBeLessThanOrEqual(hi);
+      }
     });
   });
 
@@ -138,8 +143,8 @@ describe('crawl rooms: 500 seeds', () => {
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
     expect(CRAWL_VERSION).toBe('crawl2');
-    expect(first.map((b) => b.tries).join(' ')).toBe('1 2 2 5 1 1 4 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1');
-    expect((h >>> 0).toString(16)).toBe('d8d8dd3a');
+    expect(first.map((b) => b.tries).join(' ')).toBe('1 1 3 2 1 2 1 2 1 1 1 1 1 1 2 1 1 1 3 1 1 1 1 1 1');
+    expect((h >>> 0).toString(16)).toBe('55338c46');
   });
 
   it('a room built again checks the same (verifyRoom keeps no state between rooms)', () => {
@@ -178,13 +183,15 @@ describe('verifyRoom: a broken room for each rule', () => {
   });
 
   it('an enemy next to a hero, and one too far', () => {
-    expect(broken((r) => Object.assign(foe(r), { x: hero(r).x, y: hero(r).y - 1 })).join()).toMatch(/min 5/);
+    expect(broken((r) => Object.assign(foe(r), { x: hero(r).x, y: hero(r).y - 1 })).join()).toMatch(
+      /starts \d tiles from the nearest hero \(5 to 7\)/,
+    );
     // one enemy in the far corner, the heroes in the near one: 8 tiles or more
     const corner = [
-      { x: 6, y: 6 },
-      { x: 5, y: 6 },
-      { x: 6, y: 5 },
-      { x: 4, y: 6 },
+      { x: 10, y: 10 },
+      { x: 9, y: 10 },
+      { x: 10, y: 9 },
+      { x: 8, y: 10 },
     ];
     expect(
       broken((r) => {
@@ -192,7 +199,7 @@ describe('verifyRoom: a broken room for each rule', () => {
         Object.assign(foe(r), { x: 1, y: 1 });
         r.spawns.filter((s) => s.team === 'hero').forEach((h, k) => Object.assign(h, corner[k]));
       }).join(),
-    ).toMatch(/max 7/);
+    ).toMatch(/starts \d\d tiles from the nearest hero \(5 to 7\)/);
   });
 
   it('a hero in deep water, on the border, beside a drop of 2, beside spikes', () => {
@@ -233,11 +240,11 @@ describe('verifyRoom: a broken room for each rule', () => {
   });
 
   it('too much water, too many spikes, a tile too high, a boss on uneven ground', () => {
-    expect(broken((r) => r.grid.tiles.slice(0, 12).forEach((t) => (t.depth = 1))).join()).toMatch(
+    expect(broken((r) => r.grid.tiles.slice(0, 24).forEach((t) => (t.depth = 1))).join()).toMatch(
       /water on \d+ tiles, more than 15%/,
     );
-    expect(broken((r) => r.grid.tiles.slice(0, 4).forEach((t) => (t.spikes = true))).join()).toMatch(
-      /spike tiles, more than 3/,
+    expect(broken((r) => r.grid.tiles.slice(0, 7).forEach((t) => (t.spikes = true))).join()).toMatch(
+      /spike tiles, more than 6/,
     );
     expect(broken((r) => (r.grid.tiles[0].h = 4)).join()).toMatch(/heights 0 to 3/);
     const boss = generateRoom(1, { boss: true });

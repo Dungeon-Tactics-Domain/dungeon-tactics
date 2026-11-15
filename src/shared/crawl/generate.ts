@@ -8,7 +8,7 @@ import { rollInt } from '../battle/rng.ts';
 import type { Scenario, Spawn } from '../battle/scenarios.ts';
 import type { Pos } from '../battle/types.ts';
 import { UNIT_DEFS } from '../battle/units.ts';
-import { FAR, NEAR, verifyRoom } from './verify.ts';
+import { startRange, verifyRoom } from './verify.ts';
 
 // In every room id: a change that gives other rooms for the same seed bumps it, so a save of an older room starts over
 export const CRAWL_VERSION = 'crawl2';
@@ -30,8 +30,11 @@ export interface RoomOptions {
 // the theme ends the room id (the client picks the room's mood by it)
 export const roomTheme = (id: string) => (id.startsWith(`${CRAWL_VERSION}-`) ? id.slice(id.lastIndexOf('-') + 1) : '');
 
-// layouts drawn per room before giving up; the 500 test seeds needed at most 9, 1.6 on average (measured Nov 15)
+// layouts drawn per room before giving up; the 500 test seeds need at most 6, 1.3 on average, ~50 ms a room (Nov 15)
 const TRIES = 200;
+// room side in whole tiles: 24x24 half tiles like Ash Wood, 28x28 for the boss (Nov 15, Fernando; the lab's descida.json)
+const SIDE = 12,
+  BOSS_SIDE = 14;
 
 export const generateRoom = (seed: number, opts: RoomOptions = {}): Scenario => buildRoom(seed, opts).room;
 
@@ -60,7 +63,7 @@ export function buildRoom(seed: number, opts: RoomOptions = {}): { room: Scenari
   };
   const id = `${CRAWL_VERSION}-${seed | 0}-d${depth}${opts.boss ? '-boss' : ''}-${theme}`;
   for (let tries = 1; tries <= TRIES; tries++) {
-    const laid = layout(int, opts.boss ? 10 : 8, group.enemies, CRAWL_THEMES[theme]);
+    const laid = layout(int, opts.boss ? BOSS_SIDE : SIDE, group.enemies, CRAWL_THEMES[theme]);
     if (!laid) continue;
     const room: Scenario = { id, name: group.name[0], en: group.name[1], ...laid };
     if (!verifyRoom(room).length) return { room, tries };
@@ -68,12 +71,12 @@ export function buildRoom(seed: number, opts: RoomOptions = {}): { room: Scenari
   throw new Error(`crawl: no room passed the checks for seed ${seed}`);
 }
 
-// One N x N layout (8 for a short room, 10 for the boss, as the lab proposes), or null when the units do not fit.
-// Heroes in a band of 2 rows at the bottom, enemies in rows 1 to 3; the border row stays empty
+// One N x N layout, or null when the units do not fit. Heroes in a band of 2 rows (4 half tiles) with 2 rows behind
+// them, enemies ahead at the lab's starting distance; the extra width and the back rows are room to flank
 function layout(int: (lo: number, hi: number) => number, N: number, enemies: string[], theme: CrawlTheme) {
   const hero = int(0, 1);
   const foe = hero + int(0, 1); // the enemy side may hold ground 1 level up, never more
-  const edge = Array.from({ length: N }, () => int(4, N - 3)); // where the enemy level ends, column by column
+  const edge = Array.from({ length: N }, () => int(4, N - 4)); // where the enemy level ends, column by column
   const tiles: Tile[] = [];
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) tiles.push({ terrain: 'floor', h: y < edge[x] ? foe : hero });
   const at = (p: Pos) => tiles[p.y * N + p.x];
@@ -84,8 +87,8 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
   };
   const middle = (h: number) => int(2, N - 2 - h); // a top row that keeps a feature between the two bands
 
-  // 1 or 2 mounds; a step up inside one makes a high point with drops of 2 on its far sides (the jump-2 shortcut)
-  for (let m = int(1, 2); m > 0; m--) {
+  // 2 to 4 mounds (1 or 2 on the first 16x16 half-tile room, scaled by area); a step up inside one makes a high point with drops of 2 on its far sides (the jump-2 shortcut)
+  for (let m = int(2, 4); m > 0; m--) {
     const w = int(2, 3),
       h = int(2, 3),
       x0 = int(0, N - w),
@@ -94,8 +97,8 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
     if (int(0, 1) || at({ x: x0, y: y0 }).h < 2)
       for (const t of rect(x0 + 1, y0 + 1, w - 1, h - 1)) t.h = Math.min(3, t.h + 1);
   }
-  // a small pool on flat ground (at most 6 tiles: under 15%), sunk 1 level; deep 1 time in 4
-  if (int(0, 4) < 3) {
+  // up to 2 small pools on flat ground (at most 6 tiles each: under 15%), sunk 1 level; deep 1 time in 4
+  for (let k = int(0, 2); k > 0; k--) {
     const w = int(1, 3),
       h = int(1, 2),
       pool = rect(int(0, N - w), middle(h), w, h),
@@ -104,12 +107,12 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
       for (const t of pool) Object.assign(t, { h: Math.max(0, t.h - 1), depth, look: 'water' });
   }
   // obstacles between the sides, then the place's spikes
-  for (let k = int(4, N - 2); k > 0; k--) {
+  for (let k = int(N - 3, N + 2); k > 0; k--) {
     const t = at({ x: int(0, N - 1), y: int(2, N - 3) });
     if (!t.look) Object.assign(t, theme.props[int(0, theme.props.length - 1)]);
   }
   if (theme.hazard)
-    for (let k = int(0, 3); k > 0; k--) {
+    for (let k = int(0, 6); k > 0; k--) {
       const t = at({ x: int(1, N - 2), y: int(2, N - 3) });
       if (!t.look) Object.assign(t, theme.hazard);
     }
@@ -139,7 +142,7 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
   const spawns: Spawn[] = [];
   const taken: Pos[] = []; // every tile a unit stands on
   for (const def of CRAWL_PARTY) {
-    const p = pick(band(N - 3, N - 2, hero), (q) => taken.every((t) => dist(q, t) >= 2));
+    const p = pick(band(N - 4, N - 3, hero), (q) => taken.every((t) => dist(q, t) >= 2));
     if (!p) return null;
     spawns.push({ id: `h-${def}`, def, team: 'hero', ...p });
     taken.push(p);
@@ -148,19 +151,19 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
   const gapTo = (tiles: Pos[]) => Math.min(...tiles.flatMap((p) => heroes.map((q) => dist(p, q))));
   const square = (p: Pos, size: number) =>
     Array.from({ length: size * size }, (_, k) => ({ x: p.x + (k % size), y: p.y + Math.floor(k / size) }));
-  const front = enemies.findIndex((d) => !UNIT_DEFS[d].size); // the one that meets the heroes first, NEAR to FAR away
   for (const [i, def] of enemies.entries()) {
     const size = UNIT_DEFS[def].size ?? 1;
-    // the Colossus on a dais at the back (rows 1 and 2), one level up: the lab's boss stands "at the back and high". Its
-    // spells reach 2 to 5 tiles, so from up there it may hit on its first turn but not a hero standing beside it
+    const [lo, hi] = startRange(def);
+    // the Colossus on a dais at the back (rows 1 and 2), one level up: the lab's boss stands "at the back and high", 16
+    // to 20 half tiles from the heroes, past its spells' reach of 2 to 5 tiles, so the fight is the walk in under them
     const from =
       size > 1
         ? band(1, 1, foe).filter((p) => p.x < N - 2 && square(p, 2).every((q) => plain(q, foe)))
-        : band(1, 3, foe);
+        : band(1, N - 6, foe);
     const p = pick(from, (q) => {
       const own = square(q, size);
       const d = gapTo(own);
-      return d >= NEAR && (i !== front || d <= FAR) && own.every((o) => taken.every((t) => dist(o, t) >= 2));
+      return d >= lo && d <= hi && own.every((o) => taken.every((t) => dist(o, t) >= 2));
     });
     if (!p) return null;
     const own = square(p, size);

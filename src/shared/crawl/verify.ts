@@ -9,14 +9,14 @@ import { initialState, type Scenario, type Spawn } from '../battle/scenarios.ts'
 import type { Pos, UnitState } from '../battle/types.ts';
 import { UNIT_DEFS } from '../battle/units.ts';
 
-// whole tiles between the nearest hero and enemy at the start, nothing more: contact on the 1st or 2nd turn. A ranged
-// enemy may still hit on its first turn, which Fernando accepted on Nov 15 (enemies may act on turn 1). Measured by the
-// Nov 15 review, rooms where a ranged enemy sees and reaches a hero at the start: ~61/102 at depth 1, 48/134 at depth 2,
-// 33/200 at depth 3; the Colossus in ~40% of boss rooms
+// whole tiles from each enemy to the nearest hero at the start: 10 to 14 half tiles, contact on the 1st or 2nd turn, on
+// the 24x24 room too (the extra room is for flanking); the Colossus, which does not walk, 16 to 20 half tiles away. A
+// ranged enemy may still hit on its first turn, which Fernando accepted on Nov 15 (enemies may act on turn 1)
 export const NEAR = 5;
 export const FAR = 7;
+export const startRange = (def: string): [number, number] => (UNIT_DEFS[def].size ? [8, 10] : [NEAR, FAR]);
 const MAX_WATER = 0.15; // of the tiles; deep water is never the only way through (the walk below closes it)
-const MAX_SPIKES = 3;
+const MAX_SPIKES = 6; // 0 to 6 on the bigger room (the lab's descida.json)
 const MAX_H = 3; // height levels 0 to 3
 const HIGH = 2; // a high point both sides can climb to with jump 1
 const MIN_COVER = 2; // tiles that stop a shot between the two sides at the start
@@ -54,10 +54,12 @@ export function verifyRoom(room: Scenario): string[] {
     if (around.some((q) => inBounds(g0, q) && at(q).h <= at(s).h - 2)) out.push(`${where}: on a ledge`);
     if (around.some((q) => inBounds(g0, q) && at(q).spikes)) out.push(`${where}: next to spikes`);
   }
-  // fair start: nobody within NEAR tiles of the other side, and the front pair at most FAR apart
-  const gaps = heroes.flatMap((h) => foes.map((f) => gap(tilesOf(h), tilesOf(f))));
-  if (Math.min(...gaps) < NEAR) out.push(`a hero starts ${Math.min(...gaps)} tiles from an enemy (min ${NEAR})`);
-  if (Math.min(...gaps) > FAR) out.push(`the nearest enemy starts ${Math.min(...gaps)} tiles away (max ${FAR})`);
+  // fair start: each enemy within its starting range of the nearest hero
+  for (const f of foes) {
+    const d = Math.min(...heroes.map((h) => gap(tilesOf(h), tilesOf(f))));
+    const [lo, hi] = startRange(f.def);
+    if (d < lo || d > hi) out.push(`${f.id} starts ${d} tiles from the nearest hero (${lo} to ${hi})`);
+  }
 
   // the battle the client opens: the same split map and tokens, every unit walking with jump 1 (most classes; any class
   // may take a hero's place)
