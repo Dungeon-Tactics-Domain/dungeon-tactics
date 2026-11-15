@@ -14,8 +14,8 @@ export const TRACKS = {
   crypt: { file: 'crypt.ogg', gain: 1 },
   snow: { file: 'snow.ogg', gain: 1 },
   boss: { file: 'boss.ogg', gain: 1 },
-  // standalone battle (no campaign stage): the same file as before
-  battle: { file: 'battle.mp3', gain: 1 },
+  // battles without their own track (Nov 15, Fernando: the lab's dark main theme); loudnorm already at the old file's -17.8 LUFS
+  battle: { file: 'battle_dark.ogg', gain: 1 },
 } satisfies Record<string, { file: string; gain: number }>;
 export type SongId = keyof typeof TRACKS;
 export const trackUrl = (id: SongId) => `/music/${TRACKS[id].file}`;

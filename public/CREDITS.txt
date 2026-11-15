@@ -101,9 +101,9 @@ music/snow.ogg (snow)
   FAINOD, "A Long Winter at Home (Classical)" - https://opengameart.org/content/a-long-winter-at-home-classical-fainod
 music/boss.ogg (bosses)
   cynicmusic, "Sinister Boss Appears!" - https://opengameart.org/content/sinister-boss-appears
-music/battle.mp3 (standalone battle)
-  Emma_MA, "Determined Pursuit (epic orchestra loop)" - https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
-  Licence read on the page: CC0 ("This track is in the public domain as of January 2017. No attribution necessary.").
+music/battle_dark.ogg (battles)
+  Our own composition (scripts/music/battle_dark.py), rendered with the SGM-V2.01 SoundFont by Shan; only the rendered .ogg ships.
+  Licence of SGM-V2.01: not settled (sources disagree: credit / CC BY / own text); to confirm against the original package before launch.
 
 == Site icon (favicon.svg, and favicon.ico at 32 and 48 px) ==
   Our own art (a sword planted in an isometric tile), drawn by scripts/assets/favicon.py.
