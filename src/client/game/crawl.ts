@@ -26,6 +26,7 @@ import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
 import { openBar, openParty, openShop } from '../town-ui.ts';
+import { type CardLine, type EndHero, enterButton, fellLine, resultBoard, tallyLine } from './end-screens.ts';
 import { titleScreen } from './title.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
@@ -315,8 +316,9 @@ export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
   return { next, done, node, down: node.next.some((n) => map[n].floor > node.floor) };
 }
 
-// the window after the room: back to the map to go on, or to the town when the expedition ended
-export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mvp: HTMLElement[]) {
+// the window after the room: back to the map to go on, or to the town when the expedition ended. Each hero's card says
+// the life it takes into the next room (the recovery already applied), in place of the mockup's EXP
+export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, heroes: EndHero[]) {
   const settled = settleRoom(room, won, state);
   if (!settled) return goHome();
   const { next, done, node, down } = settled;
@@ -324,55 +326,48 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
   const home = () => {
     location.search = next && !done ? '?home=expedition' : '?home';
   };
-  const d = dialog(
-    'result',
-    !next
+  const line = (h: EndHero): CardLine => {
+    const carried = next && !done && next.party.find((p) => p.id === room.heroes[h.id]?.id);
+    if (!carried) return h.hp <= 0 ? fellLine() : tallyLine(h);
+    const life = `${carried.hp}/${carried.max}`;
+    return h.hp <= 0
+      ? [t(`Caído · volta com ${life}`, `Fallen · back at ${life}`), 'fell']
+      : [t(`Próxima sala: ${life}`, `Next room: ${life}`), 'gain'];
+  };
+  resultBoard({
+    won: !!next, // a cleared room and a won expedition get the victory's look
+    title: !next
       ? t('Expedição perdida', 'Expedition lost')
       : done
         ? t('Expedição concluída!', 'Expedition complete!')
         : down
           ? t(`Andar ${node.floor} vencido!`, `Floor ${node.floor} cleared!`)
           : t('Sala vencida!', 'Room cleared!'),
-    [
-      ...mvp,
-      el(
-        'p',
-        {},
-        !next
+    cards: heroes.map((h) => [h, line(h)]),
+    cols: [
+      [t('Andar', 'Floor'), t(`${node.floor} de ${CRAWL_RUN.floors}`, `${node.floor} of ${CRAWL_RUN.floors}`)],
+      ...(next ? ([[t('Salas vencidas', 'Rooms cleared'), String(next.path.length)]] as [string, string][]) : []),
+    ],
+    note: !next
+      ? t(
+          `O grupo caiu no andar ${node.floor}. Os feridos voltam à cidade.`,
+          `The party fell on floor ${node.floor}. The wounded return to town.`,
+        )
+      : done
+        ? t('O chefe da masmorra caiu. O grupo volta à cidade.', 'The dungeon’s boss fell. The party returns to town.')
+        : down
           ? t(
-              `O grupo caiu no andar ${node.floor}. Os feridos voltam à cidade.`,
-              `The party fell on floor ${node.floor}. The wounded return to town.`,
+              `Quem ficou de pé recupera 25% da vida e quem caiu volta com 25%; ao descer ao andar ${node.floor + 1}, todos recuperam mais 50%.`,
+              `Whoever stood recovers 25% of their life and the fallen come back at 25%; going down to floor ${node.floor + 1}, everyone recovers 50% more.`,
             )
-          : done
-            ? t(
-                'O chefe da masmorra caiu. O grupo volta à cidade.',
-                'The dungeon’s boss fell. The party returns to town.',
-              )
-            : down
-              ? t(
-                  `Quem ficou de pé recupera 25% da vida e quem caiu volta com 25%; ao descer ao andar ${node.floor + 1}, todos recuperam mais 50%.`,
-                  `Whoever stood recovers 25% of their life and the fallen come back at 25%; going down to floor ${node.floor + 1}, everyone recovers 50% more.`,
-                )
-              : t(
-                  'Quem ficou de pé recupera 25% da vida; quem caiu volta com 25%.',
-                  'Whoever stood recovers 25% of their life; the fallen come back at 25%.',
-                ),
-      ),
-      next && !done ? partyList(next) : null,
-      el(
-        'div',
-        { class: 'menu-actions' },
-        button(
-          'primary',
-          next && !done ? t('Seguir no mapa', 'On to the map') : t('Voltar à cidade', 'Back to town'),
-          home,
-        ),
-      ),
-    ].filter((n): n is HTMLElement => !!n),
-    // Esc or ✕ goes the same way: closing only left the finished room on screen
-    { onBack: home },
-  );
-  // a cleared room and a won expedition get the victory's yellow title, like the battle's end window (end-screens.ts)
-  d.overlay.querySelector('.dialog')!.classList.add(next ? 'won' : 'lost');
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+          : t(
+              'Quem ficou de pé recupera 25% da vida; quem caiu volta com 25%.',
+              'Whoever stood recovers 25% of their life; the fallen come back at 25%.',
+            ),
+    actions: [
+      enterButton(next && !done ? t('Seguir no mapa', 'On to the map') : t('Voltar à cidade', 'Back to town'), home),
+    ],
+    // Esc goes the same way: closing only left the finished room on screen
+    onBack: home,
+  });
 }

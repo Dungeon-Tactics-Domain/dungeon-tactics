@@ -35,7 +35,7 @@ import { dialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom, homeScreen } from './game/crawl.ts';
-import { battleEndScreen, confetti, heroCards, mvpCard } from './game/end-screens.ts';
+import { battleEndScreen, confetti, type EndHero } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
@@ -62,7 +62,6 @@ import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
-import { faceSheet } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
@@ -822,35 +821,24 @@ export class Game {
     this.roster = Object.fromEntries(this.battle.state.units.map((u) => [u.id, { team: u.team, def: u.def }]));
   }
 
-  // the highlight card (mvpCard): the hero who downed the most, tie broken by damage, like FFT's closing
-  private mvpLine(): HTMLElement[] {
-    const m = mvp(this.tally, this.teamOf(), 'hero');
-    if (!m) return [];
-    const [id, s] = m;
-    const { def } = this.roster[id];
-    const card = mvpCard(def, unitName(def), s.dmg, s.kills);
-    // on a victory the highlight hero shows its painted face as on its hero card (endExpression); the card is the face left on screen
-    const f = battleFace(def);
-    const u = this.battle.state.units.find((x) => x.id === id);
-    if (f && this.battle.state.outcome === 'victory') {
-      const { node, show } = faceSheet(def, f, 'battle-face portrait');
-      show(frameOf(f, endExpression(u?.hp ?? 0, UNIT_DEFS[def].hp, true)));
-      card.querySelector('.portrait')?.replaceWith(node);
-    }
-    return [card];
-  }
-
-  // the result window's top: a card per hero who fought, then the highlight. The roster, not the state: the state drops
-  // the fallen, who get a card too (hp 0)
-  private resultCards(): HTMLElement[] {
-    const heroes = Object.entries(this.roster)
+  // the heroes' cards at the end (end-screens.ts resultBoard): everyone who started on the heroes' side but the Beacon, the
+  // life left (the roster keeps the fallen, at 0: the state drops them), the tally and the highlight
+  private endHeroes(): EndHero[] {
+    const best = mvp(this.tally, this.teamOf(), 'hero')?.[0];
+    return Object.entries(this.roster)
       .filter(([, r]) => r.team === 'hero' && !isObjective(r.def))
-      .map(([id, { def }]) => ({
-        def,
-        hp: this.battle.state.units.find((u) => u.id === id)?.hp ?? 0,
-        max: UNIT_DEFS[def].hp,
-      }));
-    return [heroCards(heroes, this.battle.state.outcome === 'victory'), ...this.mvpLine()];
+      .map(([id, { def }]) => {
+        const s = this.tally.scores[id];
+        return {
+          id,
+          def,
+          hp: this.battle.state.units.find((u) => u.id === id)?.hp ?? 0,
+          max: UNIT_DEFS[def].hp,
+          dmg: s?.dmg ?? 0,
+          kills: s?.kills ?? 0,
+          mvp: id === best,
+        };
+      });
   }
 
   private restart() {
@@ -871,7 +859,7 @@ export class Game {
     jingle(won);
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
     if (won) confetti();
-    if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, this.resultCards());
+    if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, this.endHeroes());
     // Until Dawn: how many turns it lasted and the record (a new record gets highlighted, like the stage grade)
     // winning by downing everyone before dawn also counts as surviving the whole night (it used to save "record 20" on a victory)
     const lasted = won ? SURVIVE_TURNS : survived(this.battle.state),
@@ -882,7 +870,7 @@ export class Game {
       survival: isSurvival(scenario.id),
       lasted,
       best,
-      mvp: this.resultCards(),
+      heroes: this.endHeroes(),
       restart: () => this.restart(),
     });
   }

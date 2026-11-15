@@ -1,9 +1,10 @@
-// End-of-battle window of the standalone battle (Until Dawn record, play again, home) and the victory confetti; the
-// expedition rooms have their own (crawl.ts finishRoom). The game saves progress before opening it.
+// End-of-battle window of the standalone battle (Until Dawn record, play again, home) and the victory confetti. The
+// standalone battle and the expedition rooms (crawl.ts finishRoom) both end on the lab mockup's board (resultBoard). The
+// game saves progress before opening it.
 import { endExpression } from '../battle-face.ts';
 import { classOf } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
-import { gauge, portrait, stillFace } from '../hud.ts';
+import { gauge, stillFace } from '../hud.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { SURVIVE_TURNS } from '../survival.ts';
@@ -26,127 +27,131 @@ export function confetti() {
   setTimeout(() => box.remove(), 3000);
 }
 
-// Battle highlight (tally.ts) as a small unit card, like the HUD's unit panel: portrait, name and what the unit did
-export function mvpCard(def: string, name: string, dmg: number, kills: number): HTMLElement {
-  return el(
-    'div',
-    { class: 'result-mvp' },
-    portrait(def),
-    el(
-      'div',
-      {},
-      el('span', { class: 'result-label' }, t('Destaque', 'MVP')),
-      el('strong', {}, name),
-      el(
-        'span',
-        {},
-        t(
-          `${dmg} de dano · ${kills} derrubado${kills === 1 ? '' : 's'}`,
-          `${dmg} damage · ${kills} ${kills === 1 ? 'takedown' : 'takedowns'}`,
-        ),
-      ),
-    ),
-  );
-}
-
-// One card per hero who fought (the lab's result mock-up): the painted face as the battle left them (endExpression), name,
-// class and life. The fallen card is greyed and says so: colour is never the only signal
-export interface EndHero {
-  def: string;
-  hp: number; // 0 for the fallen
-  max: number;
-}
-export function heroCards(heroes: EndHero[], won: boolean): HTMLElement {
-  return el(
-    'ul',
-    { class: 'result-heroes' },
-    ...heroes.map(({ def, hp, max }) => {
-      const base = classOf(def);
-      // under the name: Fallen, else the class when the name is not it (expedition heroes)
-      const label = hp <= 0 ? t('Caído', 'Fallen') : base && unitName(base);
-      return el(
-        'li',
-        { class: `result-hero${hp <= 0 ? ' fallen' : ''}` },
-        stillFace(def, endExpression(hp, max, won), true),
-        el('strong', {}, unitName(def)),
-        ...(label ? [el('span', { class: 'result-label' }, label)] : []),
-        gauge('hp', t('Vida', 'HP'), hp, max),
-      );
-    }),
-  );
-}
-
-// What the battle gave, one row each after a glass orb like the command menu's: gold-coloured for records (the orb is
-// decoration: the text says it all)
-type Gain = [orb: 'gold' | 'blue', text: string];
-const gainList = (rows: Gain[]) =>
-  rows.length
-    ? [
-        el(
-          'ul',
-          { class: 'result-gains' },
-          ...rows.map(([orb, text]) => el('li', {}, el('span', { class: `orb ${orb}`, 'aria-hidden': 'true' }), text)),
-        ),
-      ]
-    : [];
-
 // victory or defeat on the window itself: the overlay keeps the plain `result-overlay` class, which hides the battle HUD
 const outcome = (overlay: HTMLElement, won: boolean) =>
   overlay.querySelector('.dialog')!.classList.add(won ? 'won' : 'lost');
+
+// a hero at the end of the battle (Game.endHeroes): its spawn id, the life left (0 when fallen),
+// what it did and whether it was the highlight (most downed, tie broken by damage)
+export interface EndHero {
+  id: string;
+  def: string;
+  hp: number;
+  max: number;
+  dmg: number;
+  kills: number;
+  mvp: boolean;
+}
+// the card's last line, where the lab mockup had the EXP gained: `gain` green, `fell` light red, plain muted
+export type CardLine = [text: string, tone: 'gain' | 'fell' | ''];
+
+export const fellLine = (): CardLine => [t('Caído', 'Fallen'), 'fell'];
+// what the hero did, for the battles that give nothing else to show on the card
+export const tallyLine = (h: EndHero): CardLine =>
+  h.hp <= 0
+    ? fellLine()
+    : [
+        t(
+          `${h.dmg} de dano · ${h.kills} derrubado${h.kills === 1 ? '' : 's'}`,
+          `${h.dmg} damage · ${h.kills} ${h.kills === 1 ? 'takedown' : 'takedowns'}`,
+        ),
+        '',
+      ];
+
+// One hero's card (lab mockup, Nov 15): face, name (with the highlight's tag where the mockup had the level), class, the
+// life bar and one line; a fallen hero's face goes grey and the line says so in words
+function heroCard(h: EndHero, [text, tone]: CardLine, won: boolean) {
+  const base = classOf(h.def);
+  return el(
+    'li',
+    { class: `hero-card${h.hp <= 0 ? ' fell' : ''}` },
+    stillFace(h.def, endExpression(h.hp, h.max, won), true),
+    el(
+      'strong',
+      { class: 'hero-card-name' },
+      unitName(h.def),
+      h.mvp ? el('span', { class: 'hero-card-mvp' }, t('Destaque', 'MVP')) : null,
+    ),
+    base && unitName(base) !== unitName(h.def) ? el('span', { class: 'unit-class' }, unitName(base)) : null,
+    gauge('hp', t('Vida', 'HP'), h.hp, h.max),
+    el('span', { class: `hero-card-line ${tone}` }, text),
+  );
+}
+
+// The primary button with its key drawn on it, like the kit's Continue [Enter]
+export const enterButton = (label: string, onclick: () => void) =>
+  button('primary', [label, el('kbd', { class: 'key-chip', 'aria-hidden': 'true' }, 'Enter')], onclick);
+
+export interface Board {
+  won: boolean;
+  title: string;
+  cards: [EndHero, CardLine][];
+  cols: [label: string, value: string][]; // what the battle gave, one column each, label over value
+  note: string;
+  actions: HTMLButtonElement[]; // the primary last: it sits at the right edge, like the mockup's Continue
+  onBack?: () => void;
+}
+
+// End of battle as the Design lab's mockup (Nov 15): no window over the darkened battle, the title on its own band (wine
+// on a defeat), a card per hero and the Result panel as wide as the cards, with the actions at its right foot
+export function resultBoard({ won, title, cards, cols, note, actions, onBack }: Board) {
+  const d = dialog(
+    'result',
+    title,
+    [
+      el('ul', { class: 'hero-cards' }, ...cards.map(([h, line]) => heroCard(h, line, won))),
+      el(
+        'section',
+        { class: 'result-panel' },
+        el('div', { class: 'panel-head' }, t('Resultado', 'Result')),
+        cols.length ? el('dl', {}, ...cols.flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)])) : null,
+        el('p', {}, note),
+        el('div', { class: 'result-actions' }, ...actions),
+      ),
+    ],
+    { onBack },
+  );
+  d.overlay.querySelector('.dialog')!.classList.add('result-board');
+  outcome(d.overlay, won);
+  // Enter takes the primary (focus went to the X, and closing left the finished battle with no key to go on)
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+  return d;
+}
 
 export interface BattleEnd {
   won: boolean;
   survival: boolean; // Until Dawn: turns held and the record instead of the Beacon line
   lasted: number;
   best: number; // record before this battle
-  mvp: HTMLElement[]; // the hero cards and the highlight card (Game.resultCards: heroCards, mvpCard)
+  heroes: EndHero[];
   restart: () => void;
 }
 
-export function battleEndScreen({ won, survival, lasted, best, mvp, restart }: BattleEnd) {
-  const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
-    ...mvp,
-    ...gainList([
-      ...(survival
-        ? [
-            [
-              'gold',
-              lasted > best
-                ? t(
-                    `Novo recorde: ${lasted} de ${SURVIVE_TURNS} turnos!`,
-                    `New record: ${lasted} of ${SURVIVE_TURNS} turns!`,
-                  )
-                : t(
-                    `Aguentaram ${lasted} de ${SURVIVE_TURNS} turnos (recorde: ${best}).`,
-                    `Held out ${lasted} of ${SURVIVE_TURNS} turns (record: ${best}).`,
-                  ),
-            ] as Gain,
-          ]
-        : []),
-    ]),
-    el(
-      'p',
-      {},
-      survival
-        ? won
-          ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.')
-          : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.')
-        : won
-          ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
-          : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.'),
-    ),
+export function battleEndScreen({ won, survival, lasted, best, heroes, restart }: BattleEnd) {
+  const d = resultBoard({
+    won,
+    title: won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'),
+    cards: heroes.map((h) => [h, tallyLine(h)]),
+    cols: survival
+      ? [
+          [t('Turnos', 'Turns'), t(`${lasted} de ${SURVIVE_TURNS}`, `${lasted} of ${SURVIVE_TURNS}`)],
+          [t('Recorde', 'Record'), lasted > best ? t(`${lasted}, novo!`, `${lasted}, new!`) : String(best)],
+        ]
+      : [],
+    note: survival
+      ? won
+        ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.')
+        : t('Os heróis tombaram antes do amanhecer.', 'The heroes fell before dawn.')
+      : won
+        ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
+        : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.'),
     // the way home beside it (the town): without it, leaving the battle required reloading the page
-    el(
-      'div',
-      { class: 'menu-actions' },
-      button('primary', t('Jogar de novo', 'Play again'), () => {
+    actions: [
+      button('secondary', homeLabel(), goHome),
+      enterButton(t('Jogar de novo', 'Play again'), () => {
         d.close();
         restart();
       }),
-      button('secondary', homeLabel(), goHome),
-    ),
-  ]);
-  outcome(d.overlay, won);
-  // Enter plays again (focus went to the X, and closing left the finished battle with no key to restart)
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+    ],
+  });
 }

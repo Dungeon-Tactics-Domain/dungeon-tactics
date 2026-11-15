@@ -93,6 +93,7 @@
   --fs-xl: 34px; /* xl: the hit chance of the strike preview */
   --fs-title: 28px; /* dialog title, opening narration */
   --fs-display: 38px; /* game title in a window, big damage number */
+  --fs-banner: 64px; /* the end-of-battle title band (lab mockup) */
   /* motion: menus open in 90 ms, banners and the dialogue box in 120 ms; the ▶ and ▼ nudge every 0.6 s */
   --t-menu: 90ms;
   --t-open: 120ms;
@@ -415,8 +416,7 @@ button[hidden],
 } /* what is missing to recruit in the Tavern; .dialog in front to beat .dialog p */
 
 /* ---- End of battle: result window (game/end-screens.ts) ---- */
-/* composed from the HUD pieces (no lab mockup): the title big on the head band, yellow on a victory; the highlight as a
-   small unit panel; what was won as rows after a glass orb */
+/* the title yellow on a victory; the rest is the lab mockup's board below */
 .dialog.result {
   width: min(560px, 100%);
 }
@@ -427,43 +427,153 @@ button[hidden],
 .dialog.result.won h2 {
   color: var(--focus);
 }
-.result-mvp {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 14px;
-  border-left: 6px solid var(--hero);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
-}
-.result-mvp > div {
-  display: grid;
-  gap: 2px;
-}
-.result-mvp strong {
-  font-size: var(--fs-lg);
-}
 .result-label {
   font-size: var(--fs-sm);
   color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.result-gains {
-  list-style: none;
-  margin: 14px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
+/* the lab mockup's board (Nov 15; resultBoard): no window, the battle behind darkened at 45%; the title on its own band
+   (wine on a defeat), a row of hero cards and the Result panel as wide as the cards. Fits 1280x720 with four heroes */
+.result-overlay:has(.result-board) {
+  background: color-mix(in srgb, var(--shade) 45%, transparent);
 }
-.result-gains li {
+.dialog.result.result-board {
+  width: min(1176px, 100%);
+  max-height: calc(100dvh - 32px); /* the overlay's padding */
+  padding: 4px; /* room for the panels' outer line and drop shadow inside the scroll box */
+  background: none;
+  border: none;
+  box-shadow: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  font-weight: 700;
+  gap: 20px;
 }
-.result-gains .orb {
-  width: 20px;
-  height: 20px;
+.result-board .dialog-head,
+.hero-card,
+.result-panel {
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  background: linear-gradient(var(--paper-hi), var(--paper) 45%, var(--paper-lo));
+  box-shadow: var(--paper-frame);
+}
+.result-board .dialog-head {
+  margin: 0;
+  padding: 16px 56px;
+}
+.result-board.lost .dialog-head {
+  background: var(--enemy-paper);
+}
+.dialog.result.result-board h2 {
+  font-size: var(--fs-banner);
+  line-height: 1;
+}
+/* the actions close the board (Esc still does): the mockup has no ✕ */
+.result-board .dialog-head button.icon {
+  display: none;
+}
+.hero-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+@media (max-width: 760px) {
+  .hero-cards {
+    flex-wrap: wrap;
+  }
+}
+.hero-card {
+  flex: 0 1 280px;
+  min-width: 0;
+  padding: 16px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.hero-card .portrait {
+  justify-self: center;
+  width: 96px;
+  height: 128px;
+  margin-bottom: 4px;
+}
+.hero-card.fell :is(.portrait, .still-face) {
+  filter: grayscale(1) brightness(0.7);
+}
+.hero-card-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap);
+  font: 700 var(--fs-lg) / 1.1 var(--font-title);
+}
+.hero-card-mvp {
+  font-size: var(--fs-sm);
+  color: var(--focus);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.hero-card-line {
+  color: var(--ink-muted);
+}
+.hero-card-line.gain {
+  color: var(--heal);
+}
+.hero-card-line.fell {
+  color: var(--enemy-hi);
+}
+.result-panel {
+  width: 100%;
+}
+/* one column per result, label over value, so the board stays inside 720 px of height */
+.result-panel dl {
+  display: grid;
+  grid-template-rows: auto auto;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px 24px;
+  margin: 0;
+  padding: 14px 20px 0;
+  font-size: var(--fs-lg);
+}
+.result-panel dt {
+  color: var(--ink-muted);
+}
+.result-panel dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.result-panel p {
+  margin: 12px 20px 0;
+}
+.result-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 20px 16px;
+}
+.dialog .result-actions button {
+  flex: none;
+  width: auto;
+  padding: 0 20px;
+}
+/* the key drawn on the primary, like the kit's Continue [Enter]; only where a keyboard is likely */
+.key-chip {
+  font: 500 var(--fs-xs) / 1 var(--font);
+  padding: 3px 6px;
+  border: 1px solid color-mix(in srgb, var(--ink) 60%, transparent);
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--shade) 35%, transparent);
+}
+@media (hover: none) {
+  .key-chip {
+    display: none;
+  }
 }
 
 /* ---- Pieces inside dialogs: legend, choice, key list, value bar ---- */
@@ -1807,7 +1917,7 @@ body:has(.result-overlay) .fps {
   width: 64px;
   height: 64px;
 }
-/* the face held on one expression outside the battle (hud.ts stillFace: result cards, party, tavern): 64 px, .big 128,
+/* the face held on one expression outside the battle (hud.ts stillFace: result board cards, party, tavern): 64 px, .big 128,
    whole ratios of the 128 px paint; not a .portrait, whose party sizes (48x64, 96x128) would crop it */
 .still-face {
   flex: none;
@@ -1821,52 +1931,13 @@ body:has(.result-overlay) .fps {
 .still-face .face-strip {
   image-rendering: pixelated;
 }
-/* hero cards on the result window (end-screens.ts heroCards): each card is a container, so the face keeps 128 px where
-   the card is wide enough (the lab mock-up's 280 px cards) and halves to 64 in the 560 px window with 4 heroes */
-.result-heroes {
-  list-style: none;
-  margin: 0 0 14px;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap);
-}
-.result-hero {
-  flex: 1 1 110px;
-  container-type: inline-size;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  padding: 10px 8px;
-  border-top: 4px solid var(--hero);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
-}
-/* label and number over a full-width bar: in the 4-across cards the gauge's usual one row left the bar ~15 px */
-.result-hero .gauge {
-  justify-self: stretch;
-  grid-template-columns: auto auto;
-  justify-content: space-between;
-  row-gap: 2px;
-}
-.result-hero .gauge-bar {
-  grid-row: 2;
-  grid-column: 1 / -1;
-}
 /* tavern recruits: the class face beside the button text */
 .recruits button {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.result-hero.fallen .still-face {
-  filter: grayscale(1) brightness(0.7);
-}
-@container (max-width: 160px) {
-  .result-hero .still-face.big {
-    width: 64px;
-    height: 64px;
-  }
-} /* a portrait in the face's place (no sheet, sheet still loading or failed) takes the face's height, and the face's width
+/* a portrait in the face's place (no sheet, sheet still loading or failed) takes the face's height, and the face's width
    stays reserved: neither the box nor the text jumps when the sheet arrives */
 .talk-face {
   min-width: 132px;
