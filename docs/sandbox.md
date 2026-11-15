@@ -37,7 +37,7 @@ a tile that is already taken, an ability the unit lacks. The CLI prints the reas
 - CSS animations are stopped for the shot.
 
 Measured: two runs of the same spec gave byte-identical PNGs. The fps counter reads that fake clock, so its numbers
-mean nothing in a shot; hide it with `"hide": ["fps"]`. `path` specs (world map, town) are not frozen. They wait for
+mean nothing in a shot; hide it with `"hide": ["fps"]`. `path` specs (title, town) are not frozen. They wait for
 the network to go idle.
 
 ## Scene spec
@@ -49,9 +49,8 @@ different picture.
 |---|---|---|
 | `name` | output file name (default: the spec file name) | CLI |
 | `scenario` | map id: `skirmish`, `beacon_hill`, `flooded_crypt`, `crypt_heart`, `ash_wood`, `frost_pass` (also `survival`, `half`, `fft-gariland`, and the sandbox-only `arena`) | page load |
-| `stage` | campaign stage index (0-6); the CLI unlocks it | page load |
 | `crawl` | a crawl room: `{ "seed": 7, "depth": 2, "boss": false, "theme": "dungeon" }` (`depth`, `boss` and `theme` optional; theme among `dungeon`, `forest`, `mountain`) | page load |
-| `path` | any other page with no staged battle, e.g. `"/?world"` (a hero is seeded) or `"/"` (the town, or the expedition map when the page's saves hold one) | page load |
+| `path` | any other page with no staged battle, e.g. `"/"` (the title) or `"/?home"` (the town, or the expedition map when the page's saves hold one) | page load |
 | `seed` | battle dice (default 1) | page load |
 | `lang` | `"pt"` or `"en"` (the CLI defaults to `en`) | page load |
 | `viewport` | `{ "width": 1600, "height": 900 }` (default) | CLI |
@@ -64,7 +63,7 @@ different picture.
 | `camera` | `{ "angle": 0-7, "zoom": 1.5, "focus": {x,y}, "action": { "from": "<unit id>", "to": {x,y} }, "fixed": "side" \| "three-quarter" }` | load and live |
 | `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all` | load and live |
 | `pixel` | `0` (plain 3D), `2`, `3`, `4`: pixel-art block size | load and live |
-| `daylight` | `0` night to `1` day: the light that Until Dawn and the dark stages use | load and live |
+| `daylight` | `0` night to `1` day: the light that Until Dawn uses | load and live |
 | `steps` | `[{ "move": { "unit", "to": {x,y} } }, { "act": { "unit", "ability", "target": {x,y} } }, { "wait": { "unit", "facing"? } }, { "pause": 500 }]` | played after the scene settles (CLI), by `play`, or by the page with `loop` |
 | `loop` | `true`: the page plays the steps by itself and replays them forever ([Bench](#bench-live-game-feel)) | page load |
 | `timing` | `{ "hitStop": 160, "jumpCrouch": 380 }`: `TIMING` values (`src/client/timing.ts`) for this page only | page load |
@@ -90,12 +89,9 @@ Notes:
 - **Hiding:** panels are hidden with `visibility`, so they keep their space and the camera frames the map exactly as
   with the interface on (compare the two Ash Wood examples). `marks` removes the 3D tile marks, cursor, range ring and
   shot line, and stays off through the game's own redraws.
-- **Turns:** the AI never plays on its own, because the sandbox puts a hero on the turn. The opening conversation of a
-  stage is skipped. Acting in the battle by hand saves to `dt:battle:sandbox`, never to the real save.
+- **Turns:** the AI never plays on its own, because the sandbox puts a hero on the turn. Acting in the battle by hand saves to `dt:battle:sandbox`, never to the real save.
 - **Restart resets the sandbox:** Options → Restart builds a new battle the sandbox no longer holds; reload the
   page (or `load`) to go on scripting.
-- **Saves in a dev browser:** `load` only raises campaign progress and keeps an existing hero, because those are the
-  real saves there. The CLI's fresh contexts start empty.
 - **Steps** (see [Gameplay clips](#gameplay-clips)): played in order, each one only after the last has settled. A
   step whose unit does not have the turn gets it first, as if the queue had reached it; any unit that plays may take a
   step, enemies included.
@@ -110,7 +106,7 @@ On a page opened with `?sandbox=`:
 
 ```js
 await __sandbox.idle();                       // waits until every unit holds still on screen, then 300 ms for the menus
-__sandbox.list();                             // maps, stages, unit defs, panels, the units here (id, def, team, x, y, hp, ct, facing)
+__sandbox.list();                             // maps, unit defs, panels, the units here (id, def, team, x, y, hp, ct, facing)
 __sandbox.apply({ camera: { angle: 3, zoom: 2 }, hide: ['all'] });                 // returns the problems ([] = ok)
 __sandbox.apply({ units: { 'e-brute': { x: 4, y: 5, hp: 10 } }, actor: 'h-mage', screen: 'abilities' });
 __sandbox.apply({ screen: { aim: 'firebolt', target: { x: 4, y: 5 }, confirm: true } });
@@ -139,7 +135,7 @@ const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(
   .replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 ```
 
-The map always comes from the address (`?scenario=` or `?stage=`), because the game picks it before the sandbox loads. A
+The map always comes from the address (`?scenario=`), because the game picks it before the sandbox loads. A
 spec whose `scenario` differs from the address is a problem, not another map.
 
 ## Gameplay clips

@@ -14,16 +14,16 @@ npm run typecheck   # client, tests and scripts
 npx vitest run      # tests
 npm run coverage    # tests with a coverage summary; lcov report in coverage/
 npx vite build      # production build in dist/
-npm run smoke       # after the build: title, battle and world map in headless Chrome
+npm run smoke       # after the build: title, town, expedition and battles in headless Chrome
 ```
 
-On localhost, `?auto=1` lets the AI play the heroes, `?scenario=<id>` opens a map directly (`ash_wood`, `beacon_hill`, `half` for half tiles) and `?world` opens the world map. Links with the Portuguese names used before Nov 14 (`?cenario`, `?campanha`, `?mundo`…) still work.
+On localhost, `?auto=1` lets the AI play the heroes, `?scenario=<id>` opens a map directly (`ash_wood`, `beacon_hill`, `half` for half tiles) and `?home` opens the town (or the expedition map in progress). Links with the Portuguese names used before Nov 14 (`?cenario`, `?musica`…) still work.
 
 ## Architecture
 
 - `src/shared/battle` holds the rules: pure TypeScript without DOM or Three.js. The state is plain JSON-friendly data, so saving, undo and the AI simulator all work on the same object.
-- `src/content` holds the game content as typed data (classes, abilities, items, maps, campaign, world, quests, party); the rules files keep the types and registries and import it.
-- `src/client` is the browser: `main.ts` wires the game loop (the screens around it in `game/`: URL boot, title, options, end of battle, world map flow), `scene.ts` renders with Three.js (its parts in `scene/`: board, tile marks, units, camera), `hud.ts` and `world-ui.ts` build the interface from the components in `dialog.ts` and `icons.ts`.
+- `src/content` holds the game content as typed data (classes, abilities, items, maps, party, dungeon crawl); the rules files keep the types and registries and import it.
+- `src/client` is the browser: `main.ts` wires the game loop (the screens around it in `game/`: URL boot, title, options, end of battle, town and expedition), `scene.ts` renders with Three.js (its parts in `scene/`: board, tile marks, units, camera), `hud.ts` and `town-ui.ts` build the interface from the components in `dialog.ts` and `icons.ts`.
 - `tests` covers the rules and the pure client functions with Vitest.
 - Each folder's `CLAUDE.md` explains the patterns and the reasoning behind that area.
 
@@ -41,7 +41,7 @@ This is a portfolio project: the history is part of what people read. Every comm
 - **Summary.** Imperative mood, lowercase, no final period, at most 72 characters. Details go in the body.
 - **Body.** Optional for trivial changes; otherwise wrapped at 72 columns, says *why* and lists notable behaviour.
 - **Types:** `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style` (visual/CSS only), `balance` (numbers only), `build`, `ci`, `chore`.
-- **Scopes:** `battle`, `ai`, `maps`, `units`, `scene`, `terrain`, `water`, `fx`, `hud`, `ui`, `input`, `camera`, `campaign`, `world`, `party`, `content`, `audio`, `assets`, `docs`, `ci`, `deps`.
+- **Scopes:** `battle`, `ai`, `maps`, `units`, `scene`, `terrain`, `water`, `fx`, `hud`, `ui`, `input`, `camera`, `crawl`, `party`, `content`, `audio`, `assets`, `docs`, `ci`, `deps`.
 - **Breaking changes** to browser saves (`dt:*`) are marked `!` (`feat(party)!: ...`) and explained in the body.
 - History stays linear: no merge commits; bring other branches in with `git rebase` or `git cherry-pick`. No `Co-Authored-By` trailers or tool signatures.
 

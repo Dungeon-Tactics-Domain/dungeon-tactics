@@ -7,7 +7,7 @@
 
 ![An archer aims a shot across a bridge in Ash Wood; the action camera follows the arrow](docs/media/gameplay.gif)
 
-**A turn-based tactics game for the browser in the tradition of Final Fantasy Tactics and Tactics Ogre: height, facing, charged spells and a story campaign on painted 3D maps.**
+**A turn-based tactics game for the browser in the tradition of Final Fantasy Tactics and Tactics Ogre: height, facing, charged spells and dungeon descents on painted 3D maps.**
 
 **Play it:** https://dungeon-tactics.fernandorffdev.com (desktop browser; keyboard, mouse or gamepad)
 
@@ -18,13 +18,13 @@ Nothing is copied from the originals: rules, art direction, text and code are ou
 | | |
 |---|---|
 | ![Ash Wood: the archer's command menu, with the dotted ring of its longest skill](docs/media/battle.webp) | ![Attack forecast: shot trajectory, hit chance and HP before and after](docs/media/forecast.webp) |
-| ![Title screen over a live battle](docs/media/title.webp) | ![World map of the Beacon Ashes campaign](docs/media/world-map.webp) |
+| ![Title screen over a live battle](docs/media/title.webp) | ![Expedition map: the floor in play as rows of rooms and the party's life](docs/media/expedition-map.webp) |
 
-- **Campaign "Beacon Ashes":** an opening, character creation, an illustrated world map with towns, 7 battles across 2 acts with dialogue before and after each one, and an epilogue.
+- **Dungeon descents:** a town to prepare the party, then an expedition map of short procedural rooms floor by floor, each room a battle that carries the party's life into the next, down to a 2x2 boss.
 - **Tactical rules in the FFT tradition:** a CT turn queue, charged spells, per-class jump and leaps, height that adds range and hit chance, facing, push and fall damage, counters, deep and shallow water, spike traps and 2x2 bosses.
 - **Move, act, keep moving:** units spend a movement budget around their action, and a move can be undone while nothing has been revealed.
 - **Readable combat:** a Tactics Ogre-style forecast with hit chance and HP before and after, shot trajectories that stop at the first obstacle, a range ring for the longest skill and an action camera.
-- **Party management:** recruit at the tavern, change classes (including the lancer), equip items bought at the shop, take side quests.
+- **Party management:** recruit at the tavern, change classes (including the lancer), equip items bought at the shop.
 - **Painted maps:** smooth terrain with painted textures, procedural trees and props, wave-field water with currents and waterfalls, fog and light per map, 8 camera angles, optional pixel-art rendering.
 - Keyboard, mouse and gamepad; English and Portuguese.
 
@@ -32,7 +32,7 @@ Nothing is copied from the originals: rules, art direction, text and code are ou
 
 - **Pure, deterministic rules engine.** `src/shared/battle` has no DOM or Three.js. The battle state is plain JSON with a seeded RNG (mulberry32) inside it, so saving, cloning, the AI and the headless simulator all run the same code, and undo restores everything except the dice.
 - **FFT-style CT turn queue.** Units gain CT by speed and act at 100; a turn costs 100, 80 or 60 depending on whether the unit moved and acted, and charged abilities resolve on their own clock.
-- **Content as typed data.** Classes, abilities, items, maps, campaign stages and quests are TypeScript data in `src/content`; tests check that ids are unique, every reference resolves and every map is well formed.
+- **Content as typed data.** Classes, abilities, items, maps, the party and the dungeon tables are TypeScript data in `src/content`; tests check that ids are unique, every reference resolves and every map is well formed.
 - **Smooth subdivided terrain.** One mesh for the ground of each open map, 6x6 subdivisions per tile, flat where units stand and sloped at the edges, with textures painted by a script in this repository.
 - **Wave-field water.** A damped wave equation on a height grid: units splash, waves reflect off the banks and the current drags the surface.
 - **Procedural trees and props.** Broadleaf trees, pines, dead trees and crates built in code with vertex-painted colour, one draw call each.
@@ -42,7 +42,7 @@ Nothing is copied from the originals: rules, art direction, text and code are ou
 ## Architecture
 
 ```
-src/content       game content as typed data (classes, abilities, items, maps, campaign, world)
+src/content       game content as typed data (classes, abilities, items, maps, party, dungeon)
 src/shared/battle rules engine: grid, pathing, combat, turn queue, Battle (state, undo, save), AI
 src/client        browser: game loop and screens, Three.js scene, HUD, input
 ```
@@ -61,10 +61,10 @@ npm run typecheck    # client, tests and scripts
 npx vitest run       # tests
 npm run coverage     # tests with a coverage summary
 npx vite build       # production build in dist/
-npm run smoke        # after the build: title, battle and world map in headless Chrome
+npm run smoke        # after the build: title, town, expedition and battles in headless Chrome
 ```
 
-On localhost, `?scenario=ash_wood` opens a map directly, `?world` opens the world map and `?auto=1` lets the AI play the heroes too.
+On localhost, `?scenario=ash_wood` opens a map directly, `?home` opens the town (or the expedition map in progress) and `?auto=1` lets the AI play the heroes too.
 
 ## Project structure
 
@@ -73,7 +73,7 @@ src/content/        game content as typed data
 src/shared/battle/  rules engine (no DOM, no Three.js); fft/ is a reference study of the original formulas
 src/client/         game loop, HUD, input, terrain, water, trees, ambience
 src/client/scene/   board, tile marks, units, camera
-src/client/game/    boot from the URL, title, options, end screens, world map flow
+src/client/game/    boot from the URL, title, options, end screens, town and expedition
 tests/              Vitest: rules, content and pure client functions
 scripts/            simulator, browser smoke test, asset generators (textures, favicon, portraits)
 docs/               game design, design system, asset index, README media

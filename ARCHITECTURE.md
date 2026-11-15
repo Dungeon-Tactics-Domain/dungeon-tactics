@@ -9,7 +9,7 @@ flowchart LR
   subgraph content["src/content (data)"]
     C1["units, abilities, items"]
     C2["maps/*.ts"]
-    C3["campaign, world, quests, party"]
+    C3["party, crawl/rooms"]
   end
   subgraph rules["src/shared/battle (rules engine)"]
     R1["registries: units.ts, abilities.ts, equipment.ts, scenarios.ts"]
@@ -20,7 +20,7 @@ flowchart LR
   subgraph client["src/client (browser)"]
     G["main.ts + game/ (screens)"]
     I["interaction.ts, keyboard.ts, gamepad.ts, touch-input.ts"]
-    H["hud.ts, world-ui.ts, dialog.ts"]
+    H["hud.ts, town-ui.ts, dialog.ts"]
     S["scene.ts + scene/"]
   end
   C1 --> R1
@@ -39,7 +39,7 @@ flowchart LR
 | Rules engine | `src/shared/battle` | content (to build its registries) and nothing from `src/client`; no DOM, no Three.js |
 | Client | `src/client` | everything above, plus Three.js and the DOM |
 
-- **Content is typed data.** Classes, abilities, items and maps live in `src/content` as TypeScript arrays (`UNIT_LIST`, `ABILITY_LIST`, `ITEM_LIST`, one file per map in `src/content/maps/`). The engine turns them into lookup tables (`UNIT_DEFS`, `ABILITIES`, `ITEMS`, `MAPS`/`SCENARIOS` in `src/shared/battle/scenarios.ts`). Campaign stages, world nodes, quests and the party roster also live in `src/content`; their types and rules are in the client (`src/client/campaign.ts`, `world.ts`, `missions.ts`, `group.ts`), which is why content imports types from both layers.
+- **Content is typed data.** Classes, abilities, items and maps live in `src/content` as TypeScript arrays (`UNIT_LIST`, `ABILITY_LIST`, `ITEM_LIST`, one file per map in `src/content/maps/`). The engine turns them into lookup tables (`UNIT_DEFS`, `ABILITIES`, `ITEMS`, `MAPS`/`SCENARIOS` in `src/shared/battle/scenarios.ts`). The party roster and the dungeon crawl tables also live in `src/content`; the party's types and rules are in the client (`src/client/group.ts`), which is why content imports types from both layers.
 - **Abilities are general stats, not special cases.** An ability is range, damage, accuracy, area, push and charge (`A()` in `src/content/abilities.ts`); the combat code applies them the same way to every target.
 - **The rules engine is pure.** `grid.ts` (heights, terrain, water depth), `pathing.ts` (reach, jump, leaps, line of sight, shot path), `combat.ts` (hit chance, damage, push, falls, counters, forecast) and `turn-queue.ts` are functions over plain data. The one class is `Battle` (`battle.ts`), because the state, the undo history and the save have a lifecycle.
 - **The client draws and asks.** `main.ts` owns the game loop; `scene.ts` only renders what it is given and knows no rules (its header comment says so); `hud.ts` builds the DOM interface from the components in `dialog.ts`.
@@ -88,7 +88,7 @@ sequenceDiagram
 - **Seeded RNG in the state.** `rng.ts` is mulberry32 written as a pure function: `nextRng(state)` returns the value and the next state, and that state is the `rng` field of `BattleState`. The rules never call `Math.random` (a grep of `src/shared` and `src/content` outside the `fft/` study finds none). Rolls happen in a fixed order per target: hit, then damage. The only random number is the seed a new battle gets in the client (`newBattle` in `src/client/game/boot.ts`).
 - **Plain JSON state.** `BattleState` holds units, the turn, charges, outcome and the RNG state; maps and definitions stay outside and are looked up by id. That makes `clone()`, `save()` and the simulator trivial.
 - **Undo never rolls back the dice.** `Battle` keeps a history of the current turn's frames without the RNG field (`endTurn` clears it). Undoing a move is free; undoing an action that rolled dice uses up one of the `UNDO_LIMIT` (3) paid undos of the battle, and the RNG state is kept, so retrying an attack does not repeat the same roll (`undo()` in `battle.ts`). A move that triggered a counter-attack clears the history.
-- **Saves are a trust boundary.** `Battle.load` and `parseBattleState` rebuild the state field by field and return `null` on anything unexpected: unknown scenario or unit, a unit outside the map or on a blocked tile, duplicate ids, out-of-range HP or CT. The other browser saves (`dt:*`: hero, party, campaign progress, equipment) follow the same pattern with their own `parse*` functions (`hero.ts`, `group.ts`, `campaign.ts`, `chest.ts`).
+- **Saves are a trust boundary.** `Battle.load` and `parseBattleState` rebuild the state field by field and return `null` on anything unexpected: unknown scenario or unit, a unit outside the map or on a blocked tile, duplicate ids, out-of-range HP or CT. The other browser saves (`dt:*`: party, equipment, chest, expedition) follow the same pattern with their own `parse*` functions (`group.ts`, `chest.ts`, `parseExpedition` in `src/shared/crawl/expedition.ts`).
 
 ## Rendering pipeline
 
@@ -119,9 +119,9 @@ flowchart TB
 |---|---|---|
 | Lint and format | `npm run lint` | Biome over the whole repository |
 | Types | `npm run typecheck` | the client, the tests and `scripts/` (two `tsconfig` files) |
-| Unit tests | `npx vitest run` | 46 test files: the rules engine (`battle-*.test.ts`, FFT formulas), content integrity (`content.test.ts`, `scenario-maps.test.ts`), campaign and world progression, and the pure client functions (input mapping, interaction, HUD forecast and layout, markers, water levels, save parsers) |
+| Unit tests | `npx vitest run` | 46 test files: the rules engine (`battle-*.test.ts`, FFT formulas), content integrity (`content.test.ts`, `scenario-maps.test.ts`), dungeon rooms and the expedition, and the pure client functions (input mapping, interaction, HUD forecast and layout, markers, water levels, save parsers) |
 | Coverage | `npm run coverage` | V8 coverage of `src/`; the `fft/` study and `types.ts` are excluded (`vite.config.ts`) |
-| Browser smoke test | `npx vite build && npm run smoke` | serves `dist/` with `vite preview` and opens the title, the Ash Wood battle and the world map in headless Chrome; fails on a missing screen, a console error or a failed request (`scripts/smoke-game.mjs`) |
+| Browser smoke test | `npx vite build && npm run smoke` | serves `dist/` with `vite preview` and opens the title (fresh and with a save), the town, the expedition map and its first room, the Ash Wood battle and a crawl boss room in headless Chrome; fails on a missing screen, a console error or a failed request (`scripts/smoke-game.mjs`) |
 | AI vs AI | `npm run sim -- <scenario> <seeds>` | optional balance tool: win rate, turns and survivors over many seeds (`scripts/battle-sim.ts`, `src/shared/battle/simulate.ts`) |
 
 The tests never import Three.js or the DOM (`tests/CLAUDE.md`): code that needs testing is split into a pure function next to the module that draws it (for example `markers.ts`, `water-levels.ts`, `interaction.ts`). A logic bug fix comes with a test that fails without the fix. Content tests make data mistakes fail the build: unique ids, every reference resolvable, full map grids, free spawn tiles, ramps that rise exactly one level.

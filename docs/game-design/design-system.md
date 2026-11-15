@@ -35,7 +35,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Panel | `--paper-hi` `--paper` `--paper-lo` `--paper-edge` | top, middle and foot of the blue gradient of panels and dialogs; light frame |
 | Ink | `--ink` `--ink-muted` `--ink-off` `--ink-shadow` `--focus` | text, muted text, disabled row text, the hard dark text shadow, yellow highlight/focus/link |
 | Focus row | `--focus-band` `--row-hi` `--row-off` | menu row under focus (lighter blue band), row under hover, disabled row (sunken dark band, focused or not) |
-| Dark scene | `--bg` `--fg` `--muted` `--overlay` `--shade` | page background, text over the scene, veil behind dialogs and the place name tag on the map; `--shade` is the dark navy the other veils mix with `color-mix()` at their own alpha: debug readout 55%, ability banner 88%, dialogue veil 35%, opening narration 96% (beacon pulse 90%), protagonist creation 70% |
+| Dark scene | `--bg` `--fg` `--muted` `--overlay` `--shade` | page background, text over the scene, veil behind dialogs; `--shade` is the dark navy the other veils mix with `color-mix()` at their own alpha: debug readout 55%, ability banner 88%, dialogue veil 35% |
 | Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the panels (almost unused today), bar background |
 | Primary | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button (brighter blue; the names stayed from the gold one), battle highlight (yellow) |
 | Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
@@ -43,9 +43,6 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Strike preview | `--strike-dmg` `--enemy-paper` `--enemy-hi` `--strike` | damage number; the wine gradient of an enemy target's half and its ◆; `--strike` is now only the translucent band of the "+N targets" line |
 | Fields | `--paper-white` | Developer fields (dark blue field) |
 | Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
-| Map ink | `--map-ink` | outlines on the world map land: land, lakes, rocks, icons, compass star, roads |
-| Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
-| Fade | `--fade` | black of the fade on entering a map point |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` | legend; same as `MARK` in `src/client/scene/marks.ts` |
 | Command orbs | `--orb-blue` `--orb-gold` `--orb-off` | glass orb (`.orb` with `act`/`blue` or `status`/`gold`) before Act and Status in the command menu and before each row of the result window; `--orb-off` on a disabled row |
 | Theme art | `--ability-atlas` | the whole `url(...)` of the theme's 32 px ability icon atlas (`public/ui/fft/atlas-32.png`); CSS cannot join a path to a file name, so a theme with its own art redefines the full value |
@@ -116,8 +113,6 @@ Minimum text: 16 px (the key hint, 11 px, and the fps counter and the map compas
 | Conversation title | 160 ms | `banner-in` |
 | Speaker portrait | 220 ms | `face-pop` |
 | Speaker mouth (painted face) | 180 ms per frame while the text types: talk1 from the first instant, then talk2, talk1, neutral…; neutral when the sentence is out | `mouthFrame` in `talk.ts` (JS: it follows the typing, not a CSS loop) |
-| Fade when entering a node | 300 ms | `.fade-out` = `FADE_MS` in `world-ui.ts` |
-| Step on the world map | 320 ms | `--walk-ms` = `WALK_MS` |
 | Game title | 600 ms | `title-in` |
 | Focus ▶ and dialogue ▼ | 0.6 s in 2 steps (`--t-nudge`) | `nudge` |
 | Damage number | 1.5 s | `pop` = `TIMING.float` |
@@ -131,13 +126,13 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 
 | Piece | Lives in | States | Used in |
 |---|---|---|---|
-| **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, place panel on the map, dialogue box, creation |
+| **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, dialogue box |
 | **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) on the sunken `--row-off` band, also when focused (▶ but no `--focus-band`) | commands, abilities, Yes/No, corner list, map actions; in the command menu and submenu the row is 60 px tall with a 32 px marker (atlas icon, or an orb for Act and Status) before the name, and Act shows S (`.picked`: sunken band, yellow edge and ▸) while the submenu is open |
 | **Bar** `gauge()` | `hud.ts` | uppercase label, 10 px bar with a dark edge and a light gloss over the fill (`--bar`), number at `--fs`; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
 | **Unit panel** `unitPanel()` | `hud.ts` | `--slot-w` wide, 6 px side stripe, the 64×64 battle face (units without a sheet: the 96×128 portrait, 72×96 below 1600 px), name with the side in uppercase after ● (hero) or ◆ (enemy), a class line for units with their own name, bars; mirrored for the target | bottom left and right |
 | **Menu head** `.panel-head` | `style.css`, `hud.ts` (`menuHead`) | N only: the menu name over a faint band and a line; `aria-hidden`, the menu's `aria-label` says it | command menu (Commands, 422 px), submenu (Abilities, 460 px), "Execute?" (title with the ability icon, 460 px) |
 | **Ability icon** `abilityIcon(id)` | `icons.ts`, `style.css` | 32×32 at 1:1 (`image-rendering: pixelated`), the atlas cell of the ability (`atlasCell`, pure and tested against the atlas .json) over the game-icons `on-target` symbol: no cell (FFT study abilities, a new ability) or an image that fails shows the symbol; faded 50% in a disabled row | abilities submenu, Move and Wait rows of the command menu, "Execute?" title |
-| **Portrait** `portrait()` | `hud.ts` | 96×128 (unit panel; 72×96 below 1600 px), 99×132 in the dialogue box (the face's height), 72×96 (creation), 48×64 (party), 44×58 (map), 48×48 (queue, cropped from the top; units without a battle face); sizes set by the container, `portrait()` itself unchanged | everywhere with a face |
+| **Portrait** `portrait()` | `hud.ts` | 96×128 (unit panel; 72×96 below 1600 px), 99×132 in the dialogue box (the face's height), 48×64 (party), 48×48 (queue, cropped from the top; units without a battle face); sizes set by the container, `portrait()` itself unchanged | everywhere with a face |
 | **Turn list** `.queue` (`renderQueue`) | `hud.ts`, `style.css` | a 132 px column (the lab kit's narrow queue, a little wider for the charge rows): title, then per row the number (NOW in `--focus` for the one acting), the battle face (or the portrait) framed in its side colour (yellow with a glow for NOW) and the name after ● or ◆; charge rows in muted italics, the "goes off here" row with a yellow outline, ◎ target in `--focus`; 4 rows by default (L shows all, scrolling within the column, which ends above the acting unit's panel: `hud.ts` sets its height from that panel's); on a charge preview the short list shows up to the "goes off here" row; below 1600 px the portraits are 36 px | top left, under the tile line |
 | **Place beside** `placeBeside()` | `hud.ts` (pure, tested) | right; no room, left; slides vertically | menu beside the unit |
 | **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary); `fixed` does not close; `onBack` goes back. Since Nov 15 (theme screens) the title sits on the battle menus' head band (6% `--ink` over the panel, a light line under it) and the ✕ is a bare glyph on the band (H `--row-hi`) | town, expedition map, title, Options, Status, How to play, Credits, Party, Sheet, Shop, Tavern, Town, stage end, room end, Developer |
@@ -151,20 +146,15 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Painted face** `faceSheet()` | `talk.ts`, `.face-sheet` in `style.css` | one frame of the speaker's sheet (`public/chars/px/<model>.webp`, described in `src/content/faces.json`, bundled so the box never waits on the network) at 128×128, the nearest whole ratio of the frame: the painted 128 px sheets as they are, scaled smooth; the 64 px skeletons at 2× with `image-rendering: pixelated` (`.enlarged`); neutral at rest; the mouth opens from the line's first instant and cycles `mouthFrames`; `[]` stays still; Instant text speed and reduced motion: no animation; sheets preloaded when the conversation opens, and the portrait stands in until a sheet is decoded; no sheet or a failed image: `portrait()` at 99×132, the same height | dialogue box (the party and map keep `portrait()`) |
 | **Battle face** `faceSheet(def, face, 'battle-face portrait')` | `hud.ts` (`face`, `showFaces`), `battle-face.ts`, `.battle-face` in `style.css` | the same sheet as a `.portrait` (frame, side colour, NOW glow) at 64×64 in the unit panels and on the victory card, 48×48 in the turn list (36 below 1600 px), always `image-rendering: pixelated` (128 → 64 is a whole ratio; 48 and 36 are not and drop rows unevenly); the sheet by class (`battleFace`: the Warrior with the barbarian, the rest by the model on the map); expression by the events played (`faceCues`): shout 700 ms on an attack or a charge, angry 2200 ms on a counter-attack, hurt 900 ms on damage (then angry 2200 ms after a hit of 25% of life or more), smile 2200 ms for whoever downs a unit, wounded under 30% of life, else neutral; on a victory the highlight hero smiles on the result card; the small skeletons stay neutral (no expression frames); timed on the battle clock and moved per frame without a redraw | unit panels, turn list, victory card |
 | **Dialogue box** `talk()` | `talk.ts` | letter by letter; ▼ blinks when done; `dark` for the opening | conversations and narration |
-| **Class card** `.create-card` | `create-ui.ts` | S yellow ring and `--focus-band` background | protagonist creation |
-| **Map node** `.world-node` | `world-ui.ts` | battle red diamond · story blue circle · done gold border · D dark grey · here: ring with halo | world map |
 | **Window list** `.camp-list` (a `.menu-actions` of buttons) | `dialog.ts`, `style.css` | up and down arrows (and the d-pad) move the focus through the list, wrapping; the menu row inside a window (Nov 15): bare rows at `--fs-lg`, H `--row-hi`, F (the real focus, so keyboard, mouse and gamepad share it) `--focus-band` with a yellow line and the pulsing ▶; the primary looks like the others, the focus starting on it marks it; on the title the list sits on the panel gradient down to `--paper-lo`, and Continue's where-to line is `--ink-muted`, `--ink` when focused | title menu, Quick battle, Town |
-| **Place panel** `.world-panel` | `world-ui.ts`, `style.css` | the place name on the `.panel-head` band, kind and enemies in `--ink-muted`, the commands (Enter, Party, Town, Shop, Title) as menu rows in two columns, focused like the window list; with no row focused (a node clicked, a window just closed) the band rests on Enter, which the Enter key triggers (Nov 15) | world map, bottom right |
-| **Map frame** `.world-map`, cartouche `.world-title` | `style.css` | the panels' 2 px `--paper-edge` frame and `--paper-frame` (was a double line); the cartouche on the panel gradient with the same frame | world map |
-| **Party row** `.party-list .party-card` | `world-ui.ts`, `style.css` | like a menu row: H `--row-hi`, F `--focus-band`, yellow line and ▶; its muted lines (class, numbers, abilities) turn `--ink` on both (muted gives 4.3:1 on `--row-hi` and 3.8 on `--focus-band`) | Party window |
+| **Party row** `.party-list .party-card` | `town-ui.ts`, `style.css` | like a menu row: H `--row-hi`, F `--focus-band`, yellow line and ▶; its muted lines (class, numbers, abilities) turn `--ink` on both (muted gives 4.3:1 on `--row-hi` and 3.8 on `--focus-band`) | Party window |
 | **Sheet head** `.sheet .party-card` | `style.css` | the unit panel's look: `--hero` side stripe on a 25% `--shade` band, 96×128 portrait, class at `--fs-lg` | unit Sheet |
-| **Quest card** `.quest` | `world-ui.ts`, `style.css` | 25% `--shade` band with a yellow left edge; name, text, reward and Accept at the right foot | Tavern |
-| **Gold counter** `.gold` | `world-ui.ts`, `style.css` | the lab kit's counter: uppercase `--ink-muted` label, the number at `--fs-lg` after a coin drawn from `--ct` and `--orb-gold` | Shop |
+| **Gold counter** `.gold` | `town-ui.ts`, `style.css` | the lab kit's counter: uppercase `--ink-muted` label, the number at `--fs-lg` after a coin drawn from `--ct` and `--orb-gold` | Shop |
 | **Expedition room** `button(…)` in `.crawl-row` | `game/crawl.ts`, `style.css` | a primary or regular button stacked in two lines: the group's name (with "Boss:" and, when closed, why: cleared, path not taken, opens after the one before) over its enemies in `.continue-where`; open rooms primary, the rest D; one `.crawl-row` panel per row of the floor, the party's life on a `.legend` panel above | expedition map (Nov 15) |
-| **Form field** (text, select, number, checkbox, `details`) | `create-ui.ts`, `dev-menu.ts` | F the same yellow ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | protagonist name, Developer menu |
+| **Form field** (text, select, number, checkbox, `details`) | `dev-menu.ts` | F the same yellow ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | Developer menu |
 | **Key hint** `.hint` | `style.css` | PC with keyboard only (`.kbd`) | menu rows and buttons |
 | **Strike preview** `strikes()` | `hud.ts`, `style.css` | one two-colour strip per target, up to 3, then "+N targets": the action half on the panel blue (ability icon, name, the big −dmg or +heal PTS in `--strike-dmg` or `--heal`, ⊕ hit chance) and the target half on its side's colour (`--enemy-paper` for an enemy, the panel blue for a hero): name and side, the life bar with the stripes (`gauge` `change`) and the `strikeInfo` line (direction, push, life after, ALLY! in `--accent`). While aiming it takes the target panel's place, beside the acting panel, up to 760 px wide | bottom, while aiming and on "Execute?" |
-| **Result window** `dialog('result', …)` with `won` or `lost` on the window | `game/end-screens.ts`, `style.css` | the `result-overlay` hides the battle HUD behind it; the title at `--fs-display` on the head band (`--focus` on a victory); the highlight as `mvpCard()` (a small unit panel: `portrait()`, MVP label, name, damage and takedowns, `--hero` side stripe on a 25% `--shade` band); what was won as `.result-gains` rows after a gold orb (gold, quest reward, record) or a blue orb (abilities learned); the flavour line; the actions (Nov 15, composed from the HUD pieces, no lab mockup) | standalone battle end, quest reward, Until Dawn record, stage cleared, campaign complete, defeat |
+| **Result window** `dialog('result', …)` with `won` or `lost` on the window | `game/end-screens.ts`, `style.css` | the `result-overlay` hides the battle HUD behind it; the title at `--fs-display` on the head band (`--focus` on a victory); the highlight as `mvpCard()` (a small unit panel: `portrait()`, MVP label, name, damage and takedowns, `--hero` side stripe on a 25% `--shade` band); what was won as `.result-gains` rows after a gold orb (the Until Dawn record); the flavour line; the actions (Nov 15, composed from the HUD pieces, no lab mockup) | standalone battle end, expedition room, Until Dawn record, defeat |
 | **Banner** `.banner` / `.announce` | `style.css` | enters, holds, leaves | ability name, stage objective |
 
 ### Focus
@@ -186,9 +176,8 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | Move in menu / cursor | W A S D and arrows | hover | d-pad and stick |
 | Confirm | Enter, Space (on press only) | click | A / × |
 | Back, close dialog | Esc | right button, click outside, ✕ | B / ○ |
-| Inside a dialog | Tab and Shift+Tab; Enter on the button | click | in battle and on the title: d-pad moves between visible buttons, A presses (`pollPad`); on the world map only A works (debt) |
+| Inside a dialog | Tab and Shift+Tab; Enter on the button | click | in battle and on the title: d-pad moves between visible buttons, A presses (`pollPad`) |
 | Volume bar | arrows | drag | left and right with the bar focused |
-| World map | arrows walk, Enter enters, G party, Esc title | click on the node | d-pad, A, B |
 | Creation | arrows change class, Enter starts | click on the card | same |
 | Conversation | Enter next, Esc skip | click | A next |
 
@@ -214,12 +203,11 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 
 ## 6. Debts (left for later)
 
-- **Loose font sizes:** one-off sizes left outside the `--fs-*` scale: 11 (key hint), 12 (compass letters, map art), 26 (damage number), 28 (creation title), 30 (objective banner) and 64 px (game title).
+- **Loose font sizes:** one-off sizes left outside the `--fs-*` scale: 11 (key hint), 26 (damage number), 30 (objective banner) and 64 px (game title).
 - **Loose interface colours:** the confetti colours in `game/end-screens.ts` (the title's old gold glow became `--focus` on Nov 15). The illustrated map palette (`.world-art`, `.world-icon`, `.world-compass`) is drawing, not interface: it stays as is.
 - **Shop with 9 items and a full chest** still scrolls (761 px at 1280×720; fits at 1920×1080): asks for Buy / Sell tabs.
 - **Party list** (`.party-card`) is an `li` with `role="button"`: make it a real button.
 - **Tavern:** quests and recruiting in the same long dialog (833 px).
-- **Gamepad in world map dialogs:** in `?world` there is no `Game`, so `pollPad` does not run; the loop in `world-ui.ts` forwards A and turns the d-pad's up and down into arrow keys, which only the Town list uses (Nov 15). Party, Sheet, Shop and Tavern still cannot be navigated with the d-pad.
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
 - **`--stone*` tokens** are almost unused since every window took the panel look (Nov 13): only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 

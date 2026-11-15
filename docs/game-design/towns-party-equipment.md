@@ -2,13 +2,13 @@
 
 Request from Fernando (Nov 13): "create the character management menu just like FFT's and towns just like FFT's too, with taverns, side quests, equipment, shops, recruiting; implement new classes; and overall keep testing in loops to find bugs and improvements in interface, UX and game feel".
 
-> Update Nov 15: the campaign is frozen and the game is now a town, descent, camp and return loop; the town is fixed (only the party grows) and gold comes from selling loot. This document describes the old campaign mode except where marked. Source: `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`.
+> Update Nov 15: the campaign is frozen and the game is now a town, descent, camp and return loop; the town is fixed (only the party grows) and gold comes from selling loot. This document describes the old campaign mode except where marked; the campaign, the world map and the tavern quests were removed from the code the same day, so it is kept as history. Source: `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`.
 
 Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, text, names or music (project rule). Sources already gathered in `fft-reference.md` and `tactics-ogre-fft-ui-reference.md`.
 
 ## 1. Party management ("Formation", like FFT)
 
-- **Where:** Party button on the map (G key, the read-only list already exists in `world-ui.ts` `openParty`) and inside every town.
+- **Where:** Party button on the map (G key, the read-only list in `world-ui.ts` `openParty`, a file removed on Nov 15) and inside every town.
 - **Screen 1, list:** portrait, name, class and health of each unit; marks who goes to the next battle (up to 4) and who stays in camp.
 - **Screen 2, unit sheet** (when someone is chosen): numbers (health, speed, movement, jump), abilities with an explanation of each, the 3 equipment slots (weapon, armor, accessory) and the actions:
   - **Equip:** picks an item from the party chest for each slot; shows before → after for each number, like FFT.
