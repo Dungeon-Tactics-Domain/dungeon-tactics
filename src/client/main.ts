@@ -314,7 +314,8 @@ export class Game {
     }
     if (s.k === 'facing') {
       if (a.k === 'cursor') {
-        // the tile past that side of the unit's square (a 2x2 token's corner + 1 is its own cell)
+        // a tile on that side of the unit's square, `size` cells from its corner (right/down: just past the square; left/up:
+        // one cell further out). faceTo only reads the direction from the nearest cell, so the distance does not matter
         const st = gridStep(a.dir, this.scene.heading),
           s = UNIT_DEFS[b.actor.def].size ?? 1;
         this.faceTo({ x: b.actor.pos.x + st.x * s, y: b.actor.pos.y + st.y * s });
