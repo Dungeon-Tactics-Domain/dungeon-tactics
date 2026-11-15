@@ -143,8 +143,9 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
         for (const k of Object.keys(u))
           if (!['x', 'y', 'facing', 'hp', 'ct', 'remove'].includes(k)) p.push(`units.${id}: unknown key "${k}"`);
         if ((u.x !== undefined) !== (u.y !== undefined)) p.push(`units.${id}: give x and y together`);
-        if (u.x !== undefined && u.y !== undefined && !(isInt(u.x, 0) && isInt(u.y, 0)))
-          p.push(`units.${id}: x and y must be integers ≥ 0`);
+        // x.5 too: a token stands between tiles on the split map, as the AI and a push leave it
+        if (u.x !== undefined && u.y !== undefined && !isHalfPos(u))
+          p.push(`units.${id}: x and y must be whole or x.5, ≥ 0`);
         if (u.facing !== undefined && !isInt(u.facing, 0, 3)) p.push(`units.${id}: facing must be 0-3`);
         if (u.hp !== undefined && !isInt(u.hp, 1)) p.push(`units.${id}: hp must be an integer ≥ 1`);
         if (u.ct !== undefined && !isInt(u.ct, 0)) p.push(`units.${id}: ct must be an integer ≥ 0`);
@@ -341,6 +342,10 @@ export function offMap(grid: Grid, spec: SceneSpec): string[] {
   const c = spec.screen;
   const at: [string, Pos | undefined][] = [
     ['cursor', spec.cursor],
+    ...Object.entries(spec.units ?? {}).map(([id, u]): [string, Pos | undefined] => [
+      `units.${id}`,
+      u.x !== undefined && u.y !== undefined ? { x: u.x, y: u.y } : undefined,
+    ]),
     ['camera.focus', spec.camera?.focus],
     ['camera.action.to', spec.camera?.action?.to],
     ['screen.target', typeof c === 'object' ? c.target : undefined],

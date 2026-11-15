@@ -55,7 +55,7 @@ different picture.
 | `lang` | `"pt"` or `"en"` (the CLI defaults to `en`) | page load |
 | `viewport` | `{ "width": 1600, "height": 900 }` (default) | CLI |
 | `format` | `"png"` (default) or `"webp"` | CLI |
-| `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "remove": true } }` | load; live (no `remove`) |
+| `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "remove": true } }`; on a split map `x.5` puts the token between tiles | load; live (no `remove`) |
 | `add` | `[{ "id", "def", "team": "hero" \| "enemy", "x", "y" }]` | page load |
 | `actor` | the hero whose turn it is (default: the first hero that plays) | load and live |
 | `screen` | `"menu"`, `"abilities"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y}, "confirm": true }` | load and live |

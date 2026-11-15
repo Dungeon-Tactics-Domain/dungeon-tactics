@@ -98,7 +98,9 @@ export async function stage(selected: Scenario): Promise<{ scenario: Scenario; b
   const cells = inCells(spec, k);
   // a token sheet copied from list() (soldier½) stays as it is
   if (k > 1) cells.add = cells.add?.map((a) => ({ ...a, def: a.def.endsWith(HALF) ? a.def : halfDef(a.def) }));
-  const cast = castOf(base.spawns, cells);
+  // a unit between tiles on a map with no half tiles (the FFT study) falls back to the map's own cast
+  const off = offMap(base.grid, { units: spec.units });
+  const cast = off.length ? { spawns: base.spawns, problems: off } : castOf(base.spawns, cells);
   const scenario = { ...base, spawns: cast.spawns };
   battle = Battle.start(scenario, spec.seed ?? 1);
   const bad = [...cast.problems, ...placementProblems(battle.grid, battle.state.units)];

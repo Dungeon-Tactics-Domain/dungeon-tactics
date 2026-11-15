@@ -106,6 +106,19 @@ describe('parseSpec', () => {
     ]);
   });
 
+  it('places a unit between tiles only on a split map', () => {
+    // Nov 15: to stage a token that a push leaves between tiles, as the AI and a push do in play
+    const spec = { units: { 'h-archer': { x: 4.5, y: 7 } } };
+    expect(parseSpec(spec).problems).toEqual([]);
+    expect(parseSpec({ units: { a: { x: 4.25, y: 7 } } }).problems).toEqual([
+      'units.a: x and y must be whole or x.5, ≥ 0',
+    ]);
+    expect(offMap(halve(SCENARIOS.ash_wood).grid, spec)).toEqual([]);
+    expect(offMap(SCENARIOS.ash_wood.grid, spec)).toEqual([
+      'units.h-archer: 4.5,7 is between tiles, and this map has no half tiles',
+    ]);
+  });
+
   it('rejects a spec that is not an object', () => {
     expect(parseSpec([]).problems).toEqual(['spec must be an object']);
   });
