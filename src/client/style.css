@@ -100,6 +100,10 @@
   --t-nudge: 0.6s;
   /* art of the theme: the 32 px ability icon atlas (icons.ts abilityIcon, approved Nov 15), shown at its own pixel size */
   --ability-atlas: url("/ui/fft/atlas-32.png");
+  /* glass orb before the commands with no atlas icon (Act, Status), the lab kit's command markers; off when disabled */
+  --orb-gold: #c8a040;
+  --orb-blue: #4a78d0;
+  --orb-off: #4a5068;
 }
 
 /* Alegreya Sans (SIL OFL 1.1, public/fonts/OFL-Alegreya-Sans.txt), latin subset from Fontsource 5.3.0 */
@@ -822,38 +826,84 @@ button[hidden],
 }
 /* command menu, abilities submenu and "Execute?": beside the acting character, like FFT (Nov 13); left and top
    come from hud.ts (place), which follows the camera every frame. Hence no transform here: the open animations use it */
-.commands {
+/* command menu and submenu at the lab kit's size (Nov 15, FFT theme block 2): 422 and 460 px wide (22% of the 1920 screen),
+   a head with the menu name, 60 px rows with a marker (glass orb or 32 px ability icon) before the name */
+.commands,
+.abilities {
   display: grid;
-  min-width: 220px;
-  padding: 6px;
-} /* width set by the longest item: "Undo move" on one line */
-.commands .item {
-  white-space: nowrap;
+  width: 422px;
+  padding: 0 0 8px;
 }
 .abilities {
-  width: 300px;
-  padding: 6px;
+  width: 460px;
   --slide: -24px;
 }
-.confirm {
-  width: 420px;
-}
-.confirm strong {
-  font: 400 var(--fs-lg) / 1.2 var(--font-title);
-}
-.confirm-title {
+.panel-head {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 6px 14px 7px;
+  font: 400 var(--fs) / 1.2 var(--font-title);
+  border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.panel.commands .item,
+.panel.abilities .item {
+  min-height: 60px;
+  padding: 0 18px 0 46px;
+  gap: 14px;
+  white-space: nowrap;
+  font: 500 var(--fs-lg) / 1 var(--font-title);
+}
+.panel.commands .item.focus::before,
+.panel.abilities .item.focus::before {
+  left: 14px;
+  font-size: var(--fs);
+}
+/* Act with the submenu open: marked as picked, with a pointer toward the submenu (the focus is in the submenu) */
+.panel.commands .item.picked {
+  background: color-mix(in srgb, var(--shade) 45%, transparent);
+  box-shadow: inset 4px 0 0 var(--focus);
+}
+.panel.commands .item.picked::after {
+  content: "▸";
+  color: var(--focus);
+}
+.orb {
+  width: 28px;
+  height: 28px;
+  margin: 0 2px; /* centred in the 32 px icon column */
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--ink) 55%, transparent) 0 15%, var(--orb) 45%);
+  box-shadow:
+    inset -3px -4px 6px var(--bevel-lo),
+    0 0 0 2px var(--edge);
+}
+.orb.blue {
+  --orb: var(--orb-blue);
+}
+.orb.gold {
+  --orb: var(--orb-gold);
+}
+.panel .item:disabled .orb {
+  --orb: var(--orb-off);
+}
+.confirm {
+  width: 460px;
+  padding: 0 0 8px;
+}
+.confirm .panel-head {
+  font: 400 var(--fs-lg) / 1.2 var(--font-title);
 }
 .confirm p {
-  margin: 6px 0 0;
+  margin: 6px 14px 0;
   font-size: var(--fs-sm);
 }
 .yes-no {
   display: flex;
   gap: 6px;
-  margin-top: 10px;
+  margin: 10px 8px 0;
 }
 .panel .item {
   width: 100%;

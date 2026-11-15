@@ -292,6 +292,12 @@ const COMMAND_NAME: Record<Command, () => string> = {
   wait: () => t('Esperar', 'Wait'),
   status: () => 'Status',
 };
+// command row marker: the atlas icon (Move, Wait) or, for the commands without one, a glass orb like the lab kit's
+const ORB: Partial<Record<Command, string>> = { act: 'blue', status: 'gold' };
+const marker = (c: Command) =>
+  ORB[c] ? el('span', { class: `orb ${ORB[c]}`, 'aria-hidden': 'true' }) : abilityIcon(c);
+// menu name on top of the command menu, the submenu and "Execute?" (the menu's aria-label says it to the screen reader)
+const menuHead = (...text: Child[]) => el('div', { class: 'panel-head', 'aria-hidden': 'true' }, ...text);
 
 // bar with label and number (HP, MP, CT), like the ones in FFT's unit panel. `change` marks in stripes the part
 // that the strike takes (loss) or the heal adds (gain), like the target bar in Tactics Ogre; the number comes along in the panel
@@ -565,8 +571,16 @@ export class BattleHud {
   }
   private readonly help = el('div', { class: 'panel help', 'aria-live': 'polite' });
   private readonly bannerEl = el('div', { class: 'panel banner', role: 'status', hidden: true });
-  private readonly commands = el('div', { class: 'panel commands', role: 'menu' });
-  private readonly abilities = el('div', { class: 'panel abilities', role: 'menu' });
+  private readonly commands = el('div', {
+    class: 'panel commands',
+    role: 'menu',
+    'aria-label': t('Comandos', 'Commands'),
+  });
+  private readonly abilities = el('div', {
+    class: 'panel abilities',
+    role: 'menu',
+    'aria-label': t('Habilidades', 'Abilities'),
+  });
   private readonly confirmBox = el('div', { class: 'panel confirm', role: 'dialog' });
   private readonly active = el('div', { class: 'active-slot' });
   private readonly target = el('div', { class: 'target-slot' });
@@ -824,15 +838,23 @@ export class BattleHud {
     this.commands.hidden = !open || !(s.k === 'menu' || s.k === 'abilities');
     if (this.commands.hidden) return;
     const b = v.battle;
-    const current = s.k === 'menu' ? s.index : 1;
+    // with the submenu open, Act stays marked as the picked command (the focus is in the submenu)
+    const state = (c: Command, i: number) =>
+      s.k === 'menu' ? (i === s.index ? ' focus' : '') : c === 'act' ? ' picked' : '';
     // moved and did not act: Move becomes "Undo move" (Esc also undoes), like Tactics Ogre
     const undo = canUndoMove(b);
     this.commands.replaceChildren(
+      menuHead(t('Comandos', 'Commands')),
       ...COMMANDS.map((c, i) =>
         button(
-          `item${i === current ? ' focus' : ''}`,
+          `item${state(c, i)}`,
           [
-            c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
+            marker(c),
+            el(
+              'span',
+              { class: 'item-label' },
+              c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
+            ),
             c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null,
           ],
           () => this.act.command(i),
@@ -848,6 +870,7 @@ export class BattleHud {
     if (s.k !== 'abilities' || this.abilities.hidden) return;
     const b = v.battle;
     this.abilities.replaceChildren(
+      menuHead(t('Habilidades', 'Abilities')),
       ...abilitiesOf(b).map((id, i) => {
         const a = ABILITIES[id];
         const cost = a.cost
@@ -902,7 +925,7 @@ export class BattleHud {
     this.confirmBox.replaceChildren(
       el(
         'strong',
-        { class: 'confirm-title' },
+        { class: 'panel-head confirm-title' },
         abilityIcon(s.ability),
         t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`),
       ),
