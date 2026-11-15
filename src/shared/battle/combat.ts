@@ -367,10 +367,13 @@ export function simulatePush(
     }
   }
   // A push never leaves the square on uneven ground (Nov 15, Fernando: "it tie-breaks by making the guy fall, or hit a
-  // wall"): one more cell when it drops onto even ground, else back to where it last rested, with the bump
+  // wall"): one more cell when it drops onto even ground, or when the square is level and only ramp, terrain or spikes
+  // kept it from resting (Fernando, after the review); else back to where it last rested, with the bump. A square that
+  // started uneven (a sandbox placement, an old save) goes back to its start
   if (!rests(result.to)) {
     const m = move(result.to);
-    if (m && height(m.to) < height(result.to) && rests(m.to)) add(m);
+    const level = new Set(cells(result.to).map((c) => standH(tileAt(grid, c)))).size === 1;
+    if (m && rests(m.to) && (level || height(m.to) < height(result.to))) add(m);
     else {
       Object.assign(result, even);
       bumped = true;

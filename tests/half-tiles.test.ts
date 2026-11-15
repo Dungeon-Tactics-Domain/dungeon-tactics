@@ -475,7 +475,6 @@ describe('half tiles: push', () => {
   });
 
   // Nov 15, Fernando: a push that would leave the token on uneven ground "tie-breaks by making the guy fall, or hit a wall"
-  // (before, 6 to 16% of the 1-tile pushes from the stops between tiles ended hovering over a ledge corner)
   const pushOn = (heights: string, at: number, steps: number, more: Parameters<typeof stateOf>[0] = []) => {
     const whole = gridOf(['.'.repeat(heights.length), '.'.repeat(heights.length)], [heights, heights]);
     const g = split(whole, 't-uneven').grid;
@@ -502,6 +501,30 @@ describe('half tiles: push', () => {
     const held = pushOn('1100', 1, 1, [{ id: 'x', def: `soldier${HALF}`, team: 'enemy', x: 5, y: 0 }]);
     expect(held.to).toEqual({ x: 2, y: 0 });
     expect(held.events.map((e) => e.k)).toEqual(['push', 'bump']);
+  });
+
+  // floor, floor, rubble, floor: level ground where only the terrain keeps a square between tiles 1 and 2 from resting
+  const pushOnRubble = (at: number, more: Parameters<typeof stateOf>[0] = []) => {
+    const whole = gridOf(['....', '....']);
+    for (const y of [0, 1]) whole.tiles[y * 4 + 2].terrain = 'rubble';
+    const g = split(whole, 't-rubble').grid;
+    const s = stateOf([{ id: 'b', def: `soldier${HALF}`, team: 'enemy', x: at, y: 0 }, ...more]);
+    return simulatePush(g, s, s.units[0], s.units[0].pos, { x: at - 2, y: 0 }, 1);
+  };
+
+  it('goes 1 more cell, unhurt, when only the terrain kept a level square from resting', () => {
+    // Fernando after the review (Nov 15): before, it went back a cell and took the bump (633 of the 24,840 pushes the review tried)
+    const r = pushOnRubble(1);
+    expect(r.to).toEqual({ x: 4, y: 0 });
+    expect(r.dmg).toBe(0);
+    expect(r.events.map((e) => e.k)).toEqual(['push', 'push', 'push']);
+  });
+
+  it('a square that started uneven and is held stays where it was, bumped', () => {
+    // a sandbox placement or an old save between floor and rubble; a unit right ahead holds the push
+    const r = pushOnRubble(3, [{ id: 'x', def: `soldier${HALF}`, team: 'enemy', x: 5, y: 0 }]);
+    expect(r.to).toEqual({ x: 3, y: 0 });
+    expect(r.events.map((e) => e.k)).toEqual(['bump']);
   });
 
   for (const map of MAPS) {
