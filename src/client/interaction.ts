@@ -165,7 +165,7 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   // the choice goes over the actor's square: a 2x2 token stepping 1 cell overlaps where it stands
   if (reach) {
     // the whole square where it would stop; only `reach` says whether it fits (a square on 4 marked cells may still
-    // straddle a step too high, an ally or a body). A 1-cell unit marks only its chosen tile, as before the squares: the red
+    // straddle a step, a ledge corner, an ally or a body). A 1-cell unit marks only its chosen tile, as before the squares: the red
     // square under the cursor is for units bigger than one cell (Nov 14 review: not asked for whole tiles, nor FFT's feel)
     const at = size > 1 ? (ui.pending ?? cursor) : ui.pending;
     const fits = !!at && reach.has(posKey(at));
