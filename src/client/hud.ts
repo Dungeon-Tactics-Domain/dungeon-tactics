@@ -509,11 +509,11 @@ export function placeBeside(
     .sort((p, q) => Math.abs(p - mid) - Math.abs(q - mid));
   for (const side of sides.filter(fits)) {
     const top = tops.find((t) => !covers(xs[side], t));
-    if (top !== undefined) return { left: xs[side], top, side };
+    if (top !== undefined) return { left: xs[side], top, side, free: true };
   }
   // nothing free (narrow screen, character off screen): the side that fits, clamped inside the area
   const side = fits(sides[0]) || !fits(sides[1]) ? sides[0] : sides[1];
-  return { left: clamp(xs[side], area.left, area.right - w), top: tops[0], side };
+  return { left: clamp(xs[side], area.left, area.right - w), top: tops[0], side, free: false };
 }
 
 // portrait of the rendered KayKit character (public/chars, scripts/portraits.mjs); the Beacon has no character: a CSS crystal
@@ -769,7 +769,9 @@ export class BattleHud {
     };
     const { commands: c, abilities: s, confirm: f } = this.sizes;
     if (!this.confirmBox.hidden) {
-      const p = placeBeside(a, f.w, f.h, area, prefer, avoid);
+      let p = placeBeside(a, f.w, f.h, area, prefer, avoid);
+      // no room clear of both (three strips at 1280x720): keep the turn list clear, the strips already show the target's numbers
+      if (!p.free) p = placeBeside(a, f.w, f.h, area, prefer, avoid.slice(0, 1));
       return put(this.confirmBox, p.left, p.top);
     }
     const sub = !this.abilities.hidden;

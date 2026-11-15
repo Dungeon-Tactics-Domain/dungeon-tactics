@@ -8,7 +8,7 @@ const clear = (p: { left: number }, w: number, x: number, r: number) => p.left +
 describe('menu beside the unit', () => {
   it('to the right of the unit, centered on its height', () => {
     const p = placeBeside({ x: 400, y: 300, r: 20 }, 220, 200, area);
-    expect(p).toEqual({ left: 432, top: 200, side: 'right' });
+    expect(p).toEqual({ left: 432, top: 200, side: 'right', free: true });
     expect(clear(p, 220, 400, 20)).toBe(true);
   });
 
@@ -36,8 +36,18 @@ describe('menu beside the unit', () => {
     expect(clear(p, 420, 200, 20)).toBe(true);
     const queue = { left: 12, top: 56, right: 242, bottom: 248 };
     const q = placeBeside({ x: 400, y: 200, r: 20 }, 220, 150, area, 'left', [queue]);
-    expect(q).toEqual({ left: 148, top: 260, side: 'left' }); // on the left, but below the list
+    expect(q).toEqual({ left: 148, top: 260, side: 'left', free: true }); // on the left, but below the list
     expect(placeBeside({ x: 500, y: 200, r: 20 }, 220, 150, area, 'left', [queue]).top).toBe(125); // already beside the list: stays in the middle
+  });
+
+  it('says when no spot is clear, so "Execute?" can retry keeping only the turn list clear', () => {
+    // a tall window beside a unit with its target right of it and the list on the left: nothing is clear of both
+    const queue = { left: 12, top: 56, right: 144, bottom: 560 };
+    const target = { left: 650, top: 165, right: 710, bottom: 255 };
+    const a = { x: 520, y: 190, r: 20 };
+    expect(placeBeside(a, 460, 215, { ...area, bottom: 430 }, 'left', [queue, target]).free).toBe(false);
+    const p = placeBeside(a, 460, 215, { ...area, bottom: 430 }, 'left', [queue]);
+    expect(p).toMatchObject({ side: 'right', free: true }); // clear of the list, over the target (its numbers are in the strips)
   });
 
   it('the "Executar?" (Execute?) prompt prefers the side opposite the target', () => {
