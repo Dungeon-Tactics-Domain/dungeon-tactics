@@ -1,7 +1,7 @@
 // Gamepad (browser Gamepad API, Fernando's request of Nov 12). Translates the button state into keyboard actions
 // (KeyAction), so the Game treats gamepad, keyboard and mouse the same way. Pure: the loop that reads the gamepad lives in the Game.
 // The browser's "standard" mapping, the same on Xbox and PlayStation: 0 = A / ×, 1 = B / ○, 2 = X / □, 3 = Y / △,
-// 4 and 5 = bumpers, 6 and 7 = triggers, 8 = Back / Select, 9 = Start, 12 to 15 = d-pad.
+// 4 and 5 = bumpers, 6 and 7 = triggers, 8 = Back / Select, 9 = Start, 12 to 15 = d-pad; axes 0 and 1 = left stick, 2 and 3 = right stick.
 import type { KeyAction, ScreenDir } from './keyboard.ts';
 
 export interface PadState {
@@ -39,9 +39,12 @@ export function padActions(pad: PadState, mem: PadMemory, now: number): KeyActio
   const out: KeyAction[] = [];
   const dirs: ScreenDir[] = [];
   for (const [i, dir] of Object.entries(DPAD)) if (pad.buttons[Number(i)]) dirs.push(dir);
-  const [x = 0, y = 0] = pad.axes;
+  const [x = 0, y = 0, , ry = 0] = pad.axes;
   if (Math.abs(x) > DEAD || Math.abs(y) > DEAD)
     dirs.push(Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : y > 0 ? 'down' : 'up');
+  // right stick up and down scroll the turn list (Nov 15): the bumpers and triggers already turn and zoom the camera
+  const repeating: [string, KeyAction][] = [...new Set(dirs)].map((dir) => [`d${dir}`, { k: 'cursor', dir }]);
+  if (Math.abs(ry) > DEAD) repeating.push([ry > 0 ? 'list-down' : 'list-up', { k: 'turns', dir: ry > 0 ? 1 : -1 }]);
   const active = new Set<string>();
   for (const [i, action] of Object.entries(PRESS)) {
     const key = `b${i}`;
@@ -49,13 +52,12 @@ export function padActions(pad: PadState, mem: PadMemory, now: number): KeyActio
     active.add(key);
     if (mem.held[key] === undefined) out.push(action);
   }
-  for (const dir of new Set(dirs)) {
-    const key = `d${dir}`;
+  for (const [key, action] of repeating) {
     active.add(key);
     const since = mem.held[key];
     const last = mem.last[key] ?? 0;
     if (since === undefined || (now - since >= FIRST_REPEAT && now - last >= REPEAT)) {
-      out.push({ k: 'cursor', dir });
+      out.push(action);
       mem.last[key] = now;
     }
   }

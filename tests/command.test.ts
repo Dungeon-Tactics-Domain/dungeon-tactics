@@ -113,6 +113,16 @@ describe('gamepad', () => {
     expect(padActions(pad([], [0.3, 0.2]), emptyMemory(), 0)).toEqual([]); // dead zone
   });
 
+  it('the right stick up and down scrolls the turn list, repeating while held; left and right do nothing', () => {
+    const mem = emptyMemory();
+    expect(padActions(pad([], [0, 0, 0, 0.9]), mem, 0)).toEqual([{ k: 'turns', dir: 1 }]);
+    expect(padActions(pad([], [0, 0, 0, 0.9]), mem, 200)).toEqual([]);
+    expect(padActions(pad([], [0, 0, 0, 0.9]), mem, 310)).toEqual([{ k: 'turns', dir: 1 }]);
+    // flipping the stick is a new press, not the held one
+    expect(padActions(pad([], [0, 0, 0, -0.9]), mem, 330)).toEqual([{ k: 'turns', dir: -1 }]);
+    expect(padActions(pad([], [0, 0, 0.9, 0.2]), emptyMemory(), 0)).toEqual([]);
+  });
+
   it('shoulder buttons rotate the camera, Start opens the menu, Back undoes', () => {
     const mem = emptyMemory();
     expect(padActions(pad([4, 9]), mem, 0)).toEqual([{ k: 'rotate', dir: -1 }, { k: 'help' }]);

@@ -20,7 +20,7 @@ export type KeyAction =
   | { k: 'face' }
   | { k: 'status' }
   | { k: 'fps' }
-  | { k: 'turns' }
+  | { k: 'turns'; dir: 1 | -1 }
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
@@ -51,7 +51,9 @@ const SIMPLE: Record<string, KeyAction> = {
   '?': { k: 'help' },
   i: { k: 'info' },
   v: { k: 'pixel' },
-  l: { k: 'turns' },
+  // the page keys scroll the turn list, which since Nov 15 holds every unit (Fernando's decision)
+  pageup: { k: 'turns', dir: -1 },
+  pagedown: { k: 'turns', dir: 1 },
   // Q zooms out and E zooms in: same hand as WASD
   q: { k: 'zoom', factor: ZOOM_STEP },
   e: { k: 'zoom', factor: 1 / ZOOM_STEP },
@@ -144,7 +146,7 @@ export const keyHelp = (): [string, string][] => [
   ['Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
   ['F', t('ver o mapa inteiro', 'show the whole map')],
   ['V', t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)')],
-  ['L', t('lista de turnos inteira ou só os próximos 4', 'full turn list or only the next 4')],
+  ['PgUp · PgDn', t('rolar a lista de turnos', 'scroll the turn list')],
   ['F3', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
   ['H · ?', t('esta ajuda e o menu', 'this help and the menu')],
 ];

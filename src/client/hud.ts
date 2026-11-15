@@ -16,7 +16,7 @@ import { type Grid, inBounds, posKey, standH, TERRAIN, tileAt } from '../shared/
 import { cellsOf, jumpOf, unitAt } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
-import { previewOrder, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
+import { previewOrder, type QueueEntry, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../shared/battle/types.ts';
 import { baseDef, UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from './battle-face.ts';
@@ -37,6 +37,7 @@ import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import { type Face, faceSheet } from './talk.ts';
+import { keepInView, roundLength } from './turn-list.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
@@ -62,7 +63,9 @@ export interface HudView {
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
 }
 
-const QUEUE_SIZE = 8;
+// rows of the queue projection the turn list reads: today's speeds (5 to 12) show 12 units in about 30 rows
+// (ponytail: a unit too slow to show within the cap is left off the list; raise it if a battle ever needs more)
+const QUEUE_CAP = 64;
 const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
 const hpText = (u: UnitState) => `${u.hp}/${UNIT_DEFS[u.def].hp}`;
@@ -571,35 +574,51 @@ function unitPanel(state: BattleState, u: UnitState, pic: HTMLElement) {
   );
 }
 
-// Top queue with the charge still to be confirmed (Nov 13, Fernando's request, like FFT's CT list): the spell
-// goes in where it will fire (`at`) and whoever it hits goes in `targets`, to see whether the target acts before it (and leaves the tile) or not.
-// Outside the "Execute?" of an ability with a charge, it is the usual queue.
-export function queueRows(b: Battle, pending: { ability: string; target: Pos } | null, n: number) {
+// Turn list: every unit that plays, from the one acting now, until each has shown once (Nov 15, Fernando's decision), with
+// each queued charge where it fires and its ticks left (`ticks`). On the "Execute?" of an ability with a charge (Nov 13,
+// Fernando's request, like FFT's CT list) the spell goes in where it will fire (`at`) and whoever it hits goes in
+// `targets`, to see whether the target acts before it (and leaves the tile) or not.
+export function queueRows(b: Battle, pending: { ability: string; target: Pos } | null) {
   const a = pending ? ABILITIES[pending.ability] : null;
-  if (!pending || !a?.charge) return { rows: previewOrder(b.state, n), targets: new Set<string>(), at: -1 };
   const me = b.actor.id;
-  const follow = a.panel ? null : (unitAt(b.state, pending.target)?.id ?? null);
+  const preview = a?.charge ? pending : null;
   // the same charge that Battle.act would register (a new charge replaces the previous one of the same unit)
-  const charge = { unit: me, ability: pending.ability, target: pending.target, follow, ticks: a.charge };
-  const rows = previewOrder({ ...b.state, charges: [...b.state.charges.filter((c) => c.unit !== me), charge] }, 24);
-  const at = rows.findIndex((r) => r.unit === me && r.charge === pending.ability);
-  const targets = new Set(b.preview(pending.ability, pending.target).targets.map((tg) => tg.unit));
-  return { rows: rows.slice(0, Math.max(n, at + 1)), targets, at };
+  const charges =
+    preview && a?.charge
+      ? [
+          ...b.state.charges.filter((c) => c.unit !== me),
+          {
+            unit: me,
+            ability: preview.ability,
+            target: preview.target,
+            follow: a.panel ? null : (unitAt(b.state, preview.target)?.id ?? null),
+            ticks: a.charge,
+          },
+        ]
+      : b.state.charges;
+  const all = previewOrder({ ...b.state, charges }, QUEUE_CAP).map((r): QueueEntry & { ticks?: number } =>
+    r.charge ? { ...r, ticks: charges.find((c) => c.unit === r.unit && c.ability === r.charge)?.ticks } : r,
+  );
+  const at = preview ? all.findIndex((r) => r.unit === me && r.charge === preview.ability) : -1;
+  const targets = new Set(preview ? b.preview(preview.ability, preview.target).targets.map((tg) => tg.unit) : []);
+  return { rows: all.slice(0, roundLength(all)), targets, at };
 }
 
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
-  private readonly queue = el('ol', { class: 'panel queue short', 'aria-label': t('Ordem dos turnos', 'Turn order') });
+  private readonly queue = el('ol', { class: 'panel queue', 'aria-label': t('Ordem dos turnos', 'Turn order') });
   private fastBtn!: HTMLElement;
   setFast(on: boolean) {
     this.fastBtn.setAttribute('aria-checked', String(on));
   }
-  get queueFull() {
-    return !this.queue.classList.contains('short');
+  // PageUp/PageDown and the right stick: a page of the list less one row, which stays in view to keep the place
+  scrollQueue(dir: 1 | -1) {
+    const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;
+    this.queue.scrollBy({ top: dir * Math.max(row, this.queue.clientHeight - row) });
   }
-  setQueueFull(full: boolean) {
-    this.queue.classList.toggle('short', !full);
-  }
+  // where the list was scrolled before the redraw, and the turn it showed: a new turn scrolls back to NOW on top
+  private queueScroll = 0;
+  private queueTurn = '';
   private readonly help = el('div', { class: 'panel help', 'aria-live': 'polite' });
   private readonly bannerEl = el('div', { class: 'panel banner', role: 'status', hidden: true });
   private readonly commands = el('div', {
@@ -708,9 +727,9 @@ export class BattleHud {
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me, this.face(me))] : []));
-    // the turn list ends a gap above the acting panel, whose height changes with the screen width; a charge's row stays in view
+    // the turn list ends a gap above the acting panel, whose height changes with the screen width
     this.queue.style.maxHeight = `calc(100% - 56px - 2 * var(--inset) - ${this.active.offsetHeight}px)`;
-    this.queue.querySelector('.pending')?.scrollIntoView({ block: 'nearest' });
+    this.anchorQueue(b);
     // unit under the cursor (or the "Execute?" target)
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
     // unitAt: any tile of the large unit shows its panel
@@ -858,25 +877,20 @@ export class BattleHud {
   private renderQueue(b: Battle, s: Screen) {
     const { rows, targets, at } = b.over
       ? { rows: [], targets: new Set<string>(), at: -1 }
-      : queueRows(b, s.k === 'confirm' ? s : null, QUEUE_SIZE);
+      : queueRows(b, s.k === 'confirm' ? s : null);
     // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
     const left = isSurvival(b.state.scenario) ? turnsLeft(b.state) : null;
-    // with the charge in preview the short list hides nothing up to its row (the list disappears again on leaving "Execute?")
-    this.queue.classList.toggle('preview', at >= 0);
+    this.queueScroll = this.queue.scrollTop;
     this.queue.replaceChildren(
       el(
         'li',
         { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined },
         left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`),
+        hint('PgUp PgDn'),
       ),
-      ...rows.map(({ unit, charge }, i) => {
+      // a charge row: the caster's face, the ability's icon and name, and the ticks until it goes off
+      ...rows.map(({ unit, charge, ticks }, i) => {
         const u = b.state.units.find((x) => x.id === unit)!;
-        const label =
-          i === at
-            ? t(`⏳ ${abilityName(charge!)} sai aqui`, `⏳ ${abilityName(charge!)} goes off here`)
-            : charge
-              ? `${unitName(u.def)}: ${abilityName(charge)}`
-              : unitName(u.def);
         const mark =
           !charge && i > 0 && targets.has(unit) ? el('span', { class: 'queue-target' }, t('◎ alvo', '◎ target')) : null;
         return el(
@@ -884,13 +898,36 @@ export class BattleHud {
           {
             class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}`,
           },
-          el('span', { class: 'queue-n' }, i === 0 ? t('AGORA', 'NOW') : String(i)),
           this.face(u),
-          el('span', { class: 'queue-name' }, label),
-          mark,
+          charge ? abilityIcon(charge) : null,
+          el(
+            'span',
+            { class: 'queue-text' },
+            el(
+              'span',
+              { class: 'queue-n' },
+              charge ? t(`resolve em ${ticks}`, `resolves in ${ticks}`) : i === 0 ? t('AGORA', 'NOW') : String(i),
+              mark,
+            ),
+            el('span', { class: 'queue-name' }, charge ? abilityName(charge) : unitName(u.def)),
+          ),
         );
       }),
     );
+  }
+
+  // NOW stays in view: a new turn scrolls back to the top, otherwise the list keeps where the player scrolled it; the
+  // "Execute?" charge row is kept in view, since it shows whether the target acts before the spell lands
+  private anchorQueue(b: Battle) {
+    const q = this.queue;
+    const turn = `${b.state.turnsPlayed}:${b.state.turn.actor}`;
+    const pending = q.querySelector<HTMLElement>('.pending');
+    q.scrollTop = pending
+      ? keepInView(this.queueScroll, q.clientHeight, pending.offsetTop, pending.offsetHeight)
+      : turn === this.queueTurn
+        ? this.queueScroll
+        : 0;
+    this.queueTurn = turn;
   }
 
   private renderCommands(v: HudView, open: boolean) {

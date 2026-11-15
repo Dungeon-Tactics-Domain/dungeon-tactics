@@ -71,8 +71,6 @@ const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const AUTO = LOCAL && new URLSearchParams(location.search).has('auto');
 
 const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (Fernando's request, Nov 12)
-// short turn list (next 4) by default: FFT does not leave the whole order on screen and the list covered the map (Nov 12)
-const QUEUE_KEY = 'dt:turns';
 const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
 
 export class Game {
@@ -168,7 +166,6 @@ export class Game {
     addEventListener('blur', () => (pace.key = false));
     host.append(this.fps);
     this.fps.hidden = store.get(FPS_KEY) === '0';
-    this.hud.setQueueFull(store.get(QUEUE_KEY) === 'all');
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
     // performance counter: the text changes 2 times per second, not every frame (almost zero cost)
@@ -263,11 +260,7 @@ export class Game {
     if (a.k === 'help') return this.menu();
     if (a.k === 'pixel') return this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) });
     if (a.k === 'status') return this.status();
-    if (a.k === 'turns') {
-      const full = !this.hud.queueFull;
-      store.set(QUEUE_KEY, full ? 'all' : '');
-      return this.hud.setQueueFull(full);
-    }
+    if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
     if (a.k === 'fps') {
       this.fps.hidden = !this.fps.hidden;
       store.set(FPS_KEY, this.fps.hidden ? '0' : '1');

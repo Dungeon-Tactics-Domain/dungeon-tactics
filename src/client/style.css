@@ -818,33 +818,22 @@ button[hidden],
 .tile-info:empty {
   display: none;
 } /* end of battle: with no tile under the cursor, the empty box lost its meaning */
-/* turn list as a narrow column (Nov 15, FFT theme block 2, the lab kit's ~5% of the screen, a little wider for the charge
-   rows): the number over the portrait, the name below it, the side by colour and by shape (● hero, ◆ enemy) */
+/* turn list (Nov 15, Fernando's decision: every unit of the battle, not the next 4): one compact row per turn, the face
+   beside two short lines (number or NOW, then the name), the side by colour and by shape (● hero, ◆ enemy). The column
+   ends above the acting panel (hud.ts sets max-height from its height) and scrolls when the battle has more turns */
 .queue {
   top: 56px;
   left: 12px;
-  width: 132px;
-  /* hud.ts sets max-height from the acting panel's height; the full list (L) scrolls past it, since the column's rows are tall */
+  width: 196px;
   overflow-y: auto;
   scrollbar-width: thin;
   list-style: none;
-  padding: 6px;
+  padding: 4px;
   display: grid;
-  gap: 6px;
-}
-.queue.short li:nth-child(n + 6) {
-  display: none;
-} /* title + 4 rows; L shows everything, scrolling within the column */
-/* charge in preview on "Execute?" (hud.ts queueRows): the list shows up to its row, which gets marked; the targets carry ◎.
-   The rows after it act once the charge has fired, so the short list leaves them out: 8 rows of the column did not fit */
-.queue.preview li:nth-child(n) {
-  display: grid;
-}
-.queue.short.preview .queue-row.pending ~ li:nth-child(n + 6) {
-  display: none;
+  gap: 2px;
 }
 .queue-target {
-  font-size: var(--fs-sm);
+  margin-left: 6px;
   font-weight: 700;
   color: var(--focus);
 }
@@ -852,16 +841,26 @@ button[hidden],
   font: 400 var(--fs-sm) / 1 var(--font-title);
   color: var(--ink-muted);
   text-align: center;
-  padding: 2px 0;
+  padding: 2px 0 4px;
 }
 .queue-row {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  padding: 2px 2px 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
   font-size: var(--fs-sm);
   line-height: 1.15;
-  text-align: center;
+}
+.queue-text {
+  display: grid;
+  min-width: 0;
+}
+/* one line each, so every row keeps the face's height and a long name ends in … instead of growing the row */
+.queue-n,
+.queue-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .queue-row.hero {
   --side: var(--hero);
@@ -899,8 +898,9 @@ button[hidden],
   color: var(--ink);
 }
 .queue-row .portrait {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
+  flex: none;
   object-position: top;
   border-color: var(--side);
 }
@@ -1098,11 +1098,6 @@ button[hidden],
   .hud .unit-panel .portrait {
     width: 72px;
     height: 96px;
-  }
-  /* the column's rows shrink with the panel, so a charge preview of 5 rows still fits at 1280x720 */
-  .queue-row .portrait {
-    width: 36px;
-    height: 36px;
   }
 }
 .orb {
@@ -1765,7 +1760,7 @@ body:has(.result-overlay) .fps {
   image-rendering: pixelated;
 }
 /* the painted face in the battle HUD (hud.ts face, battle-face.ts) and on the victory card: one square frame at 64 px,
-   half the 128 px paint, so it stays crisp; in the turn list .queue-row .portrait keeps it at 48 (36 below 1600 px).
+   half the 128 px paint, so it stays crisp; in the turn list .queue-row .portrait keeps it at 36.
    It is also a .portrait, for the frame, the side colour and the acting unit's glow */
 .battle-face,
 .hud .unit-panel .battle-face {
