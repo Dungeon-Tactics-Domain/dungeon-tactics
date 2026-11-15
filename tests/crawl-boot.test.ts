@@ -5,6 +5,7 @@ import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { HALF } from '../src/shared/battle/half.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { expeditionMap, openNodes, startExpedition } from '../src/shared/crawl/expedition.ts';
 import type * as Generate from '../src/shared/crawl/generate.ts';
 import { CRAWL_VERSION, type RoomOptions } from '../src/shared/crawl/generate.ts';
@@ -85,14 +86,17 @@ describe('crawl rooms in the client', () => {
     expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-${map[node].seed}-d1-dungeon${HALF}`);
     const b = newBattle(sel.scenario, sel.room);
     expect(b.state.units.find((u) => u.id === 'h1')?.hp).toBe(7);
+    // a saved life above the battle sheet's (Bran 42, Odo 24) is cut to it
+    expect(b.state.units.find((u) => u.id === 'h0')?.hp).toBe(42);
+    expect(b.state.units.find((u) => u.id === 'h2')?.hp).toBe(24);
     expect(b.state.units.filter((u) => u.team === 'hero')).toHaveLength(ids.length);
 
-    // won with Lia (h3) fallen and the rest as they entered: +25% (ceil 12.5) for whoever stood, 25% for her
+    // won with Lia (h3) fallen and the rest as they entered: +25% of the saved max (ceil 12.5) for whoever stood, 25% for her
     b.state.units = b.state.units.filter((u) => u.team === 'hero' && u.id !== 'h3');
     settleRoom(sel.room!, true, b.state);
     const after = savedExpedition();
     expect(after?.path).toEqual([node]);
-    expect(after?.party.map((h) => h.hp)).toEqual([50, 7 + 13, 50, 13]);
+    expect(after?.party.map((h) => h.hp)).toEqual([42 + 8, 7 + 13, 24 + 13, 13]);
     // a defeat ends it
     settleRoom({ ...sel.room!, node: openNodes(map, [node])[0] }, false, b.state);
     expect(savedExpedition()).toBeNull();
@@ -102,5 +106,29 @@ describe('crawl rooms in the client', () => {
     const location = open(`?room=${closed}`);
     expect(await selectBattle()).toBeNull();
     expect(location.search).toBe('');
+  });
+
+  it('a floor boss room opens with the Colossus and its battle saves and loads', async () => {
+    const ids = parseGroup(null).deployed;
+    const map = expeditionMap(33);
+    let exp = startExpedition(
+      33,
+      ids.map((id) => ({ id, max: 20 })),
+    );
+    while (!map[openNodes(map, exp.path)[0]].boss) exp = { ...exp, path: [...exp.path, openNodes(map, exp.path)[0]] };
+    store.set(CRAWL_KEY, JSON.stringify(exp));
+    const node = openNodes(map, exp.path)[0];
+    open(`?room=${node}`);
+    const sel = await selectBattle();
+    if (!sel || sel === 'world') throw new Error('no battle');
+    expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-${map[node].seed}-d1-boss-dungeon${HALF}`);
+    const b = newBattle(sel.scenario, sel.room);
+    const foes = b.state.units.filter((u) => u.team === 'enemy');
+    expect(foes.map((u) => UNIT_DEFS[u.def].size)).toEqual([4, 2, 2]); // the 2x2 Colossus and two minions, in half tiles
+    expect(b.state.units.filter((u) => u.team === 'hero').map((u) => u.hp)).toEqual([20, 20, 20, 20]);
+    store.set(sel.saveKey, b.save());
+    const again = await selectBattle();
+    if (!again || again === 'world') throw new Error('no battle');
+    expect(Battle.load(store.get(again.saveKey) ?? '')?.state.scenario).toBe(again.scenario.id);
   });
 });

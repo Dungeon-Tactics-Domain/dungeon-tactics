@@ -48,8 +48,12 @@ const crawlers = (ids: string[]) =>
 export function castRoom(room: Scenario, exp: Expedition, node: number): { scenario: Scenario; room: CrawlRoom } {
   const ids = exp.party.map((h) => h.id).filter((id) => group().members.some((m) => m.id === id));
   const enemies = slotsOf(room.id).enemy.map((s) => unitFrom(s.def));
-  const scenario = buildDevScenario({ map: room.id, heroes: crawlers(ids), enemies }, room.id, [room.name, room.en]);
-  const heroes = Object.fromEntries(ids.map((id, i) => [`h${i}`, { id, hp: exp.party.find((h) => h.id === id)!.hp }]));
+  const units = crawlers(ids);
+  const scenario = buildDevScenario({ map: room.id, heroes: units, enemies }, room.id, [room.name, room.en]);
+  // never above the sheet's life: the save is read from the browser (a max typed into dt:crawl gave a hero 999)
+  const hp = (id: string, i: number) =>
+    Math.min(exp.party.find((h) => h.id === id)!.hp, units[i].hp + bonusOf(units[i].items).hp);
+  const heroes = Object.fromEntries(ids.map((id, i) => [`h${i}`, { id, hp: hp(id, i) }]));
   return { scenario, room: { node, heroes } };
 }
 
@@ -269,6 +273,8 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
         ),
       ),
     ].filter((n): n is HTMLElement => !!n),
+    // Esc or ✕ goes home too: closing only left the finished room on screen
+    { onBack: () => void (location.search = '') },
   );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
