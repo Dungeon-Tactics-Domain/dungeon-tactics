@@ -41,6 +41,7 @@ import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import {
+  aimMark,
   confirm,
   facingHighlights,
   freshUi,
@@ -323,10 +324,15 @@ export class Game {
       // choosing where a token stops, its whole square stays on the map, as with the mouse (squareUnder): clamped, not
       // refused, so a cursor left nearer the edge (the cycle key on a smaller unit's corner) can still step back
       const size = this.pickSize;
-      const next = {
+      let next = {
         x: Math.min(this.cursor.x + step.x, b.grid.width - size),
         y: Math.min(this.cursor.y + step.y, b.grid.height - size),
       };
+      // aiming, a step that stays on the same marked body changed nothing on screen: go on until the mark moves
+      const mark = (p: Pos) => JSON.stringify(aimMark(b.grid, b.state, p));
+      if (this.ui.mode.k === 'ability')
+        while (inBounds(b.grid, next) && mark(next) === mark(this.cursor))
+          next = { x: next.x + step.x, y: next.y + step.y };
       if (inBounds(b.grid, next) && !samePos(next, this.cursor)) this.moveCursor(next);
     } else if (a.k === 'cycle') this.moveCursor(cycleUnit(b.state, this.cursor, a.dir));
     else if (a.k === 'confirm') void this.mapConfirm();
@@ -498,12 +504,17 @@ export class Game {
               };
     const moving = s.k === 'map' && ui.mode.k === 'move';
     this.scene.setHighlights(hl);
-    // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square
-    this.scene.setCursor(
-      hl ? this.cursor : null,
-      hl && (moving || samePos(this.cursor, this.battle.actor.pos)) ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1,
-      !hl?.tiles.some((m) => m.kind === 'nogo'),
-    );
+    // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square; aiming,
+    // it frames what the target mark covers (one cell, or the body of the unit there)
+    const framed =
+      (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability'
+        ? aimMark(this.battle.grid, this.battle.state, this.cursor)
+        : {
+            pos: this.cursor,
+            size:
+              moving || samePos(this.cursor, this.battle.actor.pos) ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1,
+          };
+    this.scene.setCursor(hl ? framed.pos : null, framed.size, !hl?.tiles.some((m) => m.kind === 'nogo'));
     // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
     // it can be reached), to see where the strike reaches before moving
     const ringAt =
