@@ -94,6 +94,7 @@
   --fs-title: 28px; /* dialog title, opening narration */
   --fs-display: 38px; /* game title in a window, big damage number */
   --fs-banner: 64px; /* the end-of-battle title band (lab mockup) */
+  --fs-logo: 96px; /* the game's name on the title screen (lab mockup) */
   /* motion: menus open in 90 ms, banners and the dialogue box in 120 ms; the ▶ and ▼ nudge every 0.6 s */
   --t-menu: 90ms;
   --t-open: 120ms;
@@ -829,13 +830,18 @@ button[hidden],
   text-align: left;
 }
 /* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the panel menu
-   at the bottom; does not close (dialog fixed) */
+   below it; does not close (dialog fixed). Since Nov 15 as the Design lab's mockup: the name at 96 px in capitals, the
+   kit's 422 px command menu 48 px below, the key hint alone at the foot of the screen */
 .main-title .dialog.title {
   background: none;
   border: none;
   box-shadow: none;
-  width: min(520px, 100%);
+  width: min(1100px, 100%);
   overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
 }
 .main-title .dialog-head {
   justify-content: center;
@@ -845,14 +851,14 @@ button[hidden],
   background: none;
 }
 .main-title .dialog.title h2 {
-  font-size: 64px;
-  line-height: 1.05;
+  font: 700 min(var(--fs-logo), 8vw) / 1 var(--font-title); /* 8vw: the name stays on one line on a phone */
   color: var(--fg);
-  letter-spacing: 2px;
-  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
   text-shadow:
-    0 4px 0 var(--edge),
-    0 0 28px color-mix(in srgb, var(--focus) 55%, transparent);
+    3px 4px 0 var(--edge),
+    0 0 24px color-mix(in srgb, var(--shade) 80%, transparent);
   animation: title-in 600ms ease-out;
 }
 .main-title .title-sub,
@@ -863,8 +869,12 @@ button[hidden],
     0 0 8px var(--edge);
 }
 .main-title .title-foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 24px;
   font-size: var(--fs-sm);
-  margin: 14px 0 0;
+  margin: 0;
   opacity: 0.85;
 }
 .main-title .title-lang {
@@ -879,6 +889,14 @@ button[hidden],
   border-radius: var(--r);
   box-shadow: var(--paper-frame);
   padding: 12px;
+}
+/* the kit's 422 px, wider when a row needs it: rows stay on one line like the battle menu's */
+.main-title .command-list {
+  min-width: min(422px, 100%);
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 8px;
+  text-align: left;
 }
 /* expedition map (game/crawl.ts, Nov 15): the title's look, wider, with the party on a panel and one room per button, its
    enemies under its name */
@@ -2263,6 +2281,7 @@ p.gold strong::before {
   min-height: 60px;
   gap: 14px;
   padding-left: 46px;
+  white-space: nowrap;
 }
 .dialog .command-list > button:focus::before {
   left: 14px;

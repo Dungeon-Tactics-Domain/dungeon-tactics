@@ -256,5 +256,11 @@ export function titleScreen() {
     { fixed: true },
   ); // real title screen (Nov 13): does not close, and the map behind it is just scenery
   d.overlay.classList.add('main-title');
+  // the lab kit's command menu (Nov 15 mockup): a Menu head and a glass orb before each row, gold where the focus starts
+  const list = d.overlay.querySelector('.camp-list')!;
+  list.classList.add('command-list');
+  list.prepend(el('div', { class: 'panel-head', 'aria-hidden': 'true' }, 'Menu'));
+  for (const b of list.querySelectorAll('button'))
+    b.prepend(el('span', { class: `orb ${b.classList.contains('primary') ? 'gold' : 'blue'}`, 'aria-hidden': 'true' }));
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
