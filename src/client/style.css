@@ -2278,19 +2278,20 @@ body:has(.result-overlay) .fps {
   display: flex;
   margin-left: auto;
 }
-/* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin */
-.dialog .gold {
+/* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin (`p.gold`: a bare
+   `.gold` also caught the result window's gold orbs and took their margin) */
+.dialog p.gold {
   display: flex;
   align-items: baseline;
   gap: 10px;
   margin: 0 0 8px;
 }
-.gold strong {
+p.gold strong {
   font-size: var(--fs-lg);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.gold strong::before {
+p.gold strong::before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -2309,10 +2310,12 @@ body:has(.result-overlay) .fps {
 /* Shop (world-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
    landed in a different column and the 9-item list ran past 900 px. Rows split by a faint line, as in the kit's list */
 .shop .keys {
-  align-items: center;
   gap: 0;
 }
+/* name and price cells stretch to the row's height, so their faint lines meet in one line */
 .shop .keys dt {
+  display: flex;
+  align-items: center;
   padding-right: 12px;
 }
 .shop .keys > * {
