@@ -7,7 +7,7 @@ import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { canStand, dist, FACING, type Grid, posKey, type Tile, tileAt, withRamps } from '../src/shared/battle/grid.ts';
 import { halve, registerHalf } from '../src/shared/battle/half.ts';
-import { cellsOf, jumpOf, reachable, restsOn } from '../src/shared/battle/pathing.ts';
+import { cellsOf, reachable, restsOn, squareMoves } from '../src/shared/battle/pathing.ts';
 import { initialState, MAPS, SCENARIOS, type Scenario } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import type { BattleState, Pos, UnitState } from '../src/shared/battle/types.ts';
@@ -294,6 +294,27 @@ describe('half tiles: walking', () => {
     expect(whole.get('3,8')?.cost).toBe(2);
     expect(half.get(posKey(cell({ x: 3, y: 8 })))?.cost).toBe(4);
   });
+
+  // Nov 15, Fernando: "the move and jump values double; 1 per half tile". Drawn in cells: a token with jump J flies up to
+  // J cells of gap, 1 movement point per cell it moves, and climbs and drops by height levels as before
+  const hops = (heights: string, jump: number) => {
+    const g: Grid = { ...gridOf([heights.replace(/./g, '.'), heights.replace(/./g, '.')], [heights, heights]), sub: 2 };
+    return squareMoves(g, { x: 0, y: 0 }, 2, jump, () => false).filter((m) => m.to.x > 1);
+  };
+
+  it('flies up to as many cells of gap as its jump', () => {
+    // a gap of 3 cells, 2 levels below both banks
+    expect(hops('22000222', 2)).toEqual([]);
+    expect(hops('22000222', 3)).toEqual([{ to: { x: 5, y: 0 }, cost: 5 }]);
+    // a single cell: jump 1 flies it (on whole tiles jump 1 flies nothing, and no whole-tile gap is 1 cell wide)
+    expect(hops('22022', 1)).toEqual([{ to: { x: 3, y: 0 }, cost: 3 }]);
+  });
+
+  it('lands level, wholly past the gap', () => {
+    // Flooded Crypt: from the ledge at 3 over the trench at 1 to the floor at 2. A 1-cell hop landed half in the trench
+    expect(hops('331122', 1)).toEqual([]);
+    expect(hops('331122', 2)).toEqual([{ to: { x: 4, y: 0 }, cost: 4 }]);
+  });
 });
 
 describe('half tiles: where a token may stop', () => {
@@ -361,9 +382,9 @@ describe('half tiles: where a token may stop', () => {
 
 describe('half tiles: the AI walking map', () => {
   // the AI's distance on foot follows the token's square, not a 1-cell walker that slips through gaps a 2x2 cannot (Nov 14
-  // review: 192 of 400 Beacon Hill tiles came out 1 or 2 tiles shorter for the hero h0). With jump 2 the token may also fly
-  // a single cell and land straddling a bank, which no whole tile can, so it is never farther and at most 1 tile (2 cells)
-  // nearer; the old 1-cell walker came out 2 tiles short for the rogue on Beacon Hill (second review)
+  // review: 192 of 400 Beacon Hill tiles came out 1 or 2 tiles shorter for the hero h0). Since Nov 15 a gap lands level,
+  // wholly past it, so the token no longer flies a single cell to land straddling a bank and every whole tile is exactly
+  // twice as far, jump 2 included (it used to come out up to 1 tile nearer)
   for (const map of MAPS) {
     it(`${map.id}: every whole tile is twice as far in cells`, () => {
       const hm = halve(map);
@@ -373,16 +394,13 @@ describe('half tiles: the AI walking map', () => {
         if (!UNIT_DEFS[u.def].move) continue;
         const w = walkMap(map.grid, ws, u);
         const h = walkMap(hm.grid, hs, hs.units.find((x) => x.id === u.id) as UnitState);
-        const flies = jumpOf(ws, u.def) >= 2;
         const diff: string[] = [];
         for (let y = 0; y < map.grid.height; y++)
           for (let x = 0; x < map.grid.width; x++) {
             const p = { x, y };
             const want = w.has(posKey(p)) ? 2 * (w.get(posKey(p)) as number) : undefined;
             const got = h.get(posKey(cell(p)));
-            const ok =
-              want === got || (flies && want !== undefined && got !== undefined && got <= want && got >= want - 2);
-            if (!ok) diff.push(`${posKey(p)} whole ${want} half ${got}`);
+            if (want !== got) diff.push(`${posKey(p)} whole ${want} half ${got}`);
           }
         expect(diff.slice(0, 5), `${u.id}`).toEqual([]);
       }

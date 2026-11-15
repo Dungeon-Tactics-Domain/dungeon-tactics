@@ -129,7 +129,7 @@ export function leaps(grid: Grid, from: Pos, jump: number): { to: Pos; over: Pos
 // most the jump (a square across a step of 2 is the middle of the jump of whoever jumps 2; it stops only on even ground,
 // restsOn); the square's height is the highest, and
 // the step follows the jump by the surface, deep water included (it enters, like the 1-tile unit). Cost: 1 per cell. The gap flies
-// over the cells between the two squares, up to [jump/2] whole tiles, like `leaps`
+// over the cells between the two squares, up to `jump` cells on the split map (`leaps` with the jump counted in cells)
 // One move of such a square from the corner `cur`, in FACING order, each step before its gaps: the corner it reaches and the
 // points it costs. `blocked` is a cell the square cannot stand on or fly over (an enemy, for `reachable`; nothing, for the
 // AI's walking map, which ignores units)
@@ -154,7 +154,9 @@ export function squareMoves(
     return hi - lo > jump ? null : hi;
   };
   const out: { to: Pos; cost: number }[] = [];
-  const flyMax = subOf(grid) * Math.floor(jump / 2);
+  // the jump counts in cells like the move (Nov 15, Fernando: "the move and jump values double; 1 per half tile"), so the
+  // gap is half of it: J cells for jump J on the split map, [J/2] tiles on a whole one. Height stays in levels
+  const flyMax = Math.floor((subOf(grid) * jump) / 2);
   const h0 = heightOf(cur) ?? tileAt(grid, cur).h;
   for (const d of FACING) {
     const n = { x: cur.x + d.x, y: cur.y + d.y };
@@ -177,7 +179,10 @@ export function squareMoves(
       const hl = heightOf(land);
       if (hl === null || hl > h0 || h0 - hl > jump || cells(land).some((c) => isDeep(tileAt(grid, c)))) continue;
       const low = Math.min(h0, hl);
-      if (strip.every((c) => standH(tileAt(grid, c)) < low)) out.push({ to: land, cost: size + g });
+      // and lands wholly past the gap, its square level (Nov 15): a 1-cell hop used to land half inside a 1-tile trench,
+      // flying half of it
+      if (strip.every((c) => standH(tileAt(grid, c)) < low) && cells(land).every((c) => tileAt(grid, c).h === hl))
+        out.push({ to: land, cost: size + g });
     }
   }
   return out;
