@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { chooseTurn, GUARD_RADIUS } from '../src/shared/battle/ai.ts';
-import { previewAbility } from '../src/shared/battle/combat.ts';
+import { pendingCounters, previewAbility } from '../src/shared/battle/combat.ts';
 import { dist } from '../src/shared/battle/grid.ts';
 import type { BattleState, Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -56,6 +56,17 @@ describe('AI and charges (Nov 15)', () => {
     state.charges = [{ unit: 'h', ability: 'aimed_shot', target: start, follow: 'e', ticks: 2 }];
     const plan = chooseTurn(grid, state, 'e');
     expect(lands(state, plan.moveTo ?? start)).toBe(false);
+  });
+
+  // the same rule for a counter owed since its last turn (Nov 15): the move it would make is priced like the rule plays it
+  it('a unit a ranged counter would kill does not walk into its line', () => {
+    const shooter = { ...start, def: 'skeleton_archer', hp: 3 }; // a counter would kill it
+    const state = stateOf([shooter, archer]);
+    const struck = (s: BattleState, to: Pos | null) =>
+      !!to && pendingCounters(grid, s, 'e', to).some((c) => c.preview.targets.some((t) => t.unit === 'e'));
+    const owed = { ...state, engaged: [{ unit: 'h', by: 'e', ranged: true, turns: 1 }] };
+    expect(struck(owed, chooseTurn(grid, state, 'e').moveTo)).toBe(true); // not owed: it walks into the line
+    expect(struck(owed, chooseTurn(grid, owed, 'e').moveTo)).toBe(false);
   });
 });
 

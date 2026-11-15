@@ -100,11 +100,18 @@ export function chargeAim(state: BattleState, c: Charge): Pos {
   return followed ? (caster ? nearestTile(followed, caster.pos) : followed.pos) : c.target;
 }
 
-// Charges the actor's turn cost for what it did (BMG 1.1)
+// Charges the actor's turn cost for what it did (BMG 1.1), and counts down the counters owed by it: they last its attack turn
+// and its next one (Nov 15); a counter whose unit is gone goes too
 export function finishTurn(state: BattleState): void {
   const actor = state.units.find((u) => u.id === state.turn.actor);
   if (actor) actor.ct = turnCt(actor.ct, state.turn.moved, !!state.turn.usedAbility);
   state.turnsPlayed++;
+  const alive = (id: string) => state.units.some((u) => u.id === id);
+  const left = (state.engaged ?? [])
+    .map((e) => (e.by === state.turn.actor ? { ...e, turns: e.turns - 1 } : e))
+    .filter((e) => e.turns > 0 && alive(e.unit) && alive(e.by));
+  if (left.length) state.engaged = left;
+  else delete state.engaged;
 }
 
 export interface QueueEntry {

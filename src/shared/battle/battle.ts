@@ -1,6 +1,6 @@
 import { ABILITIES, defaultLock } from './abilities.ts';
 import {
-  basicOf,
+  canCounter,
   checkOutcome,
   counters,
   isRanged,
@@ -24,7 +24,7 @@ import {
 import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
-import type { BattleEvent, BattleState, Charge, Lock, Pos, UnitState } from './types.ts';
+import type { BattleEvent, BattleState, Charge, Engaged, Lock, Pos, UnitState } from './types.ts';
 import { HALF, UNIT_DEFS } from './units.ts';
 
 // Undo per battle (spec: initial value 3, to be measured). It only counts within the current turn: after the turn ends the
@@ -98,7 +98,7 @@ export class Battle {
     this.remember(false);
     const from = this.actor.pos;
     const id = this.actor.id;
-    const hit = counters(this.grid, this.state, id, to);
+    const hit = counters(this.grid, this.state, id, to, false); // melee: before it leaves
     // took a counter-attack: this move cannot be undone (Nov 13, Fernando's request: "you can only not undo the move if the
     // character takes damage or falls into a trap")
     if (hit.length) this.history = [];
@@ -110,7 +110,11 @@ export class Battle {
     this.actor.pos = to;
     this.state.turn.moved = true;
     // the event carries the starting tile in front (Nov 13): without it the animation began at the 1st step and the model "teleported"
-    return [...hit, { k: 'move', unit: this.actor.id, path: [from, ...path] }];
+    const walk: BattleEvent = { k: 'move', unit: id, path: [from, ...path] };
+    const shot = counters(this.grid, this.state, id, to, true); // ranged: where it stops (Nov 15)
+    if (shot.length) this.history = [];
+    this.state.outcome = checkOutcome(this.state);
+    return [...hit, walk, ...shot];
   }
 
   // `lock`: where a charge stays aimed, picked by the player after the aim (Nov 15); without it, the ability's default
@@ -136,24 +140,17 @@ export class Battle {
       events = [{ k: 'charge', unit: this.actor.id, ability: abilityId, target }];
     } else {
       events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
-      // whoever took the hit and can retaliate the same way (melee or ranged) keeps watch: if the actor walks
-      // afterwards, it counter-attacks (counters)
-      if (!(ability.heal[1] > 0 || ability.ally)) {
-        const ranged = isRanged(abilityId);
-        for (const e of events) {
-          if (e.k !== 'hit' && e.k !== 'miss') continue;
-          const foe = this.state.units.find((u) => u.id === e.unit);
-          if (
-            !foe ||
-            foe.team === this.actor.team ||
-            !basicOf(foe.def) ||
-            UNIT_DEFS[foe.def].speed === 0 ||
-            isRanged(basicOf(foe.def)) !== ranged
-          )
-            continue; // the Beacon does not retaliate
-          if (!(this.state.turn.engaged ?? []).some((x) => x.unit === foe.id))
-            (this.state.turn.engaged ??= []).push({ unit: foe.id, ranged });
-        }
+      // whoever took the hit and can retaliate the same way keeps watch: on every move of the actor this turn and the next,
+      // it counter-attacks (counters); striking it again renews the window
+      for (const e of events) {
+        if (e.k !== 'hit' && e.k !== 'miss') continue;
+        const foe = this.state.units.find((u) => u.id === e.unit);
+        if (!foe || !canCounter(this.actor, abilityId, foe)) continue;
+        const owed = { unit: foe.id, by: this.actor.id, ranged: isRanged(abilityId), turns: 2 };
+        this.state.engaged = [
+          ...(this.state.engaged ?? []).filter((x) => x.unit !== foe.id || x.by !== this.actor.id),
+          owed,
+        ];
       }
     }
     this.state.turn.usedAbility = abilityId;
@@ -331,26 +328,35 @@ export function parseBattleState(raw: unknown): BattleState | null {
     });
   }
   if (t.spent !== undefined && (!isInt(t.spent) || t.spent < 0 || t.spent > 99)) return null;
-  const engaged: { unit: string; ranged: boolean }[] = [];
-  if (t.engaged !== undefined) {
-    if (!Array.isArray(t.engaged) || t.engaged.length > MAX_UNITS) return null;
-    for (const e of t.engaged) {
+  // counters owed: a save from before Nov 15 kept them in the turn, owed by its actor for that turn only
+  const engaged: Engaged[] = [];
+  const owed = (list: unknown, old: boolean) => {
+    if (list === undefined) return true;
+    if (!Array.isArray(list) || list.length > MAX_UNITS * MAX_UNITS) return false;
+    for (const e of list) {
+      const by = old ? actor.id : isObj(e) && e.by;
+      const turns = old ? 1 : isObj(e) && e.turns;
       if (
         !isObj(e) ||
         typeof e.unit !== 'string' ||
+        typeof by !== 'string' ||
+        e.unit === by ||
         typeof e.ranged !== 'boolean' ||
-        !units.some((u) => u.id === e.unit)
+        (turns !== 1 && turns !== 2) ||
+        !units.some((u) => u.id === e.unit) ||
+        !units.some((u) => u.id === by)
       )
-        return null;
-      engaged.push({ unit: e.unit, ranged: e.ranged });
+        return false;
+      engaged.push({ unit: e.unit, by, ranged: e.ranged, turns });
     }
-  }
+    return true;
+  };
+  if (!owed(t.engaged, true) || !owed(raw.engaged, false)) return null;
   const turn = {
     actor: actor.id,
     moved: t.moved,
     usedAbility,
     ...(t.spent !== undefined && { spent: t.spent as number }),
-    ...(t.engaged !== undefined && { engaged }),
   };
   return {
     scenario: raw.scenario,
@@ -358,6 +364,7 @@ export function parseBattleState(raw: unknown): BattleState | null {
     rng: raw.rng,
     turn,
     charges,
+    ...(engaged.length > 0 && { engaged }),
     outcome: raw.outcome,
     turnsPlayed: raw.turnsPlayed,
   };

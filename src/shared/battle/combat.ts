@@ -58,6 +58,7 @@ export const COMBAT = {
   // the other side both land at half
   FRIENDLY_FIRE: 0.5,
   UNDEAD_HEAL: 0.5, // a heal on the undead hurts by this share of the amount instead (Nov 15, Fernando)
+  COUNTER: 0.5, // the counter-attack's share of the basic attack (Nov 13, Fernando's choice)
 };
 
 export interface TargetPreview {
@@ -193,26 +194,57 @@ export function previewAbility(
 export const basicOf = (def: string) => UNIT_DEFS[def].abilities[0];
 export const isRanged = (abilityId: string) => ABILITIES[abilityId].range[1] > 1;
 
-// Counter-attack (Nov 13, Fernando's request; half damage, his choice): whoever was attacked this turn retaliates when the
-// attacker walks, with the basic attack and half the damage, before it leaves the tile. Melee only retaliates if it moves
-// away (ends more than 1 tile away); ranged retaliates at any step. Each attacked unit retaliates once per turn
-export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos): BattleEvent[] {
-  const events: BattleEvent[] = [];
-  const left: { unit: string; ranged: boolean }[] = [];
-  for (const e of state.turn.engaged ?? []) {
-    const actor = state.units.find((u) => u.id === actorId);
-    const foe = state.units.find((u) => u.id === e.unit);
-    if (!actor || !foe) continue;
-    if (!e.ranged && gap(footprint(foe), cellsOf(to, UNIT_DEFS[actor.def].size ?? 1)) <= 1) {
-      left.push(e);
-      continue;
-    } // stayed adjacent: it can still retaliate if it leaves later
-    const basic = basicOf(foe.def);
+// Who gains a counter when `actor` strikes `u` with `abilityId` (Nov 13): a unit of the other side that can strike back the
+// same way (melee against melee, ranged against ranged); not the Beacon, and not from a heal or a support ability
+export function canCounter(actor: UnitState, abilityId: string, u: UnitState): boolean {
+  const a = ABILITIES[abilityId];
+  const basic = basicOf(u.def);
+  return (
+    !(a.heal[1] > 0 || a.ally) &&
+    u.team !== actor.team &&
+    !!basic &&
+    UNIT_DEFS[u.def].speed > 0 &&
+    isRanged(basic) === isRanged(abilityId)
+  );
+}
+
+export interface PendingCounter {
+  unit: string; // who strikes back
+  ranged: boolean;
+  at: Pos; // where it aims: the tile the attacker leaves (melee) or stops on (ranged)
+  preview: Preview; // the shot as it would land, from the counter's own rule (shot path, friendly fire)
+}
+
+// Counter-attack (Nov 13, Fernando's request; half damage, his choice; Nov 15, Fernando: also when the attacker moves on its
+// next turn): each unit owed a counter by `actorId` (BattleState.engaged) strikes back once per move order, with its basic
+// attack at half. Melee only when the attacker ends the move out of its reach, hit before it leaves; ranged at the tile the
+// attacker stops on (Nov 15: before, the tile it left), so cover or a unit in the way catches the shot. Read by the rule, the
+// AI and the move preview alike
+export function pendingCounters(grid: Grid, state: BattleState, actorId: string, to: Pos): PendingCounter[] {
+  const actor = state.units.find((u) => u.id === actorId);
+  if (!actor) return [];
+  const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: to } : u)) };
+  const out: PendingCounter[] = [];
+  for (const e of state.engaged ?? []) {
+    const foe = e.by === actorId ? state.units.find((u) => u.id === e.unit) : undefined;
+    if (!foe) continue;
+    if (!e.ranged && gap(footprint(foe), cellsOf(to, UNIT_DEFS[actor.def].size ?? 1)) <= 1) continue; // stays in reach
+    const at = e.ranged ? to : actor.pos;
     // charged: the counter-attack pays no MP or stock
-    if (previewAbility(grid, state, foe.id, basic, actor.pos, true).ok)
-      events.push(...resolveAbility(grid, state, foe.id, basic, actor.pos, true, 0.5));
+    const preview = previewAbility(grid, e.ranged ? moved : state, foe.id, basicOf(foe.def), at, true);
+    if (preview.ok) out.push({ unit: foe.id, ranged: e.ranged, at, preview });
   }
-  state.turn.engaged = left;
+  return out;
+}
+
+// Plays the melee counters before the attacker leaves (`ranged` false) or the ranged ones once it stands on `to` (true)
+export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos, ranged: boolean): BattleEvent[] {
+  const events: BattleEvent[] = [];
+  for (const c of pendingCounters(grid, state, actorId, to)) {
+    if (c.ranged !== ranged || !state.units.some((u) => u.id === actorId)) continue;
+    const foe = state.units.find((u) => u.id === c.unit)!;
+    events.push(...resolveAbility(grid, state, c.unit, basicOf(foe.def), c.at, true, COMBAT.COUNTER));
+  }
   return events;
 }
 

@@ -215,7 +215,7 @@ describe('counterattack', () => {
     s.rng = HIT_SEED;
     const b = new Battle(g, s);
     b.act('strike', at(2, 1));
-    expect(b.state.turn.engaged).toEqual([{ unit: 'b', ranged: false }]);
+    expect(b.state.engaged).toEqual([{ unit: 'b', by: 'a', ranged: false, turns: 2 }]);
     const hp = b.state.units[0].hp;
     expect(b.move(at(2, 2)).some((e) => e.k === 'attack' && e.unit === 'b')).toBe(false); // still adjacent: no counter
     const ev = b.move(at(3, 2));
@@ -234,7 +234,7 @@ describe('counterattack', () => {
     s.turn = { actor: 'a', moved: false, usedAbility: null };
     const b = new Battle(g, s);
     b.act(UNIT_DEFS.archer.abilities[0], at(3, 1));
-    expect(b.state.turn.engaged).toEqual([{ unit: 'b', ranged: true }]);
+    expect(b.state.engaged).toEqual([{ unit: 'b', by: 'a', ranged: true, turns: 2 }]);
     expect(b.move(at(0, 0)).some((e) => e.k === 'attack' && e.unit === 'b')).toBe(true);
   });
 });
