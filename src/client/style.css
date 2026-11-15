@@ -345,9 +345,6 @@ button[hidden],
   border-color: transparent;
   box-shadow: none;
 }
-.dialog .dialog-head button.icon {
-  font-size: var(--fs-lg);
-}
 .dialog .dialog-head button.icon:hover {
   background: var(--row-hi);
 }

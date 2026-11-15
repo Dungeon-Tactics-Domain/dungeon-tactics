@@ -67,6 +67,10 @@ const gainList = (rows: Gain[]) =>
       ]
     : [];
 
+// victory or defeat on the window itself: the overlay keeps the plain `result-overlay` class, which hides the battle HUD
+const outcome = (overlay: HTMLElement, won: boolean) =>
+  overlay.querySelector('.dialog')!.classList.add(won ? 'won' : 'lost');
+
 export interface BattleEnd {
   won: boolean;
   survival: boolean; // Until Dawn: turns held and the record instead of the Beacon line
@@ -78,7 +82,7 @@ export interface BattleEnd {
 }
 
 export function battleEndScreen({ won, survival, lasted, best, mvp, mission, restart }: BattleEnd) {
-  const d = dialog(`result ${won ? 'won' : 'lost'}`, won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
+  const d = dialog('result', won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'), [
     ...mvp,
     ...gainList([
       ...(survival
@@ -135,6 +139,7 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, mission, res
       }),
     ),
   ]);
+  outcome(d.overlay, won);
   // Enter plays again (focus went to the X, and closing left the finished battle with no key to restart)
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
@@ -150,7 +155,7 @@ export interface StageEnd {
 export function stageEndScreen({ n, won, mvp, heroesFell, restart }: StageEnd) {
   const last = n === CHAPTERS.length - 1;
   const d = dialog(
-    `result ${won ? 'won' : 'lost'}`,
+    'result',
     won
       ? last
         ? t('Fim da campanha!', 'Campaign complete!')
@@ -202,5 +207,6 @@ export function stageEndScreen({ n, won, mvp, heroesFell, restart }: StageEnd) {
       ),
     ],
   );
+  outcome(d.overlay, won);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
