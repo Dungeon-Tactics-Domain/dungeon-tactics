@@ -16,7 +16,7 @@ export interface UnitDef {
   info?: Record<string, string | number>; // extra sheet for the status window (weapon, Brave, Faith…); only the study scenario has it
   vars?: Record<string, number>; // counters the unit is born with (see UnitState.vars); only the study scenario uses it
   model?: string; // model in public/models; only the study scenario sets it, the game units are in the scene map
-  boss?: true; // stage boss (campaign): only the crown in the drawing; the victory rule comes from the scenario
+  boss?: true; // crowned boss: only the crown in the drawing; the victory rule comes from the scenario
   tint?: string; // the model's own glow color, drawing only: a unit that shares the model with another (the Acolyte uses the mage)
   size?: number;
   power?: number; // extra damage on every ability that hurts (equipment, equipment.ts); without it, 0

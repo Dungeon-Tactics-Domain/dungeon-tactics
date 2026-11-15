@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { CHAPTERS, chapterScenario } from '../src/client/campaign.ts';
 import { DEV_KEY, DEV_SCENARIO, defaultSetup } from '../src/client/dev-roster.ts';
 import { selectBattle } from '../src/client/game/boot.ts';
 import { confirm, freshUi, selectMode, tapTile } from '../src/client/interaction.ts';
@@ -574,7 +573,7 @@ describe('half tiles: the test map', () => {
 describe('half tiles: saves', () => {
   it('a split battle save does not load with whole-tile sheets', () => {
     // an edited save (Nov 14 review): 1-cell units on the split map measured range from a single cell
-    const b = Battle.start(halve(chapterScenario(0)), 1);
+    const b = Battle.start(halve(SCENARIOS.ash_wood), 1);
     expect(Battle.load(b.save())).not.toBeNull();
     const raw = JSON.parse(b.save());
     raw.state.units = raw.state.units.map((u: UnitState) => ({ ...u, def: baseDef(u.def) }));
@@ -610,17 +609,14 @@ describe('half tiles: whole battles', () => {
     }
   }, 30000);
 
-  it('every campaign stage plays to the end on half tiles', () => {
-    for (let n = 0; n < CHAPTERS.length; n++) {
-      const r = simulate(halve(chapterScenario(n)), 3);
-      expect(r.outcome, `stage ${n}`).not.toBe('timeout');
-    }
+  it('every game map plays to the end on half tiles', () => {
+    for (const m of MAPS) expect(simulate(halve(m), 3).outcome, m.id).not.toBe('timeout');
   }, 60000);
 });
 
-describe('half tiles: a turn through the interface (stage 0 is what Fernando plays)', () => {
+describe('half tiles: a turn through the interface (on Ash Wood)', () => {
   it('moves the token to a cell between tiles and undoes the move for free', () => {
-    const b = Battle.start(halve(chapterScenario(0)), 7);
+    const b = Battle.start(halve(SCENARIOS.ash_wood), 7);
     while (b.actor.team !== 'hero') playAiTurn(b);
     const from = { ...b.actor.pos };
     const odd = [...b.reach().values()].find((s) => s.pos.x % 2 === 1)!.pos;
@@ -657,8 +653,8 @@ describe('half tiles: a turn through the interface (stage 0 is what Fernando pla
     expect(foe().hp).toBe(hp);
   });
 
-  it('the AI plays its turns on the split stage, walking cell by cell, and the save loads back', () => {
-    const b = Battle.start(halve(chapterScenario(0)), 11);
+  it('the AI plays its turns on the split map, walking cell by cell, and the save loads back', () => {
+    const b = Battle.start(halve(SCENARIOS.ash_wood), 11);
     for (let turn = 0; turn < 6; turn++) {
       for (const e of playAiTurn(b))
         if (e.k === 'move')

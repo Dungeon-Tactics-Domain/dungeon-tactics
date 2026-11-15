@@ -529,7 +529,7 @@ export function portrait(def: string) {
     : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
 }
 
-// the class line, only for those with their own name (campaign, developer menu): "Rogue" under "Aria"
+// the class line, only for those with their own name (the party, developer menu): "Rogue" under "Lia"
 function classText(u: UnitState) {
   const base = classOf(u.def);
   return base && unitName(base) !== unitName(u.def) ? unitName(base) : null;

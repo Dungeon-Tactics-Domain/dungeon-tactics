@@ -158,7 +158,7 @@ const lastStanding: Rules = {
 const BASE: Record<string, string> = {};
 export const classOf = (def: string): string | undefined => BASE[baseDef(def)]; // the half-tile token too (half.ts)
 
-// The campaign (campaign.ts) uses the same path with its own id and name per stage.
+// The expedition rooms (game/crawl.ts castRoom) use the same path with their own id and name.
 export function buildDevScenario(
   setup: DevSetup,
   scenarioId = DEV_SCENARIO,
@@ -173,7 +173,7 @@ export function buildDevScenario(
       // unchanged name = the class's in both languages; own name (Bran, Vesper) is the same in both; en only if it comes in the cast
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
       BASE[id] = u.base;
-      // size comes from the class (the campaign's Colossus occupies 2x2 like the original)
+      // size comes from the class (the Colossus occupies 2x2 like the original)
       const b = bonusOf(u.items); // equipment: sum of general stats (equipment.ts), 0 without an item
       UNIT_DEFS[id] = {
         ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),

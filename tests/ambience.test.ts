@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { Ambience, kindOf, LIMIT, MOODS } from '../src/client/ambience.ts';
-import { chapterScenario } from '../src/client/campaign.ts';
+import { buildDevScenario, unitFrom } from '../src/client/dev-roster.ts';
 import { extH } from '../src/client/terrain.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
@@ -10,11 +10,13 @@ const out = (x: number, z: number, w: number, h: number) =>
   Math.hypot(Math.max(Math.abs(x) - w / 2, 0), Math.max(Math.abs(z) - h / 2, 0));
 
 describe('board surroundings', () => {
-  it('weather comes from the map, also in campaign stages (which reuse the base map grid)', () => {
+  it('weather comes from the map, also in developer battles (which reuse the base map grid)', () => {
     expect(kindOf(SCENARIOS.ash_wood.grid)).toBe('forest');
     expect(kindOf(SCENARIOS.flooded_crypt.grid)).toBe('crypt');
-    expect(kindOf(chapterScenario(5).grid)).toBe('frost');
-    expect(kindOf(chapterScenario(1).grid)).toBe('field');
+    const cast = (map: string) =>
+      buildDevScenario({ map, heroes: [unitFrom('warrior')], enemies: [unitFrom('brute')] });
+    expect(kindOf(cast('frost_pass').grid)).toBe('frost');
+    expect(kindOf(cast('beacon_hill').grid)).toBe('field');
   });
 
   // the rule that keeps the surroundings from hiding tiles and units at any camera angle: nothing above LIMIT(d)

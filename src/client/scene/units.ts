@@ -205,7 +205,7 @@ export class Units {
     barBg.renderOrder = bar.renderOrder = 10;
     ground.add(ring);
     holder.add(ground, barHolder);
-    // stage boss: golden crown above the bar, so the "take down the boss" objective shows on the map
+    // boss: golden crown above the bar, so the "take down the boss" objective shows on the map
     if (UNIT_DEFS[u.def].boss) {
       const crown = new THREE.Mesh(
         new THREE.ConeGeometry(0.14, 0.2, 5),

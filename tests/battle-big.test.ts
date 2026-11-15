@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAPTERS, chapterScenario } from '../src/client/campaign.ts';
+import { buildDevScenario, unitFrom } from '../src/client/dev-roster.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { simulatePush } from '../src/shared/battle/combat.ts';
 import { footprint, reachable, unitAt } from '../src/shared/battle/pathing.ts';
@@ -73,13 +73,16 @@ describe('big unit (2x2)', () => {
     });
   });
 
-  it('in stage 7 the boss is the Colossus, with the 4 tiles free on the summit', () => {
-    const n = CHAPTERS.length - 1;
-    const s = chapterScenario(n);
-    const boss = s.spawns.find((sp) => sp.id === 'e0')!;
+  it('on Frost Pass the Colossus takes the 1st enemy tile, with the 4 tiles free on the summit', () => {
+    const s = buildDevScenario({
+      map: 'frost_pass',
+      heroes: ['warrior', 'archer', 'mage', 'rogue'].map((c) => unitFrom(c)),
+      enemies: [unitFrom('colossus'), unitFrom('minion')],
+    });
+    const boss = s.spawns.find((sp) => sp.team === 'enemy')!;
     expect(UNIT_DEFS[boss.def].size).toBe(2);
     const st = Battle.start(s, 1).state;
-    const big = st.units.find((u) => u.id === 'e0')!;
-    for (const p of footprint(big)) expect(unitAt(st, p)?.id).toBe('e0');
+    const big = st.units.find((u) => u.id === boss.id)!;
+    for (const p of footprint(big)) expect(unitAt(st, p)?.id).toBe(boss.id);
   });
 });

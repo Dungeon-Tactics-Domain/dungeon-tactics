@@ -78,7 +78,7 @@ export const CRYPT_HEART: Scenario = {
     { id: 'h-archer', def: 'archer', team: 'hero', x: 6, y: 12 },
     { id: 'h-mage', def: 'mage', team: 'hero', x: 6, y: 13 },
     { id: 'h-rogue', def: 'rogue', team: 'hero', x: 7, y: 11 },
-    { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 6, y: 0 }, // 1st enemy tile: the stage boss (campaign.ts), at the back
+    { id: 'e-mage', def: 'dark_mage', team: 'enemy', x: 6, y: 0 }, // 1st enemy tile, at the back
     { id: 'e-soldier', def: 'soldier', team: 'enemy', x: 3, y: 2 }, // the others guard the two bridges
     { id: 'e-archer', def: 'skeleton_archer', team: 'enemy', x: 5, y: 1 },
     // 2nd archer in place of the Brute (Nov 13, standalone Battle only; the campaign puts its own cast on these tiles): with the gap the

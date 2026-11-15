@@ -30,7 +30,7 @@ export interface Scenario {
 // The maps live in src/content/maps, one file each; Beacon Hill is the 1st battle and the standalone default
 export const FIRST_BATTLE = BEACON_HILL;
 
-// the game maps as written; SCENARIOS also receives the casts built at runtime (campaign, quests, developer menu)
+// the game maps as written; SCENARIOS also receives the casts built at runtime (crawl and expedition rooms, developer menu)
 export const MAPS: Scenario[] = [SKIRMISH, FIRST_BATTLE, FLOODED_CRYPT, CRYPT_HEART, ASH_WOOD, FROST_PASS];
 export const SCENARIOS: Record<string, Scenario> = Object.fromEntries(MAPS.map((s) => [s.id, s]));
 

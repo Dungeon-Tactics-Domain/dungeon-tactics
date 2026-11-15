@@ -1,16 +1,14 @@
 // Player party (Nov 13, Fernando's request: "recruitment and class change", like the FFT formation; design in
-// docs/game-design/towns-party-equipment.md, delivery 5). Pure and tested; the screens live in world-ui.ts.
-// The 4 from the story never leave; recruits are hired at the Bar with gold and can be dismissed. Anyone can change class
-// among the unlocked ones (JOBS), and up to 4 go to battle (the maps' starting tiles). The default party assembles exactly the
-// measured cast of each stage, so the campaign curve doesn't change for whoever doesn't touch the party. The story members and
-// the recruit names are data in src/content/party.ts.
+// docs/game-design/towns-party-equipment.md, delivery 5). Pure and tested; the screens live in town-ui.ts.
+// The 4 from the story never leave; recruits are hired at the Tavern with gold and can be dismissed. Anyone can change class
+// among JOBS, and up to 4 go to battle (the maps' starting tiles). The story members and the recruit names are data in
+// src/content/party.ts.
 import { RECRUIT_NAMES, STORY } from '../content/party.ts';
 import type { Chest, Equip } from './chest.ts';
 import { type DevUnit, unitFrom } from './dev-roster.ts';
-import { HERO_CLASSES, type Hero, NAME_MAX } from './hero.ts';
 
-// party classes: the protagonist's 4 and the new ones, which only join via recruitment and class change (design, section 4)
-export const JOBS = [...HERO_CLASSES, 'lancer'] as const;
+// party classes: the 4 starting ones and the new ones, which only join via recruitment and class change (design, section 4)
+export const JOBS = ['warrior', 'archer', 'mage', 'rogue', 'lancer'] as const;
 export type Job = (typeof JOBS)[number];
 
 export interface Member {
@@ -26,7 +24,8 @@ export interface Group {
 export const GROUP_KEY = 'dt:party';
 export const GROUP_MAX = 8; // design cap (section 3)
 export const DEPLOY_MAX = 4; // the maps have 4 hero starting tiles
-export const RECRUIT_COST = 200; // initial number: a victory gives 150, the 1st act shop costs 100 to 240
+export const RECRUIT_COST = 200; // initial number: the shop's items cost 100 to 240
+const NAME_MAX = 16; // a recruit's name in the saved party
 
 export const defaultGroup = (): Group => ({ members: STORY.map((m) => ({ ...m })), deployed: STORY.map((m) => m.id) });
 
@@ -110,23 +109,9 @@ export function toggleDeploy(g: Group, id: string): Group | null {
     : null;
 }
 
-// Abilities unlocked at stage n: 2 in the 1st, 3 in the 2nd, all 4 from the 3rd on (the 1st stage teaches a little at a time and Odo's
-// Heal arrives mid-campaign). Applies to each one's current class
-export const learnedCount = (n: number) => Math.min(4, 2 + n);
-
-// who goes to the battle of stage n, with the unlocked abilities, the equipment and the protagonist (hero.ts) in place of the
-// story companion who has his starting class (the companion stays in the conversations)
-export function heroesFor(g: Group, n: number, hero: Hero | null = null, eq: Equip = {}): DevUnit[] {
+// who goes to battle, in the deployment order, each with the whole kit of their class and their equipment
+export function heroesFor(g: Group, eq: Equip = {}): DevUnit[] {
   return g.deployed
     .map((id) => g.members.find((m) => m.id === id)!)
-    .map((m) => {
-      const name = hero && m.id === hero.cls ? hero.name : m.name;
-      const u = unitFrom(m.cls, name);
-      return {
-        ...u,
-        ...(hero && m.id === hero.cls ? { en: hero.name } : {}),
-        abilities: u.abilities.slice(0, learnedCount(n)),
-        items: eq[m.id],
-      };
-    });
+    .map((m) => ({ ...unitFrom(m.cls, m.name), items: eq[m.id] }));
 }

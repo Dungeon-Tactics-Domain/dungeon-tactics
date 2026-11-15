@@ -64,7 +64,7 @@ export const UNIT_LIST: UnitDef[] = [
   },
   { id: 'brute', name: 'Bruto', en: 'Brute', hp: 82, speed: 5, move: 3, abilities: ['cleave', 'slam'] },
   // Minion (Nov 12, campaign): little life and lots of speed, comes in a swarm and falls in one hit; initial numbers, measured in the
-  // difficulty of the campaign stages (tests/campaign.test.ts)
+  // difficulty of the campaign stages (Nov 12)
   {
     id: 'minion',
     name: 'Lacaio esqueleto',

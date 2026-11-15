@@ -18,7 +18,7 @@ const RENAMED: [old: string, now: string][] = [
   ['dt:pixel2', 'dt:pixel'],
 ];
 // Nov 14: quest ids that were Portuguese (also in old ?quest= links)
-export const RENAMED_QUESTS: Record<string, string> = {
+const RENAMED_QUESTS: Record<string, string> = {
   'ratos-da-estrada': 'road-rats',
   'cripta-rasa': 'shallow-crypt',
   'lobos-do-passo': 'pass-wolves',
@@ -94,13 +94,9 @@ export const store = {
 };
 
 // URL parameters were Portuguese until Nov 14 (?cenario, ?campanha, ?mundo…): links shared before that still open, through
-// the old name. Presence-only flags (?world) come back as '' (test with `!== null`).
+// the old name. Presence-only flags (?home) come back as '' (test with `!== null`).
 const OLD_PARAM: Record<string, string> = {
   scenario: 'cenario',
-  stage: 'campanha',
-  quest: 'missao',
-  world: 'mundo',
-  from: 'de',
   music: 'musica',
   units: 'bonecos',
   extension: 'extensao',

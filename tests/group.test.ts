@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { CHAPTERS } from '../src/client/campaign.ts';
 import {
   changeClass,
   DEPLOY_MAX,
@@ -18,10 +17,11 @@ import { flat, stateOf } from './battle-helpers.ts';
 
 // Recruitment and class change (Nov 13, delivery 5 of the FFT-style group design)
 describe('party', () => {
-  it("the default group builds exactly the measured roster of each stage (the campaign curve doesn't change)", () => {
-    CHAPTERS.forEach((c, n) =>
-      expect(heroesFor(defaultGroup(), n)).toEqual(c.setup.heroes.map((u) => ({ ...u, items: undefined }))),
-    );
+  it('the default group sends the 4 story members with the whole kit of their class and their equipment', () => {
+    const heroes = heroesFor(defaultGroup(), { warrior: { weapon: 'w1' } });
+    expect(heroes.map((u) => `${u.name}:${u.base}`)).toEqual(['Bran:warrior', 'Tess:archer', 'Odo:mage', 'Lia:rogue']);
+    for (const u of heroes) expect(u.abilities).toEqual(UNIT_DEFS[u.base].abilities);
+    expect(heroes.map((u) => u.items)).toEqual([{ weapon: 'w1' }, undefined, undefined, undefined]);
   });
 
   it('recruiting costs gold, joins the deployment if there is room and respects the cap', () => {
@@ -38,12 +38,12 @@ describe('party', () => {
 
   it('changing class changes the numbers and abilities in battle', () => {
     const g = changeClass(defaultGroup(), 'warrior', 'mage');
-    const bran = heroesFor(g, 6)[0];
+    const bran = heroesFor(g)[0];
     expect(bran).toMatchObject({
       name: 'Bran',
       base: 'mage',
       hp: UNIT_DEFS.mage.hp,
-      abilities: UNIT_DEFS.mage.abilities.slice(0, 4),
+      abilities: UNIT_DEFS.mage.abilities,
     });
   });
 
@@ -51,7 +51,7 @@ describe('party', () => {
     const r = recruit(defaultGroup(), { gold: 500, items: [] }, 'rogue')!.group;
     expect(toggleDeploy(r, 'r1')).toBeNull(); // already 4
     const swapped = toggleDeploy(toggleDeploy(r, 'archer')!, 'r1')!;
-    expect(heroesFor(swapped, 0).map((u) => u.name)).toEqual(['Bran', 'Odo', 'Lia', 'Ivo']);
+    expect(heroesFor(swapped).map((u) => u.name)).toEqual(['Bran', 'Odo', 'Lia', 'Ivo']);
     let one = defaultGroup();
     for (const id of ['warrior', 'archer', 'mage']) one = toggleDeploy(one, id)!;
     expect(toggleDeploy(one, 'rogue')).toBeNull();
@@ -90,7 +90,7 @@ describe('party', () => {
   it('Lancer (new class): joins by recruitment, jumps 3 and the spear reaches 2 tiles', () => {
     const r = recruit(defaultGroup(), { gold: 500, items: [] }, 'lancer')!;
     const g = toggleDeploy(toggleDeploy(r.group, 'archer')!, 'r1')!;
-    const lancer = heroesFor(g, 6).at(-1)!;
+    const lancer = heroesFor(g).at(-1)!;
     expect(lancer).toMatchObject({ base: 'lancer', jump: 3, abilities: ['lance', 'sweep', 'lance_jump'] });
     expect(parseGroup(JSON.parse(JSON.stringify(g))).members.at(-1)?.cls).toBe('lancer');
     const s = stateOf([

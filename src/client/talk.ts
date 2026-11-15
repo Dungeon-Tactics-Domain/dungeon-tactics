@@ -1,11 +1,9 @@
-// Campaign speech box: portrait, name and the text appearing letter by letter with the speaker's beep. Click, Enter,
+// Speech box: portrait, name and the text appearing letter by letter with the speaker's beep. Click, Enter,
 // Space or A complete the sentence and, once complete, move to the next; Esc skips the whole conversation. It's a button inside an
 // .overlay, so keyboard, mouse and gamepad (main.ts presses the focused button) arrive through the same click.
 
 import faces from '../content/faces.json';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { type Line, SPEAKERS } from './campaign.ts';
-import type { Hero } from './hero.ts';
 import { portrait } from './hud.ts';
 import { LANG, t } from './i18n.ts';
 import { el } from './icons.ts';
@@ -68,21 +66,30 @@ export function faceSheet(def: string, f: Face, cls = '') {
   return { node: first, show: (n: number) => (strip.style.translate = `${(-n * 100) / f.frames}% 0`) };
 }
 
+// who speaks: name (the same in both languages unless `en` says otherwise; empty for the narrator, with no portrait),
+// the figure whose face shows, and the speech beep's pitch in Hz, a different one per voice
+interface Speaker {
+  name: string;
+  en?: string;
+  def: string;
+  pitch: number;
+}
+export interface Line {
+  who: Speaker;
+  pt: string;
+  en: string;
+}
+
 export interface TalkOptions {
-  title?: string; // strip above the box (stage or place name)
-  hero?: Hero | null; // the protagonist: name and portrait of the 'hero' lines (without a hero, "You" with the Warrior)
+  title?: string; // strip above the box (place name)
   dark?: true; // nearly black screen behind (story opening)
 }
 
-export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Promise<void> {
+export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<void> {
   // reduced motion: the face stays still, like the portrait hop
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const speaker = (l: Line) => {
-    const base = SPEAKERS[l.who];
-    return l.who === 'hero' && hero ? { ...base, name: hero.name, en: hero.name, def: hero.cls } : base;
-  };
   // every sheet of the conversation starts loading with it, so later lines find theirs decoded
-  for (const sheet of new Set(lines.map((l) => faceOf(speaker(l).def)?.sheet)))
+  for (const sheet of new Set(lines.map((l) => faceOf(l.who.def)?.sheet)))
     if (sheet) new Image().src = `/chars/${sheet}`;
   return new Promise((done) => {
     let i = 0,
@@ -122,7 +129,7 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
       done();
     };
     const show = () => {
-      const who = speaker(lines[i]);
+      const who = lines[i].who;
       // speaker changed: the portrait does a little hop (restarts the CSS animation)
       if (i === 0 || lines[i - 1].who !== lines[i].who) {
         face.classList.remove('pop');
@@ -135,7 +142,7 @@ export function talk(lines: Line[], { title, hero, dark }: TalkOptions = {}): Pr
       const talking = still ? [] : (sheet?.mouthFrames ?? []);
       mouth = drawn?.show;
       const start = performance.now();
-      name.textContent = LANG === 'en' && 'en' in who ? who.en : who.name; // proper names are the same in both languages
+      name.textContent = LANG === 'en' && who.en ? who.en : who.name; // proper names are the same in both languages
       name.hidden = face.hidden = !who.name; // narrator: no portrait or name
       shown = 0;
       text.textContent = '';

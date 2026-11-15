@@ -1,6 +1,6 @@
 // "Until dawn" mode (night of Nov 12, request for new modes): in the standalone Battle, the 4 heroes hold out in the Ash
 // Ash Wood against enemies stronger than they are until the queue reaches SURVIVE_TURNS turns (of everyone, as the turn list
-// counts). Downing everyone also wins. Kept outside the campaign: a new stage in the middle would change the saves and the map order.
+// counts). Downing everyone also wins.
 import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
 import { HALF } from '../shared/battle/units.ts';

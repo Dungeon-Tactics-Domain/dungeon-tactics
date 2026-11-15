@@ -175,8 +175,8 @@ function howToPlay() {
           'li',
           {},
           t(
-            'Proteja o Farol (o cristal azul) quando houver um. Inimigo de coroa é o chefe: derrubá-lo vence a fase.',
-            'Protect the Beacon (the blue crystal) when there is one. A crowned enemy is the boss: bringing it down wins the stage.',
+            'Proteja o Farol (o cristal azul) quando houver um. Inimigo de coroa é o chefe: derrubá-lo vence a batalha.',
+            'Protect the Beacon (the blue crystal) when there is one. A crowned enemy is the boss: bringing it down wins the battle.',
           ),
         ),
       ),

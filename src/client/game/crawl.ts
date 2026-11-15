@@ -28,7 +28,6 @@ import { titleScreen } from './title.ts';
 
 export const CRAWL_KEY = 'dt:crawl';
 export const ROOM_KEY = 'dt:battle:expedition'; // the room in play, saved from its first frame (main.ts boot)
-const KIT = 2; // learnedCount(2): the whole kit, the crawl unlocks no abilities yet
 
 // the expedition room in play: who stands on each hero spawn (h0, h1…) and the life they enter with
 export interface CrawlRoom {
@@ -39,11 +38,10 @@ export interface CrawlRoom {
 export const savedExpedition = () => parseExpedition(store.json(CRAWL_KEY));
 const group = () => parseGroup(store.json(GROUP_KEY));
 // who goes, as the town's party has them (class, name, equipment); `ids` keeps the order of the sheets
-const crawlers = (ids: string[]) =>
-  heroesFor({ ...group(), deployed: ids }, KIT, null, parseEquip(store.json(EQUIP_KEY)));
+const crawlers = (ids: string[]) => heroesFor({ ...group(), deployed: ids }, parseEquip(store.json(EQUIP_KEY)));
 
-// The generated room with the expedition party on its hero spawns and the enemies as sheets of their own: the campaign's
-// path (dev-roster.ts), under the room's id so the mood still reads its theme. A member no longer in the group stays out
+// The generated room with the expedition party on its hero spawns and the enemies as sheets of their own: the developer
+// menu's path (dev-roster.ts), under the room's id so the mood still reads its theme. A member no longer in the group stays out
 export function castRoom(room: Scenario, exp: Expedition, node: number): { scenario: Scenario; room: CrawlRoom } {
   const ids = exp.party.map((h) => h.id).filter((id) => group().members.some((m) => m.id === id));
   const enemies = slotsOf(room.id).enemy.map((s) => unitFrom(s.def));

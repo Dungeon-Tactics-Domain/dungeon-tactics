@@ -61,7 +61,7 @@ let settings = parseSound(store.json(SOUND_KEY));
 let ctx: AudioContext | null = null;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 
-// Music from a file (music.ts), one track per moment (title, map, stages; without a stage the standalone battle plays). Switching
+// Music from a file (music.ts), one track per moment (title, town, expedition map; in battle, the battle track). Switching
 // track does a 0.5 s fade: the old one fades while the new one rises. Volume = options bar × 0.6 (the music stays below
 // the effects) × track gain.
 let track: SongId | null = null;
@@ -173,7 +173,7 @@ export function jingle(win: boolean) {
   });
 }
 
-// Speech beep (campaign): a short square-wave note per spoken letter, at the speaker's pitch, varying a little
+// Speech beep (dialogue box, talk.ts): a short square-wave note per spoken letter, at the speaker's pitch, varying a little
 // so it doesn't sound like an alarm. Synthesized, no file.
 export function blip(pitch: number) {
   if (!ctx || !settings.sfx) return;

@@ -18,10 +18,10 @@ src/shared/battle/  battle rules, no DOM or Three.js
   half.ts           half tiles: every battle the client opens is split on load (halve), the FFT study included, plus the ?scenario=half test map; fft/ is a reference study, not the game
 src/shared/crawl/   dungeon crawl: generate.ts (seeded room from the tables), verify.ts (checks it on the halved map) and
                     expedition.ts (floors of rooms from a seed, the life carried between rooms, the dt:crawl save)
-src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), campaign (stages and
-                    lines; frozen), world (nodes, towns, rumors), quests, party (story members, recruit names), crawl/ (room tables)
+src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), party (story members,
+                    recruit names), faces.json (dialogue face sheets), crawl/ (room tables, the town, the expedition)
 src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, town-ui.ts (party, tavern, shop),
-                    group.ts (party rules), campaign.ts (stage rules), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
+                    group.ts (party rules), talk.ts (dialogue box and faces), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
   game/             what opens around the battle: boot (URL to scenario), crawl (the town, the expedition map and its rooms),
                     title (new game, continue, quick battle, how to play, developer, credits), options, end screens
   scene/            the parts BattleScene composes: board, marks (tile marks, cursor), units, camera, space (tile to world), timeline

@@ -3,7 +3,7 @@ import { baseDef, HALF, UNIT_DEFS } from '../shared/battle/units.ts';
 // Height of the markers around each unit, in meters from the top of the tile. Pure so the test can check the
 // order (ground < unit < health bar < cursor arrow), which the scene only applies.
 export const UNIT_HEIGHT = { default: 0.85, brute: 1.05, colossus: 2 }; // the Brute is bigger so it reads from afar that it hits hard; the Colossus takes 2x2
-// by model, not by id: the campaign and developer-menu Brute has its own sheet (camp1-e0...) and came out small
+// by model, not by id: the developer-menu Brute has its own sheet (dev-e0...) and came out small
 // half tile (half.ts): the ½ sheet is twice the size of the original, because each tile became 2x2
 export const unitHeight = (def: string): number =>
   def.endsWith(HALF)

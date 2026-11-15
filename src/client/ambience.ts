@@ -169,8 +169,8 @@ export const MOODS: Record<Kind, Mood> = {
     motes: { n: 900, color: ['#dfe8ff', '#ffffff'], size: 0.065, fall: 0.0011, add: false, top: 9 },
   },
 };
-// the map comes from the grid: campaign stage, developer room and Until Dawn reuse the base map's Grid, and
-// the base maps are the first of SCENARIOS (what is found is the map id, not the stage's)
+// the map comes from the grid: the developer battle and Until Dawn reuse the base map's Grid, and the base maps are the
+// first of SCENARIOS (what is found is the map id, not the cast's)
 const KIND: Record<string, Kind> = {
   ash_wood: 'forest',
   flooded_crypt: 'crypt',
