@@ -6,12 +6,45 @@ import { openChrome } from './lib/browser.mjs';
 const PORT = 4173;
 const TIMEOUT = 60_000; // software WebGL on a CI runner takes a while to build the first frame
 
+// an expedition just started (src/shared/crawl/expedition.ts) with the default party worn down to 9 life: the map opens
+// at home and its first room (node 0 is always open first) must show the carried life, not a full bar
+const WORN = {
+  'dt:crawl': JSON.stringify({
+    v: 'crawl1',
+    seed: 77,
+    path: [],
+    party: ['warrior', 'archer', 'mage', 'rogue'].map((id) => ({ id, max: 50, hp: 9 })),
+  }),
+};
+
 const PAGES = [
   {
-    name: 'title',
+    // the game opens in the town (Nov 15): quest, shop, tavern, party and the older modes
+    name: 'town',
     path: '/',
     ready: '.title-overlay [role=dialog] button.primary',
-    check: () => document.querySelectorAll('.title-overlay [role=dialog] button').length >= 3,
+    check: () => document.querySelectorAll('.title-overlay [role=dialog] button').length >= 5,
+  },
+  {
+    name: 'expedition map',
+    path: '/',
+    seed: WORN,
+    ready: '.crawl-map [role=dialog] button.primary',
+    check: () =>
+      document.querySelectorAll('.crawl-map .crawl-row button').length >= 5 &&
+      !!document.querySelector('.crawl-map .crawl-row button:disabled'),
+  },
+  {
+    name: 'expedition room',
+    path: '/?room=0',
+    seed: WORN,
+    ready: '.panel.commands[role=menu] button',
+    check: () => {
+      const [hp, max] = (document.querySelector('.unit-panel.hero .gauge.hp .gauge-num')?.textContent ?? '')
+        .split('/')
+        .map(Number);
+      return hp > 0 && hp <= 9 && max > 9;
+    },
   },
   {
     name: 'battle',
