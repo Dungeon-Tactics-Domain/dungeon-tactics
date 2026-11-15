@@ -22,7 +22,7 @@ import {
   recruit,
   toggleDeploy,
 } from './group.ts';
-import { abilityDetail, portrait } from './hud.ts';
+import { abilityDetail, stillFace } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { sfx } from './sound.ts';
@@ -50,7 +50,7 @@ export function jumpHelp(): string {
 }
 
 // Party screen (like the FFT formation): everyone in the party, who goes to the next battle (up to 4) and who stays in camp,
-// with portrait, class and numbers; each row opens the sheet. Every member knows the whole kit of their class.
+// with the painted face (portrait for a class without one), class and numbers; each row opens the sheet. Every member knows the whole kit of their class.
 // Nov 13, delivery 5 of the design (docs/game-design/towns-party-equipment.md): recruits and class change
 const loadGroup = () => parseGroup(store.json(GROUP_KEY));
 const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
@@ -81,7 +81,7 @@ export function openParty(back?: () => void) {
           }
         },
       },
-      portrait(m.cls),
+      stillFace(m.cls, 'neutral'),
       el(
         'div',
         {},
@@ -177,11 +177,11 @@ export function openBar(back: () => void) {
       ...(why ? [el('p', { class: 'learned' }, why)] : []),
       el(
         'div',
-        { class: 'menu-actions' },
+        { class: 'menu-actions recruits' },
         ...JOBS.map((c) =>
           button(
             'secondary',
-            t(`Recrutar ${unitName(c)}`, `Recruit ${unitName(c)}`),
+            [stillFace(c, 'neutral'), t(`Recrutar ${unitName(c)}`, `Recruit ${unitName(c)}`)],
             () => {
               const r = recruit(loadGroup(), loadChest(), c);
               if (!r) return void sfx('cancel');
@@ -330,7 +330,7 @@ function openSheet(m: Member, back: () => void, at = -1) {
           el(
             'div',
             { class: 'party-card' },
-            portrait(m.cls),
+            stillFace(m.cls, 'neutral', true),
             el(
               'div',
               {},

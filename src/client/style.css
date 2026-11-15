@@ -1812,6 +1812,12 @@ body:has(.result-overlay) .fps {
   grid-row: 2;
   grid-column: 1 / -1;
 }
+/* tavern recruits: the class face beside the button text */
+.recruits button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .result-hero.fallen .still-face {
   filter: grayscale(1) brightness(0.7);
 }
