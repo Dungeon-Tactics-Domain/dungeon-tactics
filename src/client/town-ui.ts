@@ -7,7 +7,7 @@ import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
 import { unitFrom } from './dev-roster.ts';
-import { choice, dialog } from './dialog.ts';
+import { choice, dialog, priceRow } from './dialog.ts';
 import {
   changeClass,
   DEPLOY_MAX,
@@ -159,29 +159,23 @@ export function openBar(back: () => void) {
             `${RECRUIT_COST - gold} more gold needed to recruit.`,
           )
         : '';
+  const party = loadGroup().members.length;
   const d = dialog(
     'party',
     t('Taverna', 'Tavern'),
     [
       // recruit (delivery 5): one person of any of the 4 classes for gold, up to the party cap
       el('h3', {}, t('Recrutar', 'Recruit')),
-      el(
-        'p',
-        {},
-        t(
-          `${RECRUIT_COST} de ouro cada · ouro no baú: ${loadChest().gold} · grupo ${loadGroup().members.length} de ${GROUP_MAX}`,
-          `${RECRUIT_COST} gold each · gold in chest: ${loadChest().gold} · party ${loadGroup().members.length} of ${GROUP_MAX}`,
-        ),
-      ),
       // without gold or with a full party the buttons turn off and the line says what is missing (before, only the error sound played)
       ...(why ? [el('p', { class: 'learned' }, why)] : []),
-      el(
-        'div',
-        { class: 'menu-actions recruits' },
-        ...JOBS.map((c) =>
+      // one lab kit list row per class: neutral face, what it does, the price after a coin and Recruit
+      ...JOBS.map((c) =>
+        priceRow(
+          [stillFace(c, 'neutral'), t(`Recrutar ${unitName(c)}`, `Recruit ${unitName(c)}`)],
+          RECRUIT_COST,
           button(
             'secondary',
-            [stillFace(c, 'neutral'), t(`Recrutar ${unitName(c)}`, `Recruit ${unitName(c)}`)],
+            t('Recrutar', 'Recruit'),
             () => {
               const r = recruit(loadGroup(), loadChest(), c);
               if (!r) return void sfx('cancel');
@@ -196,70 +190,71 @@ export function openBar(back: () => void) {
         ),
       ),
     ],
-    { onBack: back },
+    {
+      onBack: back,
+      note: goldNote(t(`Grupo ${party} de ${GROUP_MAX} · ouro`, `Party ${party} of ${GROUP_MAX} · gold`), gold),
+    },
   );
 }
 
-// Shop (Nov 13, delivery 2: provisional on the map until the towns): buy with the chest gold, sell for half (as in FFT)
-export function openShop(back?: () => void) {
+// the lab kit's gold counter on a window's head band (Shop, Tavern): small uppercase label, the number after a coin
+const goldNote = (label: string, gold: number) =>
+  el('p', { class: 'gold' }, el('span', { class: 'result-label' }, label), el('strong', {}, String(gold)));
+
+// Shop (Nov 13, delivery 2: provisional on the map until the towns): buy with the chest gold, sell for half (as in FFT).
+// Since Nov 15 the lab kit's list rows, buying and selling in turns: the 9 items fit at 1280x720 (a full chest scrolled
+// the window to 905 px)
+export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
   const chest = loadChest();
   const save = (c: ReturnType<typeof buy>) => {
     if (!c) return void sfx('cancel');
     store.set(CHEST_KEY, JSON.stringify(c));
     sfx('confirm');
     d.close();
-    openShop(back);
+    openShop(back, tab);
   };
   const d = dialog(
     'party shop',
     t('Loja', 'Shop'),
     [
-      el(
-        'p',
-        { class: 'gold' },
-        el('span', { class: 'result-label' }, t('Ouro no baú', 'Gold in chest')),
-        el('strong', {}, String(chest.gold)),
+      choice<'buy' | 'sell'>(
+        t('Comprar ou vender', 'Buy or sell'),
+        [
+          ['buy', t('Comprar', 'Buy')],
+          ['sell', t(`Vender (${chest.items.length})`, `Sell (${chest.items.length})`)],
+        ],
+        tab,
+        (v) => {
+          d.close();
+          openShop(back, v);
+        },
       ),
-      el(
-        'dl',
-        { class: 'keys' },
-        ...Object.values(ITEMS).flatMap((it) => [
-          el('dt', {}, `${itemName(it)} (${SLOT_NAME[it.slot]()})`),
-          // too expensive: the button turns off and its text says how much is missing (before, it only went grey)
-          el(
-            'dd',
-            {},
-            `${itemStats(it)} · ${it.price} ${t('de ouro', 'gold')} `,
-            button(
-              'secondary',
-              chest.gold < it.price
-                ? t(`Faltam ${it.price - chest.gold}`, `${it.price - chest.gold} short`)
-                : t('Comprar', 'Buy'),
-              () => save(buy(chest, it.id)),
-              { disabled: chest.gold < it.price },
+      ...(tab === 'buy'
+        ? Object.values(ITEMS).map((it) =>
+            priceRow(
+              [itemName(it), el('small', {}, `${SLOT_NAME[it.slot]()} · ${itemStats(it)}`)],
+              it.price,
+              button('secondary', t('Comprar', 'Buy'), () => save(buy(chest, it.id)), {
+                disabled: chest.gold < it.price,
+              }),
+              // too expensive: the button turns off and says under it how much is missing (before, it only went grey)
+              chest.gold < it.price ? t(`faltam ${it.price - chest.gold}`, `${it.price - chest.gold} short`) : '',
             ),
-          ),
-        ]),
-      ),
-      el('h3', {}, t('No baú', 'In the chest')),
-      chest.items.length
-        ? el(
-            'dl',
-            { class: 'keys' },
-            ...chest.items.flatMap((id) => [
-              el('dt', {}, itemName(ITEMS[id])),
-              el(
-                'dd',
-                {},
-                `${Math.floor(ITEMS[id].price / 2)} ${t('de ouro', 'gold')} `,
+          )
+        : chest.items.length
+          ? chest.items.map((id) =>
+              priceRow(
+                [itemName(ITEMS[id]), el('small', {}, SLOT_NAME[ITEMS[id].slot]())],
+                Math.floor(ITEMS[id].price / 2),
                 button('secondary', t('Vender', 'Sell'), () => save(sell(chest, id))),
               ),
-            ]),
-          )
-        : el('p', {}, t('Vazio.', 'Empty.')),
+            )
+          : [el('p', {}, t('Vazio.', 'Empty.'))]),
     ],
-    { onBack: back },
+    { onBack: back, note: goldNote(t('Ouro no baú', 'Gold in chest'), chest.gold) },
   );
+  // the open tab keeps the focus, so switching by keyboard goes on from there
+  d.overlay.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
 }
 
 // Unit sheet (like the FFT formation status screen): numbers, each ability with what it does (the ones still to come are

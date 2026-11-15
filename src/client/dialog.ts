@@ -10,7 +10,13 @@ import { button, type Child, el, iconButton } from './icons.ts';
 const syncInert = () =>
   document.getElementById('app')?.toggleAttribute('inert', !!document.querySelector('.overlay > .dialog'));
 
-export function dialog(cls: string, title: string, body: Node[], opts: { fixed?: boolean; onBack?: () => void } = {}) {
+// `note`: a counter at the right of the head band, like the kit's "Gold in chest" (Shop, Tavern)
+export function dialog(
+  cls: string,
+  title: string,
+  body: Node[],
+  opts: { fixed?: boolean; onBack?: () => void; note?: Child } = {},
+) {
   const ac = new AbortController();
   const close = () => {
     if (!overlay.isConnected) return;
@@ -30,7 +36,7 @@ export function dialog(cls: string, title: string, body: Node[], opts: { fixed?:
     el(
       'div',
       { class: `dialog ${cls}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-      el('header', { class: 'dialog-head' }, el('h2', {}, title), x),
+      el('header', { class: 'dialog-head' }, el('h2', {}, title), opts.note, x),
       ...body,
     ),
   );
@@ -65,6 +71,17 @@ export function dialog(cls: string, title: string, body: Node[], opts: { fixed?:
   x?.focus();
   return { overlay, close };
 }
+
+// A row of the lab kit's list (Shop, Tavern): what it is, with its kind in small type, the price after a gold coin, and
+// the action at the right with why it is off in small type under it (a disabled button says why)
+export const priceRow = (what: Child[], price: number, action: HTMLButtonElement, why = '') =>
+  el(
+    'div',
+    { class: 'price-row' },
+    el('span', { class: 'price-what' }, ...what),
+    el('span', { class: 'price' }, String(price)),
+    el('span', { class: 'price-act' }, action, why ? el('small', {}, why) : null),
+  );
 
 export type Orb = 'gold' | 'blue' | 'bronze';
 // A row of the lab kit's command menu inside a window (town, title): a glass orb before the name, in a `.command-list`

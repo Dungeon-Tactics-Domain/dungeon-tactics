@@ -1953,12 +1953,6 @@ body:has(.result-overlay) .fps {
 .still-face .face-strip {
   image-rendering: pixelated;
 }
-/* tavern recruits: the class face beside the button text */
-.recruits button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 /* a portrait in the face's place (no sheet, sheet still loading or failed) takes the face's height, and the face's width
    stays reserved: neither the box nor the text jumps when the sheet arrives */
 .talk-face {
@@ -2139,7 +2133,8 @@ p.gold strong {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-p.gold strong::before {
+p.gold strong::before,
+.price::before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -2155,30 +2150,57 @@ p.gold strong::before {
   );
   box-shadow: 0 0 0 1px var(--edge);
 }
-/* Shop (town-ui.ts, openShop): each row's button pinned to the right and shorter; loose after the text, each one
-   landed in a different column and the 9-item list ran past 900 px. Rows split by a faint line, as in the kit's list */
-.shop .keys {
-  gap: 0;
+/* the gold counter on the head band (Shop, Tavern), at the right before the ✕, like the kit's "Gold in chest" */
+.dialog-head p.gold {
+  margin: 0 0 0 auto;
 }
-/* name and price cells stretch to the row's height, so their faint lines meet in one line */
-.shop .keys dt {
+/* Shop and Tavern rows (dialog.ts priceRow, Nov 15 lab mockup): name with its kind in small type, the price after a coin
+   in its own column and the button at the right with why it is off under it; a faint line on top of each row */
+.price-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 8em;
+  align-items: center;
+  gap: 16px;
+  min-height: 52px;
+  padding: 2px 0;
+  border-top: 1px solid color-mix(in srgb, var(--paper-edge) 18%, transparent);
+}
+.price-what {
   display: flex;
   align-items: center;
-  padding-right: 12px;
-}
-.shop .keys > * {
-  padding: 4px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--paper-edge) 20%, transparent);
-}
-.shop .keys dd {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
+  font-size: var(--fs-lg);
 }
-.shop .keys button {
+.price-what small {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.price-act {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.price-act button {
   min-height: 36px;
   min-width: 112px;
+}
+.price-act small {
+  font-size: var(--fs-sm);
+  line-height: 1; /* with a why under every button (no gold) the 9 rows still fit at 1280x720 */
+  font-style: italic;
+  color: var(--ink-muted);
+}
+.price-row .portrait {
+  width: 36px;
+  height: 48px;
+}
+/* Buy and Sell switch the Shop's list: the choice's own label stays for the screen reader only (the group's aria-label) */
+.shop .choice-label {
+  display: none;
 }
 
 /* ---- Developer menu (dev-menu.ts) ---- */
