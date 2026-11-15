@@ -89,8 +89,8 @@ function credits() {
           'li',
           {},
           t(
-            'Músicas (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD e Emma_MA. Vozes dos diálogos: compostas para o jogo',
-            'Music (CC0, OpenGameArt): CodeManu, TAD, cynicmusic, nene, FAINOD and Emma_MA. Dialogue voices: composed for the game',
+            'Músicas (CC0, OpenGameArt): CodeManu e nene. Vozes dos diálogos: compostas para o jogo',
+            'Music (CC0, OpenGameArt): CodeManu and nene. Dialogue voices: composed for the game',
           ),
         ),
         el(

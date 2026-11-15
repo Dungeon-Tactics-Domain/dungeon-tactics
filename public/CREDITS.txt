@@ -85,22 +85,16 @@ sfx/heal.mp3 (magical_3.ogg, trimmed to 1.2 s)
 sfx/die.mp3 (creature_die_01.ogg)
   "80 CC0 RPG SFX" - https://opengameart.org/content/80-cc0-rpg-sfx
   Licence read on the page on Nov 12, 2026: CC0.
-Victory and defeat fanfares and campaign speech blips: notes generated in the browser (src/client/sound.ts, jingle and blip), no file; created by the project.
+Victory and defeat fanfares and dialogue speech blips: notes generated in the browser (src/client/sound.ts, jingle and blip), no file; created by the project.
 
 == Music ==
-Campaign music (Nov 13, 2026): OpenGameArt tracks, all CC0 (licence read on each one's page), converted to .ogg by ffmpeg (the snow one trimmed to the first 75 s with a fade, the map one with +2.2 dB). Gain per track in src/client/music.ts.
+Music (Nov 13, 2026): OpenGameArt tracks, all CC0 (licence read on each one's page), converted to .ogg by ffmpeg. Gain per track in src/client/music.ts.
 music/title.ogg (title screen)
   CodeManu, "A Legend Will Rise (Orchestral)" - https://opengameart.org/content/a-legend-will-rise-orchestral
-music/city_pastoral_d.ogg (town and world screen)
+music/city_pastoral_d.ogg (town)
   Our own composition (scripts/music/eval/slot_D.py), rendered with the MuseScore General SoundFont (MIT); only the rendered .ogg ships.
-music/road.ogg (road stages)
-  cynicmusic, "Battle Theme B for RPG" - https://opengameart.org/content/battle-theme-b-for-rpg
-music/crypt.ogg (crypt)
+music/crypt.ogg (expedition map)
   nene, "Evil Approach" - https://opengameart.org/content/evil-approach
-music/snow.ogg (snow)
-  FAINOD, "A Long Winter at Home (Classical)" - https://opengameart.org/content/a-long-winter-at-home-classical-fainod
-music/boss.ogg (bosses)
-  cynicmusic, "Sinister Boss Appears!" - https://opengameart.org/content/sinister-boss-appears
 music/battle_dark.ogg (battles)
   Our own composition (scripts/music/battle_dark.py, rendered by scripts/music/psx.py), rendered with the SGM-V2.01 SoundFont by Shan; only the rendered .ogg ships.
   Licence of SGM-V2.01: not settled (sources disagree: credit / CC BY / own text); to confirm against the original package before launch.
