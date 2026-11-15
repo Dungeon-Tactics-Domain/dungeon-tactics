@@ -56,10 +56,14 @@
   --hp: #5ccf5f;
   --mp: #4f9cf0;
   --ct: #e8b030;
-  /* translucent strip of the strike preview (Nov 13, Tactics Ogre style): dark enough for the damage pink to pass
-     4.5:1 even over the bright sky */
+  /* translucent band of the strike preview's "+N targets" line: dark enough for light text over the bright sky */
   --strike: rgba(5, 10, 24, 0.82);
   --strike-dmg: #ffc2c2;
+  --enemy-paper: linear-gradient(
+    #7a2436,
+    #3e0f1c
+  ); /* target half of the strike preview when it is an enemy (lab kit) */
+  --enemy-hi: #ff9aa2; /* the enemy's ◆ on --enemy-paper, where --enemy is too dark to see */
   /* focus outside the panels (menu button over the scene, map node, language on the title, dialogue box): a dark band
      hugging the yellow ring, so the ring shows on the bright sky and on the grass */
   --focus-halo: 0 0 0 2px #0a1028;
@@ -1243,43 +1247,66 @@ button[hidden],
   border-left: 2px solid var(--paper-edge);
   border-right: 6px solid var(--side);
 }
-/* strike preview strips (hud.ts strikes, Nov 13, Tactics Ogre style, our design): in the gap between the two
-   bottom panels, anchored at the bottom and arrow-shaped pointing at the target panel. They stay inside the panel height (up to 3
-   strips) so as not to cover the map; no click (the mouse passes through to the tiles below) */
+/* strike preview (hud.ts strikes; Tactics Ogre's idea from Nov 13, the lab kit's two-colour strip since Nov 15): beside the
+   acting unit's panel, in the target panel's place, anchored at the bottom; the action half on the panel blue, the target
+   half on its side's colour (wine for an enemy). Up to 3 strips, then "+N targets"; no click (the mouse reaches the tiles) */
 .strikes {
   position: absolute;
   bottom: var(--inset);
   left: calc(var(--slot-w) + 2 * var(--inset));
-  right: calc(var(--slot-w) + 2 * var(--inset));
+  width: min(760px, calc(100% - var(--slot-w) - 3 * var(--inset)));
   display: grid;
-  justify-items: end;
   align-content: end;
   gap: 4px;
   pointer-events: none;
 }
 .strike {
-  max-width: 100%;
-  padding: 4px 30px 5px 14px;
-  color: var(--fg);
-  background: var(--strike);
-  border-left: 4px solid var(--strike-dmg);
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  box-shadow: var(--paper-frame);
+  color: var(--ink);
+  text-shadow: var(--ink-shadow);
+  overflow: hidden;
 }
-.strike.gain {
-  border-left-color: var(--heal);
-}
-.strike.ally {
-  border-left-color: var(--accent);
+.strike-main,
+.strike-target {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  padding: 6px 14px;
 }
 .strike-main {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 12px;
+  background: linear-gradient(var(--paper-hi), var(--paper-lo));
+}
+.strike-target {
+  background: linear-gradient(var(--paper), var(--paper-lo));
+  border-left: 2px solid var(--paper-edge);
+}
+.strike-target.enemy {
+  background: var(--enemy-paper);
+}
+/* the ◆ in --enemy vanished on the wine half */
+.strike-target.enemy .unit-side::before {
+  color: var(--enemy-hi);
+}
+.strike-name,
+.strike-who {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  font-size: var(--fs-sm);
   white-space: nowrap;
 }
-.strike-hp {
-  font: 700 var(--fs-sm) / 1 var(--font);
-  color: var(--muted);
+.strike-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  white-space: nowrap;
 }
 .strike-pts {
   font: 400 var(--fs-xl) / 1 var(--font-title);
@@ -1294,12 +1321,17 @@ button[hidden],
   font: 700 var(--fs-sm) / 1 var(--font);
 }
 .strike-hit {
-  margin-left: auto;
-  font: 400 var(--fs-lg) / 1 var(--font-title);
+  font: 700 var(--fs-lg) / 1 var(--font-title);
+}
+.strike .gauge {
+  grid-template-columns: 3.4em 1fr 3.4em;
+}
+.strike .gauge-num {
+  font-size: var(--fs-sm);
 }
 .strike-info {
   font-size: var(--fs-sm);
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 .strike.ally .strike-info {
   color: var(--accent);

@@ -5,9 +5,9 @@
 //   top middle: the help line for what to do now and, below it, the banner with the ability name;
 //   beside the acting character: the command menu (Move · Act · Wait · Status), the abilities submenu and the
 //   "Execute?" (Nov 13, Fernando's request: "beside the character like in FFT"; `place` follows the camera every frame);
-//   bottom left: the acting unit (portrait, HP, MP and CT bars); bottom right: the unit under the cursor,
-//   which when aiming marks on the bar the part of the life that goes away; between the two, the strike preview strips in the
-//   Tactics Ogre style (Nov 13): one arrow per target with the big damage and the hit chance.
+//   bottom left: the acting unit (portrait, HP, MP and CT bars); bottom right: the unit under the cursor; when aiming, the
+//   strike preview (Tactics Ogre's idea, Nov 13; the lab kit's two-colour strip, Nov 15) takes its place beside the acting
+//   panel: one strip per target with the big damage, the hit chance and the target's bar with the part that goes away.
 // Redraws everything on each change (it is little DOM); the menu position changes only via left/top.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
@@ -410,21 +410,50 @@ export function strikeInfo(f: Forecast, ability: string): string[] {
   if (f.ally) out.push(t('ALIADO!', 'ALLY!'));
   return out;
 }
+// Two-colour strip (Nov 15, the lab kit's strike preview): the action on the panel blue (ability icon and name, the big
+// number, the hit chance) and the target on its side's colour (wine for an enemy): name and side, the life bar with the part
+// that goes away (or the heal adds) in stripes, and the small `strikeInfo` line. It stands in for the target panel while aiming
 function strike(f: Forecast, ability: string) {
   const amount = f.heal ? `+${range(f.heal)}` : f.dmg ? `−${range(f.dmg)}` : null;
+  const change =
+    f.support || !(f.heal || f.dmg)
+      ? undefined
+      : f.heal
+        ? { from: f.unit.hp, to: f.after[1], kind: 'gain' as const }
+        : { from: f.after[0], to: f.unit.hp, kind: 'loss' as const };
   return el(
     'div',
     { class: `strike${f.heal ? ' gain' : ''}${f.ally ? ' ally' : ''}` },
-    amount
-      ? el(
-          'div',
-          { class: 'strike-main' },
-          el('span', { class: 'strike-hp' }, t('Vida', 'HP')),
-          el('strong', { class: 'strike-pts' }, amount, el('small', {}, 'PTS')),
-          el('span', { class: 'strike-hit', title: t('Chance de acerto', 'Chance to hit') }, `⊕ ${f.chance}%`),
-        )
-      : null,
-    el('div', { class: 'strike-info' }, strikeInfo(f, ability).join(' · ')),
+    el(
+      'div',
+      { class: 'strike-main' },
+      abilityIcon(ability),
+      el(
+        'div',
+        {},
+        el('span', { class: 'strike-name' }, abilityName(ability)),
+        amount
+          ? el(
+              'span',
+              { class: 'strike-row' },
+              el('strong', { class: 'strike-pts' }, amount, el('small', {}, 'PTS')),
+              el('span', { class: 'strike-hit', title: t('Chance de acerto', 'Chance to hit') }, `⊕ ${f.chance}%`),
+            )
+          : null,
+      ),
+    ),
+    el(
+      'div',
+      { class: `strike-target ${f.unit.team}` },
+      el(
+        'span',
+        { class: 'strike-who' },
+        unitName(f.unit.def),
+        el('span', { class: 'unit-side' }, f.unit.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy')),
+      ),
+      gauge('hp', t('Vida', 'HP'), f.unit.hp, UNIT_DEFS[f.unit.def].hp, change),
+      el('span', { class: 'strike-info' }, strikeInfo(f, ability).slice(1).join(' · ')),
+    ),
   );
 }
 function strikes(fs: Forecast[], ability: string) {
@@ -502,17 +531,10 @@ function classText(u: UnitState) {
   return base && unitName(base) !== unitName(u.def) ? unitName(base) : null;
 }
 
-// unit panel (the acting one bottom left, the target's bottom right, mirrored); with `f`, the part of the life
-// that the strike takes or the heal adds, in stripes on the bar
-function unitPanel(state: BattleState, u: UnitState, f?: Forecast) {
+// unit panel (the acting one bottom left, the one under the cursor bottom right, mirrored)
+function unitPanel(state: BattleState, u: UnitState) {
   const def = UNIT_DEFS[u.def];
-  const change =
-    !f || f.support
-      ? undefined
-      : f.heal
-        ? { from: u.hp, to: f.after[1], kind: 'gain' as const }
-        : { from: f.after[0], to: u.hp, kind: 'loss' as const };
-  const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp, change)];
+  const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp)];
   if (u.vars?.mp !== undefined) rows.push(gauge('mp', 'MP', u.vars.mp, def.vars?.mp ?? u.vars.mp));
   if (def.speed > 0) rows.push(gauge('ct', 'CT', Math.min(u.ct, TURN_THRESHOLD), TURN_THRESHOLD));
   const charge = state.charges.find((c) => c.unit === u.id);
@@ -684,13 +706,13 @@ export class BattleHud {
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
     // unitAt: any tile of the large unit shows its panel
     const found = unitAt(b.state, at);
-    // aiming (Act map or "Execute?"): the target panel shows the bar with what goes away, and the strips between the two
-    // panels, the one for the target under the cursor first. It applies even to someone healing themself (outside aiming, their own panel is not repeated)
+    // aiming (Act map or "Execute?"): the strips beside the acting panel take the target panel's place, the one for the target
+    // under the cursor first. It applies even to someone healing themself (outside aiming, their own panel is not repeated)
     const ability = v.screen.k === 'confirm' ? v.screen.ability : v.screen.k === 'map' ? v.ability : null;
     const fs = open && ability && v.hl?.preview?.ok ? forecast(b, ability, v.hl.preview) : [];
     const main = fs.find((f) => f.unit.id === found?.id) ?? fs[0];
-    const other = main?.unit ?? (found?.id !== me?.id ? found : undefined);
-    this.target.replaceChildren(...(other ? [unitPanel(b.state, other, main)] : []));
+    const other = main ? undefined : found?.id !== me?.id ? found : undefined;
+    this.target.replaceChildren(...(other ? [unitPanel(b.state, other)] : []));
     this.strikesEl.replaceChildren(...(main ? strikes([main, ...fs.filter((f) => f !== main)], ability!) : []));
     // size of the panels that move with the character, measured once per draw (each frame's `place` only reads the cache);
     // the strips enter the bottom height so "Execute?" does not land on top of them

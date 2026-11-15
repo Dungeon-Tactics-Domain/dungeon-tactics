@@ -40,7 +40,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Primary | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button (brighter blue; the names stayed from the gold one), battle highlight (yellow) |
 | Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
 | Bars | `--hp` `--mp` `--ct` `--heal` | HP, MP, CT, healing |
-| Strike preview | `--strike` `--strike-dmg` | arrow band between the panels |
+| Strike preview | `--strike-dmg` `--enemy-paper` `--enemy-hi` `--strike` | damage number; the wine gradient of an enemy target's half and its ◆; `--strike` is now only the translucent band of the "+N targets" line |
 | Fields | `--paper-white` | Developer fields (dark blue field) |
 | Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
 | Map ink | `--map-ink` | outlines on the world map land: land, lakes, rocks, icons, compass star, roads |
@@ -66,7 +66,12 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | `--ink` on `--paper-white` (fields) | 13.0 | ✓ |
 | `--fg` on `--bg` | 17.4 | ✓ |
 | `--muted` on `--stone` | 9.3 | ✓ |
-| `--fg` / `--strike-dmg` / `--muted` / `--accent` / `--heal` on the strike band over a white sky | 11.2 / 7.9 / 8.0 / 8.7 / 7.1 | ✓ |
+| `--fg` on the "+N targets" band over a white sky | 11.2 | ✓ |
+| Strike preview, action half on `--paper-hi` (top): `--ink` / `--strike-dmg` / `--heal` | 7.8 / 5.5 / 4.9 | ✓ (Nov 15) |
+| Strike preview, enemy half on `--enemy-paper` (top `#7a2436`): `--ink` / `--ink-muted` | 9.1 / 6.6 | ✓ (Nov 15) |
+| Strike preview, hero half on `--paper`: `--ink-muted` / `--accent` (ALLY!) | 6.7 / 7.2 | ✓ (Nov 15) |
+| Menu head band (6% `--ink` over `--paper-hi`) / picked row (45% `--shade` over `--paper-hi`): `--ink` | 6.7 / 12.4 | ✓ (Nov 15) |
+| ◆ on `--enemy-paper` (not text, the word beside it carries the side): `--enemy-hi` / `--enemy` | 4.9 / 2.6 | hence `--enemy-hi` |
 | `--fg` on the place name tag over the map land | 11.9 | ✓ |
 | `--focus` alone on the white sky | 1.4 | ✗ → hence `--focus-halo` (dark band: 18.8 on white, 13.5 against the ring) |
 
@@ -142,6 +147,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Map node** `.world-node` | `world-ui.ts` | battle red diamond · story blue circle · done gold border · D dark grey · here: ring with halo | world map |
 | **Form field** (text, select, number, checkbox, `details`) | `create-ui.ts`, `dev-menu.ts` | F the same yellow ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | protagonist name, Developer menu |
 | **Key hint** `.hint` | `style.css` | PC with keyboard only (`.kbd`) | menu rows and buttons |
+| **Strike preview** `strikes()` | `hud.ts`, `style.css` | one two-colour strip per target, up to 3, then "+N targets": the action half on the panel blue (ability icon, name, the big −dmg or +heal PTS in `--strike-dmg` or `--heal`, ⊕ hit chance) and the target half on its side's colour (`--enemy-paper` for an enemy, the panel blue for a hero): name and side, the life bar with the stripes (`gauge` `change`) and the `strikeInfo` line (direction, push, life after, ALLY! in `--accent`). While aiming it takes the target panel's place, beside the acting panel, up to 760 px wide | bottom, while aiming and on "Execute?" |
 | **Banner** `.banner` / `.announce` | `style.css` | enters, holds, leaves | ability name, stage objective |
 
 ### Focus
@@ -201,6 +207,8 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 - **`--stone*` tokens** are almost unused since every window took the panel look (Nov 13): only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 
 ## 7. What was and was not checked
+
+Nov 15 (block 2, battle HUD in the lab kit's layout and the 32 px ability icons), in the repo's headless Chrome through the sandbox (`npm run sandbox`, muted), before and after the change, in `_notas/agentes/bloco2-evidencia/`: command menu with the abilities submenu (warrior and mage), aiming (one target, three targets with an ally, a heal), "Execute?" (one target and a charged area spell, with the queue preview), at 1920×1080 in pt and en and at 1280×720 in en. Not checked: a 1280×720 shot in pt, the mobile widths, a disabled ability row with its icon on screen, the full turn list (L) at 1280×720.
 
 Nov 15 (FFT Classic): title, credits, battle commands, abilities, corner menu, Status, Options (Game, Video, Controls), aiming, dialogue box, world map, town and party windows, opening and creation, at 1920×1080 in pt and en, in headless Chrome; the strike preview strips and 1280×720 were not opened.
 
