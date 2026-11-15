@@ -91,7 +91,7 @@ describe('parseSpec', () => {
     expect(spec).toEqual({});
     expect(problems).toEqual([
       'unknown key "scenari"',
-      'use only one of scenario, stage and path (got stage, path)',
+      'use only one of scenario, stage, crawl and path (got stage, path)',
       'units.a: give x and y together',
       'units.b: facing must be 0-3',
       'units.b: hp must be an integer ≥ 1',
@@ -130,6 +130,16 @@ describe('specUrl and storageFor', () => {
     const q = new URLSearchParams(specUrl(spec).slice(2));
     expect(q.get('scenario')).toBe('frost_pass');
     expect(JSON.parse(q.get('sandbox')!)).toEqual(spec);
+  });
+
+  it('opens a crawl room by its seed and options, and refuses an unknown theme', () => {
+    expect(specUrl({ crawl: { seed: 12, depth: 2, boss: true, theme: 'forest' } })).toMatch(
+      /^\/\?crawl=12&depth=2&boss=1&theme=forest&sandbox=/,
+    );
+    expect(parseSpec({ crawl: { seed: 3 } }).problems).toEqual([]);
+    expect(parseSpec({ crawl: { seed: 3, theme: 'swamp' } }).problems).toEqual([
+      'crawl must be { seed, depth?, boss?, theme? } with theme among dungeon, forest, mountain',
+    ]);
   });
 
   it('opens a stage and unlocks it before the page loads', () => {

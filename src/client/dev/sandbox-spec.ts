@@ -1,6 +1,7 @@
 // Scene spec of the sandbox (docs/sandbox.md): what a scripted screenshot opens and shows. Pure, shared by the page
 // (dev/sandbox.ts) and the Node CLI (scripts/sandbox.mjs), so no DOM or Three here. Every check returns readable
 // problems instead of a silent default: a typo in a spec must fail the shot, not produce a different picture.
+import { CRAWL_THEMES } from '../../content/crawl/rooms.ts';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import { Battle } from '../../shared/battle/battle.ts';
 import type { PreviewReason } from '../../shared/battle/combat.ts';
@@ -62,6 +63,7 @@ export interface SceneSpec {
   name?: string; // CLI: output file name (default: the spec file name)
   scenario?: string; // map or study id (?scenario=)
   stage?: number; // campaign stage (?stage=), unlocked for the shot
+  crawl?: { seed: number; depth?: number; boss?: boolean; theme?: string }; // a dungeon crawl room (?crawl=)
   path?: string; // any other page (world map, title) with no staged battle, e.g. "/?world"
   seed?: number; // battle dice; default 1
   lang?: 'pt' | 'en';
@@ -87,6 +89,7 @@ const KEYS = [
   'scenario',
   'stage',
   'path',
+  'crawl',
   'seed',
   'lang',
   'viewport',
@@ -120,13 +123,26 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   if (!isObj(raw)) return { spec: {}, problems: ['spec must be an object'] };
   const r = raw;
   for (const k of Object.keys(r)) if (!KEYS.includes(k)) p.push(`unknown key "${k}"`);
-  const opened = ['scenario', 'stage', 'path'].filter((k) => r[k] !== undefined);
-  if (opened.length > 1) p.push(`use only one of scenario, stage and path (got ${opened.join(', ')})`);
+  const opened = ['scenario', 'stage', 'crawl', 'path'].filter((k) => r[k] !== undefined);
+  if (opened.length > 1) p.push(`use only one of scenario, stage, crawl and path (got ${opened.join(', ')})`);
   if (r.name !== undefined && (typeof r.name !== 'string' || !/^[\w.-]+$/.test(r.name)))
     p.push('name: letters, digits, "-", "_" and "." only');
   if (r.scenario !== undefined && typeof r.scenario !== 'string') p.push('scenario must be a string');
   if (r.stage !== undefined && !isInt(r.stage, 0)) p.push('stage must be an integer ≥ 0');
   if (r.path !== undefined && (typeof r.path !== 'string' || !r.path.startsWith('/'))) p.push('path must start with /');
+  const room = r.crawl;
+  if (
+    room !== undefined &&
+    !(
+      isObj(room) &&
+      Object.keys(room).every((k) => ['seed', 'depth', 'boss', 'theme'].includes(k)) &&
+      isInt(room.seed, 0) &&
+      (room.depth === undefined || isInt(room.depth, 1)) &&
+      (room.boss === undefined || typeof room.boss === 'boolean') &&
+      (room.theme === undefined || (typeof room.theme === 'string' && Object.hasOwn(CRAWL_THEMES, room.theme)))
+    )
+  )
+    p.push(`crawl must be { seed, depth?, boss?, theme? } with theme among ${Object.keys(CRAWL_THEMES).join(', ')}`);
   if (r.seed !== undefined && !isInt(r.seed, 0)) p.push('seed must be an integer ≥ 0');
   if (r.lang !== undefined && r.lang !== 'pt' && r.lang !== 'en') p.push('lang must be "pt" or "en"');
   if (r.viewport !== undefined && !(isObj(r.viewport) && isInt(r.viewport.width, 200) && isInt(r.viewport.height, 200)))
@@ -249,6 +265,12 @@ export function specUrl(spec: SceneSpec): string {
   const q = new URLSearchParams();
   if (spec.stage !== undefined) q.set('stage', String(spec.stage));
   else if (spec.scenario) q.set('scenario', spec.scenario);
+  else if (spec.crawl) {
+    q.set('crawl', String(spec.crawl.seed));
+    if (spec.crawl.depth) q.set('depth', String(spec.crawl.depth));
+    if (spec.crawl.boss) q.set('boss', '1');
+    if (spec.crawl.theme) q.set('theme', spec.crawl.theme);
+  }
   q.set('sandbox', JSON.stringify(spec));
   return `/?${q}`;
 }
