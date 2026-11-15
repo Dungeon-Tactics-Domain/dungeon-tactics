@@ -23,7 +23,12 @@ describe('save migration', () => {
       'dt:party': '{"deployed":[]}',
       'dt:chest': '{"gold":150}',
       'dt:lang': 'en',
-      'dt:migrated': '3',
+      'dt:migrated': '4',
+      // the progress kept becomes save slot 1 (saves.ts)
+      'dt:saves': JSON.stringify({
+        active: 1,
+        slots: [{ id: 1, data: { 'dt:party': '{"deployed":[]}', 'dt:chest': '{"gold":150}' } }],
+      }),
     });
   });
 
@@ -63,7 +68,13 @@ describe('campaign saves', () => {
       'dt:party': '{}',
     });
     migrate(s);
-    expect([...s.m.keys()].sort()).toEqual(['dt:battle', 'dt:battle:expedition', 'dt:migrated', 'dt:party']);
-    expect(s.m.get('dt:migrated')).toBe('3');
+    expect([...s.m.keys()].sort()).toEqual([
+      'dt:battle',
+      'dt:battle:expedition',
+      'dt:migrated',
+      'dt:party',
+      'dt:saves',
+    ]);
+    expect(s.m.get('dt:migrated')).toBe('4');
   });
 });

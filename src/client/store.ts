@@ -1,4 +1,6 @@
 // Preferences stored in the browser. localStorage can fail (incognito tab, blocked data): falls back to memory and is valid only in this tab.
+import { PLAYED_KEY, PROGRESS_KEYS, readSaves, SAVES_KEY } from './saves.ts';
+
 const memory = new Map<string, string>();
 
 type Saves = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
@@ -50,6 +52,11 @@ const MIGRATIONS: ((s: Saves) => void)[] = [
     }
     for (const k of dead) s.removeItem(k);
   },
+  (s) => {
+    // Nov 15: save slots (saves.ts); the single save from before them becomes slot 1
+    const m = readSaves(s);
+    if (m.slots.length) s.setItem(SAVES_KEY, JSON.stringify(m));
+  },
 ];
 export function migrate(s: Saves) {
   const done = Number(s.getItem(MIGRATED)) || 0;
@@ -78,6 +85,8 @@ export const store = {
     } catch {
       // memory only
     }
+    // the save slot's last-played time (saves.ts), for the Continue list
+    if (PROGRESS_KEYS.includes(k)) store.set(PLAYED_KEY, String(Date.now()));
   },
   // Missing or invalid syntax = null; each consumer validates the format before using.
   json(k: string): unknown {

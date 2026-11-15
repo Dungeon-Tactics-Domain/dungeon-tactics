@@ -22,13 +22,13 @@ import { dialog } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
 import { openBar, openParty, openShop } from '../town-ui.ts';
 import { titleScreen } from './title.ts';
 
-export const CRAWL_KEY = 'dt:crawl';
-export const ROOM_KEY = 'dt:battle:expedition'; // the room in play, saved from its first frame (main.ts boot)
+export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
 
 // the expedition room in play: who stands on each hero spawn (h0, h1…) and the life they enter with
 export interface CrawlRoom {
