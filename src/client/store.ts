@@ -1,28 +1,18 @@
 // Preferences stored in the browser. localStorage can fail (incognito tab, blocked data): falls back to memory and is valid only in this tab.
 const memory = new Map<string, string>();
 
-type Saves = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+type Saves = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
 const MIGRATED = 'dt:migrated'; // how many MIGRATIONS already ran in this browser, so each runs once
 // Nov 14: the saves had Portuguese keys; renamed keeping every value (progress, party, options)
 const RENAMED: [old: string, now: string][] = [
   ['dt:amanhecer', 'dt:dawn'],
   ['dt:bau', 'dt:chest'],
-  ['dt:campanha', 'dt:campaign'],
   ['dt:grupo', 'dt:party'],
-  ['dt:heroi', 'dt:hero'],
-  ['dt:missoes', 'dt:quests'],
-  ['dt:mundo', 'dt:world'],
   ['dt:rapido', 'dt:fast'],
   ['dt:texto', 'dt:text'],
   ['dt:turnos', 'dt:turns'],
   ['dt:pixel2', 'dt:pixel'],
 ];
-// Nov 14: quest ids that were Portuguese (also in old ?quest= links)
-const RENAMED_QUESTS: Record<string, string> = {
-  'ratos-da-estrada': 'road-rats',
-  'cripta-rasa': 'shallow-crypt',
-  'lobos-do-passo': 'pass-wolves',
-};
 // Save format changes, in order. Each takes the saves as they were left by the previous one.
 const MIGRATIONS: ((s: Saves) => void)[] = [
   (s) => {
@@ -36,23 +26,29 @@ const MIGRATIONS: ((s: Saves) => void)[] = [
       s.removeItem(old);
     }
   },
+  // Nov 14: renamed the Portuguese quest ids; the quests left with the campaign on Nov 15 (the next step drops their
+  // saves). Kept as an empty step: dt:migrated counts positions in this list
+  () => {},
   (s) => {
-    // won quests keep their place in dt:quests; a quest battle in progress keeps its save, whose scenario and unit
-    // sheets carry the scenario id (missao-<id>-h0…), so the old id is replaced inside it too
-    const done = s.getItem('dt:quests');
-    if (done !== null)
-      s.setItem(
-        'dt:quests',
-        done.replace(/"([a-z-]+)"/g, (all, id: string) =>
-          Object.hasOwn(RENAMED_QUESTS, id) ? `"${RENAMED_QUESTS[id]}"` : all,
-        ),
-      );
-    for (const [old, now] of Object.entries(RENAMED_QUESTS)) {
-      const battle = s.getItem(`dt:battle:missao-${old}`);
-      if (battle === null) continue;
-      s.setItem(`dt:battle:quest-${now}`, battle.replaceAll(`missao-${old}`, `quest-${now}`));
-      s.removeItem(`dt:battle:missao-${old}`);
+    // Nov 15: the world map and the Beacon Ashes campaign left the code; their saves (progress, protagonist, quests, the
+    // battles of stages and quests, under the old Portuguese names too) are dead
+    for (const k of [
+      'dt:world',
+      'dt:campaign',
+      'dt:hero',
+      'dt:quests',
+      'dt:mundo',
+      'dt:campanha',
+      'dt:heroi',
+      'dt:missoes',
+    ])
+      s.removeItem(k);
+    const dead: string[] = [];
+    for (let i = 0; i < s.length; i++) {
+      const k = s.key(i);
+      if (k && /^dt:battle:(camp\d+|quest-|missao-)/.test(k)) dead.push(k);
     }
+    for (const k of dead) s.removeItem(k);
   },
 ];
 export function migrate(s: Saves) {

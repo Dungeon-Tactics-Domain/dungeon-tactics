@@ -8,19 +8,22 @@ const saves = (init: Record<string, string>) => {
     getItem: (k: string) => m.get(k) ?? null,
     setItem: (k: string, v: string) => void m.set(k, v),
     removeItem: (k: string) => void m.delete(k),
+    key: (i: number) => [...m.keys()][i] ?? null,
+    get length() {
+      return m.size;
+    },
   };
 };
 
 describe('save migration', () => {
   it('moves the Portuguese keys to the English ones, keeping the values', () => {
-    const s = saves({ 'dt:heroi': '{"name":"Ayla"}', 'dt:mundo': '4', 'dt:bau': '{"gold":150}', 'dt:lang': 'en' });
+    const s = saves({ 'dt:grupo': '{"deployed":[]}', 'dt:bau': '{"gold":150}', 'dt:lang': 'en' });
     migrate(s);
     expect(Object.fromEntries(s.m)).toEqual({
-      'dt:hero': '{"name":"Ayla"}',
-      'dt:world': '4',
+      'dt:party': '{"deployed":[]}',
       'dt:chest': '{"gold":150}',
       'dt:lang': 'en',
-      'dt:migrated': '2',
+      'dt:migrated': '3',
     });
   });
 
@@ -43,20 +46,24 @@ describe('save migration', () => {
   });
 });
 
-describe('quest id migration', () => {
-  it('renames won quests and the battle save of a quest in progress', () => {
-    const battle = '{"scenario":"missao-cripta-rasa","units":[{"def":"missao-cripta-rasa-h0"}]}';
+describe('campaign saves', () => {
+  it('are dropped with the campaign, under the old names too, and the rest stays', () => {
     const s = saves({
-      'dt:migrated': '1',
-      'dt:quests': '["ratos-da-estrada","lobos-do-passo"]',
-      'dt:battle:missao-cripta-rasa': battle,
+      'dt:migrated': '2',
+      'dt:world': '4',
+      'dt:campaign': '3',
+      'dt:hero': '{"name":"Ayla"}',
+      'dt:quests': '["road-rats"]',
+      'dt:mundo': '2',
+      'dt:battle:camp2': '{}',
+      'dt:battle:quest-road-rats': '{}',
+      'dt:battle:missao-cripta-rasa': '{}',
+      'dt:battle': '{}',
+      'dt:battle:expedition': '{}',
+      'dt:party': '{}',
     });
     migrate(s);
-    expect(s.m.get('dt:quests')).toBe('["road-rats","pass-wolves"]');
-    expect(s.m.get('dt:battle:quest-shallow-crypt')).toBe(
-      '{"scenario":"quest-shallow-crypt","units":[{"def":"quest-shallow-crypt-h0"}]}',
-    );
-    expect(s.m.has('dt:battle:missao-cripta-rasa')).toBe(false);
-    expect(s.m.get('dt:migrated')).toBe('2');
+    expect([...s.m.keys()].sort()).toEqual(['dt:battle', 'dt:battle:expedition', 'dt:migrated', 'dt:party']);
+    expect(s.m.get('dt:migrated')).toBe('3');
   });
 });
