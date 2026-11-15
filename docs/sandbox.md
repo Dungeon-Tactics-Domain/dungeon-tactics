@@ -88,7 +88,7 @@ Notes:
   - `action` runs the strike camera from that unit to the tile, as during an attack.
 - **Hiding:** panels are hidden with `visibility`, so they keep their space and the camera frames the map exactly as
   with the interface on (compare the two Ash Wood examples). `marks` removes the 3D tile marks, cursor, range ring,
-  shot line and charge lines, and stays off through the game's own redraws.
+  shot line, charge lines and counter marks, and stays off through the game's own redraws.
 - **Turns:** the AI never plays on its own, because the sandbox puts a hero on the turn. Acting in the battle by hand saves to `dt:battle:sandbox`, never to the real save.
 - **Restart resets the sandbox:** Options → Restart builds a new battle the sandbox no longer holds; reload the
   page (or `load`) to go on scripting.
