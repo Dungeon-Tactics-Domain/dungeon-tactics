@@ -24,3 +24,18 @@ export function keepInView(scroll: number, view: number, top: number, height: nu
   if (top + height > scroll + view) return top + height - view;
   return scroll;
 }
+
+// Scroll after a redraw: the "Execute?" charge row in view (it shows whether the target acts before the spell lands);
+// else a new turn goes back to NOW on top, and the same turn keeps where the player scrolled
+export function anchorScroll(
+  scroll: number,
+  view: number,
+  newTurn: boolean,
+  pending: { top: number; height: number } | null,
+): number {
+  if (pending) return keepInView(scroll, view, pending.top, pending.height);
+  return newTurn ? 0 : scroll;
+}
+
+// PgUp/PgDn and the right stick move a page less one row, which stays in view to keep the place
+export const pageStep = (view: number, row: number) => Math.max(row, view - row);

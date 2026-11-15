@@ -37,7 +37,7 @@ import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import { type Face, faceSheet } from './talk.ts';
-import { keepInView, roundLength } from './turn-list.ts';
+import { anchorScroll, pageStep, roundLength } from './turn-list.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
@@ -611,10 +611,9 @@ export class BattleHud {
   setFast(on: boolean) {
     this.fastBtn.setAttribute('aria-checked', String(on));
   }
-  // PageUp/PageDown and the right stick: a page of the list less one row, which stays in view to keep the place
   scrollQueue(dir: 1 | -1) {
     const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;
-    this.queue.scrollBy({ top: dir * Math.max(row, this.queue.clientHeight - row) });
+    this.queue.scrollBy({ top: dir * pageStep(this.queue.clientHeight, row) });
   }
   // where the list was scrolled before the redraw, and the turn it showed: a new turn scrolls back to NOW on top
   private queueScroll = 0;
@@ -916,17 +915,12 @@ export class BattleHud {
     );
   }
 
-  // NOW stays in view: a new turn scrolls back to the top, otherwise the list keeps where the player scrolled it; the
-  // "Execute?" charge row is kept in view, since it shows whether the target acts before the spell lands
   private anchorQueue(b: Battle) {
     const q = this.queue;
     const turn = `${b.state.turnsPlayed}:${b.state.turn.actor}`;
-    const pending = q.querySelector<HTMLElement>('.pending');
-    q.scrollTop = pending
-      ? keepInView(this.queueScroll, q.clientHeight, pending.offsetTop, pending.offsetHeight)
-      : turn === this.queueTurn
-        ? this.queueScroll
-        : 0;
+    const p = q.querySelector<HTMLElement>('.pending');
+    const pending = p ? { top: p.offsetTop, height: p.offsetHeight } : null;
+    q.scrollTop = anchorScroll(this.queueScroll, q.clientHeight, turn !== this.queueTurn, pending);
     this.queueTurn = turn;
   }
 

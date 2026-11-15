@@ -34,6 +34,8 @@ describe('game keys', () => {
     expect(key('e')).toEqual({ k: 'zoom', factor: 1 / 1.15 });
     expect(key('f')).toEqual({ k: 'recenter' });
     expect(key('h')).toEqual({ k: 'help' });
+    expect(key('PageDown')).toEqual({ k: 'turns', dir: 1 });
+    expect(key('PageUp')).toEqual({ k: 'turns', dir: -1 });
   });
 
   it('browser shortcut (Ctrl, Alt, Cmd) and unknown key are left to the browser', () => {
