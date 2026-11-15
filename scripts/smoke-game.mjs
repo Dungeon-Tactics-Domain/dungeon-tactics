@@ -7,8 +7,8 @@ import { openChrome } from './lib/browser.mjs';
 const PORT = 4173;
 const TIMEOUT = 60_000; // software WebGL on a CI runner takes a while to build the first frame
 
-// an expedition just started (src/shared/crawl/expedition.ts) with the default party worn down to 9 life: the map opens
-// at home (?home) and its first room (node 0 is always open first) must show the carried life, not a full bar
+// an expedition just started (src/shared/crawl/expedition.ts) with the default party worn down to 9 life: home (?home) is
+// still the town, offering to continue it; ?home=expedition opens its map, and its first room (node 0 is always open first) must show the carried life, not a full bar
 const WORN = {
   'dt:crawl': JSON.stringify({
     v: 'crawl3',
@@ -47,8 +47,18 @@ const PAGES = [
     check: () => document.querySelectorAll('.title-overlay .camp-list button').length === 6,
   },
   {
-    name: 'expedition map',
+    // an expedition in progress still opens the town, with Continue first and the new quest after it
+    name: 'town with an expedition',
     path: '/?home',
+    seed: WORN,
+    ready: '.title-overlay [role=dialog] button.primary .continue-where',
+    check: () =>
+      !document.querySelector('.crawl-map') &&
+      document.querySelectorAll('.title-overlay .camp-list button').length === 6,
+  },
+  {
+    name: 'expedition map',
+    path: '/?home=expedition',
     seed: WORN,
     ready: '.crawl-map [role=dialog] button.primary',
     check: () =>

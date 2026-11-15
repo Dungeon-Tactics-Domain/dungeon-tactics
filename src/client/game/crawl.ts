@@ -23,7 +23,7 @@ import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { setTrack } from '../sound.ts';
-import { store } from '../store.ts';
+import { param, store } from '../store.ts';
 import { openBar, openParty, openShop } from '../town-ui.ts';
 import { titleScreen } from './title.ts';
 
@@ -55,14 +55,19 @@ export function castRoom(room: Scenario, exp: Expedition, node: number): { scena
   return { scenario, room: { node, heroes } };
 }
 
-// home (?home): the town, or the expedition map while one is in progress (homeScreen), over the standalone battle; the bare
-// address is the title
+// home (?home): the town (homeScreen), over the standalone battle; the bare address is the title
 export const goHome = () => {
   location.search = '?home';
 };
 
-// the way home: the expedition map while one is in progress, else the town
-export const homeLabel = () => (savedExpedition() ? t('Mapa da expedição', 'Expedition map') : t('Cidade', 'Town'));
+// the way home is always the town (Fernando, Nov 15: the game always opens there; a live expedition is one tap away)
+export const homeLabel = () => t('Cidade', 'Town');
+
+// the expedition in progress: saved and its boss not yet down
+export function liveExpedition() {
+  const exp = savedExpedition();
+  return exp && !cleared(expeditionMap(exp.seed), exp.path) ? exp : null;
+}
 
 // A room still saved with no room in the address: the party left it before it ended (Options, a sibling room, the
 // bare address and Continue). Fernando, Nov 15: that loses the expedition like a defeat; only Restart retries the room for free
@@ -86,11 +91,12 @@ export function savedRoom(): number | null {
   return openNodes(map, exp.path).find((n) => id(n) === held) ?? null;
 }
 
-// what ?home and the title's Continue open: the expedition in progress, else the town
+// What ?home and the title's Continue (with no room in play) open: always the town (Fernando, Nov 15), which offers to
+// continue a live expedition; ?home=expedition, where a room's result window goes, opens its map straight away
 export function homeScreen() {
   if (leftRoom()) return lostScreen();
-  const exp = savedExpedition();
-  if (exp && !cleared(expeditionMap(exp.seed), exp.path)) expeditionScreen(exp);
+  const exp = liveExpedition();
+  if (exp && param('home') === 'expedition') expeditionScreen(exp);
   else townScreen();
 }
 
@@ -98,6 +104,7 @@ export function homeScreen() {
 // title (quick battles, how to play, developer, credits). Over the spinning backdrop battle
 export function townScreen() {
   setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
+  const live = liveExpedition();
   const go = (fn: () => void) => () => {
     d.close();
     fn();
@@ -109,10 +116,35 @@ export function townScreen() {
       el(
         'div',
         { class: 'menu-actions camp-list' },
+        // an expedition in progress is continued; a new quest over it asks a 2nd tap, since it abandons it (Fernando, Nov 15)
+        ...(live
+          ? [
+              button(
+                'primary',
+                [
+                  t('Continuar a expedição', 'Continue the expedition'),
+                  el('small', { class: 'continue-where' }, floorOf(live)),
+                ],
+                go(() => expeditionScreen(live)),
+              ),
+            ]
+          : []),
         button(
-          'primary',
+          live ? 'secondary' : 'primary',
           t('Ir para a quest: descer à masmorra', 'Go on the quest: descend into the dungeon'),
-          go(depart),
+          (e: Event) => {
+            const btn = e.currentTarget as HTMLButtonElement;
+            if (live && !btn.dataset.armed) {
+              btn.dataset.armed = '1';
+              btn.textContent = t(
+                'Toque de novo: abandona a expedição atual',
+                'Tap again: abandons the current expedition',
+              );
+              return;
+            }
+            d.close();
+            depart();
+          },
         ),
         button(
           'secondary',
@@ -176,6 +208,14 @@ function depart() {
   expeditionScreen(exp);
 }
 
+// the floor of the rooms open now
+const floorAt = (exp: Expedition) => {
+  const map = expeditionMap(exp.seed);
+  return map[openNodes(map, exp.path)[0]].floor;
+};
+const floorOf = (exp: Expedition) =>
+  t(`andar ${floorAt(exp)} de ${CRAWL_RUN.floors}`, `floor ${floorAt(exp)} of ${CRAWL_RUN.floors}`);
+
 const memberOf = (id: string) => group().members.find((m) => m.id === id);
 const partyList = (exp: Expedition) =>
   el(
@@ -197,7 +237,7 @@ export function expeditionScreen(exp: Expedition) {
   setTrack('crypt');
   const map = expeditionMap(exp.seed);
   const open = openNodes(map, exp.path);
-  const floor = map[open[0]].floor;
+  const floor = floorAt(exp);
   const room = (i: number) => {
     const n = map[i];
     const { group: foes } = roomGroup(n.seed, { depth: n.floor, boss: n.boss });
@@ -227,7 +267,7 @@ export function expeditionScreen(exp: Expedition) {
   ).filter((r) => r.length);
   const d = dialog(
     'title',
-    t(`Masmorra · andar ${floor} de ${CRAWL_RUN.floors}`, `Dungeon · floor ${floor} of ${CRAWL_RUN.floors}`),
+    `${t('Masmorra', 'Dungeon')} · ${floorOf(exp)}`,
     [
       partyList(exp),
       ...rows.map((r) => el('div', { class: 'menu-actions crawl-row' }, ...r.map(room))),
@@ -280,6 +320,10 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
   const settled = settleRoom(room, won, state);
   if (!settled) return goHome();
   const { next, done, node, down } = settled;
+  // on to the expedition map while it goes on (home alone opens the town), else home
+  const home = () => {
+    location.search = next && !done ? '?home=expedition' : '?home';
+  };
   const d = dialog(
     'result',
     !next
@@ -319,12 +363,12 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
         button(
           'primary',
           next && !done ? t('Seguir no mapa', 'On to the map') : t('Voltar à cidade', 'Back to town'),
-          goHome,
+          home,
         ),
       ),
     ].filter((n): n is HTMLElement => !!n),
-    // Esc or ✕ goes home too: closing only left the finished room on screen
-    { onBack: goHome },
+    // Esc or ✕ goes the same way: closing only left the finished room on screen
+    { onBack: home },
   );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }

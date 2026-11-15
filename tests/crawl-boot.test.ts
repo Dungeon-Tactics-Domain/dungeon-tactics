@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { newBattle, selectBattle } from '../src/client/game/boot.ts';
-import { CRAWL_KEY, leftRoom, ROOM_KEY, savedExpedition, savedRoom, settleRoom } from '../src/client/game/crawl.ts';
+import {
+  CRAWL_KEY,
+  leftRoom,
+  liveExpedition,
+  ROOM_KEY,
+  savedExpedition,
+  savedRoom,
+  settleRoom,
+} from '../src/client/game/crawl.ts';
 import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -140,6 +148,22 @@ describe('crawl rooms in the client', () => {
     expect(savedRoom()).toBeNull();
     expect(store.get(ROOM_KEY)).toBe('');
     expect(leftRoom()).toBe(false);
+  });
+
+  it('the town offers to continue only an expedition whose boss is still up', () => {
+    const map = expeditionMap(33);
+    let exp = startExpedition(
+      33,
+      parseGroup(null).deployed.map((id) => ({ id, max: 20 })),
+    );
+    store.set(CRAWL_KEY, '');
+    expect(liveExpedition()).toBeNull();
+    store.set(CRAWL_KEY, JSON.stringify(exp));
+    expect(liveExpedition()?.seed).toBe(33);
+    while (openNodes(map, exp.path).length) exp = { ...exp, path: [...exp.path, openNodes(map, exp.path)[0]] };
+    store.set(CRAWL_KEY, JSON.stringify(exp)); // the boss down, saved by hand: no expedition to continue
+    expect(savedExpedition()).not.toBeNull();
+    expect(liveExpedition()).toBeNull();
   });
 
   it('the boss room opens with the Colossus and its battle saves and loads', async () => {

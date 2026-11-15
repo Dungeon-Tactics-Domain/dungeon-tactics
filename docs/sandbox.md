@@ -50,7 +50,7 @@ different picture.
 | `name` | output file name (default: the spec file name) | CLI |
 | `scenario` | map id: `skirmish`, `beacon_hill`, `flooded_crypt`, `crypt_heart`, `ash_wood`, `frost_pass` (also `survival`, `half`, `fft-gariland`, and the sandbox-only `arena`) | page load |
 | `crawl` | a crawl room: `{ "seed": 7, "depth": 2, "boss": false, "theme": "dungeon" }` (`depth`, `boss` and `theme` optional; theme among `dungeon`, `forest`, `mountain`) | page load |
-| `path` | any other page with no staged battle, e.g. `"/"` (the title) or `"/?home"` (the town, or the expedition map when the page's saves hold one) | page load |
+| `path` | any other page with no staged battle, e.g. `"/"` (the title) or `"/?home"` (the town) or `"/?home=expedition"` (the expedition map, when the page's saves hold one) | page load |
 | `seed` | battle dice (default 1) | page load |
 | `lang` | `"pt"` or `"en"` (the CLI defaults to `en`) | page load |
 | `viewport` | `{ "width": 1600, "height": 900 }` (default) | CLI |

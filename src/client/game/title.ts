@@ -208,8 +208,8 @@ export function titleScreen() {
       el(
         'div',
         { class: 'menu-actions camp-list' },
-        // Continue only shows with saved progress and says where it opens (the room in play, the expedition map or the
-        // town), like FFT's save summary; New game erases the progress (the 2nd tap confirms)
+        // Continue only shows with saved progress and says where it opens (the room in play, else the town, which offers
+        // to continue the expedition), like FFT's save summary; New game erases the progress (the 2nd tap confirms)
         ...(saved
           ? [
               button(
