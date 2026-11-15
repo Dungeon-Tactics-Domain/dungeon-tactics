@@ -1,6 +1,6 @@
 // Turn-flow timings, in ms, all together to adjust the pace in one place (Fernando's request, Nov 12: flow and
 // timings similar to Final Fantasy Tactics). There's no source for FFT's animation timings: the new ones are estimates.
-// Specification and previous values: docs/medicoes/fluxo-fft-2026-11-12.md.
+// Previous values are kept beside each number.
 // Nov 13, Fernando's request ("slow walking… very realistic jump animations… slower game feel, I don't want fast
 // animations"): the whole pace got ~40% slower than Nov 12's (previous value alongside), walking is at a walk and every step is a
 // jump in 3 parts. Holding Enter still speeds things up 3 times.

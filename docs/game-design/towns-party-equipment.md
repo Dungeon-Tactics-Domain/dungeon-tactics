@@ -26,7 +26,7 @@ Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, te
 - **Tavern:** rumors (short lines that tell the story and give hints) and **optional quests**: extra battles off the main line, with their own rule (survive N turns, protect an ally, defeat a boss), which give gold and items. A quest disappears after it is won.
 - **Shop:** buying and selling equipment with the chest's gold; stock grows each act. Shows before → after on the sheet of whoever will use it (like FFT).
 - **Recruiting:** hires a generic unit of an unlocked class, with a drawn name; priced in gold; the party has a cap (e.g. 8).
-- **Gold:** winning a stage gives gold per star; quests give more.
+- **Gold:** winning a stage gives a flat 150 gold (stars were removed on Nov 13); quests give more.
 
 ## 4. New classes
 
