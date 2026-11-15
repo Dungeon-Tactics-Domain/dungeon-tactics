@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { battleFace, expressionAt, faceCues, frameOf } from '../src/client/battle-face.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { halve } from '../src/shared/battle/half.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
-import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { HALF, UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
@@ -87,6 +88,32 @@ describe('faceCues: what each event does to the faces', () => {
     expect(cues.map(([id, m]) => [id, m.expr])).toContainEqual(['a', 'shout']);
     expect(cues.map(([id, m]) => [id, m.expr])).toContainEqual(['b', 'angry']);
     expect(cues.some(([id, m]) => id === 'b' && m.expr === 'shout')).toBe(false);
+  });
+  // the game plays only split maps: the counter aims at the mover's token, whose corner is where its walk starts
+  it('finds the counter-attack on the split map too, with 2x2 tokens', () => {
+    const spawns = ['warrior', 'soldier', 'beacon'].map((def, i) => ({
+      id: def,
+      def,
+      team: 'hero' as const,
+      x: i,
+      y: 0,
+    }));
+    const { grid } = halve({ id: 't-face', name: 't', en: 't', grid: flat(6, 3), spawns }); // registers the token sheets
+    const s = stateOf([
+      { id: 'a', def: `warrior${HALF}`, team: 'hero', x: 2, y: 2 },
+      { id: 'b', def: `soldier${HALF}`, team: 'enemy', x: 4, y: 2 },
+      { id: 'f', def: `beacon${HALF}`, team: 'hero', x: 0, y: 0 },
+    ]);
+    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    s.rng = HIT_SEED;
+    const b = new Battle(grid, s);
+    const strike = b.act('strike', at(4, 2));
+    expect(strike.length).toBeGreaterThan(0);
+    const walk = b.move(at(6, 4));
+    const events = [...strike, ...walk];
+    const i = events.findIndex((e) => e.k === 'attack' && e.unit === 'b');
+    expect(i).toBeGreaterThan(0);
+    expect(faceCues(events, hp)[i]).toEqual([['b', { expr: 'angry', from: 0, until: 2200 }]]);
   });
 });
 
