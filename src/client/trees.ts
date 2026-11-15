@@ -418,6 +418,9 @@ const SETS: [RegExp, Make[]][] = [
   [/Tree_/, [oak(LEAF.green), oak(LEAF.teal, { spread: 0.4, th: 0.36 }), old, pine]],
 ];
 
+// true when swapTrees replaces this KayKit piece, so its file need not be downloaded
+export const hasPaintedTree = (name: string) => SETS.some(([re]) => re.test(name));
+
 // swaps the KayKit tree pieces for the ones built here: `name` and the variations `name~1`, `name~2`... (painted.ts variant).
 // `lite`: low-triangle version, for the hundreds of trees in the surroundings
 export function swapTrees(pieces: Map<string, THREE.Object3D>, lite = false) {

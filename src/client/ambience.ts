@@ -10,7 +10,7 @@ import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { HALF } from '../shared/battle/units.ts';
 import { roomTheme } from '../shared/crawl/generate.ts';
 import { boxOf, loadPaint, variant } from './painted.ts';
-import { swapProps } from './props.ts';
+import { isPainted, swapProps } from './props.ts';
 import { param } from './store.ts';
 import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { swapTrees } from './trees.ts';
@@ -882,7 +882,15 @@ export async function loadAmbience(grid: Grid): Promise<Ambience> {
   const names = [...new Set([...mood.props.map((p) => p.model), ...(mood.walls ? [...WALL, TORCH] : [])])];
   const loader = new GLTFLoader();
   const models = new Map(
-    await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)),
+    await Promise.all(
+      names.map(
+        async (n) =>
+          [
+            n,
+            !mood.walls && isPainted(n) ? new THREE.Group() : (await loader.loadAsync(`/models/${n}.gltf`)).scene,
+          ] as const,
+      ),
+    ),
   );
   // outside the crypts, the outside trees and bushes are the ones built in code (trees.ts), like the board's
   if (!mood.walls) {

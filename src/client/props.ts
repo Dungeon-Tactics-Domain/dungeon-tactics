@@ -5,6 +5,7 @@
 // and same convention as the trees (painted.ts): y = 0 is the ground, one mesh per piece, the box in `userData.box`.
 import * as THREE from 'three';
 import { lump, piece, ramp, rng, slab, tones, tube, V } from './painted.ts';
+import { hasPaintedTree } from './trees.ts';
 
 const WOOD = tones('#3b2814', '#614224', '#8a6034', '#b08248', '#d2a765');
 const IRON = tones('#1e2126', '#353a41', '#525962', '#767e88');
@@ -294,6 +295,9 @@ const SETS: [RegExp, Make[]][] = [
   [/crates_stacked/, CRATES],
   [/barrel_large/, BARRELS],
 ];
+
+// true when swapTrees or swapProps replaces this KayKit piece: an empty stand-in is enough, so the file is not downloaded
+export const isPainted = (name: string) => hasPaintedTree(name) || SETS.some(([re]) => re.test(name));
 
 // swaps the KayKit pieces for the painted ones (`name`, `name~1`, `name~2`..., painted.ts variant) and adds the caravan remains
 export function swapProps(pieces: Map<string, THREE.Object3D>, litter = false) {

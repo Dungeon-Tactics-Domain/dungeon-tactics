@@ -19,7 +19,7 @@ import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { loadPaint } from './painted.ts';
 import type { PixelSettings } from './pixel-settings.ts';
-import { swapProps } from './props.ts';
+import { isPainted, swapProps } from './props.ts';
 import { Board, CORPSE_MODELS, lookPieceNames } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
 import { ChargeLines } from './scene/charge-lines.ts';
@@ -146,8 +146,17 @@ export class BattleScene {
     const models = new Map(defs.map((d, i) => [d, loaded[i]]));
     // only the map that brings a per-tile look downloads these pieces (~630 KB with the textures)
     const names = lookPieceNames(grid);
+    // open maps swap trees and props for painted ones below: those get an empty stand-in, not a download
     const looks = new Map(
-      await Promise.all(names.map(async (n) => [n, (await loader.loadAsync(`/models/${n}.gltf`)).scene] as const)),
+      await Promise.all(
+        names.map(
+          async (n) =>
+            [
+              n,
+              terrainTex && isPainted(n) ? new THREE.Group() : (await loader.loadAsync(`/models/${n}.gltf`)).scene,
+            ] as const,
+        ),
+      ),
     );
     // open maps: painted trees built in code (trees.ts), with variations, in place of KayKit's
     if (terrainTex) {
