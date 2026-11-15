@@ -8,6 +8,7 @@ import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { foesText } from './campaign.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
+import { statsLine } from './create-ui.ts';
 import { unitFrom } from './dev-roster.ts';
 import { choice, dialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
@@ -210,14 +211,7 @@ export function openParty(n: number, hero: Hero | null) {
           { class: 'party-class' },
           ` · ${unitName(m.cls)} · ${going ? t('vai à batalha', 'in battle') : t('no acampamento', 'at camp')}`,
         ),
-        el(
-          'p',
-          { class: 'party-stats' },
-          t(
-            `Vida ${u.hp} · Velocidade ${u.speed} · Movimento ${u.move * SUB} · Salto ${(u.jump ?? MAX_JUMP) * SUB}`,
-            `HP ${u.hp} · Speed ${u.speed} · Move ${u.move * SUB} · Jump ${(u.jump ?? MAX_JUMP) * SUB}`,
-          ),
-        ),
+        el('p', { class: 'party-stats' }, statsLine(u)),
         el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · ')),
       ),
     );

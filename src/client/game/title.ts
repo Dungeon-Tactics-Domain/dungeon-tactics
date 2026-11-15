@@ -2,6 +2,7 @@
 // the title with Esc or Back; the title itself never closes (the map behind it is just scenery).
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import { CAMPAIGN_KEY, CHAPTERS, chapterId } from '../campaign.ts';
+import { jumpHelp } from '../create-ui.ts';
 import { openDevMenu } from '../dev-menu.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
@@ -145,10 +146,10 @@ function howToPlay() {
         el(
           'li',
           {},
-          t(
-            'Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda. Movimento e Salto contam em meias casas: o Salto do Lanceiro é 6, o do Ladino e do Lacaio 4, o dos outros 2. Por passo se sobe ou desce metade do Salto em níveis, e se voa sobre água funda ou buraco de até metade do Salto em meias casas (Salto 4 voa 1 casa).',
-            'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more. Move and Jump count in half tiles: the Lancer has Jump 6, the Rogue and the Minion 4, the rest 2. Each step climbs or drops up to half the Jump in levels, and a leap clears deep water or a gap of up to half the Jump in half tiles (Jump 4 clears 1 tile).',
-          ),
+          `${t(
+            'Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda.',
+            'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more.',
+          )} ${jumpHelp()}`,
         ),
         el(
           'li',

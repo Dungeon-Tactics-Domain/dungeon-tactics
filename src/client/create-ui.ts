@@ -11,6 +11,27 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { sfx } from './sound.ts';
 
+// a sheet's numbers as the battle counts them: Move and Jump in half tiles (Nov 15, Fernando: "everything in half
+// tiles"); the party list shows the same line (world-ui.ts)
+export const statsLine = (d: { hp: number; speed: number; move: number; jump?: number }) => {
+  const move = d.move * SUB,
+    jump = (d.jump ?? MAX_JUMP) * SUB;
+  return t(
+    `Vida ${d.hp} · Velocidade ${d.speed} · Movimento ${move} · Salto ${jump}`,
+    `HP ${d.hp} · Speed ${d.speed} · Move ${move} · Jump ${jump}`,
+  );
+};
+
+// How to play's Move and Jump sentence, from the sheets so it follows a change. A leap needs 2 cells (a whole tile)
+// to land level past a gap, so only Jump 4 or more clears one (Nov 15)
+export function jumpHelp(): string {
+  const j = (id: string) => (UNIT_DEFS[id].jump ?? MAX_JUMP) * SUB;
+  return t(
+    `Movimento e Salto contam em meias casas: o Salto do Lanceiro é ${j('lancer')}, o do Ladino e do Lacaio ${j('rogue')}, o dos outros ${j('warrior')}. Por passo se sobe ou desce metade do Salto em níveis; com Salto ${2 * SUB} ou mais também se voa 1 casa de água funda ou de buraco.`,
+    `Move and Jump count in half tiles: the Lancer has Jump ${j('lancer')}, the Rogue and the Minion ${j('rogue')}, the rest ${j('warrior')}. Each step climbs or drops up to half the Jump in levels; Jump ${2 * SUB} or more also clears 1 tile of deep water or a gap.`,
+  );
+}
+
 // one sentence on each class's role in the party (what changes in practice, not the lore)
 const ROLE: Record<HeroClass, () => string> = {
   warrior: () =>
@@ -71,14 +92,7 @@ export function createHero(host: HTMLElement): Promise<Hero> {
       const d = UNIT_DEFS[c];
       sheet.replaceChildren(
         el('p', { class: 'create-role' }, ROLE[c]()),
-        el(
-          'p',
-          { class: 'create-stats' },
-          t(
-            `Vida ${d.hp} · Velocidade ${d.speed} · Movimento ${d.move * SUB} · Salto ${(d.jump ?? MAX_JUMP) * SUB}`,
-            `HP ${d.hp} · Speed ${d.speed} · Move ${d.move * SUB} · Jump ${(d.jump ?? MAX_JUMP) * SUB}`,
-          ),
-        ),
+        el('p', { class: 'create-stats' }, statsLine(d)),
         el(
           'ul',
           { class: 'create-skills' },
