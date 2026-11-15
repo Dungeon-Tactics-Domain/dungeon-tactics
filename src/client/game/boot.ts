@@ -90,10 +90,11 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
   } else if (study === DEV_SCENARIO) {
     // battle from the developer menu: the saved roster becomes the scenario (no valid roster, goes back to the default battle)
     const setup = parseSetup(store.json(DEV_KEY));
+    // the Gariland map only: our classes fight on it in half tiles like on any other map. Registered before the check,
+    // which counts the map's starting tiles (Nov 15 review: unregistered, it fell back to the default battle)
+    if (setup?.map.startsWith('fft-')) (await import('../../shared/battle/fft/gariland.ts')).registerFftStudy();
     // roster with a problem (empty team, unit without ability) broke the battle (Nov 13, review): falls back to the default
     if (setup && !problems(setup, t).length) {
-      // the Gariland map only: our classes fight on it in half tiles like on any other map
-      if (setup.map.startsWith('fft-')) (await import('../../shared/battle/fft/gariland.ts')).registerFftStudy();
       scenario = buildDevScenario(setup);
       saveKey = `dt:battle:${DEV_SCENARIO}`;
     }

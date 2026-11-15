@@ -1,13 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CHAPTERS, chapterScenario } from '../src/client/campaign.ts';
-import { buildDevScenario, defaultSetup } from '../src/client/dev-roster.ts';
+import { DEV_KEY, DEV_SCENARIO, defaultSetup } from '../src/client/dev-roster.ts';
+import { selectBattle } from '../src/client/game/boot.ts';
 import { confirm, freshUi, selectMode, tapTile } from '../src/client/interaction.ts';
+import { store } from '../src/client/store.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
-import { canStand, dist, FACING, type Grid, posKey, type Tile, tileAt, withRamps } from '../src/shared/battle/grid.ts';
+import {
+  canStand,
+  dist,
+  FACING,
+  type Grid,
+  posKey,
+  subOf,
+  type Tile,
+  tileAt,
+  withRamps,
+} from '../src/shared/battle/grid.ts';
 import { halve, registerHalf } from '../src/shared/battle/half.ts';
 import { cellsOf, reachable, restsOn, squareMoves } from '../src/shared/battle/pathing.ts';
 import { initialState, MAPS, SCENARIOS, type Scenario } from '../src/shared/battle/scenarios.ts';
@@ -578,11 +590,24 @@ describe('half tiles: whole battles', () => {
     expect(checkOutcome({ ...s, units: s.units.filter((u) => !u.def.startsWith('beacon')) })).toBe('defeat');
   });
 
-  it('a developer battle on the Gariland map plays on half tiles', () => {
-    // Nov 15, Fernando: no whole-tile battle left in the game; the developer menu's Gariland map was the last one
+  it('a developer battle on the Gariland map opens and plays on half tiles', async () => {
+    // Nov 15, Fernando: no whole-tile battle left in the game; the developer menu's Gariland map was the last one.
+    // Through the boot's real path (boot.ts has no DOM or Three): the address and the saved roster
+    // the roster the menu saved (the title registers the study for the menu); a fresh page has no study registered
     registerFftStudy();
-    const sc = halve(buildDevScenario(defaultSetup('fft-gariland')));
-    expect(simulate(sc, 3).outcome).not.toBe('timeout');
+    store.set(DEV_KEY, JSON.stringify(defaultSetup('fft-gariland')));
+    delete SCENARIOS['fft-gariland'];
+    vi.stubGlobal('location', { search: `?scenario=${DEV_SCENARIO}` });
+    try {
+      const sel = await selectBattle();
+      if (!sel || sel === 'world') throw new Error('no battle');
+      expect(sel.scenario.id).toBe(`${DEV_SCENARIO}${HALF}`);
+      expect(subOf(sel.scenario.grid)).toBe(2);
+      expect(sel.scenario.spawns.every((s) => s.def.endsWith(HALF))).toBe(true);
+      expect(simulate(sel.scenario, 3).outcome).not.toBe('timeout');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   }, 30000);
 
   it('every campaign stage plays to the end on half tiles', () => {
