@@ -1,10 +1,10 @@
-// Interface theme (Nov 15, Fernando's request: swappable themes, FFT Classic first): each theme is a block of tokens under
+// Interface theme (Nov 15, Fernando's request: swappable themes, FFT Classic first and the default): each theme is a block of tokens under
 // :root[data-theme="<id>"] in style.css, picked by the data-theme attribute on <html>. Saved in dt:theme.
 import { store } from './store.ts';
 
 export const THEME_KEY = 'dt:theme';
 // id, Portuguese and English name; the first one is the default
-export const THEMES = [['parchment', 'Pergaminho', 'Parchment']] as const;
+export const THEMES = [['fft', 'FFT Clássico', 'FFT Classic']] as const;
 export type Theme = (typeof THEMES)[number][0];
 
 // a missing, unknown or corrupt save falls back to the default

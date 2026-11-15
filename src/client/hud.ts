@@ -633,7 +633,7 @@ export class BattleHud {
       this.queue,
       this.help,
       this.bannerEl,
-      // a menu button (3 bars) on the HUD parchment in place of the row of 7 stone buttons (Nov 13, Fernando's request:
+      // a menu button (3 bars) on the HUD panel colour in place of the row of 7 stone buttons (Nov 13, Fernando's request:
       // "crude and inconsistent"); the keys still work and show on each row
       el('div', { class: 'tools' }, this.burger, this.toolsMenu),
       this.commands,

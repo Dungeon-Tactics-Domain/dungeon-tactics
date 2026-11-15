@@ -1,4 +1,4 @@
-// Worldmap screen (world.ts has the rules): a parchment with the road, the nodes and the party portrait, which walks from
+// Worldmap screen (world.ts has the rules): an illustrated map with the road, the nodes and the party portrait, which walks from
 // node to node. Arrows (or A D W S) walk, Enter enters, Esc goes back to the title; clicking an open node walks to it.
 // Place panel in the bottom-right corner, like the place name on the FFT map; art and text are ours.
 
@@ -277,7 +277,7 @@ export function itemStats(it: ItemDef): string {
 const loadChest = () => parseChest(store.json(CHEST_KEY));
 const loadEquip = () => parseEquip(store.json(EQUIP_KEY));
 
-// Town menu (Nov 13, delivery 3): Shop, Bar with rumors and Party, as parchment over the map; Esc goes back to the map
+// Town menu (Nov 13, delivery 3): Shop, Bar with rumors and Party, as a window over the map; Esc goes back to the map
 function openTown(i: number, party: () => void) {
   const w = WORLD[i];
   const again = () => openTown(i, party);

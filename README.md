@@ -91,4 +91,4 @@ public/             shipped models, textures, sounds, music and CREDITS.txt
 
 The code is released under the [MIT licence](LICENSE).
 
-Third-party assets keep their own licences: the KayKit models, Kenney and OpenGameArt sounds and the music are CC0; the interface icons from game-icons.net are CC BY 3.0 (credit required); the fonts loaded from Google Fonts (Cinzel, Alegreya Sans) are under the SIL Open Font License. Textures, trees, props and the site icon are our own. Full list with authors and links in [`public/CREDITS.txt`](public/CREDITS.txt); every shipped file is indexed in [`docs/ASSETS.md`](docs/ASSETS.md).
+Third-party assets keep their own licences: the KayKit models, Kenney and OpenGameArt sounds and the music are CC0; the interface icons from game-icons.net are CC BY 3.0 (credit required); the Alegreya Sans font shipped in `public/fonts` is under the SIL Open Font License. Textures, trees, props and the site icon are our own. Full list with authors and links in [`public/CREDITS.txt`](public/CREDITS.txt); every shipped file is indexed in [`docs/ASSETS.md`](docs/ASSETS.md).

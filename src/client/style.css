@@ -1,97 +1,128 @@
 :root,
-:root[data-theme="parchment"] {
-  /* Parchment theme, the default (Nov 15, Fernando's request: swappable themes, FFT Classic first). A theme is a
-     :root[data-theme="<id>"] block that redefines tokens (src/client/theme.ts lists them); outside these blocks, CSS and
-     code use only tokens and never name a theme.
-     dark fantasy in colors vivid enough for pixel art (spec: tone). Every color and size in the game comes from here */
-  --bg: #16111f;
-  --fg: #f4ecff;
-  --muted: #c9bddf;
-  --accent: #ffcf4a;
-  --on-accent: #1a1020;
-  --hero: #3d9bff;
-  --enemy: #ff4d4d;
+:root[data-theme="fft"] {
+  /* FFT Classic theme, the default (Nov 15, Fernando's request: "FFT Classic" as the first theme, ported from the lab kit
+     design/src/fft-kit.css; our colours, nothing from the original art). A theme is a :root[data-theme="<id>"] block that
+     redefines tokens (src/client/theme.ts lists them); outside these blocks, CSS and code use only tokens and never name a
+     theme. Every colour and size in the game comes from here */
+  --bg: #0a1028;
+  --fg: #f4f6ff;
+  --muted: #c8d3ee;
+  --accent: #ffd75e;
+  --on-accent: #f4f6ff; /* text on the primary button */
+  --hero: #5aa8ff;
+  --enemy: #e0525a;
   --heal: #6fdc8c;
-  --overlay: rgba(10, 6, 16, 0.8);
-  /* RPG panel frame (Oct 25, Fernando's request: a button that looks like a game, not a web page):
-     gradient stone, dark outline, gold trim and a light bevel on top/dark at the bottom, near-square corners.
-     The gold trim gives 5.9:1 on the stone (minimum 3:1 for a control outline) */
-  --stone: #2c2342;
-  --stone-lo: #1d1630;
-  --edge: #07050c;
-  --trim: #b8923f;
-  --trim-hi: #ffdd7a;
-  --bevel-hi: rgba(255, 255, 255, 0.16);
+  --overlay: rgba(5, 10, 24, 0.8);
+  /* button outside the panels (almost unused): the kit's dark blue button with a light steel trim */
+  --stone: #18295a;
+  --stone-lo: #0f1d40;
+  --edge: #050a18;
+  --trim: #8fa0c8;
+  --trim-hi: #ffd75e;
+  --bevel-hi: rgba(255, 255, 255, 0.14);
   --bevel-lo: rgba(0, 0, 0, 0.5);
-  --well: #110c1b;
-  --gold-btn: linear-gradient(#ffd75e, #e2a62b);
-  --gold-trim: #7a5513;
-  --r: 3px; /* near-square corner: pixel art has no rounded corners */
+  --well: #08112a;
+  --gold-btn: linear-gradient(#3b6ab8, #2a55a0); /* primary button: the kit's brighter blue */
+  --gold-trim: #dfe6f8;
+  --r: 2px; /* near-square corner: pixel art has no rounded corners */
   --frame:
     inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo),
     0 3px 0 var(--edge);
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
-  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 207, 74, 0.55);
+  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 215, 94, 0.55);
   /* same colors as the scene markings (MARK in scene/marks.ts), so the legend matches the map */
   --mark-move: #6fc0ff;
   --mark-range: #ff7a3c;
   --mark-blocked: #b07ae0;
   --mark-threat: #ff2d55;
   --mark-nogo: #ff4040;
-  /* HUD parchment (Nov 12, in the spirit of FFT, our colors): dark ink gives 11:1 on the paper */
-  --paper: #efe3c4;
-  --paper-lo: #dccb9f;
-  --paper-hi: #fff7de;
-  --paper-edge: #5a3d1c;
-  --ink: #2b1f12;
-  --ink-muted: #655134;
-  --focus: #9e2c0c; /* one shade darker (Nov 13, review): 4.7:1 also on --paper-lo, at the foot of the panels */
-  --hp: #4fbf5a;
-  --mp: #4a8fe0;
+  /* HUD panels: blue gradient (top --paper-hi, foot --paper-lo) with a light frame; contrast in the design system */
+  --paper: #21407c;
+  --paper-lo: #0f1d40;
+  --paper-hi: #2a4c8c;
+  --paper-edge: #dfe6f8;
+  --ink: #f4f6ff;
+  --ink-muted: #c8d3ee;
+  --ink-off: #b4bedc; /* text of a disabled menu row: 4.5:1 on --paper-hi (the kit's #8592b4 gave 2.7:1) */
+  --ink-shadow: 1px 1px 0 #050a18; /* light text on the blue panels gets a hard dark shadow */
+  --focus: #ffd75e; /* focus ring and highlight: FFT yellow */
+  --focus-band: linear-gradient(#3e66ad, #33599f); /* menu row under focus: lighter blue than the panel */
+  --hp: #5ccf5f;
+  --mp: #4f9cf0;
   --ct: #e8b030;
   /* translucent strip of the strike preview (Nov 13, Tactics Ogre style): dark enough for the damage pink to pass
-     4.5:1 even over the bright sky (the strip at 80% over white lands near #3e3846) */
-  --strike: rgba(18, 10, 26, 0.8);
-  --strike-dmg: #ffb8cf;
-  /* focus outside the parchment (menu button over the scene, map node, language on the title, dialogue box): the ink
-     ring alone gives 2.5:1 on the dark background and 1.2:1 on the map sea; with the light halo hugging it, the ring
-     exceeds 6.9:1 against the halo on any background */
-  --focus-halo: 0 0 0 3px var(--paper-hi);
-  /* parchment frame of panels, dialogs and the menu button: light inner line and a hard drop shadow */
-  --paper-frame: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, 0.45);
-  --paper-white: #fff; /* brightest paper: Developer fields and the selected class card */
-  --row-hi: rgba(255, 255, 255, 0.5); /* menu row under focus or hover */
-  --focus-band: var(--row-hi); /* background of the menu row under focus */
-  --ink-off: var(--ink); /* text of a disabled menu row (the row also fades) */
+     4.5:1 even over the bright sky */
+  --strike: rgba(5, 10, 24, 0.82);
+  --strike-dmg: #ffc2c2;
+  /* focus outside the panels (menu button over the scene, map node, language on the title, dialogue box): a dark band
+     hugging the yellow ring, so the ring shows on the bright sky and on the grass */
+  --focus-halo: 0 0 0 2px #0a1028;
+  /* frame of panels, dialogs and the menu button: dark outer line, thin inner line, inner top glow and a drop shadow */
+  --paper-frame:
+    0 0 0 1px #050a18, inset 0 0 0 1px rgba(5, 10, 24, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.14),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+  --paper-white: #18295a; /* field background: Developer fields and the class card */
+  --row-hi: rgba(255, 255, 255, 0.1); /* menu row under hover */
   /* floating damage number: pale, and hotter on a strike of 25% of life or more */
   --float-dmg: #ffd0c4;
   --float-big: #ffb199;
-  --fade: #08050e; /* fade to black on entering a map point */
+  --fade: #050a18; /* fade to black on entering a map point */
   /* map nodes: battle red, story blue, gold edge once done, dark grey when locked (the old beige was the colour of the land) */
   --node-battle: #c0412b;
   --node-story: #3d6fb0;
   --node-done: #e2b23a;
   --node-locked: #6f6656;
   --node-locked-edge: #4a4235;
-  --tap: 48px; /* touch target: >= 44 px (spec) with room for the thumb */
+  --tap: 44px; /* touch target: >= 44 px (spec) */
   --gap: 8px;
   --inset: 12px; /* panel margin to the screen edge */
   --slot-w: 440px; /* bottom unit panels; the preview strips sit in the gap between the two */
-  --font: "Alegreya Sans", system-ui, sans-serif; /* running text: legible at small sizes */
-  /* titles, options, Confirm and queue: Cinzel (OFL), an inscriptional serif (Nov 13, Fernando found the Tiny5 pixel font
-     "kind of crude" and asked for "a nicer serif font on the options with some shading"); the variable name stayed to avoid touching all the CSS */
-  --font-title: "Cinzel", var(--font);
+  --font: "Alegreya Sans", "Segoe UI", system-ui, sans-serif; /* hosted in public/fonts (@font-face below) */
+  --font-title: var(--font); /* titles, options and queue: FFT uses one plain letter, no title serif */
   --fs-xs: 12px; /* performance counter */
-  --fs-sm: 14px;
-  --fs: 16px;
-  --fs-lg: 20px;
-  --fs-xl: 32px; /* xl: the hit chance of the strike preview */
-  --fs-title: 24px; /* dialog title, opening narration */
+  --fs-sm: 16px;
+  --fs: 20px;
+  --fs-lg: 24px;
+  --fs-xl: 34px; /* xl: the hit chance of the strike preview */
+  --fs-title: 28px; /* dialog title, opening narration */
   --fs-display: 38px; /* game title in a window, big damage number */
   /* motion: menus open in 90 ms, banners and the dialogue box in 120 ms; the ▶ and ▼ nudge every 0.6 s */
   --t-menu: 90ms;
   --t-open: 120ms;
   --t-nudge: 0.6s;
+}
+
+/* Alegreya Sans (SIL OFL 1.1, public/fonts/OFL-Alegreya-Sans.txt), latin subset from Fontsource 5.3.0 */
+@font-face {
+  font-family: "Alegreya Sans";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/alegreya-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya Sans";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/alegreya-sans-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya Sans";
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/alegreya-sans-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya Sans";
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/alegreya-sans-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya Sans";
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/alegreya-sans-latin-800-normal.woff2") format("woff2");
 }
 
 /* ---- Page ---- */
@@ -104,7 +135,7 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--fg);
-  font: var(--fs) / 1.3 var(--font);
+  font: 500 var(--fs) / 1.3 var(--font);
   font-variant-ligatures: none;
 }
 /* full-screen game: no scrolling, text selection or browser double-tap zoom */
@@ -172,7 +203,7 @@ select:focus-visible,
 summary:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
-} /* ink red: the gold vanished on the parchment (1.2:1) */
+} /* FFT yellow: 7:1 on the blue panels */
 button[aria-pressed="true"] {
   box-shadow: var(--frame), var(--glow);
 }
@@ -214,9 +245,9 @@ button[hidden],
   display: none;
 }
 
-/* ---- Dialog: window on the parchment, its buttons, title, text and action row ---- */
-/* windows on the HUD parchment (Nov 13, Fernando's choice: "everything in parchment", previously dark purple stone). One shade
-   lighter than the battle panel (paper-hi → paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
+/* ---- Dialog: window on the panel blue, its buttons, title, text and action row ---- */
+/* windows on the same blue as the HUD panels (Nov 15, FFT Classic). One shade lighter than the battle panel (paper-hi →
+   paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
 .dialog {
   padding: 14px 18px 18px;
   width: min(460px, 100%);
@@ -227,8 +258,9 @@ button[hidden],
   color: var(--ink);
   background: linear-gradient(var(--paper-hi), var(--paper));
   box-shadow: var(--paper-frame);
+  text-shadow: var(--ink-shadow);
 }
-/* buttons inside the window: light paper with an ink outline (the primary's gold stays); chosen = red border */
+/* buttons inside the window: panel gradient with a light outline (the primary keeps its own colour); chosen = focus border */
 .dialog button:not(.primary) {
   color: var(--ink);
   background: linear-gradient(var(--paper-hi), var(--paper-lo));
@@ -247,7 +279,7 @@ button[hidden],
 .dialog button:focus-visible {
   outline-color: var(--focus);
 }
-/* disabled on parchment: faded, like the menu row (.panel .item); the stone's dark grey looked like a pressed button */
+/* disabled in a window: faded; the stone's dark grey looked like a pressed button */
 .dialog button:disabled {
   filter: none;
   opacity: 0.5;
@@ -312,7 +344,7 @@ button[hidden],
 }
 .dialog .mvp {
   font-weight: 700;
-  color: var(--gold-trim);
+  color: var(--accent);
   margin: 2px 0 10px;
 } /* battle highlight (tally.ts), at the end of the stage and of the standalone battle */
 .dialog .learned {
@@ -504,7 +536,7 @@ button[hidden],
 .dialog.title .legend {
   text-align: left;
 }
-/* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the parchment menu
+/* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the panel menu
    at the bottom; does not close (dialog fixed) */
 .main-title .dialog.title {
   background: none;
@@ -519,7 +551,7 @@ button[hidden],
 .main-title .dialog.title h2 {
   font-size: 64px;
   line-height: 1.05;
-  color: var(--paper-hi);
+  color: var(--fg);
   letter-spacing: 2px;
   margin: 0 0 4px;
   text-shadow:
@@ -529,7 +561,7 @@ button[hidden],
 }
 .main-title .title-sub,
 .main-title .title-foot {
-  color: var(--paper-hi);
+  color: var(--fg);
   text-shadow:
     0 2px 0 var(--edge),
     0 0 8px var(--edge);
@@ -569,8 +601,8 @@ button[hidden],
 }
 
 /* ---- Battle HUD: panels, turn list, help, corner menu, command menu ---- */
-/* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Light
-   parchment panel with dark ink and a brown frame, built here in CSS (nothing from the original art). Fixed positions on
+/* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Blue
+   gradient panel with light text and a light frame, built here in CSS (nothing from the original art). Fixed positions on
    the PC's 1920x1080 screen, except the command menu, which moves beside the character (hud.ts place); mobile gets its
    own stage later. */
 .hud {
@@ -586,9 +618,10 @@ button[hidden],
   padding: 8px 12px;
   color: var(--ink);
   border-radius: var(--r);
-  background: linear-gradient(var(--paper), var(--paper-lo));
+  background: linear-gradient(var(--paper-hi), var(--paper) 45%, var(--paper-lo));
   border: 2px solid var(--paper-edge);
   box-shadow: var(--paper-frame);
+  text-shadow: var(--ink-shadow);
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
 .tile-info {
@@ -640,7 +673,7 @@ button[hidden],
   --side: var(--enemy);
 }
 .queue-row.now {
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--focus-band);
   font-weight: 700;
 }
 .queue-row.charge {
@@ -685,7 +718,7 @@ button[hidden],
   pointer-events: auto;
   z-index: 2;
 } /* the open list goes over the counter and the command menu */
-/* menu button on the same parchment as the panels, with 3 ink bars; open, it is sunken */
+/* menu button on the same blue as the panels, with 3 bars; open, it is sunken */
 .tools .burger {
   background: linear-gradient(var(--paper), var(--paper-lo));
   border-color: var(--paper-edge);
@@ -726,7 +759,7 @@ button[hidden],
 .tools-menu {
   top: calc(var(--tap) + 8px);
   right: 0;
-  width: 320px;
+  width: 360px; /* "Show the whole map" pushed its key out at the 20 px size */
   padding: 6px;
   animation: menu-in var(--t-menu) ease-out;
   transform-origin: top;
@@ -812,16 +845,14 @@ button[hidden],
   min-height: 40px;
   justify-content: space-between;
   position: relative;
-  padding: 4px 10px 4px 28px;
+  padding: 4px 10px 4px 36px; /* room for the ▶ at the 24 px menu size */
   background: transparent;
   border: none;
   box-shadow: none;
   color: var(--ink);
   font: 700 var(--fs-lg) / 1 var(--font-title);
-  text-shadow:
-    0 1px 0 rgba(255, 248, 225, 0.9),
-    0 2px 3px rgba(60, 40, 15, 0.35);
-} /* engraved on the parchment: light below, soft shadow */
+  text-shadow: var(--ink-shadow);
+}
 .panel .item.focus {
   background: var(--focus-band);
 }
@@ -884,8 +915,15 @@ button[hidden],
 }
 .panel .item:disabled {
   filter: none;
-  opacity: 0.45;
   color: var(--ink-off);
+  text-shadow: none; /* flat, not raised like the active rows: not by colour alone */
+}
+.panel .item.focus,
+.panel .item.focus *,
+.panel .item.focus .tool-label::after,
+.queue-row.now,
+.queue-row.now .queue-target {
+  color: var(--ink); /* on --focus-band the muted text, the yellow and --ink-off drop under 4.5:1 (3.1 to 4.1) */
 }
 .panel .item:not(:disabled):active {
   transform: none;
@@ -1185,7 +1223,7 @@ button[hidden],
   pointer-events: none;
   padding: 14px 36px;
   font: 400 30px / 1.2 var(--font-title);
-  color: var(--paper-hi);
+  color: var(--fg);
   text-align: center;
   white-space: nowrap;
   max-width: 92vw;
@@ -1250,7 +1288,7 @@ body:has(.result-overlay) .fps {
 }
 
 /* ---- Dialogue box (talk.ts) and the opening narration ---- */
-/* campaign dialogue box (talk.ts): at the bottom, wide, parchment like the rest of the HUD; the ▼ blinks when the sentence is done */
+/* campaign dialogue box (talk.ts): at the bottom, wide, the same panel as the rest of the HUD; the ▼ blinks when the sentence is done */
 .talk-overlay {
   place-items: end center;
   background: rgba(10, 6, 20, 0.35);
@@ -1333,7 +1371,7 @@ body:has(.result-overlay) .fps {
   color: var(--ink-muted);
 }
 .talk-overlay.dark .talk-keys {
-  color: var(--paper-lo);
+  color: var(--muted);
   right: 50%;
   transform: translateX(50%);
   bottom: -28px;
@@ -1349,7 +1387,7 @@ body:has(.result-overlay) .fps {
   background: none;
   border: none;
   box-shadow: none;
-  color: var(--paper);
+  color: var(--fg);
   text-align: center;
   min-height: 0;
   padding: 0 24px;
@@ -1361,7 +1399,7 @@ body:has(.result-overlay) .fps {
   margin: 0 auto;
 }
 .talk-overlay.dark .talk-next {
-  color: var(--paper);
+  color: var(--fg);
 }
 @keyframes beacon {
   50% {
@@ -1378,8 +1416,8 @@ body:has(.result-overlay) .fps {
 } /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 
 /* ---- World map (world-ui.ts) ---- */
-/* World map (world-ui.ts): full-screen parchment, diamond points (battle) and circle (story), dashed road,
-   walking party portrait. Panels with the same parchment as the battle HUD. */
+/* World map (world-ui.ts): full-screen blue backdrop around the illustrated map, diamond points (battle) and circle (story),
+   dashed road, walking party portrait. Panels with the same blue as the battle HUD. */
 .world {
   position: fixed;
   inset: 0;
@@ -1556,7 +1594,7 @@ body:has(.result-overlay) .fps {
 }
 .world-art .road {
   fill: none;
-  stroke: var(--paper-edge);
+  stroke: #3d3423; /* map ink, like the icons: the panel's light edge vanished on the land (1.5:1) */
   stroke-width: 3;
   stroke-dasharray: 2 6;
   vector-effect: non-scaling-stroke;
@@ -1575,7 +1613,7 @@ body:has(.result-overlay) .fps {
   min-height: 0;
   padding: 0;
   transform: translate(-50%, -50%);
-  border: 3px solid var(--paper-edge);
+  border: 3px solid var(--edge); /* dark ring on the light land; the panel's light edge vanished there */
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
@@ -1655,7 +1693,7 @@ body:has(.result-overlay) .fps {
 .world-actions .item {
   flex: 1 1 28%;
   justify-content: center;
-  padding-left: 28px;
+  padding-left: 36px;
 }
 .world-help {
   position: absolute;
@@ -1680,7 +1718,7 @@ body:has(.result-overlay) .fps {
   white-space: nowrap;
   padding: 2px 8px;
   font: 400 var(--fs-sm) / 1.2 var(--font-title);
-  color: var(--paper-hi);
+  color: var(--fg);
   background: rgba(20, 12, 30, 0.8);
   border-radius: var(--r);
 } /* place name under the party on the map */
@@ -1709,8 +1747,8 @@ body:has(.result-overlay) .fps {
 /* ---- Party, unit sheet and shop (world-ui.ts) ---- */
 /* Party screen on the map (world-ui.ts, openParty): one row per hero, portrait on the left */
 .dialog.party {
-  width: min(560px, 100%);
-}
+  width: min(640px, 100%);
+} /* 560 px scrolled the pt Tavern by a few px once the text grew to 20 px (Nov 15) */
 .party-list {
   list-style: none;
   margin: 0;
@@ -1730,7 +1768,7 @@ body:has(.result-overlay) .fps {
 }
 .party-list .party-card:hover,
 .party-list .party-card:focus-visible {
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--row-hi);
   outline: 2px solid var(--focus);
 }
 .party-card .portrait {
@@ -1782,7 +1820,7 @@ body:has(.result-overlay) .fps {
 }
 
 /* ---- Protagonist creation (create-ui.ts) ---- */
-/* Protagonist creation (create-ui.ts): a central parchment; 4 class cards with portrait and the sheet of the chosen one */
+/* Protagonist creation (create-ui.ts): a central panel; 4 class cards with portrait and the sheet of the chosen one */
 .overlay.create {
   background: rgba(8, 5, 14, 0.7);
 }
@@ -1829,7 +1867,7 @@ body:has(.result-overlay) .fps {
 .create-card[aria-pressed="true"] {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
-  background: var(--paper-white);
+  background: var(--focus-band);
 }
 .create-sheet {
   display: grid;

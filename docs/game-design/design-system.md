@@ -2,7 +2,7 @@
 
 How the Dungeon Tactics interface is built: tokens, pieces, states, input and contrast. Read it together with `src/client/CLAUDE.md` (decisions and reasons). The layout follows FFT and Tactics Ogre; art, fonts, icons and text are ours.
 
-**Status:** this document describes the current parchment interface. On Nov 13 Fernando decided to redesign the interface from scratch in a local design lab; this file is rewritten when that work lands.
+**Status:** this document describes the FFT Classic theme (Nov 15), ported from the design lab kit (`dungeon-tactics-lab/design/src/fft-kit.css`): blue gradient panels, light text with a hard dark shadow, yellow focus. It is the only theme since Nov 15 (decision log in the root `CLAUDE.md`).
 
 **Reading copy:** Design System artifact at https://claude.ai/artifact/RR7xTnyBPxE7GyUd1XysSK (Fernando's choice, Nov 13). Change a token or this document: republish `project/tokens.json` and `project/README.md` there.
 
@@ -20,72 +20,76 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 
 ### Themes (Nov 15)
 
-The interface swaps its look through themes (Fernando's request: FFT Classic as the first swappable theme). A theme is only a block of tokens; layout and pieces stay the same.
+The interface swaps its look through themes (Fernando's request: FFT Classic as the first theme, more later). A theme is only a block of tokens; layout and pieces stay the same.
 
-- **Where:** `:root, :root[data-theme="parchment"]` at the top of `style.css` is the Parchment theme, the default and the base every other theme inherits from. Another theme is a `:root[data-theme="<id>"]` block right below it that redefines only the tokens it changes. Outside these blocks, CSS and code use tokens only and never name a theme.
-- **Choosing:** `src/client/theme.ts` holds `THEMES` (id, Portuguese and English name; the first is the default), `getTheme()` and `setTheme(id)`. The choice is saved in `dt:theme` and set as `data-theme` on `<html>`: an inline script in `index.html` copies the save before the first paint, and `theme.ts` replaces an unknown value with the default on load. Options → Video and effects → Theme lists `THEMES` with `choice()`; switching applies at once, no reload.
-- **Adding a theme:** one entry in `THEMES`, one `:root[data-theme="<id>"]` block in `style.css`, the contrast table below measured for its pairs. A value that today is a literal inside a piece becomes a token in the Parchment block first (with today's value), so the new theme only overrides tokens.
+- **Where:** `:root, :root[data-theme="fft"]` at the top of `style.css` is FFT Classic, the default and the base every other theme inherits from. Another theme is a `:root[data-theme="<id>"]` block right below it that redefines only the tokens it changes. Outside these blocks, CSS and code use tokens only and never name a theme.
+- **Choosing:** `src/client/theme.ts` holds `THEMES` (id, Portuguese and English name; the first is the default), `getTheme()` and `setTheme(id)`. The choice is saved in `dt:theme` and set as `data-theme` on `<html>`: an inline script in `index.html` copies the save before the first paint, and `theme.ts` replaces an unknown value with the default on load. Options → Video and effects → Theme lists `THEMES` with `choice()` (one entry today); switching applies at once, no reload.
+- **Adding a theme:** one entry in `THEMES`, one `:root[data-theme="<id>"]` block in `style.css`, the contrast table below measured for its pairs. A value that is a literal inside a piece becomes a token in the base block first (with its current value), so the new theme only overrides tokens.
+- **Kit names:** the kit's `--font-px` is `--font-title` here (both point to `--font`).
+- **Font:** Alegreya Sans hosted in `public/fonts` (`@font-face` under the token block; SIL OFL 1.1, licence beside the files). No Google Fonts.
 
 ### Colour
 
 | Group | Tokens | Use |
 |---|---|---|
-| Parchment | `--paper` `--paper-lo` `--paper-hi` `--paper-edge` | background, foot of the gradient, highlight and frame of panels and dialogs |
-| Ink | `--ink` `--ink-muted` `--focus` | text, muted text, highlight/focus/link |
+| Panel | `--paper-hi` `--paper` `--paper-lo` `--paper-edge` | top, middle and foot of the blue gradient of panels and dialogs; light frame |
+| Ink | `--ink` `--ink-muted` `--ink-off` `--ink-shadow` `--focus` | text, muted text, disabled row text, the hard dark text shadow, yellow highlight/focus/link |
+| Focus row | `--focus-band` `--row-hi` | menu row under focus (lighter blue band), row under hover |
 | Dark scene | `--bg` `--fg` `--muted` `--overlay` | page background, text over the scene, veil behind dialogs |
-| Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the parchment (almost unused today), bar background |
-| Gold | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button, battle highlight |
+| Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the panels (almost unused today), bar background |
+| Primary | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button (brighter blue; the names stayed from the gold one), battle highlight (yellow) |
 | Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
 | Bars | `--hp` `--mp` `--ct` `--heal` | HP, MP, CT, healing |
 | Strike preview | `--strike` `--strike-dmg` | arrow band between the panels |
-| Parchment extras | `--paper-white` `--row-hi` | brightest paper (Developer fields, selected class card); menu row under hover |
-| Theme hooks | `--focus-band` `--ink-off` | menu row under focus (today `--row-hi`), text of a disabled menu row (today `--ink`) |
+| Fields | `--paper-white` | Developer fields (dark blue field) |
 | Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
 | Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
 | Fade | `--fade` | black of the fade on entering a map point |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` | legend; same as `MARK` in `src/client/scene/marks.ts` |
 
-### Contrast (measured on Nov 13, WCAG 2.1 formula, script over the CSS hex values)
+### Contrast (measured on Nov 15, WCAG 2.1 formula, script over the CSS hex values; translucent colours blended over their worst background)
 
-| Pair | On `--paper-hi` | On `--paper` | On `--paper-lo` (foot) | Bar |
+| Pair | On `--paper-hi` (top) | On `--paper` | On `--paper-lo` (foot) | Bar |
 |---|---|---|---|---|
-| `--ink` | 15.0 | 12.6 | 10.0 | 4.5 ✓ |
-| `--ink-muted` | 7.1 | 5.9 | 4.7 | 4.5 ✓ |
-| `--focus` | 7.0 | 5.8 | 4.6 | 4.5 ✓ |
-| `--gold-trim` (battle highlight) | 6.3 | 5.3 | 4.2 | 4.5: passes in dialogs (`paper-hi` → `paper`); do not use at the foot of `.panel` |
+| `--ink` | 7.8 | 9.3 | 15.3 | 4.5 ✓ |
+| `--ink-muted` | 5.6 | 6.7 | — | 4.5 ✓ |
+| `--focus` / `--accent` (titles, names, battle highlight) | 6.0 | 7.2 | — | 4.5 ✓ |
+| `--ink-off` (disabled row; the kit's `#8592b4` gave 2.7, raised to `#b4bedc`) | 4.5 | — | — | 4.5 ✓ |
 
-| Pair on dark | Value | Bar |
+| Other pair | Value | Bar |
 |---|---|---|
-| `--fg` on `--bg` | 16.1 | ✓ |
-| `--muted` on `--stone` | 8.3 | ✓ |
-| `--on-accent` on gold (light / dark end) | 13.3 / 8.5 | ✓ |
-| `--strike-dmg` on the band (worst case `#3e3846`) | 7.0 | ✓ |
-| `--focus` alone on `--bg` | 2.5 | ✗ → hence `--focus-halo` |
-| `--focus` alone on the map sea | 1.2 | ✗ → same |
+| `--ink` on `--focus-band` (top / foot) | 5.3 / 6.3 | ✓ (every text in a focused row and in the queue's current row turns `--ink`: on the band `--ink-muted` gives 3.8, `--focus` 4.1, `--ink-off` 3.1) |
+| `--on-accent` on `--gold-btn` (top / foot) | 4.9 / 6.7 | ✓ |
+| `--ink` on `--paper-white` (fields) | 13.0 | ✓ |
+| `--fg` on `--bg` | 17.4 | ✓ |
+| `--muted` on `--stone` | 9.3 | ✓ |
+| `--fg` / `--strike-dmg` / `--muted` / `--accent` / `--heal` on the strike band over a white sky | 11.2 / 7.9 / 8.0 / 8.7 / 7.1 | ✓ |
+| `--fg` on the place name tag over the map land | 11.9 | ✓ |
+| `--focus` alone on the white sky | 1.4 | ✗ → hence `--focus-halo` (dark band: 18.8 on white, 13.5 against the ring) |
 
 ### Typography
 
 | Token | Value | Use |
 |---|---|---|
-| `--font` | Alegreya Sans | running text, small labels, numbers |
-| `--font-title` | Cinzel | titles, menu rows, primary button, queue |
-| `--fs-xs` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 12 / 14 / 16 / 20 / 32 px | fps counter / note and help / body / menu item and name / preview damage |
-| `--fs-title` / `--fs-display` | 24 / 38 px | dialog title and opening narration / game title in a window and big damage number |
+| `--font` | Alegreya Sans (hosted), weights 400, 500 (body), 700, 800, italic 400 | all text |
+| `--font-title` | `var(--font)` | titles, menu rows, primary button, queue (FFT uses one plain letter; kept as its own token so a theme can change it) |
+| `--fs-xs` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 12 / 16 / 20 / 24 / 34 px | fps counter / note and help / body / menu item and name / preview damage |
+| `--fs-title` / `--fs-display` | 28 / 38 px | dialog title and opening narration / game title in a window and big damage number |
 
-Minimum text: 14 px (the key hint, 11 px, and the fps counter, 12 px, are the exceptions).
+Minimum text: 16 px (the key hint, 11 px, and the fps counter and the map compass letters, 12 px, are the exceptions). Panel and dialog text carries `--ink-shadow`.
 
 ### Space, corner, shadow
 
 | Token | Value | Use |
 |---|---|---|
 | `--gap` | 8 px | default gap between pieces; multiples of 4 (4, 6, 8, 12, 16, 24) |
-| `--tap` | 48 px | minimum button height |
-| `--r` | 3 px | corner of everything |
+| `--tap` | 44 px | minimum button height |
+| `--r` | 2 px | corner of everything |
 | `--slot-w` | 440 px | bottom unit panels |
-| `--frame` / `--frame-pressed` | stone bevel | button outside the parchment |
-| `--glow` | gold glow | selected stone button |
-| `--focus-halo` | 3 px of `--paper-hi` | focus outside the parchment (see Focus) |
-| `--paper-frame` | `inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0,0,0,.45)` | `.panel`, `.dialog`, menu button, title menu |
+| `--frame` / `--frame-pressed` | bevel with a steel trim | button outside the panels |
+| `--glow` | yellow glow | selected button outside the panels |
+| `--focus-halo` | 2 px of `#0a1028` | focus outside the panels (see Focus) |
+| `--paper-frame` | dark outer line, thin inner line, inner top glow, 3 px drop shadow | `.panel`, `.dialog`, menu button, title menu |
 
 | `--inset` | 12 px | panel margin to the screen edge |
 
@@ -114,36 +118,36 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | Piece | Lives in | States | Used in |
 |---|---|---|---|
 | **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, place panel on the map, dialogue box, creation |
-| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F the same through `--focus-band`, with pulsing ▶ (`.focus`) · P no shift · D 45% opacity, text `--ink-off` | commands, abilities, Yes/No, corner list, map actions |
+| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) | commands, abilities, Yes/No, corner list, map actions |
 | **Bar** `gauge()` | `hud.ts` | value + number; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
 | **Unit panel** `unitPanel()` | `hud.ts` | hero/enemy by side stripe and side text; mirrored for the target | bottom left and right |
 | **Portrait** `portrait()` | `hud.ts` | 72×96 (panel, dialogue, creation), 48×64 (party), 44×58 (map), 24×32 (queue) | everywhere with a face |
 | **Place beside** `placeBeside()` | `hud.ts` (pure, tested) | right; no room, left; slides vertically | menu beside the unit |
 | **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary); `fixed` does not close; `onBack` goes back | title, Options, Status, How to play, Credits, Party, Sheet, Shop, Tavern, Town, stage end, Developer |
-| **Primary button** `button('primary', …)` | `icons.ts`, `style.css` | N gold · H lighter · F ink ring · P inverted bevel and 2 px down · D faded 50% | one per dialog: the action that continues the flow |
-| **Regular button** `button('secondary', …)` | `icons.ts`, `style.css` | N paper with outline · H lighter · F ring · P sinks · D faded 50% · S 3 px ink border and bold | secondary actions, `choice()` options |
+| **Primary button** `button('primary', …)` | `icons.ts`, `style.css` | N bright blue · H lighter · F yellow ring · P inverted bevel and 2 px down · D faded 50% | one per dialog: the action that continues the flow |
+| **Regular button** `button('secondary', …)` | `icons.ts`, `style.css` | N panel gradient with a light outline · H lighter · F ring · P sinks · D faded 50% · S 3 px yellow border and bold | secondary actions, `choice()` options |
 | **Icon button** `iconButton()` (a `button('icon', …)` named by `title` and `aria-label`) | `icons.ts` | like the regular one; name in `title` and `aria-label` | dialog ✕, menu button (3 bars) |
 | **Exclusive choice** `choice()` | `dialog.ts` | S through `aria-pressed`; applies at once, no Save | Options (sections, pixel, language, text), class on the Sheet |
 | **Value bar** `slider()` | `dialog.ts` | native range input, steps of 5%, number beside it | volume |
 | **Definition list** `.keys` | `style.css` | text | keys, sheet numbers, abilities, shop |
 | **Legend** `.legend` + `.sw` | `style.css` | text + colour swatch; `.sw.nogo` also draws the mark's cross, its red is close to the threat's | tile marks, tavern rumours |
 | **Dialogue box** `talk()` | `talk.ts` | letter by letter; ▼ blinks when done; `dark` for the opening | conversations and narration |
-| **Class card** `.create-card` | `create-ui.ts` | S ink ring and white background | protagonist creation |
+| **Class card** `.create-card` | `create-ui.ts` | S yellow ring and `--focus-band` background | protagonist creation |
 | **Map node** `.world-node` | `world-ui.ts` | battle red diamond · story blue circle · done gold border · D dark grey · here: ring with halo | world map |
-| **Form field** (text, select, number, checkbox, `details`) | `create-ui.ts`, `dev-menu.ts` | F the same ink ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | protagonist name, Developer menu |
+| **Form field** (text, select, number, checkbox, `details`) | `create-ui.ts`, `dev-menu.ts` | F the same yellow ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | protagonist name, Developer menu |
 | **Key hint** `.hint` | `style.css` | PC with keyboard only (`.kbd`) | menu rows and buttons |
 | **Banner** `.banner` / `.announce` | `style.css` | enters, holds, leaves | ability name, stage objective |
 
 ### Focus
 
 - 3 px ring in `--focus`, offset 3 px, on every button, form field (text, number, select, checkbox, `details` summary) and the volume bar (`:focus-visible`).
-- On parchment the ring alone exceeds 4.5:1. **Outside the parchment** (menu button over the scene, map node, title language button, dialogue box) `--focus-halo` is added: a light band hugging the inside of the ring, which guarantees 6.9:1 between the two on any background.
+- On the blue panels the yellow ring alone exceeds 6:1. **Outside the panels** (menu button over the scene, map node, title language button, dialogue box) `--focus-halo` is added: a dark band hugging the ring, so it shows on the bright sky (18.8:1) and on the grass.
 - Menu rows do not use a ring: focus is the ▶ and the light background (`.focus`), moved by the same cursor from keyboard, mouse and gamepad.
 - A dialog that rebuilds itself after an action (Sheet) returns focus to the same button.
 
 ### Disabled
 
-- One look on parchment: faded (50% in dialogs, 45% on menu rows), no dark grey.
+- One look: buttons in dialogs faded to 50%; menu rows in `--ink-off` without the text shadow (4.5:1, still readable); no dark grey.
 - A disabled button says why in its own text or in the line above it ("20 short", "Party is full: dismiss someone on their sheet").
 
 ## 3. Input
@@ -174,7 +178,7 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 |---|---|
 | Long unit sheet | 927 px of content in a 644 px dialog (scrolling) → two columns, 480 px with no scrolling; after equipping or changing class, focus stays on the same button |
 | Current class looked like a broken button | dark-grey disabled button with ✓ → `choice()` with the selected one marked |
-| Invisible focus outside the parchment | ring at 2.5:1 on the dark background and 1.2:1 on the sea → ring + halo, 6.9:1 |
+| Invisible focus outside the panels | ring at 2.5:1 on the dark background and 1.2:1 on the sea → ring + halo (today a dark halo, see Focus) |
 | Legend did not match the map | white swatch, "White: where the hero can move" → the scene's blue, text with colour and pattern |
 | Shop and Tavern without the reason | grey Buy and Recruit with only an error sound → "N short" and a line with what is missing; buttons aligned right |
 | Two disabled looks | dark grey (dialog) and faded (menu) → faded in both |
@@ -188,9 +192,11 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 - **Tavern:** quests and recruiting in the same long dialog (833 px).
 - **Gamepad in world map dialogs:** in `?world` there is no `Game`, so `pollPad` does not run; the loop in `world-ui.ts` only forwards A. Party, Sheet, Shop and Tavern cannot be navigated with the d-pad.
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
-- **`--stone*` tokens** are almost unused after "everything in parchment": only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
+- **`--stone*` tokens** are almost unused since every window took the panel look (Nov 13): only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 
 ## 7. What was and was not checked
+
+Nov 15 (FFT Classic): title, credits, battle commands, abilities, corner menu, Status, Options (Game, Video, Controls), aiming, dialogue box, world map, town and party windows, opening and creation, at 1920×1080 in pt and en, in headless Chrome; the strike preview strips and 1280×720 were not opened.
 
 Checked in the browser (measured on Nov 13, size confirmed through innerWidth and innerHeight):
 

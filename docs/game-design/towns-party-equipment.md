@@ -22,7 +22,7 @@ Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, te
 
 ## 3. Towns
 
-- **On the map:** town points (Vauclair and one in Act II), entered the same way as story points. Entering opens the town menu in parchment, over the map, with the town music.
+- **On the map:** town points (Vauclair and one in Act II), entered the same way as story points. Entering opens the town menu in a window over the map, with the town music.
 - **Tavern:** rumors (short lines that tell the story and give hints) and **optional quests**: extra battles off the main line, with their own rule (survive N turns, protect an ally, defeat a boss), which give gold and items. A quest disappears after it is won.
 - **Shop:** buying and selling equipment with the chest's gold; stock grows each act. Shows before → after on the sheet of whoever will use it (like FFT).
 - **Recruiting:** hires a generic unit of an unlocked class, with a drawn name; priced in gold; the party has a cap (e.g. 8).

@@ -111,6 +111,7 @@ music/battle.mp3 (standalone battle)
     cog: lorc/cog.svg, Lorc (http://lorcblog.blogspot.com)
     tv: delapouite/tv.svg, Delapouite (http://delapouite.com)
 
-== Fonts (loaded from Google Fonts by index.html, not shipped in the repository) ==
-Alegreya Sans (running text): SIL Open Font License 1.1, as stated in the in-game credits (src/client/main.ts); author not recorded here.
-Cinzel (titles, options and buttons): Natanael Gama, SIL Open Font License 1.1 (Google Fonts)
+== Fonts (shipped in public/fonts) ==
+Alegreya Sans (all interface text): Copyright 2013 The Alegreya Sans Project Authors (https://github.com/huertatipografica/Alegreya-Sans),
+  SIL Open Font License 1.1 (public/fonts/OFL-Alegreya-Sans.txt). Latin woff2 files 400, 400 italic, 500, 700 and 800
+  from the Fontsource package @fontsource/alegreya-sans 5.3.0 (https://fontsource.org/fonts/alegreya-sans)

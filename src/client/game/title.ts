@@ -93,10 +93,7 @@ export function credits(back: () => void = titleScreen) {
         el(
           'li',
           {},
-          t(
-            'Fontes: Cinzel e Alegreya Sans (SIL Open Font License 1.1)',
-            'Fonts: Cinzel and Alegreya Sans (SIL Open Font License 1.1)',
-          ),
+          t('Fonte: Alegreya Sans (SIL Open Font License 1.1)', 'Font: Alegreya Sans (SIL Open Font License 1.1)'),
         ),
         el('li', {}, t('História, mapas e regras: Dungeon Tactics', 'Story, maps and rules: Dungeon Tactics')),
       ),
