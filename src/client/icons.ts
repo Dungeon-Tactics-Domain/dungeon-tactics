@@ -58,3 +58,53 @@ export const UI_ICON = {
   recenter: 'on-target',
   pixel: 'tv',
 };
+
+// Ability icons (Nov 15, Fernando approved the 32 px set): one 6x4 atlas of 32 px cells, in the order of its .json (abilities,
+// then the Move and Wait commands). The image comes from the theme (--ability-atlas in style.css); a theme that brings its own
+// atlas keeps this layout.
+const ATLAS = [
+  'strike',
+  'heavy_strike',
+  'shield_bash',
+  'spin',
+  'cleave',
+  'slam',
+  'shot',
+  'aimed_shot',
+  'knock_shot',
+  'dagger',
+  'throwing_knife',
+  'stab',
+  'firebolt',
+  'blast',
+  'gust',
+  'heal',
+  'shadow_wave',
+  'deathblow',
+  'trip',
+  'sweep',
+  'lance',
+  'lance_jump',
+  'move',
+  'wait',
+];
+export const ATLAS_COLUMNS = 6;
+// cell of an ability or command in the atlas; null when it has none (the FFT study abilities, a new ability)
+export const atlasCell = (id: string): [x: number, y: number] | null => {
+  const n = ATLAS.indexOf(id);
+  return n < 0 ? null : [n % ATLAS_COLUMNS, Math.floor(n / ATLAS_COLUMNS)];
+};
+// 32 px ability icon, decorative. The atlas cell is opaque and drawn over the game-icons symbol: an ability without a cell, or
+// an atlas that fails to load, shows the symbol underneath
+export function abilityIcon(id: string): HTMLElement {
+  const cell = atlasCell(id);
+  return el(
+    'span',
+    {
+      class: `ability-icon${cell ? ' in-atlas' : ''}`,
+      'aria-hidden': 'true',
+      style: cell ? `--cell-x:${cell[0]};--cell-y:${cell[1]}` : null,
+    },
+    icon(UI_ICON.recenter),
+  );
+}

@@ -31,7 +31,7 @@ import {
 } from './command.ts';
 import { classOf } from './dev-roster.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
+import { abilityIcon, button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
@@ -857,7 +857,11 @@ export class BattleHud {
             : '';
         return button(
           `item${i === s.index ? ' focus' : ''}`,
-          [el('span', {}, abilityName(id)), el('span', { class: 'item-cost' }, cost)],
+          [
+            abilityIcon(id),
+            el('span', { class: 'item-label' }, abilityName(id)),
+            el('span', { class: 'item-cost' }, cost),
+          ],
           () => this.act.ability(i),
           { role: 'menuitem', disabled: !abilityEnabled(b, id) },
         );
@@ -896,7 +900,12 @@ export class BattleHud {
         ),
       );
     this.confirmBox.replaceChildren(
-      el('strong', {}, t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`)),
+      el(
+        'strong',
+        { class: 'confirm-title' },
+        abilityIcon(s.ability),
+        t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`),
+      ),
       ...rows,
       el(
         'div',

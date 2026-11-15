@@ -47,6 +47,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
 | Fade | `--fade` | black of the fade on entering a map point |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` | legend; same as `MARK` in `src/client/scene/marks.ts` |
+| Theme art | `--ability-atlas` | the whole `url(...)` of the theme's 32 px ability icon atlas (`public/ui/fft/atlas-32.png`); CSS cannot join a path to a file name, so a theme with its own art redefines the full value |
 
 ### Contrast (measured on Nov 15, WCAG 2.1 formula, script over the CSS hex values; translucent colours blended over their worst background)
 
@@ -122,6 +123,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) on the sunken `--row-off` band, also when focused (▶ but no `--focus-band`) | commands, abilities, Yes/No, corner list, map actions |
 | **Bar** `gauge()` | `hud.ts` | value + number; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
 | **Unit panel** `unitPanel()` | `hud.ts` | hero/enemy by side stripe and side text; mirrored for the target | bottom left and right |
+| **Ability icon** `abilityIcon(id)` | `icons.ts`, `style.css` | 32×32 at 1:1 (`image-rendering: pixelated`), the atlas cell of the ability (`atlasCell`, pure and tested against the atlas .json) over the game-icons `on-target` symbol: no cell (FFT study abilities, a new ability) or an image that fails shows the symbol; faded 50% in a disabled row | abilities submenu, "Execute?" title |
 | **Portrait** `portrait()` | `hud.ts` | 72×96 (panel, dialogue, creation), 48×64 (party), 44×58 (map), 24×32 (queue) | everywhere with a face |
 | **Place beside** `placeBeside()` | `hud.ts` (pure, tested) | right; no room, left; slides vertically | menu beside the unit |
 | **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary); `fixed` does not close; `onBack` goes back | title, Options, Status, How to play, Credits, Party, Sheet, Shop, Tavern, Town, stage end, Developer |

@@ -98,6 +98,8 @@
   --t-menu: 90ms;
   --t-open: 120ms;
   --t-nudge: 0.6s;
+  /* art of the theme: the 32 px ability icon atlas (icons.ts abilityIcon, approved Nov 15), shown at its own pixel size */
+  --ability-atlas: url("/ui/fft/atlas-32.png");
 }
 
 /* Alegreya Sans (SIL OFL 1.1, public/fonts/OFL-Alegreya-Sans.txt), latin subset from Fontsource 5.3.0 */
@@ -839,6 +841,11 @@ button[hidden],
 .confirm strong {
   font: 400 var(--fs-lg) / 1.2 var(--font-title);
 }
+.confirm-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .confirm p {
   margin: 6px 0 0;
   font-size: var(--fs-sm);
@@ -941,6 +948,35 @@ button[hidden],
 .item-cost {
   font: 400 var(--fs-sm) / 1 var(--font);
   color: var(--ink-muted);
+}
+.item-label {
+  flex: 1;
+  text-align: left;
+}
+/* ability icon (icons.ts abilityIcon): the theme's 32 px atlas cell at 1:1, crisp, over the game-icons symbol; the symbol
+   shows only when the ability has no cell or the image fails to load (the cell is opaque) */
+.ability-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  color: var(--ink-muted);
+}
+.ability-icon .gi {
+  width: 28px;
+  height: 28px;
+}
+.ability-icon.in-atlas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ability-atlas) calc(var(--cell-x) * -32px) calc(var(--cell-y) * -32px) no-repeat;
+  image-rendering: pixelated;
+}
+.panel .item:disabled .ability-icon {
+  opacity: 0.5;
 }
 /* menus beside the character over the fps counter, which covered the submenu */
 .commands,
