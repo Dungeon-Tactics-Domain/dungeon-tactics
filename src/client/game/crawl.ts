@@ -18,7 +18,7 @@ import {
 import { roomGroup, roomId } from '../../shared/crawl/generate.ts';
 import { EQUIP_KEY, parseEquip } from '../chest.ts';
 import { buildDevScenario, slotsOf, unitFrom } from '../dev-roster.ts';
-import { dialog } from '../dialog.ts';
+import { commandRow, dialog } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
@@ -101,14 +101,32 @@ export function homeScreen() {
   else townScreen();
 }
 
-// The town (fixed for now: only the party grows): the Shop, Tavern and Party windows, the quest, and the way back to the
-// title (quick battles, how to play, developer, credits). Over the spinning backdrop battle
+// The town (fixed for now: only the party grows) as the lab kit's command menu in the top right corner (Nov 15 mockups):
+// the quest, the Shop, Tavern and Party windows, and the way back to the title (quick battles, how to play, developer,
+// credits). Over the spinning backdrop battle
 export function townScreen() {
   setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
   const live = liveExpedition();
+  // the window beside the menu, if any (its 'close' skips its onBack)
+  const closeBeside = () => {
+    for (const o of document.querySelectorAll('.overlay')) if (o !== d.overlay) o.dispatchEvent(new Event('close'));
+  };
   const go = (fn: () => void) => () => {
+    closeBeside();
     d.close();
     fn();
+  };
+  // Shop, Tavern and Party open beside the menu, which stays on screen with the open row picked; another row swaps the
+  // window, and closing it gives the focus back to its row
+  const beside = (open: (back: () => void) => void) => (e: Event) => {
+    const row = e.currentTarget as HTMLButtonElement;
+    closeBeside();
+    for (const b of d.overlay.querySelectorAll('.picked')) b.classList.remove('picked');
+    row.classList.add('picked');
+    open(() => {
+      row.classList.remove('picked');
+      row.focus();
+    });
   };
   const d = dialog(
     'title',
@@ -116,58 +134,60 @@ export function townScreen() {
     [
       el(
         'div',
-        { class: 'menu-actions camp-list' },
+        { class: 'menu-actions camp-list command-list' },
         // an expedition in progress is continued; a new quest over it asks a 2nd tap, since it abandons it (Fernando, Nov 15)
         ...(live
           ? [
-              button(
-                'primary',
+              commandRow(
+                'gold',
                 [
                   t('Continuar a expedição', 'Continue the expedition'),
                   el('small', { class: 'continue-where' }, floorOf(live)),
                 ],
                 go(() => expeditionScreen(live)),
+                'primary',
               ),
             ]
           : []),
-        button(
-          live ? 'secondary' : 'primary',
-          t('Ir para a quest: descer à masmorra', 'Go on the quest: descend into the dungeon'),
+        commandRow(
+          'gold',
+          t('Ir para a quest', 'Go on the quest'),
           (e: Event) => {
             const btn = e.currentTarget as HTMLButtonElement;
             if (live && !btn.dataset.armed) {
               btn.dataset.armed = '1';
-              btn.textContent = t(
+              // the label only: the row keeps its orb
+              btn.lastChild!.textContent = t(
                 'Toque de novo: abandona a expedição atual',
                 'Tap again: abandons the current expedition',
               );
               return;
             }
-            d.close();
-            depart();
+            go(depart)();
           },
+          live ? 'secondary' : 'primary',
         ),
-        button(
-          'secondary',
-          t('Loja: comprar e vender equipamento', 'Shop: buy and sell equipment'),
-          go(() => openShop(townScreen)),
+        commandRow(
+          'gold',
+          t('Loja', 'Shop'),
+          beside((back) => openShop(back)),
         ),
-        button(
-          'secondary',
-          t('Taverna: recrutar', 'Tavern: recruits'),
-          go(() => openBar(townScreen)),
+        commandRow(
+          'blue',
+          t('Taverna', 'Tavern'),
+          beside((back) => openBar(back)),
         ),
-        button(
-          'secondary',
-          t('Grupo: classe, equipamento e quem vai', 'Party: class, equipment and who goes'),
-          go(() => openParty(townScreen)),
+        commandRow(
+          'blue',
+          t('Grupo', 'Party'),
+          beside((back) => openParty(back)),
         ),
-        button('secondary', t('Tela de título', 'Title screen'), go(titleScreen)),
+        commandRow('bronze', t('Tela de título', 'Title screen'), go(titleScreen)),
       ),
     ],
     { fixed: true },
   );
-  d.overlay.classList.add('main-title');
+  d.overlay.classList.add('town-menu');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 

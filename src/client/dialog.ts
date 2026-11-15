@@ -4,7 +4,7 @@
 // "on the title screen pressing Esc starts a battle… I want a real title screen"). `onBack`: what opens when the
 // player closes it (✕, Esc, tap outside); the screens that leave the title go back to it. Closing from code (`close`) doesn't call it.
 import { t } from './i18n.ts';
-import { el, iconButton } from './icons.ts';
+import { button, type Child, el, iconButton } from './icons.ts';
 
 // With a window open, the game behind is `inert` (Nov 13, review): Tab left the window and Enter acted on the battle behind
 const syncInert = () =>
@@ -49,18 +49,27 @@ export function dialog(cls: string, title: string, body: Node[], opts: { fixed?:
         items[at < 0 ? (step > 0 ? 0 : items.length - 1) : (at + step + items.length) % items.length]?.focus();
         return;
       }
-      if (e.code !== 'Escape') return;
+      // only the topmost window takes Esc too: the fixed town menu stays open under its Shop, and took the key first
+      if (e.code !== 'Escape' || !top) return;
       e.preventDefault();
       e.stopImmediatePropagation(); // Esc closes only the dialog: without this it reached the game and canceled the choice too
       back();
     },
     { capture: true, signal: ac.signal },
   );
+  // a 'close' event closes it from outside without its onBack: the town menu closes the window beside it, which reopens
+  // itself after each purchase, so no caller keeps its handle
+  overlay.addEventListener('close', close);
   document.body.append(overlay);
   syncInert();
   x?.focus();
   return { overlay, close };
 }
+
+export type Orb = 'gold' | 'blue' | 'bronze';
+// A row of the lab kit's command menu inside a window (town, title): a glass orb before the name, in a `.command-list`
+export const commandRow = (orb: Orb, label: Child | Child[], onclick: (e: Event) => void, cls = 'secondary') =>
+  button(cls, [el('span', { class: `orb ${orb}`, 'aria-hidden': 'true' }), ...[label].flat()], onclick);
 
 // Group of exclusive options (like radio) in buttons with aria-pressed; switches instantly, no save button
 export function choice<T>(

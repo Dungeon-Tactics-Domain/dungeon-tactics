@@ -210,7 +210,8 @@ export class Game {
     // 1st frame with a pad: only records what was already pressed (the A that entered the stage does not pick the 1st command)
     if (!this.padPrimed) return void (this.padPrimed = true);
     for (const a of actions) {
-      const overlay = document.querySelector<HTMLElement>('.overlay');
+      // the topmost window: the town menu stays open under the window beside it
+      const overlay = [...document.querySelectorAll<HTMLElement>('.overlay')].at(-1);
       if (!overlay) {
         this.runKey(a);
         continue;

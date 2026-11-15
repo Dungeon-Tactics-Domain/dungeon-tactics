@@ -103,6 +103,7 @@
   /* glass orb before the commands with no atlas icon (Act, Status), the lab kit's command markers; off when disabled */
   --orb-gold: #c8a040;
   --orb-blue: #4a78d0;
+  --orb-bronze: #b06a30; /* the kit's leave and options rows */
   --orb-off: #4a5068;
 }
 
@@ -1269,6 +1270,9 @@ button[hidden],
 .orb.gold {
   --orb: var(--orb-gold);
 }
+.orb.bronze {
+  --orb: var(--orb-bronze);
+}
 .panel .item:disabled .orb {
   --orb: var(--orb-off);
 }
@@ -2250,4 +2254,62 @@ p.gold strong::before {
   background: var(--paper);
   padding: 8px 0;
   border-top: 2px solid var(--paper-edge);
+}
+
+/* ---- Town menu and the windows beside it (game/crawl.ts; Design lab mockups, Nov 15) ---- */
+/* the lab kit's command menu inside a window (town, title): 60 px rows with a glass orb before the name; the row whose
+   window is open stays picked like Act with its submenu open (sunken band, yellow edge, ▸) */
+.dialog .command-list > button {
+  min-height: 60px;
+  gap: 14px;
+  padding-left: 46px;
+}
+.dialog .command-list > button:focus::before {
+  left: 14px;
+}
+.dialog .command-list > button.picked {
+  background: color-mix(in srgb, var(--shade) 45%, transparent);
+  box-shadow: inset 4px 0 0 var(--focus);
+}
+.dialog .command-list > button.picked::after {
+  content: "▸";
+  margin-left: auto;
+  color: var(--focus);
+}
+/* the town: the menu in the top right corner at the kit's 422 px, the backdrop battle in full view */
+.town-menu {
+  place-items: start end;
+  padding: var(--inset);
+  background: none;
+}
+.town-menu .dialog.title {
+  width: min(422px, 100%);
+  padding: 0 0 8px;
+  text-align: left;
+}
+.town-menu .dialog-head {
+  margin: 0;
+  padding: 6px 14px 7px;
+}
+.town-menu .dialog.title h2 {
+  font: 400 var(--fs) / 1.2 var(--font-title);
+  letter-spacing: 0;
+}
+.town-menu .menu-actions {
+  margin-top: 0;
+}
+/* Shop, Tavern, Party and Sheet open beside the menu, which stays in view and clickable (another row swaps the window):
+   no veil, top right next to the menu, as wide as the screen leaves (the kit's 1100 px at 1920, ~820 px at 1280) */
+@media (min-width: 901px) {
+  body:has(.town-menu) .overlay:not(.town-menu) {
+    place-items: start end;
+    padding: var(--inset) calc(422px + 2 * var(--inset)) var(--inset) var(--inset);
+    background: none;
+    pointer-events: none;
+  }
+  body:has(.town-menu) .overlay:not(.town-menu) > .dialog {
+    pointer-events: auto;
+    width: min(1100px, 100%);
+    max-height: calc(100dvh - 2 * var(--inset));
+  }
 }
