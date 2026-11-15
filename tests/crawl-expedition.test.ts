@@ -59,6 +59,10 @@ describe('crawl expedition', () => {
       { id: 'odo', max: 24, hp: 6 }, // 25% only, no room heal on top
     ]);
     expect(winRoom(at(e, [40, 24]), node, { bran: 40, odo: 24 }).party.map((h) => h.hp)).toEqual([42, 24]);
+    // max 41: 25% is 10.25, up to 11 (rounding would give 10)
+    const odd = startExpedition(3, [{ id: 'tess', max: 41 }]);
+    expect(winRoom({ ...odd, party: [{ id: 'tess', max: 41, hp: 20 }] }, node, { tess: 20 }).party[0].hp).toBe(31);
+    expect(winRoom(odd, node, {}).party[0].hp).toBe(11);
   });
 
   it('going down a floor adds +50% to everyone, the fallen included; the boss clears the expedition', () => {
