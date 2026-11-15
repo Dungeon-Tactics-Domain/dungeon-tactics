@@ -4,17 +4,17 @@ Applies together with the root `CLAUDE.md`. Decision of Nov 14 (Fernando, cleanu
 
 ## What lives here
 
-| File             | Content                                                                  | Type and registry (where the logic lives)                                                                  |
-| ---------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `units.ts`       | classes and enemies (`UNIT_LIST`)                                        | `UnitDef`, `UNIT_DEFS` in `src/shared/battle/units.ts`                                                     |
-| `abilities.ts`   | abilities (`ABILITY_LIST`) and the `A()` builder with the defaults       | `AbilityDef`, `ABILITIES` in `src/shared/battle/abilities.ts`                                              |
-| `items.ts`       | equipment (`ITEM_LIST`)                                                  | `ItemDef`, `ITEMS`, `bonusOf` in `src/shared/battle/equipment.ts`                                          |
-| `maps/<map>.ts`  | one map per file: terrain, heights, ramps, looks, spawns                 | `Scenario`, `MAPS`, `SCENARIOS` in `src/shared/battle/scenarios.ts`; `parseGrid`, `withRamps` in `grid.ts` |
-| `campaign.ts`    | speakers, stages (map, music, light, enemies) and their lines            | `Line`, `Chapter`, `CHAPTERS`, `chapterScenario` in `src/client/campaign.ts`                               |
-| `world.ts`       | opening lines, world map nodes, towns and bar rumors                     | `WorldNode` and the walking rules in `src/client/world.ts`                                                 |
-| `quests.ts`      | bar quests (town, map, enemies, gold, item)                              | `Mission`, `missionScenario` in `src/client/missions.ts`                                                   |
-| `party.ts`       | the 4 story members and the recruit names in order                       | `Member`, `Group` and the party rules in `src/client/group.ts`                                             |
-| `crawl/rooms.ts` | dungeon crawl: party, enemy groups by depth, the boss group, room themes | `RoomGroup`, `CrawlTheme`, `generateRoom` in `src/shared/crawl/generate.ts`                                |
+| File             | Content                                                                                                                                               | Type and registry (where the logic lives)                                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `units.ts`       | classes and enemies (`UNIT_LIST`)                                                                                                                     | `UnitDef`, `UNIT_DEFS` in `src/shared/battle/units.ts`                                                                                      |
+| `abilities.ts`   | abilities (`ABILITY_LIST`) and the `A()` builder with the defaults                                                                                    | `AbilityDef`, `ABILITIES` in `src/shared/battle/abilities.ts`                                                                               |
+| `items.ts`       | equipment (`ITEM_LIST`)                                                                                                                               | `ItemDef`, `ITEMS`, `bonusOf` in `src/shared/battle/equipment.ts`                                                                           |
+| `maps/<map>.ts`  | one map per file: terrain, heights, ramps, looks, spawns                                                                                              | `Scenario`, `MAPS`, `SCENARIOS` in `src/shared/battle/scenarios.ts`; `parseGrid`, `withRamps` in `grid.ts`                                  |
+| `campaign.ts`    | speakers, stages (map, music, light, enemies) and their lines                                                                                         | `Line`, `Chapter`, `CHAPTERS`, `chapterScenario` in `src/client/campaign.ts`                                                                |
+| `world.ts`       | opening lines, world map nodes, towns and bar rumors                                                                                                  | `WorldNode` and the walking rules in `src/client/world.ts`                                                                                  |
+| `quests.ts`      | bar quests (town, map, enemies, gold, item)                                                                                                           | `Mission`, `missionScenario` in `src/client/missions.ts`                                                                                    |
+| `party.ts`       | the 4 story members and the recruit names in order                                                                                                    | `Member`, `Group` and the party rules in `src/client/group.ts`                                                                              |
+| `crawl/rooms.ts` | dungeon crawl: party, enemy groups by depth, the boss group, room themes, the town (`CRAWL_TOWN`) and the expedition's floors and heals (`CRAWL_RUN`) | `RoomGroup`, `CrawlTheme`, `generateRoom` in `src/shared/crawl/generate.ts`; `expeditionMap`, `winRoom` in `src/shared/crawl/expedition.ts` |
 
 ## Rules
 
@@ -32,11 +32,13 @@ Applies together with the root `CLAUDE.md`. Decision of Nov 14 (Fernando, cleanu
 - **Map:** a new file in `maps/`, added to `MAPS` in `scenarios.ts` (the order is the registry order). Outside: a new tile `look` needs its pieces in `LOOK` (`src/client/scene/board.ts`) and its name in `LOOK_NAME` (`src/client/hud.ts`); a mood in `KIND` (`src/client/ambience.ts`); `DEV_MAPS` (`src/client/dev-roster.ts`) to offer it in the developer menu.
 - **Stage:** an entry in `STAGES` (`campaign.ts`) with a map that has 4 hero spawns, and a battle node in `WORLD` (`world.ts`) with its index. Music ids come from `TRACKS` (`src/client/music.ts`).
 - **Quest:** an entry in `quests.ts` whose `town` is a node with `town`.
+- **Expedition numbers:** `CRAWL_RUN` (floors, rows, rooms per row, heals in %); a change gives other maps for the same seed, so an expedition in progress may break: bump `CRAWL_VERSION`, which drops the saved one.
 - **Crawl group or theme:** an entry in `CRAWL_GROUPS` (1 to 3 existing enemies, 64 to 102 life in all, the Mechanics lab's range) or `CRAWL_THEMES` (floor looks by height, obstacle tiles, optional spikes) in `crawl/rooms.ts`. A change that gives other rooms for the same seed bumps `CRAWL_VERSION` and the pinned hash and tries in `tests/crawl-room.test.ts`; a theme's mood goes in `ROOM_KIND` (`src/client/ambience.ts`).
 
 ## Tests that guard it
 
 - `tests/content.test.ts`: unique ids, every reference exists, every tile has a known terrain and a whole height.
 - `tests/scenario-maps.test.ts`: full grid, free spawns, ramps that rise 1 level.
+- `tests/crawl-expedition.test.ts`: the map's shape and seed, the heals, the guard and `parseExpedition`.
 - `tests/crawl-room.test.ts`: 500 seeds pass the room checks and the first 25 are pinned to `CRAWL_VERSION`; `tests/content.test.ts` checks the crawl tables (life range, known enemies and terrains).
 - `tests/campaign.test.ts`, `tests/world.test.ts`, `tests/group.test.ts`: stages build and play, lines have both languages and a speaker, every stage is on the map, the default party gives the measured casts.
