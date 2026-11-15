@@ -1,5 +1,9 @@
-:root {
-  /* dark fantasy in colors vivid enough for pixel art (spec: tone). Every color and size in the game comes from here */
+:root,
+:root[data-theme="parchment"] {
+  /* Parchment theme, the default (Nov 15, Fernando's request: swappable themes, FFT Classic first). A theme is a
+     :root[data-theme="<id>"] block that redefines tokens (src/client/theme.ts lists them); outside these blocks, CSS and
+     code use only tokens and never name a theme.
+     dark fantasy in colors vivid enough for pixel art (spec: tone). Every color and size in the game comes from here */
   --bg: #16111f;
   --fg: #f4ecff;
   --muted: #c9bddf;
@@ -57,6 +61,11 @@
   --paper-frame: inset 0 0 0 2px var(--paper-hi), 0 3px 0 rgba(0, 0, 0, 0.45);
   --paper-white: #fff; /* brightest paper: Developer fields and the selected class card */
   --row-hi: rgba(255, 255, 255, 0.5); /* menu row under focus or hover */
+  --focus-band: var(--row-hi); /* background of the menu row under focus */
+  --ink-off: var(--ink); /* text of a disabled menu row (the row also fades) */
+  --enemy-paper: var(--strike); /* target half of the strike preview; unused until a theme draws that half */
+  /* folder of the theme's art pieces (public/ui/<theme>/); read from JS, since CSS url() cannot join a variable */
+  --ui-path: "/ui/parchment";
   /* floating damage number: pale, and hotter on a strike of 25% of life or more */
   --float-dmg: #ffd0c4;
   --float-big: #ffb199;
@@ -817,7 +826,7 @@ button[hidden],
     0 2px 3px rgba(60, 40, 15, 0.35);
 } /* engraved on the parchment: light below, soft shadow */
 .panel .item.focus {
-  background: var(--row-hi);
+  background: var(--focus-band);
 }
 /* FFT's hand replaced by an arrow of ours marking the focused item */
 .panel .item.focus::before {
@@ -879,6 +888,7 @@ button[hidden],
 .panel .item:disabled {
   filter: none;
   opacity: 0.45;
+  color: var(--ink-off);
 }
 .panel .item:not(:disabled):active {
   transform: none;

@@ -11,6 +11,7 @@ import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
 import { isSurvival, survivalGoal } from '../survival.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
+import { getTheme, setTheme, THEMES } from '../theme.ts';
 import { toWorld } from './boot.ts';
 import { devMenu } from './title.ts';
 
@@ -103,6 +104,12 @@ export function optionsMenu(o: OptionsContext) {
       'video',
       t('Vídeo e efeitos', 'Video and effects'),
       [
+        choice(
+          t('Tema', 'Theme'),
+          THEMES.map(([id, pt, en]) => [id, t(pt, en)]),
+          getTheme(),
+          setTheme,
+        ),
         choice(
           t('Tamanho do pixel', 'Pixel size'),
           [
