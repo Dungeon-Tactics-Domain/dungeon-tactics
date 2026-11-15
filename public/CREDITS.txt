@@ -91,8 +91,8 @@ Victory and defeat fanfares and campaign speech blips: notes generated in the br
 Campaign music (Nov 13, 2026): OpenGameArt tracks, all CC0 (licence read on each one's page), converted to .ogg by ffmpeg (the snow one trimmed to the first 75 s with a fade, the map one with +2.2 dB). Gain per track in src/client/music.ts.
 music/title.ogg (title screen)
   CodeManu, "A Legend Will Rise (Orchestral)" - https://opengameart.org/content/a-legend-will-rise-orchestral
-music/map.ogg (world map)
-  TAD, "Once Upon a Time (loop)" - https://opengameart.org/content/once-upon-a-time-loop
+music/city_pastoral_d.ogg (town and world screen)
+  Our own composition (scripts/music/eval/slot_D.py), rendered with the MuseScore General SoundFont (MIT); only the rendered .ogg ships.
 music/road.ogg (road stages)
   cynicmusic, "Battle Theme B for RPG" - https://opengameart.org/content/battle-theme-b-for-rpg
 music/crypt.ogg (crypt)

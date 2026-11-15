@@ -6,10 +6,10 @@
 // different volumes (title -12.9 dB, road -15.6, map -17.0, snow and boss -17.8, crypt -18.7). The target is that of the
 // standalone battle music, -17.3 dB, which was already at the right level; the HTMLAudioElement can't exceed 1, so whatever was louder
 // goes down (title -4.4 dB, road -1.7 dB) and whatever was quieter stays at 1 (crypt stays 1.4 dB below, snow and boss 0.6).
-// The map file already has +2.2 dB baked in at conversion (limiter at 0.95) to reach the target without exceeding 1.
 export const TRACKS = {
   title: { file: 'title.ogg', gain: 0.6 },
-  world: { file: 'map.ogg', gain: 0.97 },
+  // the town and world screen (Nov 15, Fernando: Pastoral D from the music lab); -17.0 LUFS against the -17.8 target, so a little under 1
+  world: { file: 'city_pastoral_d.ogg', gain: 0.91 },
   road: { file: 'road.ogg', gain: 0.82 },
   crypt: { file: 'crypt.ogg', gain: 1 },
   snow: { file: 'snow.ogg', gain: 1 },
