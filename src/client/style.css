@@ -73,6 +73,8 @@
   --float-dmg: #ffd0c4;
   --float-big: #ffb199;
   --fade: #050a18; /* fade to black on entering a map point */
+  --shade: #050a18; /* dark navy of the veils and tags over the scene; each piece sets its alpha with color-mix */
+  --map-ink: #3d3423; /* outlines drawn on the world map land */
   /* map nodes: battle red, story blue, gold edge once done, dark grey when locked (the old beige was the colour of the land) */
   --node-battle: #c0412b;
   --node-story: #3d6fb0;
@@ -812,7 +814,7 @@ button[hidden],
     Consolas,
     monospace;
   color: var(--fg);
-  background: rgba(10, 6, 16, 0.55);
+  background: color-mix(in srgb, var(--shade) 55%, transparent);
   padding: 4px 8px;
   border-radius: var(--r);
 }
@@ -1236,7 +1238,13 @@ button[hidden],
   max-width: 92vw;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: linear-gradient(90deg, transparent, rgba(20, 12, 30, 0.88) 15%, rgba(20, 12, 30, 0.88) 85%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--shade) 88%, transparent) 15%,
+    color-mix(in srgb, var(--shade) 88%, transparent) 85%,
+    transparent
+  );
   text-shadow: 0 2px 0 #000;
   animation: announce 2.2s ease-out forwards;
 }
@@ -1298,7 +1306,7 @@ body:has(.result-overlay) .fps {
 /* campaign dialogue box (talk.ts): at the bottom, wide, the same panel as the rest of the HUD; the ▼ blinks when the sentence is done */
 .talk-overlay {
   place-items: end center;
-  background: rgba(10, 6, 20, 0.35);
+  background: color-mix(in srgb, var(--shade) 35%, transparent);
   padding-bottom: 24px;
   gap: 12px;
   align-content: end;
@@ -1385,7 +1393,9 @@ body:has(.result-overlay) .fps {
 } /* dialogue key hint (talk.ts) */
 /* opening (new game): big narration in the center, no frame, with the Beacon's blue glow pulsing behind */
 .talk-overlay.dark {
-  background: radial-gradient(circle at 50% 30%, rgba(90, 170, 255, 0.28), transparent 40%), rgba(8, 5, 14, 0.96);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(90, 170, 255, 0.28), transparent 40%),
+    color-mix(in srgb, var(--shade) 96%, transparent);
   place-items: center;
   align-content: center;
   animation: beacon 4s ease-in-out infinite;
@@ -1410,7 +1420,7 @@ body:has(.result-overlay) .fps {
 }
 @keyframes beacon {
   50% {
-    background-color: rgba(8, 5, 14, 0.9);
+    background-color: color-mix(in srgb, var(--shade) 90%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1464,7 +1474,7 @@ body:has(.result-overlay) .fps {
 }
 .world-art .land {
   fill: #b8b483;
-  stroke: #3d3423;
+  stroke: var(--map-ink);
   stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
 }
@@ -1497,7 +1507,7 @@ body:has(.result-overlay) .fps {
 }
 .world-art .lake {
   fill: #2f6478;
-  stroke: #3d3423;
+  stroke: var(--map-ink);
   stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
 }
@@ -1520,7 +1530,7 @@ body:has(.result-overlay) .fps {
 }
 .world-art .rock {
   fill: #8a6f4d;
-  stroke: #3d3423;
+  stroke: var(--map-ink);
   stroke-width: 0.8;
   vector-effect: non-scaling-stroke;
 }
@@ -1547,7 +1557,7 @@ body:has(.result-overlay) .fps {
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
 } /* to the right and above the point: above sits the party portrait */
 .world-icon path {
-  stroke: #3d3423;
+  stroke: var(--map-ink);
   stroke-width: 1.6;
   stroke-linejoin: round;
   fill: none;
@@ -1576,7 +1586,7 @@ body:has(.result-overlay) .fps {
 }
 .world-compass .star {
   fill: #e9dcae;
-  stroke: #3d3423;
+  stroke: var(--map-ink);
   stroke-width: 1.5;
 }
 .world-compass .star-shade {
@@ -1601,7 +1611,7 @@ body:has(.result-overlay) .fps {
 }
 .world-art .road {
   fill: none;
-  stroke: #3d3423; /* map ink, like the icons: the panel's light edge vanished on the land (1.5:1) */
+  stroke: var(--map-ink); /* map ink, like the icons: the panel's light edge vanished on the land (1.5:1) */
   stroke-width: 3;
   stroke-dasharray: 2 6;
   vector-effect: non-scaling-stroke;
@@ -1726,7 +1736,7 @@ body:has(.result-overlay) .fps {
   padding: 2px 8px;
   font: 400 var(--fs-sm) / 1.2 var(--font-title);
   color: var(--fg);
-  background: rgba(20, 12, 30, 0.8);
+  background: var(--overlay);
   border-radius: var(--r);
 } /* place name under the party on the map */
 .fade-out {
@@ -1829,7 +1839,7 @@ body:has(.result-overlay) .fps {
 /* ---- Protagonist creation (create-ui.ts) ---- */
 /* Protagonist creation (create-ui.ts): a central panel; 4 class cards with portrait and the sheet of the chosen one */
 .overlay.create {
-  background: rgba(8, 5, 14, 0.7);
+  background: color-mix(in srgb, var(--shade) 70%, transparent);
 }
 .create-panel {
   position: relative;

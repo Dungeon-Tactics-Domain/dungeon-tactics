@@ -35,7 +35,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Panel | `--paper-hi` `--paper` `--paper-lo` `--paper-edge` | top, middle and foot of the blue gradient of panels and dialogs; light frame |
 | Ink | `--ink` `--ink-muted` `--ink-off` `--ink-shadow` `--focus` | text, muted text, disabled row text, the hard dark text shadow, yellow highlight/focus/link |
 | Focus row | `--focus-band` `--row-hi` `--row-off` | menu row under focus (lighter blue band), row under hover, disabled row (sunken dark band, focused or not) |
-| Dark scene | `--bg` `--fg` `--muted` `--overlay` | page background, text over the scene, veil behind dialogs |
+| Dark scene | `--bg` `--fg` `--muted` `--overlay` `--shade` | page background, text over the scene, veil behind dialogs and the place name tag on the map; `--shade` is the dark navy the other veils mix with `color-mix()` at their own alpha: debug readout 55%, ability banner 88%, dialogue veil 35%, opening narration 96% (beacon pulse 90%), protagonist creation 70% |
 | Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the panels (almost unused today), bar background |
 | Primary | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button (brighter blue; the names stayed from the gold one), battle highlight (yellow) |
 | Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
@@ -43,6 +43,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Strike preview | `--strike` `--strike-dmg` | arrow band between the panels |
 | Fields | `--paper-white` | Developer fields (dark blue field) |
 | Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
+| Map ink | `--map-ink` | outlines on the world map land: land, lakes, rocks, icons, compass star, roads |
 | Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
 | Fade | `--fade` | black of the fade on entering a map point |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` | legend; same as `MARK` in `src/client/scene/marks.ts` |
