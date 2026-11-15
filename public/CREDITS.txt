@@ -19,6 +19,13 @@ models/lancer.glb and chars/lancer.webp (the Lancer, since Nov 13, 2026)
   Rig_Medium_CombatMelee), assembled by scripts/assets/lancer.mjs. All CC0.
 chars/*.webp (the other 9 portraits)
   Rendered from the characters themselves by scripts/portraits.mjs.
+chars/px/*.png and chars/px/faces.json (faces in the dialogue box, since Nov 15, 2026)
+  barbarian, knight, lancer, mage, ranger, rogue_hooded and skeleton_mage: AI-generated (Microsoft Copilot image output
+  from our own prompts, with the KayKit renders as reference), aligned and retouched in the design lab by
+  scripts/ia-variantes.py. LICENCE STILL TO BE CONFIRMED before launch: the service terms on commercial use of the
+  output have not been checked yet.
+  skeleton_minion, skeleton_rogue and skeleton_warrior: rendered from the KayKit skeletons (CC0) by
+  scripts/assets/pixel-faces.mjs on the design branch.
 models/animations.glb (ability gestures: one- and two-handed strikes, bow, magic, use item, walk and jump)
   KayKit Character Animations 1.1 (Free), by Kay Lousberg (www.kaylousberg.com), CC0 - https://kaylousberg.itch.io/kaykit-character-animations
   Rig_Medium clips merged and mesh-free by scripts/assets/anim-pack.mjs. Licence read in the pack's LICENSE.txt (assets/kaykit/animations): "License: (Creative Commons Zero, CC0)".
