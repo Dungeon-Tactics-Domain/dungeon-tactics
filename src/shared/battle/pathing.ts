@@ -179,8 +179,8 @@ export function squareMoves(
       const hl = heightOf(land);
       if (hl === null || hl > h0 || h0 - hl > jump || cells(land).some((c) => isDeep(tileAt(grid, c)))) continue;
       const low = Math.min(h0, hl);
-      // and lands wholly past the gap, its square level (Nov 15): a 1-cell hop used to land half inside a 1-tile trench,
-      // flying half of it
+      // and lands wholly past the gap, its square level (Nov 15, our reading, to confirm): a 1-cell hop used to land half
+      // inside a 1-tile trench, flying half of it
       if (strip.every((c) => standH(tileAt(grid, c)) < low) && cells(land).every((c) => tileAt(grid, c).h === hl))
         out.push({ to: land, cost: size + g });
     }
