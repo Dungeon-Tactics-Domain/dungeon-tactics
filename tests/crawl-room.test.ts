@@ -130,6 +130,18 @@ describe('crawl rooms: 500 seeds', () => {
     }
   });
 
+  it('pins the first 25 rooms and their tries to the generator version', () => {
+    // A change in the generator, the content tables or anything the checks walk with (pathing, half tiles, a unit's move
+    // or size) gives other rooms for the same seeds: bump CRAWL_VERSION, so a saved room starts over, and re-pin.
+    // FNV-1a of the JSON; the tries show which layout passed, the hash what it holds (3 boss rooms, depths 1 to 4)
+    const first = built.slice(0, 25);
+    let h = 0x811c9dc5;
+    for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
+    expect(CRAWL_VERSION).toBe('crawl1');
+    expect(first.map((b) => b.tries).join(' ')).toBe('1 2 2 5 1 1 4 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1');
+    expect((h >>> 0).toString(16)).toBe('19b3f86');
+  });
+
   it('a room built again checks the same (verifyRoom keeps no state between rooms)', () => {
     for (const { room } of built.slice(0, 40)) expect(verifyRoom(room), room.id).toEqual([]);
   }, 30_000);
@@ -139,22 +151,6 @@ describe('crawl rooms: seeds and options', () => {
   it('the same seed and options give the same room; another seed, another room', () => {
     expect(generateRoom(7, { depth: 2 })).toEqual(generateRoom(7, { depth: 2 }));
     expect(generateRoom(7, { depth: 2 }).grid).not.toEqual(generateRoom(8, { depth: 2 }).grid);
-  });
-
-  it('pins three rooms to the generator version', () => {
-    // a change here gives other rooms for the same seeds: bump CRAWL_VERSION so older saves start over
-    // FNV-1a of the room's JSON
-    const hash = (o: RoomOptions, seed: number) => {
-      let h = 0x811c9dc5;
-      for (const ch of JSON.stringify(generateRoom(seed, o))) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-      return (h >>> 0).toString(16);
-    };
-    expect(CRAWL_VERSION).toBe('crawl1');
-    expect([hash({}, 1), hash({ depth: 3, theme: 'forest' }, 2), hash({ boss: true }, 3)]).toEqual([
-      'ac54649a',
-      '8a561d3e',
-      'ebdba60d',
-    ]);
   });
 
   it('cleans the options: depth to 1 or more, an unknown theme falls back to the dungeon', () => {
@@ -237,7 +233,9 @@ describe('verifyRoom: a broken room for each rule', () => {
   });
 
   it('too much water, too many spikes, a tile too high, a boss on uneven ground', () => {
-    expect(broken((r) => r.grid.tiles.slice(0, 12).forEach((t) => (t.depth = 1))).join()).toMatch(/water/);
+    expect(broken((r) => r.grid.tiles.slice(0, 12).forEach((t) => (t.depth = 1))).join()).toMatch(
+      /water on \d+ tiles, more than 15%/,
+    );
     expect(broken((r) => r.grid.tiles.slice(0, 4).forEach((t) => (t.spikes = true))).join()).toMatch(
       /spike tiles, more than 3/,
     );
@@ -247,5 +245,52 @@ describe('verifyRoom: a broken room for each rule', () => {
     const r = structuredClone(boss);
     at(r, { x: c.x + 1, y: c.y + 1 }).h -= 1;
     expect(verifyRoom(r).join()).toMatch(/not on even ground/);
+  });
+
+  it('a side with nobody, a unit off the map, on a wall, on top of another', () => {
+    expect(broken((r) => (r.spawns = r.spawns.filter((s) => s.team === 'hero')))).toEqual(['a side has no units']);
+    expect(broken((r) => (hero(r).x = -1)).join()).toMatch(/h-warrior at -1,\d: off the map/);
+    expect(broken((r) => (at(r, hero(r)).terrain = 'wall')).join()).toMatch(/on ground nobody stands on/);
+    const [a, b] = good.spawns;
+    expect(broken((r) => Object.assign(r.spawns[1], { x: a.x, y: a.y })).join()).toMatch(
+      new RegExp(`${b.id} at ${a.x},${a.y}: on top of another unit`),
+    );
+  });
+
+  // A handmade 8x8 room that breaks one rule at a time: flat floor, a ramp of 1 up to a level-2 tile on the left,
+  // the heroes in row 6 and one enemy 5 tiles up
+  const handmade = (enemies: Spawn[], walls: Pos[] = []): Scenario => {
+    const tiles: Tile[] = Array.from({ length: 64 }, () => ({ terrain: 'floor', h: 0 }));
+    tiles[2 * 8].h = 1;
+    tiles[3 * 8].h = 2;
+    tiles[4 * 8].h = 1;
+    for (const w of walls) tiles[w.y * 8 + w.x].terrain = 'wall';
+    const heroes = CRAWL_PARTY.map((def, k): Spawn => ({ id: `h-${def}`, def, team: 'hero', x: 2 + k, y: 6 }));
+    return {
+      id: 'crawl-test',
+      name: 'Teste',
+      en: 'Test',
+      grid: { width: 8, height: 8, tiles },
+      spawns: [...heroes, ...enemies],
+    };
+  };
+  const minion: Spawn = { id: 'e0-minion', def: 'minion', team: 'enemy', x: 3, y: 1 };
+
+  it('a room with no cover fails only the cover rule', () => {
+    expect(verifyRoom(handmade([minion]))).toEqual(['0 tiles stop a shot between the sides (min 2)']);
+  });
+
+  it('an archer that sees every hero fails only that rule', () => {
+    // two walls hide the heroes from the minion in the corner, never from the archer in the middle
+    const corner = { ...minion, x: 6 };
+    const archer: Spawn = { id: 'e1-skeleton_archer', def: 'skeleton_archer', team: 'enemy', x: 3, y: 1 };
+    const walls = [
+      { x: 5, y: 2 },
+      { x: 6, y: 2 },
+    ];
+    expect(verifyRoom(handmade([corner], walls))).toEqual([]);
+    expect(verifyRoom(handmade([corner, archer], walls))).toEqual([
+      'e1-skeleton_archer sees every hero from its start',
+    ]);
   });
 });
