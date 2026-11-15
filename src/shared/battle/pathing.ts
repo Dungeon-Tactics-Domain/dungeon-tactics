@@ -231,12 +231,12 @@ function reachableBig(
 }
 
 // Where a square may stop (Nov 14, Fernando: "it must not let the character stand still on a corner like that", a token
-// left hovering over a ledge): all its cells are the same ground (height, water, spikes, terrain), so it rests like one
+// left hovering over a ledge): all its cells are the same ground (height, deep water, spikes, terrain; shallow water stands like dry ground, Nov 14), so it rests like one
 // whole tile. A ramp cell only under a square on its own whole tile: between tiles the token stood half a level above the
 // flat cells beside it. Crossing a step or a ramp on the way stays allowed (squareMoves)
 function restsOn(grid: Grid, p: Pos, size: number): boolean {
   const k = subOf(grid);
-  const kind = (t: Tile) => `${t.h},${t.depth ?? 0},${!!t.spikes},${t.terrain}`;
+  const kind = (t: Tile) => `${t.h},${standH(t)},${!!t.spikes},${t.terrain}`;
   const tiles = cellsOf(p, size).map((c) => tileAt(grid, c));
   return tiles.every((t) => kind(t) === kind(tiles[0]) && (!t.ramp || (p.x % k === 0 && p.y % k === 0)));
 }

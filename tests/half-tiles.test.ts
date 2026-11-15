@@ -339,7 +339,7 @@ describe('half tiles: where a token may stop', () => {
     expect(r.has('3,0')).toBe(false); // ramp's top cell against the tile above
   });
 
-  it('does not stop with one corner on spikes or in water', () => {
+  it('does not stop with one corner on spikes or in deep water', () => {
     const whole = gridOf(['...', '...', '...']);
     whole.tiles[4] = { ...whole.tiles[4], spikes: true };
     whole.tiles[2] = { ...whole.tiles[2], depth: 1 };
@@ -347,7 +347,7 @@ describe('half tiles: where a token may stop', () => {
     const r = reachOn(whole);
     expect(r.has('1,1')).toBe(false); // spikes on one corner
     expect(r.has('2,2')).toBe(true); // on the spike tile, as on the whole map
-    expect(r.has('3,0')).toBe(false); // half in the shallow water
+    expect(r.has('3,0')).toBe(true); // half in the shallow water: it stands like dry ground
     expect(r.has('4,0')).toBe(true);
     expect(r.has('1,3')).toBe(false); // half in the deep water
     expect(r.has('0,4')).toBe(true);
