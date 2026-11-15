@@ -77,6 +77,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Regular button: `--ink` on `--stone` / `--stone-lo` | 13.0 / 15.3 | ✓ (Nov 15) |
 | Result highlight band (25% `--shade` over `--paper-hi`): `--ink-muted` | 7.3 | ✓ (Nov 15; the same band under the Sheet head and the Tavern quests) |
 | Hover band `--row-hi` over `--paper-hi`: `--ink` / `--ink-muted` | 6.0 / 4.3 | ✓ / ✗ → the party row's muted lines turn `--ink` on hover and focus (Nov 15) |
+| Marks on `--focus-band`: the chosen option's ✓ in `--ink` / the ▶ and ▸ focus marks in `--focus` | 5.3 / 4.1 | ✓ (Nov 15, review: the ✓ was `--focus` at 4.1; the ▶ and ▸ are non-text marks, bar 3:1; a scan of the title, Quick battle, Options, world map and Party found no `--ink-muted` text on the band) |
 | `--focus` alone on the white sky | 1.4 | ✗ → hence `--focus-halo` (dark band: 18.8 on white, 13.5 against the ring) |
 
 ### Typography

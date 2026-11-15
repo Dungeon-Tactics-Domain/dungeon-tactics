@@ -308,7 +308,7 @@ button[hidden],
 }
 .dialog button[aria-pressed="true"]:not(.primary)::before {
   content: "✓";
-  color: var(--focus);
+  color: var(--ink); /* the ✓ always sits on the band, where the yellow gives only 4.1:1 */
 }
 .dialog button:focus-visible {
   outline-color: var(--focus);
