@@ -3,23 +3,32 @@
 // line goes dim red, with an X there: red on an enemy, orange on the caster's own side (friendly fire, half), white on
 // terrain. Drawn over everything (no depth test), so a line behind a wall still reads.
 import * as THREE from 'three';
-import type { ChargeLine, Square } from '../charge-lines.ts';
+import type { ChargeLine, Counters, Square } from '../charge-lines.ts';
 import { unitHeight } from '../markers.ts';
 import type { TileSpace } from './space.ts';
 
-const COLOR = { hero: '#7fd8ff', enemy: '#ff6fb0', preview: '#ffe27a', past: '#ff4d4d', fizzle: '#9a9a9a' };
+// counter: a violet apart from both sides and the charge preview (Nov 15, the counter indicator)
+const COLOR = {
+  hero: '#7fd8ff',
+  enemy: '#ff6fb0',
+  preview: '#ffe27a',
+  counter: '#c79bff',
+  past: '#ff4d4d',
+  fizzle: '#9a9a9a',
+};
 const X = { foe: '#ff3b3b', friendly: '#ffa53b', terrain: '#f2f2f2' };
 
 export class ChargeLines {
   private kept = new THREE.Group();
   private preview = new THREE.Group();
+  private counter = new THREE.Group();
 
   constructor(
     private readonly scene: THREE.Scene,
     private readonly space: TileSpace,
     private readonly camera: THREE.Camera,
   ) {
-    scene.add(this.kept, this.preview);
+    scene.add(this.kept, this.preview, this.counter);
   }
 
   set(lines: ChargeLine[] | null) {
@@ -27,10 +36,39 @@ export class ChargeLines {
   }
 
   setPreview(line: ChargeLine | null) {
-    this.preview = this.redraw(this.preview, line ? [line] : [], 0.035, 0.95, true);
+    this.preview = this.redraw(this.preview, line ? [line] : [], 0.035, 0.95, COLOR.preview);
   }
 
-  private redraw(old: THREE.Group, lines: ChargeLine[], width: number, opacity: number, preview = false) {
+  // the counters a strike earns or a destination draws: their shots as lines, a melee one as an arrow from whoever strikes
+  // back toward the attacker, over the heads (at eye height the two adjacent bodies hid it)
+  setCounters(c: Counters | null) {
+    this.counter = this.redraw(this.counter, c?.lines ?? [], 0.03, 0.95, COLOR.counter);
+    const mat = new THREE.MeshBasicMaterial({ color: COLOR.counter, depthTest: false });
+    const above = new THREE.Vector3(0, unitHeight('soldier') * 0.6, 0);
+    for (const m of c?.melee ?? []) {
+      const a = this.eye(m.from).add(above),
+        b = this.eye(m.to).add(above);
+      const tip = a.clone().lerp(b, Math.min(0.85, 1.1 / Math.max(1e-3, a.distanceTo(b))));
+      const shaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, a.distanceTo(tip), 6).rotateX(Math.PI / 2),
+        mat,
+      );
+      shaft.position.copy(a).lerp(tip, 0.5);
+      shaft.lookAt(tip);
+      const head = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 8).rotateX(Math.PI / 2), mat);
+      head.position.copy(tip);
+      head.lookAt(b);
+      shaft.renderOrder = head.renderOrder = 13;
+      this.counter.add(shaft, head);
+    }
+  }
+
+  // eye height like the aim trajectory (Marks.setTrajectory), over the middle of each square
+  private eye(s: Square) {
+    return this.space.squareTop(s.pos, s.size).add(new THREE.Vector3(0, unitHeight('soldier') * 0.7, 0));
+  }
+
+  private redraw(old: THREE.Group, lines: ChargeLine[], width: number, opacity: number, color?: string) {
     this.scene.remove(old);
     old.traverse((o) => {
       const m = o as THREE.Mesh;
@@ -38,9 +76,7 @@ export class ChargeLines {
       (m.material as THREE.Material | undefined)?.dispose();
     });
     const g = new THREE.Group();
-    // eye height like the aim trajectory (Marks.setTrajectory), over the middle of each square
-    const eye = (s: Square) =>
-      this.space.squareTop(s.pos, s.size).add(new THREE.Vector3(0, unitHeight('soldier') * 0.7, 0));
+    const eye = (s: Square) => this.eye(s);
     const seg = (p: THREE.Vector3, q: THREE.Vector3, color: string) => {
       const m = new THREE.Mesh(
         new THREE.CylinderGeometry(width, width, Math.max(1e-3, p.distanceTo(q)), 6).rotateX(Math.PI / 2),
@@ -54,21 +90,21 @@ export class ChargeLines {
     for (const l of lines) {
       const a = eye(l.from),
         b = eye(l.to);
-      const color = !l.ok ? COLOR.fizzle : preview ? COLOR.preview : COLOR[l.team];
+      const tint = !l.ok ? COLOR.fizzle : (color ?? COLOR[l.team]);
       if (!l.stop) {
-        seg(a, b, color);
+        seg(a, b, tint);
         continue;
       }
       // the stop along the line, by the ground distance (the same reading as Marks.setTrajectory)
       const w = this.space.squareTop(l.stop.pos, l.stop.size);
       const k = Math.hypot(w.x - a.x, w.z - a.z) / Math.max(1e-3, Math.hypot(b.x - a.x, b.z - a.z));
       const cut = a.clone().lerp(b, Math.min(1, k));
-      seg(a, cut, color);
+      seg(a, cut, tint);
       seg(cut, b, COLOR.past);
       const mark = l.hits.some((h) => h.friendly) ? X.friendly : l.hits.length ? X.foe : X.terrain;
       const mat = new THREE.MeshBasicMaterial({ color: mark, depthTest: false });
       for (const turn of [Math.PI / 4, -Math.PI / 4]) {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(preview ? 0.42 : 0.3, 0.07, 0.07), mat);
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(color ? 0.42 : 0.3, 0.07, 0.07), mat);
         bar.position.copy(cut);
         bar.quaternion.copy(this.camera.quaternion);
         bar.rotateZ(turn);

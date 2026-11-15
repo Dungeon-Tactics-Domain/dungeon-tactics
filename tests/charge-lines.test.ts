@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { chargeFrom, chargeFromText, chargeLines } from '../src/client/charge-lines.ts';
+import {
+  chargeFrom,
+  chargeFromText,
+  chargeLines,
+  counterFromText,
+  countersFrom,
+  countersOwed,
+} from '../src/client/charge-lines.ts';
 import { needsLock } from '../src/client/command.ts';
 import { confirm, freshUi } from '../src/client/interaction.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { gridOf, stateOf } from './battle-helpers.ts';
+import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 // Charge lines and the lock step (Nov 15, Fernando): every charge keeps a line on screen, and while the charging unit picks
 // where to walk the line from that destination says where the shot would stop and whom it hits
@@ -62,5 +69,46 @@ describe('charge lines (Nov 15)', () => {
     const ui = { ...freshUi(b), mode: { k: 'ability' as const, id: 'aimed_shot' }, pending: { x: 5, y: 1 } };
     confirm(b, ui, 'unit');
     expect(b.state.charges[0].follow).toBe('foe');
+  });
+});
+
+// Counter indicator (Nov 15, Fernando): aiming shows who would strike back and how; walking, what the destination draws
+describe('counter indicator (Nov 15)', () => {
+  const g = gridOf(['........', '........', '..#.....', '........']);
+  const duel = () =>
+    new Battle(
+      g,
+      stateOf([
+        { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
+        { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 4, y: 1 },
+        { id: 'f', def: 'beacon', team: 'hero', x: 7, y: 0 },
+      ]),
+    );
+
+  it('aiming: a ranged foe answers with its line, a melee one with its mark', () => {
+    const b = duel();
+    const owed = countersOwed(b, 'shot', b.preview('shot', { x: 4, y: 1 }));
+    expect(owed.lines.map((l) => [l.from.pos, l.to.pos, l.hits.map((h) => h.unit)])).toEqual([
+      [{ x: 4, y: 1 }, { x: 0, y: 1 }, ['a']],
+    ]);
+    const m = new Battle(
+      flat(4, 3),
+      stateOf([
+        { id: 'w', def: 'warrior', team: 'hero', x: 1, y: 1 },
+        { id: 's', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+      ]),
+    );
+    expect(countersOwed(m, 'strike', m.preview('strike', { x: 2, y: 1 })).melee).toEqual([
+      { from: { pos: { x: 2, y: 1 }, size: 1 }, to: { pos: { x: 1, y: 1 }, size: 1 } },
+    ]);
+  });
+
+  it('walking: the destination in the open is struck, behind the wall the shot stops', () => {
+    const b = duel();
+    b.act('shot', { x: 4, y: 1 });
+    expect(countersFrom(b, { x: 0, y: 0 }).lines[0]).toMatchObject({ stop: null, hits: [{ unit: 'a' }] });
+    expect(countersFrom(b, { x: 0, y: 3 }).lines[0]).toMatchObject({ hits: [] });
+    expect(countersFrom(b, { x: 0, y: 3 }).lines[0].stop).not.toBeNull();
+    expect(counterFromText(b, { x: 0, y: 0 })).toContain('contra-ataca');
   });
 });

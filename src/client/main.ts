@@ -18,7 +18,7 @@ import {
 import type { BattleEvent, Lock, Pos, Team, UnitState } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, endExpression, expressionAt, faceCues, frameOf, type Mood } from './battle-face.ts';
-import { chargeFrom } from './charge-lines.ts';
+import { chargeFrom, countersFrom, countersOwed } from './charge-lines.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -520,6 +520,16 @@ export class Game {
     // knows where to stand"): the destination's square must fit, like the move itself
     this.scene.setChargePreview(
       hl && moving && this.battle.reach().has(posKey(this.cursor)) ? chargeFrom(this.battle, this.cursor) : null,
+    );
+    // counters (Nov 15, Fernando): aiming, who the strike would leave owed a counter; walking, what that destination draws
+    const aimed =
+      (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && hl?.preview?.ok ? ui.mode.id : null;
+    this.scene.setCounters(
+      aimed && hl?.preview
+        ? countersOwed(this.battle, aimed, hl.preview)
+        : hl && moving && this.battle.reach().has(posKey(this.cursor))
+          ? countersFrom(this.battle, this.cursor)
+          : null,
     );
     // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square; aiming,
     // it frames what the target mark covers (one cell, or the body of the unit there)

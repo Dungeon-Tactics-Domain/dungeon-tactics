@@ -13,7 +13,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import type { Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import { type Ambience, kindOf, loadAmbience } from './ambience.ts';
-import { type ChargeLine, chargeLines } from './charge-lines.ts';
+import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
 import { el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
@@ -188,6 +188,11 @@ export class BattleScene {
   // the acting unit's own charge as fired from the destination it is picking (charge-lines.ts chargeFrom)
   setChargePreview(line: ChargeLine | null) {
     this.chargeLines.setPreview(line);
+  }
+
+  // the counters a strike earns or a destination draws (charge-lines.ts countersOwed, countersFrom)
+  setCounters(c: Counters | null) {
+    this.chargeLines.setCounters(c);
   }
 
   setCursor(p: Pos | null, size = 1, fits = true) {

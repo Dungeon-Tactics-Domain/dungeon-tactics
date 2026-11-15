@@ -4,7 +4,14 @@
 // (previewAbility from where the caster stands, turn-queue.ts), so the drawing never disagrees with the shot.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { previewAbility } from '../shared/battle/combat.ts';
+import {
+  basicOf,
+  canCounter,
+  isRanged,
+  type Preview,
+  pendingCounters,
+  previewAbility,
+} from '../shared/battle/combat.ts';
 import { type Grid, posKey, samePos, subOf } from '../shared/battle/grid.ts';
 import { aimTile, unitAt } from '../shared/battle/pathing.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';
@@ -27,17 +34,15 @@ export interface ChargeLine {
 
 const square = (u: UnitState): Square => ({ pos: u.pos, size: UNIT_DEFS[u.def].size ?? 1 });
 
-export function chargeLine(grid: Grid, state: BattleState, c: Charge): ChargeLine {
-  const caster = state.units.find((u) => u.id === c.unit)!;
-  const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
-  const aim = aimTile(grid, state, chargeAim(state, c));
-  const p = previewAbility(grid, state, c.unit, c.ability, aim, true);
-  const short = p.ok && !samePos(p.center, aim);
+// A shot as its rule's preview lands it: from the caster to `to`, stopping where the preview's centre falls short of the aim
+function lineOf(grid: Grid, state: BattleState, casterId: string, p: Preview, aim: Pos, to: Square): ChargeLine {
+  const caster = state.units.find((u) => u.id === casterId)!;
+  const short = p.ok && !samePos(p.center, aimTile(grid, state, aim));
   const blocker = short ? unitAt(state, p.center) : undefined;
   return {
     team: caster.team,
     from: square(caster),
-    to: followed ? square(followed) : { pos: aim, size: subOf(grid) },
+    to,
     stop: !short ? null : blocker ? square(blocker) : { pos: p.center, size: subOf(grid) },
     hits: p.targets.map((x) => ({
       unit: x.unit,
@@ -45,6 +50,76 @@ export function chargeLine(grid: Grid, state: BattleState, c: Charge): ChargeLin
     })),
     ok: p.ok,
   };
+}
+
+export function chargeLine(grid: Grid, state: BattleState, c: Charge): ChargeLine {
+  const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
+  const aim = aimTile(grid, state, chargeAim(state, c));
+  const p = previewAbility(grid, state, c.unit, c.ability, aim, true);
+  return lineOf(grid, state, c.unit, p, aim, followed ? square(followed) : { pos: aim, size: subOf(grid) });
+}
+
+// Counters on screen (Nov 15, Fernando): a ranged one is the shot's line from whoever strikes back to the attacker, a melee
+// one a mark on whoever strikes back, pointing at the attacker
+export interface Counters {
+  lines: ChargeLine[];
+  melee: { from: Square; to: Square }[];
+}
+
+// Choosing where to walk: the counters that destination would draw, from the rule's own reading (pendingCounters)
+export function countersFrom(b: Battle, at: Pos): Counters {
+  const me = b.actor;
+  const moved = { ...b.state, units: b.state.units.map((u) => (u.id === me.id ? { ...u, pos: at } : u)) };
+  const out: Counters = { lines: [], melee: [] };
+  for (const c of pendingCounters(b.grid, b.state, me.id, at)) {
+    const from = square(b.state.units.find((u) => u.id === c.unit)!);
+    if (c.ranged) out.lines.push(lineOf(b.grid, moved, c.unit, c.preview, at, { pos: at, size: square(me).size }));
+    else out.melee.push({ from, to: square(me) });
+  }
+  return out;
+}
+
+// Aiming: who would be owed a counter by this strike, and how it would come back at the actor where it stands now
+export function countersOwed(b: Battle, ability: string, p: Preview): Counters {
+  const me = b.actor;
+  const out: Counters = { lines: [], melee: [] };
+  for (const t of p.targets) {
+    const u = b.state.units.find((x) => x.id === t.unit)!;
+    if (!canCounter(me, ability, u)) continue;
+    if (!isRanged(basicOf(u.def))) {
+      out.melee.push({ from: square(u), to: square(me) });
+      continue;
+    }
+    const back = previewAbility(b.grid, b.state, u.id, basicOf(u.def), me.pos, true);
+    if (back.ok) out.lines.push(lineOf(b.grid, b.state, u.id, back, me.pos, square(me)));
+  }
+  return out;
+}
+
+const whose = (b: Battle, c: Counters) =>
+  [...c.lines.map((l) => l.from), ...c.melee.map((m) => m.from)].map((s) => unitName(unitAt(b.state, s.pos)!.def));
+
+// The move help's sentence about the counters a destination draws
+export function counterFromText(b: Battle, at: Pos): string {
+  if (!b.reach().has(posKey(at))) return '';
+  const names = whose(b, countersFrom(b, at));
+  return names.length
+    ? t(
+        ` Ao andar para cá, ${names.join(', ')} contra-ataca (metade do dano).`,
+        ` Walking here draws a counter from ${names.join(', ')} (half damage).`,
+      )
+    : '';
+}
+
+// The "Execute?" note about the counters a strike earns: they come on the actor's moves this turn and the next
+export function counterNote(b: Battle, ability: string, p: Preview): string {
+  const names = whose(b, countersOwed(b, ability, p));
+  return names.length
+    ? t(
+        `${names.join(', ')} contra-ataca se você andar, neste turno e no próximo (metade do dano).`,
+        `${names.join(', ')} strikes back if you walk, this turn or the next (half damage).`,
+      )
+    : '';
 }
 
 export const chargeLines = (grid: Grid, state: BattleState): ChargeLine[] =>

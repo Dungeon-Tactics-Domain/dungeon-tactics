@@ -20,7 +20,7 @@ import { previewOrder, type QueueEntry, TURN_THRESHOLD } from '../shared/battle/
 import type { BattleEvent, BattleState, Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { baseDef, UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from './battle-face.ts';
-import { chargeFromText, chargeNote } from './charge-lines.ts';
+import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -871,7 +871,9 @@ export class BattleHud {
             'Mover: não dá para parar aqui; a unidade inteira precisa caber em chão livre e uniforme ao alcance.',
             'Move: cannot stop here; the whole unit must fit on free, even ground in reach.',
           )
-        : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.') + chargeFromText(b, v.cursor);
+        : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.') +
+            chargeFromText(b, v.cursor) +
+            counterFromText(b, v.cursor);
     if (s.k === 'map') {
       const p = v.hl?.preview;
       return p && !p.ok
@@ -1023,6 +1025,8 @@ export class BattleHud {
           ),
     );
     if (a.charge) rows.push(el('p', { class: 'unit-note' }, chargeNote(b, s)));
+    const owed = counterNote(b, s.ability, b.preview(s.ability, s.target));
+    if (owed) rows.push(el('p', { class: 'unit-note' }, owed));
     // the lock step (Nov 15): the same window, its two choices in place of Yes/No
     const choices = s.lock
       ? [
