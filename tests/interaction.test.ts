@@ -86,6 +86,18 @@ describe('two-step touch', () => {
     expect(defaultMode(b)).toEqual({ k: 'idle' });
   });
 
+  // the red cross, red cursor and "cannot stop here" line are for units bigger than one cell (Nov 14 review): a 1-cell unit
+  // keeps the plain cursor over an enemy or a far tile
+  it('a 1-cell unit shows no red square on a tile or enemy out of reach', () => {
+    const b = scene();
+    for (const p of [at(7, 2), at(4, 1)]) {
+      const ui = hoverTile(b, freshUi(b), p);
+      expect(b.reach().has(posKey(p))).toBe(false);
+      expect(highlights(b, ui, p)).toEqual(highlights(b, ui));
+      expect(kinds(b, ui, 'nogo')).toEqual([]);
+    }
+  });
+
   it('tapping a tile out of reach warns instead of doing nothing', () => {
     const b = scene();
     expect(tapTile(b, freshUi(b), at(7, 2)).invalid).toBe(true);
