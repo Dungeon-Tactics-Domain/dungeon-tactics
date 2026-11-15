@@ -5,9 +5,9 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
-import { canStand, dist, type Grid, posKey, type Tile, tileAt, withRamps } from '../src/shared/battle/grid.ts';
+import { canStand, dist, FACING, type Grid, posKey, type Tile, tileAt, withRamps } from '../src/shared/battle/grid.ts';
 import { halve, registerHalf } from '../src/shared/battle/half.ts';
-import { cellsOf, jumpOf, reachable } from '../src/shared/battle/pathing.ts';
+import { cellsOf, jumpOf, reachable, restsOn } from '../src/shared/battle/pathing.ts';
 import { initialState, MAPS, SCENARIOS, type Scenario } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import type { BattleState, Pos, UnitState } from '../src/shared/battle/types.ts';
@@ -453,6 +453,58 @@ describe('half tiles: push', () => {
       expect(h.dmg).toBe(w.dmg);
     }
   });
+
+  // Nov 15, Fernando: a push that would leave the token on uneven ground "tie-breaks by making the guy fall, or hit a wall"
+  // (before, 6 to 16% of the 1-tile pushes from the stops between tiles ended hovering over a ledge corner)
+  const pushOn = (heights: string, at: number, steps: number, more: Parameters<typeof stateOf>[0] = []) => {
+    const whole = gridOf(['.'.repeat(heights.length), '.'.repeat(heights.length)], [heights, heights]);
+    const g = split(whole, 't-uneven').grid;
+    const s = stateOf([{ id: 'b', def: `soldier${HALF}`, team: 'enemy', x: at, y: 0 }, ...more]);
+    const b = s.units[0];
+    return simulatePush(g, s, b, b.pos, { x: at - 2, y: 0 }, steps);
+  };
+
+  it('falls off the ledge onto the lower tile when the push ends over the drop', () => {
+    // between the two tiles at 3, pushed 1 tile: the square ends half over the drop and falls onto the tile at 0
+    const r = pushOn('3300', 1, 1);
+    expect(r.to).toEqual({ x: 4, y: 0 });
+    expect(r.dmg).toBe(18); // 3 levels: (3 - 1) x 9, no bump
+    expect(r.events.map((e) => e.k)).toEqual(['push', 'push', 'push', 'fall']);
+  });
+
+  it('goes back to where it last rested, bumped, when it cannot fall', () => {
+    // up a step of 1: half on the step is not even ground, and climbing onto it is not a fall
+    const up = pushOn('001', 1, 1);
+    expect(up.to).toEqual({ x: 2, y: 0 });
+    expect(up.dmg).toBe(5);
+    expect(up.events.map((e) => e.k)).toEqual(['push', 'bump']);
+    // a unit below the ledge holds the fall: back onto the high tile
+    const held = pushOn('1100', 1, 1, [{ id: 'x', def: `soldier${HALF}`, team: 'enemy', x: 5, y: 0 }]);
+    expect(held.to).toEqual({ x: 2, y: 0 });
+    expect(held.events.map((e) => e.k)).toEqual(['push', 'bump']);
+  });
+
+  for (const map of MAPS) {
+    it(`${map.id}: a push from any stop never ends on uneven ground`, () => {
+      const hm = halve(map);
+      const hs = initialState(hm, 1);
+      const bad: string[] = [];
+      for (const u of hs.units) {
+        if (!UNIT_DEFS[u.def].move) continue;
+        for (const { pos } of reachable(hm.grid, hs, u.id).values())
+          for (const d of FACING)
+            for (const steps of [1, 2, 3]) {
+              const s = structuredClone(hs);
+              const v = s.units.find((x) => x.id === u.id) as UnitState;
+              v.pos = pos;
+              const r = simulatePush(hm.grid, s, v, pos, { x: pos.x - 2 * d.x, y: pos.y - 2 * d.y }, steps);
+              if (!restsOn(hm.grid, r.to, 2))
+                bad.push(`${u.id} ${posKey(pos)} ${d.x},${d.y} x${steps} -> ${posKey(r.to)}`);
+            }
+      }
+      expect(bad.slice(0, 5)).toEqual([]);
+    }, 30000);
+  }
 });
 
 describe('half tiles: the test map', () => {

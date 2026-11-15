@@ -25,6 +25,7 @@ import {
   inAbilityRange,
   inArea,
   MAX_JUMP,
+  restsOn,
   shotStop,
   sightEnds,
   unitAt,
@@ -293,7 +294,8 @@ export interface PushResult {
 // from the user. Each tile is checked: wall, unit, edge and high step stop it (bump); going down is a fall, with damage
 // from 2 levels up. It does not change the state: the AI uses this to value pushes before choosing the move.
 // On the split map (half.ts) the token is pushed `steps` whole tiles in cells, its whole square checked on each cell; the
-// direction goes from the middle of the squares and the height of a square is its highest cell
+// direction goes from the middle of the squares and the height of a square is its highest cell. It ends only where the
+// square rests on even ground (restsOn): a fall onto it, or a bump back to where it last rested
 export function simulatePush(
   grid: Grid,
   state: BattleState,
@@ -317,8 +319,9 @@ export function simulatePush(
   dx = horizontal ? Math.sign(dx) : 0;
   dy = horizontal ? 0 : Math.sign(dy);
   const height = (p: Pos) => Math.max(...cells(p).map((c) => standH(tileAt(grid, c))));
-  for (let i = 0; i < steps * sub; i++) {
-    const cur = result.to;
+  const spiky = (p: Pos) => cells(p).some((c) => tileAt(grid, c).spikes);
+  // one cell of the push from `cur`: null where it is blocked
+  const move = (cur: Pos): PushResult | null => {
     const next = { x: cur.x + dx, y: cur.y + dy };
     // deep water holds a push like a wall (our assumption, kept when it started letting units enter, Nov 13)
     const blocked =
@@ -328,29 +331,54 @@ export function simulatePush(
           o = unitAt(state, c);
         return !canStand(t) || isDeep(t) || !!t.noStop || (!!o && o.id !== unit.id);
       }) || height(next) - height(cur) > MAX_JUMP;
-    if (blocked) {
-      result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });
-      result.dmg += COMBAT.BUMP_DAMAGE;
-      return result;
-    }
+    if (blocked) return null;
+    const out: PushResult = { to: next, dmg: 0, events: [{ k: 'push', unit: unit.id, to: next }] };
     const levels = height(cur) - height(next);
-    result.to = next;
-    result.events.push({ k: 'push', unit: unit.id, to: next });
     const dmg =
       levels <= 0
         ? 0
         : (rulesOf(state).fallDamage?.(levels, unit.def) ??
           Math.max(0, levels - COMBAT.FALL_FREE) * COMBAT.FALL_DAMAGE);
     if (dmg > 0) {
-      result.events.push({ k: 'fall', unit: unit.id, levels, dmg });
-      result.dmg += dmg;
+      out.events.push({ k: 'fall', unit: unit.id, levels, dmg });
+      out.dmg += dmg;
     }
     // spikes hurt when the square reaches them, not again on each cell over the same patch
-    const spiky = (p: Pos) => cells(p).some((c) => tileAt(grid, c).spikes);
     if (spiky(next) && (size === 1 || !spiky(cur))) {
-      result.events.push({ k: 'spike', unit: unit.id, dmg: COMBAT.SPIKE_DAMAGE });
-      result.dmg += COMBAT.SPIKE_DAMAGE;
+      out.events.push({ k: 'spike', unit: unit.id, dmg: COMBAT.SPIKE_DAMAGE });
+      out.dmg += COMBAT.SPIKE_DAMAGE;
     }
+    return out;
+  };
+  const add = (m: PushResult) => {
+    result.to = m.to;
+    result.dmg += m.dmg;
+    result.events.push(...m.events);
+  };
+  const rests = (p: Pos) => restsOn(grid, p, size);
+  let even: PushResult = { ...result, events: [] }; // where the square last rested (the start, at first)
+  let bumped = false;
+  for (let i = 0; i < steps * sub && !bumped; i++) {
+    const m = move(result.to);
+    if (!m) bumped = true;
+    else {
+      add(m);
+      if (rests(result.to)) even = { ...result, events: [...result.events] };
+    }
+  }
+  // A push never leaves the square on uneven ground (Nov 15, Fernando: "it tie-breaks by making the guy fall, or hit a
+  // wall"): one more cell when it drops onto even ground, else back to where it last rested, with the bump
+  if (!rests(result.to)) {
+    const m = move(result.to);
+    if (m && height(m.to) < height(result.to) && rests(m.to)) add(m);
+    else {
+      Object.assign(result, even);
+      bumped = true;
+    }
+  }
+  if (bumped) {
+    result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });
+    result.dmg += COMBAT.BUMP_DAMAGE;
   }
   return result;
 }
