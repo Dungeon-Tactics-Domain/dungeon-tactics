@@ -1,6 +1,6 @@
 # Dungeon Tactics — guide for AI agents and developers
 
-A turn-based tactics game for the browser, with the pacing and layout of Final Fantasy Tactics and Tactics Ogre, and KayKit characters. Since Nov 15 the game is a Darkest Dungeon-style loop (town, descent, camp, return); the story campaign "Beacon Ashes" is frozen as the old mode. Nothing is copied from the originals: art, music, text and rules are our own. Live at https://dungeon-tactics.fernandorffdev.com.
+A turn-based tactics game for the browser, with the pacing and layout of Final Fantasy Tactics and Tactics Ogre, and KayKit characters. Since Nov 15 the game is a Darkest Dungeon-style loop (town, descent, camp, return); the story campaign "Beacon Ashes" and its world map were removed on Nov 15. Nothing is copied from the originals: art, music, text and rules are our own. Live at https://dungeon-tactics.fernandorffdev.com.
 
 One developer (Fernando) works on it with AI agents. `AGENTS.md` points here. Each main folder (`src/shared`, `src/content`, `src/client`, `scripts`, `tests`) has its own `CLAUDE.md` with the patterns of that area: read the one for the folder you touch.
 
