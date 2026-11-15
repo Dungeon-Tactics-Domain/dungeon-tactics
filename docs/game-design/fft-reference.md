@@ -259,7 +259,7 @@ What the `fft-gariland` and `fft-classes` scenarios reproduce and what they simp
 | Wish with low health | The user is left with 1 health | Assumption |
 | Phoenix Down, Heal, Cheer Up, Scream, statuses | Out | Not reproduced |
 | Potions | 4 per Chemist | Assumption |
-| Magic and Charge | Since Nov 12, an action with a real charge: Fire and Cure 4 ticks, Charge +1 and +2 4 and 5 (BMG 3.3, 2.2 and A.2); whoever charges has no evasion and takes +50% (BMG 6). Fire and Cure follow the unit (unconfirmed); Charge aims at the tile | High |
+| Magic and Charge | Since Nov 12, an action with a real charge: Fire and Cure 4 ticks, Charge +1 and +2 4 and 5 (BMG 3.3, 2.2 and A.2); whoever charges has no evasion and takes +50% (BMG 6). Fire and Cure follow the unit (unconfirmed); Charge aims at the tile. Since Nov 15 the player picks the lock (character or tile; that FFT split is only the default) | High |
 | Knight's breaks | Only Speed Break and Power Break (the equipment ones need equipment in the engine) | Medium |
 | Longbow | Range 3 to 5, without the height gain of BMG 6.9 | Medium |
 | Faith and Brave | 60 for everyone | Assumption |
