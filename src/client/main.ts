@@ -175,7 +175,7 @@ export class Game {
   }
 
   // Keyboard (Fernando's request, Oct 25): every action has a key. The key -> action translation is pure (keyboard.ts).
-  // With a dialog open, the keys belong to it (Esc closes, Tab moves between buttons).
+  // With a dialog open, the keys belong to it (Esc closes, Tab moves between buttons, up and down walk its list: dialog.ts).
   private onKey(e: KeyboardEvent) {
     if (document.querySelector('.overlay')) return;
     const a = keyAction(e);

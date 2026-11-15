@@ -1,4 +1,5 @@
-// Modal dialog (came from the Warlock's ui.ts): closes on ✕, on Esc and on a tap outside; focus goes to the ✕ on open.
+// Modal dialog (came from the Warlock's ui.ts): closes on ✕, on Esc and on a tap outside; focus goes to the ✕ on open;
+// up and down walk its window list (`.camp-list`), if it has one.
 // `fixed`: the player can't close it (no ✕, Esc and tap outside do nothing): the title screen (Nov 13, Fernando's request:
 // "on the title screen pressing Esc starts a battle… I want a real title screen"). `onBack`: what opens when the
 // player closes it (✕, Esc, tap outside); the screens that leave the title go back to it. Closing from code (`close`) doesn't call it.
@@ -36,10 +37,11 @@ export function dialog(cls: string, title: string, body: Node[], opts: { fixed?:
   addEventListener(
     'keydown',
     (e) => {
-      // up and down walk a window list (title, Quick battle, Town), as the title footer says; only the window holding focus
-      // moves, so a list behind another window stays put
+      // up and down walk a window list (title, Quick battle, Town), as the title footer says; only the topmost window moves
+      // (a list behind another window stays put), even after a click left the focus on the page
       const list = overlay.querySelector('.camp-list');
-      if ((e.code === 'ArrowUp' || e.code === 'ArrowDown') && list && overlay.contains(document.activeElement)) {
+      const top = [...document.querySelectorAll('.overlay')].at(-1) === overlay;
+      if ((e.code === 'ArrowUp' || e.code === 'ArrowDown') && list && top) {
         e.preventDefault();
         const items = [...list.querySelectorAll<HTMLButtonElement>('button:not([disabled])')];
         const at = items.indexOf(document.activeElement as HTMLButtonElement);

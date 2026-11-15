@@ -22,6 +22,7 @@ Applies together with the root `CLAUDE.md`. **Web on PC first** (Fernando's requ
   - Keyboard: `keyboard.ts` (WASD and arrows go up and down the menu and move the cursor on the map; Enter confirms; Esc goes back; P Wait; C Status; F3 counter; Z undo).
   - Mouse: hovering chooses, click confirms, right button goes back.
   - Gamepad (Gamepad API, standard Xbox and PlayStation mapping): d-pad and analog stick move; A or × confirms; B or ○ goes back; X or □ Status; shoulders rotate the camera; triggers zoom; Back undoes; Start opens the menu. With a dialog open, the gamepad moves between its buttons.
+  - Window lists (`.camp-list`: title, Quick battle, Town): up and down arrows move the focus (`dialog.ts`); on the world map, where there is no `Game`, the d-pad does the same in the Town window. The map's own panel keeps the arrows for walking.
   - A new key or button goes into `keyAction`, into the `keyHelp` list (help screen) and as a `hint()` in the HUD. No keyboard `if` in the scene or the HUD.
 - **Text the player sees:** `t('pt', 'en')` from `i18n.ts`; names via `unitName`/`abilityName`. An action's result also as text (`eventLog`, in the help line), not just the floating number.
 - **DOM through the pieces of `icons.ts`** (`el`, `icon`, `button` for every text button, `iconButton`) and `dialog.ts`. Inline `style` only for positions and sizes computed at run time. Color is never the only signal.
