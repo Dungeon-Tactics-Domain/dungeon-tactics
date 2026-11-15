@@ -105,7 +105,7 @@
   --t-menu: 90ms;
   --t-open: 120ms;
   --t-nudge: 0.6s;
-  /* art of the theme: the 32 px ability icon atlas (icons.ts abilityIcon, approved Nov 15), shown at its own pixel size */
+  /* art of the theme: the 32 px ability icon atlas (icons.ts abilityIcon; the soft set with a transparent background, approved Nov 15), shown at its own pixel size */
   --ability-atlas: url("/ui/fft/atlas-32.png");
   /* glass orb before the commands with no atlas icon (Act, Status), the lab kit's command markers; off when disabled */
   --orb-gold: #c8a040;
@@ -1230,8 +1230,8 @@ button[hidden],
   flex: 1;
   text-align: left;
 }
-/* ability icon (icons.ts abilityIcon): the theme's 32 px atlas cell at 1:1, crisp, over the game-icons symbol; the symbol
-   shows only when the ability has no cell or the image fails to load (the cell is opaque) */
+/* ability icon (icons.ts abilityIcon): the theme's 32 px atlas cell at 1:1; the cell is transparent, so the game-icons symbol
+   is hidden when the ability has one and shows only when it has no cell */
 .ability-icon {
   position: relative;
   display: inline-grid;
@@ -1250,7 +1250,9 @@ button[hidden],
   position: absolute;
   inset: 0;
   background: var(--ability-atlas) calc(var(--cell-x) * -32px) calc(var(--cell-y) * -32px) no-repeat;
-  image-rendering: pixelated;
+}
+.ability-icon.in-atlas .gi {
+  visibility: hidden;
 }
 .panel .item:disabled .ability-icon {
   opacity: 0.5;

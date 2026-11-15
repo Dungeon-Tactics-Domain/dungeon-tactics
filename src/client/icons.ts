@@ -94,8 +94,8 @@ export const atlasCell = (id: string): [x: number, y: number] | null => {
   const n = ATLAS.indexOf(id);
   return n < 0 ? null : [n % ATLAS_COLUMNS, Math.floor(n / ATLAS_COLUMNS)];
 };
-// 32 px ability icon, decorative. The atlas cell is opaque and drawn over the game-icons symbol: an ability without a cell, or
-// an atlas that fails to load, shows the symbol underneath
+// 32 px ability icon, decorative. The atlas cell is transparent, so the CSS hides the game-icons symbol when there is a cell;
+// an ability without one shows the symbol
 export function abilityIcon(id: string): HTMLElement {
   const cell = atlasCell(id);
   return el(
