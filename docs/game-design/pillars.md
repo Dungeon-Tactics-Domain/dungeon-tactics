@@ -2,6 +2,8 @@
 
 Source: Oct 25, 2026 grill with Fernando. Rule for this document: every design decision goes in here with its date and reason; a generic design skill was deliberately rejected (decision of Oct 25), so this file is the criterion.
 
+> Update Nov 15: the game became a town, descent, camp and return loop (no campaign). The decisions of that loop are in `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md` and win over this file when they conflict.
+
 ## Pillars
 
 1. **Plan, don't react.** The turn queue and each enemy's range stay visible. Losing should feel like the plan's fault, not the interface's. (Into the Breach)
@@ -21,4 +23,4 @@ Source: Oct 25, 2026 grill with Fernando. Rule for this document: every design d
 
 ## Out for now
 
-Permadeath, stress and afflictions, expedition with resources, hamlet. Don't block them: the hero's state persists between battles.
+Permadeath (postponed on Nov 15: a fallen hero returns wounded at 25% health), stress and afflictions (not planned). Expedition with resources and the town are now the core loop, no longer out. Don't block the rest: the hero's state persists between battles.

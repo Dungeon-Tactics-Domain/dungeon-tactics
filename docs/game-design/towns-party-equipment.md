@@ -2,6 +2,8 @@
 
 Request from Fernando (Nov 13): "create the character management menu just like FFT's and towns just like FFT's too, with taverns, side quests, equipment, shops, recruiting; implement new classes; and overall keep testing in loops to find bugs and improvements in interface, UX and game feel".
 
+> Update Nov 15: the campaign is frozen and the game is now a town, descent, camp and return loop; the town is fixed (only the party grows) and gold comes from selling loot. This document describes the old campaign mode except where marked. Source: `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`.
+
 Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, text, names or music (project rule). Sources already gathered in `fft-reference.md` and `tactics-ogre-fft-ui-reference.md`.
 
 ## 1. Party management ("Formation", like FFT)
@@ -26,7 +28,7 @@ Reference: only the flow and mechanics of FFT (PS1) and Tactics Ogre; no art, te
 - **Tavern:** rumors (short lines that tell the story and give hints) and **optional quests**: extra battles off the main line, with their own rule (survive N turns, protect an ally, defeat a boss), which give gold and items. A quest disappears after it is won.
 - **Shop:** buying and selling equipment with the chest's gold; stock grows each act. Shows before → after on the sheet of whoever will use it (like FFT).
 - **Recruiting:** hires a generic unit of an unlocked class, with a drawn name; priced in gold; the party has a cap (e.g. 8).
-- **Gold:** winning a stage gives a flat 150 gold (stars were removed on Nov 13); quests give more.
+- **Gold:** in the old campaign, winning a stage gave a flat 150 gold (stars were removed on Nov 13); quests gave more. In the new loop gold comes from selling loot and spare ingredients in town.
 
 ## 4. New classes
 

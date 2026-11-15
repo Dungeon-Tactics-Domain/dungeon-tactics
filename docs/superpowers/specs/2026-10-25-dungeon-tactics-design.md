@@ -2,6 +2,8 @@
 
 Origin: pillars grill with Fernando on Oct 25, 2026 (decisions also in the memory `visao-do-jogo.md`). Pillars and goals: [`docs/game-design/pillars.md`](../../game-design/pillars.md).
 
+> **Superseded in part on 15/11.** Changed since this spec: no campaign with a fork (the game is a town, descent, camp and return loop); plain 3D instead of SNES pixel art; PC first instead of mobile first; expedition with resources and the town are now core, permadeath postponed (a fallen hero returns wounded at 25%). The body below is kept as written. Source: `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`.
+
 ## What it is
 
 Turn-based tactics on a square grid with height, mobile first, SNES pixel art (shader over 3D Three.js). References: Final Fantasy Tactics (turns, height), Into the Breach (planning against what the enemy can reach), D&D (classes, dice) and Darkest Dungeon (feel; its pieces come later).

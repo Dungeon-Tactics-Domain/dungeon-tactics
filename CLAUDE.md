@@ -1,6 +1,6 @@
 # Dungeon Tactics — guide for AI agents and developers
 
-A turn-based tactics game for the browser, with the pacing and layout of Final Fantasy Tactics and Tactics Ogre, KayKit characters and a story campaign. Nothing is copied from the originals: art, music, text and rules are our own. Live at https://dungeon-tactics.fernandorffdev.com.
+A turn-based tactics game for the browser, with the pacing and layout of Final Fantasy Tactics and Tactics Ogre, and KayKit characters. Since Nov 15 the game is a Darkest Dungeon-style loop (town, descent, camp, return); the story campaign "Beacon Ashes" is frozen as the old mode. Nothing is copied from the originals: art, music, text and rules are our own. Live at https://dungeon-tactics.fernandorffdev.com.
 
 One developer (Fernando) works on it with AI agents. `AGENTS.md` points here. Each main folder (`src/shared`, `src/content`, `src/client`, `scripts`, `tests`) has its own `CLAUDE.md` with the patterns of that area: read the one for the folder you touch.
 
@@ -17,7 +17,7 @@ src/shared/battle/  battle rules, no DOM or Three.js
   units.ts, abilities.ts, equipment.ts, scenarios.ts   types and registries (UNIT_DEFS, ABILITIES, ITEMS, SCENARIOS)
   half.ts           half tiles: every battle the client opens is split on load (halve), the FFT study included, plus the ?scenario=half test map; fft/ is a reference study, not the game
 src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), campaign (stages and
-                    lines), world (nodes, towns, rumors), quests, party (story members, recruit names)
+                    lines; frozen), world (nodes, towns, rumors), quests, party (story members, recruit names)
 src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, world-ui.ts (map, towns, party),
                     group.ts (party rules), campaign.ts (stage rules), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
   game/             what opens around the battle: boot (URL to scenario), title, options, end screens, world map flow
@@ -105,3 +105,4 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 15/11 | Swappable interface themes: a theme is a block of `:root[data-theme]` tokens chosen in Options (`dt:theme`). FFT Classic (blue panels, light text, Alegreya Sans hosted in `public/fonts`) is the default and only theme; the parchment look was removed | Fernando's request: FFT Classic as the first theme, more themes later; "pode retirar" about the parchment |
 | 15/11 | Ability icons: the 32 px pixel-art set from the design lab (`public/ui/fft/atlas-32.png`), shown at 1:1 and crisp; game-icons symbol as the fallback; AI-generated, licence to be confirmed before launch | Fernando approved the set in the lab (FFT theme plan, block 2) |
 | 15/11 | Dialogue box with the painted faces from the design lab (`public/chars/px`, AI-generated, licence to confirm before launch): 128 px lossless WebP resampled from the 256 px masters, the mouth goes talk1, talk2, talk1, neutral every 180 ms while the text types; the other expressions wait for later | FFT theme plan, block 3: talking faces like FFT's dialogue; Fernando chose the final 8-expression set |
+| 15/11 | New loop, no campaign: town (fixed; only the party grows) → descent in floors of short rooms (5 to 8 hero turns) plus a boss → camp → return, Darkest Dungeon style; pure FFT combat; a fallen hero returns wounded at 25% health, no permadeath for now. Current focus is the dungeon only (room generator, then the expedition). The Beacon Ashes campaign is frozen as the old mode, still in the code. Source of the 43 decisions: `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md` | Fernando's grill of Nov 15 (audio describing a Darkest Dungeon-style dungeon crawler with a town hub): descents in the current combat engine, with the bag, camp and party choices between fights |
