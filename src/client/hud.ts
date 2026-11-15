@@ -230,6 +230,7 @@ const LOOK_NAME: Record<string, () => string> = {
   chest: () => t('baú', 'chest'),
   rubble: () => t('entulho', 'rubble'),
   spikes: () => t('armadilha de espinhos', 'spike trap'),
+  boulder: () => t('rochedo', 'boulder'),
   corpse: () => t('corpo', 'body'),
 };
 const TERRAIN_NAME: Record<string, () => string> = {

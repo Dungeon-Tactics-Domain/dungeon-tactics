@@ -33,7 +33,7 @@ Applies together with the root `CLAUDE.md`. Decision of Nov 14 (Fernando, cleanu
 - **Stage:** an entry in `STAGES` (`campaign.ts`) with a map that has 4 hero spawns, and a battle node in `WORLD` (`world.ts`) with its index. Music ids come from `TRACKS` (`src/client/music.ts`).
 - **Quest:** an entry in `quests.ts` whose `town` is a node with `town`.
 - **Expedition numbers:** `CRAWL_RUN` (floors, rows, rooms per row, heals in %); a change gives other maps for the same seed, so an expedition in progress may break: bump `CRAWL_VERSION`, which drops the saved one.
-- **Crawl group or theme:** an entry in `CRAWL_GROUPS` (1 to 3 existing enemies, 64 to 102 life in all, the Mechanics lab's range) or `CRAWL_THEMES` (floor looks by height, obstacle tiles, optional spikes) in `crawl/rooms.ts`. A change that gives other rooms for the same seed bumps `CRAWL_VERSION` and the pinned hash and tries in `tests/crawl-room.test.ts`; a theme's mood goes in `ROOM_KIND` (`src/client/ambience.ts`).
+- **Crawl group or theme:** an entry in `CRAWL_GROUPS` (1 to 3 existing enemies, 64 to 102 life in all, the Mechanics lab's range) or `CRAWL_THEMES` (floor looks by height, obstacle tiles, the tiles that close the border, an optional road look and optional spikes; every look must be in `PAINT` (`src/client/terrain.ts`) so the room draws on the smooth painted terrain, `tests/crawl-room.test.ts` checks it) in `crawl/rooms.ts`. A change that gives other rooms for the same seed bumps `CRAWL_VERSION` and the pinned hash and tries in `tests/crawl-room.test.ts`; a theme's mood goes in `ROOM_KIND` (`src/client/ambience.ts`).
 
 ## Tests that guard it
 

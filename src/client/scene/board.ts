@@ -70,6 +70,9 @@ const LOOK: Record<
   chest: { top: 'blocks/stone_dark', side: 'blocks/stone_dark', prop: 'dungeon/chest_gold', propH: 0.6 },
   rubble: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/rubble_half', propH: 0.4 },
   spikes: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/floor_tile_big_spikes', propW: 0.95 },
+  // crawl rooms (Nov 15): a lone rock that blocks, the painted boulder of props.ts on the ground; a stone hill (rock) on a
+  // single tile read as a cube
+  boulder: { top: 'blocks/gravel', side: 'blocks/stone', prop: 'forest/Rock_3_A_Color1', propW: 1 },
   // fallen body: the ground is the terrain's and the body is a unit at the end of the death animation (buildCorpses)
   corpse: { top: 'blocks/dirt', side: 'blocks/dirt' },
 };
@@ -121,6 +124,7 @@ const WALL_COLOR: Record<string, string> = {
   chest: '#4a4a52',
   rubble: '#5a5d66',
   spikes: '#5a5d66',
+  boulder: '#7a7d86',
 };
 const NEIGHBORS = [
   [1, 0],

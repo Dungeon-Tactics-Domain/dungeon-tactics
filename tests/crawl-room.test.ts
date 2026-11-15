@@ -1,6 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { PAINT } from '../src/client/terrain.ts';
 import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
 import { dist, FACING, inBounds, posKey, TERRAIN, type Tile, tileAt } from '../src/shared/battle/grid.ts';
+import { halve } from '../src/shared/battle/half.ts';
 import type { Scenario, Spawn } from '../src/shared/battle/scenarios.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -142,9 +144,17 @@ describe('crawl rooms: 500 seeds', () => {
     const first = built.slice(0, 25);
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-    expect(CRAWL_VERSION).toBe('crawl2');
-    expect(first.map((b) => b.tries).join(' ')).toBe('1 1 3 2 1 2 1 2 1 1 1 1 1 1 2 1 1 1 3 1 1 1 1 1 1');
-    expect((h >>> 0).toString(16)).toBe('55338c46');
+    expect(CRAWL_VERSION).toBe('crawl3');
+    expect(first.map((b) => b.tries).join(' ')).toBe('4 1 3 4 3 3 1 2 1 1 3 2 1 3 2 2 1 1 2 1 2 2 1 1 2');
+    expect((h >>> 0).toString(16)).toBe('e135d33d');
+  });
+
+  it('every tile, split into half tiles too, carries a look the smooth painted terrain draws', () => {
+    // a look missing from PAINT falls back to KayKit blocks (scene/board.ts), the crude look these rooms had (Nov 15)
+    for (const { room } of built.slice(0, 30)) {
+      const half = halve({ ...room, id: 'crawl-look-test' });
+      for (const t of [...room.grid.tiles, ...half.grid.tiles]) expect(t.look && t.look in PAINT, room.id).toBe(true);
+    }
   });
 
   it('a room built again checks the same (verifyRoom keeps no state between rooms)', () => {

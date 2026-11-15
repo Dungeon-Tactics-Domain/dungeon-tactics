@@ -10,7 +10,7 @@ const TIMEOUT = 60_000; // software WebGL on a CI runner takes a while to build 
 // at home and its first room (node 0 is always open first) must show the carried life, not a full bar
 const WORN = {
   'dt:crawl': JSON.stringify({
-    v: 'crawl2',
+    v: 'crawl3',
     seed: 77,
     path: [],
     party: ['warrior', 'archer', 'mage', 'rogue'].map((id) => ({ id, max: 50, hp: 9 })),

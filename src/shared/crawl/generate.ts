@@ -11,7 +11,7 @@ import { UNIT_DEFS } from '../battle/units.ts';
 import { startRange, verifyRoom } from './verify.ts';
 
 // In every room id: a change that gives other rooms for the same seed bumps it, so a save of an older room starts over
-export const CRAWL_VERSION = 'crawl2';
+export const CRAWL_VERSION = 'crawl3';
 export interface RoomGroup {
   name: [string, string];
   depth: number;
@@ -20,7 +20,9 @@ export interface RoomGroup {
 export interface CrawlTheme {
   floors: string[]; // floor look by height level (the last one for anything higher)
   props: Partial<Tile>[]; // obstacles: a terrain and its look
-  hazard?: Partial<Tile>; // up to 3 spike tiles
+  border: Partial<Tile>[]; // what closes the room along its border, like Ash Wood's trees: trees, rock walls
+  road?: string; // floor look of a winding road from the heroes' side to the far one, like Ash Wood's sand road
+  hazard?: Partial<Tile>; // up to 6 spike tiles
 }
 export interface RoomOptions {
   depth?: number;
@@ -30,7 +32,7 @@ export interface RoomOptions {
 // the theme ends the room id (the client picks the room's mood by it)
 export const roomTheme = (id: string) => (id.startsWith(`${CRAWL_VERSION}-`) ? id.slice(id.lastIndexOf('-') + 1) : '');
 
-// layouts drawn per room before giving up; the 500 test seeds need at most 6, 1.3 on average, ~50 ms a room (Nov 15)
+// layouts drawn per room before giving up; the 500 test seeds need at most 11, 1.8 on average, ~75 ms a room (Nov 15)
 const TRIES = 200;
 // room side in whole tiles: 24x24 half tiles like Ash Wood, 28x28 for the boss (Nov 15, Fernando; the lab's descida.json)
 const SIDE = 12,
@@ -116,6 +118,15 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
       const t = at({ x: int(1, N - 2), y: int(2, N - 3) });
       if (!t.look) Object.assign(t, theme.hazard);
     }
+  // the border closed in places, 3 tiles in 5, and always in the corners (a free corner between two closed tiles is cut
+  // off): a room inside a wood or a cave, not a slab in the void
+  for (let i = 0; i < N * N; i++) {
+    const x = i % N,
+      y = Math.floor(i / N),
+      side = x === 0 || x === N - 1;
+    if ((side || y === 0 || y === N - 1) && ((side && (y === 0 || y === N - 1)) || int(0, 4) < 3) && !tiles[i].look)
+      Object.assign(tiles[i], theme.border[int(0, theme.border.length - 1)]);
+  }
 
   // starting tiles: plain ground at the side's level, inside the border, not beside a drop of 2 or spikes
   const near = (p: Pos) =>
@@ -185,6 +196,10 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
     });
     if (up.length && int(0, 1)) t.ramp = [up[int(0, up.length - 1)], 1];
   }
+  // the road is look only: 2 tiles wide, drifting a column at a time, over plain floor
+  if (theme.road)
+    for (let y = N - 1, x = int(2, N - 4); y >= 0; y--, x = Math.min(N - 3, Math.max(1, x + int(-1, 1))))
+      for (const t of [at({ x, y }), at({ x: x + 1, y })]) if (t.terrain === 'floor' && !t.look) t.look = theme.road;
   for (const t of tiles) t.look ??= theme.floors[Math.min(t.h, theme.floors.length - 1)];
   return { grid: { width: N, height: N, tiles }, spawns };
 }

@@ -16,7 +16,7 @@ import { EXT_RING, extH, outerTop, riverOf, riverOutside } from './terrain.ts';
 import { swapTrees } from './trees.ts';
 import { waterLevels } from './water-levels.ts';
 
-type Kind = 'forest' | 'field' | 'crypt' | 'frost';
+type Kind = 'forest' | 'field' | 'crypt' | 'frost' | 'cave';
 type Pair = [night: string, day: string];
 interface Prop {
   model: string;
@@ -123,6 +123,28 @@ export const MOODS: Record<Kind, Mood> = {
     motes: { n: 220, color: ['#ffb070', '#ffb070'], size: 0.045, fall: -0.00012, add: true, top: 4 },
     walls: true,
   },
+  // crawl cave (Nov 15, Fernando: the rooms must look like Ash Wood): the crypt's dark and embers over the smooth painted
+  // stone, with no crypt walls, so the ground and its rocks go on into the dark around the room
+  cave: {
+    low: ['#04070b', '#0a0d12'],
+    high: ['#010203', '#04060a'],
+    near: 1.5,
+    far: 14,
+    mist: 0.75,
+    ceiling: 1,
+    snow: 0,
+    ground: '#2a2c33',
+    rise: 0.3,
+    bump: 0.9,
+    shade: 0.7,
+    props: [
+      { model: `${F}Rock_3_A_Color1`, n: 40, d: [0.3, 5], h: [0.6, 1.6] },
+      { model: `${F}Rock_1_A_Color1`, n: 30, d: [0.3, 4], h: [0.3, 0.8] },
+    ],
+    beams: { n: 3, color: ['#8fc6ff', '#8fc6ff'], power: [0.07, 0.09], tilt: 0.25 },
+    motes: { n: 220, color: ['#ffb070', '#ffb070'], size: 0.045, fall: -0.00012, add: true, top: 4 },
+    light: { sky: 0.55, sun: 0.8, at: [-6, 9, 4] },
+  },
   frost: {
     low: ['#060a17', '#8d9db3'],
     high: ['#16234a', '#dde7f1'],
@@ -156,7 +178,7 @@ const KIND: Record<string, Kind> = {
   frost_pass: 'frost',
 };
 // crawl rooms (src/shared/crawl) have a new id per seed: the theme that ends it picks the mood
-const ROOM_KIND: Record<string, Kind> = { dungeon: 'crypt', forest: 'forest', mountain: 'frost' };
+const ROOM_KIND: Record<string, Kind> = { dungeon: 'cave', forest: 'forest', mountain: 'frost' };
 export const kindOf = (grid: Grid): Kind => {
   const id = Object.keys(SCENARIOS).find((k) => SCENARIOS[k].grid === grid) ?? '';
   // half tiles (half.ts): the split map `<id>½` is drawn with the mood of the whole one it came from

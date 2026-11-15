@@ -113,7 +113,7 @@ describe('crawl rooms', () => {
 
   it('themes use known terrains', () => {
     for (const [name, th] of Object.entries(CRAWL_THEMES))
-      for (const p of [...th.props, ...(th.hazard ? [th.hazard] : [])])
+      for (const p of [...th.props, ...th.border, ...(th.hazard ? [th.hazard] : [])])
         expect(p.terrain && TERRAIN[p.terrain], `${name} → ${p.look}`).toBeDefined();
   });
 });

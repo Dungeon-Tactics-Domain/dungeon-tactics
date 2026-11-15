@@ -42,6 +42,10 @@ export const PAINT: Record<string, Paint> = {
   summit: [0, 0, 0, 0, 1],
   gold: [0, 0, 0.3, 0, 0.7],
   stone: [0, 0, 0.4, 0, 0.6],
+  // crawl caves (src/content/crawl): the dungeon pieces on the stone floor instead of crypt blocks
+  rubble: [0, 0, 0.4, 0, 0.6],
+  spikes: [0, 0, 0.4, 0, 0.6],
+  boulder: [0, 0, 0.4, 0, 0.6],
 };
 
 // height (h) of the lowest tile on the board within `ring` tiles of (i, j): the extension never goes above it, because the camera

@@ -30,18 +30,23 @@ export const CRAWL_BOSS: Omit<RoomGroup, 'depth'> = {
   enemies: ['colossus', 'minion'],
 };
 
-// Look only: the floor by height level and the obstacles of each place; rules unique to a place wait until the dungeon
-// itself plays well (Nov 15, the dungeon loop grill)
+// Look only: the floor by height level, the obstacles, the border and the road of each place, all drawn on the smooth
+// painted ground like Ash Wood (Nov 15, Fernando: the rooms looked crude next to it); rules unique to a place wait until
+// the dungeon itself plays well (Nov 15, the dungeon loop grill)
 export const CRAWL_THEMES: Record<string, CrawlTheme> = {
+  // a cave: dirt and stone floor with a bare stone road, stone hills along the border for walls (MOUND in
+  // scene/board.ts), boulders, crates and barrels inside
   dungeon: {
-    floors: ['crypt', 'crypt', 'altar', 'altar'],
+    floors: ['stone', 'stone', 'summit', 'summit'],
     props: [
-      { terrain: 'wall', look: 'pillar' },
-      { terrain: 'wall', look: 'pillar' },
+      { terrain: 'wall', look: 'boulder' },
+      { terrain: 'wall', look: 'boulder' },
       { terrain: 'wall', look: 'crates' },
       { terrain: 'wall', look: 'barrel' },
       { terrain: 'rubble', look: 'rubble' },
     ],
+    border: [{ terrain: 'wall', look: 'rock' }],
+    road: 'summit',
     hazard: { terrain: 'floor', look: 'spikes', spikes: true },
   },
   forest: {
@@ -50,17 +55,30 @@ export const CRAWL_THEMES: Record<string, CrawlTheme> = {
       { terrain: 'forest', look: 'tree2' },
       { terrain: 'forest', look: 'tree3' },
       { terrain: 'forest', look: 'tree4' },
-      { terrain: 'wall', look: 'rock' },
+      { terrain: 'wall', look: 'boulder' },
+      { terrain: 'wall', look: 'crates' },
+      { terrain: 'wall', look: 'barrel' },
     ],
+    border: [
+      { terrain: 'forest', look: 'tree2' },
+      { terrain: 'forest', look: 'tree3' },
+      { terrain: 'forest', look: 'tree4' },
+    ],
+    road: 'sand',
   },
   mountain: {
     floors: ['snow', 'snow', 'snow', 'summit'],
     props: [
       { terrain: 'forest', look: 'bare1' },
       { terrain: 'forest', look: 'bare2' },
-      { terrain: 'wall', look: 'snow_rock' },
+      { terrain: 'wall', look: 'boulder' },
+      { terrain: 'wall', look: 'boulder' },
+    ],
+    border: [
+      { terrain: 'forest', look: 'bare1' },
       { terrain: 'wall', look: 'snow_rock' },
     ],
+    road: 'stone',
   },
 };
 
