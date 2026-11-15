@@ -355,7 +355,7 @@ export function offMap(grid: Grid, spec: SceneSpec): string[] {
   return at.flatMap(([name, p]) =>
     p && !inBounds(grid, { x: p.x * k, y: p.y * k })
       ? [`${name}: ${p.x},${p.y} is outside the ${grid.width / k}x${grid.height / k} map`]
-      : p && !Number.isInteger(p.x * k + p.y * k)
+      : p && !(Number.isInteger(p.x * k) && Number.isInteger(p.y * k))
         ? [`${name}: ${p.x},${p.y} is between tiles, and this map has no half tiles`]
         : [],
   );

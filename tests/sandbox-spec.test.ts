@@ -285,6 +285,9 @@ describe('specs on a split map', () => {
     expect(offMap(flat(4, 4), { cursor: { x: 2.5, y: 3 } })).toEqual([
       'cursor: 2.5,3 is between tiles, and this map has no half tiles',
     ]);
+    expect(offMap(flat(4, 4), { cursor: { x: 2.5, y: 2.5 } })).toEqual([
+      'cursor: 2.5,2.5 is between tiles, and this map has no half tiles',
+    ]);
   });
 
   it('names places off the map in whole tiles', () => {
