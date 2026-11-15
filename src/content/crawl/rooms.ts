@@ -56,3 +56,16 @@ export const CRAWL_THEMES: Record<string, CrawlTheme> = {
     ],
   },
 };
+
+// The expedition (Nov 15, F2): floors of short rooms the player picks a path through, each floor closed by the boss room
+// (the F2 order; the lab proposed 3 floors of 2 rooms with one boss at the end). Floor n draws its rooms at depth n. Heals in
+// % of max life, provisional until the camp exists: +25% after each won room for whoever stood (a fallen hero comes back at
+// 25% instead), +50% to everyone on going down a floor; never above the max (Fernando, Nov 15, decision 43)
+export const CRAWL_RUN = {
+  floors: 3,
+  rows: 2, // rows of rooms before the boss on each floor; the player clears one room per row
+  width: [2, 3] as [number, number], // rooms to pick from in a row
+  roomHeal: 25,
+  floorHeal: 50,
+  fallen: 25,
+};

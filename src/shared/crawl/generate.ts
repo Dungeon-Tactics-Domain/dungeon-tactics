@@ -36,18 +36,28 @@ const TRIES = 200;
 export const generateRoom = (seed: number, opts: RoomOptions = {}): Scenario => buildRoom(seed, opts).room;
 
 // The room and how many layouts it took: each one is drawn from the same seeded stream and kept only if verifyRoom passes
+const depthOf = (opts: RoomOptions) => Math.min(99, Math.max(1, Math.trunc(opts.depth ?? 1) || 1));
+
+// The enemy group a room will hold, without laying it out: the expedition map shows it on the node before the fight. It is
+// the first draw of the room's stream, so buildRoom goes on from `rng` and the pinned rooms keep their layout
+export function roomGroup(seed: number, opts: RoomOptions = {}): { group: Omit<RoomGroup, 'depth'>; rng: number } {
+  if (opts.boss) return { group: CRAWL_BOSS, rng: seed | 0 };
+  const depth = depthOf(opts);
+  const tier = Math.max(...CRAWL_GROUPS.filter((g) => g.depth <= depth).map((g) => g.depth));
+  const pool = CRAWL_GROUPS.filter((g) => g.depth === tier);
+  const [i, rng] = rollInt(seed | 0, 0, pool.length - 1);
+  return { group: pool[i], rng };
+}
+
 export function buildRoom(seed: number, opts: RoomOptions = {}): { room: Scenario; tries: number } {
-  const depth = Math.min(99, Math.max(1, Math.trunc(opts.depth ?? 1) || 1));
+  const depth = depthOf(opts);
   const theme = opts.theme && Object.hasOwn(CRAWL_THEMES, opts.theme) ? opts.theme : 'dungeon';
-  let rng = seed | 0;
+  let { group, rng } = roomGroup(seed, opts);
   const int = (lo: number, hi: number) => {
     const [v, next] = rollInt(rng, lo, hi);
     rng = next;
     return v;
   };
-  const tier = Math.max(...CRAWL_GROUPS.filter((g) => g.depth <= depth).map((g) => g.depth));
-  const pool = CRAWL_GROUPS.filter((g) => g.depth === tier);
-  const group = opts.boss ? CRAWL_BOSS : pool[int(0, pool.length - 1)];
   const id = `${CRAWL_VERSION}-${seed | 0}-d${depth}${opts.boss ? '-boss' : ''}-${theme}`;
   for (let tries = 1; tries <= TRIES; tries++) {
     const laid = layout(int, opts.boss ? 10 : 8, group.enemies, CRAWL_THEMES[theme]);
