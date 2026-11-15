@@ -63,9 +63,6 @@
   --row-hi: rgba(255, 255, 255, 0.5); /* menu row under focus or hover */
   --focus-band: var(--row-hi); /* background of the menu row under focus */
   --ink-off: var(--ink); /* text of a disabled menu row (the row also fades) */
-  --enemy-paper: var(--strike); /* target half of the strike preview; unused until a theme draws that half */
-  /* folder of the theme's art pieces (public/ui/<theme>/); read from JS, since CSS url() cannot join a variable */
-  --ui-path: "/ui/parchment";
   /* floating damage number: pale, and hotter on a strike of 25% of life or more */
   --float-dmg: #ffd0c4;
   --float-big: #ffb199;

@@ -71,7 +71,6 @@ import {
 } from './survival.ts';
 import { talk } from './talk.ts';
 import { addEvents, emptyTally, mvp } from './tally.ts';
-import './theme.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
 import { afterNode, nodeOfChapter, parseWorld, WORLD_KEY } from './world.ts';

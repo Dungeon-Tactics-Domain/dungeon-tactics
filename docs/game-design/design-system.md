@@ -25,8 +25,6 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 - **Where:** `:root, :root[data-theme="parchment"]` at the top of `style.css` is the Parchment theme, the default and the base every other theme inherits from. Another theme is a `:root[data-theme="<id>"]` block right below it that redefines only the tokens it changes. Outside these blocks, CSS and code use tokens only and never name a theme.
 - **Choosing:** `src/client/theme.ts` holds `THEMES` (id, Portuguese and English name; the first is the default), `getTheme()` and `setTheme(id)`. The choice is saved in `dt:theme` and set as `data-theme` on `<html>`: an inline script in `index.html` copies the save before the first paint, and `theme.ts` replaces an unknown value with the default on load. Options → Video and effects → Theme lists `THEMES` with `choice()`; switching applies at once, no reload.
 - **Adding a theme:** one entry in `THEMES`, one `:root[data-theme="<id>"]` block in `style.css`, the contrast table below measured for its pairs. A value that today is a literal inside a piece becomes a token in the Parchment block first (with today's value), so the new theme only overrides tokens.
-- **Art pieces:** `--ui-path` (Parchment: `"/ui/parchment"`, a quoted string: unquoted, Biome and the browser split it at the slashes) names the theme's folder under `public/ui/<theme>/`. CSS cannot join a variable inside `url()`, so it is read from JS (`getComputedStyle(document.documentElement).getPropertyValue('--ui-path')`, then drop the quotes); a piece drawn by CSS needs a whole `url(...)` token per piece in the theme block. No piece exists yet, so the folder does not either.
-- **FFT kit names:** the lab kit's `--font-px` is this game's `--font-title`; its `--focus-band`, `--ink-off` and `--enemy-paper` are the theme hooks in the colour table.
 
 ### Colour
 
@@ -41,7 +39,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Bars | `--hp` `--mp` `--ct` `--heal` | HP, MP, CT, healing |
 | Strike preview | `--strike` `--strike-dmg` | arrow band between the panels |
 | Parchment extras | `--paper-white` `--row-hi` | brightest paper (Developer fields, selected class card); menu row under hover |
-| Theme hooks | `--focus-band` `--ink-off` `--enemy-paper` | menu row under focus (today `--row-hi`), text of a disabled menu row (today `--ink`), target half of the strike preview (today `--strike`, not drawn yet) |
+| Theme hooks | `--focus-band` `--ink-off` | menu row under focus (today `--row-hi`), text of a disabled menu row (today `--ink`) |
 | Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
 | Map nodes | `--node-battle` `--node-story` `--node-done` `--node-locked` `--node-locked-edge` | world map points |
 | Fade | `--fade` | black of the fade on entering a map point |
@@ -116,7 +114,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | Piece | Lives in | States | Used in |
 |---|---|---|---|
 | **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, place panel on the map, dialogue box, creation |
-| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H 50% white background (`--row-hi`), F the same through `--focus-band`, with pulsing ▶ (`.focus`) · P no shift · D 45% opacity, text `--ink-off` | commands, abilities, Yes/No, corner list, map actions |
+| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F the same through `--focus-band`, with pulsing ▶ (`.focus`) · P no shift · D 45% opacity, text `--ink-off` | commands, abilities, Yes/No, corner list, map actions |
 | **Bar** `gauge()` | `hud.ts` | value + number; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels |
 | **Unit panel** `unitPanel()` | `hud.ts` | hero/enemy by side stripe and side text; mirrored for the target | bottom left and right |
 | **Portrait** `portrait()` | `hud.ts` | 72×96 (panel, dialogue, creation), 48×64 (party), 44×58 (map), 24×32 (queue) | everywhere with a face |
