@@ -110,8 +110,8 @@ export async function selectBattle(): Promise<BattleSelection | 'world' | null> 
     scenario = SCENARIOS[study];
     saveKey = `dt:battle:${study}`;
   }
-  // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left in the game): only the FFT
-  // study keeps its own whole tiles, and the test map comes split already
-  if (!scenario.id.startsWith('fft-') && subOf(scenario.grid) === 1) scenario = halve(scenario);
+  // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left, the FFT study included);
+  // the test map comes split already
+  if (subOf(scenario.grid) === 1) scenario = halve(scenario);
   return { scenario, mission, saveKey, chapter, study, title: camp === null && !study };
 }

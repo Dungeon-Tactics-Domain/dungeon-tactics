@@ -8,7 +8,7 @@ import { nextRng, rollInt } from '../rng.ts';
 import type { Rules } from '../rules.ts';
 import { SCENARIOS, type Scenario, type Spawn } from '../scenarios.ts';
 import type { UnitState } from '../types.ts';
-import { UNIT_DEFS, type UnitDef } from '../units.ts';
+import { baseDef, UNIT_DEFS, type UnitDef } from '../units.ts';
 import {
   BRAVE,
   CLASSES,
@@ -389,10 +389,12 @@ unit('fft_priest', 'Mago Branco', 'Priest', CLASSES.priest, 'oak_staff', 'mage',
 unit('fft_wizard', 'Mago Negro', 'Wizard', CLASSES.wizard, 'rod', 'skeleton_mage', ['fire']);
 
 // Current PA and Speed: the sheet's plus what the battle added or removed, never below 1 (the BMG 7.1 minimum)
-const now = (u: UnitState, s: 'pa' | 'sp') => Math.max(1, SHEET[u.def][s] + (u.vars?.[s] ?? 0));
+// the sheet of a unit, its half-tile token too (Nov 15: the study is played in half tiles like every battle)
+const sheetOf = (def: string) => SHEET[baseDef(def)];
+const now = (u: UnitState, s: 'pa' | 'sp') => Math.max(1, sheetOf(u.def)[s] + (u.vars?.[s] ?? 0));
 const damage = (actor: UnitState, ability: AbilityDef): [number, number] => {
   const spec = SPEC[ability.id];
-  const s = SHEET[actor.def],
+  const s = sheetOf(actor.def),
     pa = now(actor, 'pa');
   if (spec?.k === 'weapon')
     return weaponDamage(
@@ -410,7 +412,7 @@ const rules: Rules = {
   // Dash cannot be evaded (BMG 3.3); magic only goes through the magic shield; the break starts from (PA + 50)%.
   hitChance(_grid, state, actor, ability, target) {
     const spec = SPEC[ability.id],
-      t = SHEET[target.def];
+      t = sheetOf(target.def);
     if (spec?.k === 'rolls' && ability.id.endsWith('_dash')) return 100;
     // whoever is charging has no evasion (BMG 6, Charging status)
     const charging = state.charges.some((c) => c.unit === target.id);
@@ -432,7 +434,7 @@ const rules: Rules = {
     let roll: number;
     [roll, rng] = nextRng(rng);
     if (roll * 100 >= CRIT_CHANCE) return [lo, rng];
-    const wp = SHEET[actor.def].weapon.wp,
+    const wp = sheetOf(actor.def).weapon.wp,
       xa = lo / wp;
     [roll, rng] = rollInt(rng, 1, xa);
     return [critXa(xa, roll) * wp, rng];
@@ -449,8 +451,8 @@ const rules: Rules = {
     }
   },
   speed: (u) => now(u, 'sp'),
-  jump: (def) => SHEET[def].jump,
-  fallDamage: (levels, def) => fallDamage(levels, SHEET[def].jump, UNIT_DEFS[def].hp),
+  jump: (def) => sheetOf(def).jump,
+  fallDamage: (levels, def) => fallDamage(levels, sheetOf(def).jump, UNIT_DEFS[def].hp),
   // victory: defeat all enemies (Caves of Narshe). Defeat: everyone down; "Ramza down = end" has no source.
   outcome: (state) =>
     !state.units.some((u) => u.team === 'enemy')

@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { previewAbility } from '../src/shared/battle/combat.ts';
-import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
+import { CLASSES_BATTLE, GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { TERRAIN, tileAt } from '../src/shared/battle/grid.ts';
+import { halve } from '../src/shared/battle/half.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
-import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
+import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
@@ -142,4 +143,53 @@ describe('FFT Gariland: rules in the engine', () => {
     const battle = b();
     expect(Battle.load(battle.save())?.state).toEqual(battle.state);
   });
+});
+
+describe('FFT Gariland on half tiles (Nov 15, Fernando: the study opens split like every battle)', () => {
+  const half = halve(GARILAND);
+  const cell = (x: number, y: number) => ({ x: 2 * x, y: 2 * y });
+  const b = () => Battle.start(half, 1);
+  const put = (battle: Battle, id: string, x: number, y: number) => {
+    battle.state.units.find((u) => u.id === id)!.pos = cell(x, y);
+  };
+
+  it('keeps the front hit chances: 95% on the Squire, 90% on Ramza; Charge is not evaded', () => {
+    const battle = b();
+    put(battle, 'ramza', 2, 5);
+    put(battle, 'e-squire-1', 3, 5);
+    battle.state.units.find((u) => u.id === 'ramza')!.facing = 1;
+    battle.state.units.find((u) => u.id === 'e-squire-1')!.facing = 3;
+    const chance = (actor: string, ability: string, x: number, y: number) =>
+      previewAbility(battle.grid, battle.state, actor, ability, cell(x, y)).targets[0].chance;
+    expect(chance('ramza', 'fft_ramza_attack', 3, 5)).toBe(95);
+    expect(chance('ramza', 'fft_ramza_dash', 3, 5)).toBe(100);
+    expect(chance('e-squire-1', 'fft_squire_attack', 2, 5)).toBe(90);
+  });
+
+  it('Jump 3 still climbs 3 levels in one step, not 4', () => {
+    const battle = b();
+    put(battle, 'ramza', 4, 9);
+    expect(reachable(battle.grid, battle.state, 'ramza').has('6,18')).toBe(true);
+    put(battle, 'ramza', 4, 7);
+    expect(reachable(battle.grid, battle.state, 'ramza').get('6,14')?.cost ?? 99).toBeGreaterThan(2);
+  });
+
+  it('every unit reaches the same whole tiles at twice the cost in cells, its gap of 3 cells included', () => {
+    const ws = initialState(GARILAND, 1),
+      hs = initialState(half, 1);
+    for (const u of ws.units) {
+      const w = [...reachable(GARILAND.grid, ws, u.id).values()].map(
+        (s) => `${2 * s.pos.x},${2 * s.pos.y}:${2 * s.cost}`,
+      );
+      const h = [...reachable(half.grid, hs, u.id).values()]
+        .filter((s) => s.pos.x % 2 === 0 && s.pos.y % 2 === 0)
+        .map((s) => `${s.pos.x},${s.pos.y}:${s.cost}`);
+      expect(h.sort(), u.id).toEqual(w.sort());
+    }
+  });
+
+  it('the AI finishes both study battles', () => {
+    for (const seed of [1, 2, 3]) expect(simulate(half, seed, 300).outcome).not.toBe('timeout');
+    expect(simulate(halve(CLASSES_BATTLE), 1, 300).outcome).not.toBe('timeout');
+  }, 60000);
 });
