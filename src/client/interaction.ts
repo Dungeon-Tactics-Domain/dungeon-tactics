@@ -186,6 +186,15 @@ export function aimMark(grid: Grid, state: BattleState, p: Pos): { pos: Pos; siz
   return u ? { pos: u.pos, size: UNIT_DEFS[u.def].size ?? 1 } : { pos: p, size: 1 };
 }
 
+// Keyboard or gamepad step while aiming: a step that stays on the same marked body changes nothing on screen, so it goes on
+// until the mark moves (one press enters or crosses a body). Null when that runs off the map
+export function aimStep(grid: Grid, state: BattleState, from: Pos, step: Pos): Pos | null {
+  const mark = (p: Pos) => JSON.stringify(aimMark(grid, state, p));
+  let next = { x: from.x + step.x, y: from.y + step.y };
+  while (inBounds(grid, next) && mark(next) === mark(from)) next = { x: next.x + step.x, y: next.y + step.y };
+  return inBounds(grid, next) ? next : null;
+}
+
 // Direction choice at the end of the turn: the tiles beside each side of the acting unit's square, the faced side marked
 // (beside a 2x2 token, not around its corner cell, which put two of the four marks under it)
 export function facingHighlights(b: Battle): Highlights {

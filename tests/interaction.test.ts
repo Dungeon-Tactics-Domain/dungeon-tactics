@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  aimStep,
   confirm,
   defaultMode,
   facingHighlights,
@@ -284,6 +285,25 @@ describe('the square of a 2x2 token', () => {
     );
     const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), { x: 9, y: 3 });
     expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 6, y: 0 }, 4)));
+  });
+
+  describe('the aiming cursor steps until the mark moves', () => {
+    // soldier on cells 4-5, Colossus on cells 18-21 against the right edge (map 24 cells wide, 4 deep)
+    const b = aimAt(
+      [
+        { id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 },
+        { id: 'f', def: halfDef('soldier'), team: 'enemy', x: 4, y: 0 },
+        { id: 'c', def: halfDef('colossus'), team: 'enemy', x: 20, y: 0 },
+      ],
+      2,
+    );
+    const step = (from: Pos, x: number, y = 0) => aimStep(b.grid, b.state, from, { x, y });
+
+    it('enters a body from outside on its near cell', () => expect(step({ x: 3, y: 0 }, 1)).toEqual({ x: 4, y: 0 }));
+    it('crosses a token in one press', () => expect(step({ x: 4, y: 0 }, 1)).toEqual({ x: 6, y: 0 }));
+    it('steps one cell on empty ground', () => expect(step({ x: 8, y: 1 }, 1)).toEqual({ x: 9, y: 1 }));
+    it('crosses the Colossus in one press', () => expect(step({ x: 23, y: 2 }, -1)).toEqual({ x: 19, y: 2 }));
+    it('does not move off the map through a body at its edge', () => expect(step({ x: 21, y: 1 }, 1)).toBeNull());
   });
 
   it('the facing marks sit beside each side of the square, none under it', () => {

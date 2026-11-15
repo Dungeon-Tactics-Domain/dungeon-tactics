@@ -42,6 +42,7 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import {
   aimMark,
+  aimStep,
   confirm,
   facingHighlights,
   freshUi,
@@ -324,16 +325,14 @@ export class Game {
       // choosing where a token stops, its whole square stays on the map, as with the mouse (squareUnder): clamped, not
       // refused, so a cursor left nearer the edge (the cycle key on a smaller unit's corner) can still step back
       const size = this.pickSize;
-      let next = {
-        x: Math.min(this.cursor.x + step.x, b.grid.width - size),
-        y: Math.min(this.cursor.y + step.y, b.grid.height - size),
-      };
-      // aiming, a step that stays on the same marked body changed nothing on screen: go on until the mark moves
-      const mark = (p: Pos) => JSON.stringify(aimMark(b.grid, b.state, p));
-      if (this.ui.mode.k === 'ability')
-        while (inBounds(b.grid, next) && mark(next) === mark(this.cursor))
-          next = { x: next.x + step.x, y: next.y + step.y };
-      if (inBounds(b.grid, next) && !samePos(next, this.cursor)) this.moveCursor(next);
+      const next =
+        this.ui.mode.k === 'ability'
+          ? aimStep(b.grid, b.state, this.cursor, step)
+          : {
+              x: Math.min(this.cursor.x + step.x, b.grid.width - size),
+              y: Math.min(this.cursor.y + step.y, b.grid.height - size),
+            };
+      if (next && inBounds(b.grid, next) && !samePos(next, this.cursor)) this.moveCursor(next);
     } else if (a.k === 'cycle') this.moveCursor(cycleUnit(b.state, this.cursor, a.dir));
     else if (a.k === 'confirm') void this.mapConfirm();
     else if (a.k === 'cancel') {
