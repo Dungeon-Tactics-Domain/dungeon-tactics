@@ -701,6 +701,9 @@ export class BattleHud {
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
+    // the turn list ends a gap above the acting panel, whose height changes with the screen width; a charge's row stays in view
+    this.queue.style.maxHeight = `calc(100% - 56px - 2 * var(--inset) - ${this.active.offsetHeight}px)`;
+    this.queue.querySelector('.pending')?.scrollIntoView({ block: 'nearest' });
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me)] : []));
     // unit under the cursor (or the "Execute?" target)
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;

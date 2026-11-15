@@ -659,8 +659,9 @@ button[hidden],
   top: 56px;
   left: 12px;
   width: 132px;
-  max-height: calc(100% - 56px - 200px); /* the full list (L) stops above the acting unit's panel */
-  overflow: hidden;
+  /* hud.ts sets max-height from the acting panel's height; the full list (L) scrolls past it, since the column's rows are tall */
+  overflow-y: auto;
+  scrollbar-width: thin;
   list-style: none;
   padding: 6px;
   display: grid;
@@ -668,7 +669,7 @@ button[hidden],
 }
 .queue.short li:nth-child(n + 6) {
   display: none;
-} /* title + 4 rows; L shows everything */
+} /* title + 4 rows; L shows everything, scrolling within the column */
 /* charge in preview on "Execute?" (hud.ts queueRows): the list shows up to its row, which gets marked; the targets carry ◎.
    The rows after it act once the charge has fired, so the short list leaves them out: 8 rows of the column did not fit */
 .queue.preview li:nth-child(n) {
@@ -934,9 +935,6 @@ button[hidden],
     height: 96px;
   }
   /* the column's rows shrink with the panel, so a charge preview of 5 rows still fits at 1280x720 */
-  .queue {
-    max-height: calc(100% - 56px - 160px);
-  }
   .queue-row .portrait {
     width: 36px;
     height: 36px;
