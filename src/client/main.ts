@@ -325,8 +325,14 @@ export class Game {
     // map: choose the tile
     if (a.k === 'cursor') {
       const step = gridStep(a.dir, this.scene.heading);
-      const next = { x: this.cursor.x + step.x, y: this.cursor.y + step.y };
-      if (inBounds(b.grid, next)) this.moveCursor(next);
+      // choosing where a token stops, its whole square stays on the map, as with the mouse (squareUnder): clamped, not
+      // refused, so a cursor left nearer the edge (the cycle key on a smaller unit's corner) can still step back
+      const size = this.pickSize;
+      const next = {
+        x: Math.min(this.cursor.x + step.x, b.grid.width - size),
+        y: Math.min(this.cursor.y + step.y, b.grid.height - size),
+      };
+      if (inBounds(b.grid, next) && !samePos(next, this.cursor)) this.moveCursor(next);
     } else if (a.k === 'cycle') this.moveCursor(cycleUnit(b.state, this.cursor, a.dir));
     else if (a.k === 'confirm') void this.mapConfirm();
     else if (a.k === 'cancel') {
