@@ -20,8 +20,12 @@ const full = () =>
 
 export const savedGames = () => readSaves(live).slots.map(summary).sort(byPlayed);
 
-export function startNewGame() {
-  if (!newGame(live, Date.now())) return full();
+// the title closes before this runs: a refused save reopens it (onBack), so the screen is never left empty
+export function startNewGame(onBack: () => void) {
+  if (!newGame(live, Date.now())) {
+    full();
+    return onBack();
+  }
   townScreen();
 }
 

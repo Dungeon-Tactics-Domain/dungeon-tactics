@@ -78,10 +78,10 @@ export function leftRoom() {
   return true;
 }
 
-// The open room whose battle is still saved: the title's Continue reopens it, because closing the tab is not leaving the
+// The open room whose battle is still saved: loading its game from the title's Continue reopens it, because closing the tab is not leaving the
 // room (review of Nov 15); leaving through Options or the address still loses the expedition (leftRoom).
 // ponytail: matches the room built from the node's own seed; one built from the fallback seed (none of 500 tested) is
-// not found, so Continue goes home and the room counts as left
+// not found, so the loaded game goes home and the room counts as left
 export function savedRoom(): number | null {
   const exp = savedExpedition();
   const held = (store.json(ROOM_KEY) as { state?: { scenario?: unknown } } | null)?.state?.scenario;
@@ -91,7 +91,7 @@ export function savedRoom(): number | null {
   return openNodes(map, exp.path).find((n) => id(n) === held) ?? null;
 }
 
-// What ?home and the title's Continue (with no room in play) open: always the town (Fernando, Nov 15), which offers to
+// What ?home and a game loaded on the title (with no room in play) open: always the town (Fernando, Nov 15), which offers to
 // continue a live expedition; ?home=expedition, where a room's result window goes, opens its map straight away
 export function homeScreen() {
   if (leftRoom()) return lostScreen();

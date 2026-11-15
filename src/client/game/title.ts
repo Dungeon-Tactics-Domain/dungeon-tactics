@@ -230,7 +230,11 @@ export function titleScreen() {
               ),
             ]
           : []),
-        button(saved ? 'secondary' : 'primary', t('Novo jogo', 'New game'), go(startNewGame)),
+        button(
+          saved ? 'secondary' : 'primary',
+          t('Novo jogo', 'New game'),
+          go(() => startNewGame(titleScreen)),
+        ),
         button('secondary', t('Batalha avulsa', 'Quick battle'), go(quickBattle)),
         button('secondary', t('Como jogar', 'How to play'), go(howToPlay)),
         button(

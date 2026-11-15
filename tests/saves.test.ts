@@ -9,7 +9,7 @@ import {
   SAVES_KEY,
   summary,
 } from '../src/client/saves.ts';
-import { migrate } from '../src/client/store.ts';
+import { migrate, store } from '../src/client/store.ts';
 import { expeditionMap, openNodes, startExpedition } from '../src/shared/crawl/expedition.ts';
 
 const browser = (init: Record<string, string> = {}) => {
@@ -87,6 +87,15 @@ describe('save slots', () => {
     const full = { ...s, setItem: (k: string, v: string) => k !== SAVES_KEY && s.setItem(k, v) };
     expect(newGame(full, 1000)).toBe(false);
     expect(live(s, 'dt:chest')).toBe('{"gold":150}');
+  });
+
+  it('a progress write stamps the last-played time; a setting does not', () => {
+    store.set('dt:played', '1');
+    store.set('dt:lang', 'pt');
+    expect(store.get('dt:played')).toBe('1');
+    store.set('dt:chest', '{"gold":1}');
+    expect(Number(store.get('dt:played'))).toBeGreaterThan(Date.now() - 60_000);
+    store.set('dt:chest', '');
   });
 
   it('the single save from before the slots becomes slot 1 on load', () => {
