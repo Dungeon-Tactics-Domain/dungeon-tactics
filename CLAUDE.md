@@ -16,12 +16,14 @@ src/shared/battle/  battle rules, no DOM or Three.js
   ai.ts             greedy one-turn AI; simulate.ts plays AI against AI
   units.ts, abilities.ts, equipment.ts, scenarios.ts   types and registries (UNIT_DEFS, ABILITIES, ITEMS, SCENARIOS)
   half.ts           half tiles: every battle the client opens is split on load (halve), the FFT study included, plus the ?scenario=half test map; fft/ is a reference study, not the game
-src/shared/crawl/   dungeon crawl rooms: generate.ts (seeded room from the tables) and verify.ts (checks it on the halved map)
+src/shared/crawl/   dungeon crawl: generate.ts (seeded room from the tables), verify.ts (checks it on the halved map) and
+                    expedition.ts (floors of rooms from a seed, the life carried between rooms, the dt:crawl save)
 src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), campaign (stages and
                     lines; frozen), world (nodes, towns, rumors), quests, party (story members, recruit names), crawl/ (room tables)
 src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, world-ui.ts (map, towns, party),
                     group.ts (party rules), campaign.ts (stage rules), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
-  game/             what opens around the battle: boot (URL to scenario), title, options, end screens, world map flow
+  game/             what opens around the battle: boot (URL to scenario), crawl (the town, the expedition map and its rooms),
+                    title (the old modes), options, end screens, world map flow
   scene/            the parts BattleScene composes: board, marks (tile marks, cursor), units, camera, space (tile to world), timeline
   dev/              localhost-only sandbox: battles staged from a scene spec, scripted through window.__sandbox (docs/sandbox.md)
 scripts/            battle-sim.ts (optional simulator), crawl-sheet.ts (crawl room screenshots), assets/ (texture and model generators)
@@ -40,7 +42,7 @@ npm run typecheck                 # client, tests and scripts
 npx vitest run                    # tests
 npm run coverage                  # tests with a coverage summary; lcov report in coverage/
 npx vite build                    # production build in dist/
-npm run smoke                     # headless Chrome opens the built title, a battle and the world map
+npm run smoke                     # headless Chrome opens the built town, the expedition map and a room, a battle and the world map
 npx wrangler deploy               # publish dist/ to https://dungeon-tactics.fernandorffdev.com
 npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 npm run sandbox -- scripts/sandbox --sheet   # screenshots from scene specs: map, units, camera, hidden HUD (docs/sandbox.md)
@@ -113,3 +115,4 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 15/11 | Painted faces in battle: the unit panels and turn list show the dialogue sheets at 64/48 px with expressions (shout on a strike, hurt on damage, angry on a counter or a big hit, smile after a kill and on victory, wounded under 30% of life); the Warrior shows the barbarian's face; the small skeletons stay still | Fernando's request: the FFT-style faces of the dialogue box in the battle interface |
 | 15/11 | The game opens in the town, no world map: Shop, Tavern (rumors and recruits, without the campaign's quests) and Party are the existing windows, "Go on the quest" starts the expedition, and the expedition's end returns there. Beacon Ashes stays in the code, reached through "Other modes" (the old title) | Fernando's decision of Nov 15, sent to the F2 work: the town is the hub of the dungeon loop |
 | 15/11 | The expedition (F2): 3 floors, each 2 rows of 2 to 3 rooms with their enemies shown, and one boss room after the last floor (the Colossus and one minion); the town's deployed party goes in with its classes and equipment and carries its life: +25% after a won room for whoever stood, a fallen hero back at 25% without it, +50% to everyone on going down a floor, never above the max, rounded up; a defeat ends it. Saved as `dt:crawl` (seed, rooms cleared, life) | decisions 21, 27, 34, 41 and 43 of `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`; one boss at the end, not one per floor, and the Colossus with one minion: Fernando's answer of Nov 15 to the F2 review (the boss room bumps `CRAWL_VERSION` to `crawl2`) |
+| 15/11 | In an expedition room, Restart is a free retry with the life the party entered with; leaving the room before it ends (Options → Leave the room, another room, the bare address) loses the expedition like a defeat. A result from a room that is no longer open (another tab) is ignored | Fernando's answer of Nov 15 to the F2 review |

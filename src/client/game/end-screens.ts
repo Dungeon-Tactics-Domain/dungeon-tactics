@@ -12,6 +12,7 @@ import type { Mission } from '../missions.ts';
 import { SURVIVE_TURNS } from '../survival.ts';
 import { nodeOfChapter } from '../world.ts';
 import { savedGroup, savedHero, toWorld } from './boot.ts';
+import { homeLabel } from './crawl.ts';
 
 // Victory: confetti falling for 2.5 s (DOM and CSS, no cost in the 3D frame); disappears by itself. With reduced motion, nothing.
 export function confetti() {
@@ -124,7 +125,7 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, mission, res
           ? t('Todos os inimigos caíram e o Farol resistiu.', 'Every enemy fell and the Beacon held.')
           : t('O Farol caiu ou os heróis tombaram.', 'The Beacon fell or the heroes were defeated.'),
     ),
-    // Title beside it: without it, leaving the standalone battle required reloading the page
+    // the way home beside it (the town, or the expedition map): without it, leaving the battle required reloading the page
     el(
       'div',
       { class: 'menu-actions' },
@@ -134,7 +135,7 @@ export function battleEndScreen({ won, survival, lasted, best, mvp, mission, res
             d.close();
             restart();
           }),
-      button('secondary', t('Cidade', 'Town'), () => {
+      button('secondary', homeLabel(), () => {
         location.search = '';
       }),
     ),

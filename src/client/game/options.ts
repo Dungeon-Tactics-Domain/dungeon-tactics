@@ -13,10 +13,13 @@ import { isSurvival, survivalGoal } from '../survival.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { getTheme, setTheme, THEMES } from '../theme.ts';
 import { toWorld } from './boot.ts';
+import { homeLabel } from './crawl.ts';
 import { devMenu } from './title.ts';
 
 export interface OptionsContext {
   chapter: number | null; // campaign stage in play: its objective goes in the Game section
+  campaign: boolean; // a campaign stage or a tavern quest: the campaign map is where it came from
+  room: boolean; // an expedition room: leaving it loses the expedition (crawl.ts leftRoom)
   scenario: Scenario;
   busy: boolean; // animation or enemy turn running: restart is disabled
   pixel: () => PixelSettings; // the current settings, read on every change
@@ -213,10 +216,16 @@ export function optionsMenu(o: OptionsContext) {
         },
         { disabled: o.busy },
       ),
-      // the campaign map only from a campaign stage: the game opens in the town since Nov 15 (no world map)
-      ...(o.chapter !== null ? [button('secondary', t('Mapa da campanha', 'Campaign map'), toWorld)] : []),
-      // home: the town, or the expedition map when one is in progress (crawl.ts homeScreen)
-      button('secondary', t('Cidade', 'Town'), () => {
+      // the campaign map only from the campaign (a stage or a tavern quest): the game opens in the town since Nov 15
+      ...(o.campaign ? [button('secondary', t('Mapa da campanha', 'Campaign map'), toWorld)] : []),
+      // home: the town or the expedition map (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
+      button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
+        const btn = e.currentTarget as HTMLButtonElement;
+        if (o.room && !btn.dataset.armed) {
+          btn.dataset.armed = '1';
+          btn.textContent = t('Toque de novo: perde a expedição', 'Tap again: the expedition is lost');
+          return;
+        }
         location.search = '';
       }),
       button('secondary', t('Desenvolvedor', 'Developer'), () => {

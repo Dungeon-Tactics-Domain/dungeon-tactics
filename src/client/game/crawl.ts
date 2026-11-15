@@ -28,7 +28,7 @@ import { openBar, openParty, openShop } from '../world-ui.ts';
 import { titleScreen } from './title.ts';
 
 export const CRAWL_KEY = 'dt:crawl';
-const ROOM_KEY = 'dt:battle:expedition';
+export const ROOM_KEY = 'dt:battle:expedition'; // the room in play, saved from its first frame (main.ts boot)
 const KIT = 2; // learnedCount(2): the whole kit, the crawl unlocks no abilities yet
 
 // the expedition room in play: who stands on each hero spawn (h0, h1…) and the life they enter with
@@ -57,8 +57,21 @@ export function castRoom(room: Scenario, exp: Expedition, node: number): { scena
   return { scenario, room: { node, heroes } };
 }
 
+// the way home: the expedition map while one is in progress, else the town
+export const homeLabel = () => (savedExpedition() ? t('Mapa da expedição', 'Expedition map') : t('Cidade', 'Town'));
+
+// A room still saved with no room in the address: the party left it before it ended (Options, a sibling room, the
+// bare address). Fernando, Nov 15: that loses the expedition like a defeat; only Restart retries the room for free
+export function leftRoom() {
+  if (!savedExpedition() || !store.get(ROOM_KEY)) return false;
+  store.set(CRAWL_KEY, '');
+  store.set(ROOM_KEY, '');
+  return true;
+}
+
 // what opens with no address: the expedition in progress, else the town
 export function homeScreen() {
+  if (leftRoom()) return lostScreen();
   const exp = savedExpedition();
   if (exp && !cleared(expeditionMap(exp.seed), exp.path)) expeditionScreen(exp);
   else townScreen();
@@ -114,6 +127,33 @@ export function townScreen() {
     { fixed: true },
   );
   d.overlay.classList.add('main-title');
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+
+function lostScreen() {
+  const d = dialog(
+    'result',
+    t('Expedição perdida', 'Expedition lost'),
+    [
+      el(
+        'p',
+        {},
+        t(
+          'O grupo saiu no meio da sala. Os feridos voltam à cidade.',
+          'The party left in the middle of a room. The wounded return to town.',
+        ),
+      ),
+      el(
+        'div',
+        { class: 'menu-actions' },
+        button('primary', t('Voltar à cidade', 'Back to town'), () => {
+          d.close();
+          townScreen();
+        }),
+      ),
+    ],
+    { onBack: townScreen },
+  );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
@@ -210,8 +250,10 @@ export function expeditionScreen(exp: Expedition) {
 // (the save is cleared). Written before any window opens, so a reload after the battle cannot replay the room
 export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
   const exp = savedExpedition();
-  if (!exp) return null;
-  const map = expeditionMap(exp.seed);
+  store.set(ROOM_KEY, '');
+  const map = exp && expeditionMap(exp.seed);
+  // another tab may have ended the expedition or this room meanwhile: a result for a room that is no longer open is ignored
+  if (!exp || !map || !openNodes(map, exp.path).includes(room.node)) return null;
   const left = Object.fromEntries(
     Object.entries(room.heroes).flatMap(([spawn, h]) => {
       const u = state.units.find((x) => x.id === spawn);
@@ -254,8 +296,8 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, mv
               )
             : down
               ? t(
-                  'O grupo desce ao próximo andar: todos recuperam 50% da vida.',
-                  'The party goes down a floor: everyone recovers 50% of their life.',
+                  'Quem ficou de pé recupera 25% da vida e quem caiu volta com 25%; ao descer ao próximo andar, todos recuperam mais 50%.',
+                  'Whoever stood recovers 25% of their life and the fallen come back at 25%; going down a floor, everyone recovers 50% more.',
                 )
               : t(
                   'Quem ficou de pé recupera 25% da vida; quem caiu volta com 25%.',

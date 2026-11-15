@@ -880,6 +880,8 @@ export class Game {
   private menu() {
     optionsMenu({
       chapter: this.sel.chapter,
+      campaign: this.sel.chapter !== null || this.sel.mission !== null,
+      room: this.sel.room !== null,
       scenario: this.sel.scenario,
       busy: this.busy,
       pixel: () => this.pixel,
@@ -904,6 +906,8 @@ async function boot() {
   const loaded = staged ? null : Battle.load(store.get(sel.saveKey) ?? '');
   const saved = loaded?.state.scenario === scenario.id;
   const battle = staged?.battle ?? (saved ? loaded : newBattle(scenario, run.room));
+  // a room is saved from its first frame, so leaving it before any action still counts as leaving (crawl.ts leftRoom)
+  if (run.room && !saved) store.set(run.saveKey, battle.save());
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   const scene = await BattleScene.create(
     host,
