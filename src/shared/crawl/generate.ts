@@ -18,7 +18,6 @@ export interface RoomGroup {
   enemies: string[];
 }
 export interface CrawlTheme {
-  name: [string, string];
   floors: string[]; // floor look by height level (the last one for anything higher)
   props: Partial<Tile>[]; // obstacles: a terrain and its look
   hazard?: Partial<Tile>; // up to 3 spike tiles
@@ -31,7 +30,7 @@ export interface RoomOptions {
 // the theme ends the room id (the client picks the room's mood by it)
 export const roomTheme = (id: string) => (id.startsWith(`${CRAWL_VERSION}-`) ? id.slice(id.lastIndexOf('-') + 1) : '');
 
-// layouts drawn per room before giving up; 500 seeds needed at most a handful (tests/crawl-room.test.ts)
+// layouts drawn per room before giving up; the 500 test seeds needed at most 9, 1.6 on average (measured Nov 15)
 const TRIES = 200;
 
 export const generateRoom = (seed: number, opts: RoomOptions = {}): Scenario => buildRoom(seed, opts).room;
@@ -142,7 +141,8 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
   const front = enemies.findIndex((d) => !UNIT_DEFS[d].size); // the one that meets the heroes first, NEAR to FAR away
   for (const [i, def] of enemies.entries()) {
     const size = UNIT_DEFS[def].size ?? 1;
-    // the Colossus on a dais at the back (rows 1 and 2), one level up: the lab's boss stands "at the back and high"
+    // the Colossus on a dais at the back (rows 1 and 2), one level up: the lab's boss stands "at the back and high". Its
+    // spells reach 2 to 5 tiles, so from up there it may hit on its first turn but not a hero standing beside it
     const from =
       size > 1
         ? band(1, 1, foe).filter((p) => p.x < N - 2 && square(p, 2).every((q) => plain(q, foe)))

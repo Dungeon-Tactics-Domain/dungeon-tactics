@@ -18,16 +18,15 @@ export const CRAWL_GROUPS: RoomGroup[] = [
   { name: ['Tropa do Véu', 'Veil troop'], depth: 3, enemies: ['veil_knight', 'acolyte', 'minion'] },
 ];
 // the boss room at any depth: the Colossus (2x2, does not walk) and two minions, 208 life, about 16 hero turns
-export const CRAWL_BOSS: RoomGroup = {
+export const CRAWL_BOSS: Omit<RoomGroup, 'depth'> = {
   name: ['Colosso de Ossos', 'Bone Colossus'],
-  depth: 1,
   enemies: ['colossus', 'minion', 'minion'],
 };
 
-// Look only (decision 39 of Nov 15: no destination rules yet): the floor by height level and the obstacles of each place
+// Look only: the floor by height level and the obstacles of each place; rules unique to a place wait until the dungeon
+// itself plays well (Nov 15, the dungeon loop grill)
 export const CRAWL_THEMES: Record<string, CrawlTheme> = {
   dungeon: {
-    name: ['Masmorra', 'Dungeon'],
     floors: ['crypt', 'crypt', 'altar', 'altar'],
     props: [
       { terrain: 'wall', look: 'pillar' },
@@ -39,7 +38,6 @@ export const CRAWL_THEMES: Record<string, CrawlTheme> = {
     hazard: { terrain: 'floor', look: 'spikes', spikes: true },
   },
   forest: {
-    name: ['Floresta', 'Forest'],
     floors: ['grass'],
     props: [
       { terrain: 'forest', look: 'tree2' },
@@ -49,7 +47,6 @@ export const CRAWL_THEMES: Record<string, CrawlTheme> = {
     ],
   },
   mountain: {
-    name: ['Montanha', 'Mountain'],
     floors: ['snow', 'snow', 'snow', 'summit'],
     props: [
       { terrain: 'forest', look: 'bare1' },

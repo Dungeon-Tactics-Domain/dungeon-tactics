@@ -9,7 +9,10 @@ import { initialState, type Scenario, type Spawn } from '../battle/scenarios.ts'
 import type { Pos, UnitState } from '../battle/types.ts';
 import { UNIT_DEFS } from '../battle/units.ts';
 
-// whole tiles from the front hero to the nearest enemy: contact on the 1st or 2nd turn, never a hit before anyone moves
+// whole tiles between the nearest hero and enemy at the start, nothing more: contact on the 1st or 2nd turn. A ranged
+// enemy may still hit on its first turn, which Fernando accepted on Nov 15 (enemies may act on turn 1). Measured by the
+// Nov 15 review, rooms where a ranged enemy sees and reaches a hero at the start: ~61/102 at depth 1, 48/134 at depth 2,
+// 33/200 at depth 3; the Colossus in ~40% of boss rooms
 export const NEAR = 5;
 export const FAR = 7;
 const MAX_WATER = 0.15; // of the tiles; deep water is never the only way through (the walk below closes it)

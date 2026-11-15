@@ -112,8 +112,8 @@ describe('crawl rooms', () => {
   });
 
   it('themes use known terrains', () => {
-    for (const th of Object.values(CRAWL_THEMES))
+    for (const [name, th] of Object.entries(CRAWL_THEMES))
       for (const p of [...th.props, ...(th.hazard ? [th.hazard] : [])])
-        expect(p.terrain && TERRAIN[p.terrain], `${th.name[1]} → ${p.look}`).toBeDefined();
+        expect(p.terrain && TERRAIN[p.terrain], `${name} → ${p.look}`).toBeDefined();
   });
 });
