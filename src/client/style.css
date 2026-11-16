@@ -898,6 +898,11 @@ button[hidden],
   padding: 0 0 8px;
   text-align: left;
 }
+@media (min-width: 901px) {
+  .main-title .command-list > button {
+    white-space: nowrap; /* one line like the battle menu's; a phone wraps them instead of scrolling sideways */
+  }
+}
 /* expedition map (game/crawl.ts, Nov 15): the title's look, wider, with the party on a panel and one room per button, its
    enemies under its name */
 .crawl-map .dialog.title {
@@ -2303,7 +2308,6 @@ p.gold strong::before,
   min-height: 60px;
   gap: 14px;
   padding-left: 46px;
-  white-space: nowrap;
 }
 .dialog .command-list .continue-where {
   margin-left: auto; /* at the row's right end, like the kit's values */
@@ -2320,17 +2324,16 @@ p.gold strong::before,
   margin-left: auto;
   color: var(--focus);
 }
-/* the town: the menu in the top right corner at the kit's 422 px, the backdrop battle in full view */
+/* the town: the menu in the top right corner, the backdrop battle in full view */
 .town-menu {
   place-items: start end;
   padding: var(--inset);
   background: none;
 }
 .town-menu .dialog.title {
-  /* the kit's 422 px, wider when a row needs it: Continue the expedition carries its floor on the same line */
-  width: max-content;
-  min-width: min(422px, 100%);
-  max-width: 100%;
+  /* a fixed width, so the windows beside it know where it starts: the kit's 422 px plus room for Continue the
+     expedition and its floor on one line (432 px in English); a longer row (the quest's 2nd tap) wraps */
+  width: min(440px, 100%);
   padding: 0 0 8px;
   text-align: left;
 }
@@ -2345,12 +2348,15 @@ p.gold strong::before,
 .town-menu .menu-actions {
   margin-top: 0;
 }
+.town-menu .command-list > button {
+  white-space: normal;
+}
 /* Shop, Tavern, Party and Sheet open beside the menu, which stays in view and clickable (another row swaps the window):
    no veil, top right next to the menu, as wide as the screen leaves (the kit's 1100 px at 1920, ~820 px at 1280) */
 @media (min-width: 901px) {
   body:has(.town-menu) .overlay:not(.town-menu) {
     place-items: start end;
-    /* clear of the menu at its widest (432 px with Continue the expedition and its floor, in English) */
+    /* clear of the menu's 440 px */
     padding: var(--inset) calc(440px + 2 * var(--inset)) var(--inset) var(--inset);
     background: none;
     pointer-events: none;
