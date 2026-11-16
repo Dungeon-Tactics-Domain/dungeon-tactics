@@ -1793,13 +1793,23 @@ button[hidden],
   color: var(--float-magic);
 }
 .float.crit {
+  /* the glyph keeps its black outline (white and violet on gold read at 1.0 to 1.6:1); the gold ring goes outside it,
+     closed by black again */
   text-shadow:
-    0 3px 0 var(--float-crit-edge),
-    3px 0 0 var(--float-crit-edge),
-    -3px 0 0 var(--float-crit-edge),
-    0 -3px 0 var(--float-crit-edge),
-    0 5px 2px #000;
-} /* strike of 25% of life or more (scene/units.ts): bigger, with a gold edge */
+    0 2px 0 #000,
+    2px 0 0 #000,
+    -2px 0 0 #000,
+    0 -2px 0 #000,
+    0 4px 0 var(--float-crit-edge),
+    4px 0 0 var(--float-crit-edge),
+    -4px 0 0 var(--float-crit-edge),
+    0 -4px 0 var(--float-crit-edge),
+    3px 3px 0 var(--float-crit-edge),
+    -3px 3px 0 var(--float-crit-edge),
+    3px -3px 0 var(--float-crit-edge),
+    -3px -3px 0 var(--float-crit-edge),
+    0 0 6px #000;
+} /* strike of 25% of life or more (scene/units.ts): bigger, with a gold ring */
 .float.miss {
   color: var(--float-miss);
 }

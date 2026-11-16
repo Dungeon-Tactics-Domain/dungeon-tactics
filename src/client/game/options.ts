@@ -219,8 +219,8 @@ export function optionsMenu(o: OptionsContext) {
         choice(
           t('Câmera lenta nas mortes', 'Slow motion on deaths'),
           [
-            [true, t('Ligada', 'On')],
             [false, t('Desligada', 'Off')],
+            [true, t('Ligada', 'On')],
           ],
           parseSlowmo(store.json(SLOWMO_KEY)),
           (on) => store.set(SLOWMO_KEY, JSON.stringify(on)),
