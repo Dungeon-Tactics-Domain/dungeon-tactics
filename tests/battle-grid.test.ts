@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inBounds, neighbors, parseGrid, TERRAIN, tileAt } from '../src/shared/battle/grid.ts';
+import { faceNearest, inBounds, neighbors, parseGrid, TERRAIN, tileAt, withRamps } from '../src/shared/battle/grid.ts';
 
 describe('grid', () => {
   const grid = parseGrid(['.T#', '...'], ['012', '300']);
@@ -17,6 +17,19 @@ describe('grid', () => {
     expect(() => parseGrid(['.?'], ['00'])).toThrow(/symbol/);
     expect(() => parseGrid(['..'], ['0'])).toThrow(/height/);
     expect(() => parseGrid(['..'], ['0x'])).toThrow(/height/);
+    expect(() => parseGrid(['..', '..'], ['00'])).toThrow(/row count/);
+    expect(parseGrid([], [])).toEqual({ width: 0, height: 0, tiles: [] });
+  });
+
+  it('a ramp drawing of another size than the map fails on load', () => {
+    expect(withRamps(grid, ['.>.', '...']).tiles[1].ramp).toEqual([1, 1]);
+    expect(() => withRamps(grid, ['.>.'])).toThrow(/drawing size/);
+    expect(() => withRamps(grid, ['.>', '...'])).toThrow(/drawing size/);
+  });
+
+  it('a unit with no enemy left faces the first direction (+y)', () => {
+    expect(faceNearest({ x: 1, y: 1 }, [])).toBe(0);
+    expect(faceNearest({ x: 1, y: 1 }, [{ x: 4, y: 1 }])).toBe(1);
   });
 
   it('neighbors are 4 directions and stay within bounds', () => {
