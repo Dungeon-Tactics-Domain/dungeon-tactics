@@ -109,8 +109,8 @@
   ); /* bottom unit panels: the lab kit's 35% of the 1920 screen; the strike preview sits beside the acting one */
   --font: "Alegreya Sans", "Segoe UI", system-ui, sans-serif; /* hosted in public/fonts (@font-face below) */
   --font-title: var(--font); /* titles, options and queue: FFT uses one plain letter, no title serif */
-  --fs-xs: 12px; /* key hints, which show only with a keyboard */
-  --fs-min: 14px; /* the smallest text a touch screen shows (Nov 16 tablet audit): the round tag, the fps counter */
+  --fs-xs: 16px; /* the key drawn on a button; 16 like every text since Nov 16 (was 12) */
+  --fs-min: 16px; /* the smallest text anywhere (Fernando, Nov 16: no exception, touch included): the round tag, the fps counter */
   --fs-sm: 16px;
   --fs: 20px;
   --fs-lg: 24px;
@@ -1635,7 +1635,7 @@ button[hidden],
 .kbd .hint {
   display: inline-block;
   font:
-    700 11px / 1 system-ui,
+    700 var(--fs-sm) / 1 system-ui,
     sans-serif; /* the game font does not have the ⇧ */
   color: var(--ink-muted);
   border: 1px solid var(--ink-muted);

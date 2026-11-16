@@ -99,12 +99,12 @@ Fernando's request: an opacity slider for the blue interface, with a blur of wha
 |---|---|---|
 | `--font` | Alegreya Sans (hosted), weights 400, 500 (body), 700, 800, italic 400 | all text |
 | `--font-title` | `var(--font)` | titles, menu rows, primary button, queue (FFT uses one plain letter; kept as its own token so a theme can change it) |
-| `--fs-xs` / `--fs-min` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 12 / 14 / 16 / 20 / 24 / 34 px | key drawn on a button (keyboard only) / smallest text a touch screen shows: the turn list's round tag, the fps counter (Nov 16) / note and help / body / menu item and name / preview damage |
+| `--fs-xs` / `--fs-min` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 16 / 16 / 16 / 20 / 24 / 34 px | key drawn on a button (keyboard only) / smallest text a touch screen shows: the turn list's round tag, the fps counter (Nov 16) / note and help / body / menu item and name / preview damage |
 | `--fs-title` / `--fs-display` | 28 / 38 px | dialog title and opening narration / game title in a window and big damage number |
 | `--fs-banner` | 64 px | the end-of-battle title band (Result board) |
 | `--fs-logo` | 96 px (8vw on a narrow screen) | the game's name on the title screen, in capitals |
 
-Minimum text: 16 px; the exceptions are the round tag and the fps counter at `--fs-min` (14 px), and the key hint (11 px) and the key drawn on a button (12 px), which show only with a keyboard. Panel and dialog text carries `--ink-shadow`.
+Minimum text: 16 px with no exception, touch included (Fernando, Nov 16): `--fs-xs` and `--fs-min` are 16 px too, and the key hint and the key drawn on a button grew from 11 and 12. Panel and dialog text carries `--ink-shadow`.
 
 ### Space, corner, shadow
 
