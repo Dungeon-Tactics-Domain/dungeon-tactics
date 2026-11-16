@@ -1,7 +1,8 @@
 // Classes and enemies of the game (data; the type and the registry live in src/shared/battle/units.ts). Initial numbers from
 // Oct 25; speed 0 = never has a turn (the target to protect). Life x5 on Nov 15 (Fernando's grill: "aumente todos os números
 // de vida e dano em 5x"), with damage and heals in abilities.ts; not measured. Resistances and dodge in % from the Mechanics
-// lab's equipamento.json of Nov 15, a starting point Fernando tunes by playing; the hit and damage formulas (combat.ts) read them
+// lab's equipamento.json of Nov 15, a starting point Fernando tunes by playing; the hit and damage formulas (combat.ts) read them.
+// The mana or stamina pool (`vars`, start and max) and its regen per turn come from the same sheet (Nov 16)
 import type { UnitDef } from '../shared/battle/units.ts';
 
 export const UNIT_LIST: UnitDef[] = [
@@ -13,6 +14,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 8,
     move: 4,
     abilities: ['strike', 'heavy_strike', 'shield_bash', 'spin'],
+    vars: { stamina: 50 },
+    regen: { stamina: 5 },
     resist: { phys: 10 },
     dodge: 5,
   },
@@ -24,6 +27,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 10,
     move: 4,
     abilities: ['shot', 'aimed_shot', 'knock_shot', 'dagger'],
+    vars: { stamina: 40 },
+    regen: { stamina: 5 },
     dodge: 10,
   },
   {
@@ -34,6 +39,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 7,
     move: 3,
     abilities: ['firebolt', 'blast', 'gust', 'heal'],
+    vars: { mana: 60 },
+    regen: { mana: 8 },
     resist: { phys: -10, mag: 20 },
   },
   {
@@ -45,6 +52,8 @@ export const UNIT_LIST: UnitDef[] = [
     move: 5,
     jump: 2,
     abilities: ['stab', 'throwing_knife', 'trip', 'deathblow'],
+    vars: { stamina: 50 },
+    regen: { stamina: 5 },
     dodge: 20,
   },
   {
@@ -55,6 +64,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 8,
     move: 4,
     abilities: ['strike', 'shield_bash'],
+    vars: { stamina: 40 },
+    regen: { stamina: 5 },
     resist: { phys: 25 },
     dodge: 5,
   },
@@ -66,6 +77,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 10,
     move: 4,
     abilities: ['shot', 'dagger'],
+    vars: { stamina: 40 },
+    regen: { stamina: 5 },
     undead: true,
     resist: { light: -50, shadow: 50 },
     dodge: 5,
@@ -78,6 +91,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 7,
     move: 3,
     abilities: ['firebolt', 'blast'],
+    vars: { mana: 60 },
+    regen: { mana: 8 },
     resist: { phys: -10, mag: 30, shadow: 50, light: -25 },
   },
   // Lancer (Nov 13, new class to recruit and swap; outside the campaign's fixed cast): jumps 3 levels and reaches 2 tiles
@@ -90,6 +105,8 @@ export const UNIT_LIST: UnitDef[] = [
     move: 4,
     jump: 3,
     abilities: ['lance', 'sweep', 'lance_jump'],
+    vars: { stamina: 50 },
+    regen: { stamina: 5 },
     resist: { phys: 10 },
     dodge: 5,
   },
@@ -101,6 +118,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 5,
     move: 3,
     abilities: ['cleave', 'slam'],
+    vars: { stamina: 50 },
+    regen: { stamina: 5 },
     resist: { phys: 20, mag: -10 },
   },
   // Minion (Nov 12, campaign): little life and lots of speed, comes in a swarm and falls in one hit; initial numbers, measured in the
@@ -114,6 +133,8 @@ export const UNIT_LIST: UnitDef[] = [
     move: 5,
     jump: 2,
     abilities: ['stab', 'trip'],
+    vars: { stamina: 30 },
+    regen: { stamina: 5 },
     undead: true,
     resist: { light: -50, shadow: 50 },
     dodge: 10,
@@ -128,6 +149,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 9,
     move: 3,
     abilities: ['firebolt', 'heal'],
+    vars: { mana: 60 },
+    regen: { mana: 8 },
     tint: '#8a5cff',
     resist: { mag: 20, shadow: 50, light: -25 },
   },
@@ -142,6 +165,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 8,
     move: 4,
     abilities: ['strike', 'heavy_strike'],
+    vars: { stamina: 50 },
+    regen: { stamina: 5 },
     tint: '#ff4a2a',
     resist: { phys: 30, shadow: 25, light: -25 },
   },
@@ -155,6 +180,8 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 6,
     move: 0,
     abilities: ['shadow_wave', 'blast'],
+    vars: { mana: 120 },
+    regen: { mana: 10 },
     size: 2,
     undead: true,
     // the lab's sheet gives shadow +75, above its own 60 cap (RESIST_RANGE): written at the cap until Fernando decides

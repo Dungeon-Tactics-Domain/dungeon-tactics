@@ -3,6 +3,7 @@
 // screen shows and what follows each key. The Game executes; the HUD only draws.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
+import { canPay } from '../shared/battle/combat.ts';
 import { isDeep, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
@@ -43,11 +44,8 @@ export function commandEnabled(b: Battle, c: Command): boolean {
   return true;
 }
 
-// ability you can pick right now: without stock or MP it's grayed out, as in FFT
-export function abilityEnabled(b: Battle, id: string): boolean {
-  const cost = ABILITIES[id].cost;
-  return !cost || (b.actor.vars?.[cost[0]] ?? 0) >= cost[1];
-}
+// ability you can pick right now: without the mana, stamina, stock or MP it costs it's grayed out, as in FFT
+export const abilityEnabled = (b: Battle, id: string) => canPay(b.actor, ABILITIES[id]);
 export const abilitiesOf = (b: Battle) => UNIT_DEFS[b.actor.def].abilities;
 // range of the farthest-reaching ability (the dotted line around the player)
 export const longestRange = (b: Battle) => Math.max(0, ...abilitiesOf(b).map((id) => ABILITIES[id].range[1]));

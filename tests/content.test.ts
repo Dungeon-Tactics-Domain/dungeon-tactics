@@ -26,6 +26,24 @@ describe('content ids', () => {
   });
 });
 
+describe('mana and stamina (Nov 16, the Mechanics lab equipamento.json)', () => {
+  it('a spell costs mana and a martial ability stamina', () => {
+    for (const a of ABILITY_LIST.filter((x) => !x.id.startsWith('fft_') && x.cost))
+      expect(a.cost![0], a.id).toBe(a.magic ? 'mana' : 'stamina');
+  });
+  it('a basic attack is free, and every unit can pay each of its abilities from its full pool', () => {
+    for (const u of UNIT_LIST) {
+      if (u.abilities[0]) expect(ABILITIES[u.abilities[0]].cost, u.id).toBeUndefined();
+      for (const id of u.abilities) {
+        const cost = ABILITIES[id].cost;
+        if (cost) expect(u.vars?.[cost[0]] ?? 0, `${u.id} → ${id}`).toBeGreaterThanOrEqual(cost[1]);
+      }
+      // a pool's regen only for a pool the unit has
+      for (const k of Object.keys(u.regen ?? {})) expect(u.vars?.[k], `${u.id} regen ${k}`).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('classes and abilities', () => {
   it('every ability of every unit exists', () => {
     for (const u of Object.values(UNIT_DEFS))

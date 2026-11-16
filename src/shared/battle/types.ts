@@ -13,9 +13,10 @@ export interface UnitState {
   pos: Pos;
   hp: number;
   ct: number; // FFT-style turn charge; acts on reaching TURN_THRESHOLD
-  // The two fields below only exist in scenarios that ask for them (the FFT study); on the game maps they stay absent and the save does not change.
   facing?: number; // where it looks: index in FACING (grid.ts)
-  vars?: Record<string, number>; // unit counters (stock, MP, attribute bonus); the keys come from UnitDef.vars
+  // unit counters (mana, stamina; the study's stock, MP and attribute bonus); the keys come from UnitDef.vars, and a key absent
+  // reads as the sheet's start value (poolOf in combat.ts)
+  vars?: Record<string, number>;
 }
 
 // what the acting unit has already done: walks (as many times as it wants, up to its movement) and acts once, in any order

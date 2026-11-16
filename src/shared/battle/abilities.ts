@@ -27,7 +27,9 @@ export interface AbilityDef {
   magic?: true;
   element?: Element; // the target's resistance to it applies too (the Mechanics lab's equipamento.json); heals ignore it
   ally?: true; // targets an ally (or the user, if the range starts at 0) and rolls no hit; the effect comes from Rules.after. Only the study uses it
-  cost?: [counter: string, amount: number]; // spends from UnitState.vars on each use; without balance, it cannot be used. Only the study uses it
+  // spends from UnitState.vars on each use, paid when a charge starts; without balance, it cannot be used. The game's
+  // abilities spend 'mana' (spells) or 'stamina' (martial; Nov 15 grill), the study's MP and stock
+  cost?: [counter: string, amount: number];
   pushChance?: number; // % of times the push happens; without the field, always (only the FFT study uses it: ~50%)
 }
 

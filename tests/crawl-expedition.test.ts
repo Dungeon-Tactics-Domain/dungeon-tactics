@@ -86,6 +86,38 @@ describe('crawl expedition', () => {
     expect(end.path).toHaveLength(CRAWL_RUN.floors * CRAWL_RUN.rows + 1);
   });
 
+  it('mana follows the life: +25% standing, 25% fallen, +50% going down; the save keeps it (Nov 16)', () => {
+    const map = expeditionMap(9);
+    const leadsDown = (e: Expedition) => map[first(e)].next.some((n) => map[n].floor > map[first(e)].floor);
+    let e = startExpedition(9, [
+      { id: 'mia', max: 30, manaMax: 60 },
+      { id: 'bran', max: 42 },
+    ]);
+    expect(e.party).toEqual([
+      { id: 'mia', max: 30, hp: 30, manaMax: 60, mana: 60 },
+      { id: 'bran', max: 42, hp: 42 },
+    ]);
+    const room = winRoom(e, first(e), { mia: 30, bran: 42 }, { mia: 10 });
+    expect(room.party[0].mana).toBe(10 + 15);
+    expect(room.party[1]).not.toHaveProperty('mana');
+    expect(winRoom(e, first(e), { bran: 42 }, {}).party[0].mana).toBe(15); // fell: 25% only
+    while (!leadsDown(e)) e = winRoom(e, first(e), { mia: 30, bran: 42 }, { mia: 60 });
+    expect(winRoom(e, first(e), { mia: 30, bran: 42 }, { mia: 0 }).party[0].mana).toBe(15 + 30);
+    expect(parseExpedition(JSON.parse(JSON.stringify(room)))).toEqual(room);
+  });
+
+  it('a save from before the mana enters full; a mana without its max or above it is dropped', () => {
+    const old = { ...startExpedition(8, party) };
+    expect(parseExpedition(old)!.party[0]).not.toHaveProperty('mana');
+    const hero = { id: 'mia', max: 30, hp: 30 };
+    for (const bad of [
+      { ...hero, mana: 5 },
+      { ...hero, manaMax: 60, mana: 61 },
+      { ...hero, manaMax: 60, mana: -1 },
+    ])
+      expect(parseExpedition({ ...old, party: [bad] })).toBeNull();
+  });
+
   it('a room that is not open (cleared, or off the path) changes nothing', () => {
     const e = startExpedition(4, party);
     const map = expeditionMap(4);

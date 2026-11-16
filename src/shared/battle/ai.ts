@@ -1,6 +1,6 @@
 import { ABILITIES, type AbilityDef, defaultLock } from './abilities.ts';
 import type { Battle } from './battle.ts';
-import { COMBAT, damageRange, pendingCounters, previewAbility, simulatePush } from './combat.ts';
+import { COMBAT, canPay, damageRange, pendingCounters, previewAbility, simulatePush } from './combat.ts';
 import { canStand, dist, facingTo, type Grid, neighbors, posKey, stepCost, subOf, TERRAIN, tileAt } from './grid.ts';
 import { cellsOf, footprint, jumpOf, leaps, reachable, type Step, squareH, squareMoves } from './pathing.ts';
 import { chargeAim, TURN_THRESHOLD } from './turn-queue.ts';
@@ -180,7 +180,15 @@ function positionScore(
     const reach = tiles(def.move) + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
     if (tiles(dist(at, o.pos)) <= reach)
       // what it would deal this unit, by the rule's own numbers (power, resistances: Nov 15)
-      score -= W.THREAT * Math.max(...def.abilities.map((a) => avg(damageRange(state, o, ABILITIES[a], actor))));
+      // only what it can pay for now
+      score -=
+        W.THREAT *
+        Math.max(
+          0,
+          ...def.abilities
+            .filter((a) => canPay(o, ABILITIES[a]))
+            .map((a) => avg(damageRange(state, o, ABILITIES[a], actor))),
+        );
   }
   // on foot when there is a path; in a straight line only if no enemy is reachable by walking
   const walked = walk.get(posKey(at));

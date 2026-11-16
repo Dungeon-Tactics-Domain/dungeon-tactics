@@ -4,6 +4,7 @@ import {
   checkOutcome,
   counters,
   type Preview,
+  pay,
   pendingCounters,
   previewAbility,
   resolveAbility,
@@ -25,7 +26,7 @@ import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Charge, Lock, Pos, UnitState } from './types.ts';
-import { HALF, UNIT_DEFS } from './units.ts';
+import { HALF, RESOURCES, UNIT_DEFS } from './units.ts';
 
 // Undo per battle (spec: initial value 3, to be measured). It only counts within the current turn: after the turn ends the
 // enemy has already acted and the new information does not come back.
@@ -142,7 +143,7 @@ export class Battle {
     let events: BattleEvent[];
     if (ability.charge > 0) {
       // slow action: pays the cost now and joins the queue; a new charge replaces the previous one of the same unit
-      if (ability.cost) this.actor.vars![ability.cost[0]] -= ability.cost[1];
+      pay(this.actor, ability);
       // it may still walk, with half of what is left, rounded down (Nov 15, Fernando: "loses half, rounded up")
       const left = Math.max(0, UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0));
       this.state.turn.spent = (this.state.turn.spent ?? 0) + Math.ceil(left / 2);
@@ -267,11 +268,13 @@ export function parseBattleState(raw: unknown): BattleState | null {
     const defVars = UNIT_DEFS[u.def].vars;
     let vars: Record<string, number> | undefined;
     if (defVars) {
-      if (!isObj(u.vars)) return null;
+      if (u.vars !== undefined && !isObj(u.vars)) return null;
       vars = {};
       for (const k of Object.keys(defVars)) {
-        const v = u.vars[k];
+        // a save from before the mana and stamina pools (Nov 16) opens with them full
+        const v = isObj(u.vars) && u.vars[k] !== undefined ? u.vars[k] : defVars[k];
         if (!isInt(v) || Math.abs(v) > 9999) return null;
+        if ((RESOURCES as readonly string[]).includes(k) && (v < 0 || v > defVars[k])) return null;
         vars[k] = v;
       }
     } else if (u.vars !== undefined) return null;

@@ -86,6 +86,21 @@ export interface Preview {
   targets: TargetPreview[];
 }
 
+// What a unit has left of a counter (mana, stamina; the study's MP and stock): a key absent reads as the sheet's start value,
+// so a save or a state from before the pools opens full
+export const poolOf = (u: UnitState, k: string) => u.vars?.[k] ?? UNIT_DEFS[u.def].vars?.[k] ?? 0;
+// the one reading of the cost: the preview, the AI, the menu and the payment go through these two
+export const canPay = (u: UnitState, a: AbilityDef) => !a.cost || poolOf(u, a.cost[0]) >= a.cost[1];
+export function pay(u: UnitState, a: AbilityDef): void {
+  if (a.cost) u.vars = { ...u.vars, [a.cost[0]]: poolOf(u, a.cost[0]) - a.cost[1] };
+}
+// Mana and stamina back at the start of each of the unit's turns (the lab's regen by class), never above the sheet's pool
+export function regen(u: UnitState): void {
+  const d = UNIT_DEFS[u.def];
+  for (const [k, n] of Object.entries(d.regen ?? {}))
+    u.vars = { ...u.vars, [k]: Math.min(d.vars?.[k] ?? 0, poolOf(u, k) + (n ?? 0)) };
+}
+
 // damage range with the user's power (class and equipment): magic on a spell, physical otherwise
 const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
   const d = UNIT_DEFS[actor.def];
@@ -182,7 +197,7 @@ export function previewAbility(
     return fail('unknown');
   // on the split map any cell of a tile aims at that whole tile (Nov 14 review), so range, area, sight and push agree
   center = aimTile(grid, state, center);
-  if (!charged && ability.cost && (actor.vars?.[ability.cost[0]] ?? 0) < ability.cost[1]) return fail('spent');
+  if (!charged && !canPay(actor, ability)) return fail('spent');
   // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that fires does not pass here:
   // it was started on firm ground and goes off from wherever its caster walked to (Nov 15)
   if (!charged && inDeep(grid, actor)) return fail('water');
@@ -321,7 +336,7 @@ export function resolveAbility(
   const ability = ABILITIES[abilityId];
   const events: BattleEvent[] = [{ k: 'attack', unit: actorId, ability: abilityId, target: preview.center }];
   const after = rulesOf(state).after;
-  if (ability.cost && !charged) actor.vars![ability.cost[0]] -= ability.cost[1];
+  if (!charged) pay(actor, ability);
   for (const t of preview.targets) {
     const unit = state.units.find((u) => u.id === t.unit)!;
     if (isHeal(ability)) {

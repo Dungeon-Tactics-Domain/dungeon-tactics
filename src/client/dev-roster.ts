@@ -177,12 +177,15 @@ export function buildDevScenario(
       const b = bonusOf(u.items); // equipment: sum of general stats (equipment.ts), 0 without an item
       // the class's resistances, dodge and power (Nov 15): not editable here, so every hero and enemy keeps its class's,
       // the power plus the equipment's
-      const { resist, dodge } = UNIT_DEFS[u.base];
+      // and the class's mana or stamina pool and its regen (Nov 16)
+      const { resist, dodge, vars, regen } = UNIT_DEFS[u.base];
       const physPower = (UNIT_DEFS[u.base].physPower ?? 0) + b.physPower;
       const magPower = (UNIT_DEFS[u.base].magPower ?? 0) + b.magPower;
       UNIT_DEFS[id] = {
         ...(resist && { resist }),
         ...(dodge && { dodge }),
+        ...(vars && { vars: { ...vars } }),
+        ...(regen && { regen: { ...regen } }),
         ...(physPower && { physPower }),
         ...(magPower && { magPower }),
         ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),

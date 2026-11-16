@@ -1,4 +1,4 @@
-import { resolveAbility } from './combat.ts';
+import { regen, resolveAbility } from './combat.ts';
 import { type Grid, samePos } from './grid.ts';
 import { aimTile, nearestTile } from './pathing.ts';
 import { rulesOf } from './rules.ts';
@@ -55,6 +55,7 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     const ready = slots.find((s) => s.ct >= TURN_THRESHOLD);
     if (ready) {
       state.turn = { actor: ready.id, moved: false, usedAbility: null };
+      regen(state.units.find((u) => u.id === ready.id)!);
       return events;
     }
     const toTurn = slots.length

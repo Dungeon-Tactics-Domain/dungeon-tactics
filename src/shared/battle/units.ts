@@ -14,7 +14,10 @@ export interface UnitDef {
   jump?: number;
   abilities: string[]; // the first is the basic attack
   info?: Record<string, string | number>; // extra sheet for the status window (weapon, Brave, Faith…); only the study scenario has it
-  vars?: Record<string, number>; // counters the unit is born with (see UnitState.vars); only the study scenario uses it
+  // counters the unit is born with (see UnitState.vars): the study's MP and stock, and since Nov 16 every sheet's mana and
+  // stamina pools (RESOURCES), whose start value is also their max
+  vars?: Record<string, number>;
+  regen?: Partial<Record<Resource, number>>; // pool points back at the start of each of its turns (the lab's regen by class)
   model?: string; // model in public/models; only the study scenario sets it, the game units are in the scene map
   tint?: string; // the model's own glow color, drawing only: a unit that shares the model with another (the Acolyte uses the mage)
   undead?: true; // a heal hurts it by half its amount instead of healing (Nov 15, Fernando: "healing a skeleton deals damage")
@@ -32,6 +35,10 @@ export interface UnitDef {
 export const ELEMENTS = ['fire', 'ice', 'lightning', 'shadow', 'wind', 'light'] as const;
 export type Element = (typeof ELEMENTS)[number];
 export type Resist = 'phys' | 'mag' | Element;
+// Nov 15 grill: a spell spends mana, a martial ability stamina (AbilityDef.cost names which); the basic attack and the
+// counter are free. Kept in UnitState.vars like the study's counters, never below 0 nor above the sheet's start value
+export const RESOURCES = ['mana', 'stamina'] as const;
+export type Resource = (typeof RESOURCES)[number];
 // limits of the lab's proposal (Nov 15): never immune, and a low cap so stacked pieces stay in check; dodge caps at 50
 // (90% to hit from the front becomes 45%)
 export const RESIST_RANGE = [-100, 60] as const;

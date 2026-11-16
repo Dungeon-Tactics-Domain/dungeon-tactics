@@ -1,5 +1,5 @@
 // The expedition of the dungeon crawl (Nov 15, F2): floors of short rooms linked in a small graph, the party's life carried
-// from room to room. Only the seed, the rooms cleared and the party's life are saved; the map comes back from the seed
+// from room to room. Only the seed, the rooms cleared and the party's life and mana are saved; the map comes back from the seed
 // (rng.ts), so the same seed always gives the same floors and rooms.
 import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { rollInt } from '../battle/rng.ts';
@@ -16,6 +16,10 @@ export interface CrawlHero {
   id: string; // party member id (the client's group)
   max: number;
   hp: number;
+  // mana carried like the life (Nov 16; stamina refills in every room, so it is not saved); only for a class with a pool,
+  // and absent in a save from before it, which enters every room full
+  manaMax?: number;
+  mana?: number;
 }
 export interface Expedition {
   v: string; // CRAWL_VERSION: another one gives other rooms for the same seed, so an older save is dropped
@@ -51,11 +55,11 @@ export const openNodes = (map: CrawlNode[], path: number[]): number[] =>
 // the boss is down: the expedition is won
 export const cleared = (map: CrawlNode[], path: number[]) => path.length > 0 && !map[path[path.length - 1]].next.length;
 
-export const startExpedition = (seed: number, party: { id: string; max: number }[]): Expedition => ({
+export const startExpedition = (seed: number, party: { id: string; max: number; manaMax?: number }[]): Expedition => ({
   v: CRAWL_VERSION,
   seed: seed | 0,
   path: [],
-  party: party.map((h) => ({ ...h, hp: h.max })),
+  party: party.map(({ manaMax, ...h }) => ({ ...h, hp: h.max, ...(manaMax && { manaMax, mana: manaMax }) })),
 });
 
 // rounded up, as the lab rounds the fallen (42 → 11): a heal on a small life never rounds to nothing
@@ -63,19 +67,31 @@ const share = (max: number, pct: number) => Math.ceil((max * pct) / 100);
 
 // After a won room. `left`: each standing hero's life at the end, by member id; a hero missing from it fell and comes back
 // at 25% without the room heal (the lab's reading, kept in the F2 order). Clearing a floor's last row leads down a floor:
-// +50% to everyone, the fallen included. A room that is not open changes nothing.
-export function winRoom(exp: Expedition, node: number, left: Record<string, number>): Expedition {
+// +50% to everyone, the fallen included. Mana follows the same steps (Nov 15 grill), from `manaLeft` (a standing hero's
+// mana at the end; missing, what it had). A room that is not open changes nothing.
+export function winRoom(
+  exp: Expedition,
+  node: number,
+  left: Record<string, number>,
+  manaLeft: Record<string, number> = {},
+): Expedition {
   const map = expeditionMap(exp.seed);
   if (!openNodes(map, exp.path).includes(node)) return exp;
   const down = map[node].next.some((n) => map[n].floor > map[node].floor);
+  const carry = (now: number, max: number, stood: boolean) =>
+    Math.min(
+      max,
+      (stood ? now + share(max, CRAWL_RUN.roomHeal) : share(max, CRAWL_RUN.fallen)) +
+        (down ? share(max, CRAWL_RUN.floorHeal) : 0),
+    );
   return {
     ...exp,
     path: [...exp.path, node],
     party: exp.party.map((h) => {
-      const hp = Object.hasOwn(left, h.id)
-        ? left[h.id] + share(h.max, CRAWL_RUN.roomHeal)
-        : share(h.max, CRAWL_RUN.fallen);
-      return { ...h, hp: Math.min(h.max, hp + (down ? share(h.max, CRAWL_RUN.floorHeal) : 0)) };
+      const stood = Object.hasOwn(left, h.id);
+      const hp = carry(left[h.id], h.max, stood);
+      if (!h.manaMax) return { ...h, hp };
+      return { ...h, hp, mana: carry(manaLeft[h.id] ?? h.mana ?? h.manaMax, h.manaMax, stood) };
     }),
   };
 }
@@ -95,11 +111,22 @@ export function parseExpedition(raw: unknown): Expedition | null {
   }
   const party: CrawlHero[] = [];
   for (const h of r.party as unknown[]) {
-    const { id, max, hp } = (h ?? {}) as Record<string, unknown>;
+    const { id, max, hp, manaMax, mana } = (h ?? {}) as Record<string, unknown>;
     if (typeof id !== 'string' || !id || party.some((p) => p.id === id)) return null;
     if (!Number.isInteger(max) || !Number.isInteger(hp) || (max as number) < 1 || (max as number) > 999) return null;
     if ((hp as number) < 1 || (hp as number) > (max as number)) return null;
-    party.push({ id, max: max as number, hp: hp as number });
+    // mana only with its max (an older save has neither and enters full)
+    if (manaMax === undefined && mana !== undefined) return null;
+    if (manaMax !== undefined) {
+      if (!Number.isInteger(manaMax) || (manaMax as number) < 1 || (manaMax as number) > 999) return null;
+      if (!Number.isInteger(mana) || (mana as number) < 0 || (mana as number) > (manaMax as number)) return null;
+    }
+    party.push({
+      id,
+      max: max as number,
+      hp: hp as number,
+      ...(manaMax !== undefined && { manaMax: manaMax as number, mana: mana as number }),
+    });
   }
   return party.length >= 1 && party.length <= 4 ? { v: CRAWL_VERSION, seed, path, party } : null;
 }

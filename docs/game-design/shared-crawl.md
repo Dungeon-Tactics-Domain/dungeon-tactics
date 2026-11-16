@@ -25,3 +25,5 @@ Nov 15, F2. Code in `crawl/expedition.ts`, tested in `tests/crawl-expedition.tes
 - The save (`Expedition`: `CRAWL_VERSION`, seed, rooms cleared, the party's id, max and life) is rebuilt by `parseExpedition`, `null` on any doubt (a path that is not a walk of the map included).
 - `winRoom` carries the life (Fernando, decision 43, provisional until the camp): +25% of max for whoever stood, 25% for a fallen hero without the room heal, +50% to everyone after a floor's last row (going down), rounded up, never above the max; a room that is not open changes nothing.
 - `roomGroup(seed, opts)` is the room's first draw (its enemy group), split out of `buildRoom` so the map shows each room's enemies before the fight.
+
+- **Mana and stamina in the expedition** (Nov 16): stamina fills on entering each room; mana follows the life rule in `winRoom` (+25% of max for whoever stood, 25% for a fallen hero, +50% to all on going down a floor); `classMana` re-derives the mana max from the hero's current class on every read of `dt:crawl`. Details: [shared-battle-rules.md](shared-battle-rules.md).

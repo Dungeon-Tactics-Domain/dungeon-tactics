@@ -80,7 +80,8 @@ describe('FFT Gariland: facing', () => {
     expect(at(b, 'ramza').facing).toBe(0);
     expect(at(b, 'e-squire-1').facing).toBe(2);
     const game = Battle.start(FIRST_BATTLE, 1).state.units;
-    expect(game.every((u) => u.vars === undefined)).toBe(true);
+    // the game's only counters are the mana and stamina pools (Nov 16)
+    expect(game.every((u) => Object.keys(u.vars ?? {}).every((k) => k === 'mana' || k === 'stamina'))).toBe(true);
     expect(game.filter((u) => u.def !== 'beacon').every((u) => u.facing !== undefined)).toBe(true);
     expect(game.find((u) => u.def === 'beacon')!.facing).toBeUndefined(); // the Beacon has no front or back
   });
