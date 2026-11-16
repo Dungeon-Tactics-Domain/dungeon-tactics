@@ -61,6 +61,7 @@ describe('corpses: the state', () => {
       return b.state;
     };
     const one = play();
+    expect(one.outcome).not.toBe('ongoing');
     expect(one.corpses?.length).toBeGreaterThan(0);
     expect(play()).toEqual(one);
   });
@@ -129,6 +130,16 @@ describe('corpses: nobody stops on one', () => {
       { x: 1, y: 0 },
       { x: 2, y: 0 },
     ]);
+  });
+
+  it('a leap does not land on a corpse, and the walk goes on past it', () => {
+    const gap = gridOf(['.....'], ['30333']);
+    const s = stateOf([{ id: 'a', def: 'rogue', team: 'hero', x: 0, y: 0 }]);
+    expect(reachable(gap, s, 'a').has('2,0')).toBe(true); // jump 2 flies over the pit
+    s.corpses = [{ x: 2, y: 0 }];
+    const reach = reachable(gap, s, 'a');
+    expect(reach.has('2,0')).toBe(false);
+    expect(reach.has('3,0')).toBe(true);
   });
 
   it('a 2x2 token stops on no square that covers a corpse cell, and walks over it', () => {
