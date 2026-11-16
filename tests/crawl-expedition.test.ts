@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { CRAWL_RUN } from '../src/content/crawl/rooms.ts';
+import { CRAWL_GOLD, CRAWL_GROUPS, CRAWL_RUN } from '../src/content/crawl/rooms.ts';
 import {
   classMana,
   cleared,
+  descentGold,
   type Expedition,
   expeditionMap,
+  goldHome,
+  nodeGold,
+  openChest,
   openNodes,
   parseExpedition,
   startExpedition,
@@ -27,7 +31,7 @@ describe('crawl expedition', () => {
     for (let f = 1; f <= CRAWL_RUN.floors; f++) {
       const floor = map.filter((n) => n.floor === f);
       for (let r = 0; r < CRAWL_RUN.rows; r++) {
-        const row = floor.filter((n) => n.row === r && !n.boss).length;
+        const row = floor.filter((n) => n.row === r && !n.boss && !n.chest).length;
         expect(row).toBeGreaterThanOrEqual(CRAWL_RUN.width[0]);
         expect(row).toBeLessThanOrEqual(CRAWL_RUN.width[1]);
       }
@@ -147,6 +151,84 @@ describe('crawl expedition', () => {
     expect(winRoom(once, once.path[0], { bran: 42, odo: 24 })).toBe(once);
     const far = map.findIndex((n) => n.floor === 2);
     expect(winRoom(e, far, {})).toBe(e);
+  });
+
+  it('every floor has one chest, off one room of its first row, leading on to the second', () => {
+    for (let seed = 0; seed < 50; seed++) {
+      const map = expeditionMap(seed);
+      for (let f = 1; f <= CRAWL_RUN.floors; f++) {
+        const chests = map.flatMap((n, i) => (n.floor === f && n.chest ? [i] : []));
+        expect(chests).toHaveLength(1);
+        const [c] = chests;
+        const firstRow = map.flatMap((n, i) => (n.floor === f && n.row === 0 && !n.chest ? [i] : []));
+        const second = map.flatMap((n, i) => (n.floor === f && n.row === 1 ? [i] : []));
+        expect(firstRow.filter((i) => map[i].next.includes(c))).toHaveLength(1);
+        expect(map[c].next).toEqual(second);
+      }
+      expect(openNodes(map, []).some((i) => map[i].chest)).toBe(false);
+    }
+  });
+
+  it('every room draws one of its floor compositions', () => {
+    const map = expeditionMap(21);
+    for (const n of map.filter((n) => !n.chest && !n.boss)) {
+      const { group } = roomGroup(n.seed, { depth: n.floor });
+      expect(CRAWL_GROUPS.filter((g) => g.depth === n.floor)).toContain(group);
+    }
+  });
+
+  it('a chest opens without battle or heal; a room cannot be opened as a chest, nor a chest won as a room', () => {
+    const map = expeditionMap(6);
+    const c = map.findIndex((n) => n.chest);
+    const from = map.findIndex((n) => n.next.includes(c));
+    let e = at(startExpedition(6, party), [20, 24]);
+    expect(openChest(e, c)).toBe(e); // not open yet
+    e = winRoom(e, from, { bran: 20, odo: 24 });
+    expect(winRoom(e, c, { bran: 20, odo: 24 })).toBe(e);
+    expect(openChest(e, first(e))).toBe(e);
+    const opened = openChest(e, c);
+    expect(opened.path).toEqual([from, c]);
+    expect(opened.party).toEqual(e.party);
+    expect(openChest(opened, c)).toBe(opened);
+    expect(parseExpedition(JSON.parse(JSON.stringify(opened)))).toEqual(opened);
+  });
+
+  it('gold: each enemy drops within its range, simple undead nothing, the boss 300, a chest 80 to 150', () => {
+    for (let seed = 0; seed < 100; seed++)
+      for (const n of expeditionMap(seed)) {
+        const gold = nodeGold(n);
+        expect(nodeGold(n)).toBe(gold); // from the node's seed: a Restart cannot roll it again
+        if (n.chest) {
+          expect(gold).toBeGreaterThanOrEqual(CRAWL_RUN.chest[0]);
+          expect(gold).toBeLessThanOrEqual(CRAWL_RUN.chest[1]);
+          continue;
+        }
+        const { enemies } = roomGroup(n.seed, { depth: n.floor, boss: n.boss }).group;
+        const range = (k: 0 | 1) => enemies.reduce((s, e) => s + (CRAWL_GOLD[e]?.[k] ?? 0), 0);
+        expect(gold).toBeGreaterThanOrEqual(range(0));
+        expect(gold).toBeLessThanOrEqual(range(1));
+        if (n.boss) expect(gold).toBe(300);
+        if (enemies.every((e) => e === 'minion' || e === 'skeleton_archer')) expect(gold).toBe(0);
+      }
+  });
+
+  it('the gold found is read back from the path; a fallen party takes half home, rounded down', () => {
+    const e = startExpedition(14, party);
+    expect(descentGold(e)).toBe(0);
+    let run = e;
+    while (!cleared(expeditionMap(14), run.path)) {
+      const map = expeditionMap(14);
+      const open = openNodes(map, run.path);
+      const chest = open.find((i) => map[i].chest);
+      run = chest !== undefined ? openChest(run, chest) : winRoom(run, open[0], { bran: 42, odo: 24 });
+    }
+    const map = expeditionMap(14);
+    expect(descentGold(run)).toBe(run.path.reduce((s, n) => s + nodeGold(map[n]), 0));
+    expect(goldHome(run, false)).toBe(descentGold(run));
+    expect(goldHome({ ...run, path: run.path.slice(0, 3) }, true)).toBe(
+      Math.floor(descentGold({ ...run, path: run.path.slice(0, 3) }) / 2),
+    );
+    expect(goldHome({ ...e, path: [] }, true)).toBe(0);
   });
 
   it('parse keeps a good save and drops anything doubtful', () => {

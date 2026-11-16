@@ -41,7 +41,7 @@ parseGrid and withRamps (grid.ts).
 - `src/content/items.ts` — equipment (ITEM_LIST); type, registry and bonusOf in src/shared/battle/equipment.ts.
 - `src/content/party.ts` — party classes (JOBS), the 4 story members and the recruit names in order; rules in src/client/group.ts.
 - `src/content/faces.json` — painted face sheets for the dialogue box and the battle HUD.
-- `src/content/crawl/rooms.ts` — crawl party, enemy groups by depth, the boss group, room themes and the expedition numbers (CRAWL_RUN); read by generateRoom (src/shared/crawl/generate.ts) and expeditionMap and winRoom (expedition.ts).
+- `src/content/crawl/rooms.ts` — crawl party, enemy groups by depth, the boss group, room themes, the expedition numbers (CRAWL_RUN) and the gold drops (CRAWL_GOLD); read by generateRoom (src/shared/crawl/generate.ts) and expeditionMap and winRoom (expedition.ts).
 - `src/content/crawl/town.ts` — the walkable town map (TOWN), its places and doors, the start, the Guild spots and the townsfolk with their rumours; rules in src/client/town-map.ts, walking in src/client/game/town.ts.
 - `src/content/maps/beacon-hill.ts` — Beacon Hill, the 20x20 first battle and standalone default, with its per-tile looks.
 - `src/content/maps/skirmish.ts` — 8x8 Skirmish map for tests and quick simulation.

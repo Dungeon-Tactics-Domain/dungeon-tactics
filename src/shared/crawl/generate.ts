@@ -11,8 +11,9 @@ import { UNIT_DEFS } from '../battle/units.ts';
 import { startRange, verifyRoom } from './verify.ts';
 
 // In every room id: a change that gives other rooms for the same seed bumps it, so a save of an older room starts over.
-// crawl4 (Nov 15): life and damage x5, so an expedition saved at the old scale (max life 42) is dropped, not carried
-export const CRAWL_VERSION = 'crawl4';
+// crawl4 (Nov 15): life and damage x5, so an expedition saved at the old scale (max life 42) is dropped, not carried;
+// crawl5 (Nov 16): a chest node on every floor, so the same seed gives another map
+export const CRAWL_VERSION = 'crawl5';
 export interface RoomGroup {
   name: [string, string];
   depth: number;

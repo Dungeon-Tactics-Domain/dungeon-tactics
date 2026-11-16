@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITY_LIST } from '../src/content/abilities.ts';
-import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
+import { CRAWL_BOSS, CRAWL_GOLD, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
 import { CONSUMABLES, ITEM_LIST } from '../src/content/items.ts';
 import { RECRUIT_NAMES, STARTING_WEAPON, STORY } from '../src/content/party.ts';
 import { UNIT_LIST } from '../src/content/units.ts';
@@ -141,6 +141,13 @@ describe('crawl rooms', () => {
     }
     expect([...new Set(CRAWL_GROUPS.map((g) => g.depth))].sort()).toEqual([1, 2, 3]);
     expect(CRAWL_BOSS.enemies.some((e) => UNIT_DEFS[e]?.size === 2)).toBe(true);
+  });
+
+  it('gold drops name existing enemies, with whole ranges', () => {
+    for (const [id, [lo, hi]] of Object.entries(CRAWL_GOLD)) {
+      expect(UNIT_DEFS[id], id).toBeDefined();
+      expect(Number.isInteger(lo) && Number.isInteger(hi) && lo >= 0 && lo <= hi, id).toBe(true);
+    }
   });
 
   it('themes use known terrains', () => {

@@ -91,4 +91,18 @@ export const CRAWL_RUN = {
   roomHeal: 25,
   floorHeal: 50,
   fallen: 25,
+  // gold in each floor's chest node (Fernando's gold grill, Nov 15: 1 per floor, off the shortest route; the numbers are
+  // the Mechanics lab's equipamento.json proposal). Its 30% common / 10% rare piece waits for the 7-slot equipment
+  chest: [80, 150] as [number, number],
+};
+
+// Gold each enemy of a won room drops (Fernando's gold grill, Nov 15: only those it makes sense to carry; simple undead
+// drop none). Ranges from the Mechanics lab's equipamento.json drop table; an enemy missing here drops no gold
+export const CRAWL_GOLD: Record<string, [number, number]> = {
+  soldier: [30, 50],
+  dark_mage: [40, 60],
+  acolyte: [40, 60],
+  veil_knight: [60, 90],
+  brute: [50, 80],
+  colossus: [300, 300],
 };
