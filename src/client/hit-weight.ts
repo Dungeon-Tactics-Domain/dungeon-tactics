@@ -1,7 +1,7 @@
 // Weight of a blow, drawing only (Fernando's grill of Nov 15; the Mechanics lab's peso.json and its impact scene are the
 // starting point he tunes by playing). Distances in whole tiles, 1 tile = 1 m as in the lab: scene/units.ts multiplies
 // them by the map's `sub`. Timings are in timing.ts
-import type { BattleEvent } from '../shared/battle/types.ts';
+import type { BattleEvent, Team } from '../shared/battle/types.ts';
 import { BIG } from './battle-face.ts';
 
 export const WEIGHT = {
@@ -61,6 +61,18 @@ export function liftOver(others: NumberBox[], me: Omit<NumberBox, 'lift'>): numb
 export function fatal(events: BattleEvent[], i: number): boolean {
   const u = events[i].unit;
   return events.slice(i + 1).find((e) => e.unit === u && (e.k === 'die' || 'dmg' in e))?.k === 'die';
+}
+
+// the death that empties its side (Fernando, Nov 16: slow motion only on the last enemy or the last hero): nobody of the
+// team is left in the final state and no later death in the sequence is of that team. `teamOf` reads a dead unit's side
+export function lastOfSide(
+  events: BattleEvent[],
+  i: number,
+  team: Team,
+  left: number,
+  teamOf: (id: string) => Team,
+): boolean {
+  return left === 0 && !events.slice(i + 1).some((e) => e.k === 'die' && teamOf(e.unit) === team);
 }
 
 // the strike also pushes its unit (a push or a bump before the next attack): the push moves the body, so no recoil

@@ -215,7 +215,7 @@ export function optionsMenu(o: OptionsContext) {
           o.pixel().snap,
           (snap) => o.setPixel({ ...o.pixel(), snap }),
         ),
-        // Fernando's grill of Nov 15: every death in slow motion with a close-up, this turns it off
+        // Fernando's grill of Nov 15: the last enemy's or the last hero's death in slow motion with a close-up (narrowed Nov 16), this turns it off
         choice(
           t('Câmera lenta nas mortes', 'Slow motion on deaths'),
           [

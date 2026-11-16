@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fatal, liftOver, numberKind, numberPx, parseSlowmo, shoved } from '../src/client/hit-weight.ts';
+import { fatal, lastOfSide, liftOver, numberKind, numberPx, parseSlowmo, shoved } from '../src/client/hit-weight.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
 
 describe('numberPx: the number grows with the share of life it takes', () => {
@@ -80,5 +80,20 @@ describe('parseSlowmo: the death slow motion option', () => {
   it('is on by default and off only when saved off', () => {
     expect([null, undefined, true, 'false', 0, {}].map(parseSlowmo)).toEqual([true, true, true, true, true, true]);
     expect(parseSlowmo(false)).toBe(false);
+  });
+});
+
+describe('lastOfSide: the death that empties a side', () => {
+  const ev: BattleEvent[] = [
+    { k: 'die', unit: 'a' },
+    { k: 'die', unit: 'b' },
+  ];
+  const teamOf = () => 'enemy' as const;
+  it('is only the last death of a wiped-out side', () => {
+    expect(lastOfSide(ev, 0, 'enemy', 0, teamOf)).toBe(false);
+    expect(lastOfSide(ev, 1, 'enemy', 0, teamOf)).toBe(true);
+  });
+  it('is not when someone of the side still stands', () => {
+    expect(lastOfSide(ev, 1, 'enemy', 1, teamOf)).toBe(false);
   });
 });

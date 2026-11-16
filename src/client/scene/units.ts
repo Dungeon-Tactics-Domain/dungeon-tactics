@@ -7,12 +7,13 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import { canStand, dist, inBounds, isDeep, samePos, standH, subOf, tileAt } from '../../shared/battle/grid.ts';
 import { cellsOf, squareH, unitAt } from '../../shared/battle/pathing.ts';
-import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
+import type { BattleEvent, BattleState, Pos, Team, UnitState } from '../../shared/battle/types.ts';
 import { baseDef, UNIT_DEFS } from '../../shared/battle/units.ts';
 import { chargeAura, dust, lookOf, playFx, sparks } from '../fx.ts';
 import {
   fatal,
   isBig,
+  lastOfSide,
   liftOver,
   type NumberBox,
   numberKind,
@@ -48,6 +49,7 @@ interface UnitView {
   bar: THREE.Mesh; // filled part of the health bar
   hp: number;
   def: string;
+  team: Team; // for the death slow motion: only the last of a side gets it
   aura: THREE.Mesh | null; // glow on the ground while charging an ability
   body: THREE.Object3D | null;
   // between the holder and the body: the recoil, bounce and wall rebound move it, so the holder (the unit's tile for
@@ -256,6 +258,7 @@ export class Units {
       bar,
       hp: u.hp,
       def: u.def,
+      team: u.team,
       aura: null,
       body,
       sway,
@@ -524,7 +527,7 @@ export class Units {
     this.quake(WEIGHT.quakeLand, TIMING.quakeLand);
   }
 
-  // the blow that downs a unit: slow motion and the camera closes in on it, on every death unless Options turns it off
+  // the blow that downs the last of a side: slow motion and the camera closes in on it, unless Options turns it off
   private deathCam(v: UnitView): boolean {
     if (still() || !parseSlowmo(store.json(SLOWMO_KEY))) return false;
     this.slowUntil = this.time.t + TIMING.slowmo;
@@ -626,7 +629,18 @@ export class Units {
         // 10 strikes in a Skirmish went through (measured Nov 12): the effect must show up now and then
         const big = e.k === 'hit' && isBig(e.dmg, max);
         // one slow motion per sequence: an area strike that downs three would hold the battle ~10 s
-        if (dies && !slowed) slowed = this.deathCam(v);
+        if (
+          dies &&
+          !slowed &&
+          lastOfSide(
+            events,
+            i,
+            v.team,
+            state.units.filter((u) => u.team === v.team).length,
+            (id) => this.views.get(id)?.team ?? v.team,
+          )
+        )
+          slowed = this.deathCam(v);
         // a bump into rock: the body slides to it and stops dead, with sparks; against a unit, the map's edge, deep water
         // or on the way back to where it last rested it only trembles
         const way = e.k === 'bump' ? (pushed.get(e.unit) ?? this.pushWay(v, center, striker)) : null;
