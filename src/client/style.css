@@ -1718,7 +1718,7 @@ button[hidden],
 }
 .enemy .unit-side::before {
   content: "◆ ";
-  color: var(--enemy);
+  color: var(--enemy-hi);
 }
 .unit-class {
   margin-top: -4px;
