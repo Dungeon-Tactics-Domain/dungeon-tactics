@@ -5,7 +5,7 @@ The map and unit rules of `src/shared/battle`, moved out of `src/shared/CLAUDE.m
 ## Tile looks
 
 - **Per-tile look on the game maps** (Nov 12): `Tile.look` is only for drawing. Beacon Hill gets its own in `dressBeaconHill` (snow on the enemy side, rock on the hill, gold at the Beacon); the Flooded Crypt (`flooded_crypt`) is written with one letter per tile (`CRYPT_KEY`); since Nov 13 the Hill has a valley, a peak-5 hill and an enemy plateau at 3.
-- New map: state the terrain, height and `look` of each tile and register the floor name in `LOOK_NAME` (`src/client/hud.ts`) and the pieces in `LOOK` (`src/client/scene/board-looks.ts`).
+- New map: state the terrain, height and `look` of each tile and register the floor name in `LOOK_NAME` (`src/client/tile-info.ts`) and the pieces in `LOOK` (`src/client/scene/board-looks.ts`).
 
 ## Ramps
 

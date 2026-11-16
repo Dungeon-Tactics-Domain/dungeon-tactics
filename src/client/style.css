@@ -1581,7 +1581,7 @@ button[hidden],
   height: 100%;
   background: linear-gradient(color-mix(in srgb, var(--ink) 35%, transparent), transparent 60%), var(--bar);
 }
-/* strike preview on the target bar (hud.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
+/* strike preview on the target bar (hud-pieces.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
    green stripes, like Tactics Ogre. Stripe and the number "life 25 → 13–16" alongside: never color alone */
 .gauge-change {
   position: absolute;
@@ -1611,7 +1611,7 @@ button[hidden],
   border-left: 2px solid var(--paper-edge);
   border-right: 6px solid var(--side);
 }
-/* strike preview (hud.ts strikes; Tactics Ogre's idea from Nov 13, the lab kit's two-colour strip since Nov 15): beside the
+/* strike preview (hud-pieces.ts strikes; Tactics Ogre's idea from Nov 13, the lab kit's two-colour strip since Nov 15): beside the
    acting unit's panel, in the target panel's place, anchored at the bottom; the action half on the panel blue, the target
    half on its side's colour (wine for an enemy). Up to 3 strips, then "+N targets"; no click (the mouse reaches the tiles) */
 .strikes {
@@ -1990,7 +1990,7 @@ body:has(.result-overlay) .fps {
   width: 64px;
   height: 64px;
 }
-/* the face held on one expression outside the battle (hud.ts stillFace: result board cards, party, tavern): 64 px, .big 128,
+/* the face held on one expression outside the battle (hud-pieces.ts stillFace: result board cards, party, tavern): 64 px, .big 128,
    whole ratios of the 128 px paint; not a .portrait, whose party sizes (48x64, 96x128) would crop it */
 .still-face {
   flex: none;
