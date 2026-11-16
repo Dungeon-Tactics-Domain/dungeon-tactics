@@ -206,10 +206,8 @@ describe('battle save: an inconsistent turn queue', () => {
 });
 
 describe('battle save: the undo history must belong to the same battle', () => {
-  // Bug: battle.ts:212-218 parses each history frame on its own; nothing ties its scenario to the live one. Undo then puts
-  // a state of another map on this map's grid (positions checked against the wrong map). Fix: reject a frame whose
-  // scenario differs from state.scenario.
-  it.fails('a history frame of another scenario is rejected', () => {
+  // each frame is parsed on its own grid, so without this check undo would put a state of another map on this map's grid
+  it('a history frame of another scenario is rejected', () => {
     const raw = moved();
     const { rng: _rng, ...other } = Battle.start(SCENARIOS.beacon_hill, 1).state;
     raw.history[0].before = other;
@@ -217,9 +215,8 @@ describe('battle save: the undo history must belong to the same battle', () => {
     expect(b).toBeNull();
   });
 
-  // Same gap, smaller: a free (unpaid) frame naming another actor hands the player an enemy's turn on undo. Fix: the frame's
-  // turn.actor must be the live turn's actor (history is cleared at every endTurn).
-  it.fails('a history frame of another actor is rejected', () => {
+  // a free (unpaid) frame naming another actor would hand the player an enemy's turn on undo (history never spans a turn)
+  it('a history frame of another actor is rejected', () => {
     const raw = moved();
     const foe = raw.state.units.find(
       (u: Raw) => u.team !== raw.state.units.find((x: Raw) => x.id === raw.state.turn.actor).team,

@@ -215,7 +215,8 @@ export class Battle {
     for (const e of raw.history) {
       if (!isObj(e) || typeof e.paid !== 'boolean' || !isObj(e.before)) return null;
       const frame = parseBattleState({ ...e.before, rng: 0 });
-      if (!frame) return null;
+      // history only lives inside one turn (endTurn clears it): a frame of another map or actor is not this battle's
+      if (!frame || frame.scenario !== state.scenario || frame.turn.actor !== state.turn.actor) return null;
       const { rng: _rng, ...before } = frame;
       history.push({ before, paid: e.paid });
     }
