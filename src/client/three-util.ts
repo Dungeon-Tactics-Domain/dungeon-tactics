@@ -1,5 +1,5 @@
-// Small Three helpers the board and its surroundings share: fixed draws by position, noise, and the KayKit palette
-// textures without mipmap.
+// Small Three helpers the board and its surroundings share: fixed draws by position, noise, grid triangles and the
+// KayKit palette textures without mipmap.
 import * as THREE from 'three';
 
 // seeded draw: the same map always builds the same surroundings
@@ -26,6 +26,19 @@ export const smooth = (a: number, b: number, x: number) => {
   const k = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1);
   return k * k * (3 - 2 * k);
 };
+
+// two triangles per square of a grid of cols x rows squares whose vertices start at `base`, cols + 1 per row;
+// `flip` turns the faces over (a strip laid out toward -x)
+export function quads(idx: number[], base: number, cols: number, rows: number, flip = false) {
+  for (let b = 0; b < rows; b++)
+    for (let a = 0; a < cols; a++) {
+      const v = base + b * (cols + 1) + a,
+        n = v + cols + 1;
+      if (flip) idx.push(v, v + 1, n, v + 1, n + 1, n);
+      else idx.push(v, n, v + 1, v + 1, n, n + 1);
+    }
+  return idx;
+}
 
 // KayKit textures are palettes: with mipmap the low-resolution render blends neighboring colors (learned in the POC)
 export const nearestPixels = (map: THREE.Texture) =>

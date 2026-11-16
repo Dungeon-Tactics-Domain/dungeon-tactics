@@ -108,8 +108,9 @@ parseGrid and withRamps (grid.ts).
 ## src/client — 3D drawing (Three.js) and sound
 
 - `src/client/scene.ts` — BattleScene: renderer with the pixel pass, lights, frame loop and the scene's public API.
-- `src/client/three-util.ts` — small shared Three helpers: seeded draws, noise and KayKit palette textures without mipmaps.
-- `src/client/terrain.ts` — smooth painted terrain mesh, its extension ring and the river that continues off the map.
+- `src/client/three-util.ts` — small shared Three helpers: seeded draws, noise, grid triangles and KayKit palette textures without mipmaps.
+- `src/client/terrain.ts` — smooth painted terrain mesh with its paint per look and textures, and the invisible tiles the pointer picks.
+- `src/client/terrain-outer.ts` — heights of the extension ring around the map and the river that continues off it, with its mesh.
 - `src/client/water.ts` — water surface with the wave field (WaveField) the units disturb.
 - `src/client/trees.ts` — painted trees built in code that replace the KayKit tree models.
 - `src/client/props.ts` — painted crates, barrels, rocks and litter built in code that replace KayKit props.
