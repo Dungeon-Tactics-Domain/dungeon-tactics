@@ -35,14 +35,15 @@ const json = (v: string | null | undefined): unknown => {
   }
 };
 
-// Trust boundary: the manifest comes from the browser. A slot needs a whole positive id of its own; its copy keeps only
+// Trust boundary: the manifest comes from the browser. A slot needs a safe whole positive id of its own (2^60 passes
+// isInteger and id + 1 equals it); its copy keeps only
 // the slot keys with text values (a crafted save cannot write settings); an active id with no slot is none
 export function parseManifest(raw: unknown): Manifest {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const slots: Slot[] = [];
   for (const x of Array.isArray(r.slots) ? r.slots : []) {
     const { id, data } = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>;
-    if (!Number.isInteger(id) || (id as number) < 1 || slots.some((s) => s.id === id)) continue;
+    if (!Number.isSafeInteger(id) || (id as number) < 1 || slots.some((s) => s.id === id)) continue;
     const d = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
     const kept = SLOT_KEYS.flatMap((k) => (typeof d[k] === 'string' && d[k] ? [[k, d[k] as string]] : []));
     slots.push({ id: id as number, data: Object.fromEntries(kept) });
@@ -62,7 +63,12 @@ export const snapshot = (s: Pick<Storage, 'getItem'>): Data =>
 const restore = (s: Saves, data: Data) => {
   for (const k of SLOT_KEYS) s.setItem(k, data[k] ?? '');
 };
-const nextId = (m: Manifest) => Math.max(0, ...m.slots.map((x) => x.id)) + 1;
+// the first free id, so a huge id kept in the manifest never makes the next one overflow
+const nextId = (m: Manifest) => {
+  let id = 1;
+  while (m.slots.some((x) => x.id === id)) id++;
+  return id;
+};
 
 // The manifest as it stands now: the active slot holds the live game (its stored copy is older), and live progress with
 // no slot (the single save from before the slots, or a town reached by its address) becomes a new active slot

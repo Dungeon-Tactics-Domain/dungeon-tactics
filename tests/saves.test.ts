@@ -94,7 +94,17 @@ describe('save slots', () => {
       [SAVES_KEY]: JSON.stringify({ active: null, slots: [{ id: 3, data: party(5) }] }),
       ...party(9),
     });
-    expect(readSaves(s).active).toBe(4);
+    const m = readSaves(s);
+    expect(m.active).toBe(1);
+    expect(m.slots.map((x) => x.id)).toEqual([3, 1]);
+  });
+
+  it('a new slot never takes the id of a kept one, however large', () => {
+    const s = browser({
+      [SAVES_KEY]: JSON.stringify({ active: null, slots: [{ id: Number.MAX_SAFE_INTEGER, data: party(5) }] }),
+    });
+    newGame(s, 1000);
+    expect(readSaves(s).slots.map((x) => x.id)).toEqual([Number.MAX_SAFE_INTEGER, 1]);
   });
 
   it('a full browser storage stops the change before the live game is touched', () => {
@@ -144,6 +154,7 @@ describe('save manifest (trust boundary)', () => {
       ],
     });
     expect(parseManifest('junk')).toEqual({ active: null, slots: [] });
+    expect(parseManifest({ slots: [{ id: 2 ** 60, data: {} }] }).slots).toEqual([]);
     expect(parseManifest({ active: 2, slots: [{ id: 2, data: {} }] }).active).toBe(2);
   });
 });
