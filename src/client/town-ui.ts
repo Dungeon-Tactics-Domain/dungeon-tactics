@@ -2,6 +2,7 @@
 // member's sheet (class, equipment, who goes) and their Equipment, Tavern (recruits) and Shop. Rules in group.ts and chest.ts.
 
 import { CONSUMABLES } from '../content/items.ts';
+import { COMBAT } from '../shared/battle/combat.ts';
 import {
   ITEMS,
   type ItemDef,
@@ -18,7 +19,7 @@ import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { dodgeOf, ELEMENTS, resistOf, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
 import { abilityDetail, defenceRows, ELEMENT_NAME, regenLine, signed } from './battle-text.ts';
-import { buy, CHEST_KEY, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
+import { buy, CHEST_KEY, CHEST_MAX, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
 import { unitFrom } from './dev-roster.ts';
 import { choice, dialog, priceRow } from './dialog.ts';
 import {
@@ -170,6 +171,9 @@ interface Line {
   unit?: '%';
   signed?: true; // a resistance: "−10%" and "+0%" on the sheet
   of?: (d: UnitDef) => number;
+  // the same reading on a charging unit (physical and magic resistance): the drop comes off the raw sum before the cap,
+  // so a resistance past the cap still counts there (combat.ts; whether that is right is Fernando's call)
+  charging?: (d: UnitDef) => number;
   piece: (it: ItemDef) => number;
   more?: true;
 }
@@ -186,6 +190,7 @@ const LINES: Line[] = [
     unit: '%',
     signed: true,
     of: (d) => resistOf(d, 'phys'),
+    charging: (d) => resistOf(d, 'phys', -COMBAT.CHARGING_PHYS),
     piece: (it) => it.resist?.phys ?? 0,
   },
   {
@@ -194,6 +199,7 @@ const LINES: Line[] = [
     unit: '%',
     signed: true,
     of: (d) => resistOf(d, 'mag'),
+    charging: (d) => resistOf(d, 'mag', -COMBAT.CHARGING_MAG),
     piece: (it) => it.resist?.mag ?? 0,
   },
   ...ELEMENTS.map(
@@ -237,20 +243,25 @@ export const itemStats = (it: ItemDef) =>
     .join(' · ');
 
 // The Sheet's numbers (Nov 16, slice 3): each total as the battle counts it and, when a piece changes it, where it comes
-// from: ["Vida", "235", "Guerreiro 210 · Elmo de ferro +25"]; "capped" when a limit took part of it (dodge 50,
-// resistances 60)
+// from: ["Vida", "235", "Guerreiro 210 · Elmo de ferro +25"]. When a limit took part of it (dodge 50, resistances 60) it
+// says so with the raw sum, and for a resistance a charging unit loses, what is left then: the drop comes off the raw
+// sum, so past the cap the pieces still count there (the coordinator's review of Nov 16: "capped" alone misled)
 export function sheetRows(cls: string, load: Loadout | undefined): [label: string, total: string, from: string][] {
   const def = UNIT_DEFS[cls];
   return LINES.flatMap((l): [string, string, string][] => {
     const from = pieces(l, load),
       v = lineValue(l, def, load),
-      own = l.of?.(def) ?? 0;
+      own = l.of?.(def) ?? 0,
+      raw = own + from.reduce((s, p) => s + p.v, 0);
     if (l.more && !v && !own && !from.length) return [];
     const parts = [
       ...(l.of ? [`${unitName(cls)} ${total(l, own)}`] : []),
       ...from.map((p) => `${itemName(p.it)} ${plus(l, p.v)}`),
     ];
-    if (own + from.reduce((s, p) => s + p.v, 0) !== v) parts.push(t('no limite', 'capped'));
+    if (raw !== v) {
+      const when = l.charging ? `; ${t('carregando', 'charging')}, ${total(l, l.charging(withGear(def, load)))}` : '';
+      parts.push(`${t('no limite', 'capped')} (${t('bruto', 'raw')} ${total(l, raw)}${when})`);
+    }
     return [
       [
         l.label?.() ?? cap(l.name()),
@@ -262,13 +273,15 @@ export function sheetRows(cls: string, load: Loadout | undefined): [label: strin
 }
 
 // what equipping `id` in `slot` (null: taking it off) changes on the sheet, as the rules read it: past a cap the
-// change is what is left of it
+// change is what is left of it, and a resistance's change on a charging unit, read before the cap, comes apart when it
+// differs
 export function compare(cls: string, load: Loadout, slot: Slot, id: string | null): string {
   const def = UNIT_DEFS[cls],
     next: Loadout = { ...load, [slot]: id ?? undefined };
   const parts = LINES.flatMap((l) => {
     const d = lineValue(l, def, next) - lineValue(l, def, load);
-    return d ? [stat(l, d)] : [];
+    const c = l.charging ? l.charging(withGear(def, next)) - l.charging(withGear(def, load)) : d;
+    return [...(d ? [stat(l, d)] : []), ...(c !== d ? [`${stat(l, c)} ${t('carregando', 'while charging')}`] : [])];
   });
   return parts.join(' · ') || t('nada muda', 'no change');
 }
@@ -334,6 +347,8 @@ export const sideWindows = <T>(overlays: Iterable<T>, menu: T) => [...overlays].
 // what is missing to buy, under the Shop row's turned-off button; nothing when the gold covers it
 export const shortBy = (gold: number, price: number) =>
   gold < price ? t(`faltam ${price - gold}`, `${price - gold} short`) : '';
+// why a piece cannot go into the chest (CHEST_MAX): under Buy and Remove, and before Dismiss
+const chestFull = () => t(`baú cheio (${CHEST_MAX})`, `chest full (${CHEST_MAX})`);
 
 // the lab kit's gold counter on a window's head band (Shop, Tavern): small uppercase label, the number after a coin
 const goldNote = (label: string, gold: number) =>
@@ -344,7 +359,8 @@ const goldNote = (label: string, gold: number) =>
 // (rares and epics drop) and lists the consumables, whose Buy stays off until the battle can use them
 type ShopTab = 'gear' | 'goods' | 'sell';
 export function openShop(back?: () => void, tab: ShopTab = 'gear') {
-  const chest = loadChest();
+  const chest = loadChest(),
+    full = chest.items.length >= CHEST_MAX;
   const save = (c: ReturnType<typeof buy>) => {
     if (!c) return void sfx('cancel');
     store.set(CHEST_KEY, JSON.stringify(c));
@@ -361,10 +377,10 @@ export function openShop(back?: () => void, tab: ShopTab = 'gear') {
             [itemName(it), el('small', {}, `${KIND_NAME[it.kind]()} · ${itemStats(it)}`)],
             it.price,
             button('secondary', t('Comprar', 'Buy'), () => save(buy(chest, it.id)), {
-              disabled: chest.gold < it.price,
+              disabled: full || chest.gold < it.price,
             }),
             // too expensive: the button turns off and says under it how much is missing (before, it only went grey)
-            shortBy(chest.gold, it.price),
+            full ? chestFull() : shortBy(chest.gold, it.price),
           ),
         ),
     goods: () =>
@@ -413,14 +429,15 @@ export function openShop(back?: () => void, tab: ShopTab = 'gear') {
 }
 
 const row = (k: string, v: string | number) => [el('dt', {}, k), el('dd', {}, String(v))];
-// the focus a window that rebuilds itself after each action (Sheet, Equipment) gives back: the same button, else `first`
-const refocus = (overlay: HTMLElement, at: number, first: string) =>
-  ([...overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')][at] ??
-    overlay.querySelector<HTMLButtonElement>(first))!.focus();
-const buttonAt = (overlay: HTMLElement) =>
-  [...overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')].indexOf(
-    document.activeElement as HTMLButtonElement,
-  );
+// the focus a window that rebuilds itself after each action (Sheet, Equipment) gives back: the button with the same name,
+// else `first`. By name, not position (review of Nov 16): equipping adds or drops rows, so the same index was another button
+const nameOf = (b: Element) => b.getAttribute('aria-label') ?? b.textContent ?? '';
+const refocus = (overlay: HTMLElement, name: string, first: string) =>
+  (
+    [...overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')].find((b) => name && nameOf(b) === name) ??
+    overlay.querySelector<HTMLButtonElement>(first)
+  )?.focus();
+const focused = () => (document.activeElement instanceof HTMLButtonElement ? nameOf(document.activeElement) : '');
 
 // Unit sheet (like the FFT formation status screen): numbers, each ability with what it does (the ones still to come are
 // marked), what each of the 7 slots holds and the party actions: class, go or not to battle, and dismiss (recruits only).
@@ -428,10 +445,10 @@ const buttonAt = (overlay: HTMLElement) =>
 // the Equipment window. Esc/✕ goes back to the list
 // `at`: the button that had focus before the sheet rebuilt itself (every action closes and reopens the dialog): focus
 // returns to the same place instead of jumping to the top, otherwise acting by keyboard restarted the Tab walk each time
-export function openSheet(m: Member, back: () => void, at = -1) {
+export function openSheet(m: Member, back: () => void, at = '') {
   const u = unitFrom(m.cls, m.name);
   const again = (x: Member) => {
-    const i = buttonAt(d.overlay);
+    const i = focused();
     d.close();
     openSheet(x, back, i);
   };
@@ -439,6 +456,8 @@ export function openSheet(m: Member, back: () => void, at = -1) {
   const sheet = withGear(UNIT_DEFS[m.cls], mine);
   const g = loadGroup(),
     going = g.deployed.includes(m.id);
+  // dismissing returns the recruit's pieces to the chest, which keeps CHEST_MAX
+  const noRoom = loadChest().items.length + Object.values(mine).length > CHEST_MAX;
   const deploy = () => {
     const r = toggleDeploy(loadGroup(), m.id);
     if (!r) return void sfx('cancel');
@@ -541,11 +560,15 @@ export function openSheet(m: Member, back: () => void, at = -1) {
               { disabled: !going && g.deployed.length >= DEPLOY_MAX },
             ),
             button('secondary', t('Trocar equipamento', 'Change equipment'), () => {
+              const i = focused();
               d.close();
-              openGear(m, () => openSheet(m, back));
+              openGear(m, () => openSheet(m, back, i)); // back on this button
             }),
-            ...(m.recruit ? [button('secondary', t('Dispensar', 'Dismiss'), fire)] : []),
+            ...(m.recruit ? [button('secondary', t('Dispensar', 'Dismiss'), fire, { disabled: noRoom })] : []),
           ),
+          ...(m.recruit && noRoom
+            ? [el('p', {}, t(`Dispensar: ${chestFull()}, venda peças antes.`, `Dismiss: ${chestFull()}, sell first.`))]
+            : []),
           ...(!going && g.deployed.length >= DEPLOY_MAX
             ? [
                 el(
@@ -585,17 +608,18 @@ export function openSheet(m: Member, back: () => void, at = -1) {
 // Equipment window (Nov 16, slice 3: 7 slots, compare, swap, chest): the slots on the left with what each holds, the
 // open one on the right: its piece with what it gives and Remove, then the chest's pieces of its kind, each with what it
 // would change on the sheet and Equip. Every action rebuilds the window on the same slot; Esc/✕ goes back to the Sheet
-export function openGear(m: Member, back: () => void, slot: Slot = 'main', at = -1) {
+export function openGear(m: Member, back: () => void, slot: Slot = 'main', at = '') {
   const name = unitFrom(m.cls, m.name).name;
   const chest = loadChest(),
-    mine = loadEquip()[m.id] ?? {};
+    mine = loadEquip()[m.id] ?? {},
+    full = chest.items.length >= CHEST_MAX;
   const put = (s: Slot, id: string | null) => {
     const r = equip(loadChest(), loadEquip(), m.id, s, id);
     if (!r) return void sfx('cancel');
     store.set(CHEST_KEY, JSON.stringify(r.chest));
     store.set(EQUIP_KEY, JSON.stringify(r.eq));
     sfx('confirm');
-    const i = buttonAt(d.overlay);
+    const i = focused();
     d.close();
     openGear(m, back, s, i);
   };
@@ -610,7 +634,9 @@ export function openGear(m: Member, back: () => void, slot: Slot = 'main', at = 
             null,
             button('secondary', t('Tirar', 'Remove'), () => put(s, null), {
               'aria-label': t(`Tirar ${itemName(it)}`, `Remove ${itemName(it)}`),
+              disabled: full,
             }),
+            full ? chestFull() : '',
           )
         : el('p', {}, t('Vazio.', 'Empty.')),
       el('h3', {}, t('No baú', 'In the chest')),

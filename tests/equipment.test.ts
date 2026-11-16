@@ -92,17 +92,27 @@ describe('equipment', () => {
     const wall = { off: 'veil_shield', head: 'iron_helm', body: 'chain_mail', legs: 'padded_trousers' };
     const capped = rowsOf('warrior', wall);
     expect(capped['Resistência física']).toBe(
-      '+60% (Guerreiro +10% · Escudo do Véu +30% · Elmo de ferro +10% · Cota de malha +20% · Calças acolchoadas +10% · no limite)',
+      '+60% (Guerreiro +10% · Escudo do Véu +30% · Elmo de ferro +10% · Cota de malha +20% · Calças acolchoadas +10% · no limite (bruto +80%; carregando, +30%))',
     );
+    // charging takes nothing off an element, so past its cap only the raw sum is said
+    const fire = rowsOf('mage', { main: 'ember_scepter', acc1: 'ember_ring', acc2: 'ember_ring' })[
+      'Resistência a fogo'
+    ];
+    expect(fire).toMatch(/^\+60% .* · no limite \(bruto \+\d+%\)\)$/);
     expect(capped['Resistência a sombra']).toBe('+40% (Guerreiro 0% · Escudo do Véu +40%)');
     expect(capped.Velocidade).toBe('7 (Guerreiro 8 · Escudo do Véu −1)');
     expect(rowsOf('mage', { off: 'worn_grimoire' }).Mana).toBe('20 (em breve) (Grimório gasto +20)');
   });
 
-  it('comparing reads the sheet as the rules do: past a cap only what is left changes', () => {
+  it('comparing reads the sheet as the rules do: past a cap only what is left changes, but charging it counts', () => {
     const wall = { off: 'veil_shield', head: 'iron_helm', body: 'chain_mail', legs: 'padded_trousers' };
-    expect(compare('warrior', wall, 'head', null)).toBe('−25 vida'); // 70% physical stays at the 60 cap
-    expect(compare('warrior', wall, 'head', 'hood')).toBe('−25 vida · +5 acerto · +5% esquiva');
+    // 80% physical becomes 70: both read 60, but a charging unit loses 50 from the raw sum, 30 then 20
+    expect(compare('warrior', wall, 'head', null)).toBe('−25 vida · −10% física carregando');
+    expect(compare('warrior', wall, 'head', 'hood')).toBe(
+      '−25 vida · +5 acerto · +5% esquiva · −10% física carregando',
+    );
+    // under the cap the charging change equals the plain one, so it is said once
+    expect(compare('warrior', { head: 'iron_helm' }, 'head', null)).toBe('−25 vida · −10% física');
     expect(compare('warrior', wall, 'head', 'iron_helm')).toBe('nada muda');
     expect(compare('mage', {}, 'off', 'worn_grimoire')).toBe('+20 mana (em breve) · +3 regeneração de mana (em breve)');
     expect(itemStats(ITEMS.ember_scepter)).toBe(
