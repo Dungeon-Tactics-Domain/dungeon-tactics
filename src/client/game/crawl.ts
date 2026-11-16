@@ -399,14 +399,16 @@ export function expeditionScreen(exp: Expedition) {
         : taken
           ? t('caminho não tomado', 'path not taken')
           : t('abre depois da anterior', 'opens after the one before');
-    if (n.chest) {
-      // the room it hangs off: the only way to it, so the choice is made a row before
-      const [pt, en] = roomGroup(map.find((m) => m.next.includes(i))!.seed, { depth: n.floor }).group.name;
+    if (n.chest)
       return button(
         open.includes(i) ? 'primary' : 'secondary',
         [
           `${t('Baú', 'Chest')}${state ? ` (${state})` : ''}`,
-          el('small', { class: 'continue-where' }, t(`sem batalha · depois de ${pt}`, `no battle · past ${en}`)),
+          el(
+            'small',
+            { class: 'continue-where' },
+            t('sem batalha · só pela sala que leva ao baú', 'no battle · only through the room that leads to it'),
+          ),
         ],
         () => {
           d.close();
@@ -419,13 +421,14 @@ export function expeditionScreen(exp: Expedition) {
         },
         { disabled: !open.includes(i) },
       );
-    }
     const { group: foes } = roomGroup(n.seed, { depth: n.floor, boss: n.boss });
+    // the one room of its row the floor's chest hangs off, marked on its own button: two rooms of a row often share a group
+    const toChest = n.next.some((c) => map[c].chest) ? t(' · leva ao baú', ' · leads to the chest') : '';
     return button(
       open.includes(i) ? 'primary' : 'secondary',
       [
         `${n.boss ? t('Chefe: ', 'Boss: ') : ''}${t(foes.name[0], foes.name[1])}${state ? ` (${state})` : ''}`,
-        el('small', { class: 'continue-where' }, foes.enemies.map(unitName).join(' · ')),
+        el('small', { class: 'continue-where' }, foes.enemies.map(unitName).join(' · ') + toChest),
       ],
       () => {
         location.search = `?room=${i}`;
