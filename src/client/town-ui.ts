@@ -71,7 +71,7 @@ export function openParty(back?: () => void) {
         class: 'party-card',
         role: 'button',
         tabindex: '0',
-        'aria-label': t(`Ficha de ${u.name}`, `${u.name}'s sheet`),
+        'aria-label': t(`Ficha de ${u.name}`, `${u.name}’s sheet`),
         onclick: open,
         onkeydown: (e: KeyboardEvent) => {
           // Space too, like a real button (the design system's Confirm)

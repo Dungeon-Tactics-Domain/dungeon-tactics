@@ -101,7 +101,7 @@ function credits() {
         el(
           'a',
           { href: '/CREDITS.txt', target: '_blank', rel: 'noopener' },
-          t('Lista completa, com a licença de cada arquivo', "Full list, with each file's license"),
+          t('Lista completa, com a licença de cada arquivo', 'Full list, with each file’s license'),
         ),
       ),
       button('primary', t('Voltar', 'Back'), () => {
@@ -176,7 +176,7 @@ function howToPlay() {
         ),
         t(
           'Mirando alguém, você trava no personagem (a mira segue ele) ou no chão.',
-          'Aiming at someone, you lock it on the character (the aim follows them) or on the tile.',
+          'Aiming at someone, you lock on the character (the aim follows them) or on the tile.',
         ),
         t(
           'O tiro é traçado na hora de sair, de onde quem lança estiver, e para na primeira cobertura ou unidade no caminho; a linha mostra até onde vai. Fogo amigo fere pela metade.',
