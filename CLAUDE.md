@@ -6,32 +6,8 @@ One developer (Fernando) works on it with AI agents. `AGENTS.md` points here. Ea
 
 ## Code map
 
-```
-src/shared/battle/  battle rules, no DOM or Three.js
-  grid.ts           tiles with height, terrain, water depth, ramps, corpses; parseGrid and withRamps build the maps
-  pathing.ts        movement (per-class jump, leaps, 2x2 movers), line of sight, range with height bonus, shot path
-  combat.ts         hit chance by facing, damage, push, wall and fall damage, counters, forecast
-  turn-queue.ts     FFT-style CT queue with charged actions
-  battle.ts         Battle: owns the state, limited undo (dice never roll back), validated save/load
-  ai.ts             greedy one-turn AI; simulate.ts plays AI against AI
-  units.ts, abilities.ts, equipment.ts, scenarios.ts   types and registries (UNIT_DEFS, ABILITIES, ITEMS, SCENARIOS)
-  half.ts           half tiles: every battle the client opens is split on load (halve), the FFT study included, plus the ?scenario=half test map; fft/ is a reference study, not the game
-src/shared/crawl/   dungeon crawl: generate.ts (seeded room from the tables), verify.ts (checks it on the halved map) and
-                    expedition.ts (floors of rooms from a seed, the life carried between rooms, the dt:crawl save)
-src/content/        game content as typed data: units, abilities, items, maps/ (one file per map), party (story members,
-                    recruit names), faces.json (dialogue face sheets), crawl/ (room tables, the town, the expedition)
-src/client/         browser: main.ts (Game: turn loop, wiring and boot), scene.ts (Three.js renderer and the scene's public API), hud.ts, town-ui.ts (party, tavern, shop),
-                    group.ts (party rules), talk.ts (dialogue box and faces), terrain.ts, trees.ts, water.ts, input in keyboard/gamepad/touch-input
-  game/             what opens around the battle: boot (URL to scenario), town (the walkable town), crawl (the town menu and
-                    gate, the expedition map and its rooms),
-                    title (new game, continue, quick battle, how to play, developer, credits), options, end screens
-  scene/            the parts BattleScene composes: board, marks (tile marks, cursor), units, camera, space (tile to world), timeline
-  dev/              localhost-only sandbox: battles staged from a scene spec, scripted through window.__sandbox (docs/sandbox.md)
-scripts/            battle-sim.ts (optional simulator), crawl-sheet.ts (crawl room screenshots), assets/ (texture and model generators)
-tests/              Vitest: rules and pure client functions
-docs/               game-design/README.md (index and what each lab touches), design spec, pillars, party and towns design, FFT/Tactics Ogre references, design system, assets index
-assets/             source packs (KayKit, sounds); not shipped
-```
+One line per file of `src/` (and the `scripts/`, `tests/`, `docs/` and `assets/` folders) in [MAPA.md](MAPA.md); read it before looking for where something lives.
+When you add, move or split a file, update its line in the same commit (`tests/map.test.ts` fails otherwise).
 
 ## Commands
 

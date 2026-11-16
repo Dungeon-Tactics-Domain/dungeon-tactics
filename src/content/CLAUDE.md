@@ -4,15 +4,7 @@ Applies together with the root `CLAUDE.md`. Decision of Nov 14 (Fernando, cleanu
 
 ## What lives here
 
-| File             | Content                                                                                                                                                                      | Type and registry (where the logic lives)                                                                                                   |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `units.ts`       | classes and enemies (`UNIT_LIST`)                                                                                                                                            | `UnitDef`, `UNIT_DEFS` in `src/shared/battle/units.ts`                                                                                      |
-| `abilities.ts`   | abilities (`ABILITY_LIST`) and the `A()` builder with the defaults                                                                                                           | `AbilityDef`, `ABILITIES` in `src/shared/battle/abilities.ts`                                                                               |
-| `items.ts`       | equipment (`ITEM_LIST`)                                                                                                                                                      | `ItemDef`, `ITEMS`, `bonusOf` in `src/shared/battle/equipment.ts`                                                                           |
-| `maps/<map>.ts`  | one map per file: terrain, heights, ramps, looks, spawns                                                                                                                     | `Scenario`, `MAPS`, `SCENARIOS` in `src/shared/battle/scenarios.ts`; `parseGrid`, `withRamps` in `grid.ts`                                  |
-| `party.ts`       | the 4 story members and the recruit names in order                                                                                                                           | `Member`, `Group` and the party rules in `src/client/group.ts`                                                                              |
-| `crawl/rooms.ts` | dungeon crawl: party, enemy groups by depth, the boss group, room themes and the expedition's floors and heals (`CRAWL_RUN`)                                                 | `RoomGroup`, `CrawlTheme`, `generateRoom` in `src/shared/crawl/generate.ts`; `expeditionMap`, `winRoom` in `src/shared/crawl/expedition.ts` |
-| `crawl/town.ts`  | the walkable town (`TOWN`, its name and 14x14 map), its places with their doors (`TOWN_PLACES`), the start, the Guild's spots for the party, the townsfolk and their rumours | `Scenario` in `src/shared/battle/scenarios.ts`; the rules in `src/client/town-map.ts`, the walking in `src/client/game/town.ts`             |
+Each file and where its type and registry live: [MAPA.md](../../MAPA.md), section `src/content`.
 
 ## Rules
 
