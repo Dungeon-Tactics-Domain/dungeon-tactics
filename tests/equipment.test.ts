@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDevScenario, type DevSetup, defaultSetup } from '../src/client/dev-roster.ts';
-import { compare, itemStats, sheetRows } from '../src/client/sheet-lines.ts';
+import { compareRows, itemStats, sheetRows } from '../src/client/sheet-lines.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { bonusOf, ITEMS, type Loadout, withGear } from '../src/shared/battle/equipment.ts';
@@ -146,20 +146,40 @@ describe('equipment', () => {
     expect(rows.Mana).toBeUndefined();
     expect(rows['Regeneração de vida']).toBeUndefined();
     expect(rowsOf('warrior', {}).Stamina).toBe('50');
+    // the Party screen's bar: full at the rule's cap, else against the best party class with nothing on, never past full
+    const bar = (cls: string, load: Loadout) => Object.fromEntries(sheetRows(cls, load).map(([k, , , s]) => [k, s]));
+    expect(bar('warrior', wall)['Resistência física']).toBe(1);
+    expect(bar('warrior', {})['Resistência física']).toBeCloseTo(10 / 60);
+    expect(bar('mage', {})['Resistência física']).toBe(0); // −10%
+    expect(bar('warrior', {}).Vida).toBe(1); // the sturdiest class
+    expect(bar('warrior', { head: 'iron_helm' }).Vida).toBe(1);
+    expect(bar('mage', {}).Vida).toBeCloseTo(120 / 210);
   });
 
   it('comparing reads the sheet as the rules do: past a cap only what is left changes, but charging it counts', () => {
     const wall = { off: 'veil_shield', head: 'iron_helm', body: 'chain_mail', legs: 'padded_trousers' };
+    // "label now → after ▲/▼" per row, to read the four columns in one string
+    const cmp = (...a: Parameters<typeof compareRows>) =>
+      compareRows(...a).map(([k, now, after, up]) => `${k} ${now} → ${after} ${up ? '▲' : '▼'}`);
     // 80% physical becomes 70: both read 60, but a charging unit loses 50 from the raw sum, 30 then 20
-    expect(compare('warrior', wall, 'head', null)).toBe('−25 vida · −10% física carregando');
-    expect(compare('warrior', wall, 'head', 'hood')).toBe(
-      '−25 vida · +5 acerto · +5% esquiva · −10% física carregando',
-    );
+    expect(cmp('warrior', wall, 'head', null)).toEqual([
+      'Vida 310 → 285 ▼',
+      'Resistência física carregando +30% → +20% ▼',
+    ]);
+    expect(cmp('warrior', wall, 'head', 'hood')).toEqual([
+      'Vida 310 → 285 ▼',
+      'Acerto 0 → 5 ▲',
+      'Esquiva 5% → 10% ▲',
+      'Resistência física carregando +30% → +20% ▼',
+    ]);
     // under the cap the charging change equals the plain one, so it is said once
-    expect(compare('warrior', { head: 'iron_helm' }, 'head', null)).toBe('−25 vida · −10% física');
-    expect(compare('warrior', wall, 'head', 'iron_helm')).toBe('nada muda');
-    expect(compare('mage', {}, 'off', 'worn_grimoire')).toBe('+20 mana · +3 regeneração de mana');
-    expect(compare('warrior', {}, 'acc1', 'sleepstone')).toBe('+25 vida · +10 regeneração de vida');
+    expect(cmp('warrior', { head: 'iron_helm' }, 'head', null)).toEqual([
+      'Vida 235 → 210 ▼',
+      'Resistência física +20% → +10% ▼',
+    ]);
+    expect(cmp('warrior', wall, 'head', 'iron_helm')).toEqual([]);
+    expect(cmp('mage', {}, 'off', 'worn_grimoire')).toEqual(['Mana 30 → 50 ▲', 'Regeneração de mana 8 → 11 ▲']);
+    expect(cmp('warrior', {}, 'acc1', 'sleepstone')).toEqual(['Vida 210 → 235 ▲', 'Regeneração de vida 0 → 10 ▲']);
     expect(itemStats(ITEMS.ember_scepter)).toBe('+40 poder mágico · +40% fogo · −20% gelo · +3 regeneração de mana');
   });
 

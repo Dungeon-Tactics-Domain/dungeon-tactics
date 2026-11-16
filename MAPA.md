@@ -59,10 +59,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
 - `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
-- `src/client/town-ui.ts` — the town's windows: the Party list, Tavern (recruits) and Shop.
-- `src/client/town-sheet.ts` — the unit sheet window: numbers, abilities, the 7 slots and the party actions.
-- `src/client/town-gear.ts` — the equipment window: the 7 slots, compare, swap and the chest.
-- `src/client/sheet-lines.ts` — the numbers a sheet and a piece show: one line per stat, with where each total comes from.
+- `src/client/town-ui.ts` — the town's windows: Tavern (recruits) and Shop; the saved party's load and save.
+- `src/client/town-party.ts` — the Party screen (FFT's formation and unit menus): the unit list and who goes to battle, the picked unit's Status, Abilities and Class pages.
+- `src/client/town-gear.ts` — the Party screen's Equipment page: the 7 slots, compare, swap and the chest.
+- `src/client/sheet-lines.ts` — the numbers a sheet and a piece show: one line per stat, with where each total comes from, its bar and what a piece would change.
 - `src/client/window-focus.ts` — the focus a window that rebuilds itself gives back after each action.
 - `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid; the fluid walk's circle, stick and target (dt:town-free).
 - `src/client/dev-menu.ts` — developer menu screen (map, cast, JSON import/export); rules in dev-roster.ts.
@@ -85,7 +85,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/motion.ts` — the Reduce motion option (dt:motion: System, Yes, No): `reducedMotion()` for the code and `data-motion` on <html> for the CSS.
 - `src/client/hit-weight.ts` — weight of a blow: its distances, the number's size and colour, the killing-blow lookahead and the death slow motion option (dt:death-slowmo).
 - `src/client/tally.ts` — damage and takedowns per unit from the played events and the heroes' cards (endHeroes), for the result board.
-- `src/client/group.ts` — party rules: recruit, dismiss, class change, who goes to battle (dt:party).
+- `src/client/group.ts` — party rules: recruit, dismiss, class change, who goes to battle and the list's order (dt:party).
 - `src/client/chest.ts` — gold, items and per-member equipment (dt:chest, dt:equip) with their parsers.
 - `src/client/saves.ts` — save slots: the dt:saves manifest, new game, load and delete, slot summaries.
 - `src/client/store.ts` — dt:* storage with a memory fallback, the key MIGRATIONS and the URL param reader.

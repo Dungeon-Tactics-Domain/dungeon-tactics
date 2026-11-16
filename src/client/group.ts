@@ -103,6 +103,12 @@ export function toggleDeploy(g: Group, id: string): Group | null {
     : null;
 }
 
+// the Party screen's list: who goes to battle first, in the deployment order, then who stays in town
+export const roster = (g: Group): Member[] => [
+  ...g.deployed.map((id) => g.members.find((m) => m.id === id)!),
+  ...g.members.filter((m) => !g.deployed.includes(m.id)),
+];
+
 // who goes to battle, in the deployment order, each with the whole kit of their class and their equipment
 export function heroesFor(g: Group, eq: Equip = {}): DevUnit[] {
   return g.deployed

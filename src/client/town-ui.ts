@@ -1,44 +1,20 @@
-// The town's windows (opened at its buildings, game/town.ts, and from its menu, game/crawl.ts townMenu): Party with each
-// member's sheet (class, equipment, who goes) and their Equipment, Tavern (recruits) and Shop. Rules in group.ts and chest.ts.
+// The town's windows (opened at its buildings, game/town.ts, and from its menu, game/crawl.ts townMenu): Tavern (recruits)
+// and Shop; the Party screen is town-party.ts. Rules in group.ts and chest.ts.
 
 import { CONSUMABLES } from '../content/items.ts';
-import { ITEMS, withGear } from '../shared/battle/equipment.ts';
+import { ITEMS } from '../shared/battle/equipment.ts';
 import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { defenceRows } from './battle-text.ts';
 import { buy, CHEST_KEY, CHEST_MAX, sell } from './chest.ts';
-import { unitFrom } from './dev-roster.ts';
 import { choice, dialog, priceRow } from './dialog.ts';
-import {
-  DEPLOY_MAX,
-  GROUP_KEY,
-  GROUP_MAX,
-  type Group,
-  JOBS,
-  type Member,
-  parseGroup,
-  RECRUIT_COST,
-  recruit,
-} from './group.ts';
+import { GROUP_KEY, GROUP_MAX, type Group, JOBS, parseGroup, RECRUIT_COST, recruit } from './group.ts';
 import { stillFace } from './hud-pieces.ts';
-import { abilityName, t, unitName } from './i18n.ts';
+import { t, unitName } from './i18n.ts';
 import { button, el } from './icons.ts';
-import { itemName, itemStats, KIND_NAME, loadChest, loadEquip, RARITY } from './sheet-lines.ts';
+import { itemName, itemStats, KIND_NAME, loadChest, RARITY } from './sheet-lines.ts';
 import { sfx } from './sound.ts';
 import { store } from './store.ts';
-import { openSheet } from './town-sheet.ts';
-
-// a sheet's numbers as the battle counts them: Move and Jump in half tiles (Nov 15, Fernando: "everything in half
-// tiles"); the party list shows them
-export const statsLine = (d: { hp: number; speed: number; move: number; jump?: number }) => {
-  const move = d.move * SUB,
-    jump = (d.jump ?? MAX_JUMP) * SUB;
-  return t(
-    `Vida ${d.hp} · Velocidade ${d.speed} · Movimento ${move} · Salto ${jump}`,
-    `HP ${d.hp} · Speed ${d.speed} · Move ${move} · Jump ${jump}`,
-  );
-};
 
 // How to play's Move and Jump sentence, from the sheets so it follows a change. A leap needs 2 cells (a whole tile)
 // to land level past a gap, so only Jump 4 or more clears one (Nov 15)
@@ -50,87 +26,10 @@ export function jumpHelp(): string {
   );
 }
 
-// Party screen (like the FFT formation): everyone in the party, who goes to the next battle (up to 4) and who stays in town,
-// with the painted face (portrait for a class without one), class and numbers; each row opens the sheet. Every member knows the whole kit of their class.
-// Nov 13, delivery 5 of the design (docs/game-design/towns-party-equipment.md): recruits and class change
+// the saved party (dt:party); the Party screen is town-party.ts
 export const loadGroup = () => parseGroup(store.json(GROUP_KEY));
 export const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
-
-export function openParty(back?: () => void) {
-  const g = loadGroup(),
-    eq = loadEquip();
-  const again = () => openParty(back);
-  const card = (m: Member) => {
-    const u = unitFrom(m.cls, m.name),
-      going = g.deployed.includes(m.id),
-      sheet = withGear(UNIT_DEFS[m.cls], eq[m.id]); // the numbers with the pieces on, as the battle counts them
-    const open = () => {
-      d.close();
-      openSheet(m, again);
-    };
-    return el(
-      'li',
-      {
-        class: 'party-card',
-        role: 'button',
-        tabindex: '0',
-        'aria-label': t(`Ficha de ${u.name}`, `${u.name}’s sheet`),
-        onclick: open,
-        onkeydown: (e: KeyboardEvent) => {
-          // Space too, like a real button (the design system's Confirm)
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            e.stopPropagation();
-            open();
-          }
-        },
-      },
-      stillFace(m.cls, 'neutral'),
-      el(
-        'div',
-        {},
-        el('strong', {}, u.name),
-        el(
-          'span',
-          { class: 'party-class' },
-          ` · ${unitName(m.cls)} · ${going ? t('vai à batalha', 'goes to battle') : t('fica na cidade', 'stays in town')}`,
-        ),
-        el('p', { class: 'party-stats' }, statsLine(sheet)),
-        // resistances and dodge (Nov 15); the sheet shows every attribute
-        el(
-          'p',
-          { class: 'party-stats' },
-          defenceRows(sheet)
-            .map(([k, v]) => `${k} ${v}`)
-            .join(' · '),
-        ),
-        el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · ')),
-      ),
-    );
-  };
-  const d = dialog(
-    'party',
-    t('Grupo', 'Party'),
-    [
-      el(
-        'p',
-        {},
-        t(
-          `${g.deployed.length} de ${DEPLOY_MAX} vão à batalha. Escolha alguém para trocar a classe ou quem vai.`,
-          `${g.deployed.length} of ${DEPLOY_MAX} go to battle. Pick someone to change class or who goes.`,
-        ),
-      ),
-      el(
-        'ul',
-        { class: 'party-list arrow-walk' }, // the arrows walk the rows (dialog.ts)
-        ...g.deployed.map((id) => g.members.find((m) => m.id === id)!).map(card),
-        ...g.members.filter((m) => !g.deployed.includes(m.id)).map(card),
-      ),
-    ],
-    { onBack: back },
-  );
-  d.overlay.querySelector<HTMLElement>('.party-card')?.focus();
-}
+export { openParty } from './town-party.ts';
 
 // Tavern (Nov 13, delivery 5 of the design): recruit one person of any class for gold, up to the party cap
 export function openBar(back: () => void) {

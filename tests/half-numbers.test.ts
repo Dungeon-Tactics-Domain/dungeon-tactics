@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { itemStats } from '../src/client/sheet-lines.ts';
-import { jumpHelp, statsLine } from '../src/client/town-ui.ts';
+import { itemStats, sheetRows } from '../src/client/sheet-lines.ts';
+import { jumpHelp } from '../src/client/town-ui.ts';
 import { ITEMS } from '../src/shared/battle/equipment.ts';
 import { SUB } from '../src/shared/battle/half.ts';
 import { MAX_JUMP } from '../src/shared/battle/pathing.ts';
@@ -8,9 +8,10 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 // Nov 15, Fernando: "everything in half tiles": every screen shows the Move and Jump the battle spends
 describe('screens show Move and Jump in half tiles', () => {
-  it('hero creation and the party list double the sheet', () => {
-    expect(statsLine({ hp: 30, speed: 7, move: 4, jump: 2 })).toBe('Vida 30 · Velocidade 7 · Movimento 8 · Salto 4');
-    expect(statsLine({ hp: 30, speed: 7, move: 3 })).toContain(`Salto ${MAX_JUMP * SUB}`);
+  it('the Party screen doubles the sheet', () => {
+    const rows = Object.fromEntries(sheetRows('rogue', {}).map(([k, v]) => [k, v]));
+    expect(rows.Movimento).toBe(String(UNIT_DEFS.rogue.move * SUB));
+    expect(rows.Salto).toBe(String((UNIT_DEFS.rogue.jump ?? MAX_JUMP) * SUB));
   });
 
   it('item stats double move and jump, and leave the rest', () => {

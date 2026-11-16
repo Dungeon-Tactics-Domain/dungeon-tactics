@@ -1,5 +1,6 @@
 // The numbers a unit sheet and a piece show: one line per stat, each total as the battle counts it and where it comes from.
 
+import { JOBS } from '../content/party.ts';
 import { COMBAT } from '../shared/battle/combat.ts';
 import {
   type ItemDef,
@@ -13,7 +14,15 @@ import {
 } from '../shared/battle/equipment.ts';
 import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
-import { dodgeOf, ELEMENTS, resistOf, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
+import {
+  DODGE_MAX,
+  dodgeOf,
+  ELEMENTS,
+  RESIST_RANGE,
+  resistOf,
+  UNIT_DEFS,
+  type UnitDef,
+} from '../shared/battle/units.ts';
 import { ELEMENT_NAME, signed } from './battle-text.ts';
 import { CHEST_KEY, EQUIP_KEY, parseChest, parseEquip } from './chest.ts';
 import { t, unitName } from './i18n.ts';
@@ -45,6 +54,7 @@ interface Line {
   label?: () => string; // the sheet row, when not the name with a capital
   unit?: '%';
   signed?: true; // a resistance: "−10%" and "+0%" on the sheet
+  top?: number; // the rule's cap, where the stat's bar is full
   of: (d: UnitDef) => number;
   // the same reading on a charging unit (physical and magic resistance): the drop comes off the raw sum before the cap,
   // so a resistance past the cap still counts there (combat.ts; whether that is right is Fernando's call)
@@ -58,12 +68,13 @@ const LINES: Line[] = [
   { name: () => t('poder físico', 'physical power'), of: (d) => d.physPower ?? 0, piece: (it) => it.physPower ?? 0 },
   { name: () => t('poder mágico', 'magic power'), of: (d) => d.magPower ?? 0, piece: (it) => it.magPower ?? 0 },
   { name: () => t('acerto', 'hit'), of: (d) => d.hit ?? 0, piece: (it) => it.hit ?? 0 },
-  { name: () => t('esquiva', 'dodge'), unit: '%', of: dodgeOf, piece: (it) => it.dodge ?? 0 },
+  { name: () => t('esquiva', 'dodge'), unit: '%', top: DODGE_MAX, of: dodgeOf, piece: (it) => it.dodge ?? 0 },
   {
     name: () => t('física', 'physical'),
     label: () => t('Resistência física', 'Physical resistance'),
     unit: '%',
     signed: true,
+    top: RESIST_RANGE[1],
     of: (d) => resistOf(d, 'phys'),
     charging: (d) => resistOf(d, 'phys', -COMBAT.CHARGING_PHYS),
     piece: (it) => it.resist?.phys ?? 0,
@@ -73,6 +84,7 @@ const LINES: Line[] = [
     label: () => t('Resistência mágica', 'Magic resistance'),
     unit: '%',
     signed: true,
+    top: RESIST_RANGE[1],
     of: (d) => resistOf(d, 'mag'),
     charging: (d) => resistOf(d, 'mag', -COMBAT.CHARGING_MAG),
     piece: (it) => it.resist?.mag ?? 0,
@@ -83,6 +95,7 @@ const LINES: Line[] = [
       label: () => t(`Resistência a ${ELEMENT_NAME[e]()}`, `${cap(ELEMENT_NAME[e]())} resistance`),
       unit: '%',
       signed: true,
+      top: RESIST_RANGE[1],
       more: true,
       of: (d) => resistOf(d, e),
       piece: (it) => it.resist?.[e] ?? 0,
@@ -119,6 +132,13 @@ const pieces = (l: Line, load: Loadout | undefined) =>
     return it && v ? [{ it, v }] : [];
   });
 const lineValue = (l: Line, def: UnitDef, load: Loadout | undefined) => l.of(withGear(def, load));
+const rowLabel = (l: Line) => l.label?.() ?? cap(l.name());
+// how full a stat's bar is (the Party screen, Nov 16): against the rule's cap, else against the best party class with
+// nothing on, so a piece can fill it; a negative resistance leaves it empty and the number says the rest
+const share = (l: Line, v: number) => {
+  const top = l.top ?? Math.max(...JOBS.map((j) => l.of(UNIT_DEFS[j])));
+  return Math.max(0, Math.min(1, v / (top || v || 1)));
+};
 
 // "+20 poder físico · +5 acerto": only what the item changes, in the sheet's wording
 export const itemStats = (it: ItemDef) =>
@@ -130,9 +150,12 @@ export const itemStats = (it: ItemDef) =>
 // from: ["Vida", "235", "Guerreiro 210 · Elmo de ferro +25"]. When a limit took part of it (dodge 50, resistances 60) it
 // says so with the raw sum, and for a resistance a charging unit loses, what is left then: the drop comes off the raw
 // sum, so past the cap the pieces still count there (the coordinator's review of Nov 16: "capped" alone misled)
-export function sheetRows(cls: string, load: Loadout | undefined): [label: string, total: string, from: string][] {
+export function sheetRows(
+  cls: string,
+  load: Loadout | undefined,
+): [label: string, total: string, from: string, share: number][] {
   const def = UNIT_DEFS[cls];
-  return LINES.flatMap((l): [string, string, string][] => {
+  return LINES.flatMap((l): [string, string, string, number][] => {
     const from = pieces(l, load),
       v = lineValue(l, def, load),
       own = l.of(def),
@@ -143,22 +166,30 @@ export function sheetRows(cls: string, load: Loadout | undefined): [label: strin
       const when = l.charging ? `; ${t('carregando', 'charging')}, ${total(l, l.charging(withGear(def, load)))}` : '';
       parts.push(`${t('no limite', 'capped')} (${t('bruto', 'raw')} ${total(l, raw)}${when})`);
     }
-    return [[l.label?.() ?? cap(l.name()), total(l, v), from.length ? parts.join(' · ') : '']];
+    return [[rowLabel(l), total(l, v), from.length ? parts.join(' · ') : '', share(l, v)]];
   });
 }
 
-// what equipping `id` in `slot` (null: taking it off) changes on the sheet, as the rules read it: past a cap the
-// change is what is left of it, and a resistance's change on a charging unit, read before the cap, comes apart when it
-// differs
-export function compare(cls: string, load: Loadout, slot: Slot, id: string | null): string {
+// what equipping `id` in `slot` (null: taking it off) changes on the sheet, as the rules read it, one row per number
+// that moves: its label, the total now, the total after and whether it rises (FFT's equip screen shows both totals).
+// Past a cap only what is left changes, and a resistance's change on a charging unit, read before the cap, gets its own
+// row when it differs
+export function compareRows(
+  cls: string,
+  load: Loadout,
+  slot: Slot,
+  id: string | null,
+): [label: string, now: string, after: string, up: boolean][] {
   const def = UNIT_DEFS[cls],
-    next: Loadout = { ...load, [slot]: id ?? undefined };
-  const parts = LINES.flatMap((l) => {
-    const d = lineValue(l, def, next) - lineValue(l, def, load);
-    const c = l.charging ? l.charging(withGear(def, next)) - l.charging(withGear(def, load)) : d;
-    return [...(d ? [stat(l, d)] : []), ...(c !== d ? [`${stat(l, c)} ${t('carregando', 'while charging')}`] : [])];
+    a = withGear(def, load),
+    b = withGear(def, { ...load, [slot]: id ?? undefined });
+  return LINES.flatMap((l) => {
+    const row = (of: (d: UnitDef) => number, note = ''): [string, string, string, boolean][] =>
+      of(a) === of(b) ? [] : [[rowLabel(l) + note, total(l, of(a)), total(l, of(b)), of(b) > of(a)]];
+    const d = l.of(b) - l.of(a);
+    const differs = l.charging && l.charging(b) - l.charging(a) !== d;
+    return [...row(l.of), ...(differs ? row(l.charging!, t(' carregando', ' while charging')) : [])];
   });
-  return parts.join(' · ') || t('nada muda', 'no change');
 }
 export const loadChest = () => parseChest(store.json(CHEST_KEY));
 export const loadEquip = () => parseEquip(store.json(EQUIP_KEY));
