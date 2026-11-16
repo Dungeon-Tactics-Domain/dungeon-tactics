@@ -3,6 +3,7 @@ import {
   canStand,
   dist,
   FACING,
+  facingTo,
   type Grid,
   inBounds,
   isDeep,
@@ -21,7 +22,6 @@ import {
   cellsOf,
   closest,
   footprint,
-  gap,
   inAbilityRange,
   inArea,
   MAX_JUMP,
@@ -196,9 +196,10 @@ export const isRanged = (abilityId: string) => ABILITIES[abilityId].range[1] > 1
 // Nov 15, Fernando: only a single-target strike counters for now; an area one (the Colossus' Shadow Wave) never does
 const answersSingle = (def: string) => !!basicOf(def) && ABILITIES[basicOf(def)].radius === 0;
 
-// Who gains a counter when `actor` strikes `u` with `abilityId` (Nov 13): a unit of the other side that can strike back the
-// same way (melee against melee, ranged against ranged) with a single-target basic attack; not the Beacon, and not from a
-// heal, a support ability or a charge (it lands later: the aim must not promise a counter the rule never owes)
+// Who gains a counter when `actor` strikes `u` with `abilityId` (Nov 13): a unit of the other side with a single-target basic
+// attack, whatever the strike's kind (Nov 15, Fernando: a ranged unit also answers the melee one that hit it); not the
+// Beacon, and not from a heal, a support ability or a charge (it lands later: the aim must not promise a counter the rule
+// never owes)
 export function canCounter(actor: UnitState, abilityId: string, u: UnitState): boolean {
   const a = ABILITIES[abilityId];
   return (
@@ -206,47 +207,48 @@ export function canCounter(actor: UnitState, abilityId: string, u: UnitState): b
     !(a.heal[1] > 0 || a.ally) &&
     u.team !== actor.team &&
     answersSingle(u.def) &&
-    UNIT_DEFS[u.def].speed > 0 &&
-    isRanged(basicOf(u.def)) === isRanged(abilityId)
+    UNIT_DEFS[u.def].speed > 0
   );
 }
 
 export interface PendingCounter {
   unit: string; // who strikes back
-  ranged: boolean;
-  at: Pos; // where it aims: the tile the attacker leaves (melee) or stops on (ranged)
-  preview: Preview; // the shot as it would land, from the counter's own rule (shot path, friendly fire)
+  preview: Preview; // the strike at the tile the attacker leaves, from the counter's own rule (shot path, friendly fire)
 }
 
-// Counter-attack (Nov 13, Fernando's request; half damage, his choice; Nov 15, Fernando: also when the attacker moves on its
-// next turn): each unit owed a counter by `actorId` (BattleState.engaged) strikes back once per move order, with its basic
-// attack at half. Melee only when the attacker ends the move out of its reach, hit before it leaves; ranged at the tile the
-// attacker stops on (Nov 15: before, the tile it left), so cover or a unit in the way catches the shot. Read by the rule, the
-// AI and the move preview alike
+// Counter-attack (Nov 13, Fernando's request; half damage, his choice; redefined on Nov 15 after he was struck by a unit he
+// had not attacked that turn): a unit `actorId` struck this turn (turn.engaged) strikes back once per move order that starts
+// in the reach of its basic attack and ends out of it, at half, hit before the attacker leaves, so cover or a unit in the way
+// catches the shot. The attacker turns to face it, so a counter never gets the side or back bonus. Read by the rule, the AI
+// and the move preview alike
 export function pendingCounters(grid: Grid, state: BattleState, actorId: string, to: Pos): PendingCounter[] {
   const actor = state.units.find((u) => u.id === actorId);
-  if (!actor) return [];
-  const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: to } : u)) };
+  if (!actor || state.turn.actor !== actorId) return [];
   const out: PendingCounter[] = [];
-  for (const e of state.engaged ?? []) {
-    const foe = e.by === actorId ? state.units.find((u) => u.id === e.unit) : undefined;
+  for (const id of state.turn.engaged ?? []) {
+    const foe = state.units.find((u) => u.id === id);
     if (!foe || !answersSingle(foe.def)) continue; // an area one owed by a save from before the single-target rule
-    if (!e.ranged && gap(footprint(foe), cellsOf(to, UNIT_DEFS[actor.def].size ?? 1)) <= 1) continue; // stays in reach
-    const at = e.ranged ? to : actor.pos;
-    // charged: the counter-attack pays no MP or stock
-    const preview = previewAbility(grid, e.ranged ? moved : state, foe.id, basicOf(foe.def), at, true);
-    if (preview.ok) out.push({ unit: foe.id, ranged: e.ranged, at, preview });
+    // the attacker at `pos`, facing the counter; charged: the counter-attack pays no MP or stock
+    const at = (pos: Pos) => {
+      const facing = actor.facing === undefined ? undefined : facingTo(pos, foe.pos);
+      const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos, facing } : u)) };
+      return previewAbility(grid, moved, foe.id, basicOf(foe.def), pos, true);
+    };
+    const preview = at(actor.pos);
+    if (preview.ok && !at(to).ok) out.push({ unit: foe.id, preview });
   }
   return out;
 }
 
-// Plays the melee counters before the attacker leaves (`ranged` false) or the ranged ones once it stands on `to` (true)
-export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos, ranged: boolean): BattleEvent[] {
+// Plays the counters a move to `to` draws, before the attacker leaves
+export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos): BattleEvent[] {
   const events: BattleEvent[] = [];
   for (const c of pendingCounters(grid, state, actorId, to)) {
     const foe = state.units.find((u) => u.id === c.unit); // an earlier counter may have killed it (friendly fire)
-    if (!foe || c.ranged !== ranged || !state.units.some((u) => u.id === actorId)) continue;
-    events.push(...resolveAbility(grid, state, c.unit, basicOf(foe.def), c.at, true, COMBAT.COUNTER));
+    const actor = state.units.find((u) => u.id === actorId);
+    if (!foe || !actor) continue;
+    if (actor.facing !== undefined) actor.facing = facingTo(actor.pos, foe.pos);
+    events.push(...resolveAbility(grid, state, c.unit, basicOf(foe.def), actor.pos, true, COMBAT.COUNTER));
   }
   return events;
 }

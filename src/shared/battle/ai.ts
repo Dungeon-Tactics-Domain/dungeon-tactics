@@ -224,18 +224,14 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
         }
       }
     }
-    const score =
-      attackBest +
-      positionScore(grid, moved, me, spot, !!attack, walk) -
-      (spot === actor.pos ? 0 : counterCost(grid, state, actor, spot));
+    const score = attackBest + positionScore(grid, moved, me, spot, !!attack, walk);
     if (score > best.score) best = { moveTo: spot === actor.pos ? null : spot, ability: attack, score };
   }
   return best;
 }
 
 // Life the counters a move to `to` would cost `me`, by the rule's own reading (pendingCounters, at half), and a death weighed
-// like the kill it would give: since Nov 15 the units it attacked on its last turn still strike back, so the first move of a
-// turn pays them too
+// like the kill it would give
 function counterCost(grid: Grid, state: BattleState, me: UnitState, to: Pos): number {
   let lost = 0;
   for (const c of pendingCounters(grid, state, me.id, to)) {
@@ -248,7 +244,7 @@ function counterCost(grid: Grid, state: BattleState, me: UnitState, to: Pos): nu
 
 // Retreat after acting: each still-reachable tile is worth its position (positionScore, as for an attacker) minus the expected damage
 // of the counter-attacks the step provokes (counterCost); it stays put if nothing is worth more than the current tile
-function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Map<string, Step>): Pos | null {
+export function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Map<string, Step>): Pos | null {
   const me = state.units.find((u) => u.id === unitId)!;
   const walk = walkMap(grid, state, me);
   // its own charge goes off from where it ends up (Nov 15): a step that loses the shot (range, sight, an ally in the way) costs it
@@ -276,12 +272,10 @@ function chooseRetreat(grid: Grid, state: BattleState, unitId: string, reach: Ma
 export function playAiTurn(battle: Battle): BattleEvent[] {
   const plan = chooseTurn(battle.grid, battle.state, battle.actor.id);
   const events: BattleEvent[] = [];
-  // since Nov 15 the first move may draw a counter owed from its last turn, and die of it
-  const alive = () => battle.state.units.some((u) => u.id === battle.state.turn.actor);
   if (plan.moveTo) events.push(...battle.move(plan.moveTo));
-  if (plan.ability && alive()) events.push(...battle.act(plan.ability.id, plan.ability.target));
+  if (plan.ability) events.push(...battle.act(plan.ability.id, plan.ability.target));
   // with movement left after acting (Nov 13, movement in parts), it retreats if the new tile is worth more than the counter-attack
-  if (!battle.over && plan.ability && alive()) {
+  if (!battle.over && plan.ability) {
     const to = chooseRetreat(battle.grid, battle.state, battle.actor.id, battle.reach());
     if (to) events.push(...battle.move(to));
   }

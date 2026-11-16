@@ -2,7 +2,7 @@
 // unit under inspection. The scene and the HUD only draw what `highlights` returns.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { type Preview, previewAbility } from '../shared/battle/combat.ts';
+import { type Preview, pendingCounters, previewAbility } from '../shared/battle/combat.ts';
 import { FACING, type Grid, inBounds, posKey, samePos } from '../shared/battle/grid.ts';
 import {
   aimEnds,
@@ -30,7 +30,7 @@ export interface Ui {
   inspect: string | null; // unit tapped to see HP and threat
   invalid: boolean; // the last tap landed on a tile that doesn't work: the card warns instead of staying silent
 }
-export type TileKind = 'actor' | 'move' | 'range' | 'blocked' | 'threat' | 'area' | 'target' | 'nogo';
+export type TileKind = 'actor' | 'move' | 'range' | 'blocked' | 'threat' | 'area' | 'target' | 'nogo' | 'counter';
 export interface Highlights {
   tiles: { pos: Pos; kind: TileKind }[];
   path: Pos[] | null;
@@ -143,7 +143,17 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   if (reach) {
     // every cell the unit's square can cover: a 2x2 token stops by its corner cell, and marking only the corners showed the
     // area half a tile off (Nov 14, Fernando on stage 0: "it needs a preview of the tiles the units will occupy in 2x2")
-    for (const s of reach.values()) for (const c of cellsOf(s.pos, size)) mark(c, 'move');
+    // after a strike, a stop out of the reach of a unit struck this turn draws its counter (Nov 15, Fernando): red frame; a
+    // cell a counter-free stop also covers stays blue
+    const safe = new Set<string>();
+    for (const s of reach.values()) {
+      const red = !!b.state.turn.engaged && pendingCounters(b.grid, b.state, b.actor.id, s.pos).length > 0;
+      for (const c of cellsOf(s.pos, size))
+        if (!red) {
+          safe.add(posKey(c));
+          mark(c, 'move');
+        } else if (!safe.has(posKey(c))) mark(c, 'counter');
+    }
     if (ui.pending) path = pathTo(reach, ui.pending);
   } else if (ui.mode.k === 'ability') {
     const a = ABILITIES[ui.mode.id];

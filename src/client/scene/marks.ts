@@ -26,6 +26,7 @@ const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?:
   area: ['#ffb020', 1, 'solid'],
   target: ['#fff2a0', 1, 'solid'],
   nogo: ['#ff4040', 1, 'cross'], // the unit's square does not fit where the cursor is (Move)
+  counter: ['#ff3b3b', 1, 'frame'], // a stop out of the reach of a unit struck this turn: it strikes back (Move)
   path: ['#1e6fff', 0.95],
 };
 const markTextures = new Map<MarkPattern, THREE.CanvasTexture>();

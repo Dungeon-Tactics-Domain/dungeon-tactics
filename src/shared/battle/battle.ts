@@ -3,7 +3,6 @@ import {
   canCounter,
   checkOutcome,
   counters,
-  isRanged,
   type Preview,
   previewAbility,
   resolveAbility,
@@ -24,7 +23,7 @@ import {
 import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
-import type { BattleEvent, BattleState, Charge, Engaged, Lock, Pos, UnitState } from './types.ts';
+import type { BattleEvent, BattleState, Charge, Lock, Pos, UnitState } from './types.ts';
 import { HALF, UNIT_DEFS } from './units.ts';
 
 // Undo per battle (spec: initial value 3, to be measured). It only counts within the current turn: after the turn ends the
@@ -98,7 +97,7 @@ export class Battle {
     this.remember(false);
     const from = this.actor.pos;
     const id = this.actor.id;
-    const hit = counters(this.grid, this.state, id, to, false); // melee: before it leaves
+    const hit = counters(this.grid, this.state, id, to); // before it leaves
     // took a counter-attack: this move cannot be undone (Nov 13, Fernando's request: "you can only not undo the move if the
     // character takes damage or falls into a trap")
     if (hit.length) this.history = [];
@@ -110,11 +109,7 @@ export class Battle {
     this.actor.pos = to;
     this.state.turn.moved = true;
     // the event carries the starting tile in front (Nov 13): without it the animation began at the 1st step and the model "teleported"
-    const walk: BattleEvent = { k: 'move', unit: id, path: [from, ...path] };
-    const shot = counters(this.grid, this.state, id, to, true); // ranged: where it stops (Nov 15)
-    if (shot.length) this.history = [];
-    this.state.outcome = checkOutcome(this.state);
-    return [...hit, walk, ...shot];
+    return [...hit, { k: 'move', unit: id, path: [from, ...path] }];
   }
 
   // `lock`: where a charge stays aimed, picked by the player after the aim (Nov 15); without it, the ability's default
@@ -140,18 +135,14 @@ export class Battle {
       events = [{ k: 'charge', unit: this.actor.id, ability: abilityId, target }];
     } else {
       events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
-      // whoever took the hit and can retaliate the same way keeps watch: on every move of the actor this turn and the next,
-      // it counter-attacks (counters); striking it again renews the window
+      // whoever took the hit and can retaliate keeps watch for the rest of this turn: if the actor walks out of its reach,
+      // it counter-attacks (counters)
+      const owed = new Set(this.state.turn.engaged);
       for (const e of events) {
-        if (e.k !== 'hit' && e.k !== 'miss') continue;
-        const foe = this.state.units.find((u) => u.id === e.unit);
-        if (!foe || !canCounter(this.actor, abilityId, foe)) continue;
-        const owed = { unit: foe.id, by: this.actor.id, ranged: isRanged(abilityId), turns: 2 };
-        this.state.engaged = [
-          ...(this.state.engaged ?? []).filter((x) => x.unit !== foe.id || x.by !== this.actor.id),
-          owed,
-        ];
+        const foe = (e.k === 'hit' || e.k === 'miss') && this.state.units.find((u) => u.id === e.unit);
+        if (foe && canCounter(this.actor, abilityId, foe)) owed.add(foe.id);
       }
+      if (owed.size) this.state.turn.engaged = [...owed];
     }
     this.state.turn.usedAbility = abilityId;
     return events;
@@ -328,38 +319,28 @@ export function parseBattleState(raw: unknown): BattleState | null {
     });
   }
   if (t.spent !== undefined && (!isInt(t.spent) || t.spent < 0 || t.spent > 99)) return null;
-  // counters owed: a save from before Nov 15 kept them in the turn, owed by its actor for that turn only
-  const engaged: Engaged[] = [];
-  const owed = (list: unknown, old: boolean) => {
+  // counters owed this turn: unit ids in the turn. Older saves kept them as objects in the turn (Nov 13) or, for a while on
+  // Nov 15, in the state with the attacker and a 2-turn window, of which only the actor's strikes of this turn still count
+  const engaged: string[] = [];
+  const owed = (list: unknown, keep: (e: unknown) => boolean) => {
     if (list === undefined) return true;
     if (!Array.isArray(list) || list.length > MAX_UNITS * MAX_UNITS) return false;
     for (const e of list) {
-      const by = old ? actor.id : isObj(e) && e.by;
-      const turns = old ? 1 : isObj(e) && e.turns;
-      if (
-        !isObj(e) ||
-        typeof e.unit !== 'string' ||
-        typeof by !== 'string' ||
-        e.unit === by ||
-        typeof e.ranged !== 'boolean' ||
-        (turns !== 1 && turns !== 2) ||
-        !units.some((u) => u.id === e.unit) ||
-        !units.some((u) => u.id === by)
-      )
-        return false;
-      // an edited save: a repeated pair would counter twice, and the rule never owes one on its own side
-      const team = (id: string) => units.find((u) => u.id === id)!.team;
-      if (team(e.unit) === team(by) || engaged.some((x) => x.unit === e.unit && x.by === by)) continue;
-      engaged.push({ unit: e.unit, by, ranged: e.ranged, turns });
+      const u = units.find((x) => x.id === (isObj(e) ? e.unit : e));
+      if (!u) return false;
+      // an edited save: a repeated unit would counter twice, and the rule never owes one on the actor's own side
+      if (keep(e) && u.team !== actor.team && !engaged.includes(u.id)) engaged.push(u.id);
     }
     return true;
   };
-  if (!owed(t.engaged, true) || !owed(raw.engaged, false)) return null;
+  const thisTurn = (e: unknown) => isObj(e) && e.by === actor.id && e.turns !== 1;
+  if (!owed(t.engaged, () => true) || !owed(raw.engaged, thisTurn)) return null;
   const turn = {
     actor: actor.id,
     moved: t.moved,
     usedAbility,
     ...(t.spent !== undefined && { spent: t.spent as number }),
+    ...(engaged.length > 0 && { engaged }),
   };
   return {
     scenario: raw.scenario,
@@ -367,7 +348,6 @@ export function parseBattleState(raw: unknown): BattleState | null {
     rng: raw.rng,
     turn,
     charges,
-    ...(engaged.length > 0 && { engaged }),
     outcome: raw.outcome,
     turnsPlayed: raw.turnsPlayed,
   };

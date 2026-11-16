@@ -76,6 +76,15 @@ export function optionsMenu(o: OptionsContext) {
             el('i', { class: 'sw nogo' }),
             t('Vermelho, xis: a unidade não cabe ali', 'Red, cross: the unit does not fit there'),
           ),
+          el(
+            'li',
+            {},
+            el('i', { class: 'sw counter' }),
+            t(
+              'Vermelho, moldura lisa: ali você sai do alcance de quem golpeou neste turno, e ele contra-ataca',
+              'Red, plain frame: there you leave the reach of a unit you struck this turn, and it strikes back',
+            ),
+          ),
         ),
         choice(
           t('Velocidade do texto das conversas', 'Dialogue text speed'),

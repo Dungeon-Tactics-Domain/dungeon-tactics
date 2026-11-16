@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { chooseTurn, GUARD_RADIUS } from '../src/shared/battle/ai.ts';
+import { chooseRetreat, chooseTurn, GUARD_RADIUS } from '../src/shared/battle/ai.ts';
 import { pendingCounters, previewAbility } from '../src/shared/battle/combat.ts';
 import { dist } from '../src/shared/battle/grid.ts';
+import { reachable } from '../src/shared/battle/pathing.ts';
 import type { BattleState, Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
@@ -58,15 +59,26 @@ describe('AI and charges (Nov 15)', () => {
     expect(lands(state, plan.moveTo ?? start)).toBe(false);
   });
 
-  // the same rule for a counter owed since its last turn (Nov 15): the move it would make is priced like the rule plays it
-  it('a unit a ranged counter would kill does not walk into its line', () => {
-    const shooter = { ...start, def: 'skeleton_archer', hp: 3 }; // a counter would kill it
-    const state = stateOf([shooter, archer]);
-    const struck = (s: BattleState, to: Pos | null) =>
-      !!to && pendingCounters(grid, s, 'e', to).some((c) => c.preview.targets.some((t) => t.unit === 'e'));
-    const owed = { ...state, engaged: [{ unit: 'h', by: 'e', ranged: true, turns: 1 }] };
-    expect(struck(owed, chooseTurn(grid, state, 'e').moveTo)).toBe(true); // not owed: it walks into the line
-    expect(struck(owed, chooseTurn(grid, owed, 'e').moveTo)).toBe(false);
+  // a counter is drawn by walking out of the reach of a unit struck this turn (Nov 15): the retreat prices it like the rule
+  it('after striking, a unit a counter would kill does not walk out of its reach', () => {
+    // a step up toward the Beacon, out of the soldier's reach: worth the walk for a unit owed nothing
+    const grid = gridOf(Array(5).fill('..........'), [
+      '0000000000',
+      '0000000000',
+      '0000000000',
+      '0000000100',
+      '0000000000',
+    ]);
+    const state = stateOf([
+      { id: 'e', def: 'skeleton_archer', team: 'enemy', x: 6, y: 3, hp: 3 },
+      { id: 'h', def: 'soldier', team: 'hero', x: 5, y: 3 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 9, y: 3 },
+    ]);
+    state.turn.usedAbility = 'dagger'; // it stabbed the soldier: walking out of its reach draws a counter that kills it
+    const struck = { ...state, turn: { ...state.turn, engaged: ['h'] } };
+    const counter = (to: Pos | null) => !!to && pendingCounters(grid, struck, 'e', to).length > 0;
+    expect(counter(chooseRetreat(grid, state, 'e', reachable(grid, state, 'e')))).toBe(true); // owed nothing: it walks off
+    expect(counter(chooseRetreat(grid, struck, 'e', reachable(grid, struck, 'e')))).toBe(false);
   });
 });
 

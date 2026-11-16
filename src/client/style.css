@@ -36,6 +36,7 @@
   --mark-blocked: #b07ae0;
   --mark-threat: #ff2d55;
   --mark-nogo: #ff4040;
+  --mark-counter: #ff3b3b;
   /* HUD panels: blue gradient (top --paper-hi, foot --paper-lo) with a light frame; contrast in the design system */
   --paper: #21407c;
   --paper-lo: #0f1d40;
@@ -608,6 +609,10 @@ button[hidden],
   background:
     linear-gradient(45deg, transparent 40%, var(--paper) 40% 60%, transparent 60%),
     linear-gradient(-45deg, transparent 40%, var(--paper) 40% 60%, transparent 60%), var(--mark-nogo);
+}
+.sw.counter {
+  /* the map mark is a plain red frame (scene/marks.ts counter) */
+  border: 3px solid var(--mark-counter);
 }
 .choice {
   margin: 0 0 10px;

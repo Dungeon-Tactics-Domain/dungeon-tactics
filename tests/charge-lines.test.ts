@@ -3,14 +3,17 @@ import {
   chargeFrom,
   chargeFromText,
   chargeLines,
+  counterDamage,
   counterFromText,
   counterNote,
   countersFrom,
   countersOwed,
 } from '../src/client/charge-lines.ts';
 import { needsLock } from '../src/client/command.ts';
-import { confirm, freshUi } from '../src/client/interaction.ts';
+import { confirm, freshUi, highlights } from '../src/client/interaction.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { samePos } from '../src/shared/battle/grid.ts';
+import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 // Charge lines and the lock step (Nov 15, Fernando): every charge keeps a line on screen, and while the charging unit picks
@@ -110,15 +113,45 @@ describe('counter indicator (Nov 15)', () => {
     expect(countersOwed(b, 'aimed_shot', p)).toEqual({ lines: [], melee: [] });
     expect(counterNote(b, 'aimed_shot', p)).toBe('');
     b.act('aimed_shot', { x: 4, y: 1 });
-    expect(b.state.engaged).toBeUndefined();
+    expect(b.state.turn.engaged).toBeUndefined();
   });
 
-  it('walking: the destination in the open is struck, behind the wall the shot stops', () => {
-    const b = duel();
-    b.act('shot', { x: 4, y: 1 });
-    expect(countersFrom(b, { x: 0, y: 0 }).lines[0]).toMatchObject({ stop: null, hits: [{ unit: 'a' }] });
-    expect(countersFrom(b, { x: 0, y: 3 }).lines[0]).toMatchObject({ hits: [] });
-    expect(countersFrom(b, { x: 0, y: 3 }).lines[0].stop).not.toBeNull();
-    expect(counterFromText(b, { x: 0, y: 0 })).toContain('contra-ataca');
+  it('aiming: a struck unit that cannot reach the actor where it stands owes nothing', () => {
+    // the archer shoots a soldier 4 tiles off: walking can never leave a reach it is not in
+    const b = new Battle(
+      flat(8, 4),
+      stateOf([
+        { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
+        { id: 's', def: 'soldier', team: 'enemy', x: 4, y: 1 },
+        { id: 'f', def: 'beacon', team: 'hero', x: 7, y: 3 },
+      ]),
+    );
+    expect(countersOwed(b, 'shot', b.preview('shot', { x: 4, y: 1 }))).toEqual({ lines: [], melee: [] });
+  });
+
+  // after the strike, the stops out of the struck unit's reach (Nov 15, Fernando): red frame, sword and the damage
+  it('walking: the stops out of reach turn red and carry the counter and its damage', () => {
+    const b = new Battle(
+      flat(6, 4),
+      stateOf([
+        { id: 'w', def: 'warrior', team: 'hero', x: 1, y: 1 },
+        { id: 's', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+        { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 3 },
+      ]),
+    );
+    const kinds = () => {
+      const hl = highlights(b, { ...freshUi(b), mode: { k: 'move' } });
+      return (p: Pos) => hl.tiles.find((m) => samePos(m.pos, p))?.kind;
+    };
+    expect(kinds()({ x: 0, y: 1 })).toBe('move'); // nothing struck yet
+    b.act('strike', { x: 2, y: 1 });
+    const kind = kinds();
+    expect([kind({ x: 0, y: 1 }), kind({ x: 2, y: 2 })]).toEqual(['counter', 'move']); // out of its reach, still beside it
+    expect(countersFrom(b, { x: 0, y: 1 }).melee).toEqual([
+      { from: { pos: { x: 2, y: 1 }, size: 1 }, to: { pos: { x: 1, y: 1 }, size: 1 } },
+    ]);
+    expect(counterDamage(b, { x: 0, y: 1 })).toEqual([5, 8]); // the Strike's 10 to 16, at half
+    expect(counterDamage(b, { x: 2, y: 2 })).toBeNull();
+    expect(counterFromText(b, { x: 0, y: 1 })).toContain('contra-ataca');
   });
 });

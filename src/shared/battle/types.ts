@@ -26,16 +26,9 @@ export interface TurnState {
   // Movement in parts (Nov 13, Fernando's request: "walk, attack and then walk again with the remaining movement"): points
   // already spent in the turn (absent = 0, the old save stays valid)
   spent?: number;
-}
-
-// A counter owed (Nov 15, Fernando: "the counter also fires when whoever attacked it moves within its range"): `unit` strikes
-// back at `by`, which attacked it, on every move order of `by` while `turns` lasts (its attack turn and its next one, counted
-// down when a turn of `by` ends); melee against melee, ranged against ranged (combat.ts counters)
-export interface Engaged {
-  unit: string;
-  by: string;
-  ranged: boolean;
-  turns: number;
+  // the units the actor struck this turn: each strikes back once if the actor walks out of its reach (combat.ts counters;
+  // Nov 15, Fernando: only in the turn of the strike). Absent = none
+  engaged?: string[];
 }
 
 export type Outcome = 'ongoing' | 'victory' | 'defeat';
@@ -59,7 +52,6 @@ export interface BattleState {
   rng: number; // RNG state; does NOT come back on undo
   turn: TurnState;
   charges: Charge[]; // in declaration order
-  engaged?: Engaged[]; // counters owed; absent = none
   outcome: Outcome;
   turnsPlayed: number;
 }

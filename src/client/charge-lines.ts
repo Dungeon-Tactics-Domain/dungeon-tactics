@@ -6,6 +6,7 @@ import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import {
   basicOf,
+  COMBAT,
   canCounter,
   isRanged,
   type Preview,
@@ -66,32 +67,39 @@ export interface Counters {
   melee: { from: Square; to: Square }[];
 }
 
+// A counter from `u` at the actor where it stands now: a ranged basic attack as its shot's line, a melee one as the mark
+function counterOf(b: Battle, out: Counters, u: UnitState, p: Preview) {
+  const me = b.actor;
+  if (isRanged(basicOf(u.def))) out.lines.push(lineOf(b.grid, b.state, u.id, p, me.pos, square(me)));
+  else out.melee.push({ from: square(u), to: square(me) });
+}
+
 // Choosing where to walk: the counters that destination would draw, from the rule's own reading (pendingCounters)
 export function countersFrom(b: Battle, at: Pos): Counters {
-  const me = b.actor;
-  const moved = { ...b.state, units: b.state.units.map((u) => (u.id === me.id ? { ...u, pos: at } : u)) };
   const out: Counters = { lines: [], melee: [] };
-  for (const c of pendingCounters(b.grid, b.state, me.id, at)) {
-    const from = square(b.state.units.find((u) => u.id === c.unit)!);
-    if (c.ranged) out.lines.push(lineOf(b.grid, moved, c.unit, c.preview, at, { pos: at, size: square(me).size }));
-    else out.melee.push({ from, to: square(me) });
-  }
+  for (const c of pendingCounters(b.grid, b.state, b.actor.id, at))
+    counterOf(b, out, b.state.units.find((u) => u.id === c.unit)!, c.preview);
   return out;
 }
 
-// Aiming: who would be owed a counter by this strike, and how it would come back at the actor where it stands now
+// What the counters a destination draws would take from the actor, at half like the rule (null: none there)
+export function counterDamage(b: Battle, at: Pos): [number, number] | null {
+  const pending = pendingCounters(b.grid, b.state, b.actor.id, at);
+  if (!pending.length) return null;
+  const half = (d: number) => (d > 0 ? Math.max(1, Math.floor(d * COMBAT.COUNTER)) : 0);
+  const mine = pending.flatMap((c) => c.preview.targets.filter((x) => x.unit === b.actor.id));
+  return [mine.reduce((s, x) => s + half(x.dmgMin), 0), mine.reduce((s, x) => s + half(x.dmgMax), 0)];
+}
+
+// Aiming: who would be owed a counter by this strike: whoever could strike the actor where it stands now (walking out of
+// its reach this turn draws it)
 export function countersOwed(b: Battle, ability: string, p: Preview): Counters {
-  const me = b.actor;
   const out: Counters = { lines: [], melee: [] };
   for (const t of p.targets) {
     const u = b.state.units.find((x) => x.id === t.unit)!;
-    if (!canCounter(me, ability, u)) continue;
-    if (!isRanged(basicOf(u.def))) {
-      out.melee.push({ from: square(u), to: square(me) });
-      continue;
-    }
-    const back = previewAbility(b.grid, b.state, u.id, basicOf(u.def), me.pos, true);
-    if (back.ok) out.lines.push(lineOf(b.grid, b.state, u.id, back, me.pos, square(me)));
+    if (!canCounter(b.actor, ability, u)) continue;
+    const back = previewAbility(b.grid, b.state, u.id, basicOf(u.def), b.actor.pos, true);
+    if (back.ok) counterOf(b, out, u, back);
   }
   return out;
 }
@@ -105,19 +113,19 @@ export function counterFromText(b: Battle, at: Pos): string {
   const names = whose(b, countersFrom(b, at));
   return names.length
     ? t(
-        ` Ao andar para cá, ${names.join(', ')} contra-ataca (metade do dano).`,
-        ` Walking here draws a counter from ${names.join(', ')} (half damage).`,
+        ` Aqui você sai do alcance de ${names.join(', ')}, que contra-ataca (metade do dano).`,
+        ` Here you leave the reach of ${names.join(', ')}, which strikes back (half damage).`,
       )
     : '';
 }
 
-// The "Execute?" note about the counters a strike earns: they come on the actor's moves this turn and the next
+// The "Execute?" note about the counters a strike earns: only if the actor walks out of their reach this turn
 export function counterNote(b: Battle, ability: string, p: Preview): string {
   const names = whose(b, countersOwed(b, ability, p));
   return names.length
     ? t(
-        `${names.join(', ')} contra-ataca se você andar, neste turno e no próximo (metade do dano).`,
-        `${names.join(', ')} strikes back if you walk, this turn or the next (half damage).`,
+        `${names.join(', ')} contra-ataca se você sair do alcance dele neste turno (metade do dano).`,
+        `${names.join(', ')} strikes back if you leave its reach this turn (half damage).`,
       )
     : '';
 }
