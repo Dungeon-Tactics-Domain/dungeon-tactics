@@ -1,15 +1,6 @@
 import { ABILITIES, defaultLock } from './abilities.ts';
-import {
-  canCounter,
-  checkOutcome,
-  counters,
-  type Preview,
-  pay,
-  pendingCounters,
-  previewAbility,
-  resolveAbility,
-  spikeAtTurnEnd,
-} from './combat.ts';
+import { checkOutcome, counters, type Preview, pay, previewAbility, resolveAbility, spikeAtTurnEnd } from './combat.ts';
+import { canCounter, pendingCounters } from './counter.ts';
 import {
   canStand,
   FACING,

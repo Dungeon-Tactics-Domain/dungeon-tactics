@@ -6,7 +6,7 @@ import { store } from '../src/client/store.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { COMBAT, checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
+import { COMBAT, checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import {
   canStand,
   dist,
@@ -20,6 +20,7 @@ import {
 } from '../src/shared/battle/grid.ts';
 import { halve, registerHalf } from '../src/shared/battle/half.ts';
 import { cellsOf, reachable, restsOn, squareMoves } from '../src/shared/battle/pathing.ts';
+import { simulatePush } from '../src/shared/battle/push.ts';
 import { initialState, MAPS, SCENARIOS, type Scenario } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import type { BattleState, Pos, UnitState } from '../src/shared/battle/types.ts';

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn } from '../src/shared/battle/ai.ts';
-import { hitChance, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
+import { hitChance, previewAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
+import { simulatePush } from '../src/shared/battle/push.ts';
 import { clearShot, flat, stateOf } from './battle-helpers.ts';
 
 // Shallow and deep water (Fernando's decision of Nov 12, "like FFT", BMG 6.5): shallow costs 2 movement, 2h or more does not

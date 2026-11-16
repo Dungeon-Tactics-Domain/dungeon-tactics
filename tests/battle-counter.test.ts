@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Battle, parseBattleState } from '../src/shared/battle/battle.ts';
-import { pendingCounters } from '../src/shared/battle/combat.ts';
+import { pendingCounters } from '../src/shared/battle/counter.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';

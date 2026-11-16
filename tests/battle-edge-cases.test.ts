@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { COMBAT, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
+import { COMBAT, resolveAbility } from '../src/shared/battle/combat.ts';
+import { simulatePush } from '../src/shared/battle/push.ts';
 import { nextRng, rollInt } from '../src/shared/battle/rng.ts';
 import { startNextTurn } from '../src/shared/battle/turn-queue.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';

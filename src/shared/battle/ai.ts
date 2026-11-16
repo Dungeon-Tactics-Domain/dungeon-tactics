@@ -1,8 +1,10 @@
 import { ABILITIES, type AbilityDef, defaultLock } from './abilities.ts';
 import type { Battle } from './battle.ts';
-import { COMBAT, canPay, damageRange, pendingCounters, previewAbility, regen, simulatePush } from './combat.ts';
+import { COMBAT, canPay, damageRange, previewAbility, regen } from './combat.ts';
+import { pendingCounters } from './counter.ts';
 import { canStand, dist, facingTo, type Grid, neighbors, posKey, stepCost, subOf, TERRAIN, tileAt } from './grid.ts';
 import { cellsOf, footprint, jumpOf, leaps, reachable, type Step, squareH, squareMoves } from './pathing.ts';
+import { simulatePush } from './push.ts';
 import { chargeAim, TURN_THRESHOLD } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { isObjective, UNIT_DEFS } from './units.ts';

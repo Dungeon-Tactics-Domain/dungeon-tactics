@@ -2,7 +2,8 @@
 // Pure for the test; the strips in hud-pieces.ts and the "Execute?" window draw them.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { type Preview, simulatePush } from '../shared/battle/combat.ts';
+import type { Preview } from '../shared/battle/combat.ts';
+import { simulatePush } from '../shared/battle/push.ts';
 import type { UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { abilityDetail, range } from './battle-text.ts';

@@ -2,7 +2,8 @@
 // unit under inspection. The scene and the HUD only draw what `highlights` returns.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { type Preview, pendingCounters, previewAbility } from '../shared/battle/combat.ts';
+import { type Preview, previewAbility } from '../shared/battle/combat.ts';
+import { pendingCounters } from '../shared/battle/counter.ts';
 import { FACING, type Grid, inBounds, posKey, samePos } from '../shared/battle/grid.ts';
 import {
   aimEnds,

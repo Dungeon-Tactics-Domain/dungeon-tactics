@@ -1,6 +1,6 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
+import { basicOf, type PendingCounter } from './counter.ts';
 import {
-  canStand,
   dist,
   FACING,
   facingTo,
@@ -8,34 +8,19 @@ import {
   inBounds,
   isDeep,
   type Side,
-  samePos,
   sideOf,
   standH,
-  subOf,
   TERRAIN,
   tileAt,
 } from './grid.ts';
-import {
-  aimEnds,
-  aimTile,
-  areaOf,
-  cellsOf,
-  closest,
-  footprint,
-  inAbilityRange,
-  inArea,
-  MAX_JUMP,
-  nearCells,
-  restsOn,
-  unitAt,
-  wholeTiles,
-} from './pathing.ts';
+import { aimEnds, aimTile, areaOf, closest, footprint, inAbilityRange, inArea, unitAt, wholeTiles } from './pathing.ts';
+import { simulatePush } from './push.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { traceShot } from './shot.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, Shot, UnitState } from './types.ts';
-import { baseDef, dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
+import { dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
 
 // Initial numbers from Oct 25; they can be measured in the simulation (scripts/battle-sim.ts), which is optional.
 export const COMBAT = {
@@ -243,69 +228,6 @@ export function previewAbility(
   return { ok: true, center, targets, shot };
 }
 
-// Applies the ability to the state (changes units and rng) and returns the events for the client to animate.
-// Order of the rolls, per unit hit in list order: hit, then damage. Changing the order changes the tests' hash.
-// `scale`: fraction of the damage (the counter-attack comes out at half, counters)
-// the unit's basic attack (the 1st ability): it is the one that fires on the counter-attack; ranged if it reaches more than 1 tile
-export const basicOf = (def: string) => UNIT_DEFS[def].abilities[0];
-export const isRanged = (abilityId: string) => ABILITIES[abilityId].range[1] > 1;
-// Nov 15, Fernando: only a single-target strike counters for now; an area one (the Colossus' Shadow Wave) never does
-const answersSingle = (def: string) => !!basicOf(def) && ABILITIES[basicOf(def)].radius === 0;
-
-// Who gains a counter when `actor` strikes `u` with `abilityId` (Nov 13): a unit of the other side with a single-target basic
-// attack, whatever the strike's kind (Nov 15, Fernando: a ranged unit also answers the melee one that hit it); not the
-// Beacon, and not from a heal, a support ability or a charge (it lands later: the aim must not promise a counter the rule
-// never owes)
-export function canCounter(actor: UnitState, abilityId: string, u: UnitState): boolean {
-  const a = ABILITIES[abilityId];
-  return (
-    a.charge === 0 &&
-    !(a.heal[1] > 0 || a.ally) &&
-    u.team !== actor.team &&
-    answersSingle(u.def) &&
-    UNIT_DEFS[u.def].speed > 0
-  );
-}
-
-export interface PendingCounter {
-  unit: string; // who strikes back
-  at: Pos; // where it finds the attacker: the tile it leaves, or the stop for a shooter it leaves in contact
-  preview: Preview; // that strike, from the counter's own rule (shot path, friendly fire)
-}
-
-// `pos` is closer to `foe` than its basic attack's minimum range, measured like the aim (`state` has the unit there)
-export function inContact(grid: Grid, state: BattleState, foe: UnitState, pos: Pos): boolean {
-  const [from, to] = aimEnds(grid, state, foe, pos);
-  return dist(from, to) < nearCells(grid, ABILITIES[basicOf(foe.def)].range[0]);
-}
-
-// Counter-attack (Nov 13, Fernando's request; half damage, his choice; redefined on Nov 15 after he was struck by a unit he
-// had not attacked that turn): a unit `actorId` struck this turn (turn.engaged) strikes back at half on each move order that
-// starts in the reach of its basic attack and ends out of it, hit before the attacker leaves, so cover or a unit in the way
-// catches the shot. A shooter it stood too close to (Nov 15, Fernando: an archer answers the melee that hit it and walked
-// away) fires instead once a move takes the attacker out of that contact, at the stop, if it is in its range. The attacker
-// turns to face it, so a counter never gets the side or back bonus. Read by the rule, the AI and the move preview alike
-export function pendingCounters(grid: Grid, state: BattleState, actorId: string, to: Pos): PendingCounter[] {
-  const actor = state.units.find((u) => u.id === actorId);
-  if (!actor || state.turn.actor !== actorId) return [];
-  const out: PendingCounter[] = [];
-  for (const id of state.turn.engaged ?? []) {
-    const foe = state.units.find((u) => u.id === id);
-    if (!foe || !answersSingle(foe.def)) continue; // an area one owed by a save from before the single-target rule
-    // the attacker at `pos`, facing the counter; charged: the counter-attack pays no MP or stock
-    const at = (pos: Pos) => {
-      const facing = actor.facing === undefined ? undefined : facingTo(pos, foe.pos);
-      const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos, facing } : u)) };
-      return previewAbility(grid, moved, foe.id, basicOf(foe.def), pos, true);
-    };
-    const [here, there] = [at(actor.pos), at(to)];
-    if (here.ok && !there.ok) out.push({ unit: foe.id, at: actor.pos, preview: here });
-    // a stop still in contact is out of its range too, so `there.ok` already means the attacker left that contact
-    else if (there.ok && inContact(grid, state, foe, actor.pos)) out.push({ unit: foe.id, at: to, preview: there });
-  }
-  return out;
-}
-
 // Plays `owed` counters at the attacker where it stands: those on its start tile before it leaves, the shooters it left in
 // contact once it stands on the stop (`Battle.move`)
 export function counters(grid: Grid, state: BattleState, actorId: string, owed: PendingCounter[]): BattleEvent[] {
@@ -320,6 +242,9 @@ export function counters(grid: Grid, state: BattleState, actorId: string, owed: 
   return events;
 }
 
+// Applies the ability to the state (changes units and rng) and returns the events for the client to animate.
+// Order of the rolls, per unit hit in list order: hit, then damage. Changing the order changes the tests' hash.
+// `scale`: fraction of the damage (the counter-attack comes out at half, counters)
 export function resolveAbility(
   grid: Grid,
   state: BattleState,
@@ -407,108 +332,6 @@ export function spikeAtTurnEnd(grid: Grid, state: BattleState): BattleEvent[] {
   const events: BattleEvent[] = [{ k: 'spike', unit: actor.id, dmg: COMBAT.SPIKE_DAMAGE }];
   hurt(state, actor, COMBAT.SPIKE_DAMAGE, events);
   return events;
-}
-
-export interface PushResult {
-  to: Pos;
-  dmg: number; // bump and fall added together
-  events: BattleEvent[]; // push, bump and fall, in order
-}
-
-// Pushes along the axis of greatest difference relative to the ability's center. If the victim is at the center (area), it moves away
-// from the user. Each tile is checked: wall, unit, edge and high step stop it (bump); going down is a fall, with damage
-// from 2 levels up. It does not change the state: the AI uses this to value pushes before choosing the move.
-// On the split map (half.ts) the token is pushed `steps` whole tiles in cells, its whole square checked on each cell; the
-// direction goes from the middle of the squares and the height of a square is its highest cell. It ends only where the
-// square rests on even ground (restsOn): a fall onto it, or a bump back to where it last rested
-export function simulatePush(
-  grid: Grid,
-  state: BattleState,
-  unit: UnitState,
-  center: Pos,
-  origin: Pos,
-  steps: number,
-): PushResult {
-  const result: PushResult = { to: unit.pos, dmg: 0, events: [] };
-  const size = UNIT_DEFS[unit.def].size ?? 1;
-  if ((UNIT_DEFS[baseDef(unit.def)].size ?? 1) > 1) return result; // a large unit does not move
-  const cells = (p: Pos) => cellsOf(p, size);
-  // twice the middle of the square, so it stays whole
-  const mid = (p: Pos, n: number) => ({ x: 2 * p.x + n - 1, y: 2 * p.y + n - 1 });
-  const sub = subOf(grid);
-  const from = cells(unit.pos).some((c) => samePos(c, center)) ? mid(origin, sub) : mid(center, sub);
-  let dx = mid(unit.pos, size).x - from.x;
-  let dy = mid(unit.pos, size).y - from.y;
-  if (dx === 0 && dy === 0) return result;
-  const horizontal = Math.abs(dx) >= Math.abs(dy);
-  dx = horizontal ? Math.sign(dx) : 0;
-  dy = horizontal ? 0 : Math.sign(dy);
-  const height = (p: Pos) => Math.max(...cells(p).map((c) => standH(tileAt(grid, c))));
-  const spiky = (p: Pos) => cells(p).some((c) => tileAt(grid, c).spikes);
-  // one cell of the push from `cur`: null where it is blocked
-  const move = (cur: Pos): PushResult | null => {
-    const next = { x: cur.x + dx, y: cur.y + dy };
-    // deep water holds a push like a wall (our assumption, kept when it started letting units enter, Nov 13)
-    const blocked =
-      cells(next).some((c) => {
-        if (!inBounds(grid, c)) return true;
-        const t = tileAt(grid, c),
-          o = unitAt(state, c);
-        return !canStand(t) || isDeep(t) || !!t.noStop || (!!o && o.id !== unit.id);
-      }) || height(next) - height(cur) > MAX_JUMP;
-    if (blocked) return null;
-    const out: PushResult = { to: next, dmg: 0, events: [{ k: 'push', unit: unit.id, to: next }] };
-    const levels = height(cur) - height(next);
-    const dmg =
-      levels <= 0
-        ? 0
-        : (rulesOf(state).fallDamage?.(levels, unit.def) ??
-          Math.max(0, levels - COMBAT.FALL_FREE) * COMBAT.FALL_DAMAGE);
-    if (dmg > 0) {
-      out.events.push({ k: 'fall', unit: unit.id, levels, dmg });
-      out.dmg += dmg;
-    }
-    // spikes hurt when the square reaches them, not again on each cell over the same patch
-    if (spiky(next) && (size === 1 || !spiky(cur))) {
-      out.events.push({ k: 'spike', unit: unit.id, dmg: COMBAT.SPIKE_DAMAGE });
-      out.dmg += COMBAT.SPIKE_DAMAGE;
-    }
-    return out;
-  };
-  const add = (m: PushResult) => {
-    result.to = m.to;
-    result.dmg += m.dmg;
-    result.events.push(...m.events);
-  };
-  const rests = (p: Pos) => restsOn(grid, p, size);
-  let even: PushResult = { ...result, events: [] }; // where the square last rested (the start, at first)
-  let bumped = false;
-  for (let i = 0; i < steps * sub && !bumped; i++) {
-    const m = move(result.to);
-    if (!m) bumped = true;
-    else {
-      add(m);
-      if (rests(result.to)) even = { ...result, events: [...result.events] };
-    }
-  }
-  // A push never leaves the square on uneven ground (Nov 15, Fernando: "it tie-breaks by making the guy fall, or hit a
-  // wall"): one more cell when it drops onto even ground, or when the square is level and only ramp, terrain or spikes
-  // kept it from resting (Fernando, after the review); else back to where it last rested, with the bump. A square that
-  // started uneven (a sandbox placement, an old save) goes back to its start
-  if (!rests(result.to)) {
-    const m = move(result.to);
-    const level = new Set(cells(result.to).map((c) => standH(tileAt(grid, c)))).size === 1;
-    if (m && rests(m.to) && (level || height(m.to) < height(result.to))) add(m);
-    else {
-      Object.assign(result, even);
-      bumped = true;
-    }
-  }
-  if (bumped) {
-    result.events.push({ k: 'bump', unit: unit.id, dmg: COMBAT.BUMP_DAMAGE });
-    result.dmg += COMBAT.BUMP_DAMAGE;
-  }
-  return result;
 }
 
 function push(

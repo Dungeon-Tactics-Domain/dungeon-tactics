@@ -2,16 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import {
-  COMBAT,
-  checkOutcome,
-  hitChance,
-  pendingCounters,
-  previewAbility,
-  resolveAbility,
-  simulatePush,
-} from '../src/shared/battle/combat.ts';
+import { COMBAT, checkOutcome, hitChance, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
+import { pendingCounters } from '../src/shared/battle/counter.ts';
 import { dist, FACING, type Grid, sideOf } from '../src/shared/battle/grid.ts';
+import { simulatePush } from '../src/shared/battle/push.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';

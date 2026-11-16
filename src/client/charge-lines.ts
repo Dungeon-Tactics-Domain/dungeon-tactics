@@ -4,16 +4,8 @@
 // (previewAbility from where the caster stands, turn-queue.ts), so the drawing never disagrees with the shot.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import {
-  basicOf,
-  COMBAT,
-  canCounter,
-  inContact,
-  isRanged,
-  type Preview,
-  pendingCounters,
-  previewAbility,
-} from '../shared/battle/combat.ts';
+import { COMBAT, type Preview, previewAbility } from '../shared/battle/combat.ts';
+import { basicOf, canCounter, inContact, isRanged, pendingCounters } from '../shared/battle/counter.ts';
 import { type Grid, posKey, subOf } from '../shared/battle/grid.ts';
 import { aimTile, unitAt } from '../shared/battle/pathing.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { chooseRetreat, chooseTurn, GUARD_RADIUS } from '../src/shared/battle/ai.ts';
-import { pendingCounters, previewAbility } from '../src/shared/battle/combat.ts';
+import { previewAbility } from '../src/shared/battle/combat.ts';
+import { pendingCounters } from '../src/shared/battle/counter.ts';
 import { dist } from '../src/shared/battle/grid.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
 import type { BattleState, Pos } from '../src/shared/battle/types.ts';

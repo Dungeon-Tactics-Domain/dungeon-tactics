@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildDevScenario, unitFrom } from '../src/client/dev-roster.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { simulatePush } from '../src/shared/battle/combat.ts';
 import { footprint, reachable, unitAt } from '../src/shared/battle/pathing.ts';
+import { simulatePush } from '../src/shared/battle/push.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
