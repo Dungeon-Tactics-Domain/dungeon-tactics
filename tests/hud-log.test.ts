@@ -29,7 +29,7 @@ describe('summary of what happened', () => {
         ],
         state,
       ),
-    ).toBe('Mago: Cura → Guerreiro +8 · Soldado errou (40%) · Bruto bateu −3 · Bruto caiu de altura −5');
+    ).toBe('Mago: Cura → Guerreiro +8 · errou Soldado (40%) · Bruto bateu −3 · Bruto caiu de altura −5');
   });
 
   it('just moving produces no summary', () => {

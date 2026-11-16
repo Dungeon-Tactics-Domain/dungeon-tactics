@@ -142,7 +142,7 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
       );
     } else if (e.k === 'hit') parts.push(`${name(e.unit)} −${e.dmg}`);
     else if (e.k === 'miss')
-      parts.push(t(`${name(e.unit)} errou (${e.chance}%)`, `missed ${name(e.unit)} (${e.chance}%)`));
+      parts.push(t(`errou ${name(e.unit)} (${e.chance}%)`, `missed ${name(e.unit)} (${e.chance}%)`));
     else if (e.k === 'heal') parts.push(`${name(e.unit)} +${e.amount}`);
     else if (e.k === 'bump') parts.push(t(`${name(e.unit)} bateu −${e.dmg}`, `${name(e.unit)} crashed −${e.dmg}`));
     else if (e.k === 'fall')
