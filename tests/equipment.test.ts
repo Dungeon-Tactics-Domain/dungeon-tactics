@@ -9,8 +9,8 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 describe('equipment', () => {
   it('sums the items in each slot and ignores unknown items or items in the wrong slot', () => {
     expect(bonusOf({ weapon: 'iron_blade', armor: 'chain_mail', accessory: 'swift_boots' })).toEqual({
-      hp: 12,
-      power: 2,
+      hp: 60,
+      power: 10,
       hit: 0,
       move: 1,
       jump: 0,
@@ -33,9 +33,9 @@ describe('equipment', () => {
     const sc = buildDevScenario(s);
     const id = sc.spawns.find((sp) => sp.id === 'h0')!.def;
     const base = UNIT_DEFS[s.heroes[0].base];
-    expect(UNIT_DEFS[id].hp).toBe(s.heroes[0].hp + 6);
+    expect(UNIT_DEFS[id].hp).toBe(s.heroes[0].hp + 30);
     expect(UNIT_DEFS[id].move).toBe(s.heroes[0].move + 1);
-    expect(UNIT_DEFS[id].power).toBe(2);
+    expect(UNIT_DEFS[id].power).toBe(10);
     const b = Battle.start(sc, 1);
     const me = b.state.units.find((u) => u.def === id)!;
     const ability = base.abilities.find((a) => ABILITIES[a].damage[1] > 0)!;
@@ -44,6 +44,6 @@ describe('equipment', () => {
     me.pos = { x: foe.pos.x, y: foe.pos.y + 1 };
     const p = b.preview(ability, foe.pos);
     expect(p.ok).toBe(true);
-    expect(p.targets[0].dmgMin).toBe(ABILITIES[ability].damage[0] + 2);
+    expect(p.targets[0].dmgMin).toBe(ABILITIES[ability].damage[0] + 10);
   });
 });
