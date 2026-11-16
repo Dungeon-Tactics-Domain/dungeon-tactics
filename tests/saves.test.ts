@@ -28,7 +28,7 @@ const browser = (init: Record<string, string> = {}) => {
 };
 // like store.ts: every write lands in the tab's memory, the browser refuses the keys `full` names, and get falls back on
 // memory; only `saved` tells a refused write
-const fullBrowser = (init: Record<string, string>, full: (k: string) => boolean) => {
+const fullBrowser = (init: Record<string, string>, full: (k: string, v: string) => boolean) => {
   const s = browser(init);
   const mem = new Map<string, string>();
   return {
@@ -36,7 +36,7 @@ const fullBrowser = (init: Record<string, string>, full: (k: string) => boolean)
     getItem: (k: string) => s.m.get(k) ?? mem.get(k) ?? null,
     setItem: (k: string, v: string) => {
       mem.set(k, v);
-      if (!full(k)) s.m.set(k, v);
+      if (!full(k, v)) s.m.set(k, v);
     },
   };
 };
@@ -121,6 +121,28 @@ describe('save slots', () => {
     store.set('dt:chest', '{"gold":1}');
     expect(Number(store.get('dt:played'))).toBeGreaterThan(Date.now() - 60_000);
     store.set('dt:chest', '');
+  });
+
+  it('a slot the browser cannot take whole is not loaded, and no slot gets a mix of two games', () => {
+    const room = '{"big":1}';
+    const s = fullBrowser(
+      {
+        ...party(150),
+        [SAVES_KEY]: JSON.stringify({
+          active: 1,
+          slots: [
+            { id: 1, data: {} },
+            { id: 2, data: { 'dt:chest': '{"gold":40}', 'dt:battle:expedition': room } },
+          ],
+        }),
+      },
+      (k, v) => k === 'dt:battle:expedition' && v === room,
+    );
+    expect(loadSlot(s, 2)).toBe(false);
+    expect(live(s, 'dt:chest')).toBe('{"gold":150}');
+    const m = readSaves(s);
+    expect(m.active).toBe(1);
+    expect(m.slots[1].data).toEqual({ 'dt:chest': '{"gold":40}', 'dt:battle:expedition': room });
   });
 
   it('the single save from before the slots becomes slot 1 on load', () => {

@@ -60,9 +60,13 @@ export const snapshot = (s: Pick<Storage, 'getItem'>): Data =>
     }),
   );
 
-const restore = (s: Saves, data: Data) => {
-  for (const k of SLOT_KEYS) s.setItem(k, data[k] ?? '');
-};
+// key by key; false at the first one the browser refused (a room battle can be large)
+const restore = (s: Saves, data: Data) =>
+  SLOT_KEYS.every((k) => {
+    const v = data[k] ?? '';
+    s.setItem(k, v);
+    return s.saved(k) === v;
+  });
 // the first free id, so a huge id kept in the manifest never makes the next one overflow
 const nextId = (m: Manifest) => {
   let id = 1;
@@ -81,37 +85,43 @@ export function readSaves(s: Pick<Storage, 'getItem'>): Manifest {
   return { active: id, slots: [...m.slots, { id, data: live }] };
 }
 
-// Written before any live key changes; false when the browser kept the old manifest (storage full), so the caller stops
-// and the live game stays as it was
+// false when the browser kept the old manifest (storage full), so the caller stops
 function write(s: Saves, m: Manifest) {
   const v = JSON.stringify(m);
   s.setItem(SAVES_KEY, v);
   return s.saved(SAVES_KEY) === v;
 }
 
+// Puts `data` in the live keys and makes `id` the slot in play; `m` holds the game in play in its own slot. While the
+// keys change no slot owns them (active null): a refused key halfway leaves them to readSaves, which keeps them as a
+// slot of their own instead of mixing two games in one slot; the game in play goes back when the browser takes it
+function switchTo(s: Saves, m: Manifest, id: number | null, data: Data) {
+  if (!write(s, { ...m, active: null })) return false;
+  if (!restore(s, data)) {
+    if (restore(s, m.slots.find((x) => x.id === m.active)?.data ?? {})) write(s, m);
+    return false;
+  }
+  return write(s, { ...m, active: id });
+}
+
 // New game: the live game stays in its slot and a clean game starts in a new slot, listed at once (a fresh town writes nothing)
 export function newGame(s: Saves, now: number) {
   const m = readSaves(s);
   const id = nextId(m);
-  if (!write(s, { active: id, slots: [...m.slots, { id, data: {} }] })) return false;
-  restore(s, { [PLAYED_KEY]: String(now) });
-  return true;
+  return switchTo(s, { ...m, slots: [...m.slots, { id, data: {} }] }, id, { [PLAYED_KEY]: String(now) });
 }
 
 export function loadSlot(s: Saves, id: number) {
   const m = readSaves(s);
   const slot = m.slots.find((x) => x.id === id);
-  if (!slot || !write(s, { ...m, active: id })) return false;
-  restore(s, slot.data);
-  return true;
+  return !!slot && switchTo(s, m, id, slot.data);
 }
 
 // deleting the game in play clears the live keys too, otherwise its progress would live on with no slot
 export function deleteSlot(s: Saves, id: number) {
   const m = readSaves(s);
-  if (!write(s, { active: m.active === id ? null : m.active, slots: m.slots.filter((x) => x.id !== id) })) return false;
-  if (m.active === id) restore(s, {});
-  return true;
+  const rest = { ...m, slots: m.slots.filter((x) => x.id !== id) };
+  return m.active === id ? switchTo(s, rest, null, {}) : write(s, rest);
 }
 
 // a row of the Continue list, read from the slot's copy by the game's own parsers (nothing stored that could go stale)
