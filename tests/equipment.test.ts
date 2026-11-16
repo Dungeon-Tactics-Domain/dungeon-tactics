@@ -138,7 +138,14 @@ describe('equipment', () => {
     expect(fire).toMatch(/^\+60% .* · no limite \(bruto \+\d+%\)\)$/);
     expect(capped['Resistência a sombra']).toBe('+40% (Guerreiro 0% · Escudo do Véu +40%)');
     expect(capped.Velocidade).toBe('7 (Guerreiro 8 · Escudo do Véu −1)');
-    expect(rowsOf('mage', { off: 'worn_grimoire' }).Mana).toBe('20 (em breve) (Grimório gasto +20)');
+    const mage = rowsOf('mage', { off: 'worn_grimoire', acc1: 'sleepstone' });
+    expect(mage.Mana).toBe('50 (Mago 30 · Grimório gasto +20)');
+    expect(mage['Regeneração de mana']).toBe('11 (Mago 8 · Grimório gasto +3)');
+    expect(mage['Regeneração de vida']).toBe('10 (Mago 0 · Pedra-do-sono +10)');
+    // a pool or regen only when the class or a piece gives it
+    expect(rows.Mana).toBeUndefined();
+    expect(rows['Regeneração de vida']).toBeUndefined();
+    expect(rowsOf('warrior', {}).Stamina).toBe('50');
   });
 
   it('comparing reads the sheet as the rules do: past a cap only what is left changes, but charging it counts', () => {
@@ -151,10 +158,9 @@ describe('equipment', () => {
     // under the cap the charging change equals the plain one, so it is said once
     expect(compare('warrior', { head: 'iron_helm' }, 'head', null)).toBe('−25 vida · −10% física');
     expect(compare('warrior', wall, 'head', 'iron_helm')).toBe('nada muda');
-    expect(compare('mage', {}, 'off', 'worn_grimoire')).toBe('+20 mana (em breve) · +3 regeneração de mana (em breve)');
-    expect(itemStats(ITEMS.ember_scepter)).toBe(
-      '+40 poder mágico · +40% fogo · −20% gelo · +3 regeneração de mana (em breve)',
-    );
+    expect(compare('mage', {}, 'off', 'worn_grimoire')).toBe('+20 mana · +3 regeneração de mana');
+    expect(compare('warrior', {}, 'acc1', 'sleepstone')).toBe('+25 vida · +10 regeneração de vida');
+    expect(itemStats(ITEMS.ember_scepter)).toBe('+40 poder mágico · +40% fogo · −20% gelo · +3 regeneração de mana');
   });
 
   it('every piece has a price, and only commons are cheap enough for the shop', () => {

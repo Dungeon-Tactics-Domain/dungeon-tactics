@@ -38,14 +38,14 @@ export const RARITY: Record<Rarity, () => string> = {
 export const itemName = (it: ItemDef) => t(it.name, it.en);
 
 // The sheet's numbers, one line each (Nov 16, slice 3): `of` reads the battle sheet as the rules do (resistOf and dodgeOf
-// clamp), `piece` what one piece adds, Move and Jump in half tiles like every screen. A line with no `of` is a stat no
-// battle reads yet (equipment.ts PENDING: its pieces just add up); `more` is shown only when something gives it
+// clamp), `piece` what one piece adds, Move and Jump in half tiles like every screen; `more` is shown only when something
+// gives it
 interface Line {
   name: () => string; // after a piece's number: "+10% física"
   label?: () => string; // the sheet row, when not the name with a capital
   unit?: '%';
   signed?: true; // a resistance: "−10%" and "+0%" on the sheet
-  of?: (d: UnitDef) => number;
+  of: (d: UnitDef) => number;
   // the same reading on a charging unit (physical and magic resistance): the drop comes off the raw sum before the cap,
   // so a resistance past the cap still counts there (combat.ts; whether that is right is Fernando's call)
   charging?: (d: UnitDef) => number;
@@ -91,16 +91,26 @@ const LINES: Line[] = [
   { name: () => t('movimento', 'move'), of: (d) => d.move * SUB, piece: (it) => (it.move ?? 0) * SUB },
   { name: () => t('salto', 'jump'), of: (d) => (d.jump ?? MAX_JUMP) * SUB, piece: (it) => (it.jump ?? 0) * SUB },
   { name: () => t('velocidade', 'speed'), of: (d) => d.speed, piece: (it) => it.speed ?? 0 },
-  { name: () => 'mana', more: true, piece: (it) => it.mana ?? 0 },
-  { name: () => 'stamina', more: true, piece: (it) => it.stamina ?? 0 },
-  { name: () => t('regeneração de mana', 'mana regen'), more: true, piece: (it) => it.manaRegen ?? 0 },
-  { name: () => t('regeneração de vida', 'HP regen'), more: true, piece: (it) => it.hpRegen ?? 0 },
+  // the pools' max and the regens per turn (Nov 16, slice 1 of the equipment rollout)
+  { name: () => 'mana', more: true, of: (d) => d.vars?.mana ?? 0, piece: (it) => it.mana ?? 0 },
+  { name: () => 'stamina', more: true, of: (d) => d.vars?.stamina ?? 0, piece: (it) => it.stamina ?? 0 },
+  {
+    name: () => t('regeneração de mana', 'mana regen'),
+    more: true,
+    of: (d) => d.regen?.mana ?? 0,
+    piece: (it) => it.manaRegen ?? 0,
+  },
+  {
+    name: () => t('regeneração de vida', 'HP regen'),
+    more: true,
+    of: (d) => d.hpRegen ?? 0,
+    piece: (it) => it.hpRegen ?? 0,
+  },
 ];
 // a piece's number or a change, with its sign (the HUD's minus); the sheet's total
 const plus = (l: Line, v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}${l.unit ?? ''}`;
 const total = (l: Line, v: number) => (l.signed ? signed(v) : `${v}${l.unit ?? ''}`);
-const soon = () => t('em breve', 'soon');
-const stat = (l: Line, v: number) => `${plus(l, v)} ${l.name()}${l.of ? '' : ` (${soon()})`}`;
+const stat = (l: Line, v: number) => `${plus(l, v)} ${l.name()}`;
 // what each worn piece adds to a line, in slot order
 const pieces = (l: Line, load: Loadout | undefined) =>
   SLOTS.flatMap((s) => {
@@ -108,8 +118,7 @@ const pieces = (l: Line, load: Loadout | undefined) =>
     const v = it ? l.piece(it) : 0;
     return it && v ? [{ it, v }] : [];
   });
-const lineValue = (l: Line, def: UnitDef, load: Loadout | undefined) =>
-  l.of ? l.of(withGear(def, load)) : pieces(l, load).reduce((s, p) => s + p.v, 0);
+const lineValue = (l: Line, def: UnitDef, load: Loadout | undefined) => l.of(withGear(def, load));
 
 // "+20 poder físico · +5 acerto": only what the item changes, in the sheet's wording
 export const itemStats = (it: ItemDef) =>
@@ -126,24 +135,15 @@ export function sheetRows(cls: string, load: Loadout | undefined): [label: strin
   return LINES.flatMap((l): [string, string, string][] => {
     const from = pieces(l, load),
       v = lineValue(l, def, load),
-      own = l.of?.(def) ?? 0,
+      own = l.of(def),
       raw = own + from.reduce((s, p) => s + p.v, 0);
     if (l.more && !v && !own && !from.length) return [];
-    const parts = [
-      ...(l.of ? [`${unitName(cls)} ${total(l, own)}`] : []),
-      ...from.map((p) => `${itemName(p.it)} ${plus(l, p.v)}`),
-    ];
+    const parts = [`${unitName(cls)} ${total(l, own)}`, ...from.map((p) => `${itemName(p.it)} ${plus(l, p.v)}`)];
     if (raw !== v) {
       const when = l.charging ? `; ${t('carregando', 'charging')}, ${total(l, l.charging(withGear(def, load)))}` : '';
       parts.push(`${t('no limite', 'capped')} (${t('bruto', 'raw')} ${total(l, raw)}${when})`);
     }
-    return [
-      [
-        l.label?.() ?? cap(l.name()),
-        `${total(l, v)}${l.of ? '' : ` (${soon()})`}`,
-        from.length ? parts.join(' · ') : '',
-      ],
-    ];
+    return [[l.label?.() ?? cap(l.name()), total(l, v), from.length ? parts.join(' · ') : '']];
   });
 }
 

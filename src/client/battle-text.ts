@@ -55,11 +55,12 @@ export const poolRows = (def: UnitDef, u: UnitState): [string, string][] =>
     k === 'mana' ? 'Mana' : 'Stamina',
     [`${poolOf(u, k)}/${def.vars![k]}`, regenText(def, k)].filter(Boolean).join(', '),
   ]);
-// the party sheet's line under the bars: "+5 stamina per turn"
+// life regen (pieces, Nov 16): "+10 HP per turn"
+const hpRegenText = (def: UnitDef) =>
+  def.hpRegen ? t(`+${def.hpRegen} de vida por turno`, `+${def.hpRegen} HP per turn`) : '';
+// the party sheet's line under the bars: "+5 stamina per turn · +10 HP per turn"
 export const regenLine = (def: UnitDef) =>
-  RESOURCES.map((k) => regenText(def, k))
-    .filter(Boolean)
-    .join(' · ');
+  [...RESOURCES.map((k) => regenText(def, k)), hpRegenText(def)].filter(Boolean).join(' · ');
 
 // ability sheet (submenu and status window)
 export function abilityDetail(id: string): string {
@@ -184,7 +185,7 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
   const bonus = (k: string) => (u.vars?.[k] ? ` (${u.vars[k] > 0 ? '+' : ''}${u.vars[k]})` : '');
   const rows: [string, string][] = [
     [t('Lado', 'Side'), sideName(u.team)],
-    [t('Vida', 'HP'), hpText(u)],
+    [t('Vida', 'HP'), [hpText(u), hpRegenText(def)].filter(Boolean).join(', ')],
   ];
   rows.push(...poolRows(def, u));
   rows.push(

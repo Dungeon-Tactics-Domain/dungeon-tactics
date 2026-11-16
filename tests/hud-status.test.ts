@@ -21,6 +21,16 @@ describe('mana and stamina in words (Nov 16)', () => {
     expect(abilityDetail('heal')).toContain('gasta 20 mana');
     expect(regenLine(UNIT_DEFS.mage)).toBe('+8 de mana por turno');
   });
+
+  it('life regen from the pieces shows on Status and on the party sheet line', () => {
+    const s = initialState(SCENARIOS.skirmish, 1);
+    const w = s.units.find((u) => u.id === 'h-warrior')!;
+    UNIT_DEFS.t_status_regen = { ...UNIT_DEFS.warrior, id: 't_status_regen', hpRegen: 10 };
+    w.def = 't_status_regen';
+    expect(Object.fromEntries(unitStatus(s, 'h-warrior')).Vida).toBe('210/210, +10 de vida por turno');
+    expect(regenLine(UNIT_DEFS.t_status_regen)).toBe('+5 de stamina por turno · +10 de vida por turno');
+    expect(Object.fromEntries(unitStatus(initialState(SCENARIOS.skirmish, 1), 'h-warrior')).Vida).toBe('210/210');
+  });
 });
 
 describe('status window', () => {
