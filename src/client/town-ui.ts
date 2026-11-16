@@ -63,7 +63,7 @@ export function jumpHelp(): string {
   );
 }
 
-// Party screen (like the FFT formation): everyone in the party, who goes to the next battle (up to 4) and who stays in camp,
+// Party screen (like the FFT formation): everyone in the party, who goes to the next battle (up to 4) and who stays in town,
 // with the painted face (portrait for a class without one), class and numbers; each row opens the sheet. Every member knows the whole kit of their class.
 // Nov 13, delivery 5 of the design (docs/game-design/towns-party-equipment.md): recruits and class change
 const loadGroup = () => parseGroup(store.json(GROUP_KEY));
@@ -106,7 +106,7 @@ export function openParty(back?: () => void) {
         el(
           'span',
           { class: 'party-class' },
-          ` · ${unitName(m.cls)} · ${going ? t('vai à batalha', 'in battle') : t('no acampamento', 'at camp')}`,
+          ` · ${unitName(m.cls)} · ${going ? t('vai à batalha', 'goes to battle') : t('fica na cidade', 'stays in town')}`,
         ),
         el('p', { class: 'party-stats' }, statsLine(sheet)),
         // resistances and dodge (Nov 15); the sheet shows every attribute
@@ -346,7 +346,7 @@ export const sideWindows = <T>(overlays: Iterable<T>, menu: T) => [...overlays].
 
 // what is missing to buy, under the Shop row's turned-off button; nothing when the gold covers it
 export const shortBy = (gold: number, price: number) =>
-  gold < price ? t(`faltam ${price - gold}`, `${price - gold} short`) : '';
+  gold < price ? t(`faltam ${price - gold} de ouro`, `${price - gold} gold short`) : '';
 // why a piece cannot go into the chest (CHEST_MAX): under Buy and Remove, and before Dismiss
 const chestFull = () => t(`baú cheio (${CHEST_MAX})`, `chest full (${CHEST_MAX})`);
 
@@ -401,7 +401,16 @@ export function openShop(back?: () => void, tab: ShopTab = 'gear') {
               button('secondary', t('Vender', 'Sell'), () => save(sell(chest, id))),
             ),
           )
-        : [el('p', {}, t('Vazio.', 'Empty.'))],
+        : [
+            el(
+              'p',
+              {},
+              t(
+                'Nada para vender. O equipamento guardado no baú aparece aqui.',
+                'Nothing to sell. Spare gear in the chest shows up here.',
+              ),
+            ),
+          ],
   };
   const d = dialog(
     'party shop',
@@ -558,7 +567,7 @@ export function openSheet(m: Member, back: () => void, at = '') {
             { class: 'menu-actions' },
             button(
               'primary',
-              going ? t('Deixar no acampamento', 'Leave at camp') : t('Levar à batalha', 'Bring to battle'),
+              going ? t('Deixar na cidade', 'Leave in town') : t('Levar à batalha', 'Bring to battle'),
               deploy,
               { disabled: alone || (!going && g.deployed.length >= DEPLOY_MAX) },
             ),
@@ -578,8 +587,8 @@ export function openSheet(m: Member, back: () => void, at = '') {
                   'p',
                   {},
                   t(
-                    'Só este vai à batalha: leve outro antes de deixá-lo no acampamento.',
-                    'Only this one goes to battle: bring someone else before leaving them at camp.',
+                    'Só este vai à batalha: leve outro antes de deixá-lo na cidade.',
+                    'Only this one goes to battle: bring someone else before leaving them in town.',
                   ),
                 ),
               ]
@@ -590,8 +599,8 @@ export function openSheet(m: Member, back: () => void, at = '') {
                   'p',
                   {},
                   t(
-                    `Já vão ${DEPLOY_MAX}: deixe alguém no acampamento antes.`,
-                    `${DEPLOY_MAX} already go: leave someone at camp first.`,
+                    `Já vão ${DEPLOY_MAX}: deixe alguém na cidade antes.`,
+                    `${DEPLOY_MAX} already go: leave someone in town first.`,
                   ),
                 ),
               ]

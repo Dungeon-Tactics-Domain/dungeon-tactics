@@ -277,7 +277,7 @@ export function townMenu(extra?: Node) {
         // the title over its own spinning backdrop battle, the bare address (an empty `search` left a "?" on it)
         commandRow(
           'bronze',
-          t('Tela de título', 'Title screen'),
+          t('Voltar ao título', 'Back to title'),
           go(() => {
             location.href = location.pathname;
           }),

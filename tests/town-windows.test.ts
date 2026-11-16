@@ -11,7 +11,7 @@ describe('town windows', () => {
   });
 
   it("the Shop row says how much gold is missing under a turned-off button, and nothing when it's enough", () => {
-    expect(shortBy(20, 120)).toBe('faltam 100');
+    expect(shortBy(20, 120)).toBe('faltam 100 de ouro');
     expect(shortBy(120, 120)).toBe('');
     expect(shortBy(200, 120)).toBe('');
   });

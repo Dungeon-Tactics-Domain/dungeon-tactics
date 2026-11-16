@@ -218,8 +218,8 @@ function howToPlay() {
           'The Adventurers’ Guild opens the Party (who goes and each one’s class), the Shop buys and sells, the Tavern recruits and the Dungeon gate starts the expedition. The Blacksmith and the Enchantress are still to come.',
         ),
         t(
-          `A descida tem ${floors} andares de ${rows} fileiras de salas: em cada fileira você escolhe 1 de ${width[0]} ou ${width[1]} salas, vendo os inimigos antes. Depois do último andar vem o chefe.`,
-          `The descent has ${floors} floors of ${rows} rows of rooms: in each row you pick 1 of ${width[0]} or ${width[1]}, seeing the enemies first. After the last floor comes the boss.`,
+          `A expedição tem ${floors} andares de ${rows} fileiras de salas. Em cada fileira, escolha 1 de ${width[0]} ou ${width[1]} salas: os inimigos aparecem antes. Depois do último andar vem o chefe.`,
+          `The expedition has ${floors} floors of ${rows} rows of rooms. In each row, pick 1 of ${width[0]} or ${width[1]}: you see the enemies first. After the last floor comes the boss.`,
         ),
         t(
           `A vida passa de uma sala para a outra: ao vencer, quem ficou de pé ganha ${roomHeal}% da vida máxima e quem caiu volta com ${fallen}%; ao descer de andar, todos ganham ${floorHeal}%, nunca acima do máximo.`,

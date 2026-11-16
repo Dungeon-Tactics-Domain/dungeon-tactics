@@ -48,7 +48,7 @@ describe('party', () => {
     });
   });
 
-  it("deploying: at most 4 and never none; whoever stays in camp doesn't go to battle", () => {
+  it("deploying: at most 4 and never none; whoever stays in town doesn't go to battle", () => {
     const r = recruit(defaultGroup(), { gold: 500, items: [] }, 'rogue')!.group;
     expect(toggleDeploy(r, 'r1')).toBeNull(); // already 4
     const swapped = toggleDeploy(toggleDeploy(r, 'archer')!, 'r1')!;
