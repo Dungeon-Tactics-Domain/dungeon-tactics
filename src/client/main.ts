@@ -18,7 +18,7 @@ import {
 import type { BattleEvent, Lock, Pos, Team, UnitState } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
-import { chargeFrom, countersFrom, countersOwed } from './charge-lines.ts';
+import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -531,6 +531,9 @@ export class Game {
           ? countersFrom(this.battle, this.cursor)
           : null,
     );
+    const owed =
+      hl && moving && this.battle.reach().has(posKey(this.cursor)) && counterDamage(this.battle, this.cursor);
+    this.scene.setCursorNote(owed ? `−${owed[0] === owed[1] ? owed[0] : `${owed[0]}–${owed[1]}`}` : null);
     // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square; aiming,
     // it frames what the target mark covers (one cell, or the body of the unit there)
     const framed =

@@ -301,6 +301,11 @@ export class Marks {
     this.scene.add(this.trajectory);
   }
 
+  // where the cursor stands now (it slides), null when hidden
+  cursorAt(): THREE.Vector3 | null {
+    return this.cursor.visible ? this.cursor.position : null;
+  }
+
   // `size`: the frame goes around the square a unit of that many cells per side would stand on, with its corner on `p` (Move).
   // `fits` false turns frame and arrow red: the arrow draws over everything, so a square hidden behind a barrel or a tree still
   // reads as not fitting

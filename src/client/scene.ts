@@ -14,7 +14,7 @@ import type { Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import { type Ambience, kindOf, loadAmbience } from './ambience.ts';
 import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
-import { el } from './icons.ts';
+import { abilityIcon, el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
 import { loadPaint } from './painted.ts';
@@ -58,6 +58,7 @@ export class BattleScene {
   private readonly chargeLines: ChargeLines;
   private readonly units: Units;
   private readonly floats: HTMLElement;
+  private readonly note: HTMLElement; // the counter a Move destination draws, over the cursor
   private readonly clock = new THREE.Clock();
   private readonly time = new Timeline();
   private readonly onResize = () => this.resize();
@@ -85,6 +86,8 @@ export class BattleScene {
     this.renderer.domElement.className = 'board';
     host.append(this.renderer.domElement);
     this.floats = el('div', { class: 'floats', 'aria-hidden': 'true' });
+    this.note = el('div', { class: 'cursor-note', hidden: true }, abilityIcon('strike'), el('span'));
+    this.floats.append(this.note);
     host.append(this.floats);
     this.cam = new CameraRig(host, this.renderer.domElement, this.space, (ms, step) => this.time.animate(ms, step));
     this.camera = this.cam.camera;
@@ -206,6 +209,12 @@ export class BattleScene {
 
   setCursor(p: Pos | null, size = 1, fits = true) {
     this.marks.setCursor(p, size, fits);
+  }
+
+  // a sword and the damage the counters there would deal, over the cursor (Nov 15, Fernando); null hides it
+  setCursorNote(text: string | null) {
+    this.note.hidden = !text;
+    this.note.lastElementChild!.textContent = text ?? '';
   }
 
   // rotation to where the camera is going (not the mid-animation one): WASD already walks right after R
@@ -393,6 +402,13 @@ export class BattleScene {
     this.cam.update(dt);
     this.marks.update(dt);
     this.cam.place(this.pixel, this.units.shake(this.time.t), this.time.t);
+    // the note follows the sliding cursor and the camera every frame, like the menu beside the unit
+    const at = this.note.hidden ? null : this.marks.cursorAt();
+    if (at) {
+      const p = at.clone().project(this.camera);
+      this.note.style.left = `${((p.x + 1) / 2) * 100}%`;
+      this.note.style.top = `${((1 - p.y) / 2) * 100}%`;
+    }
     if (this.board.hasTrees)
       this.board.updateCuts(this.camera.matrixWorldInverse, (add) => {
         this.units.protect(add);

@@ -1751,6 +1751,24 @@ button[hidden],
 .float.heal {
   color: var(--heal);
 }
+/* the counter a Move destination draws (Nov 15): the strike icon and the damage, beside the cursor (scene.ts setCursorNote) */
+.cursor-note {
+  position: absolute;
+  transform: translate(16px, -120%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--strike);
+  border: 2px solid var(--mark-counter);
+  color: var(--strike-dmg);
+  font: 700 var(--fs-sm) / 1.2 var(--font);
+  text-shadow: var(--ink-shadow);
+  white-space: nowrap;
+}
+.cursor-note[hidden] {
+  display: none;
+}
 @keyframes pop {
   0% {
     transform: translate(-50%, -50%) scale(0.6);
