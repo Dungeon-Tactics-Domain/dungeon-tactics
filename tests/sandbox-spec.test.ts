@@ -33,19 +33,14 @@ import { ARENA } from '../src/client/dev/arena.ts';
 import {
   castOf,
   giveTurn,
-  inCells,
   offMap,
-  parseSpec,
   patchUnits,
   placementProblems,
   playStep,
-  readParam,
   rewind,
   sideAngle,
-  specParam,
-  specUrl,
-  storageFor,
-} from '../src/client/dev/sandbox-spec.ts';
+} from '../src/client/dev/sandbox-play.ts';
+import { inCells, parseSpec, readParam, specParam, specUrl, storageFor } from '../src/client/dev/sandbox-spec.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
 import { halfDef, halve } from '../src/shared/battle/half.ts';

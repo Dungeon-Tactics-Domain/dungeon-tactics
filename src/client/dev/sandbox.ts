@@ -18,19 +18,21 @@ import { ARENA } from './arena.ts';
 import {
   castOf,
   giveTurn,
-  inCells,
   offMap,
-  PANELS,
-  type Panel,
-  parseSpec,
   patchUnits,
   placementProblems,
   playStep,
-  readParam,
   rewind,
+  sideAngle,
+} from './sandbox-play.ts';
+import {
+  inCells,
+  PANELS,
+  type Panel,
+  parseSpec,
+  readParam,
   type SceneSpec,
   type Step,
-  sideAngle,
   specUrl,
   storageFor,
 } from './sandbox-spec.ts';

@@ -161,7 +161,8 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client/dev — localhost only
 
-- `src/client/dev/sandbox-spec.ts` — sandbox scene spec: parsing, checks and steps, shared with scripts/sandbox.mjs.
+- `src/client/dev/sandbox-spec.ts` — sandbox scene spec: types, parsing and the address, shared with scripts/sandbox.mjs.
+- `src/client/dev/sandbox-play.ts` — what a spec does to the battle: cast, patch on live units, placement checks and played steps.
 - `src/client/dev/sandbox.ts` — stages a battle from a spec and exposes window.__sandbox.
 - `src/client/dev/arena.ts` — the animation arena map for the sandbox bench (?scenario=arena).
 
