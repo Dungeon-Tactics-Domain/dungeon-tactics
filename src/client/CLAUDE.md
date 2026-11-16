@@ -1,6 +1,6 @@
 # src/client — browser
 
-Applies together with the root `CLAUDE.md`. **Web on PC first** (Fernando, Nov 12): mobile only needs to open without errors; keep the media queries and touch input.
+Applies together with the root `CLAUDE.md`. **Web on PC first; phone and tablet are also a priority** (Fernando, Nov 16, after the tablet could not be played): follow the touch rules in the design system, section 8.
 
 ## Who owns what
 

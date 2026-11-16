@@ -14,7 +14,7 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 - A new screen is built from the pieces below. Something missing: first one more parameter on the piece; a new piece only if that does not fit, recorded here.
 - Colour is never the only cue: always text, a drawing or a mark with it (✓, ▶, stripes).
 - All text through `t('pt', 'en')`.
-- Web on PC first (1280×720 and 1920×1080; wider screens in section 10). Touch: section 8 holds the rules written on Nov 16 after the tablet audit (Fernando reported the tablet could not be played) and marks what holds today and what is a target; whether a tablet that plays start to finish with the fingers becomes a gate for every change is Fernando's open decision. Until he decides, the existing media queries and touch input keep working and no change may break what section 8 marks as holding today.
+- Web on PC first, and phone and tablet are also a priority (Fernando, Nov 16, after the tablet could not be played). Screens: 1280×720 and 1920×1080 first, wider screens in section 10. Section 8 holds the touch rules and marks what holds today and what is still a target; new and changed interface follows them, and no change may break what section 8 marks as holding today. Decided Nov 16: the Back button in battle beside the menu button, a "Rotate your phone" notice on portrait phones under 600 px, the fps counter off by default, a Skip button on the dialogue box.
 - Accessibility (section 9) and wide screens (section 10) come after the dated sections 5 to 7.
 
 ## 1. Tokens
