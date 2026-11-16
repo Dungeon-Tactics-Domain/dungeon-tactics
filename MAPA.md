@@ -49,7 +49,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — wiring and windows
 
-- `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game; the start banner (announce).
+- `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game; the title before the models; the start banner (announce).
 - `src/client/main.ts` — Game: wires rules, scene, HUD and input for one battle and owns the turn loop.
 - `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
@@ -129,7 +129,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client/game — what opens around the battle
 
-- `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, developer, map, standalone).
+- `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, developer, map, standalone); the loading line over a scene still downloading (loadNote).
 - `src/client/game/title.ts` — title screen and its windows (new game, continue, battle, how to play, credits, developer).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/crawl.ts` — the town menu and quest gate, the expedition map, room settle and finish, and the way home.

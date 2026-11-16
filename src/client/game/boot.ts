@@ -1,5 +1,6 @@
 // What the page opens, read from the URL: an expedition room, a crawl room, a study or developer battle, another map, or
 // the standalone battle behind the title (and the town).
+import { DefaultLoadingManager } from 'three';
 import { Battle } from '../../shared/battle/battle.ts';
 import { regen } from '../../shared/battle/combat.ts';
 import { subOf } from '../../shared/battle/grid.ts';
@@ -10,6 +11,7 @@ import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
 import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
 import { t } from '../i18n.ts';
+import { el } from '../icons.ts';
 import { param, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
 import { type CrawlRoom, castRoom, goHome, heldRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
@@ -116,4 +118,16 @@ export async function selectBattle(): Promise<BattleSelection | null> {
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
   return { scenario, saveKey, title: !study && crawl === null && !room, room };
+}
+
+// Discreet line at the top while a page's scene downloads (the title's backdrop, a battle, the town): Three's default
+// manager counts every model and texture, files found so far (the total grows as models name their parts), since no
+// loader knows the bytes ahead. The caller removes it once its scene is built
+export function loadNote() {
+  const note = el('p', { class: 'load-note', role: 'status' }, t('Carregando modelos 3D…', 'Loading 3D models…'));
+  DefaultLoadingManager.onProgress = (_url, done, total) => {
+    note.textContent = t(`Carregando modelos 3D… ${done}/${total}`, `Loading 3D models… ${done}/${total}`);
+  };
+  document.body.append(note);
+  return note;
 }

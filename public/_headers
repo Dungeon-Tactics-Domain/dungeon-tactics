@@ -1,3 +1,13 @@
 # Vite hashes everything in /assets, so those files never change under the same name
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Cloudflare only compresses listed content types (developers.cloudflare.com/speed/optimization/content/compression/), and
+# the model types are not on it: served as listed types they go out compressed (Nov 16: the title's 7.9 MB fell to 4.4 MB under wrangler dev). Same bytes, and
+# Three's GLTFLoader reads them as an ArrayBuffer whatever the type says
+/models/*.glb
+  Content-Type: application/wasm
+/models/*.bin
+  Content-Type: application/wasm
+/models/*.gltf
+  Content-Type: application/json

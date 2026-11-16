@@ -948,6 +948,22 @@ button[hidden],
     position: static;
   }
 }
+/* boot.ts loadNote: the scene's download count over the title (Nov 16), lettered like the title's foot */
+.load-note {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  z-index: 11;
+  margin: 0;
+  pointer-events: none;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  text-shadow:
+    0 2px 0 var(--edge),
+    0 0 8px var(--edge);
+}
 .main-title .title-lang {
   min-height: 32px;
   padding: 0 12px;

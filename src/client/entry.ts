@@ -1,6 +1,6 @@
 // Entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game.
 import { Battle } from '../shared/battle/battle.ts';
-import { newBattle, selectBattle } from './game/boot.ts';
+import { loadNote, newBattle, selectBattle } from './game/boot.ts';
 import { titleScreen } from './game/title.ts';
 import { bootTown } from './game/town.ts';
 import { t } from './i18n.ts';
@@ -31,19 +31,21 @@ async function boot() {
   // a room is saved from its first frame, so leaving it before any action still counts as leaving (crawl.ts leftRoom)
   if (run.room && !saved) store.set(run.saveKey, battle.save());
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
+  // the title before the models (Fernando, Nov 16): it waited for 7.9 MB (~49 s on 4G); every title button opens another
+  // page by address, so none needs the backdrop, which comes in behind it once loaded
+  if (sel.title) titleScreen();
+  const note = loadNote();
   const scene = await BattleScene.create(
     host,
     battle.grid,
     battle.state,
     pixel,
     scenario.spawns.map((s) => s.def),
-  );
+  ).finally(() => note.remove());
   const game = new Game(battle, scene, host, pixel, run);
   sandbox?.install(game, scene);
   // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
   if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
-  // without a battle parameter the title opens over the standalone battle, which stays behind as spinning scenery
-  if (sel.title) titleScreen();
 }
 
 // Large banner in the middle of the screen for 2 s (Until Dawn's goal at the start); disappears by itself and does not take clicks

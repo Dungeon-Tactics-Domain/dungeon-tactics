@@ -53,6 +53,7 @@ import {
   townTarget,
 } from '../town-map.ts';
 import { openBar, openParty, openSheet, openShop } from '../town-ui.ts';
+import { loadNote } from './boot.ts';
 import { homeScreen, questGate, townMenu } from './crawl.ts';
 import { townFreeChoice, townGridChoice } from './options.ts';
 
@@ -465,7 +466,12 @@ export async function bootTown(host: HTMLElement) {
   castParty(state, group());
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   // every class's model loads, so a recruit or a class change in town finds theirs
-  const scene = await BattleScene.create(host, sc.grid, state, pixel, [...JOBS, ...TOWNSFOLK.map((f) => f.def)]);
+  // the title no longer waits for the models (Nov 16), so New game can arrive here before any is cached
+  const note = loadNote();
+  const scene = await BattleScene.create(host, sc.grid, state, pixel, [
+    ...JOBS,
+    ...TOWNSFOLK.map((f) => f.def),
+  ]).finally(() => note.remove());
   new Town(scene, sc.grid, state, host);
   homeScreen();
 }
