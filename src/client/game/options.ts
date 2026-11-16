@@ -81,8 +81,8 @@ export function optionsMenu(o: OptionsContext) {
             {},
             el('i', { class: 'sw counter' }),
             t(
-              'Vermelho, moldura lisa: ali você sai do alcance de quem golpeou neste turno, e ele contra-ataca',
-              'Red, plain frame: there you leave the reach of a unit you struck this turn, and it strikes back',
+              'Vermelho, moldura lisa: parar ali faz quem você golpeou neste turno contra-atacar',
+              'Red, plain frame: stopping there draws the counter of a unit you struck this turn',
             ),
           ),
         ),

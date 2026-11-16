@@ -143,7 +143,7 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   if (reach) {
     // every cell the unit's square can cover: a 2x2 token stops by its corner cell, and marking only the corners showed the
     // area half a tile off (Nov 14, Fernando on stage 0: "it needs a preview of the tiles the units will occupy in 2x2")
-    // after a strike, a stop out of the reach of a unit struck this turn draws its counter (Nov 15, Fernando): red frame; a
+    // after a strike, a stop that draws the counter of a unit struck this turn (Nov 15, Fernando; pendingCounters): red frame; a
     // cell a counter-free stop also covers stays blue
     const safe = new Set<string>();
     for (const s of reach.values()) {

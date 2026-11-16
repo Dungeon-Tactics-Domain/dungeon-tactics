@@ -170,8 +170,8 @@ function howToPlay() {
           'li',
           {},
           t(
-            'Quem você golpeia sem carga contra-ataca pela metade, de frente, se o ataque básico dele é de alvo único e você sair do alcance dele no mesmo turno: o golpe vem antes de você sair. Depois de golpear, as paradas que saem de um alcance ficam com borda vermelha e o cursor mostra o dano; ao mirar, uma linha ou seta mostra quem contra-ataca.',
-            'Whoever you strike without a charge strikes back at half, from the front, if its basic attack is single-target and you walk out of its reach in the same turn: the blow lands before you leave. After striking, the stops that leave a reach get a red frame and the cursor shows the damage; aiming, a line or arrow shows who strikes back.',
+            'Quem você golpeia sem carga contra-ataca pela metade, de frente, se o ataque básico dele é de alvo único e você sair do alcance dele no mesmo turno: o golpe vem antes de você sair. Um atirador golpeado de perto atira quando você sai do contato, onde você parar, se ali estiver no alcance dele. Depois de golpear, as paradas que causam contra-ataque ficam com borda vermelha e o cursor mostra o dano; ao mirar, uma linha ou seta mostra quem contra-ataca.',
+            'Whoever you strike without a charge strikes back at half, from the front, if its basic attack is single-target and you walk out of its reach in the same turn: the blow lands before you leave. A shooter struck up close fires once you walk out of contact, where you stop, if that stop is in its range. After striking, the stops that draw a counter get a red frame and the cursor shows the damage; aiming, a line or arrow shows who strikes back.',
           ),
         ),
         el(

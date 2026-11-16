@@ -25,6 +25,7 @@ import {
   inAbilityRange,
   inArea,
   MAX_JUMP,
+  nearCells,
   restsOn,
   shotStop,
   sightEnds,
@@ -213,14 +214,22 @@ export function canCounter(actor: UnitState, abilityId: string, u: UnitState): b
 
 export interface PendingCounter {
   unit: string; // who strikes back
-  preview: Preview; // the strike at the tile the attacker leaves, from the counter's own rule (shot path, friendly fire)
+  at: Pos; // where it finds the attacker: the tile it leaves, or the stop for a shooter it leaves in contact
+  preview: Preview; // that strike, from the counter's own rule (shot path, friendly fire)
+}
+
+// `pos` is closer to `foe` than its basic attack's minimum range, measured like the aim (`state` has the unit there)
+export function inContact(grid: Grid, state: BattleState, foe: UnitState, pos: Pos): boolean {
+  const [from, to] = aimEnds(grid, state, foe, pos);
+  return dist(from, to) < nearCells(grid, ABILITIES[basicOf(foe.def)].range[0]);
 }
 
 // Counter-attack (Nov 13, Fernando's request; half damage, his choice; redefined on Nov 15 after he was struck by a unit he
-// had not attacked that turn): a unit `actorId` struck this turn (turn.engaged) strikes back once per move order that starts
-// in the reach of its basic attack and ends out of it, at half, hit before the attacker leaves, so cover or a unit in the way
-// catches the shot. The attacker turns to face it, so a counter never gets the side or back bonus. Read by the rule, the AI
-// and the move preview alike
+// had not attacked that turn): a unit `actorId` struck this turn (turn.engaged) strikes back at half on each move order that
+// starts in the reach of its basic attack and ends out of it, hit before the attacker leaves, so cover or a unit in the way
+// catches the shot. A shooter it stood too close to (Nov 15, Fernando: an archer answers the melee that hit it and walked
+// away) fires instead once a move takes the attacker out of that contact, at the stop, if it is in its range. The attacker
+// turns to face it, so a counter never gets the side or back bonus. Read by the rule, the AI and the move preview alike
 export function pendingCounters(grid: Grid, state: BattleState, actorId: string, to: Pos): PendingCounter[] {
   const actor = state.units.find((u) => u.id === actorId);
   if (!actor || state.turn.actor !== actorId) return [];
@@ -234,16 +243,19 @@ export function pendingCounters(grid: Grid, state: BattleState, actorId: string,
       const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos, facing } : u)) };
       return previewAbility(grid, moved, foe.id, basicOf(foe.def), pos, true);
     };
-    const preview = at(actor.pos);
-    if (preview.ok && !at(to).ok) out.push({ unit: foe.id, preview });
+    const [here, there] = [at(actor.pos), at(to)];
+    if (here.ok && !there.ok) out.push({ unit: foe.id, at: actor.pos, preview: here });
+    // a stop still in contact is out of its range too, so `there.ok` already means the attacker left that contact
+    else if (there.ok && inContact(grid, state, foe, actor.pos)) out.push({ unit: foe.id, at: to, preview: there });
   }
   return out;
 }
 
-// Plays the counters a move to `to` draws, before the attacker leaves
-export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos): BattleEvent[] {
+// Plays `owed` counters at the attacker where it stands: those on its start tile before it leaves, the shooters it left in
+// contact once it stands on the stop (`Battle.move`)
+export function counters(grid: Grid, state: BattleState, actorId: string, owed: PendingCounter[]): BattleEvent[] {
   const events: BattleEvent[] = [];
-  for (const c of pendingCounters(grid, state, actorId, to)) {
+  for (const c of owed) {
     const foe = state.units.find((u) => u.id === c.unit); // an earlier counter may have killed it (friendly fire)
     const actor = state.units.find((u) => u.id === actorId);
     if (!foe || !actor) continue;

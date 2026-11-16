@@ -154,4 +154,29 @@ describe('counter indicator (Nov 15)', () => {
     expect(counterDamage(b, { x: 2, y: 2 })).toBeNull();
     expect(counterFromText(b, { x: 0, y: 1 })).toContain('contra-ataca');
   });
+
+  // a shooter struck up close fires at the stop once the attacker leaves its contact (Nov 15, Fernando's choice)
+  it('a shooter struck up close: owed when aiming, red where it would shoot, its line ending at the stop', () => {
+    const b = new Battle(
+      gridOf(['......', '......', '......', '...#..', '......', '......']),
+      stateOf([
+        { id: 'w', def: 'warrior', team: 'hero', x: 3, y: 2 },
+        { id: 'r', def: 'archer', team: 'enemy', x: 3, y: 1 },
+        { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 5 },
+      ]),
+    );
+    const archer = { pos: { x: 3, y: 1 }, size: 1 };
+    expect(countersOwed(b, 'strike', b.preview('strike', archer.pos)).melee).toEqual([
+      { from: archer, to: { pos: { x: 3, y: 2 }, size: 1 } },
+    ]);
+    expect(counterNote(b, 'strike', b.preview('strike', archer.pos))).toContain('contra-ataca');
+    b.act('strike', archer.pos);
+    const hl = highlights(b, { ...freshUi(b), mode: { k: 'move' } });
+    const kind = (p: Pos) => hl.tiles.find((m) => samePos(m.pos, p))?.kind;
+    expect([kind({ x: 2, y: 1 }), kind({ x: 5, y: 2 })]).toEqual(['move', 'counter']); // beside it, 3 tiles off
+    expect(countersFrom(b, { x: 5, y: 2 }).lines.map((l) => l.to)).toEqual([{ pos: { x: 5, y: 2 }, size: 1 }]);
+    expect(counterDamage(b, { x: 5, y: 2 })).not.toBeNull();
+    // behind the wall the shot still goes and the wall catches it: red, but nothing for the cursor to show
+    expect([kind({ x: 3, y: 4 }), counterDamage(b, { x: 3, y: 4 })]).toEqual(['counter', null]);
+  });
 });

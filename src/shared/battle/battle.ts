@@ -4,6 +4,7 @@ import {
   checkOutcome,
   counters,
   type Preview,
+  pendingCounters,
   previewAbility,
   resolveAbility,
   spikeAtTurnEnd,
@@ -97,7 +98,13 @@ export class Battle {
     this.remember(false);
     const from = this.actor.pos;
     const id = this.actor.id;
-    const hit = counters(this.grid, this.state, id, to); // before it leaves
+    const owed = pendingCounters(this.grid, this.state, id, to);
+    const hit = counters(
+      this.grid,
+      this.state,
+      id,
+      owed.filter((c) => samePos(c.at, from)),
+    ); // before it leaves
     // took a counter-attack: this move cannot be undone (Nov 13, Fernando's request: "you can only not undo the move if the
     // character takes damage or falls into a trap")
     if (hit.length) this.history = [];
@@ -109,7 +116,17 @@ export class Battle {
     this.actor.pos = to;
     this.state.turn.moved = true;
     // the event carries the starting tile in front (Nov 13): without it the animation began at the 1st step and the model "teleported"
-    return [...hit, { k: 'move', unit: id, path: [from, ...path] }];
+    const walk: BattleEvent = { k: 'move', unit: id, path: [from, ...path] };
+    // a shooter it stood too close to fires where it stops (Nov 15, Fernando)
+    const shot = counters(
+      this.grid,
+      this.state,
+      id,
+      owed.filter((c) => !samePos(c.at, from)),
+    );
+    if (shot.length) this.history = [];
+    this.state.outcome = checkOutcome(this.state);
+    return [...hit, walk, ...shot];
   }
 
   // `lock`: where a charge stays aimed, picked by the player after the aim (Nov 15); without it, the ability's default
