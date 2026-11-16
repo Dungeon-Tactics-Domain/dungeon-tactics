@@ -1,8 +1,8 @@
-// Game entry point: wires the battle (rules), the scene (Three), the HUD (DOM) and touch input. Owns the turn loop: the player acts
+// The Game of one battle: wires the battle (rules), the scene (Three), the HUD (DOM) and the input. Owns the turn loop: the player acts
 // through the HUD; on the enemy turn the AI plays on its own, one unit at a time, with a pause so it can be read.
 
 import { playAiTurn } from '../shared/battle/ai.ts';
-import { Battle } from '../shared/battle/battle.ts';
+import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -12,30 +12,28 @@ import { beforeEvent } from './before-event.ts';
 import { type Screen, startScreen } from './command.ts';
 import { dialog } from './dialog.ts';
 import { fpsCounter } from './fps.ts';
-import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
+import { type BattleSelection, newBattle } from './game/boot.ts';
 import { finishRoom } from './game/crawl.ts';
 import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
-import { titleScreen } from './game/title.ts';
-import { bootTown } from './game/town.ts';
 import { HeroTurn, type TurnHost } from './hero-turn.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
-import { nextSize, PIXEL_KEY, type PixelSettings, parsePixel } from './pixel-settings.ts';
-import { BattleScene } from './scene.ts';
+import { nextSize, PIXEL_KEY, type PixelSettings } from './pixel-settings.ts';
+import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
-import { param, store } from './store.ts';
-import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
+import { store } from './store.ts';
+import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
 import { pace, TIMING } from './timing.ts';
 import { turnMarks } from './turn-marks.ts';
 
 // Test (localhost only): ?auto=1 makes the AI play the heroes too, to check the battle end and the way home without
 // playing by hand (night of Nov 12). Nothing changes in production.
-const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+export const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const AUTO = LOCAL && new URLSearchParams(location.search).has('auto');
 
 const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
@@ -359,47 +357,3 @@ export class Game implements TurnHost {
     });
   }
 }
-
-async function boot() {
-  const host = document.getElementById('app')!;
-  // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
-  if (param('home') !== null) return bootTown(host);
-  const sel = await selectBattle();
-  if (!sel) return; // went home instead
-  // localhost ?sandbox=<spec>: a battle staged for screenshots (docs/sandbox.md); its own chunk, never fetched online
-  const sandbox = LOCAL && param('sandbox') !== null ? await import('./dev/sandbox.ts') : null;
-  const staged = await sandbox?.stage(sel.scenario);
-  // its own save key: acting in a staged battle must not overwrite the real one
-  const run = staged ? { ...sel, scenario: staged.scenario, saveKey: 'dt:battle:sandbox' } : sel;
-  const { scenario } = run;
-  // a save of another scenario (a whole-tile one, from before the half tiles of Nov 14) starts the battle over
-  const loaded = staged ? null : Battle.load(store.get(sel.saveKey) ?? '');
-  const saved = loaded?.state.scenario === scenario.id;
-  const battle = staged?.battle ?? (saved ? loaded : newBattle(scenario, run.room));
-  // a room is saved from its first frame, so leaving it before any action still counts as leaving (crawl.ts leftRoom)
-  if (run.room && !saved) store.set(run.saveKey, battle.save());
-  const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
-  const scene = await BattleScene.create(
-    host,
-    battle.grid,
-    battle.state,
-    pixel,
-    scenario.spawns.map((s) => s.def),
-  );
-  const game = new Game(battle, scene, host, pixel, run);
-  sandbox?.install(game, scene);
-  // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
-  if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
-  // without a battle parameter the title opens over the standalone battle, which stays behind as spinning scenery
-  if (sel.title) titleScreen();
-}
-
-// Large banner in the middle of the screen for 2 s (Until Dawn's goal at the start); disappears by itself and does not take clicks
-function announce(text: string) {
-  sfx('confirm');
-  const box = el('div', { class: 'announce', role: 'status' }, text);
-  document.body.append(box);
-  setTimeout(() => box.remove(), 2200);
-}
-
-void boot();

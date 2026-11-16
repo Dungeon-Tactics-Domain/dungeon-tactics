@@ -52,7 +52,8 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — wiring and windows
 
-- `src/client/main.ts` — Game: the entry point; wires rules, scene, HUD and input and owns the turn loop.
+- `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game; the start banner (announce).
+- `src/client/main.ts` — Game: wires rules, scene, HUD and input for one battle and owns the turn loop.
 - `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
