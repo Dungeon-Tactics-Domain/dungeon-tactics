@@ -173,8 +173,8 @@ function questRows(go: (fn: () => void) => () => void) {
           btn.dataset.armed = '1';
           // the label only: the row keeps its orb
           btn.lastChild!.textContent = t(
-            'Toque de novo: abandona a expedição atual',
-            'Tap again: abandons the current expedition',
+            'Toque de novo: encerra a expedição atual, o ouro achado vai à cidade',
+            'Tap again: ends the current expedition, the gold found goes to town',
           );
           return;
         }
@@ -271,6 +271,13 @@ export function townMenu(extra?: HTMLElement) {
     { onBack: closeBeside, note: goldNote(t('Ouro', 'Gold'), townGold()) },
   );
   d.overlay.classList.add('town-menu');
+  // the gold on its head band follows a buy, a sale or a recruit in the window beside it (they all go through a click)
+  const note = d.overlay.querySelector('.dialog-head .gold strong')!;
+  const follow = () => {
+    if (d.overlay.isConnected) note.textContent = String(townGold());
+    else removeEventListener('click', follow);
+  };
+  addEventListener('click', follow);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
