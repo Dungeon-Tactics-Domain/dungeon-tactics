@@ -3253,6 +3253,16 @@ p.gold strong::before,
     filter: brightness(1.18);
   }
 }
+/* a short wide screen (a phone lying down, as the rotate note asks): the window grows with its content and the overlay
+   scrolls, so the chart keeps five rows and the party box never runs over the commands */
+@media (max-height: 700px) {
+  .crawl-map .dialog.title {
+    height: auto;
+  }
+  .map-scroll {
+    height: 330px; /* as tall as the party box of four beside it */
+  }
+}
 /* a tablet upright: the chart over the box, the commands and the party side by side under them; the chart keeps a
    window of its own so the commands stay near it */
 @media (max-width: 900px) {
@@ -3261,7 +3271,7 @@ p.gold strong::before,
     height: auto;
   }
   .map-scroll {
-    height: min(46dvh, 520px);
+    height: clamp(260px, 46dvh, 520px); /* never under four rows, on a phone lying down either */
   }
   .dialog .map-commands {
     align-self: start;
@@ -3279,7 +3289,7 @@ p.gold strong::before,
     padding-left: 10px;
   }
   .map-scroll {
-    height: min(40dvh, 420px);
+    height: clamp(260px, 40dvh, 420px);
   }
   .crawl-map .dialog.title h2 {
     font-size: var(--fs-lg);
