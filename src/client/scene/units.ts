@@ -107,9 +107,9 @@ export class Units {
     for (const n of this.numbers) {
       const p = TMP.copy(n.at).project(this.camera);
       n.box.x = ((p.x + 1) / 2) * this.canvas.clientWidth;
-      n.box.y = ((1 - p.y) / 2) * this.canvas.clientHeight;
+      n.box.y = ((1 - p.y) / 2) * this.canvas.clientHeight - n.box.h / 2;
       n.node.style.left = `${n.box.x}px`;
-      n.node.style.top = `${n.box.y - n.box.lift}px`;
+      n.node.style.top = `${n.box.y + n.box.h / 2 - n.box.lift}px`;
     }
     for (const v of this.views.values()) {
       if (t >= this.frozenUntil) v.mixer?.update(dt * fast);
@@ -484,10 +484,11 @@ export class Units {
       c = this.canvas;
     const node = el('div', { class: `float ${cls}`, style: `font-size:${px}px` }, text);
     this.floats.append(node);
-    // measured once on screen, so a wider number (a ✦, a "Miss") keeps its real room
+    // measured once on screen, so a wider number (a ✦, a "Miss") keeps its real room; `y` is where it is drawn while
+    // it holds: `pop` raises it by its own height from the chest, so a big number sits higher than a small one
     const box = {
       x: ((p.x + 1) / 2) * c.clientWidth,
-      y: ((1 - p.y) / 2) * c.clientHeight,
+      y: ((1 - p.y) / 2) * c.clientHeight - px / 2,
       w: node.offsetWidth,
       h: px,
     };
@@ -497,7 +498,7 @@ export class Units {
     );
     // placed now, not on the next frame, so it never flashes in the corner
     node.style.left = `${box.x}px`;
-    node.style.top = `${box.y - lift}px`;
+    node.style.top = `${box.y + px / 2 - lift}px`;
     const n = { node, at, box: { ...box, lift } };
     this.numbers.push(n);
     setTimeout(() => {

@@ -1777,6 +1777,7 @@ button[hidden],
 .float {
   position: absolute;
   transform: translate(-50%, -50%);
+  white-space: nowrap; /* near the right edge the magic star would break onto a line of its own */
   font: 400 26px / 1 var(--font-title);
   text-shadow:
     0 2px 0 #000,
