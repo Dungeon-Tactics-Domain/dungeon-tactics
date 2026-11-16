@@ -17,7 +17,7 @@ import {
 } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Lock, Pos, Team, UnitState } from '../shared/battle/types.ts';
 import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
-import { battleFace, endExpression, expressionAt, faceCues, frameOf, type Mood } from './battle-face.ts';
+import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { chargeFrom, countersFrom, countersOwed } from './charge-lines.ts';
 import {
   abilitiesOf,
