@@ -121,7 +121,8 @@ const applyMusic = () => {
 // stay suspended: every gesture wakes it until it runs (Nov 16 tablet audit: the sound may not play on the iPad)
 export function wake(c: AudioContext | null, make: () => AudioContext): AudioContext {
   const out = c ?? make();
-  if (out.state === 'suspended') void out.resume().catch(() => undefined);
+  // not just 'suspended': iOS also leaves it 'interrupted' after a call or a lock screen
+  if (out.state !== 'running' && out.state !== 'closed') void out.resume().catch(() => undefined);
   return out;
 }
 // player's gestures: the first creates the audio context and starts the music; later ones retry what the browser refused
@@ -134,6 +135,11 @@ function unlock() {
 if (typeof addEventListener !== 'undefined')
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
     addEventListener(ev, unlock, { capture: true });
+// coming back to the tab or app: the system may have suspended the context while it was away
+if (typeof document !== 'undefined')
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && ctx) unlock();
+  });
 
 const load = (name: string) => {
   let p = buffers.get(name);

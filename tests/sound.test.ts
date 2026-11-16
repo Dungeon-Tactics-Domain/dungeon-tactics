@@ -38,6 +38,14 @@ describe('audio wake', () => {
     expect(make).not.toHaveBeenCalled();
     expect(c.resume).toHaveBeenCalledOnce();
   });
+  it('resumes an interrupted context (iOS after a call) and leaves a closed one', () => {
+    const i = fake('interrupted' as AudioContextState);
+    wake(i, () => i);
+    expect(i.resume).toHaveBeenCalledOnce();
+    const x = fake('closed');
+    wake(x, () => x);
+    expect(x.resume).not.toHaveBeenCalled();
+  });
   it('leaves a running context alone', () => {
     const c = fake('running');
     wake(c, () => c);
