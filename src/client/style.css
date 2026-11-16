@@ -88,9 +88,12 @@
     0 3px 0 rgba(0, 0, 0, 0.45);
   --paper-white: #18295a; /* field background: Developer fields and the class card */
   --row-hi: rgba(255, 255, 255, 0.1); /* menu row under hover */
-  /* floating damage number: pale, and hotter on a strike of 25% of life or more */
-  --float-dmg: #ffd0c4;
-  --float-big: #ffb199;
+  /* floating number by kind (Nov 15 grill): white physical, violet magic, grey miss (heal: --heal); gold edge on a
+     strike of 25% of life or more */
+  --float-phys: #ffffff;
+  --float-magic: #d7a6ff;
+  --float-miss: #bdbdbd;
+  --float-crit-edge: #ffc531;
   --shade: #050a18; /* dark navy of the veils and tags over the scene; each piece sets its alpha with color-mix */
   --tap: 44px; /* touch target: >= 44 px (spec) */
   --gap: 8px;
@@ -1782,15 +1785,23 @@ button[hidden],
     0 -2px 0 #000;
   animation: pop 1.5s linear forwards;
 }
-.float.dmg {
-  color: var(--float-dmg);
+/* the size comes inline from the share of life (hit-weight.ts numberPx); the colour says the kind */
+.float.phys {
+  color: var(--float-phys);
 }
-.float.big {
-  font-size: var(--fs-display);
-  color: var(--float-big);
-} /* strike of 25% of life or more (scene/units.ts): bigger and hotter */
+.float.magic {
+  color: var(--float-magic);
+}
+.float.crit {
+  text-shadow:
+    0 3px 0 var(--float-crit-edge),
+    3px 0 0 var(--float-crit-edge),
+    -3px 0 0 var(--float-crit-edge),
+    0 -3px 0 var(--float-crit-edge),
+    0 5px 2px #000;
+} /* strike of 25% of life or more (scene/units.ts): bigger, with a gold edge */
 .float.miss {
-  color: var(--muted);
+  color: var(--float-miss);
 }
 .float.heal {
   color: var(--heal);

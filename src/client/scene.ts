@@ -426,7 +426,7 @@ export class BattleScene {
     this.perf.frames++;
     this.renderer.info.reset();
     const dt = this.clock.getDelta();
-    const fast = speed();
+    const fast = speed() * this.units.slow(this.time.t); // the death slow motion reaches the clock and the mixers
     this.time.tick(dt * 1000 * fast);
     this.cam.update(dt);
     this.marks.update(dt);

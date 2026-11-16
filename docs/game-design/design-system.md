@@ -54,7 +54,7 @@ Fernando's request: an opacity slider for the blue interface, with a blur of wha
 | Bars | `--hp` `--mp` `--sp` `--ct` `--heal` | HP, mana (MP), stamina (ST, Nov 16), CT, healing |
 | Strike preview | `--strike-dmg` `--enemy-paper` `--enemy-hi` `--strike` | damage number; the wine gradient of an enemy target's half and its ◆; `--strike` is now only the translucent band of the "+N targets" line |
 | Fields | `--paper-white` | Developer fields (dark blue field) |
-| Damage number | `--float-dmg` `--float-big` | floating number over the unit; the big one on a strike of 25% of life or more |
+| Damage number | `--float-phys` `--float-magic` `--heal` `--float-miss` `--float-crit-edge` | floating number from the unit's chest, coloured by kind (Nov 15 grill): white physical (push, wall, fall and spikes too), violet magic, green heal, grey miss; the gold edge on a strike of 25% of life or more. Its size comes inline from the share of life it takes (`numberPx` in `hit-weight.ts`: 26 px at 10%, 38 at 25%, up to 56, x1.4 on a strong strike), so it reads the same at x5 life |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` `--mark-counter` | legend; same as `MARK` in `src/client/scene/marks.ts` |
 | Command orbs | `--orb-blue` `--orb-gold` `--orb-bronze` `--orb-off` | glass orb (`.orb` with `act`/`blue`, `status`/`gold` or `bronze`) before Act and Status in the command menu, before each row of a window's command menu (town, title: bronze marks the row that leaves, like the kit's Leave and Options) and before each row of the stage-end window; `--orb-off` on a disabled row |
 | Theme art | `--ability-atlas` | the whole `url(...)` of the theme's 32 px ability icon atlas (`public/ui/fft/atlas-32.png`); CSS cannot join a path to a file name, so a theme with its own art redefines the full value |
@@ -133,7 +133,7 @@ Minimum text: 16 px (the key hint, 11 px, and the fps counter, the map compass l
 | Speaker mouth (painted face) | 180 ms per frame while the text types: talk1 from the first instant, then talk2, talk1, neutral…; neutral when the sentence is out | `mouthFrame` in `talk.ts` (JS: it follows the typing, not a CSS loop) |
 | Game title | 600 ms | `title-in` |
 | Focus ▶ and dialogue ▼ | 0.6 s in 2 steps (`--t-nudge`) | `nudge` |
-| Damage number | 1.5 s | `pop` = `TIMING.float` |
+| Damage number | 1.5 s; pops on the impact frame and follows the chest on screen | `pop` = `TIMING.float` |
 | Objective banner | 2.2 s | `announce` |
 
 Battle timing (step, jump, strike) lives in `timing.ts`, never in CSS. With `prefers-reduced-motion`, nothing animates.
@@ -237,7 +237,7 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 
 ## 6. Debts (left for later)
 
-- **Loose font sizes:** one-off sizes left outside the `--fs-*` scale: 11 (key hint), 26 (damage number), 30 px (objective banner) and 44 px (expedition map title, `.crawl-map h2`).
+- **Loose font sizes:** one-off sizes left outside the `--fs-*` scale: 11 (key hint), 26 (miss and charge texts; the damage number is sized by `numberPx`), 30 px (objective banner) and 44 px (expedition map title, `.crawl-map h2`).
 - **Loose sizes and bevels in windows (Nov 16 review):** buttons under `--tap` (the Shop and Tavern row buttons at 36 px, the title's language button at 32 px; PC first, so left as is) and the primary button's bevels in raw `rgba` instead of `--bevel-hi`/`--bevel-lo` (other alphas).
 - **Loose interface colours:** the confetti colours in `game/end-screens.ts` (the title's old gold glow became `--focus` on Nov 15). The illustrated map palette (`.world-art`, `.world-icon`, `.world-compass`) is drawing, not interface: it stays as is.
 - **No arrow keys in the Equipment window** (Nov 16): its slot column and Options' section column walk by Tab only; the arrows walk only a `.camp-list`, and making the slot column one would take the arrows from the right panel.

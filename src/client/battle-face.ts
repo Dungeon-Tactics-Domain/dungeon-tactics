@@ -28,7 +28,7 @@ export const frameOf = (face: Face, expr: Expression): number => face.expression
 const MOOD_MS = { hurt: 900, shout: 700, angry: 2200, smile: 2200 };
 const mood = (expr: keyof typeof MOOD_MS, from = 0): Mood => ({ expr, from, until: from + MOOD_MS[expr] });
 const WOUNDED = 0.3; // under 30% of life the face stays wounded between reactions
-const BIG = 0.25; // the strike that shakes the camera (scene/units.ts) also leaves the target angry
+export const BIG = 0.25; // the strike that shakes the camera (hit-weight.ts isBig) also leaves the target angry
 
 // the moods each event starts, `from` counted from the moment that event plays (Game.beforeEvent). A counter-attack is an
 // attack on the tile a later move leaves from (Battle.move puts it before the walk); a kill smiles for the last striker

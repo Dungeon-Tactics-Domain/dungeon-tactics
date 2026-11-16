@@ -319,3 +319,9 @@ export function chargeAura(magic: boolean): THREE.Mesh {
   };
   return m;
 }
+
+// Weight of a blow (Fernando's grill of Nov 15): dust where a falling body lands, stone sparks where a pushed one meets a wall
+export const dust = (scene: THREE.Scene, tween: Tween, at: THREE.Vector3) =>
+  bits(scene, tween, at, '#b9a888', 'burst', 0.3, 500);
+export const sparks = (scene: THREE.Scene, tween: Tween, at: THREE.Vector3) =>
+  bits(scene, tween, at, '#ffb340', 'burst', 0.15, 400);

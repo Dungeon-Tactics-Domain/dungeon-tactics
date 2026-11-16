@@ -23,8 +23,20 @@ export const TIMING = {
   die: 1000, // 700: fall of whoever dies
   float: 1500, // 1200: damage number pops, holds to be read and fades (the same value is in the CSS, .float's pop animation)
   enemyAfter: 450, // 250: breather between one enemy and the next
-  hitStop: 110, // 90: everything stops at the impact, the target flashes white; this is what gives the hit weight
-  shake: 280, // 220: the target shakes after the pause and the shaking fades
+  // weight of a blow (Fernando's grill of Nov 15, the Mechanics lab's peso.json; distances in hit-weight.ts)
+  hitStop: 70, // 110: everything stops at the impact, the target flashes white; this is what gives the hit weight
+  hitStopBig: 140, // new: the pause doubled on a strong strike (25% of life or more), which also shakes the camera
+  shake: 260, // 280: the target trembles after the pause and the trembling fades
+  quake: 280, // new: the camera shake of a strong strike...
+  quakeLand: 200, // new: ...and of a fall landing or a body meeting a wall
+  recoil: 110, // new: the struck body steps back half a tile...
+  recoilBack: 260, // new: ...and comes back
+  bounce: 240, // new: the short bounce where a fall lands
+  wallSlide: 70, // new: a pushed body slides to the wall and stops dead...
+  wallBack: 160, // new: ...then comes back a hand's width to its tile
+  slowmo: 800, // new: battle ms of the death slow motion (2.7 s at WEIGHT.slow 0.3): the impact and most of the fall
+  closeUp: 180, // new: the camera closes in on whoever dies...
+  closeUpBack: 450, // new: ...and goes back after the fall
   pop: 320, // 240: little hop of whoever starts their turn
   blink: 110, // 80: each on/off of whoever dies (3 blinks)
 };

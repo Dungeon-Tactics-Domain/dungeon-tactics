@@ -148,6 +148,23 @@ export class CameraRig {
     });
   }
 
+  // Death close-up (Fernando's grill of Nov 15): eases the view `zoom` times closer onto `at`; null eases back to the
+  // framing from before it, which endActionCam then takes back to its own
+  private closeSaved: { viewH: number; focus: THREE.Vector3 } | null = null;
+  async closeUp(at: THREE.Vector3 | null, zoom: number, ms: number) {
+    if (this.held || (!at && !this.closeSaved)) return;
+    this.closeSaved ??= { viewH: this.viewH, focus: (this.focusGoal ?? this.focus).clone() };
+    const s = this.closeSaved;
+    if (!at) this.closeSaved = null;
+    this.focusGoal = (at ?? s.focus).clone();
+    const h0 = this.viewH,
+      h1 = at ? s.viewH / zoom : s.viewH;
+    await this.animate(ms, (k) => {
+      this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k);
+      this.frameView();
+    });
+  }
+
   // Sandbox bench (dev/sandbox.ts): a fixed tilt in degrees and no action camera, so a body is always seen from the same
   // angle; `clip` cuts what stands more than that many tiles in front of the focus, as the low action cameras do. null lets go
   private held = false;

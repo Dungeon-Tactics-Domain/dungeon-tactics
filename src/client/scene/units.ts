@@ -5,14 +5,16 @@ import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
-import { dist, samePos, subOf, tileAt } from '../../shared/battle/grid.ts';
+import { canStand, dist, inBounds, samePos, subOf, tileAt } from '../../shared/battle/grid.ts';
 import { cellsOf, squareH } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
-import { chargeAura, lookOf, playFx } from '../fx.ts';
+import { chargeAura, dust, lookOf, playFx, sparks } from '../fx.ts';
+import { fatal, isBig, numberKind, numberPx, parseSlowmo, SLOWMO_KEY, shoved, WEIGHT } from '../hit-weight.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import { barYOf, MARKER, modelOf, unitHeight } from '../markers.ts';
+import { store } from '../store.ts';
 import { prepare } from '../three-util.ts';
 import { isJump, jumpAirMs, stepMs, TIMING } from '../timing.ts';
 import type { Board } from './board.ts';
@@ -24,6 +26,8 @@ const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
 const TINT_GLOW = 0.45; // strength of the own glow (UnitDef.tint): visible on the dark unit without erasing the texture
 const UP = new THREE.Vector3(0, 1, 0);
 const TMP = new THREE.Vector3(); // per-frame math without creating objects
+// reduced motion: no recoil, bounce, camera shake or death slow motion; the hit-stop is a pause and stays
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 interface UnitView {
   holder: THREE.Group;
@@ -35,6 +39,9 @@ interface UnitView {
   def: string;
   aura: THREE.Mesh | null; // glow on the ground while charging an ability
   body: THREE.Object3D | null;
+  // between the holder and the body: the recoil, bounce and wall rebound move it, so the holder (the unit's tile for
+  // posOf, the push's start and the water's splashes) stays put, and the body's own tremble, dodge and hop add up
+  sway: THREE.Group;
   mats: THREE.MeshStandardMaterial[]; // materials only for this unit (copies): flashing one does not flash the others of the same model
   flash: number; // counts the flashes: only the last one gives the glow back (a strike and a thorn in a row do not cut the second)
   ground: THREE.Group; // ring and front arrow, lying on the ramp (tiltGround)
@@ -44,7 +51,9 @@ export class Units {
   private readonly views = new Map<string, UnitView>();
   private readonly fallen = new Map<string, THREE.Group>(); // bodies of those who died, on the ground until the end of the battle
   private frozenUntil = 0; // hit-stop: units stay still until here
-  private shakeUntil = 0; // strong strike: the camera shakes until here
+  private quaking = { amp: 0, ms: 1, until: 0 }; // camera shake: strength in world units, fading until `until`
+  private slowUntil = 0; // death slow motion: the battle clock runs at WEIGHT.slow until here
+  private readonly numbers: { node: HTMLElement; at: THREE.Vector3 }[] = []; // floating numbers, kept on their chest
   private markers = true; // team ring, facing arrow and health bar; the town has none (hideMarkers)
   private readonly camera: THREE.OrthographicCamera;
 
@@ -66,14 +75,29 @@ export class Units {
     return this.views.values();
   }
 
-  // strong strike: how far the camera shakes at battle time `t` (0 = still), fading until shakeUntil
+  // how far the camera shakes at battle time `t` (0 = still), fading out
   shake(t: number): number {
-    return t < this.shakeUntil ? 0.12 * ((this.shakeUntil - t) / TIMING.shake) : 0;
+    const q = this.quaking;
+    return t < q.until ? q.amp * ((q.until - t) / q.ms) : 0;
+  }
+  private quake(amp: number, ms: number) {
+    if (!still()) this.quaking = { amp: amp * subOf(this.space.grid), ms, until: this.time.t + ms };
+  }
+
+  // the battle clock's rate at `t`: WEIGHT.slow during a death's slow motion
+  slow(t: number): number {
+    return t < this.slowUntil ? WEIGHT.slow : 1;
   }
 
   // mixers (frozen during the hit-stop), ring on the ramp and health bar facing the camera; after the camera is placed
   update(dt: number, fast: number) {
     const t = this.time.t;
+    // the numbers follow their chest while the camera slides or closes in
+    for (const n of this.numbers) {
+      const p = TMP.copy(n.at).project(this.camera);
+      n.node.style.left = `${((p.x + 1) / 2) * 100}%`;
+      n.node.style.top = `${((1 - p.y) / 2) * 100}%`;
+    }
     for (const v of this.views.values()) {
       if (t >= this.frozenUntil) v.mixer?.update(dt * fast);
       this.tiltGround(v);
@@ -135,6 +159,8 @@ export class Units {
 
   private makeUnit(u: UnitState): UnitView {
     const holder = new THREE.Group();
+    const sway = new THREE.Group();
+    holder.add(sway);
     let mixer: THREE.AnimationMixer | null = null;
     let clips: THREE.AnimationClip[] = [];
     let body: THREE.Object3D | null = null;
@@ -154,7 +180,7 @@ export class Units {
       this.glowBack(mats, u.def);
       const b = new THREE.Box3().setFromObject(body);
       body.scale.setScalar(unitHeight(u.def) / (b.max.y - b.min.y));
-      holder.add(body);
+      sway.add(body);
       mixer = new THREE.AnimationMixer(body);
       // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
       const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
@@ -219,6 +245,7 @@ export class Units {
       def: u.def,
       aura: null,
       body,
+      sway,
       mats,
       flash: 0,
       ground,
@@ -290,6 +317,7 @@ export class Units {
       if (alive.has(id)) continue;
       this.views.delete(id);
       v.mixer?.update(10); // closes the death animation on the last frame
+      v.sway.position.set(0, 0, 0); // a recoil cut short by the end of the sequence leaves no body off its tile
       v.holder.getObjectByName('bar')?.removeFromParent();
       v.ground.visible = false;
       if (v.aura) v.aura.visible = false;
@@ -363,39 +391,97 @@ export class Units {
     });
   }
 
-  // Impact: everything stops for an instant (hit-stop), the target flashes white and then shakes, with the shake fading
-  private async impact(v: UnitView) {
-    this.frozenUntil = this.time.t + TIMING.hitStop;
+  // Impact: everything stops for an instant (hit-stop, doubled on a strong strike), the target flashes white and then
+  // trembles, the trembling fading
+  private async impact(v: UnitView, big: boolean) {
+    const stop = big ? TIMING.hitStopBig : TIMING.hitStop;
+    this.frozenUntil = this.time.t + stop;
     for (const m of v.mats) m.emissive.set('#ffffff');
     const flash = ++v.flash;
     void this.time
-      .animate(TIMING.hitStop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k)))
+      .animate(stop * 1.6, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 1 - k)))
       .then(() => flash === v.flash && this.glowBack(v.mats, v.def));
-    await this.time.wait(TIMING.hitStop);
+    await this.time.wait(stop);
+    const amp = WEIGHT.tremble * subOf(this.space.grid);
     if (v.body)
-      void this.time.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * 0.07 * (1 - k)));
+      void this.time.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * amp * (1 - k)));
   }
 
-  private float(unitId: string, text: string, cls: string) {
+  // the body's offset from its tile (world units), eased out over `ms`; reduced motion keeps it on its tile
+  private sway(v: UnitView, to: THREE.Vector3, ms: number): Promise<void> {
+    if (still()) return Promise.resolve();
+    const a = v.sway.position.clone(),
+      b = to.clone().applyAxisAngle(UP, -v.holder.rotation.y);
+    return this.time.animate(ms, (k) => v.sway.position.lerpVectors(a, b, 1 - (1 - k) * (1 - k)));
+  }
+
+  // flat direction from the unit `from` to `v`; null when there is none (no attacker, its own spikes)
+  private away(from: string | null, v: UnitView): THREE.Vector3 | null {
+    const a = from ? this.views.get(from) : undefined;
+    if (!a) return null;
+    const d = v.holder.position.clone().sub(a.holder.position).setY(0);
+    return d.lengthSq() > 0.01 ? d.normalize() : null;
+  }
+
+  // the recoil steps into the cell just past the body's edge: not into a wall, a step up or off the map
+  private roomBehind(v: UnitView, d: THREE.Vector3): boolean {
+    const g = this.space.grid,
+      p = v.holder.position.clone().addScaledVector(d, (UNIT_DEFS[v.def].size ?? 1) / 2 + 0.5);
+    const c = { x: Math.round(p.x + g.width / 2 - 0.5), y: Math.round(p.z + g.height / 2 - 0.5) };
+    return inBounds(g, c) && canStand(tileAt(g, c)) && this.space.world(c).y <= v.holder.position.y + 0.01;
+  }
+
+  private chest(v: UnitView): THREE.Vector3 {
+    return v.holder.position.clone().setY(v.holder.position.y + unitHeight(v.def) * WEIGHT.chest);
+  }
+
+  // The number pops from the chest on the impact frame and follows it (update); `px` sizes it by the share of life
+  private float(unitId: string, text: string, cls: string, px?: number) {
     const v = this.views.get(unitId);
     if (!v) return;
-    const p = v.holder.position
-      .clone()
-      .setY(v.holder.position.y + 1.3)
-      .project(this.camera);
-    const node = el(
-      'div',
-      { class: `float ${cls}`, style: `left:${((p.x + 1) / 2) * 100}%;top:${((1 - p.y) / 2) * 100}%` },
-      text,
-    );
+    const node = el('div', { class: `float ${cls}`, style: px ? `font-size:${px}px` : '' }, text);
+    const n = { node, at: this.chest(v) };
+    this.numbers.push(n);
     this.floats.append(node);
-    setTimeout(() => node.remove(), TIMING.float);
+    setTimeout(() => {
+      node.remove();
+      this.numbers.splice(this.numbers.indexOf(n), 1);
+    }, TIMING.float);
+  }
+
+  // a push off a drop: a real gravity arc, then dust, a short bounce and a light camera shake where it lands (the fall's
+  // number comes with the next event)
+  private async fall(v: UnitView, a: THREE.Vector3, b: THREE.Vector3) {
+    const k = subOf(this.space.grid),
+      g = WEIGHT.gravity * k,
+      up = WEIGHT.hop * k;
+    const T = (up + Math.sqrt(up * up + 2 * g * (a.y - b.y))) / g; // seconds until it touches b's ground
+    await this.time.animate(T * 1000, (s) =>
+      v.holder.position.lerpVectors(a, b, s).setY(a.y + up * s * T - (g * (s * T) ** 2) / 2),
+    );
+    v.holder.position.copy(b);
+    void dust(this.scene, (ms, step) => this.time.animate(ms, step), b.clone());
+    if (!still())
+      void this.time.animate(TIMING.bounce, (s) => (v.sway.position.y = WEIGHT.bounce * k * 4 * s * (1 - s)));
+    this.quake(WEIGHT.quakeLand, TIMING.quakeLand);
+  }
+
+  // the blow that downs a unit: slow motion and the camera closes in on it, on every death unless Options turns it off
+  private deathCam(v: UnitView) {
+    if (still() || !parseSlowmo(store.json(SLOWMO_KEY))) return;
+    this.slowUntil = this.time.t + TIMING.slowmo;
+    void this.cam.closeUp(this.chest(v), WEIGHT.zoom, TIMING.closeUp);
   }
 
   // Plays the events in sequence; the rule is already applied to the state, here it is just reading what happened.
   // `before` runs before each event (the game uses it for the banner with the ability name and the enemy's destination).
   async playEvents(events: BattleEvent[], state: BattleState, before?: (e: BattleEvent) => Promise<void>) {
-    for (const e of events) {
+    // a hit names neither the ability nor who struck: the last attack says both (the number's colour, the recoil's way)
+    let striker: string | null = null,
+      magic = false;
+    const pushed = new Map<string, THREE.Vector3>(); // each unit's last push, the way a bump meets what stopped it
+    const k = subOf(this.space.grid);
+    for (const [i, e] of events.entries()) {
       const v = this.views.get(e.unit);
       if (!v) continue;
       await before?.(e);
@@ -439,6 +525,8 @@ export class Units {
         }
         this.play(v, 'Idle');
       } else if (e.k === 'attack') {
+        striker = e.unit;
+        magic = !!ABILITIES[e.ability].magic;
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
         if (!samePos(this.posOf(v), e.target))
           await this.cam.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
@@ -466,15 +554,42 @@ export class Units {
         this.play(v, 'Idle'); // the gesture plays once and stuck on the last frame until the unit acted again (Nov 13 review)
       } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall' || e.k === 'spike') {
         v.hp -= e.dmg;
-        // strong strike (25% of health or more): the screen shakes and the number comes out bigger. With 30%, none of 10 strikes in a
-        // Skirmish went through (measured Nov 12): the effect must show up now and then, not never
-        const big = e.dmg >= UNIT_DEFS[v.def].hp * 0.25;
-        if (big) this.shakeUntil = this.time.t + TIMING.hitStop + TIMING.shake;
-        await this.impact(v);
+        const max = UNIT_DEFS[v.def].hp,
+          dies = fatal(events, i);
+        // strong strike (25% of health or more): double pause, the camera shakes, the number bigger with a gold edge. With
+        // 30%, none of 10 strikes in a Skirmish went through (measured Nov 12): the effect must show up now and then
+        const big = isBig(e.dmg, max);
+        if (dies) this.deathCam(v);
+        // a bump: the body slides to what stopped it and stops dead (the push's way; with no push, the strike's main axis)
+        const d = e.k === 'bump' ? (pushed.get(e.unit) ?? this.away(striker, v)) : null;
+        const wall =
+          d &&
+          (Math.abs(d.x) >= Math.abs(d.z)
+            ? new THREE.Vector3(Math.sign(d.x))
+            : new THREE.Vector3(0, 0, Math.sign(d.z)));
+        if (wall) await this.sway(v, wall.clone().multiplyScalar(WEIGHT.wall * k), TIMING.wallSlide);
+        this.float(e.unit, `-${e.dmg}`, `${numberKind(e, magic)}${big ? ' crit' : ''}`, numberPx(e.dmg, max));
+        if (wall)
+          void sparks(
+            this.scene,
+            (ms, step) => this.time.animate(ms, step),
+            this.chest(v).addScaledVector(wall, 0.5 * k),
+          );
+        if (big) this.quake(WEIGHT.quake, TIMING.quake);
+        else if (wall) this.quake(WEIGHT.quakeLand, TIMING.quakeLand);
+        await this.impact(v, big);
         this.setBar(v, TIMING.hpDrain);
-        this.float(e.unit, `-${e.dmg}`, big ? 'dmg big' : 'dmg');
+        const away = e.k === 'hit' && !shoved(events, i) ? this.away(striker, v) : null;
+        const back = away && this.roomBehind(v, away) ? away : null;
+        if (wall) void this.sway(v, new THREE.Vector3(), TIMING.wallBack);
+        else if (back)
+          void this.sway(v, back.multiplyScalar(WEIGHT.recoil * k), TIMING.recoil).then(() =>
+            this.sway(v, new THREE.Vector3(), TIMING.recoilBack),
+          );
         if (v.hp > 0) this.play(v, 'Hit_A', true);
-        await this.time.wait(e.k === 'hit' ? TIMING.hit : TIMING.crash);
+        // the blow that kills goes straight into the fall (Death_A), still in the slow motion
+        if (!dies) await this.time.wait(e.k === 'hit' ? TIMING.hit : TIMING.crash);
+        else await this.time.wait(TIMING.recoil);
         if (v.hp > 0) this.play(v, 'Idle');
       } else if (e.k === 'miss') {
         this.float(e.unit, t('Errou', 'Miss'), 'miss');
@@ -491,12 +606,14 @@ export class Units {
           .animate(TIMING.hit, (k) => v.mats.forEach((m) => (m.emissiveIntensity = 0.8 * (1 - k))))
           .then(() => flash === v.flash && this.glowBack(v.mats, v.def));
         this.setBar(v, TIMING.hpDrain);
-        this.float(e.unit, `+${e.amount}`, 'heal');
+        this.float(e.unit, `+${e.amount}`, 'heal', numberPx(e.amount, UNIT_DEFS[v.def].hp, false));
         await this.time.wait(TIMING.hit);
       } else if (e.k === 'push') {
         const a = v.holder.position.clone(),
           b = this.squareAt(v.def, e.to);
-        await this.time.animate(TIMING.push, (k) => v.holder.position.lerpVectors(a, b, k));
+        pushed.set(e.unit, b.clone().sub(a).setY(0).normalize());
+        if (b.y < a.y - 0.01) await this.fall(v, a, b);
+        else await this.time.animate(TIMING.push, (s) => v.holder.position.lerpVectors(a, b, s));
       } else if (e.k === 'charge') {
         // starts charging: the long spell gesture (each ability's own effect comes in the animation block)
         this.face(v, e.target);
@@ -511,6 +628,7 @@ export class Units {
         // sync removes the bar and the ring and darkens the body (fallen)
         this.play(v, 'Death_A', true);
         await this.time.wait(TIMING.die);
+        await this.cam.closeUp(null, WEIGHT.zoom, TIMING.closeUpBack); // back from the death close-up, if there was one
       }
     }
   }

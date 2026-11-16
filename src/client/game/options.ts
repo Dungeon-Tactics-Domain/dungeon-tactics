@@ -4,6 +4,7 @@ import type { Scenario } from '../../shared/battle/scenarios.ts';
 import { isObjective } from '../../shared/battle/units.ts';
 import { choice, dialog, slider } from '../dialog.ts';
 import { ALPHA_MIN, type Blur, getGlass, glassEnv, setGlass } from '../glass.ts';
+import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { keyHelp } from '../keyboard.ts';
@@ -213,6 +214,16 @@ export function optionsMenu(o: OptionsContext) {
           ],
           o.pixel().snap,
           (snap) => o.setPixel({ ...o.pixel(), snap }),
+        ),
+        // Fernando's grill of Nov 15: every death in slow motion with a close-up, this turns it off
+        choice(
+          t('Câmera lenta nas mortes', 'Slow motion on deaths'),
+          [
+            [true, t('Ligada', 'On')],
+            [false, t('Desligada', 'Off')],
+          ],
+          parseSlowmo(store.json(SLOWMO_KEY)),
+          (on) => store.set(SLOWMO_KEY, JSON.stringify(on)),
         ),
         townGridChoice(),
       ],
