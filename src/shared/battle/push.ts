@@ -17,7 +17,7 @@ export interface PushResult {
 // from 2 levels up; a body is passed over but never ended on. It does not change the state: the AI uses this to value pushes before choosing the move.
 // On the split map (half.ts) the token is pushed `steps` whole tiles in cells, its whole square checked on each cell; the
 // direction goes from the middle of the squares and the height of a square is its highest cell. It ends only where the
-// square rests on even ground (restsOn): a fall onto it, or a bump back to where it last rested
+// square rests on even ground (restsOn): a fall onto it, or a bump back to where it last could stop
 export function simulatePush(
   grid: Grid,
   state: BattleState,
