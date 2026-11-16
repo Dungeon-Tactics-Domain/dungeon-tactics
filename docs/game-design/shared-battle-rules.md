@@ -19,6 +19,18 @@ The rules of a battle in `src/shared/battle`, moved out of `src/shared/CLAUDE.md
 - **Spikes** (night of Nov 12, our own rule): `Tile.spikes`; being pushed onto the tile (`simulatePush`) or ending your turn on it (`spikeAtTurnEnd`) hurts `COMBAT.SPIKE_DAMAGE` (50 since the x5 of Nov 15), `spike` event; walking over it does not hurt. The AI avoids stopping there and values pushing onto it for the damage.
 - Where: the Flooded Crypt (letter `s`) and the crawl rooms (the theme's `hazard` in `src/content/crawl/rooms.ts`, 0 to 6 a room, see [shared-crawl.md](shared-crawl.md)).
 
+## Shots
+
+The trajectory grill of Nov 15, Fernando's realistic rule; the Mechanics lab's `trajetorias.json` and its prototype, whose path `traceShot` (`pathing.ts`) ports.
+
+- A half tile is 1 m and a level 1 m (a whole map's tile is 2 m), so `traceShot` counts cells across and levels up. A flying ability (`needsSight`) leaves the middle of the shooter's whole tile `SHOT_H` (1.5 m) above its floor (deep water: its surface) and aims at the same point of the aimed tile.
+- The path is straight (the thrown knife, Firebolt, Gust) or a curve (`AbilityDef.arc`: the bow's three shots) whose top is 1 level per 3 whole tiles between the ends, at least 1 and at most 3, above the higher end, the lab's parabola. The curve passes over the bodies in its way on even ground; the straight shot stops at the first unit or obstacle (Fernando, Nov 16).
+- It stops at the first thing the path crosses: a cell's terrain column (`blockTop`: ground plus wall 4, forest 2, a low object or a corpse 1) or another unit's body, `BODY_H` (1.8 m) over its whole square (a token's 2x2, the Colossus' 4x4); only the shooter and the target are ignored, with no exception for a tile beside either end.
+- On the two ends' own whole tiles only the ground counts (our own reading, where the lab never stands a unit on an obstacle): a unit in a forest still shoots and is shot at, the forest's cover counted in the hit chance as before, and a cliff face below the target still stops a shot from beneath.
+- The crossing is exact (every grid line in order; along a seam both sides count, a corner touch neither), so A to B and B to A agree and the split map answers as the whole one. Terrain wins a tie, so a shot into a ledge hits the ledge, and a single-target shot stopped by terrain hits nobody.
+- Blast, Heal and Shadow wave are cast on the target and need no path.
+- The `Shot` rides on `Preview.shot` and the `attack` event (not in the state, so saves are unchanged): the same path gives the rule, the AI (`previewAbility`), charges and counters (traced from where the caster stands when they fire), the crawl room checks and the client's preview, charge lines and flight. The lab's guide for weapons (straight about +30% physical power, a curve +1 range) is data for weapons that do not exist yet.
+
 ## Charge rules
 
 Nov 15, Fernando.

@@ -144,9 +144,9 @@ describe('crawl rooms: 500 seeds', () => {
     const first = built.slice(0, 25);
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-    expect(CRAWL_VERSION).toBe('crawl5');
-    expect(first.map((b) => b.tries).join(' ')).toBe('4 1 3 4 3 3 1 2 1 1 3 2 1 3 2 2 1 1 2 1 2 2 1 1 2');
-    expect((h >>> 0).toString(16)).toBe('9545dfe7');
+    expect(CRAWL_VERSION).toBe('crawl6');
+    expect(first.map((b) => b.tries).join(' ')).toBe('1 4 3 3 6 3 1 2 1 1 3 2 1 10 2 2 10 1 2 1 2 3 1 1 2');
+    expect((h >>> 0).toString(16)).toBe('afacdded');
   });
 
   it('every tile, split into half tiles too, carries a look the smooth painted terrain draws', () => {
@@ -298,12 +298,13 @@ describe('verifyRoom: a broken room for each rule', () => {
   });
 
   it('an archer that sees every hero fails only that rule', () => {
-    // two walls hide the heroes from the minion in the corner, never from the archer in the middle
+    // two walls hide the heroes from the minion in the corner, never from the archer in the middle. A row lower than
+    // before the exact shot path of Nov 15: from the corner every line left through the wall below it, one tile in all
     const corner = { ...minion, x: 6 };
     const archer: Spawn = { id: 'e1-skeleton_archer', def: 'skeleton_archer', team: 'enemy', x: 3, y: 1 };
     const walls = [
-      { x: 5, y: 2 },
-      { x: 6, y: 2 },
+      { x: 5, y: 3 },
+      { x: 6, y: 3 },
     ];
     expect(verifyRoom(handmade([corner], walls))).toEqual([]);
     expect(verifyRoom(handmade([corner, archer], walls))).toEqual([

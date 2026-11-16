@@ -10,7 +10,12 @@ export interface AbilityDef {
   en: string;
   range: [min: number, max: number]; // in tiles; [0, 0] = centered on the user
   heightRange: boolean; // +1 max range per level above the target (only ranged attackers)
-  needsSight: boolean; // requires line of sight to the target
+  // flies to the target and stops at the first thing its path crosses (pathing.ts traceShot); without it the ability lands
+  // where it is aimed, like a melee blow or a spell cast on the target (the trajectory grill of Nov 15: no line of sight)
+  needsSight: boolean;
+  // the path is a curve, as a bow's or a thrown axe's (the trajectory grill of Nov 15: the weapon gives it); without it a
+  // flying ability goes straight, as a crossbow, a thrown dagger or a bolt spell
+  arc?: true;
   radius: number; // 0 = only the target tile; 1 = the tile and its 4 neighbors (the area never hits the user)
   damage: [min: number, max: number]; // [0, 0] = deals no damage
   heal: [min: number, max: number]; // [0, 0] = does not heal; healing targets an ally and never misses
@@ -23,7 +28,7 @@ export interface AbilityDef {
   // the lock the charge offers first (like the Archer's Charge, BMG 2.2, which aims at the tile); without this, the
   // character. Since Nov 15 the player picks either (Battle.act `lock`); the AI keeps this one
   panel?: true;
-  // a spell: magic power and magic resistance instead of physical (Nov 15 grill), and it flies over heads
+  // a spell: magic power and magic resistance instead of physical (Nov 15 grill)
   magic?: true;
   element?: Element; // the target's resistance to it applies too (the Mechanics lab's equipamento.json); heals ignore it
   ally?: true; // targets an ally (or the user, if the range starts at 0) and rolls no hit; the effect comes from Rules.after. Only the study uses it

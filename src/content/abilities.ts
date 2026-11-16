@@ -3,7 +3,9 @@
 // battle slow"): a common hit took ~17% of the life (6 hits to take someone down), in FFT it takes ~37% (FFT study, removed Nov 16); now ~30%.
 // Damage and healing x5 on Nov 15 together with the life (Fernando's grill), so the share of life per hit stays; push, fall and
 // spike damage (COMBAT in combat.ts) followed the same day. Elements and costs of the Mechanics lab's equipamento.json
-// (abilities section): a spell spends mana, a martial ability stamina, and a unit's basic attack (its 1st) costs nothing
+// (abilities section): a spell spends mana, a martial ability stamina, and a unit's basic attack (its 1st) costs nothing.
+// Paths of the trajectory grill of Nov 15: the bow's shots fly in a curve (`arc`), the thrown knife, Firebolt and Gust
+// straight; Blast, Heal and Shadow wave are cast on the target, with no line of sight (no `needsSight`)
 import type { AbilityDef } from '../shared/battle/abilities.ts';
 
 // the builder lives here, not in the engine: the engine imports this list, so a builder imported back from it would not be
@@ -60,6 +62,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 6],
     heightRange: true,
     needsSight: true,
+    arc: true,
     damage: [45, 70],
     accuracy: 85,
   }),
@@ -70,6 +73,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 6],
     heightRange: true,
     needsSight: true,
+    arc: true,
     damage: [80, 105],
     accuracy: 90,
     charge: 4,
@@ -83,6 +87,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 4],
     heightRange: true,
     needsSight: true,
+    arc: true,
     damage: [25, 35],
     accuracy: 85,
     push: 1,
@@ -108,7 +113,6 @@ export const ABILITY_LIST: AbilityDef[] = [
     en: 'Blast',
     range: [2, 5],
     heightRange: true,
-    needsSight: true,
     radius: 1,
     damage: [45, 70],
     accuracy: 85,
@@ -136,7 +140,6 @@ export const ABILITY_LIST: AbilityDef[] = [
     name: 'Cura',
     en: 'Heal',
     range: [1, 4],
-    needsSight: true,
     heal: [60, 90],
     accuracy: 100,
     charge: 4,
@@ -185,7 +188,6 @@ export const ABILITY_LIST: AbilityDef[] = [
     en: 'Shadow wave',
     range: [2, 5],
     heightRange: true,
-    needsSight: true,
     radius: 2,
     damage: [50, 80],
     accuracy: 85,

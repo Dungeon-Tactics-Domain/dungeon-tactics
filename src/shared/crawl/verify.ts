@@ -1,10 +1,10 @@
 // Checks a crawl room (generate.ts) the way the game will play it: split into half tiles by `halve`, walked with the real
-// `reachable`, shot at with the real `sightBlock`. Returns the problems in words; an empty list is a good room. The numbers
+// `reachable`, shot at with the real `traceShot`. Returns the problems in words; an empty list is a good room. The numbers
 // are the Mechanics lab's descent proposal of Nov 15 (dungeon-tactics-labs, web/src/content/mecanicas/descida.json).
 import { ABILITIES } from '../battle/abilities.ts';
 import { canStand, FACING, type Grid, inBounds, isDeep, posKey, tileAt } from '../battle/grid.ts';
 import { halve, SUB } from '../battle/half.ts';
-import { cellsOf, footprint, gap, reachable, restsOn, sightBlock, sightEnds } from '../battle/pathing.ts';
+import { cellsOf, footprint, gap, reachable, restsOn, traceShot } from '../battle/pathing.ts';
 import { initialState, type Scenario, type Spawn } from '../battle/scenarios.ts';
 import type { Pos, UnitState } from '../battle/types.ts';
 import { UNIT_DEFS } from '../battle/units.ts';
@@ -116,17 +116,18 @@ export function verifyRoom(room: Scenario): string[] {
   if (!walkers.some((e) => walk(dry, e).some((p) => heroHigh.has(posKey(p)))))
     out.push(`no high point (level ${HIGH}+) that both sides reach with jump 1`);
 
-  // line of fire: tiles that stop a shot between the sides, and no shooting enemy sees every hero from its start
+  // line of fire: tiles that stop a shot between the sides, and no shooting enemy sees every hero from its start. Each
+  // enemy's own path (a bow's curve, else straight) with only the two of them on the map: the cover is the terrain's
   const blocks = new Set<string>();
   for (const e of es) {
+    const shot = UNIT_DEFS[e.def].abilities.map((a) => ABILITIES[a]).find((a) => a.needsSight && a.range[1] > 1);
     let hidden = false;
     for (const h of hs) {
-      const b = sightBlock(g, ...sightEnds(g, state, e, h.pos));
-      if (b) blocks.add(posKey(b));
-      hidden ||= !!b;
+      const stop = traceShot(g, { ...state, units: [e, h] }, e, h.pos, !!shot?.arc).stop;
+      if (stop) blocks.add(posKey(stop.pos));
+      hidden ||= !!stop;
     }
-    const shoots = UNIT_DEFS[e.def].abilities.some((a) => ABILITIES[a].needsSight && ABILITIES[a].range[1] > 1);
-    if (shoots && !hidden) out.push(`${e.id} sees every hero from its start`);
+    if (shot && !hidden) out.push(`${e.id} sees every hero from its start`);
   }
   if (blocks.size < MIN_COVER) out.push(`${blocks.size} tiles stop a shot between the sides (min ${MIN_COVER})`);
   return out;

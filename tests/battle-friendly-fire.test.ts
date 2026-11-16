@@ -35,22 +35,23 @@ describe('friendly fire (Nov 15)', () => {
     expect(dmg).toBeLessThanOrEqual(hi);
   });
 
+  // a straight throw: since the trajectory grill of Nov 15 the bow's curve flies over a body in its way on flat ground
   it('a shot that stops on an ally in its path hits it at half, for either side', () => {
     for (const side of ['hero', 'enemy'] as const) {
       const other = side === 'hero' ? 'enemy' : 'hero';
       const s = stateOf(
         [
-          { id: 'a', def: 'archer', team: side, x: 0, y: 0 },
+          { id: 'a', def: 'rogue', team: side, x: 0, y: 0 },
           { id: 'ally', def: 'soldier', team: side, x: 2, y: 0 },
           { id: 'foe', def: 'soldier', team: other, x: 4, y: 0 },
         ],
         HIT_SEED,
       );
-      const [lo, hi] = halfOnSoldier(ABILITIES.shot.damage);
-      expect(previewAbility(flat(6, 1), s, 'a', 'shot', at(4)).targets, side).toMatchObject([
+      const [lo, hi] = halfOnSoldier(ABILITIES.throwing_knife.damage);
+      expect(previewAbility(flat(6, 1), s, 'a', 'throwing_knife', at(4)).targets, side).toMatchObject([
         { unit: 'ally', dmgMin: lo, dmgMax: hi },
       ]);
-      const dmg = dealt(resolveAbility(flat(6, 1), s, 'a', 'shot', at(4)), 'ally')!;
+      const dmg = dealt(resolveAbility(flat(6, 1), s, 'a', 'throwing_knife', at(4)), 'ally')!;
       expect(dmg).toBeLessThanOrEqual(hi);
     }
   });

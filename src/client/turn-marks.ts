@@ -3,7 +3,7 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { posKey, samePos } from '../shared/battle/grid.ts';
-import { cellsOf, farCells, footprint, shotStop, sightEnds } from '../shared/battle/pathing.ts';
+import { cellsOf, farCells, footprint, traceShot } from '../shared/battle/pathing.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
@@ -47,14 +47,10 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
       : landing
         ? cursor
         : b.actor.pos;
-  // trajectory preview (Nov 13, "like Tactics Ogre"): when aiming a shot or spell that needs line of sight, the line runs from
-  // the attacker to the cursor tile and turns red from where it hits
-  const aim =
-    hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight
-      ? cursor
-      : null;
-  const from = aim && b.actor.pos;
-  const magic = ui.mode.k === 'ability' && !!ABILITIES[ui.mode.id].magic;
+  // shot preview (Nov 13, "like Tactics Ogre"; the trajectory grill of Nov 15): a flying ability shows the rule's own path to
+  // the cursor (traceShot), red past where it stops; a spell cast on the target shows its area and a still line instead
+  const a = hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' ? ABILITIES[ui.mode.id] : undefined;
+  const onSelf = footprint(b.actor).some((c) => samePos(c, cursor));
   return {
     hl,
     // a charging unit picking where to walk sees its shot as it would fire from there (Nov 15, Fernando: "so the player
@@ -69,12 +65,10 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
       ? { from: cellsOf(ringAt, UNIT_DEFS[b.actor.def].size ?? 1), range: farCells(b.grid, longestRange(b)) }
       : null,
     trajectory:
-      aim && from && (aim.x !== from.x || aim.y !== from.y)
+      a && (a.needsSight ? !onSelf : a.magic && a.range[1] > 0)
         ? {
-            from,
-            to: aim,
-            block:
-              shotStop(b.grid, b.state, ...sightEnds(b.grid, b.state, b.actor, aim), b.actor.id, !magic)?.pos ?? null,
+            shot: traceShot(b.grid, b.state, b.actor, cursor, !!a.arc),
+            cast: a.needsSight ? null : { radius: a.radius, heal: a.heal[1] > 0 },
           }
         : null,
   };

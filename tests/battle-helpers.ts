@@ -1,6 +1,7 @@
 import { type Grid, parseGrid } from '../src/shared/battle/grid.ts';
+import { traceShot } from '../src/shared/battle/pathing.ts';
 import { nextRng } from '../src/shared/battle/rng.ts';
-import type { BattleState, Team } from '../src/shared/battle/types.ts';
+import type { BattleState, Pos, Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 // flat WxH ground grid, or built from ASCII lines (terrain and height)
@@ -36,6 +37,15 @@ export function stateOf(units: Spec[], rng = 1): BattleState {
     outcome: 'ongoing',
     turnsPlayed: 0,
   };
+}
+
+// a shot (pathing.ts traceShot) from an archer on `a` at a soldier on `b` stops on nothing; `arc`: a bow's curve
+export function clearShot(g: Grid, a: Pos, b: Pos, arc = false): boolean {
+  const s = stateOf([
+    { id: 'a', def: 'archer', team: 'hero', ...a },
+    { id: 'b', def: 'soldier', team: 'enemy', ...b },
+  ]);
+  return !traceShot(g, s, s.units[0], b, arc).stop;
 }
 
 // first seed whose first roll satisfies the test: forces a hit (low value) or a miss (high value) without a mock

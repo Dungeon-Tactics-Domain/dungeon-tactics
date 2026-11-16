@@ -12,7 +12,7 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/equipment.ts` — ItemDef type, slots, the ITEMS registry and bonusOf (a loadout's stats summed on a sheet).
 - `src/shared/battle/scenarios.ts` — Scenario (map plus spawns), the MAPS and SCENARIOS registries, FIRST_BATTLE and initialState.
 - `src/shared/battle/grid.ts` — tiles with terrain, height, water depth and ramps; parseGrid and withRamps build maps; standing, step cost, facing and sides.
-- `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, ranges in cells, areas, line of sight and the shot path.
+- `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, ranges in cells, areas and the shot path (`traceShot`).
 - `src/shared/battle/combat.ts` — hit chance, damage range, preview, resolve (hit then damage), counters, push and falls, spikes and the battle outcome.
 - `src/shared/battle/turn-queue.ts` — FFT CT queue: turn cost, the next turn, charges firing and previewOrder for the turn list.
 - `src/shared/battle/battle.ts` — Battle: owns the state, move/act/end turn, limited undo (dice never roll back), save/load through parseBattleState.
@@ -152,7 +152,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring, shot trajectory and the town's debug grid.
 - `src/client/scene/mark-looks.ts` — what each tile mark looks like: MARK colours and drawings, the danger purple and markTexture.
 - `src/client/scene/range-ring.ts` — rangeRing: the dotted outline of the tiles within the longest range, laid on the ground.
-- `src/client/scene/trajectory.ts` — trajectory: the shot line from eye to aim, red past the blocking point, with an X there.
+- `src/client/scene/trajectory.ts` — trajectory: the shot preview along traceShot's path (flowing dots, landing ring, red past the stop with an X; a cast spell's pulsing circle and dashed line), animateAim and disposeAim.
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
 - `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin and action camera.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.

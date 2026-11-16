@@ -173,8 +173,9 @@ describe('counters (Nov 15)', () => {
   it('a counter whose unit fell to an earlier counter is skipped', () => {
     const s = stateOf([
       { id: 'a', def: 'archer', team: 'hero', x: 7, y: 1 },
-      { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 13, y: 1 },
-      { id: 'c', def: 'skeleton_archer', team: 'enemy', x: 10, y: 1, hp: 1 },
+      // straight bolts: since the trajectory grill of Nov 15 a bow's curve flies over a body in its way on flat ground
+      { id: 'b', def: 'dark_mage', team: 'enemy', x: 12, y: 1 },
+      { id: 'c', def: 'dark_mage', team: 'enemy', x: 10, y: 1, hp: 1 },
       { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 3 },
     ]);
     s.turn.engaged = ['b', 'c'];
@@ -219,11 +220,12 @@ describe('counters (Nov 15)', () => {
   });
 
   it('a unit killed mid-move leaves the owed list, and the battle saves and loads', () => {
-    // Spin (an area strike) hit two skeleton archers; walking off, the first one's shot kills the second (friendly fire)
+    // Spin (an area strike) hit two dark mages; walking off, the first one's bolt kills the second (friendly fire). Bolts,
+    // not arrows: since the trajectory grill of Nov 15 a bow's curve flies over a body in its way on flat ground
     const s = stateOf([
       { id: 'a', def: 'warrior', team: 'hero', x: 2, y: 2 },
-      { id: 's1', def: 'skeleton_archer', team: 'enemy', x: 3, y: 2 },
-      { id: 's2', def: 'skeleton_archer', team: 'enemy', x: 1, y: 2, hp: 1 },
+      { id: 's1', def: 'dark_mage', team: 'enemy', x: 3, y: 2 },
+      { id: 's2', def: 'dark_mage', team: 'enemy', x: 1, y: 2, hp: 1 },
       { id: 'f', def: 'beacon', team: 'hero', x: 9, y: 4 },
     ]);
     s.turn.usedAbility = 'spin';

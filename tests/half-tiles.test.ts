@@ -37,9 +37,18 @@ const halfState = (s: BattleState): BattleState => ({
   units: s.units.map((u) => ({ ...structuredClone(u), def: u.def + HALF, pos: cell(u.pos) })),
 });
 
+// every game ability in one sheet, with mana and stamina to pay for any of them (a spell's mana cost failed as 'spent' on
+// both maps, so the measure compared nothing)
+const ALL = {
+  ...UNIT_DEFS.warrior,
+  id: 't-all',
+  abilities: Object.keys(ABILITIES),
+  vars: { mana: 999, stamina: 999 },
+};
+
 describe('half tiles: abilities measure the same as on whole tiles', () => {
-  // every game ability in one sheet, on a map with slopes (height bonus and +range from above)
-  UNIT_DEFS['t-all'] = { ...UNIT_DEFS.warrior, id: 't-all', abilities: Object.keys(ABILITIES) };
+  // on a map with slopes (height bonus and +range from above)
+  UNIT_DEFS['t-all'] = ALL;
   const whole = gridOf(Array(9).fill('.........'), [
     '000011122',
     '000111122',
@@ -128,7 +137,7 @@ describe('half tiles: aiming at a big unit', () => {
   it('every tile of the Colossus answers as on the whole map, from every cell of it', () => {
     // review, "The Shade on the Summit": range went to the Colossus' nearest tile and sight to the aimed one, and an area
     // centered on its whole 4x4 square; the whole map measures all three from the aimed tile
-    UNIT_DEFS['t-all'] = { ...UNIT_DEFS.warrior, id: 't-all', abilities: Object.keys(ABILITIES) };
+    UNIT_DEFS['t-all'] = ALL;
     const whole = gridOf(Array(9).fill('.........'), [
       '000011122',
       '000111122',
@@ -174,7 +183,7 @@ describe('half tiles: aiming at a big unit', () => {
 });
 
 describe('half tiles: aiming at empty ground', () => {
-  it('a Blast at empty ground stops on Beacon Hill where the whole map stops it, from every cell of the tile', () => {
+  it('a Firebolt at empty ground stops on Beacon Hill where the whole map stops it, from every cell of the tile', () => {
     // review, stage 1 turn 33: from the tile corner the line runs to a raw odd cell and reached the archer behind the hill
     const map = MAPS.find((m) => m.id === 'beacon_hill') as Scenario;
     const hm = halve({ ...map, spawns: [] });
@@ -190,10 +199,10 @@ describe('half tiles: aiming at empty ground', () => {
           for (let x = 0; x < g.width; x++) {
             const B = { x, y };
             if (posKey(B) === posKey(A)) continue;
-            const w = previewAbility(g, s, 'a', 'blast', B);
+            const w = previewAbility(g, s, 'a', 'firebolt', B);
             const want = w.ok ? posKey(cell(w.center)) : w.reason;
             for (const p of cellsOf(cell(B), 2)) {
-              const h = previewAbility(hm.grid, hs, 'a', 'blast', p);
+              const h = previewAbility(hm.grid, hs, 'a', 'firebolt', p);
               const got = h.ok ? posKey(h.center) : h.reason;
               if (want !== got) diff.push(`${posKey(A)} -> ${posKey(p)} whole ${want} half ${got}`);
             }
@@ -221,7 +230,7 @@ describe('half tiles: line of sight between tiles and against big units', () => 
   });
 
   it('the Colossus sees and is seen from the same tiles as on the whole map', () => {
-    UNIT_DEFS['t-all'] = { ...UNIT_DEFS.warrior, id: 't-all', abilities: Object.keys(ABILITIES) };
+    UNIT_DEFS['t-all'] = ALL;
     const map = MAPS.find((m) => m.id === 'frost_pass') as Scenario;
     const hm = halve({ ...map, spawns: [{ id: 'c', def: 'colossus', team: 'enemy', x: 0, y: 0 }] });
     const g = map.grid;
@@ -444,7 +453,8 @@ describe('half tiles: the AI position score', () => {
 describe('half tiles: push', () => {
   it('a shot stopped by a token between tiles pushes it away from the shooter', () => {
     // shooting down column 0 at a target 4 tiles below; a Brute half a tile to the right stands in the way. The probe square
-    // that meets it has its corner outside the Brute, and the push read the direction from that square (Nov 14 review)
+    // that meets it has its corner outside the Brute, and the push read the direction from that square (Nov 14 review).
+    // A straight Gust: since the trajectory grill of Nov 15 the Knock Shot's curve flies over a body on flat ground
     const sc = split(gridOf(Array(8).fill('....')), 't-knock', [
       { id: 'a', def: 't-all', team: 'hero', x: 0, y: 0 },
       { id: 'x', def: 'brute', team: 'enemy', x: 0, y: 0 },
@@ -453,14 +463,14 @@ describe('half tiles: push', () => {
     const s = stateOf(
       [
         { id: 'a', def: `t-all${HALF}`, team: 'hero', x: 0, y: 0 },
-        { id: 'x', def: `brute${HALF}`, team: 'enemy', x: 1, y: 3 },
+        { id: 'x', def: `brute${HALF}`, team: 'enemy', x: 1, y: 2 },
         { id: 't', def: `soldier${HALF}`, team: 'enemy', x: 0, y: 8 },
       ],
       HIT_SEED,
     );
-    const events = resolveAbility(sc.grid, s, 'a', 'knock_shot', { x: 0, y: 8 });
+    const events = resolveAbility(sc.grid, s, 'a', 'gust', { x: 0, y: 8 });
     expect(events.find((e) => e.k === 'hit')).toMatchObject({ unit: 'x' });
-    expect(s.units.find((u) => u.id === 'x')?.pos).toEqual({ x: 1, y: 5 });
+    expect(s.units.find((u) => u.id === 'x')?.pos).toEqual({ x: 1, y: 6 }); // Gust pushes 2 tiles, 4 cells
   });
 
   it('pushes the token the same whole tiles, with the same bump and fall', () => {

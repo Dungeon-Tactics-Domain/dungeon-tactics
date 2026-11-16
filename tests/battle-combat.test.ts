@@ -79,7 +79,8 @@ describe('ability preview', () => {
     ]);
     const g = flat(5, 1);
     expect(previewAbility(g, s, 'a', 'firebolt', at(2)).targets.map((t) => t.unit)).toEqual(['ally']);
-    expect(previewAbility(g, s, 'a', 'firebolt', at(3)).targets.map((t) => t.unit)).toEqual(['f']);
+    // the bolt flies straight and stops on the ally in its path (the trajectory grill of Nov 15; it flew over heads before)
+    expect(previewAbility(g, s, 'a', 'firebolt', at(3)).targets.map((t) => t.unit)).toEqual(['ally']);
     expect(previewAbility(g, s, 'a', 'heal', at(2)).targets.map((t) => t.unit)).toEqual(['ally']);
     expect(previewAbility(g, s, 'a', 'heal', at(3)).targets.map((t) => t.unit)).toEqual(['f']);
     expect(previewAbility(g, s, 'a', 'heal', at(0)).ok).toBe(false); // never the caster itself (range starts at 1)

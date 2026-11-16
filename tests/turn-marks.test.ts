@@ -42,7 +42,11 @@ describe('turn marks', () => {
     const b = scene();
     const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), at(5, 1));
     const m = turnMarks(b, { k: 'map', command: 'act' }, ui, at(5, 1), true);
-    expect(m.trajectory).toMatchObject({ from: at(0, 1), to: at(5, 1) });
+    // the rule's own path (traceShot): from the middle of the archer's tile to the middle of the cursor's, 1.5 m up
+    expect(m.trajectory).toMatchObject({
+      shot: { from: { x: 0.5, y: 1.5, h: 1.5 }, to: { x: 5.5, y: 1.5, h: 1.5 }, stop: null },
+      cast: null,
+    });
     expect(m.ring).toBeNull();
     expect(turnMarks(b, { k: 'facing' }, ui, at(5, 1), true).ring).toBeNull();
   });

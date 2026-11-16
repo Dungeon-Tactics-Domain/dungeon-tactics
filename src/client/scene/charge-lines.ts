@@ -3,6 +3,7 @@
 // line goes dim red, with an X there: red on an enemy, orange on the caster's own side (friendly fire, half), white on
 // terrain. Drawn over everything (no depth test), so a line behind a wall still reads.
 import * as THREE from 'three';
+import { shotAt } from '../../shared/battle/pathing.ts';
 import type { ChargeLine, Counters, Square } from '../charge-lines.ts';
 import { unitHeight } from '../markers.ts';
 import type { TileSpace } from './space.ts';
@@ -63,7 +64,7 @@ export class ChargeLines {
     }
   }
 
-  // eye height like the aim trajectory (Marks.setTrajectory), over the middle of each square
+  // eye height over the middle of each square: the melee arrows and a cast spell's line
   private eye(s: Square) {
     return this.space.squareTop(s.pos, s.size).add(new THREE.Vector3(0, unitHeight('soldier') * 0.7, 0));
   }
@@ -88,19 +89,20 @@ export class ChargeLines {
       g.add(m);
     };
     for (const l of lines) {
-      const a = eye(l.from),
-        b = eye(l.to);
       const tint = !l.ok ? COLOR.fizzle : (color ?? COLOR[l.team]);
-      if (!l.stop) {
-        seg(a, b, tint);
-        continue;
-      }
-      // the stop along the line, by the ground distance (the same reading as Marks.setTrajectory)
-      const w = this.space.squareTop(l.stop.pos, l.stop.size);
-      const k = Math.hypot(w.x - a.x, w.z - a.z) / Math.max(1e-3, Math.hypot(b.x - a.x, b.z - a.z));
-      const cut = a.clone().lerp(b, Math.min(1, k));
-      seg(a, cut, tint);
-      seg(cut, b, COLOR.past);
+      // a flying shot follows the rule's own path (traceShot), cut where it stops; a spell cast on the target, a straight line
+      const { shot } = l;
+      const [a, b] = [eye(l.from), eye(l.to)];
+      const at = shot ? (k: number) => this.space.point(shotAt(shot, k)) : (k: number) => a.clone().lerp(b, k);
+      const path = (k0: number, k1: number, c: string) => {
+        const n = shot?.fall ? Math.ceil((k1 - k0) * 24) : 1;
+        for (let i = 0; i < n; i++) seg(at(k0 + ((k1 - k0) * i) / n), at(k0 + ((k1 - k0) * (i + 1)) / n), c);
+      };
+      const k = shot?.stop?.k ?? 1;
+      path(0, k, tint);
+      if (!l.stop) continue;
+      const cut = at(k);
+      path(k, 1, COLOR.past);
       const mark = l.hits.some((h) => h.friendly) ? X.friendly : l.hits.length ? X.foe : X.terrain;
       const mat = new THREE.MeshBasicMaterial({ color: mark, depthTest: false });
       for (const turn of [Math.PI / 4, -Math.PI / 4]) {

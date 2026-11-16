@@ -8,13 +8,13 @@ Nov 15, Fernando: the dungeon loop, with procedural rooms. Code in `crawl/genera
 
 - `generateRoom(seed, { depth, boss, theme })` draws a plain `Scenario` in whole tiles through `rollInt` only (24x24 half tiles like Ash Wood, 28x28 for the boss, Fernando's decision of Nov 15; written as 12x12 and 14x14 whole tiles; groups, party and themes from `src/content/crawl/rooms.ts`).
 - It closes the border in places with the theme's trees or rock walls (always in the corners, so no corner is cut off), lays a look-only road, and keeps the first layout that `verifyRoom` passes (200 tries, then it throws; the 500 test seeds needed at most 11, about 75 ms a room, measured Nov 15 on `crawl3`; the test accepts up to 15).
-- `verifyRoom` returns the problems in words and checks the room the way the client plays it: `halve` under a scratch id, every unit walking with jump 1 (`rules.jump`), the real `reachable`, `restsOn` and `sightBlock`.
+- `verifyRoom` returns the problems in words and checks the room the way the client plays it: `halve` under a scratch id, every unit walking with jump 1 (`rules.jump`), the real `reachable`, `restsOn` and `traceShot` (each shooter's own path, curved for a bow).
 - Its numbers are the Mechanics lab's descent proposal (`dungeon-tactics-labs`, `mecanicas/descida.json`): each enemy 10 to 14 half tiles from the nearest hero and the Colossus 16 to 20 (`startRange`; the extra room is for flanking), heroes in a band of 4 half tiles, water up to 15%, up to 6 spikes (the theme's `hazard`), heights 0 to 3, a high point both sides reach, 2 tiles stopping shots, no shooter seeing every hero, no spawn on the border, a ledge or beside spikes.
 
 ## Room version
 
 - `CRAWL_VERSION` starts every room id: bump it whenever the same seed would give another room (`tests/crawl-room.test.ts` pins the first 25 test rooms and their tries by hash, so a change in pathing, half tiles, the checks or a unit's move or size breaks it too).
-- History: `crawl2` when the boss group became the Colossus and one minion (Nov 15, Fernando; the pinned hash moved, the tries did not); `crawl3` when the rooms were drawn on the painted terrain like Ash Wood (Nov 15); `crawl4` with life and damage x5 (Nov 15), so an expedition saved at the old scale is dropped, not carried; `crawl5` with a chest node on every floor (Nov 16), so the same seed gives another map (the pinned tries did not move). Today: `crawl5` (`generate.ts`).
+- History: `crawl2` when the boss group became the Colossus and one minion (Nov 15, Fernando; the pinned hash moved, the tries did not); `crawl3` when the rooms were drawn on the painted terrain like Ash Wood (Nov 15); `crawl4` with life and damage x5 (Nov 15), so an expedition saved at the old scale is dropped, not carried; `crawl5` with a chest node on every floor (Nov 16), so the same seed gives another map (the pinned tries did not move); `crawl6` with the realistic shot path (Nov 16, the trajectory grill of Nov 15), so some seeds keep another layout. Today: `crawl6` (`generate.ts`).
 
 ## Expedition
 

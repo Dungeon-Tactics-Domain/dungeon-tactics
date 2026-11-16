@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { inAbilityRange, leaps, lineOfSight, pathTo, reachable } from '../src/shared/battle/pathing.ts';
-import { flat, gridOf, stateOf } from './battle-helpers.ts';
+import { inAbilityRange, leaps, pathTo, reachable } from '../src/shared/battle/pathing.ts';
+import { clearShot, flat, gridOf, stateOf } from './battle-helpers.ts';
 
 const keys = (m: Map<string, unknown>) => [...m.keys()].sort();
 
@@ -93,19 +93,20 @@ describe('movement', () => {
   });
 });
 
+// a straight shot under the realistic rule of Nov 15 (1.5 m up at both ends): the old line-of-sight cases keep their answers
 describe('line of sight', () => {
   it('open ground sees; a wall in between blocks', () => {
-    expect(lineOfSight(flat(5, 1), { x: 0, y: 0 }, { x: 4, y: 0 })).toBe(true);
-    expect(lineOfSight(gridOf(['..#..']), { x: 0, y: 0 }, { x: 4, y: 0 })).toBe(false);
+    expect(clearShot(flat(5, 1), { x: 0, y: 0 }, { x: 4, y: 0 })).toBe(true);
+    expect(clearShot(gridOf(['..#..']), { x: 0, y: 0 }, { x: 4, y: 0 })).toBe(false);
   });
 
-  it('forest blocks on the same level, but whoever is 2 levels above sees over it', () => {
-    expect(lineOfSight(gridOf(['.T..']), { x: 0, y: 0 }, { x: 3, y: 0 })).toBe(false);
-    expect(lineOfSight(gridOf(['.T..'], ['2000']), { x: 0, y: 0 }, { x: 3, y: 0 })).toBe(true);
+  it('forest (2 m) blocks on the same level, but a shot from 2 levels above passes over it', () => {
+    expect(clearShot(gridOf(['.T..']), { x: 0, y: 0 }, { x: 3, y: 0 })).toBe(false);
+    expect(clearShot(gridOf(['.T..'], ['2000']), { x: 0, y: 0 }, { x: 3, y: 0 })).toBe(true);
   });
 
   it('a hill between two units on the ground blocks sight', () => {
-    expect(lineOfSight(gridOf(['...'], ['020']), { x: 0, y: 0 }, { x: 2, y: 0 })).toBe(false);
+    expect(clearShot(gridOf(['...'], ['020']), { x: 0, y: 0 }, { x: 2, y: 0 })).toBe(false);
   });
 
   it('is symmetric and the diagonal works', () => {
@@ -120,7 +121,7 @@ describe('line of sight', () => {
         { x: 4, y: 0 },
       ],
     ] as const) {
-      expect(lineOfSight(g, a, b)).toBe(lineOfSight(g, b, a));
+      expect(clearShot(g, a, b)).toBe(clearShot(g, b, a));
     }
   });
 });
@@ -172,7 +173,7 @@ describe('findings from the Nov 13 review', () => {
         { x: 2, y: 2 },
       ],
     ]) {
-      expect(lineOfSight(g, a, b)).toBe(lineOfSight(g, b, a));
+      expect(clearShot(g, a, b)).toBe(clearShot(g, b, a));
     }
   });
 });

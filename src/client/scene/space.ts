@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { FACING, type Grid, inBounds, posKey, tileAt } from '../../shared/battle/grid.ts';
 import { cellsOf } from '../../shared/battle/pathing.ts';
-import type { Pos } from '../../shared/battle/types.ts';
+import type { Point, Pos } from '../../shared/battle/types.ts';
 import { DEEP_DROP, raisedDeep, SWIM, WADE, type WaterLevel, waterLevels } from '../water-levels.ts';
 
 export const STEP = 0.5; // height of one level in meters (1 tile = 1 wide), the same as the approved POC
@@ -47,6 +47,11 @@ export class TileSpace {
       (t.h + 1 + (t.ramp ? t.ramp[1] / 2 : 0) - drop) * this.step,
       p.y - this.grid.height / 2 + 0.5,
     );
+  }
+
+  // a point of a shot's path (pathing.ts traceShot: cells across from the map's corner, levels up) in the world
+  point(p: Point): THREE.Vector3 {
+    return new THREE.Vector3(p.x - this.grid.width / 2, (p.h + 1) * this.step, p.y - this.grid.height / 2);
   }
 
   // middle of the square of `size` cells with its corner on `p`, on its highest cell's ground (where a token stands); cells

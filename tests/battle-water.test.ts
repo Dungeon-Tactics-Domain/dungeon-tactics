@@ -3,8 +3,8 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn } from '../src/shared/battle/ai.ts';
 import { hitChance, previewAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
-import { lineOfSight, reachable } from '../src/shared/battle/pathing.ts';
-import { flat, stateOf } from './battle-helpers.ts';
+import { reachable } from '../src/shared/battle/pathing.ts';
+import { clearShot, flat, stateOf } from './battle-helpers.ts';
 
 // Shallow and deep water (Fernando's decision of Nov 12, "like FFT", BMG 6.5): shallow costs 2 movement, 2h or more does not
 // allow entry; since Nov 13 shallow water does not lower whoever stands in it (it only costs movement).
@@ -64,7 +64,7 @@ describe('water', () => {
 
   it('a swimmer in deep water is seen from afar through the surface (Nov 13 review: at 3 tiles or more it was invisible)', () => {
     const g = withWater(flat(8, 1), [[6, 0, 2]]);
-    for (let x = 0; x <= 4; x++) expect(lineOfSight(g, { x, y: 0 }, { x: 6, y: 0 })).toBe(true);
+    for (let x = 0; x <= 4; x++) expect(clearShot(g, { x, y: 0 }, { x: 6, y: 0 })).toBe(true);
   });
 
   it('a push stops at deep water, like a wall (our assumption)', () => {

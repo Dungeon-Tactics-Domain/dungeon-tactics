@@ -190,7 +190,7 @@ export class BattleScene {
     this.marks.setRangeRing(r);
   }
 
-  setTrajectory(t: { from: Pos; to: Pos; block: Pos | null } | null) {
+  setTrajectory(t: Parameters<Marks['setTrajectory']>[0]) {
     this.marks.setTrajectory(t);
   }
 

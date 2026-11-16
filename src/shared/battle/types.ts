@@ -58,10 +58,27 @@ export interface BattleState {
   turnsPlayed: number;
 }
 
+// A point of a shot's path (pathing.ts traceShot): x and y in cells from the map's corner (a cell's middle is +0.5), h in
+// levels above level 0. A half tile and a level are both 1 m (the trajectory grill of Nov 15)
+export interface Point {
+  x: number;
+  y: number;
+  h: number;
+}
+// A shot's path and where it stops: at k along the way (0 to 1) it stands at shotAt(shot, k), h = from.h + rise k - fall k²
+// (fall 0: straight). `stop` is short of `to`: the unit's cell it hit, or the corner of the obstacle's whole tile
+export interface Shot {
+  from: Point;
+  to: Point;
+  rise: number;
+  fall: number;
+  stop: { k: number; pos: Pos; unit: string | null } | null;
+}
+
 // events for the client to animate; the rule has already been applied to the state when they come out
 export type BattleEvent =
   | { k: 'move'; unit: string; path: Pos[] }
-  | { k: 'attack'; unit: string; ability: string; target: Pos }
+  | { k: 'attack'; unit: string; ability: string; target: Pos; shot?: Shot } // `shot`: the path the projectile flies
   | { k: 'charge'; unit: string; ability: string; target: Pos } // started charging; fires later
   | { k: 'fizzle'; unit: string; ability: string } // the charge fired and found no target (it left the tile or the range)
   | { k: 'hit'; unit: string; dmg: number; chance: number }

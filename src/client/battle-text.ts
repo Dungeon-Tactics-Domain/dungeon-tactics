@@ -75,7 +75,15 @@ export function abilityDetail(id: string): string {
   if (a.heal[1]) parts.push(t(`cura ${range(a.heal)}`, `heals ${range(a.heal)}`));
   if (a.radius) parts.push(t(`área de raio ${a.radius} (pega aliados)`, `area of radius ${a.radius} (hits allies)`)); // radius 2 has existed since Shadow wave
   if (a.push) parts.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
-  if (a.needsSight) parts.push(t('precisa de visão', 'needs sight'));
+  // the path of the trajectory grill of Nov 15: what may stand in the way
+  if (a.needsSight)
+    parts.push(
+      a.arc
+        ? t('tiro em curva: passa por cima do que é baixo', 'arcing shot: flies over what is low')
+        : t('tiro reto: para no primeiro obstáculo', 'straight shot: stops at the first obstacle'),
+    );
+  else if (a.magic && a.range[1] > 0)
+    parts.push(t('conjurada no alvo, sem linha de visão', 'cast on the target, no line of sight'));
   if (a.heightRange) parts.push(t('+1 de alcance por nível acima', '+1 range per level above'));
   if (a.cost) parts.push(t(`gasta ${costText(a)}`, `costs ${costText(a)}`));
   // Nov 15: the player locks it on the tile or the character, and starting it costs half the movement left

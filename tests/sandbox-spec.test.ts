@@ -431,11 +431,15 @@ describe('playStep', () => {
     expect(() => b.reach()).not.toThrow();
   });
 
+  // a straight throw: since the trajectory grill of Nov 15 the bow's curve flies over a body in its way on flat ground
   it('plays a shot with no clear line, stopping at the first unit on its path', () => {
     const b = start();
     b.state.units.find((u) => u.id === 'e-soldier')!.pos = { x: 5, y: 6 };
     b.state.units.find((u) => u.id === 'h-warrior')!.pos = { x: 5, y: 8 };
-    const { events, problem } = playStep(b, { act: { unit: 'h-archer', ability: 'shot', target: { x: 5, y: 6 } } });
+    b.state.units.find((u) => u.id === 'h-archer')!.pos = { x: 8, y: 9 };
+    b.state.units.find((u) => u.id === 'h-rogue')!.pos = { x: 5, y: 10 };
+    const throwKnife = { act: { unit: 'h-rogue', ability: 'throwing_knife', target: { x: 5, y: 6 } } };
+    const { events, problem } = playStep(b, throwKnife);
     expect(problem).toBeNull();
     expect(events.find((e) => e.k === 'hit' || e.k === 'miss')).toMatchObject({ unit: 'h-warrior' });
   });

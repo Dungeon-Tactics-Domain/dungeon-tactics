@@ -11,7 +11,7 @@ const TIMEOUT = 60_000; // software WebGL on a CI runner takes a while to build 
 // still the town, offering to continue it; ?home=expedition opens its map, and its first room (node 0 is always open first) must show the carried life, not a full bar
 const WORN = {
   'dt:crawl': JSON.stringify({
-    v: 'crawl5',
+    v: 'crawl6',
     seed: 77,
     path: [],
     party: ['warrior', 'archer', 'mage', 'rogue'].map((id) => ({ id, max: 50, hp: 9 })),

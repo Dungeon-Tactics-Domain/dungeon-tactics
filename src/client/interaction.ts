@@ -12,11 +12,10 @@ import {
   footprint,
   inAbilityRange,
   inArea,
-  lineOfSight,
   nearestTile,
   pathTo,
   reachable,
-  sightEnds,
+  traceShot,
   unitAt,
 } from '../shared/battle/pathing.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';
@@ -164,7 +163,8 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
       for (const t of allTiles(b)) {
         const [from, to] = aimEnds(b.grid, b.state, b.actor, t);
         if (!inAbilityRange(b.grid, a, from, to)) continue;
-        mark(t, a.needsSight && !lineOfSight(b.grid, ...sightEnds(b.grid, b.state, b.actor, t)) ? 'blocked' : 'range');
+        // the rule's own path: a tile the shot would not reach (terrain or a body in the way) is marked blocked
+        mark(t, a.needsSight && traceShot(b.grid, b.state, b.actor, t, !!a.arc).stop ? 'blocked' : 'range');
       }
     }
     if (ui.pending) {

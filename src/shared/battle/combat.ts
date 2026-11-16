@@ -27,15 +27,14 @@ import {
   MAX_JUMP,
   nearCells,
   restsOn,
-  shotStop,
-  sightEnds,
+  traceShot,
   unitAt,
   wholeTiles,
 } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';
-import type { BattleEvent, BattleState, Outcome, Pos, UnitState } from './types.ts';
+import type { BattleEvent, BattleState, Outcome, Pos, Shot, UnitState } from './types.ts';
 import { baseDef, dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
 
 // Initial numbers from Oct 25; they can be measured in the simulation (scripts/battle-sim.ts), which is optional.
@@ -84,6 +83,7 @@ export interface Preview {
   reason?: PreviewReason;
   center: Pos; // tile the ability acts from (the target's, or the user's when it is centered)
   targets: TargetPreview[];
+  shot?: Shot; // a flying ability's path (traceShot): the scene's preview and flight draw this one
 }
 
 // What a unit has left of a counter (mana, stamina; the study's MP and stock): a key absent reads as the sheet's start value,
@@ -204,17 +204,17 @@ export function previewAbility(
   // a large unit measures range and sight from its tile nearest to the target (for whoever occupies 1 tile it is the same)
   const [from, to] = aimEnds(grid, state, actor, center);
   if (!inAbilityRange(grid, ability, from, to)) return fail('range');
-  // Without sight the shot fires anyway and stops at the first obstacle on the path (Nov 13, Fernando's request: "must allow the
-  // attack and the guy loses the attack"); the area, if any, explodes there. And attacking empty ground is allowed (Nov 13): the hit fires
-  // without a target. The AI only picks attacks with a target (attackScore adds zero without a target)
-  // a model on the path only blocks what flies straight (arrow, knife): magic passes over heads
-  const stop = ability.needsSight
-    ? shotStop(grid, state, ...sightEnds(grid, state, actor, center), actor.id, !ability.magic)
-    : null;
+  // Without a clear path the shot fires anyway and stops at the first thing it crosses (Nov 13, Fernando's request: "must allow
+  // the attack and the guy loses the attack"; the realistic path of the trajectory grill of Nov 15, bolt spells included); the
+  // area, if any, explodes there. And attacking empty ground is allowed (Nov 13): the hit fires without a target. The AI only
+  // picks attacks with a target (attackScore adds zero without a target)
+  const shot = ability.needsSight ? traceShot(grid, state, actor, center, !!ability.arc) : undefined;
+  const stop = shot?.stop;
   if (stop) center = stop.pos;
-  // hit a model on the path: it takes the hit, whichever side it is on (without area: only it)
+  // a single-target shot stopped short hits only what stopped it: a unit, whichever side it is on, or the ground (not the
+  // unit standing on the ledge it struck)
   const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;
-  const hit = blocker && ability.radius === 0 ? [blocker] : affected(grid, state, actor, ability, center);
+  const hit = stop && ability.radius === 0 ? (blocker ? [blocker] : []) : affected(grid, state, actor, ability, center);
   const targets = hit.map((u) => {
     // against a large unit, its tile nearest to the attacker (distance and height)
     const [from, at] = closest(footprint(actor), footprint(u));
@@ -240,7 +240,7 @@ export function previewAbility(
       healMax: heal(healHi),
     };
   });
-  return { ok: true, center, targets };
+  return { ok: true, center, targets, shot };
 }
 
 // Applies the ability to the state (changes units and rng) and returns the events for the client to animate.
@@ -333,7 +333,9 @@ export function resolveAbility(
   if (!preview.ok) return [];
   const actor = state.units.find((u) => u.id === actorId)!;
   const ability = ABILITIES[abilityId];
-  const events: BattleEvent[] = [{ k: 'attack', unit: actorId, ability: abilityId, target: preview.center }];
+  const events: BattleEvent[] = [
+    { k: 'attack', unit: actorId, ability: abilityId, target: preview.center, shot: preview.shot },
+  ];
   const after = rulesOf(state).after;
   if (!charged) pay(actor, ability);
   for (const t of preview.targets) {

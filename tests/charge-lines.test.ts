@@ -17,8 +17,12 @@ import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 // Charge lines and the lock step (Nov 15, Fernando): every charge keeps a line on screen, and while the charging unit picks
-// where to walk the line from that destination says where the shot would stop and whom it hits
-const grid = gridOf(['........', '........', '........', '.....#..', '........']);
+// where to walk the line from that destination says where the shot would stop and whom it hits. The ally stands 2 levels up,
+// so the bow's curve meets its body: on flat ground it flies over (the trajectory grill of Nov 15)
+const grid = gridOf(
+  ['........', '........', '........', '.....#..', '........'],
+  ['00000000', '00000000', '00020000', '00000000', '00000000'],
+);
 const battle = () =>
   new Battle(
     grid,
@@ -54,7 +58,7 @@ describe('charge lines (Nov 15)', () => {
       stop: null,
       hits: [{ unit: 'foe', friendly: false }],
     });
-    // from below the ally, the arrow stops on it, at half
+    // from below the ally, the curve (3.5 m at its top) meets its body (2 + 1.8 m) and stops on it, at half
     expect(chargeFrom(b, { x: 1, y: 3 })).toMatchObject({
       ok: true,
       stop: { pos: { x: 3, y: 2 } },

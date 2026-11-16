@@ -14,10 +14,10 @@ import {
   pendingCounters,
   previewAbility,
 } from '../shared/battle/combat.ts';
-import { type Grid, posKey, samePos, subOf } from '../shared/battle/grid.ts';
+import { type Grid, posKey, subOf } from '../shared/battle/grid.ts';
 import { aimTile, unitAt } from '../shared/battle/pathing.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';
-import type { BattleState, Charge, Lock, Pos, Team, UnitState } from '../shared/battle/types.ts';
+import type { BattleState, Charge, Lock, Pos, Shot, Team, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 
@@ -32,20 +32,22 @@ export interface ChargeLine {
   stop: Square | null; // where the shot stops short: the unit or the whole tile in the way
   hits: { unit: string; friendly: boolean }[]; // who it would hit; `friendly`: hurt on the caster's own side, at half
   ok: boolean; // false: out of range from there, it would fizzle
+  shot: Shot | null; // a flying ability's path, which the line follows (a spell cast on the target has none)
 }
 
 const square = (u: UnitState): Square => ({ pos: u.pos, size: UNIT_DEFS[u.def].size ?? 1 });
 
-// A shot as its rule's preview lands it: from the caster to `to`, stopping where the preview's centre falls short of the aim
-function lineOf(grid: Grid, state: BattleState, casterId: string, p: Preview, aim: Pos, to: Square): ChargeLine {
+// A shot as its rule's preview lands it: from the caster to `to`, stopping where the preview's path stops
+function lineOf(grid: Grid, state: BattleState, casterId: string, p: Preview, to: Square): ChargeLine {
   const caster = state.units.find((u) => u.id === casterId)!;
-  const short = p.ok && !samePos(p.center, aimTile(grid, state, aim));
-  const blocker = short ? unitAt(state, p.center) : undefined;
+  const stop = p.shot?.stop;
+  const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;
   return {
     team: caster.team,
     from: square(caster),
     to,
-    stop: !short ? null : blocker ? square(blocker) : { pos: p.center, size: subOf(grid) },
+    stop: !stop ? null : blocker ? square(blocker) : { pos: stop.pos, size: subOf(grid) },
+    shot: p.shot ?? null,
     hits: p.targets.map((x) => ({
       unit: x.unit,
       friendly: x.dmgMax > 0 && state.units.find((u) => u.id === x.unit)!.team === caster.team,
@@ -58,7 +60,7 @@ export function chargeLine(grid: Grid, state: BattleState, c: Charge): ChargeLin
   const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
   const aim = aimTile(grid, state, chargeAim(state, c));
   const p = previewAbility(grid, state, c.unit, c.ability, aim, true);
-  return lineOf(grid, state, c.unit, p, aim, followed ? square(followed) : { pos: aim, size: subOf(grid) });
+  return lineOf(grid, state, c.unit, p, followed ? square(followed) : { pos: aim, size: subOf(grid) });
 }
 
 // Counters on screen (Nov 15, Fernando): a ranged one is the shot's line from whoever strikes back to the attacker, a melee
@@ -73,7 +75,7 @@ export interface Counters {
 function counterOf(b: Battle, out: Counters, u: UnitState, p: Preview, at: Pos) {
   const me = b.actor;
   const there = { ...b.state, units: b.state.units.map((x) => (x.id === me.id ? { ...x, pos: at } : x)) };
-  if (isRanged(basicOf(u.def))) out.lines.push(lineOf(b.grid, there, u.id, p, at, { pos: at, size: square(me).size }));
+  if (isRanged(basicOf(u.def))) out.lines.push(lineOf(b.grid, there, u.id, p, { pos: at, size: square(me).size }));
   else out.melee.push({ from: square(u), to: square(me) });
 }
 
