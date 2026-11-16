@@ -161,6 +161,9 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin and action camera.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.
 - `src/client/scene/timeline.ts` — Timeline: the battle clock behind every animate and wait (no setTimeout).
+- `src/client/scene/load.ts` — what a battle downloads before it draws: models, painted pieces, animation pack and surroundings.
+- `src/client/scene/post.ts` — the pixel art chain: outline strengths, reduced palette and the options that switch them.
+- `src/client/scene/perf.ts` — PerfCounter: frames and average time between two readings of the performance counter.
 
 ## src/client/dev — localhost only
 

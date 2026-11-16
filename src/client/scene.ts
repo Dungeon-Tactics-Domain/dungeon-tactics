@@ -3,8 +3,7 @@
 // The parts live in scene/: board (terrain and pieces), marks (tile marks and cursor), units (characters and events),
 // camera (orbit and action camera), space (tile to world) and timeline (the battle clock).
 import * as THREE from 'three';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -12,38 +11,23 @@ import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPix
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import type { Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
-import { type Ambience, loadAmbience } from './ambience.ts';
-import { kindOf } from './ambience-moods.ts';
+import type { Ambience } from './ambience.ts';
 import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
 import { abilityIcon, el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
-import { modelOf } from './markers.ts';
-import { loadPaint } from './painted.ts';
 import type { PixelSettings } from './pixel-settings.ts';
-import { isPainted, swapProps } from './props.ts';
 import { Board } from './scene/board.ts';
-import { CORPSE_MODELS, lookPieceNames } from './scene/board-looks.ts';
 import { CameraRig } from './scene/camera.ts';
 import { ChargeLines } from './scene/charge-lines.ts';
+import { loadBattleAssets } from './scene/load.ts';
 import { Marks } from './scene/marks.ts';
+import { PerfCounter } from './scene/perf.ts';
+import { applyPixel, EDGES, PALETTE_SHADER } from './scene/post.ts';
 import { squareUnder, TileSpace } from './scene/space.ts';
 import { Timeline } from './scene/timeline.ts';
 import { Units } from './scene/units.ts';
-import { loadTerrainTextures, type TerrainTextures } from './terrain.ts';
+import type { TerrainTextures } from './terrain.ts';
 import { speed } from './timing.ts';
-import { swapTrees } from './trees.ts';
-
-const EDGES = { depthEdgeStrength: 0.5, normalEdgeStrength: 0.35 }; // outline from the approved POC
-
-// Reduced palette: each channel in a few steps, after the sRGB conversion (steps equal to the eye). 6 levels
-// recall the SNES's 15 bits without becoming a poster; the option exists for Fernando to compare.
-const PALETTE_SHADER = {
-  uniforms: { tDiffuse: { value: null }, levels: { value: 6 } },
-  vertexShader:
-    'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader:
-    'uniform sampler2D tDiffuse; uniform float levels; varying vec2 vUv; void main() { vec4 c = texture2D(tDiffuse, vUv); gl_FragColor = vec4(floor(c.rgb * levels + 0.5) / levels, c.a); }',
-};
 
 export class BattleScene {
   private readonly renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -62,6 +46,7 @@ export class BattleScene {
   private readonly floats: HTMLElement;
   private readonly note: HTMLElement; // the counter a Move destination draws, over the cursor
   private readonly clock = new THREE.Clock();
+  private readonly perf = new PerfCounter();
   private readonly time = new Timeline();
   private readonly onResize = () => this.resize();
   private readonly space: TileSpace;
@@ -134,54 +119,9 @@ export class BattleScene {
     pixel: PixelSettings,
     all: string[] = [],
   ): Promise<BattleScene> {
-    const ambience = loadAmbience(grid); // downloads along with the map pieces
-    // smooth terrain on open maps (terrain.ts); crypts stay block-based
-    const terrainTex = grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt' ? loadTerrainTextures() : null;
-    // units compressed with meshopt (Nov 13, Fernando's request: the game downloaded 11 MB to open); Three's decoder
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const corpses = grid.tiles.some((t) => t.look === 'corpse') ? CORPSE_MODELS : [];
-    const defs = [
-      ...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean)),
-    ];
-    const [top, side, stone, tree, ...loaded] = await Promise.all([
-      ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/square/${n}.gltf`)),
-      loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // the tree in the block pack is a cube of leaves
-      ...defs.map((d) => loader.loadAsync(`/models/${d}.glb`)),
-    ]);
-    const models = new Map(defs.map((d, i) => [d, loaded[i]]));
-    // only the map that brings a per-tile look downloads these pieces (~630 KB with the textures)
-    const names = lookPieceNames(grid);
-    // open maps swap trees and props for painted ones below: those get an empty stand-in, not a download
-    const looks = new Map(
-      await Promise.all(
-        names.map(
-          async (n) =>
-            [
-              n,
-              terrainTex && isPainted(n) ? new THREE.Group() : (await loader.loadAsync(`/models/${n}.gltf`)).scene,
-            ] as const,
-        ),
-      ),
-    );
-    // open maps: painted trees built in code (trees.ts), with variations, in place of KayKit's
-    if (terrainTex) {
-      await loadPaint();
-      swapTrees(looks);
-      swapProps(looks, true);
-    } // and the painted objects (props.ts)
-    // extra ability gestures (KayKit Rig_Medium, same bones as the units): scripts/assets/anim-pack.mjs
-    const pack = (await loader.loadAsync('/models/animations.glb')).animations;
-    const s = new BattleScene(
-      host,
-      grid,
-      models,
-      { top: top.scene, side: side.scene, stone: stone.scene, tree: tree.scene },
-      pixel,
-      looks,
-      pack,
-      await terrainTex,
-    );
-    s.ambience = (await ambience).mount(s.scene);
+    const a = await loadBattleAssets(grid, state, all);
+    const s = new BattleScene(host, grid, a.models, a.pieces, pixel, a.looks, a.pack, a.terrainTex);
+    s.ambience = a.ambience.mount(s.scene);
     s.sync(state);
     return s;
   }
@@ -357,18 +297,7 @@ export class BattleScene {
   // Applies the pixel art options right away, without reloading the page
   setPixel(p: PixelSettings) {
     this.pixel = p;
-    const on = p.size > 0;
-    this.renderPass.enabled = !on;
-    this.pixelPass.enabled = on;
-    if (on) this.pixelPass.setPixelSize(p.size);
-    this.pixelPass.depthEdgeStrength = p.outline ? EDGES.depthEdgeStrength : 0;
-    this.pixelPass.normalEdgeStrength = p.outline ? EDGES.normalEdgeStrength : 0;
-    this.palettePass.enabled = p.palette;
-    // pixel art draws at 1x even on a 3x screen (the blocks are already bigger than the device pixel and the phone is grateful);
-    // without it, screen sharpness up to 2x
-    const ratio = on ? 1 : Math.min(devicePixelRatio, 2);
-    this.renderer.setPixelRatio(ratio);
-    this.composer.setPixelRatio(ratio);
+    applyPixel(p, this.renderer, this.composer, this.renderPass, this.pixelPass, this.palettePass);
     this.resize();
   }
 
@@ -408,27 +337,13 @@ export class BattleScene {
     this.cam.frameView();
   }
 
-  // Performance counter numbers (Fernando's request, Nov 12): frames and average time since the last reading, and Three's
-  // resources. Pixel art draws the scene more than once per frame: info sums everything and zeroes only at the start of the frame.
-  private perf = { frames: 0, since: performance.now() };
+  // Performance counter numbers (Fernando's request, Nov 12): see PerfCounter
   stats() {
-    const now = performance.now(),
-      ms = now - this.perf.since,
-      frames = this.perf.frames;
-    this.perf = { frames: 0, since: now };
-    const info = this.renderer.info;
-    return {
-      fps: (frames * 1000) / ms,
-      ms: frames ? ms / frames : 0,
-      calls: info.render.calls,
-      triangles: info.render.triangles,
-      geometries: info.memory.geometries,
-      textures: info.memory.textures,
-    };
+    return this.perf.read(this.renderer.info);
   }
 
   private frame() {
-    this.perf.frames++;
+    this.perf.tick();
     this.renderer.info.reset();
     const dt = this.clock.getDelta();
     const fast = speed() * this.units.slow(this.time.t); // the death slow motion reaches the clock and the mixers
