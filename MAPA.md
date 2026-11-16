@@ -66,6 +66,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/command.ts` — FFT command menu (Move, Act, Wait, Status): which turn screen shows and what each key leads to.
 - `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
 - `src/client/charge-lines.ts` — charge and counter lines and notes computed from the rule that fires them.
+- `src/client/turn-marks.ts` — what the scene marks on the hero's turn: tiles, cursor frame, range ring, shot line, charge preview and counters (turnMarks).
 - `src/client/turn-list.ts` — rows of the turn list: the queue projection while aiming (queueRows), round length, two rounds and scrolling.
 - `src/client/battle-text.ts` — battle texts: ability sheet, last action summary (eventLog), attribute rows and the Status sheet.
 - `src/client/tile-info.ts` — the tile line under the cursor: height, floor, water, spikes and a charge landing there.

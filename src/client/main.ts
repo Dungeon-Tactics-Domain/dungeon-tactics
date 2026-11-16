@@ -4,20 +4,18 @@
 import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { facingTo, inBounds, posKey, samePos } from '../shared/battle/grid.ts';
-import { cellsOf, farCells, footprint, nearestTile, shotStop, sightEnds, unitAt } from '../shared/battle/pathing.ts';
+import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
+import { footprint, nearestTile, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { beforeEvent } from './before-event.ts';
-import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import {
   abilitiesOf,
   abilityEnabled,
   COMMANDS,
   canUndoMove,
   commandEnabled,
-  longestRange,
   needsLock,
   type Screen,
   startScreen,
@@ -35,18 +33,7 @@ import { emptyMemory, padActions } from './gamepad.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
-import {
-  aimMark,
-  aimStep,
-  confirm,
-  facingHighlights,
-  freshUi,
-  highlights,
-  hoverTile,
-  selectMode,
-  tapTile,
-  type Ui,
-} from './interaction.ts';
+import { aimStep, confirm, freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction, keyAction } from './keyboard.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings, parsePixel } from './pixel-settings.ts';
 import { BattleScene } from './scene.ts';
@@ -56,6 +43,7 @@ import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived,
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
 import { pace, TIMING } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
+import { turnMarks } from './turn-marks.ts';
 
 // Test (localhost only): ?auto=1 makes the AI play the heroes too, to check the battle end and the way home without
 // playing by hand (night of Nov 12). Nothing changes in production.
@@ -439,93 +427,14 @@ export class Game {
     if (isSurvival(this.battle.state.scenario))
       this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.screen;
-    // on the menu and submenu only the acting unit's tile is marked; the range shows when choosing (like FFT)
-    const hl =
-      !this.heroTurn || this.busy
-        ? null
-        : s.k === 'facing'
-          ? facingHighlights(this.battle)
-          : s.k === 'map' || s.k === 'confirm'
-            ? highlights(this.battle, ui, this.cursor)
-            : {
-                tiles: footprint(this.battle.actor).map((pos) => ({ pos, kind: 'actor' as const })),
-                path: null,
-                preview: null,
-              };
-    const moving = s.k === 'map' && ui.mode.k === 'move';
+    const { hl, ...m } = turnMarks(this.battle, s, ui, this.cursor, this.heroTurn && !this.busy);
     this.scene.setHighlights(hl);
-    // a charging unit picking where to walk sees its shot as it would fire from there (Nov 15, Fernando: "so the player
-    // knows where to stand"): the destination's square must fit, like the move itself
-    this.scene.setChargePreview(
-      hl && moving && this.battle.reach().has(posKey(this.cursor)) ? chargeFrom(this.battle, this.cursor) : null,
-    );
-    // counters (Nov 15, Fernando): aiming, who the strike would leave owed a counter; walking, what that destination draws
-    const aimed =
-      (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && hl?.preview?.ok ? ui.mode.id : null;
-    this.scene.setCounters(
-      aimed && hl?.preview
-        ? countersOwed(this.battle, aimed, hl.preview)
-        : hl && moving && this.battle.reach().has(posKey(this.cursor))
-          ? countersFrom(this.battle, this.cursor)
-          : null,
-    );
-    const owed =
-      hl && moving && this.battle.reach().has(posKey(this.cursor)) && counterDamage(this.battle, this.cursor);
-    this.scene.setCursorNote(owed ? `−${owed[0] === owed[1] ? owed[0] : `${owed[0]}–${owed[1]}`}` : null);
-    // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square; aiming,
-    // it frames what the target mark covers (one cell, or the body of the unit there)
-    const framed =
-      (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability'
-        ? aimMark(this.battle.grid, this.battle.state, this.cursor)
-        : {
-            pos: this.cursor,
-            // only on a hero's turn (hl): a battle that ended on the actor's death leaves no actor to read
-            size:
-              hl && (moving || samePos(this.cursor, this.battle.actor.pos))
-                ? (UNIT_DEFS[this.battle.actor.def].size ?? 1)
-                : 1,
-          };
-    this.scene.setCursor(hl ? framed.pos : null, framed.size, !hl?.tiles.some((m) => m.kind === 'nogo'));
-    // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
-    // it can be reached), to see where the strike reaches before moving
-    const ringAt =
-      !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving)
-        ? null
-        : moving && this.battle.reach().has(posKey(this.cursor))
-          ? this.cursor
-          : this.battle.actor.pos;
-    this.scene.setRangeRing(
-      ringAt
-        ? {
-            from: cellsOf(ringAt, UNIT_DEFS[this.battle.actor.def].size ?? 1),
-            range: farCells(this.battle.grid, longestRange(this.battle)),
-          }
-        : null,
-    );
-    // trajectory preview (Nov 13, "like Tactics Ogre"): when aiming a shot or spell that needs line of sight, the line runs from
-    // the attacker to the cursor tile and turns red from where it hits
-    const aim =
-      hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight
-        ? this.cursor
-        : null;
-    const from = aim && this.battle.actor.pos;
-    const magic = ui.mode.k === 'ability' && !!ABILITIES[ui.mode.id].magic;
-    this.scene.setTrajectory(
-      aim && from && (aim.x !== from.x || aim.y !== from.y)
-        ? {
-            from,
-            to: aim,
-            block:
-              shotStop(
-                this.battle.grid,
-                this.battle.state,
-                ...sightEnds(this.battle.grid, this.battle.state, this.battle.actor, aim),
-                this.battle.actor.id,
-                !magic,
-              )?.pos ?? null,
-          }
-        : null,
-    );
+    this.scene.setChargePreview(m.charge);
+    this.scene.setCounters(m.counters);
+    this.scene.setCursorNote(m.note);
+    this.scene.setCursor(m.cursor, m.size, m.fits);
+    this.scene.setRangeRing(m.ring);
+    this.scene.setTrajectory(m.trajectory);
     this.hud.render({
       battle: this.battle,
       screen: s,
