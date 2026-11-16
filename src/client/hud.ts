@@ -9,28 +9,17 @@
 //   strike preview (Tactics Ogre's idea, Nov 13; the lab kit's two-colour strip, Nov 15) takes its place beside the acting
 //   panel: one strip per target with the big damage, the hit chance and the target's bar with the part that goes away.
 // Redraws everything on each change (it is little DOM); the menu position changes only via left/top.
-import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { type Expression, frameOf } from './battle-face.ts';
-import { abilityDetail } from './battle-text.ts';
-import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
-import {
-  abilitiesOf,
-  abilityEnabled,
-  COMMANDS,
-  type Command,
-  canUndoMove,
-  commandEnabled,
-  type Screen,
-  swimming,
-} from './command.ts';
-import { forecast, forecastText, hpAfterText } from './forecast.ts';
+import type { Screen } from './command.ts';
+import { forecast } from './forecast.ts';
+import { helpText, renderAbilities, renderCommands, renderConfirm } from './hud-menus.ts';
 import { hint, KEYS, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
 import { ToolsMenu } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { abilityIcon, button, type Child, el } from './icons.ts';
+import { abilityIcon, el } from './icons.ts';
 import type { Highlights } from './interaction.ts';
 import { type Anchor, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
@@ -67,26 +56,6 @@ export interface HudView {
   ability: string | null; // ability being aimed on the map (the strike preview on the target panel)
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
 }
-
-const REASON: Record<string, () => string> = {
-  range: () => t('Fora do alcance', 'Out of range'),
-  sight: () => t('Sem linha de visão', 'No line of sight'),
-  'no-target': () => t('Nenhum alvo nesta casa', 'No target on this tile'),
-  unknown: () => t('Não dá para usar aqui', 'Cannot use here'),
-  spent: () => t('Acabou o estoque ou o MP', 'Out of stock or MP'),
-  water: () => t('Na água funda só dá para andar ou esperar', 'In deep water you can only move or wait'),
-};
-const COMMAND_NAME: Record<Command, () => string> = {
-  move: () => t('Mover', 'Move'),
-  act: () => t('Agir', 'Act'),
-  wait: () => t('Esperar', 'Wait'),
-  status: () => 'Status',
-};
-// command row marker: the atlas icon (Move, Wait) or, for the commands without one, a glass orb like the lab kit's
-const ORB = new Set<Command>(['act', 'status']);
-const marker = (c: Command) => (ORB.has(c) ? el('span', { class: `orb ${c}`, 'aria-hidden': 'true' }) : abilityIcon(c));
-// menu name on top of the command menu, the submenu and "Execute?" (the menu's aria-label says it to the screen reader)
-const menuHead = (...text: Child[]) => el('div', { class: 'panel-head', 'aria-hidden': 'true' }, ...text);
 
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
@@ -155,10 +124,10 @@ export class BattleHud {
     const s = v.screen;
     const aim = s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : null;
     this.renderQueue(b, aim);
-    this.help.textContent = this.helpText(v, heroTurn);
-    this.renderCommands(v, open);
-    this.renderAbilities(v, open);
-    this.renderConfirm(v, open);
+    this.help.textContent = helpText(v, heroTurn);
+    renderCommands(this.commands, v, open, this.act);
+    renderAbilities(this.abilities, v, open, this.act);
+    renderConfirm(this.confirmBox, v, open, this.act);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
@@ -265,56 +234,6 @@ export class BattleHud {
     this.abilities.classList.toggle('from-right', !right);
   }
 
-  // top line: what to do now (like FFT's help), and the summary of the last action
-  private helpText(v: HudView, heroTurn: boolean): string {
-    const b = v.battle;
-    if (b.over) return b.state.outcome === 'victory' ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat');
-    if (v.busy || !heroTurn)
-      return v.log || (v.acting ? t(`Vez do inimigo: ${unitName(v.acting)}`, `Enemy turn: ${unitName(v.acting)}`) : '');
-    const s = v.screen;
-    const say = (pt: string, en: string) => (v.log ? `${v.log} — ` : '') + t(pt, en);
-    if (s.k === 'menu')
-      return swimming(b)
-        ? say(
-            `${unitName(b.actor.def)}: na água funda só dá para andar ou esperar.`,
-            `${unitName(b.actor.def)}: in deep water you can only move or wait.`,
-          )
-        : say(`${unitName(b.actor.def)}: escolha um comando.`, `${unitName(b.actor.def)}: pick a command.`);
-    if (s.k === 'abilities') {
-      const id = abilitiesOf(b)[s.index];
-      return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
-    }
-    if (s.k === 'map' && s.command === 'move')
-      return v.hl?.tiles.some((m) => m.kind === 'nogo')
-        ? t(
-            'Mover: não dá para parar aqui; a unidade inteira precisa caber em chão livre e uniforme ao alcance.',
-            'Move: cannot stop here; the whole unit must fit on free, even ground in reach.',
-          )
-        : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.') +
-            chargeFromText(b, v.cursor) +
-            counterFromText(b, v.cursor);
-    if (s.k === 'map') {
-      const p = v.hl?.preview;
-      return p && !p.ok
-        ? REASON[p.reason ?? 'unknown']()
-        : t(
-            'Escolha o alvo na área laranja (roxo: o tiro bate no caminho).',
-            'Pick the target in the orange area (purple: the shot hits something on the way).',
-          );
-    }
-    if (s.k === 'confirm')
-      return s.lock
-        ? t(
-            `${abilityName(s.ability)}: travar no personagem ou na casa?`,
-            `${abilityName(s.ability)}: lock on the character or on the tile?`,
-          )
-        : t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`);
-    return t(
-      'Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.',
-      'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.',
-    );
-  }
-
   private renderQueue(b: Battle, aim: { ability: string; target: Pos } | null) {
     const { rows, targets, at } = b.over ? { rows: [], targets: new Set<string>(), at: -1 } : queueRows(b, aim);
     // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
@@ -363,113 +282,6 @@ export class BattleHud {
     const pending = p ? { top: p.offsetTop, height: p.offsetHeight } : null;
     q.scrollTop = anchorScroll(this.queueScroll, q.clientHeight, turn !== this.queueTurn, pending);
     this.queueTurn = turn;
-  }
-
-  private renderCommands(v: HudView, open: boolean) {
-    const s = v.screen;
-    this.commands.hidden = !open || !(s.k === 'menu' || s.k === 'abilities');
-    if (this.commands.hidden) return;
-    const b = v.battle;
-    // with the submenu open, Act stays marked as the picked command (the focus is in the submenu)
-    const state = (c: Command, i: number) =>
-      s.k === 'menu' ? (i === s.index ? ' focus' : '') : c === 'act' ? ' picked' : '';
-    // moved and did not act: Move becomes "Undo move" (Esc also undoes), like Tactics Ogre
-    const undo = canUndoMove(b);
-    this.commands.replaceChildren(
-      menuHead(t('Comandos', 'Commands')),
-      ...COMMANDS.map((c, i) =>
-        button(
-          `item${state(c, i)}`,
-          [
-            marker(c),
-            el(
-              'span',
-              { class: 'item-label' },
-              c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
-            ),
-            c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null,
-          ],
-          () => this.act.command(i),
-          { role: 'menuitem', disabled: !commandEnabled(b, c) },
-        ),
-      ),
-    );
-  }
-
-  private renderAbilities(v: HudView, open: boolean) {
-    const s = v.screen;
-    this.abilities.hidden = !open || s.k !== 'abilities';
-    if (s.k !== 'abilities' || this.abilities.hidden) return;
-    const b = v.battle;
-    this.abilities.replaceChildren(
-      menuHead(t('Habilidades', 'Abilities')),
-      ...abilitiesOf(b).map((id, i) => {
-        const a = ABILITIES[id];
-        const cost = a.cost
-          ? `${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : t('un.', 'pcs')}`
-          : a.charge
-            ? t(`${a.charge} tiq.`, `${a.charge} tk`)
-            : '';
-        return button(
-          `item${i === s.index ? ' focus' : ''}`,
-          [
-            abilityIcon(id),
-            el('span', { class: 'item-label' }, abilityName(id)),
-            el('span', { class: 'item-cost' }, cost),
-          ],
-          () => this.act.ability(i),
-          { role: 'menuitem', disabled: !abilityEnabled(b, id) },
-        );
-      }),
-    );
-  }
-
-  // "Execute?" window: hit and effect on each target, life before → after, and Yes/No
-  private renderConfirm(v: HudView, open: boolean) {
-    const s = v.screen;
-    this.confirmBox.hidden = !open || s.k !== 'confirm';
-    if (s.k !== 'confirm' || this.confirmBox.hidden) return;
-    const b = v.battle;
-    const a = ABILITIES[s.ability];
-    const rows = forecast(b, s.ability, b.preview(s.ability, s.target)).map((f) =>
-      f.support
-        ? el('p', {}, `${unitName(f.unit.def)}: ${abilityDetail(s.ability)}`)
-        : el(
-            'p',
-            {},
-            el('strong', {}, unitName(f.unit.def)),
-            ` ${forecastText(f)} · ${hpAfterText(f)}${f.ally ? t(' · ALIADO!', ' · ALLY!') : ''}`,
-          ),
-    );
-    if (a.charge) rows.push(el('p', { class: 'unit-note' }, chargeNote(b, s)));
-    const owed = counterNote(b, s.ability, b.preview(s.ability, s.target));
-    if (owed) rows.push(el('p', { class: 'unit-note' }, owed));
-    // the lock step (Nov 15): the same window, its two choices in place of Yes/No
-    const choices = s.lock
-      ? [
-          button(`item${s.lock === 'unit' ? ' focus' : ''}`, [t('No personagem', 'On the character')], () =>
-            this.act.lock('unit'),
-          ),
-          button(`item${s.lock === 'tile' ? ' focus' : ''}`, [t('Na casa', 'On the tile')], () =>
-            this.act.lock('tile'),
-          ),
-        ]
-      : [
-          button(`item${s.yes ? ' focus' : ''}`, [t('Sim', 'Yes'), hint('Enter')], () => this.act.answer(true)),
-          button(`item${s.yes ? '' : ' focus'}`, [t('Não', 'No'), hint('Esc')], () => this.act.answer(false)),
-        ];
-    this.confirmBox.replaceChildren(
-      el(
-        'strong',
-        { class: 'panel-head' },
-        abilityIcon(s.ability),
-        s.lock
-          ? t(`${abilityName(s.ability)}: travar onde?`, `${abilityName(s.ability)}: lock on?`)
-          : t(`${abilityName(s.ability)}: executar?`, `${abilityName(s.ability)}: execute?`),
-      ),
-      ...rows,
-      el('div', { class: 'yes-no' }, ...choices),
-    );
   }
 
   banner(text: string | null) {
