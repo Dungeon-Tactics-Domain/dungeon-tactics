@@ -877,6 +877,12 @@ button[hidden],
   margin: 0;
   opacity: 0.85;
 }
+/* a short screen (800x600, 1024x640) left the fixed foot 3 to 9 px under the menu: there it follows the menu instead */
+@media (max-height: 700px) {
+  .main-title .title-foot {
+    position: static;
+  }
+}
 .main-title .title-lang {
   min-height: 32px;
   padding: 0 12px;
