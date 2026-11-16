@@ -12,15 +12,19 @@ import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import {
   classMana,
   cleared,
+  descentGold,
   type Expedition,
   expeditionMap,
+  goldHome,
+  nodeGold,
+  openChest,
   openNodes,
   parseExpedition,
   startExpedition,
   winRoom,
 } from '../../shared/crawl/expedition.ts';
 import { roomGroup, roomId } from '../../shared/crawl/generate.ts';
-import { EQUIP_KEY, parseEquip } from '../chest.ts';
+import { CHEST_KEY, EQUIP_KEY, parseChest, parseEquip } from '../chest.ts';
 import { buildDevScenario, type DevUnit, slotsOf, unitFrom } from '../dev-roster.ts';
 import { commandRow, dialog } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
@@ -30,7 +34,7 @@ import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
 import { roomLine } from '../tally.ts';
-import { openBar, openParty, openShop, sideWindows } from '../town-ui.ts';
+import { goldNote, openBar, openParty, openShop, sideWindows } from '../town-ui.ts';
 import { type EndHero, enterButton, resultBoard } from './end-screens.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
@@ -41,6 +45,17 @@ export interface CrawlRoom {
   heroes: Record<string, { id: string; hp: number; mana?: number }>;
 }
 
+const townGold = () => parseChest(store.json(CHEST_KEY)).gold;
+
+// The descent ends: its gold goes to the town's (all of it alive, half when the party fell: goldHome) and the save is
+// cleared in the same step, so a reload cannot bank it twice. Capped where parseChest reads it (above, it reads 0)
+function endExpedition(exp: Expedition, fell: boolean) {
+  const chest = parseChest(store.json(CHEST_KEY));
+  const gold = goldHome(exp, fell);
+  store.set(CHEST_KEY, JSON.stringify({ ...chest, gold: Math.min(999999, chest.gold + gold) }));
+  store.set(CRAWL_KEY, '');
+  return gold;
+}
 const group = () => parseGroup(store.json(GROUP_KEY));
 // who goes, as the town's party has them (class, name, equipment); `ids` keeps the order of the sheets
 const crawlers = (ids: string[]) => heroesFor({ ...group(), deployed: ids }, parseEquip(store.json(EQUIP_KEY)));
@@ -93,11 +108,12 @@ export function liveExpedition() {
 
 // A room still saved with no room in the address: the party left it before it ended (Options, a sibling room, the
 // bare address and Continue). Fernando, Nov 15: that loses the expedition like a defeat; only Restart retries the room for free
+// It returns the gold that went home (half, as for a fall), null when no room was left
 export function leftRoom() {
-  if (!savedExpedition() || !store.get(ROOM_KEY)) return false;
-  store.set(CRAWL_KEY, '');
+  const exp = savedExpedition();
+  if (!exp || !store.get(ROOM_KEY)) return null;
   store.set(ROOM_KEY, '');
-  return true;
+  return endExpedition(exp, true);
 }
 
 // The scenario id of the room battle still saved, read raw: Battle.load needs that room's scenario registered, which a
@@ -121,7 +137,8 @@ export function savedRoom(): number | null {
 // expedition lost if the party left a room, the expedition map on ?home=expedition, where a room's result window goes;
 // else the town alone, which offers to continue a live expedition at its gate
 export function homeScreen() {
-  if (leftRoom()) return lostScreen();
+  const kept = leftRoom();
+  if (kept !== null) return lostScreen(kept);
   const exp = liveExpedition();
   if (exp && param('home') === 'expedition') expeditionScreen(exp);
 }
@@ -251,13 +268,13 @@ export function townMenu(extra?: HTMLElement) {
       ),
     ],
     // closes back to the street; a window beside it closes first (only the topmost window takes Esc)
-    { onBack: closeBeside },
+    { onBack: closeBeside, note: goldNote(t('Ouro', 'Gold'), townGold()) },
   );
   d.overlay.classList.add('town-menu');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-function lostScreen() {
+function lostScreen(kept: number) {
   const d = dialog(
     'result',
     t('Expedição perdida', 'Expedition lost'),
@@ -266,10 +283,11 @@ function lostScreen() {
         'p',
         {},
         t(
-          'O grupo saiu no meio da sala. Os feridos voltam à cidade.',
-          'The party left in the middle of a room. The wounded return to town.',
+          'O grupo saiu no meio da sala. Os feridos voltam à cidade com metade do ouro achado.',
+          'The party left in the middle of a room. The wounded return to town with half the gold found.',
         ),
       ),
+      goldNote(t('Ouro para a cidade', 'Gold to town'), kept),
       el(
         'div',
         { class: 'menu-actions' },
@@ -286,6 +304,9 @@ function lostScreen() {
 
 // the party that goes is the town's (up to 4), each at full life with its equipment
 function depart() {
+  // a new quest over a live one ends that one in town, alive: its gold goes home whole
+  const live = liveExpedition();
+  if (live) endExpedition(live, false);
   const g = group();
   const units = crawlers(g.deployed);
   const party = g.deployed.map((id, k) => ({
@@ -321,6 +342,7 @@ const partyList = (exp: Expedition) =>
           (h.manaMax ? ` · ${t('mana', 'mana')} ${h.mana ?? h.manaMax}/${h.manaMax}` : ''),
       );
     }),
+    el('li', {}, `${t('Ouro achado', 'Gold found')} · ${descentGold(exp)}`),
   );
 
 // The floor in play as rows of rooms (decision 21: a map of linked rooms, the enemies of each in sight before choosing);
@@ -332,15 +354,36 @@ export function expeditionScreen(exp: Expedition) {
   const floor = floorAt(exp);
   const room = (i: number) => {
     const n = map[i];
-    const { group: foes } = roomGroup(n.seed, { depth: n.floor, boss: n.boss });
+    // another room of its row taken (for the chest: a room of the row it hangs off, not its own)
     const taken = exp.path.some((p) => map[p].floor === n.floor && map[p].row === n.row);
     const state = exp.path.includes(i)
-      ? t('vencida', 'cleared')
+      ? n.chest
+        ? t(`aberto: ${nodeGold(n)} de ouro`, `opened: ${nodeGold(n)} gold`)
+        : t('vencida', 'cleared')
       : open.includes(i)
         ? ''
         : taken
           ? t('caminho não tomado', 'path not taken')
           : t('abre depois da anterior', 'opens after the one before');
+    if (n.chest) {
+      // the room it hangs off: the only way to it, so the choice is made a row before
+      const [pt, en] = roomGroup(map.find((m) => m.next.includes(i))!.seed, { depth: n.floor }).group.name;
+      return button(
+        open.includes(i) ? 'primary' : 'secondary',
+        [
+          `${t('Baú', 'Chest')}${state ? ` (${state})` : ''}`,
+          el('small', { class: 'continue-where' }, t(`sem batalha · depois de ${pt}`, `no battle · past ${en}`)),
+        ],
+        () => {
+          const next = openChest(exp, i);
+          store.set(CRAWL_KEY, JSON.stringify(next));
+          d.close();
+          chestScreen(next, nodeGold(n));
+        },
+        { disabled: !open.includes(i) },
+      );
+    }
+    const { group: foes } = roomGroup(n.seed, { depth: n.floor, boss: n.boss });
     return button(
       open.includes(i) ? 'primary' : 'secondary',
       [
@@ -353,10 +396,12 @@ export function expeditionScreen(exp: Expedition) {
       { disabled: !open.includes(i) },
     );
   };
-  // the boss is one more row, on the last floor only
-  const rows = Array.from({ length: CRAWL_RUN.rows + 1 }, (_, r) =>
-    map.flatMap((n, i) => (n.floor === floor && n.row === r ? [i] : [])),
-  ).filter((r) => r.length);
+  // the boss is one more row, on the last floor only; the chest on a line of its own after the row it hangs off
+  const line = (r: number, chest: boolean) =>
+    map.flatMap((n, i) => (n.floor === floor && n.row === r && n.chest === chest ? [i] : []));
+  const rows = Array.from({ length: CRAWL_RUN.rows + 1 }, (_, r) => [line(r, false), line(r, true)])
+    .flat()
+    .filter((r) => r.length);
   const d = dialog(
     'title',
     `${t('Masmorra', 'Dungeon')} · ${floorOf(exp)}`,
@@ -366,15 +411,18 @@ export function expeditionScreen(exp: Expedition) {
       el(
         'div',
         { class: 'menu-actions' },
-        // the 2nd tap confirms: going back loses the descent (decision 32)
+        // the 2nd tap confirms: going back ends the descent (decision 32), alive, so its gold goes home whole
         button('secondary', t('Voltar à cidade', 'Back to town'), (e: Event) => {
           const btn = e.currentTarget as HTMLButtonElement;
           if (!btn.dataset.armed) {
             btn.dataset.armed = '1';
-            btn.textContent = t('Toque de novo: perde a expedição', 'Tap again: the expedition is lost');
+            btn.textContent = t(
+              'Toque de novo: encerra a expedição, o ouro achado vai à cidade',
+              'Tap again: ends the expedition, the gold found goes to town',
+            );
             return;
           }
-          store.set(CRAWL_KEY, '');
+          endExpedition(exp, false);
           d.close();
           toTown();
         }),
@@ -386,8 +434,30 @@ export function expeditionScreen(exp: Expedition) {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
+// The chest just opened (already saved): its gold, then back to the map
+function chestScreen(exp: Expedition, gold: number) {
+  const back = () => expeditionScreen(exp);
+  const d = dialog(
+    'result',
+    t('Baú aberto', 'Chest opened'),
+    [
+      goldNote(t('Ouro', 'Gold'), gold),
+      el(
+        'div',
+        { class: 'menu-actions' },
+        button('primary', t('Seguir no mapa', 'On to the map'), () => {
+          d.close();
+          back();
+        }),
+      ),
+    ],
+    { onBack: back },
+  );
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+
 // After an expedition room: a victory carries the life on (winRoom), a defeat or the last boss down ends the expedition
-// (the save is cleared). Written before any window opens, so a reload after the battle cannot replay the room
+// (the save is cleared, its gold banked). Written before any window opens, so a reload after the battle cannot replay the room
 export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
   const exp = savedExpedition();
   store.set(ROOM_KEY, '');
@@ -402,9 +472,12 @@ export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
   const manaLeft = Object.fromEntries(standing.map(([id, u]) => [id, poolOf(u, 'mana')]));
   const next = won ? winRoom(exp, room.node, left, manaLeft) : null;
   const done = !!next && cleared(map, next.path);
-  store.set(CRAWL_KEY, next && !done ? JSON.stringify(next) : '');
+  // what went to the town when it ended: all of it with the boss down, half when the party fell
+  const banked = !next ? endExpedition(exp, true) : done ? endExpedition(next, false) : 0;
+  if (next && !done) store.set(CRAWL_KEY, JSON.stringify(next));
   const node = map[room.node];
-  return { next, done, node, down: node.next.some((n) => map[n].floor > node.floor) };
+  const gold = { room: next ? nodeGold(node) : 0, found: descentGold(next ?? exp), banked };
+  return { next, done, map, node, gold, down: node.next.some((n) => map[n].floor > node.floor) };
 }
 
 // the window after the room: back to the map to go on, or to the town when the expedition ended. Each hero's card says
@@ -412,7 +485,7 @@ export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
 export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, heroes: EndHero[]) {
   const settled = settleRoom(room, won, state);
   if (!settled) return goHome();
-  const { next, done, node, down } = settled;
+  const { next, done, node, gold, down, map } = settled;
   // on to the expedition map while it goes on (home alone opens the town), else home
   const home = () => {
     location.search = next && !done ? '?home=expedition' : '?home';
@@ -430,15 +503,27 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, he
     cards: heroes.map((h) => [h, roomLine(h, carried(h))]),
     cols: [
       [t('Andar', 'Floor'), t(`${node.floor} de ${CRAWL_RUN.floors}`, `${node.floor} of ${CRAWL_RUN.floors}`)],
-      ...(next ? ([[t('Salas vencidas', 'Rooms cleared'), String(next.path.length)]] as [string, string][]) : []),
+      ...(next
+        ? ([
+            [t('Salas vencidas', 'Rooms cleared'), String(next.path.filter((n) => !map[n].chest).length)],
+            [t('Ouro da sala', 'Room gold'), `+${gold.room}`],
+          ] as [string, string][])
+        : []),
+      [t('Ouro achado', 'Gold found'), String(gold.found)],
+      ...(next && !done
+        ? []
+        : ([[t('Ouro para a cidade', 'Gold to town'), String(gold.banked)]] as [string, string][])),
     ],
     note: !next
       ? t(
-          `O grupo caiu no andar ${node.floor}. Os feridos voltam à cidade.`,
-          `The party fell on floor ${node.floor}. The wounded return to town.`,
+          `O grupo caiu no andar ${node.floor}. Os feridos voltam à cidade com metade do ouro achado.`,
+          `The party fell on floor ${node.floor}. The wounded return to town with half the gold found.`,
         )
       : done
-        ? t('O chefe da masmorra caiu. O grupo volta à cidade.', 'The dungeon’s boss fell. The party returns to town.')
+        ? t(
+            'O chefe da masmorra caiu. O grupo volta à cidade com todo o ouro achado.',
+            'The dungeon’s boss fell. The party returns to town with all the gold found.',
+          )
         : down
           ? t(
               `Quem ficou de pé recupera ${CRAWL_RUN.roomHeal}% da vida e quem caiu volta com ${CRAWL_RUN.fallen}%; ao descer ao andar ${node.floor + 1}, todos recuperam mais ${CRAWL_RUN.floorHeal}%.`,

@@ -351,7 +351,7 @@ export const shortBy = (gold: number, price: number) =>
 const chestFull = () => t(`baú cheio (${CHEST_MAX})`, `chest full (${CHEST_MAX})`);
 
 // the lab kit's gold counter on a window's head band (Shop, Tavern): small uppercase label, the number after a coin
-const goldNote = (label: string, gold: number) =>
+export const goldNote = (label: string, gold: number) =>
   el('p', { class: 'gold' }, el('span', { class: 'result-label' }, label), el('strong', {}, String(gold)));
 
 // Shop (Nov 13, delivery 2: provisional on the map until the towns): buy with the chest gold, sell for half (as in FFT).

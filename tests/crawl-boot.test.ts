@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CHEST_KEY, parseChest } from '../src/client/chest.ts';
 import { newBattle, selectBattle } from '../src/client/game/boot.ts';
 import {
   CRAWL_KEY,
@@ -13,9 +14,16 @@ import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { HALF } from '../src/shared/battle/half.ts';
-import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
+import { MAPS, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { expeditionMap, openNodes, startExpedition } from '../src/shared/crawl/expedition.ts';
+import {
+  descentGold,
+  expeditionMap,
+  openChest,
+  openNodes,
+  startExpedition,
+  winRoom,
+} from '../src/shared/crawl/expedition.ts';
 import type * as Generate from '../src/shared/crawl/generate.ts';
 import { CRAWL_VERSION, type RoomOptions } from '../src/shared/crawl/generate.ts';
 
@@ -152,11 +160,41 @@ describe('crawl rooms in the client', () => {
     const location = open(`?room=${sibling}`);
     expect(await selectBattle()).toBeNull();
     expect(location.search).toBe('?home');
-    expect(leftRoom()).toBe(true);
+    expect(leftRoom()).toBe(0); // the gold that went home: half of none found
     expect(savedExpedition()).toBeNull();
     expect(savedRoom()).toBeNull();
     expect(store.get(ROOM_KEY)).toBe('');
-    expect(leftRoom()).toBe(false);
+    expect(leftRoom()).toBeNull();
+  });
+
+  it('the descent gold goes to town when it ends: half after a fall; a chest node is no battle', async () => {
+    const ids = parseGroup(null).deployed;
+    const map = expeditionMap(21);
+    let exp = startExpedition(
+      21,
+      ids.map((id) => ({ id, max: 20 })),
+    );
+    // through the floor's chest and into floor 2, where the rooms drop gold
+    exp = winRoom(
+      exp,
+      map.findIndex((n) => n.next.some((c) => map[c].chest)),
+      {},
+    );
+    const chest = openNodes(map, exp.path).find((i) => map[i].chest)!;
+    store.set(CRAWL_KEY, JSON.stringify(exp));
+    const location = open(`?room=${chest}`);
+    expect(await selectBattle()).toBeNull();
+    expect(location.search).toBe('?home');
+    exp = openChest(exp, chest);
+    while (map[openNodes(map, exp.path)[0]].floor < 3) exp = winRoom(exp, openNodes(map, exp.path)[0], {});
+    const found = descentGold(exp);
+    expect(found).toBeGreaterThan(0);
+    store.set(CRAWL_KEY, JSON.stringify(exp));
+    store.set(CHEST_KEY, JSON.stringify({ gold: 7, items: [] }));
+    const lost = settleRoom({ node: openNodes(map, exp.path)[0], heroes: {} }, false, newBattle(MAPS[0]).state);
+    expect(lost?.gold.banked).toBe(Math.floor(found / 2));
+    expect(parseChest(store.json(CHEST_KEY)).gold).toBe(7 + Math.floor(found / 2));
+    expect(savedExpedition()).toBeNull();
   });
 
   it('the town offers to continue only an expedition whose boss is still up', () => {

@@ -40,6 +40,8 @@ describe('chest and equipment', () => {
   it('the save only accepts whole gold and known items', () => {
     expect(parseChest({ gold: 120, items: ['iron_blade', 'nada', 3] })).toEqual({ gold: 120, items: ['iron_blade'] });
     expect(parseChest({ gold: -5 })).toEqual({ gold: 0, items: [] });
+    // a new game has no chest saved: it starts with 0 gold (Fernando's gold grill, Nov 15)
+    expect(parseChest(null)).toEqual({ gold: 0, items: [] });
   });
 
   it('a new game starts with 0 gold and the common weapon of each story member', () => {

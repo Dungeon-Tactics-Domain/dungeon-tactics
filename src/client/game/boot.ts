@@ -64,11 +64,11 @@ export async function selectBattle(): Promise<BattleSelection | null> {
   let room: CrawlRoom | null = null;
   if (roomAt !== null) {
     // an expedition room (crawl.ts): only one the party may enter now, so a reload or a typed address cannot replay a
-    // cleared room for its heal; anything else goes back home (the town)
+    // cleared room for its heal; anything else (a chest too: it has no battle) goes back home (the town)
     const exp = savedExpedition();
     const map = exp && expeditionMap(exp.seed);
     const node = Number(roomAt);
-    if (!exp || !map || roomAt === '' || !openNodes(map, exp.path).includes(node)) {
+    if (!exp || !map || roomAt === '' || !openNodes(map, exp.path).includes(node) || map[node].chest) {
       goHome();
       return null;
     }
