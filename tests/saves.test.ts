@@ -11,7 +11,7 @@ import {
   summary,
 } from '../src/client/saves.ts';
 import { migrate, store } from '../src/client/store.ts';
-import { expeditionMap, openNodes, startExpedition } from '../src/shared/crawl/expedition.ts';
+import { expeditionMap, openNodes, parseExpedition, startExpedition } from '../src/shared/crawl/expedition.ts';
 
 const browser = (init: Record<string, string> = {}) => {
   const m = new Map(Object.entries(init));
@@ -229,6 +229,18 @@ describe('slot summary', () => {
       room: false,
       played: null,
     });
+  });
+
+  // life x5 moved CRAWL_VERSION to crawl4 (Nov 15): an expedition kept in another slot from before is dropped, not broken
+  it('an older expedition in a slot shows as the town and the slot still loads', () => {
+    const old = JSON.stringify({ ...startExpedition(77, [{ id: 'warrior', max: 42 }]), v: 'crawl3' });
+    const s = browser({ ...party(10), 'dt:crawl': old, 'dt:battle:expedition': '{"state":{}}' });
+    newGame(s, 1000); // the old game waits in slot 1, not in play
+    const slot = readSaves(s).slots.find((x) => x.id === 1)!;
+    expect(summary(slot)).toMatchObject({ gold: 10, floor: null, room: false });
+    expect(loadSlot(s, 1)).toBe(true);
+    expect(live(s, 'dt:chest')).toBe('{"gold":10}');
+    expect(parseExpedition(JSON.parse(live(s, 'dt:crawl')!))).toBeNull();
   });
 
   it('lists the latest played first', () => {

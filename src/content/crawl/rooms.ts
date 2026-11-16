@@ -19,10 +19,9 @@ export const CRAWL_GROUPS: RoomGroup[] = [
   { name: ['Acólito que cura', 'Healing acolyte'], depth: 3, enemies: ['soldier', 'acolyte'] },
   { name: ['Tropa do Véu', 'Veil troop'], depth: 3, enemies: ['veil_knight', 'acolyte', 'minion'] },
 ];
-// the boss room, once at the end of the expedition: the Colossus (2x2, does not walk) and one minion, 184 life (920 since the
-// x5) (Fernando,
-// Nov 15: one boss, at the end of the expedition, with the Colossus and one minion), about 14 hero turns plus 2 or 3 to
-// walk in (the lab's descida.json: with two minions on the bigger room it ran past 18)
+// the boss room, once at the end of the expedition: the Colossus (2x2, does not walk) and one minion, 184 life (920 since
+// the x5) (Fernando, Nov 15: one boss, at the end of the expedition, with the Colossus and one minion), about 14 hero turns
+// plus 2 or 3 to walk in (the lab's descida.json: with two minions on the bigger room it ran past 18)
 export const CRAWL_BOSS: Omit<RoomGroup, 'depth'> = {
   name: ['Colosso de Ossos', 'Bone Colossus'],
   enemies: ['colossus', 'minion'],

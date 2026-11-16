@@ -171,13 +171,17 @@ export function attrRows(def: UnitDef): [string, string][] {
   const rows: [string, string][] = [
     [t('Poder físico', 'Physical power'), String((def.physPower ?? 0) + (def.power ?? 0))],
     [t('Poder mágico', 'Magic power'), String((def.magPower ?? 0) + (def.power ?? 0))],
-    [t('Resistência física', 'Physical resistance'), signed(resistOf(def, 'phys'))],
-    [t('Resistência mágica', 'Magic resistance'), signed(resistOf(def, 'mag'))],
-    [t('Esquiva', 'Dodge'), `${dodgeOf(def)}%`],
+    ...defenceRows(def),
   ];
   if (els.length) rows.push([t('Elementos', 'Elements'), els.join(' · ')]);
   return rows;
 }
+// physical and magic resistance and dodge: the party list's short line too
+export const defenceRows = (def: UnitDef): [string, string][] => [
+  [t('Resistência física', 'Physical resistance'), signed(resistOf(def, 'phys'))],
+  [t('Resistência mágica', 'Magic resistance'), signed(resistOf(def, 'mag'))],
+  [t('Esquiva', 'Dodge'), `${dodgeOf(def)}%`],
+];
 
 // Status window sheet (like FFT's): what the unit is now. [label, value] rows; pure for the test.
 const INFO_LABEL: Record<string, () => string> = {

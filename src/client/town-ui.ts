@@ -22,7 +22,7 @@ import {
   recruit,
   toggleDeploy,
 } from './group.ts';
-import { abilityDetail, attrRows, stillFace } from './hud.ts';
+import { abilityDetail, attrRows, defenceRows, stillFace } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { sfx } from './sound.ts';
@@ -96,8 +96,7 @@ export function openParty(back?: () => void) {
         el(
           'p',
           { class: 'party-stats' },
-          attrRows(UNIT_DEFS[m.cls])
-            .slice(2, 5)
+          defenceRows(UNIT_DEFS[m.cls])
             .map(([k, v]) => `${k} ${v}`)
             .join(' · '),
         ),
