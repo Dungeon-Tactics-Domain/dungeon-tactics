@@ -39,7 +39,7 @@ export const UNIT_LIST: UnitDef[] = [
     speed: 7,
     move: 3,
     abilities: ['firebolt', 'blast', 'gust', 'heal'],
-    vars: { mana: 60 },
+    vars: { mana: 30 }, // was 60: a spell is a choice, not free (Fernando, Nov 16),
     regen: { mana: 8 },
     resist: { phys: -10, mag: 20 },
   },
@@ -176,11 +176,11 @@ export const UNIT_LIST: UnitDef[] = [
     id: 'colossus',
     name: 'Colosso de Ossos',
     en: 'Bone Colossus',
-    hp: 800,
+    hp: 680, // was 800: 680 / 0.725 resistances + the minion = 1,058 effective life, 14.7 to 20.3 turns (Fernando, Nov 16)
     speed: 6,
     move: 0,
     abilities: ['shadow_wave', 'blast'],
-    vars: { mana: 120 },
+    vars: { mana: 50 }, // two Blasts, then the free Shadow wave (was 120; Fernando, Nov 16)
     regen: { mana: 10 },
     size: 2,
     undead: true,

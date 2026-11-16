@@ -39,7 +39,7 @@ describe('mana and stamina (Nov 15 grill)', () => {
     expect(poolOf(free.actor, 'stamina')).toBe(50);
     const m = field('mage');
     m.act('blast', at(1, 1));
-    expect(poolOf(m.actor, 'mana')).toBe(60 - 25);
+    expect(poolOf(m.actor, 'mana')).toBe(30 - 25);
   });
 
   // Fernando, Nov 16: as in FFT, a strike on an empty tile still spends its cost
@@ -99,11 +99,11 @@ describe('mana and stamina (Nov 15 grill)', () => {
     const m = field('mage');
     m.move(at(5, 1));
     m.act('blast', at(1, 1));
-    expect(poolOf(m.actor, 'mana')).toBe(35);
+    expect(poolOf(m.actor, 'mana')).toBe(5);
     expect(m.undo()).toBe(true); // the charge
-    expect([poolOf(m.actor, 'mana'), m.state.charges]).toEqual([60, []]);
+    expect([poolOf(m.actor, 'mana'), m.state.charges]).toEqual([30, []]);
     expect(m.undo()).toBe(true); // the move: nothing to give back
-    expect(poolOf(m.actor, 'mana')).toBe(60);
+    expect(poolOf(m.actor, 'mana')).toBe(30);
   });
 
   it('regenerates at the start of each of the unit own turns, never above the pool', () => {
@@ -179,7 +179,7 @@ describe('battle sheets built from a class', () => {
       'res-test',
     );
     const [h, e] = sc.spawns.filter((s) => s.def.startsWith('res-test')).map((s) => UNIT_DEFS[s.def]);
-    expect([h.vars, h.regen]).toEqual([{ mana: 60 }, { mana: 8 }]);
+    expect([h.vars, h.regen]).toEqual([{ mana: 30 }, { mana: 8 }]);
     expect([e.vars, e.regen]).toEqual([{ stamina: 50 }, { stamina: 5 }]);
   });
 });
