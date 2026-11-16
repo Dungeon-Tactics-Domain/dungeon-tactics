@@ -191,6 +191,10 @@ describe('crawl expedition', () => {
     expect(opened.party).toEqual(e.party);
     expect(openChest(opened, c)).toBe(opened);
     expect(parseExpedition(JSON.parse(JSON.stringify(opened)))).toEqual(opened);
+    // a save cannot start on the chest, nor reach it from a first-row room that does not lead to it
+    const other = map.findIndex((n, i) => n.floor === 1 && n.row === 0 && !n.chest && i !== from);
+    expect(parseExpedition({ ...opened, path: [c] })).toBeNull();
+    expect(parseExpedition({ ...opened, path: [other, c] })).toBeNull();
   });
 
   it('gold: each enemy drops within its range, simple undead nothing, the boss 300, a chest 80 to 150', () => {
