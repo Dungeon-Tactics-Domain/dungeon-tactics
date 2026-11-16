@@ -30,7 +30,7 @@
     0 3px 0 var(--edge);
   --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
   --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 215, 94, 0.55);
-  /* same colors as the scene markings (MARK in scene/marks.ts), so the legend matches the map */
+  /* same colors as the scene markings (MARK in scene/mark-looks.ts), so the legend matches the map */
   --mark-move: #6fc0ff;
   --mark-range: #ff7a3c;
   --mark-blocked: #b07ae0;
@@ -666,7 +666,7 @@ button[hidden],
     linear-gradient(-45deg, transparent 40%, var(--paper) 40% 60%, transparent 60%), var(--mark-nogo);
 }
 .sw.counter {
-  /* the map mark is a plain red frame (scene/marks.ts counter) */
+  /* the map mark is a plain red frame (scene/mark-looks.ts counter) */
   border: 3px solid var(--mark-counter);
 }
 .choice {
@@ -1925,7 +1925,7 @@ button[hidden],
     3px -3px 0 var(--float-crit-edge),
     -3px -3px 0 var(--float-crit-edge),
     0 0 6px #000;
-} /* strike of 25% of life or more (scene/units.ts): bigger, with a gold ring */
+} /* strike of 25% of life or more (scene/unit-hits.ts): bigger, with a gold ring */
 .float.miss {
   color: var(--float-miss);
 }

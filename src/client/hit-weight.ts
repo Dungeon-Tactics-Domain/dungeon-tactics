@@ -1,6 +1,6 @@
 // Weight of a blow, drawing only (Fernando's grill of Nov 15; the Mechanics lab's peso.json and its impact scene are the
-// starting point he tunes by playing). Distances in whole tiles, 1 tile = 1 m as in the lab: scene/units.ts multiplies
-// them by the map's `sub`. Timings are in timing.ts
+// starting point he tunes by playing). Distances in whole tiles, 1 tile = 1 m as in the lab: scene/unit-hits.ts and
+// unit-moves.ts multiply them by the map's `sub`. Timings are in timing.ts
 import type { BattleEvent, Team } from '../shared/battle/types.ts';
 import { BIG } from './battle-face.ts';
 

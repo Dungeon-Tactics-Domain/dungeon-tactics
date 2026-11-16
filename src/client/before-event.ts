@@ -35,7 +35,7 @@ function sound(e: BattleEvent, battle: Battle, scene: BattleScene) {
     const h = (i: number) => squareH(battle.grid, e.path[i], size);
     let at = 0;
     for (let i = 1; i < e.path.length; i++) {
-      // ramp: walking, at the step pace (the same as scene/units.ts)
+      // ramp: walking, at the step pace (the same as scene/unit-moves.ts)
       const dh = rampLink(battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1),
         tiles = dist(e.path[i - 1], e.path[i]) / subOf(battle.grid),
         ms = stepMs(dh, tiles);
