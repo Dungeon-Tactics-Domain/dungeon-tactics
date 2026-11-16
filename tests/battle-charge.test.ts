@@ -120,6 +120,21 @@ describe('charged actions', () => {
     expect(roll(true)).toMatchObject({ dmg: Math.floor(die * 1.25) });
   });
 
+  it('two charges due on the same tick fire enemies first, so the first may kill the other caster (BMG A.2)', () => {
+    // the hero is first in the unit list and in the charges: only the enemy-first rule puts the soldier ahead
+    const fired = (hp: number) => {
+      const b = duel('warrior');
+      b.state.units[0].hp = hp;
+      b.state.charges = [
+        { unit: 'a', ability: 'strike', target: { x: 4, y: 3 }, follow: 'b', ticks: 1 },
+        { unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: 'a', ticks: 1 },
+      ];
+      return b.endTurn().flatMap((e) => (e.k === 'attack' ? [e.unit] : []));
+    };
+    expect(fired(UNIT_DEFS.warrior.hp)).toEqual(['b', 'a']);
+    expect(fired(1)).toEqual(['b']);
+  });
+
   it('the AI turn brings the events of charges that resolve before the next turn', () => {
     const b = duel('mage', 1, 3);
     b.act('blast', { x: 4, y: 3 });
