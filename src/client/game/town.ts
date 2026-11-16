@@ -14,7 +14,7 @@ import {
 } from '../../content/crawl/town.ts';
 import { dist, type Grid, posKey, samePos } from '../../shared/battle/grid.ts';
 import { SUB } from '../../shared/battle/half.ts';
-import { cellsOf, footprint, gap, reachable } from '../../shared/battle/pathing.ts';
+import { cellsOf, footprint, reachable } from '../../shared/battle/pathing.ts';
 import type { BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { dialog, padDialog } from '../dialog.ts';
 import { emptyMemory, padActions } from '../gamepad.ts';
@@ -34,11 +34,13 @@ import {
   atDoor,
   castParty,
   cell,
+  clear,
   ME,
   memberUnit,
+  near,
   placeAt,
-  REACH,
   route,
+  strollPath,
   townScenario,
   townState,
 } from '../town-map.ts';
@@ -47,7 +49,6 @@ import { homeScreen, questGate, townMenu } from './crawl.ts';
 
 const STEP_MS = TIMING.step / SUB; // a cell at the battle's walking pace (Nov 13, Fernando: slow walking)
 const STROLL_MS = STEP_MS * 1.6; // townsfolk amble
-const STROLL = 4; // cells a townsperson strays from home
 const DIRS: ScreenDir[] = ['up', 'down', 'left', 'right'];
 
 const group = () => parseGroup(store.json(GROUP_KEY));
@@ -58,8 +59,8 @@ class Town {
   private readonly pad = emptyMemory();
   private padPrimed = false;
   private walking = false;
-  private path: Pos[] = []; // what is left of a clicked route
-  private arrive: (() => void) | null = null; // what the clicked route does on arrival (talk, go in)
+  private goal: ((p: Pos) => boolean) | null = null; // where a click sends the walker
+  private arrive: (() => void) | null = null; // what the click does on arrival (talk, go in)
   private facing: Pos = { x: 0, y: -1 }; // the walker's last step, for who stands in front
   private talking: string | null = null; // who listens now: they stop strolling
   private told = new Map<string, number>(); // the next rumour of each townsperson
@@ -154,7 +155,7 @@ class Town {
 
   private run(a: KeyAction) {
     if (a.k === 'cursor') {
-      this.path = [];
+      this.goal = null;
       this.arrive = null;
       return void this.walk();
     }
@@ -171,16 +172,17 @@ class Town {
   }
 
   // Walks while a direction is held, one cell at a time (a blocked cell ends it, going in if it is the place's door),
-  // else along the clicked route, and does what the route was for on arrival
+  // else toward the clicked goal, and does what the click was for on arrival
   private async walk() {
     if (this.walking) return;
     this.walking = true;
+    let arrived = false;
     for (;;) {
       if (windowOpen()) break;
       const dir = this.held();
       let next: Pos | undefined;
       if (dir) {
-        this.path = [];
+        this.goal = null;
         this.arrive = null;
         const s = gridStep(dir, this.scene.heading);
         next = { x: this.me.pos.x + s.x, y: this.me.pos.y + s.y };
@@ -189,7 +191,13 @@ class Town {
           this.bump(next);
           break;
         }
-      } else next = this.path.shift();
+      } else if (this.goal) {
+        // the way again from every cell: a townsperson may have stepped into the old one (review of Nov 15)
+        const way = route(this.grid, this.state, this.goal);
+        if (!way) sfx('cancel');
+        arrived = way?.length === 0;
+        next = way?.[0];
+      }
       if (!next) break;
       this.facing = { x: Math.sign(next.x - this.me.pos.x), y: Math.sign(next.y - this.me.pos.y) };
       this.me.pos = next;
@@ -199,9 +207,10 @@ class Town {
     this.walking = false;
     this.scene.rest(ME);
     this.showPrompt();
-    const arrive = this.arrive;
+    const arrive = arrived ? this.arrive : null;
+    this.goal = null;
     this.arrive = null;
-    if (arrive && !this.path.length && !windowOpen()) arrive();
+    if (arrive && !windowOpen()) arrive();
   }
 
   // walking into a house from its door goes in
@@ -217,18 +226,20 @@ class Town {
     const who = this.state.units.find((u) => u.id !== ME && footprint(u).some((c) => samePos(c, p)));
     const pl = who ? undefined : placeAt(p);
     const [ok, then]: [(q: Pos) => boolean, (() => void) | null] = who
-      ? [(q) => this.near(q, who), () => this.talkTo(who)]
+      ? [(q) => near(q, who), () => this.talkTo(who)]
       : pl
         ? [(q) => atDoor(q, pl), () => this.enter(pl)]
         : [(q) => samePos(q, p), null];
-    const path = route(this.grid, this.state, ME, ok);
-    if (!path) return sfx('cancel');
-    this.path = path;
+    // no way there: the click also cancels the one walked now
+    if (!route(this.grid, this.state, ok)) {
+      this.goal = null;
+      this.arrive = null;
+      return sfx('cancel');
+    }
+    this.goal = ok;
     this.arrive = then;
     void this.walk();
   }
-
-  private near = (p: Pos, u: UnitState) => gap(cellsOf(p, SUB), footprint(u)) <= REACH;
 
   // What Enter or A does here, for the key and the prompt: whoever stands in front (the way the walker last stepped), else
   // the door the walker stands at, else whoever is beside
@@ -237,18 +248,18 @@ class Town {
     const centre = (p: Pos) => ({ x: p.x + SUB / 2, y: p.y + SUB / 2 });
     const ahead = (u: UnitState) =>
       (centre(u.pos).x - centre(me.pos).x) * this.facing.x + (centre(u.pos).y - centre(me.pos).y) * this.facing.y > 0;
-    const near = this.state.units
-      .filter((u) => u.id !== ME && this.near(me.pos, u))
+    const beside = this.state.units
+      .filter((u) => u.id !== ME && near(me.pos, u))
       .sort((a, b) => dist(a.pos, me.pos) - dist(b.pos, me.pos));
     const talkTo = (u: UnitState) => ({
       label: t(`Falar com ${this.nameOf(u)}`, `Talk to ${this.nameOf(u)}`),
       go: () => this.talkTo(u),
     });
-    const front = near.find(ahead);
+    const front = beside.find(ahead);
     if (front) return talkTo(front);
     const pl = TOWN_PLACES.find((p) => atDoor(me.pos, p));
     if (pl) return { label: t(...pl.name), go: () => this.enter(pl) };
-    return near[0] ? talkTo(near[0]) : null;
+    return beside[0] ? talkTo(beside[0]) : null;
   }
 
   private showPrompt() {
@@ -314,8 +325,9 @@ class Town {
     this.showPrompt();
   }
 
-  // A townsperson ambles to a free spot near home every few seconds (cosmetic, so Math.random), never onto the walker;
-  // stays put while a window is open, while being talked to or while the walker stands beside them
+  // A townsperson ambles to a spot near home every few seconds (cosmetic, so Math.random) along a way that never blocks a
+  // door or anyone (town-map.ts clear); stays put while a window is open, while being talked to or while the walker
+  // stands beside them
   private async stroll(f: Townsfolk) {
     const id = `f-${f.id}`;
     const home = cell(f.home);
@@ -325,13 +337,10 @@ class Town {
       const u = this.state.units.find((x) => x.id === id);
       if (!u) return;
       // beside the walker, wait to be talked to: they wandered off while the prompt still offered to talk to them
-      if (this.near(this.me.pos, u)) continue;
-      const stops = [...reachable(this.grid, this.state, id, STROLL).values()].filter(
-        (s) => dist(s.pos, home) <= STROLL && gap(cellsOf(s.pos, SUB), footprint(this.me)) > REACH,
-      );
-      const pick = stops[Math.floor(Math.random() * stops.length)];
-      for (const p of pick?.path ?? []) {
-        if (windowOpen() || this.talking === id || gap(cellsOf(p, SUB), footprint(this.me)) <= 1) break;
+      if (near(this.me.pos, u)) continue;
+      for (const p of strollPath(this.grid, this.state, id, home, Math.random)) {
+        // checked again at every cell: the walker and the others moved since (never onto the walker's next cell)
+        if (windowOpen() || this.talking === id || !clear(this.grid, this.state, id, p)) break;
         u.pos = p;
         await this.scene.glide(id, p, STROLL_MS);
       }

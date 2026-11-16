@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeClass, defaultGroup, type Group } from '../src/client/group.ts';
+import { changeClass, defaultGroup, GROUP_MAX, type Group } from '../src/client/group.ts';
 import { faceOf } from '../src/client/talk.ts';
 import { PAINT } from '../src/client/terrain.ts';
 import {
@@ -8,24 +8,55 @@ import {
   cell,
   ME,
   memberUnit,
+  near,
   placeAt,
   route,
+  steps,
+  strollPath,
   townScenario,
   townState,
 } from '../src/client/town-map.ts';
 import { GUILD_SPOTS, TOWN, TOWN_PLACES, TOWN_START, TOWNSFOLK } from '../src/content/crawl/town.ts';
-import { tileAt } from '../src/shared/battle/grid.ts';
+import { posKey, tileAt } from '../src/shared/battle/grid.ts';
 import { halfDef, SUB } from '../src/shared/battle/half.ts';
-import { footprint } from '../src/shared/battle/pathing.ts';
-import type { Pos } from '../src/shared/battle/types.ts';
+import { cellsOf, footprint, reachable } from '../src/shared/battle/pathing.ts';
+import type { BattleState, Pos } from '../src/shared/battle/types.ts';
 
 const sc = townScenario();
 const place = (id: string) => TOWN_PLACES.find((p) => p.id === id)!;
-// the walker alone at the start: nobody stands in the way of the reachability checks
-const alone = () => ({
-  ...townState(sc),
-  units: [{ id: ME, def: halfDef('warrior'), team: 'hero' as const, pos: cell(TOWN_START), hp: 1, ct: 0 }],
-});
+// the party at its cap: the story members and recruits, so every Guild spot is taken
+const full: Group = {
+  ...defaultGroup(),
+  members: [
+    ...defaultGroup().members,
+    ...['a', 'b', 'c', 'd'].map((id) => ({ id, name: id, cls: 'rogue' as const, recruit: true })),
+  ],
+};
+// seeded, so a failing stroll replays
+const seeded = (seed: number) => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+// where the keyboard takes the walker: one cell at a time by the battle's own rule (reachable, budget 1)
+const keyStops = (state: BattleState) => {
+  const me = state.units.find((u) => u.id === ME)!;
+  const from = me.pos;
+  const seen = new Map([[posKey(from), from]]);
+  for (const p of seen.values()) {
+    me.pos = p;
+    for (const s of reachable(sc.grid, state, ME, 1).values()) seen.set(posKey(s.pos), s.pos);
+  }
+  me.pos = from;
+  return [...seen.values()];
+};
+// what the keyboard misses: a door, someone to talk to, or someone standing on someone (steps: the fast keyStops, the
+// next test holds them equal)
+const missed = (state: BattleState) => {
+  const stops = steps(sc.grid, state).map((s) => s.pos);
+  const cells = state.units.flatMap((u) => footprint(u).map(posKey));
+  return [
+    ...TOWN_PLACES.filter((pl) => !stops.some((p) => atDoor(p, pl))).map((pl) => pl.id),
+    ...state.units.filter((u) => u.id !== ME && !stops.some((p) => near(p, u))).map((u) => u.id),
+    ...(new Set(cells).size === cells.length ? [] : ['overlap']),
+  ];
+};
 const party = (g: Group = defaultGroup()) => {
   const state = townState(sc);
   castParty(state, g);
@@ -44,18 +75,41 @@ describe('the walkable town (src/content/crawl/town.ts, town-map.ts)', () => {
     }
   });
 
-  it('lets the walker reach every door, every guild spot and every townsperson from the start', () => {
-    const state = alone();
-    for (const p of TOWN_PLACES)
-      expect(
-        route(sc.grid, state, ME, (q) => atDoor(q, p)),
-        p.id,
-      ).not.toBeNull();
-    for (const at of [...GUILD_SPOTS, ...TOWNSFOLK.map((f) => f.home)])
-      expect(
-        route(sc.grid, state, ME, (q) => q.x === cell(at).x && q.y === cell(at).y),
-        JSON.stringify(at),
-      ).not.toBeNull();
+  it('keeps every door and everyone within single keyboard steps, whole party in and townsfolk strolling', () => {
+    expect(full.members.length).toBe(GROUP_MAX);
+    const moved = new Set<string>();
+    for (let seed = 1; seed <= 4; seed++) {
+      const state = party();
+      const me = state.units.find((u) => u.id === ME)!;
+      const rnd = seeded(seed);
+      for (let round = 0; round < 12; round++) {
+        // halfway, recruits hired at the Tavern join the Guild's spots, wherever the townsfolk stand by then
+        if (round === 6) castParty(state, full);
+        expect(missed(state), `seed ${seed}, round ${round}`).toEqual([]);
+        // the walker goes somewhere, then each townsperson strolls; every cell of the way must hold, since in the game
+        // a stroll stops halfway when a window opens or the walker comes along
+        const ways = steps(sc.grid, state);
+        me.pos = ways[Math.floor(rnd() * ways.length)].pos;
+        for (const f of TOWNSFOLK) {
+          const u = state.units.find((x) => x.id === `f-${f.id}`)!;
+          for (const p of strollPath(sc.grid, state, u.id, cell(f.home), rnd)) {
+            moved.add(f.id);
+            u.pos = p;
+            expect(missed(state), `seed ${seed}, round ${round}, ${f.id} at ${posKey(p)}`).toEqual([]);
+          }
+        }
+      }
+    }
+    expect(moved.size).toBe(TOWNSFOLK.length); // nobody stood still all along: the checks are not too strict
+  }, 20_000); // about 200 walks over the whole town
+
+  it('walks a click the way of the keyboard: the same stops, nobody walked through', () => {
+    const state = party(full);
+    const ways = steps(sc.grid, state);
+    expect(ways.map((s) => posKey(s.pos)).sort()).toEqual(keyStops(state).map(posKey).sort());
+    const taken = new Set(state.units.filter((u) => u.id !== ME).flatMap((u) => footprint(u).map(posKey)));
+    for (const s of ways) for (const p of s.path) expect(cellsOf(p, SUB).some((c) => taken.has(posKey(c)))).toBe(false);
+    expect(route(sc.grid, state, (q) => atDoor(q, place('tavern')))?.length).toBeGreaterThan(0);
   });
 
   it('finds the place from any cell of its lot, the gate included, and none on the road', () => {
