@@ -40,11 +40,9 @@ describe('hostile addresses', () => {
     expect(sel?.saveKey).toBe('dt:battle');
   });
 
-  // Bug: boot.ts:111 tests `SCENARIOS[study]` for truth instead of Object.hasOwn, so a key inherited from Object.prototype
-  // passes and boot.ts:118 reads `scenario.grid.sub` off a function: TypeError, blank page (measured: "Cannot read properties
-  // of undefined (reading 'sub')"). Fix: `Object.hasOwn(SCENARIOS, study)` as parseBattleState does.
+  // boot.ts tests the registry with Object.hasOwn, so a key inherited from Object.prototype cannot reach `scenario.grid`
   for (const key of ['constructor', '__proto__', 'toString', 'hasOwnProperty'])
-    it.fails(`?scenario=${key} opens the default battle instead of throwing`, async () => {
+    it(`?scenario=${key} opens the default battle instead of throwing`, async () => {
       open(`?scenario=${key}`);
       const sel = await selectBattle();
       expect(sel?.scenario.id.startsWith(FIRST_BATTLE.id)).toBe(true);

@@ -108,7 +108,7 @@ export async function selectBattle(): Promise<BattleSelection | null> {
     // the own rule (wins at dawn) only exists after the scenario is assembled: assemble before loading the save
     scenario = survivalScenario();
     saveKey = `dt:battle:${SURVIVAL_ID}`;
-  } else if (study && SCENARIOS[study] && !study.endsWith(HALF)) {
+  } else if (study && Object.hasOwn(SCENARIOS, study) && !study.endsWith(HALF)) {
     // other game maps through the same parameter (e.g. ?scenario=flooded_crypt), with their own save
     scenario = SCENARIOS[study];
     saveKey = `dt:battle:${study}`;

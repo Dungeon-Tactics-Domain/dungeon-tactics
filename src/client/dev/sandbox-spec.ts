@@ -171,7 +171,8 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
       r.add.forEach((u, i) => {
         if (!isObj(u) || typeof u.id !== 'string' || !isInt(u.x, 0) || !isInt(u.y, 0))
           return p.push(`add[${i}] needs id, def, team, x and y`);
-        if (typeof u.def !== 'string' || !UNIT_DEFS[u.def]) p.push(`add[${i}]: unknown def "${String(u.def)}"`);
+        if (typeof u.def !== 'string' || !Object.hasOwn(UNIT_DEFS, u.def))
+          p.push(`add[${i}]: unknown def "${String(u.def)}"`);
         if (u.team !== 'hero' && u.team !== 'enemy') p.push(`add[${i}]: team must be "hero" or "enemy"`);
       });
   }
