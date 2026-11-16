@@ -13,7 +13,6 @@ export type KeyAction =
   | { k: 'undo' }
   | { k: 'wait' }
   | { k: 'rotate'; dir: 1 | -1 }
-  | { k: 'info' }
   | { k: 'pixel' }
   | { k: 'zoom'; factor: number }
   | { k: 'recenter' }
@@ -49,7 +48,6 @@ const SIMPLE: Record<string, KeyAction> = {
   f: { k: 'recenter' },
   h: { k: 'help' },
   '?': { k: 'help' },
-  i: { k: 'info' },
   v: { k: 'pixel' },
   // the page keys scroll the turn list, which since Nov 15 holds every unit (Fernando's decision)
   pageup: { k: 'turns', dir: -1 },

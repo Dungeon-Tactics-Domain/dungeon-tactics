@@ -28,7 +28,6 @@ describe('game keys', () => {
     expect(key('p')).toEqual({ k: 'wait' });
     expect(key('r')).toEqual({ k: 'rotate', dir: 1 });
     expect(key('R', { shiftKey: true })).toEqual({ k: 'rotate', dir: -1 });
-    expect(key('i')).toEqual({ k: 'info' });
     expect(key('v')).toEqual({ k: 'pixel' });
     expect(key('q')).toEqual({ k: 'zoom', factor: 1.15 });
     expect(key('e')).toEqual({ k: 'zoom', factor: 1 / 1.15 });
