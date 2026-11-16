@@ -946,6 +946,9 @@ button[hidden],
    enemies under its name */
 .crawl-map .dialog.title {
   width: min(860px, 100%);
+  /* a floor with a 3-room row and the chest line runs past 720 px: it scrolls, so Back to town stays reachable */
+  max-height: 100%;
+  overflow-y: auto;
 }
 .crawl-map .dialog.title h2 {
   font-size: 44px;
