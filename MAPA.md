@@ -12,7 +12,7 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/equipment.ts` — ItemDef type, slots, the ITEMS registry and bonusOf (a loadout's stats summed on a sheet).
 - `src/shared/battle/scenarios.ts` — Scenario (map plus spawns), the MAPS and SCENARIOS registries, FIRST_BATTLE and initialState.
 - `src/shared/battle/grid.ts` — tiles with terrain, height, water depth and ramps; parseGrid and withRamps build maps; standing, step cost, facing and sides.
-- `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, ranges in cells and areas.
+- `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, where nobody stops (noStopAt: map bodies and corpses), ranges in cells and areas.
 - `src/shared/battle/shot.ts` — the shot path (`traceShot`, `shotAt`): what stops a shot and the two ends it is measured between.
 - `src/shared/battle/combat.ts` — hit chance, damage range, preview, resolve (hit then damage), the counters it plays, spikes and the battle outcome.
 - `src/shared/battle/counter.ts` — who answers a strike with a counter and which counters a move owes.

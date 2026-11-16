@@ -19,6 +19,13 @@ The rules of a battle in `src/shared/battle`, moved out of `src/shared/CLAUDE.md
 - **Spikes** (night of Nov 12, our own rule): `Tile.spikes`; being pushed onto the tile (`simulatePush`) or ending your turn on it (`spikeAtTurnEnd`) hurts `COMBAT.SPIKE_DAMAGE` (50 since the x5 of Nov 15), `spike` event; walking over it does not hurt. The AI avoids stopping there and values pushing onto it for the damage.
 - Where: the Flooded Crypt (letter `s`) and the crawl rooms (the theme's `hazard` in `src/content/crawl/rooms.ts`, 0 to 6 a room, see [shared-crawl.md](shared-crawl.md)).
 
+## Corpses
+
+- **A dead unit leaves a corpse that nobody may stop on** (Fernando, Nov 16; the Mechanics lab's `peso.json` reads "the corpse already exists in the rules"): `hurt` adds the dead unit's whole footprint to `BattleState.corpses` (the Colossus' 4 tiles, a token's 2x2 cells). Like a map body (`Tile.noStop`, Nov 13), a corpse cell is walked and jumped over but never ends a move or a push; `noStopAt` (`pathing.ts`) is the one reading, used by `reachable` and `simulatePush`, so the preview, the AI and the forecast agree.
+- Corpses stay to the end of the battle, are not units (no target, counter or turn) and roll no die. The field is optional: absent = none (a battle without deaths, a save from before); `parseBattleState` keeps cells inside the map, one per cell. Undo of the killing blow takes the corpse back.
+- A push onto a corpse stops on the cell before it with the bump, as onto a map body. Corpses exist only in play: crawl rooms and their verifier do not change.
+- Not done yet: a corpse does not block sight (a map body blocks 1 level, `LOW` in `grid.ts`), and after a reload no body is drawn on its cells (the state keeps only the cells; the scene draws the death as it happens).
+
 ## Shots
 
 The trajectory grill of Nov 15, Fernando's realistic rule; the Mechanics lab's `trajetorias.json` and its prototype, whose path `traceShot` (`pathing.ts`) ports.
