@@ -2253,6 +2253,14 @@ body:has(.result-overlay) .fps {
     animation: none;
   }
 }
+.talk-skip {
+  justify-self: end;
+  min-height: var(--tap);
+  min-width: var(--tap);
+}
+.talk-overlay.dark .talk-skip {
+  display: none;
+}
 .talk-keys {
   position: absolute;
   right: 40px;

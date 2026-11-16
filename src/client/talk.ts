@@ -5,7 +5,7 @@
 import faces from '../content/faces.json';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { LANG, t } from './i18n.ts';
-import { el } from './icons.ts';
+import { button, el } from './icons.ts';
 import { modelOf } from './markers.ts';
 import { portrait } from './portrait.ts';
 import { blip } from './sound.ts';
@@ -106,13 +106,22 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
       el('div', { class: 'talk-body' }, name, text),
       el('span', { class: 'talk-next', 'aria-hidden': 'true' }, '▼'),
       // discreet hint: whoever didn't know Esc skipped the whole conversation went through line by line
-      el('span', { class: 'talk-keys' }, t('Enter segue · Esc pula', 'Enter next · Esc skip')),
+      // on a touch screen there is no Enter or Esc: the hint says what a finger does (Nov 16, Fernando)
+      el(
+        'span',
+        { class: 'talk-keys' },
+        matchMedia('(pointer: coarse)').matches
+          ? t('Toque para seguir', 'Tap to continue')
+          : t('Enter segue · Esc pula', 'Enter next · Esc skip'),
+      ),
     ) as HTMLButtonElement;
     const overlay = el(
       'div',
       { class: `overlay talk-overlay${dark ? ' dark' : ''}` },
       ...(title ? [el('div', { class: 'panel talk-title' }, title)] : []),
       box,
+      // a 44 px button for what Esc does, outside the box (a button cannot hold a button); it ends the whole conversation
+      button('talk-skip', t('Pular', 'Skip'), () => end()),
     );
     const full = () => (LANG === 'pt' ? lines[i].pt : lines[i].en);
     const typing = () => shown < full().length;

@@ -69,6 +69,6 @@ Nov 13, Fernando found the flat white square "too white".
 
 Nov 12 and 13.
 
-- The dialogue box is in `talk.ts`, with letter-by-letter text, a blip per voice (`blip` in `sound.ts`) and the painted faces; Esc skips the conversation. Today the walkable town calls it (`game/town.ts`): the townsfolk's rumours and a party member's greeting before their sheet opens.
+- The dialogue box is in `talk.ts`, with letter-by-letter text, a blip per voice (`blip` in `sound.ts`) and the painted faces; Esc or the "Skip" button (44 px, Nov 16) skips the conversation, and on a touch screen the hint reads "Tap to continue". Today the walkable town calls it (`game/town.ts`): the townsfolk's rumours and a party member's greeting before their sheet opens.
 - Music is a CC0 .ogg file from `public/music/` per screen, with per-track gain in `music.ts`, played in a loop with a 0.5 s fade by `sound.ts` (Nov 13, Fernando's request: "use free music instead of the ones you created").
 - **Testing without music** (Fernando's request, Nov 13): on `localhost` the music starts at 0 and, on a page opened by automation (`navigator.webdriver`, Playwright), it never plays unless the URL has a `music` parameter (`?music=1`). Test scripts launch Chrome with `--mute-audio`.
