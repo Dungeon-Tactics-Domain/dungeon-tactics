@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDevScenario, type DevSetup, defaultSetup } from '../src/client/dev-roster.ts';
+import { compare, itemStats, sheetRows } from '../src/client/town-ui.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { bonusOf, ITEMS, type Loadout, withGear } from '../src/shared/battle/equipment.ts';
@@ -76,6 +77,37 @@ describe('equipment', () => {
     expect(armed.t.dmgMin).toBe(dmg(resistOf(armed.foe, 'phys')));
     expect(armed.t.dmgMin).toBeLessThan(bare.t.dmgMin);
     expect(armed.t.chance).toBeLessThan(bare.t.chance); // the buckler's 5% dodge
+  });
+
+  it('the Sheet shows each total the battle counts and where it comes from, and says when a cap took part', () => {
+    // "total (origin)" per row label, to read the three columns in one string
+    const rowsOf = (cls: string, load: Loadout) =>
+      Object.fromEntries(sheetRows(cls, load).map(([k, v, from]) => [k, from ? `${v} (${from})` : v]));
+    const rows = rowsOf('warrior', { main: 'iron_blade', head: 'iron_helm' });
+    expect(rows.Vida).toBe('235 (Guerreiro 210 · Elmo de ferro +25)');
+    expect(rows['Poder físico']).toBe('20 (Guerreiro 0 · Lâmina de ferro +20)');
+    expect(rows['Resistência física']).toBe('+20% (Guerreiro +10% · Elmo de ferro +10%)');
+    expect(rows.Esquiva).toBe('5%');
+    expect(rows['Resistência a fogo']).toBeUndefined(); // an element only when something gives it
+    const wall = { off: 'veil_shield', head: 'iron_helm', body: 'chain_mail', legs: 'padded_trousers' };
+    const capped = rowsOf('warrior', wall);
+    expect(capped['Resistência física']).toBe(
+      '+60% (Guerreiro +10% · Escudo do Véu +30% · Elmo de ferro +10% · Cota de malha +20% · Calças acolchoadas +10% · no limite)',
+    );
+    expect(capped['Resistência a sombra']).toBe('+40% (Guerreiro 0% · Escudo do Véu +40%)');
+    expect(capped.Velocidade).toBe('7 (Guerreiro 8 · Escudo do Véu −1)');
+    expect(rowsOf('mage', { off: 'worn_grimoire' }).Mana).toBe('20 (em breve) (Grimório gasto +20)');
+  });
+
+  it('comparing reads the sheet as the rules do: past a cap only what is left changes', () => {
+    const wall = { off: 'veil_shield', head: 'iron_helm', body: 'chain_mail', legs: 'padded_trousers' };
+    expect(compare('warrior', wall, 'head', null)).toBe('−25 vida'); // 70% physical stays at the 60 cap
+    expect(compare('warrior', wall, 'head', 'hood')).toBe('−25 vida · +5 acerto · +5% esquiva');
+    expect(compare('warrior', wall, 'head', 'iron_helm')).toBe('nada muda');
+    expect(compare('mage', {}, 'off', 'worn_grimoire')).toBe('+20 mana (em breve) · +3 regeneração de mana (em breve)');
+    expect(itemStats(ITEMS.ember_scepter)).toBe(
+      '+40 poder mágico · +40% fogo · −20% gelo · +3 regeneração de mana (em breve)',
+    );
   });
 
   it('every piece has a price, and only commons are cheap enough for the shop', () => {

@@ -119,22 +119,25 @@ describe('dt:chest and dt:equip (parseChest, parseEquip)', () => {
     expect(parseChest({ items }).items).toEqual(Array(99).fill(known));
   });
 
-  it('a slot keeps only an item of that slot; prototype names are not items', () => {
-    const [id, item] = Object.entries(ITEMS)[0];
-    const wrong = Object.values(ITEMS).find((i) => i.slot !== item.slot);
+  // a known item in a slot of another kind is not lost: it moves to a free slot of its own kind (the Nov 16 migration)
+  it('a slot keeps only an item of its kind; prototype names are not items', () => {
+    const [id, item] = Object.entries(ITEMS).find(([, i]) => i.kind === 'head')!;
+    const wrong = Object.values(ITEMS).find((i) => i.kind !== item.kind);
     const eq = parseEquip({
-      h0: { [item.slot]: id, constructor: 'x' },
-      h1: { [item.slot]: 'constructor' },
-      h2: { [item.slot]: wrong?.id },
+      h0: { head: id, constructor: 'x' },
+      h1: { head: 'constructor' },
+      h2: { head: wrong?.id },
       h3: 'sword',
       h4: null,
     });
-    expect(eq).toEqual({ h0: { [item.slot]: id }, h1: {}, h2: {} });
+    expect(eq).toEqual({
+      h0: { head: id },
+      h1: {},
+      h2: { [wrong!.kind === 'accessory' ? 'acc1' : wrong!.kind]: wrong!.id },
+    });
   });
 
-  // Bug: chest.ts:33 writes `out[base] = load` for any key; JSON.parse keeps "__proto__" as an own key, and the assignment
-  // then swaps the prototype of the returned object (no global pollution, but eq[x] can read inherited loadouts). Fix:
-  // skip base === '__proto__' (or build `out` with Object.create(null) / only for member ids).
+  // chest.ts:33 writes `out[base] = load` for any key; assigning "__proto__" swaps the prototype of the returned object
   it.fails('a "__proto__" member key does not change the prototype of the equipment', () => {
     const eq = parseEquip(JSON.parse('{"__proto__":{"weapon":"x"},"h0":{}}'));
     expect(Object.getPrototypeOf(eq)).toBe(Object.prototype);

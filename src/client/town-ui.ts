@@ -1,11 +1,23 @@
 // The town's windows (opened at its buildings, game/town.ts, and from its menu, game/crawl.ts townMenu): Party with each
-// member's sheet (class, equipment, who goes), Tavern (recruits) and Shop. Rules in group.ts and chest.ts.
+// member's sheet (class, equipment, who goes) and their Equipment, Tavern (recruits) and Shop. Rules in group.ts and chest.ts.
 
-import { bonusOf, ITEMS, type ItemDef, type Kind, kindOf, SLOTS, type Slot } from '../shared/battle/equipment.ts';
+import { CONSUMABLES } from '../content/items.ts';
+import {
+  ITEMS,
+  type ItemDef,
+  type Kind,
+  kindOf,
+  type Loadout,
+  type Rarity,
+  SLOTS,
+  type Slot,
+  withGear,
+  worn,
+} from '../shared/battle/equipment.ts';
 import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
-import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { abilityDetail, attrRows, defenceRows, regenLine } from './battle-text.ts';
+import { dodgeOf, ELEMENTS, resistOf, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
+import { abilityDetail, defenceRows, ELEMENT_NAME, regenLine, signed } from './battle-text.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
 import { unitFrom } from './dev-roster.ts';
 import { choice, dialog, priceRow } from './dialog.ts';
@@ -57,11 +69,13 @@ const loadGroup = () => parseGroup(store.json(GROUP_KEY));
 const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
 
 export function openParty(back?: () => void) {
-  const g = loadGroup();
+  const g = loadGroup(),
+    eq = loadEquip();
   const again = () => openParty(back);
   const card = (m: Member) => {
     const u = unitFrom(m.cls, m.name),
-      going = g.deployed.includes(m.id);
+      going = g.deployed.includes(m.id),
+      sheet = withGear(UNIT_DEFS[m.cls], eq[m.id]); // the numbers with the pieces on, as the battle counts them
     const open = () => {
       d.close();
       openSheet(m, again);
@@ -93,12 +107,12 @@ export function openParty(back?: () => void) {
           { class: 'party-class' },
           ` · ${unitName(m.cls)} · ${going ? t('vai à batalha', 'in battle') : t('no acampamento', 'at camp')}`,
         ),
-        el('p', { class: 'party-stats' }, statsLine(u)),
+        el('p', { class: 'party-stats' }, statsLine(sheet)),
         // resistances and dodge (Nov 15); the sheet shows every attribute
         el(
           'p',
           { class: 'party-stats' },
-          defenceRows(UNIT_DEFS[m.cls])
+          defenceRows(sheet)
             .map(([k, v]) => `${k} ${v}`)
             .join(' · '),
         ),
@@ -139,22 +153,124 @@ const KIND_NAME: Record<Kind, () => string> = {
   accessory: () => t('Acessório', 'Accessory'),
 };
 const slotName = (s: Slot) => (s === 'acc1' || s === 'acc2' ? `${KIND_NAME.accessory()} ${s.at(-1)}` : KIND_NAME[s]());
+// rarity in words (a piece, "peça", is feminine in Portuguese): never by colour alone
+const RARITY: Record<Rarity, () => string> = {
+  common: () => t('comum', 'common'),
+  rare: () => t('rara', 'rare'),
+  epic: () => t('épica', 'epic'),
+};
 const itemName = (it: ItemDef) => t(it.name, it.en);
-// "+2 damage · +8 accuracy": only what the item changes, in the sheet's wording
-export function itemStats(it: ItemDef): string {
-  const parts: [number | undefined, string, string][] = [
-    [it.hp, 'vida', 'HP'],
-    [it.physPower, 'poder físico', 'physical power'],
-    [it.magPower, 'poder mágico', 'magic power'],
-    [it.hit, 'acerto', 'hit'],
-    [it.move && it.move * SUB, 'movimento', 'move'], // in half tiles, like every Move and Jump on screen
-    [it.jump && it.jump * SUB, 'salto', 'jump'],
-    [it.speed, 'velocidade', 'speed'],
-  ];
-  return parts
-    .filter(([v]) => v)
-    .map(([v, pt, en]) => `${v! > 0 ? '+' : ''}${v} ${t(pt, en)}`)
+
+// The sheet's numbers, one line each (Nov 16, slice 3): `of` reads the battle sheet as the rules do (resistOf and dodgeOf
+// clamp), `piece` what one piece adds, Move and Jump in half tiles like every screen. A line with no `of` is a stat no
+// battle reads yet (equipment.ts PENDING: its pieces just add up); `more` is shown only when something gives it
+interface Line {
+  name: () => string; // after a piece's number: "+10% física"
+  label?: () => string; // the sheet row, when not the name with a capital
+  unit?: '%';
+  signed?: true; // a resistance: "−10%" and "+0%" on the sheet
+  of?: (d: UnitDef) => number;
+  piece: (it: ItemDef) => number;
+  more?: true;
+}
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+const LINES: Line[] = [
+  { name: () => t('vida', 'HP'), of: (d) => d.hp, piece: (it) => it.hp ?? 0 },
+  { name: () => t('poder físico', 'physical power'), of: (d) => d.physPower ?? 0, piece: (it) => it.physPower ?? 0 },
+  { name: () => t('poder mágico', 'magic power'), of: (d) => d.magPower ?? 0, piece: (it) => it.magPower ?? 0 },
+  { name: () => t('acerto', 'hit'), of: (d) => d.hit ?? 0, piece: (it) => it.hit ?? 0 },
+  { name: () => t('esquiva', 'dodge'), unit: '%', of: dodgeOf, piece: (it) => it.dodge ?? 0 },
+  {
+    name: () => t('física', 'physical'),
+    label: () => t('Resistência física', 'Physical resistance'),
+    unit: '%',
+    signed: true,
+    of: (d) => resistOf(d, 'phys'),
+    piece: (it) => it.resist?.phys ?? 0,
+  },
+  {
+    name: () => t('mágica', 'magic'),
+    label: () => t('Resistência mágica', 'Magic resistance'),
+    unit: '%',
+    signed: true,
+    of: (d) => resistOf(d, 'mag'),
+    piece: (it) => it.resist?.mag ?? 0,
+  },
+  ...ELEMENTS.map(
+    (e): Line => ({
+      name: ELEMENT_NAME[e],
+      label: () => t(`Resistência a ${ELEMENT_NAME[e]()}`, `${cap(ELEMENT_NAME[e]())} resistance`),
+      unit: '%',
+      signed: true,
+      more: true,
+      of: (d) => resistOf(d, e),
+      piece: (it) => it.resist?.[e] ?? 0,
+    }),
+  ),
+  { name: () => t('movimento', 'move'), of: (d) => d.move * SUB, piece: (it) => (it.move ?? 0) * SUB },
+  { name: () => t('salto', 'jump'), of: (d) => (d.jump ?? MAX_JUMP) * SUB, piece: (it) => (it.jump ?? 0) * SUB },
+  { name: () => t('velocidade', 'speed'), of: (d) => d.speed, piece: (it) => it.speed ?? 0 },
+  { name: () => 'mana', more: true, piece: (it) => it.mana ?? 0 },
+  { name: () => 'stamina', more: true, piece: (it) => it.stamina ?? 0 },
+  { name: () => t('regeneração de mana', 'mana regen'), more: true, piece: (it) => it.manaRegen ?? 0 },
+  { name: () => t('regeneração de vida', 'HP regen'), more: true, piece: (it) => it.hpRegen ?? 0 },
+];
+// a piece's number or a change, with its sign (the HUD's minus); the sheet's total
+const plus = (l: Line, v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}${l.unit ?? ''}`;
+const total = (l: Line, v: number) => (l.signed ? signed(v) : `${v}${l.unit ?? ''}`);
+const soon = () => t('em breve', 'soon');
+const stat = (l: Line, v: number) => `${plus(l, v)} ${l.name()}${l.of ? '' : ` (${soon()})`}`;
+// what each worn piece adds to a line, in slot order
+const pieces = (l: Line, load: Loadout | undefined) =>
+  SLOTS.flatMap((s) => {
+    const it = worn(load, s);
+    const v = it ? l.piece(it) : 0;
+    return it && v ? [{ it, v }] : [];
+  });
+const lineValue = (l: Line, def: UnitDef, load: Loadout | undefined) =>
+  l.of ? l.of(withGear(def, load)) : pieces(l, load).reduce((s, p) => s + p.v, 0);
+
+// "+20 poder físico · +5 acerto": only what the item changes, in the sheet's wording
+export const itemStats = (it: ItemDef) =>
+  LINES.filter((l) => l.piece(it))
+    .map((l) => stat(l, l.piece(it)))
     .join(' · ');
+
+// The Sheet's numbers (Nov 16, slice 3): each total as the battle counts it and, when a piece changes it, where it comes
+// from: ["Vida", "235", "Guerreiro 210 · Elmo de ferro +25"]; "capped" when a limit took part of it (dodge 50,
+// resistances 60)
+export function sheetRows(cls: string, load: Loadout | undefined): [label: string, total: string, from: string][] {
+  const def = UNIT_DEFS[cls];
+  return LINES.flatMap((l): [string, string, string][] => {
+    const from = pieces(l, load),
+      v = lineValue(l, def, load),
+      own = l.of?.(def) ?? 0;
+    if (l.more && !v && !own && !from.length) return [];
+    const parts = [
+      ...(l.of ? [`${unitName(cls)} ${total(l, own)}`] : []),
+      ...from.map((p) => `${itemName(p.it)} ${plus(l, p.v)}`),
+    ];
+    if (own + from.reduce((s, p) => s + p.v, 0) !== v) parts.push(t('no limite', 'capped'));
+    return [
+      [
+        l.label?.() ?? cap(l.name()),
+        `${total(l, v)}${l.of ? '' : ` (${soon()})`}`,
+        from.length ? parts.join(' · ') : '',
+      ],
+    ];
+  });
+}
+
+// what equipping `id` in `slot` (null: taking it off) changes on the sheet, as the rules read it: past a cap the
+// change is what is left of it
+export function compare(cls: string, load: Loadout, slot: Slot, id: string | null): string {
+  const def = UNIT_DEFS[cls],
+    next: Loadout = { ...load, [slot]: id ?? undefined };
+  const parts = LINES.flatMap((l) => {
+    const d = lineValue(l, def, next) - lineValue(l, def, load);
+    return d ? [stat(l, d)] : [];
+  });
+  return parts.join(' · ') || t('nada muda', 'no change');
 }
 const loadChest = () => parseChest(store.json(CHEST_KEY));
 const loadEquip = () => parseEquip(store.json(EQUIP_KEY));
@@ -224,9 +340,10 @@ const goldNote = (label: string, gold: number) =>
   el('p', { class: 'gold' }, el('span', { class: 'result-label' }, label), el('strong', {}, String(gold)));
 
 // Shop (Nov 13, delivery 2: provisional on the map until the towns): buy with the chest gold, sell for half (as in FFT).
-// Since Nov 15 the lab kit's list rows, buying and selling in turns: the 9 items fit at 1280x720 (a full chest scrolled
-// the window to 905 px)
-export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
+// Since Nov 15 the lab kit's list rows, in turns. Since Nov 16 (slice 3, the lab's gold grill) it sells only common pieces
+// (rares and epics drop) and lists the consumables, whose Buy stays off until the battle can use them
+type ShopTab = 'gear' | 'goods' | 'sell';
+export function openShop(back?: () => void, tab: ShopTab = 'gear') {
   const chest = loadChest();
   const save = (c: ReturnType<typeof buy>) => {
     if (!c) return void sfx('cancel');
@@ -235,14 +352,50 @@ export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
     d.close();
     openShop(back, tab);
   };
+  const rows: Record<ShopTab, () => HTMLElement[]> = {
+    gear: () =>
+      Object.values(ITEMS)
+        .filter((it) => it.rarity === 'common')
+        .map((it) =>
+          priceRow(
+            [itemName(it), el('small', {}, `${KIND_NAME[it.kind]()} · ${itemStats(it)}`)],
+            it.price,
+            button('secondary', t('Comprar', 'Buy'), () => save(buy(chest, it.id)), {
+              disabled: chest.gold < it.price,
+            }),
+            // too expensive: the button turns off and says under it how much is missing (before, it only went grey)
+            shortBy(chest.gold, it.price),
+          ),
+        ),
+    goods: () =>
+      CONSUMABLES.map((c) =>
+        priceRow(
+          [t(c.name, c.en), el('small', {}, t(...c.use))],
+          c.price,
+          button('secondary', t('Comprar', 'Buy'), () => sfx('cancel'), { disabled: true }),
+          t('usar em batalha vem depois', 'using it in battle comes later'),
+        ),
+      ),
+    sell: () =>
+      chest.items.length
+        ? chest.items.map((id) =>
+            priceRow(
+              [itemName(ITEMS[id]), el('small', {}, `${KIND_NAME[ITEMS[id].kind]()} · ${RARITY[ITEMS[id].rarity]()}`)],
+              Math.floor(ITEMS[id].price / 2),
+              button('secondary', t('Vender', 'Sell'), () => save(sell(chest, id))),
+            ),
+          )
+        : [el('p', {}, t('Vazio.', 'Empty.'))],
+  };
   const d = dialog(
     'party shop',
     t('Loja', 'Shop'),
     [
-      choice<'buy' | 'sell'>(
+      choice<ShopTab>(
         t('Comprar ou vender', 'Buy or sell'),
         [
-          ['buy', t('Comprar', 'Buy')],
+          ['gear', t('Peças', 'Gear')],
+          ['goods', t('Consumíveis', 'Consumables')],
           ['sell', t(`Vender (${chest.items.length})`, `Sell (${chest.items.length})`)],
         ],
         tab,
@@ -251,31 +404,7 @@ export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
           openShop(back, v);
         },
       ),
-      ...(tab === 'buy'
-        ? // only the common pieces are sold (Nov 16, the Mechanics lab): rares and epics come from later sources
-          Object.values(ITEMS)
-            .filter((it) => it.rarity === 'common')
-            .map((it) =>
-              priceRow(
-                [itemName(it), el('small', {}, `${KIND_NAME[it.kind]()} · ${itemStats(it)}`)],
-                it.price,
-                button('secondary', t('Comprar', 'Buy'), () => save(buy(chest, it.id)), {
-                  disabled: chest.gold < it.price,
-                }),
-                // too expensive: the button turns off and says under it how much is missing (before, it only went grey)
-                shortBy(chest.gold, it.price),
-              ),
-            )
-        : chest.items.length
-          ? chest.items.map((id) =>
-              priceRow(
-                [itemName(ITEMS[id]), el('small', {}, KIND_NAME[ITEMS[id].kind]())],
-                Math.floor(ITEMS[id].price / 2),
-                button('secondary', t('Vender', 'Sell'), () => save(sell(chest, id))),
-              ),
-            )
-          : // an empty state says the next step (design system, Copy)
-            [el('p', {}, t('O baú está vazio: compre na aba Comprar.', 'The chest is empty: buy on the Buy tab.'))]),
+      ...rows[tab](),
     ],
     { onBack: back, note: goldNote(t('Ouro no baú', 'Gold in chest'), chest.gold) },
   );
@@ -283,37 +412,33 @@ export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
   d.overlay.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
 }
 
+const row = (k: string, v: string | number) => [el('dt', {}, k), el('dd', {}, String(v))];
+// the focus a window that rebuilds itself after each action (Sheet, Equipment) gives back: the same button, else `first`
+const refocus = (overlay: HTMLElement, at: number, first: string) =>
+  ([...overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')][at] ??
+    overlay.querySelector<HTMLButtonElement>(first))!.focus();
+const buttonAt = (overlay: HTMLElement) =>
+  [...overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')].indexOf(
+    document.activeElement as HTMLButtonElement,
+  );
+
 // Unit sheet (like the FFT formation status screen): numbers, each ability with what it does (the ones still to come are
-// marked), the 3 equipment slots and the party actions: class, go or not to battle, and dismiss (recruits only).
-// Esc/✕ goes back to the list
+// marked), what each of the 7 slots holds and the party actions: class, go or not to battle, and dismiss (recruits only).
+// Since Nov 16 (slice 3) each number is the total the battle counts with where it comes from, and Change equipment opens
+// the Equipment window. Esc/✕ goes back to the list
 // `at`: the button that had focus before the sheet rebuilt itself (every action closes and reopens the dialog): focus
-// returns to the same place instead of jumping to the top, otherwise equipping by keyboard restarted the Tab walk each time
+// returns to the same place instead of jumping to the top, otherwise acting by keyboard restarted the Tab walk each time
 export function openSheet(m: Member, back: () => void, at = -1) {
   const u = unitFrom(m.cls, m.name);
-  const def = UNIT_DEFS[m.cls];
-  const buttons = () => [...d.overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
   const again = (x: Member) => {
-    const i = buttons().indexOf(document.activeElement as HTMLButtonElement);
+    const i = buttonAt(d.overlay);
     d.close();
     openSheet(x, back, i);
   };
-  const row = (k: string, v: string | number) => [el('dt', {}, k), el('dd', {}, String(v))];
-  const eq = loadEquip(),
-    chest = loadChest(),
-    mine = eq[m.id] ?? {};
-  const b = bonusOf(mine);
+  const mine = loadEquip()[m.id] ?? {};
+  const sheet = withGear(UNIT_DEFS[m.cls], mine);
   const g = loadGroup(),
     going = g.deployed.includes(m.id);
-  // number with the equipment: "42 (+6)"
-  const withB = (v: number, plus: number) => (plus ? `${v + plus} (${plus > 0 ? '+' : ''}${plus})` : String(v));
-  const put = (slot: Slot, id: string | null) => {
-    const r = equip(loadChest(), loadEquip(), m.id, slot, id);
-    if (!r) return void sfx('cancel');
-    store.set(CHEST_KEY, JSON.stringify(r.chest));
-    store.set(EQUIP_KEY, JSON.stringify(r.eq));
-    sfx('confirm');
-    again(m);
-  };
   const deploy = () => {
     const r = toggleDeploy(loadGroup(), m.id);
     if (!r) return void sfx('cancel');
@@ -336,8 +461,52 @@ export function openSheet(m: Member, back: () => void, at = -1) {
     d.close();
     back();
   };
-  // two columns on PC (13/11, design system): who the unit is and the decisions on the left, what it knows and wears on
-  // the right; in one column the sheet was 927 px inside a 644 px dialog and equipment sat below the fold
+  // the right column shows one at a time (Nov 16): the attributes, the totals the battle sheet counts with where each
+  // comes from (dev-roster.ts builds it with the same withGear), what each of the 7 slots holds (changing it is the
+  // Equipment window's), or the abilities; all at once scrolled at 1280x720
+  const tabs = {
+    attrs: () =>
+      el(
+        'dl',
+        { class: 'keys attrs' },
+        ...sheetRows(m.cls, mine).flatMap(([k, v, from]) => [
+          el('dt', {}, k),
+          el('dd', {}, v, from ? el('small', { class: 'from' }, from) : null),
+        ]),
+      ),
+    gear: () =>
+      el(
+        'dl',
+        { class: 'keys attrs' },
+        ...SLOTS.flatMap((s) => {
+          const it = worn(mine, s);
+          return [
+            el('dt', {}, slotName(s)),
+            el(
+              'dd',
+              {},
+              it ? itemName(it) : t('vazio', 'empty'),
+              it ? el('small', { class: 'from' }, `${RARITY[it.rarity]()} · ${itemStats(it)}`) : null,
+            ),
+          ];
+        }),
+      ),
+    skills: () => el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a)))),
+  };
+  const pane = el('div', {}, tabs.attrs());
+  const tab = choice<keyof typeof tabs>(
+    t('O que ver', 'What to show'),
+    [
+      ['attrs', t('Atributos', 'Attributes')],
+      ['gear', t('Equipamento', 'Equipment')],
+      ['skills', t('Habilidades', 'Abilities')],
+    ],
+    'attrs',
+    (v) => pane.replaceChildren(tabs[v]()),
+  );
+  tab.classList.add('sheet-tabs');
+  // two columns on PC (13/11, design system): who the unit is and the decisions on the left, its numbers, what it wears
+  // and what it knows on the right; in one column the sheet was 927 px inside a 644 px dialog
   const d = dialog(
     'party sheet',
     u.name,
@@ -356,24 +525,10 @@ export function openSheet(m: Member, back: () => void, at = -1) {
               'div',
               {},
               el('strong', {}, unitName(m.cls)),
-              el(
-                'dl',
-                { class: 'keys' },
-                ...row(t('Vida', 'HP'), withB(u.hp, b.hp)),
-                ...row(t('Velocidade', 'Speed'), withB(u.speed, b.speed)),
-                ...row(t('Movimento', 'Move'), withB(u.move * SUB, b.move * SUB)),
-                ...row(t('Salto', 'Jump'), withB((u.jump ?? def.jump ?? MAX_JUMP) * SUB, b.jump * SUB)),
-                ...(b.hit ? row(t('Acerto', 'Hit'), `+${b.hit}`) : []),
-                // the class's power plus the equipment's, as the battle sheet adds them (dev-roster.ts)
-                ...attrRows({
-                  ...def,
-                  physPower: (def.physPower ?? 0) + b.physPower,
-                  magPower: (def.magPower ?? 0) + b.magPower,
-                }).flatMap(([k, v]) => row(k, v)),
-              ),
+              el('p', { class: 'party-stats' }, statsLine(sheet)),
               // the class's mana or stamina pool, full as it enters a battle, and its regen (Nov 16)
-              ...poolGauges(def),
-              regenLine(def) ? el('p', { class: 'party-stats' }, regenLine(def)) : null,
+              ...poolGauges(sheet),
+              regenLine(sheet) ? el('p', { class: 'party-stats' }, regenLine(sheet)) : null,
             ),
           ),
           el(
@@ -385,6 +540,10 @@ export function openSheet(m: Member, back: () => void, at = -1) {
               deploy,
               { disabled: !going && g.deployed.length >= DEPLOY_MAX },
             ),
+            button('secondary', t('Trocar equipamento', 'Change equipment'), () => {
+              d.close();
+              openGear(m, () => openSheet(m, back));
+            }),
             ...(m.recruit ? [button('secondary', t('Dispensar', 'Dismiss'), fire)] : []),
           ),
           ...(!going && g.deployed.length >= DEPLOY_MAX
@@ -415,49 +574,85 @@ export function openSheet(m: Member, back: () => void, at = -1) {
             back();
           }),
         ),
-        el(
-          'div',
-          {},
-          el('h3', {}, t('Habilidades', 'Abilities')),
-          el('dl', { class: 'keys' }, ...u.abilities.flatMap((a) => row(abilityName(a), abilityDetail(a)))),
-          el('h3', {}, t('Equipamento', 'Equipment')),
-          // each slot: the current item and the chest items that fit it (Equip); Unequip returns it to the chest
-          el(
-            'dl',
-            { class: 'keys' },
-            ...SLOTS.flatMap((slot) => [
-              el('dt', {}, slotName(slot)),
-              el(
-                'dd',
-                {},
-                mine[slot]
-                  ? `${itemName(ITEMS[mine[slot]!])} (${itemStats(ITEMS[mine[slot]!])}) `
-                  : t('vazio ', 'empty '),
-                ...(mine[slot] ? [button('secondary', t('Tirar', 'Remove'), () => put(slot, null))] : []),
-                ...[...new Set(chest.items.filter((id) => ITEMS[id].kind === kindOf(slot)))].map((id) =>
-                  button(
-                    'secondary',
-                    t(`Equipar ${itemName(ITEMS[id])}`, `Equip ${itemName(ITEMS[id])}`),
-                    () => put(slot, id),
-                    { title: itemStats(ITEMS[id]) },
-                  ),
-                ),
-              ),
-            ]),
-          ),
-          ...(chest.items.length
-            ? []
-            : [
-                el(
-                  'p',
-                  {},
-                  t('O baú está vazio: compre na Loja da cidade.', 'The chest is empty: buy at the town Shop.'),
-                ),
-              ]),
-        ),
+        el('div', {}, tab, pane),
       ),
     ],
     { onBack: back },
   );
-  (buttons()[at] ?? d.overlay.querySelector<HTMLButtonElement>('.primary')!).focus();
+  refocus(d.overlay, at, '.primary');
+}
+
+// Equipment window (Nov 16, slice 3: 7 slots, compare, swap, chest): the slots on the left with what each holds, the
+// open one on the right: its piece with what it gives and Remove, then the chest's pieces of its kind, each with what it
+// would change on the sheet and Equip. Every action rebuilds the window on the same slot; Esc/✕ goes back to the Sheet
+export function openGear(m: Member, back: () => void, slot: Slot = 'main', at = -1) {
+  const name = unitFrom(m.cls, m.name).name;
+  const chest = loadChest(),
+    mine = loadEquip()[m.id] ?? {};
+  const put = (s: Slot, id: string | null) => {
+    const r = equip(loadChest(), loadEquip(), m.id, s, id);
+    if (!r) return void sfx('cancel');
+    store.set(CHEST_KEY, JSON.stringify(r.chest));
+    store.set(EQUIP_KEY, JSON.stringify(r.eq));
+    sfx('confirm');
+    const i = buttonAt(d.overlay);
+    d.close();
+    openGear(m, back, s, i);
+  };
+  const panel = (s: Slot) => {
+    const it = worn(mine, s);
+    const fits = [...new Set(chest.items)].filter((id) => ITEMS[id].kind === kindOf(s));
+    return [
+      el('h3', {}, slotName(s)),
+      it
+        ? priceRow(
+            [itemName(it), el('small', {}, `${RARITY[it.rarity]()} · ${itemStats(it)}`)],
+            null,
+            button('secondary', t('Tirar', 'Remove'), () => put(s, null), {
+              'aria-label': t(`Tirar ${itemName(it)}`, `Remove ${itemName(it)}`),
+            }),
+          )
+        : el('p', {}, t('Vazio.', 'Empty.')),
+      el('h3', {}, t('No baú', 'In the chest')),
+      ...(fits.length
+        ? fits.map((id) =>
+            priceRow(
+              [itemName(ITEMS[id]), el('small', {}, `${RARITY[ITEMS[id].rarity]()} · ${compare(m.cls, mine, s, id)}`)],
+              null,
+              button('secondary', t('Equipar', 'Equip'), () => put(s, id), {
+                'aria-label': t(`Equipar ${itemName(ITEMS[id])}`, `Equip ${itemName(ITEMS[id])}`),
+              }),
+            ),
+          )
+        : [
+            el(
+              'p',
+              {},
+              t(
+                'Nada deste tipo no baú: a Loja da cidade vende peças comuns.',
+                'Nothing of this kind in the chest: the town Shop sells common pieces.',
+              ),
+            ),
+          ]),
+    ];
+  };
+  const body = el('div', { class: 'menu-body' }, ...panel(slot));
+  // the slots as Options' section column: picking one shows it on the right at once
+  const nav = choice(
+    t('Espaços', 'Slots'),
+    SLOTS.map((s): [Slot, string] => {
+      const it = worn(mine, s);
+      return [s, `${slotName(s)}: ${it ? itemName(it) : t('vazio', 'empty')}`];
+    }),
+    slot,
+    (s) => body.replaceChildren(...panel(s)),
+  );
+  nav.classList.add('menu-nav');
+  const d = dialog(
+    'party gear',
+    t(`Equipamento de ${name}`, `${name}'s equipment`),
+    [el('div', { class: 'menu-layout' }, nav, body)],
+    { onBack: back },
+  );
+  refocus(d.overlay, at, '[aria-pressed="true"]');
 }

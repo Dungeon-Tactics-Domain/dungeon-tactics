@@ -37,14 +37,21 @@ Nov 15, the Design lab's approved mockups.
 
 - The town menu (Esc over the walkable town) is a 440 px command menu in the top right corner (`commandRow`, an orb per row). Shop, Tavern and Party (and the Sheet) open beside it while it stays on screen with the open row picked; another row swaps the window. So only the topmost window takes Esc (`dialog.ts`) and the gamepad (`padDialog`), and a `close` event closes a window from outside without its `onBack`.
 - The title (`titleScreen`) takes the same command menu look under the 96 px name, its key hint alone at the foot of the screen.
-- Shop and Tavern use the kit's list rows (`priceRow`) with the gold counter on the head band; the Shop shows Buy or Sell at a time (`choice`), so its 9 items fit at 1280x720.
+- Shop and Tavern use the kit's list rows (`priceRow`) with the gold counter on the head band; the Shop shows one tab at a time (`choice`): Gear (only the common pieces, Nov 16), Consumables (listed, Buy off until a battle can use them) and Sell (half the price); Gear scrolls a little at 1280x720 (design system, Debts).
 
 ## Party, recruiting and class change
 
 Nov 13, delivery 5 of [towns-party-equipment.md](towns-party-equipment.md).
 
 - Pure rules in `group.ts` (`dt:party`): the 4 from the story never leave; recruits join through the town's Tavern (`RECRUIT_COST`, cap `GROUP_MAX` 8) and are dismissed on the sheet; anyone switches among the classes of `JOBS` (the 4 starting ones and the Lancer since Nov 13, with the barbarian's character until it gets its own); up to 4 go to battle (`deployed`).
-- `heroesFor` builds who fights, with the whole kit of the class and the equipment kept by member id. Screens in `town-ui.ts` (`openParty`, `openSheet`, `openBar`).
+- `heroesFor` builds who fights, with the whole kit of the class and the equipment kept by member id. Screens in `town-ui.ts` (`openParty`, `openSheet`, `openGear`, `openBar`).
+
+## Equipment in 7 slots
+
+Nov 16, slice 3 of the Nov 15 grill; the rule is `withGear` in `src/shared/battle/equipment.ts` ([shared-battle-rules.md](shared-battle-rules.md)).
+
+- `dt:equip` keeps each member's loadout and `dt:chest` the gold and the loose pieces (`chest.ts`); `parseEquip` rebuilds both field by field and puts each known piece in a slot of its kind, its saved slot first, so a save from the 3-slot days (weapon, armor, accessory) keeps every piece. With no `dt:equip` at all (a new game) the story members get their weapon (`STARTING_WEAPON` in `src/content/party.ts`) and the chest starts at 0 gold.
+- The Sheet shows the totals the battle counts with their origin (`sheetRows`), what each slot holds and the abilities, one tab at a time; Change equipment opens the Equipment window (`openGear`: the 7 slots, the chest's pieces of the open slot's kind with what each changes, `compare`). Both read the sheet as the battle does (`withGear`, the caps of `resistOf` and `dodgeOf`).
 
 ## Standalone crawl rooms
 

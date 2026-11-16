@@ -141,7 +141,7 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
   return out.join(' | ');
 }
 
-const ELEMENT_NAME: Record<Element, () => string> = {
+export const ELEMENT_NAME: Record<Element, () => string> = {
   fire: () => t('fogo', 'fire'),
   ice: () => t('gelo', 'ice'),
   lightning: () => t('raio', 'lightning'),
@@ -149,7 +149,7 @@ const ELEMENT_NAME: Record<Element, () => string> = {
   wind: () => t('vento', 'wind'),
   light: () => t('luz', 'light'),
 };
-const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`; // the HUD's minus sign, as in −12
+export const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`; // the HUD's minus sign, as in −12
 // The Nov 15 grill's attributes, for the Status window and the party sheet: power (class and equipment), resistances in %
 // (negative = weakness), dodge; elements only when set
 export function attrRows(def: UnitDef): [string, string][] {

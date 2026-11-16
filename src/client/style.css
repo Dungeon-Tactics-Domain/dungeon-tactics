@@ -2210,6 +2210,42 @@ body:has(.result-overlay) .fps {
     grid-template-columns: 1fr;
   }
 }
+/* Attributes, Equipment or Abilities on the Sheet's right column (Nov 16): the tabs' own label stays for the screen
+   reader; each total or piece in --ink, where it comes from or what it gives on its own muted line under it */
+.sheet-tabs .choice-label {
+  display: none;
+}
+.keys.attrs dd {
+  color: var(--ink);
+}
+.keys.attrs .from {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+/* Equipment window (town-ui.ts, openGear, Nov 16): Options' section column holds the 7 slots with what each wears (wider,
+   so a slot and its piece fit), the open slot on the right with the lab kit's list rows, no price column */
+.dialog.gear {
+  width: min(980px, 100%);
+}
+.gear .menu-layout {
+  grid-template-columns: 300px 1fr;
+}
+.gear .menu-body h3:first-child {
+  margin-top: 0;
+}
+/* the piece's name on its line and what it gives or changes under it: beside the name it wrapped both in the ~480 px
+   panel at 1280 */
+.gear .price-what {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+@media (max-width: 600px) {
+  .gear .menu-layout {
+    grid-template-columns: 1fr; /* slots on top, as Options' sections */
+  }
+}
 /* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin (`p.gold`: a bare
    `.gold` also caught the result window's gold orbs and took their margin) */
 .dialog p.gold {
