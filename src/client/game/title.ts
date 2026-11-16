@@ -170,8 +170,8 @@ function howToPlay() {
           'li',
           {},
           t(
-            'Quem você golpeia sem carga contra-ataca pela metade cada vez que você se mover, neste turno e no próximo, se responde do mesmo jeito (de perto ou de longe) com golpe de alvo único: de perto quando você sai do alcance dele, de longe onde você parar. Ao mirar e ao escolher para onde andar, uma linha ou seta mostra quem contra-ataca.',
-            'Whoever you strike without a charge strikes back at half each time you move, this turn and your next, if it answers the same way (up close or from afar) with a single-target attack: up close when you leave its reach, from afar where you stop. Aiming and choosing where to walk, a line or arrow shows who strikes back.',
+            'Quem você golpeia sem carga contra-ataca pela metade, de frente, se o ataque básico dele é de alvo único e você sair do alcance dele no mesmo turno: o golpe vem antes de você sair. Depois de golpear, as paradas que saem de um alcance ficam com borda vermelha e o cursor mostra o dano; ao mirar, uma linha ou seta mostra quem contra-ataca.',
+            'Whoever you strike without a charge strikes back at half, from the front, if its basic attack is single-target and you walk out of its reach in the same turn: the blow lands before you leave. After striking, the stops that leave a reach get a red frame and the cursor shows the damage; aiming, a line or arrow shows who strikes back.',
           ),
         ),
         el(
