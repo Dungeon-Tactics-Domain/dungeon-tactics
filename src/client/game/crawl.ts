@@ -410,12 +410,12 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, he
         ? t('O chefe da masmorra caiu. O grupo volta à cidade.', 'The dungeon’s boss fell. The party returns to town.')
         : down
           ? t(
-              `Quem ficou de pé recupera 25% da vida e quem caiu volta com 25%; ao descer ao andar ${node.floor + 1}, todos recuperam mais 50%.`,
-              `Whoever stood recovers 25% of their life and the fallen come back at 25%; going down to floor ${node.floor + 1}, everyone recovers 50% more.`,
+              `Quem ficou de pé recupera ${CRAWL_RUN.roomHeal}% da vida e quem caiu volta com ${CRAWL_RUN.fallen}%; ao descer ao andar ${node.floor + 1}, todos recuperam mais ${CRAWL_RUN.floorHeal}%.`,
+              `Whoever stood recovers ${CRAWL_RUN.roomHeal}% of their life and the fallen come back at ${CRAWL_RUN.fallen}%; going down to floor ${node.floor + 1}, everyone recovers ${CRAWL_RUN.floorHeal}% more.`,
             )
           : t(
-              'Quem ficou de pé recupera 25% da vida; quem caiu volta com 25%.',
-              'Whoever stood recovers 25% of their life; the fallen come back at 25%.',
+              `Quem ficou de pé recupera ${CRAWL_RUN.roomHeal}% da vida; quem caiu volta com ${CRAWL_RUN.fallen}%.`,
+              `Whoever stood recovers ${CRAWL_RUN.roomHeal}% of their life; the fallen come back at ${CRAWL_RUN.fallen}%.`,
             ),
     actions: [
       enterButton(next && !done ? t('Seguir no mapa', 'On to the map') : t('Voltar à cidade', 'Back to town'), home),
