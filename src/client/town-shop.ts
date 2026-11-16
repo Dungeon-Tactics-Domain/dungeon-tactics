@@ -324,7 +324,15 @@ export function openBar(back: () => void, sel = '', said = '') {
     title: t('Taverna', 'Tavern'),
     note: goldNote(t(`Grupo ${party} de ${GROUP_MAX} · ouro`, `Party ${party} of ${GROUP_MAX} · gold`), gold),
     commands: [
-      command('blue', t('Recrutar', 'Recruit'), () => {}, true),
+      command(
+        'blue',
+        t('Recrutar', 'Recruit'),
+        () => {
+          d.close();
+          openBar(back);
+        },
+        true,
+      ),
       command('bronze', t('Sair', 'Leave'), () => {
         d.close();
         back();
