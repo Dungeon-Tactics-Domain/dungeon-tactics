@@ -1,7 +1,7 @@
 // The title's saved games (Nov 15, Fernando: "save games so New game does not erase the progress"): New game starts a new
 // slot, Continue opens the list of every slot, the latest played first, to load one or delete it. Rules in saves.ts.
 import { dialog } from '../dialog.ts';
-import { stillFace } from '../hud.ts';
+import { stillFace } from '../hud-pieces.ts';
 import { LOCALE, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { byPlayed, deleteSlot, loadSlot, newGame, readSaves, type SlotSummary, summary } from '../saves.ts';

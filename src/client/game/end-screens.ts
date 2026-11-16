@@ -4,7 +4,7 @@
 import { endExpression } from '../battle-face.ts';
 import { classOf } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
-import { gauge, stillFace } from '../hud.ts';
+import { gauge, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { survivalCols } from '../survival.ts';

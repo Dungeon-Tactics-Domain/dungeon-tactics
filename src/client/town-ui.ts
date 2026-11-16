@@ -23,7 +23,7 @@ import {
   recruit,
   toggleDeploy,
 } from './group.ts';
-import { stillFace } from './hud.ts';
+import { stillFace } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { sfx } from './sound.ts';

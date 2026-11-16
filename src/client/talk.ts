@@ -4,10 +4,10 @@
 
 import faces from '../content/faces.json';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { portrait } from './hud.ts';
 import { LANG, t } from './i18n.ts';
 import { el } from './icons.ts';
 import { modelOf } from './markers.ts';
+import { portrait } from './portrait.ts';
 import { blip } from './sound.ts';
 import { store } from './store.ts';
 

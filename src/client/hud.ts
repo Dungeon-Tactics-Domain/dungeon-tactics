@@ -12,11 +12,9 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
-import { TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
-import type { BattleState, Lock, Pos, UnitState } from '../shared/battle/types.ts';
-import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { battleFace, type Expression, frameOf } from './battle-face.ts';
-import { abilityDetail, range, sideName } from './battle-text.ts';
+import type { Lock, Pos, UnitState } from '../shared/battle/types.ts';
+import { type Expression, frameOf } from './battle-face.ts';
+import { abilityDetail } from './battle-text.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
   abilitiesOf,
@@ -28,20 +26,21 @@ import {
   type Screen,
   swimming,
 } from './command.ts';
-import { classOf } from './dev-roster.ts';
-import { type Forecast, forecast, forecastText, hpAfterText, strikeInfo } from './forecast.ts';
+import { forecast, forecastText, hpAfterText } from './forecast.ts';
+import { hint, KEYS, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
 import type { Highlights } from './interaction.ts';
-import { modelOf } from './markers.ts';
 import { type Anchor, placeBeside } from './place-beside.ts';
+import { portrait } from './portrait.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
-import { type Face, faceSheet } from './talk.ts';
+import type { Face } from './talk.ts';
 import { cursorInfo } from './tile-info.ts';
 import { anchorScroll, pageStep, queueRows } from './turn-list.ts';
 
-// main.ts reads these through hud.ts
+// main.ts and game/town.ts read these through hud.ts
 export { eventLog, unitStatus } from './battle-text.ts';
+export { hint, KEYS } from './hud-pieces.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
@@ -68,9 +67,6 @@ export interface HudView {
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
 }
 
-export const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
-export const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
-
 const REASON: Record<string, () => string> = {
   range: () => t('Fora do alcance', 'Out of range'),
   sight: () => t('Sem linha de visão', 'No line of sight'),
@@ -90,158 +86,6 @@ const ORB = new Set<Command>(['act', 'status']);
 const marker = (c: Command) => (ORB.has(c) ? el('span', { class: `orb ${c}`, 'aria-hidden': 'true' }) : abilityIcon(c));
 // menu name on top of the command menu, the submenu and "Execute?" (the menu's aria-label says it to the screen reader)
 const menuHead = (...text: Child[]) => el('div', { class: 'panel-head', 'aria-hidden': 'true' }, ...text);
-
-// bar with label and number (HP, MP, CT), like the ones in FFT's unit panel. `change` marks in stripes the part
-// that the strike takes (loss) or the heal adds (gain), like the target bar in Tactics Ogre; the number comes along in the panel
-export function gauge(
-  cls: string,
-  label: string,
-  value: number,
-  max: number,
-  change?: { from: number; to: number; kind: 'loss' | 'gain' },
-) {
-  const pct = (v: number) => Math.round(Math.max(0, Math.min(1, v / max)) * 100);
-  return el(
-    'div',
-    { class: `gauge ${cls}` },
-    el('span', { class: 'gauge-label' }, label),
-    el(
-      'span',
-      { class: 'gauge-bar' },
-      el('i', { style: `width:${pct(value)}%` }),
-      change
-        ? el('b', {
-            class: `gauge-change ${change.kind}`,
-            style: `left:${pct(change.from)}%;width:${pct(change.to) - pct(change.from)}%`,
-          })
-        : null,
-    ),
-    el('span', { class: 'gauge-num' }, `${Math.max(0, value)}/${max}`),
-  );
-}
-
-// Preview strips in the Tactics Ogre style (Nov 13, Fernando's request; our design): one arrow strip per target,
-// "HP", the big number (−12–15 PTS, or +7–10 on a heal) and the aim with the hit chance; below, the small `strikeInfo` line.
-// Up to STRIKES strips: more than that would rise above the panel band and cover the map; the rest becomes "+N targets".
-const STRIKES = 3;
-// Two-colour strip (Nov 15, the lab kit's strike preview): the action on the panel blue (ability icon and name, the big
-// number, the hit chance) and the target on its side's colour (wine for an enemy): name and side, the life bar with the part
-// that goes away (or the heal adds) in stripes, and the small `strikeInfo` line. It stands in for the target panel while aiming
-function strike(f: Forecast, ability: string) {
-  const amount = f.heal ? `+${range(f.heal)}` : f.dmg ? `−${range(f.dmg)}` : null;
-  const change =
-    f.support || !(f.heal || f.dmg)
-      ? undefined
-      : f.heal
-        ? { from: f.unit.hp, to: f.after[1], kind: 'gain' as const }
-        : { from: f.after[0], to: f.unit.hp, kind: 'loss' as const };
-  return el(
-    'div',
-    { class: `strike${f.heal ? ' gain' : ''}${f.ally ? ' ally' : ''}` },
-    el(
-      'div',
-      { class: 'strike-main' },
-      abilityIcon(ability),
-      el(
-        'div',
-        {},
-        el('span', { class: 'strike-name' }, abilityName(ability)),
-        amount
-          ? el(
-              'span',
-              { class: 'strike-row' },
-              el('strong', { class: 'strike-pts' }, amount, el('small', {}, 'PTS')),
-              el('span', { class: 'strike-hit', title: t('Chance de acerto', 'Chance to hit') }, `⊕ ${f.chance}%`),
-            )
-          : null,
-      ),
-    ),
-    el(
-      'div',
-      { class: `strike-target ${f.unit.team}` },
-      el(
-        'span',
-        { class: 'strike-who' },
-        unitName(f.unit.def),
-        el('span', { class: 'unit-side' }, sideName(f.unit.team)),
-      ),
-      gauge('hp', t('Vida', 'HP'), f.unit.hp, UNIT_DEFS[f.unit.def].hp, change),
-      el('span', { class: 'strike-info' }, strikeInfo(f, ability).slice(1).join(' · ')),
-    ),
-  );
-}
-function strikes(fs: Forecast[], ability: string) {
-  const rest = fs.slice(STRIKES).map((o) => unitName(o.unit.def) + (o.ally ? t(' (aliado!)', ' (ally!)') : ''));
-  return [
-    ...fs.slice(0, STRIKES).map((f) => strike(f, ability)),
-    rest.length
-      ? el(
-          'p',
-          { class: 'strike-more' },
-          t(
-            `+${rest.length} ${rest.length === 1 ? 'alvo' : 'alvos'}: `,
-            `+${rest.length} ${rest.length === 1 ? 'target' : 'targets'}: `,
-          ) + rest.join(', '),
-        )
-      : null,
-  ].filter((x) => x !== null);
-}
-
-// portrait of the rendered KayKit character (public/chars, scripts/portraits.mjs); the Beacon has no character: a CSS crystal
-export function portrait(def: string) {
-  const model = modelOf(def);
-  // tinted unit (UnitDef.tint, the Acolyte over the mage): the portrait gets the .tinted filter to match the character
-  return model
-    ? el('img', { class: `portrait${UNIT_DEFS[def]?.tint ? ' tinted' : ''}`, src: `/chars/${model}.webp`, alt: '' })
-    : el('span', { class: 'portrait gem', 'aria-hidden': 'true' });
-}
-
-// the painted face held on one expression outside the battle (result cards, party, tavern): 64 px, `big` 128, whole
-// ratios of the 128 px paint so it stays crisp; a class without a sheet keeps portrait()
-export function stillFace(def: string, expr: Expression, big = false) {
-  const f = battleFace(def);
-  if (!f) return portrait(def);
-  const { node, show } = faceSheet(def, f, `still-face${big ? ' big' : ''}`);
-  show(frameOf(f, expr));
-  return node;
-}
-
-// the class line, only for those with their own name (the party, developer menu): "Rogue" under "Lia"
-function classText(u: UnitState) {
-  const base = classOf(u.def);
-  return base && unitName(base) !== unitName(u.def) ? unitName(base) : null;
-}
-
-// unit panel (the acting one bottom left, the one under the cursor bottom right, mirrored)
-function unitPanel(state: BattleState, u: UnitState, pic: HTMLElement) {
-  const def = UNIT_DEFS[u.def];
-  const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp)];
-  if (u.vars?.mp !== undefined) rows.push(gauge('mp', 'MP', u.vars.mp, def.vars?.mp ?? u.vars.mp));
-  if (def.speed > 0) rows.push(gauge('ct', 'CT', Math.min(u.ct, TURN_THRESHOLD), TURN_THRESHOLD));
-  const charge = state.charges.find((c) => c.unit === u.id);
-  return el(
-    'div',
-    { class: `panel unit-panel ${u.team}` },
-    pic,
-    el(
-      'div',
-      { class: 'unit-body' },
-      el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, sideName(u.team))),
-      classText(u) ? el('span', { class: 'unit-class' }, classText(u)) : null,
-      ...rows,
-      charge
-        ? el(
-            'p',
-            { class: 'unit-note' },
-            t(
-              `Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`,
-              `Charging ${abilityName(charge.ability)} (${charge.ticks} ticks)`,
-            ),
-          )
-        : null,
-    ),
-  );
-}
 
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
@@ -400,13 +244,10 @@ export class BattleHud {
   private faces: { u: UnitState; f: Face; show: (n: number) => void; n: number }[] = [];
   private expression: HudView['face'] = () => 'neutral';
   private face(u: UnitState) {
-    const f = battleFace(u.def);
-    if (!f) return portrait(u.def);
-    const { node, show } = faceSheet(u.def, f, 'battle-face portrait');
-    const n = frameOf(f, this.expression(u));
-    show(n);
-    this.faces.push({ u, f, show, n });
-    return node;
+    const s = sheetFace(u.def, 'battle-face portrait', this.expression(u));
+    if (!s) return portrait(u.def);
+    this.faces.push({ u, f: s.f, show: s.show, n: s.n });
+    return s.node;
   }
   showFaces() {
     for (const face of this.faces) {
