@@ -56,6 +56,9 @@ export interface BattleState {
   charges: Charge[]; // in declaration order
   outcome: Outcome;
   turnsPlayed: number;
+  // cells the dead lie on, a large unit's whole square (Fernando, Nov 16): nobody stops there, anyone passes over
+  // (pathing.ts noStopAt). They stay to the end of the battle; absent = none (a save from before, a battle without deaths)
+  corpses?: Pos[];
 }
 
 // A point of a shot's path (pathing.ts traceShot): x and y in cells from the map's corner (a cell's middle is +0.5), h in

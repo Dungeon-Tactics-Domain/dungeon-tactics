@@ -357,6 +357,20 @@ export function parseBattleState(raw: unknown): BattleState | null {
     ...(t.spent !== undefined && { spent: t.spent as number }),
     ...(engaged.length > 0 && { engaged }),
   };
+  // corpses (Nov 16): cells inside the map, at most one per cell, repeats dropped
+  let corpses: Pos[] | undefined;
+  if (raw.corpses !== undefined) {
+    if (!Array.isArray(raw.corpses) || raw.corpses.length > grid.width * grid.height) return null;
+    const seen = new Set<string>();
+    corpses = [];
+    for (const c of raw.corpses) {
+      if (!isObj(c) || !isInt(c.x) || !isInt(c.y)) return null;
+      const p = { x: c.x, y: c.y };
+      if (!inBounds(grid, p)) return null;
+      if (!seen.has(posKey(p))) corpses.push(p);
+      seen.add(posKey(p));
+    }
+  }
   return {
     scenario: raw.scenario,
     units,
@@ -365,5 +379,6 @@ export function parseBattleState(raw: unknown): BattleState | null {
     charges,
     outcome: raw.outcome,
     turnsPlayed: raw.turnsPlayed,
+    ...(corpses?.length && { corpses }),
   };
 }
