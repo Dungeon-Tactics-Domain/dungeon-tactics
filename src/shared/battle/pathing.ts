@@ -81,6 +81,9 @@ export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[]) =>
 
 export const unitAt = (state: BattleState, p: Pos): UnitState | undefined =>
   state.units.find((u) => footprint(u).some((f) => samePos(f, p)));
+// a body lies on the cell: the map's (Tile.noStop) or a unit's that died here (Nov 16). Passed over, never stopped on
+export const noStopAt = (grid: Grid, state: BattleState, p: Pos) =>
+  !!tileAt(grid, p).noStop || !!state.corpses?.some((c) => samePos(c, p));
 
 export interface Step {
   pos: Pos;
@@ -225,7 +228,7 @@ function reachableBig(
       !restsOn(grid, step.pos, size) ||
       cells(step.pos).some((c) => {
         const o = unitAt(state, c);
-        return (o && o.id !== unit.id) || tileAt(grid, c).noStop;
+        return (o && o.id !== unit.id) || noStopAt(grid, state, c);
       })
     )
       seen.delete(k);
@@ -292,7 +295,7 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
     step.path = path;
   }
   seen.delete(posKey(unit.pos));
-  for (const [k, step] of seen) if (unitAt(state, step.pos) || tileAt(grid, step.pos).noStop) seen.delete(k);
+  for (const [k, step] of seen) if (unitAt(state, step.pos) || noStopAt(grid, state, step.pos)) seen.delete(k);
   return seen;
 }
 

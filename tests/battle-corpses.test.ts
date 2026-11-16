@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { playAiTurn } from '../src/shared/battle/ai.ts';
+import { chooseTurn, playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { registerHalf } from '../src/shared/battle/half.ts';
+import { reachable } from '../src/shared/battle/pathing.ts';
+import { simulatePush } from '../src/shared/battle/push.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { flat, gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
 
@@ -113,5 +116,53 @@ describe('corpses: the save', () => {
 
   it('only x and y are kept', () => {
     expect(saved([{ x: 1, y: 1, evil: true }])?.state.corpses).toEqual([{ x: 1, y: 1 }]);
+  });
+});
+
+describe('corpses: nobody stops on one', () => {
+  it('a corpse is walked over but is not a stop', () => {
+    const b = killer();
+    b.act('strike', { x: 1, y: 0 });
+    const reach = reachable(row, b.state, 'a', 4);
+    expect(reach.has('1,0')).toBe(false);
+    expect(reach.get('2,0')?.path).toEqual([
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+    ]);
+  });
+
+  it('a 2x2 token stops on no square that covers a corpse cell, and walks over it', () => {
+    registerHalf();
+    const s = stateOf([{ id: 'a', def: 'warrior½', team: 'hero', x: 0, y: 0 }]);
+    s.corpses = [{ x: 4, y: 0 }];
+    const reach = reachable(flat(10, 2), s, 'a', 20);
+    expect(reach.has('3,0')).toBe(false);
+    expect(reach.has('4,0')).toBe(false);
+    expect(reach.has('5,0')).toBe(true);
+  });
+
+  it('a push onto a corpse stops short with the bump, like a map body (Tile.noStop)', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 1, y: 0 },
+    ]);
+    s.corpses = [{ x: 2, y: 0 }];
+    const corpse = simulatePush(row, s, s.units[1], { x: 1, y: 0 }, { x: 0, y: 0 }, 2);
+    const body = gridOf(['......']);
+    body.tiles[2] = { ...body.tiles[2], noStop: true };
+    const map = simulatePush(body, { ...s, corpses: undefined }, s.units[1], { x: 1, y: 0 }, { x: 0, y: 0 }, 2);
+    expect(corpse).toEqual(map);
+    expect(corpse.to).toEqual({ x: 1, y: 0 });
+    expect(corpse.events.map((e) => e.k)).toEqual(['bump']);
+  });
+
+  it('the AI never plans to stop on a corpse', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+      { id: 'e', def: 'soldier', team: 'enemy', x: 4, y: 0 },
+    ]);
+    expect(chooseTurn(row, s, 'a').moveTo).toEqual({ x: 3, y: 0 }); // the only tile beside the foe
+    s.corpses = [{ x: 3, y: 0 }];
+    expect(chooseTurn(row, s, 'a').moveTo).not.toEqual({ x: 3, y: 0 });
   });
 });

@@ -1,7 +1,7 @@
 // Where a push ends and what it costs: bump, fall and the events, without touching the state (the AI prices pushes with it).
 import { COMBAT } from './combat.ts';
 import { canStand, type Grid, inBounds, isDeep, samePos, standH, subOf, tileAt } from './grid.ts';
-import { cellsOf, MAX_JUMP, restsOn, unitAt } from './pathing.ts';
+import { cellsOf, MAX_JUMP, noStopAt, restsOn, unitAt } from './pathing.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { baseDef, UNIT_DEFS } from './units.ts';
@@ -51,7 +51,7 @@ export function simulatePush(
         if (!inBounds(grid, c)) return true;
         const t = tileAt(grid, c),
           o = unitAt(state, c);
-        return !canStand(t) || isDeep(t) || !!t.noStop || (!!o && o.id !== unit.id);
+        return !canStand(t) || isDeep(t) || noStopAt(grid, state, c) || (!!o && o.id !== unit.id);
       }) || height(next) - height(cur) > MAX_JUMP;
     if (blocked) return null;
     const out: PushResult = { to: next, dmg: 0, events: [{ k: 'push', unit: unit.id, to: next }] };
