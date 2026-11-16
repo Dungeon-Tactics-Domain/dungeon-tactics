@@ -111,8 +111,8 @@ export function expeditionScreen(exp: Expedition) {
         // the 2nd tap confirms: going back ends the descent (decision 32), alive, so its gold goes home whole
         button('secondary', t('Voltar à cidade', 'Back to town'), (e: Event) => {
           const again = t(
-            'Toque de novo: encerra a expedição, o ouro achado vai à cidade',
-            'Tap again: ends the expedition, the gold found goes to town',
+            'Confirmar: encerra a expedição, o ouro achado vai à cidade',
+            'Confirm: ends the expedition, the gold found goes to town',
           );
           if (!secondTap(e, again)) return;
           retreat(exp);

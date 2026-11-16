@@ -81,3 +81,4 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 16/11 | The enemy's ◆ on the panel blue is drawn in `--enemy-hi` (4.1:1, was 2.2:1 in `--enemy`); the side stripe stays `--enemy` | Fernando via the Design lab, Nov 16 (contrast of the enemy mark) |
 | 16/11 | Options → Video and effects has "Reduce motion" (System by default, Yes, No): it also covers the camera shake, the action camera and the death slow motion, which only the code ignored before | Fernando via the Design lab, Nov 16 (decided: a switch in Options) |
 | 16/11 | Microcopy of the Narrative lab, first batch (battle help, Confirm/Back on "Execute?", Fast battle (3×)): applied in lots of about 15 pairs | Fernando via the Narrative lab, Nov 16 (microcopy-proposal.md, section 1) |
+| 16/11 | The 2nd-tap buttons say "Confirmar: ..." (device neutral), not "Toque de novo" | Fernando via the Narrative lab, Nov 16 (microcopy-proposal, section 4) |

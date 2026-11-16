@@ -318,7 +318,7 @@ export function optionsMenu(o: OptionsContext) {
           ? t('Reiniciar batalha: espere a sua vez', 'Restart battle: wait for your turn')
           : t('Reiniciar batalha', 'Restart battle'),
         (e: Event) => {
-          if (!secondTap(e, t('Toque de novo para reiniciar', 'Tap again to restart'))) return;
+          if (!secondTap(e, t('Confirmar: reiniciar a batalha', 'Confirm: restart the battle'))) return;
           d.close();
           o.restart();
         },
@@ -326,7 +326,7 @@ export function optionsMenu(o: OptionsContext) {
       ),
       // home: the town (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
       button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
-        if (o.room && !secondTap(e, t('Toque de novo: perde a expedição', 'Tap again: the expedition is lost'))) return;
+        if (o.room && !secondTap(e, t('Confirmar: perde a expedição', 'Confirm: the expedition is lost'))) return;
         goHome();
       }),
       button('secondary', t('Desenvolvedor', 'Developer'), () => {

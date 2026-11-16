@@ -73,7 +73,7 @@ export function openSaves(onBack: () => void) {
       },
     ),
     button('secondary save-delete', t('Apagar', 'Delete'), (e: Event) => {
-      if (!secondTap(e, t('Toque de novo: apaga', 'Tap again: deletes'))) return;
+      if (!secondTap(e, t('Confirmar: apagar este jogo', 'Confirm: delete this game'))) return;
       if (!deleteSlot(live, s.id)) return full();
       d.close();
       if (savedGames().length) openSaves(onBack);

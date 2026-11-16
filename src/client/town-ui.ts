@@ -473,7 +473,7 @@ export function openSheet(m: Member, back: () => void, at = '') {
   };
   // the recruit leaves for good: a 2nd tap like Delete on a saved game (Fernando's grill of Nov 16)
   const fire = (e: Event) => {
-    if (!secondTap(e, t('Toque de novo: dispensa', 'Tap again: dismisses'))) return;
+    if (!secondTap(e, t('Confirmar: dispensar', 'Confirm: dismiss'))) return;
     const r = dismiss(loadGroup(), loadEquip(), loadChest(), m.id);
     if (!r) return void sfx('cancel');
     saveGroup(r.group);

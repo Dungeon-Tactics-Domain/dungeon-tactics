@@ -260,7 +260,7 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 - **Shop's lists** scroll at 1280×720: Gear, with the 12 common pieces since Nov 16, by 85 px in pt and 70 in en, and Sell from 11 items in the chest.
 - **Party list** (`.party-card`) is an `li` with `role="button"`: make it a real button.
 - **Title menu** adds its head and orbs after building plain buttons (`titleScreen`); the battle command menu builds its orb in `marker()` (`hud-menus.ts`); the windows use `commandRow()`. One builder would keep them alike.
-- **Second tap** is written by hand in four places (`data-armed`); the armed state never disarms, and "Tap again" also shows on a PC.
+- **Second tap** is written by hand in four places (`data-armed`); the armed state never disarms, and the labels now say "Confirm" on every device (Nov 16).
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
 - **Panel glass (Nov 16):** no "Glass" preset yet (two controls only); the enemy's wine half of the strike preview and the defeat band stay opaque; the blur over the 3D scene re-blurs every frame, never profiled on a phone or tablet; a browser without `color-mix()` (from memory: Chrome before 111, Safari before 16.2, Firefox before 113; not checked) loses the panel background only when glass is on below 100%, the default stays plain hex; with glass on, the gradient's middle interpolates in oklab instead of sRGB.
 - **`--stone*` tokens** are almost unused since every window took the panel look (Nov 13): only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.

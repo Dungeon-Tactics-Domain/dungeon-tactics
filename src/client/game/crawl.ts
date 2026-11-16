@@ -182,8 +182,8 @@ function questRows(go: (fn: () => void) => () => void) {
       t('Nova expedição', 'New expedition'),
       (e: Event) => {
         const again = t(
-          'Toque de novo: encerra a expedição atual, o ouro achado vai à cidade',
-          'Tap again: ends the current expedition, the gold found goes to town',
+          'Confirmar: encerra a expedição atual, o ouro achado vai à cidade',
+          'Confirm: ends the current expedition, the gold found goes to town',
         );
         if (live && !secondTap(e, again)) return;
         go(depart)();

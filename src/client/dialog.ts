@@ -86,7 +86,7 @@ export function dialog(
 // one): the 1st only arms the button and says what the next does, true on the 2nd. It disarms (the label back) after
 // ARM_MS, when the focus leaves it, on Esc (dialog above). The label is the button's last child, so a
 // command row keeps its orb. Nov 16 QA: Dismiss acted on the 1st tap and the armed ones never disarmed
-const ARM_MS = 5000; // long enough to read "Tap again: ends the current expedition, the gold found goes to town"
+const ARM_MS = 5000; // long enough to read "Confirm: ends the current expedition, the gold found goes to town"
 const timers = new WeakMap<HTMLElement, number>();
 function disarm(btn: HTMLElement) {
   if (btn.dataset.armed === undefined) return;
