@@ -4,10 +4,13 @@ import { el } from './icons.ts';
 import type { BattleScene } from './scene.ts';
 import { store } from './store.ts';
 
-const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (Fernando's request, Nov 12)
+// performance counter on (1) or off (0); off by default since Nov 16 (Fernando: it cluttered the screen, mostly on a tablet),
+// the menu button and F3 switch it on
+const FPS_KEY = 'dt:fps';
+export const fpsOn = () => store.get(FPS_KEY) === '1';
 
-// adds the counter to the host and returns its on/off switch
-export function fpsCounter(host: HTMLElement, scene: BattleScene): () => void {
+// adds the counter to the host and returns its on/off switch, which says the new state
+export function fpsCounter(host: HTMLElement, scene: BattleScene): () => boolean {
   const fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
   const show = () => {
     if (fps.hidden) return;
@@ -24,12 +27,13 @@ export function fpsCounter(host: HTMLElement, scene: BattleScene): () => void {
     ].join('\n');
   };
   host.append(fps);
-  fps.hidden = store.get(FPS_KEY) === '0';
+  fps.hidden = !fpsOn();
   // the text changes 2 times per second, not every frame (almost zero cost)
   setInterval(show, 500);
   return () => {
     fps.hidden = !fps.hidden;
     store.set(FPS_KEY, fps.hidden ? '0' : '1');
     show();
+    return !fps.hidden;
   };
 }

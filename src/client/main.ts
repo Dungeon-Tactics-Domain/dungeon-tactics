@@ -45,7 +45,7 @@ export class Game implements TurnHost {
   private acting: string | null = null;
   private readonly hud: BattleHud;
   private readonly readPad: () => void;
-  private readonly toggleFps: () => void;
+  private readonly toggleFps: () => boolean;
   // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)
   private tally = emptyTally();
   private roster: Roster = {};
@@ -78,6 +78,7 @@ export class Game implements TurnHost {
         this.hud.setFast(pace.toggle);
       },
       menu: () => this.menu(),
+      fps: () => this.hud.setFps(this.toggleFps()),
       undo: () => this.runKey({ k: 'undo' }),
       cancel: () => this.runKey({ k: 'cancel' }),
     });
@@ -115,7 +116,7 @@ export class Game implements TurnHost {
     if (a.k === 'pixel') return this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) });
     if (a.k === 'status') return this.status();
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
-    if (a.k === 'fps') return this.toggleFps();
+    if (a.k === 'fps') return this.hud.setFps(this.toggleFps());
     if (this.busy || !this.heroTurn) return;
     this.turn.key(a);
   }

@@ -1,5 +1,6 @@
-// The battle HUD's corner menu (3 bars): undo, rotate, whole map, pixel size, fast battle and Options, each with its key.
+// The battle HUD's corner menu (3 bars): undo, rotate, whole map, pixel size, fast battle, fps counter and Options, each with its key.
 // Owns its document listeners while open; close() removes them.
+import { fpsOn } from './fps.ts';
 import type { HudActions } from './hud.ts';
 import { hint } from './hud-pieces.ts';
 import { t } from './i18n.ts';
@@ -14,6 +15,7 @@ export class ToolsMenu {
     { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' },
   );
   private readonly fastBtn: HTMLElement;
+  private readonly fpsBtn: HTMLElement;
   // a menu button (3 bars) on the HUD panel colour in place of the row of 7 stone buttons (Nov 13, Fernando's request:
   // "crude and inconsistent"); the keys still work and show on each row
   readonly root = el('div', { class: 'tools' }, this.burger, this.toolsMenu);
@@ -25,6 +27,10 @@ export class ToolsMenu {
   };
 
   constructor(act: HudActions) {
+    this.fpsBtn = this.toolItem('▤', t('Contador de fps', 'FPS counter'), 'F3', () => act.fps(), {
+      role: 'menuitemcheckbox',
+      'aria-checked': String(fpsOn()),
+    });
     this.fastBtn = this.toolItem('»', t('Batalha rápida', 'Fast battle'), '', () => act.fast(), {
       role: 'menuitemcheckbox',
       'aria-checked': 'false',
@@ -36,10 +42,14 @@ export class ToolsMenu {
       this.toolItem(icon(UI_ICON.recenter), t('Ver o mapa inteiro', 'Show the whole map'), 'F', () => act.recenter()),
       this.toolItem(icon(UI_ICON.pixel), t('Tamanho do pixel', 'Pixel size'), 'V', () => act.pixel()),
       this.fastBtn,
+      this.fpsBtn,
       this.toolItem(icon(UI_ICON.menu), t('Opções e ajuda', 'Options and help'), 'H', () => act.menu()),
     );
   }
 
+  setFps(on: boolean) {
+    this.fpsBtn.setAttribute('aria-checked', String(on));
+  }
   setFast(on: boolean) {
     this.fastBtn.setAttribute('aria-checked', String(on));
   }

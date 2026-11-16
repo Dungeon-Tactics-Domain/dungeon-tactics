@@ -43,6 +43,7 @@ export interface HudActions {
   fast(): void; // toggles the 3x faster battle (the touch way; on the keyboard, hold Enter)
   undo(): void; // undoes the last step (same as the Z key): whoever plays with a mouse only had no way to
   menu(): void;
+  fps(): void; // the menu's performance counter switch (the F3 key on a keyboard)
   cancel(): void; // the Back button, the same as Esc, B and the right button (a finger has none of them)
 }
 export interface HudView {
@@ -63,6 +64,9 @@ export class BattleHud {
   private readonly tools: ToolsMenu;
   setFast(on: boolean) {
     this.tools.setFast(on);
+  }
+  setFps(on: boolean) {
+    this.tools.setFps(on);
   }
   scrollQueue(dir: 1 | -1) {
     const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;
