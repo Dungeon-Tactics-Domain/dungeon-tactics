@@ -95,8 +95,8 @@ Victory and defeat fanfares and dialogue speech blips: notes generated in the br
 Music (Nov 13, 2026): OpenGameArt tracks, all CC0 (licence read on each one's page), converted to .ogg by ffmpeg. Gain per track in src/client/music.ts.
 music/title.ogg (title screen)
   CodeManu, "A Legend Will Rise (Orchestral)" - https://opengameart.org/content/a-legend-will-rise-orchestral
-music/city_pastoral_d.ogg (town)
-  Our own composition (scripts/music/eval/slot_D.py), rendered with the MuseScore General SoundFont (MIT); only the rendered .ogg ships.
+music/city_pastoral_rica.ogg (town)
+  Our own composition (scripts/music/pastoral_rica_B.py, an extension of the earlier town theme), rendered with the MuseScore General SoundFont (MIT); only the rendered .ogg ships.
 music/crypt.ogg (expedition map)
   nene, "Evil Approach" - https://opengameart.org/content/evil-approach
 music/battle_dark.ogg (battles)

@@ -8,8 +8,9 @@
 // quieter stays at 1 (crypt stays 1.4 dB below).
 export const TRACKS = {
   title: { file: 'title.ogg', gain: 0.6 },
-  // the town (Nov 15, Fernando: Pastoral D from the music lab); -17.0 LUFS against the -17.8 target, so a little under 1
-  world: { file: 'city_pastoral_d.ogg', gain: 0.91 },
+  // the town (Nov 16, Fernando: the richer Pastoral D, version B, from the music lab); -18.1 LUFS against the -17.8 target,
+  // so it stays at 1 (an audio element can't go above it)
+  world: { file: 'city_pastoral_rica.ogg', gain: 1 },
   crypt: { file: 'crypt.ogg', gain: 1 },
   // battles without their own track (Nov 15, Fernando: the lab's dark main theme); loudnorm already at the old file's -17.8 LUFS
   battle: { file: 'battle_dark.ogg', gain: 1 },
