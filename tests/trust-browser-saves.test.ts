@@ -298,19 +298,16 @@ describe('store.json and the save migration', () => {
     expect(s.m.get('dt:battle')).toBe('x');
   });
 
-  // Risk (low): store.ts:72 reads dt:migrated with Number(..) || 0, and slice() takes a negative count from the end, so an
-  // edited "-1" reruns the last step and wipes every dt:battle* save. Fix: clamp the count to a whole number from 0 to
-  // MIGRATIONS.length, e.g. Math.min(MIGRATIONS.length, Math.max(0, Math.trunc(Number(v)) || 0))
-  it.fails('a negative migration count never reruns the last step', () => {
+  // slice() takes a negative count from the end, so an edited "-1" would rerun the last step and wipe every dt:battle* save
+  it('a negative migration count never reruns the last step', () => {
     const s = browser({ 'dt:migrated': '-1', 'dt:battle': 'x' });
     migrate(s);
     expect(s.m.get('dt:battle')).toBe('x');
   });
 
-  // Same line, open question for Fernando: a count that is not a number ("abc") reads as 0 and reruns every step, whose
-  // first one removes the live dt:pixel. A missing key must still run them all (a browser from before the migrations);
-  // whether garbage means "all done" is his call.
-  it.fails('a garbage migration count keeps the live pixel setting', () => {
+  // garbage ("abc") reads as all done (Fernando, Nov 16: a bad count never deletes saves); only a missing key reruns
+  // every step, whose first one removes dt:pixel
+  it('a garbage migration count keeps the live pixel setting', () => {
     const s = browser({ 'dt:migrated': 'abc', 'dt:pixel': '{"size":2}' });
     migrate(s);
     expect(s.m.get('dt:pixel')).toBe('{"size":2}');

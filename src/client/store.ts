@@ -69,7 +69,11 @@ const MIGRATIONS: ((s: Saves) => void)[] = [
   },
 ];
 export function migrate(s: Saves) {
-  const done = Number(s.getItem(MIGRATED)) || 0;
+  // only a missing count (a browser from before the migrations) reruns them; a negative or garbage count reads as all
+  // done, since a rerun step deletes live saves (a negative slice would rerun the last ones)
+  const v = s.getItem(MIGRATED);
+  const n = Number(v);
+  const done = v === null ? 0 : Number.isInteger(n) && n >= 0 ? n : MIGRATIONS.length;
   for (const m of MIGRATIONS.slice(done)) m(s);
   s.setItem(MIGRATED, String(MIGRATIONS.length));
 }
