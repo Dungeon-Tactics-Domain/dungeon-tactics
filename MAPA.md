@@ -115,7 +115,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/water-field.ts` — WaveField: the pure wave-equation height field the water runs on.
 - `src/client/water-mesh.ts` — water surface geometry per tile and the waterfalls and edge cuts where it drops.
 - `src/client/water-shaders.ts` — the water and waterfall shaders and their two materials.
-- `src/client/trees.ts` — painted trees built in code that replace the KayKit tree models.
+- `src/client/trees.ts` — painted tree species built in code and the sets that replace the KayKit tree models.
+- `src/client/tree-parts.ts` — the parts painted trees are built from: palettes, trunk and roots, branches, crown light.
 - `src/client/props.ts` — painted crates, barrels, rocks and litter built in code that replace KayKit props.
 - `src/client/painted.ts` — the shared painted material and the shape helpers trees and props are built from.
 - `src/client/bridge.ts` — bridges with planks, beams, posts, ropes and end stairs.
