@@ -3,6 +3,7 @@
 // spike), until the next "attack". Only counts damage to the other side (a spike at the end of one's own turn is nobody's merit).
 // Pure and tested; the Game gathers the events on each animation. Saving and reopening mid-battle resets the tally (it lives only in memory).
 import type { BattleEvent, Team } from '../shared/battle/types.ts';
+import { t } from './i18n.ts';
 
 export interface Score {
   dmg: number;
@@ -39,3 +40,29 @@ export function mvp(t: Tally, team: Record<string, Team>, side: Team): [id: stri
   list.sort(([, a], [, b]) => b.kills - a.kills || b.dmg - a.dmg);
   return list[0] ?? null;
 }
+
+// the result board card's last line, where the lab mockup had the EXP gained (XP and levels are cancelled): `gain`
+// green, `fell` light red, plain muted
+export type CardLine = [text: string, tone: 'gain' | 'fell' | ''];
+
+// what the hero did, for the battles that give nothing else to show on the card; a fallen hero says so in words
+export const tallyLine = (h: Score & { hp: number }): CardLine =>
+  h.hp <= 0
+    ? [t('Caído', 'Fallen'), 'fell']
+    : [
+        t(
+          `${h.dmg} de dano · ${h.kills} derrubado${h.kills === 1 ? '' : 's'}`,
+          `${h.dmg} damage · ${h.kills} ${h.kills === 1 ? 'takedown' : 'takedowns'}`,
+        ),
+        '',
+      ];
+
+// an expedition room's card line: the life the hero takes into the next room (the recovery already applied), or
+// "Fallen · back at" for a fallen hero; with nothing carried (a lost or finished expedition), what the hero did
+export const roomLine = (h: Score & { hp: number }, carried?: { hp: number; max: number }): CardLine => {
+  if (!carried) return tallyLine(h);
+  const life = `${carried.hp}/${carried.max}`;
+  return h.hp <= 0
+    ? [t(`Caído · volta com ${life}`, `Fallen · back at ${life}`), 'fell']
+    : [t(`Próxima sala: ${life}`, `Next room: ${life}`), 'gain'];
+};

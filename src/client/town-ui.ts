@@ -197,6 +197,13 @@ export function openBar(back: () => void) {
   );
 }
 
+// the windows open beside the town menu (crawl.ts): every overlay but the menu's own
+export const sideWindows = <T>(overlays: Iterable<T>, menu: T) => [...overlays].filter((o) => o !== menu);
+
+// what is missing to buy, under the Shop row's turned-off button; nothing when the gold covers it
+export const shortBy = (gold: number, price: number) =>
+  gold < price ? t(`faltam ${price - gold}`, `${price - gold} short`) : '';
+
 // the lab kit's gold counter on a window's head band (Shop, Tavern): small uppercase label, the number after a coin
 const goldNote = (label: string, gold: number) =>
   el('p', { class: 'gold' }, el('span', { class: 'result-label' }, label), el('strong', {}, String(gold)));
@@ -238,7 +245,7 @@ export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
                 disabled: chest.gold < it.price,
               }),
               // too expensive: the button turns off and says under it how much is missing (before, it only went grey)
-              chest.gold < it.price ? t(`faltam ${it.price - chest.gold}`, `${it.price - chest.gold} short`) : '',
+              shortBy(chest.gold, it.price),
             ),
           )
         : chest.items.length

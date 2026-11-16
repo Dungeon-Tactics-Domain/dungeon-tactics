@@ -25,8 +25,9 @@ import { button, el } from '../icons.ts';
 import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
-import { openBar, openParty, openShop } from '../town-ui.ts';
-import { type CardLine, type EndHero, enterButton, fellLine, resultBoard, tallyLine } from './end-screens.ts';
+import { roomLine } from '../tally.ts';
+import { openBar, openParty, openShop, sideWindows } from '../town-ui.ts';
+import { type EndHero, enterButton, resultBoard } from './end-screens.ts';
 import { titleScreen } from './title.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
@@ -109,7 +110,7 @@ export function townScreen() {
   const live = liveExpedition();
   // the window beside the menu, if any (its 'close' skips its onBack)
   const closeBeside = () => {
-    for (const o of document.querySelectorAll('.overlay')) if (o !== d.overlay) o.dispatchEvent(new Event('close'));
+    for (const o of sideWindows(document.querySelectorAll('.overlay'), d.overlay)) o.dispatchEvent(new Event('close'));
   };
   const go = (fn: () => void) => () => {
     closeBeside();
@@ -346,14 +347,7 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, he
   const home = () => {
     location.search = next && !done ? '?home=expedition' : '?home';
   };
-  const line = (h: EndHero): CardLine => {
-    const carried = next && !done && next.party.find((p) => p.id === room.heroes[h.id]?.id);
-    if (!carried) return h.hp <= 0 ? fellLine() : tallyLine(h);
-    const life = `${carried.hp}/${carried.max}`;
-    return h.hp <= 0
-      ? [t(`Caído · volta com ${life}`, `Fallen · back at ${life}`), 'fell']
-      : [t(`Próxima sala: ${life}`, `Next room: ${life}`), 'gain'];
-  };
+  const carried = (h: EndHero) => (next && !done ? next.party.find((p) => p.id === room.heroes[h.id]?.id) : undefined);
   resultBoard({
     won: !!next, // a cleared room and a won expedition get the victory's look
     title: !next
@@ -363,7 +357,7 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, he
         : down
           ? t(`Andar ${node.floor} vencido!`, `Floor ${node.floor} cleared!`)
           : t('Sala vencida!', 'Room cleared!'),
-    cards: heroes.map((h) => [h, line(h)]),
+    cards: heroes.map((h) => [h, roomLine(h, carried(h))]),
     cols: [
       [t('Andar', 'Floor'), t(`${node.floor} de ${CRAWL_RUN.floors}`, `${node.floor} of ${CRAWL_RUN.floors}`)],
       ...(next ? ([[t('Salas vencidas', 'Rooms cleared'), String(next.path.length)]] as [string, string][]) : []),

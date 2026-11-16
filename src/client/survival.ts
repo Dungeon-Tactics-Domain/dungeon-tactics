@@ -5,6 +5,7 @@ import type { Scenario } from '../shared/battle/scenarios.ts';
 import type { BattleState } from '../shared/battle/types.ts';
 import { HALF } from '../shared/battle/units.ts';
 import { buildDevScenario, type DevUnit, unitFrom } from './dev-roster.ts';
+import { t } from './i18n.ts';
 
 export const SURVIVAL_ID = 'survival';
 // the battle is opened in half tiles (half.ts) under `survival½`
@@ -68,3 +69,9 @@ export function survivalScenario(turns = SURVIVE_TURNS): Scenario {
   };
   return s;
 }
+
+// the result board's columns for Until Dawn: the turns held and the record, a new one said so
+export const survivalCols = (lasted: number, best: number): [label: string, value: string][] => [
+  [t('Turnos', 'Turns'), t(`${lasted} de ${SURVIVE_TURNS}`, `${lasted} of ${SURVIVE_TURNS}`)],
+  [t('Recorde', 'Record'), lasted > best ? t(`${lasted}, novo!`, `${lasted}, new!`) : String(best)],
+];

@@ -7,7 +7,8 @@ import { dialog } from '../dialog.ts';
 import { gauge, stillFace } from '../hud.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
-import { SURVIVE_TURNS } from '../survival.ts';
+import { survivalCols } from '../survival.ts';
+import { type CardLine, tallyLine } from '../tally.ts';
 import { goHome, homeLabel } from './crawl.ts';
 
 // Victory: confetti falling for 2.5 s (DOM and CSS, no cost in the 3D frame); disappears by itself. With reduced motion, nothing.
@@ -42,22 +43,6 @@ export interface EndHero {
   kills: number;
   mvp: boolean;
 }
-// the card's last line, where the lab mockup had the EXP gained: `gain` green, `fell` light red, plain muted
-export type CardLine = [text: string, tone: 'gain' | 'fell' | ''];
-
-export const fellLine = (): CardLine => [t('Caído', 'Fallen'), 'fell'];
-// what the hero did, for the battles that give nothing else to show on the card
-export const tallyLine = (h: EndHero): CardLine =>
-  h.hp <= 0
-    ? fellLine()
-    : [
-        t(
-          `${h.dmg} de dano · ${h.kills} derrubado${h.kills === 1 ? '' : 's'}`,
-          `${h.dmg} damage · ${h.kills} ${h.kills === 1 ? 'takedown' : 'takedowns'}`,
-        ),
-        '',
-      ];
-
 // One hero's card (lab mockup, Nov 15): face, name (with the highlight's tag where the mockup had the level), class, the
 // life bar and one line; a fallen hero's face goes grey and the line says so in words
 function heroCard(h: EndHero, [text, tone]: CardLine, won: boolean) {
@@ -132,12 +117,7 @@ export function battleEndScreen({ won, survival, lasted, best, heroes, restart }
     won,
     title: won ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat'),
     cards: heroes.map((h) => [h, tallyLine(h)]),
-    cols: survival
-      ? [
-          [t('Turnos', 'Turns'), t(`${lasted} de ${SURVIVE_TURNS}`, `${lasted} of ${SURVIVE_TURNS}`)],
-          [t('Recorde', 'Record'), lasted > best ? t(`${lasted}, novo!`, `${lasted}, new!`) : String(best)],
-        ]
-      : [],
+    cols: survival ? survivalCols(lasted, best) : [],
     note: survival
       ? won
         ? t('O sol nasceu e os heróis ainda estavam de pé.', 'The sun rose and the heroes were still standing.')
