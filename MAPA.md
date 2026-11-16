@@ -146,7 +146,12 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/board-looks.ts` — what each tile look draws (LOOK pieces, side colors, details) and the pieces a map downloads.
 - `src/client/scene/board-extras.ts` — board dressing outside the rules: edge sides, caravan bodies, dotted border, crypt stairs, rocks and tufts.
 - `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees and the crown cutout over units, cursor and marks.
-- `src/client/scene/units.ts` — Units: character models, rings, facing arrows, health bars and the event animations on them.
+- `src/client/scene/units.ts` — Units: keeps each unit's drawing where the state says, the shake, hit-stop and slow-motion clocks, picking and the town walk.
+- `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, ring, facing arrow, health bar, clips, flash and glow.
+- `src/client/scene/unit-events.ts` — playEvents: plays the battle events on the units in sequence (strike, miss, heal, charge, death).
+- `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
+- `src/client/scene/unit-hits.ts` — how damage lands: hit-stop, flash, recoil, slide into rock, camera shake and the death slow motion.
+- `src/client/scene/float-numbers.ts` — FloatNumbers: the damage and heal numbers popping from a chest and following it on screen.
 - `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring and shot trajectory.
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
 - `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin and action camera.
