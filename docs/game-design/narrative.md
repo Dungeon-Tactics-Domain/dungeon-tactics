@@ -14,9 +14,9 @@ The loop itself (town, descent through rooms, camp, return) is in `_notas/LOOP-D
 | Tone | Warm with a shadow underneath: a lively, kind village; the descent brings losses and secrets little by little. No stress or afflictions: the weight comes from the story, not from a mechanic. |
 | Why the party goes down | The protagonist is a **prisoner** the town forces to go down. Only the protagonist has a main story for now. They start going down with other prisoners; as their runs go well they gain independence, and the party turns from prisoners into adventurers. Other stories happen alongside. |
 | Who holds them | The town itself: going down is the sentence it hands to convicts. |
-| The sentence | A quota of descents paid off through **milestones**. Each milestone changes how they are treated and unlocks places, people and lines. Numbers come from the Mechanics lab later. |
-| The protagonist | **Created by the player**, Dragon Age style (Fernando, Nov 15); the player picks a name, a look (KayKit models), and a starting class. No crime choice for now: every protagonist is sentenced for **a debt they could not pay**, so the sentence is paying it off with work (Nov 16). The starting party is the protagonist plus three companions: the companion of the class the player picks does not appear, so the party stays at four (`CRAWL_PARTY`) (Nov 16). |
-| The three companions | Blank at the start (no past in this draft); revealed later. |
+| The sentence | A quota of descents (each a win over the descent's boss) paid off through **milestones**. Each milestone changes how they are treated and unlocks places, people and lines. Numbers come from the Mechanics lab later. |
+| The protagonist | **Created by the player**, Dragon Age style (Fernando, Nov 15); the player picks a name, a look (KayKit models), and a starting class. No crime choice for now: every protagonist is sentenced for **a debt they could not pay**, so the sentence is paying it off with work (Nov 16). The party of four is picked from a roster of recruits after the prologue (Nov 16). |
+| The other party members | A prologue with one or two characters, then four go down, picked like in Darkest Dungeon; only the protagonist is fixed in the MVP. No past for the others in this draft. |
 | The town | A small border village with a fixed name and past, written by hand: about 8 to 12 named residents; the four facilities are its centre. |
 | Residents | One resident per facility, each with a different first attitude that shifts with every milestone, plus a few residents without a facility who carry rumours. |
 | How the story reaches the player | Three channels: the **request board** (short quests), **talking** to each resident (a new line per milestone; rumours are lines that point at a place), and **return events** (a short scene when an expedition meets a condition). |
@@ -42,9 +42,9 @@ Four milestones, no numbers yet (the Mechanics lab sets how many descents or how
 
 | Milestone | How they are treated | What opens |
 |---|---|---|
-| 1. Chained _(proposed name)_ | Escorted from the cell to the entrance and back; only the warden and the kitchen talk to them. | The dungeon (first floors); the kitchen and the shop at prisoner prices. |
-| 2. Tethered | Free to walk the village between descents, a bell on the ankle. Residents start talking to them. | The request board; the tavern; the forest. |
-| 3. Paid | Keeps a share of what they bring up and spends it themselves. | The smith's full work; the mountain; small bonuses from residents' stories. |
+| 1. Chained | Escorted from the cell to the entrance and back; few talk to them. | The dungeon; every facility is open, at prisoner prices. |
+| 2. Tethered | Free to walk the village between descents, a bell on the ankle. Residents start talking to them. | Rumours about the forest and the mountain. |
+| 3. Paid | Keeps a share of what they bring up and spends it themselves. | Small bonuses from residents' stories. |
 | 4. Free | The sentence is paid. They choose to stay as an adventurer; the party is no longer prisoners. | Deeper floors; recruits who are adventurers, not convicts. |
 
 ## Residents
@@ -109,33 +109,31 @@ Each item is data shaped as **trigger → text → effect**. Below, the first ex
 | Hesk | "Caído conta como voltou. Por pouco." / "Fallen counts as back. Barely." |
 | Sela | "Mais uma tigela, então." / "One more bowl, then." |
 
-## Conflicts and gaps against the standing decisions
+## Conflicts settled on Nov 16
 
-Checked on Nov 16 against `pillars.md`, the decision log in `CLAUDE.md` and `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`. None is
-resolved here: each one is a question for Fernando (in `PENDENCIAS-GRILL.md`), with this draft's default in the last column.
+Checked against `pillars.md`, the decision log in `CLAUDE.md` and `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`; Fernando decided each one the same morning.
 
-| # | Where | Conflict or gap | Default in this draft |
-|---|---|---|---|
-| 1 | `pillars.md` pillar 6 ("grim, dark tone") | The grill picked "warm with a shadow underneath". | Warm tone; pillar 6 to be reworded. |
-| 2 | Loop decision 8 and the town windows in code (Shop, Tavern, Party open from the start) | The milestone table gates facilities (kitchen and shop at prisoner prices, tavern and smith later). | Facilities stay open from the start; milestones only change prices, lines and what the board offers. The table above is the pending part. |
-| 3 | Loop decision 16 (facilities fixed, only the party grows) | Milestones "open" places and recipes, which reads as the town evolving. | Treat it as content unlocks, not facility upgrades. |
-| 4 | Loop decision 32 (return from a cleared room loses the descent) | The sentence counts "descents", but nothing says what a descent is. | Open: a boss win, a floor, or a safe return. |
-| 5 | Tavern in code (rumours and recruits, no quests) and `towns-party-equipment.md` (recruit 200 gold, up to 8) | The draft makes recruits "adventurers, not convicts" only at milestone 4, and adds a request board that the tavern does not have. | Board as a new town window; recruiting keeps working as today. |
-| 6 | `party.ts` ("the four story members never leave") | The created protagonist replaces the companion of the chosen class. | The replaced companion never appears (does not become a recruit). |
-| 7 | Loop decision 20 (a scout-cook class) and the kitchen facility | Wren (kitchen) and the scout-cook class both "cook". | Wren sells ingredients and teaches recipes; the class cooks in camp. |
-| 8 | Loop decision 39 (unique destination rules out of the MVP) | Rumours point at the forest and mountain as places to unlock. | Destinations differ by look and enemies only (`CRAWL_THEMES`). |
-| 9 | Loop decision 41 (focus on the dungeon first) | This draft is town content. | Nothing enters `src/content` until the descent plays. |
-| 10 | Loop decision 33 and economy | Requests pay trinkets, recipes and discounts; prices are not defined. | Rewards are items and recipes, never gold, until prices exist. |
+| Topic | Decision |
+|---|---|
+| Pillar 6 ("grim") | One tone for the whole game: warm with a shadow underneath. Pillar 6 was reworded. |
+| Facilities | All four open from the start; milestones change prices, lines and rumours, they do not unlock facilities. |
+| What counts as a descent | A win over the descent's boss. |
+| Request board | In the MVP the requests are spoken rumours; the Board window comes later. |
+| Starting party | A prologue with one or two characters (the protagonist and a prisoner, a short first descent), then the descent with four, picked as in Darkest Dungeon. Only the protagonist is fixed in the MVP; the other three come from a roster of recruits. |
+| Wren and the scout-cook class | Wren sells ingredients and teaches recipes; the class cooks in camp. |
+| When the text becomes data | Now: three lines per key resident in `src/content/crawl/residents.ts`, no interface. |
+| Names | All proposed names approved. |
+
+Still open: the prologue (how many rooms, who the second prisoner is), what the sentence costs in descents, and a conflict between this cast and the one already in `town.ts` (see Open questions).
 
 ## What this feeds in `src/content`
 
-Nothing yet: the data goes in only after Fernando approves the names. When it does, the likely home is next to
-`CRAWL_TOWN` (`src/content/crawl/` or a new `town.ts`): residents, milestones, rumours, requests and events as typed data,
-each with its trigger and effect. The engine needs a trigger check (milestone reached, expedition ended, someone fell) and
-the effects that unlock places, recipes and items; that is work for the implementation session, not for this lab.
+Since Nov 16, `src/content/crawl/residents.ts` holds the residents and three lines for each key one (warden, shop, smith, tavern, kitchen), with a `when` of milestone 1 to 3 or `fall`; nothing in the client reads it yet. Still to come as data: milestones, rumours that unlock places and recipes, and return events, each with a trigger and an effect. The engine needs a trigger check (milestone reached, expedition ended, someone fell); that is work for the implementation session.
 
 ## Open questions
 
-- Milestone costs (how many descents or how much value) and whether a failed expedition counts.
+- Milestone costs (how many boss wins per milestone) and whether a failed expedition counts.
+- The prologue: how many rooms, who the second prisoner is (Dace, Rook or Nell), and how the player reaches the town and the roster.
+- `src/content/crawl/town.ts` already has townsfolk (Aldo, Hugo, Selene, Mira) and `residents.ts` has Hesk, Marta, Garrick, Sela, Wren, Pip, Ysolde and Tobin: which cast wins, or how they merge; the places also differ (`smith` and `smithy`).
 - What lies at the bottom and why the village stopped going down.
 - The companions' stories and the conflict inside the town (left out of this draft).

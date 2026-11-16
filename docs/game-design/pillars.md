@@ -11,7 +11,7 @@ Source: Oct 25, 2026 grill with Fernando. Rule for this document: every design d
 3. **Luck you can read.** Dice exist (hit and damage), but the chance is shown before confirming. Never a hidden miss. (D&D, XCOM)
 4. **PC first.** Mobile comes later (Nov 13 decision); the existing touch input and media queries keep working, and the battle is saved if the app closes.
 5. **Weighty choices, mistakes with an out.** Limited undo and restart in one tap: the player takes risks without a time penalty.
-6. **Grim but playable.** Dark tone, short text, losses and hard choices; legibility beats atmosphere. (Darkest Dungeon as the feel to aim for)
+6. **Warm with a shadow underneath.** One tone for the whole game: a kind, lively town and a descent that costs something, with short text, losses and hard choices; legibility beats atmosphere. (Made in Abyss and Darkest Dungeon as the feel to aim for; Fernando's decision of Nov 16, replacing "grim but playable" of Oct 25)
 
 ## Measurable goals (to be validated by simulation and testing)
 

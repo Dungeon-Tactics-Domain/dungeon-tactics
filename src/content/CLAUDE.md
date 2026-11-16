@@ -31,4 +31,5 @@ Each file and where its type and registry live: [MAPA.md](../../MAPA.md), sectio
 - `tests/crawl-expedition.test.ts`: the map's shape and seed, the heals, the guard and `parseExpedition`.
 - `tests/crawl-room.test.ts`: 500 seeds pass the room checks and the first 25 are pinned to `CRAWL_VERSION`; `tests/content.test.ts` checks the crawl tables (life range, known enemies and terrains).
 - `tests/town.test.ts`: the town draws on the painted terrain, every door and everyone stays within the keyboard's single steps with the whole party in and the townsfolk strolling, and every townsperson has a painted face.
+- `tests/content-residents.test.ts`: three lines for each key resident, non-empty pt/en pairs, unique ids and places, no old terms (quest, descent).
 - `tests/group.test.ts`: the default party is the 4 story members with the whole kit of their class and their equipment.
