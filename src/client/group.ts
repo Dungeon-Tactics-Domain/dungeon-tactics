@@ -3,20 +3,13 @@
 // The 4 from the story never leave; recruits are hired at the Tavern with gold and can be dismissed. Anyone can change class
 // among JOBS, and up to 4 go to battle (the maps' starting tiles). The story members and the recruit names are data in
 // src/content/party.ts.
-import { RECRUIT_NAMES, STORY } from '../content/party.ts';
+import { JOBS, type Job, type Member, RECRUIT_NAMES, STORY } from '../content/party.ts';
 import type { Chest, Equip } from './chest.ts';
 import { type DevUnit, unitFrom } from './dev-roster.ts';
 
-// party classes: the 4 starting ones and the new ones, which only join via recruitment and class change (design, section 4)
-export const JOBS = ['warrior', 'archer', 'mage', 'rogue', 'lancer'] as const;
-export type Job = (typeof JOBS)[number];
+// the party's types are data in src/content/party.ts (the engine side never imports the client)
+export { JOBS, type Job, type Member } from '../content/party.ts';
 
-export interface Member {
-  id: string; // equipment key (dt:equip); the story ones use the starting class, like the old save
-  name: string;
-  cls: Job;
-  recruit: boolean;
-}
 export interface Group {
   members: Member[];
   deployed: string[]; // ids of who goes to battle, in the order of the starting tiles

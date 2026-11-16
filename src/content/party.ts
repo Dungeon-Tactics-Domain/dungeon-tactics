@@ -1,6 +1,15 @@
-// Party (data): the 4 story members, who never leave, and the names recruits take in order. The Member type and the party
-// rules (recruit, dismiss, class change, who goes to battle) live in src/client/group.ts.
-import type { Member } from '../client/group.ts';
+// Party (data): the 4 story members, who never leave, and the names recruits take in order. The party rules (recruit, dismiss,
+// class change, who goes to battle) live in src/client/group.ts.
+// party classes: the 4 starting ones and the new ones, which only join via recruitment and class change (design, section 4)
+export const JOBS = ['warrior', 'archer', 'mage', 'rogue', 'lancer'] as const;
+export type Job = (typeof JOBS)[number];
+
+export interface Member {
+  id: string; // equipment key (dt:equip); the story ones use the starting class, like the old save
+  name: string;
+  cls: Job;
+  recruit: boolean;
+}
 
 export const STORY: Member[] = [
   { id: 'warrior', name: 'Bran', cls: 'warrior', recruit: false },
