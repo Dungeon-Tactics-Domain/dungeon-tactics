@@ -3,16 +3,13 @@
 // animates the water and opens the crown holes the scene asks for.
 import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { FACING, type Grid, inBounds, neighbors, posKey, type Tile, tileAt } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { EXTEND } from '../ambience-moods.ts';
 import { buildBridges } from '../bridge.ts';
 import { addDetail } from '../detail.ts';
-import { unitHeight } from '../markers.ts';
 import { boxOf as pieceBox, variant } from '../painted.ts';
-import { DEBRIS, LITTER } from '../props.ts';
+import { DEBRIS } from '../props.ts';
 import { param } from '../store.ts';
 import {
   buildStream,
@@ -23,209 +20,21 @@ import {
   riverOutside,
   type TerrainTextures,
 } from '../terrain.ts';
+import { hash, prepare } from '../three-util.ts';
 import { Water } from '../water.ts';
 import type { WaterLevel } from '../water-levels.ts';
+import { buildBorder, buildCorpses, buildDetails, buildStairs, buildWalls } from './board-extras.ts';
+import { LOOK, MOUND, NEIGHBORS, UNDER, WALL_COLOR } from './board-looks.ts';
 import type { TileSpace } from './space.ts';
+import { TreeCrowns } from './tree-crowns.ts';
 
-// Pieces for each tile look (Tile.look), in public/models: top cube and column cube below. A bridge has no
-// column (water underneath); a tree puts the forest model on top. Mapping by the orchestrator on Nov 12 (assembly
-// of Gariland from the map file's surface_type), approved by Fernando to go into the game.
-// `canopy`: the tile height on the map is the crown's (a Gariland tree), and the ground comes from the lowest neighbor.
-// `stairs`: on a ramp tile the top stays flat and the dungeon stairs (STAIRS) climb over it (crypts, Nov 13)
-// `house`: a town building (src/content/crawl/town.ts), `propW` whole tiles wide over its lot, centred on this tile and
-// picked as it, so a click on the house finds the place
-const LOOK: Record<
-  string,
-  {
-    top: string;
-    side: string | null;
-    prop?: string;
-    propH?: number;
-    propW?: number;
-    canopy?: true;
-    stairs?: true;
-    house?: true;
-  }
-> = {
-  grass: { top: 'blocks/grass', side: 'blocks/dirt' },
-  stone: { top: 'blocks/gravel', side: 'blocks/stone' },
-  // water: the top piece is the gravel bed (where the unit steps), seen through the water.ts surface (Nov 13)
-  water: { top: 'blocks/gravel', side: 'blocks/stone_dark' },
-  roof: { top: 'blocks/bricks_B', side: 'blocks/bricks_A' },
-  chimney: { top: 'blocks/stone_dark', side: 'blocks/bricks_A' },
-  wood: { top: 'blocks/wood', side: 'blocks/wood' },
-  bridge: { top: 'blocks/wood', side: null },
-  box: { top: 'dungeon/box_large', side: 'blocks/stone' },
-  tree: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_1_A_Color1', canopy: true },
-  // Beacon Hill (Nov 12, proposal approved by Fernando): rock on the hill, sand and gold on the Beacon mound, brick
-  // walls, four varied trees and the enemies' side in the snow (read from afar which side each team starts on)
-  rock: { top: 'blocks/stone', side: 'blocks/stone' },
-  summit: { top: 'blocks/stone_dark', side: 'blocks/stone' },
-  sand: { top: 'blocks/sand_with_grass', side: 'blocks/dirt' },
-  gold: { top: 'blocks/stone_with_gold', side: 'blocks/stone' },
-  brick: { top: 'blocks/bricks_B', side: 'blocks/bricks_A' },
-  snow: { top: 'blocks/dirt_with_snow', side: 'blocks/dirt' },
-  snow_rock: { top: 'blocks/snow', side: 'blocks/stone' },
-  tree2: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_2_A_Color1' },
-  tree3: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_3_A_Color1' },
-  tree4: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_4_A_Color1' },
-  bare1: { top: 'blocks/dirt_with_snow', side: 'blocks/dirt', prop: 'forest/Tree_Bare_1_A_Color1' },
-  bare2: { top: 'blocks/dirt_with_snow', side: 'blocks/dirt', prop: 'forest/Tree_Bare_2_A_Color1' },
-  // Flooded Crypt (Nov 12, closed map with the dungeon pieces): gravel floor, dark altar, and tiles that block
-  // with a column, crates, barrel or chest on top; the debris is walkable cover. propH = piece height in tiles.
-  crypt: { top: 'blocks/gravel', side: 'blocks/stone_dark', stairs: true },
-  altar: { top: 'blocks/stone_dark', side: 'blocks/stone_dark', stairs: true },
-  pillar: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/pillar', propH: 2 },
-  crates: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/crates_stacked', propH: 1 },
-  barrel: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/barrel_large', propH: 0.8 },
-  chest: { top: 'blocks/stone_dark', side: 'blocks/stone_dark', prop: 'dungeon/chest_gold', propH: 0.6 },
-  rubble: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/rubble_half', propH: 0.4 },
-  spikes: { top: 'blocks/gravel', side: 'blocks/stone_dark', prop: 'dungeon/floor_tile_big_spikes', propW: 0.95 },
-  // crawl rooms (Nov 15): a lone rock that blocks, the painted boulder of props.ts on the ground; a stone hill (rock) on a
-  // single tile read as a cube
-  boulder: { top: 'blocks/gravel', side: 'blocks/stone', prop: 'forest/Rock_3_A_Color1', propW: 1 },
-  // fallen body: the ground is the terrain's and the body is a unit at the end of the death animation (buildCorpses)
-  corpse: { top: 'blocks/dirt', side: 'blocks/dirt' },
-  // the walkable town (Nov 15): KayKit Medieval Hexagon houses, each over a 3x3 lot of trodden earth (`lot`: a wall
-  // drawn as flat ground, the house stands on its centre tile); the gate's lot is 3x1 and the well's a single tile
-  lot: { top: 'blocks/dirt', side: 'blocks/dirt' },
-  guild: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_barracks_blue', propW: 2.8, house: true },
-  shop: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_market_green', propW: 2.8, house: true },
-  tavern: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_tavern_red', propW: 2.8, house: true },
-  smithy: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_blacksmith_yellow', propW: 2.8, house: true },
-  enchanter: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_tower_A_blue', propW: 2.4, house: true },
-  gate: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/wall_straight_gate', propW: 2.8, house: true },
-  home: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_home_A_red', propW: 2.6, house: true },
-  well: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_well_blue', propW: 0.9 },
-};
-// caravan body units (knight and rogue, the ones guarding the cargo)
-export const CORPSE_MODELS = ['knight', 'rogue'];
-// dungeon stairs: 2 wide, 4 deep and 4 high, climbing toward -z (checked on the file's vertices)
-const STAIRS = 'dungeon/stairs_modular_center';
 const PLAIN_UNITS = param('units') === 'plain';
-// walls without a piece that the smooth terrain draws as a stone hill (brick stays as blocks: it is construction)
-const MOUND = new Set(['rock', 'snow_rock', 'summit', 'snow']);
-const UNDER = 'blocks/stone_dark'; // column under the bridge water and the map skirt
-
-// Map base as a block (Fernando's requests, Nov 12, looking at FFT's board): all columns end on the same
-// ground (y = 0), and the edge sides, from each tile's floor down, are a flat color pulled from the floor above that
-// darkens until it vanishes into the background ("the floors at the map edges have no texture and it looks better that way"). The tops keep their texture.
-const BASE_DEPTH = 2; // in tiles, below the ground; with 1 the gradient ended before fully darkening
-const BACKGROUND = '#1b1626'; // the scene background: the gradient ends in it
-// side color by the floor above (Tile.look) or by the terrain on maps without a per-tile look
-const WALL_COLOR: Record<string, string> = {
-  grass: '#4f8f3a',
-  tree: '#4f8f3a',
-  floor: '#4f8f3a',
-  forest: '#3f7a34',
-  stone: '#7a7d86',
-  box: '#7a7d86',
-  wall: '#7a7d86',
-  water: '#2f6fae',
-  bridge: '#2f6fae',
-  roof: '#8a4b32',
-  chimney: '#4a4a52',
-  wood: '#8a6238',
-  rock: '#7a7d86',
-  summit: '#4a4a52',
-  sand: '#b8a06a',
-  gold: '#7a7d86',
-  brick: '#8a4b32',
-  snow: '#c9d2dc',
-  snow_rock: '#c9d2dc',
-  tree2: '#4f8f3a',
-  tree3: '#4f8f3a',
-  tree4: '#4f8f3a',
-  bare1: '#c9d2dc',
-  bare2: '#c9d2dc',
-  crypt: '#5a5d66',
-  altar: '#4a4a52',
-  pillar: '#5a5d66',
-  crates: '#5a5d66',
-  barrel: '#5a5d66',
-  chest: '#4a4a52',
-  rubble: '#5a5d66',
-  spikes: '#5a5d66',
-  boulder: '#7a7d86',
-};
-const NEIGHBORS = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
-// Trees (Nov 13, Fernando's request: "bigger trees... some can even take up more than 1 tile"): maximum height and width,
-// in tiles, of the 1-tile tree (the unit is 0.85: the crown goes past the tile) and of the one covering 2 or 4 tree tiles
-// together at the same height. Each model fits the smaller of the two limits, so the round crown does not get too wide.
-const TREE_SIZE: Record<number, { h: number; w: number }> = {
-  1: { h: 2.4, w: 1.9 },
-  2: { h: 2.8, w: 2.3 },
-  4: { h: 3.4, w: 2.9 },
-};
-// Crown cutout (same request: the crown must not hide a unit, the cursor or a marked tile): each one opens a hole in the
-// tree in front of it. Cap of points per frame (9 units, the cursor and the marked tiles)
-const CUT_MAX = 64;
-// Details that break the grid (Nov 13, "it's not Minecraft"): rocks at the foot of ravines, tufts and pebbles at the corners of
-// tiles, away from the unit's ring (0.44 from the center). Pieces from KayKit's forest pack (same texture as the trees)
-const DETAIL = {
-  rock: 'forest/Rock_1_A_Color1',
-  boulder: 'forest/Rock_3_A_Color1',
-  pebble: 'forest/Rock_2_A_Color1',
-  tuft: 'forest/Grass_1_A_Color1',
-};
-const GREEN = new Set(['grass', 'sand', 'tree', 'tree2', 'tree3', 'tree4']); // ground that gets a grass tuft
-const ROCKY = new Set(['rock', 'summit', 'snow', 'snow_rock', 'bare1', 'bare2']); // ground that gets a pebble
-// fixed draw by position (the same map always draws the same), from 0 to 1
-const hash = (x: number, y: number, k = 0) => {
-  const s = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453;
-  return s - Math.floor(s);
-};
-const TMP = new THREE.Vector3(); // per-frame math without creating objects
-
-// pieces a map with a per-tile look downloads (BattleScene.create): only that map brings them (~630 KB with the textures)
-export function lookPieceNames(grid: Grid): string[] {
-  return [
-    ...new Set(
-      grid.tiles.flatMap((t) =>
-        t.look
-          ? [
-              LOOK[t.look].top,
-              LOOK[t.look].side ?? LOOK.water.top,
-              LOOK[t.look].prop ?? '',
-              UNDER,
-              t.ramp && LOOK[t.look].stairs ? STAIRS : '',
-              ...Object.values(DETAIL),
-            ]
-          : [],
-      ),
-    ),
-  ].filter(Boolean);
-}
-
-// KayKit textures are palettes: with mipmap the low-resolution render blends neighboring colors (learned in the POC)
-export function prepare(o: THREE.Object3D) {
-  o.traverse((m) => {
-    const mesh = m as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    mesh.castShadow = mesh.receiveShadow = true;
-    const mat = mesh.material as THREE.MeshStandardMaterial,
-      map = mat.map;
-    if (map?.generateMipmaps && !mat.userData.procedural)
-      Object.assign(map, {
-        generateMipmaps: false,
-        minFilter: THREE.NearestFilter,
-        magFilter: THREE.NearestFilter,
-        needsUpdate: true,
-      });
-  });
-  return o;
-}
 
 export class Board {
   readonly tileTops: THREE.Object3D[] = []; // what touch can pick as a tile (pick)
   private water: Water | null = null; // only on maps with water
   private stream: { meshes: THREE.Mesh[]; time: { value: number } } | null = null;
-  private trees = false;
+  private readonly crowns: TreeCrowns;
   // tile drawn by the smooth terrain (terrain.ts) instead of blocks: paintable look, plus pieceless wall (stone, brick)
   // stone or snow wall (pieceless wall) also becomes terrain: a stone hill two levels above (rock(t))
   private readonly ground = (t: Tile): boolean =>
@@ -234,24 +43,30 @@ export class Board {
     t.look in PAINT &&
     (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look) || t.look === 'corpse' || t.look === 'lot');
   private readonly rock = (t: Tile) => t.terrain === 'wall' && !LOOK[t.look ?? '']?.prop && MOUND.has(t.look ?? '');
-  private readonly grid: Grid;
+  readonly grid: Grid;
 
   constructor(
-    private readonly scene: THREE.Scene,
-    private readonly space: TileSpace,
-    private readonly models: Map<string, GLTF>,
+    readonly scene: THREE.Scene,
+    readonly space: TileSpace,
+    readonly models: Map<string, GLTF>,
     pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>,
-    private readonly lookPieces: Map<string, THREE.Object3D>,
-    private readonly packClips: THREE.AnimationClip[],
-    private readonly terrainTex: TerrainTextures | null,
+    readonly lookPieces: Map<string, THREE.Object3D>,
+    readonly packClips: THREE.AnimationClip[],
+    readonly terrainTex: TerrainTextures | null,
   ) {
     this.grid = space.grid;
+    this.crowns = new TreeCrowns(this);
     this.buildBoard(pieces);
   }
 
   // the map has trees, so the crowns need the cutout points every frame
   get hasTrees(): boolean {
-    return this.trees;
+    return this.crowns.has;
+  }
+
+  // Points the crowns open a hole for, given by the scene every frame (tree-crowns.ts)
+  updateCuts(view: THREE.Matrix4, protect: (add: (x: number, y: number, z: number, r: number) => void) => void) {
+    this.crowns.updateCuts(view, protect);
   }
 
   // water waves and the outside river current, on the battle clock
@@ -348,7 +163,7 @@ export class Board {
           : [];
       });
       this.scene.add(buildBridges(this.grid, this.space.step, this.terrainTex!.wood, this.terrainTex!.bark));
-      this.buildBorder(levels);
+      buildBorder(this, levels);
       const pick = pickTiles(picks);
       this.scene.add(pick);
       this.tileTops.push(pick);
@@ -362,30 +177,11 @@ export class Board {
       }
       this.tileTops.push(this.water.surface); // touching the water picks its tile, not the bed way down below
     }
-    this.buildCorpses();
-    this.buildTrees(pieces.tree);
-    this.buildStairs();
-    this.buildDetails();
-    this.buildWalls(walls);
-  }
-
-  // Smooth edge sides in a single drawing (one draw call): floor color at the top, already darkened, down to the bottom
-  private buildWalls(walls: { x: number; z: number; top: number; color: string }[]) {
-    if (!walls.length) return;
-    const bottom = -BASE_DEPTH;
-    const deep = new THREE.Color(BACKGROUND);
-    const parts = walls.map(({ x, z, top, color }) => {
-      const g = new THREE.BoxGeometry(1, top - bottom, 1).translate(x, (top + bottom) / 2, z);
-      const high = new THREE.Color(color).multiplyScalar(0.55); // the side is darker than the top, like a shadow
-      const pos = g.getAttribute('position');
-      const colors = new Float32Array(pos.count * 3);
-      for (let i = 0; i < pos.count; i++) (pos.getY(i) > bottom + 0.001 ? high : deep).toArray(colors, i * 3);
-      g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      return g;
-    });
-    const mesh = new THREE.Mesh(mergeGeometries(parts), new THREE.MeshBasicMaterial({ vertexColors: true }));
-    for (const g of parts) g.dispose();
-    this.scene.add(mesh);
+    buildCorpses(this);
+    this.crowns.build(pieces.tree);
+    buildStairs(this);
+    buildDetails(this);
+    buildWalls(this, walls);
   }
 
   // Tiles with a look (Tile.look): column of whole 1-tile cubes, from the tile top down, with the top piece
@@ -533,114 +329,9 @@ export class Board {
     return out;
   }
 
-  // Caravan bodies: knight and rogue alternating, still on the last frame of the death animation, darkened, with a
-  // dark stain on the ground; draw by tile for the rotation
-  private buildCorpses() {
-    const stain = new THREE.MeshBasicMaterial({
-      color: '#2a0f0a',
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
-    });
-    this.grid.tiles.forEach((t, i) => {
-      if (t.look !== 'corpse' || t.span === 0) return; // split map: one body per whole tile (Tile.span)
-      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
-      const gltf = this.models.get(CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length]);
-      if (!gltf) return;
-      const body = prepare(cloneSkinned(gltf.scene));
-      body.traverse((m) => {
-        const mesh = m as THREE.Mesh;
-        if (!mesh.isMesh) return;
-        const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
-        mat.color.multiplyScalar(0.55); // lifeless: darker and duller than the battle units
-        mesh.material = this.shaded(mat);
-      });
-      const b = new THREE.Box3().setFromObject(body);
-      body.scale.setScalar(((t.span ?? 1) * unitHeight('soldier')) / (b.max.y - b.min.y));
-      const clip = [...gltf.animations, ...this.packClips].find((c) => c.name === 'Death_A');
-      if (clip) {
-        const mixer = new THREE.AnimationMixer(body);
-        const act = mixer.clipAction(clip);
-        act.setLoop(THREE.LoopOnce, 1);
-        act.clampWhenFinished = true;
-        act.play();
-        mixer.update(clip.duration);
-      }
-      const w = this.space.world(p);
-      body.position.copy(w).add(new THREE.Vector3(((t.span ?? 1) - 1) / 2, 0, ((t.span ?? 1) - 1) / 2));
-      body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
-      this.scene.add(body);
-      // stain with an irregular edge (brushstroke), not a disc
-      const blot = new THREE.CircleGeometry(0.42, 14).rotateX(-Math.PI / 2),
-        bp = blot.getAttribute('position');
-      for (let k = 1; k < bp.count; k++) {
-        const r = 0.7 + 0.5 * hash(p.x + (k % 14) * 0.37, p.y, 9);
-        bp.setXYZ(k, bp.getX(k) * r, 0, bp.getZ(k) * r);
-      }
-      const spot = new THREE.Mesh(blot, stain);
-      spot.position.set(w.x + 0.08, w.y + 0.012, w.z - 0.05);
-      spot.scale.set(1, 1, 0.7);
-      // caravan remains beside the body: bottles, sack, plank (props.ts), only on open maps
-      const litter = this.lookPieces.get(variant(this.lookPieces, LITTER, hash(p.x, p.y, 8)))?.clone();
-      if (litter) {
-        const a = hash(p.x, p.y, 10) * Math.PI * 2;
-        litter.position.set(w.x + Math.cos(a) * 0.3, w.y, w.z + Math.sin(a) * 0.3);
-        litter.rotation.y = a * 3;
-        this.scene.add(litter);
-      }
-      spot.renderOrder = -2;
-      this.scene.add(spot);
-    });
-  }
-
-  // Discreet dotted line on the edge of the battlefield (Nov 13, Fernando's request): follows the ground height of each
-  // edge tile (on water, the surface), with a step where the height changes
-  private buildBorder(levels: Map<string, WaterLevel>) {
-    const { width: W, height: H } = this.grid,
-      pts: THREE.Vector3[] = [];
-    const yAt = (p: Pos, x: number, z: number) =>
-      (levels.get(posKey(p))?.surface ?? this.space.surfaceY(p, x, z)) + 0.04;
-    const side = (cells: Pos[], edge: (p: Pos, k: number) => [number, number]) => {
-      const line: THREE.Vector3[] = [];
-      for (const p of cells)
-        for (let k = 0; k <= 4; k++) {
-          const [x, z] = edge(p, k / 4);
-          line.push(new THREE.Vector3(x, yAt(p, x, z), z));
-        }
-      for (let i = 1; i < line.length; i++) pts.push(line[i - 1], line[i]);
-    };
-    const X = (x: number) => x - W / 2,
-      Z = (z: number) => z - H / 2;
-    const row = (y: number) => Array.from({ length: W }, (_, x) => ({ x, y }));
-    const col = (x: number) => Array.from({ length: H }, (_, y) => ({ x, y }));
-    side(row(0), (p, k) => [X(p.x + k), Z(0) + 0.01]);
-    side(row(H - 1), (p, k) => [X(p.x + k), Z(H) - 0.01]);
-    side(col(0), (p, k) => [X(0) + 0.01, Z(p.y + k)]);
-    side(col(W - 1), (p, k) => [X(W) - 0.01, Z(p.y + k)]);
-    const g = new THREE.BufferGeometry().setFromPoints(pts);
-    const line = new THREE.LineSegments(
-      g,
-      new THREE.LineDashedMaterial({
-        color: '#f4ecd8',
-        dashSize: 0.14,
-        gapSize: 0.11,
-        transparent: true,
-        opacity: 0.45,
-        depthWrite: false,
-      }),
-    );
-    line.computeLineDistances();
-    line.renderOrder = 2;
-    this.scene.add(line);
-  }
-
   // One InstancedMesh per piece mesh instead of one object per block: the 20x20 made 2,321 draw calls per frame and fell
   // to 9 fps on the emulated phone (measurement of Nov 11). `tiles` marks the pieces that count as a tile for touch.
-  private instanced(
-    piece: THREE.Object3D,
-    at: (THREE.Vector3 | THREE.Matrix4)[],
-    tiles?: Pos[],
-  ): THREE.InstancedMesh[] {
+  instanced(piece: THREE.Object3D, at: (THREE.Vector3 | THREE.Matrix4)[], tiles?: Pos[]): THREE.InstancedMesh[] {
     const out: THREE.InstancedMesh[] = [];
     if (!at.length) return out;
     piece.updateMatrixWorld(true);
@@ -666,166 +357,6 @@ export class Board {
     return out;
   }
 
-  // Forest-tile trees, bigger than the tile (TREE_SIZE). Neighboring tree tiles at the same height become a single
-  // tree (2x2 first, then 2x1): drawing only, each tile is still a tree in the rules. The group uses the widest model
-  // among its tiles'; rotation and size vary by position. The crown gets the cutout (cutMaterial).
-  private buildTrees(legacy: THREE.Object3D) {
-    const g = this.grid,
-      taken = new Set<string>();
-    const free = (x: number, y: number, h: number) =>
-      inBounds(g, { x, y }) &&
-      !taken.has(posKey({ x, y })) &&
-      tileAt(g, { x, y }).terrain === 'forest' &&
-      tileAt(g, { x, y }).h === h;
-    // map without a per-tile look (Skirmish) uses the POC tree; the rest, the look's piece
-    const modelOf = (p: Pos) => {
-      const look = tileAt(g, p).look;
-      return look ? (LOOK[look].prop ?? null) : '';
-    };
-    const pieceOf = (name: string) => (name ? this.lookPieces.get(name)! : legacy);
-    const boxOf = (name: string) => pieceBox(pieceOf(name));
-    const width = (b: THREE.Box3) => Math.max(b.max.x - b.min.x, b.max.z - b.min.z);
-    const batches = new Map<string, THREE.Matrix4[]>();
-    for (let y = 0; y < g.height; y++) {
-      for (let x = 0; x < g.width; x++) {
-        const t = tileAt(g, { x, y });
-        // big half-tile tree (half.ts): a single tree, the size of its square
-        if (t.tree && !taken.has(posKey({ x, y })) && modelOf({ x, y })) {
-          const n = t.tree,
-            name = modelOf({ x, y })!;
-          for (let dy = 0; dy < n; dy++) for (let dx = 0; dx < n; dx++) taken.add(posKey({ x: x + dx, y: y + dy }));
-          const box = boxOf(name);
-          const k = Math.min((n * (1 + 0.5 * hash(x, y, 4))) / (box.max.y - box.min.y), (n * 0.95) / width(box));
-          const c = this.space.world({ x, y }).add(new THREE.Vector3((n - 1) / 2, 0, (n - 1) / 2));
-          const m = new THREE.Matrix4()
-            .makeRotationY(hash(x, y, 2) * Math.PI * 2)
-            .scale(new THREE.Vector3(k, k, k))
-            .setPosition(c.x, c.y - box.min.y * k, c.z);
-          if (!batches.has(name)) batches.set(name, []);
-          batches.get(name)!.push(m);
-          continue;
-        }
-        if (!free(x, y, t.h)) continue;
-        const group =
-          free(x + 1, y, t.h) && free(x, y + 1, t.h) && free(x + 1, y + 1, t.h)
-            ? [
-                [0, 0],
-                [1, 0],
-                [0, 1],
-                [1, 1],
-              ]
-            : free(x + 1, y, t.h)
-              ? [
-                  [0, 0],
-                  [1, 0],
-                ]
-              : free(x, y + 1, t.h)
-                ? [
-                    [0, 0],
-                    [0, 1],
-                  ]
-                : [[0, 0]];
-        const tiles = group.map(([dx, dy]) => ({ x: x + dx, y: y + dy }));
-        for (const p of tiles) taken.add(posKey(p));
-        const names = tiles.map(modelOf).filter((n): n is string => n !== null);
-        if (!names.length) continue;
-        // the tree variation comes from the position (painted.ts variant): different species and sizes side by side. The draw 16
-        // was chosen looking at Ash Wood: 2 tall pines, 4 skirted ones and 2 old trees among the 14 (with 5 it came out 1 pine)
-        const name = variant(
-          this.lookPieces,
-          names.reduce((a, b) => (width(boxOf(b)) > width(boxOf(a)) ? b : a)),
-          hash(x, y, 16),
-        );
-        const box = boxOf(name),
-          size = TREE_SIZE[tiles.length],
-          tall = (pieceOf(name).userData.tall as number | undefined) ?? 1; // pine: taller than the tile's ceiling
-        // more varied size (Nov 13, "trees of different sizes"): from 75% to 135% of the tile size
-        // the painted tree's foot (flare and roots, userData.foot) stays on the flat core of its tile: on the edge slope
-        // (terrain.ts, 1/6 of the tile) the root hung in the air
-        const foot = (0.4 * Math.sqrt(tiles.length)) / ((pieceOf(name).userData.foot as number | undefined) ?? 0.01);
-        const k = Math.min(
-          Math.min((size.h * tall) / (box.max.y - box.min.y), size.w / width(box)) * (0.75 + 0.6 * hash(x, y, 1)),
-          foot,
-        );
-        const c = tiles
-          .reduce((s: THREE.Vector3, p) => s.add(this.space.world(p)), new THREE.Vector3())
-          .divideScalar(tiles.length);
-        const m = new THREE.Matrix4()
-          .makeRotationY(hash(x, y, 2) * Math.PI * 2)
-          .scale(new THREE.Vector3(k, k, k))
-          .setPosition(c.x, c.y - box.min.y * k, c.z);
-        if (!batches.has(name)) batches.set(name, []);
-        batches.get(name)!.push(m);
-      }
-    }
-    for (const [name, at] of batches) {
-      for (const inst of this.instanced(prepare(pieceOf(name).clone()), at)) {
-        inst.material = this.cutMaterial(inst.material as THREE.MeshStandardMaterial);
-        // the pixel art normal pass swaps everyone's material; the tree uses its own, with the same cutout, and only
-        // returns the normal (without this the outline of the cut crown showed up over the unit)
-        inst.onBeforeRender = (_r, scene) =>
-          void (this.cuts.normals.value = (scene as THREE.Scene).overrideMaterial ? 1 : 0);
-        this.trees = true;
-      }
-    }
-  }
-
-  // Crown cutout: discards the piece of the tree that is in front (closer to the camera) of a protected point and
-  // within `w` of it on screen; the hole's edge comes out checkered, in the 16-bit way. Points in camera coordinates,
-  // updated every frame (updateCuts). With `cutNormals`, it returns the normal like pixel art's MeshNormalMaterial.
-  private readonly cuts = {
-    points: { value: Array.from({ length: CUT_MAX }, () => new THREE.Vector4()) },
-    count: { value: 0 },
-    normals: { value: 0 },
-  };
-  private cutMaterial(src: THREE.MeshStandardMaterial) {
-    const m = src.clone();
-    m.allowOverride = false;
-    m.customProgramCacheKey = () => `copa${CUT_MAX}`;
-    m.onBeforeCompile = (s) => {
-      Object.assign(s.uniforms, {
-        cutPoints: this.cuts.points,
-        cutCount: this.cuts.count,
-        cutNormals: this.cuts.normals,
-      });
-      s.fragmentShader = s.fragmentShader
-        .replace(
-          'void main() {',
-          `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`,
-        )
-        .replace(
-          '#include <clipping_planes_fragment>',
-          `#include <clipping_planes_fragment>
-          vec3 viewPos = -vViewPosition;
-          for (int i = 0; i < ${CUT_MAX}; i++) {
-            if (i >= cutCount) break;
-            vec4 c = cutPoints[i];
-            float d = distance(viewPos.xy, c.xy);
-            if (viewPos.z > c.z + 0.3 && d < c.w && (d < c.w * 0.7 || mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0)) discard;
-          }`,
-        )
-        .replace(
-          '#include <dithering_fragment>',
-          '#include <dithering_fragment>\n  if (cutNormals > 0.5) gl_FragColor = vec4(normalize(normal) * 0.5 + 0.5, 1.0);',
-        );
-    };
-    return m;
-  }
-
-  // Points the crowns open a hole for, given by the scene every frame (each unit's body, the cursor and the marked tiles),
-  // in camera coordinates
-  updateCuts(view: THREE.Matrix4, protect: (add: (x: number, y: number, z: number, r: number) => void) => void) {
-    const pts = this.cuts.points.value;
-    let n = 0;
-    const add = (x: number, y: number, z: number, r: number) => {
-      if (n >= CUT_MAX) return;
-      TMP.set(x, y, z).applyMatrix4(view);
-      pts[n++].set(TMP.x, TMP.y, TMP.z, r);
-    };
-    protect(add);
-    this.cuts.count.value = n;
-  }
-
   // Column cube that never shows: the 4 neighbors are solid ground (no water, bridge or Gariland crown) reaching up to
   // its top, and so is the tile. They were most of the triangles on maps with a per-tile look (1.2 million on Beacon Hill);
   // cutting them pays for the bigger trees and the details (Nov 13). Water is left out: the other front may make it transparent
@@ -841,91 +372,5 @@ export class Board {
         solid(t) && (t.h + 1 + (t.terrain === 'wall' && !LOOK[t.look!].prop ? 2 : 0)) * this.space.step >= y - 1e-6
       );
     });
-  }
-
-  // Crypt stairs: on a ramp tile with a dungeon floor (LOOK.stairs) the stairs leave the flat top and climb the whole
-  // ramp in its direction, taking up the tile (1 wide and deep); the unit stands in the middle, as on the ramp (world)
-  private buildStairs() {
-    const at: THREE.Matrix4[] = [];
-    for (const [i, t] of this.grid.tiles.entries()) {
-      if (!t.ramp || !t.look || !LOOK[t.look].stairs) continue;
-      const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) },
-        w = this.space.world(p),
-        f = FACING[t.ramp[0]];
-      const rise = t.ramp[1] * this.space.step;
-      // the piece climbs toward -z: the rotation takes -z to the ramp direction; its center (z = 2) goes to the tile center. Sunk
-      // 1 of the 8 steps: each step's corner sits on the ramp plane or below, and the marker, ring and cursor (lying
-      // on that plane) do not vanish behind the steps
-      at.push(
-        new THREE.Matrix4()
-          .makeRotationY(Math.atan2(-f.x, -f.y))
-          .setPosition(w.x, w.y - rise / 2 - rise / 8, w.z)
-          .multiply(new THREE.Matrix4().makeScale(0.5, rise / 4, 0.25))
-          .multiply(new THREE.Matrix4().makeTranslation(0, 0, -2)),
-      );
-    }
-    if (at.length) this.instanced(prepare(this.lookPieces.get(STAIRS)!.clone()), at);
-  }
-
-  // Rocks at the foot of ravines (the side stops being a smooth wall of cubes), grass tufts and pebbles at the corner of
-  // some tiles. Outside the unit's ring and the water; none of this goes into touch (pick) or the rules.
-  private buildDetails() {
-    if (!this.lookPieces.has(DETAIL.rock)) return; // map without a per-tile look: no detail pieces
-    const g = this.grid;
-    const at: Record<keyof typeof DETAIL, THREE.Matrix4[]> = { rock: [], boulder: [], pebble: [], tuft: [] };
-    const put = (kind: keyof typeof DETAIL, x: number, y: number, z: number, size: number, turn: number) => {
-      const box = pieceBox(this.lookPieces.get(DETAIL[kind])!);
-      const k = size / Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
-      // base on the ground, sunk 15% of the piece's height: a settled rock, not a landed one
-      at[kind].push(
-        new THREE.Matrix4()
-          .makeRotationY(turn * Math.PI * 2)
-          .scale(new THREE.Vector3(k, k, k))
-          .setPosition(x, y - (box.min.y + 0.15 * (box.max.y - box.min.y)) * k, z),
-      );
-    };
-    const natural = (t: { look?: string; depth?: number }) =>
-      !t.depth && (GREEN.has(t.look ?? '') || ROCKY.has(t.look ?? ''));
-    for (const [i, t] of g.tiles.entries()) {
-      const p = { x: i % g.width, y: Math.floor(i / g.width) },
-        w = this.space.world(p);
-      if (!natural(t) || t.terrain === 'wall') continue;
-      // ravine: the neighbor is 1 level or more higher at the corner between the two. The rock sits against the wall, near
-      // one of the corners (0.45 or more from the center, outside the unit's ring), and the taller one gets another in the middle of the wall
-      for (const [d, f] of FACING.entries()) {
-        const q = { x: p.x + f.x, y: p.y + f.y };
-        if (!inBounds(g, q) || hash(p.x, p.y, 3 + d) > 0.55) continue;
-        const u = tileAt(g, q);
-        if (!natural(u) && !(u.terrain === 'wall' && ROCKY.has(u.look ?? ''))) continue;
-        const ex = w.x + f.x / 2,
-          ez = w.z + f.y / 2;
-        const low = this.space.surfaceY(p, ex, ez),
-          high = u.terrain === 'wall' ? (u.h + 3) * this.space.step : this.space.surfaceY(q, ex, ez);
-        if (high - low < this.space.step * 0.9) continue;
-        const side = (hash(p.x, p.y, 7 + d) < 0.5 ? -1 : 1) * (0.26 + 0.14 * hash(p.x, p.y, 11 + d));
-        const x = ex + f.y * side,
-          z = ez + f.x * side;
-        put('rock', x, this.space.surfaceY(p, x, z), z, 0.2 + 0.08 * hash(p.x, p.y, 13 + d), hash(p.x, p.y, 17 + d));
-        if (high - low >= this.space.step * 1.9)
-          put(
-            'boulder',
-            ex - f.y * side * 0.5,
-            low + (high - low) * 0.4,
-            ez - f.x * side * 0.5,
-            0.26 + 0.08 * hash(p.x, p.y, 19 + d),
-            hash(p.x, p.y, 23 + d),
-          );
-      }
-      // tuft or pebble at a tile corner (~0.5 from the center): breaks the top's stamp without looking like an obstacle
-      if (t.terrain !== 'floor' || hash(p.x, p.y, 29) > 0.4) continue;
-      const cx = w.x + (hash(p.x, p.y, 31) < 0.5 ? -0.36 : 0.36),
-        cz = w.z + (hash(p.x, p.y, 37) < 0.5 ? -0.36 : 0.36);
-      const green = GREEN.has(t.look ?? '');
-      // grass tuft only on block maps: on the smooth terrain it did not match the ground photo (Nov 13, Fernando's request)
-      if (!(green && this.terrainTex))
-        put(green ? 'tuft' : 'pebble', cx, this.space.surfaceY(p, cx, cz), cz, green ? 0.2 : 0.13, hash(p.x, p.y, 41));
-    }
-    for (const kind of Object.keys(at) as (keyof typeof DETAIL)[])
-      this.instanced(prepare(this.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
   }
 }

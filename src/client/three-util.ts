@@ -35,3 +35,16 @@ export const nearestPixels = (map: THREE.Texture) =>
     magFilter: THREE.NearestFilter,
     needsUpdate: true,
   });
+
+// a board piece: casts and takes shadows, palette without mipmap (a painted piece keeps its own filtering)
+export function prepare(o: THREE.Object3D) {
+  o.traverse((m) => {
+    const mesh = m as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    mesh.castShadow = mesh.receiveShadow = true;
+    const mat = mesh.material as THREE.MeshStandardMaterial,
+      map = mat.map;
+    if (map?.generateMipmaps && !mat.userData.procedural) nearestPixels(map);
+  });
+  return o;
+}
