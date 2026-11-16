@@ -59,10 +59,19 @@ const SIMPLE: Record<string, KeyAction> = {
   e: { k: 'zoom', factor: 1 / ZOOM_STEP },
 };
 
-type KeyInput = Pick<KeyboardEvent, 'key' | 'shiftKey' | 'ctrlKey' | 'altKey' | 'metaKey'>;
+type KeyInput = Pick<KeyboardEvent, 'key' | 'shiftKey' | 'ctrlKey' | 'altKey' | 'metaKey'> & { repeat?: boolean };
+
+// a held key repeats none of these: a held Esc backed out and then undid the move, a held P skipped the facing choice, a
+// held Z spent every undo, and an Esc held while closing a window went on into the battle (input review, Nov 16)
+const ONCE = new Set<KeyAction['k']>(['cancel', 'wait', 'undo']);
 
 // Ctrl/Alt/Cmd stay with the browser (Ctrl+R reloads, Ctrl+W closes the tab); the key works in lower or upper case
 export function keyAction(e: KeyInput): KeyAction | null {
+  const a = action(e);
+  return a && e.repeat && ONCE.has(a.k) ? null : a;
+}
+
+function action(e: KeyInput): KeyAction | null {
   if (e.ctrlKey || e.altKey || e.metaKey) return null;
   const k = e.key.toLowerCase();
   if (DIRS[k]) return { k: 'cursor', dir: DIRS[k] };
@@ -119,12 +128,11 @@ export const keyHelp = (): [string, string][] => [
   [
     'Esc · Backspace',
     t(
-      'cancelar a escolha; de novo, volta para Mover; no menu, depois de andar e antes de agir, desfaz o movimento',
-      'cancel the choice; again, back to Move; in the menu, after moving and before acting, undoes the move',
+      'volta um passo (mapa → habilidades → menu); no menu, desfaz o último movimento se ele não levou contra-ataque',
+      'goes back one step (map → abilities → menu); in the menu, undoes the last move if it drew no counter',
     ),
   ],
   ['1 – 7', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
-  ['I', t('ficha da habilidade escolhida', 'details of the chosen ability')],
   [
     'C',
     t(
@@ -132,14 +140,17 @@ export const keyHelp = (): [string, string][] => [
       'Status: sheet of the unit under the cursor (or the active one)',
     ),
   ],
-  ['Tab · Shift+Tab', t('pular de unidade em unidade (vida e alcance)', 'jump between units (HP and reach)')],
+  [
+    'Tab · Shift+Tab',
+    t('no mapa, pula de unidade em unidade (vida e alcance)', 'on the map, jump between units (HP and reach)'),
+  ],
   ['Z', t('desfazer', 'undo')],
   ['T', t('virar a unidade da vez', 'turn the active unit')],
   [
     'P',
     t(
-      'Esperar: termina o turno; quem fez menos joga antes de novo (sem ter agido, pede P de novo)',
-      'Wait: ends the turn; doing less brings the next turn sooner (without acting, asks for P again)',
+      'Esperar: escolhe para onde olhar; P de novo ou Enter termina o turno; quem fez menos joga antes de novo',
+      'Wait: pick the facing; P again or Enter ends the turn; doing less brings the next turn sooner',
     ),
   ],
   ['R · Shift+R', t('girar a câmera 45°', 'rotate the camera 45°')],

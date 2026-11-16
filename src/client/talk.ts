@@ -186,6 +186,8 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
       end();
     };
     addEventListener('keydown', onEsc, true);
+    // a click beside the box left the focus on the page, and Enter, Space and A no longer moved the conversation on
+    overlay.addEventListener('mousedown', (e) => e.preventDefault());
     document.body.append(overlay);
     box.focus();
     show();

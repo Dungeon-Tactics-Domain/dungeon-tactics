@@ -132,7 +132,9 @@ class Town {
     const a = keyAction(e);
     if (!a) return;
     if (a.k === 'cursor' && !down) return void (this.keys = this.keys.filter((d) => d !== a.dir));
-    if (!down || windowOpen()) return;
+    if (!down) return;
+    // the Enter held into a door would click the window's focused ✕ on its first repeat and close what it just opened
+    if (windowOpen()) return void (e.repeat && a.k === 'confirm' && e.preventDefault());
     e.preventDefault();
     if (a.k === 'cursor') {
       if (!this.keys.includes(a.dir)) this.keys.push(a.dir);

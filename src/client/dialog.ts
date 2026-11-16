@@ -57,7 +57,7 @@ export function dialog(
         return;
       }
       // only the topmost window takes Esc too: the fixed town menu stays open under its Shop, and took the key first
-      if (e.code !== 'Escape' || !top) return;
+      if (e.code !== 'Escape' || !top || e.repeat) return; // a held Esc would close every stacked window
       e.preventDefault();
       e.stopImmediatePropagation(); // Esc closes only the dialog: without this it reached the game and canceled the choice too
       back();

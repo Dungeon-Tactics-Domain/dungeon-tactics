@@ -38,6 +38,20 @@ describe('game keys', () => {
     expect(key('PageUp')).toEqual({ k: 'turns', dir: -1 });
   });
 
+  it('a held key repeats moves, not Esc, P or Z', () => {
+    const held = { repeat: true };
+    expect(key('Escape', held)).toBeNull(); // backed out and then undid the move
+    expect(key('Backspace', held)).toBeNull();
+    expect(key('p', held)).toBeNull(); // skipped the facing choice
+    expect(key('z', held)).toBeNull(); // spent every undo
+    expect(key('Escape')).toEqual({ k: 'cancel' });
+    expect(key('ArrowUp', held)).toEqual({ k: 'cursor', dir: 'up' });
+    expect(key('Tab', held)).toEqual({ k: 'cycle', dir: 1 });
+    expect(key('e', held)).toEqual({ k: 'zoom', factor: 1 / 1.15 });
+    // main.ts drops a held confirm itself, after keeping Space from scrolling
+    expect(key('Enter', held)).toEqual({ k: 'confirm' });
+  });
+
   it('browser shortcut (Ctrl, Alt, Cmd) and unknown key are left to the browser', () => {
     expect(key('r', { ctrlKey: true })).toBeNull();
     expect(key('w', { metaKey: true })).toBeNull();

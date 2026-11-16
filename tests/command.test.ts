@@ -64,7 +64,7 @@ describe('command menu', () => {
     expect(startScreen(b)).toEqual({ k: 'menu', index: 0 }); // back to the menu from before moving
   });
 
-  it('after acting, undoing the move is no longer offered (before or after moving)', () => {
+  it('after acting, a move that drew a counter cannot be undone (before or after moving)', () => {
     const moved = duel();
     moved.move({ x: 2, y: 2 });
     moved.act('strike', { x: 2, y: 1 });
@@ -74,6 +74,23 @@ describe('command menu', () => {
     acted.act('strike', { x: 2, y: 1 });
     acted.move({ x: 1, y: 2 });
     expect(canUndoMove(acted)).toBe(false);
+  });
+
+  it('acted, then a free move: the cursor skips "Undo move" and starts on Wait', () => {
+    const b = new Battle(
+      flat(8, 8),
+      stateOf([
+        { id: 'a', def: 'archer', team: 'hero', x: 1, y: 1 },
+        { id: 'b', def: 'soldier', team: 'enemy', x: 5, y: 1 },
+        { id: 'beacon', def: 'beacon', team: 'hero', x: 7, y: 7 },
+      ]),
+    );
+    b.act('shot', { x: 5, y: 1 });
+    b.move({ x: 1, y: 2 });
+    expect(canUndoMove(b)).toBe(true); // a soldier cannot answer a shot, so the move took no counter
+    expect(b.reach().size).toBeGreaterThan(0);
+    // the Move row reads "Undo move" now: a 2nd Enter on it would undo the step
+    expect(startScreen(b)).toEqual({ k: 'menu', index: 2 });
   });
 
   it('up and down skip what is disabled and wrap around', () => {

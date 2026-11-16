@@ -58,7 +58,14 @@ export function startScreen(b: Battle): Screen {
   // already moved and not yet acted: Act (the rest of the movement is left for after the hit)
   return {
     k: 'menu',
-    index: b.reach().size && !b.state.turn.moved ? 0 : commandEnabled(b, 'act') ? 1 : b.reach().size ? 0 : 2,
+    index:
+      b.reach().size && !b.state.turn.moved
+        ? 0
+        : commandEnabled(b, 'act')
+          ? 1
+          : b.reach().size && !canUndoMove(b)
+            ? 0
+            : 2,
   };
 }
 
