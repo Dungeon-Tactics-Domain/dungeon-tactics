@@ -142,6 +142,13 @@ function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitStat
   return Math.max(1, Math.floor((roll * kind * element * scale * sideShare(actor, u, false)) / 10000));
 }
 
+// the range `actor` would deal `u` with `a` before the hit roll, wherever they stand: the preview and the AI's threat read it
+export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState): [number, number] {
+  const [lo, hi] = rulesOf(state).damage?.(actor, a) ?? withPower(actor, a);
+  const dmg = (d: number) => (d > 0 ? landed(state, actor, a, u, d) : 0);
+  return [dmg(lo), dmg(hi)];
+}
+
 // What the ability would do if confirmed, without touching the state: the interface shows this before Confirm (pillar "readable luck").
 
 // `charged`: it is the charge firing now; the cost (MP, stock) was already paid when it started
@@ -179,7 +186,6 @@ export function previewAbility(
   // hit a model on the path: it takes the hit, whichever side it is on (without area: only it)
   const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;
   const hit = blocker && ability.radius === 0 ? [blocker] : affected(grid, state, actor, ability, center);
-  const [dmgMin, dmgMax] = rulesOf(state).damage?.(actor, ability) ?? withPower(actor, ability);
   const targets = hit.map((u) => {
     // against a large unit, its tile nearest to the attacker (distance and height)
     const [from, at] = closest(footprint(actor), footprint(u));
@@ -187,7 +193,7 @@ export function previewAbility(
     const hurts = healHurts(ability, u);
     // then the target's dodge, by where the hit lands (Nov 15 grill: spells are dodged too); whole, so the shown % is the rolled one
     const dodged = (c: number) => Math.round(c * (1 - (dodgeOf(UNIT_DEFS[u.def]) * COMBAT.DODGE_BY_SIDE[side]) / 100));
-    const dmg = (d: number) => (d > 0 ? landed(state, actor, ability, u, d) : 0);
+    const [dmgMin, dmgMax] = damageRange(state, actor, ability, u);
     const heal = (h: number) => (hurts ? 0 : Math.floor(h * sideShare(actor, u, true)));
     return {
       unit: u.id,
@@ -198,8 +204,8 @@ export function previewAbility(
           dodged(
             Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
           )),
-      dmgMin: hurts ? Math.floor(ability.heal[0] * COMBAT.UNDEAD_HEAL) : dmg(dmgMin),
-      dmgMax: hurts ? Math.floor(ability.heal[1] * COMBAT.UNDEAD_HEAL) : dmg(dmgMax),
+      dmgMin: hurts ? Math.floor(ability.heal[0] * COMBAT.UNDEAD_HEAL) : dmgMin,
+      dmgMax: hurts ? Math.floor(ability.heal[1] * COMBAT.UNDEAD_HEAL) : dmgMax,
       healMin: heal(ability.heal[0]),
       healMax: heal(ability.heal[1]),
     };

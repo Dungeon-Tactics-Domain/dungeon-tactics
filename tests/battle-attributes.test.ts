@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { COMBAT, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { COMBAT, damageRange, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS, type UnitDef } from '../src/shared/battle/units.ts';
 import { flat, seedWhere, stateOf } from './battle-helpers.ts';
@@ -82,6 +83,14 @@ describe('resistances (Nov 15)', () => {
       dmgMin: 75, // fire -50: 1.5 times; the ice is not this spell's
       dmgMax: 120,
     });
+  });
+
+  it("the AI's threat reads the preview's range (damageRange), not the ability's table", () => {
+    const s = duel('warrior', sheet('t_hard', { resist: { phys: 90 } }), 1);
+    const [lo, hi] = damageRange(s, s.units[0], ABILITIES.strike, s.units[1]);
+    expect([lo, hi]).toEqual([20, 32]);
+    const p = previewAbility(grid, s, 'a', 'strike', { x: 1, y: 1 }).targets[0];
+    expect([p.dmgMin, p.dmgMax]).toEqual([lo, hi]);
   });
 
   it('a hit that lands always takes at least 1', () => {
