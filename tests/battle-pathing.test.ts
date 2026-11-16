@@ -127,18 +127,18 @@ describe('line of sight', () => {
 });
 
 describe('ability range', () => {
-  const shot = ABILITIES.shot; // 2 to 6, gains range from above
+  const shot = ABILITIES.shot; // 2 to 7 (6 before the bow's +1 of Nov 15), gains range from above
   it('respects minimum and maximum', () => {
     const g = flat(9, 1);
     expect(inAbilityRange(g, shot, { x: 0, y: 0 }, { x: 1, y: 0 })).toBe(false);
-    expect(inAbilityRange(g, shot, { x: 0, y: 0 }, { x: 6, y: 0 })).toBe(true);
-    expect(inAbilityRange(g, shot, { x: 0, y: 0 }, { x: 7, y: 0 })).toBe(false);
+    expect(inAbilityRange(g, shot, { x: 0, y: 0 }, { x: 7, y: 0 })).toBe(true);
+    expect(inAbilityRange(g, shot, { x: 0, y: 0 }, { x: 8, y: 0 })).toBe(false);
   });
 
   it('+1 range per level above the target, only for those with heightRange', () => {
-    const g = gridOf(['.........'], ['200000000']);
-    expect(inAbilityRange(g, shot, { x: 0, y: 0 }, { x: 8, y: 0 })).toBe(true); // 8 tiles = 6 + 2 levels
-    expect(inAbilityRange(flat(9, 1), shot, { x: 0, y: 0 }, { x: 8, y: 0 })).toBe(false); // on flat ground only 6
+    const g = gridOf(['..........'], ['2000000000']);
+    expect(inAbilityRange(g, shot, { x: 0, y: 0 }, { x: 9, y: 0 })).toBe(true); // 9 tiles = 7 + 2 levels
+    expect(inAbilityRange(flat(10, 1), shot, { x: 0, y: 0 }, { x: 9, y: 0 })).toBe(false); // on flat ground only 7
     expect(inAbilityRange(g, ABILITIES.gust, { x: 0, y: 0 }, { x: 5, y: 0 })).toBe(false); // Gust: 4 and no bonus
   });
 });

@@ -34,7 +34,7 @@ describe('command menu', () => {
         { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 4 },
       ]),
     );
-    expect(longestRange(archer)).toBe(6); // Shot: 2 to 6
+    expect(longestRange(archer)).toBe(7); // Shot: 2 to 7
   });
 
   it('starts on Move; after moving, on Act; after moving and acting, on Wait', () => {

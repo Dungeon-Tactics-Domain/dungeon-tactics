@@ -47,13 +47,13 @@ describe('counters (Nov 15)', () => {
   it('a ranged counter fires only when the attacker leaves its reach, once', () => {
     const s = stateOf([
       { id: 'a', def: 'archer', team: 'hero', x: 3, y: 1 },
-      { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 7, y: 1 },
+      { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 8, y: 1 },
       { id: 'f', def: 'beacon', team: 'hero', x: 11, y: 3 },
     ]);
     const b = new Battle(flat(12, 4), s);
-    b.act('shot', { x: 7, y: 1 });
-    expect(strikes(b.move({ x: 3, y: 0 }), 'b')).toBe(0); // 5 tiles: still in its reach of 6
-    expect(strikes(b.move({ x: 1, y: 0 }), 'b')).toBe(1); // 7 tiles: out of it
+    b.act('shot', { x: 8, y: 1 });
+    expect(strikes(b.move({ x: 3, y: 0 }), 'b')).toBe(0); // 6 tiles: still in its reach of 7 (the bow's +1, Nov 15)
+    expect(strikes(b.move({ x: 1, y: 0 }), 'b')).toBe(1); // 8 tiles: out of it
   });
 
   it('a unit answers whatever struck it, melee or ranged', () => {
@@ -114,7 +114,7 @@ describe('counters (Nov 15)', () => {
     s.rng = HIT_SEED;
     const b = new Battle(flat(12, 4), s);
     b.act('strike', { x: 2, y: 1 });
-    expect(pendingCounters(b.grid, b.state, 'a', { x: 9, y: 1 })).toEqual([]); // 7 tiles: past its range of 6
+    expect(pendingCounters(b.grid, b.state, 'a', { x: 10, y: 1 })).toEqual([]); // 8 tiles: past its range of 7
     expect(strikes(b.move({ x: 2, y: 2 }), 'r')).toBe(0); // still beside it
     expect(b.lastFree).toBe(true);
   });

@@ -5,7 +5,8 @@
 // spike damage (COMBAT in combat.ts) followed the same day. Elements and costs of the Mechanics lab's equipamento.json
 // (abilities section): a spell spends mana, a martial ability stamina, and a unit's basic attack (its 1st) costs nothing.
 // Paths of the trajectory grill of Nov 15: the bow's shots fly in a curve (`arc`), the thrown knife, Firebolt and Gust
-// straight; Blast, Heal and Shadow wave are cast on the target, with no line of sight (no `needsSight`)
+// straight; Blast, Heal and Shadow wave are cast on the target, with no line of sight (no `needsSight`). The lab's weapon guide
+// on top, not measured yet: a curved weapon +1 range (the bow's shots), a straight one about +30% damage (the thrown knife)
 import type { AbilityDef } from '../shared/battle/abilities.ts';
 
 // the builder lives here, not in the engine: the engine imports this list, so a builder imported back from it would not be
@@ -59,7 +60,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     id: 'shot',
     name: 'Tiro',
     en: 'Shot',
-    range: [2, 6],
+    range: [2, 7],
     heightRange: true,
     needsSight: true,
     arc: true,
@@ -70,7 +71,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     id: 'aimed_shot',
     name: 'Tiro mirado',
     en: 'Aimed shot',
-    range: [2, 6],
+    range: [2, 7],
     heightRange: true,
     needsSight: true,
     arc: true,
@@ -84,7 +85,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     id: 'knock_shot',
     name: 'Tiro de recuo',
     en: 'Knockback shot',
-    range: [2, 4],
+    range: [2, 5],
     heightRange: true,
     needsSight: true,
     arc: true,
@@ -156,7 +157,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 4],
     heightRange: true,
     needsSight: true,
-    damage: [35, 50],
+    damage: [46, 65],
     accuracy: 85,
     cost: ['stamina', 10],
   }),

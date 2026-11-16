@@ -29,7 +29,7 @@ The trajectory grill of Nov 15, Fernando's realistic rule; the Mechanics lab's `
 - On the two ends' own whole tiles only the ground counts (our own reading, where the lab never stands a unit on an obstacle): a unit in a forest still shoots and is shot at, the forest's cover counted in the hit chance as before, and a cliff face below the target still stops a shot from beneath.
 - The crossing is exact (every grid line in order; along a seam both sides count, a corner touch neither), so A to B and B to A agree and the split map answers as the whole one. Terrain wins a tie, so a shot into a ledge hits the ledge, and a single-target shot stopped by terrain hits nobody.
 - Blast, Heal and Shadow wave are cast on the target and need no path.
-- The `Shot` rides on `Preview.shot` and the `attack` event (not in the state, so saves are unchanged): the same path gives the rule, the AI (`previewAbility`), charges and counters (traced from where the caster stands when they fire), the crawl room checks and the client's preview, charge lines and flight. The lab's guide for weapons (straight about +30% physical power, a curve +1 range) is data for weapons that do not exist yet.
+- The `Shot` rides on `Preview.shot` and the `attack` event (not in the state, so saves are unchanged): the same path gives the rule, the AI (`previewAbility`), charges and counters (traced from where the caster stands when they fire), the crawl room checks and the client's preview, charge lines and flight. The lab's guide for weapons (straight about +30% physical power, a curve +1 range) is content data, not a rule: in `src/content/abilities.ts` the bow's shots have +1 range and the thrown knife about +30% damage.
 
 ## Charge rules
 
