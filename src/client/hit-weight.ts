@@ -30,6 +30,32 @@ export type NumberKind = 'phys' | 'magic' | 'heal' | 'miss';
 export const numberKind = (e: BattleEvent, magic: boolean): NumberKind =>
   e.k === 'heal' ? 'heal' : e.k === 'miss' ? 'miss' : e.k === 'hit' && magic ? 'magic' : 'phys';
 
+// A floating number on screen: its middle and size in px, and how far it was lifted
+export interface NumberBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  lift: number;
+}
+// How far up a new number goes so it covers none still on screen (an area strike's targets stand side by side, and
+// their numbers came out on top of each other): it climbs over each one it meets, in px
+export function liftOver(others: NumberBox[], me: Omit<NumberBox, 'lift'>): number {
+  let lift = 0;
+  for (let moved = true; moved; ) {
+    moved = false;
+    for (const o of others) {
+      const gapY = (o.h + me.h) / 2,
+        dy = me.y - lift - (o.y - o.lift);
+      if (Math.abs(o.x - me.x) < (o.w + me.w) / 2 && Math.abs(dy) < gapY) {
+        lift += gapY + dy;
+        moved = true;
+      }
+    }
+  }
+  return lift;
+}
+
 // the damage that downs its unit: the unit's next damage or death after it is its death (a push, fall or spike may come
 // between a strike and the death)
 export function fatal(events: BattleEvent[], i: number): boolean {

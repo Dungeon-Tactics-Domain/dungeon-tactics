@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fatal, numberKind, numberPx, parseSlowmo, shoved } from '../src/client/hit-weight.ts';
+import { fatal, liftOver, numberKind, numberPx, parseSlowmo, shoved } from '../src/client/hit-weight.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
 
 describe('numberPx: the number grows with the share of life it takes', () => {
@@ -59,6 +59,20 @@ describe('shoved: a strike whose push moves the body, so it gets no recoil', () 
   ];
   it('looks only until the next attack', () => {
     expect([1, 2, 5].map((i) => shoved(ev, i))).toEqual([false, true, false]);
+  });
+});
+
+describe("liftOver: an area strike's numbers do not cover each other", () => {
+  const box = (x: number, y: number, lift = 0) => ({ x, y, w: 60, h: 30, lift });
+  it('stays put with nothing near, and climbs over the one it would cover', () => {
+    expect(liftOver([box(500, 300)], box(100, 300))).toBe(0);
+    expect(liftOver([box(100, 300)], box(120, 310))).toBe(40); // its top goes 30 px above the other's
+  });
+  it('climbs over a stack, the lifted ones included, until it covers none', () => {
+    const stack = [box(100, 300), box(110, 300, 30)];
+    const lift = liftOver(stack, box(105, 300));
+    expect(lift).toBe(60);
+    for (const o of stack) expect(Math.abs(300 - lift - (o.y - o.lift))).toBeGreaterThanOrEqual(30);
   });
 });
 

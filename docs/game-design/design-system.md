@@ -133,7 +133,7 @@ Minimum text: 16 px (the key hint, 11 px, and the fps counter, the map compass l
 | Speaker mouth (painted face) | 180 ms per frame while the text types: talk1 from the first instant, then talk2, talk1, neutral…; neutral when the sentence is out | `mouthFrame` in `talk.ts` (JS: it follows the typing, not a CSS loop) |
 | Game title | 600 ms | `title-in` |
 | Focus ▶ and dialogue ▼ | 0.6 s in 2 steps (`--t-nudge`) | `nudge` |
-| Damage number | 1.5 s; pops on the impact frame and follows the chest on screen | `pop` = `TIMING.float` |
+| Damage number | 1.5 s; pops on the impact frame and follows the chest on screen; lifted over any number still showing (`liftOver`, an area strike's targets side by side); leaves on the wall clock, slow motion or not | `pop` = `TIMING.float` |
 | Objective banner | 2.2 s | `announce` |
 
 Battle timing (step, jump, strike) lives in `timing.ts`, never in CSS. With `prefers-reduced-motion`, nothing animates.

@@ -10,7 +10,18 @@ import { cellsOf, squareH, unitAt } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { baseDef, UNIT_DEFS } from '../../shared/battle/units.ts';
 import { chargeAura, dust, lookOf, playFx, sparks } from '../fx.ts';
-import { fatal, isBig, numberKind, numberPx, parseSlowmo, SLOWMO_KEY, shoved, WEIGHT } from '../hit-weight.ts';
+import {
+  fatal,
+  isBig,
+  liftOver,
+  type NumberBox,
+  numberKind,
+  numberPx,
+  parseSlowmo,
+  SLOWMO_KEY,
+  shoved,
+  WEIGHT,
+} from '../hit-weight.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import { barYOf, MARKER, modelOf, unitHeight } from '../markers.ts';
@@ -53,7 +64,7 @@ export class Units {
   private frozenUntil = 0; // hit-stop: units stay still until here
   private quaking = { amp: 0, ms: 1, until: 0 }; // camera shake: strength in world units, fading until `until`
   private slowUntil = 0; // death slow motion: the battle clock runs at WEIGHT.slow until here
-  private readonly numbers: { node: HTMLElement; at: THREE.Vector3 }[] = []; // floating numbers, kept on their chest
+  private readonly numbers: { node: HTMLElement; at: THREE.Vector3; box: NumberBox }[] = []; // floating numbers, kept on their chest
   private markers = true; // team ring, facing arrow and health bar; the town has none (hideMarkers)
   private readonly camera: THREE.OrthographicCamera;
 
@@ -95,8 +106,10 @@ export class Units {
     // the numbers follow their chest while the camera slides or closes in
     for (const n of this.numbers) {
       const p = TMP.copy(n.at).project(this.camera);
-      n.node.style.left = `${((p.x + 1) / 2) * 100}%`;
-      n.node.style.top = `${((1 - p.y) / 2) * 100}%`;
+      n.box.x = ((p.x + 1) / 2) * this.canvas.clientWidth;
+      n.box.y = ((1 - p.y) / 2) * this.canvas.clientHeight;
+      n.node.style.left = `${n.box.x}px`;
+      n.node.style.top = `${n.box.y - n.box.lift}px`;
     }
     for (const v of this.views.values()) {
       if (t >= this.frozenUntil) v.mixer?.update(dt * fast);
@@ -460,12 +473,32 @@ export class Units {
     return v.holder.position.clone().setY(v.holder.position.y + unitHeight(v.def) * WEIGHT.chest);
   }
 
-  // The number pops from the chest on the impact frame and follows it (update); `px` sizes it by the share of life
-  private float(unitId: string, text: string, cls: string, px?: number) {
+  // The number pops from the chest on the impact frame and follows it (update), lifted over any number still on screen
+  // (liftOver); `px` sizes it by the share of life. It leaves on the wall clock with its CSS animation (TIMING.float),
+  // so a slow motion, a camera that goes back or a death never leaves one hanging
+  private float(unitId: string, text: string, cls: string, px = 26) {
     const v = this.views.get(unitId);
     if (!v) return;
-    const node = el('div', { class: `float ${cls}`, style: px ? `font-size:${px}px` : '' }, text);
-    const n = { node, at: this.chest(v) };
+    const at = this.chest(v),
+      p = at.clone().project(this.camera),
+      c = this.canvas;
+    const box = {
+      x: ((p.x + 1) / 2) * c.clientWidth,
+      y: ((1 - p.y) / 2) * c.clientHeight,
+      w: text.length * px * 0.6,
+      h: px,
+    };
+    const lift = liftOver(
+      this.numbers.map((o) => o.box),
+      box,
+    );
+    // placed now, not on the next frame, so it never flashes in the corner
+    const node = el(
+      'div',
+      { class: `float ${cls}`, style: `font-size:${px}px;left:${box.x}px;top:${box.y - lift}px` },
+      text,
+    );
+    const n = { node, at, box: { ...box, lift } };
     this.numbers.push(n);
     this.floats.append(node);
     setTimeout(() => {
