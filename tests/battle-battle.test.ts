@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Battle, parseBattleState, UNDO_LIMIT } from '../src/shared/battle/battle.ts';
 import { resolveAbility } from '../src/shared/battle/combat.ts';
 import { CLASSES_BATTLE, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
+import { canStand } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
@@ -209,6 +210,53 @@ describe('a broken save does not crash the game', () => {
     expect(parseBattleState(s)).not.toBeNull();
     s.units[caster].vars[key] = 10000;
     expect(parseBattleState(s)).toBeNull();
+  });
+
+  it('a team, a turn, the charges or the owed counters of the wrong shape are rejected', () => {
+    expect(mutate((s) => (s.units[1].team = 'ally'))).toBeNull();
+    expect(mutate((s) => (s.turn.moved = 'yes'))).toBeNull();
+    expect(mutate((s) => (s.turn = null))).toBeNull();
+    expect(mutate((s) => delete s.charges)).toBeNull();
+    // a unit on the other side from the actor: the only kind that may owe it a counter
+    const { units, turn } = good().state;
+    const team = units.find((u: { id: string }) => u.id === turn.actor).team;
+    const foe = units.find((u: { team: string }) => u.team !== team).id;
+    // a string would be read letter by letter as unit ids
+    expect(mutate((s) => (s.turn.engaged = foe))).toBeNull();
+    expect(mutate((s) => (s.turn.engaged = [foe]))?.turn.engaged).toEqual([foe]);
+  });
+
+  it('counters (vars) only on the sheets that have them, and always on those', () => {
+    expect(mutate((s) => (s.units[1].vars = {}))).toBeNull();
+    registerFftStudy();
+    const s = JSON.parse(Battle.start(CLASSES_BATTLE, 1).save()).state;
+    delete s.units.find((u: { vars?: object }) => u.vars).vars;
+    expect(parseBattleState(s)).toBeNull();
+  });
+
+  it('a save holds at most 64 units', () => {
+    const base = JSON.parse(Battle.start(SCENARIOS.ash_wood, 1).save()).state;
+    const grid = SCENARIOS.ash_wood.grid;
+    const free = grid.tiles.flatMap((t, i) =>
+      canStand(t) ? [{ x: i % grid.width, y: Math.floor(i / grid.width) }] : [],
+    );
+    const crowd = (n: number) => ({
+      ...base,
+      units: free.slice(0, n).map((pos, i) => ({
+        id: `u${i}`,
+        def: 'soldier',
+        team: i % 2 ? 'hero' : 'enemy',
+        pos,
+        hp: UNIT_DEFS.soldier.hp,
+        ct: 0,
+        facing: 0,
+      })),
+      turn: { actor: 'u0', moved: false, usedAbility: null },
+      charges: [],
+    });
+    expect(free.length).toBeGreaterThan(64);
+    expect(parseBattleState(crowd(64))?.units).toHaveLength(64);
+    expect(parseBattleState(crowd(65))).toBeNull();
   });
 
   it('Battle.load rejects an edited undo count or history', () => {
