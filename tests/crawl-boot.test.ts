@@ -256,7 +256,8 @@ describe('crawl rooms in the client', () => {
     const fresh = startExpedition(22, ahead.party);
     store.set(CRAWL_KEY, JSON.stringify(fresh));
     expect(retreat(exp)).toBe(0);
-    expect(savedExpedition()).toEqual(fresh);
+    // savedExpedition also fills each hero's mana from the class, so the fixture is a subset
+    expect(savedExpedition()).toMatchObject(fresh);
   });
 
   it('a chest opened from a stale map neither pays twice nor undoes what another tab did', () => {
@@ -269,7 +270,7 @@ describe('crawl rooms in the client', () => {
     const past = winRoom(exp, openNodes(map, exp.path)[0], {});
     store.set(CRAWL_KEY, JSON.stringify(past));
     expect(takeChest(exp, chest)).toBeNull();
-    expect(savedExpedition()).toEqual(past);
+    expect(savedExpedition()).toMatchObject(past);
     // an ended expedition is not brought back
     store.set(CRAWL_KEY, '');
     expect(takeChest(exp, chest)).toBeNull();
