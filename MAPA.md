@@ -152,7 +152,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
 - `src/client/scene/unit-hits.ts` — how damage lands: hit-stop, flash, recoil, slide into rock, camera shake and the death slow motion.
 - `src/client/scene/float-numbers.ts` — FloatNumbers: the damage and heal numbers popping from a chest and following it on screen.
-- `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring and shot trajectory.
+- `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring, shot trajectory and the town's debug grid.
+- `src/client/scene/mark-looks.ts` — what each tile mark looks like: MARK colours and drawings, the danger purple and markTexture.
+- `src/client/scene/range-ring.ts` — rangeRing: the dotted outline of the tiles within the longest range, laid on the ground.
+- `src/client/scene/trajectory.ts` — trajectory: the shot line from eye to aim, red past the blocking point, with an X there.
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
 - `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin and action camera.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.

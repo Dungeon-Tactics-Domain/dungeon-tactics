@@ -1,81 +1,18 @@
-// Everything drawn on the board to read a choice: tile marks of each kind, the charge danger, the path dots, the keyboard
-// cursor, the dotted range ring and the shot trajectory. It only draws what the scene passes in.
+// Everything drawn on the board to read a choice: tile marks of each kind (looks in mark-looks.ts), the charge danger, the
+// path dots, the keyboard cursor, the dotted range ring (range-ring.ts), the shot trajectory (trajectory.ts) and the town's
+// debug grid. It only draws what the scene passes in.
 import * as THREE from 'three';
 import { inBounds, posKey } from '../../shared/battle/grid.ts';
-import { cellsOf, gap } from '../../shared/battle/pathing.ts';
+import { cellsOf } from '../../shared/battle/pathing.ts';
 import type { Pos } from '../../shared/battle/types.ts';
-import type { Highlights, TileKind } from '../interaction.ts';
-import { MARKER, unitHeight } from '../markers.ts';
+import type { Highlights } from '../interaction.ts';
+import { MARKER } from '../markers.ts';
+import { DANGER, MARK, markTexture } from './mark-looks.ts';
+import { rangeRing } from './range-ring.ts';
 import type { TileSpace } from './space.ts';
+import { trajectory } from './trajectory.ts';
 
-// marker colors; the meaning also goes in HUD text (never color alone)
-// Veil purple: the area of a spell being charged stays lit until it goes off (the text goes on the tile under the cursor, hud.ts)
-const DANGER: [string, number] = ['#9b4dff', 0.4];
-// Stylized marker (Nov 13, Fernando's request: "this preview is too white... something more stylized and less washed-out"; the
-// flat white square became a carpet in Ash Wood): thin frame in the type's color with a dark thread outside (reads on
-// grass, dirt and water: the Nov 12 blue vanished in water for being a full square), faint core and a drawing per
-// type, because color is never the only signal: smooth (walk), full (chosen tile, whoever acts, strike area), stripes
-// (strike range, threat) and cross (blocked shot)
-type MarkPattern = 'frame' | 'solid' | 'hatch' | 'cross';
-const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?: MarkPattern]> = {
-  actor: ['#ffd479', 0.95, 'solid'],
-  move: ['#6fc0ff', 0.95, 'frame'],
-  range: ['#ff7a3c', 0.95, 'hatch'],
-  blocked: ['#b07ae0', 0.95, 'cross'],
-  threat: ['#ff2d55', 0.6, 'hatch'],
-  area: ['#ffb020', 1, 'solid'],
-  target: ['#fff2a0', 1, 'solid'],
-  nogo: ['#ff4040', 1, 'cross'], // the unit's square does not fit where the cursor is (Move)
-  counter: ['#ff3b3b', 1, 'frame'], // a stop that draws the counter of a unit struck this turn (Move)
-  path: ['#1e6fff', 0.95],
-};
-const markTextures = new Map<MarkPattern, THREE.CanvasTexture>();
-// white texture (the color comes from the material) with the marker drawing; one per drawing, made the first time
-function markTexture(p: MarkPattern): THREE.CanvasTexture {
-  let t = markTextures.get(p);
-  if (t) return t;
-  const S = 64,
-    c = document.createElement('canvas');
-  c.width = c.height = S;
-  const g = c.getContext('2d')!;
-  g.fillStyle = `rgba(255,255,255,${p === 'solid' ? 0.42 : 0.08})`; // core
-  g.fillRect(4, 4, S - 8, S - 8);
-  if (p === 'hatch' || p === 'cross') {
-    g.save();
-    g.beginPath();
-    g.rect(7, 7, S - 14, S - 14);
-    g.clip();
-    g.strokeStyle = 'rgba(255,255,255,0.6)';
-    g.lineWidth = 4;
-    g.beginPath();
-    if (p === 'hatch')
-      for (let k = -S; k < S; k += 16) {
-        g.moveTo(k, S);
-        g.lineTo(k + S, 0);
-      }
-    else {
-      g.moveTo(10, 10);
-      g.lineTo(S - 10, S - 10);
-      g.moveTo(S - 10, 10);
-      g.lineTo(10, S - 10);
-    }
-    g.stroke();
-    g.restore();
-  }
-  g.strokeStyle = 'rgba(0,0,0,0.6)'; // dark thread outside
-  g.lineWidth = 2;
-  g.strokeRect(1, 1, S - 2, S - 2);
-  g.strokeStyle = '#ffffff'; // frame
-  g.lineWidth = 5;
-  g.strokeRect(4.5, 4.5, S - 9, S - 9);
-  t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  // no mipmap: the tile shows up flat (half the height) and the mipmap blurred the frame inward, leaving the core milky
-  t.generateMipmaps = false;
-  t.minFilter = THREE.LinearFilter;
-  markTextures.set(p, t);
-  return t;
-}
+const CURSOR = { frame: '#ffffff', arrow: '#ffcf4a' }; // the cursor's colors when the square fits
 
 export class Marks {
   private readonly marks = new Map<string, THREE.Mesh>();
@@ -97,7 +34,7 @@ export class Marks {
     const grid = space.grid;
     const markGeo = this.markGeo;
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
-    for (const i of grid.tiles.keys()) {
+    for (const [i, tile] of grid.tiles.entries()) {
       const p = { x: i % grid.width, y: Math.floor(i / grid.width) };
       const w = this.space.world(p);
       const mark = new THREE.Mesh(
@@ -130,18 +67,14 @@ export class Marks {
       dot.visible = false;
       this.scene.add(dot);
       this.pathDots.set(posKey(p), dot);
-    }
-    // tile markers lying on the ramp: flat, the top half was buried on the climb
-    for (const [i, tile] of grid.tiles.entries()) {
-      if (!tile.ramp) continue;
-      const p = { x: i % grid.width, y: Math.floor(i / grid.width) };
-      for (const layer of [this.marks, this.danger, this.pathDots]) this.space.lay(layer.get(posKey(p))!, p);
+      // tile markers lying on the ramp: flat, the top half was buried on the climb
+      if (tile.ramp) for (const m of [mark, danger, dot]) this.space.lay(m, p);
     }
     // transparent only to enter the transparent queue, after the water (renderOrder -1): without it the water tinted the frame
     const frame = new THREE.Mesh(
       new THREE.RingGeometry(0.44, 0.64, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({
-        color: '#ffffff',
+        color: CURSOR.frame,
         depthTest: MARKER.frameDepthTest,
         depthWrite: false,
         transparent: true,
@@ -151,7 +84,7 @@ export class Marks {
     frame.name = 'frame';
     const arrow = new THREE.Mesh(
       new THREE.ConeGeometry(0.16, 0.3, 4).rotateX(Math.PI),
-      new THREE.MeshBasicMaterial({ color: '#ffcf4a', depthTest: false }),
+      new THREE.MeshBasicMaterial({ color: CURSOR.arrow, depthTest: false }),
     );
     arrow.name = 'arrow';
     arrow.renderOrder = 11; // the arrow stays above everything (even behind a wall it shows where the cursor is); the frame does not
@@ -183,8 +116,7 @@ export class Marks {
   }
 
   // Dotted line of the longest range (Nov 13, Fernando's request: "around the character the range of
-  // their longest-hitting skill should show as dotted, and while they see the movement preview too"): outline of the tiles within `range`
-  // steps of `center` (the same distance as the rule), at each tile's ground height. Only rebuilds when it changes
+  // their longest-hitting skill should show as dotted, and while they see the movement preview too"). Only rebuilds when it changes
   private ring: { key: string; mesh: THREE.Mesh } | null = null;
   // `from`: the cells of the unit (a token occupies 2x2); `range` in cells
   setRangeRing(r: { from: Pos[]; range: number } | null) {
@@ -197,64 +129,12 @@ export class Marks {
       this.ring = null;
     }
     if (!r || r.range < 1) return;
-    const { width: W, height: H } = this.space.grid,
-      pos: number[] = [];
-    const inside = (p: Pos) => inBounds(this.space.grid, p) && gap(r.from, [p]) <= r.range;
-    const yAt = (p: Pos, x: number, z: number) =>
-      (this.space.levels.get(posKey(p))?.surface ?? this.space.surfaceY(p, x, z)) + 0.05;
-    // flat little dash lying on the ground (WebGL's 1 px line barely showed): 2 triangles from `a` to `b`, 0.07 wide
-    const dash = (p: Pos, ax: number, az: number, bx: number, bz: number) => {
-      const nx = -(bz - az),
-        nz = bx - ax,
-        k = 0.035 / Math.hypot(nx, nz);
-      const v = (x: number, z: number, side: number) => [x + nx * k * side, yAt(p, x, z), z + nz * k * side];
-      const a1 = v(ax, az, 1),
-        a2 = v(ax, az, -1),
-        b1 = v(bx, bz, 1),
-        b2 = v(bx, bz, -1);
-      pos.push(...a1, ...a2, ...b1, ...b1, ...a2, ...b2);
-    };
-    for (let y = 0; y < H; y++)
-      for (let x = 0; x < W; x++) {
-        const p = { x, y };
-        if (!inside(p)) continue;
-        // each side of the tile that touches an outside tile becomes 3 little dashes (they follow ramp and step)
-        for (const [dx, dy, ax, az, bx, bz] of [
-          [0, -1, 0, 0, 1, 0],
-          [0, 1, 0, 1, 1, 1],
-          [-1, 0, 0, 0, 0, 1],
-          [1, 0, 1, 0, 1, 1],
-        ] as const) {
-          if (inside({ x: x + dx, y: y + dy })) continue;
-          for (let k = 0; k < 3; k++) {
-            const t0 = (k + 0.2) / 3,
-              t1 = (k + 0.8) / 3;
-            const at = (t: number) => [x + ax + (bx - ax) * t - W / 2, y + az + (bz - az) * t - H / 2];
-            const [x0, z0] = at(t0),
-              [x1, z1] = at(t1);
-            dash(p, x0, z0, x1, z1);
-          }
-        }
-      }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    const mesh = new THREE.Mesh(
-      g,
-      new THREE.MeshBasicMaterial({
-        color: '#ffd27a',
-        transparent: true,
-        opacity: 0.9,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
-    );
-    mesh.renderOrder = 11;
+    const mesh = rangeRing(this.space, r);
     this.scene.add(mesh);
     this.ring = { key, mesh };
   }
 
-  // Trajectory preview: thin strip from the shooter's eye to the target's aim, blue where it passes and red after the point
-  // where it hits (the blocking tile, sightBlock). Rebuilt on every cursor change; few vertices
+  // Trajectory preview (trajectory.ts), rebuilt on every cursor change
   private trajectory: THREE.Group | null = null;
   setTrajectory(t: { from: Pos; to: Pos; block: Pos | null } | null) {
     if (this.trajectory) {
@@ -263,42 +143,7 @@ export class Marks {
       this.trajectory = null;
     }
     if (!t) return;
-    const eye = (p: Pos) => this.space.stand(p).add(new THREE.Vector3(0, unitHeight('soldier') * 0.7, 0));
-    const a = eye(t.from),
-      b = eye(t.to);
-    const cut = t.block
-      ? (() => {
-          const w = this.space.world(t.block);
-          const k = Math.hypot(w.x - a.x, w.z - a.z) / Math.max(1e-3, Math.hypot(b.x - a.x, b.z - a.z));
-          return a.clone().lerp(b, k);
-        })()
-      : b;
-    const seg = (p: THREE.Vector3, q: THREE.Vector3, color: string) => {
-      const len = p.distanceTo(q);
-      const m = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.025, 0.025, len, 6).rotateX(Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthTest: false }),
-      );
-      m.position.copy(p).lerp(q, 0.5);
-      m.lookAt(q);
-      m.renderOrder = 12;
-      return m;
-    };
-    this.trajectory = new THREE.Group();
-    this.trajectory.add(seg(a, cut, '#5fd6ff'));
-    if (t.block) {
-      this.trajectory.add(seg(cut, b, '#ff4d4d'));
-      // red X where the shot hits (Nov 13, Fernando's request: "there should be an X where it will hit")
-      const mat = new THREE.MeshBasicMaterial({ color: '#ff3b3b', depthTest: false });
-      for (const turn of [Math.PI / 4, -Math.PI / 4]) {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.07), mat);
-        bar.position.copy(cut);
-        bar.quaternion.copy(this.camera.quaternion);
-        bar.rotateZ(turn);
-        bar.renderOrder = 13;
-        this.trajectory.add(bar);
-      }
-    }
+    this.trajectory = trajectory(this.space, this.camera, t);
     this.scene.add(this.trajectory);
   }
 
@@ -318,8 +163,8 @@ export class Marks {
       this.cursorGoal.copy(this.space.squareTop(p, size));
       const frame = this.cursor.getObjectByName('frame') as THREE.Mesh;
       for (const [o, color] of [
-        [frame, '#ffffff'],
-        [this.cursor.getObjectByName('arrow') as THREE.Mesh, '#ffcf4a'],
+        [frame, CURSOR.frame],
+        [this.cursor.getObjectByName('arrow') as THREE.Mesh, CURSOR.arrow],
       ] as const)
         (o.material as THREE.MeshBasicMaterial).color.set(fits ? color : MARK.nogo[0]);
       // over a step or a ramp the flat frame floated off the lower cells' marks (stills at angles 0 and 2 on stage 0): there
@@ -345,7 +190,7 @@ export class Marks {
       // the cursor frame's white, faint: it must not hide the ground it explains
       const dots = new THREE.InstancedMesh(
         new THREE.PlaneGeometry(0.12, 0.12).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.45, depthWrite: false }),
+        new THREE.MeshBasicMaterial({ color: CURSOR.frame, transparent: true, opacity: 0.45, depthWrite: false }),
         g.dots.length,
       );
       const m = new THREE.Matrix4();
