@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { COMBAT, checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
+import { COMBAT, checkOutcome, hitChance, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
@@ -27,6 +27,10 @@ describe('hit chance', () => {
     const g = flat(9, 1);
     expect(chanceOf(g, duel('archer', 2), 'shot', at(2))).toBe(82);
     expect(chanceOf(g, duel('archer', 5), 'shot', at(5))).toBe(73);
+  });
+
+  it('never drops below 5% before the hit bonus and the dodge are applied', () => {
+    expect(hitChance(flat(9, 1), { ...ABILITIES.shot, accuracy: 10 }, at(0), at(8))).toBe(COMBAT.MIN_CHANCE);
   });
 
   it('rises 5 points per level above the target and drops 5 per level below', () => {

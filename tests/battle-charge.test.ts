@@ -5,6 +5,7 @@ import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { resolveAbility } from '../src/shared/battle/combat.ts';
 import { CLASSES_BATTLE, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
+import { nextRng, rollInt } from '../src/shared/battle/rng.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { previewOrder } from '../src/shared/battle/turn-queue.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
@@ -105,6 +106,18 @@ describe('charged actions', () => {
     UNIT_DEFS.t_frail = { ...UNIT_DEFS.soldier, id: 't_frail', resist: { phys: -80 } };
     b.state.units[1].def = 't_frail';
     expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: 100, dmgMax: 160 });
+  });
+
+  it('the roll takes the lowered resistance too, not only the preview', () => {
+    const roll = (charging: boolean) => {
+      const b = duel('warrior');
+      if (charging)
+        b.state.charges = [{ unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 }];
+      return resolveAbility(b.grid, b.state, 'a', 'strike', { x: 4, y: 3 }).find((e) => e.k === 'hit');
+    };
+    const [die] = rollInt(nextRng(HIT_SEED)[1], ...ABILITIES.strike.damage); // the damage roll comes after the hit roll
+    expect(roll(false)).toMatchObject({ dmg: Math.floor(die * 0.75) });
+    expect(roll(true)).toMatchObject({ dmg: Math.floor(die * 1.25) });
   });
 
   it('the AI turn brings the events of charges that resolve before the next turn', () => {

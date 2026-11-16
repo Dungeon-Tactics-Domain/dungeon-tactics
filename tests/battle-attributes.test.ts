@@ -3,7 +3,7 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { afterDodge, COMBAT, damageRange, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS, type UnitDef } from '../src/shared/battle/units.ts';
-import { flat, seedWhere, stateOf } from './battle-helpers.ts';
+import { flat, HIT_SEED, seedWhere, stateOf } from './battle-helpers.ts';
 
 // The Nov 15 grill's formulas (the Mechanics lab's equipamento.json, formulas section): hit x (1 - dodge x side), damage
 // with power, then x (1 - physical or magic resistance) x (1 - the element's), rounded down, at least 1
@@ -126,6 +126,15 @@ describe('power (Nov 15)', () => {
   it('physical power goes on martial abilities, magic power on spells, at both ends', () => {
     expect(aim(brawler, 'strike', PLAIN, 1)).toMatchObject({ dmgMin: 60, dmgMax: 90 });
     expect(aim(caster, 'firebolt', PLAIN)).toMatchObject({ dmgMin: 65, dmgMax: 95 });
+  });
+
+  it('the roll adds it too, not only the preview', () => {
+    const roll = (def: string) =>
+      resolveAbility(grid, duel(def, PLAIN, 1, 3, 'enemy', HIT_SEED), 'a', 'strike', { x: 1, y: 1 }).find(
+        (e) => e.k === 'hit',
+      ) as { dmg: number };
+    expect(roll('warrior').dmg).toBeGreaterThan(0);
+    expect(roll(brawler).dmg - roll('warrior').dmg).toBe(10); // same die, 10 physical power
   });
 
   it('magic power goes on heals too (Fernando, Nov 15, as the lab), physical power does not', () => {
