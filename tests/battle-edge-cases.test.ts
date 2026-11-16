@@ -14,6 +14,7 @@ describe('charges on the same tick (Nov 12, FFT tie-break: enemies first)', () =
       [
         { id: 'h', def: 'mage', team: 'hero', x: 1, y: 1, hp: 1 },
         { id: 'e', def: 'dark_mage', team: 'enemy', x: 4, y: 1 },
+        { id: 'g', def: 'warrior', team: 'hero', x: 8, y: 3 }, // keeps the battle going, so the second charge is reached
         BEACON,
       ],
       HIT_SEED,
@@ -23,8 +24,10 @@ describe('charges on the same tick (Nov 12, FFT tie-break: enemies first)', () =
       { unit: 'e', ability: 'blast', target: { x: 1, y: 1 }, follow: 'h', ticks: 1 },
     ];
     const ev = startNextTurn(flat(10, 4), s);
+    expect(s.outcome).toBe('ongoing');
     expect(ev.map((e) => e.k)).toEqual(['attack', 'hit', 'die']);
     expect(ev[0]).toMatchObject({ unit: 'e' });
+    expect(ev.some((e) => 'unit' in e && e.unit === 'h' && (e.k === 'attack' || e.k === 'fizzle'))).toBe(false);
     expect(s.charges).toEqual([]);
   });
 });
