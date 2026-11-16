@@ -14,7 +14,7 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 13/11 | Move, act, then keep moving with what is left; undo the move unless it took damage | fewer movement constraints, more strategy |
 | 13/11 | Water costs 1 movement like ground; allies can be passed through; no zone of control | fewer movement constraints |
 | 13/11 | Shots stop at the first unit or obstacle in their path; attacking an empty tile is allowed; the forecast marks the hit with an X | Tactics Ogre-style trajectory |
-| 13/11 | End-of-stage stars removed; every victory gives 150 gold | no puzzle-style scoring |
+| 13/11 | End-of-stage stars removed; ~~every victory gives 150 gold~~ (replaced on Nov 15 and 16: gold comes only from drops and chests) | no puzzle-style scoring |
 | 13/11 | Smooth painted terrain, procedural trees and props, wave-field water, action camera, 8 camera angles, plain 3D by default (pixel art optional) | a painted look closer to FFT than to blocks |
 | 13/11 | Party with recruits (tavern, 200 gold, up to 8) and class changes; the lancer is the first new class | FFT-style party management |
 | 13/11 | One environment only (dungeon-tactics.fernandorffdev.com), updated after every block | test on a single link |
