@@ -134,6 +134,6 @@ Since Nov 16, `src/content/crawl/residents.ts` holds the residents and three lin
 
 - Milestone costs (how many boss wins per milestone) and whether a failed expedition counts.
 - The prologue: how many rooms, who the second prisoner is (Dace, Rook or Nell), and how the player reaches the town and the roster.
-- `src/content/crawl/town.ts` already has townsfolk (Aldo, Hugo, Selene, Mira) and `residents.ts` has Hesk, Marta, Garrick, Sela, Wren, Pip, Ysolde and Tobin: which cast wins, or how they merge; the places also differ (`smith` and `smithy`).
+- Settled on Nov 16: the narrative cast replaces the townsfolk in `src/content/crawl/town.ts` (Aldo, Hugo, Selene, Mira); the walkable town's owner swaps them when the lines are wired, and reconciles the places (`smith` and `smithy`, plus kitchen, square, well and tower).
 - What lies at the bottom and why the village stopped going down.
 - The companions' stories and the conflict inside the town (left out of this draft).
