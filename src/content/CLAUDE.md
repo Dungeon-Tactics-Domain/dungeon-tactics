@@ -25,7 +25,7 @@ Applies together with the root `CLAUDE.md`. Decision of Nov 14 (Fernando, cleanu
 ## How to add
 
 - **Class or enemy:** an entry in `units.ts`. Outside this folder: its model in `MODEL` (`src/client/markers.ts`), a portrait (`scripts/portraits.mjs`), and `JOBS` (`src/client/group.ts`) if the party can take it.
-- **Ability:** `A({...})` in `abilities.ts` and its id in a unit's `abilities`. Outside: gesture and effect in `LOOKS` (`src/client/fx.ts`).
+- **Ability:** `A({...})` in `abilities.ts` and its id in a unit's `abilities`; `magic` makes it a spell (magic power and resistance) and `element` adds the target's resistance to that element (Nov 15). Outside: gesture and effect in `LOOKS` (`src/client/fx.ts`).
 - **Item:** an entry in `items.ts`; the shop lists every item.
 - **Map:** a new file in `maps/`, added to `MAPS` in `scenarios.ts` (the order is the registry order). Outside: a new tile `look` needs its pieces in `LOOK` (`src/client/scene/board.ts`) and its name in `LOOK_NAME` (`src/client/hud.ts`); a mood in `KIND` (`src/client/ambience.ts`); `DEV_MAPS` (`src/client/dev-roster.ts`) to offer it in the developer menu.
 - **Expedition numbers:** `CRAWL_RUN` (floors, rows, rooms per row, heals in %); a change gives other maps for the same seed, so an expedition in progress may break: bump `CRAWL_VERSION`, which drops the saved one.
