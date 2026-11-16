@@ -89,6 +89,6 @@ export const roomLine = (h: Score & { hp: number }, carried?: { hp: number; max:
   if (!carried) return tallyLine(h);
   const life = `${carried.hp}/${carried.max}`;
   return h.hp <= 0
-    ? [t(`Caído · volta com ${life}`, `Fallen · back at ${life}`), 'fell']
-    : [t(`Próxima sala: ${life}`, `Next room: ${life}`), 'gain'];
+    ? [t(`Caiu · volta com ${life} de vida`, `Fell · back at ${life} HP`), 'fell']
+    : [t(`Segue com ${life} de vida`, `Goes on with ${life} HP`), 'gain'];
 };

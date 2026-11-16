@@ -302,8 +302,8 @@ function lostScreen(kept: number) {
         'p',
         {},
         t(
-          'O grupo saiu no meio da sala. Os feridos voltam à cidade com metade do ouro achado.',
-          'The party left in the middle of a room. The wounded return to town with half the gold found.',
+          'O grupo deixou a sala no meio da luta. A expedição acabou, e metade do ouro achado vai à cidade.',
+          'The party left the room mid-fight. The expedition is over, and half the gold found goes to town.',
         ),
       ),
       goldNote(t('Ouro para a cidade', 'Gold to town'), kept),

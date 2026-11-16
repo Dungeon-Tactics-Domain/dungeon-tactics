@@ -262,8 +262,8 @@ export function optionsMenu(o: OptionsContext) {
           'p',
           {},
           t(
-            'Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, ombros giram a câmera, analógico direito rola a lista de turnos, Start abre este menu.',
-            'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, shoulders rotate the camera, right stick scrolls the turn list, Start opens this menu.',
+            'Mouse: passe por cima para escolher, clique para confirmar, botão direito volta; arraste para mover a câmera e use a roda para o zoom. Controle: direcional ou analógico andam, A (×) confirma, B (○) volta, X (□) abre o Status, Y (△) abre a ficha da habilidade, Back desfaz, ombros giram a câmera, gatilhos dão zoom, analógico direito rola a lista de turnos, Start abre este menu.',
+            'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, X (□) opens Status, Y (△) opens the ability sheet, Back undoes, shoulders rotate the camera, triggers zoom, right stick scrolls the turn list, Start opens this menu.',
           ),
         ),
         // only what touch-input.ts and the HUD do today (Nov 16, the tablet audit: this section said nothing about touch)

@@ -12,8 +12,8 @@ describe('result board card lines', () => {
   });
 
   it('an expedition room shows the life carried into the next room, the recovery applied', () => {
-    expect(roomLine(hero(20), { hp: 35, max: 50 })).toEqual(['Próxima sala: 35/50', 'gain']);
-    expect(roomLine(hero(0), { hp: 13, max: 50 })).toEqual(['Caído · volta com 13/50', 'fell']);
+    expect(roomLine(hero(20), { hp: 35, max: 50 })).toEqual(['Segue com 35/50 de vida', 'gain']);
+    expect(roomLine(hero(0), { hp: 13, max: 50 })).toEqual(['Caiu · volta com 13/50 de vida', 'fell']);
   });
 
   it('with nothing carried (expedition lost or finished) it falls back to the tally', () => {
