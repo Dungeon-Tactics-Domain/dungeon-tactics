@@ -1891,7 +1891,7 @@ button[hidden],
     animation-timing-function: steps(1, end);
   }
 }
-/* objective banner at the start of the stage (main.ts, announce): enters stretching, holds to be read, fades; takes no clicks */
+/* objective banner at the start of the stage (entry.ts, announce): enters stretching, holds to be read, fades; takes no clicks */
 .announce {
   position: fixed;
   left: 50%;

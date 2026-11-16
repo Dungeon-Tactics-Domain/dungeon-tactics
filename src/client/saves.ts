@@ -9,7 +9,7 @@ import { GROUP_KEY, type Job, parseGroup } from './group.ts';
 export const SAVES_KEY = 'dt:saves';
 export const BAD_KEY = 'dt:saves:bad'; // the last manifest the parse could not read whole, kept to recover by hand
 export const CRAWL_KEY = 'dt:crawl';
-export const ROOM_KEY = 'dt:battle:expedition'; // the room in play, saved from its first frame (main.ts boot)
+export const ROOM_KEY = 'dt:battle:expedition'; // the room in play, saved from its first frame (entry.ts boot)
 export const PLAYED_KEY = 'dt:played'; // when the game was last played: store.ts stamps it on every progress write
 // what a game is made of: the party, its chest and equipment, the expedition and the room in play
 export const PROGRESS_KEYS = [GROUP_KEY, CHEST_KEY, EQUIP_KEY, CRAWL_KEY, ROOM_KEY];

@@ -23,7 +23,7 @@ On localhost, `?auto=1` lets the AI play the heroes, `?scenario=<id>` opens a ma
 
 - `src/shared/battle` holds the rules: pure TypeScript without DOM or Three.js. The state is plain JSON-friendly data, so saving, undo and the AI simulator all work on the same object.
 - `src/content` holds the game content as typed data (classes, abilities, items, maps, party, dungeon crawl); the rules files keep the types and registries and import it.
-- `src/client` is the browser: `main.ts` wires the game loop (the screens around it in `game/`: URL boot, title, options, end of battle, town and expedition), `scene.ts` renders with Three.js (its parts in `scene/`: board, tile marks, units, camera), `hud.ts` and `town-ui.ts` build the interface from the components in `dialog.ts` and `icons.ts`.
+- `src/client` is the browser: `entry.ts` boots the page and `main.ts` wires the game loop (the screens around it in `game/`: URL boot, title, options, end of battle, town and expedition), `scene.ts` renders with Three.js (its parts in `scene/`: board, tile marks, units, camera), `hud.ts` and `town-ui.ts` build the interface from the components in `dialog.ts` and `icons.ts`.
 - `tests` covers the rules and the pure client functions with Vitest.
 - Each folder's `CLAUDE.md` explains the patterns and the reasoning behind that area.
 

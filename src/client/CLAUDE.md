@@ -4,7 +4,8 @@ Applies together with the root `CLAUDE.md`. **Web on PC first** (Fernando, Nov 1
 
 ## Who owns what
 
-- `main.ts` (`Game`): wires everything; owns the turn loop and the turn screen.
+- `entry.ts`: what `index.html` loads; opens the town or builds the battle, its scene and its `Game`.
+- `main.ts` (`Game`): wires everything; owns the turn loop. `hero-turn.ts` (`HeroTurn`) owns the turn screen (screen, Ui and cursor) and `battle-input.ts` the listeners.
 - `game/`: what opens around the battle: URL boot (`boot.ts`, `selectBattle`), title (`title.ts`), Options (`options.ts`), end windows (`end-screens.ts`), save slots window (`saves-ui.ts`), walkable town (`town.ts`, rules in `town-map.ts`), town menu, gate and expedition (`crawl.ts`).
 - `command.ts`: what the menu shows and what comes next. `interaction.ts`: what the chosen tile does. Both pure and tested.
 - `scene.ts` (`BattleScene`): only draws, composing `scene/` (`Board`, `Marks`, `Units`, `CameraRig`, `TileSpace`, `Timeline`), each built from what it needs.
@@ -15,7 +16,7 @@ Applies together with the root `CLAUDE.md`. **Web on PC first** (Fernando, Nov 1
 
 ## Rules
 
-- **Logic that can be pure is pure and tested** (`command.ts`, `interaction.ts`, `turn-list.ts`, `charge-lines.ts`, `battle-face.ts`, `tally.ts`, `town-map.ts`, `group.ts`, `saves.ts`, `glass.ts`); the DOM and Three.js files only show it.
+- **Logic that can be pure is pure and tested** (`command.ts`, `interaction.ts`, `turn-marks.ts`, `turn-list.ts`, `charge-lines.ts`, `battle-face.ts`, `tally.ts`, `town-map.ts`, `group.ts`, `saves.ts`, `glass.ts`); the DOM and Three.js files only show it.
 - **Interface follows the [design system](../../docs/game-design/design-system.md).** Change a token or a piece, change that document in the same commit. Colours and sizes only through the `:root` variables. A new HUD piece is a `.panel` with `.item` rows (`.focus` marks the focus), `gauge()` and `unitPanel()` from `hud-pieces.ts`. A new blue surface paints the `--glass*` stops over `--panel-veil` and joins the `backdrop-filter` list in `style.css`, so the panel opacity and blur (`glass.ts`, `dt:glass`) reach it; never `--paper*` for a panel background. Focus outside the panels takes `--focus-halo`; a disabled button says why in its text.
 - **DOM through the pieces** of `icons.ts` (`el`, `icon`, `button` for every text button, `iconButton`) and `dialog.ts` (`dialog()`, `choice()`, `slider()`). Inline `style` only for positions and sizes computed at run time. Colour is never the only signal.
 - **Text the player sees:** `t('pt', 'en')` from `i18n.ts`; names via `unitName`/`abilityName`. An action's result also as text (`eventLog`, in the help line), not only the floating number.

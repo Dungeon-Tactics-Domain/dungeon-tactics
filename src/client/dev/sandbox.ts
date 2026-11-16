@@ -1,5 +1,5 @@
 // Sandbox (docs/sandbox.md): a battle staged from a scene spec, for screenshots and the UX lab, scripted through
-// window.__sandbox. Loaded only on localhost with ?sandbox= (main.ts), as its own chunk: the online game never fetches it.
+// window.__sandbox. Loaded only on localhost with ?sandbox= (entry.ts), as its own chunk: the online game never fetches it.
 // The map, the cast, the dice and the language are fixed when the page loads (`stage`); everything else changes live (`apply`).
 import { Battle } from '../../shared/battle/battle.ts';
 import { subOf } from '../../shared/battle/grid.ts';

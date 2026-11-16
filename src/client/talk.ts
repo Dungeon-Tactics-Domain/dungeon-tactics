@@ -1,6 +1,6 @@
 // Speech box: portrait, name and the text appearing letter by letter with the speaker's beep. Click, Enter,
 // Space or A complete the sentence and, once complete, move to the next; Esc skips the whole conversation. It's a button inside an
-// .overlay, so keyboard, mouse and gamepad (main.ts presses the focused button) arrive through the same click.
+// .overlay, so keyboard, mouse and gamepad (battle-input.ts presses the focused button) arrive through the same click.
 
 import faces from '../content/faces.json';
 import { UNIT_DEFS } from '../shared/battle/units.ts';

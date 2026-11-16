@@ -12,7 +12,7 @@ import type { BattleEvent, BattleState, Pos, Team, UnitState } from '../../share
 import { baseDef, UNIT_DEFS } from '../../shared/battle/units.ts';
 import { TIMING } from '../timing.ts';
 
-// HUD parts that `hide` accepts, by the class the HUD gives them (hud.ts, talk.ts, dialog.ts, main.ts)
+// HUD parts that `hide` accepts, by the class the HUD gives them (hud.ts, talk.ts, dialog.ts, entry.ts, fps.ts)
 export const PANELS = {
   tile: '.panel.tile-info',
   queue: '.panel.queue',

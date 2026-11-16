@@ -275,7 +275,7 @@ Each loops, hides every panel and fixes a side camera. Seeds were picked so the 
   - `stage(scenario)` builds the battle before the scene exists (cast, seed, actor).
   - `install(game, scene)` applies the rest and exposes `window.__sandbox`.
 - **Hooks in the game:**
-  - `boot()` in `main.ts`, with a separate save key and no intro talk.
+  - `boot()` in `entry.ts`, with a separate save key and no intro talk.
   - `Game.showScreen` (a turn screen, cursor and marks set directly).
   - `Game.playStep` (a step's events through `animate`, then the turn menu).
   - `BattleScene.actionCam`.
