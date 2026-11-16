@@ -111,6 +111,7 @@ describe('crawl expedition', () => {
       { ...e, party: [{ id: 'bran', max: 42, hp: 43 }] },
       { ...e, party: [{ id: 'bran', max: 1000, hp: 1000 }] },
       { ...e, party: [{ id: '', max: 42, hp: 1 }] },
+      { ...e, party: [null] },
       { ...e, party: [1, 2, 3, 4, 5].map((n) => ({ id: `m${n}`, max: 9, hp: 9 })) },
     ])
       expect(parseExpedition(bad)).toBeNull();
