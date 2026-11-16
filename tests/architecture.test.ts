@@ -16,6 +16,10 @@ function code(text: string): string {
 
 const files = Object.entries(sources);
 
+// a file the model reads whole stays small enough to hold in view: split by responsibility before it passes this
+const MAX_LINES = 400;
+const everySource = import.meta.glob<string>('../src/**/*.ts', { query: '?raw', import: 'default', eager: true });
+
 describe('architecture', () => {
   it('finds the rules-side sources it is meant to check', () => {
     expect(files.length).toBeGreaterThan(20);
@@ -31,5 +35,12 @@ describe('architecture', () => {
       .filter(([, text]) => /Math\.random|Date\.now|new Date\(|performance\.now/.test(code(text)))
       .map(([path]) => path);
     expect(offenders).toEqual([]);
+  });
+
+  it(`keeps every file of src/ at ${MAX_LINES} lines or fewer`, () => {
+    const big = Object.entries(everySource)
+      .map(([path, text]) => [path, text.trimEnd().split('\n').length] as const)
+      .filter(([, lines]) => lines > MAX_LINES);
+    expect(big).toEqual([]);
   });
 });
