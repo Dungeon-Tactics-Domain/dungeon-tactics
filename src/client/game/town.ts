@@ -370,7 +370,7 @@ class Town {
   }
 }
 
-// ?home: the town instead of a battle (main.ts boot), then what home opens over it (crawl.ts homeScreen)
+// ?home: the town instead of a battle (entry.ts boot), then what home opens over it (crawl.ts homeScreen)
 export async function bootTown(host: HTMLElement) {
   setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
   const sc = townScenario();

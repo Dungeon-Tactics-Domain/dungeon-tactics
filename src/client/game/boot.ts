@@ -48,7 +48,12 @@ function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
     } catch (err) {
       console.error(err);
     }
-  alert(t('Não deu para montar esta sala da masmorra.', 'This dungeon room could not be built.'));
+  alert(
+    t(
+      'Não deu para abrir esta sala. Você volta para a cidade.',
+      'This room wouldn’t open. You’re heading back to town.',
+    ),
+  );
   goHome();
   return null;
 }
