@@ -14,7 +14,7 @@ export interface PushResult {
 
 // Pushes along the axis of greatest difference relative to the ability's center. If the victim is at the center (area), it moves away
 // from the user. Each tile is checked: wall, unit, edge and high step stop it (bump); going down is a fall, with damage
-// from 2 levels up. It does not change the state: the AI uses this to value pushes before choosing the move.
+// from 2 levels up; a body is passed over but never ended on. It does not change the state: the AI uses this to value pushes before choosing the move.
 // On the split map (half.ts) the token is pushed `steps` whole tiles in cells, its whole square checked on each cell; the
 // direction goes from the middle of the squares and the height of a square is its highest cell. It ends only where the
 // square rests on even ground (restsOn): a fall onto it, or a bump back to where it last rested
@@ -51,7 +51,7 @@ export function simulatePush(
         if (!inBounds(grid, c)) return true;
         const t = tileAt(grid, c),
           o = unitAt(state, c);
-        return !canStand(t) || isDeep(t) || noStopAt(grid, state, c) || (!!o && o.id !== unit.id);
+        return !canStand(t) || isDeep(t) || (!!o && o.id !== unit.id);
       }) || height(next) - height(cur) > MAX_JUMP;
     if (blocked) return null;
     const out: PushResult = { to: next, dmg: 0, events: [{ k: 'push', unit: unit.id, to: next }] };
@@ -78,24 +78,30 @@ export function simulatePush(
     result.events.push(...m.events);
   };
   const rests = (p: Pos) => restsOn(grid, p, size);
-  let even: PushResult = { ...result, events: [] }; // where the square last rested (the start, at first)
+  // a body (the map's or a corpse) is passed over and counts in the distance, but no cell of the square ends on one (Nov 16)
+  const onBody = (p: Pos) => cells(p).some((c) => noStopAt(grid, state, c));
+  const stops = (p: Pos) => rests(p) && !onBody(p);
+  let even: PushResult = { ...result, events: [] }; // where the square last could stop (the start, at first)
   let bumped = false;
   for (let i = 0; i < steps * sub && !bumped; i++) {
     const m = move(result.to);
     if (!m) bumped = true;
     else {
       add(m);
-      if (rests(result.to)) even = { ...result, events: [...result.events] };
+      if (stops(result.to)) even = { ...result, events: [...result.events] };
     }
   }
   // A push never leaves the square on uneven ground (Nov 15, Fernando: "it tie-breaks by making the guy fall, or hit a
   // wall"): one more cell when it drops onto even ground, or when the square is level and only ramp, terrain or spikes
   // kept it from resting (Fernando, after the review); else back to where it last rested, with the bump. A square that
   // started uneven (a sandbox placement, an old save) goes back to its start
-  if (!rests(result.to)) {
+  // A push that runs out on a body slides back to where it last could stop, before the whole chain, with no bump of its
+  // own: nothing solid was hit (Fernando, Nov 16; a wall, unit, edge or deep water past the body bumped already)
+  if (onBody(result.to)) Object.assign(result, even);
+  else if (!rests(result.to)) {
     const m = move(result.to);
     const level = new Set(cells(result.to).map((c) => standH(tileAt(grid, c)))).size === 1;
-    if (m && rests(m.to) && (level || height(m.to) < height(result.to))) add(m);
+    if (m && stops(m.to) && (level || height(m.to) < height(result.to))) add(m);
     else {
       Object.assign(result, even);
       bumped = true;

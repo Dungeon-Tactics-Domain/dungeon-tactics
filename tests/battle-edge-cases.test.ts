@@ -76,7 +76,7 @@ describe('push damage adds up (x5 of Nov 15)', () => {
 });
 
 describe('a body on the ground (Nov 13, Fernando: passable, but nobody stays on it)', () => {
-  it('a push cannot end on it: it stops before, with the bump', () => {
+  it('a push cannot end on it: it slides back before it, with no bump (Fernando, Nov 16)', () => {
     const g = flat(5, 1);
     g.tiles[3].noStop = true;
     const s = stateOf([
@@ -85,7 +85,7 @@ describe('a body on the ground (Nov 13, Fernando: passable, but nobody stays on 
     ]);
     const r = simulatePush(g, s, s.units[1], { x: 1, y: 0 }, { x: 0, y: 0 }, 2);
     expect(r.to).toEqual({ x: 2, y: 0 });
-    expect(r.events.map((e) => e.k)).toEqual(['push', 'bump']);
-    expect(r.dmg).toBe(COMBAT.BUMP_DAMAGE);
+    expect(r.events.map((e) => e.k)).toEqual(['push']);
+    expect(r.dmg).toBe(0);
   });
 });
