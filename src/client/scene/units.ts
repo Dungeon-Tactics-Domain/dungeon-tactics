@@ -744,6 +744,21 @@ export class Units {
     await this.time.animate(ms, (k) => v.holder.position.lerpVectors(a, b, k));
   }
 
+  // The town's fluid walk: the unit's square with its corner on `p`, which falls between cells, at the height of the
+  // cell under it (the town is flat where people walk). With `dir` it walks that way; without, it only stands there.
+  // Returns where it is in the world, for the camera to follow
+  slide(unitId: string, p: Pos, dir?: Pos): THREE.Vector3 | undefined {
+    const v = this.views.get(unitId);
+    if (!v) return;
+    const c = { x: Math.round(p.x), y: Math.round(p.y) };
+    const w = this.squareAt(v.def, c);
+    v.holder.position.set(w.x + p.x - c.x, w.y, w.z + p.y - c.y);
+    if (!dir) return;
+    v.holder.rotation.y = Math.atan2(dir.x, dir.y);
+    if (v.current?.getClip().name !== 'Walking_A') this.play(v, 'Walking_A', false, 1.25);
+    return v.holder.position;
+  }
+
   // back to standing, after a glide; turned toward `at` (who it talks to), if given
   rest(unitId: string, at?: Pos) {
     const v = this.views.get(unitId);

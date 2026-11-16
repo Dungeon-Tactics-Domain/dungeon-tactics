@@ -2,7 +2,7 @@
 // who stands where (the party, the townsfolk), which place a tile belongs to and where its door is, and where the walker
 // can go (the battle's own `reachable`). The scene and the input live in game/town.ts.
 import { GUILD_SPOTS, type Place, type PlaceId, TOWN, TOWN_PLACES, TOWN_START } from '../content/crawl/town.ts';
-import { dist, type Grid, posKey, tileAt } from '../shared/battle/grid.ts';
+import { dist, type Grid, inBounds, posKey, tileAt } from '../shared/battle/grid.ts';
 import { halfDef, halve, SUB } from '../shared/battle/half.ts';
 import { cellsOf, footprint, gap, jumpOf, reachable, restsOn, squareMoves, unitAt } from '../shared/battle/pathing.ts';
 import { SCENARIOS, type Scenario } from '../shared/battle/scenarios.ts';
@@ -94,7 +94,107 @@ export function townTarget(state: BattleState, facing: Pos): TownTarget | null {
   const unit = beside.find(ahead);
   if (unit) return { act: 'talk', unit };
   const place = TOWN_PLACES.find((p) => atDoor(me.pos, p));
-  if (place) return { act: place.soon ? 'soon' : (PLACE_ACT[place.id] ?? 'enter'), place };
+  if (place) return doorTarget(place);
+  return beside[0] ? { act: 'talk', unit: beside[0] } : null;
+}
+const doorTarget = (place: Place): TownTarget => ({
+  act: place.soon ? 'soon' : (PLACE_ACT[place.id] ?? 'enter'),
+  place,
+});
+
+// Fluid movement (Nov 16, Fernando's grill): an option beside the town grid, off by default, to compare with the cell
+// steps. The walker is a circle that slides along walls and people; its unit keeps the square snapped under it
+// (`cellUnder`), so every cell rule here (route, clear, near, castParty) goes on reading a whole cell
+export const FREE_KEY = 'dt:town-free';
+export const parseTownFree = (v: unknown) => v === true;
+// The circle's radius, in cells. Above √½ the snapped square never overlaps a wall or anyone (the fuzz walk in
+// tests/town.test.ts holds it); below 1 it passes the 2-cell lanes with room to slide
+export const BODY = 0.8;
+export const TALK = 3; // centre to centre: side by side with a cell between (REACH on the mesh) or corner to corner
+const AHEAD = 0.5; // cos 60°: how wide "in front" is to each side
+const DOOR = 1.25; // from the doorstep's middle, per axis: over its tile (atDoor on the mesh) and a quarter cell of slack
+export const STICK_DEAD = 0.25; // the stick's rest noise; padActions' 0.5 is for a cursor that steps, too deaf for a walk
+
+export const centreOf = (p: Pos): Pos => ({ x: p.x + SUB / 2, y: p.y + SUB / 2 });
+export const cellUnder = (c: Pos): Pos => ({ x: Math.round(c.x - SUB / 2), y: Math.round(c.y - SUB / 2) });
+
+// the left stick as a screen vector: nothing inside the dead zone, then growing from 0 to full tilt (length 1)
+export function stick(x: number, y: number): Pos {
+  const m = Math.hypot(x, y);
+  if (!(m > STICK_DEAD)) return { x: 0, y: 0 }; // NaN from a broken pad lands here too
+  const k = Math.min(1, (m - STICK_DEAD) / (1 - STICK_DEAD)) / m;
+  return { x: x * k, y: y * k };
+}
+
+// a screen vector (x right, y down) on the ground under the camera's yaw (the same axes as keyboard.ts gridStep)
+export const groundDir = (v: Pos, yaw: number): Pos => ({
+  x: v.x * Math.cos(yaw) + v.y * Math.sin(yaw),
+  y: v.y * Math.cos(yaw) - v.x * Math.sin(yaw),
+});
+
+// The walker's centre after moving by `d`: pushed out of every cell that is not floor (lots, trees, crates, the well,
+// the map's edge) and of everyone's square, which leaves the part of `d` along the wall, so it slides
+export function slide(grid: Grid, state: BattleState, at: Pos, d: Pos): Pos {
+  const solid = (c: Pos) => {
+    if (!inBounds(grid, c) || tileAt(grid, c).terrain !== 'floor') return true;
+    const u = unitAt(state, c);
+    return !!u && u.id !== ME;
+  };
+  const hops = Math.ceil(Math.hypot(d.x, d.y) / (BODY / 2)) || 1; // short hops: a long frame never jumps a wall
+  let { x, y } = at;
+  for (let i = 0; i < hops; i++) {
+    x += d.x / hops;
+    y += d.y / hops;
+    // Out of the cell it is deepest in, up to 3 times (a corner takes two). Deepest first: along a wall that is the
+    // cell straight ahead, which pushes straight back; its neighbours' corners would push sideways and change the pace
+    for (let pass = 0; pass < 3; pass++) {
+      const x0 = Math.floor(x - BODY),
+        y0 = Math.floor(y - BODY);
+      let hit = { dx: 0, dy: 0, len: BODY };
+      for (let cy = y0; cy <= y0 + 2; cy++)
+        for (let cx = x0; cx <= x0 + 2; cx++) {
+          if (!solid({ x: cx, y: cy })) continue;
+          const dx = x - Math.min(Math.max(x, cx), cx + 1),
+            dy = y - Math.min(Math.max(y, cy), cy + 1);
+          const len = Math.hypot(dx, dy);
+          // len 0 would be the centre inside a wall: never, the centre stays in its own snapped square
+          if (len && len < hit.len) hit = { dx, dy, len };
+        }
+      if (hit.len === BODY) break;
+      const nx = hit.dx / hit.len,
+        ny = hit.dy / hit.len;
+      x += nx * (BODY - hit.len);
+      y += ny * (BODY - hit.len);
+      // Dead on a corner (within about 15°) the push only undoes the hop and the walker would stand there pressing (W
+      // at the start, with the smith's corner up the screen): the hop goes round it instead, to the side it leans.
+      // Leaning to neither, always the same side, not the one rounding noise picks: at the start the other is the
+      // dead end between the smith and his forge. Only a corner: head-on into a flat wall stops
+      const along = (d.y * nx - d.x * ny) / hops; // the hop's part along the corner's tangent (-ny, nx)
+      const hop = Math.hypot(d.x, d.y) / hops;
+      if (pass || !hit.dx || !hit.dy || d.x * nx + d.y * ny >= 0 || Math.abs(along) >= 0.25 * hop) continue;
+      const slip = (along > 1e-9 * hop ? 1 : -1) * (hop - Math.abs(along));
+      x -= ny * slip;
+      y += nx * slip;
+    }
+  }
+  return { x, y };
+}
+
+// townTarget for the fluid walk, measured from the walker's centre: the nearest within TALK inside the cone in front,
+// else the door whose step the centre is over, else the nearest within TALK
+export function freeTarget(state: BattleState, at: Pos, facing: Pos): TownTarget | null {
+  const off = (u: UnitState) => ({ x: centreOf(u.pos).x - at.x, y: centreOf(u.pos).y - at.y });
+  const far = (u: UnitState) => Math.hypot(off(u).x, off(u).y);
+  const beside = state.units.filter((u) => u.id !== ME && far(u) <= TALK).sort((a, b) => far(a) - far(b));
+  const unit = beside.find(
+    (u) => off(u).x * facing.x + off(u).y * facing.y >= AHEAD * far(u) * Math.hypot(facing.x, facing.y),
+  );
+  if (unit) return { act: 'talk', unit };
+  const place = TOWN_PLACES.find((p) => {
+    const door = centreOf(cell(p.door));
+    return Math.max(Math.abs(door.x - at.x), Math.abs(door.y - at.y)) <= DOOR;
+  });
+  if (place) return doorTarget(place);
   return beside[0] ? { act: 'talk', unit: beside[0] } : null;
 }
 

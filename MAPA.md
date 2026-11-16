@@ -59,7 +59,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
 - `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
 - `src/client/town-ui.ts` — the town's windows: Party with each member's sheet, Tavern (recruits) and Shop.
-- `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid.
+- `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid; the fluid walk's circle, stick and target (dt:town-free).
 - `src/client/dev-menu.ts` — developer menu screen (map, cast, JSON import/export); rules in dev-roster.ts.
 - `src/client/dev-roster.ts` — developer cast rules: build and validate sheets, DEV_MAPS, parseSetup and buildDevScenario.
 - `src/client/survival.ts` — "Until dawn" standalone mode: its scenario, turn goal and best-record save.
@@ -132,7 +132,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/crawl.ts` — the town menu and quest gate, the expedition map, room settle and finish, and the way home.
 - `src/client/game/saves-ui.ts` — Continue's list of save slots (load, delete) and starting a new game.
-- `src/client/game/options.ts` — Options window (game, sound, video, controls, language; restart, home, developer) and the town grid switch.
+- `src/client/game/options.ts` — Options window (game, sound, video, controls, language; restart, home, developer) and the town grid and fluid movement switches.
 - `src/client/game/end-screens.ts` — end-of-battle window, the result board and the victory confetti.
 
 ## src/client/scene — the parts BattleScene composes

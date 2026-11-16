@@ -14,7 +14,7 @@ import { store } from '../store.ts';
 import { isSurvival, survivalGoal } from '../survival.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { getTheme, setTheme, THEMES } from '../theme.ts';
-import { GRID_KEY, parseTownGrid } from '../town-map.ts';
+import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts';
 import { goHome, homeLabel } from './crawl.ts';
 import { devMenu } from './title.ts';
 
@@ -38,6 +38,20 @@ export const townGridChoice = (onPick: (on: boolean) => void = () => {}) =>
     parseTownGrid(store.json(GRID_KEY)),
     (on) => {
       store.set(GRID_KEY, JSON.stringify(on));
+      onPick(on);
+    },
+  );
+// Fluid movement in the walkable town instead of the half-tile steps (Nov 16, Fernando: off by default, to compare the two)
+export const townFreeChoice = (onPick: (on: boolean) => void = () => {}) =>
+  choice(
+    t('Movimento fluido na cidade', 'Fluid movement in town'),
+    [
+      [false, t('Desligado', 'Off')],
+      [true, t('Ligado', 'On')],
+    ],
+    parseTownFree(store.json(FREE_KEY)),
+    (on) => {
+      store.set(FREE_KEY, JSON.stringify(on));
       onPick(on);
     },
   );
@@ -226,6 +240,7 @@ export function optionsMenu(o: OptionsContext) {
           (on) => store.set(SLOWMO_KEY, JSON.stringify(on)),
         ),
         townGridChoice(),
+        townFreeChoice(),
       ],
     ],
     [

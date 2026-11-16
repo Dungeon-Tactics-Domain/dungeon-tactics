@@ -93,6 +93,11 @@ export class CameraRig {
     this.focusGoal = new THREE.Vector3(w.x, this.held ? w.y + 0.5 * this.k : STEP, w.z);
   }
 
+  // the same slide to a point between tiles (the town's fluid walk); the lerp in update is its smoothing
+  focusAt(w: THREE.Vector3) {
+    this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
+  }
+
   // Action camera (Nov 13, Fernando's request: "when a character is going to attack, an action cam like XCOM"): turns to
   // get behind the attacker, comes close and frames the attacker and the target; goes back to what it was after the sequence
   private camSaved: { viewH: number; yaw: number; pair: string } | null = null;

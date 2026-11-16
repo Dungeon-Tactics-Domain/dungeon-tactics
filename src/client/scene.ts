@@ -272,6 +272,11 @@ export class BattleScene {
   glide(unitId: string, to: Pos, ms: number) {
     return this.units.glide(unitId, to, ms);
   }
+  // the fluid walk (Units.slide): while it walks toward `dir`, the camera follows
+  slide(unitId: string, p: Pos, dir?: Pos) {
+    const w = this.units.slide(unitId, p, dir);
+    if (w) this.cam.focusAt(w);
+  }
   rest(unitId: string, at?: Pos) {
     this.units.rest(unitId, at);
   }
