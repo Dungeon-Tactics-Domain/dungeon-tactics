@@ -51,7 +51,7 @@ Nov 13, delivery 5 of [towns-party-equipment.md](towns-party-equipment.md).
 Nov 15, Fernando: a new mode; rules in `src/shared/crawl`.
 
 - `?crawl=SEED` (plus `depth=N`, `boss=1`, `theme=dungeon|forest|mountain`) makes `selectBattle` build the room from the seed, register it whole and halve it like any battle.
-- The mood reads the theme at the end of the room's id (`ROOM_KIND` in `ambience.ts`). The dungeon theme is the `cave` mood, the crypt's dark and embers without its walls, so every room draws on the smooth painted terrain like Ash Wood (Fernando's request of Nov 15); a lone blocking rock is the `boulder` look, the painted rock of `props.ts`.
+- The mood reads the theme at the end of the room's id (`ROOM_KIND` in `ambience-moods.ts`). The dungeon theme is the `cave` mood, the crypt's dark and embers without its walls, so every room draws on the smooth painted terrain like Ash Wood (Fernando's request of Nov 15); a lone blocking rock is the `boulder` look, the painted rock of `props.ts`.
 - The save key is `dt:battle:crawl`; a save of another room id (another seed or `CRAWL_VERSION`) starts the room over.
 - A seed whose 200 layouts all fail (none of the 500 tested) gives way to the next one; if that fails too, an alert says so and the page goes back home (`tests/crawl-boot.test.ts`; expedition rooms share this fallback).
 - The survival goal banner follows the battle in play (`isSurvival(scenario.id)`), so `?crawl` with `?scenario=survival` opens the room without it.
