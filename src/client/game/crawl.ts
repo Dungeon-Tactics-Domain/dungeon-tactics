@@ -56,6 +56,29 @@ function endExpedition(exp: Expedition, fell: boolean) {
   store.set(CRAWL_KEY, '');
   return gold;
 }
+
+// A window drawn earlier (another tab may have moved the expedition on, ended it or started another) acts on the save as
+// it is now: the same expedition (its seed) still live, else null
+const current = (exp: Expedition) => {
+  const live = liveExpedition();
+  return live?.seed === exp.seed ? live : null;
+};
+
+// Back to town alive (the map's Back to town, a new quest over a live one): the saved expedition's gold goes home whole,
+// once; nothing when it already ended elsewhere. Returns the gold that went home
+export function retreat(exp: Expedition) {
+  const now = current(exp);
+  return now ? endExpedition(now, false) : 0;
+}
+
+// Opens a chest of the saved expedition and saves it; null when the chest is not open there any more (a stale map)
+export function takeChest(exp: Expedition, node: number) {
+  const now = current(exp);
+  const next = now && openChest(now, node);
+  if (!next || next === now) return null;
+  store.set(CRAWL_KEY, JSON.stringify(next));
+  return next;
+}
 const group = () => parseGroup(store.json(GROUP_KEY));
 // who goes, as the town's party has them (class, name, equipment); `ids` keeps the order of the sheets
 const crawlers = (ids: string[]) => heroesFor({ ...group(), deployed: ids }, parseEquip(store.json(EQUIP_KEY)));
@@ -317,7 +340,7 @@ function lostScreen(kept: number) {
 function depart() {
   // a new quest over a live one ends that one in town, alive: its gold goes home whole
   const live = liveExpedition();
-  if (live) endExpedition(live, false);
+  if (live) retreat(live);
   const g = group();
   const units = crawlers(g.deployed);
   const party = g.deployed.map((id, k) => ({
@@ -386,10 +409,13 @@ export function expeditionScreen(exp: Expedition) {
           el('small', { class: 'continue-where' }, t(`sem batalha · depois de ${pt}`, `no battle · past ${en}`)),
         ],
         () => {
-          const next = openChest(exp, i);
-          store.set(CRAWL_KEY, JSON.stringify(next));
           d.close();
-          chestScreen(next, nodeGold(n));
+          const next = takeChest(exp, i);
+          if (next) return chestScreen(next, nodeGold(n));
+          // a stale map: the expedition as it is now, or the town when it ended
+          const now = current(exp);
+          if (now) expeditionScreen(now);
+          else toTown();
         },
         { disabled: !open.includes(i) },
       );
@@ -433,7 +459,7 @@ export function expeditionScreen(exp: Expedition) {
             );
             return;
           }
-          endExpedition(exp, false);
+          retreat(exp);
           d.close();
           toTown();
         }),

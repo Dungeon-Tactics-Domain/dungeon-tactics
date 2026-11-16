@@ -6,9 +6,11 @@ import {
   leftRoom,
   liveExpedition,
   ROOM_KEY,
+  retreat,
   savedExpedition,
   savedRoom,
   settleRoom,
+  takeChest,
 } from '../src/client/game/crawl.ts';
 import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
@@ -18,6 +20,7 @@ import { MAPS, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import {
   descentGold,
+  type Expedition,
   expeditionMap,
   openChest,
   openNodes,
@@ -195,6 +198,90 @@ describe('crawl rooms in the client', () => {
     expect(lost?.gold.banked).toBe(Math.floor(found / 2));
     expect(parseChest(store.json(CHEST_KEY)).gold).toBe(7 + Math.floor(found / 2));
     expect(savedExpedition()).toBeNull();
+  });
+
+  const map21 = expeditionMap(21);
+  // an expedition of seed 21 walked through every chest until `stop` says so, saved, with 7 gold in town
+  const walked = (stop: (open: number[], exp: Expedition) => boolean) => {
+    const map = expeditionMap(21);
+    let exp = startExpedition(
+      21,
+      parseGroup(null).deployed.map((id) => ({ id, max: 20 })),
+    );
+    while (!stop(openNodes(map, exp.path), exp)) {
+      const open = openNodes(map, exp.path);
+      const chest = open.find((i) => map[i].chest);
+      const lead = open.find((i) => map[i].next.some((c) => map[c].chest));
+      exp = chest !== undefined ? openChest(exp, chest) : winRoom(exp, lead ?? open[0], {});
+    }
+    store.set(CRAWL_KEY, JSON.stringify(exp));
+    store.set(ROOM_KEY, '');
+    store.set(CHEST_KEY, JSON.stringify({ gold: 7, items: [] }));
+    return { map, exp };
+  };
+  const townGold = () => parseChest(store.json(CHEST_KEY)).gold;
+
+  it('the boss down takes all the gold home, the boss’s 300 included', () => {
+    const { map, exp } = walked((open) => map21[open[0]].boss);
+    const boss = openNodes(map, exp.path)[0];
+    const won = settleRoom({ node: boss, heroes: {} }, true, newBattle(MAPS[0]).state);
+    expect(won?.done).toBe(true);
+    expect(won?.gold.banked).toBe(descentGold(exp) + 300);
+    expect(townGold()).toBe(7 + descentGold(exp) + 300);
+    expect(savedExpedition()).toBeNull();
+  });
+
+  it('leaving a room with gold found takes half home, rounded down', () => {
+    // the first point of the walk with an odd sum, so the rounding shows
+    const { exp } = walked((_, e) => descentGold(e) % 2 === 1);
+    const found = descentGold(exp);
+    store.set(ROOM_KEY, 'room in play');
+    expect(leftRoom()).toBe((found - 1) / 2);
+    expect(townGold()).toBe(7 + (found - 1) / 2);
+  });
+
+  it('Back to town (and a new quest over it) takes all the gold home, once, even from a stale window', () => {
+    const { map, exp } = walked((open) => map21[open[0]].floor === 2);
+    const found = descentGold(exp);
+    expect(found).toBeGreaterThan(0);
+    // another tab went on and opened a room meanwhile: this window's older expedition banks what is saved now
+    const ahead = winRoom(exp, openNodes(map, exp.path)[0], {});
+    store.set(CRAWL_KEY, JSON.stringify(ahead));
+    expect(retreat(exp)).toBe(descentGold(ahead));
+    expect(townGold()).toBe(7 + descentGold(ahead));
+    // the second tab's Back to town finds it ended: nothing twice
+    expect(retreat(ahead)).toBe(0);
+    expect(townGold()).toBe(7 + descentGold(ahead));
+    // nor does it touch a newer expedition started after it
+    const fresh = startExpedition(22, ahead.party);
+    store.set(CRAWL_KEY, JSON.stringify(fresh));
+    expect(retreat(exp)).toBe(0);
+    expect(savedExpedition()).toEqual(fresh);
+  });
+
+  it('a chest opened from a stale map neither pays twice nor undoes what another tab did', () => {
+    const { map, exp } = walked((open) => open.some((i) => map21[i].chest));
+    const chest = openNodes(map, exp.path).find((i) => map[i].chest)!;
+    const opened = takeChest(exp, chest);
+    expect(opened?.path.at(-1)).toBe(chest);
+    expect(takeChest(exp, chest)).toBeNull(); // the same window again
+    // a tab that went past the chest's row: the stale chest leaves its path as it is
+    const past = winRoom(exp, openNodes(map, exp.path)[0], {});
+    store.set(CRAWL_KEY, JSON.stringify(past));
+    expect(takeChest(exp, chest)).toBeNull();
+    expect(savedExpedition()).toEqual(past);
+    // an ended expedition is not brought back
+    store.set(CRAWL_KEY, '');
+    expect(takeChest(exp, chest)).toBeNull();
+    expect(savedExpedition()).toBeNull();
+  });
+
+  it('the town’s gold stops at the most the save holds (999999), not wrapping to 0', () => {
+    const { exp } = walked((open) => map21[open[0]].floor === 2);
+    store.set(CHEST_KEY, JSON.stringify({ gold: 999990, items: [] }));
+    expect(descentGold(exp)).toBeGreaterThan(9);
+    retreat(exp);
+    expect(townGold()).toBe(999999);
   });
 
   it('the town offers to continue only an expedition whose boss is still up', () => {
