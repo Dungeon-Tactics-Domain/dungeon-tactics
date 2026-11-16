@@ -264,4 +264,31 @@ describe('charges in the FFT study (BMG 2.2, 3.3)', () => {
     untilResolved(b);
     expect(b.state.units.find((u) => u.id === 'wizard')!.vars!.mp).toBe(11);
   });
+
+  // the game's resistances stay out of the study (Rules.defence): x1.5 from a physical hit on a charging unit, x1 from a
+  // spell (BMG 6, Charging status), and a spell shows no side, since FFT's magic ignores facing
+  it('a charging unit takes x1.5 from a physical hit and x1 from a spell; a spell shows no side', () => {
+    const b = Battle.start(CLASSES_BATTLE, 1);
+    const wizard = b.state.units.find((u) => u.id === 'wizard')!;
+    const knight = b.state.units.find((u) => u.id === 'e-knight')!;
+    const fighter = b.state.units.find(
+      (u) => u.team === 'hero' && !ABILITIES[UNIT_DEFS[u.def].abilities[0]].magic && UNIT_DEFS[u.def].speed > 0,
+    )!;
+    wizard.pos = { x: 5, y: 5 };
+    knight.pos = { x: 5, y: 7 };
+    knight.facing = 0; // the wizard stands to its side
+    fighter.pos = { x: 5, y: 8 };
+    const swing = UNIT_DEFS[fighter.def].abilities[0];
+    const aim = (unit: string, ability: string) => {
+      b.state.turn = { actor: unit, moved: false, usedAbility: null };
+      return b.preview(ability, { x: 5, y: 7 }).targets[0];
+    };
+    const [fire, hit] = [aim('wizard', 'fft_wizard_fire'), aim(fighter.id, swing)];
+    expect(fire.side).toBe('front');
+    b.state.charges = [
+      { unit: 'e-knight', ability: 'fft_wizard_fire', target: { x: 5, y: 5 }, follow: null, ticks: 3 },
+    ];
+    expect(aim('wizard', 'fft_wizard_fire')).toMatchObject({ dmgMin: fire.dmgMin, dmgMax: fire.dmgMax });
+    expect(aim(fighter.id, swing)).toMatchObject({ dmgMax: Math.floor(hit.dmgMax * 1.5) });
+  });
 });

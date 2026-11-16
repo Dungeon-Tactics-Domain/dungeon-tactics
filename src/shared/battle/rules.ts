@@ -14,6 +14,9 @@ export interface Rules {
   facing?: true; // units have a direction (UnitState.facing): they turn when walking and acting, and the player chooses at the end of the turn
   speed?(unit: UnitState): number; // CT gained per tick
   damage?(actor: UnitState, ability: AbilityDef): [min: number, max: number]; // damage range shown in the preview and used by the AI
+  // share of a hit the target keeps, in 1/10000 (the game: its resistances, combat.ts `defence`)
+  defence?(state: BattleState, ability: AbilityDef, target: UnitState): number;
+  spellsIgnoreSide?: true; // a spell always catches the front: no side or back bonus to show (FFT: magic ignores facing)
   after?(state: BattleState, actor: UnitState, ability: AbilityDef, target: UnitState, events: BattleEvent[]): void; // extra effect after hitting or healing the target
 }
 

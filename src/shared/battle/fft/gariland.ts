@@ -425,6 +425,10 @@ const rules: Rules = {
     );
   },
   damage,
+  // the game's resistances are not FFT's: whoever charges takes x1.5 from a physical hit only (BMG 6, Charging status)
+  defence: (state, ability, target) =>
+    !ability.magic && state.charges.some((c) => c.unit === target.id) ? 15000 : 10000,
+  spellsIgnoreSide: true, // magic only goes through the magic shield (BMG 1.4), so no side or back to show
   // BMG 2.1 and 2.2: ~5% of ATTACKs (and Charges, which count as ATTACK) are critical, with XA + (1..XA) - 1.
   // The other abilities roll within their own range.
   rollDamage(_state, actor, ability, rng) {
