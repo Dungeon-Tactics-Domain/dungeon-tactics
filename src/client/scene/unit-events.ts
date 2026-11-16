@@ -2,6 +2,7 @@
 // already applied to the state; this only reads what happened.
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import { samePos } from '../../shared/battle/grid.ts';
+import { shotAt } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { lookOf, playFx } from '../fx.ts';
@@ -46,7 +47,18 @@ export async function playEvents(
           b = a.clone().lerp(u.space.world(e.target), 0.5);
         await u.time.animate(TIMING.lunge, (k) => v.holder.position.lerpVectors(a, b, Math.sin(Math.PI * k)));
       }
-      await playFx(u.scene, u.animate, look.fx, from, to, ABILITIES[e.ability].radius, TIMING.projectile);
+      const { shot } = e;
+      await playFx(
+        u.scene,
+        u.animate,
+        look.fx,
+        from,
+        to,
+        ABILITIES[e.ability].radius,
+        TIMING.projectile,
+        // a flying shot flies the rule's own path (traceShot), up to where it stops
+        shot && ((k) => u.space.point(shotAt(shot, k * (shot.stop?.k ?? 1)))),
+      );
       playClip(v, 'Idle'); // the gesture plays once and stuck on the last frame until the unit acted again (Nov 13 review)
     } else if (e.k === 'hit' || e.k === 'bump' || e.k === 'fall' || e.k === 'spike')
       await takeDamage(u, v, events, i, state, s);

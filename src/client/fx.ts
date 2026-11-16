@@ -170,28 +170,57 @@ async function arc(
   done();
 }
 
-// projectile from `from` to `to`, straight or arced (rock and flask rise as in a throw)
-// `spin`: turns per second around its own axis (the knife spins in the air; the arrow does not)
+// Projectile along `at` (k 0 leaves, 1 lands), its tip on the path's tangent and a short trail behind it, as the Mechanics
+// lab's trajectory prototype. `spin`: turns per second around its own axis (the knife spins in the air; the arrow does not)
 async function fly(
   scene: THREE.Scene,
   tween: Tween,
-  from: THREE.Vector3,
-  to: THREE.Vector3,
+  at: (k: number) => THREE.Vector3,
   geo: THREE.BufferGeometry | THREE.Object3D,
   color: string,
-  height: number,
   ms: number,
   spin = 0,
 ) {
   const m = geo instanceof THREE.Object3D ? geo : new THREE.Mesh(geo, glow(color, 1));
   const done = spawn(scene, m);
+  // the trail: the last 12 places it flew through
+  const seen: THREE.Vector3[] = [];
+  const trail = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(Array.from({ length: 12 }, () => at(0))),
+    new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthWrite: false }),
+  );
+  scene.add(trail);
   await tween(ms, (k) => {
-    m.position.lerpVectors(from, to, k).y += Math.sin(Math.PI * k) * height;
-    m.lookAt(to);
+    m.position.copy(at(k));
+    m.lookAt(at(k + 0.01));
     if (spin) m.rotateX(k * (ms / 1000) * spin * Math.PI * 2);
+    seen.unshift(m.position.clone());
+    seen.length = Math.min(seen.length, 12);
+    const pos = trail.geometry.attributes.position;
+    for (let i = 0; i < 12; i++) pos.setXYZ(i, ...seen[Math.min(i, seen.length - 1)].toArray());
+    pos.needsUpdate = true;
   });
+  scene.remove(trail);
+  trail.geometry.dispose();
+  trail.material.dispose();
   done();
 }
+
+// the old throw: the straight line lifted by a sine (rock and flask rise as in a throw)
+const lob = (from: THREE.Vector3, to: THREE.Vector3, height: number) => (k: number) => {
+  const p = from.clone().lerp(to, k);
+  p.y += Math.sin(Math.PI * k) * height;
+  return p;
+};
+
+// Flight speed of a shot, in metres a second (a cell is 1 m on every game map): the Mechanics lab's weapon speeds, given in
+// whole tiles a second there (bow 8, dagger 16, fire bolt 12), so the curve flies slower than the straight line
+const SPEED: Partial<Record<FxKind, number>> = { arrow: 16, knife: 32, fire: 24, wind: 24 };
+const lengthOf = (at: (k: number) => THREE.Vector3) => {
+  let s = 0;
+  for (let i = 1; i <= 20; i++) s += at((i - 1) / 20).distanceTo(at(i / 20));
+  return s;
+};
 
 // Real arrow and knife in the air (Nov 13, Fernando's request: "the thrown knife must be a knife projectile, and the arrow
 // an arrow projectile"): simple pieces pointing to +z (lookAt aims at the target)
@@ -238,7 +267,9 @@ function knifeModel(): THREE.Group {
   return g;
 }
 
-// Ability effect from the gesture to the impact (waits for the projectile to arrive); what comes after the impact does not hold up the queue
+// Ability effect from the gesture to the impact (waits for the projectile to arrive); what comes after the impact does not hold up the queue.
+// `path`: a flying shot's path in the world (the rule's traceShot, up to where it stops), which the projectile follows at its
+// kind's speed, with a spark where it lands; without it the old throws from `from` to `to`
 export async function playFx(
   scene: THREE.Scene,
   tween: Tween,
@@ -247,9 +278,16 @@ export async function playFx(
   to: THREE.Vector3,
   radius: number,
   travel: number,
+  path?: (k: number) => THREE.Vector3,
 ) {
   const c = COLOR[kind];
   const after = (p: Promise<void>) => void p;
+  if (path) to = path(1);
+  const shot = async (geo: THREE.BufferGeometry | THREE.Object3D, height: number, ms: number, spin = 0) => {
+    if (!path) return fly(scene, tween, lob(from, to, height), geo, c, ms, spin);
+    await fly(scene, tween, path, geo, c, (lengthOf(path) / (SPEED[kind] ?? 16)) * 1000, spin);
+    after(bits(scene, tween, to, '#fff2a8', 'burst', 0.15, 300));
+  };
   switch (kind) {
     case 'slash':
     case 'stab':
@@ -263,22 +301,24 @@ export async function playFx(
     case 'spin':
       return ring(scene, tween, from, c, 1.6, 300);
     case 'arrow':
-      return fly(scene, tween, from, to, arrowModel(), c, 0.15, travel);
+      return shot(arrowModel(), 0.15, travel);
     case 'knife':
-      return fly(scene, tween, from, to, knifeModel(), c, 0.1, travel, 3);
+      return shot(knifeModel(), 0.1, travel, 3);
     case 'rock':
-      await fly(scene, tween, from, to, new THREE.DodecahedronGeometry(0.12), c, 1.1, travel * 1.4);
+      await shot(new THREE.DodecahedronGeometry(0.12), 1.1, travel * 1.4);
       return after(bits(scene, tween, to, c, 'burst', 0.2, 320));
     case 'flask':
-      await fly(scene, tween, from, to, new THREE.CylinderGeometry(0.06, 0.08, 0.18, 6), c, 1.1, travel * 1.4);
+      await shot(new THREE.CylinderGeometry(0.06, 0.08, 0.18, 6), 1.1, travel * 1.4);
       return after(bits(scene, tween, to, '#7dffa8', 'up', 0.3, 700));
     case 'fire':
-      await fly(scene, tween, from, to, new THREE.IcosahedronGeometry(0.22), c, 0.3, travel);
+      await shot(new THREE.IcosahedronGeometry(0.22), 0.3, travel);
       return after(ring(scene, tween, to, c, 1, 280));
     case 'blast':
       after(bits(scene, tween, to, '#ffd08a', 'burst', 0.4 + radius * 0.5, 500));
       return ring(scene, tween, to, c, 1.2 + radius * 1.6, 380);
     case 'wind':
+      // the gust flies straight as a puff, then opens where it lands
+      if (path) await shot(new THREE.SphereGeometry(0.16, 8, 6), 0, travel);
       return ring(scene, tween, to, c, 1.4, 320);
     case 'heal':
       return bits(scene, tween, to, c, 'up', 0.3 + radius * 0.6, 650);
