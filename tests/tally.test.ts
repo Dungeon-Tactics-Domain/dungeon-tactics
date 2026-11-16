@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { addEvents, emptyTally, mvp } from '../src/client/tally.ts';
+import { addEvents, emptyTally, endHeroes, mvp } from '../src/client/tally.ts';
 import type { Team } from '../src/shared/battle/types.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 const team: Record<string, Team> = { h1: 'hero', h2: 'hero', e1: 'enemy', e2: 'enemy' };
 const at = { x: 0, y: 0 };
@@ -86,5 +87,27 @@ describe('battle tally', () => {
     expect(mvp(t, team, 'hero')).toEqual(['h2', { dmg: 5, kills: 1 }]);
     expect(mvp(t, team, 'enemy')?.[0]).toBe('e1');
     expect(mvp(emptyTally(), team, 'hero')).toBeNull();
+  });
+
+  it('the end cards list every hero who started but the Beacon, the fallen at 0 life, with the highlight marked', () => {
+    const t = emptyTally();
+    const roster = {
+      h1: { team: 'hero' as const, def: 'warrior' },
+      h2: { team: 'hero' as const, def: 'archer' },
+      b: { team: 'hero' as const, def: 'beacon' },
+      e1: { team: 'enemy' as const, def: 'soldier' },
+    };
+    addEvents(
+      t,
+      [
+        { k: 'attack', unit: 'h2', ability: 'shot', target: at },
+        { k: 'hit', unit: 'e1', dmg: 12, chance: 90 },
+      ],
+      { h1: 'hero', h2: 'hero', b: 'hero', e1: 'enemy' },
+    );
+    expect(endHeroes(t, roster, [{ id: 'h2', hp: 7 }])).toEqual([
+      { id: 'h1', def: 'warrior', hp: 0, max: UNIT_DEFS.warrior.hp, dmg: 0, kills: 0, mvp: false },
+      { id: 'h2', def: 'archer', hp: 7, max: UNIT_DEFS.archer.hp, dmg: 12, kills: 0, mvp: true },
+    ]);
   });
 });

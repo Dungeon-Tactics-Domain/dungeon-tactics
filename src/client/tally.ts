@@ -3,6 +3,7 @@
 // spike), until the next "attack". Only counts damage to the other side (a spike at the end of one's own turn is nobody's merit).
 // Pure and tested; the Game gathers the events on each animation. Saving and reopening mid-battle resets the tally (it lives only in memory).
 import type { BattleEvent, Team } from '../shared/battle/types.ts';
+import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
 import { t } from './i18n.ts';
 
 export interface Score {
@@ -14,7 +15,12 @@ export interface Tally {
   scores: Record<string, Score>;
 }
 
+// side and sheet of each unit, stored at the start of the battle (dead units leave the state)
+export type Roster = Record<string, { team: Team; def: string }>;
+
 export const emptyTally = (): Tally => ({ by: null, scores: {} });
+export const teamsOf = (roster: Roster): Record<string, Team> =>
+  Object.fromEntries(Object.entries(roster).map(([id, u]) => [id, u.team]));
 
 export function addEvents(t: Tally, events: BattleEvent[], team: Record<string, Team>): void {
   // spike with no push right before (from whoever ended their turn on it) is nobody's merit, nor is the death that comes from it;
@@ -39,6 +45,26 @@ export function mvp(t: Tally, team: Record<string, Team>, side: Team): [id: stri
   const list = Object.entries(t.scores).filter(([id, s]) => team[id] === side && (s.dmg > 0 || s.kills > 0));
   list.sort(([, a], [, b]) => b.kills - a.kills || b.dmg - a.dmg);
   return list[0] ?? null;
+}
+
+// the heroes' cards at the end (end-screens.ts resultBoard): everyone who started on the heroes' side but the Beacon, the
+// life left (the roster keeps the fallen, at 0: the state drops them), the tally and the highlight
+export function endHeroes(tally: Tally, roster: Roster, units: { id: string; hp: number }[]) {
+  const best = mvp(tally, teamsOf(roster), 'hero')?.[0];
+  return Object.entries(roster)
+    .filter(([, r]) => r.team === 'hero' && !isObjective(r.def))
+    .map(([id, { def }]) => {
+      const s = tally.scores[id];
+      return {
+        id,
+        def,
+        hp: units.find((u) => u.id === id)?.hp ?? 0,
+        max: UNIT_DEFS[def].hp,
+        dmg: s?.dmg ?? 0,
+        kills: s?.kills ?? 0,
+        mvp: id === best,
+      };
+    });
 }
 
 // the result board card's last line, where the lab mockup had the EXP gained (XP and levels are cancelled): `gain`

@@ -71,7 +71,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/place-beside.ts` — where a menu goes beside the acting unit on screen (placeBeside).
 - `src/client/battle-face.ts` — which face sheet and expression a battle event shows, and for how long.
 - `src/client/hit-weight.ts` — weight of a blow: its distances, the number's size and colour, the killing-blow lookahead and the death slow motion option (dt:death-slowmo).
-- `src/client/tally.ts` — damage and takedowns per unit from the played events, for the result board.
+- `src/client/tally.ts` — damage and takedowns per unit from the played events and the heroes' cards (endHeroes), for the result board.
 - `src/client/group.ts` — party rules: recruit, dismiss, class change, who goes to battle (dt:party).
 - `src/client/chest.ts` — gold, items and per-member equipment (dt:chest, dt:equip) with their parsers.
 - `src/client/saves.ts` — save slots: the dt:saves manifest, new game, load and delete, slot summaries.

@@ -15,8 +15,8 @@ import {
   squareH,
   unitAt,
 } from '../shared/battle/pathing.ts';
-import type { BattleEvent, Lock, Pos, Team, UnitState } from '../shared/battle/types.ts';
-import { isObjective, UNIT_DEFS } from '../shared/battle/units.ts';
+import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.ts';
+import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import {
@@ -35,7 +35,7 @@ import { dialog, padDialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom } from './game/crawl.ts';
-import { battleEndScreen, confetti, type EndHero } from './game/end-screens.ts';
+import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
 import { bootTown } from './game/town.ts';
@@ -63,7 +63,7 @@ import { BattleScene } from './scene.ts';
 import { jingle, type Sfx, sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
-import { addEvents, emptyTally, mvp } from './tally.ts';
+import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
 import { isJump, pace, stepMs, TIMING } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
 
@@ -89,8 +89,7 @@ export class Game {
   private readonly fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
   // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)
   private tally = emptyTally();
-  private roster: Record<string, { team: Team; def: string }> = {};
-  private readonly teamOf = () => Object.fromEntries(Object.entries(this.roster).map(([id, u]) => [id, u.team]));
+  private roster: Roster = {};
 
   constructor(
     private battle: Battle,
@@ -593,7 +592,7 @@ export class Game {
   }
 
   private async animate(events: BattleEvent[], enemy = false) {
-    addEvents(this.tally, events, this.teamOf());
+    addEvents(this.tally, events, teamsOf(this.roster));
     this.busy = true;
     this.update(this.ui);
     // the faces react as each event plays, after its banner: a unit's new moods replace the ones it had
@@ -801,26 +800,6 @@ export class Game {
     this.roster = Object.fromEntries(this.battle.state.units.map((u) => [u.id, { team: u.team, def: u.def }]));
   }
 
-  // the heroes' cards at the end (end-screens.ts resultBoard): everyone who started on the heroes' side but the Beacon, the
-  // life left (the roster keeps the fallen, at 0: the state drops them), the tally and the highlight
-  private endHeroes(): EndHero[] {
-    const best = mvp(this.tally, this.teamOf(), 'hero')?.[0];
-    return Object.entries(this.roster)
-      .filter(([, r]) => r.team === 'hero' && !isObjective(r.def))
-      .map(([id, { def }]) => {
-        const s = this.tally.scores[id];
-        return {
-          id,
-          def,
-          hp: this.battle.state.units.find((u) => u.id === id)?.hp ?? 0,
-          max: UNIT_DEFS[def].hp,
-          dmg: s?.dmg ?? 0,
-          kills: s?.kills ?? 0,
-          mvp: id === best,
-        };
-      });
-  }
-
   private restart() {
     this.battle = newBattle(this.sel.scenario, this.sel.room);
     this.resetTally();
@@ -839,7 +818,8 @@ export class Game {
     jingle(won);
     this.scene.celebrate(won ? 'hero' : 'enemy', this.battle.state);
     if (won) confetti();
-    if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, this.endHeroes());
+    const heroes = endHeroes(this.tally, this.roster, this.battle.state.units);
+    if (this.sel.room) return finishRoom(this.sel.room, won, this.battle.state, heroes);
     // Until Dawn: how many turns it lasted and the record (a new record gets highlighted, like the stage grade)
     // winning by downing everyone before dawn also counts as surviving the whole night (it used to save "record 20" on a victory)
     const lasted = won ? SURVIVE_TURNS : survived(this.battle.state),
@@ -850,7 +830,7 @@ export class Game {
       survival: isSurvival(scenario.id),
       lasted,
       best,
-      heroes: this.endHeroes(),
+      heroes,
       restart: () => this.restart(),
     });
   }
