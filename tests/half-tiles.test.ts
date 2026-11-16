@@ -6,7 +6,7 @@ import { store } from '../src/client/store.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
+import { COMBAT, checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
 import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import {
   canStand,
@@ -498,7 +498,7 @@ describe('half tiles: push', () => {
     // between the two tiles at 3, pushed 1 tile: the square ends half over the drop and falls onto the tile at 0
     const r = pushOn('3300', 1, 1);
     expect(r.to).toEqual({ x: 4, y: 0 });
-    expect(r.dmg).toBe(18); // 3 levels: (3 - 1) x 9, no bump
+    expect(r.dmg).toBe(2 * COMBAT.FALL_DAMAGE); // 3 levels: 3 - 1 past the free one, no bump
     expect(r.events.map((e) => e.k)).toEqual(['push', 'push', 'push', 'fall']);
   });
 
@@ -506,7 +506,7 @@ describe('half tiles: push', () => {
     // up a step of 1: half on the step is not even ground, and climbing onto it is not a fall
     const up = pushOn('001', 1, 1);
     expect(up.to).toEqual({ x: 2, y: 0 });
-    expect(up.dmg).toBe(5);
+    expect(up.dmg).toBe(COMBAT.BUMP_DAMAGE);
     expect(up.events.map((e) => e.k)).toEqual(['push', 'bump']);
     // a unit below the ledge holds the fall: back onto the high tile
     const held = pushOn('1100', 1, 1, [{ id: 'x', def: `soldier${HALF}`, team: 'enemy', x: 5, y: 0 }]);

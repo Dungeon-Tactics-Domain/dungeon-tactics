@@ -46,11 +46,11 @@ export const COMBAT = {
   MIN_CHANCE: 5, // never certain nor impossible: the die always exists
   MAX_CHANCE: 95,
   // bump, fall and spikes x1.75 together with the abilities' damage (Nov 13, "very low damage making the battle slow"):
-  // previously 3, 5 and 6
-  BUMP_DAMAGE: 5, // push stopped by a wall, unit, edge or high step
+  // previously 3, 5 and 6; x5 on Nov 15 with life and damage (Fernando's grill), previously 5, 9 and 10
+  BUMP_DAMAGE: 25, // push stopped by a wall, unit, edge or high step
   FALL_FREE: 1, // a fall of up to 1 level is just a step
-  FALL_DAMAGE: 9, // per level beyond the free step
-  SPIKE_DAMAGE: 10, // spikes tile (grid.ts): the same as a weak hit
+  FALL_DAMAGE: 45, // per level beyond the free step
+  SPIKE_DAMAGE: 50, // spikes tile (grid.ts): the same as a weak hit
   // physical hit from the side and from behind (Nov 13, direction in the game, like FFT: there the side removes the class evasion and the
   // back removes the shield's too). Our hit chance has no evasion: it becomes a bonus. Initial numbers, measured in the campaign
   SIDE_BONUS: 15,

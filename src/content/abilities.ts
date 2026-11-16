@@ -2,7 +2,7 @@
 // to be decided by playing and simulating. Damage and healing x1.75 on Nov 13 (Fernando's request: "very low damage making the
 // battle slow"): a common hit took ~17% of the life (6 hits to take someone down), in FFT it takes ~37% (Gariland study); now ~30%.
 // Damage and healing x5 on Nov 15 together with the life (Fernando's grill), so the share of life per hit stays; push, fall and
-// spike damage (COMBAT in combat.ts) follow in phase B
+// spike damage (COMBAT in combat.ts) followed the same day
 import type { AbilityDef } from '../shared/battle/abilities.ts';
 
 // the builder lives here, not in the engine: the engine imports this list, so a builder imported back from it would not be
