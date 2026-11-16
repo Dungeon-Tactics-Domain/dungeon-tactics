@@ -480,8 +480,8 @@ button[hidden],
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-/* the lab mockup's board (Nov 15; resultBoard): no window, the battle behind darkened at 45%; the title on its own band
-   (wine on a defeat), a row of hero cards and the Result panel as wide as the cards. Fits 1280x720 with four heroes */
+/* the board (resultBoard): no window, the battle behind darkened at 45%; the title on its own band (wine on a defeat).
+   The hero rows and the Result window are laid out in the FFT block at the end of this file */
 .result-overlay:has(.result-board) {
   background: color-mix(in srgb, var(--shade) 45%, transparent);
 }
@@ -525,43 +525,8 @@ button[hidden],
 .result-board .dialog-head button.icon {
   display: none;
 }
-.hero-cards {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-}
-@media (max-width: 760px) {
-  .hero-cards {
-    flex-wrap: wrap;
-  }
-}
-.hero-card {
-  flex: 0 1 280px;
-  min-width: 0;
-  padding: 16px;
-  display: grid;
-  gap: 6px;
-  align-content: start;
-}
-.hero-card .portrait {
-  justify-self: center;
-  width: 96px;
-  height: 128px;
-  margin-bottom: 4px;
-}
 .hero-card.fell :is(.portrait, .still-face) {
   filter: grayscale(1) brightness(0.7);
-}
-.hero-card-name {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--gap);
-  font: 700 var(--fs-lg) / 1.1 var(--font-title);
 }
 .hero-card-mvp {
   font-size: var(--fs-sm);
@@ -577,42 +542,6 @@ button[hidden],
 }
 .hero-card-line.fell {
   color: var(--enemy-hi);
-}
-.result-panel {
-  width: 100%;
-}
-/* one column per result, label over value, so the board stays inside 720 px of height */
-.result-panel dl {
-  display: grid;
-  grid-template-rows: auto auto;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 4px 24px;
-  margin: 0;
-  padding: 14px 20px 0;
-  font-size: var(--fs-lg);
-}
-.result-panel dt {
-  color: var(--ink-muted);
-}
-.result-panel dd {
-  margin: 0;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.result-panel p {
-  margin: 12px 20px 0;
-}
-.result-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 12px 20px 16px;
-}
-.dialog .result-actions button {
-  flex: none;
-  width: auto;
-  padding: 0 20px;
 }
 /* the key drawn on the primary, like the kit's Continue [Enter]; only where a keyboard is likely */
 .key-chip {
@@ -2868,4 +2797,199 @@ p.gold strong::before,
   .dialog .save-list {
     grid-template-columns: minmax(0, 1fr) 8em;
   }
+}
+/* ---- FFT results/dialogue (agent results) ---- */
+/* End of battle after FFT's (Nov 16; game/end-screens.ts resultBoard): the banner, then the party as a list of rows
+   (face, name, life, damage, takedowns) beside the Result window, whose foot holds the commands. Up to 900 px wide the
+   window goes under the rows */
+.dialog.result.result-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  justify-items: stretch;
+  gap: 16px 20px;
+}
+.result-board .dialog-head {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+.hero-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.hero-card {
+  display: grid;
+  grid-template-columns: 64px minmax(110px, 1fr) minmax(200px, 1.6fr) auto;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 8px 14px 8px 8px;
+}
+/* a class with no painted sheet: the portrait at the face's height */
+.hero-card .portrait {
+  width: 48px;
+  height: 64px;
+  justify-self: center;
+}
+.hero-card-who,
+.hero-card-life {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.hero-card-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--gap);
+  font: 700 var(--fs-lg) / 1.1 var(--font-title);
+}
+.hero-card .unit-class {
+  margin: 0;
+}
+/* what the hero did: the number big under its label, a column each, like the lines of FFT's unit list */
+.hero-card-did {
+  display: flex;
+  gap: 14px;
+  margin: 0;
+  text-align: right;
+}
+.hero-card-did dt {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.hero-card-did dd {
+  margin: 0;
+  font: 700 var(--fs-lg) / 1.1 var(--font);
+  font-variant-numeric: tabular-nums;
+}
+/* the Result window: one line per result, the label at the left and the value at the right */
+.result-panel dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 12px 16px 0;
+  font-size: var(--fs-lg);
+}
+.result-panel dt {
+  color: var(--ink-muted);
+}
+.result-panel dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.result-panel p {
+  margin: 12px 16px 0;
+}
+.result-actions {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+@media (max-width: 900px) {
+  .dialog.result.result-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* a phone: the life bar and the numbers go under the name */
+@media (max-width: 560px) {
+  .hero-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .hero-card-life,
+  .hero-card-did {
+    grid-column: 1 / -1;
+  }
+  .hero-card-did {
+    text-align: left;
+  }
+}
+/* one step at a time, like FFT's results: the banner, each row, then the window (about half a second in all) */
+.result-board .dialog-head {
+  animation: result-band 160ms ease-out;
+}
+.hero-card,
+.result-panel {
+  animation: result-in 160ms ease-out both;
+}
+.hero-card:nth-child(1) {
+  animation-delay: 120ms;
+}
+.hero-card:nth-child(2) {
+  animation-delay: 190ms;
+}
+.hero-card:nth-child(3) {
+  animation-delay: 260ms;
+}
+.hero-card:nth-child(n + 4) {
+  animation-delay: 330ms;
+}
+.result-panel {
+  animation-delay: 400ms;
+}
+@keyframes result-band {
+  from {
+    transform: scaleX(0.2);
+    opacity: 0;
+  }
+}
+@keyframes result-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+/* Dialogue box after FFT's (Nov 16; talk.ts): wider, the speaker's name on a tab over the box's top left corner, the
+   face at the left, the text typing beside it and the small ▼ at the bottom right */
+.panel.talk {
+  width: min(1100px, 100%);
+  margin-top: 40px; /* the tab's room, so it never covers the place strip above */
+  padding-top: 18px;
+}
+.talk-name {
+  position: absolute;
+  left: 10px;
+  bottom: calc(100% - 2px); /* over the box's top line: the tab and the box read as one piece */
+  padding: 6px 18px;
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--r);
+  background: linear-gradient(var(--glass-hi), var(--glass)), var(--panel-veil);
+  /* set here, not in the blue surfaces' list above, so this block stays in one place */
+  -webkit-backdrop-filter: var(--panel-filter);
+  backdrop-filter: var(--panel-filter);
+  box-shadow: var(--paper-frame);
+}
+/* the opening narration has no box, so no tab either */
+.talk-overlay.dark .talk-name {
+  position: static;
+  padding: 0;
+  border: none;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+/* a phone: the face at half size (a whole ratio), so the text keeps most of the line, and a line of its own for the
+   hint, which four lines of text ran under */
+@media (max-width: 560px) {
+  .talk-face {
+    zoom: 0.5;
+  }
+  .panel.talk {
+    padding-bottom: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) :is(.result-board .dialog-head, .hero-card, .result-panel) {
+    animation: none;
+  }
+}
+:root[data-motion="reduce"] :is(.result-board .dialog-head, .hero-card, .result-panel) {
+  animation: none;
 }
