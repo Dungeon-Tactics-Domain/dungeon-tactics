@@ -28,8 +28,9 @@ import {
 } from './command.ts';
 import { forecast, forecastText, hpAfterText } from './forecast.ts';
 import { hint, KEYS, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
+import { ToolsMenu } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { abilityIcon, button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
+import { abilityIcon, button, type Child, el } from './icons.ts';
 import type { Highlights } from './interaction.ts';
 import { type Anchor, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
@@ -90,9 +91,9 @@ const menuHead = (...text: Child[]) => el('div', { class: 'panel-head', 'aria-hi
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
   private readonly queue = el('ol', { class: 'panel queue', 'aria-label': t('Ordem dos turnos', 'Turn order') });
-  private fastBtn!: HTMLElement;
+  private readonly tools: ToolsMenu;
   setFast(on: boolean) {
-    this.fastBtn.setAttribute('aria-checked', String(on));
+    this.tools.setFast(on);
   }
   scrollQueue(dir: 1 | -1) {
     const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;
@@ -119,59 +120,11 @@ export class BattleHud {
   private readonly strikesEl = el('div', { class: 'strikes' });
   private readonly root: HTMLElement;
 
-  private readonly toolsMenu = el('div', { class: 'panel tools-menu', role: 'menu', hidden: true });
-  private readonly burger = iconButton(
-    el('span', { class: 'burger-bars', 'aria-hidden': 'true' }),
-    t('Menu', 'Menu'),
-    () => this.showTools(!!this.toolsMenu.hidden),
-    { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' },
-  );
-  // closes on click outside or on any key press (Esc also goes back in the game; the action key keeps acting). The
-  // key closes even with focus on the menu button, which keeps it after the click
-  private readonly closeOutside = (e: Event) => {
-    if (e.type === 'keydown' || !(e.target instanceof Node && this.toolsMenu.parentElement?.contains(e.target)))
-      this.showTools(false);
-  };
-  private showTools(open: boolean) {
-    this.toolsMenu.hidden = !open;
-    this.burger.setAttribute('aria-expanded', String(open));
-    for (const ev of ['pointerdown', 'keydown']) {
-      if (open) document.addEventListener(ev, this.closeOutside, true);
-      else document.removeEventListener(ev, this.closeOutside, true);
-    }
-  }
-  private toolItem(glyph: Child, label: string, key: string, run: () => void, props: Record<string, unknown> = {}) {
-    return button(
-      'item',
-      [
-        el('span', { class: 'tool-label' }, el('span', { class: 'tool-glyph', 'aria-hidden': 'true' }, glyph), label),
-        key ? hint(key) : null,
-      ],
-      () => {
-        this.showTools(false);
-        run();
-      },
-      { role: 'menuitem', ...props },
-    );
-  }
-
   constructor(
     host: HTMLElement,
     private readonly act: HudActions,
   ) {
-    this.fastBtn = this.toolItem('»', t('Batalha rápida', 'Fast battle'), '', () => act.fast(), {
-      role: 'menuitemcheckbox',
-      'aria-checked': 'false',
-    });
-    this.toolsMenu.append(
-      this.toolItem(icon(UI_ICON.undo), t('Desfazer', 'Undo'), 'Z', () => act.undo()),
-      this.toolItem('⟲', t('Girar à esquerda', 'Rotate left'), '⇧R', () => act.rotate(-1)),
-      this.toolItem('⟳', t('Girar à direita', 'Rotate right'), 'R', () => act.rotate(1)),
-      this.toolItem(icon(UI_ICON.recenter), t('Ver o mapa inteiro', 'Show the whole map'), 'F', () => act.recenter()),
-      this.toolItem(icon(UI_ICON.pixel), t('Tamanho do pixel', 'Pixel size'), 'V', () => act.pixel()),
-      this.fastBtn,
-      this.toolItem(icon(UI_ICON.menu), t('Opções e ajuda', 'Options and help'), 'H', () => act.menu()),
-    );
+    this.tools = new ToolsMenu(act);
     this.root = el(
       'div',
       { class: `hud${KEYS ? ' kbd' : ''}` },
@@ -179,9 +132,7 @@ export class BattleHud {
       this.queue,
       this.help,
       this.bannerEl,
-      // a menu button (3 bars) on the HUD panel colour in place of the row of 7 stone buttons (Nov 13, Fernando's request:
-      // "crude and inconsistent"); the keys still work and show on each row
-      el('div', { class: 'tools' }, this.burger, this.toolsMenu),
+      this.tools.root,
       this.commands,
       this.abilities,
       this.confirmBox,
@@ -533,7 +484,7 @@ export class BattleHud {
   }
 
   dispose() {
-    this.showTools(false);
+    this.tools.close();
     this.root.remove();
   }
 }

@@ -88,6 +88,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/theme.ts` — interface theme choice (dt:theme), set as data-theme on the page.
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
+- `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/icons.ts` — el(), button(), iconButton() and icon() over the icon sprite, and the ability icon atlas.
