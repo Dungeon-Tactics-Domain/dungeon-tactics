@@ -6,13 +6,14 @@ import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import { openDevMenu } from '../dev-menu.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
+import { KEYS } from '../hud-pieces.ts';
 import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
 import { jumpHelp } from '../town-ui.ts';
-import { openSaves, savedGames, startNewGame } from './saves-ui.ts';
+import { openSaves, savedCount, savedGames, startNewGame } from './saves-ui.ts';
 
 // Developer menu (Nov 12). Starting saves the roster, erases the previous developer battle and reopens the game on it
 // (boot builds the scenario).
@@ -242,7 +243,9 @@ function howToPlay() {
 }
 
 // Title screen (night of Nov 12): the game opened straight into a battle without saying what it was. Since Nov 15 New
-// game and Continue lead to the town (crawl.ts), the dungeon loop's home; there is no world map or campaign
+// game and Continue lead to the town (crawl.ts), the dungeon loop's home; there is no world map or campaign. Since Nov 16
+// (Fernando: the interface on its FFT counterpart) the name over the art and a small plain command window under it, the
+// cursor on Continue when there is a save; the lab kit's Menu head and orbs of Nov 15 left
 export function titleScreen() {
   setTrack('title');
   // read here, not at load: crawl.ts imports this module back
@@ -264,16 +267,7 @@ export function titleScreen() {
           ? [
               button(
                 'primary',
-                [
-                  t('Continuar', 'Continue'),
-                  el(
-                    'small',
-                    { class: 'continue-where' },
-                    saved === 1
-                      ? t('1 jogo salvo', '1 saved game')
-                      : t(`${saved} jogos salvos`, `${saved} saved games`),
-                  ),
-                ],
+                [t('Continuar', 'Continue'), el('small', { class: 'continue-where' }, savedCount(saved))],
                 go(() => openSaves(titleScreen)),
               ),
             ]
@@ -295,8 +289,8 @@ export function titleScreen() {
       el(
         'p',
         { class: 'title-foot' },
-        t('Setas escolhem · Enter confirma', 'Arrows choose · Enter confirms'),
-        ' · ',
+        // the keys only where there is a keyboard (Nov 16 touch audit: a tablet was told to press Enter)
+        KEYS && t('Setas escolhem · Enter confirma · ', 'Arrows choose · Enter confirms · '),
         // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
         button('title-lang', LANG === 'pt' ? 'English' : 'Português', () => setLang(LANG === 'pt' ? 'en' : 'pt')),
       ),
@@ -304,11 +298,5 @@ export function titleScreen() {
     { fixed: true },
   ); // real title screen (Nov 13): does not close, and the map behind it is just scenery
   d.overlay.classList.add('main-title');
-  // the lab kit's command menu (Nov 15 mockup): a Menu head and a glass orb before each row, gold where the focus starts
-  const list = d.overlay.querySelector('.camp-list')!;
-  list.classList.add('command-list');
-  list.prepend(el('div', { class: 'panel-head', 'aria-hidden': 'true' }, 'Menu'));
-  for (const b of list.querySelectorAll('button'))
-    b.prepend(el('span', { class: `orb ${b.classList.contains('primary') ? 'gold' : 'blue'}`, 'aria-hidden': 'true' }));
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }

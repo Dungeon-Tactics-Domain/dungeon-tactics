@@ -108,7 +108,7 @@ export function secondTap(e: Event, text: string): boolean {
 }
 
 // The gamepad inside the topmost window (the battle's and the town's loops): the d-pad moves between its visible buttons,
-// A presses the focused one, B closes it like Esc, left and right change a focused volume bar. False with no window open,
+// A presses the focused one, B closes it like Esc, left and right change a focused volume bar or Options row. False with no window open,
 // so the action goes to the map behind
 export function padDialog(a: KeyAction): boolean {
   // the topmost window: the town menu stays open under the window beside it
@@ -132,6 +132,15 @@ export function padDialog(a: KeyAction): boolean {
     if (a.dir === 'right') range.stepUp();
     else range.stepDown();
     range.dispatchEvent(new Event('input'));
+  } else if (
+    a.k === 'cursor' &&
+    at >= 0 &&
+    buttons[at].matches('.opt-row') &&
+    (a.dir === 'left' || a.dir === 'right')
+  ) {
+    // on an Options row (option-row.ts) left and right change its value, through the row's own arrow keys
+    const code = a.dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
+    buttons[at].dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true }));
   } else if (a.k === 'cursor')
     buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
   return true;

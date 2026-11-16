@@ -107,6 +107,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
+- `src/client/option-row.ts` — the Options list's row: a setting's name, its value between ◀ ▶, the pure steps (cycle, pctAt).
 - `src/client/icons.ts` — el(), button(), iconButton() and icon() over the icon sprite, and the ability icon atlas.
 - `src/client/talk.ts` — dialogue box: typed text, blips, talking faces and text speed (dt:text).
 - `src/client/touch-input.ts` — tap, drag and pinch or wheel on the map.
@@ -140,15 +141,16 @@ parseGrid and withRamps (grid.ts).
 ## src/client/game — what opens around the battle
 
 - `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, developer, map, standalone); the loading line over a scene still downloading (loadNote).
-- `src/client/game/title.ts` — title screen and its windows (new game, continue, battle, how to play, credits, developer).
+- `src/client/game/title.ts` — title screen (the name over the art, a small command window) and its windows (new game, continue, battle, how to play, credits, developer).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/town-folk.ts` — the townsfolk: who strolls, who is being talked to, the rumour each tells next.
 - `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
 - `src/client/game/crawl.ts` — the town menu and quest gate, the expedition map, room settle and finish, and the way home.
 - `src/client/game/expedition-map.ts` — the expedition map: the floor in play as rows of rooms, the party's state and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
-- `src/client/game/saves-ui.ts` — Continue's list of save slots (load, delete) and starting a new game.
-- `src/client/game/options.ts` — Options window (game, sound, video, controls, language; restart, home, developer) and the town grid and fluid movement switches.
+- `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
+- `src/client/game/options.ts` — Options window: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
+- `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
 - `src/client/game/end-screens.ts` — end-of-battle window, the result board and the victory confetti.
 
 ## src/client/scene — the parts BattleScene composes

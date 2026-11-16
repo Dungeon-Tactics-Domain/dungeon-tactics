@@ -727,14 +727,8 @@ button[hidden],
 }
 
 /* ---- Options window ---- */
-/* Options (Nov 13, Fernando's request: "something that takes up more of the screen width, with subsections"): sections in a column on the
-   left and one at a time on the right; fixed height so the window does not jump when switching sections. On narrow screens, sections on top */
-.dialog.menu {
-  width: min(1400px, 92vw);
-  height: min(760px, 90dvh);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-}
+/* the Nov 13 layout, sections in a column on the left and one at a time on the right, is the Equipment window's now
+   (.gear); Options itself is a list since Nov 16, in the block at the end of this file. On narrow screens, sections on top */
 .menu-layout {
   display: grid;
   grid-template-columns: 240px 1fr;
@@ -820,9 +814,6 @@ button[hidden],
 .menu-section .slider {
   max-width: 560px;
 }
-.dialog.menu .menu-actions button {
-  flex: 1 1 20%;
-} /* in the wide window all 4 fit on one row */
 @media (max-width: 600px) {
   .menu-layout {
     grid-template-columns: 1fr;
@@ -982,19 +973,6 @@ button[hidden],
   border-radius: var(--r);
   box-shadow: var(--paper-frame);
   padding: 12px;
-}
-/* the kit's 422 px, wider when a row needs it: rows stay on one line like the battle menu's */
-.main-title .command-list {
-  min-width: min(422px, 100%);
-  max-width: 100%;
-  margin: 0;
-  padding: 0 0 8px;
-  text-align: left;
-}
-@media (min-width: 901px) {
-  .main-title .command-list > button {
-    white-space: nowrap; /* one line like the battle menu's; a phone wraps them instead of scrolling sideways */
-  }
 }
 /* expedition map (game/crawl.ts, Nov 15): the title's look, wider, with the party on a panel and one room per button, its
    enemies under its name */
@@ -2727,5 +2705,167 @@ p.gold strong::before,
     pointer-events: auto;
     width: min(1100px, 100%);
     max-height: calc(100dvh - var(--inset-t) - var(--inset-b));
+  }
+}
+
+/* ---- FFT title/options/saves (agent title) ---- */
+/* Nov 16, Fernando: these three screens on their Final Fantasy Tactics counterparts (structure and pacing only; art,
+   text and numbers are ours). Title: the name in the upper part of the art and a small plain command window under it,
+   the gap growing with the screen's height; rows on one line where there is room, a phone wraps them */
+.main-title .dialog.title {
+  gap: clamp(32px, 14vh, 180px);
+}
+.main-title .camp-list {
+  min-width: min(340px, 100%);
+  max-width: 100%;
+  margin: 0;
+  padding: 8px;
+  text-align: left;
+}
+.main-title .camp-list .continue-where {
+  margin-left: auto; /* the number of saved games at the row's right end, like a value */
+  padding-left: 16px;
+}
+@media (min-width: 901px) {
+  .main-title .camp-list > button {
+    white-space: nowrap;
+  }
+}
+/* a note on a window's head band, at the right before the ✕: how Options' rows change, how many games are saved */
+.opt-keys {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+
+/* Options: one list like FFT's option menu. The list scrolls between the goal line and the description box, so the
+   box and the foot's actions never leave the screen; fixed height so the window does not jump with the description */
+.dialog.menu {
+  width: min(860px, 100%);
+  height: min(860px, 90dvh);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  overflow: hidden;
+}
+.dialog .opt-goal {
+  margin: 0 0 8px;
+}
+.opt-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
+  padding-right: 4px;
+}
+.opt-list h3 {
+  margin: 12px 0 4px;
+}
+.opt-list h3:first-child {
+  margin-top: 0;
+}
+/* the name at the left, the value at the right in a zone of one width, so every row's ◀ and ▶ line up in two columns;
+   on a phone the zone drops under the name */
+.dialog .camp-list > .opt-row {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 16px;
+  padding-right: 0;
+  font-size: var(--fs);
+}
+.opt-label {
+  flex: 1 1 11em;
+}
+.opt-value {
+  flex: 0 1 340px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.opt-text {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+}
+/* drawn marks, not buttons (the row is the button); still a finger's 44 px, since a tap is told apart by where it lands */
+.opt-arrow {
+  flex: none;
+  width: var(--tap);
+  min-height: var(--tap);
+  display: grid;
+  place-items: center;
+  color: var(--focus);
+}
+.opt-bar {
+  flex: 1;
+  height: 12px;
+  border: 1px solid var(--shade);
+  background: var(--well);
+}
+.opt-bar i {
+  display: block;
+  height: 100%;
+  background: var(--focus);
+}
+.opt-bar + .opt-text {
+  flex: none;
+  min-width: 3.5em;
+  text-align: right;
+}
+/* FFT's message box: what the row under the cursor does, two lines tall so the list does not move as it changes */
+.dialog .opt-help {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  min-height: calc(2 * 1.3em + 18px);
+  border: 1px solid var(--paper-edge);
+  background: color-mix(in srgb, var(--shade) 25%, transparent);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  line-height: 1.3;
+}
+.dialog.menu .menu-actions {
+  margin-top: 12px;
+}
+.dialog.menu .menu-actions button {
+  flex: 1 1 20%;
+} /* all 3 on one row */
+/* a short screen (a phone lying down) has no room for a list between the fixed parts: the whole window scrolls */
+@media (max-height: 560px) {
+  .dialog.menu {
+    display: block;
+    height: auto;
+    overflow: auto;
+  }
+  .opt-list {
+    overflow: visible;
+  }
+}
+/* the tile marks and the controls, in a window over Options: the controls' text needs the width */
+.dialog.menu-help {
+  width: min(760px, 100%);
+}
+
+/* Saved games: FFT's file list. The slot's number, the face, who goes over where, and at the right end the gold over
+   the date; Delete keeps its own column (.save-list) */
+.save-slots .dialog.title {
+  width: min(900px, 100%);
+}
+.save-no {
+  flex: none;
+  min-width: 2ch;
+  font: 700 var(--fs-lg) / 1 var(--font-title);
+  color: var(--focus); /* 24 px bold: large text, 4.1:1 on the focus band passes its 3:1 */
+}
+.save-load .save-text {
+  flex: 1;
+  min-width: 0;
+}
+.save-load .save-meta {
+  flex: none;
+  align-items: flex-end;
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .dialog .save-list {
+    grid-template-columns: minmax(0, 1fr) 8em;
   }
 }
