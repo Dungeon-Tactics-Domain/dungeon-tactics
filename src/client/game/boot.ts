@@ -10,7 +10,7 @@ import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '.
 import { t } from '../i18n.ts';
 import { param, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
-import { type CrawlRoom, castRoom, goHome, ROOM_KEY, savedExpedition } from './crawl.ts';
+import { type CrawlRoom, castRoom, goHome, heldRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
 
 // the battle the page opens: the scenario, where it is saved and what it belongs to
 export interface BattleSelection {
@@ -66,8 +66,8 @@ export async function selectBattle(): Promise<BattleSelection | null> {
     const built = crawlRoom(map[node].seed, { depth: map[node].floor, boss: map[node].boss });
     if (!built) return null;
     // another room still saved: the party left it for this one, which loses the expedition (crawl.ts leftRoom, at home)
-    const held = Battle.load(store.get(ROOM_KEY) ?? '')?.state.scenario;
-    if (held && held !== `${built.id}${HALF}`) {
+    const held = heldRoom();
+    if (typeof held === 'string' && held !== `${built.id}${HALF}`) {
       goHome();
       return null;
     }

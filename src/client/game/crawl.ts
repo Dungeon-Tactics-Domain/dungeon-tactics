@@ -80,13 +80,17 @@ export function leftRoom() {
   return true;
 }
 
+// The scenario id of the room battle still saved, read raw: Battle.load needs that room's scenario registered, which a
+// new page does only once it opens the room, so a load there missed the room left behind
+export const heldRoom = () => (store.json(ROOM_KEY) as { state?: { scenario?: unknown } } | null)?.state?.scenario;
+
 // The open room whose battle is still saved: loading its game from the title's Continue reopens it, because closing the tab is not leaving the
 // room (review of Nov 15); leaving through Options or the address still loses the expedition (leftRoom).
 // ponytail: matches the room built from the node's own seed; one built from the fallback seed (none of 500 tested) is
 // not found, so the loaded game goes home and the room counts as left
 export function savedRoom(): number | null {
   const exp = savedExpedition();
-  const held = (store.json(ROOM_KEY) as { state?: { scenario?: unknown } } | null)?.state?.scenario;
+  const held = heldRoom();
   if (!exp || typeof held !== 'string') return null;
   const map = expeditionMap(exp.seed);
   const id = (n: number) => roomId(map[n].seed, { depth: map[n].floor, boss: map[n].boss }) + HALF;

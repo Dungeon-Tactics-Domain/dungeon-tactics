@@ -13,6 +13,7 @@ import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { HALF } from '../src/shared/battle/half.ts';
+import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { expeditionMap, openNodes, startExpedition } from '../src/shared/crawl/expedition.ts';
 import type * as Generate from '../src/shared/crawl/generate.ts';
@@ -137,9 +138,17 @@ describe('crawl rooms in the client', () => {
     // Restart is free: a new battle of the same room, with the life the party entered with
     expect(newBattle(sel.scenario, sel.room).state.units.find((u) => u.id === 'h0')?.hp).toBe(9);
     // the same room again (a reload, or the title's Continue after closing the tab) resumes it
+    // each open is a new page, where the room saved is not registered yet (this process still had it, which hid that a
+    // sibling room opened)
+    const newPage = () => {
+      delete SCENARIOS[sel.scenario.id];
+      delete SCENARIOS[sel.scenario.id.slice(0, -HALF.length)];
+    };
     expect(savedRoom()).toBe(node);
+    newPage();
     expect(await selectBattle()).not.toBeNull();
     // a sibling room goes home instead of opening, and home finds the room left behind: the expedition is lost
+    newPage();
     const location = open(`?room=${sibling}`);
     expect(await selectBattle()).toBeNull();
     expect(location.search).toBe('?home');
