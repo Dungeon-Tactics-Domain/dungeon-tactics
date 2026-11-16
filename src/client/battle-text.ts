@@ -13,6 +13,7 @@ import {
   ELEMENTS,
   type Element,
   RESOURCES,
+  type Resource,
   resistOf,
   UNIT_DEFS,
   type UnitDef,

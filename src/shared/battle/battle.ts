@@ -271,10 +271,11 @@ export function parseBattleState(raw: unknown): BattleState | null {
       if (u.vars !== undefined && !isObj(u.vars)) return null;
       vars = {};
       for (const k of Object.keys(defVars)) {
-        // a save from before the mana and stamina pools (Nov 16) opens with them full
-        const v = isObj(u.vars) && u.vars[k] !== undefined ? u.vars[k] : defVars[k];
+        const pool = (RESOURCES as readonly string[]).includes(k);
+        // a save from before the mana and stamina pools (Nov 16) opens with them full; the study's counters stay required
+        const v = isObj(u.vars) && u.vars[k] !== undefined ? u.vars[k] : pool ? defVars[k] : undefined;
         if (!isInt(v) || Math.abs(v) > 9999) return null;
-        if ((RESOURCES as readonly string[]).includes(k) && (v < 0 || v > defVars[k])) return null;
+        if (pool && (v < 0 || v > defVars[k])) return null;
         vars[k] = v;
       }
     } else if (u.vars !== undefined) return null;

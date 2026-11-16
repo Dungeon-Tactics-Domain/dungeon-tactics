@@ -227,7 +227,8 @@ describe('a broken save does not crash the game', () => {
   });
 
   it('counters (vars) only on the sheets that have them, and always on those', () => {
-    expect(mutate((s) => (s.units[1].vars = {}))).toBeNull();
+    // an empty or missing `vars` on a mana/stamina sheet is an old save and fills to full (Nov 16); a wrong shape is not
+    expect(mutate((s) => (s.units[1].vars = 'x'))).toBeNull();
     registerFftStudy();
     const s = JSON.parse(Battle.start(CLASSES_BATTLE, 1).save()).state;
     delete s.units.find((u: { vars?: object }) => u.vars).vars;

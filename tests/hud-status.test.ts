@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  abilityDetail,
-  attrRows,
-  regenLine,
-  shortOf,
-  spendNote,
-  unitStatus,
-} from '../src/client/battle-text.ts';
+import { abilityDetail, attrRows, regenLine, shortOf, spendNote, unitStatus } from '../src/client/battle-text.ts';
 import { cursorInfo, tileInfo } from '../src/client/tile-info.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';

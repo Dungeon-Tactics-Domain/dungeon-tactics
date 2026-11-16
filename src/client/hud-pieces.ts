@@ -1,8 +1,9 @@
 // HUD pieces (design system): key hints, the HP/MP/CT bar, the unit panel, the strike strips and the painted faces.
 // The battle HUD composes them; the town, the save slots and the result board reuse the bar and the still face.
+
+import { poolOf } from '../shared/battle/combat.ts';
 import { TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleState, UnitState } from '../shared/battle/types.ts';
-import { poolOf } from '../shared/battle/combat.ts';
 import { RESOURCES, type Resource, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from './battle-face.ts';
 import { range, sideName } from './battle-text.ts';
