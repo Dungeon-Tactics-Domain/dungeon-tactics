@@ -17,6 +17,14 @@ export const STORY: Member[] = [
   { id: 'mage', name: 'Odo', cls: 'mage', recruit: false },
   { id: 'rogue', name: 'Lia', cls: 'rogue', recruit: false },
 ];
+// a new game: 0 gold and each story member with the common weapon of their class in the main hand (the Mechanics lab's
+// gold grill, Nov 15). The lab has no common dagger, so the Rogue takes the blade
+export const STARTING_WEAPON: Record<string, string> = {
+  warrior: 'iron_blade',
+  archer: 'hunter_bow',
+  mage: 'ash_staff',
+  rogue: 'iron_blade',
+};
 // names of the recruits, in order (no draw: the same party gives the same names)
 export const RECRUIT_NAMES = [
   'Ivo',

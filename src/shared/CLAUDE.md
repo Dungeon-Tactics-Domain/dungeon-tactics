@@ -25,7 +25,7 @@ Applies together with the root `CLAUDE.md`.
 
 What each rule does, the request behind it and its date:
 
-- [shared-battle-rules.md](../../docs/game-design/shared-battle-rules.md): FFT turns, water, spikes, charge, attributes in the hit and the damage, friendly fire, counters, jump by class, AI.
+- [shared-battle-rules.md](../../docs/game-design/shared-battle-rules.md): FFT turns, water, spikes, charge, attributes in the hit and the damage, equipment in 7 slots, friendly fire, counters, jump by class, AI.
 - [shared-maps-units.md](../../docs/game-design/shared-maps-units.md): tile looks, ramps, the old campaign's maps and units, the large unit, half tiles, the FFT study.
 - [shared-crawl.md](../../docs/game-design/shared-crawl.md): crawl rooms, `CRAWL_VERSION` history, expedition.
 - Decisions: [docs/decisions.md](../../docs/decisions.md).

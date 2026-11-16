@@ -3,7 +3,7 @@
 // His decisions (multiple choice, Nov 12): edits class, name and numbers; builds heroes and enemies; the units occupy the
 // map's starting tiles; saves in the browser and exports/imports JSON.
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { bonusOf, type Loadout } from '../shared/battle/equipment.ts';
+import { type Loadout, withGear } from '../shared/battle/equipment.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import type { Rules } from '../shared/battle/rules.ts';
 import { SCENARIOS, type Scenario, type Spawn } from '../shared/battle/scenarios.ts';
@@ -174,34 +174,33 @@ export function buildDevScenario(
       const en = u.en ?? (u.name === UNIT_DEFS[u.base].name ? UNIT_DEFS[u.base].en : u.name);
       BASE[id] = u.base;
       // size comes from the class (the Colossus occupies 2x2 like the original)
-      const b = bonusOf(u.items); // equipment: sum of general stats (equipment.ts), 0 without an item
-      // the class's resistances, dodge and power (Nov 15): not editable here, so every hero and enemy keeps its class's,
-      // the power plus the equipment's
-      // and the class's mana or stamina pool and its regen (Nov 16)
-      const { resist, dodge, vars, regen } = UNIT_DEFS[u.base];
-      const physPower = (UNIT_DEFS[u.base].physPower ?? 0) + b.physPower;
-      const magPower = (UNIT_DEFS[u.base].magPower ?? 0) + b.magPower;
-      UNIT_DEFS[id] = {
-        ...(resist && { resist }),
-        ...(dodge && { dodge }),
-        ...(vars && { vars: { ...vars } }),
-        ...(regen && { regen: { ...regen } }),
-        ...(physPower && { physPower }),
-        ...(magPower && { magPower }),
-        ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),
-        jump: (u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP) + b.jump,
-        ...(b.hit && { hit: b.hit }),
-        ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }),
-        ...(UNIT_DEFS[u.base].undead && { undead: true as const }), // heals hurt the class's skeletons in every cast too
-        id,
-        name: u.name,
-        en,
-        hp: u.hp + b.hp,
-        speed: Math.max(1, u.speed + b.speed),
-        move: u.move + b.move,
-        abilities: [...u.abilities],
-        model: modelOf(u.base),
-      };
+      // the class's resistances, dodge and power (Nov 15): not editable here, so every hero and enemy keeps its class's;
+      // and the class's mana or stamina pool and regen (Nov 16), copied so no sheet shares the class's object;
+      // the equipment adds its pieces on top (withGear, equipment.ts), the same sheet the party's Sheet shows
+      const { resist, dodge, physPower, magPower, vars, regen } = UNIT_DEFS[u.base];
+      UNIT_DEFS[id] = withGear(
+        {
+          ...(resist && { resist }),
+          ...(dodge && { dodge }),
+          ...(vars && { vars: { ...vars } }),
+          ...(regen && { regen: { ...regen } }),
+          ...(physPower && { physPower }),
+          ...(magPower && { magPower }),
+          ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),
+          jump: u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP,
+          ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }),
+          ...(UNIT_DEFS[u.base].undead && { undead: true as const }), // heals hurt the class's skeletons in every cast too
+          id,
+          name: u.name,
+          en,
+          hp: u.hp,
+          speed: u.speed,
+          move: u.move,
+          abilities: [...u.abilities],
+          model: modelOf(u.base),
+        },
+        u.items,
+      );
       spawns.push({ id: `${tag}${i}`, def: id, team, x: slots[i].x, y: slots[i].y });
     });
   add(setup.heroes, s.hero, 'hero', 'h');

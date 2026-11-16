@@ -39,6 +39,14 @@ Nov 15, Fernando's grill; the Mechanics lab's `equipamento.json`, formulas secti
 - The preview, the forecast, the counter note and the AI (`damageRange` for the threat of a nearby enemy) read the same calculation.
 - The FFT study keeps its own hit chance (no dodge), swaps the resistances for FFT's x1.5 on a physical hit on a charging unit (`Rules.defence`) and shows no side on a spell (`Rules.spellsIgnoreSide`).
 
+## Equipment in 7 slots
+
+Nov 16, slice 3 of the Nov 15 grill; the Mechanics lab's `equipamento.json`. No XP, so every number past the class comes from pieces.
+
+- A `Loadout` has main and off hand, head, body, legs and 2 accessories (`SLOTS`); an item has a `kind` (an accessory fits either accessory slot, `kindOf`), a rarity (common, rare, epic) and general stats (`STATS` plus `resist`), the same against everything.
+- `bonusOf` sums the worn pieces (`worn` drops an unknown id or a piece in a slot of another kind) and `withGear` adds them to the class sheet with raw sums, so `resistOf` and `dodgeOf` still cap on read and the client's battle sheets (`dev-roster.ts`) count the equipment through the same rule.
+- Move and jump in whole tiles; speed never below 1. Mana, stamina and their regeneration (`PENDING`) are summed but nothing in battle reads them yet.
+
 ## Friendly fire
 
 - **No exceptions** (Nov 15, Fernando): every hit and heal lands on either side, aimed or as collateral; on the caster's own side damage is `COMBAT.FRIENDLY_FIRE` (half), and a heal on the other side heals half (`sideShare` in `combat.ts`), the same for enemies.

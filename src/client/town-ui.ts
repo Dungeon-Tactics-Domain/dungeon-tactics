@@ -1,7 +1,7 @@
 // The town's windows (opened at its buildings, game/town.ts, and from its menu, game/crawl.ts townMenu): Party with each
 // member's sheet (class, equipment, who goes), Tavern (recruits) and Shop. Rules in group.ts and chest.ts.
 
-import { bonusOf, ITEMS, type ItemDef, SLOTS, type Slot } from '../shared/battle/equipment.ts';
+import { bonusOf, ITEMS, type ItemDef, type Kind, kindOf, SLOTS, type Slot } from '../shared/battle/equipment.ts';
 import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -130,11 +130,15 @@ export function openParty(back?: () => void) {
   d.overlay.querySelector<HTMLElement>('.party-card')?.focus();
 }
 
-const SLOT_NAME: Record<Slot, () => string> = {
-  weapon: () => t('Arma', 'Weapon'),
-  armor: () => t('Armadura', 'Armor'),
+const KIND_NAME: Record<Kind, () => string> = {
+  main: () => t('Mão principal', 'Main hand'),
+  off: () => t('Mão secundária', 'Off hand'),
+  head: () => t('Cabeça', 'Head'),
+  body: () => t('Corpo', 'Body'),
+  legs: () => t('Pernas', 'Legs'),
   accessory: () => t('Acessório', 'Accessory'),
 };
+const slotName = (s: Slot) => (s === 'acc1' || s === 'acc2' ? `${KIND_NAME.accessory()} ${s.at(-1)}` : KIND_NAME[s]());
 const itemName = (it: ItemDef) => t(it.name, it.en);
 // "+2 damage · +8 accuracy": only what the item changes, in the sheet's wording
 export function itemStats(it: ItemDef): string {
@@ -248,21 +252,24 @@ export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
         },
       ),
       ...(tab === 'buy'
-        ? Object.values(ITEMS).map((it) =>
-            priceRow(
-              [itemName(it), el('small', {}, `${SLOT_NAME[it.slot]()} · ${itemStats(it)}`)],
-              it.price,
-              button('secondary', t('Comprar', 'Buy'), () => save(buy(chest, it.id)), {
-                disabled: chest.gold < it.price,
-              }),
-              // too expensive: the button turns off and says under it how much is missing (before, it only went grey)
-              shortBy(chest.gold, it.price),
-            ),
-          )
+        ? // only the common pieces are sold (Nov 16, the Mechanics lab): rares and epics come from later sources
+          Object.values(ITEMS)
+            .filter((it) => it.rarity === 'common')
+            .map((it) =>
+              priceRow(
+                [itemName(it), el('small', {}, `${KIND_NAME[it.kind]()} · ${itemStats(it)}`)],
+                it.price,
+                button('secondary', t('Comprar', 'Buy'), () => save(buy(chest, it.id)), {
+                  disabled: chest.gold < it.price,
+                }),
+                // too expensive: the button turns off and says under it how much is missing (before, it only went grey)
+                shortBy(chest.gold, it.price),
+              ),
+            )
         : chest.items.length
           ? chest.items.map((id) =>
               priceRow(
-                [itemName(ITEMS[id]), el('small', {}, SLOT_NAME[ITEMS[id].slot]())],
+                [itemName(ITEMS[id]), el('small', {}, KIND_NAME[ITEMS[id].kind]())],
                 Math.floor(ITEMS[id].price / 2),
                 button('secondary', t('Vender', 'Sell'), () => save(sell(chest, id))),
               ),
@@ -419,7 +426,7 @@ export function openSheet(m: Member, back: () => void, at = -1) {
             'dl',
             { class: 'keys' },
             ...SLOTS.flatMap((slot) => [
-              el('dt', {}, SLOT_NAME[slot]()),
+              el('dt', {}, slotName(slot)),
               el(
                 'dd',
                 {},
@@ -427,7 +434,7 @@ export function openSheet(m: Member, back: () => void, at = -1) {
                   ? `${itemName(ITEMS[mine[slot]!])} (${itemStats(ITEMS[mine[slot]!])}) `
                   : t('vazio ', 'empty '),
                 ...(mine[slot] ? [button('secondary', t('Tirar', 'Remove'), () => put(slot, null))] : []),
-                ...[...new Set(chest.items.filter((id) => ITEMS[id].slot === slot))].map((id) =>
+                ...[...new Set(chest.items.filter((id) => ITEMS[id].kind === kindOf(slot)))].map((id) =>
                   button(
                     'secondary',
                     t(`Equipar ${itemName(ITEMS[id])}`, `Equip ${itemName(ITEMS[id])}`),

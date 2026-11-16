@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITY_LIST } from '../src/content/abilities.ts';
 import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
-import { ITEM_LIST } from '../src/content/items.ts';
-import { RECRUIT_NAMES, STORY } from '../src/content/party.ts';
+import { CONSUMABLES, ITEM_LIST } from '../src/content/items.ts';
+import { RECRUIT_NAMES, STARTING_WEAPON, STORY } from '../src/content/party.ts';
 import { UNIT_LIST } from '../src/content/units.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { ITEMS } from '../src/shared/battle/equipment.ts';
 import { TERRAIN } from '../src/shared/battle/grid.ts';
 import { MAPS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -19,7 +20,7 @@ describe('content ids', () => {
   it('are unique in every list', () => {
     expect(unique(UNIT_LIST.map((u) => u.id))).toEqual([]);
     expect(unique(ABILITY_LIST.map((a) => a.id))).toEqual([]);
-    expect(unique(ITEM_LIST.map((i) => i.id))).toEqual([]);
+    expect(unique([...ITEM_LIST, ...CONSUMABLES].map((i) => i.id))).toEqual([]);
     expect(unique(mapIds)).toEqual([]);
     expect(unique(STORY.map((m) => m.id))).toEqual([]);
     expect(unique(RECRUIT_NAMES)).toEqual([]);
@@ -82,8 +83,47 @@ describe('maps', () => {
 });
 
 describe('party', () => {
-  it('story members are existing classes', () => {
+  it('story members are existing classes, each starting with an existing common weapon', () => {
     for (const m of STORY) expect(UNIT_DEFS[m.cls], m.id).toBeDefined();
+    expect(Object.keys(STARTING_WEAPON)).toEqual(STORY.map((m) => m.id));
+    for (const w of Object.values(STARTING_WEAPON)) expect(ITEMS[w]).toMatchObject({ kind: 'main', rarity: 'common' });
+  });
+});
+
+describe('equipment', () => {
+  // the Mechanics lab's rarity budget (equipamento.json, Nov 15): common 2 points, rare 4, epic 6, and what 1 point buys;
+  // only an epic may take one negative stat, which gives its points back
+  const BUDGET = { common: 2, rare: 4, epic: 6 };
+  const PER_POINT: Record<string, number> = {
+    physPower: 10,
+    magPower: 10,
+    hp: 25,
+    dodge: 5,
+    hit: 5,
+    mana: 20,
+    stamina: 20,
+    hpRegen: 5,
+    manaRegen: 3,
+    speed: 0.5,
+    jump: 0.5,
+    move: 1 / 3,
+  };
+  const RESIST_PER_POINT = (k: string) => (k === 'phys' || k === 'mag' ? 10 : 20);
+  it('every piece spends exactly its rarity budget, with at most one negative stat on an epic', () => {
+    for (const it of ITEM_LIST) {
+      const stats = [
+        ...Object.entries(PER_POINT).flatMap(([k, per]) => {
+          const v = it[k as keyof typeof it] as number | undefined;
+          return v ? [v / per] : [];
+        }),
+        ...Object.entries(it.resist ?? {}).map(([k, v]) => v / RESIST_PER_POINT(k)),
+      ];
+      expect(
+        stats.reduce((s, p) => s + p, 0),
+        it.id,
+      ).toBeCloseTo(BUDGET[it.rarity]);
+      expect(stats.filter((p) => p < 0).length, it.id).toBeLessThanOrEqual(it.rarity === 'epic' ? 1 : 0);
+    }
   });
 });
 

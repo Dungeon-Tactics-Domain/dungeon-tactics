@@ -18,10 +18,10 @@ import { flat, stateOf } from './battle-helpers.ts';
 // Recruitment and class change (Nov 13, delivery 5 of the FFT-style group design)
 describe('party', () => {
   it('the default group sends the 4 story members with the whole kit of their class and their equipment', () => {
-    const heroes = heroesFor(defaultGroup(), { warrior: { weapon: 'w1' } });
+    const heroes = heroesFor(defaultGroup(), { warrior: { main: 'w1' } });
     expect(heroes.map((u) => `${u.name}:${u.base}`)).toEqual(['Bran:warrior', 'Tess:archer', 'Odo:mage', 'Lia:rogue']);
     for (const u of heroes) expect(u.abilities).toEqual(UNIT_DEFS[u.base].abilities);
-    expect(heroes.map((u) => u.items)).toEqual([{ weapon: 'w1' }, undefined, undefined, undefined]);
+    expect(heroes.map((u) => u.items)).toEqual([{ main: 'w1' }, undefined, undefined, undefined]);
   });
 
   it('recruiting costs gold, joins the deployment if there is room and respects the cap', () => {
@@ -60,7 +60,7 @@ describe('party', () => {
   it('dismiss only recruits, and the equipment returns to the chest', () => {
     const r = recruit(defaultGroup(), { gold: 500, items: [] }, 'rogue')!;
     expect(dismiss(r.group, {}, r.chest, 'warrior')).toBeNull();
-    const out = dismiss(r.group, { r1: { weapon: 'w1' } }, r.chest, 'r1')!;
+    const out = dismiss(r.group, { r1: { main: 'w1' } }, r.chest, 'r1')!;
     expect(out.group.members.some((m) => m.id === 'r1')).toBe(false);
     expect(out.eq).toEqual({});
     expect(out.chest.items).toEqual(['w1']);
