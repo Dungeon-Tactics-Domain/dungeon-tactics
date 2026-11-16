@@ -115,6 +115,26 @@ describe('friendly fire (Nov 15)', () => {
     }
   });
 
+  it('a heal that hurts an undead can kill it, and the last enemy down wins', () => {
+    const s = stateOf(
+      [
+        { id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 },
+        { id: 'b', def: 'beacon', team: 'hero', x: 3, y: 0 },
+        { id: 'u', def: 'minion', team: 'enemy', x: 2, y: 0, hp: 30 },
+      ],
+      1,
+    );
+    const ev = resolveAbility(flat(4, 1), s, 'a', 'heal', at(2));
+    // seed 1 rolls a heal of 79 (60 to 90): half, rounded down, is 39, past the minion's 30
+    expect(ev).toEqual([
+      { k: 'attack', unit: 'a', ability: 'heal', target: at(2) },
+      { k: 'hit', unit: 'u', dmg: 39, chance: 100 },
+      { k: 'die', unit: 'u' },
+    ]);
+    expect(s.units.map((u) => u.id)).toEqual(['a', 'b']);
+    expect(s.outcome).toBe('victory');
+  });
+
   it('the undead flag is data on the skeleton sheets and survives the half tiles and the battle sheets', () => {
     const undead = Object.values(UNIT_DEFS)
       .filter((d) => d.undead && !d.id.includes('½') && !d.id.startsWith('dev-'))

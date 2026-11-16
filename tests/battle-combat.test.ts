@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { COMBAT, checkOutcome, hitChance, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
+import {
+  COMBAT,
+  checkOutcome,
+  hitChance,
+  pendingCounters,
+  previewAbility,
+  resolveAbility,
+  simulatePush,
+} from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
@@ -227,6 +235,45 @@ describe('push', () => {
     );
     resolveAbility(flat(8, 5), s, 'a', 'gust', at(3, 2));
     expect(s.units[1].pos).toEqual(at(5, 2)); // Gust: pushes 2 tiles, away from the caster
+  });
+
+  // no ability pushes with an area today; the AI already prices pushes through simulatePush, so the rule is read directly
+  it('a unit beside an area center is pushed away from the center, not from the caster', () => {
+    const s = stateOf([{ id: 'f', def: 'soldier', team: 'enemy', x: 2, y: 2 }]);
+    // the caster sits to the left on the unit's row: read from it, the push would go right to (3,2)
+    expect(simulatePush(flat(5, 5), s, s.units[0], at(2, 1), at(0, 2), 1)).toEqual({
+      to: at(2, 3),
+      dmg: 0,
+      events: [{ k: 'push', unit: 'f', to: at(2, 3) }],
+    });
+  });
+
+  it('a push with no direction (the caster on the center, the unit there) leaves the unit still', () => {
+    const s = stateOf([{ id: 'f', def: 'soldier', team: 'enemy', x: 2, y: 2 }]);
+    expect(simulatePush(flat(5, 5), s, s.units[0], at(2, 2), at(2, 2), 2)).toEqual({
+      to: at(2, 2),
+      dmg: 0,
+      events: [],
+    });
+  });
+});
+
+describe('rules on the edges of a hit', () => {
+  it('a heal never rolls to hit, even far beyond where a shot would drop to the cap', () => {
+    expect(hitChance(flat(9, 1), ABILITIES.heal, at(0), at(4))).toBe(100);
+  });
+
+  it('only the unit whose turn it is can owe itself counters', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 1 },
+      { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 1 },
+      { id: 'b', def: 'warrior', team: 'hero', x: 1, y: 2 },
+    ]);
+    s.turn.engaged = ['f'];
+    const g = flat(5, 5);
+    expect(pendingCounters(g, s, 'a', at(0, 4)).map((c) => c.unit)).toEqual(['f']);
+    // b stands in f's reach too, but walking off on someone else's turn draws nothing
+    expect(pendingCounters(g, s, 'b', at(3, 4))).toEqual([]);
   });
 });
 
