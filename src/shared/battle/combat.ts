@@ -27,13 +27,13 @@ import {
   MAX_JUMP,
   nearCells,
   restsOn,
-  traceShot,
   unitAt,
   wholeTiles,
 } from './pathing.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';
+import { traceShot } from './shot.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, Shot, UnitState } from './types.ts';
 import { baseDef, dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
 

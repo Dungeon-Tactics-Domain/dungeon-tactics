@@ -3,7 +3,7 @@
 // line goes dim red, with an X there: red on an enemy, orange on the caster's own side (friendly fire, half), white on
 // terrain. Drawn over everything (no depth test), so a line behind a wall still reads.
 import * as THREE from 'three';
-import { shotAt } from '../../shared/battle/pathing.ts';
+import { shotAt } from '../../shared/battle/shot.ts';
 import type { ChargeLine, Counters, Square } from '../charge-lines.ts';
 import { unitHeight } from '../markers.ts';
 import type { TileSpace } from './space.ts';

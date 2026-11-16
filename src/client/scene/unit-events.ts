@@ -2,7 +2,7 @@
 // already applied to the state; this only reads what happened.
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import { samePos } from '../../shared/battle/grid.ts';
-import { shotAt } from '../../shared/battle/pathing.ts';
+import { shotAt } from '../../shared/battle/shot.ts';
 import type { BattleEvent, BattleState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { lookOf, playFx } from '../fx.ts';

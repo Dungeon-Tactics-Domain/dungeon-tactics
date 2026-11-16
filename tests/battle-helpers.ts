@@ -1,6 +1,6 @@
 import { type Grid, parseGrid } from '../src/shared/battle/grid.ts';
-import { traceShot } from '../src/shared/battle/pathing.ts';
 import { nextRng } from '../src/shared/battle/rng.ts';
+import { traceShot } from '../src/shared/battle/shot.ts';
 import type { BattleState, Pos, Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 

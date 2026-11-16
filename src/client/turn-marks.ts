@@ -3,7 +3,8 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { posKey, samePos } from '../shared/battle/grid.ts';
-import { cellsOf, farCells, footprint, traceShot } from '../shared/battle/pathing.ts';
+import { cellsOf, farCells, footprint } from '../shared/battle/pathing.ts';
+import { traceShot } from '../shared/battle/shot.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';

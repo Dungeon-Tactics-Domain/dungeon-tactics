@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { previewAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
 import { halfDef, halve } from '../src/shared/battle/half.ts';
-import { shotAt, traceShot } from '../src/shared/battle/pathing.ts';
+import { shotAt, traceShot } from '../src/shared/battle/shot.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 

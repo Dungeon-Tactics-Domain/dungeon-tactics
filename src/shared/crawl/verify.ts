@@ -4,8 +4,9 @@
 import { ABILITIES } from '../battle/abilities.ts';
 import { canStand, FACING, type Grid, inBounds, isDeep, posKey, tileAt } from '../battle/grid.ts';
 import { halve, SUB } from '../battle/half.ts';
-import { cellsOf, footprint, gap, reachable, restsOn, traceShot } from '../battle/pathing.ts';
+import { cellsOf, footprint, gap, reachable, restsOn } from '../battle/pathing.ts';
 import { initialState, type Scenario, type Spawn } from '../battle/scenarios.ts';
+import { traceShot } from '../battle/shot.ts';
 import type { Pos, UnitState } from '../battle/types.ts';
 import { UNIT_DEFS } from '../battle/units.ts';
 

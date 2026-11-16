@@ -5,7 +5,7 @@
 // caster instead: no dots and no X, so it never reads as a projectile.
 import * as THREE from 'three';
 import { subOf } from '../../shared/battle/grid.ts';
-import { SHOT_H, shotAt } from '../../shared/battle/pathing.ts';
+import { SHOT_H, shotAt } from '../../shared/battle/shot.ts';
 import type { Shot } from '../../shared/battle/types.ts';
 import type { TileSpace } from './space.ts';
 

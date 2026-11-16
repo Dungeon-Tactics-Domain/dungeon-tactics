@@ -15,9 +15,9 @@ import {
   nearestTile,
   pathTo,
   reachable,
-  traceShot,
   unitAt,
 } from '../shared/battle/pathing.ts';
+import { traceShot } from '../shared/battle/shot.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
