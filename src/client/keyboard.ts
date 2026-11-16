@@ -18,6 +18,7 @@ export type KeyAction =
   | { k: 'recenter' }
   | { k: 'face' }
   | { k: 'status' }
+  | { k: 'info' }
   | { k: 'fps' }
   | { k: 'turns'; dir: 1 | -1 }
   | { k: 'help' };
@@ -43,6 +44,7 @@ const SIMPLE: Record<string, KeyAction> = {
   z: { k: 'undo' },
   t: { k: 'face' },
   c: { k: 'status' },
+  i: { k: 'info' },
   f3: { k: 'fps' },
   p: { k: 'wait' },
   f: { k: 'recenter' },
@@ -156,6 +158,7 @@ export const keyHelp = (): [string, string][] => [
   ['F', t('ver o mapa inteiro', 'show the whole map')],
   ['V', t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)')],
   ['PgUp · PgDn', t('rolar a lista de turnos', 'scroll the turn list')],
+  ['I', t('ficha da habilidade em foco no submenu Agir', 'sheet of the ability in focus in the Act submenu')],
   ['F3', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
   ['H · ?', t('esta ajuda e o menu', 'this help and the menu')],
   // the walkable town (game/town.ts) reads the same keys

@@ -8,8 +8,9 @@ import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.t
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { battleInput } from './battle-input.ts';
+import { abilityDetail } from './battle-text.ts';
 import { beforeEvent } from './before-event.ts';
-import { type Screen, startScreen } from './command.ts';
+import { abilitiesOf, type Screen, startScreen } from './command.ts';
 import { dialog } from './dialog.ts';
 import { fpsCounter } from './fps.ts';
 import { type BattleSelection, newBattle } from './game/boot.ts';
@@ -18,7 +19,7 @@ import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { HeroTurn, type TurnHost } from './hero-turn.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
-import { t, unitName } from './i18n.ts';
+import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
@@ -115,6 +116,7 @@ export class Game implements TurnHost {
     if (a.k === 'help') return this.menu();
     if (a.k === 'pixel') return this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) });
     if (a.k === 'status') return this.status();
+    if (a.k === 'info') return this.abilitySheet();
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
     if (a.k === 'fps') return this.hud.setFps(this.toggleFps());
     if (this.busy || !this.heroTurn) return;
@@ -238,6 +240,14 @@ export class Game implements TurnHost {
   }
 
   // status window of the unit under the cursor (or of the acting unit), with dialog() like the other dialogs
+  // the sheet of the ability in focus in the Act submenu (the I key, the pad's 4th button): name, numbers and its notes
+  abilitySheet() {
+    const s = this.turn.screen;
+    if (s.k !== 'abilities') return;
+    const id = abilitiesOf(this.battle)[s.index];
+    if (id) dialog('status', abilityName(id), [el('p', {}, abilityDetail(id))]);
+  }
+
   status() {
     const s = this.battle.state;
     const id = unitAt(s, this.turn.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit

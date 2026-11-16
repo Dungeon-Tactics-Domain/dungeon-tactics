@@ -66,7 +66,7 @@ Fernando's decision, Nov 12: "discard the current interfaces and recreate the in
 
 Keyboard, mouse and gamepad move the same cursor and go through the same `Game.runKey` (in the walkable town, `Town.run`).
 
-- **Keyboard** (`keyboard.ts`): WASD and arrows go up and down the menu and move the cursor on the map; Enter or Space confirms; Esc or Backspace goes back; P Wait; C Status; T turns the actor's facing; Tab and Shift+Tab move the cursor between units; R and Shift+R rotate; Q and E zoom; F shows the whole map; V pixel size; H or ? Options and help; F3 counter; Z undo; PgUp and PgDn scroll the turn list.
+- **Keyboard** (`keyboard.ts`): WASD and arrows go up and down the menu and move the cursor on the map; Enter or Space confirms; Esc or Backspace goes back; P Wait; C Status; I the sheet of the ability in focus in the Act submenu; T turns the actor's facing; Tab and Shift+Tab move the cursor between units; R and Shift+R rotate; Q and E zoom; F shows the whole map; V pixel size; H or ? Options and help; F3 counter; Z undo; PgUp and PgDn scroll the turn list.
 - **Mouse:** hovering chooses, click confirms, right button goes back.
 - **Gamepad** (Gamepad API, standard Xbox and PlayStation mapping): d-pad and analog stick move; A or × confirms; B or ○ goes back; X or □ Status; shoulders rotate the camera; triggers zoom; right stick up and down scrolls the turn list; Back undoes; Start opens the menu. With a dialog open, the gamepad moves between its buttons.
 - **Window lists** (`.camp-list`: title, Quick battle, town menu, Continue's save list): up and down arrows move the focus (`dialog.ts`). Since Nov 16 `.arrow-walk` does the same where the rows are not menu rows, left and right too: the Party list and the expedition map.
