@@ -1331,6 +1331,37 @@ button[hidden],
   color: var(--focus);
   font-weight: 700;
 }
+/* the turn-the-phone notice: only on a touch phone held upright, over the battle (Nov 16); the battle fits sideways */
+.rotate-note {
+  display: none;
+}
+@media (pointer: coarse) and (max-width: 600px) and (orientation: portrait) {
+  .rotate-note {
+    display: grid;
+    position: fixed;
+    inset: 0;
+    z-index: 12;
+    place-items: center;
+    background: var(--overlay);
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+      max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .rotate-card {
+    display: grid;
+    justify-items: center;
+    gap: var(--gap);
+    max-width: min(100%, 20em);
+    padding: 24px;
+    text-align: center;
+    font-size: var(--fs-lg);
+  }
+  .rotate-card p {
+    margin: 0;
+  }
+  .rotate-glyph {
+    font-size: var(--fs-xl);
+  }
+}
 .fps {
   position: absolute;
   top: calc(72px + env(safe-area-inset-top, 0px));

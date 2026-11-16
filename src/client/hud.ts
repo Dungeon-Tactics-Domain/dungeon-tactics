@@ -123,6 +123,17 @@ export class BattleHud {
       this.active,
       this.strikesEl,
       this.target,
+      // shown by CSS only on a phone held upright (Nov 16, Fernando: the battle does not fit it): the screen asks to turn it
+      el(
+        'div',
+        { class: 'rotate-note', role: 'status' },
+        el(
+          'div',
+          { class: 'panel rotate-card' },
+          el('span', { class: 'rotate-glyph', 'aria-hidden': 'true' }, '⟳'),
+          el('p', {}, t('Gire o celular para jogar a batalha.', 'Turn your phone sideways to play the battle.')),
+        ),
+      ),
     );
     host.append(this.root);
   }
