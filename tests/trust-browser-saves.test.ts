@@ -137,8 +137,8 @@ describe('dt:chest and dt:equip (parseChest, parseEquip)', () => {
     });
   });
 
-  // chest.ts:33 writes `out[base] = load` for any key; assigning "__proto__" swaps the prototype of the returned object
-  it.fails('a "__proto__" member key does not change the prototype of the equipment', () => {
+  // chest.ts skips a "__proto__" key: assigning it would swap the prototype of the returned object
+  it('a "__proto__" member key does not change the prototype of the equipment', () => {
     const eq = parseEquip(JSON.parse('{"__proto__":{"weapon":"x"},"h0":{}}'));
     expect(Object.getPrototypeOf(eq)).toBe(Object.prototype);
   });
