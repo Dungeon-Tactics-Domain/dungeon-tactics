@@ -10,6 +10,7 @@ import type { Scenario } from '../../shared/battle/scenarios.ts';
 import type { BattleState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import {
+  classMana,
   cleared,
   type Expedition,
   expeditionMap,
@@ -40,29 +41,39 @@ export interface CrawlRoom {
   heroes: Record<string, { id: string; hp: number; mana?: number }>;
 }
 
-export const savedExpedition = () => parseExpedition(store.json(CRAWL_KEY));
 const group = () => parseGroup(store.json(GROUP_KEY));
 // who goes, as the town's party has them (class, name, equipment); `ids` keeps the order of the sheets
 const crawlers = (ids: string[]) => heroesFor({ ...group(), deployed: ids }, parseEquip(store.json(EQUIP_KEY)));
 // the mana pool of a crawler's battle sheet (its class's, as buildDevScenario copies it); 0 without one
 const manaOf = (u: DevUnit) => UNIT_DEFS[u.base].vars?.mana ?? 0;
+// the members still in the group, with their sheets in the same order
+const inGroup = (exp: Expedition) => {
+  const ids = exp.party.map((h) => h.id).filter((id) => group().members.some((m) => m.id === id));
+  return { ids, units: crawlers(ids) };
+};
+// read with each hero's mana pool as its class has it now (classMana): every reader sees a class changed in town
+export const savedExpedition = () => {
+  const exp = parseExpedition(store.json(CRAWL_KEY));
+  if (!exp) return null;
+  const { ids, units } = inGroup(exp);
+  return classMana(exp, Object.fromEntries(ids.map((id, i) => [id, manaOf(units[i])])));
+};
 
 // The generated room with the expedition party on its hero spawns and the enemies as sheets of their own: the developer
 // menu's path (dev-roster.ts), under the room's id so the mood still reads its theme. A member no longer in the group stays out
 export function castRoom(room: Scenario, exp: Expedition, node: number): { scenario: Scenario; room: CrawlRoom } {
-  const ids = exp.party.map((h) => h.id).filter((id) => group().members.some((m) => m.id === id));
+  const { ids, units } = inGroup(exp);
   const enemies = slotsOf(room.id).enemy.map((s) => unitFrom(s.def));
-  const units = crawlers(ids);
   const scenario = buildDevScenario({ map: room.id, heroes: units, enemies }, room.id, [room.name, room.en]);
   // never above the sheet's life: the save is read from the browser (a max typed into dt:crawl gave a hero 999)
   const hp = (id: string, i: number) =>
     Math.min(exp.party.find((h) => h.id === id)!.hp, units[i].hp + bonusOf(units[i].items).hp);
-  // the same for mana, against the sheet's pool now (a class changed in town meanwhile may have none)
-  const mana = (id: string, i: number) => {
+  // mana as savedExpedition matched it to the class (absent: no pool)
+  const mana = (id: string) => {
     const saved = exp.party.find((h) => h.id === id)!.mana;
-    return saved === undefined ? {} : { mana: Math.min(saved, manaOf(units[i])) };
+    return saved === undefined ? {} : { mana: saved };
   };
-  const heroes = Object.fromEntries(ids.map((id, i) => [`h${i}`, { id, hp: hp(id, i), ...mana(id, i) }]));
+  const heroes = Object.fromEntries(ids.map((id, i) => [`h${i}`, { id, hp: hp(id, i), ...mana(id) }]));
   return { scenario, room: { node, heroes } };
 }
 

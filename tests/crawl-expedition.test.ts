@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CRAWL_RUN } from '../src/content/crawl/rooms.ts';
 import {
+  classMana,
   cleared,
   type Expedition,
   expeditionMap,
@@ -116,6 +117,27 @@ describe('crawl expedition', () => {
       { ...hero, manaMax: 60, mana: -1 },
     ])
       expect(parseExpedition({ ...old, party: [bad] })).toBeNull();
+  });
+
+  // the class may change in town between rooms (Nov 16 review): the warrior turned mage got no mana and entered full forever
+  it('mana follows the class a hero has now: a new pool enters full once, a lost one is dropped', () => {
+    const e = startExpedition(9, [
+      { id: 'mia', max: 30, manaMax: 60 },
+      { id: 'bran', max: 42 },
+    ]);
+    const toMage = classMana(e, { mia: 0, bran: 60 }); // mia became a warrior, bran a mage
+    expect(toMage.party).toEqual([
+      { id: 'mia', max: 30, hp: 30 },
+      { id: 'bran', max: 42, hp: 42, manaMax: 60, mana: 60 },
+    ]);
+    // after a room bran's mana is carried, and the same class keeps it instead of refilling
+    const room = winRoom(toMage, first(toMage), { mia: 30, bran: 42 }, { bran: 4 });
+    expect(classMana(room, { mia: 0, bran: 60 }).party[1].mana).toBe(4 + 15);
+    // a member no longer in the group keeps what it had
+    expect(classMana(room, {})).toEqual(room);
+    // a save from before the mana: a mage enters full, then it is carried
+    const old = parseExpedition(startExpedition(9, [{ id: 'odo', max: 24 }]))!;
+    expect(classMana(old, { odo: 60 }).party[0]).toEqual({ id: 'odo', max: 24, hp: 24, manaMax: 60, mana: 60 });
   });
 
   it('a room that is not open (cleared, or off the path) changes nothing', () => {

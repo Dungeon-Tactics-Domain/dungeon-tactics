@@ -62,6 +62,17 @@ export const startExpedition = (seed: number, party: { id: string; max: number; 
   party: party.map(({ manaMax, ...h }) => ({ ...h, hp: h.max, ...(manaMax && { manaMax, mana: manaMax }) })),
 });
 
+// The mana pool each hero's class has now (`max` by member id, 0 without one), since the class may change in town between
+// rooms (Nov 16 review): a new max enters full once and is then carried, a class without a pool drops it, and a hero
+// missing from `max` (no longer in the group) keeps what it had
+export const classMana = (exp: Expedition, max: Record<string, number>): Expedition => ({
+  ...exp,
+  party: exp.party.map(({ manaMax, mana, ...h }) => {
+    const m = max[h.id] ?? manaMax;
+    return m ? { ...h, manaMax: m, mana: m === manaMax ? mana : m } : h;
+  }),
+});
+
 // rounded up, as the lab rounds the fallen (42 → 11): a heal on a small life never rounds to nothing
 const share = (max: number, pct: number) => Math.ceil((max * pct) / 100);
 
