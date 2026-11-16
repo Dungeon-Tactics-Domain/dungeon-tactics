@@ -67,11 +67,11 @@ export function endHeroes(tally: Tally, roster: Roster, units: { id: string; hp:
     });
 }
 
-// the result board card's last line, where the lab mockup had the EXP gained (XP and levels are cancelled): `gain`
-// green, `fell` light red, plain muted
+// the line under the life bar of a result board row: `gain` green, `fell` light red; the plain tone is not drawn since
+// the FFT rows of Nov 16 (the row's Damage and Takedowns columns say it)
 export type CardLine = [text: string, tone: 'gain' | 'fell' | ''];
 
-// what the hero did, for the battles that give nothing else to show on the card; a fallen hero says so in words
+// what the hero did, for the battles with nothing carried on; a fallen hero says so in words
 export const tallyLine = (h: Score & { hp: number }): CardLine =>
   h.hp <= 0
     ? [t('Caído', 'Fallen'), 'fell']

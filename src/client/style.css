@@ -2965,7 +2965,10 @@ p.gold strong::before,
   backdrop-filter: var(--panel-filter);
   box-shadow: var(--paper-frame);
 }
-/* the opening narration has no box, so no tab either */
+/* the opening narration has no box, so no tab either, nor its room */
+.talk-overlay.dark .panel.talk {
+  margin-top: 0;
+}
 .talk-overlay.dark .talk-name {
   position: static;
   padding: 0;
