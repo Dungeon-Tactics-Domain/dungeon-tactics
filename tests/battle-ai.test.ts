@@ -81,4 +81,14 @@ describe('AI and friendly fire (Nov 15)', () => {
     ]);
     expect(chooseTurn(flat(8, 8), state, 'e').ability).toBeNull();
   });
+
+  it('the same healer heals its wounded living ally', () => {
+    UNIT_DEFS.test_ai_healer = { ...UNIT_DEFS.acolyte, id: 'test_ai_healer', abilities: ['heal'] };
+    const state = stateOf([
+      { id: 'e', def: 'test_ai_healer', team: 'enemy', x: 0, y: 0 },
+      { id: 'h', def: 'soldier', team: 'hero', x: 6, y: 6 },
+      { id: 's', def: 'soldier', team: 'enemy', x: 0, y: 2, hp: 10 },
+    ]);
+    expect(chooseTurn(flat(8, 8), state, 'e').ability).toEqual({ id: 'heal', target: { x: 0, y: 2 } });
+  });
 });

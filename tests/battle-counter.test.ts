@@ -38,8 +38,9 @@ describe('opportunity counters (Nov 15)', () => {
     ]);
     const b = new Battle(flat(8, 4), s);
     b.act('shot', { x: 4, y: 1 });
-    expect(countered(b.move({ x: 0, y: 2 }), 'b')).toBe(true);
-    expect(countered(b.move({ x: 0, y: 3 }), 'b')).toBe(true); // a second move, a second counter
+    const strikes = (ev: BattleEvent[]) => ev.filter((e) => e.k === 'attack' && e.unit === 'b').length;
+    expect(strikes(b.move({ x: 0, y: 2 }))).toBe(1);
+    expect(strikes(b.move({ x: 0, y: 3 }))).toBe(1); // a second move, a second counter
   });
 
   it('a ranged counter stops on the cover the attacker hides behind', () => {
