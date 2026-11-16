@@ -79,6 +79,7 @@ export class Game implements TurnHost {
       },
       menu: () => this.menu(),
       undo: () => this.runKey({ k: 'undo' }),
+      cancel: () => this.runKey({ k: 'cancel' }),
     });
     this.readPad = battleInput(host.querySelector('canvas')!, scene, {
       key: (a) => this.runKey(a),

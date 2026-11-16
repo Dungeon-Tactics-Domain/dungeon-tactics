@@ -211,6 +211,10 @@ function howToPlay() {
           'In town you walk with W A S D, the arrows, the gamepad’s d-pad or stick, or by clicking the ground. Near someone or a door a balloon shows what you can do: Enter, A or a click on the balloon talks or goes in. Clicking a person or a house only walks there. Esc, H, Start, B or the right mouse button open the town menu.',
         ),
         t(
+          'No toque: toque no chão para andar e no balão para falar ou entrar; o botão ☰ abre o menu da cidade. Na batalha, o 1º toque numa casa marca e o 2º confirma, e o botão Voltar (↩) aparece ao lado do ☰.',
+          'On touch: tap the ground to walk and the balloon to talk or go in; the ☰ button opens the town menu. In battle the 1st tap on a tile marks it and the 2nd confirms, and the Back button (↩) shows beside the ☰.',
+        ),
+        t(
           'A Guilda dos Aventureiros abre o Grupo (quem vai e a classe de cada um), a Loja compra e vende, a Taverna recruta e o Portão da masmorra inicia a expedição. Ferreiro e Encantadora ainda estão por vir.',
           'The Adventurers’ Guild opens the Party (who goes and each one’s class), the Shop buys and sells, the Tavern recruits and the Dungeon gate starts the expedition. The Blacksmith and the Enchantress are still to come.',
         ),

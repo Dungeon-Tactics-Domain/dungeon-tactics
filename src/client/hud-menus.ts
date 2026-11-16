@@ -1,6 +1,7 @@
 // The menus beside the acting unit (commands, the abilities submenu, "Execute?") and the help line on top. Each menu
 // sets its own `hidden` before anything else: BattleHud.menuOpen and its size cache read it right after.
 import { ABILITIES } from '../shared/battle/abilities.ts';
+import type { Battle } from '../shared/battle/battle.ts';
 import { abilityDetail, costText, shortOf, spendNote } from './battle-text.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
@@ -10,11 +11,12 @@ import {
   type Command,
   canUndoMove,
   commandEnabled,
+  type Screen,
   swimming,
 } from './command.ts';
 import { forecast, forecastText, hpAfterText } from './forecast.ts';
 import type { HudActions, HudView } from './hud.ts';
-import { hint } from './hud-pieces.ts';
+import { hint, KEYS } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, button, type Child, el } from './icons.ts';
 
@@ -41,8 +43,25 @@ const menuHead = (...text: Child[]) => el('div', { class: 'panel-head', 'aria-hi
 // the "Execute?" question, in the help line and on top of its window
 const executeText = (id: string) => t(`${abilityName(id)}: executar?`, `${abilityName(id)}: execute?`);
 
-// top line: what to do now (like FFT's help), and the summary of the last action
-export function helpText(v: HudView, heroTurn: boolean): string {
+// The on-screen Back button (Nov 16: a tablet has no Esc, B or right button, and the Move and Act maps had no way out):
+// what it does now, the same as Esc. null hides it: nothing to go back to
+export function backKind(b: Battle, s: Screen, open: boolean): 'back' | 'undo' | null {
+  if (!open) return null;
+  if (s.k !== 'menu') return 'back';
+  return canUndoMove(b) ? 'undo' : null;
+}
+
+// What a finger's tap left on the map (Nov 16: the 1st tap only marks, the 2nd confirms, and nothing said so). 'marked': a
+// tile is chosen, tapping it again confirms; 'invalid': the tap landed on a tile that does not work (`Ui.invalid`, which
+// a tap on a unit to inspect it and a cursor step from the gamepad never set)
+function tapState(v: HudView): 'marked' | 'invalid' | null {
+  if (v.hl?.tiles.some((m) => m.kind === 'target')) return 'marked';
+  return v.hl?.invalid ? 'invalid' : null;
+}
+
+// top line: what to do now (like FFT's help), and the summary of the last action. `touch`: no keyboard or mouse, so the
+// map screens say what a tap does
+export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
   const b = v.battle;
   if (b.over) return b.state.outcome === 'victory' ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat');
   if (v.busy || !heroTurn)
@@ -60,23 +79,32 @@ export function helpText(v: HudView, heroTurn: boolean): string {
     const id = abilitiesOf(b)[s.index];
     return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
   }
+  const tap = touch && s.k === 'map' ? tapState(v) : null;
   if (s.k === 'map' && s.command === 'move')
     return v.hl?.tiles.some((m) => m.kind === 'nogo')
       ? t(
           'Mover: não dá para parar aqui; a unidade inteira precisa caber em chão livre e uniforme ao alcance.',
           'Move: cannot stop here; the whole unit must fit on free, even ground in reach.',
         )
-      : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.') +
+      : (tap === 'marked'
+          ? t('Mover: toque de novo na casa para confirmar.', 'Move: tap the tile again to confirm.')
+          : tap === 'invalid'
+            ? t('Mover: essa casa não serve; toque numa casa marcada.', 'Move: not that tile; tap a highlighted one.')
+            : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.')) +
           chargeFromText(b, v.cursor) +
           counterFromText(b, v.cursor);
   if (s.k === 'map') {
     const p = v.hl?.preview;
     return p && !p.ok
       ? REASON[p.reason ?? 'unknown']()
-      : t(
-          'Escolha o alvo na área laranja (roxo: o tiro bate no caminho).',
-          'Pick the target in the orange area (purple: the shot hits something on the way).',
-        );
+      : tap === 'marked'
+        ? t('Toque de novo no alvo para confirmar.', 'Tap the target again to confirm.')
+        : tap === 'invalid'
+          ? t('Essa casa não serve; toque na área laranja.', 'Not that tile; tap inside the orange area.')
+          : t(
+              'Escolha o alvo na área laranja (roxo: o tiro bate no caminho).',
+              'Pick the target in the orange area (purple: the shot hits something on the way).',
+            );
   }
   if (s.k === 'confirm')
     return s.lock
@@ -85,10 +113,22 @@ export function helpText(v: HudView, heroTurn: boolean): string {
           `${abilityName(s.ability)}: lock on the character or on the tile?`,
         )
       : executeText(s.ability);
-  return t(
-    'Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.',
-    'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.',
-  );
+  return touch
+    ? t(
+        'Para onde olhar? Toque num lado para virar; toque de novo no mesmo lado para passar a vez.',
+        'Which way to face? Tap a side to turn; tap the same side again to end the turn.',
+      )
+    : t(
+        'Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.',
+        'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.',
+      );
+}
+
+// the Back button's name for what it does now; hidden with nothing to go back to
+export function renderBack(btn: HTMLElement, v: HudView, open: boolean) {
+  const kind = backKind(v.battle, v.screen, open);
+  btn.hidden = !kind;
+  if (kind) btn.title = btn.ariaLabel = kind === 'undo' ? t('Desfazer movimento', 'Undo move') : t('Voltar', 'Back');
 }
 
 export function renderCommands(box: HTMLElement, v: HudView, open: boolean, act: HudActions) {

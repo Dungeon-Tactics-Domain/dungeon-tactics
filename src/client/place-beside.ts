@@ -40,5 +40,15 @@ export function placeBeside(
   }
   // nothing free (narrow screen, character off screen): the side that fits, clamped inside the area
   const side = fits(sides[0]) || !fits(sides[1]) ? sides[0] : sides[1];
+  // no side has room at all (a phone, the 460 px "Execute?" on a 768 px tablet): beside it the panel sat on the character.
+  // It goes below the character (which spans 1.5 half widths up and down), or above, clear of `avoid` when one of them is
+  if (!fits('right') && !fits('left')) {
+    const left = clamp(a.x - w / 2, area.left, area.right - w);
+    const rows = [a.y + 1.5 * a.r + gap, a.y - 1.5 * a.r - gap - h].filter(
+      (t) => t >= area.top && t + h <= area.bottom,
+    );
+    const top = rows.find((t) => !covers(left, t)) ?? rows[0];
+    if (top !== undefined) return { left, top, side, free: false };
+  }
   return { left: clamp(xs[side], area.left, area.right - w), top: tops[0], side, free: false };
 }

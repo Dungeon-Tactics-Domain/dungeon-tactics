@@ -50,6 +50,23 @@ describe('menu beside the unit', () => {
     expect(p).toMatchObject({ side: 'right', free: true }); // clear of the list, over the target (its numbers are in the strips)
   });
 
+  // Nov 16 (touch audit): on a phone or a 768 px tablet a wide window fits on neither side and sat on the acting unit
+  it('with room on neither side, goes below the unit, or above it, never on it', () => {
+    const tablet = { left: 12, top: 72, right: 756, bottom: 886 }; // 768x1024
+    const a = { x: 400, y: 400, r: 30 };
+    const p = placeBeside(a, 460, 108, tablet, 'left');
+    expect(p).toMatchObject({ left: 170, top: 400 + 45 + 12, free: false }); // centred under the unit
+    // no room below: above
+    expect(placeBeside(a, 460, 108, { ...tablet, bottom: 500 }, 'left').top).toBe(400 - 45 - 12 - 108);
+    // the target right under the unit: above, clear of it
+    const target = { left: 380, top: 450, right: 440, bottom: 540 };
+    expect(placeBeside(a, 460, 108, tablet, 'left', [target]).top).toBe(400 - 45 - 12 - 108);
+    // room for neither row: the old clamp, inside the area
+    const tight = placeBeside(a, 460, 400, { ...tablet, bottom: 600 }, 'left');
+    expect(tight.top).toBeGreaterThanOrEqual(72);
+    expect(tight.top + 400).toBeLessThanOrEqual(600);
+  });
+
   it('the "Executar?" (Execute?) prompt prefers the side opposite the target', () => {
     expect(placeBeside({ x: 600, y: 300, r: 20 }, 420, 200, area, 'left').side).toBe('left');
     // no room on the left, stays on the right anyway

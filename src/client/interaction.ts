@@ -36,6 +36,7 @@ export interface Highlights {
   path: Pos[] | null;
   preview: Preview | null;
   size?: number; // cells per side of whoever walks `path`: a big unit or a half-tile token walks by its corner cell
+  invalid?: boolean; // `Ui.invalid`, for the HUD's help line: the last tap landed on a tile that does not work
 }
 
 const selfCentered = (id: string) => ABILITIES[id].range[1] === 0;
@@ -187,7 +188,7 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
     const { pos, size: s } = aimMark(b.grid, b.state, ui.pending);
     for (const c of cellsOf(pos, s)) mark(c, 'target');
   }
-  return { tiles: [...tiles.values()], path, preview, size };
+  return { tiles: [...tiles.values()], path, preview, size, invalid: ui.invalid };
 }
 
 // The square an aim at `p` marks, as corner and cells per side (Nov 15, Fernando: the aim mark is one half-tile cell, and the

@@ -15,11 +15,11 @@ import type { Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { type Expression, frameOf } from './battle-face.ts';
 import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
-import { helpText, renderAbilities, renderCommands, renderConfirm } from './hud-menus.ts';
+import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm } from './hud-menus.ts';
 import { hint, KEYS, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
 import { ToolsMenu } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { abilityIcon, el } from './icons.ts';
+import { abilityIcon, el, iconButton } from './icons.ts';
 import type { Highlights } from './interaction.ts';
 import { type Anchor, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
@@ -43,6 +43,7 @@ export interface HudActions {
   fast(): void; // toggles the 3x faster battle (the touch way; on the keyboard, hold Enter)
   undo(): void; // undoes the last step (same as the Z key): whoever plays with a mouse only had no way to
   menu(): void;
+  cancel(): void; // the Back button, the same as Esc, B and the right button (a finger has none of them)
 }
 export interface HudView {
   battle: Battle;
@@ -71,6 +72,16 @@ export class BattleHud {
   private queueScroll = 0;
   private queueTurn = '';
   private readonly help = el('div', { class: 'panel help', 'aria-live': 'polite' });
+  // Back beside the menu button (Nov 16, Fernando): the only way out of the Move and Act maps without Esc, B or a right button
+  private readonly back = iconButton(
+    '↩',
+    '',
+    () => {
+      this.tools.close(); // the open corner list counts a tap anywhere in .tools as inside
+      this.act.cancel();
+    },
+    { class: 'icon back', hidden: true },
+  );
   private readonly bannerEl = el('div', { class: 'panel banner', role: 'status', hidden: true });
   private readonly commands = el('div', {
     class: 'panel commands',
@@ -93,6 +104,7 @@ export class BattleHud {
     private readonly act: HudActions,
   ) {
     this.tools = new ToolsMenu(act);
+    this.tools.root.prepend(this.back);
     this.root = el(
       'div',
       { class: `hud${KEYS ? ' kbd' : ''}` },
@@ -124,6 +136,7 @@ export class BattleHud {
     const aim = s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : null;
     this.renderQueue(b, aim);
     this.help.textContent = helpText(v, heroTurn);
+    renderBack(this.back, v, open);
     renderCommands(this.commands, v, open, this.act);
     renderAbilities(this.abilities, v, open, this.act);
     renderConfirm(this.confirmBox, v, open, this.act);
@@ -132,7 +145,8 @@ export class BattleHud {
     const me = b.over ? undefined : (actingUnit ?? b.actor);
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me, this.face(me))] : []));
     // the turn list ends a gap above the acting panel, whose height changes with the screen width
-    this.queue.style.maxHeight = `calc(100% - 56px - 2 * var(--inset) - ${this.active.offsetHeight}px)`;
+    // 56px + the top safe area is the list's own top in style.css; the panel below sits --inset-b off the edge
+    this.queue.style.maxHeight = `calc(100% - 56px - env(safe-area-inset-top, 0px) - var(--inset) - var(--inset-b) - ${this.active.offsetHeight}px)`;
     this.anchorQueue(b);
     // unit under the cursor (or the "Execute?" target)
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
@@ -154,6 +168,8 @@ export class BattleHud {
       abilities: box(this.abilities),
       confirm: box(this.confirmBox),
       bottom: Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight),
+      // the help line wraps to several rows on a narrow screen: the menus start below it
+      top: Math.max(72, this.help.getBoundingClientRect().bottom + 8),
     };
   }
 
@@ -175,7 +191,7 @@ export class BattleHud {
     }
   }
 
-  private sizes = { commands: { w: 0, h: 0 }, abilities: { w: 0, h: 0 }, confirm: { w: 0, h: 0 }, bottom: 0 };
+  private sizes = { commands: { w: 0, h: 0 }, abilities: { w: 0, h: 0 }, confirm: { w: 0, h: 0 }, bottom: 0, top: 72 };
   get menuOpen() {
     return !this.commands.hidden || !this.confirmBox.hidden;
   }
@@ -188,7 +204,7 @@ export class BattleHud {
     // free: below the help line and the menu button (which stay at the top), above the bottom unit panels
     const area = {
       left: 12,
-      top: 72,
+      top: this.sizes.top,
       right: this.root.clientWidth - 12,
       bottom: this.root.clientHeight - 24 - this.sizes.bottom,
     };
@@ -222,8 +238,15 @@ export class BattleHud {
       return put(this.confirmBox, p.left, p.top);
     }
     const sub = !this.abilities.hidden;
-    // with the submenu open, both decide the side together (otherwise the submenu fell on top of the character); the menu stays on its side
     const gap = 8;
+    // a phone has no room for both side by side (164 + 8 + 320 px on a 375 px screen): the submenu takes the menu's place
+    const over = sub && c.w + gap + s.w > area.right - area.left;
+    this.commands.classList.toggle('covered', over);
+    if (over) {
+      const o = placeBeside(a, s.w, s.h, area, 'right', avoid);
+      return put(this.abilities, o.left, o.top);
+    }
+    // with the submenu open, both decide the side together (otherwise the submenu fell on top of the character); the menu stays on its side
     const p = placeBeside(a, sub ? c.w + gap + s.w : c.w, Math.max(c.h, sub ? s.h : 0), area, 'right', avoid);
     const right = p.side === 'right';
     put(this.commands, right || !sub ? p.left : p.left + s.w + gap, p.top);

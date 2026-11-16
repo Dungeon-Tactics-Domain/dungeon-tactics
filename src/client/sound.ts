@@ -117,14 +117,23 @@ const applyMusic = () => {
   fader ??= setInterval(fadeTick, 50);
 };
 
-// player's first gesture: creates the audio context and starts the music
+// iPadOS Safari lets sound start only at the end of a tap (pointerup, touchend, click), so a context made on pointerdown can
+// stay suspended: every gesture wakes it until it runs (Nov 16 tablet audit: the sound may not play on the iPad)
+export function wake(c: AudioContext | null, make: () => AudioContext): AudioContext {
+  const out = c ?? make();
+  if (out.state === 'suspended') void out.resume().catch(() => undefined);
+  return out;
+}
+// player's gestures: the first creates the audio context and starts the music; later ones retry what the browser refused
 function unlock() {
-  if (ctx) return;
-  ctx = new AudioContext();
-  applyMusic();
+  const fresh = !ctx;
+  ctx = wake(ctx, () => new AudioContext());
+  if (fresh) applyMusic();
+  else for (const v of voices.values()) if (v.audio.paused && v.to) void v.audio.play().catch(() => undefined);
 }
 if (typeof addEventListener !== 'undefined')
-  for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, unlock, { once: true, capture: true });
+  for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
+    addEventListener(ev, unlock, { capture: true });
 
 const load = (name: string) => {
   let p = buffers.get(name);

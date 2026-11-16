@@ -98,13 +98,19 @@
   --tap: 44px; /* touch target: >= 44 px (spec) */
   --gap: 8px;
   --inset: 12px; /* panel margin to the screen edge */
+  /* the same margin clear of the notch, rounded corners and home bar (index.html sets viewport-fit=cover); 0 extra elsewhere */
+  --inset-t: calc(var(--inset) + env(safe-area-inset-top, 0px));
+  --inset-r: calc(var(--inset) + env(safe-area-inset-right, 0px));
+  --inset-b: calc(var(--inset) + env(safe-area-inset-bottom, 0px));
+  --inset-l: calc(var(--inset) + env(safe-area-inset-left, 0px));
   --slot-w: min(
     672px,
     35vw
   ); /* bottom unit panels: the lab kit's 35% of the 1920 screen; the strike preview sits beside the acting one */
   --font: "Alegreya Sans", "Segoe UI", system-ui, sans-serif; /* hosted in public/fonts (@font-face below) */
   --font-title: var(--font); /* titles, options and queue: FFT uses one plain letter, no title serif */
-  --fs-xs: 12px; /* performance counter */
+  --fs-xs: 12px; /* key hints, which show only with a keyboard */
+  --fs-min: 14px; /* the smallest text a touch screen shows (Nov 16 tablet audit): the round tag, the fps counter */
   --fs-sm: 16px;
   --fs: 20px;
   --fs-lg: 24px;
@@ -171,6 +177,7 @@ body {
   color: var(--fg);
   font: 500 var(--fs) / 1.3 var(--font);
   font-variant-ligatures: none;
+  overscroll-behavior: none; /* a pull down at the top reloaded the page on Chrome Android, losing the battle */
 }
 /* full-screen game: no scrolling, text selection or browser double-tap zoom */
 body {
@@ -234,15 +241,19 @@ button:disabled {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
-summary:focus-visible {
+summary:focus-visible,
+a:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 } /* FFT yellow: 7:1 on the blue panels */
 button[aria-pressed="true"] {
   box-shadow: var(--frame), var(--glow);
 }
+/* over the scene the yellow ring alone gives 1.4:1 on a white sky; the dark halo carries it */
 .tools .burger:focus-visible,
+.tools .back:focus-visible,
 .main-title .title-lang:focus-visible,
+.town-act:focus-visible,
 .panel.talk:focus-visible {
   box-shadow: var(--focus-halo);
 }
@@ -285,6 +296,8 @@ button[hidden],
   width: min(460px, 100%);
   max-height: 90dvh;
   overflow: auto;
+  /* a finger scrolls the window and nothing else: without this a pinch inside it zoomed the whole page 5x (Nov 16 tablet audit) */
+  touch-action: pan-y;
   border: 2px solid var(--paper-edge);
   border-radius: var(--r);
   color: var(--ink);
@@ -302,6 +315,7 @@ button[hidden],
 .crawl-map .legend,
 .panel,
 .tools .burger,
+.tools .back,
 .strike {
   -webkit-backdrop-filter: var(--panel-filter);
   backdrop-filter: var(--panel-filter);
@@ -349,7 +363,8 @@ button[hidden],
   background: var(--overlay);
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
   z-index: 10;
 }
 /* the window's name on the kit's head band (the battle menus' .panel-head): faint light band and a line under it */
@@ -370,8 +385,11 @@ button[hidden],
   border-color: transparent;
   box-shadow: none;
 }
-.dialog .dialog-head button.icon:hover {
-  background: var(--row-hi);
+/* hover only where a mouse hovers: on touch the tapped row kept the hover look */
+@media (hover: hover) {
+  .dialog .dialog-head button.icon:hover {
+    background: var(--row-hi);
+  }
 }
 .dialog h2,
 .dialog h3 {
@@ -427,8 +445,10 @@ button[hidden],
   border-color: transparent;
   box-shadow: none;
 }
-.dialog .camp-list > button:hover {
-  background: var(--row-hi);
+@media (hover: hover) {
+  .dialog .camp-list > button:hover {
+    background: var(--row-hi);
+  }
 }
 .dialog .camp-list > button:focus {
   outline: none;
@@ -752,8 +772,10 @@ button[hidden],
   border-color: transparent;
   box-shadow: none;
 }
-.menu-nav .choice-row button:hover {
-  background: var(--row-hi);
+@media (hover: hover) {
+  .menu-nav .choice-row button:hover {
+    background: var(--row-hi);
+  }
 }
 .menu-nav .choice-row button[aria-pressed="true"] {
   background: color-mix(in srgb, var(--shade) 45%, transparent);
@@ -783,6 +805,7 @@ button[hidden],
 }
 .menu-body {
   overflow: auto;
+  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
   min-height: 0;
   padding-right: 8px;
 }
@@ -832,8 +855,13 @@ button[hidden],
   color: var(--ink-muted);
   margin-left: 8px;
 } /* where Continue leads, on the same line; --ink on the hover and focus bands, where the muted tone drops to 4.3 and 3.8:1 */
-.camp-list > button:is(:hover, :focus) .continue-where {
+.camp-list > button:focus .continue-where {
   color: var(--ink);
+}
+@media (hover: hover) {
+  .camp-list > button:hover .continue-where {
+    color: var(--ink);
+  }
 }
 /* Continue's saved games (saves-ui.ts, Nov 15): the load row and its Delete side by side as menu rows of the window
    list, the face before who goes and the where-gold-when line; scrolls past a screenful. Delete keeps its width when its
@@ -846,6 +874,7 @@ button[hidden],
   grid-template-columns: minmax(0, 1fr) 12em;
   max-height: 60vh;
   overflow-y: auto;
+  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
 }
 .dialog .camp-list > .save-load {
   min-height: 76px;
@@ -908,10 +937,9 @@ button[hidden],
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   font-size: var(--fs-sm);
-  margin: 0;
-  opacity: 0.85;
+  margin: 0; /* full opacity: at .85 it fell to ~4.2:1 over the veil on a white sky */
 }
 /* a short screen (800x600, 1024x640) left the fixed foot 3 to 9 px under the menu: there it follows the menu instead */
 @media (max-height: 700px) {
@@ -924,6 +952,12 @@ button[hidden],
   padding: 0 12px;
   font-size: var(--fs-sm);
   vertical-align: middle;
+}
+/* touch: the 44 px finger target (Nov 16 tablet audit); the PC keeps the slim 32 px button on the foot line */
+@media (pointer: coarse) {
+  .main-title .title-lang {
+    min-height: var(--tap);
+  }
 }
 .main-title .menu-actions {
   background: linear-gradient(var(--glass-hi), var(--glass) 45%, var(--glass-lo)), var(--panel-veil);
@@ -977,6 +1011,24 @@ button[hidden],
 .crawl-row button.primary .continue-where {
   color: var(--on-accent);
 }
+/* Nov 16 (touch audit): "Back to town" sat below the screen with no way to scroll to it (cut by 10 px at 1280x720, off
+   screen on a phone). The overlay scrolls, not the window, so no shadow or focus ring is clipped. Top-aligned with auto
+   margins: centred where it fits, the top in reach where it does not (`safe center` does the same, on newer browsers) */
+.crawl-map {
+  overflow-y: auto;
+  touch-action: pan-y; /* body has none: a finger scrolls the map */
+  align-items: start;
+}
+.crawl-map .dialog.title {
+  max-height: none;
+  margin-block: auto;
+}
+/* under 760 px of height the title's 48 px gaps do not fit (708 px of map + the overlay's 32 px): they close to 16 px */
+@media (max-height: 760px), (max-width: 600px) {
+  .crawl-map .dialog.title {
+    gap: 16px;
+  }
+}
 @keyframes title-in {
   from {
     opacity: 0;
@@ -1018,8 +1070,8 @@ button[hidden],
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
 .tile-info {
-  top: var(--inset);
-  left: var(--inset);
+  top: var(--inset-t);
+  left: var(--inset-l);
   font-size: var(--fs-sm);
 }
 .tile-info:empty {
@@ -1029,9 +1081,10 @@ button[hidden],
    beside two short lines (number or NOW, then the name), the side by colour and by shape (● hero, ◆ enemy). The column
    ends above the acting panel (hud.ts sets max-height from its height) and scrolls when the battle has more turns */
 .queue {
-  top: 56px;
-  left: 12px;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: var(--inset-l);
   width: 196px;
+  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
   overflow-y: auto;
   scrollbar-width: thin;
   list-style: none;
@@ -1071,7 +1124,7 @@ button[hidden],
   position: absolute;
   left: 30px; /* row padding 4 + face 36, less the tag's overlap */
   bottom: 1px;
-  font: 700 var(--fs-xs) / 1 var(--font);
+  font: 700 var(--fs-min) / 1 var(--font);
   color: var(--ink);
   background: var(--paper-lo);
   border: 1px solid var(--paper-edge);
@@ -1136,7 +1189,7 @@ button[hidden],
 }
 /* what-to-do-now help and ability name banner: at the top, in the middle */
 .help {
-  top: 12px;
+  top: var(--inset-t);
   left: 50%;
   transform: translateX(-50%);
   max-width: 760px;
@@ -1147,7 +1200,7 @@ button[hidden],
   display: none;
 }
 .banner {
-  top: 64px;
+  top: calc(64px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 28px;
@@ -1156,17 +1209,26 @@ button[hidden],
 /* camera tools and the menu: top right corner; the performance counter right below */
 .tools {
   position: absolute;
-  top: var(--inset);
-  right: var(--inset);
+  top: var(--inset-t);
+  right: var(--inset-r);
   pointer-events: auto;
   z-index: 2;
+  /* Back (hud.ts back, Nov 16, Fernando) to the left of the menu button, only while there is something to go back to: the
+     same cancel as Esc, B and the right button, for a finger */
+  display: flex;
+  gap: var(--gap);
 } /* the open list goes over the counter and the command menu */
 /* menu button on the same blue as the panels, with 3 bars; open, it is sunken */
-.tools .burger {
+.tools .burger,
+.tools .back {
   background: linear-gradient(var(--glass), var(--glass-lo)), var(--panel-veil);
   border-color: var(--paper-edge);
   color: var(--ink);
   box-shadow: var(--paper-frame);
+}
+/* the back button is for fingers; with a keyboard or mouse Esc and the right button already go back */
+.kbd .tools .back {
+  display: none;
 }
 .tools .burger[aria-expanded="true"] {
   box-shadow:
@@ -1204,17 +1266,32 @@ button[hidden],
   right: 0;
   width: 360px; /* "Show the whole map" pushed its key out at the 20 px size */
   padding: 6px;
+  /* a phone lying down (844x390): the 7 rows at 44 px are 344 px and ran 18 px under the screen; the list scrolls there */
+  max-height: calc(100dvh - var(--inset-t) - var(--tap) - 8px - var(--inset-b));
+  overflow-y: auto;
+  touch-action: pan-y;
   animation: menu-in var(--t-menu) ease-out;
   transform-origin: top;
 }
 .tools-menu .item {
   font: 400 var(--fs) / 1 var(--font-title);
-  min-height: 38px;
+}
+/* 44 px on every screen, the PC too (Nov 16); .panel in front to beat the later `.panel .item` 40 px: the old 38 here
+   never applied, the rows measured 40 and 42 */
+.panel.tools-menu .item {
+  min-height: var(--tap);
+}
+.tools-menu .item + .item {
+  margin-top: 4px; /* a gap between targets, so a finger on the edge does not take the row next to it */
 }
 @media (hover: hover) {
   .tools-menu .item:hover {
     background: var(--row-hi);
     filter: none;
+  }
+  /* the muted key hint gave 4.3:1 on the hover band; --ink as the party list does */
+  .tools-menu .item:hover .hint {
+    color: var(--ink);
   }
 }
 .tool-label {
@@ -1239,17 +1316,17 @@ button[hidden],
 }
 .fps {
   position: absolute;
-  top: 72px;
-  right: var(--inset);
+  top: calc(72px + env(safe-area-inset-top, 0px));
+  right: var(--inset-r);
   pointer-events: none;
   white-space: pre;
   text-align: right;
   font:
-    var(--fs-xs) / 1.35 ui-monospace,
+    var(--fs-min) / 1.35 ui-monospace,
     Consolas,
     monospace;
   color: var(--fg);
-  background: color-mix(in srgb, var(--shade) 55%, transparent);
+  background: color-mix(in srgb, var(--shade) 65%, transparent); /* 55% gave 4.1:1 over a white sky */
   padding: 4px 8px;
   border-radius: var(--r);
 }
@@ -1376,6 +1453,13 @@ button[hidden],
   color: var(--ink);
   font: 700 var(--fs-lg) / 1 var(--font-title);
   text-shadow: var(--ink-shadow);
+}
+/* touch: every menu row and "Execute?"'s Yes and No reach the 44 px finger target (Nov 16 tablet audit: 40 px); the PC
+   keeps the compact rows. The corner list's rows are 44 px on every screen (.panel.tools-menu .item, above) */
+@media (pointer: coarse) {
+  .panel .item {
+    min-height: var(--tap);
+  }
 }
 .panel .item.focus {
   background: var(--focus-band);
@@ -1517,15 +1601,15 @@ button[hidden],
 .active-slot,
 .target-slot {
   position: absolute;
-  bottom: var(--inset);
+  bottom: var(--inset-b);
   width: var(--slot-w);
   pointer-events: none;
 }
 .active-slot {
-  left: var(--inset);
+  left: var(--inset-l);
 }
 .target-slot {
-  right: var(--inset);
+  right: var(--inset-r);
 }
 .unit-panel {
   position: relative;
@@ -1656,9 +1740,9 @@ button[hidden],
    half on its side's colour (wine for an enemy). Up to 3 strips, then "+N targets"; no click (the mouse reaches the tiles) */
 .strikes {
   position: absolute;
-  bottom: var(--inset);
-  left: calc(var(--slot-w) + 2 * var(--inset));
-  width: min(760px, calc(100% - var(--slot-w) - 3 * var(--inset)));
+  bottom: var(--inset-b);
+  left: calc(var(--slot-w) + var(--inset) + var(--inset-l));
+  width: min(760px, calc(100% - var(--slot-w) - var(--inset-l) - var(--inset) - var(--inset-r)));
   display: grid;
   align-content: end;
   gap: 4px;
@@ -1764,6 +1848,30 @@ button[hidden],
   text-align: right;
   font-size: var(--fs);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---- Battle HUD: touch and narrow screens (Nov 16, Fernando: the game must play on a tablet with the fingers) ---- */
+/* no menu wider than the screen: "Execute?" (460 px) cut its No button on a 390 px phone */
+.commands,
+.abilities,
+.confirm {
+  max-width: calc(100vw - var(--inset-l) - var(--inset-r));
+}
+/* the submenu took the menu's place (hud.ts place: no room for both side by side) */
+.commands.covered {
+  visibility: hidden;
+}
+/* narrow tablet: at 35vw the unit panel left the HP and CT bars 2 px wide. By width alone, not by `pointer: coarse`: a
+   narrow PC window had the same 2 px bars. An upright phone (under 600 px) gets a "turn the phone" notice instead of a
+   layout of its own (Fernando, Nov 16) */
+@media (max-width: 900px) {
+  .hud {
+    --slot-w: max(35vw, 300px); /* on .hud: a theme's :root block would win over a plain :root here */
+  }
+  .hud .unit-panel {
+    gap: 10px;
+    padding: 10px 12px;
+  }
 }
 
 /* ---- Battle HUD: floating numbers, objective banner, hidden under windows ---- */
@@ -1976,7 +2084,7 @@ body:has(.result-overlay) .fps {
 .talk-overlay {
   place-items: end center;
   background: color-mix(in srgb, var(--shade) 35%, transparent);
-  padding-bottom: 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   gap: 12px;
   align-content: end;
 }
@@ -2178,8 +2286,13 @@ body:has(.result-overlay) .fps {
 }
 /* hover and focus as the menu rows: the band, its yellow line and the ▶; the muted text turns --ink there (4.3:1 on the
    hover band, under the 4.5 bar) */
-.party-list .party-card:hover {
-  background: var(--row-hi);
+@media (hover: hover) {
+  .party-list .party-card:hover {
+    background: var(--row-hi);
+  }
+  .party-list .party-card:hover :is(.party-class, p) {
+    color: var(--ink);
+  }
 }
 .party-list .party-card:focus {
   outline: none;
@@ -2193,7 +2306,7 @@ body:has(.result-overlay) .fps {
   color: var(--focus);
   animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
-.party-list .party-card:is(:hover, :focus) :is(.party-class, p) {
+.party-list .party-card:focus :is(.party-class, p) {
   color: var(--ink);
 }
 .party-card .portrait {
@@ -2345,6 +2458,12 @@ p.gold strong::before,
   min-height: 36px;
   min-width: 112px;
 }
+/* touch: Buy, Sell and Recruit reach the 44 px finger target (Nov 16 tablet audit); the PC keeps 36 so 9 rows fit at 1280x720 */
+@media (pointer: coarse) {
+  .price-act button {
+    min-height: var(--tap);
+  }
+}
 .price-act small {
   font-size: var(--fs-sm);
   line-height: 1; /* with a why under every button (no gold) the 9 rows still fit at 1280x720 */
@@ -2479,7 +2598,7 @@ p.gold strong::before,
 /* the town: the menu in the top right corner, the backdrop battle in full view */
 .town-menu {
   place-items: start end;
-  padding: var(--inset);
+  padding: var(--inset-t) var(--inset-r) var(--inset-b) var(--inset-l);
   background: none;
 }
 .town-menu .dialog.title {
@@ -2509,13 +2628,13 @@ p.gold strong::before,
   body:has(.town-menu) .overlay:not(.town-menu) {
     place-items: start end;
     /* clear of the menu's 440 px */
-    padding: var(--inset) calc(440px + 2 * var(--inset)) var(--inset) var(--inset);
+    padding: var(--inset-t) calc(440px + var(--inset) + var(--inset-r)) var(--inset-b) var(--inset-l);
     background: none;
     pointer-events: none;
   }
   body:has(.town-menu) .overlay:not(.town-menu) > .dialog {
     pointer-events: auto;
     width: min(1100px, 100%);
-    max-height: calc(100dvh - 2 * var(--inset));
+    max-height: calc(100dvh - var(--inset-t) - var(--inset-b));
   }
 }

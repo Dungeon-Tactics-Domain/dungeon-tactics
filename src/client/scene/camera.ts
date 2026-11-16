@@ -101,7 +101,8 @@ export class CameraRig {
     if (this.camSaved?.pair === `${posKey(to)}>${posKey(from)}`) return;
     // `heroi`: the camera always stays on the heroes' side (over the attacker's shoulder; when the enemy attacks, behind the hero)
     const cam = ACTION_CAMS[CAM_NAME === 'hero' ? (enemy ? 'behind' : 'shoulder') : CAM_NAME];
-    if (!cam || this.held) return;
+    // reduced motion: no swing and zoom around the strike (Nov 16 audit); the strike plays from the usual view
+    if (!cam || this.held || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     this.camSaved = {
       viewH: this.camSaved?.viewH ?? this.viewH,
       yaw: this.camSaved?.yaw ?? this.yawTarget,
