@@ -7,7 +7,7 @@
   "units": {
     "e-soldier": { "x": 4, "y": 10, "facing": 0 },
     "e-brute": { "x": 6, "y": 10, "facing": 0 },
-    "e-archer": { "x": 8, "y": 9, "facing": 0, "hp": 5 }
+    "e-archer": { "x": 8, "y": 9, "facing": 0, "hp": 25 }
   },
   "screen": "menu",
   "cursor": { "x": 6, "y": 10 },

@@ -4,9 +4,11 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT } from '../src/shared/battle/combat.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Strike preview when aiming (Nov 13, Fernando's request, as in FFT and Tactics Ogre): the same calculation as the "Executar?" (Execute?) prompt
+const HP = UNIT_DEFS.soldier.hp; // the soldier's full life
 const fc = (b: Battle, ability: string, target: Pos) => forecast(b, ability, b.preview(ability, target));
 
 describe('strike preview', () => {
@@ -20,9 +22,9 @@ describe('strike preview', () => {
     );
     const [f] = fc(b, 'strike', { x: 1, y: 0 });
     const [lo, hi] = ABILITIES.strike.damage; // the numbers come from the table (changed with the x1.75 damage of Nov 13)
-    expect(f).toMatchObject({ chance: 90, dmg: [lo, hi], heal: null, push: 0, after: [45 - hi, 45 - lo], ally: false });
+    expect(f).toMatchObject({ chance: 90, dmg: [lo, hi], heal: null, push: 0, after: [HP - hi, HP - lo], ally: false });
     expect(forecastText(f)).toBe(`acerto 90% · dano ${lo}–${hi}`);
-    expect(hpAfterText(f)).toBe(`vida 45 → ${45 - hi}–${45 - lo}`);
+    expect(hpAfterText(f)).toBe(`vida ${HP} → ${HP - hi}–${HP - lo}`);
   });
 
   it('knockback against the edge: the bump counts in the damage and resulting health', () => {
@@ -37,13 +39,13 @@ describe('strike preview', () => {
     const [lo, hi] = ABILITIES.shield_bash.damage,
       bump = COMBAT.BUMP_DAMAGE;
     expect(f.push).toBe(bump);
-    expect(f.after).toEqual([45 - hi - bump, 45 - lo - bump]); // damage plus the bump at the edge
+    expect(f.after).toEqual([HP - hi - bump, HP - lo - bump]); // damage plus the bump at the edge
     expect(forecastText(f)).toBe(`acerto 95% · dano ${lo}–${hi} · empurrão +${bump}`);
     // small line of the preview strip (Tactics Ogre style): who, knockback and resulting health
     expect(strikeInfo(f, 'shield_bash')).toEqual([
       'Soldado',
       `empurrão +${bump}`,
-      `vida 45 → ${45 - hi - bump}–${45 - lo - bump}`,
+      `vida ${HP} → ${HP - hi - bump}–${HP - lo - bump}`,
     ]);
   });
 
@@ -71,14 +73,14 @@ describe('strike preview', () => {
       stateOf([
         { id: 'm', def: 'mage', team: 'hero', x: 0, y: 0 },
         { id: 'a', def: 'archer', team: 'hero', x: 2, y: 0, hp: 10 },
-        { id: 'r', def: 'rogue', team: 'hero', x: 3, y: 0, hp: 25 },
+        { id: 'r', def: 'rogue', team: 'hero', x: 3, y: 0, hp: 125 },
       ]),
     );
     const [hurt] = fc(b, 'heal', { x: 2, y: 0 });
     const [lo, hi] = ABILITIES.heal.heal;
     expect(hurt).toMatchObject({ heal: [lo, hi], dmg: null, after: [10 + lo, 10 + hi], ally: false });
     expect(forecastText(hurt)).toBe(`cura ${lo}–${hi}`);
-    expect(fc(b, 'heal', { x: 3, y: 0 })[0].after).toEqual([26, 26]); // Rogue has 26 health
+    expect(fc(b, 'heal', { x: 3, y: 0 })[0].after).toEqual([130, 130]); // Rogue has 130 health
   });
 
   it('area: one per target, and an ally inside it comes flagged', () => {

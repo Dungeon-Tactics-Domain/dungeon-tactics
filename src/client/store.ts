@@ -57,6 +57,16 @@ const MIGRATIONS: ((s: Saves) => void)[] = [
     const m = readSaves(s);
     if (m.slots.length) s.setItem(SAVES_KEY, JSON.stringify(m));
   },
+  (s) => {
+    // Nov 15: life and damage x5 (Fernando's grill); a battle saved mid-fight would go on at a fifth of its life, so it
+    // starts over (the expedition's own save is dropped by CRAWL_VERSION)
+    const dead: string[] = [];
+    for (let i = 0; i < s.length; i++) {
+      const k = s.key(i);
+      if (k && /^dt:battle(:|$)/.test(k)) dead.push(k);
+    }
+    for (const k of dead) s.removeItem(k);
+  },
 ];
 export function migrate(s: Saves) {
   const done = Number(s.getItem(MIGRATED)) || 0;

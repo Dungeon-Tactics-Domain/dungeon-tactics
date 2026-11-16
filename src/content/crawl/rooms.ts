@@ -1,7 +1,8 @@
 // Dungeon crawl rooms (Nov 15, Fernando: the new dungeon loop, a mode apart from Beacon Ashes, with procedural rooms).
 // The groups, the boss and the sizes come from the Mechanics lab's descent proposal of Nov 15 (dungeon-tactics-labs,
 // web/src/content/mecanicas/descida.json): 1 to 3 enemies worth 64 to 102 life in total, about 5 to 8 hero turns
-// at ~12.8 enemy life per hero turn (a deduction from the Skirmish measure, not a measured room). Tune by playing.
+// at ~12.8 enemy life per hero turn (a deduction from the Skirmish measure, not a measured room). Since the x5 of life and
+// damage (Nov 15) the same groups are worth 320 to 510 at ~64 per hero turn. Tune by playing.
 import type { CrawlTheme, RoomGroup } from '../../shared/crawl/generate.ts';
 
 // who the room is laid out and checked for, and who enters a ?crawl room: the four starting classes with their whole kit;
@@ -18,7 +19,8 @@ export const CRAWL_GROUPS: RoomGroup[] = [
   { name: ['Acólito que cura', 'Healing acolyte'], depth: 3, enemies: ['soldier', 'acolyte'] },
   { name: ['Tropa do Véu', 'Veil troop'], depth: 3, enemies: ['veil_knight', 'acolyte', 'minion'] },
 ];
-// the boss room, once at the end of the expedition: the Colossus (2x2, does not walk) and one minion, 184 life (Fernando,
+// the boss room, once at the end of the expedition: the Colossus (2x2, does not walk) and one minion, 184 life (920 since the
+// x5) (Fernando,
 // Nov 15: one boss, at the end of the expedition, with the Colossus and one minion), about 14 hero turns plus 2 or 3 to
 // walk in (the lab's descida.json: with two minions on the bigger room it ran past 18)
 export const CRAWL_BOSS: Omit<RoomGroup, 'depth'> = {

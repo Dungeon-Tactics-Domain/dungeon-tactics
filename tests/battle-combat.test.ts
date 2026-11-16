@@ -128,13 +128,13 @@ describe('resolving the ability', () => {
     const s = stateOf(
       [
         { id: 'a', def: 'mage', team: 'hero', x: 0, y: 0 },
-        { id: 'w', def: 'warrior', team: 'hero', x: 2, y: 0, hp: 40 },
+        { id: 'w', def: 'warrior', team: 'hero', x: 2, y: 0, hp: 200 },
       ],
       MISS_SEED,
     );
     const ev = resolveAbility(flat(3, 1), s, 'a', 'heal', at(2));
-    expect(s.units[1].hp).toBe(42);
-    expect(ev).toContainEqual({ k: 'heal', unit: 'w', amount: 2 });
+    expect(s.units[1].hp).toBe(210);
+    expect(ev).toContainEqual({ k: 'heal', unit: 'w', amount: 10 });
   });
 
   it('killing removes the unit and announces it', () => {

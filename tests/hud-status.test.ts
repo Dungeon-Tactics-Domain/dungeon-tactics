@@ -15,7 +15,7 @@ describe('status window', () => {
     const rows = Object.fromEntries(unitStatus(s, 'h-warrior'));
     expect(rows).toMatchObject({
       Lado: 'herói',
-      Vida: '42/42',
+      Vida: '210/210',
       CT: '0/100',
       Velocidade: '8',
       Movimento: '4',

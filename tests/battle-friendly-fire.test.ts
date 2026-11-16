@@ -100,7 +100,7 @@ describe('friendly fire (Nov 15)', () => {
     ] as const) {
       const s = stateOf([
         { id: 'a', def: caster, team: side, x: 0, y: 0 },
-        { id: 'u', def: target, team, x: 2, y: 0, hp: 20 },
+        { id: 'u', def: target, team, x: 2, y: 0, hp: 100 },
       ]);
       expect(previewAbility(flat(4, 1), s, 'a', 'heal', at(2)).targets, target).toMatchObject([
         { unit: 'u', chance: 100, dmgMin: lo, dmgMax: hi, healMin: 0, healMax: 0 },
@@ -108,7 +108,7 @@ describe('friendly fire (Nov 15)', () => {
       const dmg = dealt(resolveAbility(flat(4, 1), s, 'a', 'heal', at(2)), 'u')!;
       expect(dmg).toBeGreaterThanOrEqual(lo);
       expect(dmg).toBeLessThanOrEqual(hi);
-      expect(s.units.find((u) => u.id === 'u')!.hp).toBe(20 - dmg);
+      expect(s.units.find((u) => u.id === 'u')!.hp).toBe(100 - dmg);
     }
   });
 

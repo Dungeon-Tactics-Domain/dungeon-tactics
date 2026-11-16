@@ -23,7 +23,7 @@ describe('save migration', () => {
       'dt:party': '{"deployed":[]}',
       'dt:chest': '{"gold":150}',
       'dt:lang': 'en',
-      'dt:migrated': '4',
+      'dt:migrated': '5',
       // the progress kept becomes save slot 1 (saves.ts)
       'dt:saves': JSON.stringify({
         active: 1,
@@ -68,13 +68,22 @@ describe('campaign saves', () => {
       'dt:party': '{}',
     });
     migrate(s);
-    expect([...s.m.keys()].sort()).toEqual([
-      'dt:battle',
-      'dt:battle:expedition',
-      'dt:migrated',
-      'dt:party',
-      'dt:saves',
-    ]);
-    expect(s.m.get('dt:migrated')).toBe('4');
+    expect([...s.m.keys()].sort()).toEqual(['dt:migrated', 'dt:party', 'dt:saves']);
+    expect(s.m.get('dt:migrated')).toBe('5');
+  });
+});
+
+describe('life x5 (Nov 15)', () => {
+  it('drops the battles saved mid-fight at the old scale and nothing else', () => {
+    const s = saves({
+      'dt:migrated': '4',
+      'dt:battle': '{}',
+      'dt:battle:crawl': '{}',
+      'dt:battle:expedition': '{}',
+      'dt:battles': '{}',
+      'dt:party': '{}',
+    });
+    migrate(s);
+    expect([...s.m.keys()].sort()).toEqual(['dt:battles', 'dt:migrated', 'dt:party']);
   });
 });

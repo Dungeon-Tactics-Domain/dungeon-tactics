@@ -150,7 +150,7 @@ describe('counter indicator (Nov 15)', () => {
     expect(countersFrom(b, { x: 0, y: 1 }).melee).toEqual([
       { from: { pos: { x: 2, y: 1 }, size: 1 }, to: { pos: { x: 1, y: 1 }, size: 1 } },
     ]);
-    expect(counterDamage(b, { x: 0, y: 1 })).toEqual([5, 8]); // the Strike's 10 to 16, at half
+    expect(counterDamage(b, { x: 0, y: 1 })).toEqual([25, 40]); // the Strike's 50 to 80, at half
     expect(counterDamage(b, { x: 2, y: 2 })).toBeNull();
     expect(counterFromText(b, { x: 0, y: 1 })).toContain('contra-ataca');
   });

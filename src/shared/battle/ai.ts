@@ -9,18 +9,21 @@ import { isObjective, UNIT_DEFS } from './units.ts';
 
 // Initial weights from Oct 25 (in "expected life points"): the AI is greedy for one turn and has no rolls, so with the same
 // situation it plays the same. The player sees its reach; the intent only shows on its turn (spec).
+// Life and damage x5 on Nov 15 (Fernando's grill): the weights counted in life points scale with them, so the AI weighs a
+// tile, a kill and a charge against a hit as before (a ranged counter that would kill no longer lost to the hit it allows)
+const LIFE = 5;
 const W = {
-  KILL: 8, // bonus for killing (times the chance)
+  KILL: 8 * LIFE, // bonus for killing (times the chance)
   OBJECTIVE: 1.5, // multiplies the value of hitting the target to protect
   FRIENDLY: 1.5, // multiplies the loss from hurting an ally
-  CHARGE: 0.5, // per charge tick (the target may leave the tile); it was 0.05 per delay point, 10 delay = 1 tick
-  COVER: 1,
-  HEIGHT: 0.4, // per tile level
-  APPROACH: 0.35, // per tile of distance from the most interesting target
+  CHARGE: 0.5 * LIFE, // per charge tick (the target may leave the tile); it was 0.05 per delay point, 10 delay = 1 tick
+  COVER: 1 * LIFE,
+  HEIGHT: 0.4 * LIFE, // per tile level
+  APPROACH: 0.35 * LIFE, // per tile of distance from the most interesting target
   OBJECTIVE_PULL: 3, // how much the target to protect "pulls" the enemies (as if it were closer)
   THREAT: 0.25, // per point of average damage of whoever reaches the tile
-  ADVANCE: 1.2, // per tile of distance when there is nobody to hit this turn
-  GUARD: 2, // per tile the hero moves away from the target to protect beyond the guard radius
+  ADVANCE: 1.2 * LIFE, // per tile of distance when there is nobody to hit this turn
+  GUARD: 2 * LIFE, // per tile the hero moves away from the target to protect beyond the guard radius
   // Aimed Shot (charge on the tile) against whoever plays before it fires is worth 40% (they may leave). Measured on Nov 12 (1,000
   // seeds): Hill 72.8% → 72.7% for the heroes, Skirmish 45.2% → 43.7%. Applying it to every charge was a mistake: the spell
   // follows the unit, and the AI stopped using the Blast on fast targets (Hill dropped to 64.1%)
@@ -260,7 +263,7 @@ export function chooseRetreat(grid: Grid, state: BattleState, unitId: string, re
     bestScore = value(me.pos);
   for (const step of reach.values()) {
     const v = value(step.pos);
-    if (v > bestScore + 0.5) {
+    if (v > bestScore + 0.5 * LIFE) {
       bestScore = v;
       best = step.pos;
     } // margin: it does not dance around for almost nothing

@@ -78,9 +78,9 @@ describe('crawl rooms in the client', () => {
     const ids = parseGroup(null).deployed;
     const exp = startExpedition(
       21,
-      ids.map((id) => ({ id, max: 50 })),
+      ids.map((id) => ({ id, max: 250 })),
     );
-    exp.party[1].hp = 7;
+    exp.party[1].hp = 35;
     store.set(CRAWL_KEY, JSON.stringify(exp));
     const map = expeditionMap(21);
     const node = openNodes(map, [])[0];
@@ -93,18 +93,18 @@ describe('crawl rooms in the client', () => {
     expect(Object.values(sel.room?.heroes ?? {}).map((h) => h.id)).toEqual(ids);
     expect(sel.scenario.id).toBe(`${CRAWL_VERSION}-${map[node].seed}-d1-dungeon${HALF}`);
     const b = newBattle(sel.scenario, sel.room);
-    expect(b.state.units.find((u) => u.id === 'h1')?.hp).toBe(7);
-    // a saved life above the battle sheet's (Bran 42, Odo 24) is cut to it
-    expect(b.state.units.find((u) => u.id === 'h0')?.hp).toBe(42);
-    expect(b.state.units.find((u) => u.id === 'h2')?.hp).toBe(24);
+    expect(b.state.units.find((u) => u.id === 'h1')?.hp).toBe(35);
+    // a saved life above the battle sheet's (Bran 210, Odo 120) is cut to it
+    expect(b.state.units.find((u) => u.id === 'h0')?.hp).toBe(210);
+    expect(b.state.units.find((u) => u.id === 'h2')?.hp).toBe(120);
     expect(b.state.units.filter((u) => u.team === 'hero')).toHaveLength(ids.length);
 
-    // won with Lia (h3) fallen and the rest as they entered: +25% of the saved max (ceil 12.5) for whoever stood, 25% for her
+    // won with Lia (h3) fallen and the rest as they entered: +25% of the saved max (ceil 62.5) for whoever stood, never above it,, 25% for her
     b.state.units = b.state.units.filter((u) => u.team === 'hero' && u.id !== 'h3');
     settleRoom(sel.room!, true, b.state);
     const after = savedExpedition();
     expect(after?.path).toEqual([node]);
-    expect(after?.party.map((h) => h.hp)).toEqual([42 + 8, 7 + 13, 24 + 13, 13]);
+    expect(after?.party.map((h) => h.hp)).toEqual([250, 35 + 63, 120 + 63, 63]);
     // a result for a room that is no longer open (another tab won it) is ignored
     expect(settleRoom(sel.room!, false, b.state)).toBeNull();
     expect(savedExpedition()?.path).toEqual([node]);
