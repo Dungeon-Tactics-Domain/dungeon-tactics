@@ -9,9 +9,9 @@ import {
   retreat,
   savedExpedition,
   savedRoom,
-  settleRoom,
   takeChest,
 } from '../src/client/game/crawl.ts';
+import { settleRoom } from '../src/client/game/room-end.ts';
 import { parseGroup } from '../src/client/group.ts';
 import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';

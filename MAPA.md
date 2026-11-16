@@ -138,6 +138,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/title.ts` — title screen and its windows (new game, continue, battle, how to play, credits, developer).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/crawl.ts` — the town menu and quest gate, the expedition map, room settle and finish, and the way home.
+- `src/client/game/expedition-map.ts` — the expedition map: the floor in play as rows of rooms, the party's state and the chest window.
+- `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
 - `src/client/game/saves-ui.ts` — Continue's list of save slots (load, delete) and starting a new game.
 - `src/client/game/options.ts` — Options window (game, sound, video, controls, language; restart, home, developer) and the town grid and fluid movement switches.
 - `src/client/game/end-screens.ts` — end-of-battle window, the result board and the victory confetti.
