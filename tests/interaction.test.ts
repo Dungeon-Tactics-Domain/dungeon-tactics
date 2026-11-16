@@ -111,11 +111,12 @@ describe('two-step touch', () => {
     const h = highlights(b, ui);
     expect(ui.pending).toEqual(at(4, 1));
     expect(h.preview?.ok).toBe(true);
-    expect(h.preview?.targets[0].chance).toBeGreaterThan(0);
+    expect(h.preview?.targets[0]).toMatchObject({ unit: 'f', chance: b.preview('shot', at(4, 1)).targets[0].chance });
     const hp = b.state.units[2].hp;
-    confirm(b, ui);
+    const { events } = confirm(b, ui);
     expect(b.state.turn.usedAbility).toBe('shot');
-    expect(b.state.units[2].hp).toBeLessThanOrEqual(hp);
+    expect(events).toContainEqual(expect.objectContaining({ k: 'hit', unit: 'f' })); // the scene's seed hits
+    expect(b.state.units[2].hp).toBeLessThan(hp);
   });
 
   it('tapping an enemy out of ability range shows what it threatens', () => {
