@@ -357,7 +357,8 @@ export function parseBattleState(raw: unknown): BattleState | null {
     ...(t.spent !== undefined && { spent: t.spent as number }),
     ...(engaged.length > 0 && { engaged }),
   };
-  // corpses (Nov 16): cells inside the map, at most one per cell, repeats dropped
+  // corpses (Nov 16): the rule never saves an empty list nor a cell twice (a repeat would count twice), and nobody stands
+  // on a body, so a unit's cell there is an edited save
   let corpses: Pos[] | undefined;
   if (raw.corpses !== undefined) {
     if (!Array.isArray(raw.corpses) || raw.corpses.length > grid.width * grid.height) return null;
@@ -366,7 +367,7 @@ export function parseBattleState(raw: unknown): BattleState | null {
     for (const c of raw.corpses) {
       if (!isObj(c) || !isInt(c.x) || !isInt(c.y)) return null;
       const p = { x: c.x, y: c.y };
-      if (!inBounds(grid, p)) return null;
+      if (!inBounds(grid, p) || cells.has(posKey(p))) return null;
       if (!seen.has(posKey(p))) corpses.push(p);
       seen.add(posKey(p));
     }

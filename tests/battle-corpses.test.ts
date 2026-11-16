@@ -45,6 +45,29 @@ describe('corpses: the state', () => {
     ]);
   });
 
+  it('a half-tile token leaves its 4 cells on the split map', () => {
+    const g = halve({ id: 't-kill', name: 't-kill', en: 't-kill', grid: flat(6, 2), spawns: [] }).grid;
+    const b = new Battle(
+      g,
+      stateOf(
+        [
+          { id: 'a', def: `warrior${HALF}`, team: 'hero', x: 0, y: 0 },
+          { id: 'b', def: `soldier${HALF}`, team: 'enemy', x: 2, y: 0, hp: 1 },
+          { id: 'c', def: `soldier${HALF}`, team: 'enemy', x: 8, y: 0 },
+        ],
+        HIT_SEED,
+      ),
+    );
+    b.act('strike', { x: 2, y: 0 });
+    expect(b.state.units.map((u) => u.id)).not.toContain('b');
+    expect(b.state.corpses).toEqual([
+      { x: 2, y: 0 },
+      { x: 3, y: 0 },
+      { x: 2, y: 1 },
+      { x: 3, y: 1 },
+    ]);
+  });
+
   it('a battle without deaths has no field (the save does not change)', () => {
     expect(Battle.start(SCENARIOS.skirmish, 7).state.corpses).toBeUndefined();
   });
@@ -116,6 +139,19 @@ describe('corpses: the save', () => {
       Array.from({ length: width * height + 1 }, () => ({ x: 0, y: 0 })),
     ])
       expect(saved(bad)).toBeNull();
+  });
+
+  it('a corpse under a living unit is refused, on any of its cells', () => {
+    const raw = JSON.parse(Battle.start(SCENARIOS.skirmish, 7).save());
+    const { x, y } = raw.state.units[0].pos;
+    expect(saved([{ x, y }])).toBeNull();
+    const half = Battle.start(halve(SCENARIOS.skirmish), 7);
+    const p = half.state.units[0].pos;
+    const edited = JSON.parse(half.save());
+    edited.state.corpses = [{ x: p.x + 1, y: p.y + 1 }]; // the token's far corner, not its anchor
+    expect(Battle.load(JSON.stringify(edited))).toBeNull();
+    edited.state.corpses = [{ x: p.x + 2, y: p.y + 2 }];
+    expect(Battle.load(JSON.stringify(edited))?.state.corpses).toHaveLength(1);
   });
 
   it('only x and y are kept', () => {
