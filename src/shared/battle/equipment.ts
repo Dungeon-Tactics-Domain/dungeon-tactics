@@ -5,7 +5,7 @@
 // comes from the pieces; 7 slots (main and off hand, head, body, legs, 2 accessories) and 3 fixed rarities
 import { ITEM_LIST } from '../../content/items.ts';
 import { MAX_JUMP } from './pathing.ts';
-import type { Resist, UnitDef } from './units.ts';
+import type { Resist, Resource, UnitDef } from './units.ts';
 
 // what a piece is; an accessory fits either accessory slot
 export type Kind = 'main' | 'off' | 'head' | 'body' | 'legs' | 'accessory';
@@ -31,10 +31,6 @@ export const STATS = [
   'hpRegen',
 ] as const;
 export type Stat = (typeof STATS)[number];
-// mana, stamina and the two regens are the lab's numbers for slice 2 (mana and stamina as resources): carried as data,
-// summed, but no battle reads them yet
-export const PENDING: readonly Stat[] = ['mana', 'stamina', 'manaRegen', 'hpRegen'];
-
 export interface ItemDef extends Partial<Record<Stat, number>> {
   id: string;
   name: string;
@@ -74,7 +70,14 @@ export function withGear(d: UnitDef, loadout: Loadout | undefined): UnitDef {
   const b = bonusOf(loadout);
   const resist = { ...d.resist };
   for (const [k, v] of Object.entries(b.resist) as [Resist, number][]) resist[k] = (resist[k] ?? 0) + v;
-  const add = (k: 'dodge' | 'physPower' | 'magPower' | 'hit') => (b[k] ? { [k]: (d[k] ?? 0) + b[k] } : {});
+  const add = (k: 'dodge' | 'physPower' | 'magPower' | 'hit' | 'hpRegen') => (b[k] ? { [k]: (d[k] ?? 0) + b[k] } : {});
+  // a mana or stamina piece raises the pool's max (its start value too): a class without that pool gets one (the lab's
+  // "+20 mana or stamina max"). Only mana has a piece regen; stamina regen is the class's (equipamento.json, Regeneração)
+  const vars = { ...d.vars },
+    regen = { ...d.regen };
+  for (const k of ['mana', 'stamina'] as Resource[]) if (b[k]) vars[k] = (vars[k] ?? 0) + b[k];
+  // a mana regen with no pool to fill gives nothing (regen in combat.ts would write an empty pool into the state)
+  if (b.manaRegen && vars.mana) regen.mana = (regen.mana ?? 0) + b.manaRegen;
   return {
     ...d,
     hp: d.hp + b.hp,
@@ -86,5 +89,8 @@ export function withGear(d: UnitDef, loadout: Loadout | undefined): UnitDef {
     ...add('physPower'),
     ...add('magPower'),
     ...add('hit'),
+    ...add('hpRegen'),
+    ...(Object.keys(vars).length && { vars }),
+    ...(Object.keys(regen).length && { regen }),
   };
 }

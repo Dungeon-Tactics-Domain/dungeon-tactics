@@ -45,6 +45,43 @@ describe('equipment', () => {
     expect(withGear(UNIT_DEFS.mage, { body: 'colossus_plate' }).move).toBe(UNIT_DEFS.mage.move - 1);
   });
 
+  it('mana and stamina pieces raise the pool max, and the regens add to the class own', () => {
+    const mage = withGear(UNIT_DEFS.mage, { off: 'worn_grimoire', body: 'warded_robe', acc1: 'sleepstone' });
+    expect(mage.vars).toEqual({ mana: 30 + 20 + 20 });
+    expect(mage.regen).toEqual({ mana: 8 + 3 });
+    expect(mage.hpRegen).toBe(10);
+    expect(
+      withGear(UNIT_DEFS.warrior, { body: 'colossus_plate', acc1: 'sleepstone', acc2: 'sleepstone' }).hpRegen,
+    ).toBe(30);
+    // a pool the class lacks opens with the piece (the lab: "+20 mana or stamina max"), regen only where a piece gives it
+    const archer = withGear(UNIT_DEFS.mage, { off: 'leather_quiver' });
+    expect(archer.vars).toEqual({ mana: 30, stamina: 20 });
+    expect(archer.regen).toEqual({ mana: 8 });
+    expect(withGear(UNIT_DEFS.warrior, { off: 'worn_grimoire' })).toMatchObject({
+      vars: { stamina: 50, mana: 20 },
+      regen: { stamina: 5, mana: 3 },
+    });
+    // a mana regen with no mana pool to fill gives nothing (it wrote an empty pool into the state every turn)
+    const helm = withGear(UNIT_DEFS.warrior, { head: 'dawn_circlet' });
+    expect([helm.vars, helm.regen]).toEqual([{ stamina: 50 }, { stamina: 5 }]);
+    // the class sheet itself never changes
+    expect([UNIT_DEFS.mage.vars, UNIT_DEFS.mage.regen, UNIT_DEFS.mage.hpRegen]).toEqual([
+      { mana: 30 },
+      { mana: 8 },
+      undefined,
+    ]);
+  });
+
+  it('a battle with a mana piece starts the pool full at its new max and regenerates the sum', () => {
+    const s = defaultSetup('skirmish');
+    const i = s.heroes.findIndex((h) => h.base === 'mage');
+    s.heroes[i] = { ...s.heroes[i], items: { off: 'worn_grimoire', acc1: 'sleepstone' } };
+    const b = Battle.start(buildDevScenario(s), 1);
+    const me = b.state.units.find((u) => u.id === `h${i}`)!;
+    expect(me.vars).toEqual({ mana: 50 });
+    expect(UNIT_DEFS[me.def]).toMatchObject({ regen: { mana: 11 }, hpRegen: 10 });
+  });
+
   it('the battle sheet carries the equipment: life, move, power, resistance and dodge in the preview', () => {
     const s = defaultSetup('skirmish');
     s.heroes[0] = { ...s.heroes[0], items: { main: 'iron_blade', body: 'leather_vest', legs: 'swift_boots' } };

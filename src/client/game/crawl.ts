@@ -1,5 +1,5 @@
 import { TOWN } from '../../content/crawl/town.ts';
-import { bonusOf } from '../../shared/battle/equipment.ts';
+import { bonusOf, withGear } from '../../shared/battle/equipment.ts';
 import { HALF } from '../../shared/battle/half.ts';
 import type { Scenario } from '../../shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
@@ -72,14 +72,15 @@ export function takeChest(exp: Expedition, node: number) {
 export const group = () => parseGroup(store.json(GROUP_KEY));
 // who goes, as the town's party has them (class, name, equipment); `ids` keeps the order of the sheets
 const crawlers = (ids: string[]) => heroesFor({ ...group(), deployed: ids }, parseEquip(store.json(EQUIP_KEY)));
-// the mana pool of a crawler's battle sheet (its class's, as buildDevScenario copies it); 0 without one
-const manaOf = (u: DevUnit) => UNIT_DEFS[u.base].vars?.mana ?? 0;
+// the mana pool of a crawler's battle sheet (its class's with its pieces, as buildDevScenario builds it); 0 without one
+const manaOf = (u: DevUnit) => withGear(UNIT_DEFS[u.base], u.items).vars?.mana ?? 0;
 // the members still in the group, with their sheets in the same order
 const inGroup = (exp: Expedition) => {
   const ids = exp.party.map((h) => h.id).filter((id) => group().members.some((m) => m.id === id));
   return { ids, units: crawlers(ids) };
 };
-// read with each hero's mana pool as its class has it now (classMana): every reader sees a class changed in town
+// read with each hero's mana pool as its class and pieces have it now (classMana): every reader sees a class or a
+// mana piece changed in town
 export const savedExpedition = () => {
   const exp = parseExpedition(store.json(CRAWL_KEY));
   if (!exp) return null;

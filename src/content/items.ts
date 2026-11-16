@@ -3,8 +3,8 @@
 // Nov 15), a starting point Fernando tunes by playing. A rarity is a budget of points (common 2, rare 4, epic 6; an epic
 // may take one negative stat that gives points back); tests/content.test.ts checks every piece against it. Move and jump
 // are whole tiles like the sheets (+1 shows +2 in half tiles). Shop prices: the lab gives commons 100 to 150 (each one
-// below is our pick); rares 300 and epics 600 only count for selling, at half. Mana, stamina and the regens wait for
-// slice 2 (equipment.ts PENDING). The old ids stay (saves point to them)
+// below is our pick); rares 300 and epics 600 only count for selling, at half. Mana and stamina raise the pool's
+// max and the regens add to the class's (equipment.ts withGear). The old ids stay (saves point to them)
 import type { ItemDef } from '../shared/battle/equipment.ts';
 
 export const ITEM_LIST: ItemDef[] = [
@@ -163,7 +163,7 @@ export const ITEM_LIST: ItemDef[] = [
     price: 600,
     resist: { phys: 30 },
     hp: 125,
-    hpRegen: 5,
+    hpRegen: 10, // 10 life regen a point since Fernando's Nov 16 answer (the lab first said 5)
     move: -1,
   },
   // legs
@@ -214,7 +214,7 @@ export const ITEM_LIST: ItemDef[] = [
     kind: 'accessory',
     rarity: 'common',
     price: 130,
-    hpRegen: 5,
+    hpRegen: 10, // 10 life regen a point since Fernando's Nov 16 answer (the lab first said 5)
     hp: 25,
   },
   {

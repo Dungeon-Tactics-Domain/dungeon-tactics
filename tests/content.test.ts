@@ -101,7 +101,7 @@ describe('equipment', () => {
     hit: 5,
     mana: 20,
     stamina: 20,
-    hpRegen: 5,
+    hpRegen: 10, // Fernando, Nov 16: 10 life regen a point (the lab first said 5)
     manaRegen: 3,
     speed: 0.5,
     jump: 0.5,
