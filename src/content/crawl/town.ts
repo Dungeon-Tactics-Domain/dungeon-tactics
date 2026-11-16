@@ -61,7 +61,7 @@ export const TOWN_PLACES: Place[] = [
   { id: 'guild', name: ['Guilda dos Aventureiros', 'Adventurers’ Guild'], at: { x: 2, y: 2 }, door: { x: 2, y: 4 } },
   {
     id: 'enchanter',
-    name: ['Encantador', 'Enchanter'],
+    name: ['Encantadora', 'Enchantress'],
     at: { x: 10, y: 2 },
     door: { x: 10, y: 4 },
     soon: [

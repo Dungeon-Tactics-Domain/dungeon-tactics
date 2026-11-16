@@ -140,7 +140,7 @@ function howToPlay() {
         ),
         t(
           'Nas batalhas avulsas, proteja o Farol (o cristal azul) quando houver um.',
-          'In standalone battles, protect the Beacon (the blue crystal) when there is one.',
+          'In quick battles, protect the Beacon (the blue crystal) when there is one.',
         ),
       ),
       ...part(
@@ -211,8 +211,8 @@ function howToPlay() {
           'In town you walk with W A S D, the arrows, the gamepad’s d-pad or stick, or by clicking the ground. Near someone or a door a balloon shows what you can do: Enter, A or a click on the balloon talks or goes in. Clicking a person or a house only walks there. Esc, H, Start, B or the right mouse button open the town menu.',
         ),
         t(
-          'A Guilda dos Aventureiros abre o Grupo (quem vai e a classe de cada um), a Loja compra e vende, a Taverna recruta e o Portão da masmorra começa a quest. Ferreiro e Encantador ainda estão por vir.',
-          'The Adventurers’ Guild opens the Party (who goes and each one’s class), the Shop buys and sells, the Tavern recruits and the Dungeon gate starts the quest. The Blacksmith and the Enchanter are still to come.',
+          'A Guilda dos Aventureiros abre o Grupo (quem vai e a classe de cada um), a Loja compra e vende, a Taverna recruta e o Portão da masmorra inicia a expedição. Ferreiro e Encantadora ainda estão por vir.',
+          'The Adventurers’ Guild opens the Party (who goes and each one’s class), the Shop buys and sells, the Tavern recruits and the Dungeon gate starts the expedition. The Blacksmith and the Enchantress are still to come.',
         ),
         t(
           `A descida tem ${floors} andares de ${rows} fileiras de salas: em cada fileira você escolhe 1 de ${width[0]} ou ${width[1]} salas, vendo os inimigos antes. Depois do último andar vem o chefe.`,

@@ -125,7 +125,7 @@ function questRows(go: (fn: () => void) => () => void) {
       : []),
     commandRow(
       'gold',
-      t('Ir para a quest', 'Go on the quest'),
+      t('Nova expedição', 'New expedition'),
       (e: Event) => {
         const btn = e.currentTarget as HTMLButtonElement;
         if (live && !btn.dataset.armed) {
@@ -342,7 +342,7 @@ export function expeditionScreen(exp: Expedition) {
           const btn = e.currentTarget as HTMLButtonElement;
           if (!btn.dataset.armed) {
             btn.dataset.armed = '1';
-            btn.textContent = t('Toque de novo: perde a descida', 'Tap again: the descent is lost');
+            btn.textContent = t('Toque de novo: perde a expedição', 'Tap again: the expedition is lost');
             return;
           }
           store.set(CRAWL_KEY, '');
