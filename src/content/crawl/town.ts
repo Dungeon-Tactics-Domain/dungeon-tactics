@@ -85,15 +85,17 @@ export const TOWN_PLACES: Place[] = [
 
 // where the hero (the first of the party who goes to battle) starts: on the road, near the south edge
 export const TOWN_START: Pos = { x: 6, y: 11 };
-// the rest of the party waits in front of the Guild, in this order (Fernando: the party's heroes stand there as NPCs)
+// the rest of the party waits by the Guild, in this order (Fernando: the party's heroes stand there as NPCs): in the yard
+// beside it, then across the square when the party outgrows it. Never in the street to its door, where the keyboard's
+// single steps could not pass them (review of Nov 15), and each with free ground beside them to talk
 export const GUILD_SPOTS: Pos[] = [
-  { x: 1, y: 4 },
-  { x: 3, y: 4 },
   { x: 4, y: 3 },
   { x: 4, y: 2 },
   { x: 4, y: 1 },
-  { x: 4, y: 4 },
-  { x: 5, y: 3 },
+  { x: 5, y: 5 },
+  { x: 5, y: 6 },
+  { x: 5, y: 7 },
+  { x: 8, y: 5 },
 ];
 // what a party member says before their sheet opens, and each class's voice (the speech beep, in Hz)
 export const GUILD_LINE: [string, string] = ['Pronto quando você estiver.', 'Ready when you are.'];
@@ -163,7 +165,7 @@ export const TOWNSFOLK: Townsfolk[] = [
     def: 'archer',
     name: 'Mira',
     pitch: 349,
-    home: { x: 8, y: 8 },
+    home: { x: 8, y: 10 },
     lines: [
       ['Lacaios são rápidos, mas quebram fácil. Arqueiro adora.', 'Minions are fast but brittle. Archers love them.'],
       ['Na taverna tem gente para contratar, 200 de ouro cada.', 'The tavern has hands for hire, 200 gold each.'],
