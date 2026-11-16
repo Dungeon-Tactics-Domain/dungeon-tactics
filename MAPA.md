@@ -111,7 +111,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/three-util.ts` — small shared Three helpers: seeded draws, noise, grid triangles and KayKit palette textures without mipmaps.
 - `src/client/terrain.ts` — smooth painted terrain mesh with its paint per look and textures, and the invisible tiles the pointer picks.
 - `src/client/terrain-outer.ts` — heights of the extension ring around the map and the river that continues off it, with its mesh.
-- `src/client/water.ts` — water surface with the wave field (WaveField) the units disturb.
+- `src/client/water.ts` — Water: builds the water of a map and makes the units disturb it (pokes, splash drops, foam collars).
+- `src/client/water-field.ts` — WaveField: the pure wave-equation height field the water runs on.
+- `src/client/water-mesh.ts` — water surface geometry per tile and the waterfalls and edge cuts where it drops.
+- `src/client/water-shaders.ts` — the water and waterfall shaders and their two materials.
 - `src/client/trees.ts` — painted trees built in code that replace the KayKit tree models.
 - `src/client/props.ts` — painted crates, barrels, rocks and litter built in code that replace KayKit props.
 - `src/client/painted.ts` — the shared painted material and the shape helpers trees and props are built from.

@@ -17,7 +17,6 @@ export {
   EXT_RING,
   extH,
   outerTop,
-  type River,
   riverOf,
   riverOutside,
 } from './terrain-outer.ts';

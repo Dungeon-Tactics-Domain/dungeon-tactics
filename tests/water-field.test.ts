@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WaveField } from '../src/client/water.ts';
+import { WaveField } from '../src/client/water-field.ts';
 
 // 20x5 water strip with land in the last column; optional current
 const strip = (flow = 0) => {
