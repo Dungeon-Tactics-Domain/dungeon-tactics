@@ -32,6 +32,9 @@ node scripts/crawl-sheet.ts <out>   # screenshots of 12 crawl rooms with the ver
 - **Straight to `master`.** No feature branches or pull requests while the project is solo. Every commit passes the gates (`npm run lint`, `npm run typecheck`, `npx vitest run`, `npx vite build`; `npm run format` fixes lint and formatting); new tests and browser checks are the agent's call.
 - **Commits** follow [Conventional Commits in English](CONTRIBUTING.md#commit-convention): `type(scope): summary` (≤ 72 chars, imperative), atomic, the *why* in the body, no merge commits, no `Co-Authored-By` or tool signatures.
 - **Publish after each block** with `npx wrangler deploy` and check that the served `index-*.js` matches `dist/assets`. There is one environment only; the deploy workflow runs manually.
+- **One approval per block.** Ask Fernando once per block of work; subagents inside the approved block run without asking again.
+- **Edge cases first in `src/shared`.** Before changing a rule in the engine, write the edge-case tests, then change the rule.
+- **Follow-up artifacts** are published once per block, not on every step.
 - **Parallel agent sessions** (3D models, design system) work on their own branch; the main session brings their commits onto `master` with rebase or cherry-pick.
 - **Process skills:** `superpowers:systematic-debugging` before fixing a bug and `superpowers:verification-before-completion` before calling work done. Brainstorming, written plans and TDD only for large tasks.
 - **Balance is decided by playing.** The simulator is an optional tool, not a gate.
