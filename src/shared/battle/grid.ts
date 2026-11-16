@@ -32,7 +32,7 @@ export interface Tile {
   // COMBAT.SPIKE_DAMAGE. Walking over it does not hurt. It gives pushes a tactical use (combat.ts) and the AI already values it for the damage.
   spikes?: true;
   // Body on the ground (Nov 13, Fernando's request: "obstacles like the body on the ground must be passable, the character just
-  // cannot stay on top"): you can pass over it, but not stop or be pushed onto it
+  // cannot stay on top"): you can walk or be pushed over it, but no move or push ends on it (Nov 16)
   noStop?: true;
   // Tree that occupies a square of `tree` x `tree` tiles (half tile, half.ts): it sits on the top-left tile; the other
   // tiles of the square are forest without a drawing of their own. Drawing only: the rule reads the terrain of each tile
