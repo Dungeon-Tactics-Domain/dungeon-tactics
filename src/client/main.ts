@@ -31,7 +31,7 @@ import {
   startScreen,
   stepIndex,
 } from './command.ts';
-import { dialog } from './dialog.ts';
+import { dialog, padDialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom, homeScreen } from './game/crawl.ts';
@@ -209,33 +209,7 @@ export class Game {
     );
     // 1st frame with a pad: only records what was already pressed (the A that entered the stage does not pick the 1st command)
     if (!this.padPrimed) return void (this.padPrimed = true);
-    for (const a of actions) {
-      // the topmost window: the town menu stays open under the window beside it
-      const overlay = [...document.querySelectorAll<HTMLElement>('.overlay')].at(-1);
-      if (!overlay) {
-        this.runKey(a);
-        continue;
-      }
-      // only what is in view: the hidden Options section holds buttons that would take focus without showing
-      const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter(
-        (e) => e.offsetParent,
-      );
-      const at = buttons.indexOf(document.activeElement as HTMLElement);
-      const range =
-        document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range'
-          ? document.activeElement
-          : null;
-      if (a.k === 'cancel' || a.k === 'help')
-        dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
-      else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
-      else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
-        // on the volume bar, left and right change the value (stepUp/Down do not fire 'input': it is dispatched by hand)
-        if (a.dir === 'right') range.stepUp();
-        else range.stepDown();
-        range.dispatchEvent(new Event('input'));
-      } else if (a.k === 'cursor')
-        buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
-    }
+    for (const a of actions) if (!padDialog(a)) this.runKey(a);
   }
 
   private showFps() {

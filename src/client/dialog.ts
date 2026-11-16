@@ -5,6 +5,7 @@
 // player closes it (✕, Esc, tap outside); the screens that leave the title go back to it. Closing from code (`close`) doesn't call it.
 import { t } from './i18n.ts';
 import { button, type Child, el, iconButton } from './icons.ts';
+import type { KeyAction } from './keyboard.ts';
 
 // With a window open, the game behind is `inert` (Nov 13, review): Tab left the window and Enter acted on the battle behind
 const syncInert = () =>
@@ -70,6 +71,35 @@ export function dialog(
   syncInert();
   x?.focus();
   return { overlay, close };
+}
+
+// The gamepad inside the topmost window (the battle's and the town's loops): the d-pad moves between its visible buttons,
+// A presses the focused one, B closes it like Esc, left and right change a focused volume bar. False with no window open,
+// so the action goes to the map behind
+export function padDialog(a: KeyAction): boolean {
+  // the topmost window: the town menu stays open under the window beside it
+  const overlay = [...document.querySelectorAll<HTMLElement>('.overlay')].at(-1);
+  if (!overlay) return false;
+  // only what is in view: the hidden Options section holds buttons that would take focus without showing
+  const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter(
+    (e) => e.offsetParent,
+  );
+  const at = buttons.indexOf(document.activeElement as HTMLElement);
+  const range =
+    document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range'
+      ? document.activeElement
+      : null;
+  if (a.k === 'cancel' || a.k === 'help')
+    dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
+  else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
+  else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
+    // on the volume bar, left and right change the value (stepUp/Down do not fire 'input': it is dispatched by hand)
+    if (a.dir === 'right') range.stepUp();
+    else range.stepDown();
+    range.dispatchEvent(new Event('input'));
+  } else if (a.k === 'cursor')
+    buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+  return true;
 }
 
 // A row of the lab kit's list (Shop, Tavern): what it is, with its kind in small type, the price after a gold coin, and
