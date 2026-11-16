@@ -238,6 +238,9 @@ export function counters(grid: Grid, state: BattleState, actorId: string, owed: 
     if (!foe || !actor) continue;
     if (actor.facing !== undefined) actor.facing = facingTo(actor.pos, foe.pos);
     events.push(...resolveAbility(grid, state, c.unit, basicOf(foe.def), actor.pos, true, COMBAT.COUNTER));
+    // one counter per foe per turn (Fernando, Nov 16): out, back in and out again no longer draws a second one
+    const left = state.turn.engaged?.filter((id) => id !== c.unit);
+    state.turn.engaged = left?.length ? left : undefined; // an empty list is not saved
   }
   return events;
 }

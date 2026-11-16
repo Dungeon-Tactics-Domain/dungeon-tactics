@@ -31,7 +31,7 @@ describe('counters (Nov 15)', () => {
     expect(strikes(b.move({ x: 0, y: 2 }), 'b')).toBe(0); // leaves its reach the next turn: no counter
   });
 
-  it('each walk out of the reach in that turn draws the counter again', () => {
+  it('a foe counters once per turn: walking out again after going back in draws nothing', () => {
     const s = stateOf([
       { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
       { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
@@ -41,7 +41,7 @@ describe('counters (Nov 15)', () => {
     const b = new Battle(flat(10, 4), s);
     b.act('strike', { x: 2, y: 1 });
     const out = [b.move({ x: 0, y: 1 }), b.move({ x: 1, y: 1 }), b.move({ x: 0, y: 1 })];
-    expect(out.map((ev) => strikes(ev, 'b'))).toEqual([1, 0, 1]); // out, back in, out again
+    expect(out.map((ev) => strikes(ev, 'b'))).toEqual([1, 0, 0]); // out, back in, out again: it already answered
   });
 
   it('a ranged counter fires only when the attacker leaves its reach, once', () => {
@@ -119,7 +119,7 @@ describe('counters (Nov 15)', () => {
     expect(b.lastFree).toBe(true);
   });
 
-  it('against a shooter, out of contact, back in and out again draws 3 shots', () => {
+  it('against a shooter, out of contact, back in and out again draws only the first shot', () => {
     const s = stateOf([
       { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
       { id: 'r', def: 'archer', team: 'enemy', x: 2, y: 1 },
@@ -131,11 +131,7 @@ describe('counters (Nov 15)', () => {
     b.act('strike', { x: 2, y: 1 });
     // out: at the stop; back in: walking closer than its minimum leaves its reach, shot before it leaves; out again
     const out = [b.move({ x: 0, y: 1 }), b.move({ x: 1, y: 1 }), b.move({ x: 0, y: 1 })];
-    expect(out.map((ev) => order(ev, 'r'))).toEqual([
-      ['move', 'attack'],
-      ['attack', 'move'],
-      ['move', 'attack'],
-    ]);
+    expect(out.map((ev) => order(ev, 'r'))).toEqual([['move', 'attack'], ['move'], ['move']]); // one counter per turn
   });
 
   it('on half tiles the contact is measured like the aim, from a token half a tile off', () => {
@@ -235,8 +231,9 @@ describe('counters (Nov 15)', () => {
     s.scenario = 't-dead';
     const b = new Battle(grid, s);
     expect(b.move({ x: 0, y: 2 })).toContainEqual({ k: 'die', unit: 's2' });
-    expect(b.state.turn.engaged).toEqual(['s1']);
-    expect(Battle.load(b.save())?.state.turn.engaged).toEqual(['s1']);
+    // s2 died and s1 already answered (one counter per turn): nobody is owed any more
+    expect(b.state.turn.engaged).toBeUndefined();
+    expect(Battle.load(b.save())?.state.turn.engaged).toBeUndefined();
   });
 
   it('the last hero killed by a counter ends the battle, and the dead actor has nowhere to walk', () => {

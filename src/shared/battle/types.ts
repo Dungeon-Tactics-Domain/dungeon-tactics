@@ -27,7 +27,7 @@ export interface TurnState {
   // Movement in parts (Nov 13, Fernando's request: "walk, attack and then walk again with the remaining movement"): points
   // already spent in the turn (absent = 0, the old save stays valid)
   spent?: number;
-  // the units the actor struck this turn: each strikes back every time the actor walks out of its reach, a shooter it stood
+  // the units the actor struck this turn: each strikes back once, when the actor walks out of its reach (it leaves this list after answering), a shooter it stood
   // too close to once it walks out of that contact (combat.ts counters;
   // Nov 15, Fernando: only in the turn of the strike). Absent = none
   engaged?: string[];
