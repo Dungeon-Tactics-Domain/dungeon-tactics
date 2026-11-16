@@ -7,9 +7,10 @@ import { unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
+import { battleInput } from './battle-input.ts';
 import { beforeEvent } from './before-event.ts';
 import { type Screen, startScreen } from './command.ts';
-import { dialog, padDialog } from './dialog.ts';
+import { dialog } from './dialog.ts';
 import { fpsCounter } from './fps.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom } from './game/crawl.ts';
@@ -17,13 +18,12 @@ import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
 import { bootTown } from './game/town.ts';
-import { emptyMemory, padActions } from './gamepad.ts';
 import { HeroTurn, type TurnHost } from './hero-turn.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
-import { type KeyAction, keyAction } from './keyboard.ts';
+import type { KeyAction } from './keyboard.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings, parsePixel } from './pixel-settings.ts';
 import { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
@@ -31,7 +31,6 @@ import { param, store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
 import { pace, TIMING } from './timing.ts';
-import { TouchInput } from './touch-input.ts';
 import { turnMarks } from './turn-marks.ts';
 
 // Test (localhost only): ?auto=1 makes the AI play the heroes too, to check the battle end and the way home without
@@ -47,8 +46,7 @@ export class Game implements TurnHost {
   private log = '';
   private acting: string | null = null;
   private readonly hud: BattleHud;
-  private readonly pad = emptyMemory();
-  private padPrimed = false;
+  private readonly readPad: () => void;
   private readonly toggleFps: () => void;
   // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)
   private tally = emptyTally();
@@ -85,26 +83,11 @@ export class Game implements TurnHost {
       menu: () => this.menu(),
       undo: () => this.runKey({ k: 'undo' }),
     });
-    const canvas = host.querySelector('canvas')!;
-    // TouchInput attaches its listeners to the canvas in the constructor; nothing else needs a reference
-    new TouchInput(canvas, {
+    this.readPad = battleInput(host.querySelector('canvas')!, scene, {
+      key: (a) => this.runKey(a),
       tap: (x, y) => this.turn.tap(x, y),
       hover: (x, y) => this.turn.hover(x, y),
-      pan: (dx, dy) => scene.pan(dx, dy),
-      zoom: (f) => scene.zoom(f),
     });
-    // right button cancels, like FFT's "back"
-    canvas.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      this.runKey({ k: 'cancel' });
-    });
-    addEventListener('keydown', (e) => this.onKey(e));
-    // holding Enter or Space fast-forwards the battle (timing.ts); switching tabs releases it, otherwise it stayed fast-forwarded with no key held
-    const hold = (on: boolean) => (e: KeyboardEvent) =>
-      e.key === 'Enter' || e.key === ' ' ? (pace.key = on) : undefined;
-    addEventListener('keydown', hold(true));
-    addEventListener('keyup', hold(false));
-    addEventListener('blur', () => (pace.key = false));
     this.toggleFps = fpsCounter(host, scene);
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
@@ -113,21 +96,7 @@ export class Game implements TurnHost {
     void this.runEnemies(); // the save may have stopped on the enemy turn
   }
 
-  // Keyboard (Fernando's request, Oct 25): every action has a key. The key -> action translation is pure (keyboard.ts).
-  // With a dialog open, the keys belong to it (Esc closes, Tab moves between buttons, up and down walk its list: dialog.ts).
-  private onKey(e: KeyboardEvent) {
-    if (document.querySelector('.overlay')) return;
-    const a = keyAction(e);
-    if (!a) return;
-    // confirm only on press: holding Enter to speed up the enemy must not pick the hero's 1st command by accident
-    if (e.repeat && a.k === 'confirm') return void e.preventDefault();
-    e.preventDefault(); // Tab does not jump between buttons, Space does not scroll, F3 does not open the browser search
-    (document.activeElement as HTMLElement | null)?.blur();
-    this.runKey(a);
-  }
-
-  // Gamepad (gamepad.ts): reads the first pad every frame and sends actions through the same path as the keyboard. With a
-  // dialog open, the pad moves between its buttons (A presses, B closes).
+  // every frame; the gamepad goes through the same path as the keyboard (battle-input.ts)
   private pollPad() {
     requestAnimationFrame(() => this.pollPad());
     // the standalone battle is the backdrop of the title screen (and of the screens that leave it): it rotates while any is open
@@ -136,17 +105,7 @@ export class Game implements TurnHost {
     );
     this.placeMenu();
     this.hud.showFaces();
-    const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
-    pace.pad = !!gp?.buttons[0]?.pressed; // holding A (or x) fast-forwards the battle
-    if (!gp) return;
-    const actions = padActions(
-      { buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] },
-      this.pad,
-      performance.now(),
-    );
-    // 1st frame with a pad: only records what was already pressed (the A that entered the stage does not pick the 1st command)
-    if (!this.padPrimed) return void (this.padPrimed = true);
-    for (const a of actions) if (!padDialog(a)) this.runKey(a);
+    this.readPad();
   }
 
   private runKey(a: KeyAction) {
