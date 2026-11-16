@@ -54,12 +54,9 @@ describe('hostile addresses', () => {
     expect(sel?.scenario.id).toBe(`${CRAWL_VERSION}-0-d1-dungeon${HALF}`);
   }, 60_000);
 
-  // Bug (game rule, not data): boot.ts:69 reads the held room with Battle.load before that room's scenario is registered;
-  // on a fresh page (a reload, a typed address) SCENARIOS has no generated rooms, parseBattleState rejects the unknown id,
-  // `held` is undefined and a sibling ?room= opens, so the party escapes a bad room without losing the expedition (the
-  // rule of crawl.ts leftRoom). The in-module test in crawl-boot.test.ts passes only because the first call registered the
-  // room. Fix: read the held id as savedRoom does (crawl.ts:89, the raw JSON's state.scenario), not through Battle.load.
-  it.fails('a sibling ?room= on a fresh page still goes home while another room is saved', async () => {
+  // boot.ts reads the held room's id raw (heldRoom, as savedRoom does), not through Battle.load, because on a fresh page
+  // SCENARIOS has no generated rooms yet and parseBattleState would reject the id.
+  it('a sibling ?room= on a fresh page still goes home while another room is saved', async () => {
     const kept = new Map<string, string>();
     vi.stubGlobal('localStorage', {
       getItem: (k: string) => kept.get(k) ?? null,
