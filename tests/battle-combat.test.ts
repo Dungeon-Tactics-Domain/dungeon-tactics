@@ -11,7 +11,9 @@ import { flat, gridOf, HIT_SEED, MISS_SEED, stateOf } from './battle-helpers.ts'
 const at = (x: number, y = 0) => ({ x, y });
 const chanceOf = (g: Grid, s: BattleState, ability: string, target: { x: number; y: number }) =>
   previewAbility(g, s, 'a', ability, target).targets[0]?.chance;
-const duel = (def: string, foeAt: number, foeDef = 'soldier', rng = 1) =>
+// a soldier with no resistance or dodge, for the rules that are not about them (those: battle-attributes.test.ts)
+UNIT_DEFS.test_plain = { ...UNIT_DEFS.soldier, id: 'test_plain', resist: undefined, dodge: undefined };
+const duel = (def: string, foeAt: number, foeDef = 'test_plain', rng = 1) =>
   stateOf(
     [
       { id: 'a', def, team: 'hero', x: 0, y: 0 },
@@ -96,13 +98,13 @@ describe('ability preview', () => {
 describe('resolving the ability', () => {
   it('a hit removes HP within the range and a miss removes nothing', () => {
     const g = flat(3, 1);
-    const hit = duel('warrior', 1, 'soldier', HIT_SEED);
+    const hit = duel('warrior', 1, 'test_plain', HIT_SEED);
     const ev = resolveAbility(g, hit, 'a', 'strike', at(1));
     const lost = UNIT_DEFS.soldier.hp - hit.units[1].hp;
     expect(lost).toBeGreaterThanOrEqual(ABILITIES.strike.damage[0]);
     expect(lost).toBeLessThanOrEqual(ABILITIES.strike.damage[1]);
     expect(ev.map((e) => e.k)).toContain('hit');
-    const miss = duel('warrior', 1, 'soldier', MISS_SEED);
+    const miss = duel('warrior', 1, 'test_plain', MISS_SEED);
     const ev2 = resolveAbility(g, miss, 'a', 'strike', at(1));
     expect(miss.units[1].hp).toBe(UNIT_DEFS.soldier.hp);
     expect(ev2.map((e) => e.k)).toContain('miss');
@@ -262,22 +264,27 @@ describe('push with chance', () => {
 });
 
 describe('facing in the game (Nov 13)', () => {
-  it('a physical hit gains accuracy from the side and more from behind; magic ignores facing', () => {
+  it('a hit gains accuracy from the side and more from behind, spells too since Nov 15', () => {
     const g = flat(5, 3);
-    const s = stateOf([
-      { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
-      { id: 'f', def: 'soldier', team: 'enemy', x: 3, y: 1 },
-    ]);
-    const shot = (facing: number) => {
-      s.units[1].facing = facing;
-      return previewAbility(g, s, 'a', 'shot', { x: 3, y: 1 }).targets[0];
-    };
-    const front = shot(3); // facing -x, toward the archer
-    expect(front.side).toBe('front');
-    expect(shot(0).side).toBe('side');
-    expect(shot(0).chance).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.SIDE_BONUS));
-    expect(shot(1).side).toBe('back');
-    expect(shot(1).chance).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.BACK_BONUS));
+    for (const [def, ability] of [
+      ['archer', 'shot'],
+      ['mage', 'firebolt'],
+    ]) {
+      const s = stateOf([
+        { id: 'a', def, team: 'hero', x: 0, y: 1 },
+        { id: 'f', def: 'test_plain', team: 'enemy', x: 3, y: 1 },
+      ]);
+      const shot = (facing: number) => {
+        s.units[1].facing = facing;
+        return previewAbility(g, s, 'a', ability, { x: 3, y: 1 }).targets[0];
+      };
+      const front = shot(3); // facing -x, toward the attacker
+      expect(front.side).toBe('front');
+      expect(shot(0).side).toBe('side');
+      expect(shot(0).chance, ability).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.SIDE_BONUS));
+      expect(shot(1).side).toBe('back');
+      expect(shot(1).chance, ability).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.BACK_BONUS));
+    }
   });
 });
 

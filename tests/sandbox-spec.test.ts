@@ -494,14 +494,14 @@ const CLIPS = {
   'climb-descend': [['move h-rogue 1,11 h1 > 1.5,11 h1 > 2,11 h2 > 2.5,11 h2 > 3,11 h0'], climbDescend],
   // one leap over the moat
   'leap-gap': [['move h-rogue 5,4 h2 > 5,2 h2'], leapGap],
-  'melee-hit': [['attack h-warrior strike', 'hit e-brute 50'], meleeHit],
+  'melee-hit': [['attack h-warrior strike', 'hit e-brute 40'], meleeHit],
   'melee-miss': [['attack h-warrior strike', 'miss e-brute'], meleeMiss],
-  'heavy-hit': [['attack h-warrior heavy_strike', 'hit e-soldier 95'], heavyHit],
-  'archer-shot': [['attack h-archer shot', 'hit e-soldier 45'], archerShot],
+  'heavy-hit': [['attack h-warrior heavy_strike', 'hit e-soldier 71'], heavyHit],
+  'archer-shot': [['attack h-archer shot', 'hit e-soldier 33'], archerShot],
   'shield-bash-fall': [
     [
       'attack h-warrior shield_bash',
-      'hit e-soldier 20',
+      'hit e-soldier 15',
       'push e-soldier 11,1.5',
       'push e-soldier 11,2',
       'fall e-soldier 2 45',
@@ -510,11 +510,11 @@ const CLIPS = {
     ],
     shieldBashFall,
   ],
-  death: [['attack h-archer shot', 'hit e-soldier 45', 'die e-soldier'], death],
+  death: [['attack h-archer shot', 'hit e-soldier 33', 'die e-soldier'], death],
   firebolt: [['attack h-mage firebolt', 'hit e-soldier 50'], firebolt],
   // the charge on the act, the blast on the wait, before anyone else's turn
   'blast-charge': [
-    ['charge h-mage blast', '|', 'attack h-mage blast', 'hit e-soldier 45', 'hit e-brute 70'],
+    ['charge h-mage blast', '|', 'attack h-mage blast', 'hit e-soldier 45', 'hit e-brute 77'],
     blastCharge,
   ],
 } as const;
@@ -654,16 +654,16 @@ const BENCH = {
   walk: [['move h-warrior 2,6 h0 > 2.5,6 h0 > 3,6 h0 > 3.5,6 h0 > 4,6 h0 > 4.5,6 h0 > 5,6 h0'], benchWalk],
   climb: [['move h-rogue 9,3 h1 > 9,2.5 h2 > 9,2 h2 > 9,1.5 h3 > 9,1 h3'], benchClimb],
   drop: [['move h-rogue 11,1 h4 > 11,1.5 h4 > 11,2 h2 > 11,2.5 h2 > 11,3 h2'], benchDrop],
-  'melee-hit': [['attack h-warrior strike', 'hit e-soldier 50'], benchMeleeHit],
+  'melee-hit': [['attack h-warrior strike', 'hit e-soldier 37'], benchMeleeHit],
   'melee-miss': [['attack h-warrior strike', 'miss e-soldier'], benchMeleeMiss],
-  // 95 of 225 HP: a quarter or more shakes the camera
-  'heavy-strike': [['attack h-warrior heavy_strike', 'hit e-soldier 95'], benchHeavy],
-  death: [['attack h-warrior strike', 'hit e-soldier 50', 'die e-soldier'], benchDeath],
+  // 71 of 225 HP (95 less its 25% physical resistance): a quarter or more shakes the camera
+  'heavy-strike': [['attack h-warrior heavy_strike', 'hit e-soldier 71'], benchHeavy],
+  death: [['attack h-warrior strike', 'hit e-soldier 37', 'die e-soldier'], benchDeath],
   'archer-shot': [['attack h-archer shot', 'hit e-archer 45'], benchArcher],
   'shield-bash-fall': [
     [
       'attack h-warrior shield_bash',
-      'hit e-soldier 20',
+      'hit e-soldier 15',
       'push e-soldier 11,1.5',
       'push e-soldier 11,2',
       'fall e-soldier 2 45',
@@ -688,11 +688,11 @@ const BENCH = {
     benchStairs,
   ],
   'arena-gap': [['move rogue 4,2 h0 > 6,2 h0'], benchGap],
-  'arena-wall': [['attack a-hero shield_bash', 'hit a-foe 20', 'bump a-foe'], benchWall],
+  'arena-wall': [['attack a-hero shield_bash', 'hit a-foe 15', 'bump a-foe'], benchWall],
   'arena-spikes': [
     [
       'attack a-hero shield_bash',
-      'hit a-foe 20',
+      'hit a-foe 15',
       'push a-foe 1.5,4',
       'push a-foe 2,4',
       'push a-foe 2.5,4',

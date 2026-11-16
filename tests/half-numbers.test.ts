@@ -14,7 +14,7 @@ describe('screens show Move and Jump in half tiles', () => {
 
   it('item stats double move and jump, and leave the rest', () => {
     const any = Object.values(ITEMS)[0];
-    const text = itemStats({ ...any, hp: 5, power: undefined, hit: undefined, speed: undefined, move: 1, jump: 1 });
+    const text = itemStats({ ...any, hp: 5, physPower: undefined, hit: undefined, speed: undefined, move: 1, jump: 1 });
     expect(text).toBe('+5 vida · +2 movimento · +2 salto');
   });
 

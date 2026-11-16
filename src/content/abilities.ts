@@ -2,7 +2,7 @@
 // to be decided by playing and simulating. Damage and healing x1.75 on Nov 13 (Fernando's request: "very low damage making the
 // battle slow"): a common hit took ~17% of the life (6 hits to take someone down), in FFT it takes ~37% (Gariland study); now ~30%.
 // Damage and healing x5 on Nov 15 together with the life (Fernando's grill), so the share of life per hit stays; push, fall and
-// spike damage (COMBAT in combat.ts) followed the same day
+// spike damage (COMBAT in combat.ts) followed the same day. Elements of the Mechanics lab's equipamento.json (abilities section)
 import type { AbilityDef } from '../shared/battle/abilities.ts';
 
 // the builder lives here, not in the engine: the engine imports this list, so a builder imported back from it would not be
@@ -71,6 +71,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     damage: [50, 80],
     accuracy: 90,
     magic: true,
+    element: 'fire',
   }),
   A({
     id: 'blast',
@@ -84,6 +85,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     accuracy: 85,
     charge: 4,
     magic: true,
+    element: 'fire',
   }), // like Fire
   A({
     id: 'gust',
@@ -96,6 +98,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     push: 2,
     charge: 4,
     magic: true,
+    element: 'wind',
   }), // damage spell: like Fire
   A({
     id: 'heal',
@@ -107,6 +110,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     accuracy: 100,
     charge: 4,
     magic: true,
+    element: 'light',
   }), // like Cure
   // Rogue
   A({ id: 'stab', name: 'Facada', en: 'Stab', range: [1, 1], damage: [45, 60], accuracy: 95 }),
@@ -137,6 +141,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     accuracy: 85,
     charge: 6,
     magic: true,
+    element: 'shadow',
   }),
   A({ id: 'cleave', name: 'Machadada', en: 'Cleave', range: [1, 1], damage: [90, 120], accuracy: 80 }),
   A({ id: 'slam', name: 'Pancada', en: 'Slam', range: [1, 1], damage: [35, 50], accuracy: 85, push: 2 }),

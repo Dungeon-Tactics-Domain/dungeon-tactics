@@ -43,10 +43,10 @@ describe('status window', () => {
     });
   });
 
-  // the equipment's damage (power) still lands on every ability that hurts, so the sheet counts it in both powers
-  it('equipment power shows in both powers', () => {
-    const rows = Object.fromEntries(attrRows({ ...UNIT_DEFS.warrior, power: 10 }));
-    expect(rows).toMatchObject({ 'Poder físico': '10', 'Poder mágico': '10' });
+  // the sheet shows each power apart (Nov 15 grill: physical on martial abilities, magic on spells)
+  it('physical and magic power show apart', () => {
+    const rows = Object.fromEntries(attrRows({ ...UNIT_DEFS.warrior, physPower: 10, magPower: 15 }));
+    expect(rows).toMatchObject({ 'Poder físico': '10', 'Poder mágico': '15' });
   });
 
   it('FFT study: Brave, Faith, weapon, gained bonus and the charge in progress', () => {

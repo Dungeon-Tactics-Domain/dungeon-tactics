@@ -91,20 +91,20 @@ describe('charged actions', () => {
     expect(b.state.charges.length).toBe(1);
   });
 
-  it('whoever is charging takes 50% more physical attack, not magic (BMG 6, Charging)', () => {
+  // Nov 15 grill, in place of FFT's x1.5 (BMG 6, Charging): the soldier's 25 physical becomes -25, its 0 magic -25
+  it('whoever is charging loses 50 physical and 25 magic resistance', () => {
     const b = duel('warrior');
-    b.state.charges = [{ unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 }];
-    const [lo, hi] = ABILITIES.strike.damage;
-    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({
-      dmgMin: Math.floor(lo * 1.5),
-      dmgMax: Math.floor(hi * 1.5),
-    });
+    const charging = { unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 };
+    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: 37, dmgMax: 60 }); // 50 and 80 x 0.75
+    b.state.charges = [charging];
+    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: 62, dmgMax: 100 }); // x 1.25
     const m = duel('mage', 2, 3);
-    m.state.charges = [{ unit: 'b', ability: 'strike', target: { x: 3, y: 3 }, follow: null, ticks: 3 }];
-    expect(m.preview('firebolt', { x: 4, y: 3 }).targets[0]).toMatchObject({
-      dmgMin: ABILITIES.firebolt.damage[0],
-      dmgMax: ABILITIES.firebolt.damage[1],
-    });
+    m.state.charges = [charging];
+    expect(m.preview('firebolt', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: 62, dmgMax: 100 }); // x 1.25
+    // the lowered resistance still stops at -100: twice the damage, no more
+    UNIT_DEFS.t_frail = { ...UNIT_DEFS.soldier, id: 't_frail', resist: { phys: -80 } };
+    b.state.units[1].def = 't_frail';
+    expect(b.preview('strike', { x: 4, y: 3 }).targets[0]).toMatchObject({ dmgMin: 100, dmgMax: 160 });
   });
 
   it('the AI turn brings the events of charges that resolve before the next turn', () => {

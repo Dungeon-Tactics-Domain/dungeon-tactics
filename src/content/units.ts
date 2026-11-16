@@ -1,7 +1,7 @@
 // Classes and enemies of the game (data; the type and the registry live in src/shared/battle/units.ts). Initial numbers from
 // Oct 25; speed 0 = never has a turn (the target to protect). Life x5 on Nov 15 (Fernando's grill: "aumente todos os números
 // de vida e dano em 5x"), with damage and heals in abilities.ts; not measured. Resistances and dodge in % from the Mechanics
-// lab's equipamento.json of Nov 15, a starting point Fernando tunes by playing; the formulas read them in phase B
+// lab's equipamento.json of Nov 15, a starting point Fernando tunes by playing; the hit and damage formulas (combat.ts) read them
 import type { UnitDef } from '../shared/battle/units.ts';
 
 export const UNIT_LIST: UnitDef[] = [

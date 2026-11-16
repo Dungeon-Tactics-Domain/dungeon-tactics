@@ -2,6 +2,7 @@
 // (decision of Oct 21 inherited from Warlock). The data lives in src/content/abilities.ts.
 import { ABILITY_LIST } from '../../content/abilities.ts';
 import type { Lock } from './types.ts';
+import type { Element } from './units.ts';
 
 export interface AbilityDef {
   id: string;
@@ -22,7 +23,9 @@ export interface AbilityDef {
   // the lock the charge offers first (like the Archer's Charge, BMG 2.2, which aims at the tile); without this, the
   // character. Since Nov 15 the player picks either (Battle.act `lock`); the AI keeps this one
   panel?: true;
-  magic?: true; // magic: does not get the +50% against whoever is charging (the bonus is for physical attacks, BMG 6, Charging status)
+  // a spell: magic power and magic resistance instead of physical (Nov 15 grill), and it flies over heads
+  magic?: true;
+  element?: Element; // the target's resistance to it applies too (the Mechanics lab's equipamento.json); heals ignore it
   ally?: true; // targets an ally (or the user, if the range starts at 0) and rolls no hit; the effect comes from Rules.after. Only the study uses it
   cost?: [counter: string, amount: number]; // spends from UnitState.vars on each use; without balance, it cannot be used. Only the study uses it
   pushChance?: number; // % of times the push happens; without the field, always (only the FFT study uses it: ~50%)

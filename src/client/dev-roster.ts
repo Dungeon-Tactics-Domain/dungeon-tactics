@@ -175,8 +175,11 @@ export function buildDevScenario(
       BASE[id] = u.base;
       // size comes from the class (the Colossus occupies 2x2 like the original)
       const b = bonusOf(u.items); // equipment: sum of general stats (equipment.ts), 0 without an item
-      // the class's resistances, dodge and power (Nov 15): not editable here, so every hero and enemy keeps its class's
-      const { resist, dodge, physPower, magPower } = UNIT_DEFS[u.base];
+      // the class's resistances, dodge and power (Nov 15): not editable here, so every hero and enemy keeps its class's,
+      // the power plus the equipment's
+      const { resist, dodge } = UNIT_DEFS[u.base];
+      const physPower = (UNIT_DEFS[u.base].physPower ?? 0) + b.physPower;
+      const magPower = (UNIT_DEFS[u.base].magPower ?? 0) + b.magPower;
       UNIT_DEFS[id] = {
         ...(resist && { resist }),
         ...(dodge && { dodge }),
@@ -184,7 +187,6 @@ export function buildDevScenario(
         ...(magPower && { magPower }),
         ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),
         jump: (u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP) + b.jump,
-        ...(b.power && { power: b.power }),
         ...(b.hit && { hit: b.hit }),
         ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }),
         ...(UNIT_DEFS[u.base].undead && { undead: true as const }), // heals hurt the class's skeletons in every cast too

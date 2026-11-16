@@ -36,7 +36,7 @@ import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, UnitState } from './types.ts';
-import { baseDef, isObjective, UNIT_DEFS } from './units.ts';
+import { baseDef, dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
 
 // Initial numbers from Oct 25; they can be measured in the simulation (scripts/battle-sim.ts), which is optional.
 export const COMBAT = {
@@ -51,10 +51,16 @@ export const COMBAT = {
   FALL_FREE: 1, // a fall of up to 1 level is just a step
   FALL_DAMAGE: 45, // per level beyond the free step
   SPIKE_DAMAGE: 50, // spikes tile (grid.ts): the same as a weak hit
-  // physical hit from the side and from behind (Nov 13, direction in the game, like FFT: there the side removes the class evasion and the
-  // back removes the shield's too). Our hit chance has no evasion: it becomes a bonus. Initial numbers, measured in the campaign
+  // hit from the side and from behind (Nov 13, direction in the game, like FFT: there the side removes the class evasion and the
+  // back removes the shield's too); spells too since Nov 15 (Fernando's grill: "yes, for everything"). Initial numbers,
+  // measured in the campaign
   SIDE_BONUS: 15,
   BACK_BONUS: 30,
+  // share of the target's dodge that counts by where the hit catches it, on top of the bonus above (Nov 15 grill)
+  DODGE_BY_SIDE: { front: 1, side: 0.75, back: 0.5 } as Record<Side, number>,
+  // resistance a charging target loses (Nov 15 grill, in place of FFT's x1.5 on the Charging status, BMG 6)
+  CHARGING_PHYS: 50,
+  CHARGING_MAG: 25,
   // Friendly fire (Nov 15, Fernando, "no exceptions"): a hit on the caster's own side, aimed or collateral, and a heal on
   // the other side both land at half
   FRIENDLY_FIRE: 0.5,
@@ -80,9 +86,10 @@ export interface Preview {
   targets: TargetPreview[];
 }
 
-// damage range with the user's equipment (UnitDef.power); without equipment it is the ability's range, and the roll does not change
+// damage range with the user's power (class and equipment): magic on a spell, physical otherwise; heals get none
 const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
-  const p = a.damage[1] > 0 ? (UNIT_DEFS[actor.def].power ?? 0) : 0;
+  const d = UNIT_DEFS[actor.def];
+  const p = a.damage[1] > 0 ? ((a.magic ? d.magPower : d.physPower) ?? 0) : 0;
   return [a.damage[0] + p, a.damage[1] + p];
 };
 
@@ -95,14 +102,14 @@ const healHurts = (a: AbilityDef, u: UnitState) => a.heal[1] > 0 && !!UNIT_DEFS[
 // swimming: the whole square in deep water (a token with a foot on the bank still acts)
 const inDeep = (grid: Grid, u: UnitState) => footprint(u).every((c) => isDeep(tileAt(grid, c)));
 
-// `side`: where the hit catches the target (sideOf); magic ignores direction (in FFT it only goes through the magic shield)
+// `side`: where the hit catches the target (sideOf); spells too since Nov 15 (Fernando's grill)
 export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, side: Side = 'front'): number {
   if (isHeal(ability)) return 100;
   const d = wholeTiles(grid, dist(from, to)); // on the split map, the whole tiles the cells stand for
   const dh = standH(tileAt(grid, from)) - standH(tileAt(grid, to));
   // cover only counts against ranged attackers: melee sees the whole target
   const cover = d > 1 && TERRAIN[tileAt(grid, to).terrain].cover ? COMBAT.COVER_PENALTY : 0;
-  const flank = ability.magic ? 0 : side === 'back' ? COMBAT.BACK_BONUS : side === 'side' ? COMBAT.SIDE_BONUS : 0;
+  const flank = side === 'back' ? COMBAT.BACK_BONUS : side === 'side' ? COMBAT.SIDE_BONUS : 0;
   const raw = ability.accuracy - COMBAT.DIST_PENALTY * Math.max(0, d - 1) + COMBAT.HEIGHT_BONUS * dh - cover + flank;
   return Math.max(COMBAT.MIN_CHANCE, Math.min(COMBAT.MAX_CHANCE, raw));
 }
@@ -123,11 +130,19 @@ function affected(grid: Grid, state: BattleState, actor: UnitState, ability: Abi
   return wanted ? [u] : [];
 }
 
+// Damage that lands (Nov 15 grill): the roll (with power) x (1 - physical or magic resistance) x (1 - the element's), the
+// counter's `scale` and the side share, rounded down, at least 1. A charging target loses CHARGING_PHYS / CHARGING_MAG.
+// Whole numbers until the last division, so 70 at 30% is 49, not 48.99 rounded down
+function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, roll: number, scale = 1): number {
+  const d = UNIT_DEFS[u.def];
+  const charging = state.charges.some((c) => c.unit === u.id);
+  const drop = !charging ? 0 : a.magic ? COMBAT.CHARGING_MAG : COMBAT.CHARGING_PHYS;
+  const kind = 100 - resistOf(d, a.magic ? 'mag' : 'phys', -drop);
+  const element = 100 - (a.element ? resistOf(d, a.element) : 0);
+  return Math.max(1, Math.floor((roll * kind * element * scale * sideShare(actor, u, false)) / 10000));
+}
+
 // What the ability would do if confirmed, without touching the state: the interface shows this before Confirm (pillar "readable luck").
-// Whoever is charging takes 50% more physical attack (BMG 6, Charging status: PA * 3/2). Our damage does not come from PA:
-// the bonus goes on the whole damage (adaptation).
-const chargingBonus = (state: BattleState, ability: AbilityDef, target: UnitState) =>
-  !ability.magic && state.charges.some((c) => c.unit === target.id) ? 1.5 : 1;
 
 // `charged`: it is the charge firing now; the cost (MP, stock) was already paid when it started
 export function previewAbility(
@@ -170,7 +185,9 @@ export function previewAbility(
     const [from, at] = closest(footprint(actor), footprint(u));
     const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
     const hurts = healHurts(ability, u);
-    const dmg = (d: number) => Math.floor(d * chargingBonus(state, ability, u) * sideShare(actor, u, false));
+    // then the target's dodge, by where the hit lands (Nov 15 grill: spells are dodged too); whole, so the shown % is the rolled one
+    const dodged = (c: number) => Math.round(c * (1 - (dodgeOf(UNIT_DEFS[u.def]) * COMBAT.DODGE_BY_SIDE[side]) / 100));
+    const dmg = (d: number) => (d > 0 ? landed(state, actor, ability, u, d) : 0);
     const heal = (h: number) => (hurts ? 0 : Math.floor(h * sideShare(actor, u, true)));
     return {
       unit: u.id,
@@ -178,7 +195,9 @@ export function previewAbility(
       chance: isHeal(ability)
         ? 100
         : (rulesOf(state).hitChance?.(grid, state, actor, ability, u) ??
-          Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0))),
+          dodged(
+            Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
+          )),
       dmgMin: hurts ? Math.floor(ability.heal[0] * COMBAT.UNDEAD_HEAL) : dmg(dmgMin),
       dmgMax: hurts ? Math.floor(ability.heal[1] * COMBAT.UNDEAD_HEAL) : dmg(dmgMax),
       healMin: heal(ability.heal[0]),
@@ -312,7 +331,7 @@ export function resolveAbility(
     let dmg: number;
     [dmg, state.rng] =
       rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ...withPower(actor, ability));
-    dmg = Math.max(1, Math.floor(dmg * chargingBonus(state, ability, unit) * scale * sideShare(actor, unit, false)));
+    dmg = landed(state, actor, ability, unit, dmg, scale);
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
     after?.(state, actor, ability, unit, events);

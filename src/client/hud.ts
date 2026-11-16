@@ -164,13 +164,13 @@ const ELEMENT_NAME: Record<Element, () => string> = {
   light: () => t('luz', 'light'),
 };
 const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`; // the HUD's minus sign, as in −12
-// The Nov 15 grill's attributes, for the Status window and the party sheet: power (the equipment's `power` adds to both, as
-// the damage formula still reads it until phase B), resistances in % (negative = weakness), dodge; elements only when set
+// The Nov 15 grill's attributes, for the Status window and the party sheet: power (class and equipment), resistances in %
+// (negative = weakness), dodge; elements only when set
 export function attrRows(def: UnitDef): [string, string][] {
   const els = ELEMENTS.filter((e) => resistOf(def, e)).map((e) => `${ELEMENT_NAME[e]()} ${signed(resistOf(def, e))}`);
   const rows: [string, string][] = [
-    [t('Poder físico', 'Physical power'), String((def.physPower ?? 0) + (def.power ?? 0))],
-    [t('Poder mágico', 'Magic power'), String((def.magPower ?? 0) + (def.power ?? 0))],
+    [t('Poder físico', 'Physical power'), String(def.physPower ?? 0)],
+    [t('Poder mágico', 'Magic power'), String(def.magPower ?? 0)],
     ...defenceRows(def),
   ];
   if (els.length) rows.push([t('Elementos', 'Elements'), els.join(' · ')]);
@@ -405,7 +405,7 @@ export function forecast(b: Battle, ability: string, p: Preview): Forecast[] {
       after,
       ally: !heal && !support && u.team === b.actor.team,
       support,
-      side: a.magic || heal || support ? 'front' : tg.side,
+      side: heal || support ? 'front' : tg.side,
     };
   });
 }
@@ -415,7 +415,7 @@ const dmgText = (f: Forecast) =>
   (f.push
     ? t(` · empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, ` · push +${f.push}${f.spikes ? ' (spikes!)' : ''}`)
     : '');
-// a physical strike from the side or behind says where the hit bonus comes from (combat.ts SIDE_BONUS/BACK_BONUS)
+// a strike from the side or behind, spells too since Nov 15, says where the hit bonus comes from (combat.ts SIDE_BONUS/BACK_BONUS)
 const fromText = (f: Forecast) =>
   f.side === 'back'
     ? t(' (pelas costas)', ' (from behind)')

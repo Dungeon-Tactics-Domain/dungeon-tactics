@@ -12,7 +12,8 @@ const HP = UNIT_DEFS.soldier.hp; // the soldier's full life
 const fc = (b: Battle, ability: string, target: Pos) => forecast(b, ability, b.preview(ability, target));
 
 describe('strike preview', () => {
-  it('strike: hit chance, damage and the resulting health as a range', () => {
+  // the soldier dodges 5% and resists 25% of a physical hit (Nov 15): the preview shows the numbers the roll uses
+  it('strike: hit chance, damage and the resulting health as a range, after dodge and resistance', () => {
     const b = new Battle(
       flat(4, 1),
       stateOf([
@@ -21,9 +22,10 @@ describe('strike preview', () => {
       ]),
     );
     const [f] = fc(b, 'strike', { x: 1, y: 0 });
-    const [lo, hi] = ABILITIES.strike.damage; // the numbers come from the table (changed with the x1.75 damage of Nov 13)
-    expect(f).toMatchObject({ chance: 90, dmg: [lo, hi], heal: null, push: 0, after: [HP - hi, HP - lo], ally: false });
-    expect(forecastText(f)).toBe(`acerto 90% · dano ${lo}–${hi}`);
+    expect(ABILITIES.strike).toMatchObject({ damage: [50, 80], accuracy: 90 });
+    const [lo, hi] = [37, 60]; // 50 and 80 x 0.75, rounded down
+    expect(f).toMatchObject({ chance: 86, dmg: [lo, hi], heal: null, push: 0, after: [HP - hi, HP - lo], ally: false }); // 90 x 0.95
+    expect(forecastText(f)).toBe(`acerto 86% · dano ${lo}–${hi}`);
     expect(hpAfterText(f)).toBe(`vida ${HP} → ${HP - hi}–${HP - lo}`);
   });
 
@@ -36,11 +38,12 @@ describe('strike preview', () => {
       ]),
     );
     const [f] = fc(b, 'shield_bash', { x: 1, y: 0 });
-    const [lo, hi] = ABILITIES.shield_bash.damage,
+    expect(ABILITIES.shield_bash).toMatchObject({ damage: [20, 25], accuracy: 95 });
+    const [lo, hi] = [15, 18], // x 0.75, rounded down; the bump is not resisted
       bump = COMBAT.BUMP_DAMAGE;
     expect(f.push).toBe(bump);
     expect(f.after).toEqual([HP - hi - bump, HP - lo - bump]); // damage plus the bump at the edge
-    expect(forecastText(f)).toBe(`acerto 95% · dano ${lo}–${hi} · empurrão +${bump}`);
+    expect(forecastText(f)).toBe(`acerto 90% · dano ${lo}–${hi} · empurrão +${bump}`); // 95 x 0.95
     // small line of the preview strip (Tactics Ogre style): who, knockback and resulting health
     expect(strikeInfo(f, 'shield_bash')).toEqual([
       'Soldado',

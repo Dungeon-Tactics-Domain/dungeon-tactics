@@ -4,13 +4,16 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import { halfDef } from '../src/shared/battle/half.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
-import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { resistOf, UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Friendly fire (Nov 15, Fernando, "no exceptions"): whatever lands on the caster's own side does half the damage, aimed or
 // collateral; a heal that lands on the other side heals half; a heal on the undead hurts by half its amount instead
 const at = (x: number, y = 0) => ({ x, y });
 const half = ([lo, hi]: [number, number]) => [Math.floor(lo / 2), Math.floor(hi / 2)];
+// half of a physical hit on a soldier, after its physical resistance (Nov 15)
+const halfOnSoldier = (r: [number, number]) =>
+  r.map((d) => Math.floor((d * (100 - resistOf(UNIT_DEFS.soldier, 'phys'))) / 200));
 const dealt = (events: BattleEvent[], unit: string) =>
   events.find((e): e is Extract<BattleEvent, { k: 'hit' }> => e.k === 'hit' && e.unit === unit)?.dmg;
 
@@ -23,7 +26,7 @@ describe('friendly fire (Nov 15)', () => {
       ],
       HIT_SEED,
     );
-    const [lo, hi] = half(ABILITIES.strike.damage);
+    const [lo, hi] = halfOnSoldier(ABILITIES.strike.damage);
     expect(previewAbility(flat(3, 1), s, 'a', 'strike', at(1)).targets).toMatchObject([
       { unit: 'ally', dmgMin: lo, dmgMax: hi },
     ]);
@@ -43,7 +46,7 @@ describe('friendly fire (Nov 15)', () => {
         ],
         HIT_SEED,
       );
-      const [lo, hi] = half(ABILITIES.shot.damage);
+      const [lo, hi] = halfOnSoldier(ABILITIES.shot.damage);
       expect(previewAbility(flat(6, 1), s, 'a', 'shot', at(4)).targets, side).toMatchObject([
         { unit: 'ally', dmgMin: lo, dmgMax: hi },
       ]);

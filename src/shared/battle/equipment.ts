@@ -11,7 +11,8 @@ export interface ItemDef {
   slot: Slot;
   price: number; // gold in the shop (selling returns half)
   hp?: number; // max life
-  power?: number; // added to both ends of the damage range of every ability that hurts
+  physPower?: number; // added to the sheet's physical power (martial abilities)
+  magPower?: number; // added to the sheet's magic power (spells)
   hit?: number; // hit points
   move?: number;
   jump?: number;
@@ -24,7 +25,8 @@ export const SLOTS: Slot[] = ['weapon', 'armor', 'accessory'];
 export type Loadout = Partial<Record<Slot, string>>;
 export interface Bonus {
   hp: number;
-  power: number;
+  physPower: number;
+  magPower: number;
   hit: number;
   move: number;
   jump: number;
@@ -33,7 +35,7 @@ export interface Bonus {
 
 // sum of the equipped items; an unknown item or one in the wrong slot does not count (the save is a trust boundary)
 export function bonusOf(loadout: Loadout | undefined): Bonus {
-  const b: Bonus = { hp: 0, power: 0, hit: 0, move: 0, jump: 0, speed: 0 };
+  const b: Bonus = { hp: 0, physPower: 0, magPower: 0, hit: 0, move: 0, jump: 0, speed: 0 };
   for (const slot of SLOTS) {
     const it = loadout?.[slot] ? ITEMS[loadout[slot]!] : undefined;
     if (!it || it.slot !== slot) continue;

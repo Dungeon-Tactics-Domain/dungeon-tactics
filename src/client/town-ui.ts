@@ -138,7 +138,8 @@ const itemName = (it: ItemDef) => t(it.name, it.en);
 export function itemStats(it: ItemDef): string {
   const parts: [number | undefined, string, string][] = [
     [it.hp, 'vida', 'HP'],
-    [it.power, 'dano', 'damage'],
+    [it.physPower, 'poder físico', 'physical power'],
+    [it.magPower, 'poder mágico', 'magic power'],
     [it.hit, 'acerto', 'hit'],
     [it.move && it.move * SUB, 'movimento', 'move'], // in half tiles, like every Move and Jump on screen
     [it.jump && it.jump * SUB, 'salto', 'jump'],
@@ -353,8 +354,12 @@ export function openSheet(m: Member, back: () => void, at = -1) {
                 ...row(t('Movimento', 'Move'), withB(u.move * SUB, b.move * SUB)),
                 ...row(t('Salto', 'Jump'), withB((u.jump ?? def.jump ?? MAX_JUMP) * SUB, b.jump * SUB)),
                 ...(b.hit ? row(t('Acerto', 'Hit'), `+${b.hit}`) : []),
-                // the equipment's damage counts in both powers, as the battle sheet does
-                ...attrRows({ ...def, power: b.power }).flatMap(([k, v]) => row(k, v)),
+                // the class's power plus the equipment's, as the battle sheet adds them (dev-roster.ts)
+                ...attrRows({
+                  ...def,
+                  physPower: (def.physPower ?? 0) + b.physPower,
+                  magPower: (def.magPower ?? 0) + b.magPower,
+                }).flatMap(([k, v]) => row(k, v)),
               ),
             ),
           ),

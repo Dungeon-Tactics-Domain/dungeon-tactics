@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkOutcome, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
+import { resistOf, UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 // Per-scenario rules (Nov 11): the FFT study swaps hit chance, turn cost, jump and battle end without touching the
@@ -63,6 +64,7 @@ describe('scenario rules', () => {
       duel,
     );
     const hit = resolveAbility(grid, state, 'a', 'strike', { x: 2, y: 1 }).find((e) => e.k === 'hit');
-    expect(hit).toMatchObject({ dmg: 3 });
+    // then the target's physical resistance, like any roll (Nov 15)
+    expect(hit).toMatchObject({ dmg: Math.floor((3 * (100 - resistOf(UNIT_DEFS.soldier, 'phys'))) / 100) });
   });
 });
