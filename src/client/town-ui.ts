@@ -1,5 +1,5 @@
-// The town's windows (game/crawl.ts townScreen): Party with each member's sheet (class, equipment, who goes), Tavern
-// (recruits) and Shop. Rules in group.ts and chest.ts.
+// The town's windows (opened at its buildings, game/town.ts, and from its menu, game/crawl.ts townMenu): Party with each
+// member's sheet (class, equipment, who goes), Tavern (recruits) and Shop. Rules in group.ts and chest.ts.
 
 import { bonusOf, ITEMS, type ItemDef, SLOTS, type Slot } from '../shared/battle/equipment.ts';
 import { SUB } from '../shared/battle/half.ts';
@@ -269,7 +269,7 @@ export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
 // Esc/✕ goes back to the list
 // `at`: the button that had focus before the sheet rebuilt itself (every action closes and reopens the dialog): focus
 // returns to the same place instead of jumping to the top, otherwise equipping by keyboard restarted the Tab walk each time
-function openSheet(m: Member, back: () => void, at = -1) {
+export function openSheet(m: Member, back: () => void, at = -1) {
   const u = unitFrom(m.cls, m.name);
   const def = UNIT_DEFS[m.cls];
   const buttons = () => [...d.overlay.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];

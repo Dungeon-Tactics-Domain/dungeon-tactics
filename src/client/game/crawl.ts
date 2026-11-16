@@ -1,7 +1,8 @@
-// The dungeon crawl around its rooms (Nov 15): the town the game opens in (Fernando: no world map; the town's windows and
-// "Go on the quest"), the expedition map between rooms and the window after each room. The rules live in src/shared/crawl;
+// The dungeon crawl around its rooms (Nov 15): the town's menu and gate (the walkable town itself is game/town.ts), the
+// expedition map between rooms and the window after each room. The rules live in src/shared/crawl;
 // this file casts the town's party into the rooms and keeps the dt:crawl save.
-import { CRAWL_RUN, CRAWL_TOWN } from '../../content/crawl/rooms.ts';
+import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
+import { TOWN } from '../../content/crawl/town.ts';
 import { bonusOf } from '../../shared/battle/equipment.ts';
 import { HALF } from '../../shared/battle/half.ts';
 import type { Scenario } from '../../shared/battle/scenarios.ts';
@@ -28,7 +29,6 @@ import { param, store } from '../store.ts';
 import { roomLine } from '../tally.ts';
 import { openBar, openParty, openShop, sideWindows } from '../town-ui.ts';
 import { type EndHero, enterButton, resultBoard } from './end-screens.ts';
-import { titleScreen } from './title.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
 
@@ -93,21 +93,83 @@ export function savedRoom(): number | null {
   return openNodes(map, exp.path).find((n) => id(n) === held) ?? null;
 }
 
-// What ?home and a game loaded on the title (with no room in play) open: always the town (Fernando, Nov 15), which offers to
-// continue a live expedition; ?home=expedition, where a room's result window goes, opens its map straight away
+// What ?home opens over the walkable town (game/town.ts; a game loaded on the title and New game go there too): the
+// expedition lost if the party left a room, the expedition map on ?home=expedition, where a room's result window goes;
+// else the town alone, which offers to continue a live expedition at its gate
 export function homeScreen() {
   if (leftRoom()) return lostScreen();
   const exp = liveExpedition();
   if (exp && param('home') === 'expedition') expeditionScreen(exp);
-  else townScreen();
 }
 
-// The town (fixed for now: only the party grows) as the lab kit's command menu in the top right corner (Nov 15 mockups):
-// the quest, the Shop, Tavern and Party windows, and the way back to the title (quick battles, how to play, developer,
-// credits). Over the spinning backdrop battle
-export function townScreen() {
-  setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
+// back to walking the town after a window over it (its music, Pastoral D: Fernando, Nov 15)
+const toTown = () => setTrack('world');
+
+// The quest's rows, at the gate and in the town menu: an expedition in progress is continued; a new quest over it asks a
+// 2nd tap, since it abandons it (Fernando, Nov 15)
+function questRows(go: (fn: () => void) => () => void) {
   const live = liveExpedition();
+  return [
+    ...(live
+      ? [
+          commandRow(
+            'gold',
+            [
+              t('Continuar a expedição', 'Continue the expedition'),
+              el('small', { class: 'continue-where' }, floorOf(live)),
+            ],
+            go(() => expeditionScreen(live)),
+            'primary',
+          ),
+        ]
+      : []),
+    commandRow(
+      'gold',
+      t('Ir para a quest', 'Go on the quest'),
+      (e: Event) => {
+        const btn = e.currentTarget as HTMLButtonElement;
+        if (live && !btn.dataset.armed) {
+          btn.dataset.armed = '1';
+          // the label only: the row keeps its orb
+          btn.lastChild!.textContent = t(
+            'Toque de novo: abandona a expedição atual',
+            'Tap again: abandons the current expedition',
+          );
+          return;
+        }
+        go(depart)();
+      },
+      live ? 'secondary' : 'primary',
+    ),
+  ];
+}
+
+// The dungeon gate at the north end of the town (Nov 15, Fernando: the quest opens at its spot): the quest's rows and the
+// way back to the street
+export function questGate(name: string) {
+  const go = (fn: () => void) => () => {
+    d.close();
+    fn();
+  };
+  const d = dialog(
+    'title',
+    name,
+    [
+      el(
+        'div',
+        { class: 'menu-actions camp-list command-list' },
+        ...questRows(go),
+        commandRow('bronze', t('Ficar na cidade', 'Stay in town'), go(toTown)),
+      ),
+    ],
+    { onBack: toTown },
+  );
+  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+}
+
+// The town menu (Esc, Start, the corner button; the lab kit's command menu in the top right corner, Nov 15 mockups):
+// every place without walking there, the quest, Shop, Tavern and Party, and the way back to the title. Over the walkable town
+export function townMenu() {
   // the window beside the menu, if any (its 'close' skips its onBack)
   const closeBeside = () => {
     for (const o of sideWindows(document.querySelectorAll('.overlay'), d.overlay)) o.dispatchEvent(new Event('close'));
@@ -131,43 +193,12 @@ export function townScreen() {
   };
   const d = dialog(
     'title',
-    t(...CRAWL_TOWN),
+    t(TOWN.name, TOWN.en),
     [
       el(
         'div',
         { class: 'menu-actions camp-list command-list' },
-        // an expedition in progress is continued; a new quest over it asks a 2nd tap, since it abandons it (Fernando, Nov 15)
-        ...(live
-          ? [
-              commandRow(
-                'gold',
-                [
-                  t('Continuar a expedição', 'Continue the expedition'),
-                  el('small', { class: 'continue-where' }, floorOf(live)),
-                ],
-                go(() => expeditionScreen(live)),
-                'primary',
-              ),
-            ]
-          : []),
-        commandRow(
-          'gold',
-          t('Ir para a quest', 'Go on the quest'),
-          (e: Event) => {
-            const btn = e.currentTarget as HTMLButtonElement;
-            if (live && !btn.dataset.armed) {
-              btn.dataset.armed = '1';
-              // the label only: the row keeps its orb
-              btn.lastChild!.textContent = t(
-                'Toque de novo: abandona a expedição atual',
-                'Tap again: abandons the current expedition',
-              );
-              return;
-            }
-            go(depart)();
-          },
-          live ? 'secondary' : 'primary',
-        ),
+        ...questRows(go),
         commandRow(
           'gold',
           t('Loja', 'Shop'),
@@ -183,10 +214,18 @@ export function townScreen() {
           t('Grupo', 'Party'),
           beside((back) => openParty(back)),
         ),
-        commandRow('bronze', t('Tela de título', 'Title screen'), go(titleScreen)),
+        // the title over its own spinning backdrop battle, the bare address
+        commandRow(
+          'bronze',
+          t('Tela de título', 'Title screen'),
+          go(() => {
+            location.search = '';
+          }),
+        ),
       ),
     ],
-    { fixed: true },
+    // closes back to the street; a window beside it closes first (only the topmost window takes Esc)
+    { onBack: closeBeside },
   );
   d.overlay.classList.add('town-menu');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
@@ -210,11 +249,11 @@ function lostScreen() {
         { class: 'menu-actions' },
         button('primary', t('Voltar à cidade', 'Back to town'), () => {
           d.close();
-          townScreen();
+          toTown();
         }),
       ),
     ],
-    { onBack: townScreen },
+    { onBack: toTown },
   );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
@@ -306,7 +345,7 @@ export function expeditionScreen(exp: Expedition) {
           }
           store.set(CRAWL_KEY, '');
           d.close();
-          townScreen();
+          toTown();
         }),
       ),
     ],

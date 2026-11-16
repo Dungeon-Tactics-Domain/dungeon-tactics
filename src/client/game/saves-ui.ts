@@ -6,7 +6,7 @@ import { LOCALE, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { byPlayed, deleteSlot, loadSlot, newGame, readSaves, type SlotSummary, summary } from '../saves.ts';
 import { store } from '../store.ts';
-import { homeScreen, savedRoom, townScreen } from './crawl.ts';
+import { goHome, savedRoom } from './crawl.ts';
 
 // through store, so a blocked browser storage still plays in this tab's memory like every other save
 const live = { getItem: store.get, setItem: store.set, saved: store.saved };
@@ -20,19 +20,20 @@ const full = () =>
 
 export const savedGames = () => readSaves(live).slots.map(summary).sort(byPlayed);
 
-// the title closes before this runs: a refused save reopens it (onBack), so the screen is never left empty
+// the title closes before this runs: a refused save reopens it (onBack), so the screen is never left empty. The town is
+// its own page (?home, game/town.ts), not a window over the title's backdrop battle
 export function startNewGame(onBack: () => void) {
   if (!newGame(live, Date.now())) {
     full();
     return onBack();
   }
-  townScreen();
+  goHome();
 }
 
 // where a loaded game opens: the room in play (closing the tab is not leaving it), else the town (crawl.ts savedRoom)
 function resume() {
   const room = savedRoom();
-  if (room === null) homeScreen();
+  if (room === null) goHome();
   else location.search = `?room=${room}`;
 }
 

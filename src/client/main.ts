@@ -34,10 +34,11 @@ import {
 import { dialog, padDialog } from './dialog.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
-import { finishRoom, homeScreen } from './game/crawl.ts';
+import { finishRoom } from './game/crawl.ts';
 import { battleEndScreen, confetti, type EndHero } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
+import { bootTown } from './game/town.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
@@ -868,6 +869,8 @@ export class Game {
 
 async function boot() {
   const host = document.getElementById('app')!;
+  // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
+  if (param('home') !== null) return bootTown(host);
   const sel = await selectBattle();
   if (!sel) return; // went home instead
   // localhost ?sandbox=<spec>: a battle staged for screenshots (docs/sandbox.md); its own chunk, never fetched online
@@ -894,9 +897,8 @@ async function boot() {
   sandbox?.install(game, scene);
   // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
   if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
-  // without a battle parameter the title (or, with ?home, the town; ?home=expedition, the expedition map) opens over
-  // the standalone battle, which stays behind as spinning scenery (Nov 15, Fernando: the game opens in the town)
-  if (sel.title) (param('home') !== null ? homeScreen : titleScreen)();
+  // without a battle parameter the title opens over the standalone battle, which stays behind as spinning scenery
+  if (sel.title) titleScreen();
 }
 
 // Large banner in the middle of the screen for 2 s (Until Dawn's goal at the start); disappears by itself and does not take clicks

@@ -68,8 +68,8 @@ export interface HudView {
 // rows of the queue projection the turn list reads: today's speeds (5 to 12) show 12 units twice in about 60 rows
 // (ponytail: a unit too slow to show within the cap is left off the list; raise it if a battle ever needs more)
 const QUEUE_CAP = 128;
-const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
-const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
+export const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
+export const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
 const hpText = (u: UnitState) => `${u.hp}/${UNIT_DEFS[u.def].hp}`;
 const range = (r: [number, number]) => (r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`);
 

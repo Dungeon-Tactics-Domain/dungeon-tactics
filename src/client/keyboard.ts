@@ -149,4 +149,12 @@ export const keyHelp = (): [string, string][] => [
   ['PgUp · PgDn', t('rolar a lista de turnos', 'scroll the turn list')],
   ['F3', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
   ['H · ?', t('esta ajuda e o menu', 'this help and the menu')],
+  // the walkable town (game/town.ts) reads the same keys
+  [
+    t('Na cidade', 'In town'),
+    t(
+      'W A S D anda enquanto segura; Enter fala com quem está à frente ou entra pela porta; o clique anda até lá; Esc · H abre o menu da cidade',
+      'W A S D walk while held; Enter talks to whoever is in front or goes in at the door; a click walks there; Esc · H opens the town menu',
+    ),
+  ],
 ];

@@ -29,13 +29,18 @@ const PAGES = [
       document.querySelectorAll('.title-overlay .camp-list button').length === 5,
   },
   {
-    // home with no expedition: the town (Nov 15): quest, shop, tavern, party and the title
+    // home with no expedition: the walkable town (Nov 15), drawn with no window over it; Esc opens its menu: quest, shop,
+    // tavern, party and the title. The check presses Esc itself (the town's keys listen on the window)
     name: 'town',
     path: '/?home',
-    ready: '.title-overlay [role=dialog] button.primary',
-    check: () =>
-      !document.querySelector('.title-overlay .title-foot') &&
-      document.querySelectorAll('.title-overlay .camp-list button').length === 5,
+    ready: '.town-prompt',
+    check: () => {
+      const bare =
+        !document.querySelector('.overlay') &&
+        [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl'));
+      dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      return bare && document.querySelectorAll('.town-menu .camp-list button').length === 5;
+    },
   },
   {
     // with a save the title adds Continue, which says how many games are saved: the expedition seeded with no save slot
@@ -48,14 +53,20 @@ const PAGES = [
     check: () => document.querySelectorAll('.title-overlay .camp-list button').length === 6,
   },
   {
-    // an expedition in progress still opens the town, with Continue first and the new quest after it
+    // an expedition in progress still opens the town, its menu with Continue first and the new quest after it
     name: 'town with an expedition',
     path: '/?home',
     seed: WORN,
-    ready: '.title-overlay [role=dialog] button.primary .continue-where',
-    check: () =>
-      !document.querySelector('.crawl-map') &&
-      document.querySelectorAll('.title-overlay .camp-list button').length === 6,
+    ready: '.town-prompt',
+    check: () => {
+      const bare = !document.querySelector('.overlay');
+      dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      return (
+        bare &&
+        !!document.querySelector('.town-menu button.primary .continue-where') &&
+        document.querySelectorAll('.town-menu .camp-list button').length === 6
+      );
+    },
   },
   {
     name: 'expedition map',
