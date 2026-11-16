@@ -5,7 +5,8 @@ import { KEYS } from '../hud.ts';
 import { t } from '../i18n.ts';
 import { button, el, iconButton } from '../icons.ts';
 import { sfx } from '../sound.ts';
-import { openBar, openParty, openShop } from '../town-ui.ts';
+import { openBar, openShop } from '../town-shop.ts';
+import { openParty } from '../town-ui.ts';
 import { questGate } from './crawl.ts';
 
 // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the menu button in the

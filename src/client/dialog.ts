@@ -137,7 +137,7 @@ export function padDialog(a: KeyAction): boolean {
   return true;
 }
 
-// A row of the lab kit's list (Shop, Tavern): what it is, with its kind in small type, the price after a gold coin, and
+// A row of the lab kit's list (the Equipment window): what it is, with its kind in small type, the price after a gold coin, and
 // the action at the right with why it is off in small type under it (a disabled button says why). A null price leaves
 // its column empty, without the coin: the Equipment window's rows (Nov 16)
 export const priceRow = (what: Child[], price: number | null, action: HTMLButtonElement, why = '') =>
