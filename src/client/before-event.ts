@@ -25,6 +25,7 @@ function sound(e: BattleEvent, battle: Battle, scene: BattleScene) {
     spike: 'hit',
     miss: 'miss',
     heal: 'heal',
+    regen: 'heal',
     charge: 'charge',
     fizzle: 'miss',
     die: 'die',

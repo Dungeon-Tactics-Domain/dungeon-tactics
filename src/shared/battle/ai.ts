@@ -180,7 +180,7 @@ function positionScore(
     const def = UNIT_DEFS[o.def];
     if (!attacking || def.speed === 0 || !def.abilities.length) continue;
     const reach = tiles(def.move) + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
-    // only what it can pay for on its next turn, after that turn's regen (regen replaces vars, so the copy keeps `o` intact)
+    // only what it can pay for on its next turn, after that turn's regen (regen replaces vars and sets life on the copy, so `o` stays intact)
     const ready = { ...o };
     regen(ready);
     if (tiles(dist(at, o.pos)) <= reach)

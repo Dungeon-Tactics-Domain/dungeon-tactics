@@ -134,7 +134,11 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
     else if (e.k === 'miss')
       parts.push(t(`errou ${name(e.unit)} (${e.chance}%)`, `missed ${name(e.unit)} (${e.chance}%)`));
     else if (e.k === 'heal') parts.push(`${name(e.unit)} +${e.amount}`);
-    else if (e.k === 'bump') parts.push(t(`${name(e.unit)} bateu −${e.dmg}`, `${name(e.unit)} crashed −${e.dmg}`));
+    else if (e.k === 'regen') {
+      // its own sentence: after a strike it would read as the strike's heal
+      flush();
+      out.push(t(`${name(e.unit)} +${e.amount} de regeneração`, `${name(e.unit)} +${e.amount} regen`));
+    } else if (e.k === 'bump') parts.push(t(`${name(e.unit)} bateu −${e.dmg}`, `${name(e.unit)} crashed −${e.dmg}`));
     else if (e.k === 'fall')
       parts.push(t(`${name(e.unit)} caiu de altura −${e.dmg}`, `${name(e.unit)} fell −${e.dmg}`));
     else if (e.k === 'spike')

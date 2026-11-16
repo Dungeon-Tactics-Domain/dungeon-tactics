@@ -54,7 +54,8 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     const ready = slots.find((s) => s.ct >= TURN_THRESHOLD);
     if (ready) {
       state.turn = { actor: ready.id, moved: false, usedAbility: null };
-      regen(state.units.find((u) => u.id === ready.id)!);
+      // after the charges that fired on the way: the turn starts once they land
+      events.push(...regen(state.units.find((u) => u.id === ready.id)!));
       return events;
     }
     const toTurn = slots.length

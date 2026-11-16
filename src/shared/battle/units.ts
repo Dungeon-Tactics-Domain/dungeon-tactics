@@ -17,6 +17,9 @@ export interface UnitDef {
   // stamina pools (RESOURCES), whose start value is also their max
   vars?: Record<string, number>;
   regen?: Partial<Record<Resource, number>>; // pool points back at the start of each of its turns (the lab's regen by class)
+  // life back at the start of each of its turns (Nov 15 grill): pieces and buffs give it, no class has it. Apart from
+  // `regen`, whose keys are pools in `vars`
+  hpRegen?: number;
   model?: string; // model in public/models; only the study scenario sets it, the game units are in the scene map
   tint?: string; // the model's own glow color, drawing only: a unit that shares the model with another (the Acolyte uses the mage)
   undead?: true; // a heal hurts it by half its amount instead of healing (Nov 15, Fernando: "healing a skeleton deals damage")

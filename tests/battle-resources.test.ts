@@ -132,6 +132,67 @@ describe('mana and stamina (Nov 15 grill)', () => {
   });
 });
 
+// Life regen (Nov 15 grill, 10 per point since Fernando's Nov 16 answer): only pieces and buffs give it, no class
+describe('life regen', () => {
+  UNIT_DEFS.t_regen = { ...UNIT_DEFS.warrior, id: 't_regen', hpRegen: 10 };
+  UNIT_DEFS.t_regen_undead = { ...UNIT_DEFS.minion, id: 't_regen_undead', hpRegen: 10 };
+  // `def` plays next; a soldier far away keeps the battle going
+  const turnOf = (def: string, hp: number) => {
+    const s = stateOf([
+      { id: 'r', def, team: 'hero', x: 0, y: 0, hp },
+      { id: 'f', def: 'soldier', team: 'enemy', x: 5, y: 0 },
+    ]);
+    s.units[0].ct = 100;
+    return { s, events: startNextTurn(flat(6, 1), s) };
+  };
+
+  it('heals at the start of the unit own turn, with an event for the green number, and costs no roll', () => {
+    const { s, events } = turnOf('t_regen', 100);
+    expect(s.turn.actor).toBe('r');
+    expect(s.units[0].hp).toBe(110);
+    expect(events).toEqual([{ k: 'regen', unit: 'r', amount: 10 }]);
+    expect(s.rng).toBe(stateOf([{ id: 'x', def: 'warrior', team: 'hero', x: 0, y: 0 }]).rng);
+  });
+
+  it('never above the max life, and nothing said at full life', () => {
+    const max = UNIT_DEFS.t_regen.hp;
+    const near = turnOf('t_regen', max - 4);
+    expect([near.s.units[0].hp, near.events]).toEqual([max, [{ k: 'regen', unit: 'r', amount: 4 }]]);
+    const full = turnOf('t_regen', max);
+    expect([full.s.units[0].hp, full.events]).toEqual([max, []]);
+  });
+
+  it('is not a heal: the undead gain it too', () => {
+    expect(turnOf('t_regen_undead', 50).s.units[0].hp).toBe(60);
+  });
+
+  it('a class sheet has none', () => {
+    expect(turnOf('warrior', 100).s.units[0].hp).toBe(100);
+  });
+
+  it('comes after the charges that fired before the turn', () => {
+    const s = stateOf([
+      { id: 'r', def: 't_regen', team: 'hero', x: 0, y: 0, hp: 100 },
+      { id: 'm', def: 'mage', team: 'enemy', x: 3, y: 0 },
+      { id: 'b', def: 'beacon', team: 'hero', x: 1, y: 0 }, // a charge checks the outcome: without it the test map is lost
+    ]);
+    s.units[0].ct = 99;
+    s.charges = [{ unit: 'm', ability: 'blast', target: { x: 5, y: 0 }, follow: null, ticks: 1 }];
+    const events = startNextTurn(flat(6, 1), s);
+    expect(events.at(-1)).toEqual({ k: 'regen', unit: 'r', amount: 10 });
+    expect(events[0].k).not.toBe('regen');
+  });
+
+  it('the AI weighing a foe next turn leaves the real unit untouched', () => {
+    const st = stateOf([
+      { id: 'w', def: 'warrior', team: 'enemy', x: 0, y: 0 },
+      { id: 'r', def: 't_regen', team: 'hero', x: 1, y: 0, hp: 100 },
+    ]);
+    chooseTurn(flat(6, 3), st, 'w');
+    expect(st.units.find((u) => u.id === 'r')!.hp).toBe(100);
+  });
+});
+
 describe('the save of the pools', () => {
   const saved = () => JSON.parse(JSON.stringify(Battle.start(SCENARIOS.skirmish, 3).state));
   it('a save from before the pools opens them full', () => {

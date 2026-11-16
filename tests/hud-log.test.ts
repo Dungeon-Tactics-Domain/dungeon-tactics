@@ -32,6 +32,19 @@ describe('summary of what happened', () => {
     ).toBe('Mago: Cura → Guerreiro +8 · errou Soldado (40%) · Bruto bateu −3 · Bruto caiu de altura −5');
   });
 
+  it('life regen at the start of a turn is its own sentence, not part of the strike before it', () => {
+    expect(
+      eventLog(
+        [
+          { k: 'attack', unit: 'h-rogue', ability: 'throwing_knife', target: { x: 6, y: 3 } },
+          { k: 'hit', unit: 'e-mage', dmg: 6, chance: 76 },
+          { k: 'regen', unit: 'h-warrior', amount: 10 },
+        ],
+        state,
+      ),
+    ).toBe('Ladino: Faca arremessada → Mago sombrio −6 | Guerreiro +10 de regeneração');
+  });
+
   it('just moving produces no summary', () => {
     expect(eventLog([{ k: 'move', unit: 'h-rogue', path: [] }], state)).toBe('');
   });

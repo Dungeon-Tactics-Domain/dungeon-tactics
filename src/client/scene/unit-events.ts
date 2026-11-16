@@ -67,7 +67,7 @@ export async function playEvents(
       // dodge: the target takes a little step back and returns, so the miss shows on the unit and not only in the text
       if (v.body) void u.time.animate(TIMING.hit * 0.8, (k) => (v.body!.position.z = -Math.sin(Math.PI * k) * 0.25));
       await u.time.wait(TIMING.hit);
-    } else if (e.k === 'heal') {
+    } else if (e.k === 'heal' || e.k === 'regen') {
       v.hp += e.amount;
       // heal flashes green, without the strike's pause or shake: the same signal, with another meaning
       flash(v, u.time, '#5dff8a', 0.8, TIMING.hit);

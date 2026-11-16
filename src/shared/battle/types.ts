@@ -84,6 +84,7 @@ export type BattleEvent =
   | { k: 'hit'; unit: string; dmg: number; chance: number }
   | { k: 'miss'; unit: string; chance: number }
   | { k: 'heal'; unit: string; amount: number }
+  | { k: 'regen'; unit: string; amount: number } // life regen at the start of its turn: not a heal (no power, no undead harm)
   | { k: 'push'; unit: string; to: Pos }
   | { k: 'bump'; unit: string; dmg: number }
   | { k: 'fall'; unit: string; levels: number; dmg: number }

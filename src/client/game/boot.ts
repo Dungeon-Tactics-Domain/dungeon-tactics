@@ -34,7 +34,8 @@ export function newBattle(scenario: Scenario, room: CrawlRoom | null = null): Ba
     u.hp = h.hp || u.hp;
     if (h.mana !== undefined && UNIT_DEFS[u.def].vars?.mana) u.vars = { ...u.vars, mana: h.mana };
   }
-  // the first to act got its regen on the full pool Battle.start gave it: again on the carried one (a no-op when full)
+  // the first to act got its regen on the full pool and life Battle.start gave it: again on the carried ones (a no-op
+  // when full; its life regen shows on the bar, not as a number)
   regen(b.actor);
   return b;
 }

@@ -79,11 +79,16 @@ export const canPay = (u: UnitState, a: AbilityDef) => !a.cost || poolOf(u, a.co
 export function pay(u: UnitState, a: AbilityDef): void {
   if (a.cost) u.vars = { ...u.vars, [a.cost[0]]: poolOf(u, a.cost[0]) - a.cost[1] };
 }
-// Mana and stamina back at the start of each of the unit's turns (the lab's regen by class), never above the sheet's pool
-export function regen(u: UnitState): void {
+// Mana, stamina and life back at the start of each of the unit's turns (the lab's regen by class, pieces), never above
+// the sheet's max. Life regen is not a heal: no magic power, no friendly-fire share, the undead gain it too. No roll
+export function regen(u: UnitState): BattleEvent[] {
   const d = UNIT_DEFS[u.def];
   for (const [k, n] of Object.entries(d.regen ?? {}))
     u.vars = { ...u.vars, [k]: Math.min(d.vars?.[k] ?? 0, poolOf(u, k) + (n ?? 0)) };
+  const amount = Math.min(d.hpRegen ?? 0, d.hp - u.hp);
+  if (amount <= 0) return []; // at full life it says nothing, or every turn would flash
+  u.hp += amount;
+  return [{ k: 'regen', unit: u.id, amount }];
 }
 
 // damage range with the user's power (class and equipment): magic on a spell, physical otherwise
