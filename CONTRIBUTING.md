@@ -1,6 +1,6 @@
 # Development guide
 
-Dungeon Tactics is developed by one person with AI agents. This guide covers how to run the project, where things live, how commits are written and how a change reaches the live game. Code rules and the decision log are in [CLAUDE.md](CLAUDE.md).
+Dungeon Tactics is developed by one person with AI agents. This guide covers how to run the project, where things live, how commits are written and how a change reaches the live game. Code rules are in [CLAUDE.md](CLAUDE.md) and the decision log in [docs/decisions.md](docs/decisions.md).
 
 ## Getting started
 
