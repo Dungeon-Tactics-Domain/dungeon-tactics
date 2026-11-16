@@ -104,3 +104,20 @@ describe('AI and friendly fire (Nov 15)', () => {
     expect(chooseTurn(flat(8, 8), state, 'e').ability).toEqual({ id: 'heal', target: { x: 0, y: 2 } });
   });
 });
+
+// Nov 15 review: the threat of a nearby enemy is what it would deal by the rule (power, resistances), not its ability table
+describe('AI threat', () => {
+  it('keeps away from the enemy whose real hit is the bigger one, not the one with the bigger table', () => {
+    const base = { ...UNIT_DEFS.soldier, resist: undefined, dodge: undefined, move: 3 };
+    UNIT_DEFS.t_axe = { ...base, id: 't_axe', abilities: ['cleave'] }; // 90 to 120 on the table, no power
+    UNIT_DEFS.t_knife = { ...base, id: 't_knife', abilities: ['dagger'], physPower: 500 }; // 25 to 35 on the table, +500
+    // a corridor: every tile is within reach of one of them (move 3 + range 1), the middle of both
+    const state = stateOf([
+      { id: 'a', def: 'archer', team: 'enemy', x: 4, y: 0 },
+      { id: 'axe', def: 't_axe', team: 'hero', x: 0, y: 0 },
+      { id: 'knife', def: 't_knife', team: 'hero', x: 8, y: 0 },
+    ]);
+    const plan = chooseTurn(flat(9, 1), state, 'a');
+    expect(plan.moveTo!.x).toBeLessThan(4); // beside the axe: the knife's real hit is 525 to 535
+  });
+});
