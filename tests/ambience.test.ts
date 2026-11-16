@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { Ambience, kindOf, LIMIT, MOODS } from '../src/client/ambience.ts';
+import { Ambience, LIMIT } from '../src/client/ambience.ts';
+import { kindOf, MOODS } from '../src/client/ambience-moods.ts';
 import { buildDevScenario, unitFrom } from '../src/client/dev-roster.ts';
 import { extH } from '../src/client/terrain.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';

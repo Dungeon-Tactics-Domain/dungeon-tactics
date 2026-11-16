@@ -7,7 +7,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { FACING, type Grid, inBounds, neighbors, posKey, type Tile, tileAt } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
-import { EXTEND } from '../ambience.ts';
+import { EXTEND } from '../ambience-moods.ts';
 import { buildBridges } from '../bridge.ts';
 import { addDetail } from '../detail.ts';
 import { unitHeight } from '../markers.ts';

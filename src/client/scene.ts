@@ -12,7 +12,8 @@ import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPix
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import type { Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
-import { type Ambience, kindOf, loadAmbience } from './ambience.ts';
+import { type Ambience, loadAmbience } from './ambience.ts';
+import { kindOf } from './ambience-moods.ts';
 import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
 import { abilityIcon, el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
