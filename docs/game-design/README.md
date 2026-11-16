@@ -7,6 +7,7 @@ Index of the design documents and of what each lab touches. Decision of Nov 14 (
 | Document | What it holds |
 |---|---|
 | [pillars.md](pillars.md) | the design pillars and the criterion for every design decision (Oct 25) |
+| [narrative.md](narrative.md) | the town and the prisoner's sentence: tone, milestones, residents, story channels, first lines (Nov 15 draft, names pending approval) |
 | [design-system.md](design-system.md) | interface tokens, pieces, states, input and contrast; source of truth for the UI |
 | [towns-party-equipment.md](towns-party-equipment.md) | towns, party management, equipment, recruiting and new classes (Nov 13; historical: written for the Beacon Ashes campaign, removed from the code on Nov 15) |
 | [fft-reference.md](fft-reference.md) | Final Fantasy Tactics formulas with sources, for the `battle/fft/` study |
