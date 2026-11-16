@@ -198,10 +198,11 @@ const answersSingle = (def: string) => !!basicOf(def) && ABILITIES[basicOf(def)]
 
 // Who gains a counter when `actor` strikes `u` with `abilityId` (Nov 13): a unit of the other side that can strike back the
 // same way (melee against melee, ranged against ranged) with a single-target basic attack; not the Beacon, and not from a
-// heal or a support ability
+// heal, a support ability or a charge (it lands later: the aim must not promise a counter the rule never owes)
 export function canCounter(actor: UnitState, abilityId: string, u: UnitState): boolean {
   const a = ABILITIES[abilityId];
   return (
+    a.charge === 0 &&
     !(a.heal[1] > 0 || a.ally) &&
     u.team !== actor.team &&
     answersSingle(u.def) &&

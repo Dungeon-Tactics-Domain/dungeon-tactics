@@ -4,6 +4,7 @@ import {
   chargeFromText,
   chargeLines,
   counterFromText,
+  counterNote,
   countersFrom,
   countersOwed,
 } from '../src/client/charge-lines.ts';
@@ -101,6 +102,15 @@ describe('counter indicator (Nov 15)', () => {
     expect(countersOwed(m, 'strike', m.preview('strike', { x: 2, y: 1 })).melee).toEqual([
       { from: { pos: { x: 2, y: 1 }, size: 1 }, to: { pos: { x: 1, y: 1 }, size: 1 } },
     ]);
+  });
+
+  it('a charged strike promises no counter: the rule owes none for it', () => {
+    const b = duel();
+    const p = b.preview('aimed_shot', { x: 4, y: 1 });
+    expect(countersOwed(b, 'aimed_shot', p)).toEqual({ lines: [], melee: [] });
+    expect(counterNote(b, 'aimed_shot', p)).toBe('');
+    b.act('aimed_shot', { x: 4, y: 1 });
+    expect(b.state.engaged).toBeUndefined();
   });
 
   it('walking: the destination in the open is struck, behind the wall the shot stops', () => {
