@@ -32,6 +32,7 @@ import {
   stepIndex,
 } from './command.ts';
 import { dialog, padDialog } from './dialog.ts';
+import { fpsCounter } from './fps.ts';
 import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom } from './game/crawl.ts';
@@ -72,7 +73,6 @@ import { TouchInput } from './touch-input.ts';
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const AUTO = LOCAL && new URLSearchParams(location.search).has('auto');
 
-const FPS_KEY = 'dt:fps'; // performance counter on (1) or off (0); starts on (Fernando's request, Nov 12)
 const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
 
 export class Game {
@@ -86,7 +86,7 @@ export class Game {
   private readonly hud: BattleHud;
   private readonly pad = emptyMemory();
   private padPrimed = false;
-  private readonly fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
+  private readonly toggleFps: () => void;
   // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)
   private tally = emptyTally();
   private roster: Roster = {};
@@ -165,12 +165,9 @@ export class Game {
     addEventListener('keydown', hold(true));
     addEventListener('keyup', hold(false));
     addEventListener('blur', () => (pace.key = false));
-    host.append(this.fps);
-    this.fps.hidden = store.get(FPS_KEY) === '0';
+    this.toggleFps = fpsCounter(host, scene);
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
-    // performance counter: the text changes 2 times per second, not every frame (almost zero cost)
-    setInterval(() => this.showFps(), 500);
     requestAnimationFrame(() => this.pollPad());
     this.update(this.ui);
     void this.runEnemies(); // the save may have stopped on the enemy turn
@@ -212,21 +209,6 @@ export class Game {
     for (const a of actions) if (!padDialog(a)) this.runKey(a);
   }
 
-  private showFps() {
-    if (this.fps.hidden) return;
-    const s = this.scene.stats();
-    const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
-    this.fps.textContent = [
-      `${s.fps.toFixed(0)} fps · ${s.ms.toFixed(1)} ms`,
-      t(
-        `${s.calls} desenhos · ${(s.triangles / 1000).toFixed(1)} mil triângulos`,
-        `${s.calls} draw calls · ${(s.triangles / 1000).toFixed(1)}k triangles`,
-      ),
-      t(`${s.geometries} geometrias · ${s.textures} texturas`, `${s.geometries} geometries · ${s.textures} textures`),
-      ...(mem ? [`JS ${(mem.usedJSHeapSize / 1048576).toFixed(0)} MB`] : []),
-    ].join('\n');
-  }
-
   private runKey(a: KeyAction) {
     const b = this.battle;
     // camera, help, status and counter always work, including on the enemy turn
@@ -237,11 +219,7 @@ export class Game {
     if (a.k === 'pixel') return this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) });
     if (a.k === 'status') return this.status();
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
-    if (a.k === 'fps') {
-      this.fps.hidden = !this.fps.hidden;
-      store.set(FPS_KEY, this.fps.hidden ? '0' : '1');
-      return this.showFps();
-    }
+    if (a.k === 'fps') return this.toggleFps();
     if (this.busy || !this.heroTurn) return;
     if (a.k === 'undo') return this.undo();
     if (a.k === 'face') return this.face();
