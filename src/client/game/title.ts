@@ -1,6 +1,7 @@
 // Title screen and the windows it opens: new game and continue (both to the town), standalone battle, how to play,
 // credits and the developer menu. Each window goes back to the title with Esc or Back; the title itself never closes (the
 // map behind it is just scenery).
+import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import { openDevMenu } from '../dev-menu.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
@@ -113,74 +114,117 @@ function credits() {
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 
-// How to play (night of Nov 12): the rules that change the decision, one line each, for whoever arrives without a tutorial (stage
-// 1 hints only cover move and act). Text checked against the engine rules (turn-queue, combat, grid).
+// How to play (night of Nov 12): the rules that change the decision, for whoever arrives without a tutorial. Since Nov 15
+// in short sections (a heading over a legend list each) and with the town and the expedition. Text checked against the
+// engine (turn-queue, combat, battle, crawl/expedition) and the town (game/town.ts, game/crawl.ts)
 function howToPlay() {
+  const part = (title: string, ...lines: string[]) => [
+    el('h3', {}, title),
+    el('ul', { class: 'legend' }, ...lines.map((l) => el('li', {}, l))),
+  ];
+  // the expedition's numbers come from its data, so the text follows a change there (like jumpHelp)
+  const { floors, rows, width, roomHeal, fallen, floorHeal } = CRAWL_RUN;
   const d = dialog(
     'title',
     t('Como jogar', 'How to play'),
     [
-      el(
-        'ul',
-        { class: 'legend' },
-        el(
-          'li',
-          {},
-          t(
-            'A lista de turnos (canto de cima) mostra quem joga. Quem é mais rápido joga mais vezes.',
-            'The turn list (top corner) shows who acts. Faster units act more often.',
-          ),
+      ...part(
+        t('Turno e fila', 'Turn and queue'),
+        t(
+          'A lista de turnos (canto de cima) mostra quem joga nesta rodada e na próxima. Quem é mais rápido joga mais vezes.',
+          'The turn list (top corner) shows who acts this round and the next. Faster units act more often.',
         ),
-        el(
-          'li',
-          {},
-          t(
-            'Na sua vez: Mover e Agir, em qualquer ordem. Fazer menos traz a próxima vez mais cedo.',
-            'On your turn: Move and Act, in any order. Doing less brings your next turn sooner.',
-          ),
+        t(
+          'Na sua vez: Mover e Agir, em qualquer ordem; depois de agir, ainda se anda com o movimento que sobrou. Fazer menos traz a próxima vez mais cedo.',
+          'On your turn: Move and Act, in any order; after acting you can still walk with the movement left. Doing less brings your next turn sooner.',
         ),
-        el(
-          'li',
-          {},
-          `${t(
-            'Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa. No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda.',
-            'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way. At turn end, pick where to face: hits from the side land more often, from behind even more.',
-          )} ${jumpHelp()}`,
+        t(
+          'Nas batalhas avulsas, proteja o Farol (o cristal azul) quando houver um.',
+          'In standalone battles, protect the Beacon (the blue crystal) when there is one.',
         ),
-        el(
-          'li',
-          {},
-          t(
-            'Empurrar contra muro ou alguém fere; empurrar do alto para baixo também; espinhos ferem quem é jogado neles ou termina a vez em cima (passar por cima não fere).',
-            'Pushing into a wall or someone hurts; pushing someone off high ground too; spikes hurt whoever is pushed onto them or ends a turn on them (walking over is safe).',
-          ),
+      ),
+      ...part(
+        t('Posição e altura', 'Position and height'),
+        t(
+          'Do alto se acerta mais e se alcança mais longe; entulho protege de ataques de longe e árvore não se atravessa.',
+          'From high ground you hit more and reach farther; rubble covers you from ranged attacks and trees block the way.',
         ),
-        el('li', {}, t('Na água funda só se anda ou espera.', 'In deep water you can only move or wait.')),
-        // the Nov 15 charge rules (battle.ts act, turn-queue.ts chargeAim): the lock is the player's and the shot is traced when it fires
-        el(
-          'li',
-          {},
-          t(
-            'Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Começar a carga gasta metade do movimento que sobrou. Mirando alguém, você trava no personagem (a mira segue ele) ou no chão. O tiro é traçado na hora de sair, de onde quem lança estiver, e para na primeira cobertura ou unidade no caminho; a linha mostra até onde vai. Fogo amigo fere pela metade.',
-            'Charged abilities land later: the purple area shows where and the turn list shows when. Starting a charge costs half the movement you have left. Aiming at someone, you lock it on the character (the aim follows them) or on the tile. The shot is traced when it fires, from where the caster stands, and stops at the first cover or unit in its way; the line shows how far it goes. Friendly fire hurts at half.',
-          ),
+        t(
+          'No fim do turno, escolha para onde olhar: golpe pelo lado acerta mais, pelas costas mais ainda.',
+          'At turn end, pick where to face: hits from the side land more often, from behind even more.',
         ),
-        // Nov 15 counters (combat.ts pendingCounters): they change where to walk after striking
-        el(
-          'li',
-          {},
-          t(
-            'Quem você golpeia sem carga contra-ataca pela metade, de frente, se o ataque básico dele é de alvo único e você sair do alcance dele no mesmo turno: o golpe vem antes de você sair. Um atirador golpeado de perto atira quando você sai do contato, onde você parar, se ali estiver no alcance dele. Depois de golpear, as paradas que causam contra-ataque ficam com borda vermelha e o cursor mostra o dano; ao mirar, uma linha ou seta mostra quem contra-ataca.',
-            'Whoever you strike without a charge strikes back at half, from the front, if its basic attack is single-target and you walk out of its reach in the same turn: the blow lands before you leave. A shooter struck up close fires once you walk out of contact, where you stop, if that stop is in its range. After striking, the stops that draw a counter get a red frame and the cursor shows the damage; aiming, a line or arrow shows who strikes back.',
-          ),
+        jumpHelp(),
+      ),
+      ...part(
+        t('Empurrões, espinhos e água', 'Pushes, spikes and water'),
+        t(
+          'Empurrar contra muro ou alguém fere; empurrar do alto para baixo também.',
+          'Pushing into a wall or someone hurts; pushing someone off high ground too.',
         ),
-        el(
-          'li',
-          {},
-          t(
-            'Proteja o Farol (o cristal azul) quando houver um.',
-            'Protect the Beacon (the blue crystal) when there is one.',
-          ),
+        t(
+          'Espinhos ferem quem é jogado neles ou termina a vez em cima; passar por cima não fere.',
+          'Spikes hurt whoever is pushed onto them or ends a turn on them; walking over is safe.',
+        ),
+        t('Na água funda só se anda ou espera.', 'In deep water you can only move or wait.'),
+      ),
+      // the Nov 15 charge rules (battle.ts act, turn-queue.ts chargeAim): the lock is the player's and the shot is traced when it fires
+      ...part(
+        t('Cargas', 'Charges'),
+        t(
+          'Habilidade com carga sai depois: a área roxa mostra onde vai cair, e a lista de turnos mostra quando. Começar a carga gasta metade do movimento que sobrou.',
+          'Charged abilities land later: the purple area shows where and the turn list shows when. Starting a charge costs half the movement you have left.',
+        ),
+        t(
+          'Mirando alguém, você trava no personagem (a mira segue ele) ou no chão.',
+          'Aiming at someone, you lock it on the character (the aim follows them) or on the tile.',
+        ),
+        t(
+          'O tiro é traçado na hora de sair, de onde quem lança estiver, e para na primeira cobertura ou unidade no caminho; a linha mostra até onde vai. Fogo amigo fere pela metade.',
+          'The shot is traced when it fires, from where the caster stands, and stops at the first cover or unit in its way; the line shows how far it goes. Friendly fire hurts at half.',
+        ),
+      ),
+      // the counters as the engine plays them (combat.ts canCounter, pendingCounters): they change where to walk after striking
+      ...part(
+        t('Contra-ataque', 'Counter-attacks'),
+        t(
+          'Quem você golpeia direto (sem carga, sem cura) contra-ataca pela metade se o ataque básico dele é de alvo único; ataque básico em área nunca contra-ataca.',
+          'Whoever you strike directly (no charge, no heal) strikes back at half if its basic attack is single-target; an area basic attack never strikes back.',
+        ),
+        t(
+          'Só no resto do seu turno: cada movimento que sai do alcance dele leva um golpe antes de você sair, e voltar e sair de novo leva outro. O golpe vem sempre de frente.',
+          'Only for the rest of your turn: each move that leaves its reach draws a blow before you leave, and walking back in and out draws another. The blow always comes from the front.',
+        ),
+        t(
+          'Um atirador golpeado de perto atira quando você sai do contato, onde você parar, se ali estiver no alcance dele; cobertura ou alguém no caminho leva o tiro.',
+          'A shooter struck up close fires once you walk out of contact, where you stop, if that stop is in its range; cover or someone in the way takes the shot.',
+        ),
+        t(
+          'Depois de golpear, as paradas que causam contra-ataque ficam com borda vermelha e o cursor mostra o dano; ao mirar, uma linha ou seta mostra quem contra-ataca.',
+          'After striking, the stops that draw a counter get a red frame and the cursor shows the damage; aiming, a line or arrow shows who strikes back.',
+        ),
+      ),
+      // the dungeon loop (game/town.ts, game/crawl.ts, shared/crawl/expedition.ts winRoom)
+      ...part(
+        t('Cidade e expedição', 'Town and expedition'),
+        t(
+          'Na cidade se anda com W A S D, as setas, o direcional ou o analógico do gamepad, ou clicando no chão. Enter ou A fala com quem está à frente ou entra pela porta; clicar numa pessoa ou casa leva até ela. Esc, H, Start, B ou o botão direito do mouse abrem o menu da cidade.',
+          'In town you walk with W A S D, the arrows, the gamepad’s d-pad or stick, or by clicking the ground. Enter or A talks to whoever is in front or goes in at a door; clicking a person or a house walks there. Esc, H, Start, B or the right mouse button open the town menu.',
+        ),
+        t(
+          'A Guilda dos Aventureiros abre o Grupo (quem vai e a classe de cada um), a Loja compra e vende, a Taverna recruta e o Portão da masmorra começa a quest. Ferreiro e Encantador ainda estão por vir.',
+          'The Adventurers’ Guild opens the Party (who goes and each one’s class), the Shop buys and sells, the Tavern recruits and the Dungeon gate starts the quest. The Blacksmith and the Enchanter are still to come.',
+        ),
+        t(
+          `A descida tem ${floors} andares de ${rows} fileiras de salas: em cada fileira você escolhe 1 de ${width[0]} ou ${width[1]} salas, vendo os inimigos antes. Depois do último andar vem o chefe.`,
+          `The descent has ${floors} floors of ${rows} rows of rooms: in each row you pick 1 of ${width[0]} or ${width[1]}, seeing the enemies first. After the last floor comes the boss.`,
+        ),
+        t(
+          `A vida passa de uma sala para a outra: ao vencer, quem ficou de pé ganha ${roomHeal}% da vida máxima e quem caiu volta com ${fallen}%; ao descer de andar, todos ganham ${floorHeal}%, nunca acima do máximo.`,
+          `Life carries from room to room: on a win, whoever stood gains ${roomHeal}% of max life and a fallen hero comes back at ${fallen}%; going down a floor, everyone gains ${floorHeal}%, never above the max.`,
+        ),
+        t(
+          'Reiniciar batalha (Opções) tenta a sala de novo de graça, com a vida com que o grupo entrou. Sair da sala antes do fim perde a expedição, e uma derrota também; fechar a aba não é sair: em Continuar, na tela de título, carregar esse jogo salvo reabre a sala.',
+          'Restart battle (Options) retries the room for free, with the life the party came in with. Leaving the room before it ends loses the expedition, and so does a defeat; closing the tab is not leaving: on the title screen, Continue and loading that saved game reopens the room.',
         ),
       ),
       button('primary', t('Voltar', 'Back'), () => {
