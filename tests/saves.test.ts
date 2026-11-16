@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BAD_KEY,
   byPlayed,
   deleteSlot,
   loadSlot,
@@ -143,6 +144,19 @@ describe('save slots', () => {
     const m = readSaves(s);
     expect(m.active).toBe(1);
     expect(m.slots[1].data).toEqual({ 'dt:chest': '{"gold":40}', 'dt:battle:expedition': room });
+  });
+
+  it('a manifest the parse cannot read whole is kept aside before it is replaced', () => {
+    const s = browser({ [SAVES_KEY]: '{"active":1,"slots":[{"id":1,', ...party(150) });
+    newGame(s, 1000);
+    expect(s.m.get(BAD_KEY)).toBe('{"active":1,"slots":[{"id":1,');
+    const ok = browser(party(150));
+    newGame(ok, 1000);
+    newGame(ok, 2000);
+    loadSlot(ok, 1);
+    deleteSlot(ok, 2);
+    deleteSlot(ok, 1);
+    expect(ok.m.has(BAD_KEY)).toBe(false);
   });
 
   it('the single save from before the slots becomes slot 1 on load', () => {

@@ -7,6 +7,7 @@ import { CHEST_KEY, EQUIP_KEY, parseChest } from './chest.ts';
 import { GROUP_KEY, type Job, parseGroup } from './group.ts';
 
 export const SAVES_KEY = 'dt:saves';
+export const BAD_KEY = 'dt:saves:bad'; // the last manifest the parse could not read whole, kept to recover by hand
 export const CRAWL_KEY = 'dt:crawl';
 export const ROOM_KEY = 'dt:battle:expedition'; // the room in play, saved from its first frame (main.ts boot)
 export const PLAYED_KEY = 'dt:played'; // when the game was last played: store.ts stamps it on every progress write
@@ -85,8 +86,11 @@ export function readSaves(s: Pick<Storage, 'getItem'>): Manifest {
   return { active: id, slots: [...m.slots, { id, data: live }] };
 }
 
-// false when the browser kept the old manifest (storage full), so the caller stops
+// false when the browser kept the old manifest (storage full), so the caller stops. A stored manifest the parse does not
+// give back the same (broken text, a dropped slot) goes aside first: the parse read it as less than it holds
 function write(s: Saves, m: Manifest) {
+  const old = s.getItem(SAVES_KEY);
+  if (old && JSON.stringify(parseManifest(json(old))) !== old) s.setItem(BAD_KEY, old);
   const v = JSON.stringify(m);
   s.setItem(SAVES_KEY, v);
   return s.saved(SAVES_KEY) === v;
