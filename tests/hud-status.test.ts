@@ -20,9 +20,26 @@ describe('status window', () => {
       Velocidade: '8',
       Movimento: '4',
       Salto: '1',
+      'Poder físico': '0',
+      'Poder mágico': '0',
+      'Resistência física': '+10%',
+      'Resistência mágica': '0%',
+      Esquiva: '5%',
     });
+    expect(rows.Elementos).toBeUndefined(); // only when the unit has one
     expect(rows.Habilidades).toBe('Golpe, Golpe pesado, Escudada, Giro');
     expect(rows.Brave).toBeUndefined();
+  });
+
+  // the Nov 15 grill's attributes, from the Mechanics lab's sheet: a weakness shows with its minus sign
+  it('enemy: resistances, weaknesses and elements', () => {
+    const rows = Object.fromEntries(unitStatus(initialState(SCENARIOS.skirmish, 1), 'e-mage'));
+    expect(rows).toMatchObject({
+      'Resistência física': '−10%',
+      'Resistência mágica': '+30%',
+      Esquiva: '0%',
+      Elementos: 'sombra +50% · luz −25%',
+    });
   });
 
   it('FFT study: Brave, Faith, weapon, gained bonus and the charge in progress', () => {

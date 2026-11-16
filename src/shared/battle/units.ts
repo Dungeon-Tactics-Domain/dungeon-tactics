@@ -21,7 +21,25 @@ export interface UnitDef {
   size?: number;
   power?: number; // extra damage on every ability that hurts (equipment, equipment.ts); without it, 0
   hit?: number; // extra hit points (equipment); without it, 0 // side of the occupied square (2 = 2x2, pathing.ts footprint); without it, 1 tile. A large unit does not walk nor get pushed
+  // Attributes of the Nov 15 grill (no XP: every number comes from class, pieces and buffs; the Mechanics lab's
+  // equipamento.json). Shown on the sheets; the damage and hit formulas read them in phase B. Without them, 0
+  resist?: Partial<Record<Resist, number>>; // % off the damage, negative = weakness; read through resistOf
+  dodge?: number; // % of hits avoided; read through dodgeOf
+  physPower?: number; // added to martial abilities
+  magPower?: number; // added to spells and heals
 }
+
+// a % of element on a class, piece or buff is always resistance (defence); an attack takes an element from its ability
+export const ELEMENTS = ['fire', 'ice', 'lightning', 'shadow', 'wind', 'light'] as const;
+export type Element = (typeof ELEMENTS)[number];
+export type Resist = 'phys' | 'mag' | Element;
+// limits of the lab's proposal (Nov 15): never immune, and a low cap so stacked pieces stay in check; dodge caps at 50
+// (90% to hit from the front becomes 45%)
+export const RESIST_RANGE = [-100, 60] as const;
+export const DODGE_MAX = 50;
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+export const resistOf = (d: UnitDef, k: Resist) => clamp(d.resist?.[k] ?? 0, ...RESIST_RANGE);
+export const dodgeOf = (d: UnitDef) => clamp(d.dodge ?? 0, 0, DODGE_MAX);
 
 export const UNIT_DEFS: Record<string, UnitDef> = Object.fromEntries(UNIT_LIST.map((u) => [u.id, u]));
 

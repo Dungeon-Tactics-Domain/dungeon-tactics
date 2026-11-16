@@ -18,7 +18,7 @@ import { rulesOf } from '../shared/battle/rules.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { previewOrder, type QueueEntry, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, Lock, Pos, UnitState } from '../shared/battle/types.ts';
-import { baseDef, UNIT_DEFS } from '../shared/battle/units.ts';
+import { baseDef, dodgeOf, ELEMENTS, type Element, resistOf, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from './battle-face.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
@@ -155,6 +155,30 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
   return out.join(' | ');
 }
 
+const ELEMENT_NAME: Record<Element, () => string> = {
+  fire: () => t('fogo', 'fire'),
+  ice: () => t('gelo', 'ice'),
+  lightning: () => t('raio', 'lightning'),
+  shadow: () => t('sombra', 'shadow'),
+  wind: () => t('vento', 'wind'),
+  light: () => t('luz', 'light'),
+};
+const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`; // the HUD's minus sign, as in −12
+// The Nov 15 grill's attributes, for the Status window and the party sheet: power (the equipment's `power` adds to both, as
+// the damage formula still reads it until phase B), resistances in % (negative = weakness), dodge; elements only when set
+export function attrRows(def: UnitDef): [string, string][] {
+  const els = ELEMENTS.filter((e) => resistOf(def, e)).map((e) => `${ELEMENT_NAME[e]()} ${signed(resistOf(def, e))}`);
+  const rows: [string, string][] = [
+    [t('Poder físico', 'Physical power'), String((def.physPower ?? 0) + (def.power ?? 0))],
+    [t('Poder mágico', 'Magic power'), String((def.magPower ?? 0) + (def.power ?? 0))],
+    [t('Resistência física', 'Physical resistance'), signed(resistOf(def, 'phys'))],
+    [t('Resistência mágica', 'Magic resistance'), signed(resistOf(def, 'mag'))],
+    [t('Esquiva', 'Dodge'), `${dodgeOf(def)}%`],
+  ];
+  if (els.length) rows.push([t('Elementos', 'Elements'), els.join(' · ')]);
+  return rows;
+}
+
 // Status window sheet (like FFT's): what the unit is now. [label, value] rows; pure for the test.
 const INFO_LABEL: Record<string, () => string> = {
   pa: () => t('Força (PA)', 'Physical attack (PA)'),
@@ -180,6 +204,7 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
     // in half tiles on the split map, the points the game spends (Nov 15, Fernando: "the move and jump values double")
     [t('Movimento', 'Move'), String(def.move)],
     [t('Salto', 'Jump'), String(jumpOf(state, u.def) * ((def.size ?? 1) / (UNIT_DEFS[baseDef(u.def)].size ?? 1)))],
+    ...attrRows(def),
   );
   for (const [k, v] of Object.entries(def.info ?? {}))
     rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);

@@ -22,7 +22,7 @@ import {
   recruit,
   toggleDeploy,
 } from './group.ts';
-import { abilityDetail, stillFace } from './hud.ts';
+import { abilityDetail, attrRows, stillFace } from './hud.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { sfx } from './sound.ts';
@@ -344,8 +344,9 @@ export function openSheet(m: Member, back: () => void, at = -1) {
                 ...row(t('Velocidade', 'Speed'), withB(u.speed, b.speed)),
                 ...row(t('Movimento', 'Move'), withB(u.move * SUB, b.move * SUB)),
                 ...row(t('Salto', 'Jump'), withB((u.jump ?? def.jump ?? MAX_JUMP) * SUB, b.jump * SUB)),
-                ...(b.power ? row(t('Dano', 'Damage'), `+${b.power}`) : []),
                 ...(b.hit ? row(t('Acerto', 'Hit'), `+${b.hit}`) : []),
+                // the equipment's damage counts in both powers, as the battle sheet does
+                ...attrRows({ ...def, power: b.power }).flatMap(([k, v]) => row(k, v)),
               ),
             ),
           ),

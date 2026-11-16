@@ -175,7 +175,13 @@ export function buildDevScenario(
       BASE[id] = u.base;
       // size comes from the class (the Colossus occupies 2x2 like the original)
       const b = bonusOf(u.items); // equipment: sum of general stats (equipment.ts), 0 without an item
+      // the class's resistances, dodge and power (Nov 15): not editable here, so every hero and enemy keeps its class's
+      const { resist, dodge, physPower, magPower } = UNIT_DEFS[u.base];
       UNIT_DEFS[id] = {
+        ...(resist && { resist }),
+        ...(dodge && { dodge }),
+        ...(physPower && { physPower }),
+        ...(magPower && { magPower }),
         ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),
         jump: (u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP) + b.jump,
         ...(b.power && { power: b.power }),
