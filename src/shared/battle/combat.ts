@@ -56,8 +56,8 @@ export const COMBAT = {
   // measured in the campaign
   SIDE_BONUS: 15,
   BACK_BONUS: 30,
-  // share of the target's dodge that counts by where the hit catches it, on top of the bonus above (Nov 15 grill)
-  DODGE_BY_SIDE: { front: 1, side: 0.75, back: 0.5 } as Record<Side, number>,
+  // % of the target's dodge that counts by where the hit catches it, on top of the bonus above (Nov 15 grill)
+  DODGE_BY_SIDE: { front: 100, side: 75, back: 50 } as Record<Side, number>,
   // resistance a charging target loses (Nov 15 grill, in place of FFT's x1.5 on the Charging status, BMG 6)
   CHARGING_PHYS: 50,
   CHARGING_MAG: 25,
@@ -86,11 +86,16 @@ export interface Preview {
   targets: TargetPreview[];
 }
 
-// damage range with the user's power (class and equipment): magic on a spell, physical otherwise; heals get none
+// damage range with the user's power (class and equipment): magic on a spell, physical otherwise
 const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
   const d = UNIT_DEFS[actor.def];
   const p = a.damage[1] > 0 ? ((a.magic ? d.magPower : d.physPower) ?? 0) : 0;
   return [a.damage[0] + p, a.damage[1] + p];
+};
+// heal range with the caster's magic power (Fernando, Nov 15: as the lab, magic power counts on heals too)
+const healRange = (actor: UnitState, a: AbilityDef): [number, number] => {
+  const p = a.heal[1] > 0 ? (UNIT_DEFS[actor.def].magPower ?? 0) : 0;
+  return [a.heal[0] + p, a.heal[1] + p];
 };
 
 // healing and support abilities never miss
@@ -130,17 +135,26 @@ function affected(grid: Grid, state: BattleState, actor: UnitState, ability: Abi
   return wanted ? [u] : [];
 }
 
-// Damage that lands (Nov 15 grill): the roll (with power) x (1 - physical or magic resistance) x (1 - the element's), the
-// counter's `scale` and the side share, rounded down, at least 1. A charging target loses CHARGING_PHYS / CHARGING_MAG.
-// Whole numbers until the last division, so 70 at 30% is 49, not 48.99 rounded down
-function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, roll: number, scale = 1): number {
+// share of a hit `u` keeps, in 1/10000 so the sum stays whole (Nov 15 grill): x (1 - physical or magic resistance)
+// x (1 - the element's); a charging target loses CHARGING_PHYS / CHARGING_MAG
+const defence = (state: BattleState, a: AbilityDef, u: UnitState): number => {
   const d = UNIT_DEFS[u.def];
   const charging = state.charges.some((c) => c.unit === u.id);
   const drop = !charging ? 0 : a.magic ? COMBAT.CHARGING_MAG : COMBAT.CHARGING_PHYS;
-  const kind = 100 - resistOf(d, a.magic ? 'mag' : 'phys', -drop);
-  const element = 100 - (a.element ? resistOf(d, a.element) : 0);
-  return Math.max(1, Math.floor((roll * kind * element * scale * sideShare(actor, u, false)) / 10000));
+  return (100 - resistOf(d, a.magic ? 'mag' : 'phys', -drop)) * (100 - (a.element ? resistOf(d, a.element) : 0));
+};
+// Damage that lands: the roll (with power) x the defence, the counter's `scale` and the side share, rounded down, at least
+// 1. Whole numbers until the last division, so 70 at 30% is 49, not 48.99 rounded down
+function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, roll: number, scale = 1): number {
+  const keep = defence(state, a, u);
+  return Math.max(1, Math.floor((roll * keep * scale * sideShare(actor, u, false)) / 10000));
 }
+
+// Hit chance after the target's dodge (Nov 15 grill: x (1 - dodge x DODGE_BY_SIDE), spells dodged too), rounded half up
+// in whole numbers (85 against 30 from the front is 60; 85 x 0.7 in floating point rounds to 59), never below MIN_CHANCE:
+// Fernando's choice of Nov 15, where the lab's formula clamps before the dodge
+export const afterDodge = (chance: number, dodge: number, side: Side) =>
+  Math.max(COMBAT.MIN_CHANCE, Math.floor((chance * (10000 - dodge * COMBAT.DODGE_BY_SIDE[side]) + 5000) / 10000));
 
 // the range `actor` would deal `u` with `a` before the hit roll, wherever they stand: the preview and the AI's threat read it
 export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState): [number, number] {
@@ -191,23 +205,24 @@ export function previewAbility(
     const [from, at] = closest(footprint(actor), footprint(u));
     const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
     const hurts = healHurts(ability, u);
-    // then the target's dodge, by where the hit lands (Nov 15 grill: spells are dodged too); whole, so the shown % is the rolled one
-    const dodged = (c: number) => Math.round(c * (1 - (dodgeOf(UNIT_DEFS[u.def]) * COMBAT.DODGE_BY_SIDE[side]) / 100));
     const [dmgMin, dmgMax] = damageRange(state, actor, ability, u);
     const heal = (h: number) => (hurts ? 0 : Math.floor(h * sideShare(actor, u, true)));
+    const [healLo, healHi] = healRange(actor, ability);
     return {
       unit: u.id,
       side,
       chance: isHeal(ability)
         ? 100
         : (rulesOf(state).hitChance?.(grid, state, actor, ability, u) ??
-          dodged(
+          afterDodge(
             Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
+            dodgeOf(UNIT_DEFS[u.def]),
+            side,
           )),
-      dmgMin: hurts ? Math.floor(ability.heal[0] * COMBAT.UNDEAD_HEAL) : dmgMin,
-      dmgMax: hurts ? Math.floor(ability.heal[1] * COMBAT.UNDEAD_HEAL) : dmgMax,
-      healMin: heal(ability.heal[0]),
-      healMax: heal(ability.heal[1]),
+      dmgMin: hurts ? Math.floor(healLo * COMBAT.UNDEAD_HEAL) : dmgMin,
+      dmgMax: hurts ? Math.floor(healHi * COMBAT.UNDEAD_HEAL) : dmgMax,
+      healMin: heal(healLo),
+      healMax: heal(healHi),
     };
   });
   return { ok: true, center, targets };
@@ -314,7 +329,7 @@ export function resolveAbility(
         continue;
       } // support without healing: only the effect
       let amount: number;
-      [amount, state.rng] = rollInt(state.rng, ability.heal[0], ability.heal[1]);
+      [amount, state.rng] = rollInt(state.rng, ...healRange(actor, ability));
       // the same single roll either way, so the dice order does not change
       if (healHurts(ability, unit)) {
         const dmg = Math.max(1, Math.floor(amount * COMBAT.UNDEAD_HEAL));

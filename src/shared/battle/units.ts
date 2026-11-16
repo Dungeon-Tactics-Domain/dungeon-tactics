@@ -25,7 +25,7 @@ export interface UnitDef {
   resist?: Partial<Record<Resist, number>>; // % off the damage, negative = weakness; read through resistOf
   dodge?: number; // % of hits avoided from the front; read through dodgeOf
   physPower?: number; // added to both ends of a martial ability's damage (class and equipment)
-  magPower?: number; // added to both ends of a spell's damage; heals get none (Nov 15, as before the split)
+  magPower?: number; // added to both ends of a spell's damage or heal (Fernando, Nov 15, as the lab)
 }
 
 // a % of element on a class, piece or buff is always resistance (defence); an attack takes an element from its ability
@@ -37,7 +37,7 @@ export type Resist = 'phys' | 'mag' | Element;
 export const RESIST_RANGE = [-100, 60] as const;
 export const DODGE_MAX = 50;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-// `shift`: a change on top of the sheet (charging), clamped with it
+// `shift`: a change on top of the sheet (charging), added and then clamped once: the lab gives the limits per resistance
 export const resistOf = (d: UnitDef, k: Resist, shift = 0) => clamp((d.resist?.[k] ?? 0) + shift, ...RESIST_RANGE);
 export const dodgeOf = (d: UnitDef) => clamp(d.dodge ?? 0, 0, DODGE_MAX);
 

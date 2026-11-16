@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { COMBAT, damageRange, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
+import { afterDodge, COMBAT, damageRange, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import type { Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS, type UnitDef } from '../src/shared/battle/units.ts';
 import { flat, seedWhere, stateOf } from './battle-helpers.ts';
@@ -41,6 +41,14 @@ describe('dodge (Nov 15)', () => {
   it('spells are dodged the same way', () => {
     const plain = aim('mage', 'firebolt', PLAIN).chance;
     expect(aim('mage', 'firebolt', DODGER).chance).toBe(Math.round(plain * 0.6));
+  });
+
+  it('rounds half up in whole numbers and never goes below 5% (Fernando, Nov 15: the floor after the dodge)', () => {
+    expect(afterDodge(85, 30, 'front')).toBe(60); // 85 x 0.7 in floating point is 59.4999…
+    expect(afterDodge(45, 40, 'side')).toBe(32); // 45 x 0.7 = 31.5
+    expect(afterDodge(5, 50, 'front')).toBe(COMBAT.MIN_CHANCE);
+    // and on the board: the Spin (85, beside the warrior) against dodge 30 from the front
+    expect(aim('warrior', 'spin', sheet('t_quick', { dodge: 30 }), 1).chance).toBe(60);
   });
 
   it('caps at 50 (90% to hit from the front becomes 45%), and heals are never dodged', () => {
@@ -93,6 +101,10 @@ describe('resistances (Nov 15)', () => {
     expect([p.dmgMin, p.dmgMax]).toEqual([lo, hi]);
   });
 
+  it("counts in whole numbers: the Shot's 70 against 30% is 49, not 48", () => {
+    expect(aim('archer', 'shot', sheet('t_mail', { resist: { phys: 30 } }))).toMatchObject({ dmgMax: 49 });
+  });
+
   it('a hit that lands always takes at least 1', () => {
     // Gust 10 to 20 through 60 magic and 60 wind, at half on its own side: 0.8, rounded down to 0, so 1
     const tank = sheet('t_tank', { resist: { mag: 60, wind: 60 } });
@@ -116,8 +128,10 @@ describe('power (Nov 15)', () => {
     expect(aim(caster, 'firebolt', PLAIN)).toMatchObject({ dmgMin: 65, dmgMax: 95 });
   });
 
-  it('heals get none', () => {
-    expect(aim(caster, 'heal', PLAIN, 2, 3, 'hero')).toMatchObject({ healMin: 60, healMax: 90 });
+  it('magic power goes on heals too (Fernando, Nov 15, as the lab), physical power does not', () => {
+    expect(aim(caster, 'heal', PLAIN, 2, 3, 'hero')).toMatchObject({ healMin: 75, healMax: 105 });
+    const fighter = sheet('t_fighter', { ...UNIT_DEFS.mage, physPower: 30 });
+    expect(aim(fighter, 'heal', PLAIN, 2, 3, 'hero')).toMatchObject({ healMin: 60, healMax: 90 });
   });
 });
 
