@@ -42,6 +42,13 @@ describe('mana and stamina (Nov 15 grill)', () => {
     expect(poolOf(m.actor, 'mana')).toBe(60 - 25);
   });
 
+  // Fernando, Nov 16: as in FFT, a strike on an empty tile still spends its cost
+  it('an ability aimed at an empty tile still spends', () => {
+    const w = field('warrior');
+    expect(w.act('heavy_strike', at(0, 0)).length).toBeGreaterThan(0);
+    expect(poolOf(w.actor, 'stamina')).toBe(50 - 30);
+  });
+
   it('a charge pays when it starts and fires later for free', () => {
     const m = field('mage');
     m.act('blast', at(1, 1));
