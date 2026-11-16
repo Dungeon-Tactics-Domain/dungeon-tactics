@@ -1,6 +1,6 @@
 import { ABILITIES, type AbilityDef, defaultLock } from './abilities.ts';
 import type { Battle } from './battle.ts';
-import { COMBAT, canPay, damageRange, pendingCounters, previewAbility, simulatePush } from './combat.ts';
+import { COMBAT, canPay, damageRange, pendingCounters, previewAbility, regen, simulatePush } from './combat.ts';
 import { canStand, dist, facingTo, type Grid, neighbors, posKey, stepCost, subOf, TERRAIN, tileAt } from './grid.ts';
 import { cellsOf, footprint, jumpOf, leaps, reachable, type Step, squareH, squareMoves } from './pathing.ts';
 import { chargeAim, TURN_THRESHOLD } from './turn-queue.ts';
@@ -178,15 +178,17 @@ function positionScore(
     const def = UNIT_DEFS[o.def];
     if (!attacking || def.speed === 0 || !def.abilities.length) continue;
     const reach = tiles(def.move) + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
+    // only what it can pay for on its next turn, after that turn's regen (regen replaces vars, so the copy keeps `o` intact)
+    const ready = { ...o };
+    regen(ready);
     if (tiles(dist(at, o.pos)) <= reach)
       // what it would deal this unit, by the rule's own numbers (power, resistances: Nov 15)
-      // only what it can pay for now
       score -=
         W.THREAT *
         Math.max(
           0,
           ...def.abilities
-            .filter((a) => canPay(o, ABILITIES[a]))
+            .filter((a) => canPay(ready, ABILITIES[a]))
             .map((a) => avg(damageRange(state, o, ABILITIES[a], actor))),
         );
   }
