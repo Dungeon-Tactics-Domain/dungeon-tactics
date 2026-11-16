@@ -143,10 +143,11 @@ export function choice<T>(
 }
 
 // 0 to 100% bar (Nov 13, Fernando's request: volume "in 5% steps"): native range input (keyboard arrows already move it;
-// the gamepad moves it via main.ts pollPad), number in % beside it, changes instantly on every move, no save button
-export function slider(label: string, value: number, onChange: (v: number) => void): HTMLElement {
+// the gamepad moves it via main.ts pollPad), number in % beside it, changes instantly on every move, no save button.
+// `min`: a floor above 0 (panel opacity: below it the panels stop reading as the interface)
+export function slider(label: string, value: number, onChange: (v: number) => void, min = 0): HTMLElement {
   const out = el('output', { class: 'slider-value' }, `${value}%`);
-  const input = el('input', { type: 'range', min: 0, max: 100, step: 5, value, 'aria-valuetext': `${value}%` });
+  const input = el('input', { type: 'range', min, max: 100, step: 5, value, 'aria-valuetext': `${value}%` });
   input.addEventListener('input', () => {
     const v = Number(input.value);
     out.textContent = `${v}%`;

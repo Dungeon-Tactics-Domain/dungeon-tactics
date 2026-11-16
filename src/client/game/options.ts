@@ -3,6 +3,7 @@
 import type { Scenario } from '../../shared/battle/scenarios.ts';
 import { isObjective } from '../../shared/battle/units.ts';
 import { choice, dialog, slider } from '../dialog.ts';
+import { ALPHA_MIN, type Blur, getGlass, glassEnv, setGlass } from '../glass.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { keyHelp } from '../keyboard.ts';
@@ -135,6 +136,45 @@ export function optionsMenu(o: OptionsContext) {
           THEMES.map(([id, pt, en]) => [id, t(pt, en)]),
           getTheme(),
           setTheme,
+        ),
+        // panel glass (Nov 16, Fernando's request): opacity of the blue panels and the blur of what shows through them
+        slider(
+          t('Opacidade dos painéis', 'Panel opacity'),
+          getGlass().alpha,
+          (alpha) => setGlass({ ...getGlass(), alpha }),
+          ALPHA_MIN,
+        ),
+        choice(
+          t('Desfoque atrás dos painéis', 'Blur behind the panels'),
+          [
+            ['off', t('Desligado', 'Off')],
+            ['light', t('Leve', 'Light')],
+            ['strong', t('Forte', 'Strong')],
+          ] as [Blur, string][],
+          getGlass().blur,
+          (blur) => setGlass({ ...getGlass(), blur }),
+        ),
+        el(
+          'p',
+          {},
+          // every notice that applies: an old browser can also be asked for less transparency
+          [
+            !glassEnv().blur &&
+              t('Este navegador não desfoca o fundo dos painéis.', 'This browser cannot blur behind the panels.'),
+            glassEnv().reducedTransparency &&
+              t(
+                'O sistema pede menos transparência: os painéis ficam opacos.',
+                'The system asks for less transparency: the panels stay opaque.',
+              ),
+            glassEnv().blur &&
+              !glassEnv().reducedTransparency &&
+              t(
+                'O desfoque aparece com a opacidade abaixo de 100%; no celular ele pesa.',
+                'The blur shows with the opacity below 100%; on a phone it is heavy.',
+              ),
+          ]
+            .filter(Boolean)
+            .join(' '),
         ),
         choice(
           t('Tamanho do pixel', 'Pixel size'),

@@ -51,6 +51,16 @@
     24,
     0.4
   ); /* sunken disabled menu row: lifts --ink-off to 6.8:1 and sets it apart from active rows */
+  /* panel glass (glass.ts, Options → Video and effects, Nov 16): the panels paint the --glass-* stops over the veil, with the
+     rim in their frame and the filter behind. These defaults are the opaque look, plain hex and no extra layer, so nothing
+     changes at 100% in any browser; below 100% glass.ts swaps in translucent stops, the dark veil that keeps light text at
+     4.5:1 over a white sky (tests/glass.test.ts), the rim and the blur */
+  --panel-filter: none;
+  --glass-hi: var(--paper-hi);
+  --glass: var(--paper);
+  --glass-lo: var(--paper-lo);
+  --panel-veil: transparent;
+  --panel-rim: transparent;
   --ink-shadow: 1px 1px 0 #050a18; /* light text on the blue panels gets a hard dark shadow */
   --focus: #ffd75e; /* focus ring and highlight: FFT yellow */
   --focus-band: linear-gradient(#3e66ad, #33599f); /* menu row under focus: lighter blue than the panel */
@@ -68,9 +78,12 @@
   /* focus outside the panels (menu button over the scene, map node, language on the title, dialogue box): a dark band
      hugging the yellow ring, so the ring shows on the bright sky and on the grass */
   --focus-halo: 0 0 0 2px #0a1028;
-  /* frame of panels, dialogs and the menu button: dark outer line, thin inner line, inner top glow and a drop shadow */
+  /* frame of panels, dialogs and the menu button: dark outer line, the glass rim (transparent unless glass is on), thin inner
+     line, inner top glow and a drop shadow */
   --paper-frame:
-    0 0 0 1px #050a18, inset 0 0 0 1px rgba(5, 10, 24, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.14),
+    0 0 0 1px #050a18,
+    inset 0 0 0 1px var(--panel-rim),
+    inset 0 0 0 1px rgba(5, 10, 24, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.14),
     0 3px 0 rgba(0, 0, 0, 0.45);
   --paper-white: #18295a; /* field background: Developer fields and the class card */
   --row-hi: rgba(255, 255, 255, 0.1); /* menu row under hover */
@@ -271,9 +284,23 @@ button[hidden],
   border: 2px solid var(--paper-edge);
   border-radius: var(--r);
   color: var(--ink);
-  background: linear-gradient(var(--paper-hi), var(--paper));
+  background: linear-gradient(var(--glass-hi), var(--glass)), var(--panel-veil);
   box-shadow: var(--paper-frame);
   text-shadow: var(--ink-shadow);
+}
+/* every blue surface blurs what is behind it when glass is on (glass.ts); the windows with no background of their own
+   reset it below, so no invisible rectangle is blurred */
+.dialog,
+.result-board .dialog-head,
+.hero-card,
+.result-panel,
+.main-title .menu-actions,
+.crawl-map .legend,
+.panel,
+.tools .burger,
+.strike {
+  -webkit-backdrop-filter: var(--panel-filter);
+  backdrop-filter: var(--panel-filter);
 }
 /* buttons inside the window: the lab kit's dark blue button with the steel trim and a drop shadow (the primary keeps its
    brighter blue); both at --fs like the kit, the primary in bold */
@@ -439,6 +466,8 @@ button[hidden],
   max-height: calc(100dvh - 32px); /* the overlay's padding */
   padding: 4px; /* room for the panels' outer line and drop shadow inside the scroll box */
   background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: none;
   box-shadow: none;
   display: flex;
@@ -451,7 +480,7 @@ button[hidden],
 .result-panel {
   border: 2px solid var(--paper-edge);
   border-radius: var(--r);
-  background: linear-gradient(var(--paper-hi), var(--paper) 45%, var(--paper-lo));
+  background: linear-gradient(var(--glass-hi), var(--glass) 45%, var(--glass-lo)), var(--panel-veil);
   box-shadow: var(--paper-frame);
 }
 .result-board .dialog-head {
@@ -460,6 +489,8 @@ button[hidden],
 }
 .result-board.lost .dialog-head {
   background: var(--enemy-paper);
+  -webkit-backdrop-filter: none; /* the wine band stays opaque: nothing to blur behind it */
+  backdrop-filter: none;
 }
 .dialog.result.result-board h2 {
   font-size: var(--fs-banner);
@@ -833,6 +864,8 @@ button[hidden],
    kit's 422 px command menu 48 px below, the key hint alone at the foot of the screen */
 .main-title .dialog.title {
   background: none;
+  -webkit-backdrop-filter: none; /* its fixed foot must stay fixed to the screen */
+  backdrop-filter: none;
   border: none;
   box-shadow: none;
   width: min(1100px, 100%);
@@ -889,7 +922,7 @@ button[hidden],
   vertical-align: middle;
 }
 .main-title .menu-actions {
-  background: linear-gradient(var(--paper-hi), var(--paper) 45%, var(--paper-lo));
+  background: linear-gradient(var(--glass-hi), var(--glass) 45%, var(--glass-lo)), var(--panel-veil);
   border: 2px solid var(--paper-edge);
   border-radius: var(--r);
   box-shadow: var(--paper-frame);
@@ -917,7 +950,7 @@ button[hidden],
   font-size: 44px;
 }
 .crawl-map .legend {
-  background: linear-gradient(var(--paper-hi), var(--paper));
+  background: linear-gradient(var(--glass-hi), var(--glass)), var(--panel-veil);
   border: 2px solid var(--paper-edge);
   border-radius: var(--r);
   box-shadow: var(--paper-frame);
@@ -971,7 +1004,7 @@ button[hidden],
   padding: 8px 12px;
   color: var(--ink);
   border-radius: var(--r);
-  background: linear-gradient(var(--paper-hi), var(--paper) 45%, var(--paper-lo));
+  background: linear-gradient(var(--glass-hi), var(--glass) 45%, var(--glass-lo)), var(--panel-veil);
   border: 2px solid var(--paper-edge);
   box-shadow: var(--paper-frame);
   text-shadow: var(--ink-shadow);
@@ -1123,7 +1156,7 @@ button[hidden],
 } /* the open list goes over the counter and the command menu */
 /* menu button on the same blue as the panels, with 3 bars; open, it is sunken */
 .tools .burger {
-  background: linear-gradient(var(--paper), var(--paper-lo));
+  background: linear-gradient(var(--glass), var(--glass-lo)), var(--panel-veil);
   border-color: var(--paper-edge);
   color: var(--ink);
   box-shadow: var(--paper-frame);
@@ -1645,10 +1678,10 @@ button[hidden],
   grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: 12px;
-  background: linear-gradient(var(--paper-hi), var(--paper-lo));
+  background: linear-gradient(var(--glass-hi), var(--glass-lo)), var(--panel-veil);
 }
 .strike-target {
-  background: linear-gradient(var(--paper), var(--paper-lo));
+  background: linear-gradient(var(--glass), var(--glass-lo)), var(--panel-veil);
   border-left: 2px solid var(--paper-edge);
 }
 .strike-target.enemy {
@@ -2053,6 +2086,8 @@ body:has(.result-overlay) .fps {
 }
 .talk-overlay.dark .panel.talk {
   background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: none;
   box-shadow: none;
   color: var(--fg);
