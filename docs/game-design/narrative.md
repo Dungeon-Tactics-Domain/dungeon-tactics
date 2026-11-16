@@ -14,7 +14,7 @@ The loop itself (town, descent through rooms, camp, return) is in `_notas/LOOP-D
 | Tone | Warm with a shadow underneath: a lively, kind village; the descent brings losses and secrets little by little. No stress or afflictions: the weight comes from the story, not from a mechanic. |
 | Why the party goes down | The protagonist is a **prisoner** the town forces to go down. Only the protagonist has a main story for now. They start going down with other prisoners; as their runs go well they gain independence, and the party turns from prisoners into adventurers. Other stories happen alongside. |
 | Who holds them | The town itself: going down is the sentence it hands to convicts. |
-| The sentence | A quota of descents (each a win over the descent's boss) paid off through **milestones**. Each milestone changes how they are treated and unlocks places, people and lines. Numbers come from the Mechanics lab later. |
+| The sentence | A quota of descents (each a win over the descent's boss) paid off through **milestones**. Each milestone changes how they are treated and unlocks places, people and lines. Cost (Nov 16): milestones 2, 3 and 4 take 2, 3 and 4 boss wins (9 in total). |
 | The protagonist | **Created by the player**, Dragon Age style (Fernando, Nov 15); the player picks a name, a look (KayKit models), and a starting class. No crime choice for now: every protagonist is sentenced for **a debt they could not pay**, so the sentence is paying it off with work (Nov 16). The party of four is picked from a roster of recruits after the prologue (Nov 16). |
 | The other party members | A prologue with one or two characters, then four go down, picked like in Darkest Dungeon; only the protagonist is fixed in the MVP. No past for the others in this draft. |
 | The town | A small border village with a fixed name and past, written by hand: about 8 to 12 named residents; the four facilities are its centre. |
@@ -119,12 +119,12 @@ Checked against `pillars.md`, the decision log in `CLAUDE.md` and `_notas/LOOP-D
 | Facilities | All four open from the start; milestones change prices, lines and rumours, they do not unlock facilities. |
 | What counts as a descent | A win over the descent's boss. |
 | Request board | In the MVP the requests are spoken rumours; the Board window comes later. |
-| Starting party | A prologue with one or two characters (the protagonist and a prisoner, a short first descent), then the descent with four, picked as in Darkest Dungeon. Only the protagonist is fixed in the MVP; the other three come from a roster of recruits. |
+| Starting party | A prologue with the protagonist and the prisoner Rook (Nov 16), a short first descent, then the descent with four, picked as in Darkest Dungeon. Only the protagonist is fixed in the MVP; the other three come from a roster of recruits. |
 | Wren and the scout-cook class | Wren sells ingredients and teaches recipes; the class cooks in camp. |
 | When the text becomes data | Now: three lines per key resident in `src/content/crawl/residents.ts`, no interface. |
 | Names | All proposed names approved. |
 
-Still open: the prologue (how many rooms, who the second prisoner is), what the sentence costs in descents, and a conflict between this cast and the one already in `town.ts` (see Open questions).
+Still open: how many rooms the prologue has (each dungeon room has one fight and one treasure for now), and whether a failed expedition counts for the milestones. The bottom and the companions wait until the descent has been played (Nov 16).
 
 ## What this feeds in `src/content`
 
@@ -132,8 +132,9 @@ Since Nov 16, `src/content/crawl/residents.ts` holds the residents and three lin
 
 ## Open questions
 
-- Milestone costs (how many boss wins per milestone) and whether a failed expedition counts.
-- The prologue: how many rooms, who the second prisoner is (Dace, Rook or Nell), and how the player reaches the town and the roster.
+- Whether a failed expedition counts for the milestones (the cost is settled: 2, 3 and 4 boss wins).
+- The prologue: how many rooms (1 or 2, one fight and one treasure each), and how the player reaches the town and the roster. The second prisoner is Rook.
+- Settled Nov 16 (chest clash): one chest per floor, three per descent (two rooms per floor); the prologue room has one fight and its treasure comes from the floor chest. Marta pays gold only for what came from drops and chests; ingredients and beasts become recipes with Wren.
 - Settled on Nov 16: the narrative cast replaces the townsfolk in `src/content/crawl/town.ts` (Aldo, Hugo, Selene, Mira); the walkable town's owner swaps them when the lines are wired, and reconciles the places (`smith` and `smithy`, plus kitchen, square, well and tower).
 - What lies at the bottom and why the village stopped going down.
 - The companions' stories and the conflict inside the town (left out of this draft).
