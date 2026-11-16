@@ -72,10 +72,12 @@ const PAGES = [
     name: 'expedition map',
     path: '/?home=expedition',
     seed: WORN,
-    ready: '.crawl-map [role=dialog] button.primary',
+    // the chart of places: the open rooms of the first row, the rest still ahead, and Travel on for the picked one
+    ready: '.crawl-map [role=dialog] .map-commands button.primary:enabled',
     check: () =>
-      document.querySelectorAll('.crawl-map .crawl-row button').length >= 4 &&
-      !!document.querySelector('.crawl-map .crawl-row button:disabled'),
+      document.querySelectorAll('.crawl-map .map-place.open').length >= 2 &&
+      document.querySelectorAll('.crawl-map .map-place.ahead').length >= 10 &&
+      !!document.querySelector('.crawl-map .map-place.open[aria-current=true]'),
   },
   {
     name: 'expedition room',

@@ -1,3 +1,4 @@
+import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { TOWN } from '../../content/crawl/town.ts';
 import { bonusOf, withGear } from '../../shared/battle/equipment.ts';
 import { HALF } from '../../shared/battle/half.ts';
@@ -6,6 +7,7 @@ import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import {
   classMana,
   cleared,
+  descentGold,
   type Expedition,
   expeditionMap,
   goldHome,
@@ -197,6 +199,7 @@ function questRows(go: (fn: () => void) => () => void) {
 // The dungeon gate at the north end of the town (Nov 15, Fernando: the quest opens at its spot): the quest's rows and the
 // way back to the street
 export function questGate(name: string) {
+  const live = liveExpedition();
   const go = (fn: () => void) => () => {
     d.close();
     fn();
@@ -210,6 +213,28 @@ export function questGate(name: string) {
         { class: 'menu-actions camp-list command-list' },
         ...questRows(go),
         commandRow('bronze', t('Ficar na cidade', 'Stay in town'), go(toTown)),
+      ),
+      // the place's information box, as on the map: what waits below and where an expedition in progress stands
+      el(
+        'section',
+        { class: 'map-box gate-info' },
+        el(
+          'p',
+          {},
+          t(
+            `${CRAWL_RUN.floors} andares de salas e um chefe no fim.`,
+            `${CRAWL_RUN.floors} floors of rooms and a boss at the end.`,
+          ),
+        ),
+        live &&
+          el(
+            'p',
+            {},
+            t(
+              `Expedição em curso: ${floorOf(live)} · ${descentGold(live)} de ouro achado.`,
+              `Expedition in progress: ${floorOf(live)} · ${descentGold(live)} gold found.`,
+            ),
+          ),
       ),
     ],
     { onBack: toTown },

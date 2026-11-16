@@ -85,6 +85,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/motion.ts` — the Reduce motion option (dt:motion: System, Yes, No): `reducedMotion()` for the code and `data-motion` on <html> for the CSS.
 - `src/client/hit-weight.ts` — weight of a blow: its distances, the number's size and colour, the killing-blow lookahead and the death slow motion option (dt:death-slowmo).
 - `src/client/tally.ts` — damage and takedowns per unit from the played events and the heroes' cards (endHeroes), for the result board.
+- `src/client/expedition-places.ts` — the expedition map as a chart (pure): each place's spot and state, the ways between them, the floors' rows and a place's gold range.
 - `src/client/group.ts` — party rules: recruit, dismiss, class change, who goes to battle (dt:party).
 - `src/client/chest.ts` — gold, items and per-member equipment (dt:chest, dt:equip) with their parsers.
 - `src/client/saves.ts` — save slots: the dt:saves manifest, new game, load and delete, slot summaries.
@@ -145,8 +146,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/town-folk.ts` — the townsfolk: who strolls, who is being talked to, the rumour each tells next.
 - `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
-- `src/client/game/crawl.ts` — the town menu and quest gate, the expedition map, room settle and finish, and the way home.
-- `src/client/game/expedition-map.ts` — the expedition map: the floor in play as rows of rooms, the party's state and the chest window.
+- `src/client/game/crawl.ts` — the town menu and quest gate (its commands and information box), the expedition save and its gold, and the way home.
+- `src/client/game/expedition-map.ts` — the expedition map: the descent as a chart of places, the picked place's box, the travel commands, the party's state, Information and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
 - `src/client/game/options.ts` — Options window: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
