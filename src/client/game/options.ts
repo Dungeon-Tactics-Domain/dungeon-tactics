@@ -1,6 +1,7 @@
 // Options window, opened from the battle's corner menu (H): sections Game, Sound, Video and effects, Controls and Language,
 // plus restart, home and developer at the foot. It reads and changes the battle only through OptionsContext.
 import type { Scenario } from '../../shared/battle/scenarios.ts';
+import { isObjective } from '../../shared/battle/units.ts';
 import { choice, dialog, slider } from '../dialog.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
@@ -48,16 +49,19 @@ export function optionsMenu(o: OptionsContext) {
       'game',
       t('Jogo', 'Game'),
       [
-        // Until Dawn's own goal; in any other battle, the usual one
+        // Until Dawn's own goal; the Beacon only on a map born with one, as checkOutcome counts it (Nov 16 review: the
+        // expedition rooms, which have none, were told to protect it)
         el(
           'p',
           {},
           isSurvival(scenario.id)
             ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
-            : t(
-                'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',
-                'Goal: defeat the enemies and protect the Beacon (the blue crystal).',
-              ),
+            : scenario.spawns.some((s) => isObjective(s.def))
+              ? t(
+                  'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',
+                  'Goal: defeat the enemies and protect the Beacon (the blue crystal).',
+                )
+              : t('Objetivo: derrote todos os inimigos.', 'Goal: defeat every enemy.'),
         ),
         el(
           'ul',
@@ -221,9 +225,12 @@ export function optionsMenu(o: OptionsContext) {
       { class: 'menu-actions' },
       // during the animation or the enemy turn the loop is still running the old battle
       // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
+      // a disabled button says why in its own text (design system, Disabled)
       button(
         'secondary',
-        t('Reiniciar batalha', 'Restart battle'),
+        o.busy
+          ? t('Reiniciar batalha: espere a sua vez', 'Restart battle: wait for your turn')
+          : t('Reiniciar batalha', 'Restart battle'),
         (e: Event) => {
           const btn = e.currentTarget as HTMLButtonElement;
           if (!btn.dataset.armed) {

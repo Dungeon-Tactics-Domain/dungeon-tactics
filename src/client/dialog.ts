@@ -80,10 +80,11 @@ export function padDialog(a: KeyAction): boolean {
   // the topmost window: the town menu stays open under the window beside it
   const overlay = [...document.querySelectorAll<HTMLElement>('.overlay')].at(-1);
   if (!overlay) return false;
-  // only what is in view: the hidden Options section holds buttons that would take focus without showing
-  const buttons = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), input[type=range]')].filter(
-    (e) => e.offsetParent,
-  );
+  // only what is in view: the hidden Options section holds buttons that would take focus without showing. The Party rows
+  // are `li[role=button]` (Nov 16 review: without them the d-pad never left the ✕ there)
+  const buttons = [
+    ...overlay.querySelectorAll<HTMLElement>('button:not([disabled]), [role="button"], input[type=range]'),
+  ].filter((e) => e.offsetParent);
   const at = buttons.indexOf(document.activeElement as HTMLElement);
   const range =
     document.activeElement instanceof HTMLInputElement && document.activeElement.type === 'range'

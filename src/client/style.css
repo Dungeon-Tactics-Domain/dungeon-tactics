@@ -933,6 +933,10 @@ button[hidden],
 .crawl-row .continue-where {
   margin-left: 0;
 }
+/* an open room's enemies on the primary blue: --ink-muted gave 3.6:1 at its top, --on-accent 4.9 (Nov 16 review) */
+.crawl-row button.primary .continue-where {
+  color: var(--on-accent);
+}
 @keyframes title-in {
   from {
     opacity: 0;

@@ -74,7 +74,8 @@ export function openParty(back?: () => void) {
         'aria-label': t(`Ficha de ${u.name}`, `${u.name}'s sheet`),
         onclick: open,
         onkeydown: (e: KeyboardEvent) => {
-          if (e.key === 'Enter') {
+          // Space too, like a real button (the design system's Confirm)
+          if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             e.stopPropagation();
             open();
@@ -265,7 +266,8 @@ export function openShop(back?: () => void, tab: 'buy' | 'sell' = 'buy') {
                 button('secondary', t('Vender', 'Sell'), () => save(sell(chest, id))),
               ),
             )
-          : [el('p', {}, t('Vazio.', 'Empty.'))]),
+          : // an empty state says the next step (design system, Copy)
+            [el('p', {}, t('O baú está vazio: compre na aba Comprar.', 'The chest is empty: buy on the Buy tab.'))]),
     ],
     { onBack: back, note: goldNote(t('Ouro no baú', 'Gold in chest'), chest.gold) },
   );

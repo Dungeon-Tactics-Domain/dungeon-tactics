@@ -70,6 +70,7 @@ The interface swaps its look through themes (Fernando's request: FFT Classic as 
 | Menu head band (6% `--ink` over `--paper-hi`) / picked row (45% `--shade` over `--paper-hi`): `--ink` | 6.7 / 12.4 | ✓ (Nov 15) |
 | ◆ on `--enemy-paper` (not text, the word beside it carries the side): `--enemy-hi` / `--enemy` | 4.9 / 2.6 | hence `--enemy-hi` |
 | `--fg` on the place name tag over the map land | 11.9 | ✓ |
+| An open expedition room's enemies line on `--gold-btn` (top / foot): `--on-accent` | 4.9 / 6.7 | ✓ (Nov 16 review: it was `--ink-muted`, 3.6 / 4.8) |
 | Hero card's last line (it sits below the card's middle, on `--paper` or darker): `--heal` / `--enemy-hi` / `--ink-muted` | 5.9 / 5.0 / 6.7 | ✓ (Nov 15; `--enemy-hi` on `--paper-hi` would give 4.1, so it never goes at the top of a panel) |
 | Defeat band: `--ink` on `--enemy-paper` (top `#7a2436`) | 9.1 | ✓ (Nov 15) |
 | Window head band (6% `--ink` over `--paper-hi`): `--ink` / `--focus` (victory title) | 6.7 / 5.2 | ✓ (Nov 15) |
@@ -163,7 +164,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Title screen** `.main-title` (a fixed `dialog`) | `game/title.ts`, `style.css` | the Design lab's mockup (Nov 15): the name at `--fs-logo` in capitals with a hard dark shadow, the window list 48 px below it as the kit's command menu (a `Menu` head, an orb before each row, gold on the primary, blue on the rest, added in `titleScreen`; 422 px, wider when a row needs it, rows on one line), the key hint and the language button alone at the foot of the screen (under 700 px tall, right after the menu instead, so they never touch it) | title |
 | **Window list** `.camp-list` (a `.menu-actions` of buttons) | `dialog.ts`, `style.css` | up and down arrows (and the d-pad) move the focus through the list, wrapping; the menu row inside a window (Nov 15): bare rows at `--fs-lg`, H `--row-hi`, F (the real focus, so keyboard, mouse and gamepad share it) `--focus-band` with a yellow line and the pulsing ▶; the primary looks like the others, the focus starting on it marks it; on the title the list sits on the panel gradient down to `--paper-lo`, and Continue's where-to line is `--ink-muted`, `--ink` when focused | title menu, Quick battle, Town |
 | **Saved games** `.save-list` (a window list in a 760 px `dialog('title', …)` with `.save-slots`) | `game/saves-ui.ts`, `style.css` | Nov 15: two columns of menu rows, the load row (64 px still face of the first deployed member, who goes, then the where · gold · when line in `.continue-where`) and its Delete in a fixed 12em column, so the 2nd-tap text ("Tap again: deletes") wraps instead of moving the rows; the latest played first; scrolls past 60vh; arrows walk load and Delete in order | title's Continue |
-| **Party row** `.party-list .party-card` | `town-ui.ts`, `style.css` | like a menu row: H `--row-hi`, F `--focus-band`, yellow line and ▶; its muted lines (class, numbers, abilities) turn `--ink` on both (muted gives 4.3:1 on `--row-hi` and 3.8 on `--focus-band`) | Party window |
+| **Party row** `.party-list .party-card` | `town-ui.ts`, `style.css` | like a menu row: H `--row-hi`, F `--focus-band`, yellow line and ▶; its muted lines (class, numbers, abilities) turn `--ink` on both (muted gives 4.3:1 on `--row-hi` and 3.8 on `--focus-band`); Enter or Space opens the sheet, and the gamepad's d-pad walks the rows with the window's buttons (`padDialog` takes `[role="button"]`, Nov 16) | Party window |
 | **Sheet head** `.sheet .party-card` | `style.css` | the unit panel's look: `--hero` side stripe on a 25% `--shade` band, the 128 px still face (96×128 `portrait()` for a class without a sheet), class at `--fs-lg` | unit Sheet |
 | **Gold counter** `.gold` (`goldNote`) | `town-ui.ts`, `style.css` | the lab kit's counter: uppercase `--ink-muted` label, the number at `--fs-lg` after a coin drawn from `--ct` and `--orb-gold`; on the window's head band at the right, before the ✕ (`dialog`'s `note`) | Shop (gold in chest), Tavern (party size and gold) |
 | **Expedition room** `button(…)` in `.crawl-row` | `game/crawl.ts`, `style.css` | a primary or regular button stacked in two lines: the group's name (with "Boss:" and, when closed, why: cleared, path not taken, opens after the one before) over its enemies in `.continue-where`; open rooms primary, the rest D; one `.crawl-row` panel per row of the floor, the party's life on a `.legend` panel above | expedition map (Nov 15) |
@@ -192,8 +193,8 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | Move in menu / cursor | W A S D and arrows | hover | d-pad and stick |
 | Confirm | Enter, Space (on press only) | click | A / × |
 | Back, close dialog | Esc (the topmost window only: the town menu stays open under the window beside it) | right button, click outside, ✕ | B / ○ (the topmost window) |
-| Walk the town | W A S D and arrows, held: one half tile per step, the camera follows; Enter talks to whoever is in front or goes in at the door, walking into a house from its door goes in too; Esc or H the town menu | click on the ground walks there, on a house walks to its door and goes in, on someone walks beside them and talks; right button the town menu | d-pad and stick walk, A talks or goes in, B or Start the town menu |
-| Inside a dialog | Tab and Shift+Tab; Enter on the button | click | in battle, on the title and in town: d-pad moves between visible buttons, A presses (`padDialog`) |
+| Walk the town | W A S D and arrows, held: one half tile per step, the camera follows; Enter talks to whoever is in front or goes in at the door; Esc or H the town menu | click on the ground walks there, on a house walks to its door, on someone walks beside them (Nov 16: a click only walks; a click on the action balloon talks or goes in); right button the town menu | d-pad and stick walk, A talks or goes in, B or Start the town menu |
+| Inside a dialog | Tab and Shift+Tab; Enter on the button | click | in battle, on the title and in town: d-pad moves between visible buttons and Party rows, A presses (`padDialog`) |
 | Volume bar | arrows | drag | left and right with the bar focused |
 | Turn list | PgUp, PgDn (a page less one row) | wheel over the list | right stick up and down (the bumpers and triggers already turn and zoom the camera) |
 | Creation | arrows change class, Enter starts | click on the card | same |
@@ -221,7 +222,8 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 
 ## 6. Debts (left for later)
 
-- **Loose font sizes:** one-off sizes left outside the `--fs-*` scale: 11 (key hint), 26 (damage number) and 30 px (objective banner).
+- **Loose font sizes:** one-off sizes left outside the `--fs-*` scale: 11 (key hint), 26 (damage number), 30 px (objective banner) and 44 px (expedition map title, `.crawl-map h2`).
+- **Loose sizes and bevels in windows (Nov 16 review):** buttons under `--tap` (the Shop and Tavern row buttons at 36 px, the title's language button at 32 px; PC first, so left as is) and the primary button's bevels in raw `rgba` instead of `--bevel-hi`/`--bevel-lo` (other alphas).
 - **Loose interface colours:** the confetti colours in `game/end-screens.ts` (the title's old gold glow became `--focus` on Nov 15). The illustrated map palette (`.world-art`, `.world-icon`, `.world-compass`) is drawing, not interface: it stays as is.
 - **Shop's Sell list** scrolls from 11 items in the chest at 1280×720 (10 fit; Buy, with its 9 items, fits even with every button off).
 - **Party list** (`.party-card`) is an `li` with `role="button"`: make it a real button.
@@ -230,6 +232,8 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 - **`--stone*` tokens** are almost unused since every window took the panel look (Nov 13): only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 
 ## 7. What was and was not checked
+
+Nov 16 (windows and menus review), in the worktree's dev server: the Party window's rows reached by `padDialog` cursor calls on the page (before, the d-pad stayed on ✕), Space on a Party row, the Shop's empty Sell tab, Options' goal line in an expedition room and on Beacon Hill, the busy Restart label, and the open room's enemies line colour (computed style). Not checked: a physical gamepad, mobile widths.
 
 Nov 15 (turn list preview while aiming and two rounds), sandbox in the repo's headless Chrome (muted), `_notas/agentes/turn-list-preview-*.png`, 14 units at 1280×720: the menu list (43 rows, round 2 from row 18), the Act map with Firebolt (the mage's next turn moves from row 29 to 26: acting without moving costs 80), "Execute?" of the Blast (its row at 9, outlined), and Esc back to the menu brings the same list back; scrolled to round 2, the tags read 2. Not checked: 1920×1080 for this step, a physical gamepad.
 
