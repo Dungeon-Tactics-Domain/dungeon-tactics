@@ -37,7 +37,6 @@ export interface HudActions {
   ability(index: number): void; // click on a submenu ability
   answer(yes: boolean): void; // "Execute?" Yes or No
   lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
-  cancel(): void;
   rotate(dir: 1 | -1): void;
   recenter(): void;
   pixel(): void;
@@ -292,7 +291,7 @@ export class BattleHud {
   // height the HUD covers at the bottom (acting unit panel), so the scene centers the map on what is left. Only the acting one: the
   // target's grows with the strike preview and the map jumped each time the cursor passed over a target
   insets() {
-    return { top: 0, bottom: this.active.getBoundingClientRect().height };
+    return { bottom: this.active.getBoundingClientRect().height };
   }
 
   dispose() {

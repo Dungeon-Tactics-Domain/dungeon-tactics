@@ -71,7 +71,6 @@ export class Game implements TurnHost {
       ability: (i) => this.turn.chooseAbility(i),
       answer: (yes) => void this.turn.answer(yes),
       lock: (on) => void this.turn.pickLock(on),
-      cancel: () => this.runKey({ k: 'cancel' }),
       rotate: (dir) => scene.rotate(dir),
       recenter: () => scene.resetView(),
       pixel: () => this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) }),
@@ -196,8 +195,7 @@ export class Game implements TurnHost {
       ability: ui.mode.k === 'ability' ? ui.mode.id : null,
       face: (u) => this.expression(u),
     });
-    const { top, bottom } = this.hud.insets();
-    this.scene.setInsets(top, bottom);
+    this.scene.setInsets(0, this.hud.insets().bottom);
     this.placeMenu(); // already in place on open: waiting for the next frame showed the menu in the corner for 1 frame
   }
 
