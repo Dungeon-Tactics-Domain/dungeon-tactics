@@ -347,6 +347,9 @@ export function parseBattleState(raw: unknown): BattleState | null {
         !units.some((u) => u.id === by)
       )
         return false;
+      // an edited save: a repeated pair would counter twice, and the rule never owes one on its own side
+      const team = (id: string) => units.find((u) => u.id === id)!.team;
+      if (team(e.unit) === team(by) || engaged.some((x) => x.unit === e.unit && x.by === by)) continue;
       engaged.push({ unit: e.unit, by, ranged: e.ranged, turns });
     }
     return true;

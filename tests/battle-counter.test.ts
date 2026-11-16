@@ -92,7 +92,9 @@ describe('opportunity counters (Nov 15)', () => {
   it('the counters owed survive a save; an old save keeps its turn ones for that turn', () => {
     const s = Battle.start(SCENARIOS.skirmish, 1).state;
     const a = s.turn.actor;
-    const b = s.units.find((u) => u.id !== a)!.id;
+    const side = s.units.find((u) => u.id === a)!.team;
+    const b = s.units.find((u) => u.team !== side)!.id;
+    const ally = s.units.find((u) => u.id !== a && u.team === side)!.id;
     s.engaged = [{ unit: b, by: a, ranged: false, turns: 2 }];
     expect(parseBattleState(structuredClone(s))?.engaged).toEqual(s.engaged);
     const old = {
@@ -104,5 +106,15 @@ describe('opportunity counters (Nov 15)', () => {
     expect(
       parseBattleState({ ...structuredClone(s), engaged: [{ unit: b, by: b, ranged: false, turns: 1 }] }),
     ).toBeNull();
+    // an edited save: the repeated pair and the pair on one side are dropped
+    const edited = {
+      ...structuredClone(s),
+      engaged: [
+        ...s.engaged,
+        { unit: b, by: a, ranged: true, turns: 1 },
+        { unit: ally, by: a, ranged: false, turns: 2 },
+      ],
+    };
+    expect(parseBattleState(edited)?.engaged).toEqual(s.engaged);
   });
 });
