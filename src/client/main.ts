@@ -1,26 +1,14 @@
 // Game entry point: wires the battle (rules), the scene (Three), the HUD (DOM) and touch input. Owns the turn loop: the player acts
 // through the HUD; on the enemy turn the AI plays on its own, one unit at a time, with a pause so it can be read.
 
-import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
-import { footprint, nearestTile, unitAt } from '../shared/battle/pathing.ts';
+import { unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { beforeEvent } from './before-event.ts';
-import {
-  abilitiesOf,
-  abilityEnabled,
-  COMMANDS,
-  canUndoMove,
-  commandEnabled,
-  needsLock,
-  type Screen,
-  startScreen,
-  stepIndex,
-} from './command.ts';
+import { type Screen, startScreen } from './command.ts';
 import { dialog, padDialog } from './dialog.ts';
 import { fpsCounter } from './fps.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
@@ -30,11 +18,12 @@ import { optionsMenu } from './game/options.ts';
 import { titleScreen } from './game/title.ts';
 import { bootTown } from './game/town.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
+import { HeroTurn, type TurnHost } from './hero-turn.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
 import { t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
-import { aimStep, confirm, freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
-import { cycleUnit, gridStep, type KeyAction, keyAction } from './keyboard.ts';
+import { confirm, freshUi, type Ui } from './interaction.ts';
+import { type KeyAction, keyAction } from './keyboard.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings, parsePixel } from './pixel-settings.ts';
 import { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
@@ -52,14 +41,11 @@ const AUTO = LOCAL && new URLSearchParams(location.search).has('auto');
 
 const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
 
-export class Game {
-  private ui: Ui;
-  // hero turn screen in the FFT style (command.ts): menu -> submenu -> map -> "Execute?" -> menu; Wait -> direction
-  private screen: Screen;
-  private busy = false;
+export class Game implements TurnHost {
+  private readonly turn: HeroTurn; // the hero's turn screens: screen, Ui and cursor (hero-turn.ts)
+  busy = false;
   private log = '';
   private acting: string | null = null;
-  private cursor: Pos; // cursor tile (keyboard, mouse and gamepad move the same cursor)
   private readonly hud: BattleHud;
   private readonly pad = emptyMemory();
   private padPrimed = false;
@@ -69,7 +55,7 @@ export class Game {
   private roster: Roster = {};
 
   constructor(
-    private battle: Battle,
+    public battle: Battle,
     private readonly scene: BattleScene,
     host: HTMLElement,
     private pixel: PixelSettings,
@@ -81,14 +67,12 @@ export class Game {
       const f = battleFace(u.def);
       if (f) new Image().src = `/chars/${f.sheet}`;
     }
-    this.ui = freshUi(battle);
-    this.screen = startScreen(battle);
-    this.cursor = battle.actor.pos;
+    this.turn = new HeroTurn(this, scene);
     this.hud = new BattleHud(host, {
-      command: (i) => this.chooseCommand(i),
-      ability: (i) => this.chooseAbility(i),
-      answer: (yes) => void this.answer(yes),
-      lock: (on) => void this.pickLock(on),
+      command: (i) => this.turn.chooseCommand(i),
+      ability: (i) => this.turn.chooseAbility(i),
+      answer: (yes) => void this.turn.answer(yes),
+      lock: (on) => void this.turn.pickLock(on),
       cancel: () => this.runKey({ k: 'cancel' }),
       rotate: (dir) => scene.rotate(dir),
       recenter: () => scene.resetView(),
@@ -104,29 +88,8 @@ export class Game {
     const canvas = host.querySelector('canvas')!;
     // TouchInput attaches its listeners to the canvas in the constructor; nothing else needs a reference
     new TouchInput(canvas, {
-      tap: (x, y) => {
-        const pos = this.scene.pick(x, y, this.pickSize);
-        if (!pos || this.busy || !this.heroTurn) return;
-        if (this.screen.k === 'facing') return this.faceTo(pos);
-        // on the map the tile is already chosen by mouse hover (or the 1st tap): clicking it confirms
-        if (this.screen.k === 'map' && this.ui.pending && samePos(pos, this.ui.pending)) return void this.mapConfirm();
-        this.cursor = pos;
-        this.update(this.screen.k === 'map' ? tapTile(this.battle, this.ui, pos) : this.ui);
-      },
-      hover: (x, y) => {
-        const pos = this.scene.pick(x, y, this.pickSize);
-        if (
-          !pos ||
-          this.busy ||
-          !this.heroTurn ||
-          this.screen.k === 'facing' ||
-          this.screen.k === 'confirm' ||
-          samePos(pos, this.cursor)
-        )
-          return;
-        this.cursor = pos; // no blip on tiles: it piled up and stuttered when sweeping the mouse or the stick (Fernando, Nov 15)
-        this.update(this.screen.k === 'map' ? hoverTile(this.battle, this.ui, pos) : this.ui);
-      },
+      tap: (x, y) => this.turn.tap(x, y),
+      hover: (x, y) => this.turn.hover(x, y),
       pan: (dx, dy) => scene.pan(dx, dy),
       zoom: (f) => scene.zoom(f),
     });
@@ -146,7 +109,7 @@ export class Game {
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
     requestAnimationFrame(() => this.pollPad());
-    this.update(this.ui);
+    this.update(this.turn.ui);
     void this.runEnemies(); // the save may have stopped on the enemy turn
   }
 
@@ -187,7 +150,6 @@ export class Game {
   }
 
   private runKey(a: KeyAction) {
-    const b = this.battle;
     // camera, help, status and counter always work, including on the enemy turn
     if (a.k === 'rotate') return this.scene.rotate(a.dir);
     if (a.k === 'zoom') return this.scene.zoom(a.factor);
@@ -198,78 +160,13 @@ export class Game {
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
     if (a.k === 'fps') return this.toggleFps();
     if (this.busy || !this.heroTurn) return;
-    if (a.k === 'undo') return this.undo();
-    if (a.k === 'face') return this.face();
-    const s = this.screen;
-    if (a.k === 'slot') {
-      // number shortcut: 1 = Move, 2 onwards = the abilities in submenu order
-      if (a.index === 0) return this.chooseCommand(0);
-      if (commandEnabled(b, 'act')) return this.chooseAbility(a.index - 1);
-      return;
-    }
-    if (a.k === 'wait') return this.chooseCommand(2);
-    if (s.k === 'menu' || s.k === 'abilities') {
-      const list =
-        s.k === 'menu' ? COMMANDS.map((c) => commandEnabled(b, c)) : abilitiesOf(b).map((id) => abilityEnabled(b, id));
-      if (a.k === 'cursor' && (a.dir === 'up' || a.dir === 'down')) {
-        sfx('cursor');
-        this.screen = { ...s, index: stepIndex(s.index, a.dir === 'up' ? -1 : 1, list) };
-        return this.update(this.ui);
-      }
-      if (a.k === 'confirm') return s.k === 'menu' ? this.chooseCommand(s.index) : this.chooseAbility(s.index);
-      if (a.k === 'cancel' && s.k === 'abilities') return this.back({ k: 'menu', index: 1 });
-      // Esc, B or right button on the menu after moving (without having acted): undoes the move, like Tactics Ogre
-      if (a.k === 'cancel' && canUndoMove(b)) return this.undo();
-      return;
-    }
-    if (s.k === 'confirm') {
-      if (a.k === 'cursor') {
-        sfx('cursor');
-        this.screen = s.lock ? { ...s, lock: s.lock === 'unit' ? 'tile' : 'unit' } : { ...s, yes: !s.yes };
-        return this.update(this.ui);
-      }
-      if (a.k === 'confirm') return void (s.lock ? this.pickLock(s.lock) : this.answer(s.yes));
-      if (a.k === 'cancel') return void this.answer(false);
-      return;
-    }
-    if (s.k === 'facing') {
-      if (a.k === 'cursor') {
-        // a tile on that side of the unit's square, `size` cells from its corner (right/down: just past the square; left/up:
-        // one cell further out). faceTo only reads the direction from the nearest cell, so the distance does not matter
-        const st = gridStep(a.dir, this.scene.heading),
-          s = UNIT_DEFS[b.actor.def].size ?? 1;
-        this.faceTo({ x: b.actor.pos.x + st.x * s, y: b.actor.pos.y + st.y * s });
-      } else if (a.k === 'confirm') void this.endTurn();
-      else if (a.k === 'cancel') this.back({ k: 'menu', index: 2 });
-      return;
-    }
-    // map: choose the tile
-    if (a.k === 'cursor') {
-      const step = gridStep(a.dir, this.scene.heading);
-      // choosing where a token stops, its whole square stays on the map, as with the mouse (squareUnder): clamped, not
-      // refused, so a cursor left nearer the edge (the cycle key on a smaller unit's corner) can still step back
-      const size = this.pickSize;
-      const next =
-        this.ui.mode.k === 'ability'
-          ? aimStep(b.grid, b.state, this.cursor, step)
-          : {
-              x: Math.min(this.cursor.x + step.x, b.grid.width - size),
-              y: Math.min(this.cursor.y + step.y, b.grid.height - size),
-            };
-      if (next && inBounds(b.grid, next) && !samePos(next, this.cursor)) this.moveCursor(next);
-    } else if (a.k === 'cycle') this.moveCursor(cycleUnit(b.state, this.cursor, a.dir));
-    else if (a.k === 'confirm') void this.mapConfirm();
-    else if (a.k === 'cancel') {
-      // goes back to where it came from: Move -> menu; ability -> submenu, on the same ability
-      const m = this.ui.mode;
-      this.back(m.k === 'ability' ? { k: 'abilities', index: abilitiesOf(b).indexOf(m.id) } : { k: 'menu', index: 0 });
-    }
+    this.turn.key(a);
   }
 
   // sandbox (dev/sandbox.ts): a turn screen, cursor and marks put straight in, the way a key would leave them
   showScreen(screen: Screen, cursor: Pos, ui: Ui) {
-    this.screen = screen;
-    this.cursor = cursor;
+    this.turn.screen = screen;
+    this.turn.cursor = cursor;
     this.update(ui);
   }
 
@@ -278,106 +175,16 @@ export class Game {
     await this.animate(events, enemy);
     // the step ended the battle with its mover down: no actor to show a menu for (the sandbox shows no end screen)
     if (!this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor)) return;
-    this.screen = startScreen(this.battle);
-    this.cursorToActor();
+    this.turn.screen = startScreen(this.battle);
+    this.turn.cursorToActor();
     this.update(freshUi(this.battle));
-  }
-
-  private back(screen: Screen) {
-    sfx('cancel');
-    this.screen = screen;
-    this.cursorToActor();
-    this.update(freshUi(this.battle));
-  }
-
-  // menu command (click, Enter, pad A or shortcut)
-  private chooseCommand(index: number) {
-    const b = this.battle;
-    const c = COMMANDS[index];
-    if (this.busy || !this.heroTurn || !c || !commandEnabled(b, c)) return;
-    if (c === 'move' && canUndoMove(b)) return this.undo(); // the Move row became "Undo move"
-    sfx('confirm');
-    if (c === 'status') return this.status();
-    if (c === 'wait') return void this.endTurn();
-    if (c === 'act') {
-      const list = abilitiesOf(b).map((id) => abilityEnabled(b, id));
-      this.screen = { k: 'abilities', index: Math.max(0, list.indexOf(true)) };
-      return this.update(this.ui);
-    }
-    this.screen = { k: 'map', command: 'move' };
-    this.cursorToActor();
-    this.update(hoverTile(b, selectMode(b, this.ui, { k: 'move' }), this.cursor));
-  }
-
-  // submenu ability: goes to the map to choose the target; self-centered goes straight to "Execute?"
-  private chooseAbility(index: number) {
-    const b = this.battle;
-    const id = abilitiesOf(b)[index];
-    if (this.busy || !this.heroTurn || !id || !commandEnabled(b, 'act') || !abilityEnabled(b, id)) return;
-    sfx('confirm');
-    const ui = selectMode(b, this.ui, { k: 'ability', id });
-    if (ABILITIES[id].range[1] === 0) {
-      this.screen = { k: 'confirm', ability: id, target: b.actor.pos, yes: true };
-      return this.update(ui);
-    }
-    this.screen = { k: 'map', command: 'act' };
-    this.cursorToActor();
-    this.update(hoverTile(b, ui, this.cursor));
-  }
-
-  // confirm on the map: Move walks at once (like FFT); Act opens "Execute?"
-  private async mapConfirm() {
-    const p = this.ui.pending;
-    const m = this.ui.mode;
-    if (!p) return sfx('cancel');
-    if (m.k === 'ability') {
-      if (!this.battle.preview(m.id, p).ok) return sfx('cancel');
-      sfx('confirm');
-      this.screen = { k: 'confirm', ability: m.id, target: p, yes: true };
-      return this.update(this.ui);
-    }
-    sfx('confirm');
-    await this.execute();
-  }
-
-  private async answer(yes: boolean) {
-    const s = this.screen;
-    if (s.k !== 'confirm' || this.busy) return;
-    // No on the lock step goes back to "Execute?"
-    if (!yes && s.lock) {
-      sfx('cancel');
-      this.screen = { ...s, lock: undefined };
-      return this.update(this.ui);
-    }
-    // a charge aimed at someone: one more step, where to lock it (Nov 15), starting on the ability's usual lock
-    if (yes && needsLock(this.battle, s.ability, s.target)) {
-      sfx('confirm');
-      this.screen = { ...s, lock: s.lock ?? defaultLock(ABILITIES[s.ability]) };
-      return this.update(this.ui);
-    }
-    if (!yes) {
-      sfx('cancel');
-      if (ABILITIES[s.ability].range[1] === 0)
-        return this.back({ k: 'abilities', index: abilitiesOf(this.battle).indexOf(s.ability) });
-      this.screen = { k: 'map', command: 'act' };
-      return this.update(this.ui);
-    }
-    sfx('confirm');
-    await this.execute();
-  }
-
-  // the lock step's choice (click, or Enter on the focused one): the charge starts locked there
-  private async pickLock(on: Lock) {
-    if (this.screen.k !== 'confirm' || !this.screen.lock || this.busy) return;
-    sfx('confirm');
-    await this.execute(on);
   }
 
   // runs what the Ui has marked (move or act) and returns to the menu, on the next command that applies
-  private async execute(lock?: Lock) {
-    const { events, ui } = confirm(this.battle, this.ui, lock);
+  async execute(lock?: Lock) {
+    const { events, ui } = confirm(this.battle, this.turn.ui, lock);
     if (!events.length) return;
-    this.ui = ui;
+    this.turn.ui = ui;
     // fell to a counterattack while retreating: the turn passes by itself before the animation, as the AI's does, since
     // update's heroTurn reads the one acting (it threw on the dead one) and Battle.load refuses a save that still names it
     const fell = !this.battle.over && !this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor);
@@ -386,8 +193,8 @@ export class Game {
     this.save();
     if (this.battle.over) return this.finish();
     if (fell) return this.runEnemies();
-    this.screen = startScreen(this.battle);
-    this.cursorToActor();
+    this.turn.screen = startScreen(this.battle);
+    this.turn.cursorToActor();
     this.update(freshUi(this.battle));
   }
 
@@ -399,35 +206,19 @@ export class Game {
       `Pixel art: ${p.size ? `${p.size} px` : 'desligado'}`,
       `Pixel art: ${p.size ? `${p.size} px` : 'off'}`,
     );
-    this.update(this.ui);
+    this.update(this.turn.ui);
   }
 
-  private moveCursor(p: Pos) {
-    this.cursor = p;
-    this.scene.focusOn(p); // the camera follows the cursor, like FFT
-    this.update(hoverTile(this.battle, this.ui, p));
-  }
-
-  // cursor goes back to the acting unit (start of turn, after acting, undo)
-  private cursorToActor() {
-    this.cursor = this.battle.actor.pos;
-  }
-
-  // choosing where to move: the mouse picks the square of the acting unit's size centred under it, not the cell under it
-  private get pickSize() {
-    return this.screen.k === 'map' && this.ui.mode.k === 'move' ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1;
-  }
-
-  private get heroTurn() {
+  get heroTurn() {
     return !AUTO && !this.battle.over && this.battle.actor.team === 'hero';
   }
 
-  private update(ui: Ui) {
-    this.ui = ui;
+  update(ui: Ui) {
+    this.turn.ui = ui;
     if (isSurvival(this.battle.state.scenario))
       this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
-    const s = this.screen;
-    const { hl, ...m } = turnMarks(this.battle, s, ui, this.cursor, this.heroTurn && !this.busy);
+    const s = this.turn.screen;
+    const { hl, ...m } = turnMarks(this.battle, s, ui, this.turn.cursor, this.heroTurn && !this.busy);
     this.scene.setHighlights(hl);
     this.scene.setChargePreview(m.charge);
     this.scene.setCounters(m.counters);
@@ -442,7 +233,7 @@ export class Game {
       busy: this.busy,
       log: this.log,
       acting: this.acting,
-      cursor: this.cursor,
+      cursor: this.turn.cursor,
       ability: ui.mode.k === 'ability' ? ui.mode.id : null,
       face: (u) => this.expression(u),
     });
@@ -456,7 +247,7 @@ export class Game {
   private placeMenu() {
     if (!this.hud.menuOpen) return;
     const b = this.battle,
-      s = this.screen;
+      s = this.turn.screen;
     const foe = s.k === 'confirm' ? unitAt(b.state, s.target) : undefined;
     this.hud.place(this.scene.screenOf(b.actor.id), foe && foe.id !== b.actor.id ? this.scene.screenOf(foe.id) : null);
   }
@@ -470,7 +261,7 @@ export class Game {
   private async animate(events: BattleEvent[], enemy = false) {
     addEvents(this.tally, events, teamsOf(this.roster));
     this.busy = true;
-    this.update(this.ui);
+    this.update(this.turn.ui);
     // the faces react as each event plays, after its banner: a unit's new moods replace the ones it had
     // the roster keeps the fallen; the state, whoever was born mid-battle (Until Dawn)
     const defOf = (id: string) => this.battle.state.units.find((u) => u.id === id)?.def ?? this.roster[id]?.def ?? '';
@@ -489,23 +280,10 @@ export class Game {
     this.busy = false;
   }
 
-  private faceTo(p: Pos) {
-    const me = this.battle.actor;
-    // clicking the unit itself or the direction it already faces confirms and passes the turn (review of Nov 13: with only a mouse
-    // there was no way to end the turn, the click only rotated)
-    // measured from the unit's cell nearest the tile: from a 2x2 token's corner, a tile beside it read as a diagonal
-    const dir = facingTo(nearestTile(me, p), p);
-    if (footprint(me).some((c) => samePos(c, p)) || dir === me.facing) return void this.endTurn();
-    sfx('cursor');
-    this.battle.face(dir);
-    this.scene.sync(this.battle.state);
-    this.update(this.ui);
-  }
-
   // status window of the unit under the cursor (or of the acting unit), with dialog() like the other dialogs
-  private status() {
+  status() {
     const s = this.battle.state;
-    const id = unitAt(s, this.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit
+    const id = unitAt(s, this.turn.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit
     if (!id) return;
     const u = s.units.find((x) => x.id === id)!;
     dialog('status', unitName(u.def), [
@@ -513,16 +291,16 @@ export class Game {
     ]);
   }
 
-  private save() {
+  save() {
     store.set(this.sel.saveKey, this.battle.over ? '' : this.battle.save());
   }
 
-  private async endTurn() {
+  async endTurn() {
     // map with direction: before passing the turn, choose where to look (like FFT)
-    if (this.screen.k !== 'facing' && this.heroTurn && this.battle.actor.facing !== undefined) {
-      this.screen = { k: 'facing' };
-      this.cursorToActor();
-      return this.update(this.ui);
+    if (this.turn.screen.k !== 'facing' && this.heroTurn && this.battle.actor.facing !== undefined) {
+      this.turn.screen = { k: 'facing' };
+      this.turn.cursorToActor();
+      return this.update(this.turn.ui);
     }
     // charges that fire before the next turn (heroes' or enemies') play here
     const events = this.battle.endTurn();
@@ -537,13 +315,13 @@ export class Game {
       this.acting = this.battle.actor.def;
       this.scene.focusOn(this.battle.actor.pos);
       this.scene.pop(this.battle.actor.id);
-      this.update(this.ui);
+      this.update(this.turn.ui);
       await this.scene.wait(TIMING.enemyStart);
       await this.animate(playAiTurn(this.battle), true);
       // the state has already passed the turn (maybe to a hero): stays locked during the pause, otherwise the tap or key of this
       // window counted and was erased right after by freshUi (found by the keyboard-only test, Oct 25)
       this.busy = true;
-      this.update(this.ui); // shows the summary still with the name of who acted
+      this.update(this.turn.ui); // shows the summary still with the name of who acted
       await this.scene.wait(TIMING.enemyAfter);
       this.save();
     }
@@ -551,33 +329,23 @@ export class Game {
     this.busy = false;
     // ended (maybe on the actor's death, with no actor left to read): straight to the end, before the turn menu
     if (this.battle.over) return this.finish();
-    this.screen = startScreen(this.battle);
+    this.turn.screen = startScreen(this.battle);
     if (this.heroTurn) {
-      this.cursorToActor();
+      this.turn.cursorToActor();
       this.scene.focusOn(this.battle.actor.pos);
       this.scene.pop(this.battle.actor.id);
     }
     this.update(freshUi(this.battle));
   }
 
-  // rotates the acting unit 90 degrees clockwise: it is the choice of where to look before passing the turn (every map since Nov 13)
-  private face() {
-    const f = this.battle.actor.facing;
-    if (this.busy || !this.heroTurn || f === undefined) return;
-    this.battle.face((f + 1) % 4);
-    this.scene.sync(this.battle.state);
-    this.save();
-    this.update(this.ui);
-  }
-
-  private undo() {
+  undo() {
     if (!this.battle.undo()) return;
     sfx('cancel');
     this.log = ''; // the help line showed the undone action (review of Nov 13)
-    this.screen = startScreen(this.battle);
+    this.turn.screen = startScreen(this.battle);
     this.scene.sync(this.battle.state);
     this.save();
-    this.cursorToActor();
+    this.turn.cursorToActor();
     this.scene.focusOn(this.battle.actor.pos); // the camera had followed the cursor to the destination: goes back to the acting unit
     this.update(freshUi(this.battle));
   }
@@ -592,7 +360,7 @@ export class Game {
     this.resetTally();
     this.moods.clear();
     this.log = '';
-    this.screen = startScreen(this.battle);
+    this.turn.screen = startScreen(this.battle);
     this.scene.sync(this.battle.state);
     this.save();
     this.update(freshUi(this.battle));
