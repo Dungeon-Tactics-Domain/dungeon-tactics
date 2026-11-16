@@ -216,8 +216,18 @@ export function townMenu(extra?: HTMLElement) {
   const closeBeside = () => {
     for (const o of sideWindows(document.querySelectorAll('.overlay'), d.overlay)) o.dispatchEvent(new Event('close'));
   };
-  const go = (fn: () => void) => () => {
+  // the gold on its head band follows a buy, a sale or a recruit in the window beside it (they all go through a click);
+  // the listener goes when the menu closes (a close from elsewhere drops it at the next click)
+  const follow = () => {
+    if (d.overlay.isConnected) d.overlay.querySelector('.dialog-head .gold strong')!.textContent = String(townGold());
+    else removeEventListener('click', follow);
+  };
+  const stop = () => {
+    removeEventListener('click', follow);
     closeBeside();
+  };
+  const go = (fn: () => void) => () => {
+    stop();
     d.close();
     fn();
   };
@@ -268,15 +278,9 @@ export function townMenu(extra?: HTMLElement) {
       ),
     ],
     // closes back to the street; a window beside it closes first (only the topmost window takes Esc)
-    { onBack: closeBeside, note: goldNote(t('Ouro', 'Gold'), townGold()) },
+    { onBack: stop, note: goldNote(t('Ouro', 'Gold'), townGold()) },
   );
   d.overlay.classList.add('town-menu');
-  // the gold on its head band follows a buy, a sale or a recruit in the window beside it (they all go through a click)
-  const note = d.overlay.querySelector('.dialog-head .gold strong')!;
-  const follow = () => {
-    if (d.overlay.isConnected) note.textContent = String(townGold());
-    else removeEventListener('click', follow);
-  };
   addEventListener('click', follow);
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
