@@ -3,10 +3,12 @@
 // this file casts the town's party into the rooms and keeps the dt:crawl save.
 import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { TOWN } from '../../content/crawl/town.ts';
+import { poolOf } from '../../shared/battle/combat.ts';
 import { bonusOf } from '../../shared/battle/equipment.ts';
 import { HALF } from '../../shared/battle/half.ts';
 import type { Scenario } from '../../shared/battle/scenarios.ts';
 import type { BattleState } from '../../shared/battle/types.ts';
+import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import {
   cleared,
   type Expedition,
@@ -18,7 +20,7 @@ import {
 } from '../../shared/crawl/expedition.ts';
 import { roomGroup, roomId } from '../../shared/crawl/generate.ts';
 import { EQUIP_KEY, parseEquip } from '../chest.ts';
-import { buildDevScenario, slotsOf, unitFrom } from '../dev-roster.ts';
+import { buildDevScenario, type DevUnit, slotsOf, unitFrom } from '../dev-roster.ts';
 import { commandRow, dialog } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t, unitName } from '../i18n.ts';
@@ -32,16 +34,18 @@ import { type EndHero, enterButton, resultBoard } from './end-screens.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
 
-// the expedition room in play: who stands on each hero spawn (h0, h1…) and the life they enter with
+// the expedition room in play: who stands on each hero spawn (h0, h1…) and the life and mana they enter with (absent: full)
 export interface CrawlRoom {
   node: number;
-  heroes: Record<string, { id: string; hp: number }>;
+  heroes: Record<string, { id: string; hp: number; mana?: number }>;
 }
 
 export const savedExpedition = () => parseExpedition(store.json(CRAWL_KEY));
 const group = () => parseGroup(store.json(GROUP_KEY));
 // who goes, as the town's party has them (class, name, equipment); `ids` keeps the order of the sheets
 const crawlers = (ids: string[]) => heroesFor({ ...group(), deployed: ids }, parseEquip(store.json(EQUIP_KEY)));
+// the mana pool of a crawler's battle sheet (its class's, as buildDevScenario copies it); 0 without one
+const manaOf = (u: DevUnit) => UNIT_DEFS[u.base].vars?.mana ?? 0;
 
 // The generated room with the expedition party on its hero spawns and the enemies as sheets of their own: the developer
 // menu's path (dev-roster.ts), under the room's id so the mood still reads its theme. A member no longer in the group stays out
@@ -53,7 +57,12 @@ export function castRoom(room: Scenario, exp: Expedition, node: number): { scena
   // never above the sheet's life: the save is read from the browser (a max typed into dt:crawl gave a hero 999)
   const hp = (id: string, i: number) =>
     Math.min(exp.party.find((h) => h.id === id)!.hp, units[i].hp + bonusOf(units[i].items).hp);
-  const heroes = Object.fromEntries(ids.map((id, i) => [`h${i}`, { id, hp: hp(id, i) }]));
+  // the same for mana, against the sheet's pool now (a class changed in town meanwhile may have none)
+  const mana = (id: string, i: number) => {
+    const saved = exp.party.find((h) => h.id === id)!.mana;
+    return saved === undefined ? {} : { mana: Math.min(saved, manaOf(units[i])) };
+  };
+  const heroes = Object.fromEntries(ids.map((id, i) => [`h${i}`, { id, hp: hp(id, i), ...mana(id, i) }]));
   return { scenario, room: { node, heroes } };
 }
 
@@ -268,7 +277,11 @@ function lostScreen() {
 function depart() {
   const g = group();
   const units = crawlers(g.deployed);
-  const party = g.deployed.map((id, k) => ({ id, max: units[k].hp + bonusOf(units[k].items).hp }));
+  const party = g.deployed.map((id, k) => ({
+    id,
+    max: units[k].hp + bonusOf(units[k].items).hp,
+    manaMax: manaOf(units[k]),
+  }));
   const exp = startExpedition((Math.random() * 2 ** 31) | 0, party);
   store.set(CRAWL_KEY, JSON.stringify(exp));
   store.set(ROOM_KEY, '');
@@ -293,7 +306,8 @@ const partyList = (exp: Expedition) =>
       return el(
         'li',
         {},
-        `${m?.name ?? h.id}${m ? ` · ${unitName(m.cls)}` : ''} · ${t('vida', 'HP')} ${h.hp}/${h.max}`,
+        `${m?.name ?? h.id}${m ? ` · ${unitName(m.cls)}` : ''} · ${t('vida', 'HP')} ${h.hp}/${h.max}` +
+          (h.manaMax ? ` · ${t('mana', 'mana')} ${h.mana ?? h.manaMax}/${h.manaMax}` : ''),
       );
     }),
   );
@@ -369,13 +383,13 @@ export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
   const map = exp && expeditionMap(exp.seed);
   // another tab may have ended the expedition or this room meanwhile: a result for a room that is no longer open is ignored
   if (!exp || !map || !openNodes(map, exp.path).includes(room.node)) return null;
-  const left = Object.fromEntries(
-    Object.entries(room.heroes).flatMap(([spawn, h]) => {
-      const u = state.units.find((x) => x.id === spawn);
-      return u ? [[h.id, u.hp]] : [];
-    }),
-  );
-  const next = won ? winRoom(exp, room.node, left) : null;
+  const standing = Object.entries(room.heroes).flatMap(([spawn, h]) => {
+    const u = state.units.find((x) => x.id === spawn);
+    return u ? [[h.id, u] as const] : [];
+  });
+  const left = Object.fromEntries(standing.map(([id, u]) => [id, u.hp]));
+  const manaLeft = Object.fromEntries(standing.map(([id, u]) => [id, poolOf(u, 'mana')]));
+  const next = won ? winRoom(exp, room.node, left, manaLeft) : null;
   const done = !!next && cleared(map, next.path);
   store.set(CRAWL_KEY, next && !done ? JSON.stringify(next) : '');
   const node = map[room.node];

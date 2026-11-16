@@ -66,6 +66,7 @@
   --focus-band: linear-gradient(#3e66ad, #33599f); /* menu row under focus: lighter blue than the panel */
   --hp: #5ccf5f;
   --mp: #4f9cf0;
+  --sp: #f0884a; /* stamina bar (Nov 16): orange, apart from the CT amber; the ST label says it too */
   --ct: #e8b030;
   /* translucent band of the strike preview's "+N targets" line: dark enough for light text over the bright sky */
   --strike: rgba(5, 10, 24, 0.82);
@@ -1746,6 +1747,9 @@ button[hidden],
 }
 .gauge.mp {
   --bar: var(--mp);
+}
+.gauge.sp {
+  --bar: var(--sp);
 }
 .gauge.ct {
   --bar: var(--ct);

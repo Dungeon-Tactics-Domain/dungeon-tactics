@@ -1,18 +1,68 @@
 // Battle texts: the ability sheet, the summary of the last action, the attribute rows and the Status window sheet.
 // Pure (strings from the state), shared by the HUD, the party windows and the end of battle.
-import { ABILITIES } from '../shared/battle/abilities.ts';
+import { ABILITIES, type AbilityDef } from '../shared/battle/abilities.ts';
+import { poolOf } from '../shared/battle/combat.ts';
 import { jumpOf } from '../shared/battle/pathing.ts';
 import { rulesOf } from '../shared/battle/rules.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, UnitState } from '../shared/battle/types.ts';
-import { baseDef, dodgeOf, ELEMENTS, type Element, resistOf, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
+import {
+  baseDef,
+  dodgeOf,
+  ELEMENTS,
+  type Element,
+  RESOURCES,
+  resistOf,
+  UNIT_DEFS,
+  type UnitDef,
+} from '../shared/battle/units.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 
 const hpText = (u: UnitState) => `${u.hp}/${UNIT_DEFS[u.def].hp}`;
 export const range = (r: [number, number]) => (r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`);
 // the side under a unit's name (unit panel, strike strip, Status)
 export const sideName = (team: UnitState['team']) => (team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy'));
+
+// the counters an ability may spend (UnitState.vars): mana and stamina (Nov 16; the lab's words in both languages) and the
+// study's MP and stock
+const POOL_NAME: Record<string, () => string> = {
+  mana: () => 'mana',
+  stamina: () => 'stamina',
+  mp: () => 'MP',
+  potions: () => t('estoque', 'stock'),
+};
+const poolName = (k: string) => POOL_NAME[k]?.() ?? k;
+export const costText = (a: AbilityDef) => (a.cost ? `${a.cost[1]} ${poolName(a.cost[0])}` : '');
+// why a unit cannot pay for it, in words (the grayed ability row and the help line): "15 stamina short"
+export const shortOf = (u: UnitState, a: AbilityDef) =>
+  a.cost
+    ? t(
+        `faltam ${a.cost[1] - poolOf(u, a.cost[0])} de ${poolName(a.cost[0])}`,
+        `${a.cost[1] - poolOf(u, a.cost[0])} ${poolName(a.cost[0])} short`,
+      )
+    : '';
+// "Execute?": what it spends and what is left, paid now even on a charge (it fires later for free)
+export const spendNote = (u: UnitState, a: AbilityDef) =>
+  a.cost
+    ? t(
+        `Gasta ${costText(a)}: ${poolOf(u, a.cost[0])} → ${poolOf(u, a.cost[0]) - a.cost[1]}`,
+        `Spends ${costText(a)}: ${poolOf(u, a.cost[0])} → ${poolOf(u, a.cost[0]) - a.cost[1]}`,
+      )
+    : '';
+const regenText = (def: UnitDef, k: Resource) =>
+  def.regen?.[k] ? t(`+${def.regen[k]} de ${k} por turno`, `+${def.regen[k]} ${k} per turn`) : '';
+// the Status window's rows: "Mana · 45/60, +8 mana per turn"
+export const poolRows = (def: UnitDef, u: UnitState): [string, string][] =>
+  RESOURCES.filter((k) => def.vars?.[k]).map((k) => [
+    k === 'mana' ? 'Mana' : 'Stamina',
+    [`${poolOf(u, k)}/${def.vars![k]}`, regenText(def, k)].filter(Boolean).join(', '),
+  ]);
+// the party sheet's line under the bars: "+5 stamina per turn"
+export const regenLine = (def: UnitDef) =>
+  RESOURCES.map((k) => regenText(def, k))
+    .filter(Boolean)
+    .join(' · ');
 
 // ability sheet (submenu and status window)
 export function abilityDetail(id: string): string {
@@ -30,13 +80,7 @@ export function abilityDetail(id: string): string {
   if (a.push) parts.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
   if (a.needsSight) parts.push(t('precisa de visão', 'needs sight'));
   if (a.heightRange) parts.push(t('+1 de alcance por nível acima', '+1 range per level above'));
-  if (a.cost)
-    parts.push(
-      t(
-        `gasta ${a.cost[1]} de ${a.cost[0] === 'mp' ? 'MP' : 'estoque'}`,
-        `costs ${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : 'stock'}`,
-      ),
-    );
+  if (a.cost) parts.push(t(`gasta ${costText(a)}`, `costs ${costText(a)}`));
   // Nov 15: the player locks it on the tile or the character, and starting it costs half the movement left
   if (a.charge)
     parts.push(
@@ -141,6 +185,7 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
     [t('Lado', 'Side'), sideName(u.team)],
     [t('Vida', 'HP'), hpText(u)],
   ];
+  rows.push(...poolRows(def, u));
   if (u.vars?.mp !== undefined) rows.push(['MP', String(u.vars.mp)]);
   if (u.vars?.potions !== undefined) rows.push([t('Poções', 'Potions'), String(u.vars.potions)]);
   rows.push(

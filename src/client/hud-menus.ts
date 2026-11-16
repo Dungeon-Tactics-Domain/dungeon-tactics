@@ -1,7 +1,7 @@
 // The menus beside the acting unit (commands, the abilities submenu, "Execute?") and the help line on top. Each menu
 // sets its own `hidden` before anything else: BattleHud.menuOpen and its size cache read it right after.
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { abilityDetail } from './battle-text.ts';
+import { abilityDetail, costText, shortOf, spendNote } from './battle-text.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
   abilitiesOf,
@@ -23,7 +23,8 @@ const REASON: Record<string, () => string> = {
   sight: () => t('Sem linha de visão', 'No line of sight'),
   'no-target': () => t('Nenhum alvo nesta casa', 'No target on this tile'),
   unknown: () => t('Não dá para usar aqui', 'Cannot use here'),
-  spent: () => t('Acabou o estoque ou o MP', 'Out of stock or MP'),
+  // the grayed ability row already says how much is missing (shortOf); this is the sandbox's and an old save's way here
+  spent: () => t('Falta mana, stamina, MP ou estoque', 'Not enough mana, stamina, MP or stock'),
   water: () => t('Na água funda só dá para andar ou esperar', 'In deep water you can only move or wait'),
 };
 const COMMAND_NAME: Record<Command, () => string> = {
@@ -130,11 +131,11 @@ export function renderAbilities(box: HTMLElement, v: HudView, open: boolean, act
     menuHead(t('Habilidades', 'Abilities')),
     ...abilitiesOf(b).map((id, i) => {
       const a = ABILITIES[id];
-      const cost = a.cost
-        ? `${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : t('un.', 'pcs')}`
-        : a.charge
-          ? t(`${a.charge} tiq.`, `${a.charge} tk`)
-          : '';
+      const on = abilityEnabled(b, id);
+      // the cost and the charge ticks; grayed out, the row says what is missing (a disabled button says why)
+      const cost = on
+        ? [costText(a), a.charge ? t(`${a.charge} tiq.`, `${a.charge} tk`) : ''].filter(Boolean).join(' · ')
+        : shortOf(b.actor, a);
       return button(
         `item${i === s.index ? ' focus' : ''}`,
         [
@@ -143,7 +144,7 @@ export function renderAbilities(box: HTMLElement, v: HudView, open: boolean, act
           el('span', { class: 'item-cost' }, cost),
         ],
         () => act.ability(i),
-        { role: 'menuitem', disabled: !abilityEnabled(b, id) },
+        { role: 'menuitem', disabled: !on },
       );
     }),
   );
@@ -167,6 +168,7 @@ export function renderConfirm(box: HTMLElement, v: HudView, open: boolean, act: 
           ` ${forecastText(f)} · ${hpAfterText(f)}${f.ally ? t(' · ALIADO!', ' · ALLY!') : ''}`,
         ),
   );
+  if (a.cost) rows.push(el('p', { class: 'unit-note' }, spendNote(b.actor, a)));
   if (a.charge) rows.push(el('p', { class: 'unit-note' }, chargeNote(b, s)));
   const owed = counterNote(b, s.ability, preview);
   if (owed) rows.push(el('p', { class: 'unit-note' }, owed));

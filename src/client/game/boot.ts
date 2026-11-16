@@ -1,9 +1,11 @@
 // What the page opens, read from the URL: an expedition room, a crawl room, a study or developer battle, another map, or
 // the standalone battle behind the title (and the town).
 import { Battle } from '../../shared/battle/battle.ts';
+import { regen } from '../../shared/battle/combat.ts';
 import { subOf } from '../../shared/battle/grid.ts';
 import { HALF, HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
+import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
 import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
@@ -20,11 +22,18 @@ export interface BattleSelection {
   room: CrawlRoom | null; // expedition room in play (crawl.ts): who stands on each hero spawn and their life
 }
 
-// a new battle, with the expedition party's life carried in; Options -> Restart goes through here too, so restarting a
-// room does not refill the party
+// a new battle, with the expedition party's life and mana carried in (stamina starts full in every room); Options ->
+// Restart goes through here too, so restarting a room does not refill the party
 export function newBattle(scenario: Scenario, room: CrawlRoom | null = null): Battle {
   const b = Battle.start(scenario, (Math.random() * 2 ** 31) | 0);
-  for (const u of b.state.units) u.hp = (room && Object.hasOwn(room.heroes, u.id) && room.heroes[u.id].hp) || u.hp;
+  for (const u of b.state.units) {
+    const h = room && Object.hasOwn(room.heroes, u.id) ? room.heroes[u.id] : null;
+    if (!h) continue;
+    u.hp = h.hp || u.hp;
+    if (h.mana !== undefined && UNIT_DEFS[u.def].vars?.mana) u.vars = { ...u.vars, mana: h.mana };
+  }
+  // the first to act got its regen on the full pool Battle.start gave it: again on the carried one (a no-op when full)
+  regen(b.actor);
   return b;
 }
 

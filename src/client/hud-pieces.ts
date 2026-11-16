@@ -2,7 +2,8 @@
 // The battle HUD composes them; the town, the save slots and the result board reuse the bar and the still face.
 import { TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleState, UnitState } from '../shared/battle/types.ts';
-import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { poolOf } from '../shared/battle/combat.ts';
+import { RESOURCES, type Resource, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from './battle-face.ts';
 import { range, sideName } from './battle-text.ts';
 import { classOf } from './dev-roster.ts';
@@ -135,9 +136,18 @@ function classText(u: UnitState) {
 }
 
 // unit panel (the acting one bottom left, the one under the cursor bottom right, mirrored)
+// the bars of a unit's pools (mana, stamina), only those its sheet has; `u` absent: full (the party sheet)
+const POOL_GAUGE: Record<Resource, [cls: string, label: () => string]> = {
+  mana: ['mp', () => 'MP'],
+  stamina: ['sp', () => 'ST'],
+};
+export const poolGauges = (def: UnitDef, u?: UnitState) =>
+  RESOURCES.filter((k) => def.vars?.[k]).map((k) =>
+    gauge(POOL_GAUGE[k][0], POOL_GAUGE[k][1](), u ? poolOf(u, k) : def.vars![k], def.vars![k]),
+  );
 export function unitPanel(state: BattleState, u: UnitState, pic: HTMLElement) {
   const def = UNIT_DEFS[u.def];
-  const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp)];
+  const rows = [gauge('hp', t('Vida', 'HP'), u.hp, def.hp), ...poolGauges(def, u)];
   if (u.vars?.mp !== undefined) rows.push(gauge('mp', 'MP', u.vars.mp, def.vars?.mp ?? u.vars.mp));
   if (def.speed > 0) rows.push(gauge('ct', 'CT', Math.min(u.ct, TURN_THRESHOLD), TURN_THRESHOLD));
   const charge = state.charges.find((c) => c.unit === u.id);

@@ -19,6 +19,9 @@ Fernando's decision, Nov 12: "discard the current interfaces and recreate the in
   - Pure rules in `battle-face.ts` (sheet by class, `faceCues`, `expressionAt`, tested); moods kept by `Game` on the battle clock (`BattleScene.now`); frames moved every frame by `BattleHud.showFaces` without a redraw.
   - The end-of-battle board shows a hero card per hero who fought, the fallen included (`resultBoard` in `game/end-screens.ts`, heroes from `Game.endHeroes`: the roster, since the state drops the fallen), with a still face (`stillFace` in `hud-pieces.ts`) by `endExpression`.
   - Outside the battle the Party rows, the Sheet head and the Tavern's recruit buttons show the class's neutral still face (`town-ui.ts`). Units without a sheet keep `portrait()`.
+- **Mana and stamina** (Nov 16; the rules in `src/shared/CLAUDE.md`): the unit panels add an MP (mana, `--mp`) or ST (stamina, `--sp`) bar for the pool the sheet has (`poolGauges`), the Status window its left/max and regen (`poolRows`), the party sheet the full bars and the regen line (`regenLine`).
+  - The abilities submenu shows the cost and the charge ticks; a row it cannot pay is grayed out and says how much is missing (`shortOf`); "Execute?" says what it spends (`spendNote`); the expedition map lists each hero's mana.
+  - `newBattle` (`game/boot.ts`) sets the carried mana and gives the first actor the regen `Battle.start` spent on the full pool.
 - **Top middle:** the help line and, below it, the ability name banner.
 - **Beside the acting character** (Nov 13, Fernando's request: "beside the character like in FFT"): the Move · Act · Wait · Status menu, the submenu and the "Execute?" window with hit chance, effect and life before → after.
   - Since Nov 15 the submenu is at the lab kit's size: a head with the menu name, 60 px rows with the 32 px ability icon or a glass orb before the name, Act marked as picked while the submenu is open.

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { attrRows, unitStatus } from '../src/client/battle-text.ts';
+import {
+  abilityDetail,
+  attrRows,
+  regenLine,
+  shortOf,
+  spendNote,
+  unitStatus,
+} from '../src/client/battle-text.ts';
 import { cursorInfo, tileInfo } from '../src/client/tile-info.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
@@ -10,6 +18,19 @@ import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Status window and tile info (Nov 12, FFT style): what shows for each unit and tile
 registerFftStudy();
+
+describe('mana and stamina in words (Nov 16)', () => {
+  it('Status shows the pool left, its max and regen; the cost and what is missing read in words', () => {
+    const s = initialState(SCENARIOS.skirmish, 1);
+    const w = s.units.find((u) => u.id === 'h-warrior')!;
+    w.vars = { stamina: 20 };
+    expect(Object.fromEntries(unitStatus(s, 'h-warrior')).Stamina).toBe('20/50, +5 de stamina por turno');
+    expect(shortOf(w, ABILITIES.heavy_strike)).toBe('faltam 10 de stamina');
+    expect(spendNote(w, ABILITIES.shield_bash)).toBe('Gasta 10 stamina: 20 → 10');
+    expect(abilityDetail('heal')).toContain('gasta 20 mana');
+    expect(regenLine(UNIT_DEFS.mage)).toBe('+8 de mana por turno');
+  });
+});
 
 describe('status window', () => {
   it('game unit: side, health, CT, speed, movement, jump and abilities', () => {

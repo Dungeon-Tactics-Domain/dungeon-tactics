@@ -5,7 +5,7 @@ import { bonusOf, ITEMS, type ItemDef, SLOTS, type Slot } from '../shared/battle
 import { SUB } from '../shared/battle/half.ts';
 import { MAX_JUMP } from '../shared/battle/pathing.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { abilityDetail, attrRows, defenceRows } from './battle-text.ts';
+import { abilityDetail, attrRows, defenceRows, regenLine } from './battle-text.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
 import { unitFrom } from './dev-roster.ts';
 import { choice, dialog, priceRow } from './dialog.ts';
@@ -23,7 +23,7 @@ import {
   recruit,
   toggleDeploy,
 } from './group.ts';
-import { stillFace } from './hud-pieces.ts';
+import { poolGauges, stillFace } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { sfx } from './sound.ts';
@@ -364,6 +364,9 @@ export function openSheet(m: Member, back: () => void, at = -1) {
                   magPower: (def.magPower ?? 0) + b.magPower,
                 }).flatMap(([k, v]) => row(k, v)),
               ),
+              // the class's mana or stamina pool, full as it enters a battle, and its regen (Nov 16)
+              ...poolGauges(def),
+              regenLine(def) ? el('p', { class: 'party-stats' }, regenLine(def)) : null,
             ),
           ),
           el(
