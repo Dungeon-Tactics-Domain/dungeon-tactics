@@ -173,20 +173,25 @@ export function jingle(win: boolean) {
   });
 }
 
-// Speech beep (dialogue box, talk.ts): a short square-wave note per spoken letter, at the speaker's pitch, varying a little
+// Speech beep (dialogue box, talk.ts): a short soft (triangle, low-passed) note per spoken letter, at the speaker's pitch, varying a little
 // so it doesn't sound like an alarm. Synthesized, no file.
 export function blip(pitch: number) {
   if (!ctx || !settings.sfx) return;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   const t0 = ctx.currentTime;
-  osc.type = 'square';
+  // triangle through a low-pass (Nov 16, Fernando: the voices were "shrill and piercing"): the square's upper harmonics were
+  // the sting; the triangle is about 5 dB quieter, so the gain is 0.3 to keep the level of Nov 13's 0.2 square
+  osc.type = 'triangle';
   osc.frequency.value = pitch * (0.94 + Math.random() * 0.12);
-  // 0.2 (was 0.08, measured Nov 13): the beep sat at -33 dB, below the music (-31 dB), and the voice vanished in conversations;
-  // now -26 dB, above the music and below the file effects (-14 to -21 dB)
-  gain.gain.setValueAtTime(volume(settings.sfx) * 0.2, t0);
+  const soften = ctx.createBiquadFilter();
+  soften.type = 'lowpass';
+  soften.frequency.value = 1200;
+  // 0.2 square (was 0.08, measured Nov 13): the beep sat at -33 dB, below the music (-31 dB), and the voice vanished in
+  // conversations; -26 dB, above the music and below the file effects (-14 to -21 dB)
+  gain.gain.setValueAtTime(volume(settings.sfx) * 0.3, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
-  osc.connect(gain).connect(ctx.destination);
+  osc.connect(soften).connect(gain).connect(ctx.destination);
   osc.start(t0);
   osc.stop(t0 + 0.05);
 }
