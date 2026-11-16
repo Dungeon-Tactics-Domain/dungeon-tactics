@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { cursorInfo, tileInfo, unitStatus } from '../src/client/hud.ts';
+import { attrRows, cursorInfo, tileInfo, unitStatus } from '../src/client/hud.ts';
 import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Status window and tile info (Nov 12, FFT style): what shows for each unit and tile
@@ -40,6 +41,12 @@ describe('status window', () => {
       Esquiva: '0%',
       Elementos: 'sombra +50% · luz −25%',
     });
+  });
+
+  // the equipment's damage (power) still lands on every ability that hurts, so the sheet counts it in both powers
+  it('equipment power shows in both powers', () => {
+    const rows = Object.fromEntries(attrRows({ ...UNIT_DEFS.warrior, power: 10 }));
+    expect(rows).toMatchObject({ 'Poder físico': '10', 'Poder mágico': '10' });
   });
 
   it('FFT study: Brave, Faith, weapon, gained bonus and the charge in progress', () => {

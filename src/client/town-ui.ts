@@ -92,6 +92,15 @@ export function openParty(back?: () => void) {
           ` · ${unitName(m.cls)} · ${going ? t('vai à batalha', 'in battle') : t('no acampamento', 'at camp')}`,
         ),
         el('p', { class: 'party-stats' }, statsLine(u)),
+        // resistances and dodge (Nov 15); the sheet shows every attribute
+        el(
+          'p',
+          { class: 'party-stats' },
+          attrRows(UNIT_DEFS[m.cls])
+            .slice(2, 5)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(' · '),
+        ),
         el('p', { class: 'party-skills' }, u.abilities.map(abilityName).join(' · ')),
       ),
     );
