@@ -27,6 +27,7 @@ import meleeHit from '../scripts/sandbox/clips/melee-hit.json';
 import meleeMiss from '../scripts/sandbox/clips/melee-miss.json';
 import shieldBashFall from '../scripts/sandbox/clips/shield-bash-fall.json';
 import walkFlat from '../scripts/sandbox/clips/walk-flat.json';
+import wallBump from '../scripts/sandbox/clips/wall-bump.json';
 import frostPass from '../scripts/sandbox/frost-pass-ambush.json';
 import { ARENA } from '../src/client/dev/arena.ts';
 import {
@@ -511,6 +512,7 @@ const CLIPS = {
     shieldBashFall,
   ],
   death: [['attack h-archer shot', 'hit e-soldier 33', 'die e-soldier'], death],
+  'wall-bump': [['attack a-hero shield_bash', 'hit a-foe 15', 'bump a-foe'], wallBump],
   firebolt: [['attack h-mage firebolt', 'hit e-soldier 50'], firebolt],
   // the charge on the act, the blast on the wait, before anyone else's turn
   'blast-charge': [

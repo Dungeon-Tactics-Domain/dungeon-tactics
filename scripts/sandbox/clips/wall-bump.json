@@ -1,0 +1,38 @@
+{
+  "name": "wall-bump",
+  "scenario": "arena",
+  "seed": 1,
+  "units": {
+    "a-hero": {
+      "x": 9,
+      "y": 4,
+      "facing": 1
+    },
+    "a-foe": {
+      "x": 10,
+      "y": 4,
+      "facing": 3
+    }
+  },
+  "actor": "a-hero",
+  "camera": {
+    "zoom": 2.5,
+    "focus": {
+      "x": 10,
+      "y": 4
+    }
+  },
+  "steps": [
+    {
+      "act": {
+        "unit": "a-hero",
+        "ability": "shield_bash",
+        "target": {
+          "x": 10,
+          "y": 4
+        }
+      }
+    }
+  ],
+  "hide": ["tile", "queue", "help", "tools", "menu", "units", "strikes", "fps", "dialogs", "marks"]
+}
