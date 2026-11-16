@@ -30,7 +30,7 @@ const PAGES = [
   },
   {
     // home with no expedition: the walkable town (Nov 15), drawn with no window over it; Esc opens its menu: quest, shop,
-    // tavern, party and the title. The check presses Esc itself (the town's keys listen on the window)
+    // tavern, party and the title. The check presses Esc itself (the town's keys listen on the window) (its 5 rows plus the debug grid's two buttons: 7, 8 with an expedition)
     name: 'town',
     path: '/?home',
     ready: '.town-prompt',
@@ -39,7 +39,7 @@ const PAGES = [
         !document.querySelector('.overlay') &&
         [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl'));
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-      return bare && document.querySelectorAll('.town-menu .camp-list button').length === 5;
+      return bare && document.querySelectorAll('.town-menu .camp-list button').length === 7;
     },
   },
   {
@@ -64,7 +64,7 @@ const PAGES = [
       return (
         bare &&
         !!document.querySelector('.town-menu button.primary .continue-where') &&
-        document.querySelectorAll('.town-menu .camp-list button').length === 6
+        document.querySelectorAll('.town-menu .camp-list button').length === 8
       );
     },
   },
