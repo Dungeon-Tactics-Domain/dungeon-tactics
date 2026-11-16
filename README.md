@@ -11,6 +11,8 @@
 
 **Play it:** https://dungeon-tactics.fernandorffdev.com (desktop browser; keyboard, mouse or gamepad)
 
+**Stack:** TypeScript (strict) · Three.js · Vite · Vitest · Biome · GitHub Actions · Cloudflare Workers (static assets).
+
 Nothing is copied from the originals: rules, art direction, text and code are our own; models, sounds and music are free-licensed assets.
 
 ## Features
@@ -37,7 +39,9 @@ Nothing is copied from the originals: rules, art direction, text and code are ou
 - **Wave-field water.** A damped wave equation on a height grid: units splash, waves reflect off the banks and the current drags the surface.
 - **Procedural trees and props.** Broadleaf trees, pines, dead trees and crates built in code with vertex-painted colour, one draw call each.
 - **Greedy AI and an AI vs AI simulator.** `npm run sim -- beacon_hill 1000` plays the AI against itself over many seeds and reports win rate, length and survivors.
-- **Tested.** More than 600 Vitest tests; the rules engine has 98.7% line and 93.6% branch coverage (`npm run coverage`, measured on Nov 14, 2026). CI also runs a headless-browser smoke test of the production build.
+- **Procedural rooms that are checked before play.** `src/shared/crawl` builds a dungeon room from a seed (`?crawl=SEED&depth=N`) and `verify.ts` rejects rooms that cannot be played; `scripts/crawl-sheet.ts` renders a contact sheet of rooms with each verdict.
+- **Saves are a trust boundary.** Everything read back from `localStorage` is rebuilt field by field by a `parse*` function that falls back to a safe default on any doubt.
+- **Tested.** More than 1,000 Vitest tests (1,014 passing on Nov 16, 2026); the rules engine has 98.7% line and 93.6% branch coverage (`npm run coverage`, measured on Nov 14, 2026). CI also runs a headless-browser smoke test of the production build.
 
 ## Architecture
 
