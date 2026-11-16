@@ -11,6 +11,7 @@ import { store } from '../store.ts';
 import { isSurvival, survivalGoal } from '../survival.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { getTheme, setTheme, THEMES } from '../theme.ts';
+import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import { goHome, homeLabel } from './crawl.ts';
 import { devMenu } from './title.ts';
 
@@ -22,6 +23,21 @@ export interface OptionsContext {
   setPixel: (p: PixelSettings) => void;
   restart: () => void;
 }
+
+// The walkable town's debug grid (Nov 16, Fernando: off by default): here and in the town menu, since the town has no Options
+export const townGridChoice = (onPick: (on: boolean) => void = () => {}) =>
+  choice(
+    t('Grade da cidade', 'Town grid'),
+    [
+      [false, t('Desligada', 'Off')],
+      [true, t('Ligada', 'On')],
+    ],
+    parseTownGrid(store.json(GRID_KEY)),
+    (on) => {
+      store.set(GRID_KEY, JSON.stringify(on));
+      onPick(on);
+    },
+  );
 
 // Options (Nov 13, Fernando's request: "the menu could take up more of the screen width, with subsections"): wide window
 // with the sections in a left column (vertical choice()) and one section at a time on the right, so nothing scrolls far
@@ -154,6 +170,7 @@ export function optionsMenu(o: OptionsContext) {
           o.pixel().snap,
           (snap) => o.setPixel({ ...o.pixel(), snap }),
         ),
+        townGridChoice(),
       ],
     ],
     [

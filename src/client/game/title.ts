@@ -207,8 +207,8 @@ function howToPlay() {
       ...part(
         t('Cidade e expedição', 'Town and expedition'),
         t(
-          'Na cidade se anda com W A S D, as setas, o direcional ou o analógico do gamepad, ou clicando no chão. Enter ou A fala com quem está à frente ou entra pela porta; clicar numa pessoa ou casa leva até ela. Esc, H, Start, B ou o botão direito do mouse abrem o menu da cidade.',
-          'In town you walk with W A S D, the arrows, the gamepad’s d-pad or stick, or by clicking the ground. Enter or A talks to whoever is in front or goes in at a door; clicking a person or a house walks there. Esc, H, Start, B or the right mouse button open the town menu.',
+          'Na cidade se anda com W A S D, as setas, o direcional ou o analógico do gamepad, ou clicando no chão. Perto de alguém ou de uma porta aparece um balão com o que dá para fazer: Enter, A ou um clique no balão fala ou entra. Clicar numa pessoa ou casa só leva até ela. Esc, H, Start, B ou o botão direito do mouse abrem o menu da cidade.',
+          'In town you walk with W A S D, the arrows, the gamepad’s d-pad or stick, or by clicking the ground. Near someone or a door a balloon shows what you can do: Enter, A or a click on the balloon talks or goes in. Clicking a person or a house only walks there. Esc, H, Start, B or the right mouse button open the town menu.',
         ),
         t(
           'A Guilda dos Aventureiros abre o Grupo (quem vai e a classe de cada um), a Loja compra e vende, a Taverna recruta e o Portão da masmorra começa a quest. Ferreiro e Encantador ainda estão por vir.',

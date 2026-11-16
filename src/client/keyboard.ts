@@ -153,8 +153,8 @@ export const keyHelp = (): [string, string][] => [
   [
     t('Na cidade', 'In town'),
     t(
-      'W A S D anda enquanto segura; Enter fala com quem está à frente ou entra pela porta; o clique anda até lá; Esc · H abre o menu da cidade',
-      'W A S D walk while held; Enter talks to whoever is in front or goes in at the door; a click walks there; Esc · H opens the town menu',
+      'W A S D anda enquanto segura; Enter fala com quem está à frente ou entra pela porta (o balão mostra o quê); o clique só anda até lá; Esc · H abre o menu da cidade',
+      'W A S D walk while held; Enter talks to whoever is in front or goes in at the door (the balloon shows what); a click only walks there; Esc · H opens the town menu',
     ),
   ],
 ];

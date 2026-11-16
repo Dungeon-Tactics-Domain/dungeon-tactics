@@ -1,7 +1,7 @@
 // The walkable town's rules (Nov 15, Fernando's grill), pure and tested: the halved map from src/content/crawl/town.ts,
 // who stands where (the party, the townsfolk), which place a tile belongs to and where its door is, and where the walker
 // can go (the battle's own `reachable`). The scene and the input live in game/town.ts.
-import { GUILD_SPOTS, type Place, TOWN, TOWN_PLACES, TOWN_START } from '../content/crawl/town.ts';
+import { GUILD_SPOTS, type Place, type PlaceId, TOWN, TOWN_PLACES, TOWN_START } from '../content/crawl/town.ts';
 import { dist, type Grid, posKey, tileAt } from '../shared/battle/grid.ts';
 import { halfDef, halve, SUB } from '../shared/battle/half.ts';
 import { cellsOf, footprint, gap, jumpOf, reachable, restsOn, squareMoves, unitAt } from '../shared/battle/pathing.ts';
@@ -74,6 +74,41 @@ export const atDoor = (p: Pos, pl: Place) => gap(cellsOf(p, SUB), cellsOf(cell(p
 
 // close enough to talk to someone
 export const near = (p: Pos, u: UnitState) => gap(cellsOf(p, SUB), footprint(u)) <= REACH;
+
+// What the action button (Enter, A, a click on the balloon) does, by kind: each kind has its balloon symbol (UI_ICON in
+// icons.ts). `enter` is a place with no kind of its own
+export type TownAct = 'talk' | 'party' | 'shop' | 'tavern' | 'enter' | 'quest' | 'soon';
+const PLACE_ACT: Partial<Record<PlaceId, TownAct>> = { guild: 'party', shop: 'shop', tavern: 'tavern', gate: 'quest' };
+export type TownTarget = { act: TownAct } & ({ unit: UnitState } | { place: Place });
+
+// What the action button acts on: whoever stands in front (the way the walker last stepped), else the door the walker
+// stands at, else whoever is beside
+export function townTarget(state: BattleState, facing: Pos): TownTarget | null {
+  const me = state.units.find((u) => u.id === ME)!;
+  const centre = (p: Pos) => ({ x: p.x + SUB / 2, y: p.y + SUB / 2 });
+  const ahead = (u: UnitState) =>
+    (centre(u.pos).x - centre(me.pos).x) * facing.x + (centre(u.pos).y - centre(me.pos).y) * facing.y > 0;
+  const beside = state.units
+    .filter((u) => u.id !== ME && near(me.pos, u))
+    .sort((a, b) => dist(a.pos, me.pos) - dist(b.pos, me.pos));
+  const unit = beside.find(ahead);
+  if (unit) return { act: 'talk', unit };
+  const place = TOWN_PLACES.find((p) => atDoor(me.pos, p));
+  if (place) return { act: place.soon ? 'soon' : (PLACE_ACT[place.id] ?? 'enter'), place };
+  return beside[0] ? { act: 'talk', unit: beside[0] } : null;
+}
+
+// The debug grid (Nov 16, Fernando): off unless chosen in Options or the town menu
+export const GRID_KEY = 'dt:town-grid';
+export const parseTownGrid = (v: unknown) => v === true;
+// its dots: every cell of the ground people walk on
+export const floorCells = (grid: Grid): Pos[] =>
+  grid.tiles.flatMap((t, i) => (t.terrain === 'floor' ? [{ x: i % grid.width, y: Math.floor(i / grid.width) }] : []));
+// its 2x2 frames, corner cells: everyone's token and every place's doorstep
+export const townSquares = (state: BattleState): Pos[] => [
+  ...state.units.map((u) => u.pos),
+  ...TOWN_PLACES.map((pl) => cell(pl.door)),
+];
 
 // Every stop the walker reaches one cell at a time without passing anyone (the keyboard's and the pad's step), nearest
 // first, each with its way there. Clicks take these ways too, so the walker never walks through anyone (review of Nov 15).

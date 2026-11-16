@@ -234,6 +234,11 @@ export class BattleScene {
     this.marks.setHighlights(h);
   }
 
+  // the walkable town's debug grid (Marks.setDebugGrid)
+  setDebugGrid(g: { dots: Pos[]; squares: Pos[]; size: number } | null) {
+    this.marks.setDebugGrid(g);
+  }
+
   pop(unitId: string) {
     this.units.pop(unitId);
   }
@@ -294,6 +299,14 @@ export class BattleScene {
   // where the unit is on screen, for the HUD's command menu beside it
   screenOf(unitId: string): { x: number; y: number; r: number } | null {
     return this.units.screenOf(unitId);
+  }
+
+  // where the middle of a square of `size` cells is on the ground on screen, in canvas pixels like screenOf, with no body
+  // (r 0): the town's balloon on a building
+  screenAt(p: Pos, size: number): { x: number; y: number; r: number } {
+    const v = this.space.squareTop(p, size).project(this.camera);
+    const c = this.renderer.domElement;
+    return { x: ((v.x + 1) / 2) * c.clientWidth, y: ((1 - v.y) / 2) * c.clientHeight, r: 0 };
   }
 
   // slides the camera to the tile (the hero of the turn), without changing the zoom

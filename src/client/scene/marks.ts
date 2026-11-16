@@ -85,6 +85,7 @@ export class Marks {
   private readonly cursor = new THREE.Group();
   private readonly cursorGoal = new THREE.Vector3();
   private marked: THREE.Vector3[] = []; // marked tiles the tree crowns open a hole for (only on maps with trees)
+  private readonly markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
 
   // `trees`: the map has crowns with a cutout, so the marked tiles must stay visible through them
   constructor(
@@ -94,7 +95,7 @@ export class Marks {
     private readonly trees: boolean,
   ) {
     const grid = space.grid;
-    const markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
+    const markGeo = this.markGeo;
     const dotGeo = new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
     for (const i of grid.tiles.keys()) {
       const p = { x: i % grid.width, y: Math.floor(i / grid.width) };
@@ -333,6 +334,49 @@ export class Marks {
         frame.scale.set(size, 1, size);
       } else this.space.lay(frame, p);
     }
+  }
+
+  // Debug grid (the walkable town, Nov 16, Fernando): a faint dot on each of `dots` and a frame round each `size` square
+  // with its corner on `squares` (the space a token takes); null hides it. The dots are built on the first call only
+  private debugDots: THREE.InstancedMesh | null = null;
+  private readonly debugSquares: THREE.Mesh[] = [];
+  setDebugGrid(g: { dots: Pos[]; squares: Pos[]; size: number } | null) {
+    if (g && !this.debugDots) {
+      // the cursor frame's white, faint: it must not hide the ground it explains
+      const dots = new THREE.InstancedMesh(
+        new THREE.PlaneGeometry(0.12, 0.12).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.45, depthWrite: false }),
+        g.dots.length,
+      );
+      const m = new THREE.Matrix4();
+      g.dots.forEach((p, i) => {
+        const w = this.space.world(p);
+        dots.setMatrixAt(i, m.makeTranslation(w.x, w.y + 0.03, w.z));
+      });
+      this.scene.add(dots);
+      this.debugDots = dots;
+    }
+    if (this.debugDots) this.debugDots.visible = !!g;
+    const squares = g?.squares ?? [];
+    while (this.debugSquares.length < squares.length) {
+      const sq = new THREE.Mesh(
+        this.markGeo,
+        new THREE.MeshBasicMaterial({
+          color: MARK.move[0],
+          transparent: true,
+          depthWrite: false,
+          map: markTexture('frame'),
+        }),
+      );
+      this.scene.add(sq);
+      this.debugSquares.push(sq);
+    }
+    this.debugSquares.forEach((sq, i) => {
+      sq.visible = i < squares.length;
+      if (!sq.visible || !g) return;
+      sq.position.copy(this.space.squareTop(squares[i], g.size)).y += 0.025;
+      sq.scale.set(g.size, 1, g.size);
+    });
   }
 
   setHighlights(h: Highlights | null) {

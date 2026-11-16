@@ -168,8 +168,9 @@ export function questGate(name: string) {
 }
 
 // The town menu (Esc, Start, the corner button; the lab kit's command menu in the top right corner, Nov 15 mockups):
-// every place without walking there, the quest, Shop, Tavern and Party, and the way back to the title. Over the walkable town
-export function townMenu() {
+// every place without walking there, the quest, Shop, Tavern and Party, and the way back to the title. Over the walkable town.
+// `extra`: the town's own rows at the foot (its debug grid, game/town.ts, which this file cannot import)
+export function townMenu(extra?: HTMLElement) {
   // the window beside the menu, if any (its 'close' skips its onBack)
   const closeBeside = () => {
     for (const o of sideWindows(document.querySelectorAll('.overlay'), d.overlay)) o.dispatchEvent(new Event('close'));
@@ -222,6 +223,7 @@ export function townMenu() {
             location.search = '';
           }),
         ),
+        extra,
       ),
     ],
     // closes back to the street; a window beside it closes first (only the topmost window takes Esc)

@@ -110,11 +110,19 @@ music/battle_dark.ogg (battles)
   game-icons.net - https://game-icons.net - official repository https://github.com/game-icons/icons
   Licence read in the repository's license.txt: "Icons provided under the Creative Commons 3.0 BY" - https://creativecommons.org/licenses/by/3.0/
   Modification: black background removed and colour swapped for the theme's (currentColor); assembled into a sprite by scripts/assets/build-icons.mjs.
-  The sprite holds only the 4 interface symbols the code uses (UI_ICON in src/client/icons.ts):
+  The sprite holds only the interface symbols the code uses (UI_ICON in src/client/icons.ts):
     on-target: lorc/on-target.svg, Lorc (http://lorcblog.blogspot.com)
     anticlockwise-rotation: delapouite/anticlockwise-rotation.svg, Delapouite (http://delapouite.com)
     cog: lorc/cog.svg, Lorc (http://lorcblog.blogspot.com)
     tv: delapouite/tv.svg, Delapouite (http://delapouite.com)
+  The town's action balloon (since Nov 16, 2026; the same symbols the sprite held before Nov 14):
+    talk: skoll/talk.svg, Skoll
+    shop: delapouite/shop.svg, Delapouite (http://delapouite.com)
+    character: delapouite/character.svg, Delapouite (http://delapouite.com)
+    exit-door: delapouite/exit-door.svg, Delapouite (http://delapouite.com)
+    chalice-drops: lorc/chalice-drops.svg, Lorc (http://lorcblog.blogspot.com)
+    skull-crossed-bones: lorc/skull-crossed-bones.svg, Lorc (http://lorcblog.blogspot.com)
+    pocket-watch: skoll/pocket-watch.svg, Skoll
 
 == Ability icons (ui/fft/atlas-32.png and atlas-32.json, since Nov 15, 2026) ==
   24 pixel-art icons of 32 px (the 22 abilities, Move and Wait), approved by Fernando in the design lab on Nov 15.

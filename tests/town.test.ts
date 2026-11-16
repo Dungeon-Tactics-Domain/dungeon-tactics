@@ -1,20 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { changeClass, defaultGroup, GROUP_MAX, type Group } from '../src/client/group.ts';
+import { UI_ICON } from '../src/client/icons.ts';
 import { faceOf } from '../src/client/talk.ts';
 import { PAINT } from '../src/client/terrain.ts';
 import {
   atDoor,
   castParty,
   cell,
+  floorCells,
   ME,
   memberUnit,
   near,
+  parseTownGrid,
   placeAt,
   route,
   steps,
   strollPath,
+  type TownAct,
   townScenario,
+  townSquares,
   townState,
+  townTarget,
 } from '../src/client/town-map.ts';
 import { GUILD_SPOTS, TOWN, TOWN_PLACES, TOWN_START, TOWNSFOLK } from '../src/content/crawl/town.ts';
 import { posKey, tileAt } from '../src/shared/battle/grid.ts';
@@ -160,6 +166,42 @@ describe('the walkable town (src/content/crawl/town.ts, town-map.ts)', () => {
     const next = { ...g, deployed: g.deployed.slice(1) };
     expect(castParty(state, next)).toContain(ME);
     expect(state.units.find((u) => u.id === ME)).toMatchObject({ def: halfDef(g.members[1].cls), pos: walker.pos });
+  });
+
+  it('acts on whoever stands in front, else the door, else whoever is beside, each kind with its balloon symbol', () => {
+    const state = party();
+    const me = state.units.find((u) => u.id === ME)!;
+    const hugo = state.units.find((u) => u.id === 'f-smith')!;
+    me.pos = cell(place('tavern').door);
+    expect(townTarget(state, { x: 0, y: -1 })).toMatchObject({ act: 'tavern', place: place('tavern') });
+    // someone in front wins over the door
+    hugo.pos = { x: me.pos.x, y: me.pos.y - SUB };
+    expect(townTarget(state, { x: 0, y: -1 })).toMatchObject({ act: 'talk', unit: hugo });
+    // behind the walker: the door first, someone beside only off it
+    expect(townTarget(state, { x: 0, y: 1 })).toMatchObject({ act: 'tavern' });
+    me.pos = { x: me.pos.x + 2 * SUB, y: me.pos.y };
+    hugo.pos = { x: me.pos.x, y: me.pos.y - SUB };
+    expect(townTarget(state, { x: 0, y: 1 })).toMatchObject({ act: 'talk', unit: hugo });
+    hugo.pos = { x: 0, y: 0 };
+    expect(townTarget(state, { x: 0, y: 1 })).toBeNull();
+    state.units = [me]; // nobody by the doors
+    const actAt = (id: string) => {
+      me.pos = cell(place(id).door);
+      return townTarget(state, { x: 0, y: 1 })?.act;
+    };
+    expect(TOWN_PLACES.map((p) => actAt(p.id))).toEqual(['quest', 'party', 'soon', 'shop', 'tavern', 'soon']);
+    for (const act of ['talk', 'party', 'shop', 'tavern', 'enter', 'quest', 'soon'] as TownAct[])
+      expect(UI_ICON[act], act).toBeTruthy();
+  });
+
+  it('frames everyone and every doorstep on the debug grid, dotted on the walkable ground, off by default', () => {
+    const state = party();
+    expect(townSquares(state)).toEqual([...state.units.map((u) => u.pos), ...TOWN_PLACES.map((p) => cell(p.door))]);
+    const dots = floorCells(sc.grid);
+    expect(dots).toContainEqual(cell(TOWN_START));
+    expect(dots.every((p) => tileAt(sc.grid, p).terrain === 'floor')).toBe(true);
+    expect([null, 'true', 1, {}].map(parseTownGrid)).toEqual([false, false, false, false]);
+    expect(parseTownGrid(true)).toBe(true);
   });
 
   it('gives every townsperson a painted face and something to say in both languages', () => {

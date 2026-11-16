@@ -51,12 +51,20 @@ export function icon(id: string): SVGSVGElement {
   return svg;
 }
 
-// the 4 interface symbols kept in public/icons.svg (game-icons.net, credited in public/CREDITS.txt)
+// the interface symbols kept in public/icons.svg (game-icons.net, credited in public/CREDITS.txt); the second row is the
+// town's action balloon, one per kind of `townAct` (town-map.ts)
 export const UI_ICON = {
   undo: 'anticlockwise-rotation',
   menu: 'cog',
   recenter: 'on-target',
   pixel: 'tv',
+  talk: 'talk',
+  party: 'character',
+  shop: 'shop',
+  tavern: 'chalice-drops', // a goblet: the sprite has no mug
+  enter: 'exit-door',
+  quest: 'skull-crossed-bones', // the dungeon behind the gate
+  soon: 'pocket-watch', // comes later
 };
 
 // Ability icons (Nov 15, Fernando approved the 32 px set): one 6x4 atlas of 32 px cells, in the order of its .json (abilities,

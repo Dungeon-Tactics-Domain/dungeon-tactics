@@ -1769,6 +1769,25 @@ button[hidden],
 .cursor-note[hidden] {
   display: none;
 }
+/* the town's action balloon (Nov 16, Fernando): a panel over what Enter or A acts on, its kind's symbol and the key;
+   game/town.ts sets left and top every frame, the bottom middle sits on that point */
+.town-act {
+  padding: 6px 10px;
+  transform: translate(-50%, -100%);
+}
+.town-act:not(:disabled):active {
+  transform: translate(-50%, calc(-100% + 2px));
+}
+.town-act .gi {
+  width: 28px;
+  height: 28px;
+}
+.town-act .hint {
+  margin-left: 0;
+}
+.town-act[hidden] {
+  display: none;
+}
 @keyframes pop {
   0% {
     transform: translate(-50%, -50%) scale(0.6);
