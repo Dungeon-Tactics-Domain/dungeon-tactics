@@ -3,7 +3,7 @@
 // the live keys after writing the live game back into its own slot, so nothing is lost. Settings (language, sound, theme,
 // camera) and the standalone battles' saves stay outside the slots. Pure and tested; the window is game/saves-ui.ts.
 import { expeditionMap, openNodes, parseExpedition } from '../shared/crawl/expedition.ts';
-import { CHEST_KEY, EQUIP_KEY, parseChest } from './chest.ts';
+import { CHEST_KEY, EQUIP_KEY, parseChest, startingEquip } from './chest.ts';
 import { GROUP_KEY, type Job, parseGroup } from './group.ts';
 
 export const SAVES_KEY = 'dt:saves';
@@ -108,11 +108,15 @@ function switchTo(s: Saves, m: Manifest, id: number | null, data: Data) {
   return write(s, { ...m, active: id });
 }
 
-// New game: the live game stays in its slot and a clean game starts in a new slot, listed at once (a fresh town writes nothing)
+// New game: the live game stays in its slot and a clean game starts in a new slot, listed at once, with 0 gold and only
+// the story members' weapons (Nov 16, slice 3; written here, so a save without them never gets them)
 export function newGame(s: Saves, now: number) {
   const m = readSaves(s);
   const id = nextId(m);
-  return switchTo(s, { ...m, slots: [...m.slots, { id, data: {} }] }, id, { [PLAYED_KEY]: String(now) });
+  return switchTo(s, { ...m, slots: [...m.slots, { id, data: {} }] }, id, {
+    [EQUIP_KEY]: JSON.stringify(startingEquip()),
+    [PLAYED_KEY]: String(now),
+  });
 }
 
 export function loadSlot(s: Saves, id: number) {

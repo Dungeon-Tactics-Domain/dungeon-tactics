@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CHEST_MAX } from '../src/client/chest.ts';
 import {
   changeClass,
   DEPLOY_MAX,
@@ -64,6 +65,10 @@ describe('party', () => {
     expect(out.group.members.some((m) => m.id === 'r1')).toBe(false);
     expect(out.eq).toEqual({});
     expect(out.chest.items).toEqual(['w1']);
+    // a chest with no room for the recruit's pieces keeps the recruit: the pieces would be lost on the next load
+    const full = { ...r.chest, items: Array<string>(CHEST_MAX).fill('hood') };
+    expect(dismiss(r.group, { r1: { main: 'w1' } }, full, 'r1')).toBeNull();
+    expect(dismiss(r.group, {}, full, 'r1')).not.toBeNull();
   });
 
   it('the saved group only accepts what it knows; the story characters always return', () => {

@@ -4,7 +4,7 @@
 // among JOBS, and up to 4 go to battle (the maps' starting tiles). The story members and the recruit names are data in
 // src/content/party.ts.
 import { JOBS, type Job, type Member, RECRUIT_NAMES, STORY } from '../content/party.ts';
-import type { Chest, Equip } from './chest.ts';
+import { CHEST_MAX, type Chest, type Equip } from './chest.ts';
 import { type DevUnit, unitFrom } from './dev-roster.ts';
 
 // the party's types are data in src/content/party.ts (the engine side never imports the client)
@@ -17,7 +17,7 @@ export interface Group {
 export const GROUP_KEY = 'dt:party';
 export const GROUP_MAX = 8; // design cap (section 3)
 export const DEPLOY_MAX = 4; // the maps have 4 hero starting tiles
-export const RECRUIT_COST = 200; // initial number: the shop's items cost 100 to 240
+export const RECRUIT_COST = 200; // initial number: the shop's common pieces cost 100 to 150
 const NAME_MAX = 16; // a recruit's name in the saved party
 
 export const defaultGroup = (): Group => ({ members: STORY.map((m) => ({ ...m })), deployed: STORY.map((m) => m.id) });
@@ -66,7 +66,7 @@ export function recruit(g: Group, chest: Chest, cls: Job): { group: Group; chest
   return { group: { members: [...g.members, m], deployed }, chest: { ...chest, gold: chest.gold - RECRUIT_COST } };
 }
 
-// dismisses a recruit (the story ones stay); their equipment returns to the chest
+// dismisses a recruit (the story ones stay); their equipment returns to the chest, so null when the chest has no room
 export function dismiss(
   g: Group,
   eq: Equip,
@@ -77,6 +77,7 @@ export function dismiss(
   if (!m?.recruit) return null;
   const { [id]: gear, ...rest } = eq;
   const back = Object.values(gear ?? {}).filter((x): x is string => !!x);
+  if (chest.items.length + back.length > CHEST_MAX) return null;
   const deployed = g.deployed.filter((x) => x !== id);
   return {
     group: {

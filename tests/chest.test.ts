@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { buy, CHEST_KEY, EQUIP_KEY, equip, parseChest, parseEquip, sell, startingEquip } from '../src/client/chest.ts';
+import {
+  buy,
+  CHEST_KEY,
+  CHEST_MAX,
+  EQUIP_KEY,
+  equip,
+  parseChest,
+  parseEquip,
+  sell,
+  startingEquip,
+} from '../src/client/chest.ts';
 import { loadSlot, newGame } from '../src/client/saves.ts';
 
 // a browser's storage, as saves.ts reads it
@@ -45,6 +55,48 @@ describe('chest and equipment', () => {
     expect(parseEquip(read(s, EQUIP_KEY))).toEqual(startingEquip());
     // once saved, an empty hand stays empty: the weapon does not come back
     expect(parseEquip({ warrior: {} })).toEqual({ warrior: {} });
+  });
+
+  it('a game already going without the equipment key, or with a broken one, gets no free weapons', () => {
+    // a slot from before Nov 16 with a party and gold but no dt:equip, and one whose dt:equip is not JSON
+    for (const equipRaw of [undefined, '{broken']) {
+      const s = browser({
+        'dt:saves': JSON.stringify({
+          active: 2,
+          slots: [
+            {
+              id: 1,
+              data: {
+                'dt:party': '{"deployed":["mage"]}',
+                [CHEST_KEY]: '{"gold":80}',
+                ...(equipRaw ? { [EQUIP_KEY]: equipRaw } : {}),
+              },
+            },
+            { id: 2, data: {} },
+          ],
+        }),
+      });
+      expect(loadSlot(s, 1)).toBe(true);
+      expect(parseEquip(read(s, EQUIP_KEY))).toEqual({});
+    }
+    expect(parseEquip(null)).toEqual({});
+  });
+
+  it('a "__proto__" member in the save is dropped, not made the prototype', () => {
+    const eq = parseEquip(JSON.parse('{"__proto__":{"main":"iron_blade"},"mage":{"main":"ash_staff"}}'));
+    expect(Object.getPrototypeOf(eq)).toBe(Object.prototype);
+    expect(eq).toEqual({ mage: { main: 'ash_staff' } });
+    expect(Object.keys(eq)).toEqual(['mage']);
+  });
+
+  it('the chest keeps CHEST_MAX pieces: buying or taking a piece off stops there, a swap still works', () => {
+    const full = { gold: 999, items: Array<string>(CHEST_MAX).fill('hood') };
+    expect(parseChest({ ...full, items: [...full.items, 'hood'] }).items).toHaveLength(CHEST_MAX);
+    expect(buy(full, 'iron_blade')).toBeNull(); // the gold stays: the piece would be lost on the next load
+    expect(buy({ ...full, items: full.items.slice(1) }, 'iron_blade')?.items).toHaveLength(CHEST_MAX);
+    const eq = { warrior: { head: 'iron_helm' } };
+    expect(equip(full, eq, 'warrior', 'head', null)).toBeNull();
+    expect(equip(full, eq, 'warrior', 'head', 'hood')?.chest.items).toHaveLength(CHEST_MAX);
   });
 
   it('the old 3-slot save maps every piece to its kind, live or in a save slot', () => {

@@ -10,19 +10,22 @@ export interface Chest {
   items: string[];
 }
 export type Equip = Record<string, Loadout>;
+// the loose pieces the chest keeps: parseChest drops the rest, so buying, unequipping and dismissing stop here instead
+// of charging for a piece the next load would lose
+export const CHEST_MAX = 99;
 
 export function parseChest(raw: unknown): Chest {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const gold =
     Number.isInteger(r.gold) && (r.gold as number) >= 0 && (r.gold as number) <= 999999 ? (r.gold as number) : 0;
   const items = Array.isArray(r.items)
-    ? r.items.filter((i): i is string => typeof i === 'string' && Object.hasOwn(ITEMS, i)).slice(0, 99)
+    ? r.items.filter((i): i is string => typeof i === 'string' && Object.hasOwn(ITEMS, i)).slice(0, CHEST_MAX)
     : [];
   return { gold, items };
 }
 
-// No equipment saved yet is a new game (New game starts an empty slot and writes nothing): each story member holds the
-// common weapon of their class. Once saved, an unequipped hand stays empty
+// New game writes it (saves.ts newGame): each story member holds the common weapon of their class. A game without the key
+// (one from before, or a broken save) gets nothing, so no load hands out weapons again
 export const startingEquip = (): Equip =>
   Object.fromEntries(Object.entries(STARTING_WEAPON).map(([id, w]) => [id, { main: w }]));
 
@@ -30,11 +33,11 @@ export const startingEquip = (): Equip =>
 // Nov 16 (weapon, armor, accessory) land on main, body, legs or an accessory with nothing lost, in the live keys and in
 // a save slot's copy alike, since both are read here
 export function parseEquip(raw: unknown): Equip {
-  if (raw === null) return startingEquip();
   const out: Equip = {};
-  if (typeof raw !== 'object') return out;
+  if (!raw || typeof raw !== 'object') return out;
   for (const [base, l] of Object.entries(raw as Record<string, unknown>)) {
-    if (!l || typeof l !== 'object') continue;
+    // a crafted "__proto__" key would set the result's prototype instead of a member's loadout
+    if (base === '__proto__' || !l || typeof l !== 'object') continue;
     const load: Loadout = {};
     for (const [key, id] of Object.entries(l as Record<string, unknown>)) {
       const it = typeof id === 'string' && Object.hasOwn(ITEMS, id) ? ITEMS[id] : undefined;
@@ -50,7 +53,7 @@ export function parseEquip(raw: unknown): Equip {
 // lab's rares and epics only drop)
 export function buy(chest: Chest, id: string): Chest | null {
   const it = ITEMS[id];
-  return it?.rarity === 'common' && chest.gold >= it.price
+  return it?.rarity === 'common' && chest.gold >= it.price && chest.items.length < CHEST_MAX
     ? { gold: chest.gold - it.price, items: [...chest.items, id] }
     : null;
 }
@@ -75,6 +78,7 @@ export function equip(
   if (id) items.splice(items.indexOf(id), 1);
   const old = eq[base]?.[slot];
   if (old) items.push(old);
+  if (items.length > CHEST_MAX) return null; // only taking a piece off into a full chest
   const load: Loadout = { ...eq[base] };
   if (id) load[slot] = id;
   else delete load[slot];
