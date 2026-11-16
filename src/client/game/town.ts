@@ -315,7 +315,7 @@ class Town {
   }
 
   // A townsperson ambles to a free spot near home every few seconds (cosmetic, so Math.random), never onto the walker;
-  // stops while a window is open or while being talked to
+  // stays put while a window is open, while being talked to or while the walker stands beside them
   private async stroll(f: Townsfolk) {
     const id = `f-${f.id}`;
     const home = cell(f.home);
@@ -324,6 +324,8 @@ class Town {
       if (windowOpen() || this.talking === id) continue;
       const u = this.state.units.find((x) => x.id === id);
       if (!u) return;
+      // beside the walker, wait to be talked to: they wandered off while the prompt still offered to talk to them
+      if (this.near(this.me.pos, u)) continue;
       const stops = [...reachable(this.grid, this.state, id, STROLL).values()].filter(
         (s) => dist(s.pos, home) <= STROLL && gap(cellsOf(s.pos, SUB), footprint(this.me)) > REACH,
       );
