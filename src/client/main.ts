@@ -4,20 +4,12 @@
 import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import { playAiTurn } from '../shared/battle/ai.ts';
 import { Battle } from '../shared/battle/battle.ts';
-import { dist, facingTo, inBounds, posKey, samePos, subOf } from '../shared/battle/grid.ts';
-import {
-  cellsOf,
-  farCells,
-  footprint,
-  nearestTile,
-  shotStop,
-  sightEnds,
-  squareH,
-  unitAt,
-} from '../shared/battle/pathing.ts';
+import { facingTo, inBounds, posKey, samePos } from '../shared/battle/grid.ts';
+import { cellsOf, farCells, footprint, nearestTile, shotStop, sightEnds, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
+import { beforeEvent } from './before-event.ts';
 import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import {
   abilitiesOf,
@@ -33,7 +25,6 @@ import {
 } from './command.ts';
 import { dialog, padDialog } from './dialog.ts';
 import { fpsCounter } from './fps.ts';
-import { lookOf } from './fx.ts';
 import { type BattleSelection, newBattle, selectBattle } from './game/boot.ts';
 import { finishRoom } from './game/crawl.ts';
 import { battleEndScreen, confetti } from './game/end-screens.ts';
@@ -42,7 +33,7 @@ import { titleScreen } from './game/title.ts';
 import { bootTown } from './game/town.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
 import { BattleHud, eventLog, unitStatus } from './hud.ts';
-import { abilityName, t, unitName } from './i18n.ts';
+import { t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import {
   aimMark,
@@ -50,7 +41,6 @@ import {
   confirm,
   facingHighlights,
   freshUi,
-  type Highlights,
   highlights,
   hoverTile,
   selectMode,
@@ -59,13 +49,12 @@ import {
 } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction, keyAction } from './keyboard.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings, parsePixel } from './pixel-settings.ts';
-import { rampLink } from './scene/space.ts';
 import { BattleScene } from './scene.ts';
-import { jingle, type Sfx, sfx } from './sound.ts';
+import { jingle, sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survivalGoal, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
-import { isJump, pace, stepMs, TIMING } from './timing.ts';
+import { pace, TIMING } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
 
 // Test (localhost only): ?auto=1 makes the AI play the heroes too, to check the battle end and the way home without
@@ -578,7 +567,7 @@ export class Game {
     const defOf = (id: string) => this.battle.state.units.find((u) => u.id === id)?.def ?? this.roster[id]?.def ?? '';
     const cues = faceCues(events, (id) => UNIT_DEFS[defOf(id)]?.hp ?? 0);
     await this.scene.playEvents(events, this.battle.state, async (e) => {
-      await this.beforeEvent(e, enemy);
+      await beforeEvent(e, enemy, this.battle, this.scene, this.hud);
       const now = this.scene.now;
       for (const [id, m] of cues[events.indexOf(e)])
         this.moods.set(id, [
@@ -589,95 +578,6 @@ export class Game {
     this.hud.banner(null);
     this.log = eventLog(events, this.battle.state) || this.log;
     this.busy = false;
-  }
-
-  // FFT steps before each event: the enemy shows where it is going before moving, and every strike shows the ability name
-  // in a banner at the top with the hit area marked (timings in timing.ts)
-  // Sound for each event (before its animation): step by step, strike in the air, hit, miss, heal, charge, fall
-  private sound(e: BattleEvent) {
-    const MELEE = new Set(['slash', 'heavy', 'stab', 'impact', 'spin', 'dash', 'debuff']);
-    const BY_EVENT: Partial<Record<BattleEvent['k'], Sfx>> = {
-      hit: 'hit',
-      bump: 'hit',
-      fall: 'hit',
-      spike: 'hit',
-      miss: 'miss',
-      heal: 'heal',
-      charge: 'charge',
-      fizzle: 'miss',
-      die: 'die',
-    };
-    if (e.k === 'move') {
-      // step at the start of each tile walked; on a jump, the sound goes on landing (same timings as the scene, stepMs)
-      const size = UNIT_DEFS[this.battle.state.units.find((u) => u.id === e.unit)?.def ?? '']?.size ?? 1;
-      const h = (i: number) => squareH(this.battle.grid, e.path[i], size);
-      let at = 0;
-      for (let i = 1; i < e.path.length; i++) {
-        // ramp: walking, at the step pace (the same as scene/units.ts)
-        const dh = rampLink(this.battle.grid, e.path[i - 1], e.path[i]) ? 0 : h(i) - h(i - 1),
-          tiles = dist(e.path[i - 1], e.path[i]) / subOf(this.battle.grid),
-          ms = stepMs(dh, tiles);
-        void this.scene.wait(at + (isJump(dh, tiles) ? ms - TIMING.jumpLand : 0)).then(() => sfx('step'));
-        at += ms;
-      }
-    } else if (e.k === 'attack') {
-      const fx = lookOf(e.ability).fx;
-      sfx(
-        MELEE.has(fx)
-          ? 'swing'
-          : fx === 'fire' || fx === 'blast'
-            ? 'fire'
-            : ['heal', 'buff', 'wind'].includes(fx)
-              ? 'spell'
-              : 'throw',
-      );
-    } else if (BY_EVENT[e.k]) sfx(BY_EVENT[e.k]!);
-  }
-
-  private async beforeEvent(e: BattleEvent, enemy: boolean) {
-    // the enemy's steps play after the cursor shows the destination, along with the walk
-    // the strike sound comes out with the gesture, after the name banner (Nov 13, review: it played ~0.9 s earlier)
-    if (!(e.k === 'move' && enemy) && e.k !== 'attack') this.sound(e);
-    const show = async (hl: Highlights, ms: number) => {
-      this.scene.setHighlights(hl);
-      await this.scene.wait(ms);
-      this.scene.setHighlights(null);
-    };
-    if (e.k === 'move' && enemy) {
-      const to = e.path.at(-1)!;
-      const size = UNIT_DEFS[this.battle.state.units.find((u) => u.id === e.unit)?.def ?? '']?.size ?? 1;
-      this.scene.setCursor(to, size);
-      await show(
-        {
-          tiles: cellsOf(to, size).map((pos) => ({ pos, kind: 'target' as const })),
-          path: e.path.slice(1),
-          preview: null,
-          size,
-        },
-        TIMING.enemyDestination,
-      ); // without the dot under the walker
-      this.scene.setCursor(null);
-      this.sound(e);
-    } else if (e.k === 'attack') {
-      const a = ABILITIES[e.ability];
-      const me = this.battle.state.units.find((u) => u.id === e.unit);
-      if (me) this.scene.focusOn(me.pos, e.target);
-      const area = [
-        e.target,
-        ...this.allTiles().filter((p) => a.radius > 0 && dist(p, e.target) <= a.radius && !samePos(p, e.target)),
-      ];
-      this.hud.banner(abilityName(e.ability));
-      await show(
-        { tiles: area.map((pos, i) => ({ pos, kind: i ? 'area' : 'target' })), path: null, preview: null },
-        TIMING.banner,
-      );
-      this.sound(e);
-    }
-  }
-
-  private allTiles(): Pos[] {
-    const g = this.battle.grid;
-    return Array.from({ length: g.width * g.height }, (_, i) => ({ x: i % g.width, y: Math.floor(i / g.width) }));
   }
 
   private faceTo(p: Pos) {

@@ -54,6 +54,7 @@ parseGrid and withRamps (grid.ts).
 
 - `src/client/main.ts` — Game: the entry point; wires rules, scene, HUD and input and owns the turn loop.
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
+- `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
 - `src/client/town-ui.ts` — the town's windows: Party with each member's sheet, Tavern (recruits) and Shop.
 - `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid.
 - `src/client/dev-menu.ts` — developer menu screen (map, cast, JSON import/export); rules in dev-roster.ts.

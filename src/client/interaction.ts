@@ -110,7 +110,7 @@ export function confirm(b: Battle, ui: Ui, lock?: Lock): { events: BattleEvent[]
   return { events, ui: events.length && alive ? freshUi(b) : ui };
 }
 
-function allTiles(b: Battle): Pos[] {
+export function allTiles(b: Battle): Pos[] {
   const out: Pos[] = [];
   for (let y = 0; y < b.grid.height; y++) for (let x = 0; x < b.grid.width; x++) out.push({ x, y });
   return out;
