@@ -7,6 +7,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { LANG, t } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { modelOf } from './markers.ts';
+import { reducedMotion } from './motion.ts';
 import { portrait } from './portrait.ts';
 import { blip } from './sound.ts';
 import { store } from './store.ts';
@@ -87,7 +88,7 @@ export interface TalkOptions {
 
 export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<void> {
   // reduced motion: the face stays still, like the portrait hop
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = reducedMotion();
   // every sheet of the conversation starts loading with it, so later lines find theirs decoded
   for (const sheet of new Set(lines.map((l) => faceOf(l.who.def)?.sheet)))
     if (sheet) new Image().src = `/chars/${sheet}`;

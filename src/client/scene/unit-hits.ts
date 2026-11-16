@@ -17,6 +17,7 @@ import {
   shoved,
   WEIGHT,
 } from '../hit-weight.ts';
+import { reducedMotion } from '../motion.ts';
 import { store } from '../store.ts';
 import { TIMING } from '../timing.ts';
 import { chestOf, flash, playClip, setBar, type UnitView } from './unit-view.ts';
@@ -24,7 +25,7 @@ import type { Units } from './units.ts';
 
 const UP = new THREE.Vector3(0, 1, 0);
 // reduced motion: no recoil, bounce, camera shake or death slow motion; the hit-stop is a pause and stays
-export const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const still = reducedMotion;
 
 // what one sequence of events carries from event to event
 export interface Sequence {

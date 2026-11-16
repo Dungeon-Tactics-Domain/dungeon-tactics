@@ -8,6 +8,7 @@ import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { keyHelp } from '../keyboard.ts';
+import { type Motion, motion, setMotion } from '../motion.ts';
 import type { PixelSettings, PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
@@ -146,6 +147,16 @@ export function optionsMenu(o: OptionsContext) {
       'video',
       t('Vídeo e efeitos', 'Video and effects'),
       [
+        choice(
+          t('Reduzir movimento', 'Reduce motion'),
+          [
+            ['system', t('Do sistema', 'System')],
+            ['reduce', t('Sim', 'Yes')],
+            ['full', t('Não', 'No')],
+          ] as [Motion, string][],
+          motion(),
+          setMotion,
+        ),
         choice(
           t('Tema', 'Theme'),
           THEMES.map(([id, pt, en]) => [id, t(pt, en)]),

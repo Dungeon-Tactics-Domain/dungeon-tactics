@@ -23,6 +23,7 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
+import { reducedMotion } from './motion.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings } from './pixel-settings.ts';
 import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
@@ -100,9 +101,7 @@ export class Game implements TurnHost {
   private pollPad() {
     requestAnimationFrame(() => this.pollPad());
     // the standalone battle is the backdrop of the title screen (and of the screens that leave it): it rotates while any is open
-    this.scene.setSpin(
-      !!document.querySelector('.title-overlay') && !matchMedia('(prefers-reduced-motion: reduce)').matches,
-    );
+    this.scene.setSpin(!!document.querySelector('.title-overlay') && !reducedMotion());
     this.placeMenu();
     this.hud.showFaces();
     this.readPad();

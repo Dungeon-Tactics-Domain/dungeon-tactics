@@ -7,13 +7,14 @@ import { dialog } from '../dialog.ts';
 import { gauge, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { reducedMotion } from '../motion.ts';
 import { survivalCols } from '../survival.ts';
 import { type CardLine, tallyLine } from '../tally.ts';
 import { goHome, homeLabel } from './crawl.ts';
 
 // Victory: confetti falling for 2.5 s (DOM and CSS, no cost in the 3D frame); disappears by itself. With reduced motion, nothing.
 export function confetti() {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (reducedMotion()) return;
   const colors = ['#f2c14e', '#4aa3ff', '#ff6b6b', '#7dffa8', '#ffffff'];
   const box = el(
     'div',

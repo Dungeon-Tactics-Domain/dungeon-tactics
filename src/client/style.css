@@ -1053,9 +1053,12 @@ button[hidden],
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .main-title .dialog.title h2 {
+  :root:not([data-motion="full"]) .main-title .dialog.title h2 {
     animation: none;
   }
+}
+:root[data-motion="reduce"] .main-title .dialog.title h2 {
+  animation: none;
 }
 /* the rotating map behind is the title's art: no battle HUD on top and only the edges darkened */
 .title-overlay {
@@ -1560,17 +1563,28 @@ button[hidden],
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .commands,
-  .confirm,
-  .abilities,
-  .banner,
-  .tools-menu,
-  .panel .item.focus::before,
-  .dialog .camp-list > button:focus::before,
-  .party-list .party-card:focus::before,
-  .menu-nav .choice-row button:focus-visible::before {
+  :root:not([data-motion="full"]) .commands,
+  :root:not([data-motion="full"]) .confirm,
+  :root:not([data-motion="full"]) .abilities,
+  :root:not([data-motion="full"]) .banner,
+  :root:not([data-motion="full"]) .tools-menu,
+  :root:not([data-motion="full"]) .panel .item.focus::before,
+  :root:not([data-motion="full"]) .dialog .camp-list > button:focus::before,
+  :root:not([data-motion="full"]) .party-list .party-card:focus::before,
+  :root:not([data-motion="full"]) .menu-nav .choice-row button:focus-visible::before {
     animation: none;
   }
+}
+:root[data-motion="reduce"] .commands,
+:root[data-motion="reduce"] .confirm,
+:root[data-motion="reduce"] .abilities,
+:root[data-motion="reduce"] .banner,
+:root[data-motion="reduce"] .tools-menu,
+:root[data-motion="reduce"] .panel .item.focus::before,
+:root[data-motion="reduce"] .dialog .camp-list > button:focus::before,
+:root[data-motion="reduce"] .party-list .party-card:focus::before,
+:root[data-motion="reduce"] .menu-nav .choice-row button:focus-visible::before {
+  animation: none;
 }
 .panel .item:disabled {
   filter: none;
@@ -1773,9 +1787,12 @@ button[hidden],
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gauge-change {
+  :root:not([data-motion="full"]) .gauge-change {
     animation: none;
   }
+}
+:root[data-motion="reduce"] .gauge-change {
+  animation: none;
 }
 /* mirrored target panel (portrait on the right), like Tactics Ogre's status bar: attacker and target face each other */
 .target-slot .unit-panel {
@@ -2042,10 +2059,14 @@ button[hidden],
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .float {
+  :root:not([data-motion="full"]) .float {
     animation-duration: 1.6s;
     animation-timing-function: steps(1, end);
   }
+}
+:root[data-motion="reduce"] .float {
+  animation-duration: 1.6s;
+  animation-timing-function: steps(1, end);
 }
 /* objective banner at the start of the stage (entry.ts, announce): enters stretching, holds to be read, fades; takes no clicks */
 .announce {
@@ -2090,9 +2111,12 @@ button[hidden],
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .announce {
+  :root:not([data-motion="full"]) .announce {
     animation: none;
   }
+}
+:root[data-motion="reduce"] .announce {
+  animation: none;
 }
 /* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye; and on
    the result, the empty turn list and the help line behind the end dialog said nothing */
@@ -2182,11 +2206,16 @@ body:has(.result-overlay) .fps {
   animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .talk-title,
-  .panel.talk,
-  .talk.done .talk-next {
+  :root:not([data-motion="full"]) .talk-title,
+  :root:not([data-motion="full"]) .panel.talk,
+  :root:not([data-motion="full"]) .talk.done .talk-next {
     animation: none;
   }
+}
+:root[data-motion="reduce"] .talk-title,
+:root[data-motion="reduce"] .panel.talk,
+:root[data-motion="reduce"] .talk.done .talk-next {
+  animation: none;
 }
 /* painted face sheet in the dialogue box (talk.ts, faceSheet): a box one frame wide over the strip, moved frame by frame
    at a whole-ratio size; only an enlarged sheet (the 64 px skeletons) scales pixelated, the painted 128 px ones scale smooth */
@@ -2249,9 +2278,12 @@ body:has(.result-overlay) .fps {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .talk-face.pop {
+  :root:not([data-motion="full"]) .talk-face.pop {
     animation: none;
   }
+}
+:root[data-motion="reduce"] .talk-face.pop {
+  animation: none;
 }
 .talk-skip {
   justify-self: end;
@@ -2309,9 +2341,12 @@ body:has(.result-overlay) .fps {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .talk-overlay.dark {
+  :root:not([data-motion="full"]) .talk-overlay.dark {
     animation: none;
   }
+}
+:root[data-motion="reduce"] .talk-overlay.dark {
+  animation: none;
 }
 .talk-overlay.dark .panel.talk:focus-visible {
   outline: none;

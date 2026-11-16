@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { posKey, subOf } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
+import { reducedMotion } from '../motion.ts';
 import type { PixelSettings } from '../pixel-settings.ts';
 import { param } from '../store.ts';
 import { STEP, type TileSpace } from './space.ts';
@@ -107,7 +108,7 @@ export class CameraRig {
     // `heroi`: the camera always stays on the heroes' side (over the attacker's shoulder; when the enemy attacks, behind the hero)
     const cam = ACTION_CAMS[CAM_NAME === 'hero' ? (enemy ? 'behind' : 'shoulder') : CAM_NAME];
     // reduced motion: no swing and zoom around the strike (Nov 16 audit); the strike plays from the usual view
-    if (!cam || this.held || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!cam || this.held || reducedMotion()) return;
     this.camSaved = {
       viewH: this.camSaved?.viewH ?? this.viewH,
       yaw: this.camSaved?.yaw ?? this.yawTarget,
