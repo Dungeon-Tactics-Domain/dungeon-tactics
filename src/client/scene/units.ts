@@ -455,7 +455,7 @@ export class Units {
     const k = subOf(this.space.grid),
       g = WEIGHT.gravity * k,
       up = WEIGHT.hop * k;
-    const T = (up + Math.sqrt(up * up + 2 * g * (a.y - b.y))) / g; // seconds until it touches b's ground
+    const T = (up + Math.sqrt(up * up + 2 * g * Math.max(0, a.y - b.y))) / g; // seconds until it touches b's ground
     await this.time.animate(T * 1000, (s) =>
       v.holder.position.lerpVectors(a, b, s).setY(a.y + up * s * T - (g * (s * T) ** 2) / 2),
     );
@@ -527,6 +527,7 @@ export class Units {
       } else if (e.k === 'attack') {
         striker = e.unit;
         magic = !!ABILITIES[e.ability].magic;
+        pushed.clear(); // a bump of this attack must not take an earlier attack's push
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
         if (!samePos(this.posOf(v), e.target))
           await this.cam.actionCam(this.posOf(v), e.target, state.units.find((u) => u.id === e.unit)?.team === 'enemy');
@@ -611,8 +612,14 @@ export class Units {
       } else if (e.k === 'push') {
         const a = v.holder.position.clone(),
           b = this.squareAt(v.def, e.to);
-        pushed.set(e.unit, b.clone().sub(a).setY(0).normalize());
-        if (b.y < a.y - 0.01) await this.fall(v, a, b);
+        const d = b.clone().sub(a).setY(0).normalize();
+        pushed.set(e.unit, d);
+        // a drop by the rule's heights, as the walk reads them: shallow water and a ramp are drawn lower without being one
+        const size = UNIT_DEFS[v.def].size ?? 1,
+          from = { x: e.to.x - Math.round(d.x), y: e.to.y - Math.round(d.z) };
+        const grid = this.space.grid;
+        if (!rampLink(grid, from, e.to) && squareH(grid, from, size) > squareH(grid, e.to, size))
+          await this.fall(v, a, b);
         else await this.time.animate(TIMING.push, (s) => v.holder.position.lerpVectors(a, b, s));
       } else if (e.k === 'charge') {
         // starts charging: the long spell gesture (each ability's own effect comes in the animation block)
