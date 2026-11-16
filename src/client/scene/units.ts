@@ -182,7 +182,7 @@ export class Units {
         }
       }
       v.holder.position.copy(this.unitWorld(u));
-      // map with direction (FFT study): the model looks where the state says, after each animation and undo
+      // map with direction: the model looks where the state says, after each animation and undo
       if (u.facing !== undefined) v.holder.rotation.y = (u.facing * Math.PI) / 2;
       v.hp = u.hp;
       setBar(v, this.time);

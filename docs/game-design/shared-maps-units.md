@@ -15,7 +15,7 @@ The map and unit rules of `src/shared/battle`, moved out of `src/shared/CLAUDE.m
 
 ## Maps and units of the old campaign
 
-The Beacon Ashes campaign that used these maps and units was removed on Nov 15; the maps stay in the developer menu (`DEV_MAPS` in `src/client/dev-roster.ts`: beacon_hill, skirmish, flooded_crypt, crypt_heart, ash_wood, frost_pass, fft-gariland) and the tests.
+The Beacon Ashes campaign that used these maps and units was removed on Nov 15; the maps stay in the developer menu (`DEV_MAPS` in `src/client/dev-roster.ts`: beacon_hill, skirmish, flooded_crypt, crypt_heart, ash_wood, frost_pass) and the tests.
 
 - **Crypt Heart** (`crypt_heart`, night of Nov 12, stage 4): 12x14 with the `CRYPT_KEY` letters (plus `W`, deep water) and per-tile height in `HEART_H` since Nov 13, the boss on an altar behind a deep moat that can only be crossed by 2 bridges; it has a Beacon.
 - **Ash Wood** (`ash_wood`, night of Nov 12): deep river with a bridge and a ford in a valley; since Nov 13 the height of each tile comes from `WOOD_H`, 5 levels, enemy plateau with drops of 2 on the descents. No Beacon (last one standing wins).
@@ -31,7 +31,7 @@ The Beacon Ashes campaign that used these maps and units was removed on Nov 15; 
 
 ## Half tiles
 
-- **Every game battle in half tiles** (Nov 14, Fernando: "the half-tile movement mechanic still doesn't exist", looking at stage 0): the client opens every battle through `halve` (`half.ts`; Nov 15, Fernando: no whole-tile battle left, the developer battle on the Gariland map and the FFT study included).
+- **Every game battle in half tiles** (Nov 14, Fernando: "the half-tile movement mechanic still doesn't exist", looking at stage 0): the client opens every battle through `halve` (`half.ts`; Nov 15, Fernando: no whole-tile battle left, the developer battle included).
 - The map is split into cells (each tile becomes 2x2, `Grid.sub` = 2, the object drawn once by `Tile.span`), each unit a 2x2 token `<def>½` (size and move doubled, `baseDef`/`isObjective` read the original) that walks 1 cell at a time (`reachableBig`: deep water, a straddle across a step up to the jump, the gap).
 - **A token stops only on even ground** (`restsOn`, Nov 14, Fernando: "it must not let the character stand still on a corner like that"): the square's 4 cells share height, water depth, spikes and terrain, and a ramp cell is under it only on its own whole tile; it still walks over steps, ledges and ramps on the way. Every whole-tile stop stays a stop.
 - **Abilities stay written in whole tiles:** `farCells`/`nearCells` turn range and radius into cells between the two squares, `aimEnds` measures range from the closest cells of the shooter's square and the aimed tile's (one of the Colossus' four, not its whole square), line of sight walks whole-tile strides from square corner to square corner and probes each 2x2 (`sightLine`, `sightEnds`), any cell aims at its whole tile (`aimTile`: the map's tile on empty ground, Nov 14 review), `areaOf` centers an area on the whole square of whoever stands there, `wholeTiles` gives the hit chance its distance, and the push moves `push x sub` cells checking the whole square.
@@ -40,8 +40,6 @@ The Beacon Ashes campaign that used these maps and units was removed on Nov 15; 
 - On whole-tile positions every answer equals the whole map's (`tests/half-tiles.test.ts`: ranges, targets, hit chance and side for every ability, the shots of every sighted ability on every game map, walking from every spawn of every map, push). The AI counts its per-tile weights back in tiles. Whole maps (tests, simulator) are unchanged.
 - Jump on half tiles: [shared-battle-rules.md](shared-battle-rules.md#jump-by-class).
 
-## FFT study
+## FFT study (removed)
 
-- **`battle/fft/` is a reference study, not the game** (Nov 11): Final Fantasy Tactics formulas and data sourced in [fft-reference.md](fft-reference.md). It only exists for whoever calls `registerFftStudy()` (client with `?scenario=fft-gariland` or `?scenario=fft-classes`, simulator, tests).
-- Since Nov 15 the client opens it in half tiles like every battle: its rules read each sheet through `baseDef`, so the `<def>½` token keeps its numbers, and `tests/fft-gariland.test.ts` checks the hit chances, the jump of 3 and the walking from every spawn on the split map. The whole-map study stays for the reference tests and the simulator.
-- A rule only the study needs goes in as an optional field in `rules.ts`; a game scenario does not use `rules`.
+- `battle/fft/` held a Final Fantasy Tactics reference study (Nov 11 to Nov 16): the Gariland battle and a basic-classes bench on the same map, with FFT formulas sourced in [fft-reference.md](fft-reference.md). Removed on Nov 16 with the map (`docs/decisions.md`). Its `rules.ts` hooks with no other user went with it (see the decision row); `outcome` and `jump` stay in use.

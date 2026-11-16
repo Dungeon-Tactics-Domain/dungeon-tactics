@@ -37,7 +37,6 @@ Nov 15, Fernando's grill; the Mechanics lab's `equipamento.json`, formulas secti
 - Resistances stay between -100 and 60 (`resistOf`), dodge at most 50 (`dodgeOf`). Heals and a heal on the undead ignore resistances.
 - Push, fall and spike damage x5 with life (`BUMP_DAMAGE` 25, `FALL_DAMAGE` 45 a level, `SPIKE_DAMAGE` 50).
 - The preview, the forecast, the counter note and the AI (`damageRange` for the threat of a nearby enemy) read the same calculation.
-- The FFT study keeps its own hit chance (no dodge), swaps the resistances for FFT's x1.5 on a physical hit on a charging unit (`Rules.defence`) and shows no side on a spell (`Rules.spellsIgnoreSide`).
 
 ## Equipment in 7 slots
 
@@ -68,9 +67,9 @@ Redefined on Nov 15 after Fernando was struck by a unit he had not attacked that
 
 ## Jump by class
 
-- **Per-class jump** (Nov 13, Fernando's request: "jump mechanics like FFT"): `UnitDef.jump` (without it, `MAX_JUMP` = 1) says how many levels the unit climbs or descends in one step; every jump question goes through `jumpOf` (`pathing.ts`), which the FFT study swaps for `rules.jump`.
+- **Per-class jump** (Nov 13, Fernando's request: "jump mechanics like FFT"): `UnitDef.jump` (without it, `MAX_JUMP` = 1) says how many levels the unit climbs or descends in one step; every jump question goes through `jumpOf` (`pathing.ts`), which a scenario may swap for `rules.jump` (the crawl verifier does).
 - Values: Lancer 3, Rogue and Minion 2, the rest 1 (`src/content/units.ts`; in FFT proportion, where the Thief jumps 1 more than the other classes; with Rogue 3 and archers 2, stage 5 ranged from 35% to 77%).
-- **FFT gap** (`leaps`, same day, Fernando's request): flies up to `[Jump/2]` tiles in a straight line over deep water or tiles lower than both ends (a wall blocks), 1 movement point per tile flown; the AI sees it in `walkMap`. With jump 2 the Rogue crosses the moat of the Crypt Heart; in the Gariland study (jump 3 for every class) the gap also counts, and the battle ended at 73% (300 seeds).
+- **FFT gap** (`leaps`, same day, Fernando's request): flies up to `[Jump/2]` tiles in a straight line over deep water or tiles lower than both ends (a wall blocks), 1 movement point per tile flown; the AI sees it in `walkMap`. With jump 2 the Rogue crosses the moat of the Crypt Heart; in the FFT study (jump 3 for every class; removed Nov 16) the gap also counts, and the battle ended at 73% (300 seeds).
 - A push still hits a step of 2 (`MAX_JUMP`, it is physics, not the jump of whoever is pushed).
 - **On half tiles** (Nov 15, Fernando: "the move and jump values double; 1 per half tile") the jump counts in cells like the move, so a token's gap is up to J cells for jump J (`squareMoves`), 1 movement point per cell. That it lands level, wholly past the gap, is our own reading (Nov 15, kept by Fernando the same day): a 1-cell hop landed half inside a 1-tile trench, so a jump-1 archer crossed the Flooded Crypt trench it cannot cross on whole tiles. Climbing and dropping stay in height levels: a level is a physical step and has no half. With the level landing the AI's walking map on half tiles is exactly twice the whole one for every unit on every map.
 

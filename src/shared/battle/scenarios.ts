@@ -46,17 +46,13 @@ export function initialState(scenario: Scenario, seed: number): BattleState {
       hp: UNIT_DEFS[s.def].hp,
       ct: 0,
       // direction on every map since Nov 13 (Fernando's request: "direction the character will look at the end of each turn and
-      // the mechanics around it"): spawns facing the nearest enemy; the FFT study keeps its own. Counters, only on the sheet that asks for them
-      // (the Beacon, which does not play, has no front or back)
+      // the mechanics around it"): spawns facing the nearest enemy. Counters, only on
+      // the sheet that asks for them (the Beacon, which does not play, has no front or back)
       ...(UNIT_DEFS[s.def].speed > 0 && {
-        facing: scenario.rules?.facing
-          ? s.team === 'hero'
-            ? 0
-            : 2
-          : faceNearest(
-              s,
-              scenario.spawns.filter((o) => o.team !== s.team),
-            ),
+        facing: faceNearest(
+          s,
+          scenario.spawns.filter((o) => o.team !== s.team),
+        ),
       }),
       ...(UNIT_DEFS[s.def].vars && { vars: { ...UNIT_DEFS[s.def].vars } }),
     })),

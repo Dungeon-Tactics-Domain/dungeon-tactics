@@ -1,6 +1,7 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   buildDevScenario,
+  DEV_MAPS,
   DEV_SCENARIO,
   defaultSetup,
   devClasses,
@@ -9,22 +10,25 @@ import {
   unitFrom,
 } from '../src/client/dev-roster.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
+import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
 const say = (pt: string) => pt;
 
 describe('developer menu: roster', () => {
-  beforeAll(() => registerFftStudy());
-
-  it('the default roster is whoever spawns on the map; in Gariland our classes come in', () => {
+  it('the default roster is whoever spawns on the map', () => {
     const colina = defaultSetup('beacon_hill');
     expect(colina.heroes.map((u) => u.base)).toEqual(['warrior', 'archer', 'mage', 'rogue']);
     expect(colina.enemies).toHaveLength(4);
-    const gariland = defaultSetup('fft-gariland');
-    expect(gariland.heroes.every((u) => devClasses().includes(u.base))).toBe(true);
-    expect(problems(gariland, say)).toEqual([]);
+    for (const map of DEV_MAPS) {
+      const s = defaultSetup(map);
+      expect(
+        [...s.heroes, ...s.enemies].every((u) => devClasses().includes(u.base)),
+        map,
+      ).toBe(true);
+      expect(problems(s, say), map).toEqual([]);
+    }
   });
 
   it('warns when the team exceeds the start tiles or is empty', () => {
@@ -40,6 +44,7 @@ describe('developer menu: roster', () => {
     const ok = defaultSetup('flooded_crypt');
     expect(parseSetup(JSON.parse(JSON.stringify(ok)))).toEqual(ok);
     expect(parseSetup({ ...ok, map: 'nada' })).toBeNull();
+    expect(parseSetup({ ...ok, map: 'fft-gariland' })).toBeNull(); // a roster saved on the removed study map (Nov 16)
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], hp: 0 }] })).toBeNull();
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], base: 'fft_ramza' }] })).toBeNull();
     expect(parseSetup({ ...ok, heroes: [{ ...ok.heroes[0], abilities: ['nao_existe'] }] })).toBeNull();
@@ -74,8 +79,15 @@ describe('developer menu: roster', () => {
     expect(Battle.load(b.save())).not.toBeNull();
   });
 
-  it('Gariland without a Beacon ends when one side is gone (no instant defeat)', () => {
-    const scenario = buildDevScenario(defaultSetup('fft-gariland'));
+  it('a map without a Beacon ends when one side is gone (no instant defeat)', () => {
+    const setup = defaultSetup('beacon_hill');
+    // the same roster on the Hill's grid with the Beacon's start tile left out
+    SCENARIOS.t_no_beacon = {
+      ...SCENARIOS.beacon_hill,
+      id: 't_no_beacon',
+      spawns: SCENARIOS.beacon_hill.spawns.filter((sp) => sp.def !== 'beacon'),
+    };
+    const scenario = buildDevScenario({ ...setup, map: 't_no_beacon' });
     expect(scenario.spawns.some((sp) => sp.def === 'beacon')).toBe(false);
     const r = simulate(scenario, 3);
     expect(['victory', 'defeat', 'timeout']).toContain(r.outcome);

@@ -7,7 +7,6 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn, playAiTurn, walkMap } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT, checkOutcome, previewAbility, resolveAbility, simulatePush } from '../src/shared/battle/combat.ts';
-import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import {
   canStand,
   dist,
@@ -589,13 +588,10 @@ describe('half tiles: whole battles', () => {
     expect(checkOutcome({ ...s, units: s.units.filter((u) => !u.def.startsWith('beacon')) })).toBe('defeat');
   });
 
-  it('a developer battle on the Gariland map opens and plays on half tiles', async () => {
-    // Nov 15, Fernando: no whole-tile battle left in the game; the developer menu's Gariland map was the last one.
-    // Through the boot's real path (boot.ts has no DOM or Three): the address and the saved roster
-    // the roster the menu saved (the title registers the study for the menu); a fresh page has no study registered
-    registerFftStudy();
-    store.set(DEV_KEY, JSON.stringify(defaultSetup('fft-gariland')));
-    delete SCENARIOS['fft-gariland'];
+  it('a developer battle opens and plays on half tiles', async () => {
+    // Nov 15, Fernando: no whole-tile battle left in the game, the developer menu's included.
+    // Through the boot's real path (boot.ts has no DOM or Three): the address and the roster the menu saved
+    store.set(DEV_KEY, JSON.stringify(defaultSetup('ash_wood')));
     vi.stubGlobal('location', { search: `?scenario=${DEV_SCENARIO}` });
     try {
       const sel = await selectBattle();

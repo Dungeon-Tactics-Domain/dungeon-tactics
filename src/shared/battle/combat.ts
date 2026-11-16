@@ -142,7 +142,7 @@ function affected(grid: Grid, state: BattleState, actor: UnitState, ability: Abi
   }
   const u = unitAt(state, center);
   // the user is only a target of a support ability whose range starts at 0. Hits and heals land on either side (Nov 15,
-  // Fernando: "allies can attack allies"), at half on the wrong one (sideShare); support only on its own (the FFT study)
+  // Fernando: "allies can attack allies"), at half on the wrong one (sideShare); support only on its own
   const self = u?.id === actor.id;
   const wanted =
     u &&
@@ -151,7 +151,7 @@ function affected(grid: Grid, state: BattleState, actor: UnitState, ability: Abi
 }
 
 // share of a hit `u` keeps, in 1/10000 so the sum stays whole (Nov 15 grill): x (1 - physical or magic resistance)
-// x (1 - the element's); a charging target loses CHARGING_PHYS / CHARGING_MAG. A scenario may swap it (`Rules.defence`, the FFT study)
+// x (1 - the element's); a charging target loses CHARGING_PHYS / CHARGING_MAG
 const defence = (state: BattleState, a: AbilityDef, u: UnitState): number => {
   const d = UNIT_DEFS[u.def];
   const charging = state.charges.some((c) => c.unit === u.id);
@@ -161,7 +161,7 @@ const defence = (state: BattleState, a: AbilityDef, u: UnitState): number => {
 // Damage that lands: the roll (with power) x the defence, the counter's `scale` and the side share, rounded down, at least
 // 1. Whole numbers until the last division, so 70 at 30% is 49, not 48.99 rounded down
 function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, roll: number, scale = 1): number {
-  const keep = rulesOf(state).defence?.(state, a, u) ?? defence(state, a, u);
+  const keep = defence(state, a, u);
   return Math.max(1, Math.floor((roll * keep * scale * sideShare(actor, u, false)) / 10000));
 }
 
@@ -173,7 +173,7 @@ export const afterDodge = (chance: number, dodge: number, side: Side) =>
 
 // the range `actor` would deal `u` with `a` before the hit roll, wherever they stand: the preview and the AI's threat read it
 export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState): [number, number] {
-  const [lo, hi] = rulesOf(state).damage?.(actor, a) ?? withPower(actor, a);
+  const [lo, hi] = withPower(actor, a);
   const dmg = (d: number) => (d > 0 ? landed(state, actor, a, u, d) : 0);
   return [dmg(lo), dmg(hi)];
 }
@@ -218,8 +218,7 @@ export function previewAbility(
   const targets = hit.map((u) => {
     // against a large unit, its tile nearest to the attacker (distance and height)
     const [from, at] = closest(footprint(actor), footprint(u));
-    const flat = u.facing === undefined || (ability.magic && rulesOf(state).spellsIgnoreSide);
-    const side: Side = flat ? 'front' : sideOf(at, FACING[u.facing!], from);
+    const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing!], from);
     const hurts = healHurts(ability, u);
     const [dmgMin, dmgMax] = damageRange(state, actor, ability, u);
     const heal = (h: number) => (hurts ? 0 : Math.floor(h * sideShare(actor, u, true)));

@@ -23,7 +23,7 @@ export type KeyAction =
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
-const SLOTS = 7; // Move + 6 abilities: today's longest bar (the FFT study's Ramza)
+const SLOTS = 7; // Move + 6 abilities: the longest bar it was sized for
 
 const DIRS: Record<string, ScreenDir> = {
   w: 'up',

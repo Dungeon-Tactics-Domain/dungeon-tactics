@@ -34,7 +34,6 @@ describe('game maps', () => {
   it('game map ramps: ground that rises 1 level to the neighbor', () => {
     let total = 0;
     for (const s of Object.values(SCENARIOS)) {
-      if (s.rules) continue; // FFT study: ramps from the original file, with climbs of 2 (fft-gariland.test)
       s.grid.tiles.forEach((t, i) => {
         if (!t.ramp) return;
         total++;

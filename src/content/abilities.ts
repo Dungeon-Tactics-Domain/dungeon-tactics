@@ -1,6 +1,6 @@
 // Abilities of the game (data; the type and the registry live in src/shared/battle/abilities.ts). Initial numbers from Oct 25:
 // to be decided by playing and simulating. Damage and healing x1.75 on Nov 13 (Fernando's request: "very low damage making the
-// battle slow"): a common hit took ~17% of the life (6 hits to take someone down), in FFT it takes ~37% (Gariland study); now ~30%.
+// battle slow"): a common hit took ~17% of the life (6 hits to take someone down), in FFT it takes ~37% (FFT study, removed Nov 16); now ~30%.
 // Damage and healing x5 on Nov 15 together with the life (Fernando's grill), so the share of life per hit stays; push, fall and
 // spike damage (COMBAT in combat.ts) followed the same day. Elements and costs of the Mechanics lab's equipamento.json
 // (abilities section): a spell spends mana, a martial ability stamina, and a unit's basic attack (its 1st) costs nothing

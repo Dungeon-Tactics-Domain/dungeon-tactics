@@ -14,10 +14,9 @@ import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
 import { jumpHelp } from '../town-ui.ts';
 import { openSaves, savedGames, startNewGame } from './saves-ui.ts';
 
-// Developer menu (Nov 12): loads the FFT study separately just to offer Gariland's terrain as a map. Starting
-// saves the roster, erases the previous developer battle and reopens the game on it (boot builds the scenario).
-export async function devMenu(onBack?: () => void) {
-  (await import('../../shared/battle/fft/gariland.ts')).registerFftStudy();
+// Developer menu (Nov 12). Starting saves the roster, erases the previous developer battle and reopens the game on it
+// (boot builds the scenario).
+export function devMenu(onBack?: () => void) {
   openDevMenu(() => {
     store.set(`dt:battle:${DEV_SCENARIO}`, '');
     location.search = `?scenario=${DEV_SCENARIO}`;
@@ -289,7 +288,7 @@ export function titleScreen() {
         button(
           'secondary',
           t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'),
-          go(() => void devMenu(titleScreen)),
+          go(() => devMenu(titleScreen)),
         ),
         button('secondary', t('Créditos', 'Credits'), go(credits)),
       ),

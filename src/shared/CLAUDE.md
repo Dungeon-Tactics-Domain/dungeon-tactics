@@ -17,7 +17,7 @@ Applies together with the root `CLAUDE.md`.
   - every jump: `jumpOf`; a half-tile stop: `restsOn`;
   - counters: `pendingCounters`; the side's share of a hit or heal: `sideShare`; hit and damage: `afterDodge`/`landed`.
 - **Half tiles:** abilities stay written in whole tiles; convert with `farCells`/`nearCells`/`aimTile`/`wholeTiles`, never by hand. Whole-tile maps (tests, simulator) must keep giving the same answers.
-- **A rule only the FFT study needs** is an optional field in `rules.ts`; a game scenario does not use `rules`.
+- **A rule only one scenario needs** (the survival night, crawl rooms, the developer battle) is an optional field in `rules.ts`; a game map does not use `rules`.
 - **Crawl rooms:** draw only through `rollInt`; any change that gives another room for the same seed bumps `CRAWL_VERSION` and re-pins the hash in `tests/crawl-room.test.ts`.
 - **A unit or ability number** is best changed after measuring with `npm run sim` (record before/after in the comment or the commit). The simulator is optional: balance is decided by playing.
 
@@ -26,6 +26,6 @@ Applies together with the root `CLAUDE.md`.
 What each rule does, the request behind it and its date:
 
 - [shared-battle-rules.md](../../docs/game-design/shared-battle-rules.md): FFT turns, water, spikes, charge, attributes in the hit and the damage, equipment in 7 slots, friendly fire, counters, jump by class, AI.
-- [shared-maps-units.md](../../docs/game-design/shared-maps-units.md): tile looks, ramps, the old campaign's maps and units, the large unit, half tiles, the FFT study.
+- [shared-maps-units.md](../../docs/game-design/shared-maps-units.md): tile looks, ramps, the old campaign's maps and units, the large unit, half tiles.
 - [shared-crawl.md](../../docs/game-design/shared-crawl.md): crawl rooms, `CRAWL_VERSION` history, expedition.
 - Decisions: [docs/decisions.md](../../docs/decisions.md).

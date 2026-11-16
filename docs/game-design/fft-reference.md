@@ -1,6 +1,6 @@
 # Reference: Final Fantasy Tactics (PS1, 1997)
 
-Reference study requested by Fernando on Nov 11, 2026 to start balancing. Internal use: not game content. FFT proper names appear only here and in the study scenario (`src/shared/battle/fft/`), which is not part of the game's main package.
+Reference study requested by Fernando on Nov 11, 2026 to start balancing. Internal use: not game content. FFT proper names appear only here. The study scenario built from it (`src/shared/battle/fft/`, the Gariland and basic-classes battles) was removed on Nov 16 (see `docs/decisions.md`); its sections below stay as the record of what it reproduced.
 
 **Rule of this document:** every number has a source. What has no source is marked **unconfirmed** or **study assumption**.
 
@@ -238,7 +238,7 @@ Ramza's (Guts, BMG 3.3, reopened on Nov 12):
 
 ## Fidelity of the study scenario
 
-What the `fft-gariland` and `fft-classes` scenarios reproduce and what they simplify (updated Nov 12).
+What the `fft-gariland` and `fft-classes` scenarios reproduced and what they simplified (updated Nov 12; both removed Nov 16).
 
 | Item | In the study | Fidelity |
 |---|---|---|

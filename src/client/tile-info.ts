@@ -12,11 +12,7 @@ const LOOK_NAME: Record<string, () => string> = {
   grass: () => t('grama', 'grass'),
   stone: () => t('pedra', 'stone'),
   water: () => t('água', 'water'),
-  roof: () => t('telhado', 'roof'),
-  chimney: () => t('chaminé', 'chimney'),
-  wood: () => t('madeira', 'wood'),
   bridge: () => t('ponte', 'bridge'),
-  box: () => t('caixa', 'crate'),
   tree: () => t('árvore', 'tree'),
   // Beacon Hill and Flooded Crypt (Nov 12)
   rock: () => t('rocha', 'rock'),

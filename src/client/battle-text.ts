@@ -3,7 +3,6 @@
 import { ABILITIES, type AbilityDef } from '../shared/battle/abilities.ts';
 import { poolOf } from '../shared/battle/combat.ts';
 import { jumpOf } from '../shared/battle/pathing.ts';
-import { rulesOf } from '../shared/battle/rules.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
 import { TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { BattleEvent, BattleState, UnitState } from '../shared/battle/types.ts';
@@ -25,13 +24,10 @@ export const range = (r: [number, number]) => (r[0] === r[1] ? `${r[0]}` : `${r[
 // the side under a unit's name (unit panel, strike strip, Status)
 export const sideName = (team: UnitState['team']) => (team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy'));
 
-// the counters an ability may spend (UnitState.vars): mana and stamina (Nov 16; the lab's words in both languages) and the
-// study's MP and stock
+// the counters an ability may spend (UnitState.vars): mana and stamina (Nov 16; the lab's words in both languages)
 const POOL_NAME: Record<string, () => string> = {
   mana: () => 'mana',
   stamina: () => 'stamina',
-  mp: () => 'MP',
-  potions: () => t('estoque', 'stock'),
 };
 const poolName = (k: string) => POOL_NAME[k]?.() ?? k;
 export const costText = (a: AbilityDef) => (a.cost ? `${a.cost[1]} ${poolName(a.cost[0])}` : '');
@@ -170,14 +166,6 @@ export const defenceRows = (def: UnitDef): [string, string][] => [
 ];
 
 // Status window sheet (like FFT's): what the unit is now. [label, value] rows; pure for the test.
-const INFO_LABEL: Record<string, () => string> = {
-  pa: () => t('Força (PA)', 'Physical attack (PA)'),
-  ma: () => t('Magia (MA)', 'Magic attack (MA)'),
-  brave: () => 'Brave',
-  faith: () => t('Fé', 'Faith'),
-  weapon: () => t('Arma', 'Weapon'),
-  shield: () => t('Escudo', 'Shield'),
-};
 export function unitStatus(state: BattleState, unitId: string): [string, string][] {
   const u = state.units.find((x) => x.id === unitId)!;
   const def = UNIT_DEFS[u.def];
@@ -187,18 +175,14 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
     [t('Vida', 'HP'), hpText(u)],
   ];
   rows.push(...poolRows(def, u));
-  if (u.vars?.mp !== undefined) rows.push(['MP', String(u.vars.mp)]);
-  if (u.vars?.potions !== undefined) rows.push([t('Poções', 'Potions'), String(u.vars.potions)]);
   rows.push(
     ['CT', `${Math.max(0, Math.min(u.ct, TURN_THRESHOLD))}/${TURN_THRESHOLD}`], // the panel already capped it at 100; Status showed 108/100
-    [t('Velocidade', 'Speed'), `${rulesOf(state).speed?.(u) ?? def.speed}${bonus('sp')}`],
+    [t('Velocidade', 'Speed'), `${def.speed}${bonus('sp')}`],
     // in half tiles on the split map, the points the game spends (Nov 15, Fernando: "the move and jump values double")
     [t('Movimento', 'Move'), String(def.move)],
     [t('Salto', 'Jump'), String(jumpOf(state, u.def) * ((def.size ?? 1) / (UNIT_DEFS[baseDef(u.def)].size ?? 1)))],
     ...attrRows(def),
   );
-  for (const [k, v] of Object.entries(def.info ?? {}))
-    rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);
   const c = state.charges.find((x) => x.unit === u.id);
   if (c)
     rows.push([

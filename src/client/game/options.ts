@@ -320,7 +320,7 @@ export function optionsMenu(o: OptionsContext) {
       }),
       button('secondary', t('Desenvolvedor', 'Developer'), () => {
         d.close();
-        void devMenu();
+        devMenu();
       }),
     ),
   ]);

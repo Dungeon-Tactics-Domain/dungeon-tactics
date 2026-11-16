@@ -4,7 +4,6 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { resolveAbility } from '../src/shared/battle/combat.ts';
-import { CLASSES_BATTLE, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { nextRng, rollInt } from '../src/shared/battle/rng.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { previewOrder } from '../src/shared/battle/turn-queue.ts';
@@ -61,7 +60,7 @@ describe('charged actions', () => {
 
   it("a physical hit resolves immediately; only spells, Aimed Shot and the Lancer's Jump charge (Nov 12 and Nov 13)", () => {
     const charged = Object.values(ABILITIES)
-      .filter((a) => a.charge > 0 && !a.id.startsWith('fft_'))
+      .filter((a) => a.charge > 0)
       .map((a) => a.id)
       .sort();
     expect(charged).toEqual(['aimed_shot', 'blast', 'gust', 'heal', 'lance_jump', 'shadow_wave']);
@@ -274,49 +273,5 @@ describe('charge rules (Nov 15)', () => {
     const raw = JSON.parse(b.save());
     raw.state.charges[0].follow = 'nobody';
     expect(Battle.load(JSON.stringify(raw))).toBeNull(); // a lock on a unit that is not there: the save is refused
-  });
-});
-
-describe('charges in the FFT study (BMG 2.2, 3.3)', () => {
-  registerFftStudy();
-  it('Fire charges 4 ticks and spends MP only once, when it starts', () => {
-    const b = Battle.start(CLASSES_BATTLE, 1);
-    const wizard = b.state.units.find((u) => u.id === 'wizard')!;
-    const knight = b.state.units.find((u) => u.id === 'e-knight')!;
-    wizard.pos = { x: 5, y: 5 };
-    knight.pos = { x: 5, y: 7 };
-    b.state.turn = { actor: 'wizard', moved: false, usedAbility: null };
-    b.act('fft_wizard_fire', { x: 5, y: 7 });
-    expect(wizard.vars!.mp).toBe(11);
-    expect(b.state.charges[0].ticks).toBe(4);
-    untilResolved(b);
-    expect(b.state.units.find((u) => u.id === 'wizard')!.vars!.mp).toBe(11);
-  });
-
-  // the game's resistances stay out of the study (Rules.defence): x1.5 from a physical hit on a charging unit, x1 from a
-  // spell (BMG 6, Charging status), and a spell shows no side, since FFT's magic ignores facing
-  it('a charging unit takes x1.5 from a physical hit and x1 from a spell; a spell shows no side', () => {
-    const b = Battle.start(CLASSES_BATTLE, 1);
-    const wizard = b.state.units.find((u) => u.id === 'wizard')!;
-    const knight = b.state.units.find((u) => u.id === 'e-knight')!;
-    const fighter = b.state.units.find(
-      (u) => u.team === 'hero' && !ABILITIES[UNIT_DEFS[u.def].abilities[0]].magic && UNIT_DEFS[u.def].speed > 0,
-    )!;
-    wizard.pos = { x: 5, y: 5 };
-    knight.pos = { x: 5, y: 7 };
-    knight.facing = 0; // the wizard stands to its side
-    fighter.pos = { x: 5, y: 8 };
-    const swing = UNIT_DEFS[fighter.def].abilities[0];
-    const aim = (unit: string, ability: string) => {
-      b.state.turn = { actor: unit, moved: false, usedAbility: null };
-      return b.preview(ability, { x: 5, y: 7 }).targets[0];
-    };
-    const [fire, hit] = [aim('wizard', 'fft_wizard_fire'), aim(fighter.id, swing)];
-    expect(fire.side).toBe('front');
-    b.state.charges = [
-      { unit: 'e-knight', ability: 'fft_wizard_fire', target: { x: 5, y: 5 }, follow: null, ticks: 3 },
-    ];
-    expect(aim('wizard', 'fft_wizard_fire')).toMatchObject({ dmgMin: fire.dmgMin, dmgMax: fire.dmgMax });
-    expect(aim(fighter.id, swing)).toMatchObject({ dmgMax: Math.floor(hit.dmgMax * 1.5) });
   });
 });

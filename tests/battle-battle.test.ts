@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Battle, parseBattleState, UNDO_LIMIT } from '../src/shared/battle/battle.ts';
 import { resolveAbility } from '../src/shared/battle/combat.ts';
-import { CLASSES_BATTLE, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { canStand } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -200,16 +199,18 @@ describe('a broken save does not crash the game', () => {
     expect(mutate((s) => (s.units[1].ct = 10001))).toBeNull();
   });
 
-  it('a counter of the study out of its limits is rejected', () => {
-    registerFftStudy();
-    const s = JSON.parse(Battle.start(CLASSES_BATTLE, 1).save()).state;
+  it('a counter (mana or stamina) out of its limits is rejected', () => {
+    const s = JSON.parse(Battle.start(SCENARIOS.skirmish, 1).save()).state;
     const caster = s.units.findIndex((u: { vars?: object }) => u.vars);
     expect(caster).toBeGreaterThanOrEqual(0);
     const key = Object.keys(s.units[caster].vars)[0];
-    s.units[caster].vars[key] = 9999;
-    expect(parseBattleState(s)).not.toBeNull();
-    s.units[caster].vars[key] = 10000;
+    const max = s.units[caster].vars[key]; // a battle starts with the pool full
+    s.units[caster].vars[key] = max + 1;
     expect(parseBattleState(s)).toBeNull();
+    s.units[caster].vars[key] = -1;
+    expect(parseBattleState(s)).toBeNull();
+    s.units[caster].vars[key] = max;
+    expect(parseBattleState(s)).not.toBeNull();
   });
 
   it('a team, a turn, the charges or the owed counters of the wrong shape are rejected', () => {
@@ -226,13 +227,9 @@ describe('a broken save does not crash the game', () => {
     expect(mutate((s) => (s.turn.engaged = [foe]))?.turn.engaged).toEqual([foe]);
   });
 
-  it('counters (vars) only on the sheets that have them, and always on those', () => {
+  it('counters (vars) of the wrong shape are rejected', () => {
     // an empty or missing `vars` on a mana/stamina sheet is an old save and fills to full (Nov 16); a wrong shape is not
     expect(mutate((s) => (s.units[1].vars = 'x'))).toBeNull();
-    registerFftStudy();
-    const s = JSON.parse(Battle.start(CLASSES_BATTLE, 1).save()).state;
-    delete s.units.find((u: { vars?: object }) => u.vars).vars;
-    expect(parseBattleState(s)).toBeNull();
   });
 
   it('a save holds at most 64 units', () => {

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { abilityDetail, attrRows, regenLine, shortOf, spendNote, unitStatus } from '../src/client/battle-text.ts';
 import { cursorInfo, tileInfo } from '../src/client/tile-info.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
-import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
@@ -10,7 +9,6 @@ import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Status window and tile info (Nov 12, FFT style): what shows for each unit and tile
-registerFftStudy();
 
 describe('mana and stamina in words (Nov 16)', () => {
   it('Status shows the pool left, its max and regen; the cost and what is missing read in words', () => {
@@ -64,39 +62,25 @@ describe('status window', () => {
     expect(rows).toMatchObject({ 'Poder físico': '10', 'Poder mágico': '15' });
   });
 
-  it('FFT study: Brave, Faith, weapon, gained bonus and the charge in progress', () => {
-    const s = initialState(GARILAND, 1);
-    const ramza = s.units.find((u) => u.id === 'ramza')!;
-    ramza.vars!.pa = 1;
-    s.charges = [{ unit: 'ramza', ability: 'fft_ramza_dash', target: { x: 7, y: 2 }, follow: null, ticks: 3 }];
-    const rows = Object.fromEntries(unitStatus(s, 'ramza'));
-    expect(rows).toMatchObject({
-      Brave: '60',
-      Fé: '60',
-      Arma: 'broad sword',
-      'Força (PA)': '5 (+1)',
-      Salto: '3',
-      'Olhando para': 'sul',
-    });
-    expect(rows.Carregando).toBe('Investida, sai em 3 tiques');
+  it('Status shows where the unit faces and the charge in progress', () => {
+    const s = initialState(SCENARIOS.skirmish, 1);
+    const mage = s.units.find((u) => u.def === 'mage')!;
+    mage.facing = 0;
+    s.charges = [{ unit: mage.id, ability: 'blast', target: { x: 0, y: 0 }, follow: null, ticks: 3 }];
+    const rows = Object.fromEntries(unitStatus(s, mage.id));
+    expect(rows['Olhando para']).toBe('sul');
+    expect(rows.Carregando).toBe('Explosão, sai em 3 tiques');
   });
 
   it('a half-tile token shows Move and Jump in cells, doubled (Nov 15)', () => {
     const s = initialState(halve(SCENARIOS.skirmish), 1);
     expect(Object.fromEntries(unitStatus(s, 'h-warrior'))).toMatchObject({ Movimento: '8', Salto: '2' });
-    expect(Object.fromEntries(unitStatus(initialState(halve(GARILAND), 1), 'ramza')).Salto).toBe('6');
-  });
-
-  it('Chemist shows the potion stock', () => {
-    const rows = Object.fromEntries(unitStatus(initialState(GARILAND, 1), 'chemist'));
-    expect(rows.Poções).toBe('4');
   });
 });
 
 describe('tile info', () => {
   it('position, height, ramp and floor of the map', () => {
-    expect(tileInfo(GARILAND.grid, { x: 4, y: 2 })).toBe('Casa 4,2 · altura 6 (rampa) · telhado');
-    expect(tileInfo(GARILAND.grid, { x: 2, y: 0 })).toBe('Casa 2,0 · altura 5 · árvore · não dá para pisar');
+    expect(tileInfo(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 })).toBe('Casa 0,1 · altura 1 (rampa) · grama');
     expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 })).toBe('Casa 2,1 · altura 0 · árvore · não dá para pisar');
   });
 

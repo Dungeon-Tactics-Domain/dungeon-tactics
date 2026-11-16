@@ -20,7 +20,7 @@ export const blocksOf = (t: Tile) => (t.look && LOW.has(t.look) ? 1 : TERRAIN[t.
 export interface Tile {
   terrain: TerrainKind;
   h: number;
-  // Drawing only (Nov 12, Gariland map with the KayKit pieces): the rules do not read it. `look` picks the tile's pieces in the scene;
+  // Drawing only (Nov 12, maps with the KayKit pieces): the rules do not read it. `look` picks the tile's pieces in the scene;
   // `ramp` tilts the top, rising `rise` levels in the direction FACING[dir]. A map without both is drawn as before. Only a
   // token's stop reads `ramp` (pathing.ts restsOn: no ramp cell under a square between tiles).
   look?: string;
@@ -47,7 +47,7 @@ export interface Grid {
   width: number;
   height: number;
   tiles: Tile[];
-  levelHeight?: number; // height of one level in the drawing, in tiles; only the FFT study map sets it (finer levels)
+  levelHeight?: number; // height of one level in the drawing, in tiles; no game map sets it today (finer levels)
   // cells per whole tile on each side: 2 on a map split into half tiles (half.ts), where the rules still read ranges,
   // radii, pushes and hit-chance distance in whole tiles. Without it, 1
   sub?: number;
@@ -124,7 +124,7 @@ export const FACING: Pos[] = [
 ];
 
 // Where the attack comes from (BMG 1.4, diagram): the largest of the distances in front, to the side and behind the target wins; on a tie
-// the one more to the front wins (front over side, side over back). Tile height does not count. It used to be from the FFT study; since
+// the one more to the front wins (front over side, side over back). Tile height does not count. Since
 // Nov 13 it applies in the game (combat.ts, hit chance by side and back)
 export type Side = 'front' | 'side' | 'back';
 // direction of a newly spawned unit (or of an old save without direction): toward the nearest enemy; without an enemy, the first

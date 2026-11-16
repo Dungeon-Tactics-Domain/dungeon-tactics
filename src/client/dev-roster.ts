@@ -30,22 +30,14 @@ export interface DevSetup {
 
 export const DEV_KEY = 'dt:dev'; // cast saved in the browser
 export const DEV_SCENARIO = 'dev';
-// maps the menu offers: the game's and the Gariland relief (the map only: the study is loaded separately, see game/boot.ts)
-export const DEV_MAPS = [
-  'beacon_hill',
-  'skirmish',
-  'flooded_crypt',
-  'crypt_heart',
-  'ash_wood',
-  'frost_pass',
-  'fft-gariland',
-];
+// maps the menu offers: the game's
+export const DEV_MAPS = ['beacon_hill', 'skirmish', 'flooded_crypt', 'crypt_heart', 'ash_wood', 'frost_pass'];
 // limits of the editable numbers: wide for testing, but without breaking the turn queue (speed 0 never plays)
 export const LIMITS = { hp: [1, 999], speed: [1, 50], move: [1, 12], jump: [1, 6] } as const;
 const MAX_TEAM = 12;
 
-// game classes and abilities (the FFT study's depend on the study's rules and are left out)
-const ours = (id: string) => !id.startsWith('fft_') && !id.startsWith('dev-');
+// game classes and abilities (the sheets this menu builds are left out)
+const ours = (id: string) => !id.startsWith('dev-');
 // large unit (size) is left out: the maps' starting tiles are 1 tile
 export const devClasses = () =>
   Object.keys(UNIT_DEFS).filter((id) => ours(id) && id !== OBJECTIVE_DEF && !UNIT_DEFS[id].size);
@@ -66,16 +58,11 @@ export function slotsOf(map: string): Record<Team, Spawn[]> & { objective: Spawn
   };
 }
 
-// a map's default cast is whoever is born on it; in Gariland (study units) our classes come in rotation
-const FALLBACK: Record<Team, string[]> = {
-  hero: ['warrior', 'archer', 'mage', 'rogue'],
-  enemy: ['soldier', 'skeleton_archer', 'dark_mage', 'brute'],
-};
+// a map's default cast is whoever is born on it
 export function defaultSetup(map: string): DevSetup {
   const s = slotsOf(map);
-  const pick = (slots: Spawn[], team: Team) =>
-    slots.map((x, i) => unitFrom(ours(x.def) ? x.def : FALLBACK[team][i % 4]));
-  return { map, heroes: pick(s.hero, 'hero'), enemies: pick(s.enemy, 'enemy') };
+  const pick = (slots: Spawn[]) => slots.map((x) => unitFrom(x.def));
+  return { map, heroes: pick(s.hero), enemies: pick(s.enemy) };
 }
 
 // What prevents starting, as text for the player (empty = can start)
@@ -142,7 +129,7 @@ export function parseSetup(raw: unknown): DevSetup | null {
   return heroes && enemies ? { map: r.map, heroes, enemies } : null;
 }
 
-// Map without the Beacon (Gariland): no objective, last one standing wins; the default rule would give an instant defeat (no Beacon = lost)
+// Map without the Beacon (a crawl room): no objective, last one standing wins; the default rule would give an instant defeat (no Beacon = lost)
 const lastStanding: Rules = {
   outcome: (state) =>
     !state.units.some((u) => u.team === 'enemy')

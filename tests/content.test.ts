@@ -29,8 +29,7 @@ describe('content ids', () => {
 
 describe('mana and stamina (Nov 16, the Mechanics lab equipamento.json)', () => {
   it('a spell costs mana and a martial ability stamina', () => {
-    for (const a of ABILITY_LIST.filter((x) => !x.id.startsWith('fft_') && x.cost))
-      expect(a.cost![0], a.id).toBe(a.magic ? 'mana' : 'stamina');
+    for (const a of ABILITY_LIST.filter((x) => x.cost)) expect(a.cost![0], a.id).toBe(a.magic ? 'mana' : 'stamina');
   });
   it('a basic attack is free, and every unit can pay each of its abilities from its full pool', () => {
     for (const u of UNIT_LIST) {

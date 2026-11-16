@@ -5,7 +5,7 @@ import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { resistOf, UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
-// Per-scenario rules (Nov 11): the FFT study swaps hit chance, turn cost, jump and battle end without touching the
+// Per-scenario rules (Nov 11): a scenario swaps hit chance, jump, fall, damage roll and battle end without touching the
 // game rules. A scenario without `rules` (all game ones) works as before; the other tests already cover that.
 describe('scenario rules', () => {
   const grid = flat(6, 6);

@@ -97,7 +97,7 @@ const ATLAS = [
   'wait',
 ];
 export const ATLAS_COLUMNS = 6;
-// cell of an ability or command in the atlas; null when it has none (the FFT study abilities, a new ability)
+// cell of an ability or command in the atlas; null when it has none (a new ability)
 export const atlasCell = (id: string): [x: number, y: number] | null => {
   const n = ATLAS.indexOf(id);
   return n < 0 ? null : [n % ATLAS_COLUMNS, Math.floor(n / ATLAS_COLUMNS)];

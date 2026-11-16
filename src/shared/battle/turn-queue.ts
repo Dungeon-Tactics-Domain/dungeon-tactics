@@ -1,7 +1,6 @@
 import { regen, resolveAbility } from './combat.ts';
 import { type Grid, samePos } from './grid.ts';
 import { aimTile, nearestTile } from './pathing.ts';
-import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Charge, Pos } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
@@ -31,7 +30,7 @@ function advance(slots: Slot[]): Slot {
 
 const slotsOf = (state: BattleState): Slot[] => {
   const all = state.units
-    .map((u) => ({ id: u.id, team: u.team, ct: u.ct, speed: rulesOf(state).speed?.(u) ?? UNIT_DEFS[u.def].speed }))
+    .map((u) => ({ id: u.id, team: u.team, ct: u.ct, speed: UNIT_DEFS[u.def].speed }))
     .filter((s) => s.speed > 0);
   return [...all.filter((s) => s.team === 'enemy'), ...all.filter((s) => s.team === 'hero')];
 };

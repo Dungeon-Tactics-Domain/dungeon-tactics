@@ -53,11 +53,9 @@ function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
 
 // null when the address went home instead (a room that is not open, or a crawl room that could not be built)
 export async function selectBattle(): Promise<BattleSelection | null> {
-  // the battle the game opens and where it is saved; the FFT study swaps both at boot (separate save)
+  // the battle the game opens and where it is saved; the address may swap both
   let scenario = FIRST_BATTLE;
   let saveKey = 'dt:battle';
-  // FFT reference study (Nov 11): not game content. Only opens with the parameter and comes in a separate chunk of the
-  // build (dynamic import), so none of it goes into the package the player downloads.
   const study = param('scenario');
   const crawl = param('crawl');
   const roomAt = param('room');
@@ -93,17 +91,9 @@ export async function selectBattle(): Promise<BattleSelection | null> {
     scenario = built;
     SCENARIOS[scenario.id] = scenario;
     saveKey = 'dt:battle:crawl';
-  } else if (study === 'fft-gariland' || study === 'fft-classes') {
-    const fft = await import('../../shared/battle/fft/gariland.ts');
-    fft.registerFftStudy();
-    scenario = SCENARIOS[study];
-    saveKey = `dt:battle:${study}`;
   } else if (study === DEV_SCENARIO) {
     // battle from the developer menu: the saved roster becomes the scenario (no valid roster, goes back to the default battle)
     const setup = parseSetup(store.json(DEV_KEY));
-    // the Gariland map only: our classes fight on it in half tiles like on any other map. Registered before the check,
-    // which counts the map's starting tiles (Nov 15 review: unregistered, it fell back to the default battle)
-    if (setup?.map.startsWith('fft-')) (await import('../../shared/battle/fft/gariland.ts')).registerFftStudy();
     // roster with a problem (empty team, unit without ability) broke the battle (Nov 13, review): falls back to the default
     if (setup && !problems(setup, t).length) {
       scenario = buildDevScenario(setup);
@@ -122,7 +112,7 @@ export async function selectBattle(): Promise<BattleSelection | null> {
     scenario = SCENARIOS[study];
     saveKey = `dt:battle:${study}`;
   }
-  // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left, the FFT study included);
+  // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left);
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
   return { scenario, saveKey, title: !study && crawl === null && !room, room };

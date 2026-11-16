@@ -31,7 +31,7 @@ export function forecast(b: Battle, ability: string, p: Preview): Forecast[] {
     // push: the extra damage from collision, fall and spikes, to see the combo before confirming (night of Nov 12)
     const shove = a.push && !heal && !support ? simulatePush(b.grid, b.state, u, p.center, b.actor.pos, a.push) : null;
     const push = shove?.dmg ?? 0;
-    // the push comes with every hit (without `pushChance`, which only the FFT study uses): it goes into the life after
+    // the push comes with every hit (without `pushChance`, which no game ability sets): it goes into the life after
     const sure = a.pushChance === undefined ? push : 0;
     const after: [number, number] = heal
       ? [Math.min(max, u.hp + heal[0]), Math.min(max, u.hp + heal[1])]

@@ -1,7 +1,7 @@
 // Texture over the KayKit models (Nov 13, Fernando's request: "the trees and the units lack texture"): the pieces are
 // flat-colored (one palette), so a CC0 terrain texture (terrain.ts) comes in as grain, projected along the three axes
 // of the model itself. It only shifts the tone around each piece's color, without replacing the color. Applies to the KayKit pieces left over
-// on open maps (brick walls, Gariland's crate); painted trees and objects (painted.ts) do not go through here, and
+// on open maps (brick walls); painted trees and objects (painted.ts) do not go through here, and
 // units get only the shading (strength 0).
 import type * as THREE from 'three';
 

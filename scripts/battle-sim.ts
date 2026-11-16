@@ -1,11 +1,9 @@
-import { registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { simulate } from '../src/shared/battle/simulate.ts';
 
 // Usage: node scripts/battle-sim.ts [scenario] [seeds]. Measures the heroes' win rate, the turns and the heroes
 // left over: a unit/ability number is optional to check here (balance is decided by playing).
 const [scenarioId = 'beacon_hill', count = '200'] = process.argv.slice(2);
-registerFftStudy(); // the FFT study scenario (fft-gariland) only exists for whoever asks for it
 const scenario = SCENARIOS[scenarioId];
 if (!scenario) throw new Error(`unknown scenario: ${scenarioId}`);
 const n = Number(count);

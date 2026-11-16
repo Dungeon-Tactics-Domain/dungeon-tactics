@@ -22,7 +22,7 @@ import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
 // Jump of whoever does not state its own (UnitDef.jump): climbing or descending more than this in one step is blocked (spec, Oct 25). Since Nov 13
-// each class may have its own, as in FFT; the FFT study swaps it for its own rule (rules.jump)
+// each class may have its own, as in FFT; a scenario may swap it for its own rule (rules.jump)
 export const MAX_JUMP = 1;
 export const jumpOf = (state: BattleState, def: string) =>
   rulesOf(state).jump?.(def) ?? UNIT_DEFS[def]?.jump ?? MAX_JUMP;

@@ -13,7 +13,6 @@ export interface UnitDef {
   // others like the FFT Thief). Rogue 3 and archers 2 broke the campaign curve (stage 5 from 35% to 77%)
   jump?: number;
   abilities: string[]; // the first is the basic attack
-  info?: Record<string, string | number>; // extra sheet for the status window (weapon, Brave, Faith…); only the study scenario has it
   // counters the unit is born with (see UnitState.vars): the study's MP and stock, and since Nov 16 every sheet's mana and
   // stamina pools (RESOURCES), whose start value is also their max
   vars?: Record<string, number>;

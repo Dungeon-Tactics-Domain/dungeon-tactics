@@ -185,7 +185,7 @@ export class Board {
   }
 
   // Tiles with a look (Tile.look): column of whole 1-tile cubes, from the tile top down, with the top piece
-  // and the column piece of each look. Whole cube because the cube flattened to the height of one level (0.25 in Gariland) squeezed the
+  // and the column piece of each look. Whole cube because the cube flattened to the height of one level (0.25 on the old FFT study map) squeezed the
   // texture into stripes. The ramp tilts the top cube (shear) and stretches it downward, so no gap opens.
   private lookBatches(
     edge: (p: Pos) => boolean,
@@ -225,9 +225,8 @@ export class Board {
       const tile = tileAt(this.grid, p);
       const look = LOOK[tile.look!];
       const w = this.space.world(p);
-      // Gariland tree (non-walkable tile, the file height is the crown's): the ground is the lowest neighbor's. On our
-      // maps the height is already the ground's. Pieceless wall on top: two levels above the tile, as without a look; with a piece
-      // (column, crate, barrel), the piece is what blocks and the tile stays at ground level.
+      // `canopy` tree that blocks: the ground is the lowest neighbor's (on our maps the height is already the ground's).
+      // Pieceless wall on top: two levels above the tile, as without a look; with a piece (column, crate, barrel), the piece is what blocks and the tile stays at ground level.
       const wall = tile.terrain === 'wall';
       const h =
         look.canopy && wall
@@ -307,7 +306,7 @@ export class Board {
     return { add, build };
   }
 
-  // open-map pieces (crates, barrels, bridge, walls, Gariland trees) with detail.ts's texture and shading;
+  // open-map pieces (crates, barrels, bridge, walls, trees) with detail.ts's texture and shading;
   // one material per source material, so shader programs do not multiply
   private readonly texturedMats = new Map<THREE.Material, THREE.Material>();
   // unit and body: only detail.ts's shading, without the grain (Nov 13, Fernando found the texture on them "ugly")
@@ -357,7 +356,7 @@ export class Board {
     return out;
   }
 
-  // Column cube that never shows: the 4 neighbors are solid ground (no water, bridge or Gariland crown) reaching up to
+  // Column cube that never shows: the 4 neighbors are solid ground (no water, bridge or tree crown) reaching up to
   // its top, and so is the tile. They were most of the triangles on maps with a per-tile look (1.2 million on Beacon Hill);
   // cutting them pays for the bigger trees and the details (Nov 13). Water is left out: the other front may make it transparent
   private buried(p: Pos, y: number) {

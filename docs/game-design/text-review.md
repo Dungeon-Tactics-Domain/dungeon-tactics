@@ -18,7 +18,7 @@ Scope: `src/content/*.ts` and every `t('pt', 'en')` in `src/client`. Names of cl
 ## Not fixed (needs a decision or is not just text)
 
 - Long lines for a ~360 px screen (measured by eye, not rendered): `hud.ts:898` (`Mover: não dá para parar aqui; a unidade inteira precisa caber…`), `game/options.ts:183` (controls paragraph), `game/title.ts:216-224` (How to play paragraphs, town and expedition). They are paragraphs in scrolling windows, so they wrap; shortening would lose rules. Suggest a mobile pass when mobile starts.
-- `hud.ts:188-189`: `Força (PA)` / `Physical attack (PA)` and `Magia (MA)` do not match `Poder físico/mágico` (`hud.ts:172-173`). They belong to the FFT study panel, so left alone. Suggest `Ataque físico (PA)` if that panel ever ships.
+- `hud.ts:188-189`: `Força (PA)` / `Physical attack (PA)` and `Magia (MA)` do not match `Poder físico/mágico` (`hud.ts:172-173`). They belonged to the FFT study panel, removed with it on Nov 16.
 - `hud.ts:85` vs `428`: the ability stat is `acerto`/`accuracy` and the forecast chance is `acerto`/`hit`. Same pt word, two en words. Left: changing en `hit` to `accuracy` would blur the forecast. Suggest `chance de acerto` in the forecast if players get confused.
 - `town.ts` place `Ferreiro` / `Blacksmith` names a person, not the shop (`Ferraria` would match `Taverna`, `Loja`). Left: the title text and townsfolk refer to it by this name; suggest renaming together.
 - Tone: the town and end-screen lines are warm with a dark edge; the HUD/help lines are neutral and technical (`Acabou o estoque ou o MP`, `Nenhum alvo nesta casa`). Left as is: they are rule feedback, not narrative.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
+import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import {
   COMBAT,
@@ -10,7 +11,7 @@ import {
   resolveAbility,
   simulatePush,
 } from '../src/shared/battle/combat.ts';
-import type { Grid } from '../src/shared/battle/grid.ts';
+import { dist, FACING, type Grid, sideOf } from '../src/shared/battle/grid.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -291,7 +292,7 @@ describe('battle end', () => {
   });
 });
 
-// FFT study (Nov 11): Throw Stone and Charge push ~50% of the time
+// push with a chance (Nov 11, made for the FFT study's Throw Stone; no game ability sets it today)
 describe('push with chance', () => {
   it('pushChance 0 never pushes and 100 always pushes; without the field, it always pushes', () => {
     const grid = flat(6, 1);
@@ -336,6 +337,66 @@ describe('facing in the game (Nov 13)', () => {
       expect(shot(1).side).toBe('back');
       expect(shot(1).chance, ability).toBe(Math.min(COMBAT.MAX_CHANCE, front.chance + COMBAT.BACK_BONUS));
     }
+  });
+
+  // moved here from the FFT study tests when it was removed (Nov 16): these rules are the game's since Nov 13
+  it("reproduces the guide's 5x5 diagram (BMG 1.4), with the target in the center facing down", () => {
+    // rows top to bottom, as in the guide; X = the target
+    const diagram = ['SBBBS', 'SSBSS', 'SSXSS', 'SFFFS', 'FFFFF'];
+    const name = { S: 'side', B: 'back', F: 'front' } as const;
+    for (let row = 0; row < 5; row++)
+      for (let col = 0; col < 5; col++) {
+        const c = diagram[row][col] as 'S' | 'B' | 'F' | 'X';
+        if (c !== 'X')
+          expect(sideOf({ x: 2, y: 2 }, { x: 0, y: 1 }, { x: col, y: row }), `${col},${row}`).toBe(name[c]);
+      }
+  });
+
+  it('every unit but the Beacon spawns with a facing', () => {
+    const units = Battle.start(SCENARIOS.beacon_hill, 1).state.units;
+    expect(units.filter((u) => u.def !== 'beacon').every((u) => u.facing !== undefined)).toBe(true);
+    expect(units.find((u) => u.def === 'beacon')!.facing).toBeUndefined(); // the Beacon has no front or back
+  });
+
+  it('whoever moves faces where they went, whoever attacks turns to the target, and the player chooses at the end', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 3, y: 5 },
+      { id: 'f', def: 'soldier', team: 'enemy', x: 4, y: 6 },
+      { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 0 },
+    ]);
+    s.units[0].facing = 3;
+    const b = new Battle(flat(8, 8), s);
+    b.move({ x: 4, y: 5 });
+    expect(b.actor.facing).toBe(1); // moved toward +x
+    b.act('strike', { x: 4, y: 6 });
+    expect(b.actor.facing).toBe(0); // target at +y
+    b.face(2);
+    expect(b.actor.facing).toBe(2);
+    b.face(7); // nonexistent direction: ignored
+    expect(b.actor.facing).toBe(2);
+  });
+
+  it('the AI ends its turn facing the nearest enemy', () => {
+    const b = Battle.start(SCENARIOS.skirmish, 3);
+    const id = b.actor.id;
+    playAiTurn(b);
+    const me = b.state.units.find((u) => u.id === id)!;
+    const foe = b.state.units
+      .filter((u) => u.team !== me.team && u.def !== 'beacon')
+      .reduce((a, c) => (dist(c.pos, me.pos) < dist(a.pos, me.pos) ? c : a));
+    expect(sideOf(me.pos, FACING[me.facing!], foe.pos)).toBe('front');
+  });
+
+  it('saving and loading keeps facing; an invalid one is refused, a missing one (old save) is filled in', () => {
+    const b = Battle.start(SCENARIOS.skirmish, 1);
+    b.face(3);
+    expect(Battle.load(b.save())?.state).toEqual(b.state);
+    const raw = JSON.parse(b.save());
+    const i = b.state.units.findIndex((u) => u.id === b.actor.id);
+    raw.state.units[i].facing = 9;
+    expect(Battle.load(JSON.stringify(raw))).toBeNull();
+    delete raw.state.units[i].facing;
+    expect(Battle.load(JSON.stringify(raw))?.state.units[i].facing).toBeTypeOf('number');
   });
 });
 

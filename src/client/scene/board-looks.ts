@@ -3,9 +3,9 @@
 import type { Grid } from '../../shared/battle/grid.ts';
 
 // Pieces for each tile look (Tile.look), in public/models: top cube and column cube below. A bridge has no
-// column (water underneath); a tree puts the forest model on top. Mapping by the orchestrator on Nov 12 (assembly
-// of Gariland from the map file's surface_type), approved by Fernando to go into the game.
-// `canopy`: the tile height on the map is the crown's (a Gariland tree), and the ground comes from the lowest neighbor.
+// column (water underneath); a tree puts the forest model on top. Mapping by the orchestrator on Nov 12, approved by
+// Fernando to go into the game.
+// `canopy`: a blocking tree's tile height is the crown's, and the ground comes from the lowest neighbor; its column never hides.
 // `stairs`: on a ramp tile the top stays flat and the dungeon stairs (STAIRS) climb over it (crypts, Nov 13)
 // `house`: a town building (src/content/crawl/town.ts), `propW` whole tiles wide over its lot, centred on this tile and
 // picked as it, so a click on the house finds the place
@@ -26,11 +26,7 @@ export const LOOK: Record<
   stone: { top: 'blocks/gravel', side: 'blocks/stone' },
   // water: the top piece is the gravel bed (where the unit steps), seen through the water.ts surface (Nov 13)
   water: { top: 'blocks/gravel', side: 'blocks/stone_dark' },
-  roof: { top: 'blocks/bricks_B', side: 'blocks/bricks_A' },
-  chimney: { top: 'blocks/stone_dark', side: 'blocks/bricks_A' },
-  wood: { top: 'blocks/wood', side: 'blocks/wood' },
   bridge: { top: 'blocks/wood', side: null },
-  box: { top: 'dungeon/box_large', side: 'blocks/stone' },
   tree: { top: 'blocks/grass', side: 'blocks/dirt', prop: 'forest/Tree_1_A_Color1', canopy: true },
   // Beacon Hill (Nov 12, proposal approved by Fernando): rock on the hill, sand and gold on the Beacon mound, brick
   // walls, four varied trees and the enemies' side in the snow (read from afar which side each team starts on)

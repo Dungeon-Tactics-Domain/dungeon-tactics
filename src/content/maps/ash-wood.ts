@@ -76,8 +76,8 @@ export const ASH_WOOD: Scenario = {
   id: 'ash_wood',
   name: 'Bosque das Cinzas',
   en: 'Ash Wood',
-  // height of each tile on a separate map (Nov 13, Fernando's request: "stages too flat"; relief reference: Gariland
-  // has 47% of neighbors with a drop of 2+, the Wood had 0%): the enemy camp on a plateau 3 levels above the river (4 in the corners),
+  // height of each tile on a separate map (Nov 13, Fernando's request: "stages too flat"; relief reference: the FFT study
+  // map had 47% of neighbors with a drop of 2+, the Wood had 0%): the enemy camp on a plateau 3 levels above the river (4 in the corners),
   // steps of 1 that make ramps and drops of 2 that force you to go around. Water and bridge keep their own height.
   grid: withRamps(
     {

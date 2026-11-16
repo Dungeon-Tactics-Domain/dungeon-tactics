@@ -30,7 +30,7 @@ export interface AbilityDef {
   // spends from UnitState.vars on each use, paid when a charge starts; without balance, it cannot be used. The game's
   // abilities spend 'mana' (spells) or 'stamina' (martial; Nov 15 grill), the study's MP and stock
   cost?: [counter: string, amount: number];
-  pushChance?: number; // % of times the push happens; without the field, always (only the FFT study uses it: ~50%)
+  pushChance?: number; // % of times the push happens; without the field, always (no game ability sets it today)
 }
 
 export const ABILITIES: Record<string, AbilityDef> = Object.fromEntries(ABILITY_LIST.map((a) => [a.id, a]));

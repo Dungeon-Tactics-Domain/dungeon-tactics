@@ -13,10 +13,10 @@ Index of the design documents and of what each lab touches. Decision of Nov 14 (
 | [client-town-expedition.md](client-town-expedition.md) | town, expedition, walkable town, party, standalone crawl rooms and save slots in the browser |
 | [client-scene.md](client-scene.md) | half tiles on screen, water, ambience, game feel, terrain, tile marks, dialogue box and music |
 | [shared-battle-rules.md](shared-battle-rules.md) | battle rules in `src/shared/battle`: FFT turns, water, spikes, charge, attributes, friendly fire, counters, jump, AI, with the request and date |
-| [shared-maps-units.md](shared-maps-units.md) | tile looks, ramps, the old campaign's maps and units, the large unit, half tiles and the FFT study |
+| [shared-maps-units.md](shared-maps-units.md) | tile looks, ramps, the old campaign's maps and units, the large unit, half tiles and the removed FFT study |
 | [shared-crawl.md](shared-crawl.md) | crawl rooms (generator and checks), `CRAWL_VERSION` history and the expedition rules in `src/shared/crawl` |
 | [towns-party-equipment.md](towns-party-equipment.md) | towns, party management, equipment, recruiting and new classes (Nov 13; historical: written for the Beacon Ashes campaign, removed from the code on Nov 15) |
-| [fft-reference.md](fft-reference.md) | Final Fantasy Tactics formulas with sources, for the `battle/fft/` study |
+| [fft-reference.md](fft-reference.md) | Final Fantasy Tactics formulas with sources (the `battle/fft/` study that used them was removed Nov 16) |
 | [tactics-ogre-fft-ui-reference.md](tactics-ogre-fft-ui-reference.md) | FFT battle screen and Tactics Ogre mechanics, with sources |
 
 ## Labs

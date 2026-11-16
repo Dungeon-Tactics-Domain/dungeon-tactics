@@ -28,7 +28,7 @@ export interface AbilityLook {
 
 const MAGIC_CHARGE = 'Ranged_Magic_Spellcasting',
   BOW_CHARGE = 'Ranged_Bow_Aiming_Idle';
-// key: game ability id, or the end of the study id (fft_<unit>_<ability>), or the whole study id
+// key: game ability id
 const LOOKS: Record<string, AbilityLook> = {
   strike: { clip: 'Melee_1H_Attack_Chop', fx: 'slash' },
   heavy_strike: { clip: 'Melee_2H_Attack_Chop', fx: 'heavy' },
@@ -52,24 +52,8 @@ const LOOKS: Record<string, AbilityLook> = {
   lance: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
   sweep: { clip: '2H_Melee_Attack_Spin', fx: 'impact' },
   lance_jump: { clip: 'Melee_2H_Attack_Chop', charge: 'Jump_Idle', fx: 'heavy' }, // charges "in the air" and lands with the strike
-  // FFT study
-  attack: { clip: 'Melee_1H_Attack_Chop', fx: 'slash' },
-  fft_archer_attack: { clip: 'Ranged_Bow_Release', fx: 'arrow' },
-  fft_chemist_attack: { clip: 'Melee_1H_Attack_Stab', fx: 'stab' },
-  stone: { clip: 'Throw', fx: 'rock' },
-  dash: { clip: 'Dodge_Forward', fx: 'dash' },
-  accumulate: { clip: 'Cheer', fx: 'buff' },
-  yell: { clip: 'Cheer', fx: 'buff' },
-  wish: { clip: 'Ranged_Magic_Raise', fx: 'heal' },
-  potion: { clip: 'Throw', fx: 'flask' },
-  speed_break: { clip: 'Melee_1H_Attack_Chop', fx: 'debuff' },
-  power_break: { clip: 'Melee_1H_Attack_Chop', fx: 'debuff' },
-  charge1: { clip: 'Ranged_Bow_Release', charge: BOW_CHARGE, fx: 'arrow' },
-  charge2: { clip: 'Ranged_Bow_Release', charge: BOW_CHARGE, fx: 'arrow' },
-  fire: { clip: 'Ranged_Magic_Shoot', charge: MAGIC_CHARGE, fx: 'blast' },
-  cure: { clip: 'Ranged_Magic_Raise', charge: MAGIC_CHARGE, fx: 'heal' },
 };
-export const lookOf = (id: string): AbilityLook => LOOKS[id] ?? LOOKS[id.split('_').slice(2).join('_')] ?? LOOKS.strike;
+export const lookOf = (id: string): AbilityLook => LOOKS[id] ?? LOOKS.strike;
 
 // effect colors: light, not theme paint (the HUD follows the :root variables; this is inside the 3D scene)
 const COLOR: Record<FxKind, string> = {

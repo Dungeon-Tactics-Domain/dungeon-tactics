@@ -17,13 +17,10 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/turn-queue.ts` — FFT CT queue: turn cost, the next turn, charges firing and previewOrder for the turn list.
 - `src/shared/battle/battle.ts` — Battle: owns the state, move/act/end turn, limited undo (dice never roll back), save/load through parseBattleState.
 - `src/shared/battle/rng.ts` — seeded mulberry32 whose state lives in BattleState (nextRng, rollInt).
-- `src/shared/battle/rules.ts` — calculations a scenario may swap (only the FFT study does) and rulesOf.
+- `src/shared/battle/rules.ts` — calculations a scenario may swap (survival, crawl rooms, the developer battle) and rulesOf.
 - `src/shared/battle/half.ts` — half tiles: halve splits a map into 2x2 cells and units into 2x2 tokens (halfDef, SUB, the ?scenario=half test map).
 - `src/shared/battle/ai.ts` — greedy one-turn AI with fixed weights: walkMap, chooseTurn, chooseRetreat, playAiTurn.
 - `src/shared/battle/simulate.ts` — AI against AI until the end or a turn cap, for the simulator and tests.
-- `src/shared/battle/fft/data.ts` — Final Fantasy Tactics reference data (classes, weapons, gear, skills) for the balance study.
-- `src/shared/battle/fft/formulas.ts` — Final Fantasy Tactics reference formulas (damage, hit, crit, fall) for the balance study.
-- `src/shared/battle/fft/gariland.ts` — FFT study scenarios on our engine (Gariland, the classes battle) and registerFftStudy.
 
 ## src/shared/crawl — dungeon crawl rules
 
@@ -132,7 +129,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client/game — what opens around the battle
 
-- `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, study, developer, map, standalone).
+- `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, developer, map, standalone).
 - `src/client/game/title.ts` — title screen and its windows (new game, continue, battle, how to play, credits, developer).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/crawl.ts` — the town menu and quest gate, the expedition map, room settle and finish, and the way home.

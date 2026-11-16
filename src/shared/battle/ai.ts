@@ -101,7 +101,7 @@ function candidateTargets(grid: Grid, state: BattleState, actor: UnitState, abil
 // distance weighs more: on the 20x20 map the enemy fled the heroes' reach instead of advancing and the battle did not move
 // (measured on Nov 11: 28 of 40 enemy turns without attacking). The hero advances only up to the guard radius of the target to protect.
 // On-foot distance from each tile to the nearest enemy, in movement points (stepCost), and the jump is that of whoever
-// walks (units on the path do not count). It used to be the straight-line distance: in Gariland, two units on neighboring
+// walks (units on the path do not count). It used to be the straight-line distance: on the FFT study map (removed Nov 16), two units on neighboring
 // rooftops thought they were "2 tiles away" and nobody went down to go around; with shallow water (Nov 12) there were 35 stuck battles
 // in 1,000 in the class study. The search starts from the enemies: the cost of each step is that of entering the tile it comes from.
 export function walkMap(grid: Grid, state: BattleState, actor: UnitState): Map<string, number> {
