@@ -137,6 +137,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, developer, map, standalone); the loading line over a scene still downloading (loadNote).
 - `src/client/game/title.ts` — title screen and its windows (new game, continue, battle, how to play, credits, developer).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
+- `src/client/game/town-folk.ts` — the townsfolk: who strolls, who is being talked to, the rumour each tells next.
+- `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
 - `src/client/game/crawl.ts` — the town menu and quest gate, the expedition map, room settle and finish, and the way home.
 - `src/client/game/expedition-map.ts` — the expedition map: the floor in play as rows of rooms, the party's state and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
