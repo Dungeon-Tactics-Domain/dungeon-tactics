@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { finishTurn, previewOrder, startNextTurn, turnCt } from '../src/shared/battle/turn-queue.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
-import { flat, stateOf } from './battle-helpers.ts';
+import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 const G = flat(8, 8);
 
@@ -95,5 +95,40 @@ describe('turn queue', () => {
     finishTurn(s);
     const real = [preview[0], ...play(s, 11)];
     expect(real).toEqual(preview);
+  });
+
+  it('previewOrder of a turn whose actor just died (a counter on the walk) starts with the next unit', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 0 },
+    ]);
+    s.turn.actor = 'gone';
+    // both at speed 8 from 0: 13 ticks to 104, the enemy first, then the hero still at 104, then the enemy again after 12
+    expect(previewOrder(s, 3).map((e) => e.unit)).toEqual(['b', 'a', 'b']);
+  });
+
+  it('a charge whose caster died to a charge of the same tick neither fires nor fizzles', () => {
+    const s = stateOf(
+      [
+        { id: 'e', def: 'dark_mage', team: 'enemy', x: 0, y: 0 },
+        { id: 'm', def: 'mage', team: 'hero', x: 3, y: 0, hp: 1 },
+        { id: 'h', def: 'warrior', team: 'hero', x: 7, y: 7 },
+        { id: 'b', def: 'beacon', team: 'hero', x: 7, y: 0 },
+      ],
+      HIT_SEED,
+    );
+    // listed hero first: the enemy's blast still fires first (character list order, enemies first) and kills the mage
+    s.charges = [
+      { unit: 'm', ability: 'gust', target: { x: 0, y: 0 }, follow: null, ticks: 1 },
+      { unit: 'e', ability: 'blast', target: { x: 3, y: 0 }, follow: null, ticks: 1 },
+    ];
+    const ev = startNextTurn(G, s);
+    expect(ev.map((e) => [e.k, 'unit' in e ? e.unit : null])).toEqual([
+      ['attack', 'e'],
+      ['hit', 'm'],
+      ['die', 'm'],
+    ]);
+    expect(s.charges).toEqual([]);
+    expect(s.outcome).toBe('ongoing');
   });
 });
