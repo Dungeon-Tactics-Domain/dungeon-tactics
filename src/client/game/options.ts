@@ -2,7 +2,7 @@
 // plus restart, home and developer at the foot. It reads and changes the battle only through OptionsContext.
 import type { Scenario } from '../../shared/battle/scenarios.ts';
 import { isObjective } from '../../shared/battle/units.ts';
-import { choice, dialog, slider } from '../dialog.ts';
+import { choice, dialog, secondTap, slider } from '../dialog.ts';
 import { ALPHA_MIN, type Blur, getGlass, glassEnv, setGlass } from '../glass.ts';
 import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
@@ -307,12 +307,7 @@ export function optionsMenu(o: OptionsContext) {
           ? t('Reiniciar batalha: espere a sua vez', 'Restart battle: wait for your turn')
           : t('Reiniciar batalha', 'Restart battle'),
         (e: Event) => {
-          const btn = e.currentTarget as HTMLButtonElement;
-          if (!btn.dataset.armed) {
-            btn.dataset.armed = '1';
-            btn.textContent = t('Toque de novo para reiniciar', 'Tap again to restart');
-            return;
-          }
+          if (!secondTap(e, t('Toque de novo para reiniciar', 'Tap again to restart'))) return;
           d.close();
           o.restart();
         },
@@ -320,12 +315,7 @@ export function optionsMenu(o: OptionsContext) {
       ),
       // home: the town (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
       button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
-        const btn = e.currentTarget as HTMLButtonElement;
-        if (o.room && !btn.dataset.armed) {
-          btn.dataset.armed = '1';
-          btn.textContent = t('Toque de novo: perde a expedição', 'Tap again: the expedition is lost');
-          return;
-        }
+        if (o.room && !secondTap(e, t('Toque de novo: perde a expedição', 'Tap again: the expedition is lost'))) return;
         goHome();
       }),
       button('secondary', t('Desenvolvedor', 'Developer'), () => {

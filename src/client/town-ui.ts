@@ -21,7 +21,7 @@ import { dodgeOf, ELEMENTS, resistOf, UNIT_DEFS, type UnitDef } from '../shared/
 import { abilityDetail, defenceRows, ELEMENT_NAME, regenLine, signed } from './battle-text.ts';
 import { buy, CHEST_KEY, CHEST_MAX, EQUIP_KEY, equip, parseChest, parseEquip, sell } from './chest.ts';
 import { unitFrom } from './dev-roster.ts';
-import { choice, dialog, priceRow } from './dialog.ts';
+import { choice, dialog, priceRow, secondTap } from './dialog.ts';
 import {
   changeClass,
   DEPLOY_MAX,
@@ -135,7 +135,7 @@ export function openParty(back?: () => void) {
       ),
       el(
         'ul',
-        { class: 'party-list' },
+        { class: 'party-list arrow-walk' }, // the arrows walk the rows (dialog.ts)
         ...g.deployed.map((id) => g.members.find((m) => m.id === id)!).map(card),
         ...g.members.filter((m) => !g.deployed.includes(m.id)).map(card),
       ),
@@ -455,7 +455,8 @@ export function openSheet(m: Member, back: () => void, at = '') {
   const mine = loadEquip()[m.id] ?? {};
   const sheet = withGear(UNIT_DEFS[m.cls], mine);
   const g = loadGroup(),
-    going = g.deployed.includes(m.id);
+    going = g.deployed.includes(m.id),
+    alone = going && g.deployed.length === 1; // someone always goes (toggleDeploy refuses it)
   // dismissing returns the recruit's pieces to the chest, which keeps CHEST_MAX
   const noRoom = loadChest().items.length + Object.values(mine).length > CHEST_MAX;
   const deploy = () => {
@@ -470,7 +471,9 @@ export function openSheet(m: Member, back: () => void, at = '') {
     sfx('confirm');
     again({ ...m, cls: c });
   };
-  const fire = () => {
+  // the recruit leaves for good: a 2nd tap like Delete on a saved game (Fernando's grill of Nov 16)
+  const fire = (e: Event) => {
+    if (!secondTap(e, t('Toque de novo: dispensa', 'Tap again: dismisses'))) return;
     const r = dismiss(loadGroup(), loadEquip(), loadChest(), m.id);
     if (!r) return void sfx('cancel');
     saveGroup(r.group);
@@ -557,7 +560,7 @@ export function openSheet(m: Member, back: () => void, at = '') {
               'primary',
               going ? t('Deixar no acampamento', 'Leave at camp') : t('Levar à batalha', 'Bring to battle'),
               deploy,
-              { disabled: !going && g.deployed.length >= DEPLOY_MAX },
+              { disabled: alone || (!going && g.deployed.length >= DEPLOY_MAX) },
             ),
             button('secondary', t('Trocar equipamento', 'Change equipment'), () => {
               const i = focused();
@@ -568,6 +571,18 @@ export function openSheet(m: Member, back: () => void, at = '') {
           ),
           ...(m.recruit && noRoom
             ? [el('p', {}, t(`Dispensar: ${chestFull()}, venda peças antes.`, `Dismiss: ${chestFull()}, sell first.`))]
+            : []),
+          ...(alone
+            ? [
+                el(
+                  'p',
+                  {},
+                  t(
+                    'Só este vai à batalha: leve outro antes de deixá-lo no acampamento.',
+                    'Only this one goes to battle: bring someone else before leaving them at camp.',
+                  ),
+                ),
+              ]
             : []),
           ...(!going && g.deployed.length >= DEPLOY_MAX
             ? [

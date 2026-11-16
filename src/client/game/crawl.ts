@@ -26,7 +26,7 @@ import {
 import { roomGroup, roomId } from '../../shared/crawl/generate.ts';
 import { CHEST_KEY, EQUIP_KEY, parseChest, parseEquip } from '../chest.ts';
 import { buildDevScenario, type DevUnit, slotsOf, unitFrom } from '../dev-roster.ts';
-import { commandRow, dialog } from '../dialog.ts';
+import { commandRow, dialog, secondTap } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
@@ -191,16 +191,11 @@ function questRows(go: (fn: () => void) => () => void) {
       'gold',
       t('Nova expedição', 'New expedition'),
       (e: Event) => {
-        const btn = e.currentTarget as HTMLButtonElement;
-        if (live && !btn.dataset.armed) {
-          btn.dataset.armed = '1';
-          // the label only: the row keeps its orb
-          btn.lastChild!.textContent = t(
-            'Toque de novo: encerra a expedição atual, o ouro achado vai à cidade',
-            'Tap again: ends the current expedition, the gold found goes to town',
-          );
-          return;
-        }
+        const again = t(
+          'Toque de novo: encerra a expedição atual, o ouro achado vai à cidade',
+          'Tap again: ends the current expedition, the gold found goes to town',
+        );
+        if (live && !secondTap(e, again)) return;
         go(depart)();
       },
       live ? 'secondary' : 'primary',
@@ -289,12 +284,12 @@ export function townMenu(extra?: Node) {
           t('Grupo', 'Party'),
           beside((back) => openParty(back)),
         ),
-        // the title over its own spinning backdrop battle, the bare address
+        // the title over its own spinning backdrop battle, the bare address (an empty `search` left a "?" on it)
         commandRow(
           'bronze',
           t('Tela de título', 'Title screen'),
           go(() => {
-            location.search = '';
+            location.href = location.pathname;
           }),
         ),
         extra,
@@ -447,21 +442,18 @@ export function expeditionScreen(exp: Expedition) {
     `${t('Masmorra', 'Dungeon')} · ${floorOf(exp)}`,
     [
       partyList(exp),
-      ...rows.map((r) => el('div', { class: 'menu-actions crawl-row' }, ...r.map(room))),
+      // the arrows walk the open rooms row by row, then Back to town (dialog.ts)
+      ...rows.map((r) => el('div', { class: 'menu-actions crawl-row arrow-walk' }, ...r.map(room))),
       el(
         'div',
-        { class: 'menu-actions' },
+        { class: 'menu-actions arrow-walk' },
         // the 2nd tap confirms: going back ends the descent (decision 32), alive, so its gold goes home whole
         button('secondary', t('Voltar à cidade', 'Back to town'), (e: Event) => {
-          const btn = e.currentTarget as HTMLButtonElement;
-          if (!btn.dataset.armed) {
-            btn.dataset.armed = '1';
-            btn.textContent = t(
-              'Toque de novo: encerra a expedição, o ouro achado vai à cidade',
-              'Tap again: ends the expedition, the gold found goes to town',
-            );
-            return;
-          }
+          const again = t(
+            'Toque de novo: encerra a expedição, o ouro achado vai à cidade',
+            'Tap again: ends the expedition, the gold found goes to town',
+          );
+          if (!secondTap(e, again)) return;
           retreat(exp);
           d.close();
           toTown();

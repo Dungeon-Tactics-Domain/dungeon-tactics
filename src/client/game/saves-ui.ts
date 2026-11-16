@@ -1,6 +1,6 @@
 // The title's saved games (Nov 15, Fernando: "save games so New game does not erase the progress"): New game starts a new
 // slot, Continue opens the list of every slot, the latest played first, to load one or delete it. Rules in saves.ts.
-import { dialog } from '../dialog.ts';
+import { dialog, secondTap } from '../dialog.ts';
 import { stillFace } from '../hud-pieces.ts';
 import { LOCALE, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
@@ -73,12 +73,7 @@ export function openSaves(onBack: () => void) {
       },
     ),
     button('secondary save-delete', t('Apagar', 'Delete'), (e: Event) => {
-      const btn = e.currentTarget as HTMLButtonElement;
-      if (!btn.dataset.armed) {
-        btn.dataset.armed = '1';
-        btn.textContent = t('Toque de novo: apaga', 'Tap again: deletes');
-        return;
-      }
+      if (!secondTap(e, t('Toque de novo: apaga', 'Tap again: deletes'))) return;
       if (!deleteSlot(live, s.id)) return full();
       d.close();
       if (savedGames().length) openSaves(onBack);

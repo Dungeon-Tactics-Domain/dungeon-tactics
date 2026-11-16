@@ -238,7 +238,8 @@ function howToPlay() {
     ],
     { onBack: titleScreen },
   );
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+  // opens at the top with the focus on the ✕ (dialog): focusing Back, at the foot, scrolled the window to its end (Nov 16 QA)
+  d.overlay.classList.add('how-to-play');
 }
 
 // Title screen (night of Nov 12): the game opened straight into a battle without saying what it was. Since Nov 15 New

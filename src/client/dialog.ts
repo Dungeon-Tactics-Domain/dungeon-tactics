@@ -1,5 +1,5 @@
 // Modal dialog (came from the Warlock's ui.ts): closes on ✕, on Esc and on a tap outside; focus goes to the ✕ on open;
-// up and down walk its window list (`.camp-list`), if it has one.
+// up and down walk its window list (`.camp-list`, or `.arrow-walk` with left and right too), if it has one.
 // `fixed`: the player can't close it (no ✕, Esc and tap outside do nothing): the title screen (Nov 13, Fernando's request:
 // "on the title screen pressing Esc starts a battle… I want a real title screen"). `onBack`: what opens when the
 // player closes it (✕, Esc, tap outside); the screens that leave the title go back to it. Closing from code (`close`) doesn't call it.
@@ -46,20 +46,29 @@ export function dialog(
     (e) => {
       // up and down walk a window list (title, Quick battle, Town), as the title footer says; only the topmost window moves
       // (a list behind another window stays put), even after a click left the focus on the page
-      const list = overlay.querySelector('.camp-list');
+      // `.arrow-walk` takes the arrows where the rows are not menu rows (Nov 16 QA: the Party list and the expedition
+      // map's rooms walked by Tab only); left and right too, since the map's rooms of a row sit side by side
+      const items = [
+        ...overlay.querySelectorAll<HTMLElement>(
+          ':is(.camp-list, .arrow-walk) :is(button:not([disabled]), [role="button"])',
+        ),
+      ].filter((b) => b.offsetParent);
       const top = [...document.querySelectorAll('.overlay')].at(-1) === overlay;
-      if ((e.code === 'ArrowUp' || e.code === 'ArrowDown') && list && top) {
+      const dir = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[e.code];
+      const sideways = (e.code === 'ArrowLeft' || e.code === 'ArrowRight') && !overlay.querySelector('.arrow-walk');
+      if (dir && items.length && top && !sideways) {
         e.preventDefault();
-        const items = [...list.querySelectorAll<HTMLButtonElement>('button:not([disabled])')];
-        const at = items.indexOf(document.activeElement as HTMLButtonElement);
-        const step = e.code === 'ArrowUp' ? -1 : 1;
-        items[at < 0 ? (step > 0 ? 0 : items.length - 1) : (at + step + items.length) % items.length]?.focus();
+        const at = items.indexOf(document.activeElement as HTMLElement);
+        items[at < 0 ? (dir > 0 ? 0 : items.length - 1) : (at + dir + items.length) % items.length]?.focus();
         return;
       }
       // only the topmost window takes Esc too: the fixed town menu stays open under its Shop, and took the key first
       if (e.code !== 'Escape' || !top || e.repeat) return; // a held Esc would close every stacked window
       e.preventDefault();
       e.stopImmediatePropagation(); // Esc closes only the dialog: without this it reached the game and canceled the choice too
+      // an armed 2nd-tap button takes the first Esc back (secondTap), so it does not close the window under it
+      const armed = overlay.querySelector<HTMLElement>('[data-armed]');
+      if (armed) return disarm(armed);
       back();
     },
     { capture: true, signal: ac.signal },
@@ -71,6 +80,31 @@ export function dialog(
   syncInert();
   x?.focus();
   return { overlay, close };
+}
+
+// The 2nd tap of an action that loses something (Delete, Restart, Leave the room, Dismiss, a new expedition over a live
+// one): the 1st only arms the button and says what the next does, true on the 2nd. It disarms (the label back) after
+// ARM_MS, when the focus leaves it, on Esc (dialog above). The label is the button's last child, so a
+// command row keeps its orb. Nov 16 QA: Dismiss acted on the 1st tap and the armed ones never disarmed
+const ARM_MS = 5000; // long enough to read "Tap again: ends the current expedition, the gold found goes to town"
+const timers = new WeakMap<HTMLElement, number>();
+function disarm(btn: HTMLElement) {
+  if (btn.dataset.armed === undefined) return;
+  btn.lastChild!.textContent = btn.dataset.armed;
+  delete btn.dataset.armed;
+  clearTimeout(timers.get(btn));
+}
+export function secondTap(e: Event, text: string): boolean {
+  const btn = e.currentTarget as HTMLElement;
+  if (btn.dataset.armed !== undefined) return true;
+  btn.dataset.armed = btn.lastChild?.textContent ?? '';
+  btn.lastChild!.textContent = text;
+  timers.set(
+    btn,
+    window.setTimeout(() => disarm(btn), ARM_MS),
+  );
+  btn.addEventListener('blur', () => disarm(btn), { once: true });
+  return false;
 }
 
 // The gamepad inside the topmost window (the battle's and the town's loops): the d-pad moves between its visible buttons,

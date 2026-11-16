@@ -865,8 +865,9 @@ button[hidden],
 }
 /* Continue's saved games (saves-ui.ts, Nov 15): the load row and its Delete side by side as menu rows of the window
    list, the face before who goes and the where-gold-when line; scrolls past a screenful. Delete keeps its width when its
-   2nd-tap text shows, so the rows do not jump */
-.save-slots .dialog.title {
+   2nd-tap text shows, so the rows do not jump. How to play takes the same width: at 460 px it was 2.5 screens long */
+.save-slots .dialog.title,
+.how-to-play .dialog.title {
   width: min(760px, 100%);
 }
 .dialog .save-list {
