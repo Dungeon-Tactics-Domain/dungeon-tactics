@@ -10,8 +10,10 @@ describe('numberPx: the number grows with the share of life it takes', () => {
     expect(numberPx(2000, 200)).toBe(78); // capped: 56 x 1.4
     expect(numberPx(5, 500)).toBe(19); // a scratch stays readable
   });
-  it('reads the same at x5 life and damage', () => {
-    expect(numberPx(60, 210)).toBe(numberPx(12, 42));
+  it('reads the share of life, not the damage: the x5 numbers keep the size, the same damage on 5x life shrinks', () => {
+    expect(numberPx(12, 42)).toBe(57); // the old scale: 29% of life, a strong strike
+    expect(numberPx(60, 210)).toBe(57); // life and damage x5
+    expect(numberPx(60, 1050)).toBe(23); // 60 on five times the life: 6%, a plain hit
   });
 });
 

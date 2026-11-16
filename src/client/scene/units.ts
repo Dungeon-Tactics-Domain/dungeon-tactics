@@ -5,10 +5,10 @@ import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
-import { canStand, dist, inBounds, samePos, subOf, tileAt } from '../../shared/battle/grid.ts';
-import { cellsOf, squareH } from '../../shared/battle/pathing.ts';
+import { canStand, dist, inBounds, isDeep, samePos, standH, subOf, tileAt } from '../../shared/battle/grid.ts';
+import { cellsOf, squareH, unitAt } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
-import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { baseDef, UNIT_DEFS } from '../../shared/battle/units.ts';
 import { chargeAura, dust, lookOf, playFx, sparks } from '../fx.ts';
 import { fatal, isBig, numberKind, numberPx, parseSlowmo, SLOWMO_KEY, shoved, WEIGHT } from '../hit-weight.ts';
 import { t } from '../i18n.ts';
@@ -403,7 +403,7 @@ export class Units {
       .then(() => flash === v.flash && this.glowBack(v.mats, v.def));
     await this.time.wait(stop);
     const amp = WEIGHT.tremble * subOf(this.space.grid);
-    if (v.body)
+    if (v.body && !still())
       void this.time.animate(TIMING.shake, (k) => (v.body!.position.x = Math.sin(k * Math.PI * 6) * amp * (1 - k)));
   }
 
@@ -423,12 +423,37 @@ export class Units {
     return d.lengthSq() > 0.01 ? d.normalize() : null;
   }
 
-  // the recoil steps into the cell just past the body's edge: not into a wall, a step up or off the map
-  private roomBehind(v: UnitView, d: THREE.Vector3): boolean {
+  // flat direction a push takes: away from the area's centre, or from the one who struck when the unit stands on it (as
+  // simulatePush reads it)
+  private pushWay(v: UnitView, center: Pos | null, striker: string | null): THREE.Vector3 | null {
+    if (!center) return this.away(striker, v);
+    const d = v.holder.position.clone().sub(this.space.world(center)).setY(0),
+      half = (UNIT_DEFS[v.def].size ?? 1) / 2;
+    if (Math.abs(d.x) < half && Math.abs(d.z) < half) return this.away(striker, v);
+    return d.lengthSq() > 0.01 ? d.normalize() : null;
+  }
+
+  // the push's main axis, as the rule picks it (x when it is at least as long as z)
+  private axis(d: THREE.Vector3): THREE.Vector3 {
+    return Math.abs(d.x) >= Math.abs(d.z) ? new THREE.Vector3(Math.sign(d.x)) : new THREE.Vector3(0, 0, Math.sign(d.z));
+  }
+
+  // What the unit's square meets one cell along `axis`, read with the rule's heights (standH, so the body wading in
+  // shallow water is not taken for a step): 'free' (level open ground, no one there), 'wall' (wall terrain or a step up:
+  // rock the body hits) or 'other' (the map's edge, deep water, a unit, a drop)
+  private behind(v: UnitView, id: string, axis: THREE.Vector3, state: BattleState): 'free' | 'wall' | 'other' {
     const g = this.space.grid,
-      p = v.holder.position.clone().addScaledVector(d, (UNIT_DEFS[v.def].size ?? 1) / 2 + 0.5);
-    const c = { x: Math.round(p.x + g.width / 2 - 0.5), y: Math.round(p.z + g.height / 2 - 0.5) };
-    return inBounds(g, c) && canStand(tileAt(g, c)) && this.space.world(c).y <= v.holder.position.y + 0.01;
+      n = UNIT_DEFS[v.def].size ?? 1,
+      p = v.holder.position;
+    // the square's corner cell from its drawn middle (squareAt)
+    const at = { x: Math.round(p.x + g.width / 2 - n / 2), y: Math.round(p.z + g.height / 2 - n / 2) };
+    const next = { x: at.x + axis.x, y: at.y + axis.z },
+      cells = cellsOf(next, n),
+      h = squareH(g, at, n);
+    if (cells.some((c) => !inBounds(g, c))) return 'other';
+    if (cells.some((c) => !canStand(tileAt(g, c)) || standH(tileAt(g, c)) > h)) return 'wall';
+    if (cells.some((c) => isDeep(tileAt(g, c)) || (unitAt(state, c) && unitAt(state, c)!.id !== id))) return 'other';
+    return squareH(g, next, n) === h ? 'free' : 'other';
   }
 
   private chest(v: UnitView): THREE.Vector3 {
@@ -460,17 +485,18 @@ export class Units {
       v.holder.position.lerpVectors(a, b, s).setY(a.y + up * s * T - (g * (s * T) ** 2) / 2),
     );
     v.holder.position.copy(b);
+    if (still()) return; // reduced motion: no dust, bounce or shake
     void dust(this.scene, (ms, step) => this.time.animate(ms, step), b.clone());
-    if (!still())
-      void this.time.animate(TIMING.bounce, (s) => (v.sway.position.y = WEIGHT.bounce * k * 4 * s * (1 - s)));
+    void this.time.animate(TIMING.bounce, (s) => (v.sway.position.y = WEIGHT.bounce * k * 4 * s * (1 - s)));
     this.quake(WEIGHT.quakeLand, TIMING.quakeLand);
   }
 
   // the blow that downs a unit: slow motion and the camera closes in on it, on every death unless Options turns it off
-  private deathCam(v: UnitView) {
-    if (still() || !parseSlowmo(store.json(SLOWMO_KEY))) return;
+  private deathCam(v: UnitView): boolean {
+    if (still() || !parseSlowmo(store.json(SLOWMO_KEY))) return false;
     this.slowUntil = this.time.t + TIMING.slowmo;
     void this.cam.closeUp(this.chest(v), WEIGHT.zoom, TIMING.closeUp);
+    return true;
   }
 
   // Plays the events in sequence; the rule is already applied to the state, here it is just reading what happened.
@@ -478,7 +504,9 @@ export class Units {
   async playEvents(events: BattleEvent[], state: BattleState, before?: (e: BattleEvent) => Promise<void>) {
     // a hit names neither the ability nor who struck: the last attack says both (the number's colour, the recoil's way)
     let striker: string | null = null,
-      magic = false;
+      center: Pos | null = null, // the attack's aimed tile: an area pushes away from it
+      magic = false,
+      slowed = false;
     const pushed = new Map<string, THREE.Vector3>(); // each unit's last push, the way a bump meets what stopped it
     const k = subOf(this.space.grid);
     for (const [i, e] of events.entries()) {
@@ -527,6 +555,7 @@ export class Units {
       } else if (e.k === 'attack') {
         striker = e.unit;
         magic = !!ABILITIES[e.ability].magic;
+        center = e.target;
         pushed.clear(); // a bump of this attack must not take an earlier attack's push
         const target = state.units.find((u) => u.pos.x === e.target.x && u.pos.y === e.target.y);
         if (!samePos(this.posOf(v), e.target))
@@ -559,18 +588,26 @@ export class Units {
           dies = fatal(events, i);
         // strong strike (25% of health or more): double pause, the camera shakes, the number bigger with a gold edge. With
         // 30%, none of 10 strikes in a Skirmish went through (measured Nov 12): the effect must show up now and then
-        const big = isBig(e.dmg, max);
-        if (dies) this.deathCam(v);
-        // a bump: the body slides to what stopped it and stops dead (the push's way; with no push, the strike's main axis)
-        const d = e.k === 'bump' ? (pushed.get(e.unit) ?? this.away(striker, v)) : null;
-        const wall =
-          d &&
-          (Math.abs(d.x) >= Math.abs(d.z)
-            ? new THREE.Vector3(Math.sign(d.x))
-            : new THREE.Vector3(0, 0, Math.sign(d.z)));
+        // a strong strike (25% of life or more, only from an attack: a fall, a bump or spikes are not one, or a 2-level
+        // fall would always be): double pause, the camera shakes, the number bigger with a gold edge. With 30%, none of
+        // 10 strikes in a Skirmish went through (measured Nov 12): the effect must show up now and then
+        const big = e.k === 'hit' && isBig(e.dmg, max);
+        // one slow motion per sequence: an area strike that downs three would hold the battle ~10 s
+        if (dies && !slowed) slowed = this.deathCam(v);
+        // a bump into rock: the body slides to it and stops dead, with sparks; against a unit, the map's edge, deep water
+        // or on the way back to where it last rested it only trembles
+        const way = e.k === 'bump' ? (pushed.get(e.unit) ?? this.pushWay(v, center, striker)) : null;
+        const wall = way && this.behind(v, e.unit, this.axis(way), state) === 'wall' ? this.axis(way) : null;
         if (wall) await this.sway(v, wall.clone().multiplyScalar(WEIGHT.wall * k), TIMING.wallSlide);
-        this.float(e.unit, `-${e.dmg}`, `${numberKind(e, magic)}${big ? ' crit' : ''}`, numberPx(e.dmg, max));
-        if (wall)
+        // magic also by a mark after the number: the colour is never the only signal
+        const kind = numberKind(e, magic);
+        this.float(
+          e.unit,
+          `-${e.dmg}${kind === 'magic' ? ' ✦' : ''}`,
+          `${kind}${big ? ' crit' : ''}`,
+          numberPx(e.dmg, max, big),
+        );
+        if (wall && !still())
           void sparks(
             this.scene,
             (ms, step) => this.time.animate(ms, step),
@@ -580,8 +617,15 @@ export class Units {
         else if (wall) this.quake(WEIGHT.quakeLand, TIMING.quakeLand);
         await this.impact(v, big);
         this.setBar(v, TIMING.hpDrain);
-        const away = e.k === 'hit' && !shoved(events, i) ? this.away(striker, v) : null;
-        const back = away && this.roomBehind(v, away) ? away : null;
+        // the recoil steps half a tile back along the push's axis, only onto level open ground and only for a unit a push
+        // can move (simulatePush: a large one does not), and not when the strike's own push moves it
+        const from = e.k === 'hit' && !shoved(events, i) ? this.away(striker, v) : null;
+        const back =
+          from &&
+          (UNIT_DEFS[baseDef(v.def)].size ?? 1) === 1 &&
+          this.behind(v, e.unit, this.axis(from), state) === 'free'
+            ? this.axis(from)
+            : null;
         if (wall) void this.sway(v, new THREE.Vector3(), TIMING.wallBack);
         else if (back)
           void this.sway(v, back.multiplyScalar(WEIGHT.recoil * k), TIMING.recoil).then(() =>

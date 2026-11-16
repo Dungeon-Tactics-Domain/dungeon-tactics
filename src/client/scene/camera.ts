@@ -37,6 +37,7 @@ const CAM_DIST = 30; // camera distance to the focus (orthographic: it only deci
 const camAsked = param('camera');
 const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'hero';
 const ZOOM = { min: 4, max: 16 };
+const CLOSE_UP = 2; // the death close-up's tightest view height, in whole tiles: the body about half the screen
 const ZOOM_START = 1.5;
 // portrait phone: at most ~9.5 tiles wide when opening. On the 20x20 the whole map left the tile at ~20 px, small
 // for a finger (touch target ≥ 44 px); the camera follows the hero of the turn and the recenter button shows everything
@@ -157,8 +158,9 @@ export class CameraRig {
     const s = this.closeSaved;
     if (!at) this.closeSaved = null;
     this.focusGoal = (at ?? s.focus).clone();
+    // never closer than CLOSE_UP tiles of view: over the action camera's close framing 2.2x filled the screen with the body
     const h0 = this.viewH,
-      h1 = at ? s.viewH / zoom : s.viewH;
+      h1 = at ? Math.max(s.viewH / zoom, Math.min(s.viewH, CLOSE_UP * this.k)) : s.viewH;
     await this.animate(ms, (k) => {
       this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k);
       this.frameView();
