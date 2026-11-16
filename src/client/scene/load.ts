@@ -20,7 +20,8 @@ export async function loadBattleAssets(grid: Grid, state: BattleState, all: stri
   const terrainTex = grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt' ? loadTerrainTextures() : null;
   // units compressed with meshopt (Nov 13, Fernando's request: the game downloaded 11 MB to open); Three's decoder
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  const corpses = grid.tiles.some((t) => t.look === 'corpse') ? CORPSE_MODELS : [];
+  // the map's bodies and a resumed battle's corpses (Units.restoreCorpses) wear these models
+  const corpses = grid.tiles.some((t) => t.look === 'corpse') || state.corpses?.length ? CORPSE_MODELS : [];
   const defs = [
     ...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean)),
   ];

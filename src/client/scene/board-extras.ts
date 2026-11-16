@@ -40,53 +40,13 @@ export function buildWalls(board: Board, walls: { x: number; z: number; top: num
   board.scene.add(mesh);
 }
 
-// Caravan bodies: knight and rogue alternating, still on the last frame of the death animation, darkened, with a
-// dark stain on the ground; draw by tile for the rotation
+// Caravan bodies: knight and rogue alternating, with the caravan remains beside each (layBody draws the body)
 export function buildCorpses(board: Board) {
-  const stain = new THREE.MeshBasicMaterial({
-    color: '#2a0f0a',
-    transparent: true,
-    opacity: 0.55,
-    depthWrite: false,
-  });
   board.grid.tiles.forEach((t, i) => {
     if (t.look !== 'corpse' || t.span === 0) return; // split map: one body per whole tile (Tile.span)
     const p = { x: i % board.grid.width, y: Math.floor(i / board.grid.width) };
-    const gltf = board.models.get(CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length]);
-    if (!gltf) return;
-    const body = prepare(cloneSkinned(gltf.scene));
-    body.traverse((m) => {
-      const mesh = m as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
-      mat.color.multiplyScalar(0.55); // lifeless: darker and duller than the battle units
-      mesh.material = board.shaded(mat);
-    });
-    const b = new THREE.Box3().setFromObject(body);
-    body.scale.setScalar(((t.span ?? 1) * unitHeight('soldier')) / (b.max.y - b.min.y));
-    const clip = [...gltf.animations, ...board.packClips].find((c) => c.name === 'Death_A');
-    if (clip) {
-      const mixer = new THREE.AnimationMixer(body);
-      const act = mixer.clipAction(clip);
-      act.setLoop(THREE.LoopOnce, 1);
-      act.clampWhenFinished = true;
-      act.play();
-      mixer.update(clip.duration);
-    }
+    if (!layBody(board, p, t.span ?? 1).length) return;
     const w = board.space.world(p);
-    body.position.copy(w).add(new THREE.Vector3(((t.span ?? 1) - 1) / 2, 0, ((t.span ?? 1) - 1) / 2));
-    body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
-    board.scene.add(body);
-    // stain with an irregular edge (brushstroke), not a disc
-    const blot = new THREE.CircleGeometry(0.42, 14).rotateX(-Math.PI / 2),
-      bp = blot.getAttribute('position');
-    for (let k = 1; k < bp.count; k++) {
-      const r = 0.7 + 0.5 * hash(p.x + (k % 14) * 0.37, p.y, 9);
-      bp.setXYZ(k, bp.getX(k) * r, 0, bp.getZ(k) * r);
-    }
-    const spot = new THREE.Mesh(blot, stain);
-    spot.position.set(w.x + 0.08, w.y + 0.012, w.z - 0.05);
-    spot.scale.set(1, 1, 0.7);
     // caravan remains beside the body: bottles, sack, plank (props.ts), only on open maps
     const litter = board.lookPieces.get(variant(board.lookPieces, LITTER, hash(p.x, p.y, 8)))?.clone();
     if (litter) {
@@ -95,9 +55,52 @@ export function buildCorpses(board: Board) {
       litter.rotation.y = a * 3;
       board.scene.add(litter);
     }
-    spot.renderOrder = -2;
-    board.scene.add(spot);
   });
+}
+
+const STAIN = new THREE.MeshBasicMaterial({ color: '#2a0f0a', transparent: true, opacity: 0.55, depthWrite: false });
+
+// A body over a `span` x `span` square from `p`: still on the last frame of the death animation, darkened, with a dark
+// stain on the ground; rotated by tile. Returns what it added to the scene (the battle's restored corpses take it away
+// on undo), nothing when the model is not loaded
+export function layBody(board: Board, p: Pos, span: number): THREE.Object3D[] {
+  const gltf = board.models.get(CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length]);
+  if (!gltf) return [];
+  const body = prepare(cloneSkinned(gltf.scene));
+  body.traverse((m) => {
+    const mesh = m as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+    mat.color.multiplyScalar(0.55); // lifeless: darker and duller than the battle units
+    mesh.material = board.shaded(mat);
+  });
+  const b = new THREE.Box3().setFromObject(body);
+  body.scale.setScalar((span * unitHeight('soldier')) / (b.max.y - b.min.y));
+  const clip = [...gltf.animations, ...board.packClips].find((c) => c.name === 'Death_A');
+  if (clip) {
+    const mixer = new THREE.AnimationMixer(body);
+    const act = mixer.clipAction(clip);
+    act.setLoop(THREE.LoopOnce, 1);
+    act.clampWhenFinished = true;
+    act.play();
+    mixer.update(clip.duration);
+  }
+  const w = board.space.world(p);
+  body.position.copy(w).add(new THREE.Vector3((span - 1) / 2, 0, (span - 1) / 2));
+  body.rotation.y = hash(p.x, p.y, 3) * Math.PI * 2;
+  // stain with an irregular edge (brushstroke), not a disc
+  const blot = new THREE.CircleGeometry(0.42, 14).rotateX(-Math.PI / 2),
+    bp = blot.getAttribute('position');
+  for (let k = 1; k < bp.count; k++) {
+    const r = 0.7 + 0.5 * hash(p.x + (k % 14) * 0.37, p.y, 9);
+    bp.setXYZ(k, bp.getX(k) * r, 0, bp.getZ(k) * r);
+  }
+  const spot = new THREE.Mesh(blot, STAIN);
+  spot.position.set(w.x + 0.08, w.y + 0.012, w.z - 0.05);
+  spot.scale.set(1, 1, 0.7);
+  spot.renderOrder = -2;
+  board.scene.add(body, spot);
+  return [body, spot];
 }
 
 // Discreet dotted line on the edge of the battlefield (Nov 13, Fernando's request): follows the ground height of each

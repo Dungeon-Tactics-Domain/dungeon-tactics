@@ -1,18 +1,20 @@
 // The battle's characters: each unit's drawing (unit-view.ts) kept where the state says, the camera shake, hit-stop and
 // death slow motion clocks, picking and the town's walk. The battle events play in unit-events.ts.
-// Bodies of the fallen stay on the ground until the end of the battle.
+// Bodies of the fallen stay on the ground until the end of the battle; a resumed battle lays its saved corpses.
 import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
-import { subOf } from '../../shared/battle/grid.ts';
+import { posKey, subOf } from '../../shared/battle/grid.ts';
 import { cellsOf } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { corpseSquares } from '../corpse-squares.ts';
 import { chargeAura, lookOf } from '../fx.ts';
 import { WEIGHT } from '../hit-weight.ts';
 import { modelOf, unitHeight } from '../markers.ts';
 import { TIMING } from '../timing.ts';
 import type { Board } from './board.ts';
+import { layBody } from './board-extras.ts';
 import type { CameraRig } from './camera.ts';
 import { FloatNumbers, onScreen } from './float-numbers.ts';
 import type { TileSpace } from './space.ts';
@@ -27,6 +29,8 @@ const TMP = new THREE.Vector3(); // per-frame math without creating objects
 export class Units {
   readonly views = new Map<string, UnitView>();
   private readonly fallen = new Map<string, THREE.Group>(); // bodies of those who died, on the ground until the end of the battle
+  // bodies of the corpses the state already had on the first sync (a save resumed); null until then
+  private restored: { cells: string[]; parts: THREE.Object3D[] }[] | null = null;
   frozenUntil = 0; // hit-stop: units stay still until here
   private quaking = { amp: 0, ms: 1, until: 0 }; // camera shake: strength in world units, fading until `until`
   slowUntil = 0; // death slow motion: the battle clock runs at WEIGHT.slow until here
@@ -168,6 +172,7 @@ export class Units {
         this.scene.remove(h);
         this.fallen.delete(id);
       }
+    this.restoreCorpses(state);
     const enemies = state.units.filter((u) => u.team === 'enemy');
     for (const u of state.units) {
       let v = this.views.get(u.id);
@@ -275,6 +280,21 @@ export class Units {
 
   celebrate(team: 'hero' | 'enemy', state: BattleState) {
     for (const u of state.units) if (u.team === team) playClip(this.views.get(u.id)!, 'Cheer');
+  }
+
+  // Only the first sync lays the saved corpses: nobody has died on this page yet, so no body stands there; later deaths
+  // fall as views. A body leaves when its cells leave the state (the undo of a kill made before the reload, Play again)
+  private restoreCorpses(state: BattleState) {
+    const now = new Set((state.corpses ?? []).map(posKey));
+    this.restored ??= corpseSquares(state.corpses ?? [], subOf(this.board.grid)).map(({ p, span }) => ({
+      cells: cellsOf(p, span).map(posKey),
+      parts: layBody(this.board, p, span),
+    }));
+    this.restored = this.restored.filter((r) => {
+      if (r.cells.every((k) => now.has(k))) return true;
+      this.scene.remove(...r.parts);
+      return false;
+    });
   }
 
   posOf(v: UnitView): Pos {
