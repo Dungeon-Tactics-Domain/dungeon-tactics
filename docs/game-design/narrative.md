@@ -109,6 +109,24 @@ Each item is data shaped as **trigger → text → effect**. Below, the first ex
 | Hesk | "Caído conta como voltou. Por pouco." / "Fallen counts as back. Barely." |
 | Sela | "Mais uma tigela, então." / "One more bowl, then." |
 
+## Conflicts and gaps against the standing decisions
+
+Checked on Nov 16 against `pillars.md`, the decision log in `CLAUDE.md` and `_notas/LOOP-DUNGEON-CRAWLER-AUDIO.md`. None is
+resolved here: each one is a question for Fernando (in `PENDENCIAS-GRILL.md`), with this draft's default in the last column.
+
+| # | Where | Conflict or gap | Default in this draft |
+|---|---|---|---|
+| 1 | `pillars.md` pillar 6 ("grim, dark tone") | The grill picked "warm with a shadow underneath". | Warm tone; pillar 6 to be reworded. |
+| 2 | Loop decision 8 and the town windows in code (Shop, Tavern, Party open from the start) | The milestone table gates facilities (kitchen and shop at prisoner prices, tavern and smith later). | Facilities stay open from the start; milestones only change prices, lines and what the board offers. The table above is the pending part. |
+| 3 | Loop decision 16 (facilities fixed, only the party grows) | Milestones "open" places and recipes, which reads as the town evolving. | Treat it as content unlocks, not facility upgrades. |
+| 4 | Loop decision 32 (return from a cleared room loses the descent) | The sentence counts "descents", but nothing says what a descent is. | Open: a boss win, a floor, or a safe return. |
+| 5 | Tavern in code (rumours and recruits, no quests) and `towns-party-equipment.md` (recruit 200 gold, up to 8) | The draft makes recruits "adventurers, not convicts" only at milestone 4, and adds a request board that the tavern does not have. | Board as a new town window; recruiting keeps working as today. |
+| 6 | `party.ts` ("the four story members never leave") | The created protagonist replaces the companion of the chosen class. | The replaced companion never appears (does not become a recruit). |
+| 7 | Loop decision 20 (a scout-cook class) and the kitchen facility | Wren (kitchen) and the scout-cook class both "cook". | Wren sells ingredients and teaches recipes; the class cooks in camp. |
+| 8 | Loop decision 39 (unique destination rules out of the MVP) | Rumours point at the forest and mountain as places to unlock. | Destinations differ by look and enemies only (`CRAWL_THEMES`). |
+| 9 | Loop decision 41 (focus on the dungeon first) | This draft is town content. | Nothing enters `src/content` until the descent plays. |
+| 10 | Loop decision 33 and economy | Requests pay trinkets, recipes and discounts; prices are not defined. | Rewards are items and recipes, never gold, until prices exist. |
+
 ## What this feeds in `src/content`
 
 Nothing yet: the data goes in only after Fernando approves the names. When it does, the likely home is next to
