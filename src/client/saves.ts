@@ -156,7 +156,8 @@ export function summary({ id, data }: Slot): SlotSummary {
     gold: parseChest(json(data[CHEST_KEY])).gold,
     floor: map && open.length ? map[open[0]].floor : null,
     room: !!data[ROOM_KEY] && open.length > 0,
-    played: played > 0 ? played : null,
+    // 8.64e15 ms is where Date ends; past it the slot list would show "Invalid Date"
+    played: played > 0 && played <= 8.64e15 ? played : null,
   };
 }
 

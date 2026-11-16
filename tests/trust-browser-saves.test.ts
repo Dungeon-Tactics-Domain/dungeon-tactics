@@ -178,10 +178,8 @@ describe('dt:saves (parseManifest)', () => {
     expect(s.played).toBeNull();
   });
 
-  // Gap (cosmetic): saves.ts:147 checks only `played > 0`, so 1e300 passes and saves-ui.ts:46 formats it with
-  // toLocaleString, which shows "Invalid Date" (no throw, measured in Node). Fix: also require Number.isFinite(new
-  // Date(played).getTime()), i.e. played <= 8.64e15.
-  it.fails('a played time past the Date range is dropped', () => {
+  // saves-ui.ts formats played with toLocaleString, which shows "Invalid Date" past 8.64e15 ms
+  it('a played time past the Date range is dropped', () => {
     const s = summary({ id: 1, data: { 'dt:played': '1e300' } });
     expect(s.played).toBeNull();
   });
