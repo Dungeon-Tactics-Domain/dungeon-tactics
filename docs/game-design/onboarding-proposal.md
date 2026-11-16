@@ -36,7 +36,7 @@ Rules for all of them (no new component):
 | 3a | Party: "camp" wording | Replace the words, no tip: "no acampamento" → "na cidade" / "at camp" → "in town"; "Deixar no acampamento" → "Deixar na cidade" / "Leave at camp" → "Leave in town". Frees "acampamento" for the dungeon camp. | always | `town-ui.ts:92,371,383` |
 | 3b | Shop and Tavern with 0 gold | pt "Ouro vem do que o grupo traz da masmorra." (41) / en "Gold comes from what the party brings back." (43). **Only once an income exists**; until then pt "Ainda sem ouro: o grupo parte com o que tem." (44) / en "No gold yet: the party sets out with what it has." (49). | Shop or Tavern opened with 0 gold, once | first `.learned` line of the Shop and Tavern (`town-ui.ts:179` pattern) |
 | 3c | Party: numbers | pt "Movimento e Salto contam em meias casas." (40) / en "Move and Jump count in half tiles." (34) | first time the Sheet opens | `.learned` line on the Sheet, above the numbers |
-| 4 | Gate window | Rename the row: "Ir para a quest" → pt "Descer à masmorra" / en "Go down the dungeon". Sub-line (`small.continue-where`): pt "3 andares e um chefe" / en "3 floors and a boss" (numbers from `CRAWL_RUN.floors`). 2nd-tap texts stay as they are. | always | `crawl.ts:126-143` |
+| 4 | Gate window | The row is already "Nova expedição" / "New expedition" (`crawl.ts:128`, since commit 81f9ed9); keep that label. Sub-line (`small.continue-where`): pt "3 andares e um chefe" / en "3 floors and a boss" (numbers from `CRAWL_RUN.floors`). 2nd-tap texts stay as they are. | always | `crawl.ts:126-143` |
 | 5a | Node map: what to do | pt "Escolha uma sala. As outras desta fileira se fecham." (53) / en "Pick a room. The others in this row close." (43) | first time the map opens | first `.learned` line of the dialog, above the party legend |
 | 5b | Node map: closed rooms | Replace the bracket words. pt "(vencida)" / "(fechada)" / "(depois da anterior)"; en "(cleared)" / "(closed)" / "(after the one before)". Same meaning, shorter and without "path not taken", which sounds like an error. | always | `crawl.ts:308-314` |
 | 5c | Node map: danger | pt "Inimigos: 3" / en "Enemies: 3" in the sub-line before the names (`foes.enemies.length`); nothing else until balance gives a real danger number. | always | room button sub-line |
@@ -45,7 +45,7 @@ Rules for all of them (no new component):
 | 7b | First fall | pt "Cair não é o fim: quem cai volta, com pouca vida." (49) / en "Falling is not the end: the fallen come back, weak." (51) | first room end with a fallen hero, once | Result board `note`, above the heal rule |
 | 8 | Camp (future) | Not written for a mechanic that does not exist. Stub: pt "No acampamento cada um faz uma coisa. Gaste com cuidado." / en "At camp each one does one thing. Spend with care." | first camp, once | camp window `.learned` line |
 | 9a | Defeat wording | pt "O grupo caiu. Quem sobrou volta à cidade." (40) / en "The party fell. Those left return to town." (42), instead of "the wounded return to town", until the town shows a wounded state. | defeat | `crawl.ts:245,408` |
-| 9b | Return to town | pt "De volta à vila. Prepare-se e desça de novo." (43) / en "Back in the village. Get ready and go down again." (48) | first return to town after an expedition, once | town help line, like tip 2 |
+| 9b | Return to town | pt "De volta à cidade. Prepare-se e desça de novo." (43) / en "Back in town. Get ready and go down again." (48) | first return to town after an expedition, once | town help line, like tip 2 |
 
 ## 3. "How to play" screen (short)
 
@@ -55,11 +55,11 @@ New screen **"Como jogar" / "How to play"**: a `dialog('title', ...)` like the o
 
 | Step | Title (pt / en) | Line (pt / en) |
 |---|---|---|
-| 1 | Prepare-se / Get ready | pt "Monte o grupo (até 4), equipe e compre na Loja." (47) / en "Build your party (up to 4), equip and shop." (43) |
+| 1 | Prepare-se / Get ready | pt "Escolha 4 para a batalha, equipe e compre na Loja." (50) / en "Pick 4 for battle, equip and shop." (34) |
 | 2 | Desça / Go down | pt "O portão ao norte leva à masmorra: 3 andares e um chefe." (56) / en "The north gate leads down: 3 floors and a boss." (47) |
 | 3 | Escolha a sala / Pick a room | pt "Em cada fileira, uma sala. Você vê os inimigos antes." (53) / en "One room per row. You see the enemies first." (44) |
 | 4 | Lute com calma / Take your time | pt "Turnos: a fila mostra quem joga, e a chance de acerto vem antes." (64) / en "Turns: the list shows who acts; hit chance comes first." (55) |
-| 5 | Recupere-se e volte / Recover and return | pt "Entre salas o grupo se recupera um pouco. Depois do chefe, volta à vila." (73) / en "The party heals a little between rooms. After the boss, back to the village." (77) |
+| 5 | Recupere-se e volte / Recover and return | pt "Entre salas o grupo se recupera um pouco. Depois do chefe, volta à cidade." (73) / en "The party heals a little between rooms. After the boss, back to the village." (77) |
 
 A sixth step, "Acampe" / "Camp", is added when the camp exists (what the rest stop costs, what food gives).
 
@@ -106,6 +106,8 @@ A sixth step, "Acampe" / "Camp", is added when the camp exists (what the rest st
 ## 6. Design-system fit
 
 - Pieces used: `dialog()`, `button()`, `el()`, `.legend`, `.learned`, `.camp-list` rows from `commandRow()`, `small.continue-where`, the Result board `note`, `goldNote`/`.gold`, `announce()`. No new piece, no new token.
-- Copy rules (`design-system.md` section 4): verbs on buttons ("Descer à masmorra"), numbers with units ("40 kg", "3 andares"), empty states that say the next step.
+- Copy rules (`design-system.md` section 4): verbs on buttons ("Nova expedição"), numbers with units ("40 kg", "3 andares"), empty states that say the next step.
 - All text through `t('pt', 'en')`; numbers from `CRAWL_RUN` so a balance change does not leave stale text.
 - Not checked: the 360 px width on screen (the 80-character limit is a length estimate), `announce()` size at 360 px, a physical gamepad on the new rows.
+
+> Corrections of Nov 16 (from the microcopy review, `microcopy-proposal.md`): the party holds 8 and 4 go to battle (`GROUP_MAX = 8`); the game says "cidade", not "vila"; the gate row is already "Nova expedição"; check the defeat sentence for `crawl.ts:245` before applying it (it must not say the party fell when it only left the room).
