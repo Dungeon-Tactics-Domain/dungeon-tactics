@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { attrRows, cursorInfo, tileInfo, unitStatus } from '../src/client/hud.ts';
+import { attrRows, unitStatus } from '../src/client/battle-text.ts';
+import { cursorInfo, tileInfo } from '../src/client/tile-info.ts';
 import { GARILAND, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';

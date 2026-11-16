@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forecast, forecastText, hpAfterText, strikeInfo } from '../src/client/hud.ts';
+import { forecast, forecastText, hpAfterText, strikeInfo } from '../src/client/forecast.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT } from '../src/shared/battle/combat.ts';

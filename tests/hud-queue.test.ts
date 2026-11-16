@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { queueRows } from '../src/client/hud.ts';
+import { queueRows } from '../src/client/turn-list.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import type { QueueEntry } from '../src/shared/battle/turn-queue.ts';
 import type { Pos } from '../src/shared/battle/types.ts';

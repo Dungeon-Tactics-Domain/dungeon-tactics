@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { placeBeside } from '../src/client/hud.ts';
+import { placeBeside } from '../src/client/place-beside.ts';
 
 // Command menu beside the unit, as in FFT (Nov 13, Fernando's request)
 const area = { left: 12, top: 72, right: 1268, bottom: 560 }; // 1280x720 without the top strip and the bottom panels

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eventLog } from '../src/client/hud.ts';
+import { eventLog } from '../src/client/battle-text.ts';
 import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
 const state = initialState(SCENARIOS.skirmish, 1);

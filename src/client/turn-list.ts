@@ -1,6 +1,10 @@
 // Pure parts of the turn list (hud.ts renderQueue). Fernando's decision of Nov 15: the list shows every unit of the
 // battle, scrolling within its column when it is taller, instead of the next 4.
-import type { QueueEntry } from '../shared/battle/turn-queue.ts';
+import { ABILITIES } from '../shared/battle/abilities.ts';
+import type { Battle } from '../shared/battle/battle.ts';
+import { unitAt } from '../shared/battle/pathing.ts';
+import { previewOrder, type QueueEntry } from '../shared/battle/turn-queue.ts';
+import type { Pos } from '../shared/battle/types.ts';
 
 // Rows up to the one that completes the round: every unit that plays and every queued charge shows at least once.
 // A unit that never shows in `rows` (speed 0, like the Beacon) does not stretch it
@@ -47,3 +51,41 @@ export function anchorScroll(
 
 // PgUp/PgDn and the right stick move a page less one row, which stays in view to keep the place
 export const pageStep = (view: number, row: number) => Math.max(row, view - row);
+
+// rows of the queue projection the turn list reads: today's speeds (5 to 12) show 12 units twice in about 60 rows
+// (ponytail: a unit too slow to show within the cap is left off the list; raise it if a battle ever needs more)
+const QUEUE_CAP = 128;
+
+// Turn list: every unit that plays, from the one acting now, through this round and the next (Nov 15, Fernando's
+// decisions), with each queued charge where it fires and its ticks left (`ticks`). While aiming (`aim`: the Act map
+// and "Execute?", Nov 15) the one acting pays the turn cost of acting, after what it already did, instead of the usual
+// projection's cost of moving and acting; with a charge (Nov 13, Fernando's request, like FFT's CT list) the spell goes
+// in where it will fire (`at`) and whoever it hits goes in `targets`, to see whether the target acts before it (and
+// leaves the tile) or not. A copy of the queue: the state does not change, and cancelling the aim brings the usual list back
+export function queueRows(b: Battle, aim: { ability: string; target: Pos } | null) {
+  const a = aim ? ABILITIES[aim.ability] : null;
+  const me = b.actor.id;
+  const preview = a?.charge ? aim : null;
+  // the same charge that Battle.act would register (a new charge replaces the previous one of the same unit)
+  const charges =
+    preview && a?.charge
+      ? [
+          ...b.state.charges.filter((c) => c.unit !== me),
+          {
+            unit: me,
+            ability: preview.ability,
+            target: preview.target,
+            follow: a.panel ? null : (unitAt(b.state, preview.target)?.id ?? null),
+            ticks: a.charge,
+          },
+        ]
+      : b.state.charges;
+  const now = aim ? { moved: b.state.turn.moved, acted: true } : undefined;
+  const all = previewOrder({ ...b.state, charges }, QUEUE_CAP, now).map((r): QueueEntry & { ticks?: number } =>
+    r.charge ? { ...r, ticks: charges.find((c) => c.unit === r.unit && c.ability === r.charge)?.ticks } : r,
+  );
+  const at = preview ? all.findIndex((r) => r.unit === me && r.charge === preview.ability) : -1;
+  const p = preview ? b.preview(preview.ability, preview.target) : null;
+  const targets = new Set(p?.ok ? p.targets.map((tg) => tg.unit) : []);
+  return { rows: twoRounds(all), targets, at };
+}

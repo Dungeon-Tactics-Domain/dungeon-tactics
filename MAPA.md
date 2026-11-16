@@ -64,7 +64,11 @@ parseGrid and withRamps (grid.ts).
 - `src/client/command.ts` — FFT command menu (Move, Act, Wait, Status): which turn screen shows and what each key leads to.
 - `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
 - `src/client/charge-lines.ts` — charge and counter lines and notes computed from the rule that fires them.
-- `src/client/turn-list.ts` — rows of the turn list: round length, two rounds and scrolling.
+- `src/client/turn-list.ts` — rows of the turn list: the queue projection while aiming (queueRows), round length, two rounds and scrolling.
+- `src/client/battle-text.ts` — battle texts: ability sheet, last action summary (eventLog), attribute rows and the Status sheet.
+- `src/client/tile-info.ts` — the tile line under the cursor: height, floor, water, spikes and a charge landing there.
+- `src/client/forecast.ts` — strike preview per target (hit, damage or heal, push, life after) and its texts.
+- `src/client/place-beside.ts` — where a menu goes beside the acting unit on screen (placeBeside).
 - `src/client/battle-face.ts` — which face sheet and expression a battle event shows, and for how long.
 - `src/client/tally.ts` — damage and takedowns per unit from the played events, for the result board.
 - `src/client/group.ts` — party rules: recruit, dismiss, class change, who goes to battle (dt:party).
@@ -82,7 +86,7 @@ parseGrid and withRamps (grid.ts).
 ## src/client — DOM interface
 
 - `src/client/theme.ts` — interface theme choice (dt:theme), set as data-theme on the page.
-- `src/client/hud.ts` — battle HUD in the FFT layout: tile info, turn list, command menu, forecast, status panels and help line.
+- `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/icons.ts` — el(), button(), iconButton() and icon() over the icon sprite, and the ability icon atlas.
 - `src/client/talk.ts` — dialogue box: typed text, blips, talking faces and text speed (dt:text).

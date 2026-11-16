@@ -11,15 +11,12 @@
 // Redraws everything on each change (it is little DOM); the menu position changes only via left/top.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { COMBAT, type Preview, simulatePush } from '../shared/battle/combat.ts';
-import { type Grid, inBounds, posKey, standH, TERRAIN, tileAt } from '../shared/battle/grid.ts';
-import { cellsOf, jumpOf, unitAt } from '../shared/battle/pathing.ts';
-import { rulesOf } from '../shared/battle/rules.ts';
-import { SCENARIOS } from '../shared/battle/scenarios.ts';
-import { previewOrder, type QueueEntry, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
-import type { BattleEvent, BattleState, Lock, Pos, UnitState } from '../shared/battle/types.ts';
-import { baseDef, dodgeOf, ELEMENTS, type Element, resistOf, UNIT_DEFS, type UnitDef } from '../shared/battle/units.ts';
+import { unitAt } from '../shared/battle/pathing.ts';
+import { TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
+import type { BattleState, Lock, Pos, UnitState } from '../shared/battle/types.ts';
+import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from './battle-face.ts';
+import { abilityDetail, range, sideName } from './battle-text.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
   abilitiesOf,
@@ -32,13 +29,19 @@ import {
   swimming,
 } from './command.ts';
 import { classOf } from './dev-roster.ts';
+import { type Forecast, forecast, forecastText, hpAfterText, strikeInfo } from './forecast.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
-import { chargeDanger, type Highlights } from './interaction.ts';
+import type { Highlights } from './interaction.ts';
 import { modelOf } from './markers.ts';
+import { type Anchor, placeBeside } from './place-beside.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import { type Face, faceSheet } from './talk.ts';
-import { anchorScroll, pageStep, twoRounds } from './turn-list.ts';
+import { cursorInfo } from './tile-info.ts';
+import { anchorScroll, pageStep, queueRows } from './turn-list.ts';
+
+// main.ts reads these through hud.ts
+export { eventLog, unitStatus } from './battle-text.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
@@ -65,256 +68,8 @@ export interface HudView {
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
 }
 
-// rows of the queue projection the turn list reads: today's speeds (5 to 12) show 12 units twice in about 60 rows
-// (ponytail: a unit too slow to show within the cap is left off the list; raise it if a battle ever needs more)
-const QUEUE_CAP = 128;
 export const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 export const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
-const hpText = (u: UnitState) => `${u.hp}/${UNIT_DEFS[u.def].hp}`;
-const range = (r: [number, number]) => (r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`);
-
-// ability sheet (submenu and status window)
-export function abilityDetail(id: string): string {
-  const a = ABILITIES[id];
-  const parts = [
-    a.range[1] === 0 ? t('em volta de você', 'around you') : t(`alcance ${range(a.range)}`, `range ${range(a.range)}`),
-  ];
-  if (a.damage[1])
-    parts.push(
-      t(`dano ${range(a.damage)}`, `damage ${range(a.damage)}`),
-      t(`acerto ${a.accuracy}%`, `accuracy ${a.accuracy}%`),
-    );
-  if (a.heal[1]) parts.push(t(`cura ${range(a.heal)}`, `heals ${range(a.heal)}`));
-  if (a.radius) parts.push(t(`área de raio ${a.radius} (pega aliados)`, `area of radius ${a.radius} (hits allies)`)); // radius 2 has existed since Shadow wave
-  if (a.push) parts.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
-  if (a.needsSight) parts.push(t('precisa de visão', 'needs sight'));
-  if (a.heightRange) parts.push(t('+1 de alcance por nível acima', '+1 range per level above'));
-  if (a.cost)
-    parts.push(
-      t(
-        `gasta ${a.cost[1]} de ${a.cost[0] === 'mp' ? 'MP' : 'estoque'}`,
-        `costs ${a.cost[1]} ${a.cost[0] === 'mp' ? 'MP' : 'stock'}`,
-      ),
-    );
-  // Nov 15: the player locks it on the tile or the character, and starting it costs half the movement left
-  if (a.charge)
-    parts.push(
-      t(
-        `carrega ${a.charge} tiques; trava na casa ou no personagem; começar gasta metade do movimento que sobra`,
-        `charges ${a.charge} ticks; locks on the tile or the character; starting it costs half the movement left`,
-      ),
-    );
-  return parts.join(' · ');
-}
-
-// Text summary of what the last action did: the floating number vanishes in 1 s and the screen reader does not read it.
-// Whoever died has already left the state; the name comes from the scenario.
-export function eventLog(events: BattleEvent[], state: BattleState): string {
-  const name = (id: string) =>
-    unitName((state.units.find((u) => u.id === id) ?? SCENARIOS[state.scenario].spawns.find((s) => s.id === id))!.def);
-  // one sentence per action: charges that fire in the same interval bring several actions in a single list
-  const out: string[] = [];
-  let head = '';
-  let parts: string[] = [];
-  // action with no result on a target (Accumulate, Yell): just who used what
-  const flush = () => {
-    if (parts.length) out.push(head + parts.join(' · '));
-    else if (head) out.push(head.slice(0, -3));
-    head = '';
-    parts = [];
-  };
-  for (const e of events) {
-    if (e.k === 'attack') {
-      flush();
-      head = `${name(e.unit)}: ${abilityName(e.ability)} → `;
-    } else if (e.k === 'charge') {
-      flush();
-      out.push(
-        t(`${name(e.unit)} carrega ${abilityName(e.ability)}`, `${name(e.unit)} charges ${abilityName(e.ability)}`),
-      );
-    } else if (e.k === 'fizzle') {
-      flush();
-      out.push(
-        t(
-          `${name(e.unit)}: ${abilityName(e.ability)} não achou o alvo`,
-          `${name(e.unit)}: ${abilityName(e.ability)} found no target`,
-        ),
-      );
-    } else if (e.k === 'hit') parts.push(`${name(e.unit)} −${e.dmg}`);
-    else if (e.k === 'miss')
-      parts.push(t(`errou ${name(e.unit)} (${e.chance}%)`, `missed ${name(e.unit)} (${e.chance}%)`));
-    else if (e.k === 'heal') parts.push(`${name(e.unit)} +${e.amount}`);
-    else if (e.k === 'bump') parts.push(t(`${name(e.unit)} bateu −${e.dmg}`, `${name(e.unit)} crashed −${e.dmg}`));
-    else if (e.k === 'fall')
-      parts.push(t(`${name(e.unit)} caiu de altura −${e.dmg}`, `${name(e.unit)} fell −${e.dmg}`));
-    else if (e.k === 'spike')
-      parts.push(t(`${name(e.unit)} nos espinhos −${e.dmg}`, `${name(e.unit)} on the spikes −${e.dmg}`));
-    else if (e.k === 'die') parts.push(t(`${name(e.unit)} caiu`, `${name(e.unit)} is down`));
-  }
-  flush();
-  return out.join(' | ');
-}
-
-const ELEMENT_NAME: Record<Element, () => string> = {
-  fire: () => t('fogo', 'fire'),
-  ice: () => t('gelo', 'ice'),
-  lightning: () => t('raio', 'lightning'),
-  shadow: () => t('sombra', 'shadow'),
-  wind: () => t('vento', 'wind'),
-  light: () => t('luz', 'light'),
-};
-const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`; // the HUD's minus sign, as in −12
-// The Nov 15 grill's attributes, for the Status window and the party sheet: power (class and equipment), resistances in %
-// (negative = weakness), dodge; elements only when set
-export function attrRows(def: UnitDef): [string, string][] {
-  const els = ELEMENTS.filter((e) => resistOf(def, e)).map((e) => `${ELEMENT_NAME[e]()} ${signed(resistOf(def, e))}`);
-  const rows: [string, string][] = [
-    [t('Poder físico', 'Physical power'), String(def.physPower ?? 0)],
-    [t('Poder mágico', 'Magic power'), String(def.magPower ?? 0)],
-    ...defenceRows(def),
-  ];
-  if (els.length) rows.push([t('Elementos', 'Elements'), els.join(' · ')]);
-  return rows;
-}
-// physical and magic resistance and dodge: the party list's short line too
-export const defenceRows = (def: UnitDef): [string, string][] => [
-  [t('Resistência física', 'Physical resistance'), signed(resistOf(def, 'phys'))],
-  [t('Resistência mágica', 'Magic resistance'), signed(resistOf(def, 'mag'))],
-  [t('Esquiva', 'Dodge'), `${dodgeOf(def)}%`],
-];
-
-// Status window sheet (like FFT's): what the unit is now. [label, value] rows; pure for the test.
-const INFO_LABEL: Record<string, () => string> = {
-  pa: () => t('Força (PA)', 'Physical attack (PA)'),
-  ma: () => t('Magia (MA)', 'Magic attack (MA)'),
-  brave: () => 'Brave',
-  faith: () => t('Fé', 'Faith'),
-  weapon: () => t('Arma', 'Weapon'),
-  shield: () => t('Escudo', 'Shield'),
-};
-export function unitStatus(state: BattleState, unitId: string): [string, string][] {
-  const u = state.units.find((x) => x.id === unitId)!;
-  const def = UNIT_DEFS[u.def];
-  const bonus = (k: string) => (u.vars?.[k] ? ` (${u.vars[k] > 0 ? '+' : ''}${u.vars[k]})` : '');
-  const rows: [string, string][] = [
-    [t('Lado', 'Side'), u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy')],
-    [t('Vida', 'HP'), hpText(u)],
-  ];
-  if (u.vars?.mp !== undefined) rows.push(['MP', String(u.vars.mp)]);
-  if (u.vars?.potions !== undefined) rows.push([t('Poções', 'Potions'), String(u.vars.potions)]);
-  rows.push(
-    ['CT', `${Math.max(0, Math.min(u.ct, TURN_THRESHOLD))}/${TURN_THRESHOLD}`], // the panel already capped it at 100; Status showed 108/100
-    [t('Velocidade', 'Speed'), `${rulesOf(state).speed?.(u) ?? def.speed}${bonus('sp')}`],
-    // in half tiles on the split map, the points the game spends (Nov 15, Fernando: "the move and jump values double")
-    [t('Movimento', 'Move'), String(def.move)],
-    [t('Salto', 'Jump'), String(jumpOf(state, u.def) * ((def.size ?? 1) / (UNIT_DEFS[baseDef(u.def)].size ?? 1)))],
-    ...attrRows(def),
-  );
-  for (const [k, v] of Object.entries(def.info ?? {}))
-    rows.push([INFO_LABEL[k]?.() ?? k, `${v}${k === 'pa' ? bonus('pa') : ''}`]);
-  const c = state.charges.find((x) => x.unit === u.id);
-  if (c)
-    rows.push([
-      t('Carregando', 'Charging'),
-      t(
-        `${abilityName(c.ability)}, sai em ${c.ticks} tiques`,
-        `${abilityName(c.ability)}, goes off in ${c.ticks} ticks`,
-      ),
-    ]);
-  // map cardinal points (our convention: grid row 0 is north)
-  if (u.facing !== undefined)
-    rows.push([
-      t('Olhando para', 'Facing'),
-      [t('sul', 'south'), t('leste', 'east'), t('norte', 'north'), t('oeste', 'west')][u.facing],
-    ]);
-  rows.push([t('Habilidades', 'Abilities'), def.abilities.map(abilityName).join(', ') || '—']);
-  return rows;
-}
-
-// Info on the tile under the cursor (FFT corner): position, height and floor type
-const LOOK_NAME: Record<string, () => string> = {
-  grass: () => t('grama', 'grass'),
-  stone: () => t('pedra', 'stone'),
-  water: () => t('água', 'water'),
-  roof: () => t('telhado', 'roof'),
-  chimney: () => t('chaminé', 'chimney'),
-  wood: () => t('madeira', 'wood'),
-  bridge: () => t('ponte', 'bridge'),
-  box: () => t('caixa', 'crate'),
-  tree: () => t('árvore', 'tree'),
-  // Beacon Hill and Flooded Crypt (Nov 12)
-  rock: () => t('rocha', 'rock'),
-  summit: () => t('topo de rocha', 'rock top'),
-  sand: () => t('areia', 'sand'),
-  gold: () => t('veio de ouro', 'gold vein'),
-  brick: () => t('muro de tijolo', 'brick wall'),
-  snow: () => t('neve', 'snow'),
-  snow_rock: () => t('rocha com neve', 'snowy rock'),
-  tree2: () => t('árvore', 'tree'),
-  tree3: () => t('árvore', 'tree'),
-  tree4: () => t('árvore', 'tree'),
-  bare1: () => t('árvore seca', 'bare tree'),
-  bare2: () => t('árvore seca', 'bare tree'),
-  crypt: () => t('piso de pedra', 'stone floor'),
-  altar: () => t('altar', 'altar'),
-  pillar: () => t('coluna', 'pillar'),
-  crates: () => t('caixotes', 'crates'),
-  barrel: () => t('barril', 'barrel'),
-  chest: () => t('baú', 'chest'),
-  rubble: () => t('entulho', 'rubble'),
-  spikes: () => t('armadilha de espinhos', 'spike trap'),
-  boulder: () => t('rochedo', 'boulder'),
-  corpse: () => t('corpo', 'body'),
-};
-const TERRAIN_NAME: Record<string, () => string> = {
-  floor: () => t('chão', 'ground'),
-  forest: () => t('árvore', 'tree'),
-  rubble: () => t('entulho (cobertura)', 'rubble (cover)'),
-  wall: () => t('muro', 'wall'),
-};
-export function tileInfo(grid: Grid, p: Pos): string {
-  const tile = tileAt(grid, p);
-  const kind = tile.look ? (LOOK_NAME[tile.look]?.() ?? tile.look) : TERRAIN_NAME[tile.terrain]();
-  // shallow and deep water share the same drawing: the tile text is what says which is which (found looking at the Crypt Heart)
-  const blocked =
-    (TERRAIN[tile.terrain].walkable ? '' : t(' · não dá para pisar', ' · not walkable')) +
-    ((tile.depth ?? 0) >= 2
-      ? t(' · funda: não se age nela', ' · deep: no actions inside')
-      : tile.depth === 1
-        ? t(' · rasa', ' · shallow')
-        : '') +
-    (tile.spikes
-      ? t(
-          ` · espinhos: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez ou ser empurrado aqui`,
-          ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`,
-        )
-      : '');
-  // in shallow water the height one stands at counts (the one Jump compares), not the surface's
-  const h = tile.depth === 1 ? standH(tile) : tile.h;
-  return t(
-    `Casa ${p.x},${p.y} · altura ${h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`,
-    `Tile ${p.x},${p.y} · height ${h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`,
-  );
-}
-
-// The tile line under the cursor. `size` > 1 (a token choosing where to stop): its whole square counts, because a charge hits
-// a token on any of its cells (combat.ts inArea over the footprint) and spikes hurt on any cell at the turn's end (battle.ts)
-export function cursorInfo(grid: Grid, state: BattleState, p: Pos, size = 1): string {
-  const square = cellsOf(p, size).filter((c) => inBounds(grid, c));
-  const danger = chargeDanger(grid, state);
-  const hit = square.map((c) => danger.get(posKey(c))).find((a) => a);
-  const spikes = !tileAt(grid, p).spikes && square.some((c) => tileAt(grid, c).spikes);
-  return (
-    tileInfo(grid, p) +
-    (spikes
-      ? t(
-          ` · espinhos sob a unidade: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez aqui`,
-          ` · spikes under the unit: −${COMBAT.SPIKE_DAMAGE} when ending a turn here`,
-        )
-      : '') +
-    (hit ? t(` · ⚠ ${abilityName(hit)} vai cair aqui`, ` · ⚠ ${abilityName(hit)} lands here`) : '')
-  );
-}
 
 const REASON: Record<string, () => string> = {
   range: () => t('Fora do alcance', 'Out of range'),
@@ -365,88 +120,10 @@ export function gauge(
   );
 }
 
-// Preview of a strike on each target (the one in "Execute?" and the one in the target panel when aiming): same calculation in both places.
-export interface Forecast {
-  unit: UnitState;
-  chance: number; // hit chance % (heal and support do not miss: 100)
-  dmg: [number, number] | null;
-  heal: [number, number] | null;
-  push: number; // extra damage from the push (collision, fall, spikes)
-  spikes: boolean;
-  after: [number, number]; // life after, lowest and highest
-  ally: boolean; // strike that hits someone on the same side as the user
-  support: boolean; // support without heal: only the effect
-  side: 'front' | 'side' | 'back'; // where the strike hits from (target's direction, Nov 13); "from behind" hits more
-}
-export function forecast(b: Battle, ability: string, p: Preview): Forecast[] {
-  const a = ABILITIES[ability];
-  return p.targets.map((tg) => {
-    const u = b.state.units.find((x) => x.id === tg.unit)!;
-    const max = UNIT_DEFS[u.def].hp;
-    const heal: [number, number] | null = tg.healMax ? [tg.healMin, tg.healMax] : null;
-    const support = !!a.ally && !heal;
-    // push: the extra damage from collision, fall and spikes, to see the combo before confirming (night of Nov 12)
-    const shove = a.push && !heal && !support ? simulatePush(b.grid, b.state, u, p.center, b.actor.pos, a.push) : null;
-    const push = shove?.dmg ?? 0;
-    // the push comes with every hit (without `pushChance`, which only the FFT study uses): it goes into the life after
-    const sure = a.pushChance === undefined ? push : 0;
-    const after: [number, number] = heal
-      ? [Math.min(max, u.hp + heal[0]), Math.min(max, u.hp + heal[1])]
-      : support
-        ? [u.hp, u.hp]
-        : [Math.max(0, u.hp - tg.dmgMax - sure), Math.max(0, u.hp - tg.dmgMin - sure)];
-    return {
-      unit: u,
-      chance: tg.chance,
-      dmg: heal || support ? null : [tg.dmgMin, tg.dmgMax],
-      heal,
-      push,
-      spikes: !!shove?.events.some((e) => e.k === 'spike'),
-      after,
-      ally: !heal && !support && u.team === b.actor.team,
-      support,
-      side: heal || support ? 'front' : tg.side,
-    };
-  });
-}
-// "damage 9–12 · push +3", "hit 85% · damage 9–12 · push +3" or "heal 7–10"; and "life 25 → 10–13"
-const dmgText = (f: Forecast) =>
-  t(`dano ${range(f.dmg!)}`, `damage ${range(f.dmg!)}`) +
-  (f.push
-    ? t(` · empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, ` · push +${f.push}${f.spikes ? ' (spikes!)' : ''}`)
-    : '');
-// a strike from the side or behind, spells too since Nov 15, says where the hit bonus comes from (combat.ts SIDE_BONUS/BACK_BONUS)
-const fromText = (f: Forecast) =>
-  f.side === 'back'
-    ? t(' (pelas costas)', ' (from behind)')
-    : f.side === 'side'
-      ? t(' (de lado)', ' (from the side)')
-      : '';
-export const forecastText = (f: Forecast) =>
-  f.heal
-    ? t(`cura ${range(f.heal)}`, `heals ${range(f.heal)}`)
-    : `${t(`acerto ${f.chance}%`, `hit ${f.chance}%`)}${fromText(f)} · ${dmgText(f)}`;
-export const hpAfterText = (f: Forecast) => `${t('vida', 'HP')} ${f.unit.hp} → ${range(f.after)}`;
-
 // Preview strips in the Tactics Ogre style (Nov 13, Fernando's request; our design): one arrow strip per target,
 // "HP", the big number (−12–15 PTS, or +7–10 on a heal) and the aim with the hit chance; below, the small `strikeInfo` line.
 // Up to STRIKES strips: more than that would rise above the panel band and cover the map; the rest becomes "+N targets".
 const STRIKES = 3;
-// small line of the strip: who, where the strike comes from, push and the life after. Pure for the test
-export function strikeInfo(f: Forecast, ability: string): string[] {
-  const out = [unitName(f.unit.def)];
-  if (f.support) return [...out, abilityDetail(ability)];
-  // ↶ and ⇥: the direction advantage (combat.ts SIDE_BONUS/BACK_BONUS), with the word alongside (never just the icon)
-  if (f.side === 'back') out.push(t('↶ pelas costas', '↶ from behind'));
-  else if (f.side === 'side') out.push(t('⇥ de lado', '⇥ from the side'));
-  if (f.push)
-    out.push(
-      t(`empurrão +${f.push}${f.spikes ? ' (espinhos!)' : ''}`, `push +${f.push}${f.spikes ? ' (spikes!)' : ''}`),
-    );
-  out.push(hpAfterText(f));
-  if (f.ally) out.push(t('ALIADO!', 'ALLY!'));
-  return out;
-}
 // Two-colour strip (Nov 15, the lab kit's strike preview): the action on the panel blue (ability icon and name, the big
 // number, the hit chance) and the target on its side's colour (wine for an enemy): name and side, the life bar with the part
 // that goes away (or the heal adds) in stripes, and the small `strikeInfo` line. It stands in for the target panel while aiming
@@ -486,7 +163,7 @@ function strike(f: Forecast, ability: string) {
         'span',
         { class: 'strike-who' },
         unitName(f.unit.def),
-        el('span', { class: 'unit-side' }, f.unit.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy')),
+        el('span', { class: 'unit-side' }, sideName(f.unit.team)),
       ),
       gauge('hp', t('Vida', 'HP'), f.unit.hp, UNIT_DEFS[f.unit.def].hp, change),
       el('span', { class: 'strike-info' }, strikeInfo(f, ability).slice(1).join(' · ')),
@@ -508,49 +185,6 @@ function strikes(fs: Forecast[], ability: string) {
         )
       : null,
   ].filter((x) => x !== null);
-}
-
-// Panel beside the character, like FFT's menu: to its right; with no room, to its left; always inside `area` (the part
-// of the screen free of the HUD). Centered on the character's height; if it would cover something in `avoid` (the turn list, the target of
-// "Execute?"), it moves down or up beside it until clear, as close as possible. `prefer` 'left' tries the left
-// first ("Execute?" avoids the target's side). Pure for the test.
-export interface Anchor {
-  x: number;
-  y: number;
-  r: number;
-} // character's center on screen and its half width, in px
-export interface Rect {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-export function placeBeside(
-  a: Anchor,
-  w: number,
-  h: number,
-  area: Rect,
-  prefer: 'right' | 'left' = 'right',
-  avoid: Rect[] = [],
-  gap = 12,
-) {
-  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-  const xs = { right: a.x + a.r + gap, left: a.x - a.r - gap - w };
-  const fits = (s: 'right' | 'left') => xs[s] >= area.left && xs[s] + w <= area.right;
-  const sides: ('right' | 'left')[] = prefer === 'right' ? ['right', 'left'] : ['left', 'right'];
-  const covers = (l: number, t: number) =>
-    avoid.some((o) => l < o.right && l + w > o.left && t < o.bottom && t + h > o.top);
-  const mid = a.y - h / 2;
-  const tops = [mid, ...avoid.flatMap((o) => [o.bottom + gap, o.top - gap - h])]
-    .map((t) => clamp(t, area.top, area.bottom - h))
-    .sort((p, q) => Math.abs(p - mid) - Math.abs(q - mid));
-  for (const side of sides.filter(fits)) {
-    const top = tops.find((t) => !covers(xs[side], t));
-    if (top !== undefined) return { left: xs[side], top, side, free: true };
-  }
-  // nothing free (narrow screen, character off screen): the side that fits, clamped inside the area
-  const side = fits(sides[0]) || !fits(sides[1]) ? sides[0] : sides[1];
-  return { left: clamp(xs[side], area.left, area.right - w), top: tops[0], side, free: false };
 }
 
 // portrait of the rendered KayKit character (public/chars, scripts/portraits.mjs); the Beacon has no character: a CSS crystal
@@ -592,12 +226,7 @@ function unitPanel(state: BattleState, u: UnitState, pic: HTMLElement) {
     el(
       'div',
       { class: 'unit-body' },
-      el(
-        'strong',
-        { class: 'unit-name' },
-        unitName(u.def),
-        el('span', { class: 'unit-side' }, u.team === 'hero' ? t('herói', 'hero') : t('inimigo', 'enemy')),
-      ),
+      el('strong', { class: 'unit-name' }, unitName(u.def), el('span', { class: 'unit-side' }, sideName(u.team))),
       classText(u) ? el('span', { class: 'unit-class' }, classText(u)) : null,
       ...rows,
       charge
@@ -612,40 +241,6 @@ function unitPanel(state: BattleState, u: UnitState, pic: HTMLElement) {
         : null,
     ),
   );
-}
-
-// Turn list: every unit that plays, from the one acting now, through this round and the next (Nov 15, Fernando's
-// decisions), with each queued charge where it fires and its ticks left (`ticks`). While aiming (`aim`: the Act map
-// and "Execute?", Nov 15) the one acting pays the turn cost of acting, after what it already did, instead of the usual
-// projection's cost of moving and acting; with a charge (Nov 13, Fernando's request, like FFT's CT list) the spell goes
-// in where it will fire (`at`) and whoever it hits goes in `targets`, to see whether the target acts before it (and
-// leaves the tile) or not. A copy of the queue: the state does not change, and cancelling the aim brings the usual list back
-export function queueRows(b: Battle, aim: { ability: string; target: Pos } | null) {
-  const a = aim ? ABILITIES[aim.ability] : null;
-  const me = b.actor.id;
-  const preview = a?.charge ? aim : null;
-  // the same charge that Battle.act would register (a new charge replaces the previous one of the same unit)
-  const charges =
-    preview && a?.charge
-      ? [
-          ...b.state.charges.filter((c) => c.unit !== me),
-          {
-            unit: me,
-            ability: preview.ability,
-            target: preview.target,
-            follow: a.panel ? null : (unitAt(b.state, preview.target)?.id ?? null),
-            ticks: a.charge,
-          },
-        ]
-      : b.state.charges;
-  const now = aim ? { moved: b.state.turn.moved, acted: true } : undefined;
-  const all = previewOrder({ ...b.state, charges }, QUEUE_CAP, now).map((r): QueueEntry & { ticks?: number } =>
-    r.charge ? { ...r, ticks: charges.find((c) => c.unit === r.unit && c.ability === r.charge)?.ticks } : r,
-  );
-  const at = preview ? all.findIndex((r) => r.unit === me && r.charge === preview.ability) : -1;
-  const p = preview ? b.preview(preview.ability, preview.target) : null;
-  const targets = new Set(p?.ok ? p.targets.map((tg) => tg.unit) : []);
-  return { rows: twoRounds(all), targets, at };
 }
 
 export class BattleHud {
@@ -761,7 +356,10 @@ export class BattleHud {
     this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
     this.faces = [];
     this.expression = v.face;
-    this.renderQueue(b, v);
+    // the ability being aimed (Act map or "Execute?") and where: the turn list projects it, the strips preview it
+    const s = v.screen;
+    const aim = s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : null;
+    this.renderQueue(b, aim);
     this.help.textContent = this.helpText(v, heroTurn);
     this.renderCommands(v, open);
     this.renderAbilities(v, open);
@@ -779,7 +377,7 @@ export class BattleHud {
     const found = unitAt(b.state, at);
     // aiming (Act map or "Execute?"): the strips beside the acting panel take the target panel's place, the one for the target
     // under the cursor first. It applies even to someone healing themself (outside aiming, their own panel is not repeated)
-    const ability = v.screen.k === 'confirm' ? v.screen.ability : v.screen.k === 'map' ? v.ability : null;
+    const ability = aim?.ability ?? null;
     const fs = open && ability && v.hl?.preview?.ok ? forecast(b, ability, v.hl.preview) : [];
     const main = fs.find((f) => f.unit.id === found?.id) ?? fs[0];
     const other = main ? undefined : found?.id !== me?.id ? found : undefined;
@@ -925,9 +523,7 @@ export class BattleHud {
     );
   }
 
-  private renderQueue(b: Battle, v: HudView) {
-    const s = v.screen;
-    const aim = s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : null;
+  private renderQueue(b: Battle, aim: { ability: string; target: Pos } | null) {
     const { rows, targets, at } = b.over ? { rows: [], targets: new Set<string>(), at: -1 } : queueRows(b, aim);
     // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
     const left = isSurvival(b.state.scenario) ? turnsLeft(b.state) : null;
