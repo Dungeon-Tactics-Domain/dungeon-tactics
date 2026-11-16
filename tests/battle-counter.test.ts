@@ -26,6 +26,19 @@ describe('counters (Nov 15)', () => {
     expect(strikes(b.move({ x: 0, y: 2 }), 'b')).toBe(0); // leaves its reach the next turn: no counter
   });
 
+  it('each walk out of the reach in that turn draws the counter again', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 9, y: 3 },
+    ]);
+    s.rng = HIT_SEED;
+    const b = new Battle(flat(10, 4), s);
+    b.act('strike', { x: 2, y: 1 });
+    const out = [b.move({ x: 0, y: 1 }), b.move({ x: 1, y: 1 }), b.move({ x: 0, y: 1 })];
+    expect(out.map((ev) => strikes(ev, 'b'))).toEqual([1, 0, 1]); // out, back in, out again
+  });
+
   it('a ranged counter fires only when the attacker leaves its reach, once', () => {
     const s = stateOf([
       { id: 'a', def: 'archer', team: 'hero', x: 3, y: 1 },
