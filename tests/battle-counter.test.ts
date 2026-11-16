@@ -58,6 +58,22 @@ describe('opportunity counters (Nov 15)', () => {
     expect(ev.some((e) => (e.k === 'hit' || e.k === 'miss') && e.unit === 'a')).toBe(false);
   });
 
+  it('a counter whose unit fell to an earlier counter is skipped', () => {
+    const s = stateOf([
+      { id: 'a', def: 'archer', team: 'hero', x: 0, y: 2 },
+      { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 6, y: 1 },
+      { id: 'c', def: 'skeleton_archer', team: 'enemy', x: 3, y: 1, hp: 1 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 7, y: 3 },
+    ]);
+    s.engaged = [
+      { unit: 'b', by: 'a', ranged: true, turns: 2 },
+      { unit: 'c', by: 'a', ranged: true, turns: 2 },
+    ];
+    const b = new Battle(flat(8, 4), s);
+    b.move({ x: 0, y: 1 }); // b's shot meets c first (friendly fire) and kills it
+    expect(b.state.units.some((u) => u.id === 'c')).toBe(false);
+  });
+
   it('a unit whose basic attack hits an area never counters (Nov 15)', () => {
     const s = stateOf([
       { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },

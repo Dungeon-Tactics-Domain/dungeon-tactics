@@ -243,8 +243,8 @@ export function pendingCounters(grid: Grid, state: BattleState, actorId: string,
 export function counters(grid: Grid, state: BattleState, actorId: string, to: Pos, ranged: boolean): BattleEvent[] {
   const events: BattleEvent[] = [];
   for (const c of pendingCounters(grid, state, actorId, to)) {
-    if (c.ranged !== ranged || !state.units.some((u) => u.id === actorId)) continue;
-    const foe = state.units.find((u) => u.id === c.unit)!;
+    const foe = state.units.find((u) => u.id === c.unit); // an earlier counter may have killed it (friendly fire)
+    if (!foe || c.ranged !== ranged || !state.units.some((u) => u.id === actorId)) continue;
     events.push(...resolveAbility(grid, state, c.unit, basicOf(foe.def), c.at, true, COMBAT.COUNTER));
   }
   return events;
