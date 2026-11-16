@@ -59,7 +59,11 @@ parseGrid and withRamps (grid.ts).
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
 - `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
-- `src/client/town-ui.ts` — the town's windows: Party with each member's sheet, Tavern (recruits) and Shop.
+- `src/client/town-ui.ts` — the town's windows: the Party list, Tavern (recruits) and Shop.
+- `src/client/town-sheet.ts` — the unit sheet window: numbers, abilities, the 7 slots and the party actions.
+- `src/client/town-gear.ts` — the equipment window: the 7 slots, compare, swap and the chest.
+- `src/client/sheet-lines.ts` — the numbers a sheet and a piece show: one line per stat, with where each total comes from.
+- `src/client/window-focus.ts` — the focus a window that rebuilds itself gives back after each action.
 - `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid; the fluid walk's circle, stick and target (dt:town-free).
 - `src/client/dev-menu.ts` — developer menu screen (map, cast, JSON import/export); rules in dev-roster.ts.
 - `src/client/dev-roster.ts` — developer cast rules: build and validate sheets, DEV_MAPS, parseSetup and buildDevScenario.

@@ -9,7 +9,7 @@ import { store } from '../store.ts';
 import { talk } from '../talk.ts';
 import { TIMING } from '../timing.ts';
 import { cell, clear, ME, memberUnit, near, strollPath } from '../town-map.ts';
-import { openSheet } from '../town-ui.ts';
+import { openSheet } from '../town-sheet.ts';
 
 const STROLL_MS = (TIMING.step / SUB) * 1.6; // townsfolk amble, a little slower than the walker
 export const windowOpen = () => !!document.querySelector('.overlay');

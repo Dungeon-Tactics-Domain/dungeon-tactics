@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDevScenario, type DevSetup, defaultSetup } from '../src/client/dev-roster.ts';
-import { compare, itemStats, sheetRows } from '../src/client/town-ui.ts';
+import { compare, itemStats, sheetRows } from '../src/client/sheet-lines.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { bonusOf, ITEMS, type Loadout, withGear } from '../src/shared/battle/equipment.ts';
