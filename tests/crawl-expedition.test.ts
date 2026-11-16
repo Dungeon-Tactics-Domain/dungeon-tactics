@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CRAWL_GOLD, CRAWL_GROUPS, CRAWL_RUN } from '../src/content/crawl/rooms.ts';
+import { CRAWL_GOLD, CRAWL_RUN } from '../src/content/crawl/rooms.ts';
 import {
   classMana,
   cleared,
@@ -169,12 +169,18 @@ describe('crawl expedition', () => {
     }
   });
 
-  it('every room draws one of its floor compositions', () => {
-    const map = expeditionMap(21);
-    for (const n of map.filter((n) => !n.chest && !n.boss)) {
-      const { group } = roomGroup(n.seed, { depth: n.floor });
-      expect(CRAWL_GROUPS.filter((g) => g.depth === n.floor)).toContain(group);
-    }
+  it('every room draws one of its floor compositions, and over many seeds each of them', () => {
+    // the descent's salas list (lab descida.json): floor 1 teaches, floor 2 joins roles, floor 3 brings the healer
+    const lab: Record<number, string[]> = {
+      1: ['Minion patrol', 'Archer and escort'],
+      2: ['Mage at the rear', 'Knight and archer', 'Lone brute'],
+      3: ['Healing acolyte', 'Veil troop'],
+    };
+    const seen: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set() };
+    for (let seed = 0; seed < 60; seed++)
+      for (const n of expeditionMap(seed).filter((n) => !n.chest && !n.boss))
+        seen[n.floor].add(roomGroup(n.seed, { depth: n.floor }).group.name[1]);
+    for (const f of [1, 2, 3]) expect([...seen[f]].sort()).toEqual([...lab[f]].sort());
   });
 
   it('a chest opens without battle or heal; a room cannot be opened as a chest, nor a chest won as a room', () => {
@@ -201,7 +207,6 @@ describe('crawl expedition', () => {
     for (let seed = 0; seed < 100; seed++)
       for (const n of expeditionMap(seed)) {
         const gold = nodeGold(n);
-        expect(nodeGold(n)).toBe(gold); // from the node's seed: a Restart cannot roll it again
         if (n.chest) {
           expect(gold).toBeGreaterThanOrEqual(CRAWL_RUN.chest[0]);
           expect(gold).toBeLessThanOrEqual(CRAWL_RUN.chest[1]);
@@ -214,6 +219,17 @@ describe('crawl expedition', () => {
         if (n.boss) expect(gold).toBe(300);
         if (enemies.every((e) => e === 'minion' || e === 'skeleton_archer')) expect(gold).toBe(0);
       }
+  });
+
+  it('a room’s gold does not depend on the battle: the same map rebuilt pays the same, and the rolls vary', () => {
+    // a Restart replays the battle with another RNG; the gold comes from the node alone, rebuilt here from the seed
+    const rolls = new Set<number>();
+    for (let seed = 0; seed < 30; seed++) {
+      const once = expeditionMap(seed).map(nodeGold);
+      expect(expeditionMap(seed).map((n) => nodeGold({ ...n }))).toEqual(once);
+      for (const [i, n] of expeditionMap(seed).entries()) if (n.chest) rolls.add(once[i]);
+    }
+    expect(rolls.size).toBeGreaterThan(10); // a real roll over 80 to 150, not a constant
   });
 
   it('the gold found is read back from the path; a fallen party takes half home, rounded down', () => {
