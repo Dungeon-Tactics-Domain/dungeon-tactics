@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle, parseBattleState, UNDO_LIMIT } from '../src/shared/battle/battle.ts';
+import { resolveAbility } from '../src/shared/battle/combat.ts';
 import { CLASSES_BATTLE, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -267,13 +267,25 @@ describe('counterattack', () => {
     const b = new Battle(g, s);
     b.act('strike', at(2, 1));
     expect(b.state.turn.engaged).toEqual(['b']);
-    const hp = b.state.units[0].hp;
     expect(b.move(at(2, 2)).some((e) => e.k === 'attack' && e.unit === 'b')).toBe(false); // still adjacent: no counter
+    expect(b.lastFree).toBe(true);
+    // the same strike at full damage, from the same roll, against the warrior where the counter finds it
+    const full = b.clone();
+    full.state.rng = HIT_SEED;
+    const [, struck] = resolveAbility(full.grid, full.state, 'b', 'strike', at(2, 2));
+    const hp = b.state.units[0].hp;
+    b.state.rng = HIT_SEED;
     const ev = b.move(at(3, 2));
     expect(ev.some((e) => e.k === 'attack' && e.unit === 'b')).toBe(true);
     const hit = ev.find((e) => e.k === 'hit' && e.unit === 'a');
-    if (hit && hit.k === 'hit') expect(hit.dmg).toBeLessThanOrEqual(Math.ceil(ABILITIES.strike.damage[1] / 2));
-    expect(b.state.units[0].hp).toBeLessThanOrEqual(hp);
+    expect(struck.k).toBe('hit');
+    const half = Math.floor((struck as { dmg: number }).dmg / 2); // Fernando's half, not COMBAT.COUNTER read back
+    expect(hit).toMatchObject({ k: 'hit', dmg: half });
+    expect(b.state.units[0].hp).toBe(hp - half);
+    // it took the counter: the move cannot be undone, or the hit would be taken back
+    expect(b.canUndo).toBe(false);
+    expect(b.undo()).toBe(false);
+    expect(b.state.units[0].pos).toEqual(at(3, 2));
   });
 
   it('an archer who shoots another archer takes its counter on walking out of its range', () => {

@@ -70,6 +70,20 @@ describe('counters (Nov 15)', () => {
     expect(strikes(b.move({ x: 0, y: 2 }), 'l')).toBe(1);
   });
 
+  it('an ally struck by friendly fire owes no counter', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+      { id: 'w', def: 'warrior', team: 'hero', x: 2, y: 1 },
+      { id: 'e', def: 'soldier', team: 'enemy', x: 7, y: 3 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 3 },
+    ]);
+    s.rng = HIT_SEED;
+    const b = new Battle(flat(8, 4), s);
+    expect(b.act('strike', { x: 2, y: 1 })).toContainEqual(expect.objectContaining({ k: 'hit', unit: 'w' }));
+    expect(b.state.turn.engaged).toBeUndefined();
+    expect(strikes(b.move({ x: 0, y: 1 }), 'w')).toBe(0);
+  });
+
   it('a shooter struck up close fires where the attacker stops, once out of its contact', () => {
     for (const [stop, away] of [
       [{ x: 0, y: 1 }, 2],
