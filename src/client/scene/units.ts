@@ -44,6 +44,7 @@ export class Units {
   private readonly fallen = new Map<string, THREE.Group>(); // bodies of those who died, on the ground until the end of the battle
   private frozenUntil = 0; // hit-stop: units stay still until here
   private shakeUntil = 0; // strong strike: the camera shakes until here
+  private markers = true; // team ring, facing arrow and health bar; the town has none (hideMarkers)
   private readonly camera: THREE.OrthographicCamera;
 
   constructor(
@@ -204,6 +205,7 @@ export class Units {
     barHolder.name = 'bar';
     barBg.renderOrder = bar.renderOrder = 10;
     ground.add(ring);
+    ground.visible = barHolder.visible = this.markers;
     holder.add(ground, barHolder);
     this.scene.add(holder);
     const view: UnitView = {
@@ -510,6 +512,40 @@ export class Units {
         await this.time.wait(TIMING.die);
       }
     }
+  }
+
+  // The walkable town (game/town.ts): no ring, arrow or bar on anyone, the ones there now and the ones still to come
+  hideMarkers() {
+    this.markers = false;
+    for (const v of this.views.values()) v.ground.visible = v.holder.getObjectByName('bar')!.visible = false;
+  }
+
+  // The town's walk, one cell at a time at a steady pace: no start and brake per cell like the battle's walk, so a
+  // held key or a long path glides on with the walking clip. The town is flat where people walk, so no jump
+  async glide(unitId: string, to: Pos, ms: number) {
+    const v = this.views.get(unitId);
+    if (!v) return;
+    const a = v.holder.position.clone(),
+      b = this.squareAt(v.def, to);
+    v.holder.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
+    if (v.current?.getClip().name !== 'Walking_A') this.play(v, 'Walking_A', false, 1.25);
+    await this.time.animate(ms, (k) => v.holder.position.lerpVectors(a, b, k));
+  }
+
+  // back to standing, after a glide; turned toward `at` (who it talks to), if given
+  rest(unitId: string, at?: Pos) {
+    const v = this.views.get(unitId);
+    if (!v) return;
+    if (at) this.face(v, at);
+    if (v.current?.getClip().name !== 'Idle') this.play(v, 'Idle');
+  }
+
+  // a unit that leaves without dying (the town's party after a class change or a dismissal): no body stays behind
+  drop(unitId: string) {
+    const v = this.views.get(unitId);
+    if (!v) return;
+    this.scene.remove(v.holder);
+    this.views.delete(unitId);
   }
 
   celebrate(team: 'hero' | 'enemy', state: BattleState) {

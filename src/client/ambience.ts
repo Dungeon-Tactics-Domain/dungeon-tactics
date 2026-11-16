@@ -176,6 +176,7 @@ const KIND: Record<string, Kind> = {
   flooded_crypt: 'crypt',
   crypt_heart: 'crypt',
   frost_pass: 'frost',
+  vauclair: 'forest', // the walkable town (src/content/crawl/town.ts): a clearing in Ash Wood's woods and light
 };
 // crawl rooms (src/shared/crawl) have a new id per seed: the theme that ends it picks the mood
 const ROOM_KIND: Record<string, Kind> = { dungeon: 'cave', forest: 'forest', mountain: 'frost' };

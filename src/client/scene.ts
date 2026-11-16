@@ -258,6 +258,20 @@ export class BattleScene {
     this.units.celebrate(team, state);
   }
 
+  // the walkable town (game/town.ts): people without battle markers, walking cell by cell (Units.glide)
+  hideMarkers() {
+    this.units.hideMarkers();
+  }
+  glide(unitId: string, to: Pos, ms: number) {
+    return this.units.glide(unitId, to, ms);
+  }
+  rest(unitId: string, at?: Pos) {
+    this.units.rest(unitId, at);
+  }
+  drop(unitId: string) {
+    this.units.drop(unitId);
+  }
+
   // Tile under the finger. The unit's body counts before the ground: the drawn unit covers the tile behind, and whoever touches it
   // wants the unit (mobile audit of Oct 25: tapping the enemy picked the tile behind it). `size`: on the ground, the corner
   // of the square of that many cells centred under the finger (choosing where a 2x2 token stops)

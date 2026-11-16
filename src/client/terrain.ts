@@ -46,6 +46,16 @@ export const PAINT: Record<string, Paint> = {
   rubble: [0, 0, 0.4, 0, 0.6],
   spikes: [0, 0, 0.4, 0, 0.6],
   boulder: [0, 0, 0.4, 0, 0.6],
+  // the walkable town (src/content/crawl/town.ts): trodden earth under the houses and their lots
+  lot: [0.2, 0, 0.8, 0, 0],
+  guild: [0.2, 0, 0.8, 0, 0],
+  shop: [0.2, 0, 0.8, 0, 0],
+  tavern: [0.2, 0, 0.8, 0, 0],
+  smithy: [0.2, 0, 0.8, 0, 0],
+  enchanter: [0.2, 0, 0.8, 0, 0],
+  gate: [0.2, 0, 0.8, 0, 0],
+  home: [0.2, 0, 0.8, 0, 0],
+  well: [0, 0, 0.4, 0, 0.6],
 };
 
 // height (h) of the lowest tile on the board within `ring` tiles of (i, j): the extension never goes above it, because the camera

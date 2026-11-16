@@ -32,9 +32,20 @@ import type { TileSpace } from './space.ts';
 // of Gariland from the map file's surface_type), approved by Fernando to go into the game.
 // `canopy`: the tile height on the map is the crown's (a Gariland tree), and the ground comes from the lowest neighbor.
 // `stairs`: on a ramp tile the top stays flat and the dungeon stairs (STAIRS) climb over it (crypts, Nov 13)
+// `house`: a town building (src/content/crawl/town.ts), `propW` whole tiles wide over its lot, centred on this tile and
+// picked as it, so a click on the house finds the place
 const LOOK: Record<
   string,
-  { top: string; side: string | null; prop?: string; propH?: number; propW?: number; canopy?: true; stairs?: true }
+  {
+    top: string;
+    side: string | null;
+    prop?: string;
+    propH?: number;
+    propW?: number;
+    canopy?: true;
+    stairs?: true;
+    house?: true;
+  }
 > = {
   grass: { top: 'blocks/grass', side: 'blocks/dirt' },
   stone: { top: 'blocks/gravel', side: 'blocks/stone' },
@@ -75,6 +86,17 @@ const LOOK: Record<
   boulder: { top: 'blocks/gravel', side: 'blocks/stone', prop: 'forest/Rock_3_A_Color1', propW: 1 },
   // fallen body: the ground is the terrain's and the body is a unit at the end of the death animation (buildCorpses)
   corpse: { top: 'blocks/dirt', side: 'blocks/dirt' },
+  // the walkable town (Nov 15): KayKit Medieval Hexagon houses, each over a 3x3 lot of trodden earth (`lot`: a wall
+  // drawn as flat ground, the house stands on its centre tile); the gate's lot is 3x1 and the well's a single tile
+  lot: { top: 'blocks/dirt', side: 'blocks/dirt' },
+  guild: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_barracks_blue', propW: 2.8, house: true },
+  shop: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_market_green', propW: 2.8, house: true },
+  tavern: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_tavern_red', propW: 2.8, house: true },
+  smithy: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_blacksmith_yellow', propW: 2.8, house: true },
+  enchanter: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_tower_A_blue', propW: 2.4, house: true },
+  gate: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/wall_straight_gate', propW: 2.8, house: true },
+  home: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_home_A_red', propW: 2.6, house: true },
+  well: { top: 'blocks/dirt', side: 'blocks/dirt', prop: 'town/building_well_blue', propW: 0.9 },
 };
 // caravan body units (knight and rogue, the ones guarding the cargo)
 export const CORPSE_MODELS = ['knight', 'rogue'];
@@ -210,7 +232,7 @@ export class Board {
     !!this.terrainTex &&
     !!t.look &&
     t.look in PAINT &&
-    (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look) || t.look === 'corpse');
+    (t.terrain !== 'wall' || !!LOOK[t.look].prop || MOUND.has(t.look) || t.look === 'corpse' || t.look === 'lot');
   private readonly rock = (t: Tile) => t.terrain === 'wall' && !LOOK[t.look ?? '']?.prop && MOUND.has(t.look ?? '');
   private readonly grid: Grid;
 
@@ -476,6 +498,7 @@ export class Board {
           prop,
           0,
           new THREE.Matrix4().makeTranslation(w.x + c, top - box.min.y * k, w.z + c).scale(new THREE.Vector3(k, k, k)),
+          look.house ? p : undefined,
         );
       }
       // debris on top of the bridge (walkable cover): the caravan remains over the planks (props.ts), only on open maps
