@@ -102,6 +102,6 @@ describe('help line after a tap', () => {
     const b = duel();
     const v = view(b, { k: 'facing' }, freshUi(b), b.actor.pos);
     expect(helpText(v, true, true)).toContain('toque de novo no mesmo lado');
-    expect(helpText(v, true, false)).toContain('Enter');
+    expect(helpText(v, true, false)).toContain('confirme');
   });
 });

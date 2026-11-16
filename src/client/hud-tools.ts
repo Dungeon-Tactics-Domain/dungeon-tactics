@@ -31,7 +31,7 @@ export class ToolsMenu {
       role: 'menuitemcheckbox',
       'aria-checked': String(fpsOn()),
     });
-    this.fastBtn = this.toolItem('»', t('Batalha rápida', 'Fast battle'), '', () => act.fast(), {
+    this.fastBtn = this.toolItem('»', t('Batalha rápida (3×)', 'Fast battle (3×)'), '', () => act.fast(), {
       role: 'menuitemcheckbox',
       'aria-checked': 'false',
     });

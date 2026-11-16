@@ -113,7 +113,7 @@ Minimum text: 16 px with no exception, touch included (Fernando, Nov 16): `--fs-
 | Token | Value | Use |
 |---|---|---|
 | `--gap` | 8 px | default gap between pieces; multiples of 4 (4, 6, 8, 12, 16, 24) |
-| `--tap` | 44 px | minimum button height; on touch (`pointer: coarse`) also the menu rows, "Execute?"'s Yes and No, Buy, Sell, Recruit and the title's language button, which stay compact on a PC; the corner list's rows everywhere, 4 px apart (Nov 16) |
+| `--tap` | 44 px | minimum button height; on touch (`pointer: coarse`) also the menu rows, "Execute?"'s Confirm and Back, Buy, Sell, Recruit and the title's language button, which stay compact on a PC; the corner list's rows everywhere, 4 px apart (Nov 16) |
 | `--r` | 2 px | corner of everything |
 | `--slot-w` | `min(672px, 35vw)` | bottom unit panels (the lab kit's 35% of 1920; 448 px at 1280) |
 | `--frame` / `--frame-pressed` | bevel with a steel trim | button outside the panels |

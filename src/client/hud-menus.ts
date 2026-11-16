@@ -83,8 +83,8 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
   if (s.k === 'map' && s.command === 'move')
     return v.hl?.tiles.some((m) => m.kind === 'nogo')
       ? t(
-          'Mover: não dá para parar aqui; a unidade inteira precisa caber em chão livre e uniforme ao alcance.',
-          'Move: cannot stop here; the whole unit must fit on free, even ground in reach.',
+          'Não dá para parar aqui: a unidade inteira precisa caber em chão livre e plano.',
+          'Can’t stop here: the whole unit needs free, level ground.',
         )
       : (tap === 'marked'
           ? t('Mover: toque de novo na casa para confirmar.', 'Move: tap the tile again to confirm.')
@@ -102,8 +102,8 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
         : tap === 'invalid'
           ? t('Essa casa não serve; toque na área laranja.', 'Not that tile; tap inside the orange area.')
           : t(
-              'Escolha o alvo na área laranja (roxo: o tiro bate no caminho).',
-              'Pick the target in the orange area (purple: the shot hits something on the way).',
+              'Escolha o alvo na área laranja. Roxo: algo bloqueia o tiro.',
+              'Pick a target in the orange area. Purple: something blocks the shot.',
             );
   }
   if (s.k === 'confirm')
@@ -119,8 +119,8 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
         'Which way to face? Tap a side to turn; tap the same side again to end the turn.',
       )
     : t(
-        'Para onde olhar? Setas ou clique escolhem; Enter, ou clicar de novo na mesma direção, passa a vez.',
-        'Which way to face? Arrows or click choose; Enter, or clicking the same direction again, ends the turn.',
+        'Para onde olhar? Escolha a direção e confirme para passar a vez.',
+        'Which way to face? Pick a direction, then confirm to end the turn.',
       );
 }
 
@@ -221,8 +221,8 @@ export function renderConfirm(box: HTMLElement, v: HudView, open: boolean, act: 
         button(`item${s.lock === 'tile' ? ' focus' : ''}`, [t('Na casa', 'On the tile')], () => act.lock('tile')),
       ]
     : [
-        button(`item${s.yes ? ' focus' : ''}`, [t('Sim', 'Yes'), hint('Enter')], () => act.answer(true)),
-        button(`item${s.yes ? '' : ' focus'}`, [t('Não', 'No'), hint('Esc')], () => act.answer(false)),
+        button(`item${s.yes ? ' focus' : ''}`, [t('Confirmar', 'Confirm'), hint('Enter')], () => act.answer(true)),
+        button(`item${s.yes ? '' : ' focus'}`, [t('Voltar', 'Back'), hint('Esc')], () => act.answer(false)),
       ];
   box.replaceChildren(
     el(
