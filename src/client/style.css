@@ -1792,6 +1792,12 @@ button[hidden],
 .float.magic {
   color: var(--float-magic);
 }
+/* the second signal for magic; small, since the fallback font draws the star twice a digit's size */
+.float.magic::after {
+  content: "\2009\2726";
+  font-size: 0.6em;
+  vertical-align: 0.3em;
+}
 .float.crit {
   /* the glyph keeps its black outline (white and violet on gold read at 1.0 to 1.6:1); the gold ring goes outside it,
      closed by black again */

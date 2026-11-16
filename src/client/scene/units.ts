@@ -482,10 +482,13 @@ export class Units {
     const at = this.chest(v),
       p = at.clone().project(this.camera),
       c = this.canvas;
+    const node = el('div', { class: `float ${cls}`, style: `font-size:${px}px` }, text);
+    this.floats.append(node);
+    // measured once on screen, so a wider number (a ✦, a "Miss") keeps its real room
     const box = {
       x: ((p.x + 1) / 2) * c.clientWidth,
       y: ((1 - p.y) / 2) * c.clientHeight,
-      w: text.length * px * 0.6,
+      w: node.offsetWidth,
       h: px,
     };
     const lift = liftOver(
@@ -493,14 +496,10 @@ export class Units {
       box,
     );
     // placed now, not on the next frame, so it never flashes in the corner
-    const node = el(
-      'div',
-      { class: `float ${cls}`, style: `font-size:${px}px;left:${box.x}px;top:${box.y - lift}px` },
-      text,
-    );
+    node.style.left = `${box.x}px`;
+    node.style.top = `${box.y - lift}px`;
     const n = { node, at, box: { ...box, lift } };
     this.numbers.push(n);
-    this.floats.append(node);
     setTimeout(() => {
       node.remove();
       this.numbers.splice(this.numbers.indexOf(n), 1);
@@ -632,14 +631,9 @@ export class Units {
         const way = e.k === 'bump' ? (pushed.get(e.unit) ?? this.pushWay(v, center, striker)) : null;
         const wall = way && this.behind(v, e.unit, this.axis(way), state) === 'wall' ? this.axis(way) : null;
         if (wall) await this.sway(v, wall.clone().multiplyScalar(WEIGHT.wall * k), TIMING.wallSlide);
-        // magic also by a mark after the number: the colour is never the only signal
+        // magic also gets a ✦ after the number (style.css): the colour is never the only signal
         const kind = numberKind(e, magic);
-        this.float(
-          e.unit,
-          `-${e.dmg}${kind === 'magic' ? ' ✦' : ''}`,
-          `${kind}${big ? ' crit' : ''}`,
-          numberPx(e.dmg, max, big),
-        );
+        this.float(e.unit, `-${e.dmg}`, `${kind}${big ? ' crit' : ''}`, numberPx(e.dmg, max, big));
         if (wall && !still())
           void sparks(
             this.scene,
