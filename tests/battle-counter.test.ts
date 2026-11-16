@@ -199,8 +199,27 @@ describe('counters (Nov 15)', () => {
     expect(load({}, [{ unit: foe, by: a, ranged: true, turns: 2 }])).toEqual([foe]);
     expect(load({}, [{ unit: foe, by: a, ranged: true, turns: 1 }])).toBeUndefined();
     expect(load({}, [{ unit: a, by: foe, ranged: true, turns: 2 }])).toBeUndefined();
-    // an edited save: a repeated unit and one on the actor's side drop; an unknown one breaks it
+    // an edited save: a repeated unit and one on the actor's side drop, and so does one no longer in the battle
     expect(load({ engaged: [foe, foe, ally] })).toEqual([foe]);
-    expect(parseBattleState({ ...structuredClone(s), turn: { ...s.turn, engaged: ['nobody'] } })).toBeNull();
+    expect(load({ engaged: ['nobody', foe] })).toEqual([foe]);
+  });
+
+  it('a unit killed mid-move leaves the owed list, and the battle saves and loads', () => {
+    // Spin (an area strike) hit two skeleton archers; walking off, the first one's shot kills the second (friendly fire)
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 2, y: 2 },
+      { id: 's1', def: 'skeleton_archer', team: 'enemy', x: 3, y: 2 },
+      { id: 's2', def: 'skeleton_archer', team: 'enemy', x: 1, y: 2, hp: 1 },
+      { id: 'f', def: 'beacon', team: 'hero', x: 9, y: 4 },
+    ]);
+    s.turn.usedAbility = 'spin';
+    s.turn.engaged = ['s1', 's2'];
+    const grid = flat(10, 5);
+    SCENARIOS['t-dead'] = { id: 't-dead', name: 't', en: 't', grid, spawns: [] }; // a save names a known map
+    s.scenario = 't-dead';
+    const b = new Battle(grid, s);
+    expect(b.move({ x: 0, y: 2 })).toContainEqual({ k: 'die', unit: 's2' });
+    expect(b.state.turn.engaged).toEqual(['s1']);
+    expect(Battle.load(b.save())?.state.turn.engaged).toEqual(['s1']);
   });
 });

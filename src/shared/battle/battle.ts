@@ -344,7 +344,7 @@ export function parseBattleState(raw: unknown): BattleState | null {
     if (!Array.isArray(list) || list.length > MAX_UNITS * MAX_UNITS) return false;
     for (const e of list) {
       const u = units.find((x) => x.id === (isObj(e) ? e.unit : e));
-      if (!u) return false;
+      if (!u) continue; // a unit no longer here owes nothing (one that died mid-move stayed listed before Nov 15's fix)
       // an edited save: a repeated unit would counter twice, and the rule never owes one on the actor's own side
       if (keep(e) && u.team !== actor.team && !engaged.includes(u.id)) engaged.push(u.id);
     }
