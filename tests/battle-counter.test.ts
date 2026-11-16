@@ -236,4 +236,18 @@ describe('counters (Nov 15)', () => {
     expect(b.state.turn.engaged).toEqual(['s1']);
     expect(Battle.load(b.save())?.state.turn.engaged).toEqual(['s1']);
   });
+
+  it('the last hero killed by a counter ends the battle, and the dead actor has nowhere to walk', () => {
+    const s = stateOf([
+      { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1, hp: 1 },
+      { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
+    ]);
+    s.rng = HIT_SEED;
+    s.turn.usedAbility = 'strike';
+    s.turn.engaged = ['b'];
+    const b = new Battle(flat(8, 4), s);
+    expect(b.move({ x: 0, y: 2 })).toContainEqual({ k: 'die', unit: 'a' });
+    expect(b.state.outcome).toBe('defeat');
+    expect(b.reach()).toEqual(new Map()); // the end-of-battle menu asks it (startScreen)
+  });
 });

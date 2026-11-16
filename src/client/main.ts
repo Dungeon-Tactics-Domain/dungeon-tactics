@@ -424,17 +424,14 @@ export class Game {
     const { events, ui } = confirm(this.battle, this.ui, lock);
     if (!events.length) return;
     this.ui = ui;
+    // fell to a counterattack while retreating: the turn passes by itself before the animation, as the AI's does, since
+    // update's heroTurn reads the one acting (it threw on the dead one) and Battle.load refuses a save that still names it
+    const fell = !this.battle.over && !this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor);
+    if (fell) events.push(...this.battle.endTurn());
     await this.animate(events);
     this.save();
     if (this.battle.over) return this.finish();
-    // fell to a counterattack while retreating: the turn passes by itself
-    if (!this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor)) {
-      const ev = this.battle.endTurn();
-      if (ev.length) await this.animate(ev);
-      this.save();
-      if (this.battle.over) return this.finish();
-      return this.runEnemies();
-    }
+    if (fell) return this.runEnemies();
     this.screen = startScreen(this.battle);
     this.cursorToActor();
     this.update(freshUi(this.battle));
@@ -516,8 +513,11 @@ export class Game {
         ? aimMark(this.battle.grid, this.battle.state, this.cursor)
         : {
             pos: this.cursor,
+            // only on a hero's turn (hl): a battle that ended on the actor's death leaves no actor to read
             size:
-              moving || samePos(this.cursor, this.battle.actor.pos) ? (UNIT_DEFS[this.battle.actor.def].size ?? 1) : 1,
+              hl && (moving || samePos(this.cursor, this.battle.actor.pos))
+                ? (UNIT_DEFS[this.battle.actor.def].size ?? 1)
+                : 1,
           };
     this.scene.setCursor(hl ? framed.pos : null, framed.size, !hl?.tiles.some((m) => m.kind === 'nogo'));
     // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
@@ -542,10 +542,10 @@ export class Game {
       hl && (s.k === 'map' || s.k === 'confirm') && ui.mode.k === 'ability' && ABILITIES[ui.mode.id].needsSight
         ? this.cursor
         : null;
-    const from = this.battle.actor.pos;
+    const from = aim && this.battle.actor.pos;
     const magic = ui.mode.k === 'ability' && !!ABILITIES[ui.mode.id].magic;
     this.scene.setTrajectory(
-      aim && (aim.x !== from.x || aim.y !== from.y)
+      aim && from && (aim.x !== from.x || aim.y !== from.y)
         ? {
             from,
             to: aim,
@@ -763,6 +763,8 @@ export class Game {
     }
     this.acting = null;
     this.busy = false;
+    // ended (maybe on the actor's death, with no actor left to read): straight to the end, before the turn menu
+    if (this.battle.over) return this.finish();
     this.screen = startScreen(this.battle);
     if (this.heroTurn) {
       this.cursorToActor();
@@ -770,7 +772,6 @@ export class Game {
       this.scene.pop(this.battle.actor.id);
     }
     this.update(freshUi(this.battle));
-    if (this.battle.over) this.finish();
   }
 
   // rotates the acting unit 90 degrees clockwise: it is the choice of where to look before passing the turn (every map since Nov 13)

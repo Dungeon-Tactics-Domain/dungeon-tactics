@@ -83,8 +83,10 @@ export class Battle {
   // since Nov 13 you can walk after starting to charge (Fernando's request: "can move to throw it farther"): the charge is
   // not undone and fires from wherever the unit is; since Nov 15 starting it costs half of what is left (act)
   reach(): Map<string, Step> {
+    // over first: a battle that ended on the actor's death has no actor to read
+    if (this.over) return new Map();
     const left = UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0);
-    return this.over || left <= 0 ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
+    return left <= 0 ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
   }
 
   preview(abilityId: string, target: Pos): Preview {
