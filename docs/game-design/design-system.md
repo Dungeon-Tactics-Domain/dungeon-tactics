@@ -1,6 +1,6 @@
 # Interface design system (Nov 13, 2026)
 
-How the Dungeon Tactics interface is built: tokens, pieces, states, input and contrast. Read it together with `src/client/CLAUDE.md` (decisions and reasons). The layout follows FFT and Tactics Ogre; art, fonts, icons and text are ours.
+How the Dungeon Tactics interface is built: tokens, pieces, states, input and contrast. Read it together with `src/client/CLAUDE.md` (code rules) and [client-battle-screen.md](client-battle-screen.md) (what each screen does and why). The layout follows FFT and Tactics Ogre; art, fonts, icons and text are ours.
 
 **Status:** this document describes the FFT Classic theme (Nov 15), ported from the design lab kit (`dungeon-tactics-lab/design/src/fft-kit.css`): blue gradient panels, light text with a hard dark shadow, yellow focus. It is the only theme since Nov 15 (decision log in `docs/decisions.md`).
 
@@ -11,7 +11,7 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 **Rules of use**
 
 - Colour and size only through `:root` tokens. Exceptions are listed under "Debts".
-- A new screen is built from the pieces below. Something missing: first one more parameter on the piece; a new piece only if that does not fit, recorded here and in `src/client/CLAUDE.md`.
+- A new screen is built from the pieces below. Something missing: first one more parameter on the piece; a new piece only if that does not fit, recorded here.
 - Colour is never the only cue: always text, a drawing or a mark with it (✓, ▶, stripes).
 - All text through `t('pt', 'en')`.
 - Web on PC first (1280×720 and 1920×1080). The mobile media queries stay, without optimisation for now.
