@@ -43,7 +43,7 @@ node scripts/crawl-sheet.ts <out>   # screenshots of 12 crawl rooms with the ver
 - **Everything in English:** comments, docs, `CLAUDE.md` files and commits. Player-facing text stays bilingual through `t('português', 'English')` from `src/client/i18n.ts`; names come from `unitName` and `abilityName`.
 - **Comments explain why**, in one short line, wherever the code alone does not: chosen numbers and timings, call order that matters, browser workarounds, the request behind a behaviour. Do not narrate what the line does. When a decision changes, change its comment.
 - **Imports at the top of the file.** No inline type imports.
-- **Content is data in `src/content`** (Nov 14): classes, abilities, items, maps, stages, lines, towns and quests. Labs change content first; the engine changes only when a new mechanic needs it. The engine (`src/shared`) never imports `src/client`.
+- **Content is data in `src/content`** (Nov 14): classes, abilities, items, maps, the party, the town and the dungeon-crawl tables. Labs change content first; the engine changes only when a new mechanic needs it. The engine (`src/shared`) never imports `src/client`.
 - **Abilities and items are data with general stats** (range, damage, area, push, charge, bonuses) that apply the same against everything. No rule of the kind "ability X does Y against Z".
 - **Determinism:** the rules never call `Math.random`; randomness goes through `rng.ts` with its state inside `BattleState`, in a fixed order (hit, then damage, per target).
 - **Trust boundaries:** anything read from the browser (`dt:*` saves) is rebuilt field by field by its `parse*` function, which returns a safe default on any doubt.

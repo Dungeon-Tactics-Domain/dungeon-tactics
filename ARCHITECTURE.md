@@ -119,7 +119,7 @@ flowchart TB
 |---|---|---|
 | Lint and format | `npm run lint` | Biome over the whole repository |
 | Types | `npm run typecheck` | the client, the tests and `scripts/` (two `tsconfig` files) |
-| Unit tests | `npx vitest run` | 46 test files: the rules engine (`battle-*.test.ts`, FFT formulas), content integrity (`content.test.ts`, `scenario-maps.test.ts`), dungeon rooms and the expedition, and the pure client functions (input mapping, interaction, HUD forecast and layout, markers, water levels, save parsers) |
+| Unit tests | `npx vitest run` | Test files for: the rules engine (`battle-*.test.ts`, FFT formulas), content integrity (`content.test.ts`, `scenario-maps.test.ts`), dungeon rooms and the expedition, and the pure client functions (input mapping, interaction, HUD forecast and layout, markers, water levels, save parsers) |
 | Coverage | `npm run coverage` | V8 coverage of `src/`; the `fft/` study and `types.ts` are excluded (`vite.config.ts`) |
 | Browser smoke test | `npx vite build && npm run smoke` | serves `dist/` with `vite preview` and opens the title (fresh and with a save), the town, the expedition map and its first room, the Ash Wood battle and a crawl boss room in headless Chrome; fails on a missing screen, a console error or a failed request (`scripts/smoke-game.mjs`) |
 | AI vs AI | `npm run sim -- <scenario> <seeds>` | optional balance tool: win rate, turns and survivors over many seeds (`scripts/battle-sim.ts`, `src/shared/battle/simulate.ts`) |

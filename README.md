@@ -37,7 +37,7 @@ Nothing is copied from the originals: rules, art direction, text and code are ou
 - **Wave-field water.** A damped wave equation on a height grid: units splash, waves reflect off the banks and the current drags the surface.
 - **Procedural trees and props.** Broadleaf trees, pines, dead trees and crates built in code with vertex-painted colour, one draw call each.
 - **Greedy AI and an AI vs AI simulator.** `npm run sim -- beacon_hill 1000` plays the AI against itself over many seeds and reports win rate, length and survivors.
-- **Tested.** 304 Vitest tests (46 files); the rules engine has 98.7% line and 93.6% branch coverage (`npm run coverage`, measured on Nov 14, 2026). CI also runs a headless-browser smoke test of the production build.
+- **Tested.** More than 600 Vitest tests; the rules engine has 98.7% line and 93.6% branch coverage (`npm run coverage`, measured on Nov 14, 2026). CI also runs a headless-browser smoke test of the production build.
 
 ## Architecture
 
