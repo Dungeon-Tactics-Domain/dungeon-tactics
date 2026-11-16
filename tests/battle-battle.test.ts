@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle, parseBattleState, UNDO_LIMIT } from '../src/shared/battle/battle.ts';
+import { CLASSES_BATTLE, registerFftStudy } from '../src/shared/battle/fft/gariland.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
@@ -175,6 +176,56 @@ describe('a broken save does not crash the game', () => {
     expect(mutate((s) => (s.units[1].id = s.units[2].id))).toBeNull();
     expect(mutate((s) => (s.units[1].pos = { ...s.units[2].pos }))).toBeNull();
     expect(mutate((s) => (s.turn.usedAbility = 'fogo_infinito'))).toBeNull();
+  });
+
+  it('a turn clock, spent movement or charge out of its limits is rejected', () => {
+    const charge = (s: ReturnType<typeof good>, extra = {}) => {
+      const me = s.units.find((u: { id: string }) => u.id === s.turn.actor);
+      return {
+        unit: me.id,
+        ability: UNIT_DEFS[me.def].abilities[0],
+        target: { x: 2, y: 2 },
+        follow: null,
+        ticks: 3,
+        ...extra,
+      };
+    };
+    expect(mutate((s) => (s.charges = [charge(s)]))).not.toBeNull();
+    expect(mutate((s) => (s.charges = [charge(s), charge(s)]))).toBeNull(); // one charge per unit
+    expect(mutate((s) => (s.charges = [charge(s, { target: { x: 99, y: 0 } })]))).toBeNull();
+    expect(mutate((s) => (s.turn.spent = 99))).not.toBeNull();
+    expect(mutate((s) => (s.turn.spent = 100))).toBeNull();
+    expect(mutate((s) => (s.units[1].ct = -10000))).not.toBeNull();
+    expect(mutate((s) => (s.units[1].ct = 10001))).toBeNull();
+  });
+
+  it('a counter of the study out of its limits is rejected', () => {
+    registerFftStudy();
+    const s = JSON.parse(Battle.start(CLASSES_BATTLE, 1).save()).state;
+    const caster = s.units.findIndex((u: { vars?: object }) => u.vars);
+    expect(caster).toBeGreaterThanOrEqual(0);
+    const key = Object.keys(s.units[caster].vars)[0];
+    s.units[caster].vars[key] = 9999;
+    expect(parseBattleState(s)).not.toBeNull();
+    s.units[caster].vars[key] = 10000;
+    expect(parseBattleState(s)).toBeNull();
+  });
+
+  it('Battle.load rejects an edited undo count or history', () => {
+    const b = Battle.start(SCENARIOS.skirmish, 1);
+    b.move([...b.reach().values()][0].pos);
+    // biome-ignore lint/suspicious/noExplicitAny: the test corrupts arbitrary fields of a parsed save
+    const edit = (fn: (raw: any) => void) => {
+      const raw = JSON.parse(b.save());
+      fn(raw);
+      return Battle.load(JSON.stringify(raw));
+    };
+    expect(edit(() => {})).not.toBeNull();
+    expect(edit((r) => (r.undosLeft = UNDO_LIMIT + 1))).toBeNull();
+    expect(edit((r) => (r.history = Array(4).fill(r.history[0])))).not.toBeNull();
+    expect(edit((r) => (r.history = Array(5).fill(r.history[0])))).toBeNull();
+    expect(edit((r) => (r.history[0].paid = 'no'))).toBeNull();
+    expect(edit((r) => (r.history[0].before.scenario = 'missing'))).toBeNull();
   });
 });
 
