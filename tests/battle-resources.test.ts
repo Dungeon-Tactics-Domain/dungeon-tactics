@@ -3,7 +3,7 @@ import { buildDevScenario, unitFrom } from '../src/client/dev-roster.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseTurn } from '../src/shared/battle/ai.ts';
 import { Battle, parseBattleState } from '../src/shared/battle/battle.ts';
-import { canPay, poolOf, previewAbility } from '../src/shared/battle/combat.ts';
+import { canPay, poolOf, previewAbility, resolveAbility } from '../src/shared/battle/combat.ts';
 import { initialState, SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { startNextTurn } from '../src/shared/battle/turn-queue.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
@@ -73,6 +73,30 @@ describe('mana and stamina (Nov 15 grill)', () => {
     w.move(at(0, 0));
     w.move(at(3, 0));
     expect(poolOf(w.state.units.find((u) => u.id === 'f')!, 'stamina')).toBe(UNIT_DEFS.soldier.vars!.stamina);
+  });
+
+  // the counter above is the free Strike; this pins the `charged` path itself with an ability that has a cost
+  it('a resolution marked charged (a counter or a charge firing) never pays, even for a paid ability', () => {
+    const w = field('warrior', { stamina: 0 });
+    const events = resolveAbility(w.grid, w.state, 'warrior', 'heavy_strike', at(1, 1), true);
+    expect(events.some((e) => e.k === 'attack')).toBe(true);
+    expect(poolOf(w.actor, 'stamina')).toBe(0);
+  });
+
+  it('undo gives back what the action spent, a charge included', () => {
+    const w = field('warrior');
+    w.act('shield_bash', at(1, 1));
+    expect(poolOf(w.actor, 'stamina')).toBe(40);
+    expect(w.undo()).toBe(true);
+    expect(poolOf(w.actor, 'stamina')).toBe(50);
+    const m = field('mage');
+    m.move(at(5, 1));
+    m.act('blast', at(1, 1));
+    expect(poolOf(m.actor, 'mana')).toBe(35);
+    expect(m.undo()).toBe(true); // the charge
+    expect([poolOf(m.actor, 'mana'), m.state.charges]).toEqual([60, []]);
+    expect(m.undo()).toBe(true); // the move: nothing to give back
+    expect(poolOf(m.actor, 'mana')).toBe(60);
   });
 
   it('regenerates at the start of each of the unit own turns, never above the pool', () => {
