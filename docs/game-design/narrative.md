@@ -12,9 +12,10 @@ The loop itself (town, descent through rooms, camp, return) is in `_notas/LOOP-D
 | Topic | Decision |
 |---|---|
 | Tone | Warm with a shadow underneath: a lively, kind village; the descent brings losses and secrets little by little. No stress or afflictions: the weight comes from the story, not from a mechanic. |
-| Why the party goes down | The protagonist is a **prisoner** the town forces to go down. Only he has a main story for now. He starts going down with other prisoners; as his runs go well he gains independence, and the party turns from prisoners into adventurers. Other stories happen alongside. |
-| Who holds him | The town itself: going down is the sentence it hands to convicts. |
-| The sentence | A quota of descents paid off through **milestones**. Each milestone changes how he is treated and unlocks places, people and lines. Numbers come from the Mechanics lab later. |
+| Why the party goes down | The protagonist is a **prisoner** the town forces to go down. Only the protagonist has a main story for now. They start going down with other prisoners; as their runs go well they gain independence, and the party turns from prisoners into adventurers. Other stories happen alongside. |
+| Who holds them | The town itself: going down is the sentence it hands to convicts. |
+| The sentence | A quota of descents paid off through **milestones**. Each milestone changes how they are treated and unlocks places, people and lines. Numbers come from the Mechanics lab later. |
+| The protagonist | **Created by the player**, Dragon Age style (Fernando, Nov 15); the player picks a name, a look (KayKit models), and a starting class. No crime choice for now: every protagonist is sentenced for **a debt they could not pay**, so the sentence is paying it off with work (Nov 16). The starting party is the protagonist plus three companions: the companion of the class the player picks does not appear, so the party stays at four (`CRAWL_PARTY`) (Nov 16). |
 | The three companions | Blank at the start (no past in this draft); revealed later. |
 | The town | A small border village with a fixed name and past, written by hand: about 8 to 12 named residents; the four facilities are its centre. |
 | Residents | One resident per facility, each with a different first attitude that shifts with every milestone, plus a few residents without a facility who carry rumours. |
@@ -39,12 +40,12 @@ What the village does not say out loud (kept open, only hinted): why its own peo
 
 Four milestones, no numbers yet (the Mechanics lab sets how many descents or how much value each one costs).
 
-| Milestone | How he is treated | What opens |
+| Milestone | How they are treated | What opens |
 |---|---|---|
-| 1. Chained _(proposed name)_ | Escorted from the cell to the entrance and back; only the warden and the kitchen talk to him. | The dungeon (first floors); the kitchen and the shop at prisoner prices. |
-| 2. Tethered | Free to walk the village between descents, a bell on the ankle. Residents start talking to him. | The request board; the tavern; the forest. |
-| 3. Paid | Keeps a share of what he brings up and spends it himself. | The smith's full work; the mountain; small bonuses from residents' stories. |
-| 4. Free | The sentence is paid. He chooses to stay as an adventurer; the party is no longer prisoners. | Deeper floors; recruits who are adventurers, not convicts. |
+| 1. Chained _(proposed name)_ | Escorted from the cell to the entrance and back; only the warden and the kitchen talk to them. | The dungeon (first floors); the kitchen and the shop at prisoner prices. |
+| 2. Tethered | Free to walk the village between descents, a bell on the ankle. Residents start talking to them. | The request board; the tavern; the forest. |
+| 3. Paid | Keeps a share of what they bring up and spends it themselves. | The smith's full work; the mountain; small bonuses from residents' stories. |
+| 4. Free | The sentence is paid. They choose to stay as an adventurer; the party is no longer prisoners. | Deeper floors; recruits who are adventurers, not convicts. |
 
 ## Residents
 
@@ -55,7 +56,7 @@ Attitudes are the starting point; each milestone moves them one step. Every name
 | **Hesk**, the warden | the gate and the cells | Duty, no warmth: counts what comes up. | He keeps a ledger of every convict sent down and of the ones who came back; the second column is short. |
 | **Marta Penhale**, shopkeeper | Shop | Business: a prisoner is a supplier. | The council buys from her at a low price; she needs goods from below to stay open. |
 | **Garrick Ode**, smith | Smith | Distrust: has seen convicts steal tools. | His hand was hurt; he cannot hold the hot iron alone any more and will not say so. |
-| **Sela**, tavern keeper | Tavern | Pity: pours him soup, asks nothing. | Keeps a shelf of mugs, one per convict who went down; she does not wash the ones that did not come back. |
+| **Sela**, tavern keeper | Tavern | Pity: pours them soup, asks nothing. | Keeps a shelf of mugs, one per convict who went down; she does not wash the ones that did not come back. |
 | **Wren**, cook and herbalist | Kitchen / apothecary | Curiosity: wants to know what grows below. | Her mother's recipe book is missing pages; ingredients from below fill them in (unlocks recipes). |
 | **Pip**, a child | the square | Admiration: thinks prisoners are heroes. | Wants to go down; follows the party to the entrance. |
 | **Old Ysolde** | the well | Memory: talks about how it was before. | Remembers the forest and the mountain paths; her stories are the first rumours. |
@@ -117,7 +118,6 @@ the effects that unlock places, recipes and items; that is work for the implemen
 
 ## Open questions
 
-- Who is the protagonist in the party data: one of the four in `party.ts` or a fifth member?
 - Milestone costs (how many descents or how much value) and whether a failed expedition counts.
 - What lies at the bottom and why the village stopped going down.
 - The companions' stories and the conflict inside the town (left out of this draft).
