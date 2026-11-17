@@ -1426,7 +1426,6 @@ button[hidden],
   :root:not([data-motion="full"]) .tools-menu,
   :root:not([data-motion="full"]) .panel .item.focus::before,
   :root:not([data-motion="full"]) .dialog .camp-list > button:focus::before,
-  :root:not([data-motion="full"]) .party-list .party-card:focus::before,
   :root:not([data-motion="full"]) .menu-nav .choice-row button:focus-visible::before {
     animation: none;
   }
@@ -1438,7 +1437,6 @@ button[hidden],
 :root[data-motion="reduce"] .tools-menu,
 :root[data-motion="reduce"] .panel .item.focus::before,
 :root[data-motion="reduce"] .dialog .camp-list > button:focus::before,
-:root[data-motion="reduce"] .party-list .party-card:focus::before,
 :root[data-motion="reduce"] .menu-nav .choice-row button:focus-visible::before {
   animation: none;
 }
@@ -2208,135 +2206,10 @@ body:has(.result-overlay) .fps {
   outline: none;
 } /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 
-/* ---- Party, unit sheet and shop (town-ui.ts) ---- */
-/* Party screen in the town (town-ui.ts, openParty): one row per hero, portrait on the left */
+/* ---- Tavern and Shop windows (town-ui.ts); the Party screen has its own block at the end ---- */
 .dialog.party {
   width: min(640px, 100%);
 } /* 560 px scrolled the pt Tavern by a few px once the text grew to 20 px (Nov 15) */
-.party-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--gap);
-}
-.party-card {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.party-list .party-card {
-  position: relative;
-  cursor: pointer;
-  padding: 4px 8px 4px 36px; /* room for the ▶ */
-  border-radius: var(--r);
-}
-/* hover and focus as the menu rows: the band, its yellow line and the ▶; the muted text turns --ink there (4.3:1 on the
-   hover band, under the 4.5 bar) */
-@media (hover: hover) {
-  .party-list .party-card:hover {
-    background: var(--row-hi);
-  }
-  .party-list .party-card:hover :is(.party-class, p) {
-    color: var(--ink);
-  }
-}
-.party-list .party-card:focus {
-  outline: none;
-  background: var(--focus-band);
-  box-shadow: inset 0 0 0 1px var(--focus);
-}
-.party-list .party-card:focus::before {
-  content: "▶";
-  position: absolute;
-  left: 10px;
-  color: var(--focus);
-  animation: nudge var(--t-nudge) steps(1, end) infinite;
-}
-.party-list .party-card:focus :is(.party-class, p) {
-  color: var(--ink);
-}
-.party-card .portrait {
-  width: 48px;
-  height: 64px;
-}
-.party-stats,
-.party-skills {
-  margin: 2px 0 0;
-  font-size: var(--fs-sm);
-}
-.party-stats {
-  font-variant-numeric: tabular-nums;
-}
-/* Unit sheet (town-ui.ts, openSheet): two columns on PC so it fits without scrolling at 1280x720; one when narrow */
-.dialog.sheet {
-  width: min(980px, 100%);
-}
-/* who the unit is, as the HUD's unit panel: the hero's side stripe and the 96x128 portrait */
-.sheet .party-card {
-  padding: 8px 12px;
-  border-left: 6px solid var(--hero);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
-}
-.sheet .party-card .portrait {
-  width: 96px;
-  height: 128px;
-}
-.sheet .party-card strong {
-  font-size: var(--fs-lg);
-}
-.sheet-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: 0 28px;
-}
-.sheet-cols > div:first-child > .secondary {
-  margin-top: 12px;
-}
-.sheet-cols h3:first-child {
-  margin-top: 12px;
-}
-@media (max-width: 760px) {
-  .sheet-cols {
-    grid-template-columns: 1fr;
-  }
-}
-/* Attributes, Equipment or Abilities on the Sheet's right column (Nov 16): the tabs' own label stays for the screen
-   reader; each total or piece in --ink, where it comes from or what it gives on its own muted line under it */
-.sheet-tabs .choice-label {
-  display: none;
-}
-.keys.attrs dd {
-  color: var(--ink);
-}
-.keys.attrs .from {
-  display: block;
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-}
-/* Equipment window (town-ui.ts, openGear, Nov 16): Options' section column holds the 7 slots with what each wears (wider,
-   so a slot and its piece fit), the open slot on the right with the lab kit's list rows, no price column */
-.dialog.gear {
-  width: min(980px, 100%);
-}
-.gear .menu-layout {
-  grid-template-columns: 300px 1fr;
-}
-.gear .menu-body h3:first-child {
-  margin-top: 0;
-}
-/* the piece's name on its line and what it gives or changes under it: beside the name it wrapped both in the ~480 px
-   panel at 1280 */
-.gear .price-what {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-}
-@media (max-width: 600px) {
-  .gear .menu-layout {
-    grid-template-columns: 1fr; /* slots on top, as Options' sections */
-  }
-}
 /* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin (`p.gold`: a bare
    `.gold` also caught the result window's gold orbs and took their margin) */
 .dialog p.gold {
@@ -3302,4 +3175,252 @@ p.gold strong::before,
 }
 :root[data-motion="reduce"] .map-place[aria-current="true"]::before {
   animation: none;
+}
+/* ---- FFT party/sheet/equipment (agent party) ---- */
+/* The Party screen (town-party.ts, Nov 16; FFT's formation and unit menus in one window): the unit list on the left, the
+   picked unit's page on the right; one column on a Narrow screen */
+/* the list and the page scroll each on its own, so the list stays in view under a long Status page (it is 128 px taller
+   than the window at 1280x720): the window is a column whose second row shrinks to what the screen leaves */
+.dialog.roster {
+  width: min(1180px, 100%);
+  display: flex;
+  flex-direction: column;
+}
+.roster-cols {
+  display: grid;
+  grid-template: minmax(0, 1fr) / 300px minmax(0, 1fr);
+  gap: 16px 24px;
+  min-height: 0;
+  margin-top: 12px;
+}
+.roster-list,
+.roster-page {
+  overflow: auto;
+  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
+  padding: 1px 8px 1px 1px; /* the focus ring's 1 px line inside the scroll box */
+}
+/* the unit list: window list rows (.camp-list gives the focus band, its yellow line and the ▶) holding the 64 px face, the
+   name, the class and the bars */
+.roster-list {
+  margin: 0;
+  flex-wrap: nowrap; /* .menu-actions wraps: in a box with a height the rows made a second column */
+}
+.dialog .roster-list h3 {
+  margin: 0 0 4px;
+}
+.dialog .roster-list button + h3 {
+  margin-top: 12px;
+}
+.dialog .roster-list > button {
+  min-height: 76px;
+  gap: 12px;
+  padding: 6px 8px 6px 36px;
+}
+.roster-who {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+.roster-who .party-class {
+  font-size: var(--fs-sm);
+}
+/* the bars in a 300 px column: a short label and the number at note size leave the bar its room */
+.roster-who .gauge {
+  grid-column: 1 / -1;
+  grid-template-columns: 2.8em 1fr auto;
+}
+.roster-who .gauge-num {
+  font-size: var(--fs-sm);
+}
+/* the class is muted: on the hover and focus bands it turns --ink (4.3:1 and 3.8:1 otherwise) */
+@media (hover: hover) {
+  .roster-list > button:hover .party-class {
+    color: var(--ink);
+  }
+}
+.roster-list > button:focus .party-class {
+  color: var(--ink);
+}
+/* whose pages are open: the picked row of a command menu (sunken band, yellow edge, ▸); the focus band wins over it */
+.dialog .roster-list > button.picked:not(:focus) {
+  background: color-mix(in srgb, var(--shade) 45%, transparent);
+  box-shadow: inset 4px 0 0 var(--focus);
+}
+.dialog .roster-list > button.picked::after {
+  content: "▸";
+  color: var(--focus);
+}
+.roster-tabs .choice-label {
+  display: none;
+} /* the group name stays in the aria-label */
+/* the four pages on one line in the ~430 px the page has at 1280 ("Equipamento" and "Habilidades" wrapped Classe) */
+.roster-tabs .choice-row {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+.roster-tabs .choice-row button {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 4px;
+}
+/* Status: who the unit is, as the HUD's unit panel (the hero's side stripe, the 128 px face, the bars) */
+.unit-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-left: 6px solid var(--hero);
+  background: color-mix(in srgb, var(--shade) 25%, transparent);
+}
+/* a class without a painted face keeps its portrait, at the party sizes */
+.roster-list .portrait {
+  width: 48px;
+  height: 64px;
+}
+.unit-head .portrait {
+  width: 96px;
+  height: 128px;
+}
+.unit-head > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.unit-head strong {
+  font-size: var(--fs-lg);
+}
+.unit-head .gauge,
+.unit-head p {
+  grid-column: 1 / -1;
+}
+.unit-head p {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+.roster-page > .menu-actions {
+  margin-top: 12px;
+}
+.roster-page > p {
+  margin: 8px 0 0;
+  font-size: var(--fs-sm);
+}
+/* each total with its bar (sheet-lines.ts share) and, under it, where it comes from */
+.stat-rows {
+  --bar: var(--ct);
+  display: grid;
+  gap: 3px;
+  margin: 12px 0 0;
+  font-size: var(--fs-sm);
+}
+.stat-rows > div {
+  display: grid;
+  grid-template-columns: 11em 1fr 3.4em;
+  align-items: center;
+  gap: 0 12px;
+}
+.stat-rows dt {
+  font-weight: 800;
+}
+.stat-rows dd {
+  display: contents;
+}
+.stat-rows strong {
+  text-align: right;
+  font-size: var(--fs);
+  font-variant-numeric: tabular-nums;
+}
+.stat-rows .from {
+  grid-column: 1 / -1;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+/* Abilities: the 32 px icon and the name, what it does under them */
+.keys.skills {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.keys.skills dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: var(--fs);
+}
+.keys.skills dd {
+  margin-left: 40px;
+}
+/* Equipment (town-gear.ts; FFT's equip screen): the slots as Options' section column, the open slot beside it from 1600 px
+   (the PC band), under it on anything narrower, where the page is ~440 px wide */
+.gear-page {
+  display: grid;
+  gap: 12px 24px;
+  align-items: start;
+}
+@media (min-width: 1600px) {
+  .gear-page {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
+.gear-page .menu-nav {
+  padding: 0;
+  border: none;
+}
+.gear-page .menu-nav .choice-row {
+  flex-direction: column; /* a column on a phone too, where Options' sections wrap in a row */
+  flex-wrap: nowrap;
+}
+.gear-page .menu-nav .choice-row button {
+  min-height: var(--tap);
+  padding-block: 4px;
+  white-space: normal; /* "Mão secundária: Escudo do Véu" takes two lines in the column */
+}
+.gear-page h3:first-child {
+  margin-top: 0;
+}
+/* no price column here: the piece and what it changes take the row, the button its right end */
+.gear-page .price-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.gear-page .price-row > span:empty {
+  display: none;
+}
+.gear-page .price-what {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+/* what a piece would change, now → after: the ▲ or ▼ says the direction, the colour only repeats it */
+.compare {
+  display: grid;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.compare .up {
+  color: var(--heal);
+}
+.compare .down {
+  color: var(--enemy-hi);
+}
+/* Narrow: the list on top of the page, the window scrolling as a whole */
+@media (max-width: 760px) {
+  .dialog.roster {
+    display: block;
+  }
+  .roster-cols {
+    grid-template: none / 1fr;
+  }
+  .roster-list,
+  .roster-page {
+    overflow: visible;
+  }
+  .roster-tabs .choice-row {
+    flex-wrap: wrap; /* a 390 px phone holds two tabs a line */
+  }
 }
