@@ -103,6 +103,11 @@
   --inset-r: calc(var(--inset) + env(safe-area-inset-right, 0px));
   --inset-b: calc(var(--inset) + env(safe-area-inset-bottom, 0px));
   --inset-l: calc(var(--inset) + env(safe-area-inset-left, 0px));
+  /* interface layout (Options, ?layout=; ui3d/layout.ts `stage`, which these three mirror): --lay-u is one px of the
+     1920x1080 reference, --lay-x and --lay-y the margins of the frame the pieces anchor in. `edges`: the whole page */
+  --lay-u: max(0.6px, min(100vw / 1920, 100vh / 1080));
+  --lay-x: 0px;
+  --lay-y: 0px;
   --slot-w: min(
     672px,
     35vw
@@ -130,6 +135,33 @@
   --orb-blue: #4a78d0;
   --orb-bronze: #b06a30; /* the kit's leave and options rows */
   --orb-off: #4a5068;
+  /* 3D interface kit (src/client/ui3d; localhost ?menu3d and ?turn3d, Nov 16): the parchment its shaders paint and the ink
+     of its text, measured on FFT: The Ivalice Chronicles' menus. Read once by ui3d/layer.ts, hex only. Contrast (computed on the
+     drawn colours): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the title band; soft ink 5.7:1 on the rows and
+     4.7:1 on the head (never on the title band, 3.6:1); the disabled ink (1.9:1) is the faded label only, its reason
+     is written in soft ink */
+  --ui3d-paper: #ece7d4; /* the sheet at its lit corner; grain and stains take it down to the measured #e9e4d1 */
+  --ui3d-paper-shade: #d5cfb9; /* head, foot and icon column */
+  --ui3d-paper-lit: #f6f1db; /* the focused row */
+  --ui3d-paper-band: #bbb4a2; /* the inset title band of the ability sheet */
+  --ui3d-edge: #332b1a; /* outline and shadow */
+  --ui3d-ink: #474129;
+  --ui3d-ink-soft: #5b5440;
+  --ui3d-ink-off: #a9a28e;
+  /* a serif close to the reference's, from the fonts the system already has (no font file for a test behind a flag) */
+  --font-ui3d: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  /* the 3D battle result (?result=3d), measured on the reference's victory screen (labs refs/fft-ivalice/73): light
+     text on the darkened battle. `lost` is the defeat's title, the cold blue the classic game writes "Game Over" in
+     (described, not measured); `soft` is `text` dimmed for labels */
+  --ui3d-result-title: #fdebb4;
+  --ui3d-result-lost: #9db4d6;
+  --ui3d-result-note: #ddf3b5;
+  --ui3d-result-text: #dcd5ac;
+  --ui3d-result-soft: #a8a184;
+  --ui3d-result-veil: #070908;
+  --ui3d-result-band: #151207;
+  --ui3d-result-plate: #1e1c18;
+  --ui3d-result-line: #736353;
 }
 
 /* Alegreya Sans (SIL OFL 1.1, public/fonts/OFL-Alegreya-Sans.txt), latin subset from Fontsource 5.3.0 */
@@ -931,6 +963,19 @@ button[hidden],
   inset: 0;
   pointer-events: none;
   font-size: var(--fs);
+}
+/* `frame`: the interface in a centred 16:9 frame, scaled to fit. The HTML panels keep their size and move in with the
+   frame through their margins; the pieces laid out on the reference (3D, ?menu=css) also take its scale */
+:root[data-layout="frame"] {
+  --lay-u: min(100vw / 1920, 100vh / 1080);
+  --lay-x: calc((100vw - 1920 * var(--lay-u)) / 2);
+  --lay-y: calc((100vh - 1080 * var(--lay-u)) / 2);
+}
+:root[data-layout="frame"] .hud {
+  --inset-t: calc(var(--inset) + env(safe-area-inset-top, 0px) + var(--lay-y));
+  --inset-r: calc(var(--inset) + env(safe-area-inset-right, 0px) + var(--lay-x));
+  --inset-b: calc(var(--inset) + env(safe-area-inset-bottom, 0px) + var(--lay-y));
+  --inset-l: calc(var(--inset) + env(safe-area-inset-left, 0px) + var(--lay-x));
 }
 .panel {
   position: absolute;

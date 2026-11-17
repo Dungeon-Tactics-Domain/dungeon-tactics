@@ -196,7 +196,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Gold counter** `.gold` (`goldNote`) | `town-ui.ts`, `style.css` | the lab kit's counter: uppercase `--ink-muted` label, the number at `--fs-lg` after a coin drawn from `--ct` and `--orb-gold`; on the window's head band at the right, before the ✕ (`dialog`'s `note`) | Shop (gold in chest), Tavern (party size and gold) |
 | **Expedition map** `.crawl-map` (a fixed `dialog('title', …)` 1180 px wide, up to 1040 px tall) | `game/expedition-map.ts`, `expedition-places.ts` (the chart, pure), `style.css` (the "FFT expedition map" block) | Nov 16, after FFT's world map (our art and text). **Chart** `.map-chart` in its scrolling well `.map-scroll` (`--well` with a dot grid): floor bands with their names down the left gutter, the ways as SVG lines (walked 5 px `--focus`, open 3 px `--ink`, to come 2 px muted, closed dotted), the Gate tag and the party's flag (a pole and a yellow pennant). **Place** `button('map-place <room|chest|boss> <state>', …)`: 48 px (boss 60 px), round for a room with its enemy count, square with the drawn chest (`.map-chest`), the skull icon for the boss; N the dark button · open: `--gold-btn` with a `--focus` edge and glow · cleared: ✓ in `--heal` · skipped: ✕, dashed edge, no fill · S (`aria-current`, the picked one): the focus ring and the menus' ▶ beside it (still under Reduce motion) · F the same ring; never D, so a closed place can be read. **Place box** `.map-box.map-info` (`aria-live`): name in `--focus` with its floor, then a `.keys` list (Enemies with their count, Reward, Way). **Commands** `.map-commands`: a command menu (Travel gold orb, Information blue, Back to town bronze); Travel is D with the reason in small type when the picked place is not open. **Party box** `.map-box.map-party`: per member the 64 px still face, name and class, `gauge()` life and mana. The gold found is the head band's gold counter. Up to 900 px wide the chart keeps a window of 46dvh and the commands and party go under the box; up to 600 px one column; up to 700 px tall (a phone lying down) the window grows with its content and the overlay scrolls, the chart never under 260 px. The gate window reuses `.map-box` for its information lines (`.gate-info`) | expedition map, Information, dungeon gate |
 | **Form field** (text, select, number, checkbox, `details`) | `dev-menu.ts` | F the same yellow ring as buttons (since Nov 14); `--paper-hi` or `--paper-white` background | Developer menu |
-| **Key hint** `hint(k)` (`.hint`) | `hud-pieces.ts`, `style.css` | a `<kbd>` at 11 px, `aria-hidden`, shown only under `.kbd`, which `KEYS` (`hud-pieces.ts`) sets on a device with a hovering fine pointer (a PC with a mouse); never the only way to learn a key | command menu rows, Yes/No, the corner menu, the turn list title, the town prompt and action balloon |
+| **Key hint** `hint(k)` (`.hint`) | `hud-pieces.ts`, `style.css` | a `<kbd>` at 11 px, `aria-hidden`, shown only under `.kbd`, which `KEYS` (`hud-pieces.ts`) sets on a device with a hovering fine pointer (a PC with a mouse); never the only way to learn a key | command menu rows, Confirm and Back, the corner menu, the turn list title, the town prompt and action balloon |
 | **Second tap** (`data-armed` on a button) | `game/crawl.ts`, `game/saves-ui.ts`, `game/options.ts` (each by hand) | a losing action's first tap rewrites the label to say what the second does ("Tap again: deletes") and arms it; the second acts; no confirm window | New quest over an expedition, Back to town from the expedition map, Delete a save, Restart battle |
 | **Strike preview** `strikes()` | `hud-pieces.ts`, `style.css` | one two-colour strip per target, up to 3, then "+N targets": the action half on the panel blue (ability icon, name, the big −dmg or +heal PTS in `--strike-dmg` or `--heal`, ⊕ hit chance) and the target half on its side's colour (`--enemy-paper` for an enemy, the panel blue for a hero): name and side, the life bar with the stripes (`gauge` `change`) and the `strikeInfo` line (direction, push, life after, ALLY! in `--accent`). While aiming it takes the target panel's place, beside the acting panel, up to 760 px wide | bottom, while aiming and on "Execute?" |
 | **Result board** `resultBoard()` (a `dialog('result', …)` with `result-board` and `won` or `lost` on the window) | `game/end-screens.ts`, `style.css` | the end of battle after FFT's results (Nov 16; it was the Design lab's mockup of Nov 15, whose band and glass it keeps): no window, the battle behind darkened at 45% (`--shade`) and its HUD hidden (`result-overlay`); the title on its own panel band at `--fs-banner`, `--focus` on a victory, `--ink` on `--enemy-paper` on a defeat; no ✕ (Esc still closes, or goes home after a room); one **hero row** per hero who started (`heroCard`), stacked as a list at the left: the 64 px still face by how the battle left them (`endExpression`: fallen hurt, under 30% of life wounded, else smile on a victory, neutral on a defeat; `portrait()` 48×64 for a class without a sheet), name with the highlight's MVP tag in `--focus`, class line, `gauge()` life bar with one line under it (the life carried into the next room in `--heal` in an expedition, "Fallen" in `--enemy-hi` with the face in grey; none for a standing hero of a standalone battle) and two number columns, Damage and Takedowns (label `--ink-muted` over the number at `--fs-lg`); the **Result window** (`.result-panel`, 340 px) at the right: `.panel-head`, one line per result (label `--ink-muted` at the left, value bold at the right), the flavour line and the commands as a list at its foot (`.arrow-walk`: the arrows walk them), the primary first with its key drawn (`enterButton`, `.key-chip`, hidden without a hovering pointer). The banner, each row and the window come in one after the other in about half a second (`result-band`, `result-in`; all at once with reduced motion); a held Enter or Space does not press the primary. Up to 900 px wide the window goes under the rows; up to 560 px a row's life bar and numbers go under its name. 1280×720 with four heroes: 494 px tall (measured Nov 16) | standalone battle end, Until Dawn, expedition room cleared, expedition complete or lost |
@@ -252,6 +252,99 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 | Legend did not match the map | white swatch, "White: where the hero can move" → the scene's blue, text with colour and pattern |
 | Shop and Tavern without the reason | grey Buy and Recruit with only an error sound → "N short" and a line with what is missing; buttons aligned right |
 | Two disabled looks | dark grey (dialog) and faded (menu) → faded in both |
+
+### Experiment: parchment command menu (`?menucss`, Nov 16)
+
+Localhost only. `src/client/menucss.css` redraws the command menu, the abilities submenu, an ability sheet (unit, big
+icon, name, 3 pages: Description, Effects, Cost) and a pointing glove as FFT: The Ivalice Chronicles' parchment, to
+compare with the 3D versions. Its tokens (`--parch*`, `--glove-*`, `--mc-serif`, `--mc-spring`, `--t-mc`) live in that
+file's `:root`, so the game without the flag has none of them. It breaks two rules on purpose: parchment instead of
+`--glass*` panels (no backdrop blur) and a serif letter. Contrast: ink 9.3:1 on the rows, 5.9:1 on the darkest band;
+muted and disabled text 5.1:1 on the sunken row. Motion: spring cascade 320 ms, Esc fold 170 ms, confirm flash 300 ms,
+page slide 260 ms; nothing moves with Reduce motion (`data-motion`, `motion.ts`). With `?menu3d` too, the 3D menu wins.
+Its places and its scale (`--u`) come from the interface layout below (`--lay-u`, `--lay-x`, `--lay-y`).
+
+### Interface layout: edges or frame (Options, `?layout=`, Nov 16)
+
+Fernando, Nov 16: the pieces of the battle interface take the exact places of FFT: The Ivalice Chronicles.
+
+- **The places** are in `src/client/ui3d/layout.ts` (`REGIONS`, pure and tested): the battle regions measured on the
+  1920x1080 captures (labs, `refs/fft-ivalice/layout-fft-ic.json`, +-4 px), each with the edge or corner it holds on
+  to: `turn` (the combat timeline, left), `sheet` (bottom left), `menu` 1152,688 414x327 and `submenu` at x 1284
+  (bottom right), `detail` 1450,100 400x564 (top right), `height`, `banner` (top centre), `preview`, `target`, `bar`,
+  `hints` and `hintsLeft`.
+- **Two layouts**, picked in Options → Video and effects → "Interface layout" (saved in `dt:layout`,
+  `layout-mode.ts`; the address's `?layout=edges|frame` wins when the page opens): `edges` (default) keeps each region
+  at the reference distance from its own edge, so an ultrawide screen spreads them; `frame` puts the whole interface in
+  a centred 16:9 frame scaled to fit. On a 16:9 screen of 1152x648 or more the two are the same picture (below it
+  `edges` stops shrinking).
+- **One scale:** a reference px is `min(width / 1920, height / 1080)` CSS px; `edges` never goes under 0.6.
+- **CSS:** `style.css` mirrors `stage()` as `--lay-u` (one reference px), `--lay-x` and `--lay-y` (the frame's margins,
+  0 in `edges`), switched by `data-layout` on `<html>`. In `frame` the HUD's `--inset-*` margins grow by them, so the
+  HTML panels move into the frame at their own size (they are not scaled: a debt until each one is rebuilt on its
+  region).
+- **Who follows it today:** the 3D command menu (`menu3d/menu-layout.ts`), the 3D turn list (`--turn-x`, `--turn-y`,
+  `--turn-b`, set by `turn3d.ts`) and the CSS menu. Without a localhost look, `edges` changes nothing and `frame` only
+  moves the HTML panels inwards.
+
+### Interface looks piece by piece (`?menu=`, `?turn=`, `?ui=`, Nov 16)
+
+Localhost only. `src/client/ui3d/skin-flags.ts` (pure, tested) is the one reader of the flags and holds the table of
+pieces and the looks each has today: `menu` (html, css, 3d), `turn`, `bar`, `banner`, `height`, `hints`, `confirm` and `result`
+(html, 3d), and `sheet`, `preview` reserved with html only (the 3D `bar` draws both). `?menu=css&turn=3d` picks piece by piece; `?ui=html|css|3d` is a
+preset for every piece that has that look; `?pixel=1` turns the pixel filter on. A piece's own flag beats the older
+shortcuts (`?menu3d`, `?menu3d=pixel`, `?menucss`, `?turn3d`), a shortcut beats the preset, and the address beats a
+sandbox spec. The labs page builds its selector from `scripts/sandbox/bench/ui-pecas.json`, the same table (a test
+keeps them equal).
+
+### Experiment: 3D interface kit (`?menu3d`, `?menu3d=pixel`, `?turn3d`, Nov 16)
+
+Localhost only, each look behind its own flag (address or sandbox spec), each its own chunk (`hud-skin.ts`); without a
+flag the game is the one of always, checked by the hash of the bench shots. Fernando's decisions of Nov 16:
+
+- **One shared WebGL layer, no glass blur.** `ui3d/layer.ts` puts one transparent canvas over the HUD (one context) and
+  every 3D screen draws on it. It breaks the `--glass*` rule on purpose: parchment and cards are opaque shader paint.
+- **The kit** (`src/client/ui3d/`): `panel.ts` (parchment panel and inset band: outline, bevel, shadow, grain, focus
+  band), `text.ts` (a texture per distinct string, redrawn only when the words change), `icons.ts` (low-poly parts
+  merged into one geometry, shaded by a small toon shader), `pixel.ts` (the switchable pixel filter: the icons go to a
+  small target read block by block) and `spring.ts`. A new 3D screen is a thin `Ui3dScreen` built from these.
+- **Tokens:** `--ui3d-paper`, `-paper-shade`, `-paper-lit`, `-paper-band`, `--ui3d-edge`, `--ui3d-ink`, `-ink-soft`,
+  `-ink-off` and `--font-ui3d` in `:root`, read once by the layer (hex only). The turn cards keep their colours as
+  shader constants measured on the reference (a debt).
+- **Banner, Height and button hints** (`?banner=3d`, `?height=3d`, `?hints=3d`; `src/client/hints3d/`): the dark pill
+  with the help line, "Height" with the cursor tile's number over a fading line, and the hint rows at the foot (key caps
+  on a keyboard, pad buttons on a gamepad, none for a finger), on the regions `banner`, `height`, `hints` and
+  `hintsLeft`. Their colours are the reference's, as constants in `hints3d.ts` (the same debt). Zoom and rotate share one
+  "Camera" hint and the labels are one or two words, so the row fits its region at 1280x720 too, where the 16 px floor
+  widens it (Fernando, Nov 16). The tile line (floor, water, spikes, a charge landing) sits small on a dark box under
+  the Height, and every help-line instruction fits the pill in one line.
+- **"Execute?"** (`?confirm=3d`, `confirm3d/`): the strike's confirmation as a dark slate box like the pill, beside the
+  character: title, notes and the two choices, the one in focus on a gold band with ▶. The HTML window stays unseen at
+  the drawn sizes and keeps the place, the buttons and the mouse; the colours are constants in `confirm3d.ts`.
+- **Result tokens** (`?result=3d`, `result3d/`): `--ui3d-result-title`, `-lost`, `-note`, `-text`, `-soft`, `-veil`,
+  `-band`, `-plate` and `-line`, measured on the reference's victory screen (light text on the darkened battle); `-lost`
+  (the defeat's title) and `-soft` are ours. Contrast not computed yet.
+- **Contrast** (computed, WCAG): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the darkest band; soft ink 5.7:1
+  on the rows, 4.7:1 on the head, 3.6:1 on the band, so the band's title takes the full ink; the disabled ink (1.9:1)
+  is the faded name only, and the reason beside it (what is missing) is written in soft ink.
+- **Text size:** never under 16 px on the page, whatever the scale; a long ability name beside its cost shrinks to the
+  room left (below 16 px only on pages under about 0.7 of 1080p).
+- **Motion:** springs for the cascade, the focus band, the glove, the sheet's pages and the turn cards; a confirmed row
+  flashes and holds its column 150 ms. Everything runs on the battle clock. With Reduce motion every spring lands at
+  once and nothing sways or sweeps.
+- **Input is the 3D's own:** the command menu puts one transparent button over each drawn row and over each half of
+  the sheet's foot (the page arrows), from the same pure layout it draws (`menu3d/menu-layout.ts`); keys and gamepad
+  move the same turn screen. No screen reader path for the 3D screens (the canvas is `aria-hidden`); the accessibility
+  kept is the game's: contrast, text size, Reduce motion, keys and gamepad, and colour never alone (greyed rows say why).
+  The turn list keeps the HUD's own list under it, unseen, as its layout, scroll and hover (a registered deviation).
+- **Place:** on the reference's regions (Interface layout, above), not beside the unit: the command menu bottom right
+  (five rows tall like the capture, the paper blank under a shorter list), the sheet top right, the turn list on the
+  left, stacked from the bottom and ending above the HTML acting panel where that one is taller than the reference's
+  (measured: card 2 at 102,711 66x78 on a 1920x1080 page, 102,712 on the reference; at 1280x720 the panel pushes
+  the cards 57 px up). A row is 56.5 px at 1080p and passes 44 px from about 0.78 of
+  it; smaller pages have rows under `--tap` (a debt).
+- **Cost:** the layer draws only while something moves; F3 shows its draw calls and triangles for the last frame.
+  Smooth icons use the canvas's own multisampling only where the screen's density is under 2.
 
 ## 6. Debts (left for later)
 
