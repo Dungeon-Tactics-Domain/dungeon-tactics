@@ -2816,6 +2816,9 @@ p.gold strong::before,
   }
 }
 :root[data-motion="reduce"] :is(.result-board .dialog-head, .hero-card, .result-panel) {
+  animation: none;
+}
+
 /* ---- FFT expedition map (agent map) ---- */
 /* The expedition map (game/expedition-map.ts, Nov 16): a window with the descent as a chart of places on the left, the
    party in its top right corner, the picked place's box along the foot and the travel commands beside it. The overlay
