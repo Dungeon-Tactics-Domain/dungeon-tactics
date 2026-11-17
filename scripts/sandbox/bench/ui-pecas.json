@@ -12,6 +12,7 @@
     "result": ["html", "3d"],
     "party": ["html", "3d"],
     "shop": ["html", "3d"],
+    "map": ["html", "3d"],
     "options": ["html", "3d"],
     "title": ["html", "3d"],
     "tools": ["html", "3d"],

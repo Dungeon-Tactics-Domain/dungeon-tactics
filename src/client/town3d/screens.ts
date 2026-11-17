@@ -15,6 +15,7 @@ import { openBar, openShop } from '../town-shop.ts';
 import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
+import { Map3d } from './map3d.ts';
 import type { Page } from './page.ts';
 import { PAGES, partyPage } from './party-view.ts';
 import { barPage, type ShopTab, shopPage } from './shop-view.ts';
@@ -27,11 +28,12 @@ const rowOf = (page: Page, sel: string) =>
     ? sel
     : (page.hits.find((h) => h.id.startsWith('row:'))?.id.slice(4) ?? '');
 
-export function mountTown3d(root: HTMLElement, on: { party: boolean; shop: boolean }) {
+export function mountTown3d(root: HTMLElement, on: { party: boolean; shop: boolean; map?: boolean }) {
   let again: (() => void) | undefined; // the open window as its HTML one, should the drawing go away
   let layer: Ui3dLayer;
   const lost = () => {
     town3d.shop = town3d.bar = town3d.party = undefined;
+    on.map = false;
     layer.dispose(); // with the screen and its window
     again?.();
   };
@@ -41,9 +43,10 @@ export function mountTown3d(root: HTMLElement, on: { party: boolean; shop: boole
     return; // no WebGL here: the HTML windows are all there is
   }
   const ui = new Town3d(layer);
+  if (on.map) new Map3d(layer); // the expedition map draws over its own window, which it takes by itself (map3d.ts)
   // the town has no battle clock: the layer ticks on the page's own frames, and draws only while a window moves
   const tick = (now: number) => {
-    if (!town3d.shop && !town3d.party) return;
+    if (!town3d.shop && !town3d.party && !on.map) return;
     layer.frame(now);
     requestAnimationFrame(tick);
   };

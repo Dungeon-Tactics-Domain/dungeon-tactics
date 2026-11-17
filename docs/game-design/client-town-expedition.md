@@ -62,8 +62,19 @@ Nov 13, delivery 5 of [towns-party-equipment.md](towns-party-equipment.md).
   same rules (`buy`, `sell`, `equip`, `recruit`, `dismiss`, `toggleDeploy`, `changeClass`) from pure pages
   (`shop-view.ts`, `party-view.ts`). In the counter, focusing a row shows it in the box and pressing it moves the cursor
   to the box's action, so nothing is bought by the first press; in the Party, left and right turn the pages on the
-  keyboard and Dismiss asks a second press. Still HTML: the town HUD and menu, the gate and place windows, the chest
-  and the expedition map.
+  keyboard and Dismiss asks a second press. Still HTML: the town HUD and menu, the gate and place windows and the
+  chest.
+- **Expedition map in 3D** (`town3d/map3d.ts`, Nov 17; default, `?map=html` or `?ui=html` bring the HTML window back):
+  the same window (`expeditionScreen`) stays under the drawing, unseen, with every button, so keys, mouse, touch,
+  gamepad and the screen reader are the window's; `setMap3d` hands the 3D screen the window's parts (`MapView`) and
+  `changed` when the picked place changes. After FFT: The Ivalice Chronicles' world map: the descent on one sheet of
+  parchment in the middle (no scroll: the rows pack into the sheet), the party's panel and the picked place's box
+  beside it, the commands as the town's plaques on the left edge, the help band at the foot saying the picked place
+  or why a command is off. Where everything sits is pure (`map-layout.ts`, tested). The places stand on a grid (rooms in
+  columns, every row on the middle one under the gate and over the boss, a chest at the sheet's edge in its room's
+  row), so the arrows and the d-pad go straight: down to what is below, sideways to what is beside, never on a slant
+  (`spot-walk.ts`); the HTML look keeps its own chart and walks it in list order. Still HTML over the 3D map:
+  Information and the opened chest's window. A page under 1152x648, no WebGL or a lost context keep the HTML map.
 - **The Party screen** (`openParty` in `town-party.ts`; Nov 16, Fernando: the interface rebuilt on its FFT counterpart, the formation and unit menus) is one window where there were three (Party list, Sheet, Equipment): the unit list on the left (face, name, class, life and pool bars; who goes to battle first, under "Battle party 3/4", in the order `roster` gives) and the picked member's page on the right, one of Status (who goes, Dismiss, each total as a bar with its origin), Equipment (`gearPage` in `town-gear.ts`), Abilities and Class. Up and down walk the list and Enter picks; left and right turn the pages; every action saves and rebuilds the window on the same member and page (`PartyView`), the focus back on the same button. No level shows: the game has none.
 
 ## Equipment in 7 slots

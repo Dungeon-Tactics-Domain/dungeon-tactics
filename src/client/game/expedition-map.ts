@@ -12,13 +12,39 @@ import {
 } from '../../shared/crawl/expedition.ts';
 import { roomGroup } from '../../shared/crawl/generate.ts';
 import { commandRow, dialog, secondTap } from '../dialog.ts';
-import { chart, goldRange, type Place, type Spot } from '../expedition-places.ts';
+import { type Chart, chart, goldRange, type Place, type Spot } from '../expedition-places.ts';
 import { gauge, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el, icon, UI_ICON } from '../icons.ts';
 import { setTrack } from '../sound.ts';
 import { goldNote } from '../town-ui.ts';
 import { current, group, retreat, takeChest, toTown } from './crawl.ts';
+
+// What the map's 3D look (town3d/map3d.ts; ?map=3d, the default) draws over this window, which stays under it unseen
+// with every button, key and screen reader line: plain data, each place's kind and mark by node ('' where the kind has
+// its own drawing). `changed` is the drawing's, called when another place is picked
+export interface PlaceFacts {
+  node: number;
+  name: string;
+  floor: string;
+  facts: [label: string, value: string][];
+}
+export interface MapView {
+  overlay: HTMLElement;
+  title: string[];
+  gold: [label: string, value: number];
+  chart: Chart;
+  places: { kind: 'room' | 'chest' | 'boss'; mark: string; el: HTMLElement }[];
+  heroes: { name: string; job: string; def?: string; hp: number; max: number; mana?: number; manaMax?: number }[];
+  picked: PlaceFacts;
+  changed?: () => void;
+}
+let shown: MapView | undefined, take3d: ((v: MapView) => void) | undefined;
+// the 3D look arrives after the town (hud-skin.ts): it takes the map already open and every one opened after
+export function setMap3d(take?: (v: MapView) => void) {
+  take3d = take;
+  if (take && shown?.overlay.isConnected) take(shown);
+}
 
 // the floor of the rooms open now
 const floorAt = (exp: Expedition) => {
@@ -84,7 +110,7 @@ const mark = (n: CrawlNode, p: Place) =>
         : n.boss
           ? icon(UI_ICON.quest)
           : String(groupOf(n).enemies.length);
-const kindOf = (n: CrawlNode) => (n.chest ? 'chest' : n.boss ? 'boss' : 'room');
+const kindOf = (n: CrawlNode) => (n.chest ? 'chest' : n.boss ? 'boss' : 'room') as 'room' | 'chest' | 'boss';
 
 const NS = 'http://www.w3.org/2000/svg';
 const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
@@ -99,7 +125,7 @@ export function expeditionScreen(exp: Expedition) {
   const here = exp.path.at(-1);
   const spot = ([x, y]: Spot) => `left:${pct(x)};top:${pct((y + 0.5) / c.rows)}`;
 
-  const describe = (p: Place) => {
+  const factsOf = (p: Place): PlaceFacts => {
     const n = map[p.node];
     const [lo, hi] = goldRange(n);
     const foes = groupOf(n).enemies.length;
@@ -114,22 +140,17 @@ export function expeditionScreen(exp: Expedition) {
         ),
       n.boss && t('vencê-lo encerra a expedição', 'beating it ends the expedition'),
     ];
-    return [
-      el(
-        'h3',
-        {},
-        nameOf(n),
-        el('small', {}, t(`andar ${n.floor} de ${CRAWL_RUN.floors}`, `floor ${n.floor} of ${CRAWL_RUN.floors}`)),
-      ),
-      el(
-        'dl',
-        { class: 'keys' },
-        el('dt', {}, n.chest ? t('Batalha', 'Battle') : t(`Inimigos (${foes})`, `Enemies (${foes})`)),
-        el('dd', {}, n.chest ? t('nenhuma: o grupo anda até o baú', 'none: the party walks to the chest') : foesOf(n)),
-        el('dt', {}, t('Recompensa', 'Reward')),
-        el(
-          'dd',
-          {},
+    return {
+      node: p.node,
+      name: nameOf(n),
+      floor: t(`andar ${n.floor} de ${CRAWL_RUN.floors}`, `floor ${n.floor} of ${CRAWL_RUN.floors}`),
+      facts: [
+        [
+          n.chest ? t('Batalha', 'Battle') : t(`Inimigos (${foes})`, `Enemies (${foes})`),
+          n.chest ? t('nenhuma: o grupo anda até o baú', 'none: the party walks to the chest') : foesOf(n),
+        ],
+        [
+          t('Recompensa', 'Reward'),
           p.state === 'cleared'
             ? t(`${nodeGold(n)} de ouro, já achado`, `${nodeGold(n)} gold, already found`)
             : hi
@@ -137,12 +158,15 @@ export function expeditionScreen(exp: Expedition) {
                 ? t(`${hi} de ouro`, `${hi} gold`)
                 : t(`${lo} a ${hi} de ouro`, `${lo} to ${hi} gold`)
               : t('nenhum ouro', 'no gold'),
-        ),
-        el('dt', {}, t('Caminho', 'Way')),
-        el('dd', {}, way.filter(Boolean).join(' · ')),
-      ),
-    ];
+        ],
+        [t('Caminho', 'Way'), way.filter(Boolean).join(' · ')],
+      ],
+    };
   };
+  const describe = (f: PlaceFacts) => [
+    el('h3', {}, f.name, el('small', {}, f.floor)),
+    el('dl', { class: 'keys' }, ...f.facts.flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)])),
+  ];
 
   const enter = (node: number) => {
     if (!map[node].chest) {
@@ -174,10 +198,14 @@ export function expeditionScreen(exp: Expedition) {
   const info = el('section', { class: 'map-box map-info', 'aria-live': 'polite' });
   const marks = new Map<number, HTMLButtonElement>();
   let travelRow: HTMLButtonElement;
+  let view: MapView | undefined;
   // `act`: Enter, A or a tap on the place also moves on to the commands (Travel, or Information when it is closed)
   const pick = (p: Place, act = false) => {
     for (const [node, b] of marks) b.setAttribute('aria-current', String(node === p.node));
-    info.replaceChildren(...describe(p));
+    const facts = factsOf(p);
+    info.replaceChildren(...describe(facts));
+    if (view) view.picked = facts;
+    view?.changed?.();
     const row = travel(p);
     travelRow.replaceWith(row);
     travelRow = row;
@@ -212,7 +240,7 @@ export function expeditionScreen(exp: Expedition) {
     line.setAttribute('y2', String(l.to[1] + 0.5));
     ways.append(line);
   }
-  // in reading order (down the chart, left to right), which is the order the arrows and the d-pad walk them (dialog.ts)
+  // in reading order (down the chart, left to right), which is the order Tab and a screen reader walk them
   const places = [...c.places].sort((a, b) => a.at[1] - b.at[1] || a.at[0] - b.at[0]);
   for (const p of places) {
     const n = map[p.node];
@@ -262,7 +290,23 @@ export function expeditionScreen(exp: Expedition) {
     { fixed: true, note: goldNote(t('Ouro achado', 'Gold found'), descentGold(exp)) },
   );
   d.overlay.classList.add('crawl-map');
+  view = shown = {
+    overlay: d.overlay,
+    title: [t('Masmorra', 'Dungeon'), floorOf(exp)],
+    gold: [t('Ouro achado', 'Gold found'), descentGold(exp)],
+    chart: c,
+    places: map.map((n, i) => {
+      const m = mark(n, c.places[i]);
+      return { kind: kindOf(n), mark: typeof m === 'string' ? m : '', el: marks.get(i)! };
+    }),
+    heroes: exp.party.map((h) => {
+      const m = memberOf(h.id);
+      return { ...h, name: m?.name ?? h.id, job: m ? unitName(m.cls) : '', def: m?.cls };
+    }),
+    picked: factsOf(first),
+  };
   pick(first);
+  take3d?.(view);
   // the open place in the middle of the chart's window, wherever the party is on the way down
   marks.get(first.node)!.scrollIntoView({ block: 'center' });
   marks.get(first.node)!.focus({ preventScroll: true });

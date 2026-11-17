@@ -144,6 +144,9 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town3d/shop-view.ts` — the pages of the 3D Shop and Tavern (commands, scrolling list, the picked row's box and action); pure.
 - `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class); pure.
 - `src/client/town3d/town-layout.ts` — where the 3D town windows put their parts, in reference px; pure numbers.
+- `src/client/town3d/map3d.ts` — Map3d: the expedition map in 3D (?map=3d), drawn over its own unseen HTML window, which keeps every input.
+- `src/client/town3d/map-draw.ts` — what the 3D expedition map draws with: the pen (text, boxes, faces) and the chart (floors, ways, seals, flag).
+- `src/client/town3d/map-layout.ts` — where the 3D expedition map puts its parts, in reference px, and what a command's plaque and help say; pure.
 - `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D (?options=3d), laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
 - `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
 - `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, commands, message band), the scroll fade and mark, and the smallest page that takes the 3D look (`fits`); pure.
@@ -160,6 +163,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) in a window of dialog.ts, or handed to the 3D look (setStatus3d).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
+- `src/client/spot-walk.ts` — nextSpot(): the nearest box in a direction, for windows whose arrows follow where things are on screen; pure.
 - `src/client/option-row.ts` — the Options list's row: a setting's name, its value between ◀ ▶, the pure steps (cycle, pctAt).
 - `src/client/icons.ts` — el(), button(), iconButton() and icon() over the icon sprite, and the ability icon atlas.
 - `src/client/talk.ts` — dialogue box: typed text, blips, talking faces and text speed (dt:text).

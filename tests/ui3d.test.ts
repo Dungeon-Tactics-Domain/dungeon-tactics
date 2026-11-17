@@ -385,6 +385,7 @@ describe('3D interface: flags and boundaries', () => {
       'town3d/town-layout',
       'town3d/shop-view',
       'town3d/party-view',
+      'town3d/map-layout',
       'flow3d/options-view',
       'flow3d/options-layout',
       'flow3d/title-layout',
