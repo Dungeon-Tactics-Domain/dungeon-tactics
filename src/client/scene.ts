@@ -40,8 +40,8 @@ export class BattleScene {
   private readonly palettePass = new ShaderPass(PALETTE_SHADER);
   private pixel: PixelSettings;
   private readonly board: Board;
-  private readonly marks: Marks;
-  private readonly chargeLines: ChargeLines;
+  private marks: Marks; // rebuilt on a change of mark style (restyle)
+  private chargeLines: ChargeLines;
   private readonly units: Units;
   private readonly floats: HTMLElement;
   private readonly note: HTMLElement; // the counter a Move destination draws, over the cursor
@@ -128,6 +128,19 @@ export class BattleScene {
 
   setRangeRing(r: { from: Pos[]; range: number } | null) {
     this.marks.setRangeRing(r);
+  }
+
+  setTurnOrder(rank: Map<string, number> | null, now: string | null) {
+    this.units.setOrder(rank, now);
+  }
+
+  // The mark style changed (mark-style.ts): marks, lines, rings and border built again; Game.update sets the turn's marks
+  restyle(state: BattleState) {
+    this.marks = this.marks.again();
+    this.chargeLines = this.chargeLines.again();
+    this.units.restyle();
+    this.board.restyle();
+    this.sync(state);
   }
 
   setTrajectory(t: Parameters<Marks['setTrajectory']>[0]) {

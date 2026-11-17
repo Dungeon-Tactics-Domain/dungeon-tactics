@@ -6,6 +6,7 @@ import { ABILITIES } from '../../shared/battle/abilities.ts';
 import type { Pos, Team } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { PAGES } from '../command.ts';
+import { MARK_STYLES, type MarkStyle } from '../mark-style.ts';
 import { TIMING } from '../timing.ts';
 import { LAYOUT_MODES, type LayoutMode } from '../ui3d/layout.ts';
 import { PIECES, VARIANTS, type Variant } from '../ui3d/skin-flags.ts';
@@ -96,6 +97,7 @@ export interface SceneSpec {
   turn3d?: true;
   menucss?: true;
   layout?: LayoutMode; // edges or frame (ui3d/layout.ts), as ?layout= in the address
+  marks?: MarkStyle; // how the board's marks are drawn (mark-style.ts), as ?marks= in the address
   page?: number; // with screen "abilities": the ability sheet's page, 1 to 3 (shows with menu3d or menucss)
 }
 
@@ -135,6 +137,7 @@ const KEYS = [
   'turn3d',
   'menucss',
   'layout',
+  'marks',
   'page',
 ];
 const HIDDEN = new Set<string>([...Object.keys(PANELS), 'all', 'marks']);
@@ -269,6 +272,8 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   if (r.uiPixel !== undefined && typeof r.uiPixel !== 'boolean') p.push('uiPixel must be true or false');
   if (r.layout !== undefined && !LAYOUT_MODES.includes(r.layout as LayoutMode))
     p.push(`layout must be one of ${LAYOUT_MODES.join(', ')}`);
+  if (r.marks !== undefined && !MARK_STYLES.includes(r.marks as MarkStyle))
+    p.push(`marks must be one of ${MARK_STYLES.join(', ')}`);
   if (r.page !== undefined && !(isInt(r.page, 1, PAGES) && r.screen === 'abilities'))
     p.push(`page must be 1 to ${PAGES}, with screen "abilities"`);
   return { spec: p.length ? {} : (r as SceneSpec), problems: p };

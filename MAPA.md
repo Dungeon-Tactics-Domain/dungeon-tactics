@@ -77,7 +77,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/corpse-squares.ts` — groups a resumed battle's corpse cells into one body per token square (corpseSquares).
 - `src/client/charge-lines.ts` — charge and counter lines and notes computed from the rule that fires them.
 - `src/client/turn-marks.ts` — what the scene marks on the hero's turn: tiles, cursor frame, range ring, shot line, charge preview and counters (turnMarks).
-- `src/client/turn-list.ts` — rows of the turn list: the queue projection while aiming (queueRows), round length, two rounds and scrolling.
+- `src/client/turn-list.ts` — rows of the turn list: the queue projection while aiming (queueRows), round length, two rounds and scrolling, and each unit's number on the map (turnOrder).
 - `src/client/battle-text.ts` — battle texts: ability sheet, last action summary (eventLog), attribute rows and the Status sheet.
 - `src/client/tile-info.ts` — the tile line under the cursor: height, floor, water, spikes and a charge landing there.
 - `src/client/forecast.ts` — strike preview per target (hit, damage or heal, push, life after) and its texts.
@@ -105,6 +105,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/glass.ts` — panel opacity and backdrop blur (dt:glass), set as CSS variables on the page; pure parse and mapping.
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
+- `src/client/mark-style.ts` — how the board's marks are drawn: simples, luz, pedra or neon (dt:marks, ?marks=), and the listener the open battle redraws on.
 - `src/client/layout-mode.ts` — interface layout choice, edges or frame (dt:layout, ?layout=), set as data-layout on the page.
 - `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only): the 16:9 area, thirds, centre and every region of layout.ts as placed.
 - `src/client/ui3d/layout.ts` — the battle interface's regions measured on FFT The Ivalice Chronicles (REGIONS) and where each sits on a page in the two layouts (stage, place); pure.
@@ -186,6 +187,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
 - `src/client/game/options.ts` — Options window: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
 - `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
+- `src/client/game/options-marks.ts` — the Options row that picks the mark style (Simple, Light, Stone, Neon), in its own file so options.ts takes one line.
 - `src/client/game/end-screens.ts` — end-of-battle window, the result board and the victory confetti.
 
 ## src/client/scene — the parts BattleScene composes
@@ -195,12 +197,14 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/board-extras.ts` — board dressing outside the rules: edge sides, caravan bodies, dotted border, crypt stairs, rocks and tufts.
 - `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees and the crown cutout over units, cursor and marks.
 - `src/client/scene/units.ts` — Units: keeps each unit's drawing where the state says, the shake, hit-stop and slow-motion clocks, picking and the town walk.
-- `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, ring, facing arrow, health bar, clips, flash and glow.
+- `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, ring, facing arrow, health bar with the turn-order number, clips, flash and glow.
 - `src/client/scene/unit-events.ts` — playEvents: plays the battle events on the units in sequence (strike, a shot flying its traceShot path, miss, heal, charge, death).
 - `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
 - `src/client/scene/unit-hits.ts` — how damage lands: hit-stop, flash, recoil, slide into rock, camera shake and the death slow motion.
 - `src/client/scene/float-numbers.ts` — FloatNumbers: the damage and heal numbers popping from a chest and following it on screen.
 - `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring, shot trajectory and the town's debug grid.
+- `src/client/scene/mark-kit.ts` — the lit mark styles' pieces: strips swept along a path, bent over the drawn ground, their lit materials and code-drawn relief.
+- `src/client/scene/mark-textures.ts` — the lit mark styles' textures drawn by code: grain, stone, the reflected sky and each tile drawing as colour and relief.
 - `src/client/scene/mark-looks.ts` — what each tile mark looks like: MARK colours and drawings, the danger purple and markTexture.
 - `src/client/scene/range-ring.ts` — rangeRing: the dotted outline of the tiles within the longest range, laid on the ground.
 - `src/client/scene/trajectory.ts` — trajectory: the shot preview along traceShot's path (flowing dots, landing ring, red past the stop with an X; a cast spell's pulsing circle and dashed line), animateAim and disposeAim.

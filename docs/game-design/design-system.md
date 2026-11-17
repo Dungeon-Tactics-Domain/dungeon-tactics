@@ -297,6 +297,24 @@ shortcuts (`?menu3d`, `?menu3d=pixel`, `?menucss`, `?turn3d`), a shortcut beats 
 sandbox spec. The labs page builds its selector from `scripts/sandbox/bench/ui-pecas.json`, the same table (a test
 keeps them equal).
 
+### Marks on the board: four styles (Options, `?marks=`, Nov 17)
+
+The tile marks, cursor, unit rings, range ring, map border, charge and counter lines and the shot preview are drawn in
+one of four styles: `simples` (the flat drawing), `luz` (default: chamfered strips and glass that glow), `pedra` (stone
+curbs and metal rings with reflection and cast shadow) and `neon` (tubes with a halo). `src/client/mark-style.ts` holds
+the choice (`dt:marks`, `?marks=`; it is a player option, not a localhost look, so it is not in `skin-flags.ts`) and
+`src/client/scene/mark-kit.ts` the pieces. Rules that hold in every style:
+
+- The colours are the ones of `MARK` (`scene/mark-looks.ts`) and the team colours; a style changes the material, never
+  the meaning.
+- Colour is never the only signal: the tile patterns (plain, stripes, cross, full) stay as the glass's drawing and
+  relief, and in the lit styles the heroes' ring is whole and the enemies' is broken in four.
+- The pulse stops under Reduce motion.
+- The turn-order number beside each health bar is the side's colour (hero `#7cc4ff`, enemy `#ff7fb6`, acting `#ffd75e`)
+  over a dark edge (`#0c1020`), in Alegreya Sans 800.
+
+Detail, relief and measured cost: [client-scene.md](client-scene.md), "Mark styles".
+
 ### Experiment: 3D interface kit (`?menu3d`, `?menu3d=pixel`, `?turn3d`, Nov 16)
 
 Localhost only, each look behind its own flag (address or sandbox spec), each its own chunk (`hud-skin.ts`); without a

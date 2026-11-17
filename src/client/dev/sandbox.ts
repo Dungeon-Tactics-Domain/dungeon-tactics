@@ -10,6 +10,7 @@ import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { abilitiesOf, type Screen, startScreen } from '../command.ts';
 import { freshUi, hoverTile, selectMode, type Ui } from '../interaction.ts';
 import type { Game } from '../main.ts';
+import { showMarkStyle } from '../mark-style.ts';
 import { defaultPixel } from '../pixel-settings.ts';
 import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
@@ -89,6 +90,8 @@ export async function stage(selected: Scenario): Promise<{ scenario: Scenario; b
     problems.push(`scenario: the address opens "${asked ?? '(none)'}", the spec says "${spec.scenario}"`);
   // the arena is for the body only: no turn list
   if (arena) spec.hide = [...new Set([...(spec.hide ?? []), 'queue' as const])];
+  // the board's marks in the spec's style, before the scene builds them; the address's ?marks= wins
+  if (spec.marks && param('marks') === null) showMarkStyle(spec.marks);
   // this page's pace (bench): the TIMING the scene and the game read, and the battle clock's rate
   Object.assign(TIMING, spec.timing);
   bench.scale = spec.speed ?? 1;

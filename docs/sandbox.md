@@ -68,6 +68,7 @@ different picture.
 | `ui` | `"html"`, `"css"` or `"3d"`: a preset for every piece that has that look; a piece's own key wins | page load |
 | `uiPixel` | `true`: the 3D pieces through the pixel filter (`?pixel=1` in the address; the spec's `pixel` is the scene's) | page load |
 | `layout` | `"edges"` or `"frame"`: the interface layout (`ui3d/layout.ts`; the address's `?layout=` wins), for this page only | page load |
+| `marks` | `"simples"`, `"luz"`, `"pedra"` or `"neon"`: how the board's marks are drawn (`mark-style.ts`; the address's `?marks=` wins), for this page only | page load |
 | `menu3d` | `true` or `"pixel"`: the command menu in 3D, the older shortcut for `menu: "3d"` (the address's `?menu3d` wins) | page load |
 | `turn3d` | `true`: the turn list in 3D | page load |
 | `menucss` | `true`: the command menu as parchment in HTML and CSS (`menu3d` wins over it) | page load |
@@ -279,6 +280,8 @@ and its buttons, `queue` the 3D turn list):
 | `hints3d`, `hints3d-alvo` | the 3D instruction banner, Height corner and button hints at 1920x1080: with the menu open, and aiming at a target |
 | `preset-css`, `preset-3d` | the `ui` preset: every piece that has the CSS look, every piece that has the 3D one |
 | `result3d-vitoria`, `result3d-derrota` | the end of battle in 3D at 1920x1080: the warrior downs the last enemy, or the soldier downs the two heroes left. `loop` plays the steps on the page; steps that end the battle open its end screen and the loop stops there |
+| `marks-simples`, `marks-luz`, `marks-pedra`, `marks-neon` | the four mark styles on the same move screen of Ash Wood at 1920x1080 (148 marked cells, path, cursor, rings, border, turn-order numbers) |
+| `marks-degraus-simples`, `marks-degraus-luz`, `marks-degraus-pedra`, `marks-degraus-neon` | the same on the ramps and steps of Beacon Hill's middle hill: the lit marks bend over the ground |
 | `batalha-3d`, `batalha-3d-previa` | the whole battle interface in 3D (`ui: "3d"`) at 1920x1080: menu, turn list, combat bar, banner, Height and button hints with the menu open, and with a strike aimed (preview plate, target's sheet and the 3D "Execute?") |
 | `batalha-3d-executar` | the same, the Mage's Blast on two enemies: "Execute?" in 3D with its notes (mana spent, charge), the plate's "+1 target"; Enter opens the lock step (On the character / On the tile) |
 

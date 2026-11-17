@@ -70,6 +70,11 @@ export class Board {
   }
 
   // water waves and the outside river current, on the battle clock
+  // the map's dotted border again, in the mark style of now (BattleScene.restyle)
+  restyle() {
+    if (this.terrainTex) buildBorder(this, this.space.levels);
+  }
+
   update(t: number, units: Iterable<{ holder: THREE.Object3D }>) {
     this.water?.update(t, units);
     if (this.stream) this.stream.time.value = t / 1000;

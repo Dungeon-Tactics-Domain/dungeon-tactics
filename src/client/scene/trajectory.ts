@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { subOf } from '../../shared/battle/grid.ts';
 import { SHOT_H, shotAt } from '../../shared/battle/shot.ts';
 import type { Shot } from '../../shared/battle/types.ts';
+import { circle, type Lit, litPaint, piece, rod } from './mark-kit.ts';
 import type { TileSpace } from './space.ts';
 
 // the Mechanics lab's trajectory colours: the path, past the stop (and a damaging spell's area), a heal's area
@@ -22,11 +23,23 @@ export interface Aim {
 }
 
 // Built on every cursor change; `animateAim` moves it each frame
-export function trajectory(space: TileSpace, t: { shot: Shot; cast: { radius: number; heal: boolean } | null }): Aim {
+// `style`: a lit mark style (mark-kit.ts) gives the dots, rings and bars volume and the scene's light
+export function trajectory(
+  space: TileSpace,
+  t: { shot: Shot; cast: { radius: number; heal: boolean } | null },
+  style: Lit | null = null,
+): Aim {
   const { shot } = t;
   const at = (k: number) => space.point(shotAt(shot, k));
   const paint = (color: string, opacity = 1) =>
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthTest: false, depthWrite: false });
+    style
+      ? litPaint(style, color, { opacity, depthTest: false })
+      : new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthTest: false, depthWrite: false });
+  // a ring lying on the ground, of mean radius `r` and half width `w`
+  const ring = (r: number, w: number, color: string, opacity: number, n: number) =>
+    style
+      ? piece(style, [{ pts: circle(r, n), closed: true }], w, color, { opacity, depthTest: false })
+      : new THREE.Mesh(new THREE.RingGeometry(r - w, r + w, n).rotateX(-Math.PI / 2), paint(color, opacity));
   const group = new THREE.Group();
   const add = <T extends THREE.Object3D>(o: T, order = 12) => {
     o.renderOrder = order;
@@ -39,17 +52,25 @@ export function trajectory(space: TileSpace, t: { shot: Shot; cast: { radius: nu
   floor.y += 0.03;
   if (t.cast) {
     const color = t.cast.heal ? AIM.heal : AIM.past;
-    aim.circle = add(new THREE.Mesh(new THREE.RingGeometry(0.88, 1, 48).rotateX(-Math.PI / 2), paint(color, 0.85)));
+    aim.circle = add(ring(0.94, 0.06, color, 0.85, 48));
     aim.circle.position.copy(floor);
     // the area's reach from the aimed whole tile's middle, in cells
     aim.circle.userData.r = (t.cast.radius + 0.5) * subOf(space.grid);
-    const line = add(
-      new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([at(0), at(1)]),
-        new THREE.LineDashedMaterial({ color, dashSize: 0.3, gapSize: 0.2, depthTest: false, transparent: true }),
-      ),
-    );
-    line.computeLineDistances();
+    if (style) {
+      // the still dashed line as short lit bars (a 1 px line takes no light)
+      const [a, b] = [at(0), at(1)],
+        n = Math.max(1, Math.round(a.distanceTo(b) / 0.5)),
+        mat = paint(color);
+      for (let i = 0; i < n; i++) add(rod(a.clone().lerp(b, i / n), a.clone().lerp(b, (i + 0.6) / n), 0.03, mat));
+    } else {
+      const line = add(
+        new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([at(0), at(1)]),
+          new THREE.LineDashedMaterial({ color, dashSize: 0.3, gapSize: 0.2, depthTest: false, transparent: true }),
+        ),
+      );
+      line.computeLineDistances();
+    }
   } else {
     let len = 0;
     for (let i = 1; i <= 30; i++) len += at((i - 1) / 30).distanceTo(at(i / 30));
@@ -57,9 +78,7 @@ export function trajectory(space: TileSpace, t: { shot: Shot; cast: { radius: nu
     // about 2.5 dots a metre, the lab's 5 a whole tile
     for (let i = 0; i < Math.min(80, Math.max(8, Math.round(len * 2.5))); i++)
       aim.dots.push(add(new THREE.Mesh(dot, aim.paint[0])));
-    add(new THREE.Mesh(new THREE.RingGeometry(0.6, 0.8, 32).rotateX(-Math.PI / 2), paint(AIM.path, 0.9))).position.copy(
-      floor,
-    );
+    add(ring(0.7, 0.1, AIM.path, 0.9, 32)).position.copy(floor);
     if (shot.stop) {
       aim.x = add(new THREE.Group());
       aim.x.position.copy(at(shot.stop.k));

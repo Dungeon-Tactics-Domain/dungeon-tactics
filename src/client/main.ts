@@ -24,6 +24,7 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
+import { onMarkStyle } from './mark-style.ts';
 import { reducedMotion } from './motion.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings } from './pixel-settings.ts';
 import type { BattleScene } from './scene.ts';
@@ -32,6 +33,7 @@ import { store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
 import { pace, TIMING } from './timing.ts';
+import { turnOrder } from './turn-list.ts';
 import { turnMarks } from './turn-marks.ts';
 
 // Test (localhost only): ?auto=1 makes the AI play the heroes too, to check the battle end and the way home without
@@ -98,6 +100,11 @@ export class Game implements TurnHost {
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
     requestAnimationFrame(() => this.pollPad());
+    // Options changed the mark style: the scene builds its marks again and the turn's marks go back on them
+    onMarkStyle(() => {
+      scene.restyle(this.battle.state);
+      this.update(this.turn.ui);
+    });
     this.update(this.turn.ui);
     void this.runEnemies(); // the save may have stopped on the enemy turn
   }
@@ -202,6 +209,9 @@ export class Game implements TurnHost {
       ability: ui.mode.k === 'ability' ? ui.mode.id : null,
       face: (u) => this.expression(u),
     });
+    // every unit's place in the turn list beside its health bar, from the rows the list itself shows (Nov 17, Fernando)
+    const rows = this.hud.queued?.rows ?? [];
+    this.scene.setTurnOrder(turnOrder(rows), rows[0] && !rows[0].charge ? rows[0].unit : null);
     this.scene.setInsets(0, this.hud.insets().bottom);
     this.placeMenu(); // already in place on open: waiting for the next frame showed the menu in the corner for 1 frame
   }

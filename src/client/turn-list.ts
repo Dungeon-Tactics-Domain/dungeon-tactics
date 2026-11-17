@@ -49,6 +49,17 @@ export function anchorScroll(
   return newTurn ? 0 : scroll;
 }
 
+// The number each unit carries on the map, left of its health bar (Nov 17, Fernando: "the turn order as a number near
+// each character's health bar"): the row of its next turn in the list, counted like the list's own numbers. A charge's
+// row is the spell's, not its caster's turn, and a unit that never plays (the Beacon) has no number
+export function turnOrder(rows: QueueEntry[]): Map<string, number> {
+  const order = new Map<string, number>();
+  rows.forEach((r, i) => {
+    if (!r.charge && !order.has(r.unit)) order.set(r.unit, i + 1);
+  });
+  return order;
+}
+
 // PgUp/PgDn and the right stick move a page less one row, which stays in view to keep the place
 export const pageStep = (view: number, row: number) => Math.max(row, view - row);
 

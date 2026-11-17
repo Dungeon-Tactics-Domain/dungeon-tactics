@@ -118,7 +118,7 @@ export class BattleHud {
   private menu3d?: Menu3d;
   private turn3d?: Turn3d;
   private p3d: Pieces3d = {}; // the bar, the banner, Height and hints (hud-3d-pieces.ts)
-  private queued: Queue | null = null; // the rows the turn list shows now
+  queued: Queue | null = null; // the rows the turn list shows now
 
   constructor(
     host: HTMLElement,

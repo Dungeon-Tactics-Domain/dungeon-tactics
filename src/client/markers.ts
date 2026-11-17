@@ -23,6 +23,11 @@ export const MARKER = {
   frameDepthTest: true,
   barY: 1.15,
   barHalf: 0.06, // half height of the bar (0.12)
+  barHalfW: 0.35, // half width of the bar (0.7)
+  // the turn-order number left of the bar (Nov 17, Fernando: "big font"): its height and the gap to the bar. At the
+  // whole-map zoom of a 1080p screen a metre is about 57 px, so the digit stands about 32 px tall
+  orderH: 0.56,
+  orderGap: 0.05,
   arrowY: 1.5, // above the health bar: at 1.05 it sat at head height and covered the face
   arrowBob: 0.08, // up-and-down bob of the arrow
   arrowHalf: 0.15, // half height of the cone (0.3)

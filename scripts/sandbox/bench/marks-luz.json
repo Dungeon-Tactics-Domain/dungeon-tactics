@@ -1,0 +1,13 @@
+{
+  "name": "marks-luz",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "viewport": { "width": 1920, "height": 1080 },
+  "actor": "h-archer",
+  "units": { "h-archer": { "x": 5, "y": 7 } },
+  "screen": "move",
+  "cursor": { "x": 7, "y": 5 },
+  "camera": { "angle": 0, "zoom": 2.2, "focus": { "x": 7, "y": 7 } },
+  "marks": "luz",
+  "hide": ["fps"]
+}

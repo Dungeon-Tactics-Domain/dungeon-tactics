@@ -22,6 +22,7 @@ import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts
 import type { LayoutMode } from '../ui3d/layout.ts';
 import { goHome, homeLabel } from './crawl.ts';
 import { controls, tileMarks } from './options-help.ts';
+import { marksOption } from './options-marks.ts';
 import { devMenu } from './title.ts';
 
 export interface OptionsContext {
@@ -170,6 +171,7 @@ const settings = (o: OptionsContext): [title: string, rows: Option[]][] => [
           o.relayout();
         },
       ),
+      marksOption(), // how the marks on the board are drawn (Nov 17, Fernando; options-marks.ts)
       // panel glass (Nov 16, Fernando's request): opacity of the blue panels and the blur of what shows through them
       percent(
         t('Opacidade dos painéis', 'Panel opacity'),

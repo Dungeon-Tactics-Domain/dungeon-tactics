@@ -1,5 +1,5 @@
-// One unit's drawing: its model with its own copies of the materials, the team ring, facing arrow and health bar, the
-// animation clips, the flash and glow of its materials and the bar's drain.
+// One unit's drawing: its model with its own copies of the materials, the team ring, facing arrow and health bar with
+// the turn-order number beside it, the animation clips, the flash and glow of its materials and the bar's drain.
 import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -9,9 +9,12 @@ import { WEIGHT } from '../hit-weight.ts';
 import { barYOf, MARKER, unitHeight } from '../markers.ts';
 import { prepare } from '../three-util.ts';
 import type { Board } from './board.ts';
+import { circle, litPaint, litStyle, piece } from './mark-kit.ts';
 import type { Timeline } from './timeline.ts';
 
 const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
+// the turn-order number: its side's colour, gold for the one acting now (the turn list's own colours)
+const ORDER = { hero: '#7cc4ff', enemy: '#ff7fb6', now: '#ffd75e' };
 const TINT_GLOW = 0.45; // strength of the own glow (UnitDef.tint): visible on the dark unit without erasing the texture
 
 export interface UnitView {
@@ -31,6 +34,7 @@ export interface UnitView {
   mats: THREE.MeshStandardMaterial[]; // materials only for this unit (copies): flashing one does not flash the others of the same model
   flash: number; // counts the flashes: only the last one gives the glow back (a strike and a thorn in a row do not cut the second)
   ground: THREE.Group; // ring and front arrow, lying on the ramp (tiltGround)
+  facing: boolean; // the map counts direction: the ground carries the front arrow
 }
 
 // The unit `u` drawn from its model (`gltf`; none for the Beacon), added to the scene and standing in Idle; `markers`
@@ -83,24 +87,7 @@ export function makeView(
     holder.add(crystal, new THREE.PointLight('#7ff3ff', 2, 3));
   }
   // ring and front arrow together, to lie on the ramp where the unit is (tiltGround)
-  const ground = new THREE.Group();
-  // white arrow on the ground for the unit's front (white: the team color vanished on marked tiles), only on maps where direction counts: from above the unit's face is hardly readable
-  if (u.facing !== undefined) {
-    const arrow = new THREE.Mesh(
-      new THREE.ConeGeometry(0.16, 0.3, 3).rotateX(Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: '#ffffff' }),
-    );
-    arrow.position.set(0, 0.05, 0.5);
-    arrow.scale.y = 0.3;
-    ground.add(arrow);
-  }
-  // team-colored ring on the ground: the side reads even when the model looks alike
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ color: TEAM_COLOR[u.team], depthWrite: false, transparent: true, opacity: 0.9 }),
-  );
-  ring.position.y = 0.04;
-  ring.scale.setScalar(UNIT_DEFS[u.def].size ?? 1); // big unit: the ring surrounds the whole square
+  const ground = new THREE.Group().add(...groundMarks(u.team, u.def, u.facing !== undefined));
   // bar of 0.12 height (full 0.08): with 0.06 it partly vanished in the 2 px pixel art
   const barBg = new THREE.Mesh(
     new THREE.PlaneGeometry(0.7, MARKER.barHalf * 2),
@@ -115,7 +102,6 @@ export function makeView(
   barHolder.position.y = barYOf(u.def);
   barHolder.name = 'bar';
   barBg.renderOrder = bar.renderOrder = 10;
-  ground.add(ring);
   ground.visible = barHolder.visible = markers;
   holder.add(ground, barHolder);
   scene.add(holder);
@@ -134,9 +120,116 @@ export function makeView(
     mats,
     flash: 0,
     ground,
+    facing: u.facing !== undefined,
   };
   playClip(view, 'Idle');
   return view;
+}
+
+// What lies on the ground under a unit: the front arrow and the team ring, flat or in a lit mark style (mark-kit.ts)
+function groundMarks(team: Team, def: string, facing: boolean): THREE.Object3D[] {
+  const style = litStyle(),
+    out: THREE.Object3D[] = [];
+  // white arrow on the ground for the unit's front (white: the team color vanished on marked tiles), only on maps where direction counts: from above the unit's face is hardly readable
+  if (facing) {
+    const arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.16, 0.3, 3).rotateX(Math.PI / 2),
+      style ? litPaint(style, '#ffffff') : new THREE.MeshBasicMaterial({ color: '#ffffff' }),
+    );
+    arrow.position.set(0, 0.05, 0.5);
+    arrow.scale.y = 0.3;
+    out.push(arrow);
+  }
+  // team-colored ring on the ground: the side reads even when the model looks alike. Lit, the shape tells the side too
+  // (colour is never the only signal): the heroes' ring is whole, the enemies' is broken in four
+  const ring = style
+    ? piece(
+        style,
+        team === 'hero'
+          ? [{ pts: circle(0.39, 32), closed: true }]
+          : [0, 1, 2, 3].map((k) => ({
+              pts: circle(0.39, 8, (k * Math.PI) / 2 + 0.17, ((k + 1) * Math.PI) / 2 - 0.17),
+              closed: false,
+            })),
+        0.05,
+        TEAM_COLOR[team],
+      )
+    : new THREE.Mesh(
+        new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: TEAM_COLOR[team], depthWrite: false, transparent: true, opacity: 0.9 }),
+      );
+  ring.position.y = 0.04;
+  ring.scale.setScalar(UNIT_DEFS[def].size ?? 1); // big unit: the ring surrounds the whole square
+  out.push(ring);
+  return out;
+}
+
+// a change of mark style: the ring and the arrow are drawn again
+export function restyleGround(v: UnitView) {
+  v.ground.traverse((o) => {
+    (o as THREE.Mesh).geometry?.dispose();
+    ((o as THREE.Mesh).material as THREE.Material | undefined)?.dispose();
+  });
+  v.ground.clear().add(...groundMarks(v.team, v.def, v.facing));
+}
+
+// The turn-order number as a picture: big digits in the side's colour with a dark edge, lighter at the top so they read
+// as raised. One texture per number and colour, kept for the page (ponytail: at most a few dozen small canvases)
+const orderTextures = new Map<string, THREE.CanvasTexture>();
+function orderTexture(n: number, tone: keyof typeof ORDER): THREE.CanvasTexture {
+  const font = '800 108px "Alegreya Sans", sans-serif';
+  // before the game's font loads the digits come in the fallback, under their own key, and are drawn again after
+  const key = `${n}|${tone}|${document.fonts.check(font)}`;
+  let t = orderTextures.get(key);
+  if (t) return t;
+  const c = document.createElement('canvas');
+  const g = c.getContext('2d')!;
+  g.font = font;
+  c.width = Math.ceil(g.measureText(String(n)).width) + 28;
+  c.height = 128;
+  g.font = font; // sizing the canvas reset it
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.lineJoin = 'round';
+  g.lineWidth = 18;
+  g.strokeStyle = '#0c1020';
+  g.strokeText(String(n), c.width / 2, 70);
+  const fill = g.createLinearGradient(0, 22, 0, 112);
+  fill.addColorStop(0, '#ffffff');
+  fill.addColorStop(0.45, ORDER[tone]);
+  fill.addColorStop(1, new THREE.Color(ORDER[tone]).multiplyScalar(0.7).getStyle());
+  g.fillStyle = fill;
+  g.fillText(String(n), c.width / 2, 70);
+  t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  orderTextures.set(key, t);
+  return t;
+}
+
+// The unit's place in the turn list, glued to the left of its health bar and facing the camera with it (so the town and
+// the fallen, which have no bar, have no number); `n` undefined hides it, `now` paints it gold
+export function setOrder(v: UnitView, n: number | undefined, now: boolean) {
+  const bar = v.holder.getObjectByName('bar');
+  let tag = bar?.getObjectByName('order') as THREE.Mesh | undefined;
+  if (!bar || n === undefined) {
+    if (tag) tag.visible = false;
+    return;
+  }
+  if (!tag) {
+    tag = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({ transparent: true, depthTest: false }),
+    );
+    tag.name = 'order';
+    tag.renderOrder = 10;
+    bar.add(tag);
+  }
+  const tex = orderTexture(n, now ? 'now' : v.team);
+  (tag.material as THREE.MeshBasicMaterial).map = tex;
+  const w = (MARKER.orderH * tex.image.width) / tex.image.height;
+  tag.scale.set(w, MARKER.orderH, 1);
+  tag.position.set(-(MARKER.barHalfW + MARKER.orderGap + w / 2), 0, 0.002);
+  tag.visible = true;
 }
 
 export function playClip(v: UnitView, name: string, once = false, rate = 1) {

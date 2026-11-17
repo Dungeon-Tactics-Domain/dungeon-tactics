@@ -65,6 +65,40 @@ Nov 13, Fernando found the flat white square "too white".
 - **Units bigger than one cell** (the 2x2 token, the Colossus) are marked by their whole square (Nov 14, Fernando on stage 0: "it needs a preview of the tiles the units will occupy in 2x2"; `highlights` in `interaction.ts`): its own cells, the blue as every cell its square can cover, the destination's whole square (red X when `reach` does not have it), the facing tiles beside each side, the cursor frame (red, with its arrow, where the square does not fit; hidden over a step or a ramp, where it floated off the lower marks) and the path dots in the middle of the square. The mouse picks the square centred under it (`squareUnder` in `scene/space.ts`) and the keyboard cursor keeps the whole square on the map.
 - **Aim mark** (Nov 15, Fernando: no 2x2 preview on empty ground): one half-tile cell, or the whole body of the unit the strike lands on, the Colossus' 4x4 included (`aimMark` in `interaction.ts`: the rule aims at the whole tile, so a token on its corner is the one hit even from an empty cell beside it). The cursor frames the same square, and a keyboard step that would leave the mark where it was goes on until it moves, so one press crosses a body. An area aimed at empty ground keeps that one cell and marks the rest of the area the rule hits, centred on the aimed whole tile.
 
+## Mark styles: light, stone, neon or flat
+
+Nov 17, Fernando: "the lines on the ground and the circles round the characters, with relief, texture and lighting... I
+want nothing flat". Three lit styles and the flat one of before, picked in Options → Video and effects → "Marks"
+(Simple, Light, Stone, Neon), saved in `dt:marks` (`mark-style.ts`, pure choice tested in `tests/mark-style.test.ts`);
+`?marks=simples|luz|pedra|neon` in the address wins when the page opens, and a sandbox spec's `marks` sets it for its
+page. No automatic fallback: the player picks. A change applies at once (`BattleScene.restyle` builds the marks again).
+
+- **What takes the style:** the marked tiles (move, strike range, threat, area, target, blocked, no-fit, counter) and
+  the charge danger, the path studs, the cursor frame and arrow, the team ring and front arrow under each unit, the
+  dotted range ring, the map's dotted border, the charge lines, the counter lines and arrows, and the shot preview
+  (dots, landing ring, cast circle and its dashed line, the X).
+- **Luz (default):** light etched in the ground. A low strip with chamfered edges round each tile and a sheet of deep
+  glass inside, glowing in the mark's colour and breathing slowly (FFT's blue move tile and ring of light).
+- **Pedra:** pieces of stone and metal. A chiselled stone curb round each tile (the terrain's own `tex/cliff.jpg` under
+  a normal map drawn by code) with a glossy inlay, and metal rings, cursor and lines that reflect a small sky drawn by
+  code. Rings and cursor cast shadows; the tile curbs only receive them (casting cost two more draw calls a tile).
+- **Neon:** tubes of light with a hot core and an additive halo round them (no bloom pass: it would hit the whole frame
+  and the pixel art).
+- **How they are built** (`scene/mark-kit.ts`): a profile swept along a path (`sweep`, `piece`), `MeshStandardMaterial`
+  under the scene's sun, sky and shadow map (`litPaint`), kept in the transparent queue like the flat marks. The
+  patterns of `MARK` stay in every style as the glass's drawing and relief (stripes, cross, full), since colour is never
+  the only signal; the heroes' ring is whole and the enemies' is broken in four.
+- **Relief:** a lit tile mark is one geometry bent over the drawn ground (`groundOf` reads the smooth terrain's own
+  vertices), up to 12 cm off its tile's plane, so it rolls over the soft edge between two levels and lies on a ramp;
+  at a cliff it stops instead of climbing the wall. Built the first time a tile is marked and kept for the battle.
+- **Reduce motion:** no pulse, in every style (the flat marks' breath stops too).
+- **Cost, measured on Nov 17** in Edge at 1920x1080 on Ash Wood's move screen (`bench/marks-*.json`, 148 marked cells, which is 37 whole tiles, counted from the draw calls;
+  plain 3D, a 72 Hz monitor, the machine shared with other work): the median frame was 13.9 ms in all four, the
+  monitor's own rate, so the styles could not be told apart by frame time there. Draw calls: Simple 438, Light 586,
+  Stone 595, Neon 743; triangles 612k, 639k, 663k, 709k. Not measured: a phone or tablet, and pixel art (which draws
+  the scene twice a frame). Light is the default on that: same frame time as the flat marks, the fewest extra calls.
+- **Not done:** the town's debug grid and the charge aura stay flat; no textures were downloaded.
+
 ## Dialogue box and music
 
 Nov 12 and 13.

@@ -12,6 +12,7 @@ import { hash, prepare } from '../three-util.ts';
 import type { WaterLevel } from '../water-levels.ts';
 import type { Board } from './board.ts';
 import { CORPSE_MODELS, DETAIL, LOOK, STAIRS } from './board-looks.ts';
+import { groundOf, litStyle, onGround, type Path, piece } from './mark-kit.ts';
 
 // Map base as a block (Fernando's requests, Nov 12, looking at FFT's board): all columns end on the same
 // ground (y = 0), and the edge sides, from each tile's floor down, are a flat color pulled from the floor above that
@@ -104,8 +105,18 @@ export function layBody(board: Board, p: Pos, span: number): THREE.Object3D[] {
 }
 
 // Discreet dotted line on the edge of the battlefield (Nov 13, Fernando's request): follows the ground height of each
-// edge tile (on water, the surface), with a step where the height changes
+// edge tile (on water, the surface), with a step where the height changes. In a lit mark style (mark-kit.ts) each dash is
+// a short bevelled strip bent over the ground. Built again on a change of style: the old one leaves
 export function buildBorder(board: Board, levels: Map<string, WaterLevel>) {
+  const old = board.scene.getObjectByName('border');
+  old?.traverse((o) => {
+    (o as THREE.Mesh).geometry?.dispose();
+    ((o as THREE.Mesh).material as THREE.Material | undefined)?.dispose();
+  });
+  old?.removeFromParent();
+  const style = litStyle(),
+    ground = style ? groundOf(board.scene, board.space) : null,
+    strips: Path[] = [];
   const { width: W, height: H } = board.grid,
     pts: THREE.Vector3[] = [];
   const yAt = (p: Pos, x: number, z: number) =>
@@ -118,6 +129,16 @@ export function buildBorder(board: Board, levels: Map<string, WaterLevel>) {
         line.push(new THREE.Vector3(x, yAt(p, x, z), z));
       }
     for (let i = 1; i < line.length; i++) pts.push(line[i - 1], line[i]);
+    // lit: one dash per quarter of a tile, on the ground of its own tile
+    if (ground)
+      for (const p of cells)
+        for (let k = 0; k < 4; k++) {
+          const at = (t: number) => {
+            const [x, z] = edge(p, (k + t) / 4);
+            return new THREE.Vector3(x, 0, z);
+          };
+          strips.push({ pts: onGround(ground, p, [at(0.1), at(0.35), at(0.6)]), closed: false });
+        }
   };
   const X = (x: number) => x - W / 2,
     Z = (z: number) => z - H / 2;
@@ -127,6 +148,13 @@ export function buildBorder(board: Board, levels: Map<string, WaterLevel>) {
   side(row(H - 1), (p, k) => [X(p.x + k), Z(H) - 0.01]);
   side(col(0), (p, k) => [X(0) + 0.01, Z(p.y + k)]);
   side(col(W - 1), (p, k) => [X(W) - 0.01, Z(p.y + k)]);
+  if (style) {
+    const lit = piece(style, strips, 0.022, '#f4ecd8', { opacity: 0.8 });
+    lit.name = 'border';
+    lit.renderOrder = 2;
+    lit.castShadow = false; // too thin for the sun's shadow map: it only flickered
+    return void board.scene.add(lit);
+  }
   const g = new THREE.BufferGeometry().setFromPoints(pts);
   const line = new THREE.LineSegments(
     g,
@@ -140,6 +168,7 @@ export function buildBorder(board: Board, levels: Map<string, WaterLevel>) {
     }),
   );
   line.computeLineDistances();
+  line.name = 'border';
   line.renderOrder = 2;
   board.scene.add(line);
 }

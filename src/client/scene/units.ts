@@ -21,7 +21,7 @@ import type { TileSpace } from './space.ts';
 import type { Timeline } from './timeline.ts';
 import { playEvents } from './unit-events.ts';
 import { still } from './unit-hits.ts';
-import { chestOf, makeView, playClip, setBar, type UnitView, walk } from './unit-view.ts';
+import { chestOf, makeView, playClip, restyleGround, setBar, setOrder, type UnitView, walk } from './unit-view.ts';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const TMP = new THREE.Vector3(); // per-frame math without creating objects
@@ -36,6 +36,7 @@ export class Units {
   slowUntil = 0; // death slow motion: the battle clock runs at WEIGHT.slow until here
   private readonly numbers: FloatNumbers; // floating numbers, kept on their chest
   private markers = true; // team ring, facing arrow and health bar; the town has none (hideMarkers)
+  private order: { rank: Map<string, number>; now: string | null } | null = null; // the turn-order numbers (setOrder)
   private readonly camera: THREE.OrthographicCamera;
   // an animation on the battle clock, in the shape the gestures of fx.ts take
   readonly animate = (ms: number, step: (k: number) => void) => this.time.animate(ms, step);
@@ -57,6 +58,18 @@ export class Units {
 
   all(): Iterable<UnitView> {
     return this.views.values();
+  }
+
+  // each unit's place in the turn list, drawn beside its health bar (turn-list.ts turnOrder); `now`: who acts, in gold.
+  // Kept for the units a later sync creates
+  setOrder(rank: Map<string, number> | null, now: string | null) {
+    this.order = rank && { rank, now };
+    for (const [id, v] of this.views) setOrder(v, rank?.get(id), id === now);
+  }
+
+  // a change of mark style: every ring and arrow is drawn again
+  restyle() {
+    for (const v of this.views.values()) restyleGround(v);
   }
 
   // how far the camera shakes at battle time `t` (0 = still), fading out
@@ -204,6 +217,7 @@ export class Units {
         playClip(v, 'Idle');
       }
     }
+    if (this.order) this.setOrder(this.order.rank, this.order.now);
   }
 
   // start of the turn: the unit hops (rises and stretches a little), so the eye finds whoever is playing

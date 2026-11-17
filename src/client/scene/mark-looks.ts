@@ -11,7 +11,7 @@ export const DANGER: [string, number] = ['#9b4dff', 0.4];
 // grass, dirt and water: the Nov 12 blue vanished in water for being a full square), faint core and a drawing per
 // type, because color is never the only signal: smooth (walk), full (chosen tile, whoever acts, strike area), stripes
 // (strike range, threat) and cross (blocked shot)
-type MarkPattern = 'frame' | 'solid' | 'hatch' | 'cross';
+export type MarkPattern = 'frame' | 'solid' | 'hatch' | 'cross';
 export const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?: MarkPattern]> = {
   actor: ['#ffd479', 0.95, 'solid'],
   move: ['#6fc0ff', 0.95, 'frame'],

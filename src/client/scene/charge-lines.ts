@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { shotAt } from '../../shared/battle/shot.ts';
 import type { ChargeLine, Counters, Square } from '../charge-lines.ts';
 import { unitHeight } from '../markers.ts';
+import { type Lit, litPaint, litStyle, rod } from './mark-kit.ts';
 import type { TileSpace } from './space.ts';
 
 // counter: a violet apart from both sides and the charge preview (Nov 15, the counter indicator)
@@ -23,6 +24,7 @@ export class ChargeLines {
   private kept = new THREE.Group();
   private preview = new THREE.Group();
   private counter = new THREE.Group();
+  private readonly style: Lit | null = litStyle(); // a lit mark style gives the lines volume and the scene's light
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -30,6 +32,19 @@ export class ChargeLines {
     private readonly camera: THREE.Camera,
   ) {
     scene.add(this.kept, this.preview, this.counter);
+  }
+
+  // drawn over everything, flat or lit
+  private paint(color: string, opacity = 1): THREE.Material {
+    return this.style
+      ? litPaint(this.style, color, { opacity, depthTest: false })
+      : new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, depthTest: false });
+  }
+
+  // a change of style (BattleScene.restyle): these lines leave and a new ChargeLines draws in the style of now
+  again(): ChargeLines {
+    for (const g of [this.kept, this.preview, this.counter]) this.redraw(g, [], 0, 0).removeFromParent();
+    return new ChargeLines(this.scene, this.space, this.camera);
   }
 
   set(lines: ChargeLine[] | null) {
@@ -44,7 +59,7 @@ export class ChargeLines {
   // back toward the attacker, over the heads (at eye height the two adjacent bodies hid it)
   setCounters(c: Counters | null) {
     this.counter = this.redraw(this.counter, c?.lines ?? [], 0.03, 0.95, COLOR.counter);
-    const mat = new THREE.MeshBasicMaterial({ color: COLOR.counter, depthTest: false });
+    const mat = this.paint(COLOR.counter);
     const above = new THREE.Vector3(0, unitHeight('soldier') * 0.6, 0);
     for (const m of c?.melee ?? []) {
       const a = this.eye(m.from).add(above),
@@ -79,12 +94,7 @@ export class ChargeLines {
     const g = new THREE.Group();
     const eye = (s: Square) => this.eye(s);
     const seg = (p: THREE.Vector3, q: THREE.Vector3, color: string) => {
-      const m = new THREE.Mesh(
-        new THREE.CylinderGeometry(width, width, Math.max(1e-3, p.distanceTo(q)), 6).rotateX(Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthTest: false }),
-      );
-      m.position.copy(p).lerp(q, 0.5);
-      m.lookAt(q);
+      const m = rod(p, q, width, this.paint(color, opacity), 6);
       m.renderOrder = 12;
       g.add(m);
     };
@@ -104,7 +114,7 @@ export class ChargeLines {
       const cut = at(k);
       path(k, 1, COLOR.past);
       const mark = l.hits.some((h) => h.friendly) ? X.friendly : l.hits.length ? X.foe : X.terrain;
-      const mat = new THREE.MeshBasicMaterial({ color: mark, depthTest: false });
+      const mat = this.paint(mark);
       for (const turn of [Math.PI / 4, -Math.PI / 4]) {
         const bar = new THREE.Mesh(new THREE.BoxGeometry(color ? 0.42 : 0.3, 0.07, 0.07), mat);
         bar.position.copy(cut);

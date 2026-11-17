@@ -1,0 +1,13 @@
+{
+  "name": "marks-degraus-neon",
+  "scenario": "beacon_hill",
+  "seed": 1,
+  "viewport": { "width": 1920, "height": 1080 },
+  "actor": "h-warrior",
+  "units": { "h-warrior": { "x": 8, "y": 11 } },
+  "screen": "move",
+  "cursor": { "x": 9, "y": 9 },
+  "camera": { "angle": 0, "zoom": 3, "focus": { "x": 8, "y": 10 } },
+  "marks": "neon",
+  "hide": ["fps"]
+}
