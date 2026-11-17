@@ -74,17 +74,21 @@ describe('3D Options: where it sits', () => {
   it('is the reference at 1920x1080: the list, a 68 px row, the value column at the row’s right end', () => {
     const L = optionsLayout(1920, 1080, heads, 4);
     expect(L.s).toBe(1);
-    expect(L.list).toEqual(REF.list);
+    // the four commands take the foot of the list's place: 4 x (56 + 16) px
+    expect(L.list).toEqual({ ...REF.list, h: REF.list.h - 288 });
     expect(L.tops.slice(0, 5)).toEqual([0, 52, 120, 188, 240]);
     expect(L.content).toBe(2 * REF.head + 16 * REF.row);
     expect(itemBox(L, 1, 0)).toEqual({ x: 128, y: 232, w: 908, h: 68 });
     expect(itemBox(L, 1, 100).y).toBe(132);
     expect([L.value, L.arrow, L.number]).toEqual([REF.value, REF.arrow, REF.number]);
     expect(L.help).toEqual({ x: 0, y: 944, w: 1920, h: 84 });
-    // the commands under the goal, one over the other, none touching
+    // the commands under the list, in its column, one over the other, none touching, the last where the list ended
     expect(L.buttons).toHaveLength(4);
-    expect(L.buttons[0].y).toBeGreaterThan(L.goal.y + L.goal.h);
+    expect(L.buttons[0].y).toBeGreaterThan(L.list.y + L.list.h);
+    for (const b of L.buttons) expect(b.x).toBe(L.list.x);
     expect(L.buttons[1].y).toBeGreaterThan(L.buttons[0].y + L.buttons[0].h);
+    expect(L.buttons[3].y + L.buttons[3].h).toBe(REF.list.y + REF.list.h);
+    expect(optionsLayout(1920, 1080, heads, 0).list).toEqual(REF.list); // no command, the whole place
   });
 
   it('stays a centred 16:9 frame on a wide page, the message band still crossing it whole', () => {
@@ -103,8 +107,10 @@ describe('3D Options: where it sits', () => {
     const L = optionsLayout(1152, 648, heads, 4);
     expect(L.rowH).toBe(44);
     for (const b of L.buttons) expect(b.h).toBe(44);
-    // every command above the message band
+    // every command above the message band and under the list, which still shows whole rows
     expect(L.buttons[3].y + L.buttons[3].h).toBeLessThan(L.help.y);
+    expect(L.buttons[0].y).toBeGreaterThan(L.list.y + L.list.h);
+    expect(L.list.h).toBeGreaterThan(4 * L.rowH);
   });
 
   it('fades a row leaving the list instead of drawing it over the title', () => {
@@ -213,50 +219,39 @@ describe('3D sheets: where a window of the title or of Options sits', () => {
   });
 });
 
-// Fernando, Nov 17: the keys and the pad follow what is seen. The rows of the list (heads left out) and then the
-// four commands at their right; left and right on a row with a value never get here (they change it)
+// Fernando, Nov 17: the keys and the pad follow what is seen. The rows of the list (heads left out) and the four
+// commands under them are one column; left and right on a row with a value never get here (they change it)
 describe('3D Options: where an arrow takes the cursor', () => {
   // the game's own list: 2 rows, 2 rows, 13 rows and the 2 help rows, each group under its head
   const heads = [2, 2, 13, 2].flatMap((n) => [true, ...Array<boolean>(n).fill(false)]);
   const L = optionsLayout(1920, 1080, heads, 4);
   const rows = 19,
     [restart, town, dev, back] = [19, 20, 21, 22];
-  const bottom = L.content - L.list.h; // the list scrolled to its end
-  const walk = (at: number, way: Parameters<typeof optionsWalk>[4], scroll = 0) =>
-    optionsWalk(L, heads, scroll, at, way);
+  const walk = (at: number, way: Parameters<typeof optionsWalk>[4]) => optionsWalk(L, heads, 0, at, way);
 
   it('down and up: the row under and the row over, past a head', () => {
     expect(walk(0, 'down')).toBe(1);
     expect(walk(1, 'down')).toBe(2); // the "Sound" head lies between them
     expect(walk(2, 'up')).toBe(1);
+  });
+  it('the commands are under the list: down from the last row is the first of them, and up from it the last row', () => {
+    expect(walk(rows - 1, 'down')).toBe(restart);
+    expect(walk(restart, 'up')).toBe(rows - 1);
     expect(walk(restart, 'down')).toBe(town);
     expect(walk(back, 'up')).toBe(dev);
+    // and they are drawn so: each command lower than the one before, all lower than the list, in its column
+    const ys = L.buttons.map((b) => b.y);
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+    expect(ys[0]).toBeGreaterThan(L.list.y + L.list.h);
+    for (const b of L.buttons) expect(b.x).toBe(L.list.x);
   });
-  it('the two ends of the list meet, inside the list: the short way to the rows that reach the commands', () => {
-    expect(walk(0, 'up')).toBe(rows - 1);
-    expect(walk(rows - 1, 'down', bottom)).toBe(0);
+  it('the two ends of the column meet: one press up from the first row to the commands, not nineteen down', () => {
+    expect(walk(0, 'up')).toBe(back);
+    expect(walk(back, 'down')).toBe(0);
   });
-  it('the commands stay at the ends of their column, wherever the list is scrolled: never into a row out of sight', () => {
-    for (const scroll of [0, bottom]) {
-      expect(walk(restart, 'up', scroll)).toBe(restart);
-      expect(walk(back, 'down', scroll)).toBe(back);
-      for (const b of [restart, town, dev, back]) expect(walk(b, 'right', scroll)).toBe(b);
-    }
-  });
-  it('left from a command: the row nearest its height on screen, with the list at the top or at its end', () => {
-    const items = heads.flatMap((h, i) => (h ? [] : [i])); // each row's place in the list
-    for (const b of [restart, town, dev, back])
-      for (const scroll of [0, bottom]) {
-        const mid = L.buttons[b - rows].y + L.buttons[b - rows].h / 2;
-        const off = items.map((i) => Math.abs(itemBox(L, i, scroll).y + L.rowH / 2 - mid));
-        expect(walk(b, 'left', scroll)).toBe(off.indexOf(Math.min(...off)));
-        expect(Math.min(...off)).toBeLessThan(L.rowH); // a row in the list's window, beside the command
-      }
-  });
-  it('right from a help row (it has no value): the commands, the nearest one; left has nothing', () => {
-    expect(walk(rows - 1, 'right', bottom)).toBe(back);
-    expect(walk(rows - 2, 'right', bottom)).toBe(back);
-    expect(walk(rows - 1, 'left', bottom)).toBe(rows - 1);
+  it('nothing lies beside the column: left and right stay, on a row and on a command', () => {
+    for (const at of [0, rows - 1, restart, back])
+      for (const way of ['left', 'right'] as const) expect(walk(at, way)).toBe(at);
   });
   it('nothing in focus, or a place that is not there: it stays', () => {
     expect(walk(-1, 'down')).toBe(-1);

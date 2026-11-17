@@ -1,11 +1,12 @@
 // Where the 3D Options sit (options3d.ts): on the places measured on FFT: The Ivalice Chronicles' settings screen (labs
 // refs/fft-ivalice/15-opcoes-iniciais.jpg and 16-opcoes-audio.jpg, 1280x720 read as 1920x1080, +-6 px): the title over a
 // hairline, the list at the left with its values in one column, the message band at the foot. Where the reference has
-// its preview pictures, ours has the goal and the window's commands. A full screen, so it is always the centred 16:9
+// its preview pictures, ours has the goal; the window's commands stand under the list, one column with it, so the
+// arrows never leave a straight line (Fernando, Nov 17). A full screen, so it is always the centred 16:9
 // frame, whatever layout the battle pieces take. One layout for what is drawn and for the real controls under it. Pure
 // and tested (tests/flow3d.test.ts): no DOM, no Three.
 import { type Box, MIN_SCALE, SCREEN, type Stage, stage } from '../ui3d/layout.ts';
-import { neighbour, type Way } from '../ui3d/walk.ts';
+import type { Way } from '../ui3d/walk.ts';
 
 export type { Box };
 
@@ -15,7 +16,7 @@ export const REF = {
   titleY: 100, // the title's middle
   rule: { x: 390, y: 145, w: 1140, h: 2 }, // the hairline under it
   noteX: 1770, // the note's right end, on the title's line
-  list: { x: 128, y: 180, w: 908, h: 748 }, // eleven rows show at once
+  list: { x: 128, y: 180, w: 908, h: 748 }, // the rows and, in its last part, the commands under them
   row: 68,
   head: 52, // a section's name
   inset: 20, // a row's name starts this far in
@@ -27,7 +28,7 @@ export const REF = {
   knob: 26,
   toggle: { w: 76, h: 34 },
   hand: 62, // the pointing glove, left of the row
-  side: { x: 1140, y: 180, w: 630 }, // the goal, then the commands under it
+  side: { x: 1140, y: 180, w: 630 }, // the goal
   goal: 118, // room for the goal's text
   button: { w: 420, h: 56, gap: 16 },
   help: { y: 944, h: 84, w: 1500 }, // the message band across the page, and the width its text wraps at
@@ -41,7 +42,7 @@ export interface OptionsLayout {
   title: { x: number; y: number }; // middle
   rule: Box;
   note: { x: number; y: number }; // right end, middle
-  list: Box; // the scrolling list's window
+  list: Box; // the scrolling list's window: what the commands under it leave
   rowH: number; // never under the game's 44 px tap
   headH: number;
   tops: number[]; // each item's top inside the list's content
@@ -75,14 +76,18 @@ export function optionsLayout(w: number, h: number, heads: boolean[], buttons: n
     return top;
   });
   const side = at(REF.side.x, REF.side.y, REF.side.w, REF.goal);
-  const bh = Math.max(44, REF.button.h * s);
+  const bh = Math.max(44, REF.button.h * s),
+    gap = REF.button.gap * s;
+  // the commands take the foot of the list's place, by what they really measure (a 44 px one on a small page)
+  const list = at(REF.list.x, REF.list.y, REF.list.w, REF.list.h);
+  list.h -= buttons * (bh + gap);
   const help = at(0, REF.help.y, 0, REF.help.h);
   return {
     s,
     title: at(SCREEN.w / 2, REF.titleY),
     rule: at(REF.rule.x, REF.rule.y, REF.rule.w, REF.rule.h),
     note: at(REF.noteX, REF.titleY),
-    list: at(REF.list.x, REF.list.y, REF.list.w, REF.list.h),
+    list,
     rowH,
     headH,
     tops,
@@ -93,8 +98,8 @@ export function optionsLayout(w: number, h: number, heads: boolean[], buttons: n
     number: REF.number * s,
     goal: side,
     buttons: Array.from({ length: buttons }, (_, i) => ({
-      x: side.x,
-      y: side.y + side.h + REF.button.gap * s + i * (bh + REF.button.gap * s),
+      x: list.x,
+      y: list.y + list.h + gap + i * (bh + gap),
       w: REF.button.w * s,
       h: bh,
     })),
@@ -111,17 +116,19 @@ export const itemBox = (L: OptionsLayout, i: number, scroll: number): Box => ({
   h: (L.tops[i + 1] ?? L.content) - L.tops[i],
 });
 // Where an arrow or the d-pad takes the cursor (Fernando, Nov 17: it follows what is seen). `at` counts the list's
-// rows (its heads left out), then the buttons. Up and down stay in their own column: a row goes to the row over or
-// under it and the list's two ends meet (the last rows are the only ones that reach the buttons, since left and right
-// change a row's value: one press up from the top, not nineteen down); a button stays at its column's ends. Left and
-// right go to what is seen that way (ui3d/walk.ts): from a button to the row level with it, from a row to the buttons
-export function optionsWalk(L: OptionsLayout, heads: readonly boolean[], scroll: number, at: number, way: Way): number {
-  const rows = heads.flatMap((head, i) => (head ? [] : [itemBox(L, i, scroll)]));
-  const n = rows.length;
-  if (at < 0 || at >= n + L.buttons.length) return at;
-  if (way === 'left' || way === 'right') return neighbour([...rows, ...L.buttons], at, way);
-  const to = at + (way === 'down' ? 1 : -1);
-  return at < n ? (to + n) % n : Math.max(n, Math.min(n + L.buttons.length - 1, to));
+// rows (its heads left out), then the buttons under them: one column, so down from the last row is the first button
+// and up from it the last row. Its two ends meet (up from the first row is the last button: one press to the
+// commands, not nineteen); nothing lies to the left or right. `_scroll`: the list's, which a single column needs not
+export function optionsWalk(
+  L: OptionsLayout,
+  heads: readonly boolean[],
+  _scroll: number,
+  at: number,
+  way: Way,
+): number {
+  const n = heads.filter((head) => !head).length + L.buttons.length;
+  if (at < 0 || at >= n || way === 'left' || way === 'right') return at;
+  return (at + (way === 'down' ? 1 : -1) + n) % n;
 }
 
 // how much a box at the list's edge shows, 0 to 1: a row leaving the window fades instead of crossing the title, gone
