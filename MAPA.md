@@ -137,6 +137,12 @@ parseGrid and withRamps (grid.ts).
 - `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
 - `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.
+- `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D (?options=3d), laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
+- `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
+- `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, commands, message band), the scroll fade and mark, and the smallest page that takes the 3D look (`fits`); pure.
+- `src/client/flow3d/title3d.ts` — Title3d: the title in 3D (?title=3d), drawn over the title's own window, which it takes when the layer arrives and gives back.
+- `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button); pure.
+- `src/client/flow3d/draw.ts` — what the flow screens in 3D draw with: the dark tokens, text, and the glove that points at the control in focus (Hand).
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result) on the shared layer; types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).

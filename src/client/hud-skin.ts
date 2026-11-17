@@ -28,6 +28,7 @@ export interface HudSkin {
   hints3d?: (layer: Ui3dLayer) => Hints3d;
   confirm3d?: (layer: Ui3dLayer, box: HTMLElement) => Confirm3d; // "Execute?" in 3D (confirm3d/)
   result3d?: (layer: Ui3dLayer) => Result3d; // the end of battle in 3D (result3d/)
+  flow3d?: ((layer: Ui3dLayer) => unknown)[]; // the screens around the battle in 3D (flow3d/): Options, the title
 }
 
 // `spec`: a sandbox spec's keys (docs/sandbox.md); the address wins over it
@@ -66,7 +67,15 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Result3d } = await import('./result3d/result3d.ts');
     skin.result3d = (layer) => new Result3d(layer);
   }
-  if (skin.menu3d || skin.turn3d || skin.bar3d || skin.hints3d || skin.confirm3d || skin.result3d) {
+  if (flags.options === '3d') {
+    const { Options3d } = await import('./flow3d/options3d.ts');
+    (skin.flow3d ??= []).push((layer) => new Options3d(layer));
+  }
+  if (flags.title === '3d') {
+    const { Title3d } = await import('./flow3d/title3d.ts');
+    (skin.flow3d ??= []).push((layer) => new Title3d(layer));
+  }
+  if (skin.menu3d || skin.turn3d || skin.bar3d || skin.hints3d || skin.confirm3d || skin.result3d || skin.flow3d) {
     const { Ui3dLayer } = await import('./ui3d/layer.ts');
     skin.layer = (root, lost) => {
       try {

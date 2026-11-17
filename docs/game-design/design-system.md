@@ -321,6 +321,13 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
 - **"Execute?"** (`?confirm=3d`, `confirm3d/`): the strike's confirmation as a dark slate box like the pill, beside the
   character: title, notes and the two choices, the one in focus on a gold band with ▶. The HTML window stays unseen at
   the drawn sizes and keeps the place, the buttons and the mouse; the colours are constants in `confirm3d.ts`.
+- **Options and title** (`?options=3d`, `?title=3d`, `flow3d/`): full screens after FFT The Ivalice Chronicles' settings
+  and title, in the result's dark tokens (`--ui3d-result-*`, no new token) with the parchment (`--ui3d-paper`,
+  `--ui3d-ink`) for a choice's box. A choice is a box between ‹ ›, a 0 to 100% value a bar with its number, a yes or
+  no a switch with its word beside it (green when on: colour is never the only signal). The focus is the glove and a
+  lit band or plate, on every control. The HTML window stays unseen under the drawing (opacity, not visibility) and
+  keeps keys, pad, taps, scroll and screen reader; text never under 16 px, rows and buttons never under 44 px; under
+  1152x648 the HTML window shows instead.
 - **Result tokens** (`?result=3d`, `result3d/`): `--ui3d-result-title`, `-lost`, `-note`, `-text`, `-soft`, `-veil`,
   `-band`, `-plate` and `-line`, measured on the reference's victory screen (light text on the darkened battle); `-lost`
   (the defeat's title) and `-soft` are ours. Contrast not computed yet.

@@ -17,5 +17,6 @@ export interface Pieces3d {
 // draws over. The layer disposes every piece with itself
 export function pieces3d(skin: HudSkin, layer: Ui3dLayer, active: HTMLElement, confirm: HTMLElement): Pieces3d {
   skin.result3d?.(layer); // takes the end of battle by itself (end-screens.ts `setBoard3d`)
+  for (const make of skin.flow3d ?? []) make(layer); // each takes its screen by itself (options.ts `setOptions3d`)
   return { bar: skin.bar3d?.(layer, active), hints: skin.hints3d?.(layer), confirm: skin.confirm3d?.(layer, confirm) };
 }

@@ -3853,3 +3853,155 @@ body:has(.result3d-overlay) .fps {
     min-height: max(var(--tap), 52 * var(--lay-u));
   }
 }
+
+/* ---- 3D Options (?options=3d; src/client/flow3d) ---- */
+/* Options are drawn in 3D on the layer. Their window (dialog.ts) covers the page unseen and holds the board's real list
+   and buttons under the drawing, sized by the same layout (options3d.ts sets the list's box and the --o3-* sizes): the
+   keys, the pad, the taps, the list's scroll and the focus stay the window's. Unseen by opacity, never by visibility:
+   the controls must still take the focus. The rest of the HUD hides, as under the result */
+.overlay.options3d-overlay {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.dialog.options3d {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden;
+  opacity: 0;
+}
+/* no ✕ on a full screen: the drawn Back stands for it, and an unseen ✕ would still take the focus */
+.dialog.options3d .dialog-head {
+  display: none;
+}
+.dialog.options3d .opt-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.dialog.options3d .opt-list {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+.dialog.options3d .opt-list h3 {
+  height: var(--o3-head);
+  margin: 0;
+  overflow: hidden;
+}
+.dialog.options3d .opt-list > .opt-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  width: 100%;
+  height: var(--o3-row);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.dialog.options3d .opt-label {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.dialog.options3d .opt-value {
+  flex: 0 0 var(--o3-value);
+  gap: 0;
+  height: 100%;
+}
+.dialog.options3d .opt-arrow {
+  flex: 0 0 var(--o3-arrow);
+  width: var(--o3-arrow);
+  min-height: 0;
+  height: 100%;
+}
+.dialog.options3d .opt-text {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+/* a bar: the number first, then the track (the drawing's order), the track as wide as the drawn one */
+.dialog.options3d .opt-bar {
+  order: 1;
+  flex: 1 1 0;
+  height: 100%;
+  margin: 0 var(--o3-pad);
+  border: 0;
+}
+.dialog.options3d .opt-bar + .opt-text {
+  flex: 0 0 var(--o3-num);
+}
+.dialog.options3d .opt-value > .opt-arrow:last-child {
+  order: 2;
+}
+.options3d-hits > button {
+  position: absolute;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+body:has(.options3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.options3d-overlay) .fps {
+  visibility: hidden;
+}
+
+/* ---- 3D title (?title=3d; src/client/flow3d) ---- */
+/* The title is drawn in 3D on the layer. Its own window stays, unseen (by opacity: the buttons must still take the
+   focus), the command list and the language button moved under the drawn ones (title3d.ts sets their places and
+   --t3-row). The battle's HUD stays hidden under the title, except the layer the title is drawn on */
+.overlay.main-title.title3d {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.main-title.title3d .dialog.title {
+  opacity: 0;
+}
+.main-title.title3d .camp-list {
+  position: fixed;
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.main-title.title3d .camp-list > button {
+  display: block;
+  width: 100%;
+  height: var(--t3-row);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+.main-title.title3d .title-lang {
+  position: fixed;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+body:has(.main-title.title3d) .hud > .ui3d-layer {
+  visibility: visible;
+}

@@ -1,7 +1,35 @@
 // What Options explains instead of setting, each in a window over it: the tile marks' legend and the controls.
+import { dialog } from '../dialog.ts';
 import { t } from '../i18n.ts';
-import { el } from '../icons.ts';
+import { button, el } from '../icons.ts';
 import { keyHelp } from '../keyboard.ts';
+import { hoverFocus } from '../option-row.ts';
+
+// A row of the Options list that opens a window over it, which stays open under it; closing it puts the cursor back
+// on its row. `describe`: the Options' description box
+export function helpRow(label: string, text: string, body: () => Node[], describe: (text: string) => void) {
+  const back = () => row.focus();
+  const row = button(
+    'opt-row',
+    [el('span', { class: 'opt-label' }, label), el('span', { class: 'opt-arrow', 'aria-hidden': 'true' }, '▸')],
+    () => {
+      const w = dialog(
+        'menu-help',
+        label,
+        [
+          ...body(),
+          button('primary', t('Voltar', 'Back'), () => {
+            w.close();
+            back();
+          }),
+        ],
+        { onBack: back },
+      );
+    },
+    { onfocus: () => describe(text), onpointermove: hoverFocus },
+  );
+  return row;
+}
 
 export const tileMarks = () => [
   el(
