@@ -91,6 +91,8 @@ export interface SceneSpec {
   hints?: Variant;
   confirm?: Variant;
   result?: Variant;
+  tools?: Variant;
+  status?: Variant;
   uiPixel?: boolean; // the 3D pieces through the pixel filter (`pixel` is the scene's)
   menu3d?: true | 'pixel';
   turn3d?: true;
@@ -130,6 +132,8 @@ const KEYS = [
   'hints',
   'confirm',
   'result',
+  'tools',
+  'status',
   'uiPixel',
   'menu3d',
   'turn3d',
@@ -263,7 +267,7 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   if (r.menu3d !== undefined && r.menu3d !== true && r.menu3d !== 'pixel') p.push('menu3d must be true or "pixel"');
   for (const k of ['turn3d', 'menucss']) if (r[k] !== undefined && r[k] !== true) p.push(`${k} must be true`);
   if (r.ui !== undefined && !VARIANTS.includes(r.ui as Variant)) p.push(`ui must be one of ${VARIANTS.join(', ')}`);
-  for (const k of ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result'] as const)
+  for (const k of ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result', 'tools', 'status'] as const)
     if (r[k] !== undefined && !(PIECES[k] as readonly unknown[]).includes(r[k]))
       p.push(`${k} must be one of ${PIECES[k].join(', ')}`);
   if (r.uiPixel !== undefined && typeof r.uiPixel !== 'boolean') p.push('uiPixel must be true or false');

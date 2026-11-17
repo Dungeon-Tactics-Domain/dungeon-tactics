@@ -160,7 +160,7 @@ export class BattleHud {
     this.menu3d = skin.menu3d?.(this.layer, act);
     this.turn3d = skin.turn3d?.(this.layer, this.queue);
     if (this.turn3d) wireQueue(this.root, this.queue, this.turn3d);
-    this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox);
+    this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox, this.tools.root);
   }
   private drop3d() {
     this.layer?.dispose(); // with its screens

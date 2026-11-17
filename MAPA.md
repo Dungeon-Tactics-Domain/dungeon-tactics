@@ -137,9 +137,14 @@ parseGrid and withRamps (grid.ts).
 - `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
 - `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.
-- `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result) on the shared layer; types only.
+- `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D (?tools=3d): the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu that keeps its place and buttons.
+- `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D (?status=3d): a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
+- `src/client/window3d/status-view.ts` — where the 3D Status sheet sits and where each of its rows goes (statusLayout); pure.
+- `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, corner menu, Status) on the shared layer; types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
+- `src/client/tool-rows.ts` — the corner menu's rows (tool, glyph, name, key, switch) for the HTML menu and the 3D one; pure.
+- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) in a window of dialog.ts, or handed to the 3D look (setStatus3d).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/option-row.ts` — the Options list's row: a setting's name, its value between ◀ ▶, the pure steps (cycle, pctAt).

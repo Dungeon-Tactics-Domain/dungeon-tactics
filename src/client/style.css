@@ -3853,3 +3853,71 @@ body:has(.result3d-overlay) .fps {
     min-height: max(var(--tap), 52 * var(--lay-u));
   }
 }
+
+/* ---- 3D corner menu (?tools=3d; src/client/window3d/tools3d.ts) ---- */
+/* The menu button, Back and the open list are drawn on the 3D layer over the HTML ones, which stay in place unseen
+   (opacity, not visibility: their real buttons take the mouse and the taps, and the sandbox's `hide` hides the drawing
+   with them). The list takes the drawing's sizes, in px of the reference: a head like the command menu's (42), rows
+   touching each other (the parchment draws the line between them), never under the 44 px touch target */
+.hud.tools3d .tools {
+  opacity: 0;
+}
+.hud.tools3d .tools .burger,
+.hud.tools3d .tools .back {
+  width: max(var(--tap), 56 * var(--lay-u));
+  height: max(var(--tap), 56 * var(--lay-u));
+}
+.hud.tools3d .tools-menu {
+  top: calc(max(var(--tap), 56 * var(--lay-u)) + 10 * var(--lay-u));
+  width: max(300px, 430 * var(--lay-u));
+  padding: 0;
+  border: 0 solid transparent;
+  border-top-width: calc(42 * var(--lay-u)); /* the head: a border, so it stays while the rows scroll */
+  animation: none;
+  max-height: calc(100dvh - var(--inset-t) - max(var(--tap), 56 * var(--lay-u)) - 10 * var(--lay-u) - var(--inset-b));
+}
+.hud.tools3d .panel.tools-menu .item {
+  min-height: max(var(--tap), 52 * var(--lay-u));
+  border-radius: 0;
+}
+.hud.tools3d .tools-menu .item + .item {
+  margin-top: 0;
+}
+
+/* ---- 3D Status window (?status=3d; src/client/window3d/status3d.ts) ---- */
+/* The sheet is drawn on the 3D layer. Its window (dialog.ts) sits over the drawn sheet, unseen (status3d.ts gives it the
+   sheet's box): Esc, the pad, a tap outside and the ✕ on the top right corner stay the window's, and it holds the sheet
+   as real text. The rest of the HUD hides, as on the reference's status screen */
+.overlay.status3d-overlay {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.dialog.status3d {
+  position: absolute;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.dialog.status3d .dialog-head button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--tap);
+  height: var(--tap);
+  cursor: pointer;
+}
+body:has(.status3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.status3d-overlay) .fps {
+  visibility: hidden;
+}
+/* the open list sits over the 3D ability sheet's corner, whose icons draw over every panel of the layer: the 3D menu
+   steps aside while the list is open over its submenu */
+.hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
+  visibility: hidden;
+}

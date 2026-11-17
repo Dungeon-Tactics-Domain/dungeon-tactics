@@ -321,6 +321,17 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
 - **"Execute?"** (`?confirm=3d`, `confirm3d/`): the strike's confirmation as a dark slate box like the pill, beside the
   character: title, notes and the two choices, the one in focus on a gold band with ▶. The HTML window stays unseen at
   the drawn sizes and keeps the place, the buttons and the mouse; the colours are constants in `confirm3d.ts`.
+- **Corner menu** (`?tools=3d`, `window3d/tools3d.ts`): the menu button (3 bars) and Back as dark slate plates like
+  the pill (the button lighter while its list is open), and the list as a parchment panel like the command menu's: a
+  head, a row per tool (`tool-rows.ts`) with its glyph in the icon column, its name, its key on a cap and "on"/"off" in
+  words for the two switches; the row under the mouse is lit with the glove beside it. The HTML menu stays unseen at the
+  drawn sizes (rows touching, never under `--tap`) and keeps the place, the buttons and the taps. The reference has no
+  corner menu; the panel is its command menu's (refs 12, 13).
+- **Status window** (`?status=3d`, `window3d/status3d.ts`): the battle darkened and the rest of the HUD away, as on the
+  reference's status screen (ref 14), and one parchment sheet in the middle: the unit's name on the head, its rows in
+  two columns (label in soft ink, value in ink, a hairline under each; `status-view.ts`), "Esc Close" on the foot ("Tap
+  outside to close" on touch). An ability's facts are the same sheet, narrower, with one paragraph. An unseen window of
+  `dialog.ts` over the sheet keeps Esc, the pad, the tap outside, the ✕ and the sheet as real text.
 - **Result tokens** (`?result=3d`, `result3d/`): `--ui3d-result-title`, `-lost`, `-note`, `-text`, `-soft`, `-veil`,
   `-band`, `-plate` and `-line`, measured on the reference's victory screen (light text on the darkened battle); `-lost`
   (the defeat's title) and `-soft` are ours. Contrast not computed yet.

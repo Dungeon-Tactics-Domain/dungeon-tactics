@@ -9,7 +9,9 @@
     "hints": ["html", "3d"],
     "preview": ["html"],
     "confirm": ["html", "3d"],
-    "result": ["html", "3d"]
+    "result": ["html", "3d"],
+    "tools": ["html", "3d"],
+    "status": ["html", "3d"]
   },
   "presets": ["html", "css", "3d"],
   "layouts": ["edges", "frame"],
