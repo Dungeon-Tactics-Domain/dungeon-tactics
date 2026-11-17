@@ -11,7 +11,7 @@ import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
-import { hoverFocus, type Option, optionRow, percent, pick } from '../option-row.ts';
+import { type Option, optionRow, percent, pick } from '../option-row.ts';
 import type { PixelSettings, PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
@@ -21,7 +21,7 @@ import { getTheme, setTheme, THEMES } from '../theme.ts';
 import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts';
 import type { LayoutMode } from '../ui3d/layout.ts';
 import { goHome, homeLabel } from './crawl.ts';
-import { controls, tileMarks } from './options-help.ts';
+import { controls, helpRow, tileMarks } from './options-help.ts';
 import { marksOption } from './options-marks.ts';
 import { devMenu } from './title.ts';
 
@@ -67,8 +67,8 @@ export const townFreeChoice = (onPick: (on: boolean) => void = () => {}) =>
   );
 
 // `fem`: the Portuguese word agrees with the setting's name ("Paleta … Ligada")
-const onOff = (label: string, help: string, get: () => boolean, set: (on: boolean) => void, fem = false) =>
-  pick(
+const onOff = (label: string, help: string, get: () => boolean, set: (on: boolean) => void, fem = false): Option => ({
+  ...pick(
     label,
     help,
     [
@@ -77,7 +77,9 @@ const onOff = (label: string, help: string, get: () => boolean, set: (on: boolea
     ],
     get,
     set,
-  );
+  ),
+  on: get,
+});
 // a yes or no kept in its own key, read back by its parser
 const flag = (key: string, parse: (raw: unknown) => boolean) =>
   [() => parse(store.json(key)), (on: boolean) => store.set(key, JSON.stringify(on))] as const;
@@ -277,6 +279,32 @@ const settings = (o: OptionsContext): [title: string, rows: Option[]][] => [
   ],
 ];
 
+// What the Options window holds, built once and shown by either look: the HTML window below or the 3D screen
+// (flow3d/options3d.ts), which draws over these same controls
+export type OptionsItem = { head: string } | { option: Option } | { link: string }; // the list's children, in order
+export interface OptionsBoard {
+  title: string;
+  goal: string;
+  note: string; // how a row changes, said once
+  items: OptionsItem[];
+  list: HTMLElement; // a heading or a row button per item
+  help: HTMLElement; // what the row under the cursor does
+  actions: HTMLButtonElement[]; // restart, home, developer
+}
+// the 3D screen takes the board while it is set (as end-screens.ts setBoard3d); undefined from it: no room, the HTML one
+type Show3d = (board: OptionsBoard) => { close(): void } | undefined;
+let options3d: Show3d | undefined;
+export const setOptions3d = (show?: Show3d) => void (options3d = show);
+
+export function optionsWindow(b: OptionsBoard): { close(): void } {
+  return dialog(
+    'menu',
+    b.title,
+    [el('p', { class: 'opt-goal' }, b.goal), b.list, b.help, el('div', { class: 'menu-actions' }, ...b.actions)],
+    { note: el('span', { class: 'opt-keys' }, b.note) },
+  );
+}
+
 // Options (Nov 16, Fernando: the interface on its Final Fantasy Tactics counterpart): one list like FFT's option menu, the
 // current value at the right of each row, left and right change it and the box at the foot says what the focused row
 // does. It replaced the sections column of Nov 13; what is not a setting (tile marks, controls) opens from the last rows
@@ -284,108 +312,81 @@ export function optionsMenu(o: OptionsContext) {
   const { scenario } = o;
   const help = el('p', { class: 'opt-help', 'aria-live': 'polite' });
   const describe = (text: string) => (help.textContent = text);
-  // a window over this one, which stays open under it; closing it puts the cursor back on its row
-  const helpRow = (label: string, text: string, body: () => Node[]) => {
-    const back = () => row.focus();
-    const row = button(
-      'opt-row',
-      [el('span', { class: 'opt-label' }, label), el('span', { class: 'opt-arrow', 'aria-hidden': 'true' }, '▸')],
-      () => {
-        const w = dialog(
-          'menu-help',
-          label,
-          [
-            ...body(),
-            button('primary', t('Voltar', 'Back'), () => {
-              w.close();
-              back();
-            }),
-          ],
-          { onBack: back },
-        );
-      },
-      { onfocus: () => describe(text), onpointermove: hoverFocus },
-    );
-    return row;
-  };
-  const d = dialog(
-    'menu',
-    t('Opções', 'Options'),
-    [
-      // Until Dawn's own goal; the Beacon only on a map born with one, as checkOutcome counts it (Nov 16 review: the
-      // expedition rooms, which have none, were told to protect it)
-      el(
-        'p',
-        { class: 'opt-goal' },
-        isSurvival(scenario.id)
-          ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
-          : scenario.spawns.some((s) => isObjective(s.def))
-            ? t(
-                'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',
-                'Goal: defeat the enemies and protect the Beacon (the blue crystal).',
-              )
-            : t('Objetivo: derrote todos os inimigos.', 'Goal: defeat every enemy.'),
-      ),
-      el(
-        'div',
-        { class: 'camp-list opt-list' },
-        ...settings(o).flatMap(([title, rows]) => [el('h3', {}, title), ...rows.map((r) => optionRow(r, describe))]),
-        el('h3', {}, t('Ajuda', 'Help')),
-        helpRow(
-          t('Marcas do mapa', 'Tile marks'),
-          t(
-            'O que cada cor e desenho no chão da batalha quer dizer.',
-            'What each colour and pattern on the battle floor means.',
-          ),
-          tileMarks,
-        ),
-        helpRow(
-          t('Controles', 'Controls'),
-          t(
-            'Mouse, teclado, controle e toque: o que cada um faz.',
-            'Mouse, keyboard, gamepad and touch: what each one does.',
-          ),
-          controls,
-        ),
-      ),
-      help,
-      el(
-        'div',
-        { class: 'menu-actions' },
-        // during the animation or the enemy turn the loop is still running the old battle
-        // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
-        // a disabled button says why in its own text (design system, Disabled)
-        button(
-          'secondary',
-          o.busy
-            ? t('Reiniciar batalha: espere a sua vez', 'Restart battle: wait for your turn')
-            : t('Reiniciar batalha', 'Restart battle'),
-          (e: Event) => {
-            if (!secondTap(e, t('Confirmar: reiniciar a batalha', 'Confirm: restart the battle'))) return;
-            d.close();
-            o.restart();
-          },
-          { disabled: o.busy },
-        ),
-        // home: the town (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
-        button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
-          if (o.room && !secondTap(e, t('Confirmar: perde a expedição', 'Confirm: the expedition is lost'))) return;
-          goHome();
-        }),
-        button('secondary', t('Desenvolvedor', 'Developer'), () => {
-          d.close();
-          devMenu();
-        }),
-      ),
+  const marks = t('Marcas do mapa', 'Tile marks'),
+    keys = t('Controles', 'Controls');
+  const sections = settings(o);
+  const board: OptionsBoard = {
+    title: t('Opções', 'Options'),
+    // Until Dawn's own goal; the Beacon only on a map born with one, as checkOutcome counts it (Nov 16 review: the
+    // expedition rooms, which have none, were told to protect it)
+    goal: isSurvival(scenario.id)
+      ? t(`Objetivo: ${survivalGoal(t)}`, `Goal: ${survivalGoal(t)}`)
+      : scenario.spawns.some((s) => isObjective(s.def))
+        ? t(
+            'Objetivo: derrote os inimigos e proteja o Farol (o cristal azul).',
+            'Goal: defeat the enemies and protect the Beacon (the blue crystal).',
+          )
+        : t('Objetivo: derrote todos os inimigos.', 'Goal: defeat every enemy.'),
+    // the keys on a PC, the drawn arrows on touch
+    note: KEYS ? t('← → mudam o valor', '← → change the value') : t('◀ ▶ mudam o valor', '◀ ▶ change the value'),
+    items: [
+      ...sections.flatMap(([head, rows]): OptionsItem[] => [{ head }, ...rows.map((option) => ({ option }))]),
+      { head: t('Ajuda', 'Help') },
+      { link: marks },
+      { link: keys },
     ],
-    // how a row changes, said once on the head band: the keys on a PC, the drawn arrows on touch
-    {
-      note: el(
-        'span',
-        { class: 'opt-keys' },
-        KEYS ? t('← → mudam o valor', '← → change the value') : t('◀ ▶ mudam o valor', '◀ ▶ change the value'),
+    list: el(
+      'div',
+      { class: 'camp-list opt-list' },
+      ...sections.flatMap(([title, rows]) => [el('h3', {}, title), ...rows.map((r) => optionRow(r, describe))]),
+      el('h3', {}, t('Ajuda', 'Help')),
+      helpRow(
+        marks,
+        t(
+          'O que cada cor e desenho no chão da batalha quer dizer.',
+          'What each colour and pattern on the battle floor means.',
+        ),
+        tileMarks,
+        describe,
       ),
-    },
-  );
-  d.overlay.querySelector<HTMLButtonElement>('.opt-row')!.focus();
+      helpRow(
+        keys,
+        t(
+          'Mouse, teclado, controle e toque: o que cada um faz.',
+          'Mouse, keyboard, gamepad and touch: what each one does.',
+        ),
+        controls,
+        describe,
+      ),
+    ),
+    help,
+    actions: [
+      // during the animation or the enemy turn the loop is still running the old battle
+      // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
+      // a disabled button says why in its own text (design system, Disabled)
+      button(
+        'secondary',
+        o.busy
+          ? t('Reiniciar batalha: espere a sua vez', 'Restart battle: wait for your turn')
+          : t('Reiniciar batalha', 'Restart battle'),
+        (e: Event) => {
+          if (!secondTap(e, t('Confirmar: reiniciar a batalha', 'Confirm: restart the battle'))) return;
+          d.close();
+          o.restart();
+        },
+        { disabled: o.busy },
+      ),
+      // home: the town (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
+      button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
+        if (o.room && !secondTap(e, t('Confirmar: perde a expedição', 'Confirm: the expedition is lost'))) return;
+        goHome();
+      }),
+      button('secondary', t('Desenvolvedor', 'Developer'), () => {
+        d.close();
+        devMenu();
+      }),
+    ],
+  };
+  const d = options3d?.(board) ?? optionsWindow(board);
+  board.list.querySelector<HTMLButtonElement>('.opt-row')!.focus();
 }
