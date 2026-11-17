@@ -95,6 +95,7 @@ describe('3D town windows: the Party', () => {
   it('Class: a card per class, the current one picked', () => {
     const { page } = partyPage(state, { id: recruitId, page: 'job', slot: 'main' });
     expect(hit(page, 'job:lancer').picked).toBe(true);
+    expect(hit(page, 'job:lancer').hand).toBeGreaterThan(354); // the glove under the card's numbers, off the next name
     expect(ids(page, 'job:').length).toBeGreaterThan(4);
     expect(inPage(page)).toBe(true);
   });

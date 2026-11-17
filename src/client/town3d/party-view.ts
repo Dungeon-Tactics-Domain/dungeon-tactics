@@ -307,7 +307,15 @@ function job(m: Member): Parts {
   const J = P.job;
   const box = (i: number): Box => ({ x: X + i * (J.w + J.gap), y: TOP + 30, w: J.w, h: J.h });
   return {
-    hits: JOBS.map((c, i) => ({ id: `job:${c}`, box: box(i), name: unitName(c), on: 'paper', picked: c === m.cls })),
+    // the glove at the card's foot, under the numbers: at its middle it lay over the name of the card to the left
+    hits: JOBS.map((c, i) => ({
+      id: `job:${c}`,
+      box: box(i),
+      name: unitName(c),
+      on: 'paper',
+      picked: c === m.cls,
+      hand: J.h - 22,
+    })),
     items: JOBS.flatMap((c, i) => {
       const b = box(i);
       return [

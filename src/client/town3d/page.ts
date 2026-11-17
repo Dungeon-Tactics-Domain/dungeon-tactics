@@ -54,6 +54,7 @@ export interface Hit extends InList {
   on: 'paper' | 'dark';
   off?: boolean; // disabled; the page says why beside it
   picked?: boolean; // the open tab, the member whose pages show
+  hand?: number; // where the glove points, in px under the box's top (its middle when not given)
 }
 export interface Page {
   items: Item[];

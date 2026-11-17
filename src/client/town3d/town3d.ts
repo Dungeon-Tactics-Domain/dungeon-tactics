@@ -375,7 +375,7 @@ export class Town3d implements Ui3dScreen {
     if (hit) {
       const b = this.box(hit.box);
       this.gx.to = b.x + (hit.on === 'dark' && hit.box.x < T.hand ? 58 : -T.hand / 2 + 6) * s;
-      this.gy.to = b.y + b.h / 2 - (hit.row === undefined ? 0 : scroll);
+      this.gy.to = b.y + (hit.hand === undefined ? b.h / 2 : hit.hand * s) - (hit.row === undefined ? 0 : scroll);
       if (Number.isNaN(this.gy.x)) {
         land(this.gx);
         land(this.gy);
