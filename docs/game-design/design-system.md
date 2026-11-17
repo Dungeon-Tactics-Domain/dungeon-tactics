@@ -324,6 +324,10 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
 - **Result tokens** (`?result=3d`, `result3d/`): `--ui3d-result-title`, `-lost`, `-note`, `-text`, `-soft`, `-veil`,
   `-band`, `-plate` and `-line`, measured on the reference's victory screen (light text on the darkened battle); `-lost`
   (the defeat's title) and `-soft` are ours. Contrast not computed yet.
+- **Town tokens** (`?shop=3d`, `?party=3d`, `town3d/`): `--ui3d-town-gold` (the plaque or row in focus), `-picked`
+  (the open tab, the member whose pages show), `-track`, `-hp`, `-mp`, `-sp`, `-stat` (the bars) and `-up`, `-down` (a
+  change, always with its arrow). The windows reuse the paper and result tokens for panels and light text. The gold
+  plaque is darker than the reference's so the light label keeps its contrast. Contrast not computed yet.
 - **Contrast** (computed, WCAG): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the darkest band; soft ink 5.7:1
   on the rows, 4.7:1 on the head, 3.6:1 on the band, so the band's title takes the full ink; the disabled ink (1.9:1)
   is the faded name only, and the reason beside it (what is missing) is written in soft ink.

@@ -137,6 +137,12 @@ parseGrid and withRamps (grid.ts).
 - `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
 - `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.
+- `src/client/town3d/town3d.ts` — Town3d: the town's windows in 3D (?shop=3d, ?party=3d), one screen that draws the page it is handed over its own unseen buttons.
+- `src/client/town3d/screens.ts` — mountTown3d(): the 3D Shop, Tavern and Party at work (read the saved game, show the page, run the pressed button through the same rules, save).
+- `src/client/town3d/page.ts` — what a 3D town window shows: a flat list of things to draw and of buttons, in reference px; pure.
+- `src/client/town3d/shop-view.ts` — the pages of the 3D Shop and Tavern (commands, scrolling list, the picked row's box and action); pure.
+- `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class); pure.
+- `src/client/town3d/town-layout.ts` — where the 3D town windows put their parts, in reference px; pure numbers.
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result) on the shared layer; types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).

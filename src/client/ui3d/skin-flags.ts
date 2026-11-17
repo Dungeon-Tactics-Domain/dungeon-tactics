@@ -1,6 +1,7 @@
 // Which look each piece of the battle interface takes (localhost only; hud-skin.ts loads what this says). One place
 // reads every flag, from the address and from a sandbox spec:
-//   ?menu=html|css|3d, ?turn=html|3d, ?bar=, ?banner=, ?height=, ?hints=, ?confirm=, ?result=html|3d   one piece each
+//   ?menu=html|css|3d, ?turn=html|3d, ?bar=, ?banner=, ?height=, ?hints=, ?confirm=, ?result=, ?party=, ?shop=html|3d
+//                                      one piece each
 //   ?ui=html|css|3d                    a preset: every piece that has that look takes it
 //   ?menu3d, ?menu3d=pixel, ?menucss, ?turn3d   the older flags, kept as shortcuts
 //   ?pixel=1                           the 3D pieces through the pixel filter (as ?menu3d=pixel)
@@ -25,6 +26,8 @@ export const PIECES = {
   preview: ['html'], // the strike preview
   confirm: ['html', '3d'], // "Execute?": the strike's confirmation beside the character
   result: ['html', '3d'], // the end of battle: victory, defeat, a cleared room
+  party: ['html', '3d'], // the town's Party screen: the roster and a member's pages (town3d/)
+  shop: ['html', '3d'], // the town's Shop and Tavern: the counter (town3d/)
 } as const satisfies Record<string, readonly Variant[]>;
 export type Piece = keyof typeof PIECES;
 

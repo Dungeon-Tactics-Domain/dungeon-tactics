@@ -45,6 +45,8 @@ export const REGIONS = {
   hintsLeft: { at: 'bl', x: 45, y: 1035, w: 206, h: 28 },
   // the end of battle (ref 73): what the dark band across the screen holds, from the left plate to the right one's end
   result: { at: 'mc', x: 213, y: 485, w: 1497, h: 340 },
+  // the town's windows (Party, Shop, Tavern; town3d/): the whole reference screen, centred and scaled as one
+  town: { at: 'mc', x: 0, y: 0, w: 1920, h: 1080 },
 } satisfies Record<string, Region>;
 
 // The box the regions anchor in, in page px, and the scale of one reference px

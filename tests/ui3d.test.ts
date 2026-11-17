@@ -301,13 +301,13 @@ describe('3D interface: flags and boundaries', () => {
 
   const sources = import.meta.glob<string>('../src/client/**/*.ts', { query: '?raw', import: 'default', eager: true });
   const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  const is3d = (path: string) => /\/(ui3d|menu3d|turn3d|bar3d|hints3d|confirm3d|result3d)\//.test(path);
+  const is3d = (path: string) => /\/(ui3d|menu3d|turn3d|bar3d|hints3d|confirm3d|result3d|town3d)\//.test(path);
 
   // the game online never fetches the looks: outside their folders they are named only as a type or in a dynamic
   // import. The layout and the flags are the exception: small and pure, the Options and the HUD read them
   it('the rest of the client takes the 3D folders and the CSS menu by type or by dynamic import only', () => {
     const value =
-      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts|skin-flags\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|confirm3d\/|result3d\/|hud-menucss)/m;
+      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts|skin-flags\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|confirm3d\/|result3d\/|town3d\/|hud-menucss)/m;
     expect(value.test("import { Menu3d } from './menu3d/menu3d.ts';")).toBe(true);
     expect(value.test("import { Ui3dLayer } from './ui3d/layer.ts';")).toBe(true);
     expect(value.test("import { stage } from './ui3d/layout.ts';")).toBe(false);
@@ -330,6 +330,10 @@ describe('3D interface: flags and boundaries', () => {
       'hints3d/hints-view',
       'result3d/result-view',
       'result3d/result-layout',
+      'town3d/page',
+      'town3d/town-layout',
+      'town3d/shop-view',
+      'town3d/party-view',
     ];
     // and the two the main chunk takes by value bring no other file along
     for (const name of ['ui3d/layout', 'ui3d/skin-flags'])

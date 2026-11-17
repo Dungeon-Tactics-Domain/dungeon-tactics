@@ -162,6 +162,17 @@
   --ui3d-result-band: #151207;
   --ui3d-result-plate: #1e1c18;
   --ui3d-result-line: #736353;
+  /* the town's 3D windows (town3d/): the plaque in focus and the picked one (FFT's gold plaque, darkened so the light
+     text keeps 4.5:1 on it), the bars and their track, and a change's direction on the paper */
+  --ui3d-town-gold: #7a6126;
+  --ui3d-town-picked: #3d3524;
+  --ui3d-town-track: #2a2619;
+  --ui3d-town-hp: #6fb53a;
+  --ui3d-town-mp: #4c8fd6;
+  --ui3d-town-sp: #e0873f;
+  --ui3d-town-stat: #c79a2e;
+  --ui3d-town-up: #2a6426;
+  --ui3d-town-down: #962b20;
 }
 
 /* Alegreya Sans (SIL OFL 1.1, public/fonts/OFL-Alegreya-Sans.txt), latin subset from Fontsource 5.3.0 */
@@ -3716,6 +3727,70 @@ p.gold strong::before,
 body:has(.result3d-overlay) .hud > :not(.ui3d-layer),
 body:has(.result3d-overlay) .fps {
   visibility: hidden;
+}
+
+/* ---- 3D town windows (?party=3d, ?shop=3d; src/client/town3d) ---- */
+/* Party, Shop and Tavern are drawn in 3D on the town's layer. Their window (dialog.ts) covers the page unseen and only
+   holds the page's real buttons, each over its drawn one (town3d.ts places them), the list's rows inside a real
+   scrolling box. The town's HUD and the town menu under the window hide while it shows */
+/* `body:has(...)`: over the rules that seat a window beside the town menu, which this one covers */
+body:has(.town3d-overlay) .overlay.town3d-overlay {
+  display: block;
+  padding: 0;
+  background: none;
+}
+body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  animation: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+.dialog.town3d .dialog-head {
+  display: none;
+}
+.town3d-hits {
+  position: absolute;
+  inset: 0;
+}
+.town3d-hits button {
+  position: absolute;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  opacity: 0;
+  cursor: pointer;
+}
+.town3d-hits button:disabled {
+  opacity: 0;
+  cursor: default;
+}
+.town3d-list {
+  position: absolute;
+  overflow-y: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+.town3d-rows {
+  position: relative;
+}
+body:has(.town3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.town3d-overlay) .overlay:not(.town3d-overlay) {
+  visibility: hidden;
+}
+/* the town menu under the window hides the whole HUD (a `title` window): the layer still shows */
+body:has(.town3d-overlay) .hud > .ui3d-layer {
+  visibility: visible;
 }
 
 /* ---- 3D turn list (?turn3d; src/client/turn3d) ---- */

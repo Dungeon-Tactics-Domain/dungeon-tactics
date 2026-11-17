@@ -25,7 +25,7 @@ import { button, type Child, el } from './icons.ts';
 import { compare, itemName, itemStats, KIND_NAME, loadChest, loadEquip, RARITY } from './sheet-lines.ts';
 import { sfx } from './sound.ts';
 import { store } from './store.ts';
-import { chestFull, goldNote, loadGroup, saveGroup, shortBy, statsLine } from './town-ui.ts';
+import { chestFull, goldNote, loadGroup, saveGroup, shortBy, statsLine, town3d } from './town-ui.ts';
 
 // the slot a new piece of this kind would go to: the first empty one of its kind (a 2nd accessory), else the first
 export const fitSlot = (load: Loadout, kind: Kind): Slot => {
@@ -159,6 +159,7 @@ const command = (orb: 'gold' | 'blue' | 'bronze', label: string, run: () => void
 // epics drop, Nov 16) and lists the consumables, whose Buy stays off until the battle can use them
 type ShopTab = 'buy' | 'sell';
 export function openShop(back?: () => void, tab: ShopTab = 'buy', sel = '') {
+  if (town3d.shop?.(back, tab, sel)) return;
   const chest = loadChest(),
     eq = loadEquip(),
     g = loadGroup(),
@@ -308,6 +309,7 @@ export function openShop(back?: () => void, tab: ShopTab = 'buy', sel = '') {
 // Tavern (Nov 13, delivery 5 of the design): recruit one person of any class for gold, up to the party cap. `said`: who
 // just joined, on the box of the class they came from
 export function openBar(back: () => void, sel = '', said = '') {
+  if (town3d.bar?.(back, sel, said)) return;
   const gold = loadChest().gold,
     party = loadGroup().members.length;
   // without gold or with a full party Recruit turns off and the line says what is missing

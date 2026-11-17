@@ -16,7 +16,7 @@ import { loadChest, loadEquip, sheetRows } from './sheet-lines.ts';
 import { sfx } from './sound.ts';
 import { store } from './store.ts';
 import { gearPage } from './town-gear.ts';
-import { chestFull, loadGroup, saveGroup } from './town-ui.ts';
+import { chestFull, loadGroup, saveGroup, town3d } from './town-ui.ts';
 import { focused, refocus } from './window-focus.ts';
 
 const PAGES = ['status', 'gear', 'skills', 'job'] as const;
@@ -37,6 +37,7 @@ export interface PartyView {
 }
 
 export function openParty(back?: () => void, view: PartyView = {}) {
+  if (town3d.party?.(back, view)) return;
   const g = loadGroup(),
     eq = loadEquip(),
     all = roster(g);
