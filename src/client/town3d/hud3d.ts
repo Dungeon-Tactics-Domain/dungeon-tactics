@@ -65,7 +65,7 @@ export class TownHud3d implements Ui3dScreen {
   private pill(part: Part, str: string, key: string, size: number, x: number, y: number, h: number, lit = false) {
     const { s, dpr, theme } = this.layer,
       text = this.label(str, size, WHITE),
-      caps = (key && capMeshes(key as Act, this.layer.keys, Math.max(20, 28 * s), dpr, theme.font)) || null,
+      caps = (key && capMeshes(key as Act, this.layer.keys, Math.max(22, 28 * s), dpr, theme.font)) || null,
       capW = caps ? capsWidth(caps, 4 * s) : 0,
       gap = caps ? 12 * s : 0,
       pad = 22 * s,

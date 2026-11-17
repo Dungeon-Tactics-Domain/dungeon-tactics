@@ -1,10 +1,12 @@
 // The town's HUD and the window of a place: the battle HUD's pieces dressed for the town.
 import { type Place, TOWN } from '../../content/crawl/town.ts';
 import { dialog } from '../dialog.ts';
+import { keysText } from '../glyphs.ts';
 import { KEYS } from '../hud.ts';
 import { loadTownSkin } from '../hud-skin.ts';
 import { t } from '../i18n.ts';
 import { button, el, iconButton } from '../icons.ts';
+import { keysShown } from '../key-hints.ts';
 import { sfx } from '../sound.ts';
 import { openBar, openShop } from '../town-shop.ts';
 import { openParty, town3d } from '../town-ui.ts';
@@ -24,7 +26,7 @@ export function townHud(prompt: HTMLElement, balloon: HTMLElement, menu: () => v
       { class: 'tools' },
       iconButton(
         el('span', { class: 'burger-bars', 'aria-hidden': 'true' }),
-        t('Menu da cidade (Esc)', 'Town menu (Esc)'),
+        t(`Menu da cidade (${keysText('cancel', keysShown())})`, `Town menu (${keysText('cancel', keysShown())})`),
         menu,
         { class: 'icon burger' },
       ),

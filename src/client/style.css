@@ -1583,10 +1583,11 @@ button[hidden],
 .key-chip[hidden] {
   display: none;
 }
-/* a key or a pad button drawn by glyph-art.ts: 26 px tall beside 16 px text, as on the battle's hint row */
+/* a key or a pad button drawn by glyph-art.ts: 28 px tall beside 16 px text (a key's letters come to 16.8 px), as on
+   the battle's hint row */
 .cap {
   display: block;
-  height: 1.65em;
+  height: 1.75em;
   width: auto;
 }
 

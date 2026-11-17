@@ -179,7 +179,7 @@ export class Tools3d implements Ui3dScreen {
       left(this.label(d.label, SIZE.row, ink), iconW + 8 * s, mid);
       // from the right edge: the key on its cap, then a switch's state in words (colour is never the only signal)
       let x = box.w - 12 * s;
-      const caps = d.key && capMeshes(d.key, layer.keys, Math.max(20, 26 * s), layer.dpr, layer.theme.font);
+      const caps = d.key && capMeshes(d.key, layer.keys, Math.max(22, 28 * s), layer.dpr, layer.theme.font);
       if (caps) {
         x -= capsWidth(caps, 4 * s);
         capRun((m, cx, cy) => list.text(m, cx, cy), caps, x, mid, 4 * s);

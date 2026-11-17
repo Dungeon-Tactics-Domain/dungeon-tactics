@@ -62,8 +62,9 @@ export const tileLine = (b: Battle, s: Screen, cursor: Pos, size = 1): string =>
   heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
 
 // Sizes of a hint row in px of the 1920x1080 reference (layout-fft-ic.json dicas.direita: a 26 px glyph, text of about
-// 22 px, 12 px between them and 40 px to the next hint)
-export const ROW = { cap: 26, text: 22, capGap: 4, gap: 12, between: 40 };
+// 22 px, 12 px between them and 40 px to the next hint). Our cap is 28, the region's height, so a key's letters reach
+// 16 px (Nov 17)
+export const ROW = { cap: 28, text: 22, capGap: 4, gap: 12, between: 40 };
 
 // Where each hint of a row sits: the x of each of its caps and of its text, from their measured widths. The right row
 // ends on its region's right edge and grows leftwards, the left row starts on its region's left edge. `s`: the scale.

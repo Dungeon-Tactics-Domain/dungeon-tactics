@@ -219,8 +219,8 @@ const settings = (o: OptionsContext): [title: string, rows: Option[]][] => [
       pick(
         t('Tamanho do pixel', 'Pixel size'),
         t(
-          'Desenha a batalha em pixels maiores, como um jogo antigo (tecla V).',
-          'Draws the battle in bigger pixels, like an old game (V key).',
+          'Desenha a batalha em pixels maiores, como um jogo antigo.',
+          'Draws the battle in bigger pixels, like an old game.',
         ),
         [
           [0, t('Desligado', 'Off')],

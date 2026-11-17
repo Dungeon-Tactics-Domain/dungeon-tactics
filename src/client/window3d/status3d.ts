@@ -133,7 +133,7 @@ export class Status3d implements Ui3dScreen {
     );
     const x = L.box.w - 14 * s - close.scale.x;
     left(close, x, mid);
-    const caps = KEYS && capMeshes('cancel', layer.keys, Math.max(20, 26 * s), layer.dpr, layer.theme.font);
+    const caps = KEYS && capMeshes('cancel', layer.keys, Math.max(22, 28 * s), layer.dpr, layer.theme.font);
     if (caps) capRun((m, cx, cy) => part.text(m, cx, cy), caps, x - 10 * s - capsWidth(caps, 4 * s), mid, 4 * s);
     for (const m of [...veil.group.children, ...part.group.children]) if (m !== this.paper) m.renderOrder += OVER;
     for (const m of veil.group.children) m.renderOrder -= 4; // under the sheet
