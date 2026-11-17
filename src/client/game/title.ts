@@ -134,8 +134,8 @@ function howToPlay() {
           'The turn list (top corner) shows who acts this round and the next. Faster units act more often.',
         ),
         t(
-          'Na sua vez: Mover e Agir, em qualquer ordem; depois de agir, ainda se anda com o movimento que sobrou. Fazer menos traz a próxima vez mais cedo.',
-          'On your turn: Move and Act, in any order; after acting you can still walk with the movement left. Doing less brings your next turn sooner.',
+          'Na sua vez: Mover e Habilidades, em qualquer ordem; depois de agir, ainda se anda com o movimento que sobrou. Fazer menos traz a próxima vez mais cedo.',
+          'On your turn: Move and Abilities, in any order; after acting you can still walk with the movement left. Doing less brings your next turn sooner.',
         ),
         t(
           'Nas batalhas avulsas, proteja o Farol (o cristal azul) quando houver um.',

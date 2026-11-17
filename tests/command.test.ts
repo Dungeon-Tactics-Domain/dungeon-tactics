@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { commandName } from '../src/client/battle-text.ts';
 import {
   abilityEnabled,
+  COMMANDS,
+  cancelStep,
   canUndoMove,
   commandEnabled,
+  commandIndex,
   longestRange,
   startScreen,
   stepIndex,
+  turnPage,
 } from '../src/client/command.ts';
 import { emptyMemory, padActions } from '../src/client/gamepad.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
@@ -102,6 +107,98 @@ describe('command menu', () => {
   it('an ability without stock is greyed out', () => {
     const b = duel();
     expect(abilityEnabled(b, 'strike')).toBe(true);
+  });
+});
+
+// Nov 16: the names, order and steps of FFT: The Ivalice Chronicles
+describe('command list', () => {
+  it('Move, Abilities, Wait, Status, in the order of the reference', () => {
+    expect(COMMANDS).toEqual(['move', 'act', 'wait', 'status']);
+    expect(COMMANDS.map((c) => commandName(c))).toEqual(['Mover', 'Habilidades', 'Esperar', 'Status']);
+    expect(commandName('move', true)).toBe('Desfazer movimento'); // the reference's Reset
+  });
+
+  it('Status always opens; Abilities closes after acting and in deep water it never opened', () => {
+    const b = duel();
+    expect(COMMANDS.map((c) => commandEnabled(b, c))).toEqual([true, true, true, true]);
+    b.act('strike', { x: 2, y: 1 });
+    expect(commandEnabled(b, 'act')).toBe(false);
+    expect(commandEnabled(b, 'wait') && commandEnabled(b, 'status')).toBe(true);
+  });
+});
+
+describe('Cancel goes back one step', () => {
+  const strike = UNIT_DEFS.warrior.abilities.indexOf('strike');
+  const target = { x: 2, y: 1 };
+
+  it('submenu to the menu on Abilities; Move map to the menu on Move; facing to the menu on Wait', () => {
+    const b = duel();
+    expect(cancelStep(b, { k: 'abilities', index: 2, page: 1 })).toEqual({ k: 'menu', index: commandIndex('act') });
+    expect(cancelStep(b, { k: 'map', command: 'move' })).toEqual({ k: 'menu', index: commandIndex('move') });
+    expect(cancelStep(b, { k: 'facing' })).toEqual({ k: 'menu', index: commandIndex('wait') });
+  });
+
+  it('Act map to the submenu, on the ability that was being aimed', () => {
+    const b = duel();
+    expect(cancelStep(b, { k: 'map', command: 'act' }, 'strike')).toEqual({ k: 'abilities', index: strike });
+    const last = UNIT_DEFS.warrior.abilities.at(-1)!;
+    expect(cancelStep(b, { k: 'map', command: 'act' }, last)).toEqual({
+      k: 'abilities',
+      index: UNIT_DEFS.warrior.abilities.length - 1,
+    });
+  });
+
+  it('preview back to aiming; the lock step back to the preview', () => {
+    const b = duel();
+    expect(cancelStep(b, { k: 'confirm', ability: 'strike', target })).toEqual({ k: 'map', command: 'act' });
+    expect(cancelStep(b, { k: 'confirm', ability: 'strike', target, lock: 'unit' })).toEqual({
+      k: 'confirm',
+      ability: 'strike',
+      target,
+    });
+  });
+
+  it('a self-centred ability never went through the map: its preview goes back to the submenu', () => {
+    const self = Object.keys(ABILITIES).find((id) => ABILITIES[id].range[1] === 0)!;
+    const owner = Object.keys(UNIT_DEFS).find((d) => UNIT_DEFS[d].abilities.includes(self))!;
+    const mine = new Battle(
+      flat(6, 6),
+      stateOf([
+        { id: 'a', def: owner, team: 'hero', x: 1, y: 1 },
+        { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 4 },
+      ]),
+    );
+    expect(cancelStep(mine, { k: 'confirm', ability: self, target: mine.actor.pos })).toEqual({
+      k: 'abilities',
+      index: UNIT_DEFS[owner].abilities.indexOf(self),
+    });
+  });
+
+  it('on the menu: nothing to go back to, or the free move is undone', () => {
+    const b = duel();
+    expect(cancelStep(b, { k: 'menu', index: 0 })).toBeNull();
+    b.move({ x: 2, y: 2 });
+    expect(cancelStep(b, { k: 'menu', index: 1 })).toBe('undo');
+    b.act('strike', target); // the move drew a counter: no longer free
+    expect(cancelStep(b, { k: 'menu', index: 2 })).toBeNull();
+  });
+
+  it('walking the whole way back from the lock step ends on the menu, one screen per Cancel', () => {
+    const b = duel();
+    const seen: string[] = [];
+    let s = cancelStep(b, { k: 'confirm', ability: 'strike', target, lock: 'tile' }, 'strike');
+    while (s && s !== 'undo') {
+      seen.push(s.k === 'confirm' ? 'preview' : s.k === 'map' ? `map:${s.command}` : s.k);
+      s = cancelStep(b, s, 'strike');
+    }
+    expect(seen).toEqual(['preview', 'map:act', 'abilities', 'menu']);
+    expect(s).toBeNull();
+  });
+});
+
+describe('ability sheet page', () => {
+  it('turns both ways and wraps around the three pages', () => {
+    expect([turnPage(0, 1), turnPage(2, 1), turnPage(0, -1), turnPage(1, -1)]).toEqual([1, 0, 2, 0]);
   });
 });
 
