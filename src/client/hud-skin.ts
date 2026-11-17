@@ -1,4 +1,4 @@
-// The battle HUD's experimental looks, localhost only (Fernando, Nov 16): the FFT-style interfaces under comparison,
+// The battle HUD's looks (Fernando, Nov 16; the 3D one is the default since Nov 17): the FFT-style interfaces under comparison,
 // piece by piece, each its own chunk the game online never fetches. ui3d/skin-flags.ts reads which look each piece
 // takes from the address and from a sandbox spec (?menu=, ?turn=, the ?ui= preset and the older ?menu3d, ?turn3d and
 // ?menucss); this file loads them:
@@ -21,7 +21,7 @@ import { skinFlags, specFlags } from './ui3d/skin-flags.ts';
 
 export interface HudSkin {
   menucss?: (root: HTMLElement, commands: HTMLElement, abilities: HTMLElement, act: HudActions) => MenuCss;
-  layer?: (root: HTMLElement, lost: () => void) => Ui3dLayer;
+  layer?: (root: HTMLElement, lost: () => void) => Ui3dLayer | undefined; // undefined: no WebGL, the HTML HUD stays
   menu3d?: (layer: Ui3dLayer, act: HudActions) => Menu3d;
   turn3d?: (layer: Ui3dLayer, queue: HTMLElement) => Turn3d;
   bar3d?: (layer: Ui3dLayer, active: HTMLElement) => Bar3d;
@@ -68,7 +68,13 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   }
   if (skin.menu3d || skin.turn3d || skin.bar3d || skin.hints3d || skin.confirm3d || skin.result3d) {
     const { Ui3dLayer } = await import('./ui3d/layer.ts');
-    skin.layer = (root, lost) => new Ui3dLayer(root, flags.pixel, lost);
+    skin.layer = (root, lost) => {
+      try {
+        return new Ui3dLayer(root, flags.pixel, lost);
+      } catch {
+        return undefined; // no WebGL here (old device, blocked): the HTML HUD is all there is
+      }
+    };
   }
   return skin;
 }

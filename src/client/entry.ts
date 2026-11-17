@@ -43,7 +43,7 @@ async function boot() {
     pixel,
     scenario.spawns.map((s) => s.def),
   ).finally(() => note.remove());
-  const game = new Game(battle, scene, host, pixel, run, LOCAL ? await loadSkin(staged?.spec) : {});
+  const game = new Game(battle, scene, host, pixel, run, await loadSkin(staged?.spec));
   sandbox?.install(game, scene);
   // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
   if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));

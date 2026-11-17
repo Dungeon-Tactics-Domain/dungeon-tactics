@@ -73,56 +73,61 @@ describe('interface looks: one flag reader for the address and the spec', () => 
     return `${menu} ${turn}${pixel ? ' pixel' : ''}`;
   };
 
-  it('without a flag every piece is the HTML one', () => {
+  it('without a flag every piece that has a 3D look takes it, and ?ui=html brings back the HTML one', () => {
     const skin = skinFlags(url(''), specFlags({}));
     expect(skin.pixel).toBe(false);
-    for (const piece of Object.keys(PIECES)) expect(skin[piece as keyof typeof PIECES], piece).toBe('html');
+    for (const [piece, looks] of Object.entries(PIECES))
+      expect(skin[piece as keyof typeof PIECES], piece).toBe(
+        (looks as readonly string[]).includes('3d') ? '3d' : 'html',
+      );
+    const html = skinFlags(url('ui=html'), specFlags({}));
+    for (const piece of Object.keys(PIECES)) expect(html[piece as keyof typeof PIECES], piece).toBe('html');
   });
 
   it.each([
     // one piece each
-    ['menu=3d', '3d html'],
-    ['menu=css', 'css html'],
-    ['turn=3d', 'html 3d'],
+    ['menu=3d', '3d 3d'],
+    ['menu=css', 'css 3d'],
+    ['turn=3d', '3d 3d'],
     ['menu=css&turn=3d', 'css 3d'],
     // the preset sets every piece that has that look
     ['ui=3d', '3d 3d'],
-    ['ui=css', 'css html'],
+    ['ui=css', 'css 3d'],
     ['ui=html', 'html html'],
     // a piece's own flag beats the preset and the shortcut
     ['ui=3d&menu=css', 'css 3d'],
     ['ui=3d&turn=html', '3d html'],
-    ['menu3d&menu=html', 'html html'],
-    ['turn3d&turn=html', 'html html'],
+    ['menu3d&menu=html', 'html 3d'],
+    ['turn3d&turn=html', '3d html'],
     // the older flags still work, and beat the preset
-    ['menu3d', '3d html'],
-    ['menu3d=pixel', '3d html pixel'],
-    ['turn3d', 'html 3d'],
-    ['menucss', 'css html'],
+    ['menu3d', '3d 3d'],
+    ['menu3d=pixel', '3d 3d pixel'],
+    ['turn3d', '3d 3d'],
+    ['menucss', 'css 3d'],
     ['menu3d&turn3d', '3d 3d'],
-    ['menu3d&menucss', '3d html'],
+    ['menu3d&menucss', '3d 3d'],
     ['ui=3d&menucss', 'css 3d'],
     // the pixel filter
     ['ui=3d&pixel=1', '3d 3d pixel'],
-    ['menu=3d&pixel', '3d html pixel'],
-    ['menu3d=pixel&pixel=0', '3d html'],
+    ['menu=3d&pixel', '3d 3d pixel'],
+    ['menu3d=pixel&pixel=0', '3d 3d'],
     // a value the piece does not have is skipped
-    ['menu=big', 'html html'],
-    ['turn=css', 'html html'],
+    ['menu=big', '3d 3d'],
+    ['turn=css', '3d 3d'],
     ['turn=css&ui=3d', '3d 3d'],
-    ['ui=4d', 'html html'],
+    ['ui=4d', '3d 3d'],
   ])('?%s', (q, want) => {
     expect(looks(q)).toBe(want);
   });
 
   it('the address beats the spec, piece by piece', () => {
     expect(looks('', { menu3d: true, turn3d: true })).toBe('3d 3d');
-    expect(looks('', { menu3d: 'pixel' })).toBe('3d html pixel');
+    expect(looks('', { menu3d: 'pixel' })).toBe('3d 3d pixel');
     expect(looks('', { ui: '3d', uiPixel: true })).toBe('3d 3d pixel');
-    expect(looks('', { ui: 'css' })).toBe('css html');
+    expect(looks('', { ui: 'css' })).toBe('css 3d');
     expect(looks('menu=css', { menu3d: true, turn3d: true })).toBe('css 3d');
     expect(looks('ui=html', { menu: '3d', turn: '3d' })).toBe('html html');
-    expect(looks('menucss', { menu: '3d' })).toBe('css html');
+    expect(looks('menucss', { menu: '3d' })).toBe('css 3d');
     expect(looks('pixel=0', { ui: '3d', uiPixel: true })).toBe('3d 3d');
     // the spec's own `pixel` is the scene's pixel art, not the filter
     expect(looks('', { ui: '3d', pixel: 3 })).toBe('3d 3d');

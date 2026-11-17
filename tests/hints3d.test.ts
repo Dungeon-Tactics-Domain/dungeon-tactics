@@ -144,12 +144,13 @@ describe('3D banner, Height and hints: flags and scenes', () => {
       const { banner, height, hints } = skinFlags((n) => p.get(n), specFlags(spec));
       return `${banner} ${height} ${hints}`;
     };
-    expect(flags('')).toBe('html html html');
-    expect(flags('height=3d')).toBe('html 3d html');
-    expect(flags('banner=3d&hints=3d')).toBe('3d html 3d');
+    expect(flags('')).toBe('3d 3d 3d');
+    expect(flags('ui=html')).toBe('html html html');
+    expect(flags('height=html')).toBe('3d html 3d');
+    expect(flags('banner=html&hints=html')).toBe('html 3d html');
     expect(flags('ui=3d')).toBe('3d 3d 3d');
-    expect(flags('hints=html', { banner: '3d', hints: '3d' })).toBe('3d html html');
-    expect(flags('banner=css')).toBe('html html html');
+    expect(flags('hints=html', { banner: '3d', hints: '3d' })).toBe('3d 3d html');
+    expect(flags('banner=css')).toBe('3d 3d 3d');
   });
 
   it('the bench scenes are valid specs, and a look a piece does not have fails', () => {

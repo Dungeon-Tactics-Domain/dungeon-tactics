@@ -5,7 +5,8 @@
 //   ?menu3d, ?menu3d=pixel, ?menucss, ?turn3d   the older flags, kept as shortcuts
 //   ?pixel=1                           the 3D pieces through the pixel filter (as ?menu3d=pixel)
 // A piece's own flag beats a shortcut, a shortcut beats the preset, and the address beats the spec, piece by piece. A
-// value a piece does not have is skipped. Without a flag every piece is the HTML one of always.
+// value a piece does not have is skipped. Without a flag every piece that has a 3D look takes it (Fernando, Nov 17: the 3D
+// interface is the default); ?ui=html brings back the HTML one of always, ?ui=css the parchment menu.
 // PIECES is also what the labs page builds its selector from (scripts/sandbox/bench/ui-pecas.json, kept equal by
 // tests/layout.test.ts). Pure and tested.
 
@@ -59,7 +60,8 @@ function pixel(f: Flags): boolean | undefined {
 export function skinFlags(...sources: Flags[]): Skin {
   const first = <T>(read: (f: Flags) => T | undefined) => sources.map(read).find((v) => v !== undefined);
   const skin = { pixel: first(pixel) ?? false } as Skin;
-  for (const piece of Object.keys(PIECES) as Piece[]) skin[piece] = first((f) => look(piece, f)) ?? 'html';
+  for (const piece of Object.keys(PIECES) as Piece[])
+    skin[piece] = first((f) => look(piece, f)) ?? (has(piece, '3d') ? '3d' : 'html');
   return skin;
 }
 

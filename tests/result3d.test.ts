@@ -134,12 +134,13 @@ describe('3D result: where it sits', () => {
 describe('3D result: flag and bench scenes', () => {
   const url = (q: string) => (name: string) => new URLSearchParams(q).get(name);
 
-  it('?result=3d, the preset and a spec turn it on; without a flag it is the HTML window', () => {
-    expect(skinFlags(url('')).result).toBe('html');
+  it('?result=3d, the preset and a spec turn it on; the 3D window is the default', () => {
+    expect(skinFlags(url('')).result).toBe('3d');
+    expect(skinFlags(url('ui=html')).result).toBe('html');
     expect(skinFlags(url('result=3d')).result).toBe('3d');
     expect(skinFlags(url('ui=3d')).result).toBe('3d');
     expect(skinFlags(url('ui=3d&result=html')).result).toBe('html');
-    expect(skinFlags(url('result=css')).result).toBe('html');
+    expect(skinFlags(url('result=css')).result).toBe('3d');
     expect(skinFlags(url(''), specFlags({ result: '3d' })).result).toBe('3d');
     expect(parseSpec({ result: 'css' }).problems).toEqual(['result must be one of html, 3d']);
   });

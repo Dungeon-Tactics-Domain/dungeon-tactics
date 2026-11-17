@@ -158,13 +158,14 @@ describe('3D combat bar: where it sits', () => {
 describe('3D combat bar: flag and boundaries', () => {
   const url = (q: string) => (name: string) => new URLSearchParams(q).get(name);
 
-  it('?bar=3d turns it on, the 3d preset too, and nothing else does', () => {
-    expect(skinFlags(url('')).bar).toBe('html');
+  it('the 3D bar is the default; ?bar=html and ?ui=html turn it off, and a look it does not have is skipped', () => {
+    expect(skinFlags(url('')).bar).toBe('3d');
+    expect(skinFlags(url('ui=html')).bar).toBe('html');
     expect(skinFlags(url('bar=3d')).bar).toBe('3d');
     expect(skinFlags(url('ui=3d')).bar).toBe('3d');
     expect(skinFlags(url('ui=3d&bar=html')).bar).toBe('html');
-    expect(skinFlags(url('bar=css')).bar).toBe('html');
-    expect(skinFlags(url('menu=3d&turn=3d')).bar).toBe('html');
+    expect(skinFlags(url('bar=css')).bar).toBe('3d');
+    expect(skinFlags(url('menu=3d&turn=3d')).bar).toBe('3d');
   });
 
   it('a spec names the look, and its bench scenes are valid', () => {
