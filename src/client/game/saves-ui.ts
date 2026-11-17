@@ -7,6 +7,7 @@ import { button, el } from '../icons.ts';
 import { byPlayed, deleteSlot, loadSlot, newGame, readSaves, type SlotSummary, summary } from '../saves.ts';
 import { store } from '../store.ts';
 import { goHome, savedRoom } from './crawl.ts';
+import { showSheet } from './sheets.ts';
 
 // through store, so a blocked browser storage still plays in this tab's memory like every other save
 const live = { getItem: store.get, setItem: store.set, saved: store.saved };
@@ -54,45 +55,43 @@ const when = (ms: number) => new Date(ms).toLocaleString(LOCALE, { dateStyle: 's
 // first row since Nov 15). The game has no levels and counts no play time: the gold and the date stand in their place
 export function openSaves(onBack: () => void) {
   const games = savedGames();
-  const rows = [...games]
-    .sort((a, b) => a.id - b.id)
-    .flatMap((s) => [
-      button(
-        `secondary save-load${s === games[0] ? ' latest' : ''}`,
-        [
-          el('span', { class: 'save-no' }, String(s.id).padStart(2, '0')),
-          stillFace(s.leader, 'neutral'),
-          el(
-            'span',
-            { class: 'save-text' },
-            el('span', {}, s.names.join(' · ')),
-            el(
-              'small',
-              { class: 'continue-where' },
-              where(s) + (s === games[0] ? t(' · mais recente', ' · latest') : ''),
-            ),
-          ),
-          el(
-            'span',
-            { class: 'save-text save-meta' },
-            el('span', {}, t(`${s.gold} de ouro`, `${s.gold} gold`)),
-            el('small', { class: 'continue-where' }, s.played ? when(s.played) : '—'),
-          ),
-        ],
-        () => {
-          if (!loadSlot(live, s.id)) return full();
-          d.close();
-          resume();
-        },
-      ),
-      button('secondary save-delete', t('Apagar', 'Delete'), (e: Event) => {
-        if (!secondTap(e, t('Confirmar: apagar este jogo', 'Confirm: delete this game'))) return;
-        if (!deleteSlot(live, s.id)) return full();
+  const inOrder = [...games].sort((a, b) => a.id - b.id);
+  const place = (s: SlotSummary) => where(s) + (s === games[0] ? t(' · mais recente', ' · latest') : '');
+  const gold = (s: SlotSummary) => t(`${s.gold} de ouro`, `${s.gold} gold`);
+  const played = (s: SlotSummary) => (s.played ? when(s.played) : '—');
+  const rows = inOrder.flatMap((s) => [
+    button(
+      `secondary save-load${s === games[0] ? ' latest' : ''}`,
+      [
+        el('span', { class: 'save-no' }, String(s.id).padStart(2, '0')),
+        stillFace(s.leader, 'neutral'),
+        el(
+          'span',
+          { class: 'save-text' },
+          el('span', {}, s.names.join(' · ')),
+          el('small', { class: 'continue-where' }, place(s)),
+        ),
+        el(
+          'span',
+          { class: 'save-text save-meta' },
+          el('span', {}, gold(s)),
+          el('small', { class: 'continue-where' }, played(s)),
+        ),
+      ],
+      () => {
+        if (!loadSlot(live, s.id)) return full();
         d.close();
-        if (savedGames().length) openSaves(onBack);
-        else onBack();
-      }),
-    ]);
+        resume();
+      },
+    ),
+    button('secondary save-delete', t('Apagar', 'Delete'), (e: Event) => {
+      if (!secondTap(e, t('Confirmar: apagar este jogo', 'Confirm: delete this game'))) return;
+      if (!deleteSlot(live, s.id)) return full();
+      d.close();
+      if (savedGames().length) openSaves(onBack);
+      else onBack();
+    }),
+  ]);
   const d = dialog(
     'title',
     t('Continuar', 'Continue'),
@@ -105,4 +104,17 @@ export function openSaves(onBack: () => void) {
   );
   d.overlay.classList.add('save-slots');
   d.overlay.querySelector<HTMLButtonElement>('.save-load.latest')?.focus();
+  showSheet(d.overlay, {
+    title: t('Continuar', 'Continue'),
+    note: savedCount(games.length),
+    rows: inOrder.map((s) => ({
+      no: String(s.id).padStart(2, '0'),
+      face: s.leader,
+      name: s.names.join(' · '),
+      sub: place(s),
+      right: gold(s),
+      rightSub: played(s),
+      side: true,
+    })),
+  });
 }

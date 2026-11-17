@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { fits, itemBox, optionsLayout, REF, shown, thumb } from '../src/client/flow3d/options-layout.ts';
 import { optionsView } from '../src/client/flow3d/options-view.ts';
+import {
+  flow,
+  rowBox,
+  REF as SHEET,
+  scrollOf,
+  sheetLayout,
+  shown as sheetShown,
+  thumb as sheetThumb,
+  sideBox,
+  stops,
+} from '../src/client/flow3d/sheet-layout.ts';
 import { REF as TITLE, titleLayout } from '../src/client/flow3d/title-layout.ts';
 import { percent, pick } from '../src/client/option-row.ts';
+import { neighbour } from '../src/client/ui3d/walk.ts';
 
 // The flow screens in 3D (flow3d/; Nov 17): the pure parts behind the drawing. The drawing itself and the real
 // controls under it are checked on the bench (docs/media/ui3d-fluxo-telas)
@@ -133,5 +145,120 @@ describe('3D title: where it sits', () => {
     expect(end).toBeLessThan(L.foot.y - 8);
     expect(L.lang.y + L.lang.h).toBeLessThanOrEqual(648);
     expect(L.lang.x).toBeGreaterThan(L.rows[0].x + L.rows[0].w); // beside the list, never over it
+  });
+});
+
+describe('3D sheets: where a window of the title or of Options sits', () => {
+  it('is the reference at 1920x1080: the parchment, a row per saved game, Delete at its right end, Back under it', () => {
+    const L = sheetLayout(1920, 1080, { tall: true, side: true });
+    expect(L.panel).toEqual(SHEET.panel);
+    expect(L.rowH).toBe(SHEET.save);
+    const row = rowBox(L, 1, 0),
+      del = sideBox(L, 1, 0);
+    expect(row).toEqual({ x: 374, y: 216 + 96, w: 1172 - SHEET.side, h: 96 });
+    // Delete: beside its row, inside the row's height, ending where the list ends
+    expect(del.x).toBeGreaterThanOrEqual(row.x + row.w);
+    expect(del.x + del.w).toBe(L.box.x + L.box.w);
+    expect(del.y).toBeGreaterThan(row.y);
+    expect(del.y + del.h).toBeLessThan(row.y + row.h);
+    expect(L.foot).toEqual([{ x: 750, y: 930, w: 420, h: 56 }]);
+  });
+
+  it('puts the link plate left of Back, the pair centred', () => {
+    const [link, back] = sheetLayout(1920, 1080, { link: true }).foot;
+    expect(link.x + link.w).toBeLessThan(back.x);
+    expect(link.x + (back.x + back.w - link.x) / 2).toBe(960);
+  });
+
+  it('never goes under a 44 px row or plate', () => {
+    const L = sheetLayout(1152, 648);
+    expect(L.rowH).toBe(44);
+    expect(L.foot[0].h).toBe(44);
+    expect(sideBox(sheetLayout(1152, 648, { side: true }), 0, 0).h).toBeLessThanOrEqual(44);
+  });
+
+  it('fades a row leaving the sheet, and follows the window by the share it scrolled', () => {
+    const L = sheetLayout(1920, 1080);
+    expect(sheetShown(L, 0, 68)).toBe(1);
+    expect(sheetShown(L, -34, 68)).toBe(0);
+    expect(sheetShown(L, L.box.h - 51, 68)).toBe(0.5);
+    expect(scrollOf(L, L.box.h + 300, 0.5)).toBe(150);
+    expect(scrollOf(L, L.box.h - 10, 1)).toBe(0);
+    expect(sheetThumb(L, L.box.h, 0)).toBeNull();
+    const top = sheetThumb(L, L.box.h * 2, 0),
+      end = sheetThumb(L, L.box.h * 2, L.box.h);
+    expect(top?.y).toBe(L.box.y);
+    expect((end?.y ?? 0) + (end?.h ?? 0)).toBe(L.box.y + L.box.h);
+  });
+
+  it('lays the text top to bottom: a heading with its rule, a wrapped line, a key beside what it does', () => {
+    const L = sheetLayout(1920, 1080);
+    const { lines, height } = flow(
+      [
+        { k: 'head', str: 'Keys' },
+        { k: 'text', str: 'one two' },
+        { k: 'item', str: 'water', mark: 'water' },
+        { k: 'key', key: 'Enter', str: 'confirm' },
+      ],
+      L,
+      (str) => str.split(' '),
+    );
+    expect(lines.map((l) => l.str)).toEqual(['Keys', 'one', 'two', 'water', 'Enter', 'confirm']);
+    expect(lines[0].rule).toBe(true);
+    expect(lines[3]).toMatchObject({ mark: 'water', x: SHEET.indent });
+    // the key and its text share a line; every other line sits under the one before
+    expect(lines[5]).toMatchObject({ top: lines[4].top, x: SHEET.keyW, ink: 'soft' });
+    for (const i of [1, 2, 3, 4]) expect(lines[i].top).toBeGreaterThanOrEqual(lines[i - 1].top + lines[i - 1].h);
+    expect(height).toBeGreaterThan(lines[5].top + lines[5].h);
+  });
+});
+
+// Fernando, Nov 17: the keys and the pad follow what is seen
+describe('3D cursor: an arrow goes to the box seen that way', () => {
+  // the saved games: three rows with Delete beside each, Back under the list
+  const L = sheetLayout(1920, 1080, { tall: true, side: true });
+  const boxes = stops(L, [true, true, true]);
+  const [row0, del0, row1, del1, row2, del2, back] = [0, 1, 2, 3, 4, 5, 6];
+
+  it('down: the row right under, never the Delete beside', () => {
+    expect(neighbour(boxes, row0, 'down')).toBe(row1);
+    expect(neighbour(boxes, del0, 'down')).toBe(del1);
+    expect(neighbour(boxes, row2, 'down')).toBe(back);
+  });
+  it('up: the row right over', () => {
+    expect(neighbour(boxes, row2, 'up')).toBe(row1);
+    expect(neighbour(boxes, del1, 'up')).toBe(del0);
+    expect(neighbour(boxes, back, 'up')).toBe(row2);
+  });
+  it('right: the Delete of the same row', () => {
+    expect(neighbour(boxes, row1, 'right')).toBe(del1);
+  });
+  it('left: back to its row', () => {
+    expect(neighbour(boxes, del2, 'left')).toBe(row2);
+  });
+  it('the last row: down goes to Back from the row and from its Delete, with three saved games or with nine', () => {
+    expect(neighbour(boxes, del2, 'down')).toBe(back);
+    const nine = stops(L, Array(9).fill(true));
+    expect(neighbour(nine, 16, 'down')).toBe(18);
+    expect(neighbour(nine, 17, 'down')).toBe(18);
+    expect(neighbour(nine, 18, 'up')).toBe(16);
+    expect(neighbour(nine, 15, 'down')).toBe(17);
+  });
+  it('stays where it is at each edge: no wrap, no jump', () => {
+    expect(neighbour(boxes, row0, 'up')).toBe(row0);
+    expect(neighbour(boxes, del0, 'up')).toBe(del0);
+    expect(neighbour(boxes, back, 'down')).toBe(back);
+    expect(neighbour(boxes, row1, 'left')).toBe(row1);
+    expect(neighbour(boxes, del1, 'right')).toBe(del1);
+    expect(neighbour(boxes, back, 'left')).toBe(back);
+    expect(neighbour(boxes, back, 'right')).toBe(back);
+    expect(neighbour(boxes, -1, 'down')).toBe(-1);
+  });
+  it('two plates side by side: left and right walk them, up and down do not', () => {
+    const foot = sheetLayout(1920, 1080, { link: true }).foot;
+    expect(neighbour(foot, 0, 'right')).toBe(1);
+    expect(neighbour(foot, 1, 'left')).toBe(0);
+    expect(neighbour(foot, 0, 'down')).toBe(0);
+    expect(neighbour(foot, 1, 'up')).toBe(1);
   });
 });

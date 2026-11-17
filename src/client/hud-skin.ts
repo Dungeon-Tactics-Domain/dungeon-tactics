@@ -79,6 +79,10 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Title3d } = await import('./flow3d/title3d.ts');
     (skin.flow3d ??= []).push((layer) => new Title3d(layer));
   }
+  if (flags.sheets === '3d') {
+    const { Sheet3d } = await import('./flow3d/sheet3d.ts');
+    (skin.flow3d ??= []).push((layer) => new Sheet3d(layer));
+  }
   if (flags.tools === '3d') {
     const { Tools3d } = await import('./window3d/tools3d.ts');
     skin.tools3d = (layer, tools) => new Tools3d(layer, tools);

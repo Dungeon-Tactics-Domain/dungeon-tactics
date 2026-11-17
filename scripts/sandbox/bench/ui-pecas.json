@@ -14,6 +14,7 @@
     "shop": ["html", "3d"],
     "options": ["html", "3d"],
     "title": ["html", "3d"],
+    "sheets": ["html", "3d"],
     "tools": ["html", "3d"],
     "status": ["html", "3d"]
   },

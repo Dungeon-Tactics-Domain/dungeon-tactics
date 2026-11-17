@@ -4106,6 +4106,88 @@ body:has(.main-title.title3d) .hud > .ui3d-layer {
   visibility: visible;
 }
 
+/* ---- 3D sheets (?sheets=3d; src/client/flow3d/sheet3d.ts) ---- */
+/* The windows the title and Options open (saved games, quick battle, how to play, credits, tile marks,
+   controls) are drawn in 3D on the layer. Each window stays, unseen (by opacity: its buttons must still take the
+   focus), its own box moved onto the drawn sheet's scrolling window (sheet3d.ts sets its place and the --s3-* sizes),
+   so the wheel, a finger and the focus scroll it and the drawing follows. Not positioned: its ✕ (the drawn Back) and
+   its link (the plate beside it) are placed on the page, outside its scroll */
+.overlay.sheet3d {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.overlay.sheet3d > .dialog {
+  position: static;
+  box-sizing: border-box;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden auto;
+  scrollbar-width: none;
+  opacity: 0;
+}
+/* the drawn text is larger than the window's: room for the scroll to go as far as the drawing does */
+.overlay.sheet3d > .dialog::after {
+  content: "";
+  display: block;
+  height: var(--s3-more, 0);
+}
+.overlay.sheet3d .dialog-head {
+  display: contents;
+}
+.overlay.sheet3d .dialog-head > :not(button) {
+  display: none;
+}
+.overlay.sheet3d .dialog-head > button,
+.overlay.sheet3d .dialog a[href] {
+  position: absolute;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+/* a text's own Back, at its end: the pad's way down the text, never under the mouse */
+.overlay.sheet3d .dialog > button {
+  pointer-events: none;
+}
+.overlay.sheet3d-list .camp-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: var(--s3-row);
+  gap: 0;
+  min-width: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+}
+.overlay.sheet3d-list .save-list {
+  grid-template-columns: minmax(0, 1fr) var(--s3-side);
+}
+.overlay.sheet3d-list .camp-list > button {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+body:has(.overlay.sheet3d) .hud > :not(.ui3d-layer),
+body:has(.overlay.sheet3d) .fps {
+  visibility: hidden;
+}
+body:has(.overlay.sheet3d) .hud > .ui3d-layer {
+  visibility: visible;
+}
+
 /* ---- 3D corner menu (?tools=3d; src/client/window3d/tools3d.ts) ---- */
 /* The menu button, Back and the open list are drawn on the 3D layer over the HTML ones, which stay in place unseen
    (opacity, not visibility: their real buttons take the mouse and the taps, and the sandbox's `hide` hides the drawing

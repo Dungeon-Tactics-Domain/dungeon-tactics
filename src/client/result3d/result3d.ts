@@ -14,10 +14,12 @@ import { dialog } from '../dialog.ts';
 import { type Board, resultBoard, setBoard3d } from '../game/end-screens.ts';
 import { el } from '../icons.ts';
 import { alpha, clamp01, Icon, move } from '../menu3d/column.ts';
+import { type Faces, faceMesh } from '../ui3d/face.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { bandMaterial, quad, type Rgb } from '../ui3d/panel.ts';
 import { land, spring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
+import { neighbour, type Way } from '../ui3d/walk.ts';
 import { type Box, REF, type ResultLayout, resultLayout } from './result-layout.ts';
 import { type ResultView, resultView } from './result-view.ts';
 
@@ -50,6 +52,7 @@ export class Result3d implements Ui3dScreen {
   private win?: { overlay: HTMLElement; close(): void };
   private html?: { close(): void }; // the HTML window that took over after the context was lost
   private parts: Part[] = [];
+  private readonly faces: Faces = new Map();
   private buttons: ShaderMaterial[] = [];
   private focus = 0;
 
@@ -89,6 +92,14 @@ export class Result3d implements Ui3dScreen {
     );
     this.host.replaceChildren(...board.actions);
     this.win = dialog('result3d', board.title, [this.host], { onBack: board.onBack });
+    // the arrows and the d-pad go to the button seen that way, and stay with none there (dialog.ts `walked`)
+    this.win.overlay.addEventListener('walk', (e) => {
+      const boxes = this.at?.buttons;
+      if (!boxes) return;
+      e.preventDefault();
+      const at = board.actions.indexOf(document.activeElement as HTMLButtonElement);
+      board.actions[neighbour(boxes, at < 0 ? this.focus : at, (e as CustomEvent<Way>).detail)]?.focus();
+    });
     // Enter takes the primary, as in the HTML board: the board lists it first (the last one took the focus, and Enter
     // after a victory went to the town instead of playing again)
     (board.actions.find((b) => b.classList.contains('primary')) ?? board.actions[0])?.focus();
@@ -163,15 +174,32 @@ export class Result3d implements Ui3dScreen {
     // what the battle gave and each hero's line, under the left plate
     plate(L.left, c.plate, 0.95, 0.25, 62);
     put(text(v.heads[0], REF.head, c.text), L.left.x + L.left.w / 2, middle(L.left), 'centre', 0.25);
+    // each hero: face, name, class and life, then what it did under the two columns' names (the HTML board's row)
+    if (v.heroes.length) {
+      put(text(v.did[0], REF.did, c.soft), L.did.dmg, L.did.y, 'right', 0.3);
+      put(text(v.did[1], REF.did, c.soft), L.did.kills, L.did.y, 'right', 0.3);
+    }
     v.heroes.forEach((h, i) => {
       const b = L.heroes[i],
-        at = 0.3 + 0.05 * i,
-        fell = h.tone === 'fell';
-      const name = put(text(h.name, REF.row, fell ? c.soft : c.text), b.x, middle(b), 'left', at);
-      const life = put(text(h.life, REF.row, c.soft), b.x + name.scale.x + 10 * s, middle(b), 'left', at);
-      const room = b.w - name.scale.x - life.scale.x - 30 * s;
-      const hex = h.tone === 'gain' ? c.note : fell ? c.soft : c.text;
-      put(text(h.line, REF.row, hex), b.x + b.w, middle(b), 'right', at, room);
+        at = 0.3 + 0.05 * (i + 1),
+        fell = h.tone === 'fell',
+        gap = 10 * s;
+      const face = faceMesh(this.faces, h.def, h.face, L.faces[i], () => layer.wake(), fell);
+      face.renderOrder = 63;
+      add(face, 1, at);
+      // the numbers first: the words before them take the room that is left, the name the last to shrink
+      put(text(h.kills, REF.row, fell ? c.soft : c.text), L.did.kills, middle(b), 'right', at);
+      put(text(h.dmg, REF.row, fell ? c.soft : c.text), L.did.dmg, middle(b), 'right', at);
+      let x = b.x + L.who;
+      const end = L.did.dmg - 70 * s; // the damage column's own room
+      const word = (str: string, size: number, hex: string, room: number) => {
+        if (!str || room < 24 * s) return;
+        x += put(text(str, size, hex), x, middle(b), 'left', at, room).scale.x + gap;
+      };
+      word(h.name, REF.row, fell ? c.soft : c.text, end - x);
+      word(h.cls, REF.did, c.soft, end - x);
+      word(h.life, REF.row, c.soft, end - x);
+      word(h.line, REF.did, h.tone === 'gain' ? c.note : c.soft, end - x);
     });
     v.spoils.forEach(([k, value], i) => {
       const b = L.spoils[i],
@@ -253,6 +281,7 @@ export class Result3d implements Ui3dScreen {
     setBoard3d();
     this.layer.remove(this);
     this.glove.dispose();
+    for (const tex of this.faces.values()) tex.dispose();
     this.host.remove();
     if (board) this.html = resultBoard(board);
   }
