@@ -4,6 +4,7 @@
 // pages from the saved game; nothing here touches the DOM or Three.js. Tested in tests/town3d.test.ts.
 import type { Act } from '../glyphs.ts';
 import type { Box } from '../ui3d/layout.ts';
+import { neighbour as seenThatWay } from '../ui3d/walk.ts';
 import { T } from './town-layout.ts';
 
 export type { Box };
@@ -86,6 +87,33 @@ export function neighbour(hits: Hit[], at: string, dir: Dir, tol = 8): string | 
     if (!best || far < best.far || (far === best.far && off < best.off)) best = { id: h.id, far, off };
   }
   return best?.id;
+}
+
+// The buttons the cursor can go to, where they are seen: the ones that are on, the list's rows moved up by its scroll
+// (`top`, px of the reference) and only those in the list's window or peeking at its edge (the next row up or down).
+// So the cursor that leaves a row goes to the command level with it on screen, comes back to the row level with a
+// command, and never lands on a row scrolled out of sight
+export function seen(page: Page, top: number): Hit[] {
+  const L = page.list;
+  return page.hits.flatMap((h) => {
+    if (h.off) return [];
+    if (h.row === undefined || !L) return [h];
+    const y = h.box.y - top;
+    return y + h.box.h > L.box.y - L.rowH && y < L.box.y + L.box.h + L.rowH ? [{ ...h, box: { ...h.box, y } }] : [];
+  });
+}
+
+// Where an arrow takes the cursor from the button `at`: the one seen on that side (ui3d/walk.ts), or where it is
+export function step(page: Page, top: number, at: string, dir: Dir): string | undefined {
+  const hits = seen(page, top);
+  const boxes = hits.map((h) => h.box);
+  return hits[
+    seenThatWay(
+      boxes,
+      hits.findIndex((h) => h.id === at),
+      dir,
+    )
+  ]?.id;
 }
 
 export const fill = (box: Box, tone: Tone, o: Partial<Fill> = {}): Fill => ({ k: 'fill', box, tone, ...o });

@@ -7,6 +7,7 @@ import {
   canUndoMove,
   commandEnabled,
   commandIndex,
+  lockStep,
   longestRange,
   startScreen,
   stepIndex,
@@ -96,6 +97,16 @@ describe('command menu', () => {
     expect(b.reach().size).toBeGreaterThan(0);
     // the Move row reads "Undo move" now: a 2nd Enter on it would undo the step
     expect(startScreen(b)).toEqual({ k: 'menu', index: 2 });
+  });
+
+  // Fernando, Nov 17: the cursor follows what is seen. "On the character" sits left of "On the tile"
+  it('the lock step: left and right go to the choice on that side, stay at the end, and up and down do nothing', () => {
+    expect(lockStep('tile', 'left')).toBe('unit');
+    expect(lockStep('unit', 'right')).toBe('tile');
+    expect(lockStep('unit', 'left')).toBe('unit'); // the left end: no way round
+    expect(lockStep('tile', 'right')).toBe('tile'); // the right end
+    for (const lock of ['unit', 'tile'] as const)
+      for (const dir of ['up', 'down'] as const) expect(lockStep(lock, dir)).toBe(lock);
   });
 
   it('up and down skip what is disabled and wrap around', () => {

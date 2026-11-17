@@ -16,7 +16,7 @@ import { place, REGIONS } from '../ui3d/layout.ts';
 import { bandMaterial, paintTexture, paperMaterial, QUAD, QUAD_VERT, quad, type Rgb } from '../ui3d/panel.ts';
 import { land, spring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
-import type { Box, Hit, Ink, Item, Page, Tone } from './page.ts';
+import { type Box, type Dir, type Hit, type Ink, type Item, type Page, step, type Tone } from './page.ts';
 import { T } from './town-layout.ts';
 
 const rgb = (hex: string): Rgb => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16) / 255) as Rgb;
@@ -32,7 +32,7 @@ export interface WindowOpts {
   pick(id: string): void; // a button pressed
   focus?(id: string): void; // the cursor landed on a button
   key?(e: KeyboardEvent): void; // a key the window did not take (left and right turn the Party's pages)
-  byPlace?: boolean; // the arrows and the pad come to `key`, which goes to the neighbour on that side (page.ts)
+  byPlace?: boolean; // an arrow `key` left (the pad's come as arrows: dialog.ts) goes to the button seen that way
 }
 export interface Window3d {
   // draws the page; `focus`: the button the cursor goes to ('' the page's own start), where it is when absent
@@ -131,7 +131,7 @@ export class Town3d implements Ui3dScreen {
       const at = id(e);
       if (at) this.opts?.pick(at);
     });
-    this.hits.addEventListener('keydown', (e) => this.opts?.key?.(e));
+    this.hits.addEventListener('keydown', (e) => this.key(e));
     this.scroller.addEventListener('scroll', () => this.layer.wake());
     layer.add(this);
   }
@@ -154,6 +154,14 @@ export class Town3d implements Ui3dScreen {
       at: () => this.focus,
       close: () => win.close(),
     };
+  }
+
+  private key(e: KeyboardEvent) {
+    this.opts?.key?.(e);
+    if (e.defaultPrevented || !this.opts?.byPlace || !this.page || !e.key.startsWith('Arrow')) return;
+    e.preventDefault();
+    const top = this.scroller.scrollTop / this.layer.stage.s;
+    this.buttons.get(step(this.page, top, this.focus, e.key.slice(5).toLowerCase() as Dir) ?? '')?.focus();
   }
 
   private hide() {
@@ -355,15 +363,7 @@ export class Town3d implements Ui3dScreen {
     for (const { mesh, hit } of this.plates) {
       const on = hit.id === this.focus,
         dark = hit.on === 'dark';
-      const c = dark
-        ? on
-          ? this.lit.gold
-          : hit.picked
-            ? this.lit.picked
-            : this.lit.plate
-        : on
-          ? this.lit.paper
-          : this.lit.band;
+      const c = this.lit[dark ? (on ? 'gold' : hit.picked ? 'picked' : 'plate') : on ? 'paper' : 'band'];
       const u = (mesh.material as ShaderMaterial).uniforms;
       u.uColor.value.set(...c);
       u.uAlpha.value = o * shown(hit.row) * (dark ? (hit.off ? 0.55 : 0.94) : on ? 1 : hit.picked ? 0.55 : 0);

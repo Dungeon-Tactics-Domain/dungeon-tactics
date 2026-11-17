@@ -12,9 +12,10 @@ import { setTitle3d } from '../game/title.ts';
 import { Part } from '../hints3d/hints3d.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { ease } from '../ui3d/spring.ts';
+import { neighbour, type Way } from '../ui3d/walk.ts';
 import { type Colors, colors, FOCUS, Hand, label, lift, put, rgba } from './draw.ts';
 import { fits } from './options-layout.ts';
-import { REF, type TitleLayout, titleLayout } from './title-layout.ts';
+import { REF, stops, type TitleLayout, titleLayout } from './title-layout.ts';
 
 export class Title3d implements Ui3dScreen {
   readonly flat = new Group();
@@ -28,6 +29,16 @@ export class Title3d implements Ui3dScreen {
   private at?: TitleLayout;
   private open = 0;
   private readonly wake = () => this.layer.wake();
+  // An arrow or the d-pad (dialog.ts `walked`): the cursor goes to the control seen that way, and stays where it is
+  // with none there: no way round from the last command to the first
+  private readonly walk = (e: Event) => {
+    const L = this.at,
+      els = [...this.rows, ...(this.lang ? [this.lang] : [])];
+    if (!this.taken || !L) return;
+    e.preventDefault();
+    const at = els.indexOf(document.activeElement as HTMLButtonElement);
+    els[at < 0 ? 0 : neighbour(stops(L, !!this.lang), at, (e as CustomEvent<Way>).detail)]?.focus();
+  };
 
   constructor(private readonly layer: Ui3dLayer) {
     this.color = colors(layer);
@@ -48,6 +59,7 @@ export class Title3d implements Ui3dScreen {
     this.drop();
     this.title = overlay;
     overlay.addEventListener('focusin', this.wake);
+    overlay.addEventListener('walk', this.walk);
     this.open = 0;
     this.resize();
   }
@@ -157,6 +169,7 @@ export class Title3d implements Ui3dScreen {
   dispose() {
     this.drop(); // the layer went (a lost context): the HTML title is still there, seen again
     this.title?.removeEventListener('focusin', this.wake);
+    this.title?.removeEventListener('walk', this.walk);
     setTitle3d();
     this.layer.remove(this);
     this.hand.dispose();

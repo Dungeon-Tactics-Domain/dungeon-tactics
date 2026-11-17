@@ -14,6 +14,7 @@ import {
   canUndoMove,
   commandEnabled,
   commandIndex,
+  lockStep,
   needsLock,
   type Screen,
   startScreen,
@@ -107,10 +108,10 @@ export class HeroTurn {
       return;
     }
     if (s.k === 'confirm') {
-      // the preview has nothing to toggle; only the lock step has two choices
-      if (a.k === 'cursor' && s.lock) {
+      // the preview has nothing to toggle; only the lock step has two choices, side by side
+      if (a.k === 'cursor' && s.lock && lockStep(s.lock, a.dir) !== s.lock) {
         sfx('cursor');
-        this.screen = { ...s, lock: s.lock === 'unit' ? 'tile' : 'unit' };
+        this.screen = { ...s, lock: lockStep(s.lock, a.dir) };
         return this.game.update(this.ui);
       }
       if (a.k === 'confirm') return void (s.lock ? this.pickLock(s.lock) : this.answer(true));

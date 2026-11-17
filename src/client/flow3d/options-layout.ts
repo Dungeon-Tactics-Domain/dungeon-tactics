@@ -5,6 +5,7 @@
 // frame, whatever layout the battle pieces take. One layout for what is drawn and for the real controls under it. Pure
 // and tested (tests/flow3d.test.ts): no DOM, no Three.
 import { type Box, MIN_SCALE, SCREEN, type Stage, stage } from '../ui3d/layout.ts';
+import { neighbour, type Way } from '../ui3d/walk.ts';
 
 export type { Box };
 
@@ -109,6 +110,20 @@ export const itemBox = (L: OptionsLayout, i: number, scroll: number): Box => ({
   w: L.list.w,
   h: (L.tops[i + 1] ?? L.content) - L.tops[i],
 });
+// Where an arrow or the d-pad takes the cursor (Fernando, Nov 17: it follows what is seen). `at` counts the list's
+// rows (its heads left out), then the buttons. Up and down stay in their own column: a row goes to the row over or
+// under it and the list's two ends meet (the last rows are the only ones that reach the buttons, since left and right
+// change a row's value: one press up from the top, not nineteen down); a button stays at its column's ends. Left and
+// right go to what is seen that way (ui3d/walk.ts): from a button to the row level with it, from a row to the buttons
+export function optionsWalk(L: OptionsLayout, heads: readonly boolean[], scroll: number, at: number, way: Way): number {
+  const rows = heads.flatMap((head, i) => (head ? [] : [itemBox(L, i, scroll)]));
+  const n = rows.length;
+  if (at < 0 || at >= n + L.buttons.length) return at;
+  if (way === 'left' || way === 'right') return neighbour([...rows, ...L.buttons], at, way);
+  const to = at + (way === 'down' ? 1 : -1);
+  return at < n ? (to + n) % n : Math.max(n, Math.min(n + L.buttons.length - 1, to));
+}
+
 // how much a box at the list's edge shows, 0 to 1: a row leaving the window fades instead of crossing the title, gone
 // by the time half of it is out
 export const shown = (L: OptionsLayout, b: Box) =>

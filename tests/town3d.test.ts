@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultGroup, RECRUIT_COST, recruit } from '../src/client/group.ts';
-import { type Hit, neighbour, type Page } from '../src/client/town3d/page.ts';
+import { type Dir, type Hit, neighbour, type Page, seen, step } from '../src/client/town3d/page.ts';
 import { PAGES, partyPage } from '../src/client/town3d/party-view.ts';
 import { barPage, shopPage } from '../src/client/town3d/shop-view.ts';
 import { gatePage, menuPage, soonPage } from '../src/client/town3d/street-view.ts';
@@ -186,6 +186,65 @@ describe('3D town windows: where they sit', () => {
     expect(P.page.x).toBeGreaterThanOrEqual(T.plaque.x + T.plaque.w);
     expect(P.page.x + P.page.w).toBeLessThanOrEqual(P.roster.x);
     expect(P.page.y + P.page.h).toBeLessThanOrEqual(T.help.y);
+  });
+});
+
+// Fernando, Nov 17: down goes to what is below and sideways to what is beside. The Shop and the Tavern: the commands
+// down the left, the scrolling list beside them, the picked row's action in the box at the right (page.ts `step`)
+describe('3D town windows: the cursor of the Shop goes by where each button is seen', () => {
+  const state = { chest: { gold: 1000, items: [] }, eq: {}, group: defaultGroup() };
+  const p = shopPage(state, 'buy', 'hood');
+  const rows = ids(p, 'row:');
+  const end = p.list!.rows * p.list!.rowH - p.list!.box.h; // the list scrolled to its end
+  // the button an arrow goes to from `at`, the list scrolled by `top`
+  const go = (at: string, way: Dir, top = 0, page = p) => step(page, top, at, way);
+  const midY = (h: Hit) => h.box.y + h.box.h / 2;
+
+  it('down and up stay in their column: command to command, row to row', () => {
+    expect(go('cmd:buy', 'down')).toBe('cmd:sell');
+    expect(go('cmd:leave', 'up')).toBe('cmd:sell');
+    expect(go(rows[0], 'down')).toBe(rows[1]);
+    expect(go(rows[1], 'up')).toBe(rows[0]);
+  });
+  it('the last command does not go down into the list, nor the first row up into the commands: they stay', () => {
+    for (const top of [0, end]) {
+      expect(go('cmd:leave', 'down', top)).toBe('cmd:leave');
+      expect(go('cmd:buy', 'up', top)).toBe('cmd:buy');
+    }
+    expect(go(rows[0], 'up')).toBe(rows[0]);
+    expect(go(rows.at(-1)!, 'down', end)).toBe(rows.at(-1));
+  });
+  it('right from a command: the row nearest its height on screen, wherever the list is scrolled', () => {
+    for (const top of [0, end])
+      for (const cmd of ['cmd:buy', 'cmd:sell', 'cmd:leave']) {
+        const inList = seen(p, top).filter((h) => h.row !== undefined);
+        const off = inList.map((h) => Math.abs(midY(h) - midY(hit(p, cmd))));
+        expect(go(cmd, 'right', top)).toBe(inList[off.indexOf(Math.min(...off))].id);
+        expect(Math.min(...off)).toBeLessThanOrEqual(p.list!.rowH); // a row in sight (a head may lie level with it)
+      }
+  });
+  it('left from a row: the nearest command; right: the action in the box; left from the action: back to a row', () => {
+    expect(go(rows[0], 'left')).toBe('cmd:buy');
+    expect(go(rows.at(-1)!, 'left', end)).toBe('cmd:leave');
+    expect(go(rows[3], 'right')).toBe('act');
+    expect(go('act', 'left')).toMatch(/^row:/);
+    for (const way of ['up', 'down', 'right'] as const) expect(go('act', way)).toBe('act');
+    for (const cmd of ['cmd:buy', 'cmd:sell', 'cmd:leave']) expect(go(cmd, 'left')).toBe(cmd);
+  });
+  it('a button that is off and a row scrolled out of sight are not places to go', () => {
+    const poor = shopPage({ ...state, chest: { gold: 0, items: [] } }, 'buy', 'hood');
+    expect(seen(poor, 0).some((h) => h.id === 'act')).toBe(false);
+    expect(go(rows[3], 'right', 0, poor)).toBe(rows[3]);
+    const inSight = seen(p, 0).filter((h) => h.row !== undefined);
+    expect(inSight.length).toBeLessThan(rows.length);
+    expect(inSight.at(-1)!.box.y).toBeLessThan(p.list!.box.y + p.list!.box.h + p.list!.rowH); // the one peeking, no further
+    expect(seen(p, end).some((h) => h.id === rows[0])).toBe(false);
+    expect(seen(p, end).find((h) => h.id === rows.at(-1))!.box.y).toBe(hit(p, rows.at(-1)!).box.y - end);
+  });
+  it('the Tavern, whose list ends above the action: left from the action still comes back to its last row', () => {
+    const bar = barPage(1000, defaultGroup(), 'mage');
+    expect(go('act', 'left', 0, bar)).toBe(ids(bar, 'row:').at(-1));
+    expect(go(ids(bar, 'row:')[0], 'left', 0, bar)).toBe('cmd:recruit');
   });
 });
 
