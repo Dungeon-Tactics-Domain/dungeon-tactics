@@ -3,6 +3,7 @@ import { Battle } from '../shared/battle/battle.ts';
 import { loadNote, newBattle, selectBattle } from './game/boot.ts';
 import { titleScreen } from './game/title.ts';
 import { bootTown } from './game/town.ts';
+import { loadSkin } from './hud-skin.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { Game, LOCAL } from './main.ts';
@@ -42,7 +43,7 @@ async function boot() {
     pixel,
     scenario.spawns.map((s) => s.def),
   ).finally(() => note.remove());
-  const game = new Game(battle, scene, host, pixel, run);
+  const game = new Game(battle, scene, host, pixel, run, LOCAL ? await loadSkin(staged?.spec) : {});
   sandbox?.install(game, scene);
   // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
   if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));

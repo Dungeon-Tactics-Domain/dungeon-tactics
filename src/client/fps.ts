@@ -10,11 +10,17 @@ const FPS_KEY = 'dt:fps';
 export const fpsOn = () => store.get(FPS_KEY) === '1';
 
 // adds the counter to the host and returns its on/off switch, which says the new state
-export function fpsCounter(host: HTMLElement, scene: BattleScene): () => boolean {
+// `ui3d`: the cost of the HUD's 3D layer (ui3d/layer.ts), when a localhost flag turned it on
+export function fpsCounter(
+  host: HTMLElement,
+  scene: BattleScene,
+  ui3d?: () => { calls: number; triangles: number } | undefined,
+): () => boolean {
   const fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
   const show = () => {
     if (fps.hidden) return;
     const s = scene.stats();
+    const ui = ui3d?.();
     const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
     fps.textContent = [
       `${s.fps.toFixed(0)} fps · ${s.ms.toFixed(1)} ms`,
@@ -23,6 +29,14 @@ export function fpsCounter(host: HTMLElement, scene: BattleScene): () => boolean
         `${s.calls} draw calls · ${(s.triangles / 1000).toFixed(1)}k triangles`,
       ),
       t(`${s.geometries} geometrias · ${s.textures} texturas`, `${s.geometries} geometries · ${s.textures} textures`),
+      ...(ui
+        ? [
+            t(
+              `UI 3D: ${ui.calls} desenhos · ${ui.triangles} triângulos`,
+              `3D UI: ${ui.calls} draw calls · ${ui.triangles} triangles`,
+            ),
+          ]
+        : []),
       ...(mem ? [`JS ${(mem.usedJSHeapSize / 1048576).toFixed(0)} MB`] : []),
     ].join('\n');
   };

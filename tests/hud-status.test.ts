@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { abilityDetail, attrRows, regenLine, shortOf, spendNote, unitStatus } from '../src/client/battle-text.ts';
-import { cursorInfo, tileInfo } from '../src/client/tile-info.ts';
+import {
+  abilityDetail,
+  abilityPages,
+  attrRows,
+  regenLine,
+  shortOf,
+  spendNote,
+  unitStatus,
+} from '../src/client/battle-text.ts';
+import { cursorInfo, tileHeight, tileInfo } from '../src/client/tile-info.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
@@ -20,6 +28,16 @@ describe('mana and stamina in words (Nov 16)', () => {
     expect(spendNote(w, ABILITIES.shield_bash)).toBe('Gasta 10 stamina: 20 → 10');
     expect(abilityDetail('heal')).toContain('gasta 20 mana');
     expect(regenLine(UNIT_DEFS.mage)).toBe('+8 de mana por turno');
+  });
+});
+
+describe('ability sheet pages (?menucss)', () => {
+  it('splits the help line facts in three pages without changing the line', () => {
+    const [hit, , cost] = abilityPages('heal');
+    expect(hit.some((l) => l.startsWith('cura'))).toBe(true);
+    expect(cost[0]).toBe('gasta 20 mana');
+    for (const id of Object.keys(ABILITIES)) expect(abilityPages(id).flat().join(' · ')).toBe(abilityDetail(id));
+    expect(abilityPages('strike')[1]).toEqual([]);
   });
 });
 
@@ -89,6 +107,9 @@ describe('tile info', () => {
       'Casa 0,3 · altura 0 · água · funda: não se age nela',
     );
     expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe('Casa 0,7 · altura 0 · água · rasa');
+    // the number alone, for the reference's "Height" corner: the same one the line says
+    expect(tileHeight(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 })).toBe(1);
+    expect(tileHeight(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe(0);
   });
 });
 

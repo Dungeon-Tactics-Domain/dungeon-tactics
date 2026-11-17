@@ -103,6 +103,11 @@
   --inset-r: calc(var(--inset) + env(safe-area-inset-right, 0px));
   --inset-b: calc(var(--inset) + env(safe-area-inset-bottom, 0px));
   --inset-l: calc(var(--inset) + env(safe-area-inset-left, 0px));
+  /* interface layout (Options, ?layout=; ui3d/layout.ts `stage`, which these three mirror): --lay-u is one px of the
+     1920x1080 reference, --lay-x and --lay-y the margins of the frame the pieces anchor in. `edges`: the whole page */
+  --lay-u: max(0.6px, min(100vw / 1920, 100vh / 1080));
+  --lay-x: 0px;
+  --lay-y: 0px;
   --slot-w: min(
     672px,
     35vw
@@ -130,6 +135,33 @@
   --orb-blue: #4a78d0;
   --orb-bronze: #b06a30; /* the kit's leave and options rows */
   --orb-off: #4a5068;
+  /* 3D interface kit (src/client/ui3d; localhost ?menu3d and ?turn3d, Nov 16): the parchment its shaders paint and the ink
+     of its text, measured on FFT: The Ivalice Chronicles' menus. Read once by ui3d/layer.ts, hex only. Contrast (computed on the
+     drawn colours): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the title band; soft ink 5.7:1 on the rows and
+     4.7:1 on the head (never on the title band, 3.6:1); the disabled ink (1.9:1) is the faded label only, its reason
+     is written in soft ink */
+  --ui3d-paper: #ece7d4; /* the sheet at its lit corner; grain and stains take it down to the measured #e9e4d1 */
+  --ui3d-paper-shade: #d5cfb9; /* head, foot and icon column */
+  --ui3d-paper-lit: #f6f1db; /* the focused row */
+  --ui3d-paper-band: #bbb4a2; /* the inset title band of the ability sheet */
+  --ui3d-edge: #332b1a; /* outline and shadow */
+  --ui3d-ink: #474129;
+  --ui3d-ink-soft: #5b5440;
+  --ui3d-ink-off: #a9a28e;
+  /* a serif close to the reference's, from the fonts the system already has (no font file for a test behind a flag) */
+  --font-ui3d: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  /* the 3D battle result (?result=3d), measured on the reference's victory screen (labs refs/fft-ivalice/73): light
+     text on the darkened battle. `lost` is the defeat's title, the cold blue the classic game writes "Game Over" in
+     (described, not measured); `soft` is `text` dimmed for labels */
+  --ui3d-result-title: #fdebb4;
+  --ui3d-result-lost: #9db4d6;
+  --ui3d-result-note: #ddf3b5;
+  --ui3d-result-text: #dcd5ac;
+  --ui3d-result-soft: #a8a184;
+  --ui3d-result-veil: #070908;
+  --ui3d-result-band: #151207;
+  --ui3d-result-plate: #1e1c18;
+  --ui3d-result-line: #736353;
 }
 
 /* Alegreya Sans (SIL OFL 1.1, public/fonts/OFL-Alegreya-Sans.txt), latin subset from Fontsource 5.3.0 */
@@ -1075,6 +1107,19 @@ button[hidden],
   inset: 0;
   pointer-events: none;
   font-size: var(--fs);
+}
+/* `frame`: the interface in a centred 16:9 frame, scaled to fit. The HTML panels keep their size and move in with the
+   frame through their margins; the pieces laid out on the reference (3D, ?menu=css) also take its scale */
+:root[data-layout="frame"] {
+  --lay-u: min(100vw / 1920, 100vh / 1080);
+  --lay-x: calc((100vw - 1920 * var(--lay-u)) / 2);
+  --lay-y: calc((100vh - 1080 * var(--lay-u)) / 2);
+}
+:root[data-layout="frame"] .hud {
+  --inset-t: calc(var(--inset) + env(safe-area-inset-top, 0px) + var(--lay-y));
+  --inset-r: calc(var(--inset) + env(safe-area-inset-right, 0px) + var(--lay-x));
+  --inset-b: calc(var(--inset) + env(safe-area-inset-bottom, 0px) + var(--lay-y));
+  --inset-l: calc(var(--inset) + env(safe-area-inset-left, 0px) + var(--lay-x));
 }
 .panel {
   position: absolute;
@@ -2727,5 +2772,226 @@ p.gold strong::before,
     pointer-events: auto;
     width: min(1100px, 100%);
     max-height: calc(100dvh - var(--inset-t) - var(--inset-b));
+  }
+}
+
+/* ---- 3D interface layer (localhost ?menu3d and ?turn3d; src/client/ui3d) ---- */
+/* One transparent WebGL canvas over the HUD for every 3D screen. It takes no input: each screen brings its own controls,
+   which come after it in the HUD and so sit over it. "Execute?" stays over the 3D drawing */
+.ui3d-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.hud.ui3d .confirm {
+  z-index: 2;
+}
+
+/* ---- 3D command menu (?menu3d; src/client/menu3d) ---- */
+/* The menu and the submenu are drawn in 3D, bottom right. The HTML ones only keep the HUD's open state; the input is the
+   3D menu's own: one transparent button over each drawn row and over each page arrow of the sheet (menu3d.ts places
+   them from the same layout it draws) */
+.hud.menu3d .commands,
+.hud.menu3d .abilities {
+  visibility: hidden;
+  animation: none;
+}
+.menu3d-hits {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.menu3d-hits button {
+  position: absolute;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  opacity: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.menu3d-hits button:disabled {
+  cursor: default;
+}
+
+/* ---- 3D battle result (?result=3d; src/client/result3d) ---- */
+/* The end of battle is drawn in 3D on the layer. Its window (dialog.ts) covers the page unseen and only holds the
+   board's real buttons, each over its drawn one (result3d.ts places them): the keys, the pad and the focus stay the
+   window's. The rest of the HUD hides, as under the HTML result */
+.overlay.result3d-overlay {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.dialog.result3d {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+.dialog.result3d .dialog-head {
+  display: none;
+}
+.result3d-hits button {
+  position: absolute;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  opacity: 0;
+  cursor: pointer;
+}
+body:has(.result3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.result3d-overlay) .fps {
+  visibility: hidden;
+}
+
+/* ---- 3D turn list (?turn3d; src/client/turn3d) ---- */
+/* The list is drawn in 3D on the layer. The HTML list stays where it is, unseen, as the layout, the scroll and the hover:
+   its rows take the cards' sizes measured on the reference screenshots (1280x720) times --t3, the page's scale (set by
+   turn3d.ts); the HUD hands their boxes to the 3D list. The column stacks from the bottom, 1 above the acting panel and
+   counting up, like FFT's combat timeline. It sits on the reference's place (ui3d/layout.ts `turn`, set by turn3d.ts),
+   and ends above the acting panel where that one, still HTML, is taller than the reference's (--active-h: the room it takes from the bottom, hud.ts) */
+.hud.turn3d .queue {
+  left: var(--turn-x);
+  top: var(--turn-y);
+  bottom: max(var(--turn-b), var(--active-h, 0px) + 2px);
+  height: auto;
+  width: calc(120px * var(--t3));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: calc(8px * var(--t3));
+  padding: calc(8px * var(--t3)) calc(10px * var(--t3)) calc(10px * var(--t3)) calc(56px * var(--t3));
+  background: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  scrollbar-width: none;
+  /* the empty column lets the map's hover and taps through; the rows take the mouse for the hover and the wheel */
+  pointer-events: none;
+}
+.hud.turn3d .queue-title {
+  order: 1; /* in a reversed column the last one sits on top */
+  position: sticky;
+  top: 0;
+  text-shadow: var(--ink-shadow);
+}
+.hud.turn3d .queue-row {
+  flex: none;
+  width: calc(44px * var(--t3));
+  height: calc(52px * var(--t3));
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: auto;
+}
+/* the one acting now: a bigger card (the 3D card springs to its row's box) */
+.hud.turn3d .queue-row.now {
+  width: calc(54px * var(--t3));
+  height: calc(64px * var(--t3));
+}
+/* with the 3D bar its sheet's portrait is the one acting (the reference's card 1): its row leaves the list, which starts
+   at 2 right above the sheet (Fernando, Nov 16). Only while the sheet shows the list's head (hud.ts .head-on-sheet): an
+   enemy's strike can play after the state passed the turn on */
+.hud.turn3d.bar3d.head-on-sheet .queue-row.now {
+  display: none;
+}
+/* name and life of the card under the mouse, beside it */
+.turn3d-tip {
+  translate: 0 -50%;
+  padding: 4px 10px;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---- 3D combat bar (?bar=3d; src/client/bar3d) ---- */
+/* The acting sheet, the strike preview and the target's sheet are drawn in 3D on the layer, each on its region of the
+   reference (ui3d/layout.ts `sheet`, `preview`, `target`). The HTML panels stay unseen (opacity, not visibility: the
+   sandbox's `hide` is what hides the 3D bar with them): the acting one takes the sheet's place and size, so the map and
+   the turn list keep clear of what is drawn; the strips and the target panel leave the flow */
+.hud.bar3d .active-slot {
+  left: calc(var(--lay-x) + 100 * var(--lay-u));
+  bottom: calc(var(--lay-y) + 48 * var(--lay-u));
+  width: calc(672 * var(--lay-u));
+  height: calc(214 * var(--lay-u));
+  overflow: hidden;
+  opacity: 0;
+}
+.hud.bar3d .target-slot,
+.hud.bar3d .strikes {
+  display: none;
+}
+
+/* ---- 3D banner, Height and button hints (?banner=3d, ?height=3d, ?hints=3d; src/client/hints3d) ---- */
+/* Each is drawn on the 3D layer at its place of the reference; the HTML it stands for stays in the HUD, unseen: the help
+   line and the ability banner, the tile line, and the key hints inside the HUD's own rows */
+.hud.banner3d .help,
+.hud.banner3d .banner {
+  visibility: hidden;
+  animation: none;
+}
+.hud.height3d .tile-info {
+  visibility: hidden;
+}
+.hud.hints3d .hint {
+  display: none;
+}
+
+/* ---- 3D "Execute?" (?confirm=3d; src/client/confirm3d) ---- */
+/* Drawn on the 3D layer over the HTML window, which stays in place unseen (opacity, not visibility: its real buttons take
+   the mouse, BattleHud.place keeps moving it beside the character, and the sandbox's `hide` hides the drawing with it).
+   Its sizes are the drawing's, in px of the reference (confirm3d.ts SIZE); the strike's numbers are on the preview plate */
+.hud.confirm3d .confirm {
+  width: calc(440 * var(--lay-u));
+  font-family: var(--font-ui3d); /* the drawing's serif and weight, so the notes wrap where the drawn ones do */
+  font-weight: 500;
+  padding: 0 calc(12 * var(--lay-u)) calc(12 * var(--lay-u));
+  opacity: 0;
+  animation: none;
+}
+.hud.confirm3d .confirm .panel-head,
+.hud.confirm3d .confirm .item {
+  font-family: inherit;
+  font-weight: inherit;
+}
+.hud.confirm3d .confirm .panel-head {
+  padding: calc(10 * var(--lay-u)) calc(14 * var(--lay-u));
+  font-size: max(16px, 26 * var(--lay-u));
+  line-height: 1.3;
+}
+.hud.confirm3d .confirm p {
+  margin: calc(8 * var(--lay-u)) calc(6 * var(--lay-u)) 0;
+  font-size: max(16px, 18 * var(--lay-u));
+  line-height: 1.3;
+}
+.hud.confirm3d .confirm p:not(.unit-note) {
+  display: none;
+}
+.hud.confirm3d .confirm .item {
+  min-height: calc(52 * var(--lay-u));
+  font-size: max(16px, 24 * var(--lay-u));
+}
+/* a finger keeps its 44 px target (section 8) */
+@media (pointer: coarse) {
+  .hud.confirm3d .confirm .item {
+    min-height: max(var(--tap), 52 * var(--lay-u));
   }
 }

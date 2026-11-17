@@ -78,9 +78,16 @@ export interface Board {
   onBack?: () => void;
 }
 
+// localhost ?result=3d (result3d/): while set, the 3D screen takes the board in place of the window below
+type Show3d = (board: Board) => { close(): void };
+let board3d: Show3d | undefined;
+export const setBoard3d = (show?: Show3d) => void (board3d = show);
+
 // End of battle as the Design lab's mockup (Nov 15): no window over the darkened battle, the title on its own band (wine
 // on a defeat), a card per hero and the Result panel as wide as the cards, with the actions at its right foot
-export function resultBoard({ won, title, cards, cols, note, actions, onBack }: Board) {
+export function resultBoard(board: Board): { close(): void } {
+  if (board3d) return board3d(board);
+  const { won, title, cards, cols, note, actions, onBack } = board;
   const d = dialog(
     'result',
     title,
