@@ -12,10 +12,12 @@ import { footprint, reachable } from '../../shared/battle/pathing.ts';
 import type { BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { padDialog } from '../dialog.ts';
 import { emptyMemory, padActions } from '../gamepad.ts';
+import { type Act, hintLine } from '../glyphs.ts';
 import { GROUP_KEY, JOBS, parseGroup } from '../group.ts';
 import { hint } from '../hud.ts';
 import { t } from '../i18n.ts';
 import { button, el, icon, UI_ICON } from '../icons.ts';
+import { liveText, padSeen } from '../key-hints.ts';
 import { gridStep, type KeyAction, keyAction, type ScreenDir } from '../keyboard.ts';
 import { PIXEL_KEY, parsePixel } from '../pixel-settings.ts';
 import { BattleScene } from '../scene.ts';
@@ -56,6 +58,12 @@ import { openPlace, townHud } from './town-hud.ts';
 
 const STEP_MS = TIMING.step / SUB; // a cell at the battle's walking pace (Nov 13, Fernando: slow walking)
 const DIRS: ScreenDir[] = ['up', 'down', 'left', 'right'];
+// the help line with nothing in front of the walker: how to walk, act and open the menu
+const PROMPT = (): [Act, string][] => [
+  ['walk', t('andar', 'walk')],
+  ['confirm', t('falar ou entrar', 'talk or go in')],
+  ['cancel', 'menu'],
+];
 
 const group = () => parseGroup(store.json(GROUP_KEY));
 
@@ -153,6 +161,7 @@ class Town {
     if (this.free) this.freeStep(open ? 0 : Math.min(50, now - this.last), gp);
     this.last = now;
     if (!gp) return;
+    padSeen(gp);
     const actions = padActions(
       { buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] },
       this.pad,
@@ -331,13 +340,11 @@ class Town {
     this.tg = tg;
     if (same) return;
     this.prompt.replaceChildren(
-      ...(label
-        ? [label, hint('Enter')]
-        : [t('W A S D anda · Enter fala ou entra · Esc menu', 'W A S D walk · Enter talk or go in · Esc menu')]),
+      ...(label ? [label, hint('confirm')] : [liveText('', (s) => hintLine(s, PROMPT(), ' · '))]),
     );
     this.balloon.title = label ?? '';
     this.balloon.setAttribute('aria-label', label ?? '');
-    this.balloon.replaceChildren(...(tg ? [icon(UI_ICON[tg.act]), hint('Enter')] : []));
+    this.balloon.replaceChildren(...(tg ? [icon(UI_ICON[tg.act]), hint('confirm')] : []));
   }
 
   // The balloon over what the action button acts on, every frame (the camera slides and turns, people walk); only its

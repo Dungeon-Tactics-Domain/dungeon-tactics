@@ -17,7 +17,9 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
+import { type Act, hintLine, type Shown } from '../glyphs.ts';
 import { el } from '../icons.ts';
+import { keysShown, onShown } from '../key-hints.ts';
 import { getLayout } from '../layout-mode.ts';
 import { reducedMotion } from '../motion.ts';
 import { type Stage, stage } from './layout.ts';
@@ -118,6 +120,18 @@ export class Ui3dLayer {
     this.sized.observe(root);
     this.fit();
   }
+  // what the key hints show now (key-hints.ts), for the screens that draw them, and a line of hints in words
+  get keys(): Shown {
+    return keysShown();
+  }
+  keysLine(pairs: [Act, string][]): string {
+    return hintLine(keysShown(), pairs);
+  }
+  // the hints changed between the keys and a pad's icons (key-hints.ts): every screen draws again, as on a resize
+  private readonly unhear = onShown(() => {
+    for (const s of this.screens) s.resize();
+    this.wake();
+  });
 
   // pixel filter on: positions onto the block grid, so a sprite does not shimmer as it moves, and rotation in steps,
   // like the frames of a sprite
@@ -221,6 +235,7 @@ export class Ui3dLayer {
 
   dispose() {
     this.sized.disconnect();
+    this.unhear();
     for (const s of [...this.screens]) s.dispose();
     this.over?.material.dispose();
     this.target?.dispose();

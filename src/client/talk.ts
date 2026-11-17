@@ -4,8 +4,10 @@
 
 import faces from '../content/faces.json';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { hintLine } from './glyphs.ts';
 import { LANG, t } from './i18n.ts';
 import { button, el } from './icons.ts';
+import { liveText } from './key-hints.ts';
 import { modelOf } from './markers.ts';
 import { reducedMotion } from './motion.ts';
 import { portrait } from './portrait.ts';
@@ -120,7 +122,16 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
         { class: 'talk-keys' },
         matchMedia('(pointer: coarse)').matches
           ? t('Toque para seguir', 'Tap to continue')
-          : t('Enter segue · Esc pula', 'Enter next · Esc skip'),
+          : liveText('', (s) =>
+              hintLine(
+                s,
+                [
+                  ['confirm', t('seguir', 'next')],
+                  ['cancel', t('pular', 'skip')],
+                ],
+                ' · ',
+              ),
+            ),
       ),
     ) as HTMLButtonElement;
     const overlay = el(

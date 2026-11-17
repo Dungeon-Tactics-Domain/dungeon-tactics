@@ -209,10 +209,10 @@ export class Town3d implements Ui3dScreen {
       if (it.k === 'fill')
         return add(band(this.box(it.box), this.tones[it.tone]), it.tone === 'veil' ? 60 : 63, it.a, it.row);
       if (it.k === 'face') return this.face(it.def, this.box(it.box), (m) => add(m, 64, 1, it.row));
-      if (!it.str) return;
+      if (!it.str && !it.keys) return;
       const px = Math.max(16, it.size * s);
       const m = textMesh(
-        it.str,
+        it.keys ? layer.keysLine(it.keys) : it.str,
         {
           size: px,
           color: this.inks[it.ink],

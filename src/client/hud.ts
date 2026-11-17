@@ -339,7 +339,7 @@ export class BattleHud {
         'li',
         { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined },
         left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`),
-        hint('PgUp PgDn'),
+        hint('turns'),
       ),
       // a charge row: the caster's face, the ability's icon and name, and the ticks until it goes off
       ...rows.map(({ unit, charge, ticks, round }, i) => {

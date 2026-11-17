@@ -1,0 +1,26 @@
+{
+  "inset": 0.07,
+  "rim": 0.075,
+  "width": { "face": 1, "bumper": 1.55, "trigger": 1.2, "menu": 1, "menuPill": 1.35, "dpad": 1, "stick": 1 },
+  "key": { "pad": 0.3, "radius": 0.2, "edge": 0.1, "text": 0.5 },
+  "face": { "letter": 0.56, "shape": 0.2, "stroke": 0.085 },
+  "bumper": { "h": 0.76, "radius": 0.32, "corner": 0.12, "text": 0.5 },
+  "trigger": { "top": 0.44, "foot": 0.12, "text": 0.5, "drop": 0.05 },
+  "menu": { "r": 0.36, "pillH": 0.52, "mark": 0.16, "stroke": 0.06 },
+  "dpad": { "arm": 0.36, "radius": 0.07, "tip": 0.13 },
+  "stick": { "cap": 0.3, "text": 0.36 },
+  "shadow": { "y": 0.05, "blur": 0.08, "color": "rgba(0, 0, 0, 0.55)" },
+  "neon": 0.2,
+  "gold": ["#f6dc8c", "#c9973a", "#7d5518"],
+  "leather": ["#5a3d27", "#2b1b11"],
+  "shine": "rgba(255, 244, 214, 0.28)",
+  "parchment": ["#f6ebcc", "#d9c08c"],
+  "keyEdge": "#8a6a3a",
+  "ink": "#33241a",
+  "pale": "#f4ead0",
+  "colors": {
+    "xbox": { "south": "#74e36c", "east": "#ff6259", "west": "#62adff", "north": "#ffd94f" },
+    "playstation": { "south": "#86b0ff", "east": "#ff7272", "west": "#f4a3d6", "north": "#66e2b4" },
+    "switch": { "south": "#f4ead0", "east": "#f4ead0", "west": "#f4ead0", "north": "#f4ead0" }
+  }
+}

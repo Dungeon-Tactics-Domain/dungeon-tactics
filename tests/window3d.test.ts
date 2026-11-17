@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import scene from '../scripts/sandbox/bench/window3d.json';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
+import { type Act, keysText } from '../src/client/glyphs.ts';
 import { keyAction } from '../src/client/keyboard.ts';
 import { toolRows } from '../src/client/tool-rows.ts';
 import { stage } from '../src/client/ui3d/layout.ts';
@@ -26,7 +27,7 @@ describe('corner menu: one list of rows for the HTML menu and the 3D one', () =>
 
   it('shows the key that really runs the row', () => {
     const run = (key: string, shiftKey = false) => keyAction({ key, shiftKey } as KeyboardEvent);
-    const key = (tool: string) => rows.find((r) => r.tool === tool)!.key;
+    const key = (tool: string) => keysText(rows.find((r) => r.tool === tool)!.key as Act, 'keyboard')!;
     expect(run(key('undo').toLowerCase())).toEqual({ k: 'undo' });
     expect(run(key('recenter').toLowerCase())).toEqual({ k: 'recenter' });
     expect(run(key('pixel').toLowerCase())).toEqual({ k: 'pixel' });

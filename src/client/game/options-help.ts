@@ -2,6 +2,7 @@
 import { dialog } from '../dialog.ts';
 import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { keysShown } from '../key-hints.ts';
 import { keyHelp } from '../keyboard.ts';
 import { hoverFocus } from '../option-row.ts';
 import { type Block, blocksHtml, showSheet } from './sheets.ts';
@@ -79,5 +80,5 @@ export const controls = (): Block[] => [
       'On the turn list and the unit sheets, the "+N" after HP is the life the unit gets back at each of its turns; the "+N" after CT is the CT it gains each tick.',
     ),
   },
-  ...keyHelp().map(([key, str]): Block => ({ k: 'key', key, str })),
+  ...keyHelp(keysShown()).map(([key, str]): Block => ({ k: 'key', key, str })),
 ];

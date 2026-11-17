@@ -66,7 +66,11 @@ export function partyPage({ group: g, eq, chest }: PartyState, at: PartyAt): { i
     gold: [t('Ouro', 'Gold'), chest.gold],
     note: t(`Grupo ${all.length} de ${GROUP_MAX}`, `Party ${all.length} of ${GROUP_MAX}`),
     help: HELP[at.page](),
-    hints: t('← →: página   ·   Enter: escolher   ·   Esc: sair', '← →: page   ·   Enter: choose   ·   Esc: leave'),
+    hints: [
+      ['sides', t('página', 'page')],
+      ['confirm', t('escolher', 'choose')],
+      ['cancel', t('sair', 'leave')],
+    ],
   });
 
   // the picked member: face, name, class, life and pools (full, as the unit enters a battle) and who goes

@@ -17,6 +17,7 @@ import {
   swimming,
 } from './command.ts';
 import { forecast, forecastText, hpAfterText } from './forecast.ts';
+import type { Act } from './glyphs.ts';
 import type { HudActions, HudView } from './hud.ts';
 import { hint, KEYS } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
@@ -128,7 +129,7 @@ export function renderCommands(box: HTMLElement, v: HudView, open: boolean, act:
         [
           marker(c),
           el('span', { class: 'item-label' }, commandName(c, undo)),
-          c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null,
+          c === 'move' && undo ? hint('cancel') : c === 'wait' ? hint('wait') : c === 'status' ? hint('status') : null,
         ],
         () => act.command(i),
         { role: 'menuitem', disabled: !commandEnabled(b, c) },
@@ -199,7 +200,7 @@ export function renderSheet(box: HTMLElement, v: HudView, open: boolean, act: Hu
       turn(-1, '‹', t('Página anterior', 'Previous page')),
       el('span', { class: 'sheet-page' }, `${page + 1} / ${PAGES}`),
       turn(1, '›', t('Próxima página', 'Next page')),
-      hint('← →'),
+      hint('sides'),
     ),
   );
 }
@@ -211,7 +212,7 @@ export type ConfirmPick = 'yes' | 'no' | 'unit' | 'tile';
 export interface ConfirmParts {
   title: string;
   notes: string[];
-  choices: { label: string; focus: boolean; pick: ConfirmPick; key?: string }[];
+  choices: { label: string; focus: boolean; pick: ConfirmPick; key?: Act }[];
 }
 export function confirmParts(b: Battle, s: Extract<Screen, { k: 'confirm' }>): ConfirmParts {
   const a = ABILITIES[s.ability];
@@ -233,8 +234,8 @@ export function confirmParts(b: Battle, s: Extract<Screen, { k: 'confirm' }>): C
         title: executeText(s.ability),
         notes,
         choices: [
-          { label: t('Confirmar', 'Confirm'), focus: true, pick: 'yes', key: 'Enter' },
-          { label: t('Voltar', 'Back'), focus: false, pick: 'no', key: 'Esc' },
+          { label: t('Confirmar', 'Confirm'), focus: true, pick: 'yes', key: 'confirm' },
+          { label: t('Voltar', 'Back'), focus: false, pick: 'no', key: 'cancel' },
         ],
       };
 }

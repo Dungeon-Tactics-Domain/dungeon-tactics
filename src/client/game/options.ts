@@ -5,10 +5,12 @@ import type { Scenario } from '../../shared/battle/scenarios.ts';
 import { isObjective } from '../../shared/battle/units.ts';
 import { choice, dialog, secondTap } from '../dialog.ts';
 import { ALPHA_MIN, type Blur, getGlass, glassEnv, setGlass } from '../glass.ts';
+import { hintLine } from '../glyphs.ts';
 import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { glyphsOption, keysShown, liveText } from '../key-hints.ts';
 import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
 import { type Option, optionRow, percent, pick } from '../option-row.ts';
@@ -173,6 +175,7 @@ const settings = (o: OptionsContext): [title: string, rows: Option[]][] => [
           o.relayout();
         },
       ),
+      glyphsOption(), // what the key hints show: the keys or a pad's icons (Nov 17, Fernando; key-hints.ts)
       marksOption(), // how the marks on the board are drawn (Nov 17, Fernando; options-marks.ts)
       // panel glass (Nov 16, Fernando's request): opacity of the blue panels and the blur of what shows through them
       percent(
@@ -285,7 +288,7 @@ export type OptionsItem = { head: string } | { option: Option } | { link: string
 export interface OptionsBoard {
   title: string;
   goal: string;
-  note: string; // how a row changes, said once
+  note: string; // how a row changes, said once, for the input in use (read again whenever it is drawn)
   items: OptionsItem[];
   list: HTMLElement; // a heading or a row button per item
   help: HTMLElement; // what the row under the cursor does
@@ -301,7 +304,7 @@ export function optionsWindow(b: OptionsBoard): { close(): void } {
     'menu',
     b.title,
     [el('p', { class: 'opt-goal' }, b.goal), b.list, b.help, el('div', { class: 'menu-actions' }, ...b.actions)],
-    { note: el('span', { class: 'opt-keys' }, b.note) },
+    { note: liveText('opt-keys', () => b.note) },
   );
 }
 
@@ -328,7 +331,11 @@ export function optionsMenu(o: OptionsContext) {
           )
         : t('Objetivo: derrote todos os inimigos.', 'Goal: defeat every enemy.'),
     // the keys on a PC, the drawn arrows on touch
-    note: KEYS ? t('← → mudam o valor', '← → change the value') : t('◀ ▶ mudam o valor', '◀ ▶ change the value'),
+    get note() {
+      return KEYS
+        ? hintLine(keysShown(), [['sides', t('mudar o valor', 'change the value')]])
+        : t('◀ ▶ mudam o valor', '◀ ▶ change the value');
+    },
     items: [
       ...sections.flatMap(([head, rows]): OptionsItem[] => [{ head }, ...rows.map((option) => ({ option }))]),
       { head: t('Ajuda', 'Help') },

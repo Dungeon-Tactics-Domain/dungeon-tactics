@@ -1,6 +1,7 @@
 // The battle HUD's corner menu (3 bars): undo, rotate, whole map, pixel size, fast battle, fps counter and Options, each with its key.
 // Owns its document listeners while open; close() removes them.
 import { fpsOn } from './fps.ts';
+import type { Act } from './glyphs.ts';
 import type { HudActions } from './hud.ts';
 import { hint } from './hud-pieces.ts';
 import { t } from './i18n.ts';
@@ -75,7 +76,7 @@ export class ToolsMenu {
       else document.removeEventListener(ev, this.closeOutside, true);
     }
   }
-  private toolItem(glyph: Child, label: string, key: string, run: () => void, props?: Record<string, unknown>) {
+  private toolItem(glyph: Child, label: string, key: Act | '', run: () => void, props?: Record<string, unknown>) {
     return button(
       'item',
       [

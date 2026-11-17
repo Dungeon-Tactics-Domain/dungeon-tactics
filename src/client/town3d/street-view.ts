@@ -1,6 +1,7 @@
 // The pages of the 3D windows the street opens (?townmenu=3d; street.ts runs them): the town menu, the dungeon gate's
 // quest and what a place still to come says. Built from what the caller read of the saved game; pure, tested in
 // tests/town3d.test.ts.
+import { type Act, keysText, type Shown } from '../glyphs.ts';
 import { t } from '../i18n.ts';
 import { chrome, type Hit, type Item, type Page, plaques, text } from './page.ts';
 import { HINTS } from './shop-view.ts';
@@ -67,7 +68,9 @@ export function menuPage(o: {
   quest: Quest;
   switches: Switch[];
   at?: string;
+  keys?: Shown; // what the help line names: the keys or a pad's buttons
 }): Page {
+  const key = (a: Act) => keysText(a, o.keys ?? 'keyboard');
   const rows = [
     ...questRows(o.quest),
     { id: 'open:shop', label: t('Loja', 'Shop'), help: t('Compra e vende equipamento.', 'Buys and sells gear.') },
@@ -91,7 +94,10 @@ export function menuPage(o: {
       id: `sw:${i}`,
       label: s.label,
       note: s.value,
-      help: t('Enter ou ← → liga ou desliga.', 'Enter or ← → turns it on or off.'),
+      help: t(
+        `${key('confirm')} ou ${key('sides')} liga ou desliga.`,
+        `${key('confirm')} or ${key('sides')} turns it on or off.`,
+      ),
     })),
   ] as { id: string; label: string; help: string; note?: string }[];
   const R = M.rows,

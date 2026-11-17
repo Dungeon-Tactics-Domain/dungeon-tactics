@@ -9,6 +9,7 @@ import { depart, liveExpedition, questGate, toTitle, toTown, townMenu } from '..
 import { expeditionScreen, floorOf } from '../game/expedition-map.ts';
 import { GROUP_MAX } from '../group.ts';
 import { t } from '../i18n.ts';
+import { keysShown } from '../key-hints.ts';
 import { loadChest } from '../sheet-lines.ts';
 import { openParty } from '../town-party.ts';
 import { openBar, openShop } from '../town-shop.ts';
@@ -85,6 +86,7 @@ export function streetWindows(ui: Town3d, fits: () => boolean, keep: (again: () 
         gold: gold(),
         party: [loadGroup().members.length, GROUP_MAX],
         quest: q.state(),
+        keys: keysShown(),
         switches: choices.map((c) => ({
           label: c.querySelector('.choice-label')?.textContent ?? '',
           value: c.querySelector('[aria-pressed="true"]')?.textContent ?? '',

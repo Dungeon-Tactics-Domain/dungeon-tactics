@@ -4,7 +4,7 @@
 import { endExpression } from '../battle-face.ts';
 import { classOf } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
-import { gauge, stillFace } from '../hud-pieces.ts';
+import { gauge, hint, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { reducedMotion } from '../motion.ts';
@@ -78,7 +78,7 @@ function heroCard(h: EndHero, [text, tone]: CardLine, won: boolean) {
 
 // The primary button with its key drawn on it, like the kit's Continue [Enter]
 export const enterButton = (label: string, onclick: () => void) =>
-  button('primary', [label, el('kbd', { class: 'key-chip', 'aria-hidden': 'true' }, 'Enter')], onclick);
+  button('primary', [label, hint('confirm', 'key-chip')], onclick);
 
 export interface Board {
   won: boolean;

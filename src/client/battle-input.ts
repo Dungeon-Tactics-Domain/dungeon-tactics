@@ -1,6 +1,7 @@
 // Battle input: the keyboard, the mouse or touch on the canvas and the gamepad, all sent to the Game as the same actions.
 import { padDialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
+import { padSeen } from './key-hints.ts';
 import { type KeyAction, keyAction } from './keyboard.ts';
 import type { BattleScene } from './scene.ts';
 import { pace } from './timing.ts';
@@ -53,6 +54,7 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     pace.pad = !!gp?.buttons[0]?.pressed; // holding A (or x) fast-forwards the battle
     if (!gp) return;
+    padSeen(gp);
     const actions = padActions(
       { buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] },
       pad,
