@@ -170,7 +170,20 @@ export function sheetRows(
   });
 }
 
-// what equipping `id` in `slot` (null: taking it off) changes on the sheet, as the rules read it, one row per number
+// what equipping `id` in `slot` (null: taking it off) changes on the sheet, in one line of signed changes (the Shop's
+// detail box, town-shop.ts fitLine): past a cap the change is what is left of it, and a resistance's change on a
+// charging unit, read before the cap, comes apart when it differs
+export function compare(cls: string, load: Loadout, slot: Slot, id: string | null): string {
+  const def = UNIT_DEFS[cls],
+    next: Loadout = { ...load, [slot]: id ?? undefined };
+  const parts = LINES.flatMap((l) => {
+    const d = lineValue(l, def, next) - lineValue(l, def, load);
+    const c = l.charging ? l.charging(withGear(def, next)) - l.charging(withGear(def, load)) : d;
+    return [...(d ? [stat(l, d)] : []), ...(c !== d ? [`${stat(l, c)} ${t('carregando', 'while charging')}`] : [])];
+  });
+  return parts.join(' · ') || t('nada muda', 'no change');
+}
+// the same change for the Party screen's Equipment page, as the rules read it, one row per number
 // that moves: its label, the total now, the total after and whether it rises (FFT's equip screen shows both totals).
 // Past a cap only what is left changes, and a resistance's change on a charging unit, read before the cap, gets its own
 // row when it differs
