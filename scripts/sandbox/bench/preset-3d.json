@@ -1,0 +1,10 @@
+{
+  "scenario": "ash_wood",
+  "seed": 1,
+  "lang": "en",
+  "viewport": { "width": 1920, "height": 1080 },
+  "actor": "h-warrior",
+  "screen": "abilities",
+  "ui": "3d",
+  "hide": ["fps"]
+}

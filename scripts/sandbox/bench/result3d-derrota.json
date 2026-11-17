@@ -1,0 +1,21 @@
+{
+  "name": "result3d-derrota",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "viewport": { "width": 1920, "height": 1080 },
+  "units": {
+    "h-warrior": { "x": 5, "y": 7, "facing": 2, "hp": 10 },
+    "h-archer": { "x": 6, "y": 6, "facing": 3, "hp": 10 },
+    "h-mage": { "remove": true },
+    "h-rogue": { "remove": true },
+    "e-soldier": { "x": 5, "y": 6, "facing": 0 }
+  },
+  "result": "3d",
+  "hide": ["fps"],
+  "loop": true,
+  "steps": [
+    { "act": { "unit": "e-soldier", "ability": "strike", "target": { "x": 5, "y": 7 } } },
+    { "wait": { "unit": "e-soldier" } },
+    { "act": { "unit": "e-soldier", "ability": "strike", "target": { "x": 6, "y": 6 } } }
+  ]
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Screen } from '../src/client/command.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { backKind, helpText } from '../src/client/hud-menus.ts';
+import { backKind, confirmParts, helpText, runPick } from '../src/client/hud-menus.ts';
 import { freshUi, highlights, hoverTile, selectMode, tapTile, type Ui } from '../src/client/interaction.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
@@ -37,7 +37,7 @@ describe('Back button', () => {
       { k: 'map', command: 'move' },
       { k: 'map', command: 'act' },
       { k: 'abilities', index: 0 },
-      { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 }, yes: true },
+      { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } },
       { k: 'facing' },
     ] as Screen[]) {
       expect(backKind(b, s, true)).toBe('back');
@@ -63,12 +63,12 @@ describe('help line after a tap', () => {
     const b = duel();
     const ui = selectMode(b, freshUi(b), { k: 'move' });
     const first = (touch: boolean) => helpText(view(b, move, ui, b.actor.pos), true, touch);
-    expect(first(true)).toBe('Mover: escolha uma casa marcada.');
+    expect(first(true)).toBe('Mover: escolha a casa e confirme.');
     const marked = view(b, move, tapTile(b, ui, { x: 1, y: 2 }), { x: 1, y: 2 });
-    expect(helpText(marked, true, true)).toBe('Mover: toque de novo na casa para confirmar.');
+    expect(helpText(marked, true, true)).toBe('Mover: toque de novo para confirmar.');
     const bad = view(b, move, tapTile(b, ui, { x: 5, y: 0 }), { x: 5, y: 0 });
     expect(tapTile(b, ui, { x: 5, y: 0 }).pending).toBeNull();
-    expect(helpText(bad, true, true)).toBe('Mover: essa casa não serve; toque numa casa marcada.');
+    expect(helpText(bad, true, true)).toBe('Mover: toque numa casa marcada.');
     // keyboard and mouse: the hover already marks, the text stays
     expect(helpText(marked, true, false)).toBe(first(false));
     expect(helpText(bad, true, false)).toBe(first(false));
@@ -78,11 +78,11 @@ describe('help line after a tap', () => {
     const b = duel();
     const ui = selectMode(b, freshUi(b), { k: 'ability', id: 'strike' });
     const start = helpText(view(b, act, ui, b.actor.pos), true, true);
-    expect(start).toContain('Escolha o alvo na área laranja');
+    expect(start).toBe('Alvo: área laranja. Roxo: bloqueado.');
     const marked = view(b, act, tapTile(b, ui, { x: 2, y: 1 }), { x: 2, y: 1 });
-    expect(helpText(marked, true, true)).toBe('Toque de novo no alvo para confirmar.');
+    expect(helpText(marked, true, true)).toBe('Toque de novo para confirmar.');
     const bad = view(b, act, tapTile(b, ui, { x: 4, y: 4 }), { x: 4, y: 4 });
-    expect(helpText(bad, true, true)).toBe('Essa casa não serve; toque na área laranja.');
+    expect(helpText(bad, true, true)).toBe('Toque dentro da área laranja.');
     expect(helpText(marked, true, false)).toBe(start);
   });
 
@@ -101,7 +101,57 @@ describe('help line after a tap', () => {
   it('facing: taps instead of arrows and Enter', () => {
     const b = duel();
     const v = view(b, { k: 'facing' }, freshUi(b), b.actor.pos);
-    expect(helpText(v, true, true)).toContain('toque de novo no mesmo lado');
+    expect(helpText(v, true, true)).toBe('Toque um lado; de novo, passa a vez.');
     expect(helpText(v, true, false)).toContain('confirme');
+  });
+});
+
+// Fernando, Nov 16: each instruction fits one line of the 3D banner, as on FFT. The longest ones (37 letters, "Não cabe
+// aqui: precisa de chão plano.") measured 499 px of the 520 the pill holds, in the reference's 30 px serif in Chrome
+describe('help line: one banner line', () => {
+  it('every instruction without a log keeps to 37 letters', () => {
+    const b = duel();
+    const lines: string[] = [];
+    for (const touch of [true, false]) {
+      for (const k of ['move', 'ability'] as const) {
+        const ui = selectMode(b, freshUi(b), k === 'move' ? { k } : { k, id: 'strike' });
+        const s: Screen = { k: 'map', command: k === 'move' ? 'move' : 'act' };
+        for (const at of [b.actor.pos, { x: 1, y: 2 }, { x: 2, y: 1 }, { x: 5, y: 0 }, { x: 4, y: 4 }])
+          lines.push(helpText(view(b, s, tapTile(b, ui, at), at), true, touch));
+      }
+      for (const s of [
+        { k: 'menu', index: 0 },
+        { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } },
+        { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 }, lock: 'unit' },
+        { k: 'facing' },
+      ] as Screen[])
+        lines.push(helpText(view(b, s, freshUi(b), b.actor.pos), true, touch));
+    }
+    for (const line of lines) expect(line.length, line).toBeLessThanOrEqual(37);
+  });
+});
+
+// The 3D "Execute?" (confirm3d/; Fernando, Nov 16) draws what the HTML window says, from one pure source
+describe('"Execute?": its title, notes and choices', () => {
+  it('the preview: Confirm in focus and Back; the lock step: its two places, the focus where the screen is', () => {
+    const b = duel();
+    const preview = confirmParts(b, { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } });
+    expect(preview.title).toBe('Golpe: executar?');
+    expect(preview.choices.map((c) => [c.label, c.focus, c.pick])).toEqual([
+      ['Confirmar', true, 'yes'],
+      ['Voltar', false, 'no'],
+    ]);
+    const lock = confirmParts(b, { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 }, lock: 'tile' });
+    expect(lock.choices.map((c) => [c.label, c.focus, c.pick])).toEqual([
+      ['No personagem', false, 'unit'],
+      ['Na casa', true, 'tile'],
+    ]);
+  });
+
+  it('a click runs the same action as the HTML button', () => {
+    const calls: string[] = [];
+    const act = { answer: (y: boolean) => calls.push(`answer ${y}`), lock: (on: string) => calls.push(`lock ${on}`) };
+    for (const p of ['yes', 'no', 'unit', 'tile'] as const) runPick(act as never, p);
+    expect(calls).toEqual(['answer true', 'answer false', 'lock unit', 'lock tile']);
   });
 });

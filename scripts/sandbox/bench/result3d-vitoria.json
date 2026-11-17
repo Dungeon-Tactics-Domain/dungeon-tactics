@@ -1,0 +1,19 @@
+{
+  "name": "result3d-vitoria",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "viewport": { "width": 1920, "height": 1080 },
+  "units": {
+    "h-warrior": { "x": 5, "y": 7, "facing": 2 },
+    "h-archer": { "hp": 60 },
+    "h-mage": { "hp": 25 },
+    "e-soldier": { "x": 5, "y": 6, "facing": 0, "hp": 37 },
+    "e-archer": { "remove": true },
+    "e-mage": { "remove": true },
+    "e-brute": { "remove": true }
+  },
+  "result": "3d",
+  "hide": ["fps"],
+  "loop": true,
+  "steps": [{ "act": { "unit": "h-warrior", "ability": "strike", "target": { "x": 5, "y": 6 } } }]
+}

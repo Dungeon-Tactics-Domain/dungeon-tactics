@@ -43,7 +43,8 @@ if (!positionals.length) {
 const specs = [];
 for (const arg of positionals) {
   const files = (await stat(arg)).isDirectory()
-    ? (await readdir(arg)).filter((f) => f.endsWith('.json')).map((f) => join(arg, f))
+    ? // ui-pecas.json is the table of interface pieces the labs page reads, not a scene
+      (await readdir(arg)).filter((f) => f.endsWith('.json') && f !== 'ui-pecas.json').map((f) => join(arg, f))
     : [arg];
   for (const file of files) {
     const raw = JSON.parse(await readFile(file, 'utf8'));

@@ -18,7 +18,8 @@ import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { finishRoom } from './game/room-end.ts';
 import { HeroTurn, type TurnHost } from './hero-turn.ts';
-import { BattleHud, eventLog, unitStatus } from './hud.ts';
+import { BattleHud, eventLog, type HudActions, unitStatus } from './hud.ts';
+import type { HudSkin } from './hud-skin.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { el } from './icons.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
@@ -58,6 +59,7 @@ export class Game implements TurnHost {
     host: HTMLElement,
     private pixel: PixelSettings,
     private readonly sel: BattleSelection,
+    skin: HudSkin = {}, // localhost looks under comparison: ?menu=, ?turn=, ?ui= (hud-skin.ts)
   ) {
     this.resetTally();
     // every painted face of the battle starts loading with it, so the HUD's redraws find them decoded (like talk())
@@ -65,12 +67,14 @@ export class Game implements TurnHost {
       const f = battleFace(u.def);
       if (f) new Image().src = `/chars/${f.sheet}`;
     }
-    this.turn = new HeroTurn(this, scene);
-    this.hud = new BattleHud(host, {
+    this.turn = new HeroTurn(this, scene, !!(skin.menu3d || skin.menucss));
+    const act: HudActions = {
       command: (i) => this.turn.chooseCommand(i),
       ability: (i) => this.turn.chooseAbility(i),
       answer: (yes) => void this.turn.answer(yes),
       lock: (on) => void this.turn.pickLock(on),
+      page: (dir) => this.turn.turnPage(dir),
+      hover: (list, i) => this.turn.hoverRow(list, i),
       rotate: (dir) => scene.rotate(dir),
       recenter: () => scene.resetView(),
       pixel: () => this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) }),
@@ -83,13 +87,14 @@ export class Game implements TurnHost {
       fps: () => this.hud.setFps(this.toggleFps()),
       undo: () => this.runKey({ k: 'undo' }),
       cancel: () => this.runKey({ k: 'cancel' }),
-    });
+    };
+    this.hud = new BattleHud(host, act, skin);
     this.readPad = battleInput(host.querySelector('canvas')!, scene, {
       key: (a) => this.runKey(a),
       tap: (x, y) => this.turn.tap(x, y),
       hover: (x, y) => this.turn.hover(x, y),
     });
-    this.toggleFps = fpsCounter(host, scene);
+    this.toggleFps = fpsCounter(host, scene, () => this.hud.stats3d());
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
     requestAnimationFrame(() => this.pollPad());
@@ -103,7 +108,7 @@ export class Game implements TurnHost {
     // the standalone battle is the backdrop of the title screen (and of the screens that leave it): it rotates while any is open
     this.scene.setSpin(!!document.querySelector('.title-overlay') && !reducedMotion());
     this.placeMenu();
-    this.hud.showFaces();
+    this.hud.showFaces(this.scene.now);
     this.readPad();
   }
 
@@ -132,7 +137,8 @@ export class Game implements TurnHost {
   // sandbox: a scripted step's events played like a confirmed command, then the turn menu of whoever plays now
   async playStep(events: BattleEvent[], enemy: boolean) {
     await this.animate(events, enemy);
-    // the step ended the battle with its mover down: no actor to show a menu for (the sandbox shows no end screen)
+    if (this.battle.over) return this.finish(); // the step ended the battle (bench/result3d-*.json)
+    // the step left its mover down: no actor to show a menu for
     if (!this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor)) return;
     this.turn.screen = startScreen(this.battle);
     this.turn.cursorToActor();
@@ -364,6 +370,7 @@ export class Game implements TurnHost {
       busy: this.busy,
       pixel: () => this.pixel,
       setPixel: (p) => this.setPixel(p),
+      relayout: () => this.hud.relayout(),
       restart: () => this.restart(),
     });
   }

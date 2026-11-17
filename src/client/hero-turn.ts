@@ -1,4 +1,4 @@
-// The hero's turn screens in the FFT style (command.ts): menu -> submenu -> map -> "Execute?" -> menu; Wait -> direction.
+// The hero's turn screens in the FFT style (command.ts): menu -> submenu -> map -> strike preview -> menu; Wait -> direction.
 // Owns the screen, the Ui and the cursor, and turns keys, clicks and taps into the next screen; the Game runs what is confirmed.
 import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
@@ -10,12 +10,15 @@ import {
   abilitiesOf,
   abilityEnabled,
   COMMANDS,
+  cancelStep,
   canUndoMove,
   commandEnabled,
+  commandIndex,
   needsLock,
   type Screen,
   startScreen,
   stepIndex,
+  turnPage,
 } from './command.ts';
 import { aimStep, freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction } from './keyboard.ts';
@@ -44,6 +47,7 @@ export class HeroTurn {
   constructor(
     private readonly game: TurnHost,
     private readonly scene: BattleScene,
+    private readonly pages = false, // ?menu3d, ?menucss: the ability sheet, its pages turned with left and right
   ) {
     this.ui = freshUi(game.battle);
     this.screen = startScreen(game.battle);
@@ -83,33 +87,33 @@ export class HeroTurn {
     const s = this.screen;
     if (a.k === 'slot') {
       // number shortcut: 1 = Move, 2 onwards = the abilities in submenu order
-      if (a.index === 0) return this.chooseCommand(0);
+      if (a.index === 0) return this.chooseCommand(commandIndex('move'));
       if (commandEnabled(b, 'act')) return this.chooseAbility(a.index - 1);
       return;
     }
-    if (a.k === 'wait') return this.chooseCommand(2);
+    if (a.k === 'wait') return this.chooseCommand(commandIndex('wait'));
+    if (a.k === 'cancel') return this.cancel();
     if (s.k === 'menu' || s.k === 'abilities') {
       const list =
         s.k === 'menu' ? COMMANDS.map((c) => commandEnabled(b, c)) : abilitiesOf(b).map((id) => abilityEnabled(b, id));
       if (a.k === 'cursor' && (a.dir === 'up' || a.dir === 'down')) {
         sfx('cursor');
-        this.screen = { ...s, index: stepIndex(s.index, a.dir === 'up' ? -1 : 1, list) };
+        const index = stepIndex(s.index, a.dir === 'up' ? -1 : 1, list);
+        this.screen = s.k === 'menu' ? { ...s, index } : { k: 'abilities', index };
         return this.game.update(this.ui);
       }
+      if (a.k === 'cursor' && s.k === 'abilities') return this.turnPage(a.dir === 'right' ? 1 : -1);
       if (a.k === 'confirm') return s.k === 'menu' ? this.chooseCommand(s.index) : this.chooseAbility(s.index);
-      if (a.k === 'cancel' && s.k === 'abilities') return this.back({ k: 'menu', index: 1 });
-      // Esc, B or right button on the menu after moving (without having acted): undoes the move, like Tactics Ogre
-      if (a.k === 'cancel' && canUndoMove(b)) return this.game.undo();
       return;
     }
     if (s.k === 'confirm') {
-      if (a.k === 'cursor') {
+      // the preview has nothing to toggle; only the lock step has two choices
+      if (a.k === 'cursor' && s.lock) {
         sfx('cursor');
-        this.screen = s.lock ? { ...s, lock: s.lock === 'unit' ? 'tile' : 'unit' } : { ...s, yes: !s.yes };
+        this.screen = { ...s, lock: s.lock === 'unit' ? 'tile' : 'unit' };
         return this.game.update(this.ui);
       }
-      if (a.k === 'confirm') return void (s.lock ? this.pickLock(s.lock) : this.answer(s.yes));
-      if (a.k === 'cancel') return void this.answer(false);
+      if (a.k === 'confirm') return void (s.lock ? this.pickLock(s.lock) : this.answer(true));
       return;
     }
     if (s.k === 'facing') {
@@ -120,7 +124,6 @@ export class HeroTurn {
           s = UNIT_DEFS[b.actor.def].size ?? 1;
         this.faceTo({ x: b.actor.pos.x + st.x * s, y: b.actor.pos.y + st.y * s });
       } else if (a.k === 'confirm') void this.game.endTurn();
-      else if (a.k === 'cancel') this.back({ k: 'menu', index: 2 });
       return;
     }
     // map: choose the tile
@@ -139,11 +142,23 @@ export class HeroTurn {
       if (next && inBounds(b.grid, next) && !samePos(next, this.cursor)) this.moveCursor(next);
     } else if (a.k === 'cycle') this.moveCursor(cycleUnit(b.state, this.cursor, a.dir));
     else if (a.k === 'confirm') void this.mapConfirm();
-    else if (a.k === 'cancel') {
-      // goes back to where it came from: Move -> menu; ability -> submenu, on the same ability
-      const m = this.ui.mode;
-      this.back(m.k === 'ability' ? { k: 'abilities', index: abilitiesOf(b).indexOf(m.id) } : { k: 'menu', index: 0 });
+  }
+
+  // Cancel (Esc, B, right button, the Back button, the preview's Back): one step back (cancelStep)
+  private cancel() {
+    const s = this.screen,
+      m = this.ui.mode;
+    const to = cancelStep(this.game.battle, s, m.k === 'ability' ? m.id : null);
+    if (!to) return;
+    // on the menu after moving (without having acted): undoes the move, like Tactics Ogre
+    if (to === 'undo') return this.game.undo();
+    // from the preview back to aiming (or from the lock step to the preview) the target stays marked
+    if (s.k === 'confirm' && to.k !== 'abilities') {
+      sfx('cancel');
+      this.screen = to;
+      return this.game.update(this.ui);
     }
+    this.back(to);
   }
 
   private back(screen: Screen) {
@@ -172,6 +187,26 @@ export class HeroTurn {
     this.game.update(hoverTile(b, selectMode(b, this.ui, { k: 'move' }), this.cursor));
   }
 
+  // ?menu3d: the mouse over a row of the open list moves the focus there, as the arrows would (never onto a greyed row)
+  hoverRow(list: 'menu' | 'abilities', index: number) {
+    const b = this.game.battle,
+      s = this.screen;
+    if (this.game.busy || !this.game.heroTurn || s.k !== list || s.index === index) return;
+    if (list === 'menu' ? !commandEnabled(b, COMMANDS[index]) : !abilityEnabled(b, abilitiesOf(b)[index])) return;
+    sfx('cursor');
+    this.screen = { k: list, index };
+    this.game.update(this.ui);
+  }
+
+  // the ability sheet's next or previous page (left and right, or its arrows); nothing without the sheet
+  turnPage(dir: 1 | -1) {
+    const s = this.screen;
+    if (!this.pages || s.k !== 'abilities' || this.game.busy || !this.game.heroTurn) return;
+    sfx('cursor');
+    this.screen = { ...s, page: turnPage(s.page ?? 0, dir) };
+    this.game.update(this.ui);
+  }
+
   // submenu ability: goes to the map to choose the target; self-centered goes straight to "Execute?"
   chooseAbility(index: number) {
     const b = this.game.battle;
@@ -180,7 +215,7 @@ export class HeroTurn {
     sfx('confirm');
     const ui = selectMode(b, this.ui, { k: 'ability', id });
     if (ABILITIES[id].range[1] === 0) {
-      this.screen = { k: 'confirm', ability: id, target: b.actor.pos, yes: true };
+      this.screen = { k: 'confirm', ability: id, target: b.actor.pos };
       return this.game.update(ui);
     }
     this.screen = { k: 'map', command: 'act' };
@@ -188,7 +223,7 @@ export class HeroTurn {
     this.game.update(hoverTile(b, ui, this.cursor));
   }
 
-  // confirm on the map: Move walks at once (like FFT); Act opens "Execute?"
+  // confirm on the map: Move walks at once (the reference's "Move Here"); an ability opens its strike preview
   private async mapConfirm() {
     const p = this.ui.pending;
     const m = this.ui.mode;
@@ -196,33 +231,22 @@ export class HeroTurn {
     if (m.k === 'ability') {
       if (!this.game.battle.preview(m.id, p).ok) return sfx('cancel');
       sfx('confirm');
-      this.screen = { k: 'confirm', ability: m.id, target: p, yes: true };
+      this.screen = { k: 'confirm', ability: m.id, target: p };
       return this.game.update(this.ui);
     }
     sfx('confirm');
     await this.game.execute();
   }
 
+  // the preview's two buttons (click or tap): Confirm, or Back, the same as Cancel
   async answer(yes: boolean) {
     const s = this.screen;
     if (s.k !== 'confirm' || this.game.busy) return;
-    // No on the lock step goes back to "Execute?"
-    if (!yes && s.lock) {
-      sfx('cancel');
-      this.screen = { ...s, lock: undefined };
-      return this.game.update(this.ui);
-    }
+    if (!yes) return this.cancel();
     // a charge aimed at someone: one more step, where to lock it (Nov 15), starting on the ability's usual lock
     if (yes && needsLock(this.game.battle, s.ability, s.target)) {
       sfx('confirm');
       this.screen = { ...s, lock: s.lock ?? defaultLock(ABILITIES[s.ability]) };
-      return this.game.update(this.ui);
-    }
-    if (!yes) {
-      sfx('cancel');
-      if (ABILITIES[s.ability].range[1] === 0)
-        return this.back({ k: 'abilities', index: abilitiesOf(this.game.battle).indexOf(s.ability) });
-      this.screen = { k: 'map', command: 'act' };
       return this.game.update(this.ui);
     }
     sfx('confirm');

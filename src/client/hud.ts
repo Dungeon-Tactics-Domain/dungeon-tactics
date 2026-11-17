@@ -3,7 +3,7 @@
 // colors and portraits are ours (CSS and KayKit characters). Pieces, top to bottom:
 //   top left: the tile under the cursor (height and floor) and, below it, the list of upcoming turns (AT);
 //   top middle: the help line for what to do now and, below it, the banner with the ability name;
-//   beside the acting character: the command menu (Move · Act · Wait · Status), the abilities submenu and the
+//   beside the acting character: the command menu (Move · Abilities · Wait · Status), the abilities submenu and the
 //   "Execute?" (Nov 13, Fernando's request: "beside the character like in FFT"; `place` follows the camera every frame);
 //   bottom left: the acting unit (portrait, HP, MP and CT bars); bottom right: the unit under the cursor; when aiming, the
 //   strike preview (Tactics Ogre's idea, Nov 13; the lab kit's two-colour strip, Nov 15) takes its place beside the acting
@@ -15,18 +15,25 @@ import type { Lock, Pos, UnitState } from '../shared/battle/types.ts';
 import { type Expression, frameOf } from './battle-face.ts';
 import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
+import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
+import type { MenuCss } from './hud-menucss.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm } from './hud-menus.ts';
 import { hint, KEYS, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
+import { type HudSkin, queueBoxes, wireQueue } from './hud-skin.ts';
 import { ToolsMenu } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, el, iconButton } from './icons.ts';
 import type { Highlights } from './interaction.ts';
+import type { Menu3d } from './menu3d/menu3d.ts';
 import { type Anchor, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import type { Face } from './talk.ts';
 import { cursorInfo } from './tile-info.ts';
 import { anchorScroll, pageStep, queueRows } from './turn-list.ts';
+import type { Queue } from './turn3d/queue-view.ts';
+import type { Turn3d } from './turn3d/turn3d.ts';
+import type { Ui3dLayer } from './ui3d/layer.ts';
 
 // main.ts and game/town.ts read these through hud.ts
 export { eventLog, unitStatus } from './battle-text.ts';
@@ -35,8 +42,10 @@ export { hint, KEYS } from './hud-pieces.ts';
 export interface HudActions {
   command(index: number): void; // click on a command menu item
   ability(index: number): void; // click on a submenu ability
-  answer(yes: boolean): void; // "Execute?" Yes or No
+  answer(yes: boolean): void; // the "Execute?" preview: Confirm or Back
   lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
+  page(dir: 1 | -1): void; // the ability sheet's arrows (?menu3d, ?menucss)
+  hover(list: 'menu' | 'abilities', index: number): void; // ?menu3d: the mouse over a row moves the focus there
   rotate(dir: 1 | -1): void;
   recenter(): void;
   pixel(): void;
@@ -102,10 +111,19 @@ export class BattleHud {
   private readonly target = el('div', { class: 'target-slot' });
   private readonly strikesEl = el('div', { class: 'strikes' });
   private readonly root: HTMLElement;
+  // localhost looks under comparison (hud-skin.ts). The 3D ones draw on one layer over the HUD; the HTML they replace
+  // stays in place unseen, and comes back if the WebGL context is lost
+  private readonly menucss?: MenuCss;
+  private layer?: Ui3dLayer;
+  private menu3d?: Menu3d;
+  private turn3d?: Turn3d;
+  private p3d: Pieces3d = {}; // the bar, the banner, Height and hints (hud-3d-pieces.ts)
+  private queued: Queue | null = null; // the rows the turn list shows now
 
   constructor(
     host: HTMLElement,
     private readonly act: HudActions,
+    skin: HudSkin = {},
   ) {
     this.tools = new ToolsMenu(act);
     this.tools.root.prepend(this.back);
@@ -136,6 +154,26 @@ export class BattleHud {
       ),
     );
     host.append(this.root);
+    this.menucss = skin.menucss?.(this.root, this.commands, this.abilities, act);
+    this.layer = skin.layer?.(this.root, () => this.drop3d());
+    if (!this.layer) return;
+    this.menu3d = skin.menu3d?.(this.layer, act);
+    this.turn3d = skin.turn3d?.(this.layer, this.queue);
+    if (this.turn3d) wireQueue(this.root, this.queue, this.turn3d);
+    this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox);
+  }
+  private drop3d() {
+    this.layer?.dispose(); // with its screens
+    this.layer = this.menu3d = this.turn3d = undefined;
+    this.p3d = {};
+  }
+  // the layout picked in Options changed (layout-mode.ts): the CSS already follows, the 3D layer fits again
+  relayout() {
+    this.layer?.fit();
+  }
+  // the 3D layer's cost for the F3 counter (fps.ts)
+  stats3d() {
+    return this.layer?.stats();
   }
 
   render(v: HudView) {
@@ -151,17 +189,29 @@ export class BattleHud {
     const aim = s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : null;
     this.renderQueue(b, aim);
     this.help.textContent = helpText(v, heroTurn);
+    this.p3d.hints?.update(v, open, this.help.textContent);
     renderBack(this.back, v, open);
-    renderCommands(this.commands, v, open, this.act);
-    renderAbilities(this.abilities, v, open, this.act);
+    if (this.menucss) this.menucss.render(v, open);
+    else {
+      renderCommands(this.commands, v, open, this.act);
+      renderAbilities(this.abilities, v, open, this.act);
+    }
+    this.menu3d?.update(v, open);
     renderConfirm(this.confirmBox, v, open, this.act);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me, this.face(me))] : []));
+    const head = this.queued?.rows[0]; // the sheet shows the list's head (the 3D bar takes its card: queue-view.ts)
+    this.root.classList.toggle('head-on-sheet', !!me && !head?.charge && head?.unit === me.id);
     // the turn list ends a gap above the acting panel, whose height changes with the screen width
     // 56px + the top safe area is the list's own top in style.css; the panel below sits --inset-b off the edge
-    this.queue.style.maxHeight = `calc(100% - 56px - env(safe-area-inset-top, 0px) - var(--inset) - var(--inset-b) - ${this.active.offsetHeight}px)`;
+    // the 3D list sits on the reference's place instead (style.css .hud.turn3d .queue), and only needs the room the
+    // panel takes from the bottom
+    this.queue.style.maxHeight = this.turn3d
+      ? ''
+      : `calc(100% - 56px - env(safe-area-inset-top, 0px) - var(--inset) - var(--inset-b) - ${this.active.offsetHeight}px)`;
+    if (this.turn3d) this.root.style.setProperty('--active-h', `${this.root.clientHeight - this.active.offsetTop}px`);
     this.anchorQueue(b);
     // unit under the cursor (or the "Execute?" target)
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
@@ -175,6 +225,9 @@ export class BattleHud {
     const other = main ? undefined : found?.id !== me?.id ? found : undefined;
     this.target.replaceChildren(...(other ? [unitPanel(b.state, other, this.face(other))] : []));
     this.strikesEl.replaceChildren(...(main ? strikes([main, ...fs.filter((f) => f !== main)], ability!) : []));
+    this.turn3d?.update(b, this.queued, fs, v.face, queueBoxes(this.root, this.queue), me?.id);
+    this.p3d.bar?.update(b.state, me, other, main ? [main, ...fs.filter((f) => f !== main)] : [], ability, v.face);
+    this.p3d.confirm?.update(v, open);
     // size of the panels that move with the character, measured once per draw (each frame's `place` only reads the cache);
     // the strips enter the bottom height so "Execute?" does not land on top of them
     const box = (e: HTMLElement) => ({ w: e.offsetWidth, h: e.offsetHeight });
@@ -199,7 +252,8 @@ export class BattleHud {
     this.faces.push({ u, f: s.f, show: s.show, n: s.n });
     return s.node;
   }
-  showFaces() {
+  showFaces(now: number) {
+    this.layer?.frame(now); // the 3D screens run on the battle clock, like the faces' moods
     for (const face of this.faces) {
       const n = frameOf(face.f, this.expression(face.u));
       if (n !== face.n) face.show((face.n = n));
@@ -215,7 +269,10 @@ export class BattleHud {
   // the menu is open (the camera slides and rotates): only left/top change, and only when the px changes. `target`: the target of
   // "Execute?", which the window does not cover (nor the turn list, which shows where the charge fires)
   place(a: Anchor | null, target: Anchor | null = null) {
+    this.menucss?.point();
     if (!a || !this.menuOpen) return;
+    // ?menu3d and ?menucss keep the menu and the submenu bottom right; only "Execute?" follows the character
+    if ((this.menu3d || this.menucss) && this.confirmBox.hidden) return;
     // free: below the help line and the menu button (which stay at the top), above the bottom unit panels
     const area = {
       left: 12,
@@ -272,7 +329,8 @@ export class BattleHud {
   }
 
   private renderQueue(b: Battle, aim: { ability: string; target: Pos } | null) {
-    const { rows, targets, at } = b.over ? { rows: [], targets: new Set<string>(), at: -1 } : queueRows(b, aim);
+    this.queued = b.over ? null : queueRows(b, aim);
+    const { rows, targets, at } = this.queued ?? { rows: [], targets: new Set<string>(), at: -1 };
     // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
     const left = isSurvival(b.state.scenario) ? turnsLeft(b.state) : null;
     this.queueScroll = this.queue.scrollTop;
@@ -324,6 +382,7 @@ export class BattleHud {
   banner(text: string | null) {
     this.bannerEl.hidden = !text;
     this.bannerEl.textContent = text ?? '';
+    this.p3d.hints?.announce(text);
   }
 
   // height the HUD covers at the bottom (acting unit panel), so the scene centers the map on what is left. Only the acting one: the
@@ -333,6 +392,7 @@ export class BattleHud {
   }
 
   dispose() {
+    this.drop3d();
     this.tools.close();
     this.root.remove();
   }

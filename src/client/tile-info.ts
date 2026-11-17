@@ -44,6 +44,13 @@ const TERRAIN_NAME: Record<string, () => string> = {
   rubble: () => t('entulho (cobertura)', 'rubble (cover)'),
   wall: () => t('muro', 'wall'),
 };
+// The height the tile line and the reference's "Height" corner show: in shallow water the height one stands at counts
+// (the one Jump compares), not the surface's
+export function tileHeight(grid: Grid, p: Pos): number {
+  const tile = tileAt(grid, p);
+  return tile.depth === 1 ? standH(tile) : tile.h;
+}
+
 export function tileInfo(grid: Grid, p: Pos): string {
   const tile = tileAt(grid, p);
   const kind = tile.look ? (LOOK_NAME[tile.look]?.() ?? tile.look) : TERRAIN_NAME[tile.terrain]();
@@ -61,8 +68,7 @@ export function tileInfo(grid: Grid, p: Pos): string {
           ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`,
         )
       : '');
-  // in shallow water the height one stands at counts (the one Jump compares), not the surface's
-  const h = tile.depth === 1 ? standH(tile) : tile.h;
+  const h = tileHeight(grid, p);
   return t(
     `Casa ${p.x},${p.y} · altura ${h}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`,
     `Tile ${p.x},${p.y} · height ${h}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`,

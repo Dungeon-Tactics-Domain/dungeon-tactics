@@ -2,15 +2,17 @@
 // sets its own `hidden` before anything else: BattleHud.menuOpen and its size cache read it right after.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { abilityDetail, costText, shortOf, spendNote } from './battle-text.ts';
+import { abilityDetail, abilityNote, abilityPages, commandName, spendNote } from './battle-text.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
   abilitiesOf,
   abilityEnabled,
   COMMANDS,
   type Command,
+  cancelStep,
   canUndoMove,
   commandEnabled,
+  PAGES,
   type Screen,
   swimming,
 } from './command.ts';
@@ -27,13 +29,7 @@ const REASON: Record<string, () => string> = {
   unknown: () => t('Não dá para usar aqui', 'Cannot use here'),
   // the grayed ability row already says how much is missing (shortOf); this is the sandbox's and an old save's way here
   spent: () => t('Falta mana, stamina, MP ou estoque', 'Not enough mana, stamina, MP or stock'),
-  water: () => t('Na água funda só dá para andar ou esperar', 'In deep water you can only move or wait'),
-};
-const COMMAND_NAME: Record<Command, () => string> = {
-  move: () => t('Mover', 'Move'),
-  act: () => t('Agir', 'Act'),
-  wait: () => t('Esperar', 'Wait'),
-  status: () => 'Status',
+  water: () => t('Água funda: só andar ou esperar', 'Deep water: only move or wait'),
 };
 // command row marker: the atlas icon (Move, Wait) or, for the commands without one, a glass orb like the lab kit's
 const ORB = new Set<Command>(['act', 'status']);
@@ -46,9 +42,8 @@ const executeText = (id: string) => t(`${abilityName(id)}: executar?`, `${abilit
 // The on-screen Back button (Nov 16: a tablet has no Esc, B or right button, and the Move and Act maps had no way out):
 // what it does now, the same as Esc. null hides it: nothing to go back to
 export function backKind(b: Battle, s: Screen, open: boolean): 'back' | 'undo' | null {
-  if (!open) return null;
-  if (s.k !== 'menu') return 'back';
-  return canUndoMove(b) ? 'undo' : null;
+  const to = open ? cancelStep(b, s) : null;
+  return to === 'undo' ? 'undo' : to ? 'back' : null;
 }
 
 // What a finger's tap left on the map (Nov 16: the 1st tap only marks, the 2nd confirms, and nothing said so). 'marked': a
@@ -60,7 +55,9 @@ function tapState(v: HudView): 'marked' | 'invalid' | null {
 }
 
 // top line: what to do now (like FFT's help), and the summary of the last action. `touch`: no keyboard or mouse, so the
-// map screens say what a tap does
+// map screens say what a tap does. Each instruction fits one line of the 3D banner (Fernando, Nov 16, as on FFT: 520 px
+// of the reference's 30 px serif, measured in Chrome); the log before it, a submenu's detail and the charge and counter
+// notes after it still wrap
 export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
   const b = v.battle;
   if (b.over) return b.state.outcome === 'victory' ? t('Vitória!', 'Victory!') : t('Derrota', 'Defeat');
@@ -70,11 +67,8 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
   const say = (pt: string, en: string) => (v.log ? `${v.log} — ` : '') + t(pt, en);
   if (s.k === 'menu')
     return swimming(b)
-      ? say(
-          `${unitName(b.actor.def)}: na água funda só dá para andar ou esperar.`,
-          `${unitName(b.actor.def)}: in deep water you can only move or wait.`,
-        )
-      : say(`${unitName(b.actor.def)}: escolha um comando.`, `${unitName(b.actor.def)}: pick a command.`);
+      ? say('Água funda: só andar ou esperar.', 'Deep water: only move or wait.')
+      : say(`${unitName(b.actor.def)}: o que fazer?`, `${unitName(b.actor.def)}: what now?`);
   if (s.k === 'abilities') {
     const id = abilitiesOf(b)[s.index];
     return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
@@ -82,15 +76,12 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
   const tap = touch && s.k === 'map' ? tapState(v) : null;
   if (s.k === 'map' && s.command === 'move')
     return v.hl?.tiles.some((m) => m.kind === 'nogo')
-      ? t(
-          'Não dá para parar aqui: a unidade inteira precisa caber em chão livre e plano.',
-          'Can’t stop here: the whole unit needs free, level ground.',
-        )
+      ? t('Não cabe aqui: precisa de chão plano.', 'Won’t fit: needs free, level ground.')
       : (tap === 'marked'
-          ? t('Mover: toque de novo na casa para confirmar.', 'Move: tap the tile again to confirm.')
+          ? t('Mover: toque de novo para confirmar.', 'Move: tap the tile again to confirm.')
           : tap === 'invalid'
-            ? t('Mover: essa casa não serve; toque numa casa marcada.', 'Move: not that tile; tap a highlighted one.')
-            : t('Mover: escolha uma casa marcada.', 'Move: pick a highlighted tile.')) +
+            ? t('Mover: toque numa casa marcada.', 'Move: tap a highlighted tile.')
+            : t('Mover: escolha a casa e confirme.', 'Move: pick a tile and confirm.')) +
           chargeFromText(b, v.cursor) +
           counterFromText(b, v.cursor);
   if (s.k === 'map') {
@@ -98,30 +89,18 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
     return p && !p.ok
       ? REASON[p.reason ?? 'unknown']()
       : tap === 'marked'
-        ? t('Toque de novo no alvo para confirmar.', 'Tap the target again to confirm.')
+        ? t('Toque de novo para confirmar.', 'Tap again to confirm.')
         : tap === 'invalid'
-          ? t('Essa casa não serve; toque na área laranja.', 'Not that tile; tap inside the orange area.')
-          : t(
-              'Escolha o alvo na área laranja. Roxo: algo bloqueia o tiro.',
-              'Pick a target in the orange area. Purple: something blocks the shot.',
-            );
+          ? t('Toque dentro da área laranja.', 'Tap inside the orange area.')
+          : t('Alvo: área laranja. Roxo: bloqueado.', 'Target: orange area. Purple: blocked.');
   }
   if (s.k === 'confirm')
     return s.lock
-      ? t(
-          `${abilityName(s.ability)}: travar no personagem ou na casa?`,
-          `${abilityName(s.ability)}: lock on the character or on the tile?`,
-        )
+      ? t(`${abilityName(s.ability)}: travar onde?`, `${abilityName(s.ability)}: lock where?`)
       : executeText(s.ability);
   return touch
-    ? t(
-        'Para onde olhar? Toque num lado para virar; toque de novo no mesmo lado para passar a vez.',
-        'Which way to face? Tap a side to turn; tap the same side again to end the turn.',
-      )
-    : t(
-        'Para onde olhar? Escolha a direção e confirme para passar a vez.',
-        'Which way to face? Pick a direction, then confirm to end the turn.',
-      );
+    ? t('Toque um lado; de novo, passa a vez.', 'Face which way? Tap a side twice.')
+    : t('Para onde olhar? Escolha e confirme.', 'Which way to face? Pick and confirm.');
 }
 
 // the Back button's name for what it does now; hidden with nothing to go back to
@@ -148,11 +127,7 @@ export function renderCommands(box: HTMLElement, v: HudView, open: boolean, act:
         `item${state(c, i)}`,
         [
           marker(c),
-          el(
-            'span',
-            { class: 'item-label' },
-            c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c](),
-          ),
+          el('span', { class: 'item-label' }, commandName(c, undo)),
           c === 'move' && undo ? hint('Esc') : c === 'wait' ? hint('P') : c === 'status' ? hint('C') : null,
         ],
         () => act.command(i),
@@ -172,10 +147,7 @@ export function renderAbilities(box: HTMLElement, v: HudView, open: boolean, act
     ...abilitiesOf(b).map((id, i) => {
       const a = ABILITIES[id];
       const on = abilityEnabled(b, id);
-      // the cost and the charge ticks; grayed out, the row says what is missing (a disabled button says why)
-      const cost = on
-        ? [costText(a), a.charge ? t(`${a.charge} tiq.`, `${a.charge} tk`) : ''].filter(Boolean).join(' · ')
-        : shortOf(b.actor, a);
+      const cost = abilityNote(b.actor, a, on);
       return button(
         `item${i === s.index ? ' focus' : ''}`,
         [
@@ -190,13 +162,92 @@ export function renderAbilities(box: HTMLElement, v: HudView, open: boolean, act
   );
 }
 
-// "Execute?" window: hit and effect on each target, life before → after, and Yes/No
+const PAGE_NAME = [() => t('Descrição', 'Description'), () => t('Efeitos', 'Effects'), () => t('Custo', 'Cost')];
+// ?menucss: the FFT ability sheet over the submenu: the unit's name, the big icon and the ability's name, and one of the
+// three pages of its facts (abilityPages), turned with left and right or its arrows
+export function renderSheet(box: HTMLElement, v: HudView, open: boolean, act: HudActions) {
+  const s = v.screen;
+  const id = s.k === 'abilities' ? abilitiesOf(v.battle)[s.index] : undefined;
+  box.hidden = !open || !id;
+  if (s.k !== 'abilities' || !id || box.hidden) return;
+  const page = s.page ?? 0;
+  const lines = abilityPages(id)[page];
+  const turn = (dir: 1 | -1, glyph: string, name: string) =>
+    button('page-turn', glyph, () => act.page(dir), { title: name, 'aria-label': name });
+  box.replaceChildren(
+    el(
+      'div',
+      { class: 'panel-head' },
+      el('span', { class: 'diamond', 'aria-hidden': 'true' }),
+      unitName(v.battle.actor.def),
+    ),
+    el(
+      'div',
+      { class: 'sheet-title' },
+      el('span', { class: 'big-icon' }, abilityIcon(id)),
+      el('strong', { class: 'sheet-name' }, abilityName(id)),
+    ),
+    el('div', { class: 'sheet-band' }, PAGE_NAME[page]()),
+    el(
+      'div',
+      { class: 'sheet-body' },
+      ...(lines.length ? lines : [t('nada além do básico', 'nothing beyond the basics')]).map((l) => el('p', {}, l)),
+    ),
+    el(
+      'div',
+      { class: 'sheet-foot' },
+      turn(-1, '‹', t('Página anterior', 'Previous page')),
+      el('span', { class: 'sheet-page' }, `${page + 1} / ${PAGES}`),
+      turn(1, '›', t('Próxima página', 'Next page')),
+      hint('← →'),
+    ),
+  );
+}
+
+// What "Execute?" says besides the strike's numbers, for the HTML window and the 3D one (confirm3d/): its title, the notes
+// (what it spends, the charge, a counter owed) and its two choices with the one in focus. On the preview the focus stays
+// on Confirm (Enter runs it, Esc goes back, nothing to toggle); the lock step (Nov 15) puts its two choices in their place
+export type ConfirmPick = 'yes' | 'no' | 'unit' | 'tile';
+export interface ConfirmParts {
+  title: string;
+  notes: string[];
+  choices: { label: string; focus: boolean; pick: ConfirmPick; key?: string }[];
+}
+export function confirmParts(b: Battle, s: Extract<Screen, { k: 'confirm' }>): ConfirmParts {
+  const a = ABILITIES[s.ability];
+  const notes: string[] = [];
+  if (a.cost) notes.push(spendNote(b.actor, a));
+  if (a.charge) notes.push(chargeNote(b, s));
+  const owed = counterNote(b, s.ability, b.preview(s.ability, s.target));
+  if (owed) notes.push(owed);
+  return s.lock
+    ? {
+        title: t(`${abilityName(s.ability)}: travar onde?`, `${abilityName(s.ability)}: lock on?`),
+        notes,
+        choices: [
+          { label: t('No personagem', 'On the character'), focus: s.lock === 'unit', pick: 'unit' },
+          { label: t('Na casa', 'On the tile'), focus: s.lock === 'tile', pick: 'tile' },
+        ],
+      }
+    : {
+        title: executeText(s.ability),
+        notes,
+        choices: [
+          { label: t('Confirmar', 'Confirm'), focus: true, pick: 'yes', key: 'Enter' },
+          { label: t('Voltar', 'Back'), focus: false, pick: 'no', key: 'Esc' },
+        ],
+      };
+}
+// a choice's click: the lock step picks where, the preview answers
+export const runPick = (act: HudActions, pick: ConfirmPick) =>
+  pick === 'unit' || pick === 'tile' ? act.lock(pick) : act.answer(pick === 'yes');
+
+// "Execute?" window, the strike preview: hit and effect on each target, life before → after, then confirmParts
 export function renderConfirm(box: HTMLElement, v: HudView, open: boolean, act: HudActions) {
   const s = v.screen;
   box.hidden = !open || s.k !== 'confirm';
   if (s.k !== 'confirm' || box.hidden) return;
   const b = v.battle;
-  const a = ABILITIES[s.ability];
   const preview = b.preview(s.ability, s.target);
   const rows = forecast(b, s.ability, preview).map((f) =>
     f.support
@@ -208,32 +259,17 @@ export function renderConfirm(box: HTMLElement, v: HudView, open: boolean, act: 
           ` ${forecastText(f)} · ${hpAfterText(f)}${f.ally ? t(' · ALIADO!', ' · ALLY!') : ''}`,
         ),
   );
-  if (a.cost) rows.push(el('p', { class: 'unit-note' }, spendNote(b.actor, a)));
-  if (a.charge) rows.push(el('p', { class: 'unit-note' }, chargeNote(b, s)));
-  const owed = counterNote(b, s.ability, preview);
-  if (owed) rows.push(el('p', { class: 'unit-note' }, owed));
-  // the lock step (Nov 15): the same window, its two choices in place of Yes/No
-  const choices = s.lock
-    ? [
-        button(`item${s.lock === 'unit' ? ' focus' : ''}`, [t('No personagem', 'On the character')], () =>
-          act.lock('unit'),
-        ),
-        button(`item${s.lock === 'tile' ? ' focus' : ''}`, [t('Na casa', 'On the tile')], () => act.lock('tile')),
-      ]
-    : [
-        button(`item${s.yes ? ' focus' : ''}`, [t('Confirmar', 'Confirm'), hint('Enter')], () => act.answer(true)),
-        button(`item${s.yes ? '' : ' focus'}`, [t('Voltar', 'Back'), hint('Esc')], () => act.answer(false)),
-      ];
+  const parts = confirmParts(b, s);
   box.replaceChildren(
-    el(
-      'strong',
-      { class: 'panel-head' },
-      abilityIcon(s.ability),
-      s.lock
-        ? t(`${abilityName(s.ability)}: travar onde?`, `${abilityName(s.ability)}: lock on?`)
-        : executeText(s.ability),
-    ),
+    el('strong', { class: 'panel-head' }, abilityIcon(s.ability), parts.title),
     ...rows,
-    el('div', { class: 'yes-no' }, ...choices),
+    ...parts.notes.map((n) => el('p', { class: 'unit-note' }, n)),
+    el(
+      'div',
+      { class: 'yes-no' },
+      ...parts.choices.map((c) =>
+        button(`item${c.focus ? ' focus' : ''}`, [c.label, c.key ? hint(c.key) : null], () => runPick(act, c.pick)),
+      ),
+    ),
   );
 }

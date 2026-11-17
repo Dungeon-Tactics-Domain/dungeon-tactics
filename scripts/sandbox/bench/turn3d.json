@@ -1,0 +1,10 @@
+{
+  "name": "turn3d",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "viewport": { "width": 1280, "height": 720 },
+  "actor": "h-warrior",
+  "screen": "menu",
+  "turn3d": true,
+  "hide": ["fps"]
+}

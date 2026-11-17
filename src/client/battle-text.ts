@@ -17,6 +17,7 @@ import {
   UNIT_DEFS,
   type UnitDef,
 } from '../shared/battle/units.ts';
+import type { Command } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 
 const hpText = (u: UnitState) => `${u.hp}/${UNIT_DEFS[u.def].hp}`;
@@ -62,40 +63,61 @@ const hpRegenText = (def: UnitDef) =>
 export const regenLine = (def: UnitDef) =>
   [...RESOURCES.map((k) => regenText(def, k)), hpRegenText(def)].filter(Boolean).join(' · ');
 
+// A command row's name (HTML menu and 3D menu); `undo`: moved and did not act, so Move undoes the move, like Tactics Ogre
+const COMMAND_NAME: Record<Command, () => string> = {
+  move: () => t('Mover', 'Move'),
+  act: () => t('Habilidades', 'Abilities'), // the reference's name for the row and for its submenu
+  wait: () => t('Esperar', 'Wait'),
+  status: () => 'Status',
+};
+export const commandName = (c: Command, undo = false) =>
+  c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c]();
+// The note at the end of an ability row: its cost and charge ticks; greyed out, what is missing (a disabled row says why)
+export const abilityNote = (u: UnitState, a: AbilityDef, on: boolean) =>
+  on
+    ? [costText(a), a.charge ? t(`${a.charge} tiq.`, `${a.charge} tk`) : ''].filter(Boolean).join(' · ')
+    : shortOf(u, a);
+
 // ability sheet (submenu and status window)
-export function abilityDetail(id: string): string {
+export const abilityDetail = (id: string) => abilityPages(id).flat().join(' · ');
+
+// The same facts as the three pages of the FFT-style ability sheet (?menu3d and ?menucss): reach and hit, what else it
+// does, what it costs. In abilityDetail's order, so the help line reads the same
+export function abilityPages(id: string): [hit: string[], more: string[], cost: string[]] {
   const a = ABILITIES[id];
-  const parts = [
+  const hit = [
     a.range[1] === 0 ? t('em volta de você', 'around you') : t(`alcance ${range(a.range)}`, `range ${range(a.range)}`),
   ];
   if (a.damage[1])
-    parts.push(
+    hit.push(
       t(`dano ${range(a.damage)}`, `damage ${range(a.damage)}`),
       t(`acerto ${a.accuracy}%`, `accuracy ${a.accuracy}%`),
     );
-  if (a.heal[1]) parts.push(t(`cura ${range(a.heal)}`, `heals ${range(a.heal)}`));
-  if (a.radius) parts.push(t(`área de raio ${a.radius} (pega aliados)`, `area of radius ${a.radius} (hits allies)`)); // radius 2 has existed since Shadow wave
-  if (a.push) parts.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
+  if (a.heal[1]) hit.push(t(`cura ${range(a.heal)}`, `heals ${range(a.heal)}`));
+  const more: string[] = [];
+  if (a.radius) more.push(t(`área de raio ${a.radius} (pega aliados)`, `area of radius ${a.radius} (hits allies)`)); // radius 2 has existed since Shadow wave
+  if (a.push) more.push(t(`empurra ${a.push}`, `pushes ${a.push}`));
   // the path of the trajectory grill of Nov 15: what may stand in the way
   if (a.needsSight)
-    parts.push(
+    more.push(
       a.arc
         ? t('tiro em curva: passa por cima do que é baixo', 'arcing shot: flies over what is low')
         : t('tiro reto: para no primeiro obstáculo', 'straight shot: stops at the first obstacle'),
     );
   else if (a.magic && a.range[1] > 0)
-    parts.push(t('conjurada no alvo, sem linha de visão', 'cast on the target, no line of sight'));
-  if (a.heightRange) parts.push(t('+1 de alcance por nível acima', '+1 range per level above'));
-  if (a.cost) parts.push(t(`gasta ${costText(a)}`, `costs ${costText(a)}`));
+    more.push(t('conjurada no alvo, sem linha de visão', 'cast on the target, no line of sight'));
+  if (a.heightRange) more.push(t('+1 de alcance por nível acima', '+1 range per level above'));
+  const cost: string[] = [];
+  if (a.cost) cost.push(t(`gasta ${costText(a)}`, `costs ${costText(a)}`));
   // Nov 15: the player locks it on the tile or the character, and starting it costs half the movement left
   if (a.charge)
-    parts.push(
+    cost.push(
       t(
         `carrega ${a.charge} tiques; trava na casa ou no personagem; começar gasta metade do movimento que sobra`,
         `charges ${a.charge} ticks; locks on the tile or the character; starting it costs half the movement left`,
       ),
     );
-  return parts.join(' · ');
+  return [hit, more, cost];
 }
 
 // Text summary of what the last action did: the floating number vanishes in 1 s and the screen reader does not read it.
