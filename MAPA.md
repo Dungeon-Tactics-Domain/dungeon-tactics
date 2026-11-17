@@ -55,7 +55,7 @@ parseGrid and withRamps (grid.ts).
 
 - `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game; the title before the models; the start banner (announce).
 - `src/client/main.ts` — Game: wires rules, scene, HUD and input for one battle and owns the turn loop.
-- `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
+- `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, strike preview "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
 - `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
@@ -71,7 +71,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — pure interface logic (no DOM, no Three.js)
 
-- `src/client/command.ts` — FFT command menu (Move, Act, Wait, Status): which turn screen shows and what each key leads to.
+- `src/client/command.ts` — FFT command menu (Move, Abilities, Wait, Status): which turn screen shows, what each key leads to and where Cancel goes back to.
 - `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
 - `src/client/charge-lines.ts` — charge and counter lines and notes computed from the rule that fires them.
 - `src/client/turn-marks.ts` — what the scene marks on the hero's turn: tiles, cursor frame, range ring, shot line, charge preview and counters (turnMarks).
@@ -102,6 +102,39 @@ parseGrid and withRamps (grid.ts).
 - `src/client/glass.ts` — panel opacity and backdrop blur (dt:glass), set as CSS variables on the page; pure parse and mapping.
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
+- `src/client/layout-mode.ts` — interface layout choice, edges or frame (dt:layout, ?layout=), set as data-layout on the page.
+- `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only): the 16:9 area, thirds, centre and every region of layout.ts as placed.
+- `src/client/ui3d/layout.ts` — the battle interface's regions measured on FFT The Ivalice Chronicles (REGIONS) and where each sits on a page in the two layouts (stage, place); pure.
+- `src/client/ui3d/skin-flags.ts` — which look each interface piece takes (?menu=, ?turn=, ?ui=, ?pixel and the older flags) and the table of pieces (PIECES); pure.
+- `src/client/hud-skin.ts` — the HUD's localhost looks under comparison, piece by piece: loadSkin() fetches each as its own chunk; the turn list's boxes and input for the 3D list.
+- `src/client/hud-menucss.ts` — MenuCss: the command menu as parchment in HTML and CSS (?menucss), with the glove and the ability sheet.
+- `src/client/menucss.css` — the styles of ?menucss, fetched only with the flag.
+- `src/client/ui3d/layer.ts` — Ui3dLayer: the one transparent WebGL canvas over the HUD every 3D screen draws on (Ui3dScreen), on the battle clock, with the pixel filter and the F3 cost.
+- `src/client/ui3d/panel.ts` — 3D kit: the parchment panel and inset band shaders, the theme (--ui3d-* tokens) and the quad helper.
+- `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText); pure wrapLines.
+- `src/client/ui3d/icons.ts` — 3D kit: low-poly parts merged into one tinted geometry, the shared geometry cache and the icon shader.
+- `src/client/ui3d/pixel.ts` — 3D kit: the pixel filter (block size and the shader that reads the small target); pure.
+- `src/client/ui3d/spring.ts` — 3D kit: damped spring, ease and the page ring step; pure.
+- `src/client/menu3d/menu3d.ts` — Menu3d: the command menu in 3D (?menu=3d), on the reference's places, with its own transparent buttons.
+- `src/client/menu3d/menu-view.ts` — what the 3D menu shows (rows, sheet pages, icon of each ability) and what changed between two draws; pure.
+- `src/client/menu3d/menu-layout.ts` — where the 3D menu, its submenu and its sheet sit, and each row's box; pure.
+- `src/client/menu3d/column.ts` — a column of the 3D menu (panel, rows, text) and the Icon on its plate.
+- `src/client/menu3d/sheet.ts` — the 3D menu's ability sheet and its sliding pages.
+- `src/client/menu3d/models.ts` — the low-poly models of the 3D menu (command and ability icons, plates, emblem, glove).
+- `src/client/turn3d/turn3d.ts` — Turn3d: the turn list in 3D (?turn3d), a card per row over the HUD's unseen list.
+- `src/client/turn3d/queue-view.ts` — what each card of the 3D turn list shows and which card a redrawn row keeps (matchRows); pure.
+- `src/client/turn3d/card.ts` — the 3D turn card's shader, its painted detail and digits.
+- `src/client/bar3d/bar3d.ts` — Bar3d: the combat bar in 3D (?bar=3d): the acting unit's sheet, the strike preview plate and the target's sheet on their regions, over the HUD's unseen panels.
+- `src/client/bar3d/bar-view.ts` — what the 3D combat bar shows (sheet numbers, the bar's changing part, the plate's forecast texts); pure.
+- `src/client/bar3d/bar-layout.ts` — where each part of a sheet and of the plate sits inside its region, and how a text hangs on its spot; pure.
+- `src/client/bar3d/plates.ts` — the 3D combat bar's shaders: a whole unit sheet (band, bars, framed portrait) and the arrow plate.
+- `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D (?banner=3d, ?height=3d, ?hints=3d), each on its region of the reference; the tile line (floor, water, spikes, a charge landing) small under the Height.
+- `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D (?confirm=3d) beside the character, drawn over the unseen HTML window that keeps its place, sizes and buttons; text from hud-menus.ts confirmParts.
+- `src/client/hints3d/hints-view.ts` — the button hints of each turn screen for the device in use (hintsFor), the Height number and where each hint of a row sits (layRow); pure.
+- `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
+- `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
+- `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.
+- `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result) on the shared layer; types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
