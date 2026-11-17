@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { defaultGroup, RECRUIT_COST, recruit } from '../src/client/group.ts';
-import type { Hit, Page } from '../src/client/town3d/page.ts';
+import { type Hit, neighbour, type Page } from '../src/client/town3d/page.ts';
 import { PAGES, partyPage } from '../src/client/town3d/party-view.ts';
 import { barPage, shopPage } from '../src/client/town3d/shop-view.ts';
-import { C, P, T } from '../src/client/town3d/town-layout.ts';
+import { gatePage, menuPage, soonPage } from '../src/client/town3d/street-view.ts';
+import { C, G, M, P, T } from '../src/client/town3d/town-layout.ts';
 import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
 
 // The town's windows in 3D (?shop=3d, ?party=3d; Nov 17): the pages the drawing is handed, built from the saved game.
@@ -101,6 +102,75 @@ describe('3D town windows: the Party', () => {
   });
 });
 
+describe('3D town windows: the street (menu, gate, a place to come)', () => {
+  const live = { floor: 'andar 2 de 3', gold: 40 };
+  const switches = [
+    { label: 'Grade da cidade', value: 'Desligada' },
+    { label: 'Movimento fluido na cidade', value: 'Ligado' },
+  ];
+  const menu = (quest = {}, at?: string) =>
+    menuPage({ name: 'Vila de Vauclair', gold: 120, party: [4, 8], quest, switches, at });
+
+  it('the menu lists the quest, the windows, the title and the town’s switches, in the cursor’s order', () => {
+    const p = menu();
+    expect(p.hits.map((h) => h.id)).toEqual([
+      'quest:new',
+      'open:shop',
+      'open:bar',
+      'open:party',
+      'title',
+      'street',
+      'sw:0',
+      'sw:1',
+    ]);
+    expect(says(p, /^Ligado$/)).toBe(true); // a switch says its state in words
+    expect(says(p, /Nenhuma expedição em curso/)).toBe(true);
+    expect(says(p, /^120$/)).toBe(true);
+  });
+
+  it('an expedition in progress adds Continue first and says where it stands', () => {
+    const p = menu({ live });
+    expect(p.hits[0]).toMatchObject({ id: 'quest:continue', name: 'Continuar a expedição' });
+    expect(says(p, /andar 2 de 3 · 40 de ouro achado/)).toBe(true);
+  });
+
+  it('the longest menu fits above the help band, inside the page, clear of the town’s box', () => {
+    const p = menu({ live });
+    expect(p.hits).toHaveLength(9);
+    const last = p.hits.at(-1)!.box;
+    expect(last.y + last.h).toBeLessThanOrEqual(T.help.y);
+    expect(inPage(p)).toBe(true);
+    expect(M.rows.x + M.rows.w).toBeLessThanOrEqual(M.box.x);
+    expect(M.rows.x).toBeGreaterThanOrEqual(T.hand); // room for the glove at the rows' left
+  });
+
+  it('the help band says the row in focus; an armed New expedition says what the 2nd press does', () => {
+    expect(says(menu({}, 'open:bar'), /Recruta gente/)).toBe(true);
+    const armed = menu({ live, armed: true }, 'quest:new');
+    expect(hit(armed, 'quest:new').name).toBe('Confirmar nova expedição');
+    expect(says(armed, /Confirmar: encerra a expedição atual/)).toBe(true);
+    expect(hit(menu({ live }), 'quest:new').name).toBe('Nova expedição');
+  });
+
+  it('the gate has the quest’s plaques and the way back, and says what waits below', () => {
+    const p = gatePage({ name: 'Portão da masmorra', gold: 0, floors: 3, quest: { live } });
+    expect(p.hits.map((h) => h.id)).toEqual(['quest:continue', 'quest:new', 'stay']);
+    expect(says(p, /3 andares de salas[\s\S]*Expedição em curso: andar 2 de 3/)).toBe(true);
+    expect(gatePage({ name: 'Portão', gold: 0, floors: 3, quest: {} }).hits.map((h) => h.id)).toEqual([
+      'quest:new',
+      'stay',
+    ]);
+    expect(G.box.x).toBeGreaterThanOrEqual(T.plaque.x + T.plaque.w);
+    expect(G.box.y + G.box.h).toBeLessThanOrEqual(T.help.y);
+  });
+
+  it('a place still to come says its line and has one way out', () => {
+    const p = soonPage({ name: 'Ferreiro', gold: 0, says: 'A forja abre em breve.' });
+    expect(p.hits.map((h) => h.id)).toEqual(['stay']);
+    expect(says(p, /A forja abre em breve/)).toBe(true);
+  });
+});
+
 describe('3D town windows: where they sit', () => {
   it('the window is the whole reference, centred and scaled as one', () => {
     expect(place(REGIONS.town, stage(1920, 1080, 'frame'))).toEqual({ x: 0, y: 0, w: 1920, h: 1080 });
@@ -116,5 +186,58 @@ describe('3D town windows: where they sit', () => {
     expect(P.page.x).toBeGreaterThanOrEqual(T.plaque.x + T.plaque.w);
     expect(P.page.x + P.page.w).toBeLessThanOrEqual(P.roster.x);
     expect(P.page.y + P.page.h).toBeLessThanOrEqual(T.help.y);
+  });
+});
+
+// Fernando, Nov 17: the cursor goes where the eye expects, never around to the other end
+describe('3D town windows: the cursor goes to the neighbour on that side', () => {
+  const b = (id: string, x: number, y: number, off = false): Hit => ({
+    id,
+    box: { x, y, w: 100, h: 40 },
+    name: id,
+    on: 'dark',
+    off,
+  });
+  // a 2x2 grid of cards, a wide row under them and a button far to the right, off the grid's lines
+  const grid = [b('a', 0, 0), b('b', 120, 0), b('c', 0, 60), b('d', 120, 60), b('far', 600, 300)];
+
+  it('down goes to the one right below, not to the next in the list', () => {
+    expect(neighbour(grid, 'a', 'down')).toBe('c');
+    expect(neighbour(grid, 'b', 'down')).toBe('d');
+  });
+  it('up goes to the one right above', () => {
+    expect(neighbour(grid, 'd', 'up')).toBe('b');
+  });
+  it('right goes to the one beside it, on its own line', () => {
+    expect(neighbour(grid, 'a', 'right')).toBe('b');
+    expect(neighbour(grid, 'c', 'right')).toBe('d');
+  });
+  it('left goes to the one beside it', () => {
+    expect(neighbour(grid, 'd', 'left')).toBe('c');
+  });
+  it.each([
+    ['a', 'up'],
+    ['a', 'left'],
+    ['d', 'down'],
+    ['d', 'right'], // `far` is to the right but not on its line
+  ] as const)('at an edge (%s, %s) there is no neighbour: the cursor stays', (at, dir) => {
+    expect(neighbour(grid, at, dir)).toBeUndefined();
+  });
+  it('skips a button that is off and tolerates a few px out of line', () => {
+    expect(neighbour([b('a', 0, 0), b('x', 0, 60, true), b('c', 0, 120)], 'a', 'down')).toBe('c');
+    expect(neighbour([b('a', 0, 0), b('n', 104, 60)], 'a', 'down')).toBe('n'); // 4 px past its edge
+    expect(neighbour([b('a', 0, 0), b('n', 130, 60)], 'a', 'down')).toBeUndefined();
+  });
+  it('the town menu is one column: up and down walk it, left and right find nobody, the ends do not wrap', () => {
+    const p = menuPage({ name: 'Vila', gold: 0, party: [4, 8], quest: {}, switches: [] });
+    const ids = p.hits.map((h) => h.id);
+    expect(neighbour(p.hits, ids[0], 'down')).toBe(ids[1]);
+    expect(neighbour(p.hits, ids[1], 'up')).toBe(ids[0]);
+    expect(neighbour(p.hits, ids[0], 'up')).toBeUndefined();
+    expect(neighbour(p.hits, ids.at(-1)!, 'down')).toBeUndefined();
+    for (const id of ids) for (const d of ['left', 'right'] as const) expect(neighbour(p.hits, id, d)).toBeUndefined();
+    const gate = gatePage({ name: 'Portão', gold: 0, floors: 3, quest: {} });
+    expect(neighbour(gate.hits, 'quest:new', 'down')).toBe('stay');
+    expect(neighbour(gate.hits, 'stay', 'down')).toBeUndefined();
   });
 });

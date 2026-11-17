@@ -2,6 +2,7 @@
 // reads every flag, from the address and from a sandbox spec:
 //   ?menu=html|css|3d, ?turn=html|3d, ?bar=, ?banner=, ?height=, ?hints=, ?confirm=, ?result=html|3d   one piece each
 //   ?party=html|3d, ?shop=html|3d     the town's Party, and its Shop and Tavern (town3d/)
+//   ?townhud=, ?townmenu=, ?talk=html|3d   the town's HUD, its menu with the gate and the places, its speech box
 //   ?options=html|3d, ?title=html|3d                   the flow screens around the battle (flow3d/)
 //   ?tools=html|3d, ?status=html|3d    the corner menu and the Status window (window3d/)
 //   ?ui=html|css|3d                    a preset: every piece that has that look takes it
@@ -34,6 +35,9 @@ export const PIECES = {
   title: ['html', '3d'], // the title screen (flow3d/)
   tools: ['html', '3d'], // the corner menu: its button (3 bars), Back and the list of tools
   status: ['html', '3d'], // the Status window: a unit's sheet and an ability's facts
+  townhud: ['html', '3d'], // the walkable town's HUD: its name, what Enter does (line and balloon), the menu button
+  townmenu: ['html', '3d'], // the town menu, the gate's quest and a place still to come (town3d/street.ts)
+  talk: ['html', '3d'], // the speech box, in town (town3d/talk3d.ts); a battle's conversations keep the HTML one
 } as const satisfies Record<string, readonly Variant[]>;
 export type Piece = keyof typeof PIECES;
 

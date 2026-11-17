@@ -127,7 +127,11 @@ export function padDialog(a: KeyAction): boolean {
   if (a.k === 'cancel' || a.k === 'help')
     dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
   else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
-  else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
+  else if (a.k === 'cursor' && overlay.querySelector('.place-walk')) {
+    // a window that walks its buttons by where they are (town3d/street.ts) takes the d-pad as the arrow it stands for
+    const code = `Arrow${a.dir[0].toUpperCase()}${a.dir.slice(1)}`;
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true }));
+  } else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
     // on the volume bar, left and right change the value (stepUp/Down do not fire 'input': it is dispatched by hand)
     if (a.dir === 'right') range.stepUp();
     else range.stepDown();
