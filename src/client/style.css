@@ -3506,6 +3506,21 @@ p.gold strong::before,
   border-left: 6px solid var(--focus);
   background: color-mix(in srgb, var(--shade) 25%, transparent);
 }
+/* the Tavern's recruit in the box: the face beside the name, the numbers and abilities in small type (the old Party
+   list's rules, which left with it when the Party screen came) */
+.party-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.party-stats,
+.party-skills {
+  margin: 2px 0 0;
+  font-size: var(--fs-sm);
+}
+.party-stats {
+  font-variant-numeric: tabular-nums;
+}
 .counter-detail h3:first-child,
 .counter-detail .party-card h3 {
   margin-top: 0;
