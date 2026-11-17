@@ -17,8 +17,9 @@ import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { ease } from '../ui3d/spring.ts';
+import type { Way } from '../ui3d/walk.ts';
 import { type Colors, colors, FOCUS, Hand, label, lift, put, rgba, solid } from './draw.ts';
-import { fits, itemBox, type OptionsLayout, optionsLayout, REF, shown, thumb } from './options-layout.ts';
+import { fits, itemBox, type OptionsLayout, optionsLayout, optionsWalk, REF, shown, thumb } from './options-layout.ts';
 import { optionsView, type RowView } from './options-view.ts';
 
 const ON = '#4daf7c'; // a switch turned on, the green of the Height number
@@ -70,11 +71,32 @@ export class Options3d implements Ui3dScreen {
     this.buttons = [...board.actions, button('secondary', t('Voltar', 'Back'), () => this.win?.close())];
     this.host.replaceChildren(board.list, board.help, ...this.buttons);
     this.win = dialog('options3d', board.title, [this.host]);
+    this.win.overlay.addEventListener('walk', (e) => this.walk(e as CustomEvent<Way>));
     this.watch.observe(this.host, { subtree: true, childList: true, characterData: true, attributes: true });
     this.open = 0;
     this.layer.solo = this; // the battle's own 3D pieces stay out, as its HUD does
     this.build();
     return { close: () => (this.html ?? this.win)?.close() };
+  }
+
+  // An arrow or the d-pad (dialog.ts `walked`): the cursor goes where optionsWalk says, past a command that is off.
+  // Left and right on a row with a value are the row's own (option-row.ts): they change it
+  private walk(e: CustomEvent<Way>) {
+    const L = this.at,
+      b = this.board,
+      way = e.detail;
+    if (!L || !b) return;
+    const els = [...b.list.querySelectorAll<HTMLButtonElement>('.opt-row'), ...this.buttons];
+    const at = els.indexOf(document.activeElement as HTMLButtonElement);
+    if ((way === 'left' || way === 'right') && els[at]?.querySelector('.opt-value')) return;
+    e.preventDefault();
+    const heads = b.items.map((it) => 'head' in it);
+    const step = (from: number, to: Way) => optionsWalk(L, heads, b.list.scrollTop, from, to);
+    let to = at < 0 ? 0 : step(at, way);
+    // a command that is off (Restart on the enemy's turn): on to the next one down or up its column
+    for (let next = to; els[to]?.disabled; to = next)
+      if ((next = step(to, way === 'up' ? 'up' : 'down')) === to) return;
+    els[to]?.focus();
   }
 
   private hide() {

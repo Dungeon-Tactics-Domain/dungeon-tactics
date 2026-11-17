@@ -74,6 +74,7 @@ export function mountTown3d(
     const win = ui.window({
       name: t('Loja', 'Shop'),
       onBack: back,
+      byPlace: true, // commands down the left, the list beside them: the arrows go by where each is
       focus: (id) => {
         if (!id.startsWith('row:') || id.slice(4) === sel) return;
         sel = id.slice(4);
@@ -115,6 +116,7 @@ export function mountTown3d(
     const win = ui.window({
       name: t('Taverna', 'Tavern'),
       onBack: back,
+      byPlace: true,
       focus: (id) => {
         if (!id.startsWith('row:') || id.slice(4) === sel) return;
         sel = id.slice(4);

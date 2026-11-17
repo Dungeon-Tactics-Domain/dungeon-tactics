@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fits, itemBox, optionsLayout, REF, shown, thumb } from '../src/client/flow3d/options-layout.ts';
+import { fits, itemBox, optionsLayout, optionsWalk, REF, shown, thumb } from '../src/client/flow3d/options-layout.ts';
 import { optionsView } from '../src/client/flow3d/options-view.ts';
 import {
   flow,
@@ -12,7 +12,7 @@ import {
   sideBox,
   stops,
 } from '../src/client/flow3d/sheet-layout.ts';
-import { REF as TITLE, titleLayout } from '../src/client/flow3d/title-layout.ts';
+import { REF as TITLE, titleLayout, stops as titleStops } from '../src/client/flow3d/title-layout.ts';
 import { percent, pick } from '../src/client/option-row.ts';
 import { neighbour } from '../src/client/ui3d/walk.ts';
 
@@ -210,6 +210,80 @@ describe('3D sheets: where a window of the title or of Options sits', () => {
     expect(lines[5]).toMatchObject({ top: lines[4].top, x: SHEET.keyW, ink: 'soft' });
     for (const i of [1, 2, 3, 4]) expect(lines[i].top).toBeGreaterThanOrEqual(lines[i - 1].top + lines[i - 1].h);
     expect(height).toBeGreaterThan(lines[5].top + lines[5].h);
+  });
+});
+
+// Fernando, Nov 17: the keys and the pad follow what is seen. The rows of the list (heads left out) and then the
+// four commands at their right; left and right on a row with a value never get here (they change it)
+describe('3D Options: where an arrow takes the cursor', () => {
+  // the game's own list: 2 rows, 2 rows, 13 rows and the 2 help rows, each group under its head
+  const heads = [2, 2, 13, 2].flatMap((n) => [true, ...Array<boolean>(n).fill(false)]);
+  const L = optionsLayout(1920, 1080, heads, 4);
+  const rows = 19,
+    [restart, town, dev, back] = [19, 20, 21, 22];
+  const bottom = L.content - L.list.h; // the list scrolled to its end
+  const walk = (at: number, way: Parameters<typeof optionsWalk>[4], scroll = 0) =>
+    optionsWalk(L, heads, scroll, at, way);
+
+  it('down and up: the row under and the row over, past a head', () => {
+    expect(walk(0, 'down')).toBe(1);
+    expect(walk(1, 'down')).toBe(2); // the "Sound" head lies between them
+    expect(walk(2, 'up')).toBe(1);
+    expect(walk(restart, 'down')).toBe(town);
+    expect(walk(back, 'up')).toBe(dev);
+  });
+  it('the two ends of the list meet, inside the list: the short way to the rows that reach the commands', () => {
+    expect(walk(0, 'up')).toBe(rows - 1);
+    expect(walk(rows - 1, 'down', bottom)).toBe(0);
+  });
+  it('the commands stay at the ends of their column, wherever the list is scrolled: never into a row out of sight', () => {
+    for (const scroll of [0, bottom]) {
+      expect(walk(restart, 'up', scroll)).toBe(restart);
+      expect(walk(back, 'down', scroll)).toBe(back);
+      for (const b of [restart, town, dev, back]) expect(walk(b, 'right', scroll)).toBe(b);
+    }
+  });
+  it('left from a command: the row nearest its height on screen, with the list at the top or at its end', () => {
+    const items = heads.flatMap((h, i) => (h ? [] : [i])); // each row's place in the list
+    for (const b of [restart, town, dev, back])
+      for (const scroll of [0, bottom]) {
+        const mid = L.buttons[b - rows].y + L.buttons[b - rows].h / 2;
+        const off = items.map((i) => Math.abs(itemBox(L, i, scroll).y + L.rowH / 2 - mid));
+        expect(walk(b, 'left', scroll)).toBe(off.indexOf(Math.min(...off)));
+        expect(Math.min(...off)).toBeLessThan(L.rowH); // a row in the list's window, beside the command
+      }
+  });
+  it('right from a help row (it has no value): the commands, the nearest one; left has nothing', () => {
+    expect(walk(rows - 1, 'right', bottom)).toBe(back);
+    expect(walk(rows - 2, 'right', bottom)).toBe(back);
+    expect(walk(rows - 1, 'left', bottom)).toBe(rows - 1);
+  });
+  it('nothing in focus, or a place that is not there: it stays', () => {
+    expect(walk(-1, 'down')).toBe(-1);
+    expect(walk(99, 'up')).toBe(99);
+  });
+});
+
+describe('3D title: where an arrow takes the cursor', () => {
+  const L = titleLayout(1920, 1080, 5);
+  const boxes = titleStops(L, true),
+    lang = 5;
+  it('down and up walk the commands, and stay at the first and at the last: no way round', () => {
+    expect(neighbour(boxes, 0, 'down')).toBe(1);
+    expect(neighbour(boxes, 4, 'up')).toBe(3);
+    expect(neighbour(boxes, 0, 'up')).toBe(0);
+    expect(neighbour(boxes, 4, 'down')).toBe(4); // the language button is off to the right, not below
+  });
+  it('right goes to the language button at the corner, left comes back to the last command; left of the list is empty', () => {
+    expect(neighbour(boxes, 4, 'right')).toBe(lang);
+    expect(neighbour(boxes, lang, 'left')).toBe(4);
+    for (let i = 0; i < 5; i++) expect(neighbour(boxes, i, 'left')).toBe(i);
+  });
+  it('the language button stays at its three edges', () => {
+    for (const way of ['up', 'down', 'right'] as const) expect(neighbour(boxes, lang, way)).toBe(lang);
+  });
+  it('without the language button there are only the commands', () => {
+    expect(titleStops(L, false)).toEqual(L.rows);
   });
 });
 

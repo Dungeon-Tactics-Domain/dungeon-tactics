@@ -30,6 +30,9 @@ export interface TitleLayout {
   lang: Box;
 }
 
+// what an arrow or the d-pad walks (ui3d/walk.ts), in order: the commands, then the language button when there is one
+export const stops = (L: TitleLayout, lang: boolean): Box[] => (lang ? [...L.rows, L.lang] : L.rows);
+
 export function titleLayout(w: number, h: number, rows: number): TitleLayout {
   const st = stage(w, h, 'frame'),
     s = st.s;

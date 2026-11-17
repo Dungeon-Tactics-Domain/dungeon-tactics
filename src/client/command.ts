@@ -92,6 +92,11 @@ export function cancelStep(b: Battle, s: Screen, aiming: string | null = null): 
 export const PAGES = 3;
 export const turnPage = (page: number, dir: 1 | -1) => (page + dir + PAGES) % PAGES;
 
+// The lock step's two choices sit side by side, the character on the left: left and right go to the one on that side
+// and stay there at the end, up and down have nothing to go to (Fernando, Nov 17: the cursor follows what is seen)
+export const lockStep = (lock: Lock, dir: 'up' | 'down' | 'left' | 'right'): Lock =>
+  dir === 'left' ? 'unit' : dir === 'right' ? 'tile' : lock;
+
 // moves up or down the menu skipping what's grayed out, wrapping around as in FFT
 export function stepIndex(index: number, dir: 1 | -1, enabled: boolean[]): number {
   for (let k = 1; k <= enabled.length; k++) {

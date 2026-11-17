@@ -9,9 +9,10 @@ import type { KeyAction } from './keyboard.ts';
 import { nextSpot, type WalkDir } from './spot-walk.ts';
 
 // A `.spot-walk` window (the 3D expedition map; Fernando, Nov 17) walks its buttons by where they are on screen: a
-// direction goes to the nearest button that way, and stays where nothing lies (spot-walk.ts), keys and pad alike
-function spotWalk(overlay: HTMLElement, dir: WalkDir) {
-  const items = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled])')].filter((b) => b.offsetParent);
+// direction goes to the nearest button that way, and stays where nothing lies (spot-walk.ts), keys and pad alike. An
+// `.arrow-walk` group (the end of a battle's commands, the HTML map's rooms) walks its own `items` the same way
+function spotWalk(overlay: HTMLElement, dir: WalkDir, within = 'button:not([disabled])') {
+  const items = [...overlay.querySelectorAll<HTMLElement>(within)].filter((b) => b.offsetParent);
   const at = items.indexOf(document.activeElement as HTMLElement);
   const boxes = items.map((b) => b.getBoundingClientRect());
   items[at < 0 ? 0 : nextSpot(boxes, at, dir)]?.focus();
@@ -57,13 +58,11 @@ export function dialog(
     (e) => {
       // up and down walk a window list (title, Quick battle, Town), as the title footer says; only the topmost window moves
       // (a list behind another window stays put), even after a click left the focus on the page
-      // `.arrow-walk` takes the arrows where the rows are not menu rows (Nov 16 QA: the Party list and the expedition
-      // map's rooms walked by Tab only); left and right too, since the map's rooms of a row sit side by side
-      const items = [
-        ...overlay.querySelectorAll<HTMLElement>(
-          ':is(.camp-list, .arrow-walk) :is(button:not([disabled]), [role="button"])',
-        ),
-      ].filter((b) => b.offsetParent);
+      // `.arrow-walk` takes the arrows where the rows are not menu rows (Nov 16 QA: the expedition map's rooms and the
+      // end of a battle's commands walked by Tab only), all four by where each button is (Fernando, Nov 17): the
+      // map's rooms of a row sit side by side, and nothing wraps or goes on a slant
+      const walk = ':is(.camp-list, .arrow-walk) :is(button:not([disabled]), [role="button"])';
+      const items = [...overlay.querySelectorAll<HTMLElement>(walk)].filter((b) => b.offsetParent);
       const top = [...document.querySelectorAll('.overlay')].at(-1) === overlay;
       if (WAYS[e.code] && top && overlay.matches('.spot-walk')) {
         e.preventDefault();
@@ -72,7 +71,11 @@ export function dialog(
       const dir = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[e.code];
       // a 3D screen drawn over this window walks its own boxes, by what is seen (`walked`)
       if (dir && top && walked(overlay, e.code.slice(5).toLowerCase())) return e.preventDefault();
-      const sideways = (e.code === 'ArrowLeft' || e.code === 'ArrowRight') && !overlay.querySelector('.arrow-walk');
+      if (dir && items.length && top && overlay.querySelector('.arrow-walk')) {
+        e.preventDefault();
+        return spotWalk(overlay, WAYS[e.code], walk);
+      }
+      const sideways = e.code === 'ArrowLeft' || e.code === 'ArrowRight';
       if (dir && items.length && top && !sideways) {
         e.preventDefault();
         const at = items.indexOf(document.activeElement as HTMLElement);
@@ -129,9 +132,10 @@ export function secondTap(e: Event, text: string): boolean {
 const walked = (overlay: HTMLElement, way: string) =>
   !overlay.dispatchEvent(new CustomEvent('walk', { detail: way, cancelable: true }));
 
-// The gamepad inside the topmost window (the battle's and the town's loops): the d-pad moves between its visible buttons,
-// A presses the focused one, B closes it like Esc, left and right change a focused volume bar or Options row. False with no window open,
-// so the action goes to the map behind
+// The gamepad inside the topmost window (the battle's and the town's loops): A presses the focused button, B closes
+// the window like Esc, the d-pad's up and down move between its visible buttons, and its left and right are the arrow
+// keys they stand for (Fernando, Nov 17: sideways never walks a list): they change a focused volume bar or Options
+// row, turn the Party's pages, walk an `.arrow-walk` row. False with no window open, so the action goes to the map behind
 export function padDialog(a: KeyAction): boolean {
   // the topmost window: the town menu stays open under the window beside it
   const overlay = [...document.querySelectorAll<HTMLElement>('.overlay')].at(-1);
@@ -151,26 +155,22 @@ export function padDialog(a: KeyAction): boolean {
   else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
   else if (a.k === 'cursor' && overlay.matches('.spot-walk')) spotWalk(overlay, a.dir);
   else if (a.k === 'cursor' && walked(overlay, a.dir)) return true;
-  else if (a.k === 'cursor' && overlay.querySelector('.place-walk')) {
-    // a window that walks its buttons by where they are (town3d/street.ts) takes the d-pad as the arrow it stands for
-    const code = `Arrow${a.dir[0].toUpperCase()}${a.dir.slice(1)}`;
-    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true }));
-  } else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
+  else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
     // on the volume bar, left and right change the value (stepUp/Down do not fire 'input': it is dispatched by hand)
     if (a.dir === 'right') range.stepUp();
     else range.stepDown();
     range.dispatchEvent(new Event('input'));
   } else if (
     a.k === 'cursor' &&
-    at >= 0 &&
-    buttons[at].matches('.opt-row') &&
-    (a.dir === 'left' || a.dir === 'right')
+    (a.dir === 'left' || a.dir === 'right' || overlay.querySelector('.place-walk, .arrow-walk'))
   ) {
-    // on an Options row (option-row.ts) left and right change its value, through the row's own arrow keys
-    const code = a.dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
-    buttons[at].dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true }));
-  } else if (a.k === 'cursor')
-    buttons[(at + (a.dir === 'up' || a.dir === 'left' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+    // the arrow it stands for, to whatever takes that key: a window that walks its buttons by where they are
+    // (town3d/town3d.ts, `.arrow-walk` above), an Options row's value (option-row.ts), the Party's pages
+    const code = `Arrow${a.dir[0].toUpperCase()}${a.dir.slice(1)}`;
+    (overlay.contains(document.activeElement) ? document.activeElement! : overlay).dispatchEvent(
+      new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }),
+    );
+  } else if (a.k === 'cursor') buttons[(at + (a.dir === 'up' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
   return true;
 }
 
