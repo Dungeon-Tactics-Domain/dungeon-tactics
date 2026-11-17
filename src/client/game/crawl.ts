@@ -26,7 +26,8 @@ import { button, el } from '../icons.ts';
 import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
-import { goldNote, openBar, openParty, openShop, sideWindows } from '../town-ui.ts';
+import { openBar, openShop } from '../town-shop.ts';
+import { goldNote, openParty, sideWindows } from '../town-ui.ts';
 import { expeditionScreen, floorOf } from './expedition-map.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
