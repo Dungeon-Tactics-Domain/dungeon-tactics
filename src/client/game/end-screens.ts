@@ -90,11 +90,18 @@ export interface Board {
   onBack?: () => void;
 }
 
+// localhost ?result=3d (result3d/): while set, the 3D screen takes the board in place of the window below
+type Show3d = (board: Board) => { close(): void };
+let board3d: Show3d | undefined;
+export const setBoard3d = (show?: Show3d) => void (board3d = show);
+
 // End of battle after FFT's (Nov 16): no window over the darkened battle; the title on its own banner (wine on a
 // defeat), the party as a list of rows and the Result window beside it (under it on a narrow screen), which ends on the
 // commands. One board, not pages: the banner, the rows and the window come in one after the other (style.css), and one
 // Enter still goes on
-export function resultBoard({ won, title, cards, cols, note, actions, onBack }: Board) {
+export function resultBoard(board: Board): { close(): void } {
+  if (board3d) return board3d(board);
+  const { won, title, cards, cols, note, actions, onBack } = board;
   const d = dialog(
     'result',
     title,

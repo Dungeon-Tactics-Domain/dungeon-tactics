@@ -9,6 +9,7 @@ import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
 import { hoverFocus, type Option, optionRow, percent, pick } from '../option-row.ts';
 import type { PixelSettings, PixelSize } from '../pixel-settings.ts';
@@ -18,6 +19,7 @@ import { isSurvival, survivalGoal } from '../survival.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { getTheme, setTheme, THEMES } from '../theme.ts';
 import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts';
+import type { LayoutMode } from '../ui3d/layout.ts';
 import { goHome, homeLabel } from './crawl.ts';
 import { controls, tileMarks } from './options-help.ts';
 import { devMenu } from './title.ts';
@@ -28,6 +30,7 @@ export interface OptionsContext {
   busy: boolean; // animation or enemy turn running: restart is disabled
   pixel: () => PixelSettings; // the current settings, read on every change
   setPixel: (p: PixelSettings) => void;
+  relayout: () => void; // the interface layout changed: what is not laid out by CSS fits again
   restart: () => void;
 }
 
@@ -149,6 +152,23 @@ const settings = (o: OptionsContext): [title: string, rows: Option[]][] => [
         THEMES.map(([id, pt, en]) => [id, t(pt, en)]),
         getTheme,
         setTheme,
+      ),
+      // where the interface sits (Nov 16, Fernando: FFT The Ivalice Chronicles' places; ui3d/layout.ts)
+      pick(
+        t('Disposição da interface', 'Interface layout'),
+        t(
+          'Onde ficam os painéis da batalha: nas bordas da tela ou numa moldura 16:9 no centro.',
+          'Where the battle panels sit: at the screen edges or in a centred 16:9 frame.',
+        ),
+        [
+          ['edges', t('Nas bordas da tela', 'At the screen edges')],
+          ['frame', t('Moldura 16:9 no centro', 'Centred 16:9 frame')],
+        ] as [LayoutMode, string][],
+        getLayout,
+        (mode) => {
+          setLayout(mode);
+          o.relayout();
+        },
       ),
       // panel glass (Nov 16, Fernando's request): opacity of the blue panels and the blur of what shows through them
       percent(
