@@ -1,0 +1,9 @@
+{
+  "scenario": "ash_wood",
+  "viewport": { "width": 1920, "height": 1080 },
+  "actor": "h-warrior",
+  "screen": "abilities",
+  "page": 2,
+  "menucss": true,
+  "hide": ["fps"]
+}

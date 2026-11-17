@@ -80,7 +80,7 @@ let castFits = true;
 // Before the scene exists: the spec's cast on the map, its dice, and a hero on the turn (otherwise the AI would play
 // the opening enemy turn while the shot is taken). A cast that does not fit falls back to the map's own. On a split map
 // the spec's whole tiles become cells and an added sheet becomes its token, as `halve` does for the map's own spawns.
-export async function stage(selected: Scenario): Promise<{ scenario: Scenario; battle: Battle }> {
+export async function stage(selected: Scenario): Promise<{ scenario: Scenario; battle: Battle; spec: SceneSpec }> {
   const read = await readSpec();
   spec = read.spec;
   problems.push(...read.problems);
@@ -112,7 +112,7 @@ export async function stage(selected: Scenario): Promise<{ scenario: Scenario; b
   }
   const turn = takeTurn(spec.actor ?? battle.state.units.find(acts)?.id ?? '');
   if (turn) problems.push(turn);
-  return { scenario: castFits ? scenario : base, battle };
+  return { scenario: castFits ? scenario : base, battle, spec };
 }
 
 // a hero that plays: the Beacon is on the heroes' side but never has a turn
@@ -192,7 +192,7 @@ export function install(game: Game, scene: BattleScene) {
     if (turn) p.push(turn);
     const sc = s.screen ?? (s.units || s.actor || s.cursor ? 'menu' : undefined);
     if (sc === 'menu') show(startScreen(battle), s.cursor);
-    else if (sc === 'abilities') show({ k: 'abilities', index: 0 }, s.cursor);
+    else if (sc === 'abilities') show({ k: 'abilities', index: 0, page: (s.page ?? 1) - 1 }, s.cursor);
     else if (sc === 'facing') show({ k: 'facing' });
     else if (sc === 'move') {
       const at = s.cursor ?? battle.actor.pos;
@@ -208,7 +208,7 @@ export function install(game: Game, scene: BattleScene) {
       else {
         const ui = hoverTile(battle, selectMode(battle, freshUi(battle), { k: 'ability', id: sc.aim }), sc.target);
         show(
-          sc.confirm ? { k: 'confirm', ability: sc.aim, target: sc.target, yes: true } : { k: 'map', command: 'act' },
+          sc.confirm ? { k: 'confirm', ability: sc.aim, target: sc.target } : { k: 'map', command: 'act' },
           sc.target,
           ui,
         );
@@ -354,6 +354,7 @@ export function install(game: Game, scene: BattleScene) {
           console.error(`sandbox: ${bad.join('; ')}`);
           return tell();
         }
+        if (battle.over) return; // the steps ended the battle: its end screen stays
         await view.wait(1500);
         rewind(battle, start);
         scene.sync(battle.state);

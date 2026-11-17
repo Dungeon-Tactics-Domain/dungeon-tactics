@@ -1,0 +1,17 @@
+{
+  "pieces": {
+    "menu": ["html", "css", "3d"],
+    "turn": ["html", "3d"],
+    "bar": ["html", "3d"],
+    "sheet": ["html"],
+    "height": ["html", "3d"],
+    "banner": ["html", "3d"],
+    "hints": ["html", "3d"],
+    "preview": ["html"],
+    "confirm": ["html", "3d"],
+    "result": ["html", "3d"]
+  },
+  "presets": ["html", "css", "3d"],
+  "layouts": ["edges", "frame"],
+  "pixel": ["0", "1"]
+}

@@ -64,6 +64,14 @@ different picture.
 | `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all` | load and live |
 | `pixel` | `0` (plain 3D), `2`, `3`, `4`: pixel-art block size | load and live |
 | `daylight` | `0` night to `1` day: the light that Until Dawn uses | load and live |
+| `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result` | the look of one interface piece: `"html"`, `"css"` (menu only) or `"3d"` (`ui3d/skin-flags.ts`; the address's `?menu=`, `?turn=`, `?bar=`, `?banner=`, `?height=`, `?hints=`, `?confirm=`, `?result=` win) | page load |
+| `ui` | `"html"`, `"css"` or `"3d"`: a preset for every piece that has that look; a piece's own key wins | page load |
+| `uiPixel` | `true`: the 3D pieces through the pixel filter (`?pixel=1` in the address; the spec's `pixel` is the scene's) | page load |
+| `layout` | `"edges"` or `"frame"`: the interface layout (`ui3d/layout.ts`; the address's `?layout=` wins), for this page only | page load |
+| `menu3d` | `true` or `"pixel"`: the command menu in 3D, the older shortcut for `menu: "3d"` (the address's `?menu3d` wins) | page load |
+| `turn3d` | `true`: the turn list in 3D | page load |
+| `menucss` | `true`: the command menu as parchment in HTML and CSS (`menu3d` wins over it) | page load |
+| `page` | `1` to `3`: the ability sheet's page, with `screen: "abilities"` and one of the menus above | load and live |
 | `steps` | `[{ "move": { "unit", "to": {x,y} } }, { "act": { "unit", "ability", "target": {x,y} } }, { "wait": { "unit", "facing"? } }, { "pause": 500 }]` | played after the scene settles (CLI), by `play`, or by the page with `loop` |
 | `loop` | `true`: the page plays the steps by itself and replays them forever ([Bench](#bench-live-game-feel)) | page load |
 | `timing` | `{ "hitStop": 160, "jumpCrouch": 380 }`: `TIMING` values (`src/client/timing.ts`) for this page only | page load |
@@ -254,6 +262,28 @@ Each loops, hides every panel and fixes a side camera. Seeds were picked so the 
 | `arena-gap` | arena | the rogue leaps the water gap |
 | `arena-wall` | arena | Shield Bash into the wall: hit 4, bump |
 | `arena-spikes` | arena | Shield Bash pushes the soldier 2 tiles onto the spikes |
+
+Still scenes of the localhost looks (no loop; `hide` takes them like the HTML they replace: `menu` hides the 3D menu
+and its buttons, `queue` the 3D turn list):
+
+| Spec | What it shows |
+|---|---|
+| `menu3d`, `menu3d-pixel` | the 3D command menu at 1920x1080, smooth and through the pixel filter |
+| `menu3d-habilidades`, `menu3d-habilidades-pixel` | the submenu open in a cascade and the ability sheet |
+| `turn3d`, `turn3d-previa`, `turn3d-previa-carga` | the 3D turn list at 1280x720: plain, with a strike aimed, with a charge previewed |
+| `bar3d`, `bar3d-previa` | the 3D combat bar at 1920x1080: the acting unit's sheet alone, and with a strike aimed (preview plate and the target's sheet) |
+| `menucss`, `menucss-habilidades`, `menucss-descricao-p2` | the parchment menu in CSS, its submenu and the sheet's second page |
+| `ui3d-tudo` | the 3D menu with its submenu and the 3D turn list together, on the one layer |
+| `layout-edges`, `layout-frame` | the 3D menu and turn list at 1920x1080 in each layout: the same picture, the menu at 1152,688 and card 2 of the list at 102,711 like the reference |
+| `layout-ultrawide-edges`, `layout-ultrawide-frame` | the same with the submenu and the sheet at 3440x1440: spread to the edges, or in the centred 16:9 frame (one file each: a spec is one shot) |
+| `hints3d`, `hints3d-alvo` | the 3D instruction banner, Height corner and button hints at 1920x1080: with the menu open, and aiming at a target |
+| `preset-css`, `preset-3d` | the `ui` preset: every piece that has the CSS look, every piece that has the 3D one |
+| `result3d-vitoria`, `result3d-derrota` | the end of battle in 3D at 1920x1080: the warrior downs the last enemy, or the soldier downs the two heroes left. `loop` plays the steps on the page; steps that end the battle open its end screen and the loop stops there |
+| `batalha-3d`, `batalha-3d-previa` | the whole battle interface in 3D (`ui: "3d"`) at 1920x1080: menu, turn list, combat bar, banner, Height and button hints with the menu open, and with a strike aimed (preview plate, target's sheet and the 3D "Execute?") |
+| `batalha-3d-executar` | the same, the Mage's Blast on two enemies: "Execute?" in 3D with its notes (mana spent, charge), the plate's "+1 target"; Enter opens the lock step (On the character / On the tile) |
+
+`ui-pecas.json` in the same folder is not a scene: it is the table of interface pieces and looks the labs page reads
+(`ui3d/skin-flags.ts`, kept equal by `tests/layout.test.ts`); the CLI skips it when given the folder.
 
 ## Examples (`scripts/sandbox/`)
 

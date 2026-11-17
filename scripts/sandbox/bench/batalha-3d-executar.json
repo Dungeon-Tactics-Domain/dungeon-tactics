@@ -1,0 +1,15 @@
+{
+  "name": "batalha-3d-executar",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "viewport": { "width": 1920, "height": 1080 },
+  "actor": "h-mage",
+  "units": {
+    "h-mage": { "x": 4, "y": 10, "facing": 2 },
+    "e-soldier": { "x": 4, "y": 6, "facing": 0 },
+    "e-archer": { "x": 5, "y": 6, "facing": 0 }
+  },
+  "screen": { "aim": "blast", "target": { "x": 4, "y": 6 }, "confirm": true },
+  "ui": "3d",
+  "hide": ["fps"]
+}

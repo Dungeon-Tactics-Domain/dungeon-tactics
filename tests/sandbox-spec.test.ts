@@ -102,6 +102,18 @@ describe('parseSpec', () => {
     ]);
   });
 
+  it('takes the CSS command menu and a sheet page only on the abilities screen', () => {
+    const ok = { scenario: 'ash_wood', screen: 'abilities', page: 2, menucss: true };
+    expect(parseSpec(ok)).toEqual({ spec: ok, problems: [] });
+    expect(parseSpec({ screen: 'menu', page: 2, menucss: 'yes' }).problems).toEqual([
+      'menucss must be true',
+      'page must be 1 to 3, with screen "abilities"',
+    ]);
+    expect(parseSpec({ screen: 'abilities', page: 4 }).problems).toEqual([
+      'page must be 1 to 3, with screen "abilities"',
+    ]);
+  });
+
   it('places a unit between tiles only on a split map', () => {
     // Nov 15: to stage a token that a push leaves between tiles, as the AI and a push do in play
     const spec = { units: { 'h-archer': { x: 4.5, y: 7 } } };

@@ -5,16 +5,20 @@ import { CRAWL_THEMES } from '../../content/crawl/rooms.ts';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import type { Pos, Team } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { PAGES } from '../command.ts';
 import { TIMING } from '../timing.ts';
+import { LAYOUT_MODES, type LayoutMode } from '../ui3d/layout.ts';
+import { PIECES, VARIANTS, type Variant } from '../ui3d/skin-flags.ts';
 
 // HUD parts that `hide` accepts, by the class the HUD gives them (hud.ts, talk.ts, dialog.ts, entry.ts, fps.ts)
 export const PANELS = {
   tile: '.panel.tile-info',
-  queue: '.panel.queue',
+  queue: '.panel.queue, .turn3d-tip',
   help: '.panel.help',
   banner: '.panel.banner, .announce',
   tools: '.hud .tools',
-  menu: '.panel.commands, .panel.abilities, .panel.confirm',
+  // .menu3d-hits and .turn3d-tip stand for the 3D menu and the 3D turn list: the shared layer hides a screen with them
+  menu: '.panel.commands, .panel.abilities, .panel.confirm, .panel.sheet, .glove, .menu3d-hits',
   units: '.active-slot, .target-slot',
   strikes: '.strikes',
   numbers: '.floats',
@@ -76,6 +80,23 @@ export interface SceneSpec {
   loop?: boolean; // bench: the page plays the steps by itself, then rewinds the scene and plays them again, forever
   timing?: Partial<Record<keyof typeof TIMING, number>>; // bench: TIMING values for this page only
   speed?: number; // bench: battle clock rate, 0.25 is slow motion
+  // the look of each interface piece (ui3d/skin-flags.ts), as ?menu=, ?turn=, ?ui= and ?pixel=1 in the address, and
+  // the older shortcuts ?menu3d, ?menu3d=pixel, ?turn3d and ?menucss
+  ui?: Variant;
+  menu?: Variant;
+  turn?: Variant;
+  bar?: Variant;
+  banner?: Variant;
+  height?: Variant;
+  hints?: Variant;
+  confirm?: Variant;
+  result?: Variant;
+  uiPixel?: boolean; // the 3D pieces through the pixel filter (`pixel` is the scene's)
+  menu3d?: true | 'pixel';
+  turn3d?: true;
+  menucss?: true;
+  layout?: LayoutMode; // edges or frame (ui3d/layout.ts), as ?layout= in the address
+  page?: number; // with screen "abilities": the ability sheet's page, 1 to 3 (shows with menu3d or menucss)
 }
 
 const KEYS = [
@@ -100,6 +121,21 @@ const KEYS = [
   'loop',
   'timing',
   'speed',
+  'ui',
+  'menu',
+  'turn',
+  'bar',
+  'banner',
+  'height',
+  'hints',
+  'confirm',
+  'result',
+  'uiPixel',
+  'menu3d',
+  'turn3d',
+  'menucss',
+  'layout',
+  'page',
 ];
 const HIDDEN = new Set<string>([...Object.keys(PANELS), 'all', 'marks']);
 
@@ -224,6 +260,17 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   }
   if (r.speed !== undefined && !(typeof r.speed === 'number' && r.speed > 0 && r.speed <= 4))
     p.push('speed must be above 0, up to 4 (pause with __sandbox.pause)');
+  if (r.menu3d !== undefined && r.menu3d !== true && r.menu3d !== 'pixel') p.push('menu3d must be true or "pixel"');
+  for (const k of ['turn3d', 'menucss']) if (r[k] !== undefined && r[k] !== true) p.push(`${k} must be true`);
+  if (r.ui !== undefined && !VARIANTS.includes(r.ui as Variant)) p.push(`ui must be one of ${VARIANTS.join(', ')}`);
+  for (const k of ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result'] as const)
+    if (r[k] !== undefined && !(PIECES[k] as readonly unknown[]).includes(r[k]))
+      p.push(`${k} must be one of ${PIECES[k].join(', ')}`);
+  if (r.uiPixel !== undefined && typeof r.uiPixel !== 'boolean') p.push('uiPixel must be true or false');
+  if (r.layout !== undefined && !LAYOUT_MODES.includes(r.layout as LayoutMode))
+    p.push(`layout must be one of ${LAYOUT_MODES.join(', ')}`);
+  if (r.page !== undefined && !(isInt(r.page, 1, PAGES) && r.screen === 'abilities'))
+    p.push(`page must be 1 to ${PAGES}, with screen "abilities"`);
   return { spec: p.length ? {} : (r as SceneSpec), problems: p };
 }
 
