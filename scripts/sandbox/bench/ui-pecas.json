@@ -11,7 +11,11 @@
     "confirm": ["html", "3d"],
     "result": ["html", "3d"],
     "party": ["html", "3d"],
-    "shop": ["html", "3d"]
+    "shop": ["html", "3d"],
+    "options": ["html", "3d"],
+    "title": ["html", "3d"],
+    "tools": ["html", "3d"],
+    "status": ["html", "3d"]
   },
   "presets": ["html", "css", "3d"],
   "layouts": ["edges", "frame"],
