@@ -3844,6 +3844,70 @@ body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
   visibility: visible;
 }
 
+/* ---- 3D expedition map (?map=3d; src/client/town3d/map3d.ts) ---- */
+/* The map is drawn in 3D on the town's layer. Its own window stays, unseen (by opacity: the places and the commands
+   must still take the focus, a tap and the screen reader), covering the page, its parts moved under the drawn ones:
+   map3d.ts seats the chart, the party, the place's box and the commands and sets --map-step, --m3-place, --m3-boss,
+   --m3-cmd and --m3-gap. The whole descent shows: nothing scrolls. Information and the chest window open over it */
+.overlay.crawl-map.map3d {
+  display: block;
+  padding: 0;
+  background: none;
+  overflow: hidden;
+}
+.crawl-map.map3d .dialog.title {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  animation: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+.crawl-map.map3d :is(.map-scroll, .map-party, .map-info, .map-commands) {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+.crawl-map.map3d .map-chart {
+  max-width: none;
+  margin: 0;
+}
+.crawl-map.map3d .map-field {
+  inset: 0;
+}
+.crawl-map.map3d .map-place {
+  --size: var(--m3-place);
+}
+.crawl-map.map3d .map-place.boss {
+  --size: var(--m3-boss);
+}
+.crawl-map.map3d .map-commands > button {
+  display: block;
+  width: 100%;
+  height: var(--m3-cmd);
+  min-height: 0;
+  margin: 0 0 var(--m3-gap);
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+/* a `title` window hides the whole HUD: the layer the map is drawn on still shows */
+body:has(.crawl-map.map3d) .hud > .ui3d-layer {
+  visibility: visible;
+}
+
 /* ---- 3D turn list (?turn3d; src/client/turn3d) ---- */
 /* The list is drawn in 3D on the layer. The HTML list stays where it is, unseen, as the layout, the scroll and the hover:
    its rows take the cards' sizes measured on the reference screenshots (1280x720) times --t3, the page's scale (set by

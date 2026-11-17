@@ -2,6 +2,7 @@
 // reads every flag, from the address and from a sandbox spec:
 //   ?menu=html|css|3d, ?turn=html|3d, ?bar=, ?banner=, ?height=, ?hints=, ?confirm=, ?result=html|3d   one piece each
 //   ?party=html|3d, ?shop=html|3d     the town's Party, and its Shop and Tavern (town3d/)
+//   ?map=html|3d                       the expedition map (town3d/map3d.ts)
 //   ?townhud=, ?townmenu=, ?talk=html|3d   the town's HUD, its menu with the gate and the places, its speech box
 //   ?options=html|3d, ?title=html|3d, ?sheets=html|3d  the flow screens around the battle (flow3d/)
 //   ?tools=html|3d, ?status=html|3d    the corner menu and the Status window (window3d/)
@@ -31,6 +32,7 @@ export const PIECES = {
   result: ['html', '3d'], // the end of battle: victory, defeat, a cleared room
   party: ['html', '3d'], // the town's Party screen: the roster and a member's pages (town3d/)
   shop: ['html', '3d'], // the town's Shop and Tavern: the counter (town3d/)
+  map: ['html', '3d'], // the expedition map: the chart of places, its commands, the party and the place's box (town3d/)
   options: ['html', '3d'], // the Options screen (flow3d/)
   title: ['html', '3d'], // the title screen (flow3d/)
   sheets: ['html', '3d'], // the windows the title and Options open: saved games, quick battle, help (flow3d/)

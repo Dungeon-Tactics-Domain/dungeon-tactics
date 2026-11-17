@@ -114,7 +114,7 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   return skin;
 }
 
-// The town's windows, HUD and speech box in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
+// The town's windows, HUD and speech box and the expedition map in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
 // with ?ui=html or the piece's own flag, the HTML windows open
 export async function loadTownSkin(root: HTMLElement) {
   const flags = skinFlags(param);
@@ -124,6 +124,7 @@ export async function loadTownSkin(root: HTMLElement) {
     menu: flags.townmenu === '3d',
     hud: flags.townhud === '3d',
     talk: flags.talk === '3d',
+    map: flags.map === '3d',
   };
   if (!Object.values(on).some(Boolean)) return;
   const { mountTown3d } = await import('./town3d/screens.ts');

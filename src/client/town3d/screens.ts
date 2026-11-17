@@ -17,6 +17,7 @@ import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
 import { TownHud3d } from './hud3d.ts';
+import { Map3d } from './map3d.ts';
 import type { Page } from './page.ts';
 import { PAGES, partyPage } from './party-view.ts';
 import { barPage, type ShopTab, shopPage } from './shop-view.ts';
@@ -33,7 +34,7 @@ const rowOf = (page: Page, sel: string) =>
 
 export function mountTown3d(
   root: HTMLElement,
-  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean },
+  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean; map: boolean },
 ) {
   let again: (() => void) | undefined; // the open window as its HTML one, should the drawing go away
   let layer: Ui3dLayer;
@@ -51,6 +52,7 @@ export function mountTown3d(
     return; // no WebGL here: the HTML windows are all there is
   }
   const ui = new Town3d(layer);
+  if (on.map) new Map3d(layer); // the expedition map draws over its own window, which it takes by itself (map3d.ts)
   // the town has no battle clock: the layer ticks on the page's own frames, and draws only while a window moves
   const tick = (now: number) => {
     if (!live) return;
