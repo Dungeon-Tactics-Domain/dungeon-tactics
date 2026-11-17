@@ -9,6 +9,7 @@ import { range } from '../battle-text.ts';
 import { classOf } from '../dev-roster.ts';
 import { type Forecast, strikeInfo } from '../forecast.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
+import { unitStats } from '../turn-list.ts';
 
 export interface Gauge {
   label: string;
@@ -25,6 +26,10 @@ export interface SheetView {
   change: { left: number; upTo: number; gain: boolean };
   pools: Gauge[]; // mana and stamina, the ones its sheet has: the first beside the life, the second in the box under it
   ct: Gauge | null; // null for what never takes a turn
+  // what the turn list's lines say after each number (turn-list.ts unitStats; Fernando, Nov 17): "+4", the life back at
+  // each of its turns (empty without a piece that gives it), and "+8", the CT gained each tick (empty with no CT)
+  hpRegen: string;
+  ctGain: string;
   line: string; // the strip under the bars: the class, then the aimed strike's small line or a charge in progress
 }
 export interface PlateView {
@@ -58,7 +63,10 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
   const cls = unitName(classOf(u.def) ?? u.def);
   const now = frac(u.hp, def.hp);
   const struck = f && !f.support && (f.heal || f.dmg);
+  const st = unitStats(u);
   return {
+    hpRegen: st.hpRegen ? `+${st.hpRegen}` : '',
+    ctGain: def.speed > 0 ? `+${st.ctGain}` : '',
     unit: u,
     enemy: u.team === 'enemy',
     name: unitName(u.def),

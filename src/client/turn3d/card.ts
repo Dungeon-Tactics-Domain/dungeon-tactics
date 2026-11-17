@@ -26,8 +26,8 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 
-// One shader draws the whole row, back to front: target band and gold plate, shadow, halo, frame, picture, life bar,
-// charge badge and number. Shapes are rounded-rectangle distances; the small painted texture (uPaint) wears the frame,
+// One shader draws the whole row, back to front: target band and gold plate, the life and CT bars beside the card,
+// shadow, halo, frame, picture, charge badge and number. Shapes are rounded-rectangle distances; the small painted texture (uPaint) wears the frame,
 // the plate and the picture's ground so the flat gradients read as painted pieces
 const FRAG = `
 precision highp float;
@@ -35,7 +35,8 @@ varying vec2 vUv; varying float vTop;
 uniform vec2 uSize; uniform vec2 uOrigin; uniform vec2 uCard; uniform vec2 uClip; uniform vec2 uHp; uniform vec2 uIconGrid;
 uniform float uS; uniform float uTime; uniform float uAlpha; uniform float uTeam; uniform float uNow; uniform float uHover;
 uniform float uTarget; uniform float uPending; uniform float uGold; uniform float uNum; uniform float uShift;
-uniform float uLift; uniform float uHasFace; uniform float uSeed;
+uniform float uLift; uniform float uHasFace; uniform float uSeed; uniform float uCt; uniform float uBarH;
+uniform vec4 uStat;
 uniform sampler2D uFace; uniform sampler2D uDigits; uniform sampler2D uPaint; uniform sampler2D uIcons;
 uniform vec4 uFaceUv; uniform vec4 uTint; uniform vec3 uIcon;
 
@@ -53,10 +54,10 @@ vec3 digit(vec2 uv, float n) {
 void main() {
   float s = uS;
   vec2 p = vUv * uSize - uOrigin;   // px from the row's top left corner
-  float k = uCard.x / ${CARD_W}.0;  // the card's own scale: 44 x 52 design px, a 46 body and the life bar under it
-  float bodyH = uCard.y - 6.0 * k;
+  float k = uCard.x / ${CARD_W}.0;  // the card's own scale: a 44 x 46 design px body in the middle of its 52 px row
+  float bodyH = uCard.y - 6.0 * k;  // (the 6 px were the life bar under the portrait until Nov 17: it is beside it now)
   float mid = uCard.y * 0.5;
-  vec2 c0 = vec2(uShift, -uLift);   // a target's card steps right, a hovered one rises
+  vec2 c0 = vec2(uShift, 3.0 * k - uLift);   // a target's card steps right, a hovered one rises
   vec3 paint = texture2D(uPaint, p / (64.0 * s) + uSeed).rgb;
   vec4 col = vec4(0.0);
 
@@ -74,8 +75,32 @@ void main() {
     col = over(col, g, uTarget * 0.94 * cov(d));
   }
 
-  vec2 allHalf = uCard * 0.5;
+  // Life and CT beside the card (queue-view.ts statsLayout): a dark ground for the two short lines of text, and under
+  // each its bar. The life bar shows what is left, the part an aimed strike changes (blinking) and the empty rest. uStat: the bars' left and width, then the top of the life bar and of the CT bar, in px from the card's
+  // top left; a width of 0 for a row without them (a charge going off)
+  vec3 lifeTone = mix(${glsl('#2f86b0')}, ${glsl('#d9527f')}, uTeam);
+  if (uStat.y > 0.5) {
+    vec2 sp = p - vec2(uShift, -uLift);
+    float gx = uCard.x * 0.5, gw = uStat.x + uStat.y + 6.0 * s - gx;
+    float dG = box(sp - vec2(gx + gw * 0.5, mid), vec2(gw * 0.5, mid), 4.0 * s);
+    col = over(col, ${glsl('#0d1427')}, 0.8 * cov(dG));
+    for (int i = 0; i < 2; i++) {
+      vec2 bc2 = sp - vec2(uStat.x + uStat.y * 0.5, (i == 0 ? uStat.z : uStat.w) + uBarH * 0.5);
+      float dBar = box(bc2, vec2(uStat.y, uBarH) * 0.5, uBarH * 0.5);
+      col = over(col, ${glsl('#05080f')}, 0.9 * cov(dBar - 1.0));
+      float fx2 = bc2.x / uStat.y + 0.5;
+      float shade = 1.12 - 0.3 * (bc2.y / uBarH + 0.5);
+      vec3 tone = ${glsl('#2a2420')};
+      if (i == 0) {
+        if (fx2 <= uHp.x) tone = lifeTone * shade;
+        else if (fx2 <= uHp.y) tone = mix(lifeTone, vec3(1.0), 0.45 + 0.35 * sin(uTime * 9.0));
+      } else if (fx2 <= uCt) tone = ${glsl('#d2a91e')} * shade;
+      col = over(col, tone, cov(dBar));
+    }
+  }
+
   vec2 hb = vec2(uCard.x, bodyH) * 0.5;
+  vec2 allHalf = hb;
   vec2 ap = p - c0 - allHalf;       // from the middle of the card with its bar
   vec2 bp = p - c0 - hb;            // from the middle of the framed body
   float raised = uHover + 0.5 * uNow;
@@ -117,17 +142,6 @@ void main() {
   pic += uNow * 0.16 * exp(-pow((uv.x + uv.y) * 0.5 - sweep, 2.0) / 0.012);
   pic += 0.07 * uHover;
   col = over(col, pic, cov(dI));
-
-  // life bar: what is left, the part an aimed strike changes (blinking) and the empty rest
-  vec2 barHalf = vec2(uCard.x * 0.5, 3.0 * k);
-  vec2 bc = p - c0 - vec2(uCard.x * 0.5, bodyH + 3.0 * k);
-  col = over(col, mix(${glsl('#0f3a5c')}, ${glsl('#3d2016')}, uTeam), cov(box(bc, barHalf, 2.2 * k)));
-  vec2 fillHalf = barHalf - 0.8 * k;
-  float fx = clamp(bc.x / (2.0 * fillHalf.x) + 0.5, 0.0, 1.0);
-  float fy = bc.y / fillHalf.y;
-  vec3 fill = mix(${glsl('#2f86b0')}, ${glsl('#bd4a25')}, uTeam) * (1.0 - 0.2 * fy) + 0.12 * smoothstep(-0.2, -0.9, fy);
-  vec3 bar = fx <= uHp.x ? fill : fx <= uHp.y ? mix(fill, vec3(1.0), 0.45 + 0.35 * sin(uTime * 9.0)) : ${glsl('#2a1c1a')};
-  col = over(col, bar, cov(box(bc, fillHalf, 1.6 * k)));
 
   // a charge going off: the ability's icon on a dark medal over the caster's face
   if (uIcon.z > 0.5) {
@@ -306,6 +320,9 @@ export const cardMaterial = (shared: ReturnType<typeof sharedUniforms>, seed: nu
       uOrigin: { value: new Vector2() },
       uCard: { value: new Vector2() },
       uHp: { value: new Vector2(1, 1) },
+      uCt: { value: 0 }, // the CT bar's fill, 0 to 1
+      uStat: { value: new Vector4() }, // the bars beside the card: left, width, life bar's top, CT bar's top (px)
+      uBarH: { value: 4 }, // their thickness, px
       uAlpha: { value: 0 },
       uTeam: { value: 0 },
       uNow: { value: 0 },

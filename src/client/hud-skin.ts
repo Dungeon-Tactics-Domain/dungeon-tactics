@@ -18,6 +18,8 @@ import type { QueueBoxes, Turn3d } from './turn3d/turn3d.ts';
 import type { Ui3dLayer } from './ui3d/layer.ts';
 import { parseLayout } from './ui3d/layout.ts';
 import { skinFlags, specFlags } from './ui3d/skin-flags.ts';
+import type { Status3d } from './window3d/status3d.ts';
+import type { Tools3d } from './window3d/tools3d.ts';
 
 export interface HudSkin {
   menucss?: (root: HTMLElement, commands: HTMLElement, abilities: HTMLElement, act: HudActions) => MenuCss;
@@ -28,6 +30,9 @@ export interface HudSkin {
   hints3d?: (layer: Ui3dLayer) => Hints3d;
   confirm3d?: (layer: Ui3dLayer, box: HTMLElement) => Confirm3d; // "Execute?" in 3D (confirm3d/)
   result3d?: (layer: Ui3dLayer) => Result3d; // the end of battle in 3D (result3d/)
+  flow3d?: ((layer: Ui3dLayer) => unknown)[]; // the screens around the battle in 3D (flow3d/): Options, the title
+  tools3d?: (layer: Ui3dLayer, tools: HTMLElement) => Tools3d; // the corner menu in 3D (window3d/)
+  status3d?: (layer: Ui3dLayer) => Status3d; // the Status window in 3D (window3d/)
 }
 
 // `spec`: a sandbox spec's keys (docs/sandbox.md); the address wins over it
@@ -66,7 +71,33 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Result3d } = await import('./result3d/result3d.ts');
     skin.result3d = (layer) => new Result3d(layer);
   }
-  if (skin.menu3d || skin.turn3d || skin.bar3d || skin.hints3d || skin.confirm3d || skin.result3d) {
+  if (flags.options === '3d') {
+    const { Options3d } = await import('./flow3d/options3d.ts');
+    (skin.flow3d ??= []).push((layer) => new Options3d(layer));
+  }
+  if (flags.title === '3d') {
+    const { Title3d } = await import('./flow3d/title3d.ts');
+    (skin.flow3d ??= []).push((layer) => new Title3d(layer));
+  }
+  if (flags.tools === '3d') {
+    const { Tools3d } = await import('./window3d/tools3d.ts');
+    skin.tools3d = (layer, tools) => new Tools3d(layer, tools);
+  }
+  if (flags.status === '3d') {
+    const { Status3d } = await import('./window3d/status3d.ts');
+    skin.status3d = (layer) => new Status3d(layer);
+  }
+  if (
+    skin.menu3d ||
+    skin.turn3d ||
+    skin.bar3d ||
+    skin.hints3d ||
+    skin.confirm3d ||
+    skin.result3d ||
+    skin.flow3d ||
+    skin.tools3d ||
+    skin.status3d
+  ) {
     const { Ui3dLayer } = await import('./ui3d/layer.ts');
     skin.layer = (root, lost) => {
       try {

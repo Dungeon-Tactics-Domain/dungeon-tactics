@@ -43,6 +43,7 @@ export class Ui3dLayer {
   stage: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 }; // where the pieces are laid out (layout.ts), as the player picked
   private mode = getLayout();
   block = 1; // CSS px of a pixel filter block
+  solo?: Ui3dScreen; // a full screen over the game (the title): while set, only it is drawn
   still = reducedMotion(); // reduced motion (Options, motion.ts), read once a frame: everything lands at once, nothing sways
   readonly theme: Theme;
   private readonly canvas = el('canvas', { class: 'ui3d-layer', 'aria-hidden': 'true' });
@@ -187,7 +188,7 @@ export class Ui3dLayer {
     r.info.reset();
     let moving = false;
     for (const s of this.screens) {
-      const shown = s.host?.checkVisibility({ visibilityProperty: true }) ?? true;
+      const shown = (!this.solo || s === this.solo) && (s.host?.checkVisibility({ visibilityProperty: true }) ?? true);
       if (shown !== s.flat.visible) this.dirty = true;
       s.flat.visible = shown;
       if (s.deep) s.deep.visible = shown;

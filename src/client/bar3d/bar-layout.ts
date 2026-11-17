@@ -27,10 +27,12 @@ export interface SheetLayout {
   name: Spot;
   tag: Spot;
   hpLabel: Spot;
+  hpRegen: Spot; // "+4" after the label: the life back each turn
   hpValue: Spot;
   poolLabel: Spot;
   poolValue: Spot;
   ctLabel: Spot;
+  ctGain: Spot; // "+8" between the bar and the number: the CT gained each tick
   ctValue: Spot;
   boxLabel: Spot;
   boxValue: Spot;
@@ -59,17 +61,19 @@ export function sheetLayout(mirror: boolean): SheetLayout {
     mirror,
     hpBar: box(178, 84, 234, 16),
     poolBar: box(428, 84, 234, 16),
-    ctBar: box(226, 123, 130, 10),
+    ctBar: box(226, 123, 100, 10), // 130 on the reference: the last 30 px hold the CT gain, which it does not show
     box: box(428, 114, 234, 34),
     boxBar: box(480, 126, 96, 10),
     strip: box(170, 156, 498, 38),
     name: spot(180, 21, 30, 'l', 480),
     tag: { x: portrait.x + portrait.w / 2, y: 179, size: 22, align: 'c', max: portrait.w - 16 },
     hpLabel: spot(180, 65, 26, 'l'),
+    hpRegen: spot(242, 67, 20, 'l', 52),
     hpValue: spot(412, 65, 30, 'r'),
     poolLabel: spot(432, 65, 26, 'l'),
     poolValue: spot(662, 65, 30, 'r'),
     ctLabel: spot(180, 128, 24, 'l'),
+    ctGain: spot(334, 129, 20, 'l', 36),
     ctValue: spot(412, 128, 24, 'r'),
     boxLabel: spot(438, 131, 20, 'l'),
     boxValue: spot(654, 131, 20, 'r'),

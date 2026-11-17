@@ -18,8 +18,9 @@ import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { place, REGIONS } from '../ui3d/layout.ts';
 import { QUAD } from '../ui3d/panel.ts';
 import { ease, land, type Spring, spring, stepSpring } from '../ui3d/spring.ts';
+import { dropText, textMesh } from '../ui3d/text.ts';
 import { cardMaterial, hex, LEFT, PAD, RIGHT, sharedUniforms } from './card.ts';
-import { matchRows, type Queue, type QueueCard, queueCards } from './queue-view.ts';
+import { matchRows, type Queue, type QueueCard, queueCards, statsLayout } from './queue-view.ts';
 
 const INNER = 40.2 / 43; // the picture's width over its height inside the frame: how a face is cropped
 const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
@@ -27,6 +28,8 @@ const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
 // third of a second
 const K = 170;
 const C = 18;
+const INK = '#f1ebd2'; // the light ink of the 3D bar's numbers (bar3d.ts), on the same dark ground
+const TEXT_PAD = 3; // the empty margin a label carries on each side (ui3d/text.ts)
 
 interface Box {
   x: number;
@@ -55,8 +58,15 @@ interface Card {
   fade: number; // 1 showing, 0 leaving
   crop: (frame: number) => void; // moves the face to that frame of its sheet
   face: ReturnType<typeof battleFace>;
+  // the life and CT lines beside it (queue-view.ts `stats`): redrawn only when their text or size changes
+  texts: { key: string; hp: Mesh<typeof QUAD, ShaderMaterial>; ct: Mesh<typeof QUAD, ShaderMaterial> } | null;
 }
 const SIDES = ['x', 'y', 'w', 'h'] as const;
+// GLSL's smoothstep, for the texts to fade at the list's ends as the cards do
+const ramp = (a: number, b: number, v: number) => {
+  const t = Math.max(0, Math.min(1, (v - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 export class Turn3d implements Ui3dScreen {
   readonly flat = new Group();
@@ -71,6 +81,7 @@ export class Turn3d implements Ui3dScreen {
   private turn = '';
   private drawn = false; // the first list is placed, not animated: nothing flies in when the battle opens
   private hovered = -1;
+  private statW = 0; // the widest life or CT line of the list, px: every bar takes it, so they compare at a glance
   private readonly scroll = spring(0);
   private geo: QueueBoxes = { rows: [], left: 0, top: 0, height: 0, head: 0, scroll: 0, more: 0 };
   private expression: (u: UnitState) => Expression = () => 'neutral';
@@ -104,6 +115,7 @@ export class Turn3d implements Ui3dScreen {
     css.setProperty('--turn-x', `${at.x}px`);
     css.setProperty('--turn-y', `${at.y}px`);
     css.setProperty('--turn-b', `${layer.h - at.y - at.h}px`);
+    this.retext(); // the lines' size follows the scale
   }
 
   private texture(url: string, loaded: (img: HTMLImageElement) => void) {
@@ -138,6 +150,7 @@ export class Turn3d implements Ui3dScreen {
       fade: 1,
       crop: () => {},
       face: undefined,
+      texts: null,
     };
     this.setFace(c, d.unit);
     return c;
@@ -163,6 +176,40 @@ export class Turn3d implements Ui3dScreen {
         un.uHasFace.value = 1;
       });
     }
+  }
+
+  // the card's two lines of text; an unchanged line keeps its texture (the CT of every row changes each turn, not each draw)
+  private setTexts(c: Card) {
+    const { layer } = this,
+      st = c.d.stats,
+      size = statsLayout(0, this.shared.uS.value).size,
+      key = st ? JSON.stringify([st.hp, st.ct, size, layer.dpr]) : '';
+    if (c.texts?.key === key) return;
+    this.dropTexts(c);
+    if (!st) return;
+    const make = (str: string) => {
+      const m = textMesh(str, { size, color: INK, font: layer.theme.font }, layer.dpr);
+      m.renderOrder = 4; // over every card: a hovered neighbour grows a little
+      this.flat.add(m);
+      return m;
+    };
+    c.texts = { key, hp: make(st.hp), ct: make(st.ct) };
+  }
+  private retext() {
+    for (const c of this.cards) this.setTexts(c);
+    this.statW = Math.max(
+      0,
+      ...this.cards.map((c) => (c.texts ? Math.max(c.texts.hp.scale.x, c.texts.ct.scale.x) : 0)),
+    );
+    // the HUD's list grows by the room the lines take past its cards' column (20 design px are already there), so what
+    // keeps clear of the list keeps clear of them too (style.css .hud.turn3d .queue)
+    const s = this.shared.uS.value,
+      room = this.statW ? statsLayout(0, s).x + this.statW + (6 - 20) * s : 0;
+    this.layer.root.style.setProperty('--turn-stats', `${Math.max(0, Math.ceil(room))}px`);
+  }
+  private dropTexts(c: Card) {
+    if (c.texts) for (const m of [c.texts.hp, c.texts.ct]) dropText(m);
+    c.texts = null;
   }
 
   // A redrawn list (BattleHud.render): the same rows as the HTML, with the strike preview's targets. Each row keeps its
@@ -209,8 +256,10 @@ export class Turn3d implements Ui3dScreen {
       un.uNum.value = d.num;
       const cell = d.id.charge ? atlasCell(d.id.charge) : null;
       un.uIcon.value.set(cell?.[0] ?? 0, cell?.[1] ?? 0, d.id.charge ? (cell ? 2 : 1) : 0);
+      un.uCt.value = d.stats?.ctFill ?? 0;
       return c;
     });
+    this.retext();
     this.place(geo, !this.drawn);
     this.drawn = true;
   }
@@ -265,6 +314,7 @@ export class Turn3d implements Ui3dScreen {
       if (c.alpha > 0.01 && !still) return true;
       c.mesh.removeFromParent();
       c.mesh.material.dispose();
+      this.dropTexts(c);
       return false;
     });
     const tipped = this.cards[this.hovered];
@@ -290,7 +340,13 @@ export class Turn3d implements Ui3dScreen {
         h = Math.max(1, c.box.h.x * grow);
       const ox = g.left + c.box.x.x - (w - c.box.w.x) / 2,
         oy = g.top + c.box.y.x - this.scroll.x - (h - c.box.h.x) / 2;
-      const qw = w + (LEFT + RIGHT) * s,
+      // the life and CT lines right of the card, each over its bar; the quad's room on the right grows to hold them
+      const lay = statsLayout(h, s),
+        barW = c.texts ? this.statW - 2 * TEXT_PAD : 0,
+        barX = w + lay.x;
+      un.uStat.value.set(barX, barW, lay.hp.bar, lay.ct.bar);
+      un.uBarH.value = lay.bar;
+      const qw = w + LEFT * s + Math.max(RIGHT * s, barX + barW + 24 * s),
         qh = h + 2 * PAD * s;
       un.uCard.value.set(w, h);
       un.uOrigin.value.set(LEFT * s, PAD * s);
@@ -298,12 +354,29 @@ export class Turn3d implements Ui3dScreen {
       c.mesh.scale.set(qw, qh, 1);
       c.mesh.position.set(ox - LEFT * s + qw / 2, -(oy - PAD * s + qh / 2), 0);
       c.mesh.renderOrder = c === tipped ? 3 : c.d.now ? 2 : c.fade;
+      if (c.texts) {
+        // the same step aside, rise and fade at the list's ends as the card's own drawing (card.ts)
+        const tx = ox + barX - TEXT_PAD + un.uShift.value,
+          ty = oy - un.uLift.value;
+        for (const [m, at] of [
+          [c.texts.hp, lay.hp.text],
+          [c.texts.ct, lay.ct.text],
+        ] as const) {
+          const y = ty + at,
+            clip = this.shared.uClip.value;
+          m.position.set(this.layer.snap(tx + m.scale.x / 2), -this.layer.snap(y), 0);
+          m.material.uniforms.uAlpha.value =
+            c.alpha * ramp(clip.x, clip.x + 16 * s, y) * (1 - ramp(clip.y - 16 * s, clip.y, y));
+        }
+      }
     }
     this.tip.hidden = !tipped;
     if (tipped) {
       this.tip.textContent = tipped.d.tip;
       const m = tipped.mesh.material.uniforms;
-      this.tip.style.left = `${Math.round(g.left + tipped.box.x.x + tipped.box.w.x + (12 + 8 * m.uTarget.value) * s)}px`;
+      // the tip opens after the card, or after its own lines
+      const past = tipped.texts ? m.uStat.value.x + m.uStat.value.y : tipped.box.w.x;
+      this.tip.style.left = `${Math.round(g.left + tipped.box.x.x + past + (12 + 8 * m.uTarget.value) * s)}px`;
       this.tip.style.top = `${Math.round(g.top + tipped.box.y.x - this.scroll.x + tipped.box.h.x / 2)}px`;
     }
     // the acting card breathes and a light sweeps it: the list moves for as long as it shows
@@ -312,7 +385,10 @@ export class Turn3d implements Ui3dScreen {
 
   dispose() {
     this.layer.remove(this);
-    for (const c of [...this.cards, ...this.leaving]) c.mesh.material.dispose();
+    for (const c of [...this.cards, ...this.leaving]) {
+      c.mesh.material.dispose();
+      this.dropTexts(c);
+    }
     for (const tex of [...this.textures.values()].map((e) => e.tex)) tex.dispose();
     this.shared.uPaint.value.dispose();
     this.shared.uDigits.value.dispose();

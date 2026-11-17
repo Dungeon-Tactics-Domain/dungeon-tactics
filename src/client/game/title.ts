@@ -242,6 +242,15 @@ function howToPlay() {
   d.overlay.classList.add('how-to-play');
 }
 
+// The 3D title (flow3d/title3d.ts) draws over the title's own window: it is told when one opens, and takes the one
+// already on screen when it arrives (the layer comes with the battle behind the title, after the title itself)
+let title3d: ((overlay: HTMLElement) => void) | undefined;
+export function setTitle3d(take?: (overlay: HTMLElement) => void) {
+  title3d = take;
+  const open = document.querySelector<HTMLElement>('.overlay.main-title');
+  if (open) take?.(open);
+}
+
 // Title screen (night of Nov 12): the game opened straight into a battle without saying what it was. Since Nov 15 New
 // game and Continue lead to the town (crawl.ts), the dungeon loop's home; there is no world map or campaign. Since Nov 16
 // (Fernando: the interface on its FFT counterpart) the name over the art and a small plain command window under it, the
@@ -299,4 +308,5 @@ export function titleScreen() {
   ); // real title screen (Nov 13): does not close, and the map behind it is just scenery
   d.overlay.classList.add('main-title');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+  title3d?.(d.overlay);
 }

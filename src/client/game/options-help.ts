@@ -1,7 +1,35 @@
 // What Options explains instead of setting, each in a window over it: the tile marks' legend and the controls.
+import { dialog } from '../dialog.ts';
 import { t } from '../i18n.ts';
-import { el } from '../icons.ts';
+import { button, el } from '../icons.ts';
 import { keyHelp } from '../keyboard.ts';
+import { hoverFocus } from '../option-row.ts';
+
+// A row of the Options list that opens a window over it, which stays open under it; closing it puts the cursor back
+// on its row. `describe`: the Options' description box
+export function helpRow(label: string, text: string, body: () => Node[], describe: (text: string) => void) {
+  const back = () => row.focus();
+  const row = button(
+    'opt-row',
+    [el('span', { class: 'opt-label' }, label), el('span', { class: 'opt-arrow', 'aria-hidden': 'true' }, '▸')],
+    () => {
+      const w = dialog(
+        'menu-help',
+        label,
+        [
+          ...body(),
+          button('primary', t('Voltar', 'Back'), () => {
+            w.close();
+            back();
+          }),
+        ],
+        { onBack: back },
+      );
+    },
+    { onfocus: () => describe(text), onpointermove: hoverFocus },
+  );
+  return row;
+}
 
 export const tileMarks = () => [
   el(
@@ -65,6 +93,15 @@ export const controls = () => [
     t(
       'Toque: toque numa casa para marcar e toque de novo nela para confirmar; arraste com um dedo para mover a câmera e afaste ou aproxime dois dedos para o zoom. O botão Voltar (↩) aparece ao lado do ☰, no alto; girar a câmera, desfazer e ver o mapa inteiro estão no menu ☰.',
       'Touch: tap a tile to mark it and tap it again to confirm; drag with one finger to move the camera and pinch with two to zoom. The Back button (↩) shows beside the ☰ at the top; rotating the camera, undo and the whole map are in the ☰ menu.',
+    ),
+  ),
+  // the short "+N" of the turn list and of the unit sheets (Fernando, Nov 17): two different clocks
+  el(
+    'p',
+    {},
+    t(
+      'Na lista de turnos e nas fichas, o "+N" depois da Vida é a vida que a unidade recupera a cada turno dela; o "+N" depois do CT é o CT que ela ganha a cada tique.',
+      'On the turn list and the unit sheets, the "+N" after HP is the life the unit gets back at each of its turns; the "+N" after CT is the CT it gains each tick.',
     ),
   ),
   el('dl', { class: 'keys' }, ...keyHelp().flatMap(([k, what]) => [el('dt', {}, k), el('dd', {}, what)])),

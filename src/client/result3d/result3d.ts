@@ -71,6 +71,10 @@ export class Result3d implements Ui3dScreen {
     };
     this.host.addEventListener('focusin', point);
     this.host.addEventListener('pointerover', point);
+    // a held Enter or Space (the way to speed up the enemy's turn) would press the primary and close the board unread
+    this.host.addEventListener('keydown', (e) => {
+      if (e.repeat && (e.key === 'Enter' || e.key === ' ')) e.preventDefault();
+    });
     setBoard3d((b) => this.show(b));
     layer.add(this);
   }
@@ -85,7 +89,9 @@ export class Result3d implements Ui3dScreen {
     );
     this.host.replaceChildren(...board.actions);
     this.win = dialog('result3d', board.title, [this.host], { onBack: board.onBack });
-    board.actions.at(-1)?.focus(); // Enter takes the primary
+    // Enter takes the primary, as in the HTML board: the board lists it first (the last one took the focus, and Enter
+    // after a victory went to the town instead of playing again)
+    (board.actions.find((b) => b.classList.contains('primary')) ?? board.actions[0])?.focus();
     land(this.open, 0);
     this.open.to = 1;
     this.build();

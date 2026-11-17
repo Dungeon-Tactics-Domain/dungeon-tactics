@@ -5,6 +5,7 @@ import type { HudActions } from './hud.ts';
 import { hint } from './hud-pieces.ts';
 import { t } from './i18n.ts';
 import { button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
+import { type Tool, toolRows } from './tool-rows.ts';
 
 export class ToolsMenu {
   private readonly toolsMenu = el('div', { class: 'panel tools-menu', role: 'menu', hidden: true });
@@ -27,24 +28,33 @@ export class ToolsMenu {
   };
 
   constructor(act: HudActions) {
-    this.fpsBtn = this.toolItem('▤', t('Contador de fps', 'FPS counter'), 'F3', () => act.fps(), {
-      role: 'menuitemcheckbox',
-      'aria-checked': String(fpsOn()),
-    });
-    this.fastBtn = this.toolItem('»', t('Batalha rápida (3×)', 'Fast battle (3×)'), '', () => act.fast(), {
-      role: 'menuitemcheckbox',
-      'aria-checked': 'false',
-    });
-    this.toolsMenu.append(
-      this.toolItem(icon(UI_ICON.undo), t('Desfazer', 'Undo'), 'Z', () => act.undo()),
-      this.toolItem('⟲', t('Girar à esquerda', 'Rotate left'), '⇧R', () => act.rotate(-1)),
-      this.toolItem('⟳', t('Girar à direita', 'Rotate right'), 'R', () => act.rotate(1)),
-      this.toolItem(icon(UI_ICON.recenter), t('Ver o mapa inteiro', 'Show the whole map'), 'F', () => act.recenter()),
-      this.toolItem(icon(UI_ICON.pixel), t('Tamanho do pixel', 'Pixel size'), 'V', () => act.pixel()),
-      this.fastBtn,
-      this.fpsBtn,
-      this.toolItem(icon(UI_ICON.menu), t('Opções e ajuda', 'Options and help'), 'H', () => act.menu()),
+    // the rows are tool-rows.ts'; here only what each runs and the four that have an icon of the atlas
+    const run: Record<Tool, () => void> = {
+      undo: () => act.undo(),
+      rotateLeft: () => act.rotate(-1),
+      rotateRight: () => act.rotate(1),
+      recenter: () => act.recenter(),
+      pixel: () => act.pixel(),
+      fast: () => act.fast(),
+      fps: () => act.fps(),
+      menu: () => act.menu(),
+    };
+    const drawn: Partial<Record<Tool, string>> = {
+      undo: UI_ICON.undo,
+      recenter: UI_ICON.recenter,
+      pixel: UI_ICON.pixel,
+      menu: UI_ICON.menu,
+    };
+    const items = new Map(
+      toolRows().map((r) => {
+        const glyph = drawn[r.tool] ? icon(drawn[r.tool]!) : r.glyph;
+        const props = r.toggle && { role: 'menuitemcheckbox', 'aria-checked': String(r.tool === 'fps' && fpsOn()) };
+        return [r.tool, this.toolItem(glyph, r.label, r.key, run[r.tool], props)] as const;
+      }),
     );
+    this.fpsBtn = items.get('fps')!;
+    this.fastBtn = items.get('fast')!;
+    this.toolsMenu.append(...items.values());
   }
 
   setFps(on: boolean) {
@@ -65,7 +75,7 @@ export class ToolsMenu {
       else document.removeEventListener(ev, this.closeOutside, true);
     }
   }
-  private toolItem(glyph: Child, label: string, key: string, run: () => void, props: Record<string, unknown> = {}) {
+  private toolItem(glyph: Child, label: string, key: string, run: () => void, props?: Record<string, unknown>) {
     return button(
       'item',
       [

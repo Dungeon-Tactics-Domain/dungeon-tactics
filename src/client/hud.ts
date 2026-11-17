@@ -18,7 +18,7 @@ import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import type { MenuCss } from './hud-menucss.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm } from './hud-menus.ts';
-import { hint, KEYS, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
+import { hint, KEYS, queueEnd, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
 import { type HudSkin, queueBoxes, wireQueue } from './hud-skin.ts';
 import { ToolsMenu } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
@@ -160,7 +160,7 @@ export class BattleHud {
     this.menu3d = skin.menu3d?.(this.layer, act);
     this.turn3d = skin.turn3d?.(this.layer, this.queue);
     if (this.turn3d) wireQueue(this.root, this.queue, this.turn3d);
-    this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox);
+    this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox, this.tools.root);
   }
   private drop3d() {
     this.layer?.dispose(); // with its screens
@@ -364,7 +364,7 @@ export class BattleHud {
             ),
             el('span', { class: 'queue-name' }, charge ? abilityName(charge) : unitName(u.def)),
           ),
-          el('span', { class: 'queue-round', title: t(`Rodada ${round}`, `Round ${round}`) }, String(round)),
+          ...queueEnd(u, !!charge, round),
         );
       }),
     );
