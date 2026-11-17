@@ -1,6 +1,7 @@
 // Keyboard in the style of Final Fantasy Tactics (Fernando's request, Oct 25): play everything without a mouse. Only translates key into
 // action and screen direction into a grid step; the Game (main.ts) executes. Pure and tested.
 import type { BattleState, Pos } from '../shared/battle/types.ts';
+import { type Act, keysText, type Shown } from './glyphs.ts';
 import { t } from './i18n.ts';
 
 export type ScreenDir = 'up' | 'down' | 'left' | 'right';
@@ -109,67 +110,90 @@ export function cycleUnit(state: BattleState, from: Pos, dir: 1 | -1): Pos {
   return units[next].pos;
 }
 
-// Help screen list: [keys, what they do]
-export const keyHelp = (): [string, string][] => [
-  [
-    'W A S D · ← ↑ → ↓',
-    t(
-      'no menu, sobe e desce; no mapa, anda o cursor de casa em casa (segue a câmera)',
-      'in the menu, up and down; on the map, move the cursor tile by tile (follows the camera)',
-    ),
-  ],
-  [
-    t('Enter · Espaço', 'Enter · Space'),
-    t(
-      'andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º Enter age; no fim do turno, confirma a direção; seguro, acelera a batalha 3 vezes',
-      'move to the tile under the cursor; on a target, asks "Execute?" and the 2nd Enter acts; at turn end, confirms the facing; held, speeds the battle up 3 times',
-    ),
-  ],
-  [
-    'Esc · Backspace',
-    t(
-      'volta um passo (mapa → habilidades → menu); no menu, desfaz o último movimento se ele não levou contra-ataque',
-      'goes back one step (map → abilities → menu); in the menu, undoes the last move if it drew no counter',
-    ),
-  ],
-  ['1 – 7', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
-  [
-    'C',
-    t(
-      'Status: ficha da unidade sob o cursor (ou de quem joga)',
-      'Status: sheet of the unit under the cursor (or the active one)',
-    ),
-  ],
-  [
-    'Tab · Shift+Tab',
-    t('no mapa, pula de unidade em unidade (vida e alcance)', 'on the map, jump between units (HP and reach)'),
-  ],
-  ['Z', t('desfazer', 'undo')],
-  ['T', t('virar a unidade da vez', 'turn the active unit')],
-  [
-    'P',
-    t(
-      'Esperar: escolhe para onde olhar; P de novo ou Enter termina o turno; quem fez menos joga antes de novo',
-      'Wait: pick the facing; P again or Enter ends the turn; doing less brings the next turn sooner',
-    ),
-  ],
-  ['R · Shift+R', t('girar a câmera 45°', 'rotate the camera 45°')],
-  ['Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
-  ['F', t('ver o mapa inteiro', 'show the whole map')],
-  ['V', t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)')],
-  ['PgUp · PgDn', t('rolar a lista de turnos', 'scroll the turn list')],
-  [
-    'I',
-    t('ficha da habilidade em foco no submenu Habilidades', 'sheet of the ability in focus in the Abilities submenu'),
-  ],
-  ['F3', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
-  ['H · ?', t('esta ajuda e o menu', 'this help and the menu')],
-  // the walkable town (game/town.ts) reads the same keys
-  [
-    t('Na cidade', 'In town'),
-    t(
-      'W A S D anda enquanto segura; Enter fala com quem está à frente ou entra pela porta (o balão mostra o quê); o clique só anda até lá; Esc · H abre o menu da cidade',
-      'W A S D walk while held; Enter talks to whoever is in front or goes in at the door (the balloon shows what); a click only walks there; Esc · H opens the town menu',
-    ),
-  ],
-];
+// Help screen list: [keys, what they do], for what the hints show (glyphs.ts): the keys with their alternates, or the pad's
+// buttons by name; a row the pad has no button for is left out. `keys`: the keyboard's fuller spelling of the row
+export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
+  const k = (a: Act) => keysText(a, shown) ?? '';
+  const pad = shown !== 'keyboard';
+  const rows: [acts: Act[], keys: string, text: string][] = [
+    [
+      ['move'],
+      'W A S D · ← ↑ → ↓',
+      t(
+        'no menu, sobe e desce; no mapa, anda o cursor de casa em casa (segue a câmera)',
+        'in the menu, up and down; on the map, move the cursor tile by tile (follows the camera)',
+      ),
+    ],
+    [
+      ['confirm'],
+      t('Enter · Espaço', 'Enter · Space'),
+      t(
+        `andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º ${k('confirm')} age; no fim do turno, confirma a direção; seguro, acelera a batalha 3 vezes`,
+        `move to the tile under the cursor; on a target, asks "Execute?" and the 2nd ${k('confirm')} acts; at turn end, confirms the facing; held, speeds the battle up 3 times`,
+      ),
+    ],
+    [
+      ['cancel'],
+      'Esc · Backspace',
+      t(
+        'volta um passo (mapa → habilidades → menu); no menu, desfaz o último movimento se ele não levou contra-ataque',
+        'goes back one step (map → abilities → menu); in the menu, undoes the last move if it drew no counter',
+      ),
+    ],
+    [['slots'], '', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
+    [
+      ['status'],
+      '',
+      t(
+        'Status: ficha da unidade sob o cursor (ou de quem joga)',
+        'Status: sheet of the unit under the cursor (or the active one)',
+      ),
+    ],
+    [
+      ['cycle'],
+      'Tab · Shift+Tab',
+      t('no mapa, pula de unidade em unidade (vida e alcance)', 'on the map, jump between units (HP and reach)'),
+    ],
+    [['undo'], '', t('desfazer', 'undo')],
+    [['face'], '', t('virar a unidade da vez', 'turn the active unit')],
+    [
+      ['wait'],
+      '',
+      t(
+        `Esperar: escolhe para onde olhar; ${k('wait')} de novo ou ${k('confirm')} termina o turno; quem fez menos joga antes de novo`,
+        `Wait: pick the facing; ${k('wait')} again or ${k('confirm')} ends the turn; doing less brings the next turn sooner`,
+      ),
+    ],
+    [['rotateLeft', 'rotateRight'], 'R · Shift+R', t('girar a câmera 45°', 'rotate the camera 45°')],
+    [['zoom'], 'Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
+    [['recenter'], '', t('ver o mapa inteiro', 'show the whole map')],
+    [
+      ['pixel'],
+      '',
+      t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)'),
+    ],
+    [['turns'], 'PgUp · PgDn', t('rolar a lista de turnos', 'scroll the turn list')],
+    [
+      ['info'],
+      '',
+      t('ficha da habilidade em foco no submenu Habilidades', 'sheet of the ability in focus in the Abilities submenu'),
+    ],
+    [['fps'], '', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
+    [['help'], 'H · ?', t('esta ajuda e o menu', 'this help and the menu')],
+  ];
+  const menu = pad ? `${k('cancel')} · ${k('help')}` : 'Esc · H';
+  return [
+    ...rows.flatMap(([acts, keys, text]): [string, string][] => {
+      const named = acts.map(k).filter(Boolean);
+      return named.length ? [[(!pad && keys) || named.join(' · '), text]] : [];
+    }),
+    // the walkable town (game/town.ts) reads the same keys
+    [
+      t('Na cidade', 'In town'),
+      t(
+        `${k('walk')} anda enquanto segura; ${k('confirm')} fala com quem está à frente ou entra pela porta (o balão mostra o quê); o clique só anda até lá; ${menu} abre o menu da cidade`,
+        `${k('walk')} walk while held; ${k('confirm')} talks to whoever is in front or goes in at the door (the balloon shows what); a click only walks there; ${menu} opens the town menu`,
+      ),
+    ],
+  ];
+}

@@ -2,6 +2,7 @@
 // in px of the 1920x1080 reference (town-layout.ts), so the drawing is thin and the same list could feed another engine
 // (Fernando, Nov 16: positions as data, state apart from the drawing). The views (shop-view.ts, party-view.ts) build
 // pages from the saved game; nothing here touches the DOM or Three.js. Tested in tests/town3d.test.ts.
+import type { Act } from '../glyphs.ts';
 import type { Box } from '../ui3d/layout.ts';
 import { neighbour as seenThatWay } from '../ui3d/walk.ts';
 import { T } from './town-layout.ts';
@@ -38,6 +39,7 @@ export interface Text extends InList {
   max?: number; // shrinks to this width
   wrap?: number; // wraps at this width
   maxH?: number; // a wrapped block shrinks to this height
+  keys?: [Act, string][]; // a line of key hints in place of `str`: the drawing words it for the input in use (glyphs.ts hintLine)
 }
 export interface Face extends InList {
   k: 'face';
@@ -139,7 +141,7 @@ export function chrome(o: {
   gold: [label: string, value: number];
   note?: string;
   help: string;
-  hints: string;
+  hints: [Act, string][];
 }): Item[] {
   return [
     fill({ x: -40, y: -40, w: 2000, h: 1160 }, 'veil', { a: 0.86 }),
@@ -150,7 +152,7 @@ export function chrome(o: {
     ...(o.note ? [text(o.note, T.gold.x, T.gold.y + 50, 24, 'dim', { align: 'r' })] : []),
     fill(T.help, 'bar', { a: 0.8 }),
     text(o.help, 960, T.help.y + T.help.h / 2, 28, 'light', { align: 'c', max: 1700 }),
-    text(o.hints, T.hints.x, T.hints.y, 24, 'dim', { align: 'r' }),
+    text('', T.hints.x, T.hints.y, 24, 'dim', { align: 'r', keys: o.hints }),
   ];
 }
 

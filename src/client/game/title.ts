@@ -6,9 +6,11 @@ import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import { openDevMenu } from '../dev-menu.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
+import { hintLine } from '../glyphs.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { liveText } from '../key-hints.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
@@ -294,7 +296,19 @@ export function titleScreen() {
         'p',
         { class: 'title-foot' },
         // the keys only where there is a keyboard (Nov 16 touch audit: a tablet was told to press Enter)
-        KEYS && t('Setas escolhem · Enter confirma · ', 'Arrows choose · Enter confirms · '),
+        KEYS &&
+          liveText(
+            '',
+            (s) =>
+              `${hintLine(
+                s,
+                [
+                  ['move', t('escolher', 'choose')],
+                  ['confirm', t('confirmar', 'confirm')],
+                ],
+                ' · ',
+              )} · `,
+          ),
         // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
         button('title-lang', LANG === 'pt' ? 'English' : 'Português', () => setLang(LANG === 'pt' ? 'en' : 'pt')),
       ),

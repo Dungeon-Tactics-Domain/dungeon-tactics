@@ -16,7 +16,7 @@ import { faceSheet } from './talk.ts';
 import { statsText, unitStats } from './turn-list.ts';
 
 export const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
-export const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
+export { hint } from './key-hints.ts';
 
 // bar with label and number (HP, MP, CT), like the ones in FFT's unit panel. `change` marks in stripes the part
 // that the strike takes (loss) or the heal adds (gain), like the target bar in Tactics Ogre; the number comes along in the panel

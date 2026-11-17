@@ -211,7 +211,10 @@ export class Map3d implements Ui3dScreen {
     this.pen.say(back, String(view.gold[1]), 34, c.title, T.gold.x, T.gold.y, 'right');
     this.pen.say(back, view.gold[0], 22, c.soft, T.gold.x - 150, T.gold.y, 'right');
     this.pen.fill(back, T.help, rgba(c.band, 0.8));
-    const keys = t('Setas: mudar de lugar   ·   Enter: escolher', 'Arrows: change place   ·   Enter: choose');
+    const keys = layer.keysLine([
+      ['move', t('mudar de lugar', 'change place')],
+      ['confirm', t('escolher', 'choose')],
+    ]);
     this.pen.say(back, keys, 24, c.soft, T.hints.x, T.hints.y, 'right');
     lift(back, 28);
 

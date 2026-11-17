@@ -93,6 +93,9 @@ parseGrid and withRamps (grid.ts).
 - `src/client/store.ts` — dt:* storage with a memory fallback, the key MIGRATIONS and the URL param reader.
 - `src/client/keyboard.ts` — key to action (keyAction), grid steps by screen direction and the help list.
 - `src/client/gamepad.ts` — gamepad button state to keyboard actions.
+- `src/client/glyphs.ts` — the key hints' one table (action, key, pad button), the controller's family by its id (familyOf) and what the hints show by the Options and the input last used (shownFor, capsOf, hintLine); pure.
+- `src/client/glyph-art.ts` — a key cap or a pad button drawn on a canvas in the game's style (capCanvas), from the proportions and colours of glyph-art.json.
+- `src/client/key-hints.ts` — the key hints' live state (dt:glyphs, the input last used, padSeen) and the HTML hint that redraws itself (hint, live, liveText).
 - `src/client/pixel-settings.ts` — pixel art options (dt:pixel) and their parser.
 - `src/client/markers.ts` — unit heights and marker heights above them (ring, bar, cursor) and the model of each sheet.
 - `src/client/water-levels.ts` — water surface and wading heights for drawing.
@@ -117,7 +120,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/menucss.css` — the styles of ?menucss, fetched only with the flag.
 - `src/client/ui3d/layer.ts` — Ui3dLayer: the one transparent WebGL canvas over the HUD every 3D screen draws on (Ui3dScreen), on the battle clock, with the pixel filter and the F3 cost.
 - `src/client/ui3d/panel.ts` — 3D kit: the parchment panel and inset band shaders, the theme (--ui3d-* tokens) and the quad helper.
-- `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText); pure wrapLines.
+- `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText), the same for a drawing made elsewhere (imageMesh); pure wrapLines.
+- `src/client/ui3d/caps.ts` — 3D kit: an action's keys or pad buttons as quads showing glyph-art.ts' drawing (capMeshes, capRun).
 - `src/client/ui3d/icons.ts` — 3D kit: low-poly parts merged into one tinted geometry, the shared geometry cache and the icon shader.
 - `src/client/ui3d/pixel.ts` — 3D kit: the pixel filter (block size and the shader that reads the small target); pure.
 - `src/client/ui3d/spring.ts` — 3D kit: damped spring, ease and the page ring step; pure.
@@ -136,7 +140,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/bar3d/plates.ts` — the 3D combat bar's shaders: a whole unit sheet (band, bars, framed portrait) and the arrow plate.
 - `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D (?banner=3d, ?height=3d, ?hints=3d), each on its region of the reference; the tile line (floor, water, spikes, a charge landing) small under the Height.
 - `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D (?confirm=3d) beside the character, drawn over the unseen HTML window that keeps its place, sizes and buttons; text from hud-menus.ts confirmParts.
-- `src/client/hints3d/hints-view.ts` — the button hints of each turn screen for the device in use (hintsFor), the Height number and where each hint of a row sits (layRow); pure.
+- `src/client/hints3d/hints-view.ts` — the button hints of each turn screen, each an action of glyphs.ts (hintsFor), the Height number and where each hint of a row sits (layRow); pure.
 - `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
 - `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.

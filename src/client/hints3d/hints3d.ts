@@ -11,22 +11,14 @@ import { Group, Mesh, ShaderMaterial, Vector2, Vector4 } from 'three';
 import type { HudView } from '../hud.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
+import { onShown } from '../key-hints.ts';
+import { capMeshes } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { place, REGIONS } from '../ui3d/layout.ts';
 import { QUAD, QUAD_VERT } from '../ui3d/panel.ts';
 import { ease, land, settled, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
-import {
-  type Device,
-  deviceOf,
-  type Hint,
-  heightShown,
-  hintsFor,
-  layRow,
-  padBusy,
-  ROW,
-  tileLine,
-} from './hints-view.ts';
+import { type Device, type Hint, heightShown, hintsFor, layRow, ROW, tileLine } from './hints-view.ts';
 
 export interface Parts {
   banner: boolean;
@@ -37,10 +29,7 @@ export interface Parts {
 // measured on the reference (labs: refs/fft-ivalice, images 17, 19 and 24)
 export const WHITE = '#f4f1e6';
 const GREEN = '#4daf7c'; // the Height number
-const CAP_INK = '#2a2622';
 export const PILL: Rgba = [0.15, 0.18, 0.23, 0.88]; // #363f48 over the sky: dark slate, a little see-through
-const CAP: Rgba = [0.78, 0.75, 0.73, 1]; // a key cap or a pad button
-const CAP_EDGE: Rgba = [0.2, 0.18, 0.16, 0.7];
 export const LINE: Rgba = [0.82, 0.86, 0.92, 0.6];
 export const NONE: Rgba = [0, 0, 0, 0];
 export type Rgba = [number, number, number, number];
@@ -134,7 +123,7 @@ export class Hints3d implements Ui3dScreen {
   private readonly open = spring(0); // the banner: 0 away, 1 in place
   private readonly pop = spring(1); // the Height number's size as it changes
   private num?: Quad;
-  private device: Device = KEYS ? 'keyboard' : 'touch';
+  private touch = !KEYS; // a finger gets no hints; a key or a pad button brings them back
   private readonly ac = new AbortController();
   private last?: { v: HudView; open: boolean; help: string };
   private said: string | null = null;
@@ -145,16 +134,24 @@ export class Hints3d implements Ui3dScreen {
   ) {
     this.flat.add(this.banner.group, this.height.group, this.tile.group, this.hints.group);
     for (const [part, on] of Object.entries(parts)) layer.root.classList.toggle(`${part}3d`, on);
-    // which device the hints speak to: the last one touched (a pad is read in `frame`)
+    // what the hints are drawn as is key-hints.ts' (the Options, the input last used); here only the finger, which
+    // hides them. The mouse changes nothing (Fernando, Nov 17)
     const o = { signal: this.ac.signal, capture: true };
-    addEventListener('keydown', () => this.input(deviceOf('key')), o);
-    addEventListener('pointerdown', (e) => this.input(deviceOf(e.pointerType as 'mouse' | 'touch' | 'pen')), o);
+    addEventListener('keydown', () => this.finger(false), o);
+    addEventListener('pointerdown', (e) => e.pointerType !== 'mouse' && this.finger(true), o);
+    this.ac.signal.addEventListener(
+      'abort',
+      onShown(() => this.finger(false, true)),
+    );
     layer.add(this);
   }
 
-  private input(d: Device) {
-    if (d === this.device) return;
-    this.device = d;
+  private get device(): Device {
+    return this.touch ? 'touch' : this.layer.keys;
+  }
+  private finger(on: boolean, redraw = false) {
+    if (on === this.touch && !redraw) return;
+    this.touch = on;
     this.draw();
   }
 
@@ -259,7 +256,7 @@ export class Hints3d implements Ui3dScreen {
     if (parts.hints) {
       const lists = hintsFor(b, v.screen, last.open, this.device);
       const part = this.hints,
-        key = JSON.stringify(lists) + at;
+        key = JSON.stringify([lists, this.device]) + at;
       part.want = lists.left.length + lists.right.length ? 1 : 0;
       if (part.want && key !== part.key) {
         part.clear();
@@ -270,18 +267,21 @@ export class Hints3d implements Ui3dScreen {
     }
   }
 
-  // one row of hints on its region: each button as a cap (a pad's single letters round, like its buttons) and its text
-  private row(list: Hint[], align: 'left' | 'right') {
+  // one row of hints on its region: each key or pad button drawn (ui3d/caps.ts) and its text
+  private row(all: Hint[], align: 'left' | 'right') {
     const { layer, hints: part } = this,
       s = layer.s;
     const r = place(REGIONS[align === 'right' ? 'hints' : 'hintsLeft'], layer.stage);
-    const h = Math.max(20, ROW.cap * s),
+    const h = Math.max(22, ROW.cap * s),
       mid = r.y + r.h / 2;
-    const made = list.map((hint) => ({
-      caps: hint.button.split(' ').map((k) => this.label(k, 17, CAP_INK, undefined, 12)),
-      text: this.label(hint.text, ROW.text, WHITE),
-    }));
-    const capW = (m: Quad) => Math.max(h, m.scale.x + 8 * s);
+    const device = this.device;
+    if (device === 'touch') return;
+    // a hint the pad has no button for is left out
+    const made = all.flatMap((hint) => {
+      const caps = capMeshes(hint.act, device, h, layer.dpr, layer.theme.font);
+      return caps ? [{ caps, text: this.label(hint.text, ROW.text, WHITE) }] : [];
+    });
+    const capW = (m: Quad) => m.scale.x;
     const xs = layRow(
       made.map((m) => ({ caps: m.caps.map(capW), text: m.text.scale.x })),
       r,
@@ -292,8 +292,6 @@ export class Hints3d implements Ui3dScreen {
       m.caps.forEach((cap, k) => {
         const w = capW(cap),
           x = layer.snap(xs[i].caps[k]);
-        const round = this.device === 'gamepad' && w === h;
-        part.box(x, layer.snap(mid - h / 2), w, h, round ? h / 2 : 5 * s, CAP, CAP_EDGE);
         part.text(cap, x + w / 2, layer.snap(mid));
       });
       part.text(m.text, layer.snap(xs[i].text) + m.text.scale.x / 2, layer.snap(mid));
@@ -304,15 +302,6 @@ export class Hints3d implements Ui3dScreen {
     const { layer, banner, height, tile, hints } = this,
       still = layer.still,
       e = still ? 10 : dt; // reduced motion: every ease is already there
-    const pad = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
-    if (
-      pad &&
-      padBusy(
-        pad.buttons.map((b) => b.pressed),
-        [...pad.axes],
-      )
-    )
-      this.input('gamepad');
     this.pop.to = 1;
     for (const sp of [this.open, this.pop]) {
       if (still) land(sp);

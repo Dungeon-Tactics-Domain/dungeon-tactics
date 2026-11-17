@@ -124,7 +124,7 @@ export class Title3d implements Ui3dScreen {
     });
     // the keys, only where there is a keyboard (the title's own foot says them or not)
     const foot = title.querySelector('.title-foot')?.firstChild;
-    const keys = foot?.nodeType === Node.TEXT_NODE ? (foot.textContent ?? '').replace(/[\s·]+$/, '') : '';
+    const keys = foot && foot.nodeName !== 'BUTTON' ? (foot.textContent ?? '').replace(/[\s·]+$/, '') : '';
     if (keys) put(fixed, text(keys, REF.size.foot, c.text), L.foot.x, L.foot.y, 'centre');
     if (lang) {
       fixed.box(L.lang.x, L.lang.y, L.lang.w, L.lang.h, 6 * s, rgba(c.plate, 0.95), rgba(c.line, 0.8));

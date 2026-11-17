@@ -86,17 +86,27 @@ const textMaterial = (map: Texture) =>
     uniforms: { uMap: { value: map }, uAlpha: { value: 1 } },
   });
 
-// A quad showing `str` at its drawn size in CSS px (scale.x, scale.y), with `uAlpha` to fade it. Free it with dropText
-export function textMesh(str: string, o: TextOpts, dpr: number): Mesh<typeof QUAD, ShaderMaterial> {
-  const key = JSON.stringify([str, o, dpr]);
+function mesh(key: string, make: () => Label): Mesh<typeof QUAD, ShaderMaterial> {
   let l = labels.get(key);
-  if (!l) labels.set(key, (l = draw(str, o, dpr)));
+  if (!l) labels.set(key, (l = make()));
   l.uses++;
   const m = new Mesh(QUAD, textMaterial(l.tex));
   m.scale.set(l.w, l.h, 1);
   m.userData.label = key;
   return m;
 }
+// A quad showing `str` at its drawn size in CSS px (scale.x, scale.y), with `uAlpha` to fade it. Free it with dropText
+export const textMesh = (str: string, o: TextOpts, dpr: number) =>
+  mesh(JSON.stringify([str, o, dpr]), () => draw(str, o, dpr));
+// The same for a drawing made elsewhere (a key cap, a pad button: caps.ts): `make` draws it in device px, once per `key`
+export const imageMesh = (key: string, make: () => HTMLCanvasElement, dpr: number) =>
+  mesh(key, () => {
+    const cv = make();
+    const tex = new CanvasTexture(cv);
+    tex.minFilter = tex.magFilter = LinearFilter;
+    tex.generateMipmaps = false;
+    return { tex, w: cv.width / dpr, h: cv.height / dpr, uses: 0 };
+  });
 export function dropText(m: Mesh) {
   m.removeFromParent();
   (m.material as ShaderMaterial).dispose();

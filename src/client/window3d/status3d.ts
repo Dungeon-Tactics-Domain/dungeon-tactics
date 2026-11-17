@@ -17,6 +17,7 @@ import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import { alpha, clamp01, move } from '../menu3d/column.ts';
 import { type StatusSheet, setStatus3d, statusBody, statusWindow } from '../status-window.ts';
+import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { paintTexture, paperMaterial, quad } from '../ui3d/panel.ts';
 import { land, settled, spring } from '../ui3d/spring.ts';
@@ -25,11 +26,8 @@ import { REF, statusLayout, valueWidth } from './status-view.ts';
 
 const VEIL: Rgba = [0.03, 0.04, 0.05, 0.72]; // the battle behind, as the reference's dark screen
 const RULE: Rgba = [0.2, 0.17, 0.1, 0.16]; // the hairline under each row, in the paper's edge colour
-const CAP: Rgba = [0.78, 0.75, 0.73, 1];
-const CAP_EDGE: Rgba = [0.2, 0.18, 0.16, 0.7];
-const CAP_INK = '#2a2622';
 // text sizes in px of the reference (never under 16 px on the page; a key cap's letters 12)
-const SIZE = { head: 24, row: 22, foot: 20, cap: 17, close: 24 };
+const SIZE = { head: 24, row: 22, foot: 20, close: 24 };
 const OVER = 32; // over every other screen of the layer
 
 export class Status3d implements Ui3dScreen {
@@ -135,13 +133,8 @@ export class Status3d implements Ui3dScreen {
     );
     const x = L.box.w - 14 * s - close.scale.x;
     left(close, x, mid);
-    if (KEYS) {
-      const cap = this.label('Esc', SIZE.cap, CAP_INK, undefined, 12),
-        h = Math.max(20, 26 * s),
-        w = Math.max(h, cap.scale.x + 8 * s);
-      part.box(x - 10 * s - w, mid - h / 2, w, h, 5 * s, CAP, CAP_EDGE);
-      part.text(cap, x - 10 * s - w / 2, mid);
-    }
+    const caps = KEYS && capMeshes('cancel', layer.keys, Math.max(22, 28 * s), layer.dpr, layer.theme.font);
+    if (caps) capRun((m, cx, cy) => part.text(m, cx, cy), caps, x - 10 * s - capsWidth(caps, 4 * s), mid, 4 * s);
     for (const m of [...veil.group.children, ...part.group.children]) if (m !== this.paper) m.renderOrder += OVER;
     for (const m of veil.group.children) m.renderOrder -= 4; // under the sheet
     // the window takes the sheet's box, so a tap outside it closes

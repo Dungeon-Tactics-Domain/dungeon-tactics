@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { canUndoMove, commandIndex, type Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
-import { deviceOf, heightShown, hintsFor, layRow, padBusy, ROW, tileLine } from '../src/client/hints3d/hints-view.ts';
+import { keysText } from '../src/client/glyphs.ts';
+import { type Device, heightShown, hintsFor, layRow, ROW, tileLine } from '../src/client/hints3d/hints-view.ts';
 import { cursorInfo, tileHeight } from '../src/client/tile-info.ts';
 import { skinFlags, specFlags } from '../src/client/ui3d/skin-flags.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -18,8 +19,9 @@ const battle = () =>
     ]),
   );
 const menu: Screen = { k: 'menu', index: commandIndex('move') };
-const row = (b: Battle, s: Screen, open = true, device: 'keyboard' | 'gamepad' | 'touch' = 'keyboard') =>
-  hintsFor(b, s, open, device).right.map((h) => `${h.button}=${h.text}`);
+// each hint as the words of its caps (glyphs.ts) and its text
+const row = (b: Battle, s: Screen, open = true, device: Device = 'keyboard') =>
+  hintsFor(b, s, open, device).right.map((h) => `${device === 'touch' ? '' : keysText(h.act, device)}=${h.text}`);
 
 describe('button hints: what each screen shows', () => {
   it('the menu offers Select and the camera; Cancel only once there is a move to undo', () => {
@@ -44,13 +46,17 @@ describe('button hints: what each screen shows', () => {
 
   it('the buttons follow the device in use, and a finger gets none', () => {
     const b = battle();
-    expect(row(b, { k: 'map', command: 'move' }, true, 'gamepad')).toEqual([
+    expect(row(b, { k: 'map', command: 'move' }, true, 'xbox')).toEqual([
       'A=Mover',
       'B=Cancelar',
       'LT RT LB RB=Câmera',
     ]);
-    expect(hintsFor(b, menu, true, 'gamepad').left).toEqual([{ button: 'Start', text: 'Menu e ajuda' }]);
-    expect(hintsFor(b, menu, true, 'keyboard').left).toEqual([{ button: 'H', text: 'Menu e ajuda' }]);
+    expect(row(b, { k: 'map', command: 'move' }, true, 'playstation')).toEqual([
+      '✕=Mover',
+      '○=Cancelar',
+      'L2 R2 L1 R1=Câmera',
+    ]);
+    expect(hintsFor(b, menu, true, 'switch').left).toEqual([{ act: 'help', text: 'Menu e ajuda' }]);
     expect(hintsFor(b, menu, true, 'touch')).toEqual({ left: [], right: [] });
   });
 
@@ -75,24 +81,11 @@ describe('button hints: what each screen shows', () => {
     for (const b of [battle(), moved])
       for (const s of screens)
         for (const open of [true, false])
-          for (const device of ['keyboard', 'gamepad'] as const) {
+          for (const device of ['keyboard', 'xbox', 'playstation', 'switch'] as const) {
             const right = hintsFor(b, s, open, device).right;
             expect(right.length).toBeLessThanOrEqual(3);
             expect(right.reduce((n, h) => n + h.text.length, 0)).toBeLessThanOrEqual(26);
           }
-  });
-
-  it('the last input picks the device', () => {
-    expect((['key', 'mouse', 'pad', 'touch', 'pen'] as const).map(deviceOf)).toEqual([
-      'keyboard',
-      'keyboard',
-      'gamepad',
-      'touch',
-      'touch',
-    ]);
-    expect(padBusy([false, false], [0.1, -0.2])).toBe(false);
-    expect(padBusy([false, true], [0, 0])).toBe(true);
-    expect(padBusy([], [0, -0.9])).toBe(true);
   });
 });
 
@@ -134,6 +127,18 @@ describe('hint rows: where each hint sits', () => {
     const xs = layRow([{ caps: [20], text: 80 }], { x: 30, y: 0, w: 100, h: 14 }, 'left', 0.5);
     expect(xs).toEqual([{ caps: [30], text: 30 + 20 + ROW.gap * 0.5 }]);
     expect(layRow([], { x: 0, y: 0, w: 10, h: 10 }, 'right', 1)).toEqual([]);
+  });
+
+  // the pad's drawn buttons are wider than the letters they replaced (Nov 17): the row closes up before it leaves
+  it('a row wider than its region closes the space between its hints, and still ends on the edge', () => {
+    const content = 50 + ROW.gap + 100 + 26 + ROW.capGap + 26 + ROW.gap + 60;
+    const xs = layRow(sizes, { x: 100, y: 0, w: content + 20, h: 28 }, 'right', 1);
+    expect(xs[0].caps).toEqual([100]);
+    expect(xs[1].caps[0] - (xs[0].text + 100)).toBe(20);
+    expect(xs[1].text + 60).toBe(100 + content + 20);
+    // never closer than a cap and its text
+    const tight = layRow(sizes, { x: 100, y: 0, w: content, h: 28 }, 'right', 1);
+    expect(tight[1].caps[0] - (tight[0].text + 100)).toBe(ROW.gap);
   });
 });
 

@@ -200,7 +200,7 @@ export class Options3d implements Ui3dScreen {
     });
     const focus = this.buttons.indexOf(document.activeElement as HTMLButtonElement);
     const names = this.buttons.map((el) => [el.lastChild?.textContent ?? '', el.disabled]);
-    const key = JSON.stringify([b.help.textContent, names, focus]);
+    const key = JSON.stringify([b.help.textContent, names, focus, b.note]);
     if (key === this.fixed.key) return;
     const { fixed, color: c } = this,
       s = L.s;

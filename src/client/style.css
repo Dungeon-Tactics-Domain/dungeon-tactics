@@ -587,11 +587,10 @@ button[hidden],
 }
 /* the key drawn on the primary, like the kit's Continue [Enter]; only where a keyboard is likely */
 .key-chip {
-  font: 500 var(--fs-xs) / 1 var(--font);
-  padding: 3px 6px;
-  border: 1px solid color-mix(in srgb, var(--ink) 60%, transparent);
-  border-radius: var(--r);
-  background: color-mix(in srgb, var(--shade) 35%, transparent);
+  display: inline-flex;
+  gap: 3px;
+  font-size: var(--fs-xs);
+  vertical-align: middle;
 }
 @media (hover: none) {
   .key-chip {
@@ -1241,10 +1240,6 @@ button[hidden],
     background: var(--row-hi);
     filter: none;
   }
-  /* the muted key hint gave 4.3:1 on the hover band; --ink as the party list does */
-  .tools-menu .item:hover .hint {
-    color: var(--ink);
-  }
 }
 .tool-label {
   display: flex;
@@ -1577,15 +1572,23 @@ button[hidden],
   display: none;
 }
 .kbd .hint {
-  display: inline-block;
-  font:
-    700 var(--fs-sm) / 1 system-ui,
-    sans-serif; /* the game font does not have the ⇧ */
-  color: var(--ink-muted);
-  border: 1px solid var(--ink-muted);
-  border-radius: 2px;
-  padding: 2px 4px;
+  display: inline-flex;
+  gap: 3px;
+  font-size: var(--fs-sm);
+  vertical-align: middle;
   margin-left: 8px;
+}
+/* a hint whose action the gamepad has no button for hides while the pad's icons show (key-hints.ts) */
+.hint[hidden],
+.key-chip[hidden] {
+  display: none;
+}
+/* a key or a pad button drawn by glyph-art.ts: 28 px tall beside 16 px text (a key's letters come to 16.8 px), as on
+   the battle's hint row */
+.cap {
+  display: block;
+  height: 1.75em;
+  width: auto;
 }
 
 /* ---- Battle HUD: unit panels, bars and strike preview ---- */

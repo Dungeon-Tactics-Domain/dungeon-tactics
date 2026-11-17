@@ -13,6 +13,7 @@ import { t } from '../i18n.ts';
 import { alpha, clamp01, Icon, move } from '../menu3d/column.ts';
 import { REF } from '../menu3d/menu-layout.ts';
 import { toolRows } from '../tool-rows.ts';
+import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import type { Box } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, quad } from '../ui3d/panel.ts';
@@ -22,11 +23,8 @@ import { textMesh } from '../ui3d/text.ts';
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
 const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the menu button while its list is open
 const BAR: Rgba = [0.96, 0.95, 0.9, 1];
-const CAP: Rgba = [0.78, 0.75, 0.73, 1]; // a key cap, as the button hints'
-const CAP_EDGE: Rgba = [0.2, 0.18, 0.16, 0.7];
-const CAP_INK = '#2a2622';
 // text sizes in px of the reference (never under 16 px on the page; a key cap's letters 12)
-const SIZE = { head: 24, row: 26, glyph: 26, state: 18, cap: 17, back: 28 };
+const SIZE = { head: 24, row: 26, glyph: 26, state: 18, back: 28 };
 const OVER = 40; // the list draws over the Height corner and the hints, which share the layer
 
 export class Tools3d implements Ui3dScreen {
@@ -142,7 +140,7 @@ export class Tools3d implements Ui3dScreen {
       data = toolRows();
     this.at = { x: box.x, y: box.y };
     this.rows = rows as Box[];
-    const lkey = JSON.stringify([box.w, box.h, rows, on, layer.dpr, s]);
+    const lkey = JSON.stringify([box.w, box.h, rows, on, layer.dpr, s, layer.keys]);
     if (lkey === list.key || !all.length) return;
     this.drop();
     list.key = lkey;
@@ -181,13 +179,10 @@ export class Tools3d implements Ui3dScreen {
       left(this.label(d.label, SIZE.row, ink), iconW + 8 * s, mid);
       // from the right edge: the key on its cap, then a switch's state in words (colour is never the only signal)
       let x = box.w - 12 * s;
-      if (d.key) {
-        const cap = this.label(d.key, SIZE.cap, CAP_INK, 12),
-          h = Math.max(20, 26 * s),
-          w = Math.max(h, cap.scale.x + 8 * s);
-        x -= w;
-        list.box(x, mid - h / 2, w, h, 5 * s, CAP, CAP_EDGE);
-        list.text(cap, x + w / 2, mid);
+      const caps = d.key && capMeshes(d.key, layer.keys, Math.max(22, 28 * s), layer.dpr, layer.theme.font);
+      if (caps) {
+        x -= capsWidth(caps, 4 * s);
+        capRun((m, cx, cy) => list.text(m, cx, cy), caps, x, mid, 4 * s);
         x -= 10 * s;
       }
       if (d.toggle) {

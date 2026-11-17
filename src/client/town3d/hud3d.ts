@@ -5,7 +5,9 @@
 //   it says what to write and where, and its real buttons take the mouse, the taps and the screen reader. Nothing here
 //   decides anything.
 import { Group } from 'three';
+import type { Act } from '../glyphs.ts';
 import { NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
+import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import type { Box } from '../ui3d/layout.ts';
 import { textMesh } from '../ui3d/text.ts';
@@ -13,10 +15,7 @@ import { textMesh } from '../ui3d/text.ts';
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
 const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the button in focus
 const BAR: Rgba = [0.96, 0.95, 0.9, 1];
-const CAP: Rgba = [0.78, 0.75, 0.73, 1]; // a key cap, as the button hints'
-const CAP_EDGE: Rgba = [0.2, 0.18, 0.16, 0.7];
-const CAP_INK = '#2a2622';
-const SIZE = { name: 28, prompt: 28, act: 26, cap: 18 }; // px of the reference; never under 16 on the page (a cap 12)
+const SIZE = { name: 28, prompt: 28, act: 26 }; // px of the reference; never under 16 on the page
 
 export class TownHud3d implements Ui3dScreen {
   readonly flat = new Group();
@@ -64,22 +63,17 @@ export class TownHud3d implements Ui3dScreen {
 
   // a pill with a line of text and, where there is a keyboard, the key on its cap; `x`, `y`: its middle. Its size back
   private pill(part: Part, str: string, key: string, size: number, x: number, y: number, h: number, lit = false) {
-    const s = this.layer.s,
+    const { s, dpr, theme } = this.layer,
       text = this.label(str, size, WHITE),
-      cap = key ? this.label(key, SIZE.cap, CAP_INK, 12) : null,
-      capH = Math.max(20, 28 * s),
-      capW = cap ? Math.max(capH, cap.scale.x + 10 * s) : 0,
-      gap = cap ? 12 * s : 0,
+      caps = (key && capMeshes(key as Act, this.layer.keys, Math.max(22, 28 * s), dpr, theme.font)) || null,
+      capW = caps ? capsWidth(caps, 4 * s) : 0,
+      gap = caps ? 12 * s : 0,
       pad = 22 * s,
       w = text.scale.x + gap + capW + 2 * pad,
       left = x - w / 2;
     part.box(left, y - h / 2, w, h, h / 2, lit ? LIT : PILL, EDGE);
     part.text(text, left + pad + text.scale.x / 2, y);
-    if (cap) {
-      const cx = left + w - pad - capW;
-      part.box(cx, y - capH / 2, capW, capH, 5 * s, CAP, CAP_EDGE);
-      part.text(cap, cx + capW / 2, y);
-    }
+    if (caps) capRun((m, cx, cy) => part.text(m, cx, cy), caps, left + w - pad - capW, y, 4 * s);
     return w;
   }
 
@@ -94,13 +88,24 @@ export class TownHud3d implements Ui3dScreen {
     };
     layer.wake();
     const keys = hud.classList.contains('kbd'),
-      key = (e: Element) => (keys ? (e.querySelector('.hint')?.textContent ?? '') : ''),
+      // the action of the HTML hint (key-hints.ts) and what it shows now, so a change of input redraws
+      key = (e: Element) => (keys ? (e.querySelector<HTMLElement>('.hint')?.dataset.act ?? '') : ''),
       focus = document.activeElement;
     const name = rect(this.host),
       menu = rect(this.burger),
       line = rect(this.prompt),
       says = this.prompt.firstChild?.textContent ?? '';
-    const fkey = JSON.stringify([name, menu, line, says, key(this.prompt), focus === this.burger, layer.dpr, s]);
+    const fkey = JSON.stringify([
+      name,
+      menu,
+      line,
+      says,
+      key(this.prompt),
+      layer.keys,
+      focus === this.burger,
+      layer.dpr,
+      s,
+    ]);
     if (fkey !== fixed.key) {
       fixed.clear();
       fixed.key = fkey;
@@ -137,7 +142,7 @@ export class TownHud3d implements Ui3dScreen {
     }
     // the balloon: what the action button does, drawn around the origin and moved over its target every frame
     const what = this.balloon.title;
-    const akey = JSON.stringify([what, key(this.balloon), focus === this.balloon, layer.dpr, s]);
+    const akey = JSON.stringify([what, key(this.balloon), layer.keys, focus === this.balloon, layer.dpr, s]);
     if (akey !== act.key) {
       act.clear();
       act.key = akey;

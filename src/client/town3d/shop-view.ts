@@ -8,6 +8,7 @@ import { ITEMS } from '../../shared/battle/equipment.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { defenceRows } from '../battle-text.ts';
 import { CHEST_MAX, type Chest, type Equip } from '../chest.ts';
+import type { Act } from '../glyphs.ts';
 import { GROUP_MAX, type Group, JOBS, RECRUIT_COST } from '../group.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
 import { itemName, itemStats, KIND_NAME, RARITY } from '../sheet-lines.ts';
@@ -49,7 +50,10 @@ interface Counter {
   detail: (r: Row) => Detail;
 }
 
-export const HINTS = () => t('Enter: escolher   ·   Esc: sair', 'Enter: choose   ·   Esc: leave');
+export const HINTS = (): [Act, string][] => [
+  ['confirm', t('escolher', 'choose')],
+  ['cancel', t('sair', 'leave')],
+];
 
 // Hit ids: `cmd:<command>`, `row:<key>` and `act`, the picked row's action. Picking a row is not buying: the row in
 // focus shows in the box, pressing it moves the cursor to `act` (town3d-screens.ts)

@@ -5,36 +5,23 @@
 import type { Battle } from '../../shared/battle/battle.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { cancelStep, type Screen } from '../command.ts';
+import type { Act, Shown } from '../glyphs.ts';
 import { t } from '../i18n.ts';
 import { cursorInfo, tileHeight } from '../tile-info.ts';
 import type { Box } from '../ui3d/layout.ts';
 
-export type Device = 'keyboard' | 'gamepad' | 'touch';
-// the last thing the player touched says which hints to show; the mouse plays with the keyboard's
-export const deviceOf = (input: 'key' | 'pad' | 'mouse' | 'touch' | 'pen'): Device =>
-  input === 'pad' ? 'gamepad' : input === 'touch' || input === 'pen' ? 'touch' : 'keyboard';
-// a pad counts as in use while a button is down or a stick is off its rest (gamepad.ts DEAD)
-export const padBusy = (buttons: boolean[], axes: number[]) =>
-  buttons.some(Boolean) || axes.some((a) => Math.abs(a) > 0.5);
+// what the row is drawn for: the keys or a pad's family (glyphs.ts, key-hints.ts), or a finger, which gets no hints
+export type Device = Shown | 'touch';
 
-// `button`: the key or pad button as its cap reads; a space splits it into one cap each ("Q E")
+// `act`: the action whose keys or pad buttons the hint shows, one cap each (glyphs.ts ACTIONS)
 export interface Hint {
-  button: string;
+  act: Act;
   text: string;
 }
 export interface Hints {
   left: Hint[];
   right: Hint[];
 }
-
-type Action = 'confirm' | 'cancel' | 'info' | 'camera' | 'menu';
-// the same keys as keyboard.ts (SIMPLE, action) and buttons as gamepad.ts (PRESS), by the browser's standard mapping.
-// Zoom and rotate share one hint, "Camera" (Fernando, Nov 16: the row must fit its region at 1280x720, where the 16 px
-// text floor makes it wider than the reference's)
-const BUTTONS: Record<Exclude<Device, 'touch'>, Record<Action, string>> = {
-  keyboard: { confirm: 'Enter', cancel: 'Esc', info: 'I', camera: 'Q E R', menu: 'H' },
-  gamepad: { confirm: 'A', cancel: 'B', info: 'Y', camera: 'LT RT LB RB', menu: 'Start' },
-};
 
 // what Confirm does on each screen (the reference: Move Here on the Move map, Confirm on a target), in a word or two
 function confirmText(s: Screen): string {
@@ -49,8 +36,10 @@ function confirmText(s: Screen): string {
 // the battle plays, holding Confirm speeds it up. A finger has no buttons: the banner says what a tap does
 export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device): Hints {
   if (device === 'touch' || b.over) return { left: [], right: [] };
-  const hint = (a: Action, text: string): Hint => ({ button: BUTTONS[device][a], text });
-  const left = [hint('menu', t('Menu e ajuda', 'Menu and Help'))];
+  // Zoom and rotate share one hint, "Camera" (Fernando, Nov 16: the row must fit its region at 1280x720, where the 16 px
+  // text floor makes it wider than the reference's)
+  const hint = (act: Act, text: string): Hint => ({ act, text });
+  const left = [hint('help', t('Menu e ajuda', 'Menu and Help'))];
   const camera = [hint('camera', t('Câmera', 'Camera'))];
   if (!open) return { left, right: [hint('confirm', t('Segure: acelerar', 'Hold: Speed Up')), ...camera] };
   const back = cancelStep(b, s);
@@ -73,11 +62,14 @@ export const tileLine = (b: Battle, s: Screen, cursor: Pos, size = 1): string =>
   heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
 
 // Sizes of a hint row in px of the 1920x1080 reference (layout-fft-ic.json dicas.direita: a 26 px glyph, text of about
-// 22 px, 12 px between them and 40 px to the next hint)
-export const ROW = { cap: 26, text: 22, capGap: 4, gap: 12, between: 40 };
+// 22 px, 12 px between them and 40 px to the next hint). Our cap is 28, the region's height, so a key's letters reach
+// 16 px (Nov 17)
+export const ROW = { cap: 28, text: 22, capGap: 4, gap: 12, between: 40 };
 
 // Where each hint of a row sits: the x of each of its caps and of its text, from their measured widths. The right row
-// ends on its region's right edge and grows leftwards, the left row starts on its region's left edge. `s`: the scale
+// ends on its region's right edge and grows leftwards, the left row starts on its region's left edge. `s`: the scale.
+// A row wider than its region (a pad's four camera buttons at 1280x720) closes the space between its hints, down to
+// the space between a cap and its text, so it still ends inside
 export function layRow(
   sizes: { caps: number[]; text: number }[],
   box: Box,
@@ -86,7 +78,10 @@ export function layRow(
 ): { caps: number[]; text: number }[] {
   const width = (h: { caps: number[]; text: number }) =>
     h.caps.reduce((w, c) => w + c + ROW.capGap * s, 0) - ROW.capGap * s + ROW.gap * s + h.text;
-  const total = sizes.reduce((w, h) => w + width(h) + ROW.between * s, 0) - ROW.between * s;
+  const content = sizes.reduce((w, h) => w + width(h), 0),
+    spaces = Math.max(1, sizes.length - 1);
+  const between = Math.max(ROW.gap * s, Math.min(ROW.between * s, (box.w - content) / spaces));
+  const total = content + between * (sizes.length - 1);
   let x = align === 'right' ? box.x + box.w - total : box.x;
   return sizes.map((h) => {
     const caps = h.caps.map((c) => {
@@ -95,7 +90,7 @@ export function layRow(
       return at;
     });
     const text = x - ROW.capGap * s + ROW.gap * s;
-    x = text + h.text + ROW.between * s;
+    x = text + h.text + between;
     return { caps, text };
   });
 }
