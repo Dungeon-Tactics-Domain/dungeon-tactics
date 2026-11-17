@@ -5,8 +5,8 @@ import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
 import { menuLayout, REF, rowBox } from '../src/client/menu3d/menu-layout.ts';
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
-import { queueRows } from '../src/client/turn-list.ts';
-import { matchRows, queueCards } from '../src/client/turn3d/queue-view.ts';
+import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
+import { matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
 import { stage } from '../src/client/ui3d/layout.ts';
 import { pixelBlock } from '../src/client/ui3d/pixel.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
@@ -277,6 +277,56 @@ describe('3D turn list: which card each row keeps', () => {
   });
 });
 
+// Life and CT beside each card (Nov 17, Fernando)
+describe('3D turn list: life and CT lines', () => {
+  it("each turn card carries its unit's two lines and CT fill; the tip says them in full", () => {
+    const b = new Battle(
+      flat(6, 6),
+      stateOf([
+        { id: 'a', def: 'warrior', team: 'hero', x: 1, y: 1 },
+        { id: 'b', def: 'soldier', team: 'enemy', x: 3, y: 1 },
+      ]),
+    );
+    const foe = b.state.units.find((u) => u.id === 'b')!;
+    foe.hp = 90;
+    foe.ct = 40;
+    const card = queueCards(b, queueRows(b, null), []).find((c) => c.id.unit === 'b')!;
+    expect(card.stats).toEqual({ hp: statsText(unitStats(foe)).hp, ct: statsText(unitStats(foe)).ct, ctFill: 0.4 });
+    expect(card.stats!.hp).toContain('90/');
+    expect(card.stats!.ct).toContain('40/100 +');
+    expect(card.tip).toContain(statsText(unitStats(foe)).long);
+  });
+
+  it("a charge's row has no lines: it is a spell going off, not a turn", () => {
+    const b = new Battle(
+      flat(8, 1),
+      stateOf([
+        { id: 'a', def: 'archer', team: 'hero', x: 0, y: 0 },
+        { id: 'r', def: 'rogue', team: 'enemy', x: 4, y: 0 },
+      ]),
+    );
+    const cards = queueCards(b, queueRows(b, { ability: 'aimed_shot', target: { x: 4, y: 0 } }), []);
+    const charge = cards.find((c) => c.id.charge)!;
+    expect(charge.stats).toBeNull();
+    expect(cards.filter((c) => !c.id.charge).every((c) => c.stats)).toBe(true);
+  });
+
+  it('the lines never go under 16 px and fit the card at every scale the rows allow', () => {
+    // the rows' sizes in style.css (.hud.turn3d .queue-row): 52 design px tall, never under 48 px
+    for (const s of [0.3, 0.54, 0.87, 1, 1.5, 2, 3]) {
+      const h = Math.max(52 * s, 48);
+      const l = statsLayout(h, s);
+      expect(l.size).toBeGreaterThanOrEqual(16);
+      expect(l.fits).toBe(true);
+      // top to bottom: life text, its bar, CT text, its bar, all inside the card
+      expect(l.hp.text).toBeLessThan(l.hp.bar);
+      expect(l.hp.bar + l.bar).toBeLessThanOrEqual(l.ct.text);
+      expect(l.ct.bar + l.bar).toBeLessThanOrEqual(h);
+    }
+    expect(statsLayout(40, 1).fits).toBe(false);
+  });
+});
+
 describe('3D interface: flags and boundaries', () => {
   it('a spec turns each look on by its own key', () => {
     expect(parseSpec({ menu3d: true, turn3d: true }).problems).toEqual([]);
@@ -295,19 +345,19 @@ describe('3D interface: flags and boundaries', () => {
         eager: true,
       },
     );
-    expect(Object.keys(scenes).length).toBe(20);
+    expect(Object.keys(scenes).length).toBe(25);
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
   });
 
   const sources = import.meta.glob<string>('../src/client/**/*.ts', { query: '?raw', import: 'default', eager: true });
   const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  const is3d = (path: string) => /\/(ui3d|menu3d|turn3d|bar3d|hints3d|confirm3d|result3d|flow3d)\//.test(path);
+  const is3d = (path: string) => /\/(ui3d|menu3d|turn3d|bar3d|hints3d|confirm3d|result3d|flow3d|window3d)\//.test(path);
 
   // the game online never fetches the looks: outside their folders they are named only as a type or in a dynamic
   // import. The layout and the flags are the exception: small and pure, the Options and the HUD read them
   it('the rest of the client takes the 3D folders and the CSS menu by type or by dynamic import only', () => {
     const value =
-      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts|skin-flags\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|confirm3d\/|result3d\/|flow3d\/|hud-menucss)/m;
+      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts|skin-flags\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|confirm3d\/|result3d\/|flow3d\/|window3d\/|hud-menucss)/m;
     expect(value.test("import { Menu3d } from './menu3d/menu3d.ts';")).toBe(true);
     expect(value.test("import { Ui3dLayer } from './ui3d/layer.ts';")).toBe(true);
     expect(value.test("import { stage } from './ui3d/layout.ts';")).toBe(false);
@@ -333,6 +383,7 @@ describe('3D interface: flags and boundaries', () => {
       'flow3d/options-view',
       'flow3d/options-layout',
       'flow3d/title-layout',
+      'window3d/status-view',
     ];
     // and the two the main chunk takes by value bring no other file along
     for (const name of ['ui3d/layout', 'ui3d/skin-flags'])

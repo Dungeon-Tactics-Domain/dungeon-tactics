@@ -2,6 +2,7 @@
 // reads every flag, from the address and from a sandbox spec:
 //   ?menu=html|css|3d, ?turn=html|3d, ?bar=, ?banner=, ?height=, ?hints=, ?confirm=, ?result=html|3d   one piece each
 //   ?options=html|3d, ?title=html|3d                   the flow screens around the battle (flow3d/)
+//   ?tools=html|3d, ?status=html|3d    the corner menu and the Status window (window3d/)
 //   ?ui=html|css|3d                    a preset: every piece that has that look takes it
 //   ?menu3d, ?menu3d=pixel, ?menucss, ?turn3d   the older flags, kept as shortcuts
 //   ?pixel=1                           the 3D pieces through the pixel filter (as ?menu3d=pixel)
@@ -28,6 +29,8 @@ export const PIECES = {
   result: ['html', '3d'], // the end of battle: victory, defeat, a cleared room
   options: ['html', '3d'], // the Options screen (flow3d/)
   title: ['html', '3d'], // the title screen (flow3d/)
+  tools: ['html', '3d'], // the corner menu: its button (3 bars), Back and the list of tools
+  status: ['html', '3d'], // the Status window: a unit's sheet and an ability's facts
 } as const satisfies Record<string, readonly Variant[]>;
 export type Piece = keyof typeof PIECES;
 
