@@ -10,6 +10,7 @@ import {
   parseGroup,
   RECRUIT_COST,
   recruit,
+  roster,
   toggleDeploy,
 } from '../src/client/group.ts';
 import { previewAbility } from '../src/shared/battle/combat.ts';
@@ -53,6 +54,8 @@ describe('party', () => {
     expect(toggleDeploy(r, 'r1')).toBeNull(); // already 4
     const swapped = toggleDeploy(toggleDeploy(r, 'archer')!, 'r1')!;
     expect(heroesFor(swapped).map((u) => u.name)).toEqual(['Bran', 'Odo', 'Lia', 'Ivo']);
+    // the Party screen lists who goes first, in the deployment order, then who stays
+    expect(roster(swapped).map((m) => m.name)).toEqual(['Bran', 'Odo', 'Lia', 'Ivo', 'Tess']);
     let one = defaultGroup();
     for (const id of ['warrior', 'archer', 'mage']) one = toggleDeploy(one, id)!;
     expect(toggleDeploy(one, 'rogue')).toBeNull();

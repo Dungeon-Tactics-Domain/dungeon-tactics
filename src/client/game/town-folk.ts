@@ -9,7 +9,7 @@ import { store } from '../store.ts';
 import { talk } from '../talk.ts';
 import { TIMING } from '../timing.ts';
 import { cell, clear, ME, memberUnit, near, strollPath } from '../town-map.ts';
-import { openSheet } from '../town-sheet.ts';
+import { openParty } from '../town-party.ts';
 
 const STROLL_MS = (TIMING.step / SUB) * 1.6; // townsfolk amble, a little slower than the walker
 export const windowOpen = () => !!document.querySelector('.overlay');
@@ -37,7 +37,7 @@ export class Folk {
   }
   private folkOf = (u: UnitState) => TOWNSFOLK.find((f) => `f-${f.id}` === u.id);
 
-  // A townsperson tells the next rumour; a party member greets and opens their sheet (Fernando: talking opens it). Both
+  // A townsperson tells the next rumour; a party member greets and opens the Party screen on them (Fernando: talking opens it). Both
   // turn to each other first
   async talkTo(u: UnitState) {
     this.h.scene.rest(ME, u.pos);
@@ -55,7 +55,7 @@ export class Folk {
         await talk([
           { who: { name: m.name, def: m.cls, pitch: CLASS_VOICE[m.cls] ?? 330 }, pt: GUILD_LINE[0], en: GUILD_LINE[1] },
         ]);
-        openSheet(m, () => {});
+        openParty(undefined, { id: m.id });
       }
     }
     this.talking = null;
