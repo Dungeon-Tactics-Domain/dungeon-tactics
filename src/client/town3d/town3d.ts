@@ -4,8 +4,7 @@
 //   State: nothing here decides anything. A window hands it a page (page.ts: what to draw and the buttons, in px of
 //   the reference) and it draws that; screens.ts builds the pages from the saved game and runs the actions.
 //   Input: the page's buttons as real ones, unseen, over the drawn ones, inside a window of dialog.ts, so keys, pad,
-//   mouse and finger work as in every window; the glove points at the one in focus. The list's rows sit in a real
-//   scrolling box (wheel, drag and focus scroll it) and the drawing follows.
+//   mouse and finger work as in every window; the glove points at the one in focus. Its list scrolls in a real box
 import { Group, Mesh, ShaderMaterial, type Texture, TextureLoader, Vector4 } from 'three';
 import { battleFace } from '../battle-face.ts';
 import { dialog } from '../dialog.ts';
@@ -33,6 +32,7 @@ export interface WindowOpts {
   pick(id: string): void; // a button pressed
   focus?(id: string): void; // the cursor landed on a button
   key?(e: KeyboardEvent): void; // a key the window did not take (left and right turn the Party's pages)
+  byPlace?: boolean; // the arrows and the pad come to `key`, which goes to the neighbour on that side (page.ts)
 }
 export interface Window3d {
   // draws the page; `focus`: the button the cursor goes to ('' the page's own start), where it is when absent
@@ -50,8 +50,7 @@ interface Part {
 export class Town3d implements Ui3dScreen {
   readonly flat = new Group();
   readonly deep = new Group();
-  // the page's buttons, inside a window list so the arrows walk them (dialog.ts); not its children, whose looks the
-  // HTML windows own (style.css)
+  // the page's buttons, in a window list so the arrows walk them (dialog.ts); a `byPlace` window walks them itself
   private readonly hits = el('div', { class: 'town3d-hits' });
   readonly host = el('div', { class: 'camp-list' }, this.hits);
   private readonly rows = el('div', { class: 'town3d-rows' });
@@ -141,6 +140,7 @@ export class Town3d implements Ui3dScreen {
   window(opts: WindowOpts): Window3d {
     this.hide();
     this.opts = opts;
+    this.host.className = opts.byPlace ? 'place-walk' : 'camp-list';
     const win = (this.win = dialog('town3d', opts.name, [this.host], { onBack: opts.onBack }));
     land(this.open, 0);
     this.open.to = 1;

@@ -364,6 +364,10 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   (the open tab, the member whose pages show), `-track`, `-hp`, `-mp`, `-sp`, `-stat` (the bars) and `-up`, `-down` (a
   change, always with its arrow). The windows reuse the paper and result tokens for panels and light text. The gold
   plaque is darker than the reference's so the light label keeps its contrast. Contrast not computed yet.
+- **The rest of the town** (`?townmenu=3d`, `?townhud=3d`, `?talk=3d`; `town3d/street.ts`, `hud3d.ts`, `talk3d.ts`;
+  Nov 17): no new token. The town menu, the gate and a place still to come are pages of the same windows (town and
+  result tokens); the HUD takes the battle 3D HUD's slate plates and key caps (`hints3d/`); the speech box is the
+  parchment with the name on a result plate.
 - **Contrast** (computed, WCAG): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the darkest band; soft ink 5.7:1
   on the rows, 4.7:1 on the head, 3.6:1 on the band, so the band's title takes the full ink; the disabled ink (1.9:1)
   is the faded name only, and the reason beside it (what is missing) is written in soft ink.

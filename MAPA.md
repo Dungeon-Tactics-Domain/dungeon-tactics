@@ -109,6 +109,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/layout-mode.ts` — interface layout choice, edges or frame (dt:layout, ?layout=), set as data-layout on the page.
 - `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only): the 16:9 area, thirds, centre and every region of layout.ts as placed.
 - `src/client/ui3d/layout.ts` — the battle interface's regions measured on FFT The Ivalice Chronicles (REGIONS) and where each sits on a page in the two layouts (stage, place); pure.
+- `src/client/ui3d/walk.ts` — where the cursor goes on a 3D screen: from the box in focus, an arrow or the d-pad takes the nearest box seen that way, and stays with none there (neighbour); pure.
+- `src/client/ui3d/face.ts` — a painted face (a frame of the face sheet, or the portrait's top) as a quad on the 3D layer, grey for the fallen (faceMesh).
 - `src/client/ui3d/skin-flags.ts` — which look each interface piece takes (?menu=, ?turn=, ?ui=, ?pixel and the older flags) and the table of pieces (PIECES); pure.
 - `src/client/hud-skin.ts` — the HUD's localhost looks under comparison, piece by piece: loadSkin() fetches each as its own chunk; the turn list's boxes and input for the 3D list.
 - `src/client/hud-menucss.ts` — MenuCss: the command menu as parchment in HTML and CSS (?menucss), with the glove and the ability sheet.
@@ -143,6 +145,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town3d/page.ts` — what a 3D town window shows: a flat list of things to draw and of buttons, in reference px; pure.
 - `src/client/town3d/shop-view.ts` — the pages of the 3D Shop and Tavern (commands, scrolling list, the picked row's box and action); pure.
 - `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class); pure.
+- `src/client/town3d/street-view.ts` — the pages of the 3D town menu, gate and place still to come (?townmenu=3d); pure.
+- `src/client/town3d/street.ts` — streetWindows(): the 3D town menu, gate and place still to come at work, over the rules of game/crawl.ts.
+- `src/client/town3d/hud3d.ts` — TownHud3d: the walkable town's HUD drawn in 3D (?townhud=3d) over its unseen HTML pieces.
+- `src/client/town3d/talk3d.ts` — Talk3d: the town's speech box drawn in 3D (?talk=3d) over the unseen box of talk.ts.
 - `src/client/town3d/town-layout.ts` — where the 3D town windows put their parts, in reference px; pure numbers.
 - `src/client/town3d/map3d.ts` — Map3d: the expedition map in 3D (?map=3d), drawn over its own unseen HTML window, which keeps every input.
 - `src/client/town3d/map-draw.ts` — what the 3D expedition map draws with: the pen (text, boxes, faces) and the chart (floors, ways, seals, flag).
@@ -152,6 +158,9 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, commands, message band), the scroll fade and mark, and the smallest page that takes the 3D look (`fits`); pure.
 - `src/client/flow3d/title3d.ts` — Title3d: the title in 3D (?title=3d), drawn over the title's own window, which it takes when the layer arrives and gives back.
 - `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button); pure.
+- `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D (?sheets=3d), drawn over each window's own controls, which it takes and gives back.
+- `src/client/flow3d/sheet-draw.ts` — what a 3D sheet draws piece by piece: a list's row (number, face, two lines, second button), a text's line, the head and the foot plates.
+- `src/client/flow3d/sheet-layout.ts` — where a 3D sheet sits (head, parchment, rows and each one's second button, foot plates), the scroll fade and mark, and a text's blocks as lines (flow); pure.
 - `src/client/flow3d/draw.ts` — what the flow screens in 3D draw with: the dark tokens, text, and the glove that points at the control in focus (Hand).
 - `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D (?tools=3d): the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu that keeps its place and buttons.
 - `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D (?status=3d): a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
@@ -206,6 +215,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/expedition-map.ts` — the expedition map: the descent as a chart of places, the picked place's box, the travel commands, the party's state, Information and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
+- `src/client/game/sheets.ts` — the title's and Options' windows as data (rows or text blocks), shown by the HTML window or handed to the 3D sheet (showSheet, blocksHtml).
 - `src/client/game/options.ts` — Options window: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
 - `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
 - `src/client/game/options-marks.ts` — the Options row that picks the mark style (Simple, Light, Stone, Neon), in its own file so options.ts takes one line.

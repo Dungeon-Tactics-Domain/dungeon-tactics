@@ -62,6 +62,30 @@ export interface Page {
   list?: { box: Box; rowH: number; rows: number }; // the scrolling list: row i sits at box.y + i * rowH
 }
 
+// Where an arrow or the d-pad takes the cursor (Fernando, Nov 17: the cursor follows what the eye sees): the nearest
+// button whose middle lies on that side of the one in focus and that is lined up with it (their spans across the
+// direction overlap, give or take `tol` px); none there, it stays (undefined), never around to the other end
+export type Dir = 'up' | 'down' | 'left' | 'right';
+export function neighbour(hits: Hit[], at: string, dir: Dir, tol = 8): string | undefined {
+  const from = hits.find((h) => h.id === at)?.box;
+  if (!from) return undefined;
+  const flat = dir === 'left' || dir === 'right',
+    sign = dir === 'down' || dir === 'right' ? 1 : -1;
+  // a box as [start, size] along the direction and across it
+  const span = (b: Box) => (flat ? [b.x, b.w, b.y, b.h] : [b.y, b.h, b.x, b.w]);
+  const [a0, aw, c0, cw] = span(from);
+  let best: { id: string; far: number; off: number } | undefined;
+  for (const h of hits) {
+    if (h.id === at || h.off) continue;
+    const [b0, bw, d0, dw] = span(h.box);
+    const far = (b0 + bw / 2 - (a0 + aw / 2)) * sign;
+    if (far <= 0 || d0 > c0 + cw + tol || d0 + dw < c0 - tol) continue;
+    const off = Math.abs(d0 + dw / 2 - (c0 + cw / 2));
+    if (!best || far < best.far || (far === best.far && off < best.off)) best = { id: h.id, far, off };
+  }
+  return best?.id;
+}
+
 export const fill = (box: Box, tone: Tone, o: Partial<Fill> = {}): Fill => ({ k: 'fill', box, tone, ...o });
 export const text = (str: string, x: number, y: number, size: number, ink: Ink, o: Partial<Text> = {}): Text => ({
   k: 'text',

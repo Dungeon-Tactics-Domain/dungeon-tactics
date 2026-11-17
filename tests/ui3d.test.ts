@@ -389,6 +389,8 @@ describe('3D interface: flags and boundaries', () => {
       'flow3d/options-view',
       'flow3d/options-layout',
       'flow3d/title-layout',
+      'flow3d/sheet-layout',
+      'ui3d/walk',
       'window3d/status-view',
     ];
     // and the two the main chunk takes by value bring no other file along

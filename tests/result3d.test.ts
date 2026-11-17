@@ -42,9 +42,21 @@ describe('3D result: what it shows', () => {
     expect(v.won).toBe(true);
     expect(v.title).toBe('VITÓRIA!');
     expect(v.heads).toEqual(['RESULTADO', 'DESTAQUE']);
+    // the plain line is not drawn: the two columns say it (the HTML board's row)
+    expect(v.did).toEqual(['Dano', 'Derrubados']);
     expect(v.heroes).toEqual([
-      { name: 'Guerreiro', life: '80/100', line: '37 de dano · 1 derrubado', tone: '' },
-      { name: 'Mago', life: '25/100', line: '0 de dano · 0 derrubados', tone: '' },
+      {
+        def: 'warrior',
+        face: 'smile',
+        name: 'Guerreiro',
+        cls: '',
+        life: '80/100',
+        line: '',
+        tone: '',
+        dmg: '37',
+        kills: '1',
+      },
+      { def: 'mage', face: 'wounded', name: 'Mago', cls: '', life: '25/100', line: '', tone: '', dmg: '0', kills: '0' },
     ]);
     expect(v.mvp).toEqual({ name: 'Guerreiro', line: '37 de dano · 1 derrubado' });
     expect(v.spoils).toEqual([]);
@@ -57,9 +69,9 @@ describe('3D result: what it shows', () => {
       ['Jogar de novo'],
     );
     expect(v.won).toBe(false);
-    expect(v.heroes.map((h) => [h.life, h.line, h.tone])).toEqual([
-      ['0/100', 'Caído', 'fell'],
-      ['0/100', 'Caído', 'fell'],
+    expect(v.heroes.map((h) => [h.life, h.line, h.tone, h.face])).toEqual([
+      ['0/100', 'Caído', 'fell', 'hurt'],
+      ['0/100', 'Caído', 'fell', 'hurt'],
     ]);
     expect(v.mvp).toBeNull();
   });
@@ -84,7 +96,13 @@ describe('3D result: where it sits', () => {
       expect(at.rule, mode).toEqual({ x: 320, y: 271, w: 1280, h: 2 });
       expect(at.left, mode).toEqual({ x: 213, y: 525, w: 974, h: 36 });
       expect(at.right, mode).toEqual({ x: 1255, y: 525, w: 455, h: 36 });
-      expect(at.heroes[0].y + at.heroes[0].h / 2, mode).toBe(601); // the reference's first spoils row
+      expect(at.spoils[0].y + at.spoils[0].h / 2, mode).toBe(601); // the reference's first spoils row
+      // ours: the heroes' columns are named on that row and the heroes start under it, each with its face
+      expect(at.did.y, mode).toBe(601);
+      expect(at.heroes[0].y + at.heroes[0].h / 2, mode).toBe(645);
+      expect(at.faces[0], mode).toEqual({ x: 240, y: 626, w: 38, h: 38 });
+      expect(at.did.kills, mode).toBe(at.heroes[0].x + at.heroes[0].w);
+      expect(at.did.dmg, mode).toBe(at.did.kills - REF.dmg);
       expect(at.mvp.x, mode).toBe(1482.5);
       // "Next" on the reference: the last button ends at the hints' right edge
       expect(at.buttons[1].x + at.buttons[1].w, mode).toBe(1885);
@@ -103,7 +121,7 @@ describe('3D result: where it sits', () => {
   });
 
   it('the band grows past five rows and every row stays inside it', () => {
-    expect(resultLayout(full, 1920, 5, 5, 1).band.h).toBe(340);
+    expect(resultLayout(full, 1920, 4, 5, 1).band.h).toBe(340); // four heroes under their columns' names
     const tall = resultLayout(full, 1920, 8, 0, 1);
     expect(tall.band.h).toBeGreaterThan(340);
     const last = tall.heroes[7];

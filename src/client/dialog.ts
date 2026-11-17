@@ -6,17 +6,6 @@
 import { t } from './i18n.ts';
 import { button, type Child, el, iconButton } from './icons.ts';
 import type { KeyAction } from './keyboard.ts';
-import { nextSpot, type WalkDir } from './spot-walk.ts';
-
-// A `.spot-walk` window (the 3D expedition map; Fernando, Nov 17) walks its buttons by where they are on screen: a
-// direction goes to the nearest button that way, and stays where nothing lies (spot-walk.ts), keys and pad alike
-function spotWalk(overlay: HTMLElement, dir: WalkDir) {
-  const items = [...overlay.querySelectorAll<HTMLElement>('button:not([disabled])')].filter((b) => b.offsetParent);
-  const at = items.indexOf(document.activeElement as HTMLElement);
-  const boxes = items.map((b) => b.getBoundingClientRect());
-  items[at < 0 ? 0 : nextSpot(boxes, at, dir)]?.focus();
-}
-const WAYS: Record<string, WalkDir> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 
 // With a window open, the game behind is `inert` (Nov 13, review): Tab left the window and Enter acted on the battle behind
 const syncInert = () =>
@@ -65,11 +54,9 @@ export function dialog(
         ),
       ].filter((b) => b.offsetParent);
       const top = [...document.querySelectorAll('.overlay')].at(-1) === overlay;
-      if (WAYS[e.code] && top && overlay.matches('.spot-walk')) {
-        e.preventDefault();
-        return spotWalk(overlay, WAYS[e.code]);
-      }
       const dir = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[e.code];
+      // a 3D screen drawn over this window walks its own boxes, by what is seen (`walked`)
+      if (dir && top && walked(overlay, e.code.slice(5).toLowerCase())) return e.preventDefault();
       const sideways = (e.code === 'ArrowLeft' || e.code === 'ArrowRight') && !overlay.querySelector('.arrow-walk');
       if (dir && items.length && top && !sideways) {
         e.preventDefault();
@@ -122,6 +109,11 @@ export function secondTap(e: Event, text: string): boolean {
   return false;
 }
 
+// An arrow or the d-pad in a window: a 3D screen drawn over it (flow3d/sheet3d.ts, result3d/) takes the 'walk' event and
+// moves the cursor to the box seen in that direction (Fernando, Nov 17), in place of the walk in the window's own order
+const walked = (overlay: HTMLElement, way: string) =>
+  !overlay.dispatchEvent(new CustomEvent('walk', { detail: way, cancelable: true }));
+
 // The gamepad inside the topmost window (the battle's and the town's loops): the d-pad moves between its visible buttons,
 // A presses the focused one, B closes it like Esc, left and right change a focused volume bar or Options row. False with no window open,
 // so the action goes to the map behind
@@ -142,8 +134,12 @@ export function padDialog(a: KeyAction): boolean {
   if (a.k === 'cancel' || a.k === 'help')
     dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
   else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
-  else if (a.k === 'cursor' && overlay.matches('.spot-walk')) spotWalk(overlay, a.dir);
-  else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
+  else if (a.k === 'cursor' && walked(overlay, a.dir)) return true;
+  else if (a.k === 'cursor' && overlay.querySelector('.place-walk')) {
+    // a window that walks its buttons by where they are (town3d/street.ts) takes the d-pad as the arrow it stands for
+    const code = `Arrow${a.dir[0].toUpperCase()}${a.dir.slice(1)}`;
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true }));
+  } else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {
     // on the volume bar, left and right change the value (stepUp/Down do not fire 'input': it is dispatched by hand)
     if (a.dir === 'right') range.stepUp();
     else range.stepDown();

@@ -27,7 +27,7 @@ import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
 import { openBar, openShop } from '../town-shop.ts';
-import { goldNote, openParty, sideWindows } from '../town-ui.ts';
+import { goldNote, openParty, sideWindows, town3d } from '../town-ui.ts';
 import { expeditionScreen, floorOf } from './expedition-map.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
@@ -160,6 +160,11 @@ export function homeScreen() {
   if (exp && param('home') === 'expedition') expeditionScreen(exp);
 }
 
+// the title over its own spinning backdrop battle, the bare address (an empty `search` left a "?" on it)
+export const toTitle = () => {
+  location.href = location.pathname;
+};
+
 // back to walking the town after a window over it (its music, Pastoral D: Fernando, Nov 15)
 export const toTown = () => setTrack('world');
 
@@ -200,6 +205,7 @@ function questRows(go: (fn: () => void) => () => void) {
 // The dungeon gate at the north end of the town (Nov 15, Fernando: the quest opens at its spot): the quest's rows and the
 // way back to the street
 export function questGate(name: string) {
+  if (town3d.gate?.(name)) return; // its 3D look (town3d/street.ts)
   const live = liveExpedition();
   const go = (fn: () => void) => () => {
     d.close();
@@ -247,6 +253,7 @@ export function questGate(name: string) {
 // every place without walking there, the quest, Shop, Tavern and Party, and the way back to the title. Over the walkable town.
 // `extra`: the town's own rows at the foot (its debug grid and fluid movement, game/town.ts, which this file cannot import)
 export function townMenu(extra?: Node) {
+  if (town3d.menu?.(extra)) return; // its 3D look (town3d/street.ts)
   // the window beside the menu, if any (its 'close' skips its onBack)
   const closeBeside = () => {
     for (const o of sideWindows(document.querySelectorAll('.overlay'), d.overlay)) o.dispatchEvent(new Event('close'));
@@ -301,14 +308,7 @@ export function townMenu(extra?: Node) {
           t('Grupo', 'Party'),
           beside((back) => openParty(back)),
         ),
-        // the title over its own spinning backdrop battle, the bare address (an empty `search` left a "?" on it)
-        commandRow(
-          'bronze',
-          t('Voltar ao título', 'Back to title'),
-          go(() => {
-            location.href = location.pathname;
-          }),
-        ),
+        commandRow('bronze', t('Voltar ao título', 'Back to title'), go(toTitle)),
         extra,
       ),
     ],
@@ -349,7 +349,7 @@ function lostScreen(kept: number) {
 }
 
 // the party that goes is the town's (up to 4), each at full life with its equipment
-function depart() {
+export function depart() {
   // a new quest over a live one ends that one in town, alive: its gold goes home whole
   const live = liveExpedition();
   if (live) retreat(live);

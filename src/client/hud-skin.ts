@@ -79,6 +79,10 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Title3d } = await import('./flow3d/title3d.ts');
     (skin.flow3d ??= []).push((layer) => new Title3d(layer));
   }
+  if (flags.sheets === '3d') {
+    const { Sheet3d } = await import('./flow3d/sheet3d.ts');
+    (skin.flow3d ??= []).push((layer) => new Sheet3d(layer));
+  }
   if (flags.tools === '3d') {
     const { Tools3d } = await import('./window3d/tools3d.ts');
     skin.tools3d = (layer, tools) => new Tools3d(layer, tools);
@@ -110,13 +114,20 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   return skin;
 }
 
-// The town's windows and the expedition map in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
+// The town's windows, HUD and speech box in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
 // with ?ui=html or the piece's own flag, the HTML windows open
 export async function loadTownSkin(root: HTMLElement) {
-  const { party, shop, map } = skinFlags(param);
-  if (party !== '3d' && shop !== '3d' && map !== '3d') return;
+  const flags = skinFlags(param);
+  const on = {
+    party: flags.party === '3d',
+    shop: flags.shop === '3d',
+    menu: flags.townmenu === '3d',
+    hud: flags.townhud === '3d',
+    talk: flags.talk === '3d',
+  };
+  if (!Object.values(on).some(Boolean)) return;
   const { mountTown3d } = await import('./town3d/screens.ts');
-  mountTown3d(root, { party: party === '3d', shop: shop === '3d', map: map === '3d' });
+  mountTown3d(root, on);
 }
 
 // The turn list's boxes for the 3D list, which draws over them and never reads the DOM itself: each row in the list's

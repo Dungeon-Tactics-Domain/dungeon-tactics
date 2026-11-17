@@ -3813,67 +3813,34 @@ body:has(.town3d-overlay) .hud > .ui3d-layer {
   visibility: visible;
 }
 
-/* ---- 3D expedition map (?map=3d; src/client/town3d/map3d.ts) ---- */
-/* The map is drawn in 3D on the town's layer. Its own window stays, unseen (by opacity: the places and the commands
-   must still take the focus, a tap and the screen reader), covering the page, its parts moved under the drawn ones:
-   map3d.ts seats the chart, the party, the place's box and the commands and sets --map-step, --m3-place, --m3-boss,
-   --m3-cmd and --m3-gap. The whole descent shows: nothing scrolls. Information and the chest window open over it */
-.overlay.crawl-map.map3d {
-  display: block;
-  padding: 0;
-  background: none;
-  overflow: hidden;
-}
-.crawl-map.map3d .dialog.title {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
+/* ---- 3D town HUD and speech box (?townhud=3d, ?talk=3d; src/client/town3d hud3d.ts, talk3d.ts) ---- */
+/* Drawn on the town's 3D layer. The HTML pieces stay in place unseen (opacity, not visibility: they are the layout, and
+   their real buttons take the mouse, the taps, the pad and the screen reader) */
+.hud.townhud3d > .tile-info,
+.hud.townhud3d > .town-prompt,
+.hud.townhud3d > .town-act,
+.hud.townhud3d .tools .burger {
   opacity: 0;
+}
+/* the speech box: only its painted face shows, over the drawn parchment; the town is not darkened, as the reference */
+.talk-overlay.talk3d {
+  background: none;
+}
+.talk-overlay.talk3d .panel.talk {
   animation: none;
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  overflow: hidden;
+  outline: none;
 }
-.crawl-map.map3d :is(.map-scroll, .map-party, .map-info, .map-commands) {
-  position: absolute;
-  display: block;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
+.talk-overlay.talk3d :is(.talk-name, .talk-text, .talk-next, .talk-keys, .talk-title, .talk-skip) {
+  opacity: 0;
+  animation: none;
 }
-.crawl-map.map3d .map-chart {
-  max-width: none;
-  margin: 0;
-}
-.crawl-map.map3d .map-field {
-  inset: 0;
-}
-.crawl-map.map3d .map-place {
-  --size: var(--m3-place);
-}
-.crawl-map.map3d .map-place.boss {
-  --size: var(--m3-boss);
-}
-.crawl-map.map3d .map-commands > button {
-  display: block;
-  width: 100%;
-  height: var(--m3-cmd);
-  min-height: 0;
-  margin: 0 0 var(--m3-gap);
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-}
-/* a `title` window hides the whole HUD: the layer the map is drawn on still shows */
-body:has(.crawl-map.map3d) .hud > .ui3d-layer {
+/* someone talking hides the whole HUD (above): the layer still shows, with the box drawn on it */
+body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
   visibility: visible;
 }
 
@@ -4167,6 +4134,88 @@ body:has(.options3d-overlay) .fps {
   padding: 0;
 }
 body:has(.main-title.title3d) .hud > .ui3d-layer {
+  visibility: visible;
+}
+
+/* ---- 3D sheets (?sheets=3d; src/client/flow3d/sheet3d.ts) ---- */
+/* The windows the title and Options open (saved games, quick battle, how to play, credits, tile marks,
+   controls) are drawn in 3D on the layer. Each window stays, unseen (by opacity: its buttons must still take the
+   focus), its own box moved onto the drawn sheet's scrolling window (sheet3d.ts sets its place and the --s3-* sizes),
+   so the wheel, a finger and the focus scroll it and the drawing follows. Not positioned: its ✕ (the drawn Back) and
+   its link (the plate beside it) are placed on the page, outside its scroll */
+.overlay.sheet3d {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.overlay.sheet3d > .dialog {
+  position: static;
+  box-sizing: border-box;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden auto;
+  scrollbar-width: none;
+  opacity: 0;
+}
+/* the drawn text is larger than the window's: room for the scroll to go as far as the drawing does */
+.overlay.sheet3d > .dialog::after {
+  content: "";
+  display: block;
+  height: var(--s3-more, 0);
+}
+.overlay.sheet3d .dialog-head {
+  display: contents;
+}
+.overlay.sheet3d .dialog-head > :not(button) {
+  display: none;
+}
+.overlay.sheet3d .dialog-head > button,
+.overlay.sheet3d .dialog a[href] {
+  position: absolute;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+/* a text's own Back, at its end: the pad's way down the text, never under the mouse */
+.overlay.sheet3d .dialog > button {
+  pointer-events: none;
+}
+.overlay.sheet3d-list .camp-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: var(--s3-row);
+  gap: 0;
+  min-width: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+}
+.overlay.sheet3d-list .save-list {
+  grid-template-columns: minmax(0, 1fr) var(--s3-side);
+}
+.overlay.sheet3d-list .camp-list > button {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+body:has(.overlay.sheet3d) .hud > :not(.ui3d-layer),
+body:has(.overlay.sheet3d) .fps {
+  visibility: hidden;
+}
+body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   visibility: visible;
 }
 
