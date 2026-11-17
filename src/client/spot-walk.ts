@@ -13,8 +13,10 @@ interface Box {
 // The index of the box to go to, `from` itself when nothing lies that way (an edge: the cursor stays, it never wraps).
 // A box counts when its middle is past `from`'s in the direction and the two are in line: they overlap across the
 // direction (the same column going up or down, the same row going sideways; a wide plaque is in line with every place
-// level with it). The nearest of those wins, and of two as near the one whose middle is less off
-export function nextSpot(boxes: readonly Box[], from: number, dir: WalkDir): number {
+// level with it). The nearest of those wins, and of two as near the one whose middle is less off. `slant` also takes
+// a box out of line that is no farther to the side than ahead: rows that do not line up (the HTML map's floors, a
+// chest beside them) would leave places no arrow reaches
+export function nextSpot(boxes: readonly Box[], from: number, dir: WalkDir, slant = false): number {
   const a = boxes[from];
   if (!a) return from;
   const upright = dir === 'up' || dir === 'down',
@@ -30,8 +32,9 @@ export function nextSpot(boxes: readonly Box[], from: number, dir: WalkDir): num
     const [bx, by] = mid(b),
       [b0, b1] = span(b);
     const ahead = sign * (upright ? by - ay : bx - ax);
-    if (ahead <= 1 || b0 >= a1 || a0 >= b1) return;
-    const cost = ahead + Math.abs(upright ? bx - ax : by - ay) / 1000;
+    const aside = Math.abs(upright ? bx - ax : by - ay);
+    if (ahead <= 1 || ((b0 >= a1 || a0 >= b1) && !(slant && aside <= ahead))) return;
+    const cost = ahead + aside / 1000;
     if (cost < least) {
       least = cost;
       best = i;

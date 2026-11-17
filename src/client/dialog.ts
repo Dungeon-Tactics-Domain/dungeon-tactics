@@ -10,12 +10,15 @@ import { nextSpot, type WalkDir } from './spot-walk.ts';
 
 // A `.spot-walk` window (the 3D expedition map; Fernando, Nov 17) walks its buttons by where they are on screen: a
 // direction goes to the nearest button that way, and stays where nothing lies (spot-walk.ts), keys and pad alike. An
-// `.arrow-walk` group (the end of a battle's commands, the HTML map's rooms) walks its own `items` the same way
-function spotWalk(overlay: HTMLElement, dir: WalkDir, within = 'button:not([disabled])') {
-  const items = [...overlay.querySelectorAll<HTMLElement>(within)].filter((b) => b.offsetParent);
+// `.arrow-walk` group (the end of a battle's commands, the HTML map's rooms) walks its own `items` the same way, a
+// place out of line too when it is no farther to the side than ahead (the map's floors do not line up)
+function spotWalk(overlay: HTMLElement, dir: WalkDir, within?: string) {
+  const items = [...overlay.querySelectorAll<HTMLElement>(within ?? 'button:not([disabled])')].filter(
+    (b) => b.offsetParent,
+  );
   const at = items.indexOf(document.activeElement as HTMLElement);
   const boxes = items.map((b) => b.getBoundingClientRect());
-  items[at < 0 ? 0 : nextSpot(boxes, at, dir)]?.focus();
+  items[at < 0 ? 0 : nextSpot(boxes, at, dir, !!within)]?.focus();
 }
 const WAYS: Record<string, WalkDir> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 
@@ -60,7 +63,7 @@ export function dialog(
       // (a list behind another window stays put), even after a click left the focus on the page
       // `.arrow-walk` takes the arrows where the rows are not menu rows (Nov 16 QA: the expedition map's rooms and the
       // end of a battle's commands walked by Tab only), all four by where each button is (Fernando, Nov 17): the
-      // map's rooms of a row sit side by side, and nothing wraps or goes on a slant
+      // map's rooms of a row sit side by side, and nothing wraps or goes more sideways than ahead
       const walk = ':is(.camp-list, .arrow-walk) :is(button:not([disabled]), [role="button"])';
       const items = [...overlay.querySelectorAll<HTMLElement>(walk)].filter((b) => b.offsetParent);
       const top = [...document.querySelectorAll('.overlay')].at(-1) === overlay;

@@ -190,7 +190,7 @@ describe('3D town windows: where they sit', () => {
 });
 
 // Fernando, Nov 17: down goes to what is below and sideways to what is beside. The Shop and the Tavern: the commands
-// down the left, the scrolling list beside them, the picked row's action in the box at the right (town3d.ts `walk`)
+// down the left, the scrolling list beside them, the picked row's action in the box at the right (page.ts `step`)
 describe('3D town windows: the cursor of the Shop goes by where each button is seen', () => {
   const state = { chest: { gold: 1000, items: [] }, eq: {}, group: defaultGroup() };
   const p = shopPage(state, 'buy', 'hood');

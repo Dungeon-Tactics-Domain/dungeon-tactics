@@ -27,6 +27,18 @@ describe('nextSpot: the cursor goes to what is straight that way on screen', () 
     for (const d of ['up', 'down', 'left', 'right'] as const) expect(nextSpot(slant, 0, d)).toBe(0);
   });
 
+  // the HTML map (an `.arrow-walk` group): floors of three and of two places do not line up, a chest sits beside them
+  it('with `slant`, a place out of line counts while it is no farther to the side than ahead, and never past that', () => {
+    const floors = [box(612, 306), box(774, 306), box(666, 370), box(882, 370), box(515, 434)];
+    expect(nextSpot(floors, 0, 'down')).toBe(0); // in line only: the floor below is out of reach
+    expect(nextSpot(floors, 0, 'down', true)).toBe(2); // 54 to the side, 64 ahead
+    expect(nextSpot(floors, 2, 'up', true)).toBe(0);
+    expect(nextSpot(floors, 2, 'left', true)).toBe(4); // the chest: 151 ahead, 64 to the side
+    expect(nextSpot(floors, 3, 'up', true)).toBe(3); // 108 to the side for 64 ahead: more sideways than ahead, it stays
+    expect(nextSpot(floors, 0, 'right', true)).toBe(1); // what is in line is still the nearest
+    expect(nextSpot(floors, 4, 'left', true)).toBe(4); // an edge is an edge
+  });
+
   it('takes the nearest in line, past a row that has nothing in this column', () => {
     const col = [box(300, 100), box(500, 172), box(300, 244), box(300, 316)];
     expect(nextSpot(col, 0, 'down')).toBe(2);

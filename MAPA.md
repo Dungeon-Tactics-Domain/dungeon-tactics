@@ -142,7 +142,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.
 - `src/client/town3d/town3d.ts` — Town3d: the town's windows in 3D (?shop=3d, ?party=3d), one screen that draws the page it is handed over its own unseen buttons.
 - `src/client/town3d/screens.ts` — mountTown3d(): the 3D Shop, Tavern and Party at work (read the saved game, show the page, run the pressed button through the same rules, save).
-- `src/client/town3d/page.ts` — what a 3D town window shows: a flat list of things to draw and of buttons, in reference px, and the buttons the cursor can go to where they are seen (`seen`: the list scrolled); pure.
+- `src/client/town3d/page.ts` — what a 3D town window shows: a flat list of things to draw and of buttons, in reference px, and the buttons the cursor can go to where they are seen (`seen`: the list scrolled) and where an arrow takes it (`step`); pure.
 - `src/client/town3d/shop-view.ts` — the pages of the 3D Shop and Tavern (commands, scrolling list, the picked row's box and action); pure.
 - `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class); pure.
 - `src/client/town3d/street-view.ts` — the pages of the 3D town menu, gate and place still to come (?townmenu=3d); pure.
