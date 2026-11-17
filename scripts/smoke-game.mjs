@@ -84,6 +84,8 @@ const PAGES = [
     path: '/?room=0',
     seed: WORN,
     ready: '.panel.commands[role=menu] button',
+    // attached, not visible: the 3D menu (the default since Nov 17) hides the HTML one that stays under it for clicks and keys
+    attached: true,
     check: () => {
       const [hp, max] = (document.querySelector('.unit-panel.hero .gauge.hp .gauge-num')?.textContent ?? '')
         .split('/')
@@ -95,6 +97,8 @@ const PAGES = [
     name: 'battle',
     path: '/?scenario=ash_wood',
     ready: '.panel.commands[role=menu] button',
+    // attached, not visible: the 3D menu (the default since Nov 17) hides the HTML one that stays under it for clicks and keys
+    attached: true,
     check: () =>
       !!document.querySelector('.panel.queue') &&
       [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl')),
@@ -104,6 +108,8 @@ const PAGES = [
     name: 'crawl',
     path: '/?crawl=1&boss=1',
     ready: '.panel.commands[role=menu] button',
+    // attached, not visible: the 3D menu (the default since Nov 17) hides the HTML one that stays under it for clicks and keys
+    attached: true,
     check: () => !!document.querySelector('.panel.queue'),
   },
 ];
@@ -124,7 +130,7 @@ try {
       await page.addInitScript((s) => Object.entries(s).forEach(([k, v]) => localStorage.setItem(k, v)), p.seed);
     try {
       await page.goto(`http://localhost:${PORT}${p.path}`);
-      await page.waitForSelector(p.ready, { state: 'visible', timeout: TIMEOUT });
+      await page.waitForSelector(p.ready, { state: p.attached ? 'attached' : 'visible', timeout: TIMEOUT });
       if (!(await page.evaluate(p.check))) errors.push('screen incomplete');
       // models and textures keep loading after the first screen: wait for them so a missing asset still shows up
       await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
