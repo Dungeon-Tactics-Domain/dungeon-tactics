@@ -13,6 +13,7 @@ import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, el } from './icons.ts';
 import { portrait } from './portrait.ts';
 import { faceSheet } from './talk.ts';
+import { statsText, unitStats } from './turn-list.ts';
 
 export const KEYS = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 export const hint = (k: string) => el('kbd', { class: 'hint', 'aria-hidden': 'true' }, k);
@@ -44,6 +45,27 @@ export function gauge(
     ),
     el('span', { class: 'gauge-num' }, `${Math.max(0, value)}/${max}`),
   );
+}
+
+// The end of a turn list row, after the name: a turn's life and CT (Fernando, Nov 17), the short line of each over a
+// thin bar of how full it is, the same numbers the 3D list draws beside its cards (turn-list.ts unitStats); then the
+// round's tag. A charge's row has only the tag: it is a spell going off, not a turn
+export function queueEnd(u: UnitState, charge: boolean, round: number) {
+  const s = unitStats(u),
+    text = statsText(s);
+  const line = (cls: string, str: string, v: number, max: number) =>
+    el('span', { class: `queue-stat ${cls}`, style: `--f:${Math.round((v / max) * 100)}%` }, str);
+  return [
+    charge
+      ? null
+      : el(
+          'span',
+          { class: 'queue-stats', title: text.long },
+          line('hp', text.hp, s.hp, s.hpMax),
+          line('ct', text.ct, s.ct, s.ctMax),
+        ),
+    el('span', { class: 'queue-round', title: t(`Rodada ${round}`, `Round ${round}`) }, String(round)),
+  ];
 }
 
 // Preview strips in the Tactics Ogre style (Nov 13, Fernando's request; our design): one arrow strip per target,

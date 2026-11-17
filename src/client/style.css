@@ -1004,7 +1004,7 @@ button[hidden],
 .queue {
   top: calc(56px + env(safe-area-inset-top, 0px));
   left: var(--inset-l);
-  width: 196px;
+  width: 330px; /* 196 until Nov 17: the life and CT lines took the rest */
   touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
   overflow-y: auto;
   scrollbar-width: thin;
@@ -1058,6 +1058,26 @@ button[hidden],
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* life and CT at the row's end (hud-pieces.ts queueEnd; Nov 17): the number in text, how full it is as a thin bar under
+   it, life in its side's colour and CT in the CT bar's */
+.queue-stats {
+  display: grid;
+  gap: 2px;
+  margin-left: auto;
+  min-width: 110px; /* "Vida 161/210 +12": the bars of every row end up the same length */
+  white-space: nowrap;
+  line-height: 1;
+}
+.queue-stat {
+  padding-bottom: 5px;
+  background: linear-gradient(to right, var(--bar) var(--f), var(--well) 0) bottom / 100% 3px no-repeat;
+}
+.queue-stat.hp {
+  --bar: var(--side);
+}
+.queue-stat.ct {
+  --bar: var(--ct);
 }
 .queue-row.hero {
   --side: var(--hero);
@@ -3729,7 +3749,9 @@ body:has(.result3d-overlay) .fps {
   top: var(--turn-y);
   bottom: max(var(--turn-b), var(--active-h, 0px) + 2px);
   height: auto;
-  width: calc(120px * var(--t3));
+  /* the cards' column, then the room their life and CT lines take (--turn-stats, set by turn3d.ts): the menu beside the
+     unit and "Execute?" keep clear of this box (hud.ts place) */
+  width: calc(120px * var(--t3) + var(--turn-stats, 0px));
   box-sizing: border-box;
   display: flex;
   flex-direction: column-reverse;
@@ -3746,14 +3768,17 @@ body:has(.result3d-overlay) .fps {
 }
 .hud.turn3d .queue-title {
   order: 1; /* in a reversed column the last one sits on top */
+  width: calc(100% - var(--turn-stats, 0px)); /* over the cards, not over their lines */
   position: sticky;
   top: 0;
   text-shadow: var(--ink-shadow);
 }
 .hud.turn3d .queue-row {
   flex: none;
-  width: calc(44px * var(--t3));
-  height: calc(52px * var(--t3));
+  /* never shorter than the two 16 px lines and two bars beside the card take (Nov 17; queue-view.ts statsLayout): on a
+     low screen the cards stop shrinking and the list scrolls */
+  width: max(calc(44px * var(--t3)), 41px);
+  height: max(calc(52px * var(--t3)), 48px);
   padding: 0;
   overflow: hidden;
   opacity: 0;
@@ -3761,8 +3786,8 @@ body:has(.result3d-overlay) .fps {
 }
 /* the one acting now: a bigger card (the 3D card springs to its row's box) */
 .hud.turn3d .queue-row.now {
-  width: calc(54px * var(--t3));
-  height: calc(64px * var(--t3));
+  width: max(calc(54px * var(--t3)), 50px);
+  height: max(calc(64px * var(--t3)), 59px);
 }
 /* with the 3D bar its sheet's portrait is the one acting (the reference's card 1): its row leaves the list, which starts
    at 2 right above the sheet (Fernando, Nov 16). Only while the sheet shows the list's head (hud.ts .head-on-sheet): an

@@ -55,7 +55,7 @@ different picture.
 | `lang` | `"pt"` or `"en"` (the CLI defaults to `en`) | page load |
 | `viewport` | `{ "width": 1600, "height": 900 }` (default) | CLI |
 | `format` | `"png"` (default) or `"webp"` | CLI |
-| `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "remove": true } }`; on a split map `x.5` puts the token between tiles | load; live (no `remove`) |
+| `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "hpRegen", "remove": true } }`; on a split map `x.5` puts the token between tiles. `hpRegen` (life back each turn, which only equipment gives in the game) goes on the unit's sheet, so every unit of that sheet gets it | load; live (no `remove`, no `hpRegen`) |
 | `add` | `[{ "id", "def", "team": "hero" \| "enemy", "x", "y" }]` | page load |
 | `actor` | the hero whose turn it is (default: the first hero that plays) | load and live |
 | `screen` | `"menu"`, `"abilities"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y}, "confirm": true }` | load and live |
@@ -271,7 +271,9 @@ and its buttons, `queue` the 3D turn list):
 | `menu3d`, `menu3d-pixel` | the 3D command menu at 1920x1080, smooth and through the pixel filter |
 | `menu3d-habilidades`, `menu3d-habilidades-pixel` | the submenu open in a cascade and the ability sheet |
 | `turn3d`, `turn3d-previa`, `turn3d-previa-carga` | the 3D turn list at 1280x720: plain, with a strike aimed, with a charge previewed |
+| `turn3d-stats`, `turn3d-stats-720`, `turn3d-stats-baixa`, `turn3d-stats-previa`, `turn3d-stats-html` | the turn list's life and CT lines (Nov 17) with hurt units, life regen (`units.<id>.hpRegen`) and mixed CT: all 3D at 1920x1080, at 1280x720 with the HTML bar (the acting card stays on the list), on a 844x390 screen (the rows' smallest size), with a strike aimed, and the HTML list |
 | `bar3d`, `bar3d-previa` | the 3D combat bar at 1920x1080: the acting unit's sheet alone, and with a strike aimed (preview plate and the target's sheet) |
+| `bar3d-regen` | the acting sheet with a hurt unit that has life regen: "+12" after "Vida" and the CT gain between the CT bar and its number (Nov 17) |
 | `menucss`, `menucss-habilidades`, `menucss-descricao-p2` | the parchment menu in CSS, its submenu and the sheet's second page |
 | `ui3d-tudo` | the 3D menu with its submenu and the 3D turn list together, on the one layer |
 | `layout-edges`, `layout-frame` | the 3D menu and turn list at 1920x1080 in each layout: the same picture, the menu at 1152,688 and card 2 of the list at 102,711 like the reference |

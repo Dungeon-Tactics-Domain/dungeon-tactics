@@ -5,7 +5,7 @@ import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import type { Forecast } from '../forecast.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
-import type { queueRows } from '../turn-list.ts';
+import { type queueRows, statsText, unitStats } from '../turn-list.ts';
 
 export type Queue = ReturnType<typeof queueRows>;
 
@@ -36,7 +36,10 @@ export interface QueueCard {
   now: boolean; // the one acting
   target: boolean; // struck by the aimed ability
   pending: boolean; // where the aimed charge would fire
-  tip: string; // name and life, shown beside the card under the mouse (the cards carry no text)
+  // life and CT beside the card, each a short line over its bar (turn-list.ts unitStats); null on a charge's row, which
+  // is a spell going off, not a turn
+  stats: { hp: string; ct: string; ctFill: number } | null;
+  tip: string; // name, life and CT in full, shown beside the card under the mouse
 }
 
 // The cards of a drawn list. The first row of each struck unit after the acting one takes the target mark, as in the
@@ -62,6 +65,8 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
     const f = struck.get(u.id);
     // a strike's worst case, a heal's best: the bar blinks between the life now and the life after
     const after = f ? (f.heal ? f.after[1] : f.after[0]) : u.hp;
+    const st = unitStats(u),
+      text = statsText(st);
     return {
       id: { unit: r.unit, charge: r.charge },
       unit: u,
@@ -71,10 +76,31 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
       now: i === 0,
       target: marked.has(i),
       pending: i === q?.at,
+      stats: r.charge ? null : { hp: text.hp, ct: text.ct, ctFill: st.ct / st.ctMax },
       tip: r.charge
         ? `${abilityName(r.charge)} · ${unitName(u.def)} · ${t(`resolve em ${r.ticks}`, `resolves in ${r.ticks}`)}`
-        : `${unitName(u.def)} · ${t('Vida', 'HP')} ${u.hp}/${max}${marked.has(i) ? t(' · alvo', ' · target') : ''}`,
+        : `${unitName(u.def)} · ${text.long}${marked.has(i) ? t(' · alvo', ' · target') : ''}`,
     };
   });
   return headOnSheet(q, sheet) ? cards.slice(1) : cards;
+}
+
+// Where the life and CT lines sit beside a card `h` px tall, at the list's scale `s` (1 at 1280x720), in px from the
+// card's top: each line's middle and, right under it, its bar's top. The text never goes under the game's 16 px, so the
+// rows never get shorter than what two lines and two bars take (style.css .hud.turn3d .queue-row)
+export function statsLayout(h: number, s: number) {
+  const size = Math.max(16, Math.round(12 * s)),
+    bar = Math.max(4, Math.round(4 * s)),
+    line = size * 1.1,
+    gap = Math.max(2, Math.round(3 * s)),
+    top = (h - 2 * (line + bar) - gap) / 2,
+    second = top + line + bar + gap;
+  return {
+    size,
+    bar,
+    x: Math.max(6, 8 * s), // from the card's right edge
+    fits: top >= 0,
+    hp: { text: top + line / 2, bar: top + line },
+    ct: { text: second + line / 2, bar: second + line },
+  };
 }

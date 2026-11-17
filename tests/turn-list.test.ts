@@ -1,5 +1,64 @@
 import { describe, expect, it } from 'vitest';
-import { anchorScroll, keepInView, pageStep, roundLength, twoRounds } from '../src/client/turn-list.ts';
+import { t } from '../src/client/i18n.ts';
+import {
+  anchorScroll,
+  keepInView,
+  pageStep,
+  roundLength,
+  statsText,
+  twoRounds,
+  unitStats,
+} from '../src/client/turn-list.ts';
+import { withGear } from '../src/shared/battle/equipment.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { stateOf } from './battle-helpers.ts';
+
+// Life and CT on each row (Nov 17, Fernando): the number, what comes back each turn and what the CT gains each tick
+describe('turn list unit stats', () => {
+  const unit = (def: string, hp: number, ct: number) => {
+    const u = stateOf([{ id: 'u', def, team: 'hero', x: 0, y: 0 }]).units[0];
+    return { ...u, hp, ct };
+  };
+
+  it('reads life, its max, CT and the CT gained each tick (the speed) from the unit and its sheet', () => {
+    const d = UNIT_DEFS.mage;
+    expect(unitStats(unit('mage', 53, 40))).toEqual({
+      hp: 53,
+      hpMax: d.hp,
+      hpRegen: 0,
+      ct: 40,
+      ctMax: 100,
+      ctGain: d.speed,
+    });
+  });
+
+  it('keeps CT within 0 and 100 and life at 0 or more, as the sheet shows them', () => {
+    expect(unitStats(unit('mage', -5, 130))).toMatchObject({ hp: 0, ct: 100 });
+    expect(unitStats(unit('mage', 10, -20))).toMatchObject({ ct: 0 });
+  });
+
+  it('takes the life regen and the speed of the sheet with its pieces on', () => {
+    UNIT_DEFS['test-regen'] = { ...withGear(UNIT_DEFS.mage, undefined), id: 'test-regen', hpRegen: 4, speed: 9 };
+    try {
+      expect(unitStats(unit('test-regen', 53, 40))).toMatchObject({ hpRegen: 4, ctGain: 9 });
+    } finally {
+      delete UNIT_DEFS['test-regen'];
+    }
+  });
+
+  it('writes the short lines with a "+" only for what the unit gains, and says per turn and per tick in the long one', () => {
+    const s = { hp: 53, hpMax: 120, hpRegen: 4, ct: 40, ctMax: 100, ctGain: 8 };
+    const life = t('Vida', 'HP');
+    expect(statsText(s)).toEqual({
+      hp: `${life} 53/120 +4`,
+      ct: 'CT 40/100 +8',
+      long: `${life} 53/120${t(' (+4 por turno)', ' (+4 per turn)')} · CT 40/100${t(' (+8 por tique)', ' (+8 per tick)')}`,
+    });
+    const none = statsText({ ...s, hpRegen: 0 });
+    expect(none.hp).toBe(`${life} 53/120`);
+    expect(none.long).not.toContain('+4');
+  });
+});
 
 // Turn list showing every unit (Nov 15, Fernando's decision), scrolling within its column
 describe('turn list round', () => {
