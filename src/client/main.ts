@@ -210,8 +210,10 @@ export class Game implements TurnHost {
     });
     // every unit's place in the turn list beside its health bar, from the rows the list itself shows (Nov 17, Fernando)
     const rows = this.hud.queued?.rows ?? [];
-    this.scene.setTurnOrder(turnOrder(rows), rows[0] && !rows[0].charge ? rows[0].unit : null);
-    this.scene.setInsets(0, this.hud.insets().bottom);
+    const { bottom, left } = this.hud.insets(); // `left`: the turn list's right edge, which would cover a number
+    const now = rows[0] && !rows[0].charge ? rows[0].unit : null;
+    this.scene.setTurnOrder(turnOrder(rows), now, (left / innerWidth) * 2 - 1);
+    this.scene.setInsets(0, bottom);
     this.placeMenu(); // already in place on open: waiting for the next frame showed the menu in the corner for 1 frame
   }
 

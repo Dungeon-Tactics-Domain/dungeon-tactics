@@ -21,7 +21,17 @@ import type { TileSpace } from './space.ts';
 import type { Timeline } from './timeline.ts';
 import { playEvents } from './unit-events.ts';
 import { still } from './unit-hits.ts';
-import { chestOf, makeView, playClip, restyleGround, setBar, setOrder, type UnitView, walk } from './unit-view.ts';
+import {
+  chestOf,
+  makeView,
+  playClip,
+  restyleGround,
+  setBar,
+  setOrder,
+  sideOrder,
+  type UnitView,
+  walk,
+} from './unit-view.ts';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const TMP = new THREE.Vector3(); // per-frame math without creating objects
@@ -37,6 +47,7 @@ export class Units {
   private readonly numbers: FloatNumbers; // floating numbers, kept on their chest
   private markers = true; // team ring, facing arrow and health bar; the town has none (hideMarkers)
   private order: { rank: Map<string, number>; now: string | null } | null = null; // the turn-order numbers (setOrder)
+  private cover = -1; // the turn list's right edge across the screen, -1 to 1: a number under it changes side (sideOrder)
   private readonly camera: THREE.OrthographicCamera;
   // an animation on the battle clock, in the shape the gestures of fx.ts take
   readonly animate = (ms: number, step: (k: number) => void) => this.time.animate(ms, step);
@@ -62,8 +73,9 @@ export class Units {
 
   // each unit's place in the turn list, drawn beside its health bar (turn-list.ts turnOrder); `now`: who acts, in gold.
   // Kept for the units a later sync creates
-  setOrder(rank: Map<string, number> | null, now: string | null) {
+  setOrder(rank: Map<string, number> | null, now: string | null, cover = this.cover) {
     this.order = rank && { rank, now };
+    this.cover = cover;
     for (const [id, v] of this.views) setOrder(v, rank?.get(id), id === now);
   }
 
@@ -94,9 +106,9 @@ export class Units {
       if (t >= this.frozenUntil) v.mixer?.update(dt * fast);
       this.tiltGround(v);
       // health bar always facing the camera
-      v.holder
-        .getObjectByName('bar')!
-        .quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
+      const bar = v.holder.getObjectByName('bar')!;
+      bar.quaternion.copy(v.holder.quaternion.clone().invert().multiply(this.camera.quaternion));
+      sideOrder(bar, this.camera, this.cover);
     }
   }
 

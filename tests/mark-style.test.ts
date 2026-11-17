@@ -1,7 +1,9 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { MARK_DEFAULT, MARK_STYLES, parseMarkStyle, pickMarkStyle } from '../src/client/mark-style.ts';
 import { barYOf, MARKER, unitHeight } from '../src/client/markers.ts';
+import { sideOrder } from '../src/client/scene/unit-view.ts';
 import { turnOrder } from '../src/client/turn-list.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
@@ -74,5 +76,27 @@ describe('turn order on the map', () => {
     expect(MARKER.barHalfW + MARKER.orderGap).toBeGreaterThan(0.16);
     // big: at least 16 px at the whole-map zoom of a 1080p page, where a metre is about 57 px (measured, Nov 17)
     expect(MARKER.orderH * 57).toBeGreaterThanOrEqual(16);
+  });
+});
+
+describe('turn-order number: the side of the bar it sits on', () => {
+  it('goes to the right while the turn list would cover it and comes back', () => {
+    const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0, 10); // the screen's -1 to 1 is -10 to 10 here
+    camera.updateMatrixWorld();
+    const bar = new THREE.Object3D();
+    const tag = new THREE.Object3D();
+    tag.name = 'order';
+    tag.position.x = -0.6;
+    bar.add(tag);
+    const at = (x: number) => {
+      bar.position.x = x;
+      bar.updateMatrixWorld();
+      sideOrder(bar, camera, -0.8); // the list ends at -8
+      return tag.position.x;
+    };
+    expect(at(0)).toBe(-0.6);
+    expect(at(-8)).toBe(0.6); // its left edge at -9.1, under the list
+    expect(at(-8)).toBe(0.6); // stays: the side is judged from the left place, not from where it is now
+    expect(at(-6)).toBe(-0.6);
   });
 });

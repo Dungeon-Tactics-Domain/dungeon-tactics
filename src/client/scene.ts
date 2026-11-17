@@ -130,8 +130,8 @@ export class BattleScene {
     this.marks.setRangeRing(r);
   }
 
-  setTurnOrder(rank: Map<string, number> | null, now: string | null) {
-    this.units.setOrder(rank, now);
+  setTurnOrder(rank: Map<string, number> | null, now: string | null, cover?: number) {
+    this.units.setOrder(rank, now, cover);
   }
 
   // The mark style changed (mark-style.ts): marks, lines, rings and border built again; Game.update sets the turn's marks

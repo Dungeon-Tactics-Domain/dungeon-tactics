@@ -18,7 +18,7 @@ import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import type { MenuCss } from './hud-menucss.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm } from './hud-menus.ts';
-import { hint, KEYS, queueEnd, sheetFace, strikes, unitPanel } from './hud-pieces.ts';
+import { hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
 import { type HudSkin, queueBoxes, wireQueue } from './hud-skin.ts';
 import { ToolsMenu } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
@@ -388,7 +388,7 @@ export class BattleHud {
   // height the HUD covers at the bottom (acting unit panel), so the scene centers the map on what is left. Only the acting one: the
   // target's grows with the strike preview and the map jumped each time the cursor passed over a target
   insets() {
-    return { bottom: this.active.getBoundingClientRect().height };
+    return { bottom: this.active.getBoundingClientRect().height, left: shownRight(this.queue) };
   }
 
   dispose() {

@@ -20,7 +20,8 @@ Fernando's decision, Nov 12: "discard the current interfaces and recreate the in
   - It scrolls within the column above the acting panel (wheel, PgUp/PgDn, right stick): a new turn scrolls back to NOW, a redraw keeps where the player scrolled, and the charge row of "Execute?" is kept in view.
 - **Turn order on the map** (Nov 17, Fernando: "the turn order as a number near each character's health bar"): every
   unit carries the number of its next turn's row in the list (`turnOrder` in `turn-list.ts`, from the rows the list
-  itself shows, so it follows the copy of the queue while aiming), glued to the left of its health bar and facing the
+  itself shows, so it follows the copy of the queue while aiming), glued to the left of its health bar (to its right while the
+  turn list would cover it: `sideOrder`, every frame) and facing the
   camera with it (`setOrder` in `scene/unit-view.ts`). Big digits (`MARKER.orderH`, about 32 px at the whole-map zoom of
   a 1080p page) in the side's colour, blue for heroes and pink for enemies, gold for the one acting now; always on, for
   both sides. Beside the bar, so it clears the acting unit's arrow and stays above the head of the Brute and the

@@ -50,6 +50,10 @@ export function gauge(
 // The end of a turn list row, after the name: a turn's life and CT (Fernando, Nov 17), the short line of each over a
 // thin bar of how full it is, the same numbers the 3D list draws beside its cards (turn-list.ts unitStats); then the
 // round's tag. A charge's row has only the tag: it is a spell going off, not a turn
+// A panel's right edge on the page, 0 while it is hidden: a sandbox spec hides panels with `visibility`, keeping their box
+export const shownRight = (el: HTMLElement) =>
+  getComputedStyle(el).visibility === 'hidden' ? 0 : el.getBoundingClientRect().right;
+
 export function queueEnd(u: UnitState, charge: boolean, round: number) {
   const s = unitStats(u),
     text = statsText(s);

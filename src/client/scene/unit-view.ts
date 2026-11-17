@@ -232,6 +232,18 @@ export function setOrder(v: UnitView, n: number | undefined, now: boolean) {
   tag.visible = true;
 }
 
+// A number the turn list would cover goes to the bar's right side (Nov 17: the left edge's number sat under the list).
+// `cover`: the list's right edge across the screen, -1 to 1. Every frame, since the camera moves the unit under the list.
+// ponytail: only the list's right edge counts, not its height; pass its box when a number below it must stay at the left
+const EDGE = new THREE.Vector3();
+export function sideOrder(bar: THREE.Object3D, camera: THREE.Camera, cover: number) {
+  const tag = bar.getObjectByName('order');
+  if (!tag?.visible) return;
+  const x = Math.abs(tag.position.x);
+  const left = bar.localToWorld(EDGE.set(-x - tag.scale.x / 2, 0, 0)).project(camera).x;
+  tag.position.x = left < cover ? x : -x;
+}
+
 export function playClip(v: UnitView, name: string, once = false, rate = 1) {
   const clip = v.clips.find((c) => c.name === name);
   if (!v.mixer || !clip) return;
