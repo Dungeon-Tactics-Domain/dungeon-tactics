@@ -3813,6 +3813,37 @@ body:has(.town3d-overlay) .hud > .ui3d-layer {
   visibility: visible;
 }
 
+/* ---- 3D town HUD and speech box (?townhud=3d, ?talk=3d; src/client/town3d hud3d.ts, talk3d.ts) ---- */
+/* Drawn on the town's 3D layer. The HTML pieces stay in place unseen (opacity, not visibility: they are the layout, and
+   their real buttons take the mouse, the taps, the pad and the screen reader) */
+.hud.townhud3d > .tile-info,
+.hud.townhud3d > .town-prompt,
+.hud.townhud3d > .town-act,
+.hud.townhud3d .tools .burger {
+  opacity: 0;
+}
+/* the speech box: only its painted face shows, over the drawn parchment; the town is not darkened, as the reference */
+.talk-overlay.talk3d {
+  background: none;
+}
+.talk-overlay.talk3d .panel.talk {
+  animation: none;
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  outline: none;
+}
+.talk-overlay.talk3d :is(.talk-name, .talk-text, .talk-next, .talk-keys, .talk-title, .talk-skip) {
+  opacity: 0;
+  animation: none;
+}
+/* someone talking hides the whole HUD (above): the layer still shows, with the box drawn on it */
+body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
+  visibility: visible;
+}
+
 /* ---- 3D turn list (?turn3d; src/client/turn3d) ---- */
 /* The list is drawn in 3D on the layer. The HTML list stays where it is, unseen, as the layout, the scroll and the hover:
    its rows take the cards' sizes measured on the reference screenshots (1280x720) times --t3, the page's scale (set by

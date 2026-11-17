@@ -86,6 +86,13 @@ export interface TalkOptions {
   dark?: true; // nearly black screen behind (story opening)
 }
 
+// The box's 3D look (town3d/talk3d.ts, set while the town's 3D layer is up): handed each conversation's overlay, it
+// draws the box over it; the box itself stays the one below, unseen
+let look: ((overlay: HTMLElement) => void) | undefined;
+export const setTalk3d = (take?: (overlay: HTMLElement) => void) => {
+  look = take;
+};
+
 export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<void> {
   // reduced motion: the face stays still, like the portrait hop
   const still = reducedMotion();
@@ -199,6 +206,7 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
     // a click beside the box left the focus on the page, and Enter, Space and A no longer moved the conversation on
     overlay.addEventListener('mousedown', (e) => e.preventDefault());
     document.body.append(overlay);
+    if (!dark) look?.(overlay);
     box.focus();
     show();
   });

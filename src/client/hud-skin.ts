@@ -114,13 +114,20 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   return skin;
 }
 
-// The town's windows in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
+// The town's windows, HUD and speech box in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
 // with ?ui=html or the piece's own flag, the HTML windows open
 export async function loadTownSkin(root: HTMLElement) {
-  const { party, shop } = skinFlags(param);
-  if (party !== '3d' && shop !== '3d') return;
+  const flags = skinFlags(param);
+  const on = {
+    party: flags.party === '3d',
+    shop: flags.shop === '3d',
+    menu: flags.townmenu === '3d',
+    hud: flags.townhud === '3d',
+    talk: flags.talk === '3d',
+  };
+  if (!Object.values(on).some(Boolean)) return;
   const { mountTown3d } = await import('./town3d/screens.ts');
-  mountTown3d(root, { party: party === '3d', shop: shop === '3d' });
+  mountTown3d(root, on);
 }
 
 // The turn list's boxes for the 3D list, which draws over them and never reads the DOM itself: each row in the list's

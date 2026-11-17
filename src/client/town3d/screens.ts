@@ -1,5 +1,6 @@
-// The town's 3D windows at work (hud-skin.ts loads this for the town): the layer over the town's HUD, and for each
-// window (Shop, Tavern, Party) the loop the HTML one runs: read the saved game, show its page (shop-view.ts,
+// The town's 3D windows at work (hud-skin.ts loads this for the town): the layer over the town's HUD, the HUD itself
+// (hud3d.ts), the speech box (talk3d.ts), the street's windows (street.ts) and, for each window of a building (Shop,
+// Tavern, Party), the loop the HTML one runs: read the saved game, show its page (shop-view.ts,
 // party-view.ts), run the pressed button through the same rules (chest.ts, group.ts), save and show again. While
 // mounted, the town's openers hand their windows over (town-ui.ts `town3d`); a page too small for the drawing, a
 // browser without WebGL or a lost context leave the HTML windows as they are.
@@ -15,9 +16,12 @@ import { openBar, openShop } from '../town-shop.ts';
 import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
+import { TownHud3d } from './hud3d.ts';
 import type { Page } from './page.ts';
 import { PAGES, partyPage } from './party-view.ts';
 import { barPage, type ShopTab, shopPage } from './shop-view.ts';
+import { streetWindows } from './street.ts';
+import { Talk3d } from './talk3d.ts';
 import { Town3d } from './town3d.ts';
 
 const save = (key: string, v: unknown) => store.set(key, JSON.stringify(v));
@@ -27,13 +31,19 @@ const rowOf = (page: Page, sel: string) =>
     ? sel
     : (page.hits.find((h) => h.id.startsWith('row:'))?.id.slice(4) ?? '');
 
-export function mountTown3d(root: HTMLElement, on: { party: boolean; shop: boolean }) {
+export function mountTown3d(
+  root: HTMLElement,
+  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean },
+) {
   let again: (() => void) | undefined; // the open window as its HTML one, should the drawing go away
   let layer: Ui3dLayer;
+  let live = true;
   const lost = () => {
-    town3d.shop = town3d.bar = town3d.party = undefined;
-    layer.dispose(); // with the screen and its window
-    again?.();
+    live = false;
+    const open = !!document.querySelector('.town3d-overlay'); // a window closed earlier does not come back
+    for (const k of Object.keys(town3d) as (keyof typeof town3d)[]) delete town3d[k];
+    layer.dispose(); // with the screens (the HTML HUD and speech box show again) and the open window
+    if (open) again?.();
   };
   try {
     layer = new Ui3dLayer(root, false, lost);
@@ -43,7 +53,7 @@ export function mountTown3d(root: HTMLElement, on: { party: boolean; shop: boole
   const ui = new Town3d(layer);
   // the town has no battle clock: the layer ticks on the page's own frames, and draws only while a window moves
   const tick = (now: number) => {
-    if (!town3d.shop && !town3d.party) return;
+    if (!live) return;
     layer.frame(now);
     requestAnimationFrame(tick);
   };
@@ -220,5 +230,12 @@ export function mountTown3d(root: HTMLElement, on: { party: boolean; shop: boole
 
   if (on.shop) Object.assign(town3d, { shop, bar });
   if (on.party) town3d.party = party;
+  if (on.menu)
+    Object.assign(
+      town3d,
+      streetWindows(ui, fits, (fn) => (again = fn)),
+    );
+  if (on.hud) new TownHud3d(layer, root);
+  if (on.talk) new Talk3d(layer, fits);
   requestAnimationFrame(tick);
 }

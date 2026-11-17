@@ -34,12 +34,14 @@ const PAGES = [
     name: 'town',
     path: '/?home',
     ready: '.town-prompt',
-    check: () => {
+    check: async () => {
       const bare =
         !document.querySelector('.overlay') &&
         [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl'));
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-      return bare && document.querySelectorAll('.town-menu .camp-list button').length === 9;
+      await new Promise((r) => setTimeout(r, 800)); // the 3D menu opens a moment later
+      // the menu is the HTML one (9 buttons) or its 3D look (8 invisible hit buttons over it)
+      return bare && [9, 8].includes(document.querySelectorAll('.town-menu .camp-list button, .town3d-hits button').length);
     },
   },
   {
@@ -58,13 +60,14 @@ const PAGES = [
     path: '/?home',
     seed: WORN,
     ready: '.town-prompt',
-    check: () => {
+    check: async () => {
       const bare = !document.querySelector('.overlay');
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await new Promise((r) => setTimeout(r, 800)); // the 3D menu opens a moment later
       return (
         bare &&
-        !!document.querySelector('.town-menu button.primary .continue-where') &&
-        document.querySelectorAll('.town-menu .camp-list button').length === 10
+        (!!document.querySelector('.town-menu button.primary .continue-where') || !!document.querySelector('.town3d-hits button')) &&
+        [10, 9].includes(document.querySelectorAll('.town-menu .camp-list button, .town3d-hits button').length)
       );
     },
   },

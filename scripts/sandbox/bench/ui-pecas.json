@@ -16,7 +16,10 @@
     "title": ["html", "3d"],
     "sheets": ["html", "3d"],
     "tools": ["html", "3d"],
-    "status": ["html", "3d"]
+    "status": ["html", "3d"],
+    "townhud": ["html", "3d"],
+    "townmenu": ["html", "3d"],
+    "talk": ["html", "3d"]
   },
   "presets": ["html", "css", "3d"],
   "layouts": ["edges", "frame"],

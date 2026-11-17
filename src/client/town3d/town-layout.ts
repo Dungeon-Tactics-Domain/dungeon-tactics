@@ -47,3 +47,20 @@ export const P = {
   gearRow: 72, // Equipment: a chest piece with what it changes
   job: { w: 190, h: 400, gap: 16 }, // Class: a card per class, its numbers under the name
 };
+
+// the town menu: its rows down the left as the reference's list of places (57: dark plates, the glove at their left),
+// the town's box beside them. The 9 rows of the longest menu end above the help band
+export const M = {
+  rows: { x: 150, y: 120, w: 620, h: 74, gap: 10 },
+  label: 36, // a row's name, from its left end
+  box: { x: 860, y: 120, w: 640, h: 264 },
+  head: 56,
+  pad: 30,
+};
+
+// a place's window (the gate's quest, a place still to come): the plaques at the left edge, what the place says beside
+export const G = {
+  box: { x: 480, y: 380, w: 1000, h: 364 },
+  head: 56,
+  pad: 34,
+};

@@ -145,6 +145,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town3d/page.ts` — what a 3D town window shows: a flat list of things to draw and of buttons, in reference px; pure.
 - `src/client/town3d/shop-view.ts` — the pages of the 3D Shop and Tavern (commands, scrolling list, the picked row's box and action); pure.
 - `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class); pure.
+- `src/client/town3d/street-view.ts` — the pages of the 3D town menu, gate and place still to come (?townmenu=3d); pure.
+- `src/client/town3d/street.ts` — streetWindows(): the 3D town menu, gate and place still to come at work, over the rules of game/crawl.ts.
+- `src/client/town3d/hud3d.ts` — TownHud3d: the walkable town's HUD drawn in 3D (?townhud=3d) over its unseen HTML pieces.
+- `src/client/town3d/talk3d.ts` — Talk3d: the town's speech box drawn in 3D (?talk=3d) over the unseen box of talk.ts.
 - `src/client/town3d/town-layout.ts` — where the 3D town windows put their parts, in reference px; pure numbers.
 - `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D (?options=3d), laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
 - `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
