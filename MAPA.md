@@ -59,7 +59,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
 - `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
-- `src/client/town-ui.ts` — the town's windows: Tavern (recruits) and Shop; the saved party's load and save.
+- `src/client/town-ui.ts` — what the town's windows share: the saved party's load and save, the gold counter and the reasons a button is off.
+- `src/client/town-shop.ts` — the Shop (Buy, Sell, Leave) and the Tavern (recruits) as the FFT counter screen: commands, list, detail box.
 - `src/client/town-party.ts` — the Party screen (FFT's formation and unit menus): the unit list and who goes to battle, the picked unit's Status, Abilities and Class pages.
 - `src/client/town-gear.ts` — the Party screen's Equipment page: the 7 slots, compare, swap and the chest.
 - `src/client/sheet-lines.ts` — the numbers a sheet and a piece show: one line per stat, with where each total comes from, its bar and what a piece would change.

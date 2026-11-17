@@ -2290,14 +2290,6 @@ p.gold strong::before,
   font-style: italic;
   color: var(--ink-muted);
 }
-.price-row .portrait {
-  width: 36px;
-  height: 48px;
-}
-/* Buy and Sell switch the Shop's list: the choice's own label stays for the screen reader only (the group's aria-label) */
-.shop .choice-label {
-  display: none;
-}
 
 /* ---- Developer menu (dev-menu.ts) ---- */
 /* Developer menu (Nov 12): wide for the two teams side by side on PC; on narrow screens, one below the other */
@@ -3425,5 +3417,158 @@ p.gold strong::before,
   }
   .roster-tabs .choice-row {
     flex-wrap: wrap; /* a 390 px phone holds two tabs a line */
+  }
+}
+
+/* ---- FFT shop/tavern (agent shop) ---- */
+/* The Shop and the Tavern (town-shop.ts) as the counter of an FFT shop: the commands at the left, the list in the
+   middle, the picked row's detail box at the right. Under 1600 px the commands go on top so the list keeps its width
+   beside the town menu; a phone gets one column with the box over the list. The list and the box scroll inside the
+   window, as Options' sections do, so the gold counter on the head band never leaves the screen */
+.dialog.counter {
+  width: min(1100px, 100%);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+.counter-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 380px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0 20px;
+  align-items: start;
+  min-height: 0;
+}
+.counter-list,
+.counter-detail {
+  max-height: 100%;
+  overflow: auto;
+  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
+}
+.counter-layout > .command-list {
+  margin-top: 0;
+  white-space: nowrap; /* "Sell (4)" broke in two lines */
+}
+.counter-list h3 {
+  margin: 12px 0 4px;
+}
+.counter-list h3:first-child {
+  margin-top: 0;
+}
+/* a list row: the name over its kind, how many are owned, the price after a coin with why it cannot be had under it */
+.dialog .counter-list > button {
+  gap: 12px;
+  min-height: 52px;
+  padding-block: 2px;
+  font: 500 var(--fs) / 1.2 var(--font-title);
+  border-top: 1px solid color-mix(in srgb, var(--paper-edge) 18%, transparent);
+}
+/* the picked row, whose detail is in the box: the sunken band and yellow edge of an open command, under the real focus */
+.dialog .counter-list > button[aria-current]:not(:focus) {
+  background: color-mix(in srgb, var(--shade) 45%, transparent);
+  box-shadow: inset 4px 0 0 var(--focus);
+}
+.counter-what {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.counter-list small,
+.counter-own {
+  font: 500 var(--fs-sm) / 1.2 var(--font);
+  color: var(--ink-muted);
+}
+.counter-own {
+  white-space: nowrap;
+}
+.counter-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.counter-price small {
+  font-style: italic;
+}
+/* the muted text turns --ink on the focus and hover bands, where it drops under 4.5:1 (as the Party rows) */
+.counter-list > button:focus :is(small, .counter-own) {
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .counter-list > button:hover :is(small, .counter-own) {
+    color: var(--ink);
+  }
+}
+.counter-detail {
+  padding: 12px 16px;
+  border-left: 6px solid var(--focus);
+  background: color-mix(in srgb, var(--shade) 25%, transparent);
+}
+.counter-detail h3:first-child,
+.counter-detail .party-card h3 {
+  margin-top: 0;
+  font-size: var(--fs-lg);
+}
+.counter-detail p {
+  margin: 0 0 8px;
+}
+.counter-detail .keys dd,
+.dialog .counter-gives,
+.dialog .counter-said {
+  color: var(--ink);
+}
+.dialog .counter-gives,
+.dialog .counter-said {
+  font-weight: 700;
+}
+.counter-fit {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.counter-fit strong {
+  color: var(--ink);
+}
+@media (max-width: 1599px) {
+  .counter-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .counter-layout > .command-list {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    margin-bottom: 8px;
+  }
+  .dialog .counter-layout > .command-list > button {
+    flex: 1 1 0;
+    width: auto;
+  }
+}
+/* a phone: one column, the box over the list, and the whole window scrolls again (its head band with it) */
+@media (max-width: 600px) {
+  .dialog.counter {
+    display: block;
+    overflow: auto;
+  }
+  .counter-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+  .counter-layout > .command-list {
+    order: -2;
+  }
+  .counter-list,
+  .counter-detail {
+    max-height: none;
+  }
+  .counter-detail {
+    order: -1;
+    margin-bottom: 8px;
   }
 }
