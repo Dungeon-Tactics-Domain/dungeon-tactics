@@ -11,7 +11,6 @@ import { battleInput } from './battle-input.ts';
 import { abilityDetail } from './battle-text.ts';
 import { beforeEvent } from './before-event.ts';
 import { abilitiesOf, type Screen, startScreen } from './command.ts';
-import { dialog } from './dialog.ts';
 import { fpsCounter } from './fps.ts';
 import { type BattleSelection, newBattle } from './game/boot.ts';
 import { battleEndScreen, confetti } from './game/end-screens.ts';
@@ -21,7 +20,6 @@ import { HeroTurn, type TurnHost } from './hero-turn.ts';
 import { BattleHud, eventLog, type HudActions, unitStatus } from './hud.ts';
 import type { HudSkin } from './hud-skin.ts';
 import { abilityName, t, unitName } from './i18n.ts';
-import { el } from './icons.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
 import { onMarkStyle } from './mark-style.ts';
@@ -29,6 +27,7 @@ import { reducedMotion } from './motion.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings } from './pixel-settings.ts';
 import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
+import { statusWindow } from './status-window.ts';
 import { store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
@@ -254,13 +253,13 @@ export class Game implements TurnHost {
     this.busy = false;
   }
 
-  // status window of the unit under the cursor (or of the acting unit), with dialog() like the other dialogs
+  // status window of the unit under the cursor (or of the acting unit), a window of status-window.ts
   // the sheet of the ability in focus in the Act submenu (the I key, the pad's 4th button): name, numbers and its notes
   abilitySheet() {
     const s = this.turn.screen;
     if (s.k !== 'abilities') return;
     const id = abilitiesOf(this.battle)[s.index];
-    if (id) dialog('status', abilityName(id), [el('p', {}, abilityDetail(id))]);
+    if (id) statusWindow({ title: abilityName(id), rows: [], text: abilityDetail(id) });
   }
 
   status() {
@@ -268,9 +267,7 @@ export class Game implements TurnHost {
     const id = unitAt(s, this.turn.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit
     if (!id) return;
     const u = s.units.find((x) => x.id === id)!;
-    dialog('status', unitName(u.def), [
-      el('dl', { class: 'keys' }, ...unitStatus(s, id).flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)])),
-    ]);
+    statusWindow({ title: unitName(u.def), rows: unitStatus(s, id) });
   }
 
   save() {

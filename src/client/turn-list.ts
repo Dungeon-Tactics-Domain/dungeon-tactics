@@ -3,8 +3,10 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
-import { previewOrder, type QueueEntry } from '../shared/battle/turn-queue.ts';
-import type { Pos } from '../shared/battle/types.ts';
+import { previewOrder, type QueueEntry, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
+import type { Pos, UnitState } from '../shared/battle/types.ts';
+import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { t } from './i18n.ts';
 
 // Rows up to the one that completes the round: every unit that plays and every queued charge shows at least once.
 // A unit that never shows in `rows` (speed 0, like the Beacon) does not stretch it
@@ -99,4 +101,43 @@ export function queueRows(b: Battle, aim: { ability: string; target: Pos } | nul
   const p = preview ? b.preview(preview.ability, preview.target) : null;
   const targets = new Set(p?.ok ? p.targets.map((tg) => tg.unit) : []);
   return { rows: twoRounds(all), targets, at };
+}
+
+// What a row of the turn list tells about its unit besides the face and the order (Fernando, Nov 17): life with what
+// comes back at the start of each of its turns (`hpRegen`: only pieces give it, so most show none) and CT with what it
+// gains each tick (the sheet's `speed`, with the pieces on: the queue's own number, turn-queue.ts). The values are the
+// unit's now, the same on each of its rows: the list projects the order, not the life. Both lists read this (HTML and 3D)
+export interface UnitStats {
+  hp: number;
+  hpMax: number;
+  hpRegen: number; // per turn of the unit; 0 for none
+  ct: number; // 0 to ctMax, as the sheet shows it (the state's goes past 100 and below 0)
+  ctMax: number;
+  ctGain: number; // per tick
+}
+export function unitStats(u: UnitState): UnitStats {
+  const d = UNIT_DEFS[u.def];
+  return {
+    hp: Math.max(0, u.hp),
+    hpMax: d.hp,
+    hpRegen: d.hpRegen ?? 0,
+    ct: Math.max(0, Math.min(TURN_THRESHOLD, u.ct)),
+    ctMax: TURN_THRESHOLD,
+    ctGain: d.speed,
+  };
+}
+// The two short lines of a row ("Vida 53/120 +4", "CT 40/100 +8") and the long one that says what each "+" counts, for
+// the hover: a turn and a tick are different clocks
+export function statsText(s: UnitStats) {
+  const hp = `${t('Vida', 'HP')} ${s.hp}/${s.hpMax}`,
+    ct = `CT ${s.ct}/${s.ctMax}`;
+  return {
+    hp: hp + (s.hpRegen ? ` +${s.hpRegen}` : ''),
+    ct: `${ct} +${s.ctGain}`,
+    long:
+      hp +
+      (s.hpRegen ? t(` (+${s.hpRegen} por turno)`, ` (+${s.hpRegen} per turn)`) : '') +
+      ` · ${ct}` +
+      t(` (+${s.ctGain} por tique)`, ` (+${s.ctGain} per tick)`),
+  };
 }

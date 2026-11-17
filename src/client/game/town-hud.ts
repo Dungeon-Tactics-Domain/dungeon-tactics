@@ -2,6 +2,7 @@
 import { type Place, TOWN } from '../../content/crawl/town.ts';
 import { dialog } from '../dialog.ts';
 import { KEYS } from '../hud.ts';
+import { loadTownSkin } from '../hud-skin.ts';
 import { t } from '../i18n.ts';
 import { button, el, iconButton } from '../icons.ts';
 import { sfx } from '../sound.ts';
@@ -11,8 +12,8 @@ import { questGate } from './crawl.ts';
 
 // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the menu button in the
 // top right corner; as a .hud it hides while someone talks (style.css)
-export const townHud = (prompt: HTMLElement, balloon: HTMLElement, menu: () => void) =>
-  el(
+export function townHud(prompt: HTMLElement, balloon: HTMLElement, menu: () => void) {
+  const hud = el(
     'div',
     { class: `hud${KEYS ? ' kbd' : ''}` },
     el('div', { class: 'panel tile-info' }, t(TOWN.name, TOWN.en)),
@@ -29,6 +30,9 @@ export const townHud = (prompt: HTMLElement, balloon: HTMLElement, menu: () => v
       ),
     ),
   );
+  void loadTownSkin(hud); // the windows' 3D look (hud-skin.ts)
+  return hud;
+}
 
 // a place's window: the existing ones (Fernando, Nov 15), the gate's quest rows, or what a place without one yet says
 export function openPlace(pl: Place) {

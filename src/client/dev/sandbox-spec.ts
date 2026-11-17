@@ -36,6 +36,7 @@ export interface UnitPatch {
   facing?: number; // index in FACING (grid.ts): 0 +y, 1 +x, 2 -y, 3 -x
   hp?: number;
   ct?: number;
+  hpRegen?: number; // boot only: life back each turn, set on the unit's sheet (every unit of that sheet gets it)
   remove?: true; // boot only: a unit removed on a live page would stay as a corpse
 }
 export interface NewUnit {
@@ -92,6 +93,8 @@ export interface SceneSpec {
   hints?: Variant;
   confirm?: Variant;
   result?: Variant;
+  tools?: Variant;
+  status?: Variant;
   uiPixel?: boolean; // the 3D pieces through the pixel filter (`pixel` is the scene's)
   menu3d?: true | 'pixel';
   turn3d?: true;
@@ -132,6 +135,8 @@ const KEYS = [
   'hints',
   'confirm',
   'result',
+  'tools',
+  'status',
   'uiPixel',
   'menu3d',
   'turn3d',
@@ -188,7 +193,8 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
           continue;
         }
         for (const k of Object.keys(u))
-          if (!['x', 'y', 'facing', 'hp', 'ct', 'remove'].includes(k)) p.push(`units.${id}: unknown key "${k}"`);
+          if (!['x', 'y', 'facing', 'hp', 'ct', 'hpRegen', 'remove'].includes(k))
+            p.push(`units.${id}: unknown key "${k}"`);
         if ((u.x !== undefined) !== (u.y !== undefined)) p.push(`units.${id}: give x and y together`);
         // x.5 too: a token stands between tiles on the split map, as the AI and a push leave it
         if (u.x !== undefined && u.y !== undefined && !isHalfPos(u))
@@ -196,6 +202,7 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
         if (u.facing !== undefined && !isInt(u.facing, 0, 3)) p.push(`units.${id}: facing must be 0-3`);
         if (u.hp !== undefined && !isInt(u.hp, 1)) p.push(`units.${id}: hp must be an integer ≥ 1`);
         if (u.ct !== undefined && !isInt(u.ct, 0)) p.push(`units.${id}: ct must be an integer ≥ 0`);
+        if (u.hpRegen !== undefined && !isInt(u.hpRegen, 0)) p.push(`units.${id}: hpRegen must be an integer ≥ 0`);
         if (u.remove !== undefined && u.remove !== true) p.push(`units.${id}: remove must be true`);
       }
   }
@@ -266,7 +273,7 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   if (r.menu3d !== undefined && r.menu3d !== true && r.menu3d !== 'pixel') p.push('menu3d must be true or "pixel"');
   for (const k of ['turn3d', 'menucss']) if (r[k] !== undefined && r[k] !== true) p.push(`${k} must be true`);
   if (r.ui !== undefined && !VARIANTS.includes(r.ui as Variant)) p.push(`ui must be one of ${VARIANTS.join(', ')}`);
-  for (const k of ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result'] as const)
+  for (const k of ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result', 'tools', 'status'] as const)
     if (r[k] !== undefined && !(PIECES[k] as readonly unknown[]).includes(r[k]))
       p.push(`${k} must be one of ${PIECES[k].join(', ')}`);
   if (r.uiPixel !== undefined && typeof r.uiPixel !== 'boolean') p.push('uiPixel must be true or false');

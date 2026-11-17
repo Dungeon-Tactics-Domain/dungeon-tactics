@@ -8,6 +8,7 @@ export interface Option {
   text: () => string; // the current value as the row shows it
   step: (dir: -1 | 1) => void;
   bar?: { fill: () => number; set: (pct: number) => void }; // a 0 to 100% value also draws a bar a pointer can set
+  on?: () => boolean; // a yes or no: the 3D Options draw it as a switch beside its word
 }
 
 // the value before or after `at`, around the ends: Enter only goes forward, so the last one must lead to the first

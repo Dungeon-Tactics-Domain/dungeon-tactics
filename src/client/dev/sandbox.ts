@@ -115,6 +115,12 @@ export async function stage(selected: Scenario): Promise<{ scenario: Scenario; b
   }
   const turn = takeTurn(spec.actor ?? battle.state.units.find(acts)?.id ?? '');
   if (turn) problems.push(turn);
+  // life regen comes only from pieces, which a spec does not dress: it goes on the unit's sheet (the split copy the battle
+  // reads), after the turn opened so the opening regen does not move the spec's `hp`
+  for (const u of battle.state.units) {
+    const hpRegen = spec.units?.[u.id]?.hpRegen;
+    if (hpRegen !== undefined) UNIT_DEFS[u.def] = { ...UNIT_DEFS[u.def], hpRegen };
+  }
   return { scenario: castFits ? scenario : base, battle, spec };
 }
 

@@ -56,6 +56,14 @@ Nov 13, delivery 5 of [towns-party-equipment.md](towns-party-equipment.md).
 
 - Pure rules in `group.ts` (`dt:party`): the 4 from the story never leave; recruits join through the town's Tavern (`RECRUIT_COST`, cap `GROUP_MAX` 8) and are dismissed on the sheet (Dismiss asks a 2nd tap since Nov 16, Fernando's grill); anyone switches among the classes of `JOBS` (the 4 starting ones and the Lancer since Nov 13, with the barbarian's character until it gets its own); up to 4 go to battle (`deployed`), never none: the last one going has Leave at camp off, with the reason under it.
 - `heroesFor` builds who fights, with the whole kit of the class and the equipment kept by member id. The Tavern is `openBar` in `town-ui.ts`.
+- **Shop, Tavern and Party in 3D** (`town3d/`, Nov 17; default, `?shop=html`, `?party=html` or `?ui=html` bring the HTML
+  windows back): the same windows drawn on the shared 3D layer after FFT: The Ivalice Chronicles' menus (town darkened,
+  parchment panels, dark plaques on the left edge, the glove, help band and button hints at the foot). They run the
+  same rules (`buy`, `sell`, `equip`, `recruit`, `dismiss`, `toggleDeploy`, `changeClass`) from pure pages
+  (`shop-view.ts`, `party-view.ts`). In the counter, focusing a row shows it in the box and pressing it moves the cursor
+  to the box's action, so nothing is bought by the first press; in the Party, left and right turn the pages on the
+  keyboard and Dismiss asks a second press. Still HTML: the town HUD and menu, the gate and place windows, the chest
+  and the expedition map.
 - **The Party screen** (`openParty` in `town-party.ts`; Nov 16, Fernando: the interface rebuilt on its FFT counterpart, the formation and unit menus) is one window where there were three (Party list, Sheet, Equipment): the unit list on the left (face, name, class, life and pool bars; who goes to battle first, under "Battle party 3/4", in the order `roster` gives) and the picked member's page on the right, one of Status (who goes, Dismiss, each total as a bar with its origin), Equipment (`gearPage` in `town-gear.ts`), Abilities and Class. Up and down walk the list and Enter picks; left and right turn the pages; every action saves and rebuilds the window on the same member and page (`PartyView`), the focus back on the same button. No level shows: the game has none.
 
 ## Equipment in 7 slots

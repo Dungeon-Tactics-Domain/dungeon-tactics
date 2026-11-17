@@ -1,0 +1,53 @@
+{
+  "name": "turn3d-stats-720",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "lang": "pt",
+  "actor": "h-warrior",
+  "units": {
+    "h-mage": {
+      "hp": 53,
+      "ct": 40,
+      "hpRegen": 4
+    },
+    "h-archer": {
+      "hp": 140,
+      "ct": 85
+    },
+    "h-rogue": {
+      "hp": 18,
+      "ct": 96
+    },
+    "h-warrior": {
+      "hp": 161,
+      "hpRegen": 12
+    },
+    "e-soldier": {
+      "hp": 90,
+      "ct": 70,
+      "hpRegen": 10
+    },
+    "e-archer": {
+      "hp": 20,
+      "ct": 55
+    },
+    "e-mage": {
+      "hp": 150,
+      "ct": 12
+    },
+    "e-brute": {
+      "hp": 333,
+      "ct": 5
+    }
+  },
+  "screen": "menu",
+  "hide": [
+    "fps"
+  ],
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "ui": "3d",
+  "bar": "html"
+}

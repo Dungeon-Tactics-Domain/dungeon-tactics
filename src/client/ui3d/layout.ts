@@ -31,7 +31,8 @@ export interface Region extends Box {
 export const REGIONS = {
   // the combat timeline: the column of turn cards (66x78 every 90 px, the order number left of each), from the label
   // down to the acting unit's card, which the reference shows as the sheet's portrait
-  turn: { at: 'ml', x: 18, y: 64, w: 180, h: 849 },
+  // (w 180 until Nov 17: each card's life and CT lines, about 150 px, sit to its right)
+  turn: { at: 'ml', x: 18, y: 64, w: 300, h: 849 },
   sheet: { at: 'bl', x: 100, y: 818, w: 672, h: 214 }, // the acting unit: portrait and the faded band beside it
   menu: { at: 'br', x: 1152, y: 688, w: 414, h: 327 }, // the command menu (five rows)
   submenu: { at: 'br', x: 1284, y: 688, w: 414, h: 327 }, // Abilities, opened over the menu
@@ -45,6 +46,8 @@ export const REGIONS = {
   hintsLeft: { at: 'bl', x: 45, y: 1035, w: 206, h: 28 },
   // the end of battle (ref 73): what the dark band across the screen holds, from the left plate to the right one's end
   result: { at: 'mc', x: 213, y: 485, w: 1497, h: 340 },
+  // the town's windows (Party, Shop, Tavern; town3d/): the whole reference screen, centred and scaled as one
+  town: { at: 'mc', x: 0, y: 0, w: 1920, h: 1080 },
 } satisfies Record<string, Region>;
 
 // The box the regions anchor in, in page px, and the scale of one reference px
