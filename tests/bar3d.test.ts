@@ -7,6 +7,7 @@ import { forecast } from '../src/client/forecast.ts';
 import { REGIONS } from '../src/client/ui3d/layout.ts';
 import { skinFlags } from '../src/client/ui3d/skin-flags.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // The 3D combat bar behind ?bar=3d (Nov 16): the pure parts behind the drawing. The drawing itself is checked on the
@@ -36,12 +37,23 @@ describe('3D combat bar: what it shows', () => {
     expect(s.change).toEqual({ left: 1, upTo: 1, gain: false });
     expect(s.pools).toEqual([{ label: 'ST', value: 50, max: 50 }]);
     expect(s.ct).toEqual({ label: 'CT', value: 0, max: 100 });
+    // what the turn list says after each number (Nov 17): no life regen without a piece, the CT gained each tick
+    expect(s.hpRegen).toBe('');
+    expect(s.ctGain).toBe(`+${UNIT_DEFS[b.actor.def].speed}`);
+    const bare = UNIT_DEFS[b.actor.def];
+    UNIT_DEFS[b.actor.def] = { ...bare, hpRegen: 12 };
+    try {
+      expect(sheetView(b.state, b.actor).hpRegen).toBe('+12');
+    } finally {
+      UNIT_DEFS[b.actor.def] = bare;
+    }
   });
 
   it('an enemy carries its tag, and what never takes a turn has no CT', () => {
     const b = duel();
     expect(sheetView(b.state, unit(b, 'b'))).toMatchObject({ name: 'Soldado', enemy: true, tag: 'Inimigo' });
     expect(sheetView(b.state, unit(b, 'beacon')).ct).toBeNull();
+    expect(sheetView(b.state, unit(b, 'beacon')).ctGain).toBe('');
   });
 
   it('a unit charging says so on its strip', () => {
@@ -115,7 +127,7 @@ describe('3D combat bar: where it sits', () => {
   it('every part lies inside its region', () => {
     for (const l of [sheetLayout(false), sheetLayout(true)]) {
       expect(boxes(l).length).toBe(8);
-      expect(spots(l).length).toBe(11);
+      expect(spots(l).length).toBe(13);
       for (const [id, b] of boxes(l))
         expect(b.x >= 0 && b.y >= 0 && b.x + b.w <= l.w && b.y + b.h <= l.h, `${id} ${l.mirror}`).toBe(true);
       for (const [id, s] of spots(l))
@@ -172,7 +184,7 @@ describe('3D combat bar: flag and boundaries', () => {
     expect(parseSpec({ bar: '3d' }).problems).toEqual([]);
     expect(parseSpec({ bar: 'css' }).problems).toEqual(['bar must be one of html, 3d']);
     const scenes = import.meta.glob<object>('../scripts/sandbox/bench/bar3d*.json', { import: 'default', eager: true });
-    expect(Object.keys(scenes).length).toBe(2);
+    expect(Object.keys(scenes).length).toBe(3);
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
   });
 
