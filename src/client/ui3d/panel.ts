@@ -127,7 +127,8 @@ void main() {
   float lit = uFocus.z * band * (1.0 - 0.85 * smoothstep(size.x - 90.0, size.x - 4.0, u.x));
   col = mix(col, uLit, lit);
   col += 0.03 * uFocus.z * band * (1.0 - smoothstep(0.0, 2.5, dy + half_));
-  col *= 1.0 - 0.1 * uFocus.z * step(uIconW, u.x) * step(half_, dy) * exp(-(dy - half_) / 2.5);
+  // max(): far above the band the bare exp() overflowed and 0 * inf painted a tall panel's top rows black
+  col *= 1.0 - 0.1 * uFocus.z * step(uIconW, u.x) * step(half_, dy) * exp(-max(dy - half_, 0.0) / 2.5);
   float sweep = mod(uTime * 0.42, 1.9) * size.x - 0.25 * size.x;
   col += 0.07 * lit * exp(-pow((u.x + dy * 0.6 - sweep) / 26.0, 2.0));
   col = mix(col, vec3(1.0, 0.99, 0.94), uFocus.w * band * (0.9 - 0.5 * abs(dy) / max(half_, 1.0)));

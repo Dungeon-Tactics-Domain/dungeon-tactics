@@ -95,5 +95,14 @@ export const controls = () => [
       'Touch: tap a tile to mark it and tap it again to confirm; drag with one finger to move the camera and pinch with two to zoom. The Back button (↩) shows beside the ☰ at the top; rotating the camera, undo and the whole map are in the ☰ menu.',
     ),
   ),
+  // the short "+N" of the turn list and of the unit sheets (Fernando, Nov 17): two different clocks
+  el(
+    'p',
+    {},
+    t(
+      'Na lista de turnos e nas fichas, o "+N" depois da Vida é a vida que a unidade recupera a cada turno dela; o "+N" depois do CT é o CT que ela ganha a cada tique.',
+      'On the turn list and the unit sheets, the "+N" after HP is the life the unit gets back at each of its turns; the "+N" after CT is the CT it gains each tick.',
+    ),
+  ),
   el('dl', { class: 'keys' }, ...keyHelp().flatMap(([k, what]) => [el('dt', {}, k), el('dd', {}, what)])),
 ];

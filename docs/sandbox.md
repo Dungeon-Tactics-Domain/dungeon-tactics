@@ -55,7 +55,7 @@ different picture.
 | `lang` | `"pt"` or `"en"` (the CLI defaults to `en`) | page load |
 | `viewport` | `{ "width": 1600, "height": 900 }` (default) | CLI |
 | `format` | `"png"` (default) or `"webp"` | CLI |
-| `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "remove": true } }`; on a split map `x.5` puts the token between tiles | load; live (no `remove`) |
+| `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "hpRegen", "remove": true } }`; on a split map `x.5` puts the token between tiles. `hpRegen` (life back each turn, which only equipment gives in the game) goes on the unit's sheet, so every unit of that sheet gets it | load; live (no `remove`, no `hpRegen`) |
 | `add` | `[{ "id", "def", "team": "hero" \| "enemy", "x", "y" }]` | page load |
 | `actor` | the hero whose turn it is (default: the first hero that plays) | load and live |
 | `screen` | `"menu"`, `"abilities"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y}, "confirm": true }` | load and live |
@@ -64,7 +64,7 @@ different picture.
 | `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all` | load and live |
 | `pixel` | `0` (plain 3D), `2`, `3`, `4`: pixel-art block size | load and live |
 | `daylight` | `0` night to `1` day: the light that Until Dawn uses | load and live |
-| `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result` | the look of one interface piece: `"html"`, `"css"` (menu only) or `"3d"` (`ui3d/skin-flags.ts`; the address's `?menu=`, `?turn=`, `?bar=`, `?banner=`, `?height=`, `?hints=`, `?confirm=`, `?result=` win) | page load |
+| `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result`, `tools`, `status` | the look of one interface piece: `"html"`, `"css"` (menu only) or `"3d"` (`ui3d/skin-flags.ts`; the address's `?menu=`, `?turn=`, `?bar=`, `?banner=`, `?height=`, `?hints=`, `?confirm=`, `?result=`, `?tools=`, `?status=` win) | page load |
 | `ui` | `"html"`, `"css"` or `"3d"`: a preset for every piece that has that look; a piece's own key wins | page load |
 | `uiPixel` | `true`: the 3D pieces through the pixel filter (`?pixel=1` in the address; the spec's `pixel` is the scene's) | page load |
 | `layout` | `"edges"` or `"frame"`: the interface layout (`ui3d/layout.ts`; the address's `?layout=` wins), for this page only | page load |
@@ -271,13 +271,16 @@ and its buttons, `queue` the 3D turn list):
 | `menu3d`, `menu3d-pixel` | the 3D command menu at 1920x1080, smooth and through the pixel filter |
 | `menu3d-habilidades`, `menu3d-habilidades-pixel` | the submenu open in a cascade and the ability sheet |
 | `turn3d`, `turn3d-previa`, `turn3d-previa-carga` | the 3D turn list at 1280x720: plain, with a strike aimed, with a charge previewed |
+| `turn3d-stats`, `turn3d-stats-720`, `turn3d-stats-baixa`, `turn3d-stats-previa`, `turn3d-stats-html` | the turn list's life and CT lines (Nov 17) with hurt units, life regen (`units.<id>.hpRegen`) and mixed CT: all 3D at 1920x1080, at 1280x720 with the HTML bar (the acting card stays on the list), on a 844x390 screen (the rows' smallest size), with a strike aimed, and the HTML list |
 | `bar3d`, `bar3d-previa` | the 3D combat bar at 1920x1080: the acting unit's sheet alone, and with a strike aimed (preview plate and the target's sheet) |
+| `bar3d-regen` | the acting sheet with a hurt unit that has life regen: "+12" after "Vida" and the CT gain between the CT bar and its number (Nov 17) |
 | `menucss`, `menucss-habilidades`, `menucss-descricao-p2` | the parchment menu in CSS, its submenu and the sheet's second page |
 | `ui3d-tudo` | the 3D menu with its submenu and the 3D turn list together, on the one layer |
 | `layout-edges`, `layout-frame` | the 3D menu and turn list at 1920x1080 in each layout: the same picture, the menu at 1152,688 and card 2 of the list at 102,711 like the reference |
 | `layout-ultrawide-edges`, `layout-ultrawide-frame` | the same with the submenu and the sheet at 3440x1440: spread to the edges, or in the centred 16:9 frame (one file each: a spec is one shot) |
 | `hints3d`, `hints3d-alvo` | the 3D instruction banner, Height corner and button hints at 1920x1080: with the menu open, and aiming at a target |
 | `preset-css`, `preset-3d` | the `ui` preset: every piece that has the CSS look, every piece that has the 3D one |
+| `window3d` | the corner menu and the Status window in 3D at 1920x1080 (`tools`, `status`): the menu button top right; click it for the list, press C for the Status sheet (a spec cannot open either) |
 | `result3d-vitoria`, `result3d-derrota` | the end of battle in 3D at 1920x1080: the warrior downs the last enemy, or the soldier downs the two heroes left. `loop` plays the steps on the page; steps that end the battle open its end screen and the loop stops there |
 | `batalha-3d`, `batalha-3d-previa` | the whole battle interface in 3D (`ui: "3d"`) at 1920x1080: menu, turn list, combat bar, banner, Height and button hints with the menu open, and with a strike aimed (preview plate, target's sheet and the 3D "Execute?") |
 | `batalha-3d-executar` | the same, the Mage's Blast on two enemies: "Execute?" in 3D with its notes (mana spent, charge), the plate's "+1 target"; Enter opens the lock step (On the character / On the tile) |

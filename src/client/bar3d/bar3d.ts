@@ -135,6 +135,7 @@ class Sheet {
     part.text(layer, 'name', v.name, l.name, INK);
     part.text(layer, 'tag', v.tag, l.tag, ENEMY);
     part.text(layer, 'hpLabel', v.hp.label, l.hpLabel, SOFT);
+    part.text(layer, 'hpRegen', v.hpRegen, l.hpRegen, SOFT);
     part.text(layer, 'hpValue', value(v.hp), l.hpValue, INK);
     const [first, second] = v.pools;
     part.text(layer, 'poolLabel', first?.label ?? '', l.poolLabel, SOFT);
@@ -142,6 +143,7 @@ class Sheet {
     part.text(layer, 'boxLabel', second?.label ?? '', l.boxLabel, SOFT);
     part.text(layer, 'boxValue', second ? value(second) : '', l.boxValue, INK);
     part.text(layer, 'ctLabel', v.ct?.label ?? '', l.ctLabel, SOFT);
+    part.text(layer, 'ctGain', v.ctGain, l.ctGain, SOFT);
     part.text(layer, 'ctValue', v.ct ? String(v.ct.value) : '', l.ctValue, INK);
     part.text(layer, 'line', v.line, l.line, INK);
   }

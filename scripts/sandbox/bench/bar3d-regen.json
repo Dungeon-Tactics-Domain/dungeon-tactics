@@ -1,0 +1,26 @@
+{
+  "name": "bar3d-regen",
+  "scenario": "ash_wood",
+  "seed": 1,
+  "lang": "pt",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "actor": "h-warrior",
+  "units": {
+    "h-warrior": {
+      "hp": 161,
+      "hpRegen": 12
+    },
+    "e-soldier": {
+      "hp": 90,
+      "hpRegen": 10
+    }
+  },
+  "screen": "menu",
+  "bar": "3d",
+  "hide": [
+    "fps"
+  ]
+}
