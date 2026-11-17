@@ -81,7 +81,8 @@ describe('audio wake', () => {
       },
     );
     vi.resetModules();
-    await import('../src/client/sound.ts');
+    const { setSound } = await import('../src/client/sound.ts');
+    setSound({ music: 45, sfx: 100 }); // the default is off: turn the song on to test it
     expect([...heard.keys()]).toEqual(['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']);
     for (const h of heard.values()) expect(h.opts?.once).toBeFalsy();
     heard.get('pointerdown')!.run(); // makes the context and starts the song, which the browser refuses (still paused)

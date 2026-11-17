@@ -10,10 +10,9 @@ export interface SoundSettings {
   music: number;
   sfx: number;
 }
-// music low by default so it doesn't cover the effects; on localhost it starts off (several test tabs playing together
-// were annoying, decision of Oct 20 inherited from the Warlock)
-const LOCAL = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-export const DEFAULT_SOUND: SoundSettings = { music: LOCAL ? 0 : 45, sfx: 100 };
+// music off by default for now (Nov 17, Fernando's request: "the game's music must always be off by default for now");
+// whoever turns it up in Options keeps their volume (45 is the step the slider used to start at)
+export const DEFAULT_SOUND: SoundSettings = { music: 0, sfx: 100 };
 // 100% = the old "loud" (0.8): the levels measured in dB in the comments below still hold at maximum
 const volume = (p: number) => (p / 100) * 0.8;
 
