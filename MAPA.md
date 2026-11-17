@@ -144,7 +144,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town3d/screens.ts` — mountTown3d(): the 3D Shop, Tavern and Party at work (read the saved game, show the page, run the pressed button through the same rules, save).
 - `src/client/town3d/page.ts` — what a 3D town window shows: a flat list of things to draw and of buttons, in reference px, and the buttons the cursor can go to where they are seen (`seen`: the list scrolled) and where an arrow takes it (`step`); pure.
 - `src/client/town3d/shop-view.ts` — the pages of the 3D Shop and Tavern (commands, scrolling list, the picked row's box and action); pure.
-- `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class); pure.
+- `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class) and which buttons the arrows walk, the roster or the page (`inside`); pure.
 - `src/client/town3d/street-view.ts` — the pages of the 3D town menu, gate and place still to come (?townmenu=3d); pure.
 - `src/client/town3d/street.ts` — streetWindows(): the 3D town menu, gate and place still to come at work, over the rules of game/crawl.ts.
 - `src/client/town3d/hud3d.ts` — TownHud3d: the walkable town's HUD drawn in 3D (?townhud=3d) over its unseen HTML pieces.
@@ -155,7 +155,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town3d/map-layout.ts` — where the 3D expedition map puts its parts, in reference px, and what a command's plaque and help say; pure.
 - `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D (?options=3d), laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
 - `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
-- `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, commands, message band), the scroll fade and mark, where an arrow takes the cursor (`optionsWalk`), and the smallest page that takes the 3D look (`fits`); pure.
+- `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, the commands under the list, message band), the scroll fade and mark, where an arrow takes the cursor (`optionsWalk`), and the smallest page that takes the 3D look (`fits`); pure.
 - `src/client/flow3d/title3d.ts` — Title3d: the title in 3D (?title=3d), drawn over the title's own window, which it takes when the layer arrives and gives back.
 - `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button) and the boxes an arrow walks (`stops`); pure.
 - `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D (?sheets=3d), drawn over each window's own controls, which it takes and gives back.

@@ -29,6 +29,7 @@ void main() { vec4 c = texture2D(uMap, uUv.xy + vUv * uUv.zw); gl_FragColor = ve
 export interface WindowOpts {
   name: string;
   onBack?: () => void; // Esc, B, the right button: what opens when the player leaves
+  leave?(): boolean; // Esc and B come here first: true keeps the window open (the Party's page back to its roster)
   pick(id: string): void; // a button pressed
   focus?(id: string): void; // the cursor landed on a button
   key?(e: KeyboardEvent): void; // a key the window did not take (left and right turn the Party's pages)
@@ -141,7 +142,7 @@ export class Town3d implements Ui3dScreen {
     this.hide();
     this.opts = opts;
     this.host.className = opts.byPlace ? 'place-walk' : 'camp-list';
-    const win = (this.win = dialog('town3d', opts.name, [this.host], { onBack: opts.onBack }));
+    const win = (this.win = dialog('town3d', opts.name, [this.host], { onBack: opts.onBack, leave: opts.leave }));
     land(this.open, 0);
     this.open.to = 1;
     return {
@@ -298,8 +299,7 @@ export class Town3d implements Ui3dScreen {
   private sync(focus?: string) {
     const { page } = this;
     if (!page) return;
-    const s = this.layer.stage.s,
-      inside = this.hits.contains(document.activeElement); // read before a rebuild drops the focused button
+    const inside = this.hits.contains(document.activeElement); // read before a rebuild drops the focused button
     const shape = JSON.stringify(page.hits.map((h) => [h.id, h.row !== undefined]));
     if (shape !== this.shape) {
       this.shape = shape;
@@ -317,7 +317,7 @@ export class Town3d implements Ui3dScreen {
     const lb = page.list && this.box(page.list.box);
     if (lb && page.list) {
       Object.assign(this.scroller.style, px(lb));
-      this.rows.style.height = `${page.list.rows * page.list.rowH * s}px`;
+      this.rows.style.height = `${page.list.rows * page.list.rowH * this.layer.stage.s}px`;
     }
     for (const h of page.hits) {
       const b = this.buttons.get(h.id)!,

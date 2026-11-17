@@ -54,6 +54,7 @@ export interface Hit extends InList {
   name: string; // what a screen reader and the tests read
   on: 'paper' | 'dark';
   off?: boolean; // disabled; the page says why beside it
+  out?: boolean; // not a place for the arrows now (the Party's roster and its page take them in turns); it still clicks
   picked?: boolean; // the open tab, the member whose pages show
   hand?: number; // where the glove points, in px under the box's top (its middle when not given)
 }
@@ -87,14 +88,14 @@ export function neighbour(hits: Hit[], at: string, dir: Dir, tol = 8): string | 
   return best?.id;
 }
 
-// The buttons the cursor can go to, where they are seen: the ones that are on, the list's rows moved up by its scroll
+// The buttons the arrows can go to, where they are seen: the ones that are on and not `out`, the list's rows moved up by its scroll
 // (`top`, px of the reference) and only those in the list's window or peeking at its edge (the next row up or down).
 // So the cursor that leaves a row goes to the command level with it on screen, comes back to the row level with a
 // command, and never lands on a row scrolled out of sight
 export function seen(page: Page, top: number): Hit[] {
   const L = page.list;
   return page.hits.flatMap((h) => {
-    if (h.off) return [];
+    if (h.off || h.out) return [];
     if (h.row === undefined || !L) return [h];
     const y = h.box.y - top;
     return y + h.box.h > L.box.y - L.rowH && y < L.box.y + L.box.h + L.rowH ? [{ ...h, box: { ...h.box, y } }] : [];

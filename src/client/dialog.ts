@@ -31,7 +31,7 @@ export function dialog(
   cls: string,
   title: string,
   body: Node[],
-  opts: { fixed?: boolean; onBack?: () => void; note?: Child } = {},
+  opts: { fixed?: boolean; onBack?: () => void; note?: Child; leave?: () => boolean } = {},
 ) {
   const ac = new AbortController();
   const close = () => {
@@ -92,6 +92,8 @@ export function dialog(
       // an armed 2nd-tap button takes the first Esc back (secondTap), so it does not close the window under it
       const armed = overlay.querySelector<HTMLElement>('[data-armed]');
       if (armed) return disarm(armed);
+      // `leave`: the window takes Esc (and the pad's B, which comes as Esc) for a step back of its own and stays open
+      if (opts.leave?.()) return;
       back();
     },
     { capture: true, signal: ac.signal },
@@ -168,7 +170,7 @@ export function padDialog(a: KeyAction): boolean {
     (a.dir === 'left' || a.dir === 'right' || overlay.querySelector('.place-walk, .arrow-walk'))
   ) {
     // the arrow it stands for, to whatever takes that key: a window that walks its buttons by where they are
-    // (town3d/town3d.ts, `.arrow-walk` above), an Options row's value (option-row.ts), the Party's pages
+    // (town3d/town3d.ts, `.arrow-walk` above), an Options row's value (option-row.ts), the Party's roster and pages
     const code = `Arrow${a.dir[0].toUpperCase()}${a.dir.slice(1)}`;
     (overlay.contains(document.activeElement) ? document.activeElement! : overlay).dispatchEvent(
       new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }),

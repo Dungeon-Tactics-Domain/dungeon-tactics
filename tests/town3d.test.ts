@@ -73,6 +73,75 @@ describe('3D town windows: the Party', () => {
     expect(partyPage(state, { id: 'nobody', page: 'status', slot: 'main' }).id).toBe(g.members[0].id);
   });
 
+  // Fernando, Nov 17: on the roster the arrows choose the member; Enter goes into the member's page, where they walk
+  // what is seen in it; Esc comes back. The page says which buttons the arrows walk now (`out`), `step` walks them
+  describe('where an arrow takes the cursor', () => {
+    const who = g.members.map((m) => `who:${m.id}`);
+    const at = (page: (typeof PAGES)[number], inside: boolean, id = recruitId) =>
+      partyPage(state, { id, page, slot: 'main', inside }).page;
+    const walks = (p: Page) => seen(p, 0).map((h) => h.id);
+
+    it('on the roster: up and down go member to member, the first and the last stay, no page button is reached', () => {
+      for (const page of PAGES) {
+        const p = at(page, false);
+        expect(walks(p)).toEqual(who);
+        expect(step(p, 0, who[0], 'down')).toBe(who[1]);
+        expect(step(p, 0, who[4], 'up')).toBe(who[3]);
+        expect(step(p, 0, who[0], 'up')).toBe(who[0]); // it went round to Dismiss before
+        expect(step(p, 0, who[4], 'down')).toBe(who[4]); // and to the Status plaque
+        for (const dir of ['left', 'right'] as const) expect(step(p, 0, who[2], dir)).toBe(who[2]); // they turn the page
+      }
+    });
+
+    it('inside a page: only its own buttons, never a row of the roster nor a plaque, whatever the arrow', () => {
+      for (const page of PAGES) {
+        const p = at(page, true);
+        const mine = walks(p);
+        expect(mine.some((id) => /^(who|tab):/.test(id))).toBe(false);
+        for (const from of mine)
+          for (const dir of ['up', 'down', 'left', 'right'] as const) expect(mine).toContain(step(p, 0, from, dir));
+      }
+      expect(walks(at('skills', true))).toEqual([]); // nothing to walk there: the window keeps the cursor on the roster
+    });
+
+    it('Status inside: a button that is off is no place to go, and the one left stays at its four edges', () => {
+      const p = at('status', true);
+      expect(hit(p, 'deploy').off).toBe(true); // the battle party is full
+      expect(walks(p)).toEqual(['fire']);
+      for (const dir of ['up', 'down', 'left', 'right'] as const) expect(step(p, 0, 'fire', dir)).toBe('fire');
+      expect(walks(at('status', true, g.members[0].id))).toEqual(['deploy']); // a story member: no Dismiss
+    });
+
+    it('Class inside: the cards side by side, left and right card to card, the ends and up and down stay', () => {
+      const p = at('job', true);
+      const cards = walks(p);
+      expect(cards.every((id) => id.startsWith('job:'))).toBe(true);
+      expect(step(p, 0, cards[0], 'right')).toBe(cards[1]);
+      expect(step(p, 0, cards[1], 'left')).toBe(cards[0]);
+      expect(step(p, 0, cards[0], 'left')).toBe(cards[0]);
+      expect(step(p, 0, cards.at(-1)!, 'right')).toBe(cards.at(-1));
+      for (const dir of ['up', 'down'] as const) expect(step(p, 0, cards[2], dir)).toBe(cards[2]);
+    });
+
+    it('Equipment inside: the slots one under the other, the pieces of the chest beside them, and back', () => {
+      const p = at('gear', true);
+      const slots = ids(p, 'slot:'),
+        rows = ids(p, 'row:');
+      expect(rows.length).toBeGreaterThan(0);
+      expect(step(p, 0, slots[0], 'down')).toBe(slots[1]);
+      expect(step(p, 0, slots[1], 'up')).toBe(slots[0]);
+      expect(step(p, 0, slots[0], 'up')).toBe(slots[0]);
+      const over =
+        step(p, 0, slots[0], 'right') === rows[0] ? (['right', 'left'] as const) : (['left', 'right'] as const);
+      expect(step(p, 0, slots[0], over[0])).toBe(rows[0]);
+      expect(slots).toContain(step(p, 0, rows[0], over[1]));
+    });
+
+    it('every button still takes a click or a touch, whether the arrows walk it or not', () => {
+      for (const inside of [false, true]) expect(at('status', inside).hits.map((h) => h.id)).toContain('deploy');
+    });
+  });
+
   it('Status: a story member has no Dismiss, a recruit has, and Dismiss asks a second press', () => {
     const story = partyPage(state, { page: 'status', slot: 'main' }).page;
     expect(hit(story, 'fire')).toBeUndefined();

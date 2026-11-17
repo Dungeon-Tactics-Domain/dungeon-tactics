@@ -46,12 +46,14 @@ export interface PartyState {
   eq: Equip;
   chest: Chest;
 }
-// `id`: the member whose pages show (the first of the roster when absent or gone); `armed`: Dismiss was pressed once
+// `id`: the member whose pages show (the first of the roster when absent or gone); `armed`: Dismiss was pressed once;
+// `inside`: the arrows walk the member's page (Enter went in), not the roster (Esc comes back): Fernando, Nov 17
 export interface PartyAt {
   id?: string;
   page: PartyPage;
   slot: Slot;
   armed?: boolean;
+  inside?: boolean;
 }
 type Parts = { items: Item[]; hits: Hit[]; list?: Page['list'] };
 
@@ -66,7 +68,15 @@ export function partyPage({ group: g, eq, chest }: PartyState, at: PartyAt): { i
     gold: [t('Ouro', 'Gold'), chest.gold],
     note: t(`Grupo ${all.length} de ${GROUP_MAX}`, `Party ${all.length} of ${GROUP_MAX}`),
     help: HELP[at.page](),
-    hints: t('← →: página   ·   Enter: escolher   ·   Esc: sair', '← →: page   ·   Enter: choose   ·   Esc: leave'),
+    hints: at.inside
+      ? t(
+          'Setas: mover   ·   Enter: escolher   ·   Esc: voltar à lista',
+          'Arrows: move   ·   Enter: choose   ·   Esc: back to the list',
+        )
+      : t(
+          '↑ ↓: membro   ·   ← →: página   ·   Enter: entrar   ·   Esc: sair',
+          '↑ ↓: member   ·   ← →: page   ·   Enter: go in   ·   Esc: leave',
+        ),
   });
 
   // the picked member: face, name, class, life and pools (full, as the unit enters a battle) and who goes
@@ -138,7 +148,10 @@ export function partyPage({ group: g, eq, chest }: PartyState, at: PartyAt): { i
     text(`${m.name}: ${NAME[at.page]()}`, P.page.x + P.pad, P.page.y + P.head / 2, 26, 'soft'),
     ...body.items,
   );
-  return { id: m.id, page: { items, hits: [...who, ...tabs.hits, ...body.hits], list: body.list } };
+  // the arrows walk the roster or, once inside, the page's own buttons; the plaques are turned with left and right
+  const out = (hits: Hit[], is: boolean) => hits.map((h) => ({ ...h, out: is }));
+  const hits = [...out(who, !!at.inside), ...out(tabs.hits, true), ...out(body.hits, !at.inside)];
+  return { id: m.id, page: { items, hits, list: body.list } };
 }
 
 type Ctx = { g: Group; eq: Equip; chest: Chest };

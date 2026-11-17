@@ -18,7 +18,7 @@ import { Ui3dLayer } from '../ui3d/layer.ts';
 import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
 import { TownHud3d } from './hud3d.ts';
 import { Map3d } from './map3d.ts';
-import type { Page } from './page.ts';
+import type { Hit, Page } from './page.ts';
 import { PAGES, partyPage } from './party-view.ts';
 import { barPage, type ShopTab, shopPage } from './shop-view.ts';
 import { streetWindows } from './street.ts';
@@ -150,15 +150,28 @@ export function mountTown3d(
 
   // Party: a member's pages. Hit ids: `who:<member>`, `tab:<page>`, `deploy`, `fire`, `slot:<slot>`, `off` (take the
   // open slot's piece off), `row:<item>` (equip it) and `job:<class>`. Dismiss asks a 2nd press, disarmed when the
-  // cursor leaves it
+  // cursor leaves it. The arrows (Fernando, Nov 17): on the roster up and down choose the member and left and right
+  // turn the pages; Enter goes into the member's page, where the four walk its buttons by where they are seen, and
+  // Esc comes back to the roster. `inside` follows the cursor, so a click or a touch on the page goes in as well
   const party = (back?: () => void, view: PartyView = {}) => {
     if (!fits()) return false;
     let { id, page = 'status', slot = 'main' } = view;
-    let armed = false;
-    const draw = (focus?: string) => {
-      const p = partyPage({ group: loadGroup(), eq: loadEquip(), chest: loadChest() }, { id, page, slot, armed });
+    let armed = false,
+      inside = false,
+      hits: Hit[] = [];
+    // `focus` '': where the arrows start, the picked member's row or, inside, the page's picked button or its first
+    const draw = (focus?: string): void => {
+      const at = { id, page, slot, armed, inside };
+      const p = partyPage({ group: loadGroup(), eq: loadEquip(), chest: loadChest() }, at);
       id = p.id;
-      win.set(p.page, focus === '' ? `who:${id}` : focus); // it opens on the picked member's row
+      hits = p.page.hits;
+      const walks = hits.filter((h) => !h.out && !h.off);
+      if (inside && !walks.length) {
+        inside = false; // a page with no button to walk (Abilities): the arrows stay on the roster
+        draw(focus);
+        return;
+      }
+      win.set(p.page, focus === '' ? (walks.find((h) => h.picked) ?? walks[0])?.id : focus);
     };
     const turn = (dir: number) => {
       page = PAGES[(PAGES.indexOf(page) + dir + PAGES.length) % PAGES.length];
@@ -171,23 +184,46 @@ export function mountTown3d(
     const win = ui.window({
       name: t('Grupo', 'Party'),
       onBack: back,
-      // left and right turn the pages wherever the cursor is (FFT's paging)
+      byPlace: true,
+      leave: () => {
+        if (!inside) return false;
+        inside = false;
+        sfx('cancel');
+        draw('');
+        return true;
+      },
       key: (e) => {
+        if (!e.key.startsWith('Arrow')) return;
+        // the cursor on a button the arrows do not walk (a plaque clicked): back to where they do
+        if (hits.find((h) => h.id === win.at())?.out !== false) {
+          e.preventDefault();
+          return draw('');
+        }
+        // on the roster left and right turn the pages (FFT's paging); the rest is the window's walk by place
         const dir = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
-        if (!dir) return;
+        if (inside || !dir) return;
         e.preventDefault();
         turn(dir);
       },
       focus: (at) => {
-        if (!armed || at === 'fire') return;
-        armed = false;
+        // the cursor on a member's row shows that member; on the page it is inside, on the roster it is not
+        const [kind, arg] = at.split(':');
+        const was = `${id} ${inside}`;
+        if (kind === 'who') id = arg;
+        if (kind !== 'tab') inside = kind !== 'who';
+        if (was === `${id} ${inside}` && (!armed || at === 'fire')) return;
+        if (at !== 'fire') armed = false;
         draw();
       },
       pick: (at) => {
         const [kind, arg] = at.split(':');
-        if (kind === 'who' || kind === 'tab' || kind === 'slot') {
-          if (kind === 'who') id = arg;
-          else if (kind === 'tab') page = arg as typeof page;
+        if (kind === 'who') {
+          inside = true; // Enter on a member: into the page
+          draw('');
+          return sfx(inside ? 'confirm' : 'cancel');
+        }
+        if (kind === 'tab' || kind === 'slot') {
+          if (kind === 'tab') page = arg as typeof page;
           else slot = arg as Slot;
           return draw();
         }
@@ -209,7 +245,7 @@ export function mountTown3d(
             saveGroup(r.group);
             save(EQUIP_KEY, r.eq);
             save(CHEST_KEY, r.chest);
-            armed = false;
+            armed = inside = false; // the member is gone: back on the roster
             id = undefined;
           }
           return done(!!r, '');
