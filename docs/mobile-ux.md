@@ -89,7 +89,18 @@ do not rearrange the layout only to reach that number.*
   (`menuLayout`, `menu3d/menu-layout.ts`). The menu is as tall as its rows, with no blank fifth row: four at the turn's
   start, five after a move with movement left (Move and "Desfazer movimento" both show; `menuRows`, `command.ts`), the
   fifth growing it upwards from the same foot.
-- No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included).
+- No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included). The
+  battle's foot of hints follows Options › Key and button hints (`dt:hints`, Fernando, Nov 18): Automatic (the default)
+  shows it only while a key or a pad is the input last used, never for a finger; Always and Never hold (`hintsDevice`,
+  `hints3d/hints-view.ts`). A pad pressed after a finger brings it back even with the same icons (`padSeen`).
+- **The teaching lines are a Tutorial, off by default** (Options › Jogo › Tutorial, `dt:tutorial`, Fernando, Nov 18):
+  off, the banner shows no instruction ("Ladino: o que fazer?") and no refusal reason ("Não cabe aqui…"), only the
+  last action's summary, the enemy's turn and an ability's sheet (`bannerLine`). A refused tile still shows its red
+  cross mark, and Confirm on it (key or pad) plays the cancel sound (`hero-turn.ts` `mapConfirm`); a tap on it makes
+  no sound yet. The HUD's unseen help line keeps the whole text for the screen
+  reader.
+- **Messages on a phone are smaller** (Fernando, Nov 18): the banner draws at 70% on a page whose shorter side is under
+  600 px (`messageScale`): 9.2 px text at 844×390 (13.2 px before), under section 1's floors, by his request.
 - Nothing lives only in hover.
 - **Fullscreen in reach without Options** (Fernando, Nov 18: a phone in the browser opened the game under Chrome's
   bar): on a touch device in the browser the title's main button is "Jogar em tela cheia" (`fullscreenOffer`,

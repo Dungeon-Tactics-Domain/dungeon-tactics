@@ -97,7 +97,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/gamepad.ts` — gamepad button state to keyboard actions.
 - `src/client/glyphs.ts` — the key hints' one table (action, key, pad button), the controller's family by its id (familyOf) and what the hints show by the Options and the input last used (shownFor, capsOf, hintLine); pure.
 - `src/client/glyph-art.ts` — a key cap or a pad button drawn on a canvas in the game's style (capCanvas), from the proportions and colours of glyph-art.json.
-- `src/client/key-hints.ts` — the key hints' live state (dt:glyphs, the input last used, padSeen) and the HTML hint that redraws itself (hint, live, liveText).
+- `src/client/key-hints.ts` — the key hints' live state (dt:glyphs, the input last used, padSeen) and the HTML hint that redraws itself (hint, live, liveText); the Tutorial (dt:tutorial) and Key and button hints (dt:hints) options.
 - `src/client/pixel-settings.ts` — pixel art options (dt:pixel) and their parser.
 - `src/client/markers.ts` — unit heights and marker heights above them (ring, bar, cursor) and the model of each sheet.
 - `src/client/water-levels.ts` — water surface and wading heights for drawing.
@@ -146,7 +146,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D, each on its region of the reference; the tile line (X, Y, Z, floor, water, spikes, a charge landing) small under the Height, both with no plate.
 - `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D beside the character, drawn over the unseen HTML window, which it seats and whose buttons keep the input; text from hud-menus.ts confirmParts.
 - `src/client/confirm3d/confirm-layout.ts` — confirmLayout: the "Execute?" window's size, head, notes and choices with no DOM; pure.
-- `src/client/hints3d/hints-view.ts` — the button hints of each turn screen, each an action of glyphs.ts (hintsFor), the Height number and where each hint of a row sits (layRow); pure.
+- `src/client/hints3d/hints-view.ts` — the button hints of each turn screen, each an action of glyphs.ts (hintsFor), the Height number, where each hint of a row sits (layRow), who the foot is drawn for (hintsDevice), the banner with Tutorial off (bannerLine) and the phone's message scale; pure.
 - `src/client/hints3d/effects3d.ts` — Effects3d: the effects over the battle on the 3D layer: floating numbers, the cursor note, the objective banner, the victory confetti and the performance counter.
 - `src/client/hints3d/effects-view.ts` — a floating number's look and its pose along its time, the objective banner's stretch and where each slip of confetti falls, and the performance counter's plate (fpsBox); pure.
 - `src/client/hints3d/effects3d.css` — hides, by opacity, the HTML the 3D effects stand for (performance counter, objective banner); fetched only with them.

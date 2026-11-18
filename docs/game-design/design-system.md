@@ -254,7 +254,9 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   widens it (Fernando, Nov 16). The tile line ("X 16 · Y 20 · Z 1 · grama", then water, spikes, a charge landing)
   sits small under the Height; neither has a plate (Fernando, Nov 18): white text with a near-black outline and a drop
   shadow (`TextOpts.shadow`, `ui3d/text.ts`), 12.4:1 or more against its outline over snow and the crypt. Every
-  help-line instruction fits the pill in one line.
+  help-line instruction fits the pill in one line. The pill's instructions are Options › Tutorial (off by default) and
+  the foot's hints Options › Key and button hints (Automatic, Always, Never); on a phone the pill draws at 70%
+  (Fernando, Nov 18; `mobile-ux.md` section 4).
 - **"Execute?"** (`confirm3d/`): the strike's confirmation as a dark slate box like the pill, beside the
   character: title, notes and the two choices, the one in focus on a gold band with ▶. The HTML window stays unseen at
   the drawn sizes and keeps the place, the buttons and the mouse; the colours are constants in `confirm3d.ts`.
