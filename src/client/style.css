@@ -863,7 +863,8 @@ button[hidden],
   font-weight: 700;
 }
 /* the turn-the-phone notice (rotate-note.ts): only on a touch phone held upright, over every screen (Nov 18: a phone
-   plays on its side only; a tablet, wider than 600 px, is never asked) */
+   plays on its side only; a tablet, wider than 600 px, is never asked). The query is rotate-note.ts ROTATE; once a 3D
+   layer draws the notice (ui3d/rotate3d.ts) this one goes unseen */
 .rotate-note {
   display: none;
 }
@@ -887,12 +888,6 @@ button[hidden],
     padding: 24px;
     text-align: center;
     font-size: var(--fs-lg);
-  }
-  .rotate-card p {
-    margin: 0;
-  }
-  .rotate-glyph {
-    font-size: var(--fs-xl);
   }
 }
 .fps {

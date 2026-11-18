@@ -28,6 +28,7 @@ import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
 import { type Stage, stage, textPx } from './layout.ts';
 import { QUAD, QUAD_VERT, type Rgb, type Theme } from './panel.ts';
 import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
+import type { Rotate3d } from './rotate3d.ts';
 import { safeOf, safeSides } from './safe-area.ts';
 
 export interface Ui3dScreen {
@@ -66,6 +67,7 @@ export class Ui3dLayer {
   private readonly deepRoot = new Group();
   private readonly screens: Ui3dScreen[] = [];
   private readonly names = new Map<Ui3dScreen, PieceName>(); // the piece each screen is (ui-pieces.ts)
+  private rotate?: Rotate3d; // the turn-the-phone notice: while it shows, over everything, alone
   // pixel filter only: the icons' target and the quad that lays it over the panels
   private target?: WebGLRenderTarget;
   private readonly texel = new Vector2(1, 1);
@@ -135,6 +137,14 @@ export class Ui3dLayer {
     // the labs' drawing guides, a screen like the others (localhost ?guides=1)
     if (param('guides') === '1')
       void import('./guides.ts').then((m) => this.canvas.isConnected && this.add(new m.Guides(this), 'guides'));
+    // every layer carries the notice: the cover's, the town's and the battle's (the HTML one speaks until it lands)
+    void import('./rotate3d.ts').then((m) => {
+      if (this.canvas.isConnected) this.add((this.rotate = new m.Rotate3d(this)), 'rotate');
+    });
+  }
+  // whether the page shows the layer now (a window's style sheet hides the HUD's, say)
+  get seen() {
+    return this.canvas.checkVisibility({ visibilityProperty: true });
   }
   // a piece hidden or shown by name (ui-pieces.ts): its input goes with its drawing, keeping its box (visibility), and
   // a screen of several pieces draws again. The layout picked changed: the layer fits again, with no CSS in between
@@ -249,10 +259,11 @@ export class Ui3dLayer {
     const r = this.renderer;
     r.info.reset();
     let moving = false;
+    const solo = this.rotate?.on ? this.rotate : this.solo;
     for (const s of this.screens) {
       const name = this.names.get(s);
       const shown =
-        (!this.solo || s === this.solo) &&
+        (!solo || s === solo) &&
         !(name && pieceHidden(name)) &&
         (s.host?.checkVisibility({ visibilityProperty: true }) ?? true);
       if (shown !== s.flat.visible) this.dirty = true;

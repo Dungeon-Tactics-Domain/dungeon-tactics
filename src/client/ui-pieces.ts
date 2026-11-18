@@ -24,6 +24,7 @@ export const PIECE_NAMES = [
   'effects', // numbers, cursor note, objective banner, confetti, F3
   'loading', // the loading cover
   'guides', // the labs' drawing guides (?guides=1)
+  'rotate', // the turn-the-phone notice, on every layer
 ] as const;
 export type PieceName = (typeof PIECE_NAMES)[number];
 
