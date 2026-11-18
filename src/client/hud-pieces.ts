@@ -175,7 +175,7 @@ const POOL_GAUGE: Record<Resource, [cls: string, label: () => string]> = {
   mana: ['mp', () => 'MP'],
   stamina: ['sp', () => 'ST'],
 };
-export const poolGauges = (def: UnitDef, u?: UnitState) =>
+const poolGauges = (def: UnitDef, u?: UnitState) =>
   RESOURCES.filter((k) => def.vars?.[k]).map((k) =>
     gauge(POOL_GAUGE[k][0], POOL_GAUGE[k][1](), u ? poolOf(u, k) : def.vars![k], def.vars![k]),
   );

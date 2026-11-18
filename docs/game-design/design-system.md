@@ -19,118 +19,60 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 
 ## 1. Tokens
 
-### Tokens (Nov 18: one set, no themes)
+### Tokens (Nov 18: one set, no themes, no blue)
 
-The `:root` block at the top of `style.css` holds every token. The swappable themes (`theme.ts`, `dt:theme`, Options → Theme, Nov 15) and the panel glass (`glass.ts`, `dt:glass`, Options → Panel opacity and Blur behind the panels, Nov 16) were removed on Nov 18 with the HTML look they dressed: the interface is only 3D, drawn with the `--ui3d-*` tokens, so there is no panel left to tint or blur.
+The `:root` block at the top of `style.css` holds every token. The swappable themes (`theme.ts`, `dt:theme`, Options → Theme, Nov 15) and the panel glass (`glass.ts`, `dt:glass`, Options → Panel opacity and Blur behind the panels, Nov 16) were removed on Nov 18 with the HTML look they dressed. With it went the blue panel tokens (`--paper*`, `--glass*`, `--stone*`, `--frame`, `--focus-band`, `--well`, `--shade`, `--overlay` and the rest no rule read any more): the interface is only 3D, drawn with the `--ui3d-*` tokens, and the HTML under it is an unseen skeleton whose borders keep their width with no colour.
 
-- **Kit names:** the kit's `--font-px` is `--font-title` here (both point to `--font`).
-- **Font:** Alegreya Sans hosted in `public/fonts` (`@font-face` under the token block; SIL OFL 1.1, licence beside the files). No Google Fonts.
-- **Aliases on purpose:** some tokens share a value today (`--fg` = `--ink` = `--on-accent`; `--muted` = `--ink-muted`; `--trim-hi` = `--accent` = `--focus`; `--stone-lo` = `--paper-lo`; `--paper-white` = `--stone`). Each keeps its own name so a theme can split them; use the one that names the role.
-- **Literals inside composite tokens:** `--glow` repeats `--focus` as `rgba(255,215,94,.55)`, `--focus-halo` repeats `--bg` (`#0a1028`), `--ink-shadow` and `--paper-frame` repeat `--shade` (`#050a18`). A theme that changes `--focus` or `--shade` must redefine these too (listed under Debts).
+- **Font:** Alegreya Sans hosted in `public/fonts` (`@font-face` under the token block; SIL OFL 1.1, licence beside the files). No Google Fonts. The 3D pieces use `--font-ui3d` (a system serif).
+- **Read by name from TS:** the 3D code reads some tokens with `getComputedStyle`: `--ui3d-*` (`ui3d/layer.ts`, `town3d/`, `result3d/`, `flow3d/`), `--mark-*` (`flow3d/sheet-draw.ts`), and `--fg`, `--heal`, `--float-*`, `--strike`, `--strike-dmg`, `--mark-counter`, `--font-title` (`hints3d/effects3d.ts`). Grep for the name before removing a token.
 
 ### Colour
 
 | Group | Tokens | Use |
 |---|---|---|
-| Panel | `--paper-hi` `--paper` `--paper-lo` `--paper-edge` | top, middle and foot of the blue gradient of panels and dialogs; light frame |
-| Panel glass | `--glass-hi` `--glass` `--glass-lo` `--panel-veil` `--panel-rim` `--panel-filter` | the panel stops at the chosen opacity, the dark veil under them, the light rim and the backdrop filter; opaque defaults (Panel glass, above) |
-| Ink | `--ink` `--ink-muted` `--ink-off` `--ink-shadow` `--focus` | text, muted text, disabled row text, the hard dark text shadow, yellow highlight/focus/link |
-| Focus row | `--focus-band` `--row-hi` `--row-off` | menu row under focus (lighter blue band), row under hover, disabled row (sunken dark band, focused or not) |
-| Dark scene | `--bg` `--fg` `--muted` `--overlay` `--shade` | page background, text over the scene, veil behind dialogs; `--shade` is the dark navy the other veils mix with `color-mix()` at their own alpha: debug readout 65%, ability banner 88%, dialogue veil 35% |
-| Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the panels (almost unused today), bar background |
-| Primary | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button (brighter blue; the names stayed from the gold one), battle highlight (yellow) |
-| Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
-| Bars | `--hp` `--mp` `--sp` `--ct` `--heal` | HP, mana (MP), stamina (ST, Nov 16), CT, healing |
-| Strike preview | `--strike-dmg` `--enemy-paper` `--enemy-hi` `--strike` | damage number; the wine gradient of an enemy target's half and its ◆; `--strike` is now only the translucent band of the "+N targets" line |
-| Fields | `--paper-white` | Developer fields (dark blue field) |
-| Damage number | `--float-phys` `--float-magic` `--heal` `--float-miss` `--float-crit-edge` | floating number from the unit's chest, coloured by kind (Nov 15 grill): white physical (push, wall, fall and spikes too), violet magic with a ✦ after the number (colour is not the only cue), green heal (its +), grey miss (its word); on a strike of 25% of life or more from an attack, a gold ring outside the glyph's black outline (white and violet straight on gold read at 1.0 to 1.6:1). Its size comes inline from the share of life it takes (`numberPx` in `hit-weight.ts`: 26 px at 10%, 38 at 25%, up to 56, x1.4 on a strong strike), so it reads the same at x5 life |
+| Page | `--bg` `--fg` | page background under the scene and the loading cover (`#0b0a0e`, neutral; `theme-color` in `index.html` is the same), its text |
+| 3D kit | `--ui3d-paper*` `--ui3d-edge` `--ui3d-ink*` | the parchment the 3D shaders paint and its ink (contrast in the `:root` comment) |
+| 3D result and town | `--ui3d-result-*` `--ui3d-town-*` | the dark plate, veil, band and light text of the result board, the town windows and the two pieces of HTML still seen (the card's name under the mouse, the turn-the-phone notice) and the painted face's frame |
+| Damage number | `--float-phys` `--float-magic` `--heal` `--float-miss` `--float-crit-edge` | floating number by kind (Nov 15 grill): white physical, violet magic with a ✦, green heal, grey miss; a gold ring on a strike of 25% of life or more. Size from `numberPx` in `hit-weight.ts` |
+| Strike preview | `--strike` `--strike-dmg` | the "+N targets" band and the damage number on the 3D preview plate |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` `--mark-counter` | legend; same as `MARK` in `src/client/scene/mark-looks.ts` |
-| Command orbs | `--orb-blue` `--orb-gold` `--orb-bronze` `--orb-off` | glass orb (`.orb` with `act`/`blue`, `status`/`gold` or `bronze`) before Act and Status in the command menu, before each row of a window's command menu (town, title: bronze marks the row that leaves, like the kit's Leave and Options) and before each row of the stage-end window; `--orb-off` on a disabled row |
-| Theme art | `--ability-atlas` | the whole `url(...)` of the theme's 32 px ability icon atlas (`public/ui/fft/atlas-32.png`); CSS cannot join a path to a file name, so a theme with its own art redefines the full value |
+| Loading bar | `--orb-gold` | `accent-color` of the loading cover's bar (with no WebGL) |
 
-### Contrast (measured on Nov 15, WCAG 2.1 formula, script over the CSS hex values; translucent colours blended over their worst background)
+### Contrast
 
-| Pair | On `--paper-hi` (top) | On `--paper` | On `--paper-lo` (foot) | Bar |
-|---|---|---|---|---|
-| `--ink` | 7.8 | 9.3 | 15.3 | 4.5 ✓ |
-| `--ink-muted` | 5.6 | 6.7 | — | 4.5 ✓ |
-| `--focus` / `--accent` (titles, names, battle highlight) | 6.0 | 7.2 | — | 4.5 ✓ |
-| `--ink-off` (disabled row; the kit's `#8592b4` gave 2.7, raised to `#b4bedc`) on its `--row-off` band | 6.8 (4.5 without the band) | 7.6 | 9.7 | 4.5 ✓ |
-
-| Other pair | Value | Bar |
-|---|---|---|
-| `--ink` on `--focus-band` (top / foot) | 5.3 / 6.3 | ✓ (every text in a focused row turns `--ink`; the queue's current row has no band since Nov 15, its NOW is `--focus` on the panel: on the band `--ink-muted` gives 3.8, `--focus` 4.1, `--ink-off` 3.1, so a focused disabled row keeps its `--row-off` band and `--ink-off` text and shows only the ▶) |
-| `--on-accent` on `--gold-btn` (top / foot) | 4.9 / 6.7 | ✓ |
-| `--ink` on `--paper-white` (fields) | 13.0 | ✓ |
-| `--fg` on `--bg` | 17.4 | ✓ |
-| `--muted` on `--stone` | 9.3 | ✓ |
-| `--fg` on the "+N targets" band over a white sky | 11.2 | ✓ |
-| Strike preview, action half on `--paper-hi` (top): `--ink` / `--strike-dmg` / `--heal` | 7.8 / 5.5 / 4.9 | ✓ (Nov 15) |
-| Strike preview, enemy half on `--enemy-paper` (top `#7a2436`): `--ink` / `--ink-muted` | 9.1 / 6.6 | ✓ (Nov 15) |
-| Strike preview, hero half on `--paper`: `--ink-muted` / `--accent` (ALLY!) | 6.7 / 7.2 | ✓ (Nov 15) |
-| Menu head band (6% `--ink` over `--paper-hi`) / picked row (45% `--shade` over `--paper-hi`): `--ink` | 6.7 / 12.4 | ✓ (Nov 15) |
-| ◆ on `--enemy-paper` (not text, the word beside it carries the side): `--enemy-hi` / `--enemy` | 4.9 / 2.6 | hence `--enemy-hi` |
-| Expedition map (Nov 16; WCAG formula on the token hex values, not measured on screen): an open place's count `--on-accent` on `--gold-btn` (top / foot) / a path not taken's ✕ `--ink-muted` on `--well` / a cleared place's ✓ `--heal` on `--paper-lo` / the walked way `--focus` and the open way `--ink` on `--well` | 4.9 / 6.7; 12.5; 9.7; 13.5 and 17.3 | ✓ (the ways to come and the closed ones are `--ink-muted` at 75% and 40% over `--well`, not computed: weight and dash tell them apart) |
-| Hero card's last line (it sits below the card's middle, on `--paper` or darker): `--heal` / `--enemy-hi` / `--ink-muted` | 5.9 / 5.0 / 6.7 | ✓ (Nov 15; `--enemy-hi` on `--paper-hi` would give 4.1, so it never goes at the top of a panel) |
-| Defeat band: `--ink` on `--enemy-paper` (top `#7a2436`) | 9.1 | ✓ (Nov 15) |
-| Window head band (6% `--ink` over `--paper-hi`): `--ink` / `--focus` (victory title) | 6.7 / 5.2 | ✓ (Nov 15) |
-| Regular button: `--ink` on `--stone` / `--stone-lo` | 13.0 / 15.3 | ✓ (Nov 15) |
-| Result highlight band (25% `--shade` over `--paper-hi`): `--ink-muted` | 7.3 | ✓ (Nov 15; the same band under the Sheet head) |
-| Hover band `--row-hi` over `--paper-hi`: `--ink` / `--ink-muted` | 6.0 / 4.3 | ✓ / ✗ → the party row's muted lines turn `--ink` on hover and focus (Nov 15) |
-| Marks on `--focus-band`: the chosen option's ✓ in `--ink` / the ▶ and ▸ focus marks in `--focus` | 5.3 / 4.1 | ✓ (Nov 15, review: the ✓ was `--focus` at 4.1; the ▶ and ▸ are non-text marks, bar 3:1; a scan of the title, Quick battle, Options, world map and Party found no `--ink-muted` text on the band) |
-| `--focus` alone on the white sky | 1.4 | ✗ → hence `--focus-halo` (dark band: 18.8 on white, 13.5 against the ring) |
-| Panel glass over a white backdrop (Nov 16; panel stops at the chosen opacity over `--panel-veil` over white, every step from 40% to 100%, `tests/glass.test.ts`), at 40%: `--ink` / `--ink-muted` / `--focus` / `--heal` / `--strike-dmg` on `--paper-hi`, `--ink-muted` / `--enemy-hi` on `--paper` | 8.3 / 6.0 / 6.5 / 5.3 / 5.9, 6.5 / 4.8 | ✓ (worst over all steps: `--enemy-hi` on `--paper` at 40%, 4.8; without the veil `--heal` on `--paper-hi` fell to 4.3 at 95%. The browser's pixel at 40% over white, top of a window: `rgb(57,73,105)`, the formula's own) |
+The 3D kit's pairs are measured in the `:root` comment of `style.css` (ink 7.7:1 on the rows; the result board's light text 11:1 on its plate). The Nov 15 tables for the blue HTML panels went with them (Nov 18); they are in the git history of this file.
 
 ### Typography
 
 | Token | Value | Use |
 |---|---|---|
-| `--font` | Alegreya Sans (hosted), weights 400, 500 (body), 700, 800, italic 400 | all text |
-| `--font-title` | `var(--font)` | titles, menu rows, primary button, queue (FFT uses one plain letter; kept as its own token so a theme can change it) |
-| `--fs-xs` / `--fs-min` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 16 / 16 / 16 / 20 / 24 / 34 px | key drawn on a button (keyboard only) / smallest text a touch screen shows: the turn list's round tag, the fps counter (Nov 16) / note and help / body / menu item and name / preview damage |
-| `--fs-title` / `--fs-display` | 28 / 38 px | dialog title and opening narration / game title in a window and big damage number |
-| `--fs-banner` | 64 px | the end-of-battle title band (Result board) |
-| `--fs-logo` | 96 px (8vw on a narrow screen) | the game's name on the title screen, in capitals |
+| `--font` | Alegreya Sans (hosted), weights 400, 500 (body), 700, 800, italic 400 | all HTML text |
+| `--font-title` | `var(--font)` | titles; the floating numbers' letter |
+| `--font-ui3d` | Palatino Linotype, Palatino, Book Antiqua, Georgia, serif | every 3D piece's text |
+| `--fs-min` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 16 / 16 / 20 / 24 / 34 px | smallest text / note and help / body / menu item and name / large number |
+| `--fs-title` / `--fs-display` | 28 / 38 px | window title / game title in a window |
+| `--fs-3d-min` | `min(16px, 16 / 0.6 × --lay-u)` | the 3D pieces' smallest text (`ui3d/layout.ts textPx`) |
 
-Minimum text: 16 px with no exception, touch included (Fernando, Nov 16): `--fs-xs` and `--fs-min` are 16 px too, and the key hint and the key drawn on a button grew from 11 and 12. Panel and dialog text carries `--ink-shadow`.
+Minimum text: 16 px with no exception, touch included (Fernando, Nov 16).
 
-### Space, corner, shadow
+### Space
 
 | Token | Value | Use |
 |---|---|---|
-| `--gap` | 8 px | default gap between pieces; multiples of 4 (4, 6, 8, 12, 16, 24) |
-| `--tap` | 44 px | minimum button height; on touch (`pointer: coarse`) also the menu rows, "Execute?"'s action verb and Back, Buy, Sell, Recruit and the title's language button, which stay compact on a PC; the corner list's rows everywhere, 4 px apart (Nov 16) |
-| `--r` | 2 px | corner of everything |
-| `--slot-w` | `min(672px, 35vw)` | bottom unit panels (the lab kit's 35% of 1920; 448 px at 1280) |
-| `--frame` / `--frame-pressed` | bevel with a steel trim | button outside the panels |
-| `--glow` | yellow glow | selected button outside the panels |
-| `--focus-halo` | 2 px of `#0a1028` | focus outside the panels (see Focus) |
-| `--paper-frame` | dark outer line, thin inner line, inner top glow, 3 px drop shadow | `.panel`, `.dialog`, menu button, title menu |
-
-| `--inset` | 12 px | panel margin to the screen edge |
-| `--inset-t` `--inset-r` `--inset-b` `--inset-l` | `--inset` + `env(safe-area-inset-*)` | the same margin clear of the notch and home bar, on every piece anchored to an edge; `.overlay` pads by the safe areas too (Nov 16) |
+| `--gap` | 8 px | default gap between pieces |
+| `--tap` | 44 px | minimum touch target: every transparent button over a 3D drawing keeps it on touch (`pointer: coarse`) |
+| `--slot-w` | `min(672px, 35vw)` | bottom unit panels (the lab kit's 35% of 1920) |
+| `--inset` | 12 px | margin to the screen edge |
+| `--inset-t` `--inset-r` `--inset-b` `--inset-l` | `--inset` + `env(safe-area-inset-*)` | the same margin clear of the notch and home bar; `.overlay` pads by the safe areas too (Nov 16) |
+| `--lay-u` `--lay-x` `--lay-y` | one px of the 1920x1080 reference, the frame's margins | where a piece sits (`ui3d/layout.ts stage`) |
 
 ### Motion
 
-| What | Time | Where |
-|---|---|---|
-| Command menu, "Execute?", corner list | 90 ms (`--t-menu`) | `menu-in` |
-| Ability submenu | 110 ms | `menu-in-side` |
-| Ability name banner, dialogue box | 120 ms (`--t-open`) | `banner-in`, `menu-in` |
-| Conversation title (no caller since Nov 15) | 160 ms | `banner-in` |
-| Speaker portrait | 220 ms | `face-pop` |
-| Speaker mouth (painted face) | 180 ms per frame while the text types: talk1 from the first instant, then talk2, talk1, neutral…; neutral when the sentence is out | `mouthFrame` in `talk.ts` (JS: it follows the typing, not a CSS loop) |
-| Game title | 600 ms | `title-in` |
-| Focus ▶ and dialogue ▼ | 0.6 s in 2 steps (`--t-nudge`) | `nudge` |
-| Damage number | 1.5 s; pops on the impact frame and follows the chest on screen; lifted over any number still showing (`liftOver`, an area strike's targets side by side); leaves on the wall clock, slow motion or not | `pop` = `TIMING.float` |
-| Objective banner | 2.2 s | `announce` |
-| Bar loss stripes | 1 s in 2 steps | `loss-blink` |
-| Confetti (victory) | 1.6–2.6 s, 0–0.8 s delay | `fall` (`confetti()` in `game/end-screens.ts`) |
-| Opening veil pulse (no caller since Nov 15) | 4 s | `beacon` |
-
-Battle timing (step, jump, strike) lives in `timing.ts`, never in CSS. With `prefers-reduced-motion`, nothing animates; in battle the strong strike does not shake the screen and the action camera stays off (Nov 16).
+The 3D pieces move on springs on the battle clock (`ui3d/spring.ts`) and draw only while something moves; Reduce motion stills them (`layer.still`). The CSS keeps one animation, the speaker portrait's `face-pop` (220 ms), off with Reduce motion. The speaker's mouth follows the typing (`mouthFrame` in `talk.ts`, 180 ms per frame). Battle timing (step, jump, strike) lives in `timing.ts`, never in CSS. With `prefers-reduced-motion`, nothing animates; in battle the strong strike does not shake the screen and the action camera stays off (Nov 16).
 
 ## 2. Pieces
+
+Since Nov 18 every piece below is drawn in 3D; the HTML named here stays as the unseen skeleton (its box, input and screen reader), and the colour tokens it names (`--paper*`, `--stone*`, `--focus-band`…) were removed with the blue look. The table keeps each piece's behaviour and history.
 
 States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 
@@ -139,7 +81,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Panel** `.panel` | `style.css` | N only (not a control) | battle HUD, dialogue box |
 | **Counter mark** `ChargeLines.setCounters` | `scene/charge-lines.ts` | N only (3D, over everything): violet `#c79bff` line from a ranged unit that would strike back to the attacker (red past the stop, X on what it hits), or an arrow over the head of a melee one pointing at the attacker; always with the same words in "Execute?" or the move help | aiming, the Move screen |
 | **Counter stop** (tile mark `counter`) + **cursor note** `BattleScene.setCursorNote` | `scene/marks.ts`, `scene.ts`, `.cursor-note` in `style.css` | after a strike, each Move stop that draws the counter of a unit struck that turn (out of its reach, or out of a shooter's contact and in its range) gets a plain red frame (`--mark-counter`; a cell a safe stop also covers stays blue); on such a stop the cursor carries a note on `--strike` with a `--mark-counter` border: the Strike icon and the damage at half (`−5–8`; none when cover or another unit catches the shot), in `--strike-dmg`, following the cursor every frame; the legend and the move help say it in words | the Move screen after a strike |
-| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) on the sunken `--row-off` band, also when focused (▶ but no `--focus-band`) | commands, abilities, the preview's action verb (Attack, Shoot, Cast, Heal or Use, from the ability's stats, `actionVerb`; Nov 18) and Back (the focus stays on the verb, Nov 16; on a charge aimed at a unit, the lock step puts On the character / On the tile in their place, Nov 15), corner list, map actions; in the command menu and submenu the row is 60 px tall with a 32 px marker (atlas icon, or an orb for Abilities and Status) before the name, and Abilities shows S (`.picked`: sunken band, yellow edge and ▸) while the submenu is open |
+| **Menu row** `button('item', …)` in a `.panel` | `icons.ts`, `style.css` | N transparent · H brightness 1.18 (the corner list's H is `--row-hi`), F `--focus-band` with pulsing ▶ (`.focus`) · P no shift · D text `--ink-off` without the shadow (flat) on the sunken `--row-off` band, also when focused (▶ but no `--focus-band`) | commands, abilities, the preview's Confirm and Back (the focus stays on Confirm, Nov 16; on a charge aimed at a unit, the lock step puts On the character / On the tile in their place, Nov 15), corner list, map actions; in the command menu and submenu the row is 60 px tall with a 32 px marker (atlas icon, or an orb for Abilities and Status) before the name, and Abilities shows S (`.picked`: sunken band, yellow edge and ▸) while the submenu is open |
 | **Bar** `gauge()` | `hud-pieces.ts` | uppercase label, 10 px bar with a dark edge and a light gloss over the fill (`--bar`), number at `--fs`; `change` in stripes (loss blinks, gain does not) | HP, MP and CT in unit panels; `poolGauges(def, u?)` (Nov 16) gives the mana (`mp`, MP) and stamina (`sp`, ST) bars a sheet has, in the unit panels and, full, on the Party screen's list and Status head |
 | **Unit panel** `unitPanel()` | `hud-pieces.ts` | `--slot-w` wide, 6 px side stripe, the 64×64 battle face (units without a sheet: the 96×128 portrait, 72×96 below 1600 px), name with the side in uppercase after ● (hero) or ◆ (enemy), a class line for units with their own name, bars; mirrored for the target | bottom left and right |
 | **Menu head** `.panel-head` | `style.css`, `hud-menus.ts` (`menuHead`) | N only: the menu name over a faint band and a line; `aria-hidden`, the menu's `aria-label` says it | command menu (Commands, 422 px), submenu (Abilities, 460 px), "Execute?" (title with the ability icon, 460 px) |
@@ -147,7 +89,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **Portrait** `portrait()` | `portrait.ts` | 96×128 (unit panel; 72×96 below 1600 px), 99×132 in the dialogue box (the face's height), 48×64 (party), 36×36 (queue, cropped from the top; units without a battle face); sizes set by the container, `portrait()` itself unchanged | everywhere with a face |
 | **Turn list** `.queue` (`renderQueue`) | `hud.ts`, `style.css` | a 330 px column (196 until Nov 17), every unit of the battle (Nov 15, Fernando's decision: it showed the next 4): title with the PgUp PgDn hint, then one compact row per turn from NOW through two rounds (`queueRows`, `twoRounds` in `turn-list.ts`; Fernando, Nov 15): round 1 until every unit and every queued charge has shown once, round 2 until every unit has shown once more, each row with a small round tag (1 or 2, `.queue-round`: `--fs-min` `--ink` on `--paper-lo` with a `--paper-edge` frame, on the face's bottom right corner so it takes no width from the name); the 36 px battle face (or the portrait) framed in its side colour (yellow with a glow for NOW) beside two one-line texts, the number (NOW in `--focus`, ◎ target in `--focus`) and the name after ● or ◆, ending in … when long; at the row's end its life and CT (`queueEnd` in `hud-pieces.ts`, from `unitStats` in `turn-list.ts`; Fernando, Nov 17): "Vida 53/120 +4" and "CT 40/100 +8", each over a 3 px bar of how full it is (life in the side's colour, CT in `--ct`), where the first "+" is the life back at each of the unit's turns (shown only when a piece gives it) and the second the CT gained each tick (the sheet's speed), spelled out in the row's `title`; the numbers are the unit's now on each of its rows; a charge row has the caster's face, the 32 px ability icon, "resolves in N" (ticks) and the ability's name, in muted italics; while aiming (Act map and "Execute?", Fernando, Nov 15) the list is a copy of the queue where the one acting pays the turn cost of acting (100 after moving, 80 without), and a charged ability's row sits where it fires, with a yellow outline, kept in view (`keepInView`); cancelling brings the usual list back (cost 100, moving and acting); effects on the target (a death, a push) are not simulated. The column ends a gap above the acting unit's panel (`hud.ts` sets its height from that panel's) and scrolls (wheel, PgUp/PgDn, right stick); a new turn scrolls back to NOW, a redraw keeps the scroll | top left, under the tile line |
 | **Place beside** `placeBeside()` | `place-beside.ts` (pure, tested) | right; no room, left; slides vertically; with room on neither side (a phone, the 460 px "Execute?" on a 768 px tablet) below the unit, or above it, never on it (Nov 16). When the command menu and the submenu do not fit side by side the submenu takes the menu's place (`.commands.covered`), and no menu is wider than the screen less the insets and safe areas; the menus start below the help line, however many rows it wraps to | menu beside the unit |
-| **Back button** `.back` in `.tools` (`backKind`, `renderBack`) | `hud.ts`, `hud-menus.ts`, `style.css` | Nov 16 (the tablet audit: no way out of the Move and Act maps without Esc, B or a right button; Fernando the same day: fixed beside the ☰): a `--tap` square `iconButton` (↩) on the panel blue to the left of the menu button, calling the same `cancel` as Esc; F the yellow ring with `--focus-halo`. In 3D the same ↩ on a slate plate, with Undo ("↶ Desfazer") beside it on touch (corner menu, below). Named "Back" on the abilities submenu, the Move and Act maps, "Execute?" and the facing choice, and "Undo move" on the command menu after a free move; hidden with nothing to go back to and while nothing responds | battle, top right |
+| **Back button** `.back` in `.tools` (`backKind`, `renderBack`) | `hud.ts`, `hud-menus.ts`, `style.css` | Nov 16 (the tablet audit: no way out of the Move and Act maps without Esc, B or a right button; Fernando the same day: fixed beside the ☰): a `--tap` square `iconButton` (↩) on the panel blue to the left of the menu button, calling the same `cancel` as Esc; F the yellow ring with `--focus-halo`. Named "Back" on the abilities submenu, the Move and Act maps, "Execute?" and the facing choice, and "Undo move" on the command menu after a free move; hidden with nothing to go back to and while nothing responds | battle, top right |
 | **Touch help** (`helpText(v, heroTurn, touch)`) | `hud-menus.ts` (tested) | without a keyboard and mouse the map screens say what a tap did: a marked tile reads "tap again to confirm", a tap on a tile that does not work says so, and the facing choice names taps instead of arrows and Enter | battle, touch |
 | **Narrow screens** (`@media (max-width: 900px)`) | `style.css` | up to 900 px the unit panel is at least 300 px wide with tighter padding (at 35vw the HP and CT bars were 2 px wide); by width alone, a narrow PC window included. An upright phone (under 600 px) has no layout of its own: it will get a "turn the phone" notice (Fernando, Nov 16). The corner list scrolls when the screen is shorter than its 7 rows (a phone lying down) | battle on a narrow tablet |
 | **Dialog** `dialog()` | `dialog.ts` | opens with focus on ✕ (or the screen's primary; How to play keeps the ✕ so it opens at the top, and is 760 px wide, Nov 16); `fixed` does not close; `onBack` goes back; `note` puts a counter at the right of the head band (Nov 15; a plain `.opt-keys` line since Nov 16: how Options' rows change, how many games are saved); a `close` event on its overlay closes it without `onBack`. Since Nov 15 (theme screens) the title sits on the battle menus' head band (6% `--ink` over the panel, a light line under it) and the ✕ is a bare glyph on the band (H `--row-hi`) | town, expedition map, title, Options, Status, How to play, Credits, Party, Shop, Tavern, battle end, room end, Developer |
@@ -162,7 +104,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | **List row** `priceRow(what, price, action, why)` | `dialog.ts`, `style.css` | the lab kit's list row (Nov 15 mockup): what it is at `--fs-lg` with its kind in `--ink-muted` small type, the price in bold after the gold counter's coin in its own column (a `null` price leaves the column empty, no coin: Nov 16, the Equipment window), and the regular button at the right with why it is off in italic small type under it ("20 short", "chest full (99)"); a faint `--paper-edge` line on top of each row | the Party screen's Equipment page (equip and remove; no price column and the small lines under the name, `.gear-page`); the Shop and the Tavern left it for the counter screen on Nov 16 |
 | **Equipment page** `gearPage()` (`.gear-page`) | `town-gear.ts`, `style.css` | Nov 16 (FFT Party screen; before, a window of its own): the 7 slots in a column as a vertical `choice()` drawn like Options' sections (`.menu-nav`: "Main hand: Iron blade"), the open slot beside it from 1600 px wide and under it below that: what it holds as a list row with Remove, then the chest's pieces of that kind as list rows with Equip ("Equip Iron helm" as its `aria-label`) and, under the name, the rarity and each total the piece would change, now → after with a ▲ in `--heal` or a ▼ in `--enemy-hi` (`compareRows`: "HP 235 → 260 ▲", "Physical resistance while charging +30% → +20% ▼" when only a charging unit feels it, "no change"), or an empty line pointing to the Shop; Remove is off with "chest full (99)" under it when the chest is full (`CHEST_MAX`); every action saves and rebuilds the screen on the same slot with the focus back on the button of the same name (else the open slot) | the Party screen's Equipment page |
 | **Legend** `.legend` + `.sw` | `style.css` | text + colour swatch; `.sw.nogo` also draws the mark's cross, its red is close to the threat's | tile marks, tavern rumours |
-| **Painted face** `faceSheet()` | `talk.ts`, `.face-sheet` in `style.css` | one frame of the speaker's sheet (`public/chars/px/<model>.webp`, described in `src/content/faces.json`, bundled so the box never waits on the network) at 128×128, the nearest whole ratio of the frame: the painted 128 px sheets as they are, scaled smooth; the 64 px skeletons at 2× with `image-rendering: pixelated` (`.enlarged`); neutral at rest; the mouth opens from the line's first instant and cycles `mouthFrames`; `[]` stays still; Instant text speed and reduced motion: no animation; sheets preloaded when the conversation opens, and the portrait stands in until a sheet is decoded; no sheet or a failed image: `portrait()` at 99×132, the same height. In the dialogue box it is drawn in 3D since Nov 18 (`window3d/talk-face.ts`: the same frame, size, filters, tint and hop, read from `data-def` and `data-frame` on the unseen `.talk-face`); the HTML strip stays only unseen, under the 3D pieces | dialogue box |
+| **Painted face** `faceSheet()` | `talk.ts`, `.face-sheet` in `style.css` | one frame of the speaker's sheet (`public/chars/px/<model>.webp`, described in `src/content/faces.json`, bundled so the box never waits on the network) at 128×128, the nearest whole ratio of the frame: the painted 128 px sheets as they are, scaled smooth; the 64 px skeletons at 2× with `image-rendering: pixelated` (`.enlarged`); neutral at rest; the mouth opens from the line's first instant and cycles `mouthFrames`; `[]` stays still; Instant text speed and reduced motion: no animation; sheets preloaded when the conversation opens, and the portrait stands in until a sheet is decoded; no sheet or a failed image: `portrait()` at 99×132, the same height | dialogue box |
 | **Battle face** `faceSheet(def, face, 'battle-face portrait')` | `hud.ts` (`face`, `showFaces`), `battle-face.ts`, `.battle-face` in `style.css` | the same sheet as a `.portrait` (frame, side colour, NOW glow) at 64×64 in the unit panels, 36×36 in the turn list, always `image-rendering: pixelated` (128 → 64 is a whole ratio; 36 is not and drops rows unevenly); the sheet by class (`battleFace`: the Warrior with the barbarian, the rest by the model on the map); expression by the events played (`faceCues`): shout 700 ms on an attack or a charge, angry 2200 ms on a counter-attack, hurt 900 ms on damage (then angry 2200 ms after a hit of 25% of life or more), smile 2200 ms for whoever downs a unit, wounded under 30% of life, else neutral; the Result board cards hold a still face instead (Still face); the small skeletons stay neutral (no expression frames); timed on the battle clock and moved per frame without a redraw | unit panels, turn list |
 | **Still face** `stillFace(def, expr, big)` | `hud-pieces.ts`, `.still-face` in `style.css` | the battle face's sheet (`battleFace`) held on one expression outside the battle: 64×64, `big` 128×128, whole ratios of the 128 px paint, `image-rendering: pixelated`; not a `.portrait`, whose party sizes (48×64, 96×128) would crop it; a class without a sheet keeps `portrait()` | Result board hero cards; neutral in the Party screen's list (64) and Status head (128), the Tavern's list rows (64, first in `.price-what`) and the saved games list (64) |
 | **Dialogue box** `talk()` | `talk.ts` | after FFT's (Nov 16): up to 1100 px wide at the bottom, the speaker's name on a tab over the box's top left corner (`.talk-name`; none for the narrator), the face at the left, the text letter by letter beside it; ▼ blinks at the bottom right when done; the whole box is one `button` (`.panel.talk`), Skip a 44 px button under it; up to 560 px wide the face shows at half size (64 px) and the hint takes a line of its own; `title` (place strip) and `dark` (story opening) have no caller since the campaign left on Nov 15. **In 3D** (`?talk=3d`, default; `window3d/talk3d.ts`, Nov 18): this box unseen under the drawing wherever `talk()` opens, the town or a battle, at any page size; the parchment with the name on a dark plaque, the words in the paper's ink, ▼ and the hint, Skip a plaque; `dark` has no box: the page as night with the Beacon's blue glow breathing every 4 s (still under Reduce motion), the words large and centred in the result's light text, its hint and then ▼ centred under them, and Skip drawn at the bottom right for a finger (the HTML narration has none). F on Skip: a 3 px light ring around the dark plaque and the label in the title's light (11:1; a lit plaque left the label at 3.9:1). Under Reduce motion each sentence shows whole (`charMs`), in both looks. For a screen reader the text is `aria-busy` while it types, so the sentence is heard once, and Skip is named "Pular conversa" / "Skip conversation" | conversations in town |
@@ -310,8 +252,7 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   `hintsLeft`. Their colours are the reference's, as constants in `hints3d.ts` (the same debt). Zoom and rotate share one
   "Camera" hint and the labels are one or two words, so the row fits its region at 1280x720 too, where the 16 px floor
   widens it (Fernando, Nov 16). The tile line (floor, water, spikes, a charge landing) sits small on a dark box under
-  the Height, without the height the corner shows (Nov 18), and every help-line instruction fits the pill in one line.
-  Where the page is short (a phone) the Height drops under the corner buttons (`heightBox`).
+  the Height, and every help-line instruction fits the pill in one line.
 - **"Execute?"** (`?confirm=3d`, `confirm3d/`): the strike's confirmation as a dark slate box like the pill, beside the
   character: title, notes and the two choices, the one in focus on a gold band with ▶. The HTML window stays unseen at
   the drawn sizes and keeps the place, the buttons and the mouse; the colours are constants in `confirm3d.ts`.
@@ -322,13 +263,10 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   lit band or plate, on every control. The HTML window stays unseen under the drawing (opacity, not visibility) and
   keeps keys, pad, taps, scroll and screen reader; text never under 16 px, rows and buttons never under 44 px; under
   1152x648 the HTML window shows instead.
-- **Corner menu** (`?tools=3d`, `window3d/tools3d.ts`): the menu button (3 bars), Back (↩) and, for a finger, Undo
-  ("↶ Desfazer", always there, faded to 45% and dead with no step; Nov 18) as dark slate plates like the pill (the
-  button lighter while its list is open), and the list as a parchment panel like the command menu's: a head, a row per
-  tool (`tool-rows.ts`) with its glyph in the icon column, its name, its key on a cap, "on"/"off" in words for the two
-  switches and the size in use on Pixel size; Undo's row in `--ui3d-ink-off` with no step; "▼ Mais abaixo" under the
-  last whole row while rows wait below; the row under the mouse is lit with the glove beside it (no glove for a
-  finger). The HTML menu stays unseen at the
+- **Corner menu** (`?tools=3d`, `window3d/tools3d.ts`): the menu button (3 bars) and Back as dark slate plates like
+  the pill (the button lighter while its list is open), and the list as a parchment panel like the command menu's: a
+  head, a row per tool (`tool-rows.ts`) with its glyph in the icon column, its name, its key on a cap and "on"/"off" in
+  words for the two switches; the row under the mouse is lit with the glove beside it. The HTML menu stays unseen at the
   drawn sizes (rows touching, never under `--tap`) and keeps the place, the buttons and the taps. The reference has no
   corner menu; the panel is its command menu's (refs 12, 13).
 - **Status window** (`?status=3d`, `window3d/status3d.ts`): the battle darkened and the rest of the HUD away, as on the
@@ -382,8 +320,7 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   `hpRegen`, `ctGain`): "+4" after the "Vida" label and "+8" between the CT bar, 100 px instead of the reference's 130,
   and its number.
 - **Place:** on the reference's regions (Interface layout, above), not beside the unit: the command menu bottom right
-  (as tall as its rows since Nov 18: the capture's blank fifth row left; never over the acting unit's sheet, the
-  submenu's cascade shortening on a phone instead), the sheet top right, the turn list on the
+  (five rows tall like the capture, the paper blank under a shorter list), the sheet top right, the turn list on the
   left, stacked from the bottom and ending above the HTML acting panel where that one is taller than the reference's
   (measured: card 2 at 102,711 66x78 on a 1920x1080 page, 102,712 on the reference; at 1280x720 the panel pushes
   the cards 57 px up). A row is 56.5 px at 1080p and passes 44 px from about 0.78 of
@@ -404,8 +341,6 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
 - **Options only opens from a battle** (Nov 16): the title and the town have no Options row (the town menu keeps its two switches); `optionsMenu` needs the battle's `OptionsContext` for the pixel rows, the goal and the foot.
 - **Second tap** is written by hand in four places (`data-armed`); the armed state never disarms, and the labels now say "Confirm" on every device (Nov 16).
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
-- **Panel glass (Nov 16):** no "Glass" preset yet (two controls only); the enemy's wine half of the strike preview and the defeat band stay opaque; the blur over the 3D scene re-blurs every frame, never profiled on a phone or tablet; a browser without `color-mix()` (from memory: Chrome before 111, Safari before 16.2, Firefox before 113; not checked) loses the panel background only when glass is on below 100%, the default stays plain hex; with glass on, the gradient's middle interpolates in oklab instead of sRGB.
-- **`--stone*` tokens** are almost unused since every window took the panel look (Nov 13): only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 
 ## 7. What was and was not checked
 
@@ -474,7 +409,7 @@ Written on Nov 16 from the touch audit (headless Chrome with touch emulated, `is
 4. **Text is at least 16 px everywhere, touch included** (Holds today; Fernando, Nov 16: `--fs-xs` and `--fs-min` went from 12 and 14 to 16, `.kbd .hint` follows `--fs-sm`; since Nov 17 the hint is a drawn cap 1.75 em tall, its key letters 16.8 px, the letters on a pad's shoulder buttons 14 px as part of the drawing, and on the 3D layer a cap is never under 22 px, which leaves its letters at 13 px on a 1280x720 page). Body stays at `--fs` and notes at `--fs-sm`; the key hint and the key chip hide on touch. *Holds (measured Nov 16 on master `62314ea`):* no visible text under 16 px on the title, the town, the expedition gate and a battle at 820×1180 and 390×844.
 5. **Contrast: 4.5:1 for text and 3:1 for marks** over the worst background the piece can sit on (section 9). A disabled control keeps its reason readable in a line outside the faded control ("20 short" pattern, holds in Shop and Tavern). *Breaks (computed from the tokens, not rechecked):* the fps counter over a white sky 4.1:1 (off by default). (Fixed on Nov 16: a closed expedition place is no longer a faded button, its reason is plain text in the place box; the enemy's ◆ is `--enemy-hi`.)
 6. **Safe areas** (Holds today). `index.html` sets `viewport-fit=cover`; every piece anchored to an edge adds `env(safe-area-inset-*)` through the `--inset-t/r/b/l` tokens (`style.css` `:root`) and `.overlay` pads by the same. *Not tested on a device with a notch.*
-7. **Both orientations work; nothing locks the screen** (Holds today). The layout follows width and height, never a device name; every window fits the screen or scrolls inside itself (`max-height` in `dvh`, `overflow: auto`); the page never scrolls sideways (`scrollWidth` equals `innerWidth` at 820×1180 and 390×844, measured on `62314ea`). A phone held upright shows a "Rotate the phone" note (`.rotate-note`, `rotate-note.ts` called from `entry.ts` since Nov 18, so the title and the town show it too; only `(pointer: coarse)`, up to 600 px wide and portrait); drawn in 3D on every layer once one exists (`ui3d/rotate3d.ts`), the HTML line unseen under it; a tablet is never asked to rotate. The expedition map's chart scrolls inside its own well, and its window scrolls with the page on a phone; How to play opens at its top (Nov 16).
+7. **Both orientations work; nothing locks the screen** (Holds today). The layout follows width and height, never a device name; every window fits the screen or scrolls inside itself (`max-height` in `dvh`, `overflow: auto`); the page never scrolls sideways (`scrollWidth` equals `innerWidth` at 820×1180 and 390×844, measured on `62314ea`). A phone held upright shows a "Rotate the phone" note (`.rotate-note`, `rotate-note.ts` called from `entry.ts` since Nov 18, so the title and the town show it too; only `(pointer: coarse)`, up to 600 px wide and portrait); a tablet is never asked to rotate. The expedition map's chart scrolls inside its own well, and its window scrolls with the page on a phone; How to play opens at its top (Nov 16).
 8. **Nothing lives only in hover** (Holds in part). Every `:hover` style sits inside `@media (hover: hover)` (all nine, checked in `style.css`); information in a `title` tooltip also shows on screen or is not needed; copy that names a key or the mouse has a touch wording picked by the same `KEYS` test as the hints. *Holds:* the conversation hint, the facing and Move help lines and the Options controls have a touch wording. *Breaks (read):* `title`-only hints (hit chance ⊕, "Round N" in the turn list, icon buttons); key wording on touch in the town prompt ("W A S D walk…") and "Town menu (Esc)" (`game/town-hud.ts`).
 9. **Gestures** (Holds in part). One finger dragging on the map pans the camera past an 8 px slop (`TAP_SLOP`, `touch-input.ts`), two fingers zoom the camera, a tap selects; `body` has `touch-action: none` and `user-select: none`, buttons `touch-action: manipulation`; every scrolling box has `touch-action: pan-y` and `html`, `body` have `overscroll-behavior: none` (`style.css`). *Not remeasured:* whether a pinch over How to play still zooms the page (it zoomed from 1× to 5× before `pan-y` was added). Finger scrolling worked in the turn list, Options, How to play, Shop and Party in the first audit.
 10. **Screen bands.** A new rule picks one of the breakpoints the CSS already uses instead of a new number:

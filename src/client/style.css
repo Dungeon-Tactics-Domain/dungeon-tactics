@@ -1,85 +1,26 @@
 :root {
-  /* every colour and size of the page comes from here (one set since Nov 18: the themes and the panel glass went with
-     the HTML look; the 3D layer reads the --ui3d-* ones) */
-  --bg: #0a1028;
-  --fg: #f4f6ff;
-  --muted: #c8d3ee;
-  --accent: #ffd75e;
-  --on-accent: #f4f6ff; /* text on the primary button */
-  --hero: #5aa8ff;
-  --enemy: #e0525a;
-  --heal: #6fdc8c;
-  --overlay: rgba(5, 10, 24, 0.8);
-  /* button outside the panels (almost unused): the kit's dark blue button with a light steel trim */
-  --stone: #18295a;
-  --stone-lo: #0f1d40;
-  --edge: #050a18;
-  --trim: #8fa0c8;
-  --trim-hi: #ffd75e;
-  --bevel-hi: rgba(255, 255, 255, 0.14);
-  --bevel-lo: rgba(0, 0, 0, 0.5);
-  --well: #08112a;
-  --gold-btn: linear-gradient(#3b6ab8, #2a55a0); /* primary button: the kit's brighter blue */
-  --gold-trim: #dfe6f8;
-  --r: 2px; /* near-square corner: pixel art has no rounded corners */
-  --frame:
-    inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo),
-    0 3px 0 var(--edge);
-  --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
-  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 215, 94, 0.55);
-  /* same colors as the scene markings (MARK in scene/mark-looks.ts), so the legend matches the map */
+  /* every colour and size of the page comes from here (one set since Nov 18: the themes, the panel glass and the blue
+     panels went with the HTML look; the 3D layer reads the --ui3d-* ones and a few by name, listed below) */
+  --bg: #0b0a0e; /* the page under the scene and the loading cover: a neutral near-black, no blue (Nov 18) */
+  --fg: #f4f6ff; /* text of the loading cover; the fps counter (effects3d.ts) */
+  /* same colors as the scene markings (MARK in scene/mark-looks.ts), so the legend matches the map; the 3D tile-marks
+     sheet reads them by name (flow3d/sheet-draw.ts) */
   --mark-move: #6fc0ff;
   --mark-range: #ff7a3c;
   --mark-blocked: #b07ae0;
   --mark-threat: #ff2d55;
   --mark-nogo: #ff4040;
   --mark-counter: #ff3b3b;
-  /* HUD panels: blue gradient (top --paper-hi, foot --paper-lo) with a light frame; contrast in the design system */
-  --paper: #21407c;
-  --paper-lo: #0f1d40;
-  --paper-hi: #2a4c8c;
-  --paper-edge: #dfe6f8;
-  --ink: #f4f6ff;
-  --ink-muted: #c8d3ee;
-  --ink-off: #b4bedc; /* text of a disabled menu row: 4.5:1 on --paper-hi (the kit's #8592b4 gave 2.7:1) */
-  --row-off: rgba(
-    5,
-    10,
-    24,
-    0.4
-  ); /* sunken disabled menu row: lifts --ink-off to 6.8:1 and sets it apart from active rows */
-  --ink-shadow: 1px 1px 0 #050a18; /* light text on the blue panels gets a hard dark shadow */
-  --focus: #ffd75e; /* focus ring and highlight: FFT yellow */
-  --focus-band: linear-gradient(#3e66ad, #33599f); /* menu row under focus: lighter blue than the panel */
-  --hp: #5ccf5f;
-  --mp: #4f9cf0;
-  --sp: #f0884a; /* stamina bar (Nov 16): orange, apart from the CT amber; the ST label says it too */
-  --ct: #e8b030;
-  /* translucent band of the strike preview's "+N targets" line: dark enough for light text over the bright sky */
+  /* read by name by the 3D effects (hints3d/effects3d.ts): the "+N targets" band of the strike preview (dark enough for
+     light text over the bright sky), its damage number, and the floating numbers by kind (Nov 15 grill): green heal,
+     white physical, violet magic, grey miss, a gold edge on a strike of 25% of life or more */
   --strike: rgba(5, 10, 24, 0.82);
   --strike-dmg: #ffc2c2;
-  --enemy-paper: linear-gradient(
-    #7a2436,
-    #3e0f1c
-  ); /* target half of the strike preview when it is an enemy (lab kit) */
-  --enemy-hi: #ff9aa2; /* the enemy's ◆ on --enemy-paper, where --enemy is too dark to see */
-  /* focus outside the panels (menu button over the scene, map node, language on the title, dialogue box): a dark band
-     hugging the yellow ring, so the ring shows on the bright sky and on the grass */
-  --focus-halo: 0 0 0 2px #0a1028;
-  /* frame of panels, dialogs and the menu button: dark outer line, the glass rim (transparent unless glass is on), thin inner
-     line, inner top glow and a drop shadow */
-  --paper-frame:
-    0 0 0 1px #050a18, inset 0 0 0 1px rgba(5, 10, 24, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.14),
-    0 3px 0 rgba(0, 0, 0, 0.45);
-  --paper-white: #18295a; /* field background: Developer fields and the class card */
-  --row-hi: rgba(255, 255, 255, 0.1); /* menu row under hover */
-  /* floating number by kind (Nov 15 grill): white physical, violet magic, grey miss (heal: --heal); gold edge on a
-     strike of 25% of life or more */
+  --heal: #6fdc8c;
   --float-phys: #ffffff;
   --float-magic: #d7a6ff;
   --float-miss: #bdbdbd;
   --float-crit-edge: #ffc531;
-  --shade: #050a18; /* dark navy of the veils and tags over the scene; each piece sets its alpha with color-mix */
   --tap: 44px; /* touch target: >= 44 px (spec) */
   --gap: 8px;
   --inset: 12px; /* panel margin to the screen edge */
@@ -99,33 +40,17 @@
   --fs-3d-min: min(16px, 16 / 0.6 * var(--lay-u)); /* the 3D pieces' smallest text (ui3d/layout.ts textPx) */
   --lay-x: var(--safe-x);
   --lay-y: var(--safe-y);
-  --slot-w: min(
-    672px,
-    35vw
-  ); /* bottom unit panels: the lab kit's 35% of the 1920 screen; the strike preview sits beside the acting one */
+  --slot-w: min(672px, 35vw); /* bottom unit panels: the lab kit's 35% of the 1920 screen */
   --font: "Alegreya Sans", "Segoe UI", system-ui, sans-serif; /* hosted in public/fonts (@font-face below) */
-  --font-title: var(--font); /* titles, options and queue: FFT uses one plain letter, no title serif */
-  --fs-xs: 16px; /* the key drawn on a button; 16 like every text since Nov 16 (was 12) */
-  --fs-min: 16px; /* the smallest text anywhere (Fernando, Nov 16: no exception, touch included): the round tag, the fps counter */
+  --font-title: var(--font); /* titles; the floating numbers' letter (effects3d.ts) */
+  --fs-min: 16px; /* the smallest text anywhere (Fernando, Nov 16: no exception, touch included) */
   --fs-sm: 16px;
   --fs: 20px;
   --fs-lg: 24px;
-  --fs-xl: 34px; /* xl: the hit chance of the strike preview */
-  --fs-title: 28px; /* dialog title, opening narration */
-  --fs-display: 38px; /* game title in a window, big damage number */
-  --fs-banner: 64px; /* the end-of-battle title band (lab mockup) */
-  --fs-logo: 96px; /* the game's name on the title screen (lab mockup) */
-  /* motion: menus open in 90 ms, banners and the dialogue box in 120 ms; the ▶ and ▼ nudge every 0.6 s */
-  --t-menu: 90ms;
-  --t-open: 120ms;
-  --t-nudge: 0.6s;
-  /* art of the theme: the 32 px ability icon atlas (icons.ts abilityIcon; the soft set with a transparent background, approved Nov 15), shown at its own pixel size */
-  --ability-atlas: url("/ui/fft/atlas-32.png");
-  /* glass orb before the commands with no atlas icon (Act, Status), the lab kit's command markers; off when disabled */
-  --orb-gold: #c8a040;
-  --orb-blue: #4a78d0;
-  --orb-bronze: #b06a30; /* the kit's leave and options rows */
-  --orb-off: #4a5068;
+  --fs-xl: 34px;
+  --fs-title: 28px;
+  --fs-display: 38px;
+  --orb-gold: #c8a040; /* the loading bar (accent-color) */
   /* 3D interface kit (src/client/ui3d; localhost ?menu3d and ?turn3d, Nov 16): the parchment its shaders paint and the ink
      of its text, measured on FFT: The Ivalice Chronicles' menus. Read once by ui3d/layer.ts, hex only. Contrast (computed on the
      drawn colours): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the title band; soft ink 5.7:1 on the rows and
@@ -246,7 +171,7 @@ button {
   font: 700 var(--fs-sm) / 1.1 var(--font);
   min-height: var(--tap);
   min-width: var(--tap);
-  border: 2px solid var(--edge);
+  border: 2px solid transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -254,24 +179,8 @@ button {
   cursor: pointer;
   touch-action: manipulation;
 }
-/* pressed: inverted bevel and the button drops 2 px, like a key */
-button:not(:disabled):active {
-  transform: translateY(2px);
-}
 button:disabled {
   cursor: default;
-}
-/* over the scene the yellow ring alone gives 1.4:1 on a white sky; the dark halo carries it */
-button.primary {
-  font: 400 var(--fs-lg) / 1 var(--font-title);
-  flex: 1;
-}
-button.secondary {
-  padding: 0 14px;
-}
-button.icon {
-  padding: 0;
-  font-size: var(--fs-lg);
 }
 /* the button's display beat the hidden attribute: the rotate ↻ showed up on maps without direction (Nov 12) */
 button[hidden],
@@ -280,9 +189,7 @@ button[hidden],
   display: none;
 }
 
-/* ---- Dialog: window on the panel blue, its buttons, title, text and action row ---- */
-/* windows on the same blue as the HUD panels (Nov 15, FFT Classic). One shade lighter than the battle panel (paper-hi →
-   paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
+/* ---- Dialog: the window's box, its buttons, title, text and action row (unseen under its 3D screen) ---- */
 .dialog {
   padding: 0 18px 18px;
   width: min(460px, 100%);
@@ -290,22 +197,7 @@ button[hidden],
   overflow: auto;
   /* a finger scrolls the window and nothing else: without this a pinch inside it zoomed the whole page 5x (Nov 16 tablet audit) */
   touch-action: pan-y;
-  border: 2px solid var(--paper-edge);
-}
-/* buttons inside the window: the lab kit's dark blue button with the steel trim and a drop shadow (the primary keeps its
-   brighter blue); both at --fs like the kit, the primary in bold */
-.dialog button:not(.primary) {
-  font: 500 var(--fs) / 1.1 var(--font);
-}
-.dialog button.primary {
-  font: 700 var(--fs) / 1.1 var(--font-title);
-}
-/* chosen (choice()): the kit's lighter band, yellow border and a ✓, so it is not told by colour alone */
-.dialog button[aria-pressed="true"]:not(.primary) {
-  font-weight: 700;
-}
-.dialog button[aria-pressed="true"]:not(.primary)::before {
-  content: "✓";
+  border: 2px solid transparent;
 }
 /* disabled in a window: faded; the stone's dark grey looked like a pressed button */
 .dialog button:disabled {
@@ -328,13 +220,8 @@ button[hidden],
   gap: var(--gap);
   margin: 0 -18px 12px;
   padding: 4px 8px 4px 18px;
-  border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
+  border-bottom: 2px solid transparent;
 }
-/* ✕ on the band: a bare glyph like the kit's, no button frame */
-.dialog .dialog-head button.icon {
-  font-size: var(--fs-lg);
-}
-/* hover only where a mouse hovers: on touch the tapped row kept the hover look */
 .dialog h2,
 .dialog h3 {
   font-family: var(--font-title);
@@ -349,24 +236,9 @@ button[hidden],
 }
 .dialog .primary {
   width: 100%;
-} /* link in the ink highlight color, underlined: not by color alone */
-.menu-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap);
-  margin-top: 16px;
 }
-.menu-actions button {
-  flex: 1 1 40%;
-} /* 2 per row: with 5 in a row, "Developer" got cut off (review of Nov 13) */
-.camp-list {
-  flex-direction: column;
-} /* a list of places: one per row, full name */
 /* a list of places to go (title, quick battle, town) is a menu like the battle's (Nov 15, theme screens): bare rows, the
    real focus draws the lighter band, the yellow line and the ▶ (keyboard, mouse and gamepad move the same focus) */
-.dialog .camp-list {
-  gap: 0;
-}
 .dialog .camp-list > button {
   position: relative;
   flex: none;
@@ -377,31 +249,12 @@ button[hidden],
   text-align: left;
   font: 500 var(--fs-lg) / 1.2 var(--font-title);
 }
-.dialog .camp-list > button:focus::before {
-  content: "▶";
-  position: absolute;
-  left: 12px;
-  font-size: var(--fs);
-}
 .dialog .learned {
   font-weight: 700;
   margin: 2px 0;
-} /* what is missing to recruit in the Tavern; .dialog in front to beat .dialog p */
+}
 
-/* ---- End of battle: result window (game/end-screens.ts) ---- */
-/* the title yellow on a victory; the rest is the lab mockup's board below */
-.result-label {
-  font-size: var(--fs-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-/* the key drawn on the primary, like the kit's Continue [Enter]; only where a keyboard is likely */
-.key-chip {
-  display: inline-flex;
-  gap: 3px;
-  font-size: var(--fs-xs);
-  vertical-align: middle;
-}
+/* the key drawn on a button: only where a keyboard is likely */
 @media (hover: none) {
   .key-chip {
     display: none;
@@ -416,16 +269,11 @@ button[hidden],
   display: grid;
   gap: 6px;
 }
-.legend li {
-  display: flex;
-  align-items: center;
-  gap: var(--gap);
-}
 .sw {
   width: 20px;
   height: 20px;
   flex: none;
-  border: 1px solid var(--ink);
+  border: 1px solid transparent;
 }
 .sw.counter {
   /* the map mark is a plain red frame (scene/mark-looks.ts counter) */
@@ -454,13 +302,6 @@ button[hidden],
   gap: 4px 12px;
   margin: 0 0 12px;
   font-size: var(--fs-sm);
-}
-.keys dt {
-  font-weight: 800;
-  white-space: nowrap;
-}
-.keys dd {
-  margin: 0;
 }
 /* volume bar (slider in dialog.ts): track in the ink highlight color, number in % alongside */
 .slider {
@@ -504,9 +345,6 @@ button[hidden],
 
 /* ---- Title screen ---- */
 /* title screen (game/title.ts, titleScreen): big name and the three doors of the game */
-.dialog.title {
-  text-align: center;
-}
 .dialog.title h2 {
   font-size: var(--fs-display);
   letter-spacing: 1px;
@@ -518,10 +356,6 @@ button[hidden],
 /* Continue's saved games (saves-ui.ts, Nov 15): the load row and its Delete side by side as menu rows of the window
    list, the face before who goes and the where-gold-when line; scrolls past a screenful. Delete keeps its width when its
    2nd-tap text shows, so the rows do not jump. How to play takes the same width: at 460 px it was 2.5 screens long */
-.save-slots .dialog.title,
-.how-to-play .dialog.title {
-  width: min(760px, 100%);
-}
 .dialog .save-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 12em;
@@ -541,71 +375,19 @@ button[hidden],
 .save-text .continue-where {
   margin-left: 0;
 }
-/* Credits: left-aligned list even in the title's centered dialog */
-.dialog.title .legend {
-  text-align: left;
-}
 /* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the panel menu
    below it; does not close (dialog fixed). Since Nov 15 as the Design lab's mockup: the name at 96 px in capitals, the
    kit's 422 px command menu 48 px below, the key hint alone at the foot of the screen */
-.main-title .dialog.title {
-  border: none;
-  width: min(1100px, 100%);
-  overflow: visible;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 48px;
-}
 .main-title .dialog-head {
   justify-content: center;
   margin: 0;
   padding: 0;
   border: none;
 }
-.main-title .dialog.title h2 {
-  font: 700 min(var(--fs-logo), 8vw) / 1 var(--font-title); /* 8vw: the name stays on one line on a phone */
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0;
-}
-.main-title .title-foot {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  font-size: var(--fs-sm);
-  margin: 0; /* full opacity: at .85 it fell to ~4.2:1 over the veil on a white sky */
-}
-/* a short screen (800x600, 1024x640) left the fixed foot 3 to 9 px under the menu: there it follows the menu instead */
-@media (max-height: 700px) {
-  .main-title .title-foot {
-    position: static;
-  }
-}
-
-.main-title .title-lang {
-  min-height: 32px;
-  padding: 0 12px;
-  font-size: var(--fs-sm);
-  vertical-align: middle;
-}
-/* touch: the 44 px finger target (Nov 16 tablet audit); the PC keeps the slim 32 px button on the foot line */
-@media (pointer: coarse) {
-  .main-title .title-lang {
-    min-height: var(--tap);
-  }
-}
-.main-title .menu-actions {
-  border: 2px solid var(--paper-edge);
-  padding: 12px;
-}
 
 /* ---- Battle HUD: panels, turn list, help, corner menu, command menu ---- */
-/* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Blue
-   gradient panel with light text and a light frame, built here in CSS (nothing from the original art). Fixed positions on
-   the PC's 1920x1080 screen, except the command menu, which moves beside the character (hud.ts place); mobile gets its
-   own stage later. */
+/* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Fixed
+   positions on the PC's 1920x1080 screen, except the command menu, which moves beside the character (hud.ts place) */
 .hud {
   position: absolute;
   inset: 0;
@@ -630,14 +412,9 @@ button[hidden],
   pointer-events: auto;
   margin: 0;
   padding: 8px 12px;
-  border: 2px solid var(--paper-edge);
+  border: 2px solid transparent;
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
-.tile-info {
-  top: var(--inset-t);
-  left: var(--inset-l);
-  font-size: var(--fs-sm);
-}
 .tile-info:empty {
   display: none;
 } /* end of battle: with no tile under the cursor, the empty box lost its meaning */
@@ -679,15 +456,12 @@ button[hidden],
 }
 /* the row's round, 1 for the current one and 2 for the next (Nov 15, Fernando's decision): a small tag on the face's
    bottom right corner, so it takes no width from the name (at the row's end it cut "Skeleton archer" at 1280) */
-.queue-row {
-  position: relative;
-}
 .queue-round {
   position: absolute;
   left: 30px; /* row padding 4 + face 36, less the tag's overlap */
   bottom: 1px;
   font: 700 var(--fs-min) / 1 var(--font);
-  border: 1px solid var(--paper-edge);
+  border: 1px solid transparent;
   padding: 1px 3px;
 }
 /* one line each, so every row keeps the face's height and a long name ends in … instead of growing the row */
@@ -710,18 +484,6 @@ button[hidden],
 .queue-stat {
   padding-bottom: 5px;
 }
-.queue-stat.hp {
-  --bar: var(--side);
-}
-.queue-stat.ct {
-  --bar: var(--ct);
-}
-.queue-row.hero {
-  --side: var(--hero);
-}
-.queue-row.enemy {
-  --side: var(--enemy);
-}
 .queue-n {
   font-weight: 700;
   line-height: 1;
@@ -738,9 +500,6 @@ button[hidden],
 .queue-row.now {
   font-weight: 700;
 }
-.queue-row.charge {
-  font-style: italic;
-}
 /* after .charge, which won by coming later and left the "fires here" row in faded italics (review of Nov 13) */
 .queue-row.pending {
   font-weight: 700;
@@ -751,14 +510,6 @@ button[hidden],
   height: 36px;
   flex: none;
   object-position: top;
-  border-color: var(--side);
-}
-/* the one acting now: yellow frame with a glow, and NOW in yellow above it */
-.queue-row.now .portrait {
-  border-color: var(--focus);
-  box-shadow:
-    0 0 0 1px var(--edge),
-    0 0 10px color-mix(in srgb, var(--focus) 60%, transparent);
 }
 /* what-to-do-now help and ability name banner: at the top, in the middle */
 .help {
@@ -815,9 +566,6 @@ button[hidden],
   position: absolute;
   left: 0;
 }
-.burger-bars::before {
-  top: -7px;
-}
 .burger-bars::after {
   top: 7px;
 }
@@ -832,17 +580,6 @@ button[hidden],
   overflow-y: auto;
   touch-action: pan-y;
   transform-origin: top;
-}
-.tools-menu .item {
-  font: 400 var(--fs) / 1 var(--font-title);
-}
-/* 44 px on every screen, the PC too (Nov 16); .panel in front to beat the later `.panel .item` 40 px: the old 38 here
-   never applied, the rows measured 40 and 42 */
-.panel.tools-menu .item {
-  min-height: var(--tap);
-}
-.tools-menu .item + .item {
-  margin-top: 4px; /* a gap between targets, so a finger on the edge does not take the row next to it */
 }
 .tool-label {
   display: flex;
@@ -863,8 +600,7 @@ button[hidden],
   font-weight: 700;
 }
 /* the turn-the-phone notice (rotate-note.ts): only on a touch phone held upright, over every screen (Nov 18: a phone
-   plays on its side only; a tablet, wider than 600 px, is never asked). The query is rotate-note.ts ROTATE; once a 3D
-   layer draws the notice (ui3d/rotate3d.ts) this one goes unseen */
+   plays on its side only; a tablet, wider than 600 px, is never asked) */
 .rotate-note {
   display: none;
 }
@@ -876,7 +612,7 @@ button[hidden],
     z-index: 100; /* over every window */
     pointer-events: auto;
     place-items: center;
-    background: var(--overlay);
+    background: color-mix(in srgb, var(--ui3d-result-veil) 80%, transparent);
     padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
       max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
   }
@@ -888,6 +624,12 @@ button[hidden],
     padding: 24px;
     text-align: center;
     font-size: var(--fs-lg);
+  }
+  .rotate-card p {
+    margin: 0;
+  }
+  .rotate-glyph {
+    font-size: var(--fs-xl);
   }
 }
 .fps {
@@ -913,17 +655,13 @@ button[hidden],
   width: 422px;
   padding: 0 0 8px;
 }
-.abilities {
-  width: 460px;
-  --slide: -24px;
-}
 .panel-head {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 6px 14px 7px;
   font: 400 var(--fs) / 1.2 var(--font-title);
-  border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
+  border-bottom: 2px solid transparent;
 }
 .panel.commands .item,
 .panel.abilities .item {
@@ -932,11 +670,6 @@ button[hidden],
   gap: 14px;
   white-space: nowrap;
   font: 500 var(--fs-lg) / 1 var(--font-title);
-}
-.panel.commands .item.focus::before,
-.panel.abilities .item.focus::before {
-  left: 14px;
-  font-size: var(--fs);
 }
 /* Act with the submenu open: marked as picked, with a pointer toward the submenu (the focus is in the submenu) */
 .panel.commands .item.picked::after {
@@ -958,10 +691,6 @@ button[hidden],
     gap: 10px;
     font-size: var(--fs);
   }
-  .panel.commands .item.focus::before,
-  .panel.abilities .item.focus::before {
-    left: 12px;
-  }
   .hud .unit-panel .portrait {
     width: 72px;
     height: 96px;
@@ -973,36 +702,6 @@ button[hidden],
   margin: 0 2px; /* centred in the 32 px icon column */
   flex: none;
 }
-.orb.act,
-.orb.blue {
-  --orb: var(--orb-blue);
-}
-.orb.status,
-.orb.gold {
-  --orb: var(--orb-gold);
-}
-.orb.bronze {
-  --orb: var(--orb-bronze);
-}
-.panel .item:disabled .orb {
-  --orb: var(--orb-off);
-}
-.confirm {
-  width: 460px;
-  padding: 0 0 8px;
-}
-.confirm .panel-head {
-  font: 400 var(--fs-lg) / 1.2 var(--font-title);
-}
-.confirm p {
-  margin: 6px 14px 0;
-  font-size: var(--fs-sm);
-}
-.yes-no {
-  display: flex;
-  gap: 6px;
-  margin: 10px 8px 0;
-}
 .panel .item {
   width: 100%;
   min-height: 40px;
@@ -1012,34 +711,11 @@ button[hidden],
   border: none;
   font: 700 var(--fs-lg) / 1 var(--font-title);
 }
-/* touch: every menu row and "Execute?"'s Yes and No reach the 44 px finger target (Nov 16 tablet audit: 40 px); the PC
-   keeps the compact rows. The corner list's rows are 44 px on every screen (.panel.tools-menu .item, above) */
-@media (pointer: coarse) {
-  .panel .item {
-    min-height: var(--tap);
-  }
-}
-/* FFT's hand replaced by an arrow of ours marking the focused item */
-.panel .item.focus::before {
-  content: "▶";
-  position: absolute;
-  left: 8px;
-}
 /* menus open instead of popping in (Nov 12, game feel): 90 ms, fast enough not to slow down whoever knows what they want;
    the submenu comes from the side of the menu it left (hud.ts sets .from-right when it opens to the left of the menu); the ability
    name banner opens from the middle */
 .abilities.from-right {
   --slide: 24px;
-}
-.panel .item:not(:disabled):active {
-  transform: none;
-}
-.item-cost {
-  font: 400 var(--fs-sm) / 1 var(--font);
-}
-.item-label {
-  flex: 1;
-  text-align: left;
 }
 /* ability icon (icons.ts abilityIcon): the theme's 32 px atlas cell at 1:1; the cell is transparent, so the game-icons symbol
    is hidden when the ability has one and shows only when it has no cell */
@@ -1050,18 +726,6 @@ button[hidden],
   width: 32px;
   height: 32px;
   flex: none;
-}
-.ability-icon .gi {
-  width: 28px;
-  height: 28px;
-}
-.ability-icon.in-atlas::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-.ability-icon.in-atlas .gi {
-  visibility: hidden;
 }
 .panel .item:disabled .ability-icon {
   opacity: 0.5;
@@ -1105,9 +769,6 @@ button[hidden],
   width: var(--slot-w);
   pointer-events: none;
 }
-.active-slot {
-  left: var(--inset-l);
-}
 .target-slot {
   right: var(--inset-r);
 }
@@ -1117,26 +778,20 @@ button[hidden],
   align-items: center;
   gap: 18px;
   padding: 14px 22px;
-  border-left: 6px solid var(--side);
+  border-left: 6px solid transparent;
 }
 /* the portrait at the lab kit's 128 px height, scoped here so the other portraits keep their size */
 .unit-panel .portrait {
   width: 96px;
   height: 128px;
 }
-.unit-panel.hero {
-  --side: var(--hero);
-}
-.unit-panel.enemy {
-  --side: var(--enemy);
-}
 .portrait {
   width: 72px;
   height: 96px;
   object-fit: cover;
   flex: none;
-  background: var(--paper-hi);
-  border: 2px solid var(--paper-edge);
+  background: var(--ui3d-result-plate);
+  border: 2px solid var(--ui3d-result-line);
 }
 .portrait.tinted,
 .face-strip.tinted {
@@ -1158,23 +813,11 @@ button[hidden],
   gap: 12px;
 }
 /* side in words and by shape (● hero, ◆ enemy), never by colour alone */
-.unit-side {
-  font: 500 var(--fs-sm) / 1 var(--font);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.unit-side::before {
-  content: "● ";
-}
 .enemy .unit-side::before {
   content: "◆ ";
 }
 .unit-class {
   margin-top: -4px;
-}
-.unit-note {
-  margin: 0;
-  font-size: var(--fs-sm);
 }
 .gauge {
   display: grid;
@@ -1183,19 +826,10 @@ button[hidden],
   gap: var(--gap);
   font-size: var(--fs-sm);
 }
-.gauge-label {
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 .gauge-bar {
   position: relative;
   height: 10px;
-  border: 1px solid var(--edge);
-}
-.gauge-bar i {
-  display: block;
-  height: 100%;
+  border: 1px solid transparent;
 }
 /* strike preview on the target bar (hud-pieces.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
    green stripes, like Tactics Ogre. Stripe and the number "life 25 → 13–16" alongside: never color alone */
@@ -1207,12 +841,12 @@ button[hidden],
 /* mirrored target panel (portrait on the right), like Tactics Ogre's status bar: attacker and target face each other */
 .target-slot .unit-panel {
   flex-direction: row-reverse;
-  border-left: 2px solid var(--paper-edge);
-  border-right: 6px solid var(--side);
+  border-left: 2px solid transparent;
+  border-right: 6px solid transparent;
 }
 /* strike preview (hud-pieces.ts strikes; Tactics Ogre's idea from Nov 13, the lab kit's two-colour strip since Nov 15): beside the
-   acting unit's panel, in the target panel's place, anchored at the bottom; the action half on the panel blue, the target
-   half on its side's colour (wine for an enemy). Up to 3 strips, then "+N targets"; no click (the mouse reaches the tiles) */
+   acting unit's panel, in the target panel's place, anchored at the bottom. Up to 3 strips, then "+N targets"; no click
+   (the mouse reaches the tiles) */
 .strikes {
   position: absolute;
   bottom: var(--inset-b);
@@ -1226,7 +860,7 @@ button[hidden],
 .strike {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border: 2px solid var(--paper-edge);
+  border: 2px solid transparent;
   overflow: hidden;
 }
 .strike-main,
@@ -1242,7 +876,7 @@ button[hidden],
   column-gap: 12px;
 }
 .strike-target {
-  border-left: 2px solid var(--paper-edge);
+  border-left: 2px solid transparent;
 }
 /* the ◆ in --enemy vanished on the wine half */
 .strike-name,
@@ -1287,18 +921,6 @@ button[hidden],
   padding: 2px 10px;
   font-size: var(--fs-sm);
 }
-.gauge.hp {
-  --bar: var(--hp);
-}
-.gauge.mp {
-  --bar: var(--mp);
-}
-.gauge.sp {
-  --bar: var(--sp);
-}
-.gauge.ct {
-  --bar: var(--ct);
-}
 .gauge-num {
   text-align: right;
   font-size: var(--fs);
@@ -1306,12 +928,6 @@ button[hidden],
 }
 
 /* ---- Battle HUD: touch and narrow screens (Nov 16, Fernando: the game must play on a tablet with the fingers) ---- */
-/* no menu wider than the screen: "Execute?" (460 px) cut its No button on a 390 px phone */
-.commands,
-.abilities,
-.confirm {
-  max-width: calc(100vw - var(--inset-l) - var(--inset-r));
-}
 /* the submenu took the menu's place (hud.ts place: no room for both side by side) */
 .commands.covered {
   visibility: hidden;
@@ -1320,9 +936,6 @@ button[hidden],
    narrow PC window had the same 2 px bars. An upright phone (under 600 px) gets a "turn the phone" notice instead of a
    layout of its own (Fernando, Nov 16) */
 @media (max-width: 900px) {
-  .hud {
-    --slot-w: max(35vw, 300px); /* on .hud: a theme's :root block would win over a plain :root here */
-  }
   .hud .unit-panel {
     gap: 10px;
     padding: 10px 12px;
@@ -1413,57 +1026,19 @@ body:has(.result-overlay) .fps {
 
 /* ---- Dialogue box (talk.ts) and the opening narration ---- */
 /* dialogue box (talk.ts): at the bottom, wide, the same panel as the rest of the HUD; the ▼ blinks when the sentence is done */
-.talk-overlay {
-  place-items: end center;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  gap: 12px;
-  align-content: end;
-}
 .talk-title {
   position: static;
   padding: 8px 28px;
   font: 400 var(--fs-lg) / 1 var(--font-title);
   justify-self: center;
 }
-.panel.talk {
-  position: relative;
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  text-align: left;
-  width: min(860px, 100%);
-  min-height: 132px;
-  padding: 14px 40px 14px 14px;
-}
-.talk-body {
-  display: grid;
-  gap: 6px;
-  flex: 1;
-}
-.talk-name {
-  font: 400 var(--fs-lg) / 1 var(--font-title);
-}
-.talk-text {
-  margin: 0;
-  font: 400 var(--fs-lg) / 1.35 var(--font);
-  min-height: 3.6em;
-}
-.talk-next {
-  position: absolute;
-  right: 16px;
-  bottom: 10px;
-  visibility: hidden;
-}
-.talk.done .talk-next {
-  visibility: visible;
-}
 /* painted face sheet in the dialogue box (talk.ts, faceSheet): a box one frame wide over the strip, moved frame by frame
    at a whole-ratio size; only an enlarged sheet (the 64 px skeletons) scales pixelated, the painted 128 px ones scale smooth */
 .face-sheet {
   display: block;
   overflow: hidden;
-  background: var(--paper-hi);
-  border: 2px solid var(--paper-edge);
+  background: var(--ui3d-result-plate);
+  border: 2px solid var(--ui3d-result-line);
   box-sizing: content-box;
 }
 .face-strip {
@@ -1524,72 +1099,18 @@ body:has(.result-overlay) .fps {
 }
 :root[data-motion="reduce"] .talk-face.pop {
   animation: none;
-}
-.talk-skip {
-  justify-self: end;
-  min-height: var(--tap);
-  min-width: var(--tap);
-}
-.talk-overlay.dark .talk-skip {
-  display: none;
-}
-.talk-keys {
-  position: absolute;
-  right: 40px;
-  bottom: 8px;
-  font-size: var(--fs-sm);
-}
-.talk-overlay.dark .talk-keys {
-  right: 50%;
-  transform: translateX(50%);
-  bottom: -28px;
 } /* dialogue key hint (talk.ts) */
 /* opening (new game): big narration in the center, no frame, with the Beacon's blue glow pulsing behind */
-.talk-overlay.dark {
-  place-items: center;
-  align-content: center;
-}
 .talk-overlay.dark .panel.talk {
   border: none;
   text-align: center;
   min-height: 0;
   padding: 0 24px;
-}
-.talk-overlay.dark .talk-text {
-  font-size: var(--fs-title);
-  line-height: 1.5;
-  max-width: 34em;
-  margin: 0 auto;
 } /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 
 /* ---- Tavern and Shop windows (town-ui.ts); the Party screen has its own block at the end ---- */
 .dialog.party {
   width: min(640px, 100%);
-} /* 560 px scrolled the pt Tavern by a few px once the text grew to 20 px (Nov 15) */
-/* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin (`p.gold`: a bare
-   `.gold` also caught the result window's gold orbs and took their margin) */
-.dialog p.gold {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0 0 8px;
-}
-p.gold strong {
-  font-size: var(--fs-lg);
-  font-variant-numeric: tabular-nums;
-}
-p.gold strong::before,
-.price::before {
-  content: "";
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  vertical-align: -1px;
-}
-/* the gold counter on the head band (Shop, Tavern), at the right before the ✕, like the kit's "Gold in chest" */
-.dialog-head p.gold {
-  margin: 0 0 0 auto;
 }
 /* Shop and Tavern rows (dialog.ts priceRow, Nov 15 lab mockup): name with its kind in small type, the price after a coin
    in its own column and the button at the right with why it is off under it; a faint line on top of each row */
@@ -1610,22 +1131,14 @@ p.gold strong::before,
   position: sticky;
   bottom: -18px;
   padding: 8px 0;
-  border-top: 2px solid var(--paper-edge);
+  border-top: 2px solid transparent;
 }
 
 /* ---- Town menu and the windows beside it (game/crawl.ts; Design lab mockups, Nov 15) ---- */
 /* the lab kit's command menu inside a window (town, title): 60 px rows with a glass orb before the name; the row whose
    window is open stays picked like Act with its submenu open (sunken band, yellow edge, ▸) */
-.dialog .command-list > button {
-  min-height: 60px;
-  gap: 14px;
-  padding-left: 46px;
-}
 .dialog .command-list .continue-where {
   margin-left: auto; /* at the row's right end, like the kit's values */
-}
-.dialog .command-list > button:focus::before {
-  left: 14px;
 }
 .dialog .command-list > button.picked::after {
   content: "▸";
@@ -1636,16 +1149,6 @@ p.gold strong::before,
 /* Nov 16, Fernando: these three screens on their Final Fantasy Tactics counterparts (structure and pacing only; art,
    text and numbers are ours). Title: the name in the upper part of the art and a small plain command window under it,
    the gap growing with the screen's height; rows on one line where there is room, a phone wraps them */
-.main-title .dialog.title {
-  gap: clamp(32px, 14vh, 180px);
-}
-.main-title .camp-list {
-  min-width: min(340px, 100%);
-  max-width: 100%;
-  margin: 0;
-  padding: 8px;
-  text-align: left;
-}
 .main-title .camp-list .continue-where {
   margin-left: auto; /* the number of saved games at the row's right end, like a value */
   padding-left: 16px;
@@ -1671,11 +1174,7 @@ p.gold strong::before,
   overflow: hidden;
 }
 .opt-list {
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
   touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
-  padding-right: 4px;
 }
 .opt-list h3 {
   margin: 12px 0 4px;
@@ -1692,32 +1191,16 @@ p.gold strong::before,
   padding-right: 0;
   font-size: var(--fs);
 }
-.opt-label {
-  flex: 1 1 11em;
-}
 .opt-value {
   flex: 0 1 340px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.opt-text {
-  flex: 1;
-  text-align: center;
-  font-weight: 700;
-}
-/* drawn marks, not buttons (the row is the button); still a finger's 44 px, since a tap is told apart by where it lands */
-.opt-arrow {
-  flex: none;
-  width: var(--tap);
-  min-height: var(--tap);
-  display: grid;
-  place-items: center;
-}
 .opt-bar {
   flex: 1;
   height: 12px;
-  border: 1px solid var(--shade);
+  border: 1px solid transparent;
 }
 .opt-bar i {
   display: block;
@@ -1733,7 +1216,7 @@ p.gold strong::before,
   margin: 8px 0 0;
   padding: 8px 12px;
   min-height: calc(2 * 1.3em + 18px);
-  border: 1px solid var(--paper-edge);
+  border: 1px solid transparent;
   font-size: var(--fs-sm);
   line-height: 1.3;
 }
@@ -1749,9 +1232,6 @@ p.gold strong::before,
     display: block;
     height: auto;
     overflow: auto;
-  }
-  .opt-list {
-    overflow: visible;
   }
 }
 /* the tile marks and the controls, in a window over Options: the controls' text needs the width */
@@ -1784,31 +1264,6 @@ p.gold strong::before,
   }
 }
 /* ---- FFT results/dialogue (agent results) ---- */
-
-/* Dialogue box after FFT's (Nov 16; talk.ts): wider, the speaker's name on a tab over the box's top left corner, the
-   face at the left, the text typing beside it and the small ▼ at the bottom right */
-.panel.talk {
-  width: min(1100px, 100%);
-  margin-top: 40px; /* the tab's room, so it never covers the place strip above */
-  padding-top: 18px;
-}
-.talk-name {
-  position: absolute;
-  left: 10px;
-  bottom: calc(100% - 2px); /* over the box's top line: the tab and the box read as one piece */
-  padding: 6px 18px;
-  border: 2px solid var(--paper-edge);
-  /* set here, not in the blue surfaces' list above, so this block stays in one place */
-}
-/* the opening narration has no box, so no tab either, nor its room */
-.talk-overlay.dark .panel.talk {
-  margin-top: 0;
-}
-.talk-overlay.dark .talk-name {
-  position: static;
-  padding: 0;
-  border: none;
-}
 /* a phone: the face at half size (a whole ratio), so the text keeps most of the line, and a line of its own for the
    hint, which four lines of text ran under */
 @media (max-width: 560px) {
@@ -1825,9 +1280,7 @@ p.gold strong::before,
    party in its top right corner, the picked place's box along the foot and the travel commands beside it. The overlay
    scrolls where the window does not fit (a phone); top-aligned with auto margins, so the top stays in reach */
 .crawl-map {
-  overflow-y: auto;
   touch-action: pan-y; /* body has none: a finger scrolls the map */
-  align-items: start;
 }
 .crawl-map .dialog.title {
   --map-step: 64px; /* a row of the chart: a 48 px place and room for the ways between rows */
@@ -1841,22 +1294,9 @@ p.gold strong::before,
   margin-block: auto;
   text-align: left;
 }
-.crawl-map .dialog-head {
-  grid-area: head;
-  margin-bottom: 0;
-}
-.crawl-map .dialog.title h2 {
-  font-size: var(--fs-title);
-}
-.crawl-map .dialog-head .gold {
-  white-space: nowrap;
-}
 /* the chart's window: a dark well with a faint grid of dots; only it scrolls when the descent is taller than the screen */
 .map-scroll {
-  grid-area: map;
-  overflow: auto;
   touch-action: pan-y;
-  border: 2px solid var(--edge);
 }
 .map-chart {
   position: relative;
@@ -1868,7 +1308,7 @@ p.gold strong::before,
   left: 0;
   right: 0;
   padding-top: 10px; /* at the top of its band: the chest and its ▶ take the edge on the rows below */
-  border-top: 2px dashed color-mix(in srgb, var(--paper-edge) 35%, transparent);
+  border-top: 2px dashed transparent;
   font: 700 var(--fs-sm) / var(--map-gutter) var(--font);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1893,16 +1333,8 @@ p.gold strong::before,
   height: 100%;
   overflow: visible;
 }
-.map-ways line {
-  vector-effect: non-scaling-stroke;
-  stroke-linecap: round;
-  stroke-width: 2px;
-}
 .map-ways .off {
   stroke-dasharray: 1 7;
-}
-.map-ways .open {
-  stroke-width: 3px;
 }
 .map-ways .walked {
   stroke-width: 5px;
@@ -1918,110 +1350,23 @@ p.gold strong::before,
   height: var(--size);
   min-height: 0;
   padding: 0;
-  border: 2px solid var(--trim);
+  border: 2px solid transparent;
   font: 700 var(--fs) / 1 var(--font-title);
-}
-.map-place.boss {
-  --size: 60px;
-}
-.map-place .gi {
-  width: 32px;
-  height: 32px;
 }
 .crawl-map .map-place.skipped,
 .map-help .map-place.skipped {
   border-style: dashed;
 }
-/* the picked place: the focus ring and the menus' ▶ beside it, whether or not the focus is still on it */
-.map-place[aria-current="true"]::before {
-  content: "▶";
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  margin-top: -0.5em;
-  font: 700 var(--fs) / 1 var(--font);
-}
-/* the chest: a box with its lid line and a yellow lock, drawn here (the icon sprite has none) */
-.map-chest {
-  position: relative;
-  width: 24px;
-  height: 18px;
-  border: 2px solid currentColor;
-}
-.map-chest::before {
-  content: "";
-  position: absolute;
-  inset: 4px 0 auto;
-  border-top: 2px solid currentColor;
-}
-.map-chest::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 3px;
-  width: 6px;
-  height: 6px;
-  margin-left: -3px;
-}
-.map-gate {
-  padding: 4px 12px;
-  border: 2px solid var(--paper-edge);
-  font: 700 var(--fs-sm) / 1.2 var(--font);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 /* the party's flag: a pole and a yellow pennant, planted up and to the right of the place it stands on */
 .map-flag {
-  width: 22px;
-  height: 30px;
-  border-left: 3px solid var(--ink);
   pointer-events: none;
-}
-.map-field > .map-flag {
-  translate: 14px -52px;
-}
-.map-flag::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 12px 0;
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 .legend .map-flag {
   position: relative;
   flex: none;
   margin: 0 3px 0 23px; /* as wide as the 48 px marks above it, the pole on their middle */
 }
-/* the boxes around the chart: sunken bands on the window's blue */
-.map-box {
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
-}
 /* the gate window's box (game/crawl.ts questGate): the dungeon and the expedition in progress, under its commands */
-.map-info {
-  grid-area: info;
-  min-height: 8em; /* three lines of facts: the box keeps its height from place to place */
-}
-.dialog .map-info h3 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0 12px;
-  margin: 0 0 8px;
-  font-size: var(--fs-lg);
-}
-.map-info h3 small {
-  font: 400 var(--fs-sm) / 1.2 var(--font);
-}
-.map-info .keys {
-  margin: 0;
-}
-.map-party {
-  grid-area: party;
-  align-self: start;
-  display: grid;
-  gap: 10px;
-}
 .map-hero {
   display: flex;
   align-items: center;
@@ -2032,46 +1377,6 @@ p.gold strong::before,
   min-width: 0;
   display: grid;
   gap: 2px;
-}
-.map-hero strong {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.map-hero-class {
-  font: 400 var(--fs-sm) / 1.2 var(--font);
-}
-.dialog .map-commands {
-  grid-area: cmds;
-  align-self: end;
-  margin-top: 0;
-}
-.dialog .map-commands > button {
-  white-space: normal; /* the 2nd tap's sentence wraps inside the column */
-}
-/* a short wide screen (a phone lying down, as the rotate note asks): the window grows with its content and the overlay
-   scrolls, so the chart keeps five rows and the party box never runs over the commands */
-@media (max-height: 700px) {
-  .crawl-map .dialog.title {
-    height: auto;
-  }
-  .map-scroll {
-    height: 330px; /* as tall as the party box of four beside it */
-  }
-}
-/* a tablet upright: the chart over the box, the commands and the party side by side under them; the chart keeps a
-   window of its own so the commands stay near it */
-@media (max-width: 900px) {
-  .crawl-map .dialog.title {
-    grid-template: "head head" auto "map map" auto "info info" auto "cmds party" auto / minmax(0, 1fr) minmax(0, 1fr);
-    height: auto;
-  }
-  .map-scroll {
-    height: clamp(260px, 46dvh, 520px); /* never under four rows, on a phone lying down either */
-  }
-  .dialog .map-commands {
-    align-self: start;
-  }
 }
 /* a phone: one column, the party last */
 @media (max-width: 600px) {
@@ -2149,9 +1454,10 @@ p.gold strong::before,
   }
 }
 
-/* ---- 3D interface layer (localhost ?menu3d and ?turn3d; src/client/ui3d) ---- */
-/* One transparent WebGL canvas over the HUD for every 3D screen. It takes no input: each screen brings its own controls,
-   which come after it in the HUD and so sit over it. "Execute?" stays over the 3D drawing */
+/* ---- 3D interface: the layer and the unseen HTML skeleton under it (src/client/ui3d and the *3d folders) ---- */
+/* Every screen is drawn on one transparent WebGL canvas over the HUD. It takes no input: each screen keeps its HTML
+   under the drawing, unseen, as the layout the code measures, the keyboard, the pad, the taps and the screen reader.
+   Unseen by opacity, never by visibility, wherever the buttons must still take the focus; the focus is drawn in 3D */
 .ui3d-layer {
   position: absolute;
   inset: 0;
@@ -2163,15 +1469,34 @@ p.gold strong::before,
 .hud.ui3d .confirm {
   z-index: 2;
 }
+/* text for the screen reader only */
+.sr-only,
+.dialog.options3d .opt-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
 
-/* ---- 3D command menu (?menu3d; src/client/menu3d) ---- */
-/* The menu and the submenu are drawn in 3D, bottom right. The HTML ones only keep the HUD's open state; the input is the
-   3D menu's own: one transparent button over each drawn row and over each page arrow of the sheet (menu3d.ts places
-   them from the same layout it draws) */
-.hud.menu3d .commands,
-.hud.menu3d .abilities {
-  visibility: hidden;
-  animation: none;
+/* the transparent buttons each screen seats over its drawn ones (menu3d.ts, result3d.ts, town3d.ts, options3d.ts) */
+.menu3d-hits button,
+.result3d-hits button,
+.town3d-hits button,
+.options3d-hits > button {
+  position: absolute;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+.menu3d-hits button,
+.result3d-hits button,
+.town3d-hits button {
+  opacity: 0;
+}
+.options3d-hits > button {
+  margin: 0;
+  overflow: hidden;
 }
 .menu3d-hits {
   position: absolute;
@@ -2180,106 +1505,272 @@ p.gold strong::before,
   z-index: 1;
 }
 .menu3d-hits button {
-  position: absolute;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  opacity: 0;
-  cursor: pointer;
   pointer-events: auto;
-}
-.menu3d-hits button:disabled {
-  cursor: default;
-}
-
-/* ---- 3D battle result (?result=3d; src/client/result3d) ---- */
-/* The end of battle is drawn in 3D on the layer. Its window (dialog.ts) covers the page unseen and only holds the
-   board's real buttons, each over its drawn one (result3d.ts places them): the keys, the pad and the focus stay the
-   window's. The rest of the HUD hides, as under the HTML result */
-.overlay.result3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-.dialog.result3d {
-  position: absolute;
-  inset: 0;
-  width: auto;
-  max-height: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  overflow: hidden;
-}
-.dialog.result3d .dialog-head {
-  display: none;
-}
-.result3d-hits button {
-  position: absolute;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  opacity: 0;
-  cursor: pointer;
-}
-body:has(.result3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.result3d-overlay) .fps {
-  visibility: hidden;
-}
-
-/* ---- 3D town windows (?party=3d, ?shop=3d; src/client/town3d) ---- */
-/* Party, Shop and Tavern are drawn in 3D on the town's layer. Their window (dialog.ts) covers the page unseen and only
-   holds the page's real buttons, each over its drawn one (town3d.ts places them), the list's rows inside a real
-   scrolling box. The town's HUD and the town menu under the window hide while it shows */
-/* `body:has(...)`: over the rules that seat a window beside the town menu, which this one covers */
-body:has(.town3d-overlay) .overlay.town3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
-  position: absolute;
-  inset: 0;
-  width: auto;
-  max-width: none;
-  max-height: none;
-  animation: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  overflow: hidden;
-}
-.dialog.town3d .dialog-head {
-  display: none;
 }
 .town3d-hits {
   position: absolute;
   inset: 0;
 }
-.town3d-hits button {
-  position: absolute;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  opacity: 0;
-  cursor: pointer;
-}
+/* over `.dialog button:disabled`'s fade */
 .town3d-hits button:disabled {
   opacity: 0;
-  cursor: default;
 }
+
+/* a full screen drawn in 3D: its window (dialog.ts) covers the page, unseen */
+.overlay.result3d-overlay,
+.overlay.options3d-overlay,
+.overlay.status3d-overlay,
+.overlay.main-title.title3d,
+.overlay.sheet3d,
+.overlay.crawl-map.map3d {
+  display: block;
+  padding: 0;
+}
+/* `body:has(...)`: over the rules that seat a window beside the town menu, which this one covers */
+body:has(.town3d-overlay) .overlay.town3d-overlay {
+  display: block;
+  padding: 0;
+}
+.dialog.result3d,
+.dialog.options3d,
+body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+.dialog.options3d {
+  display: block;
+  height: auto;
+  opacity: 0;
+}
+body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
+  max-width: none;
+}
+/* no ✕ on a full screen: the drawn Back stands for it, and an unseen ✕ would still take the focus */
+.dialog.result3d .dialog-head,
+.dialog.options3d .dialog-head,
+.dialog.town3d .dialog-head {
+  display: none;
+}
+/* the rest of the HUD hides under a full screen, as on the reference */
+body:has(.result3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.result3d-overlay) .fps,
+body:has(.options3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.options3d-overlay) .fps,
+body:has(.status3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.status3d-overlay) .fps,
+body:has(.overlay.sheet3d) .hud > :not(.ui3d-layer),
+body:has(.overlay.sheet3d) .fps,
+body:has(.town3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.town3d-overlay) .overlay:not(.town3d-overlay) {
+  visibility: hidden;
+}
+/* a `title` window hides the whole HUD: the layer the screen is drawn on still shows */
+body:has(.town3d-overlay) .hud > .ui3d-layer,
+body:has(.talk-overlay.talk3d) .hud > .ui3d-layer,
+body:has(.crawl-map.map3d) .hud > .ui3d-layer,
+body:has(.main-title.title3d) .hud > .ui3d-layer,
+body:has(.overlay.sheet3d) .hud > .ui3d-layer {
+  visibility: visible;
+}
+
+/* battle HUD: the HTML each piece stands for stays in the HUD, unseen. The menus only keep the HUD's open state (the
+   input is .menu3d-hits); the help line, the banner and the tile line are drawn by hints3d; the strips and the target
+   panel leave the flow; the acting panel, "Execute?" and the corner menu keep the drawing's place and size, so the
+   map, the turn list and BattleHud.place keep clear of what is drawn */
+.hud.menu3d .commands,
+.hud.menu3d .abilities,
+.hud.banner3d .help,
+.hud.banner3d .banner,
+.hud.height3d .tile-info {
+  visibility: hidden;
+}
+.hud.hints3d .hint,
+.hud.bar3d .target-slot,
+.hud.bar3d .strikes {
+  display: none;
+}
+/* the open corner list sits over the 3D ability sheet's corner: the 3D menu steps aside while both are open */
+.hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
+  visibility: hidden;
+}
+.hud.bar3d .active-slot {
+  left: calc(var(--lay-x) + 100 * var(--lay-u));
+  bottom: calc(var(--lay-y) + 48 * var(--lay-u));
+  width: calc(672 * var(--lay-u));
+  height: calc(214 * var(--lay-u));
+  overflow: hidden;
+  opacity: 0;
+}
+
+/* turn list (turn3d): the HTML list stays as the layout, the scroll and the hover. Its rows take the cards' sizes
+   measured on the reference (1280x720) times --t3, the page's scale; the column stacks from the bottom like FFT's
+   combat timeline, on the reference's place (--turn-x, --turn-y, --turn-b), above the acting panel (--active-h, hud.ts) */
+.hud.turn3d .queue {
+  left: var(--turn-x);
+  top: var(--turn-y);
+  bottom: max(var(--turn-b), var(--active-h, 0px) + 2px);
+  height: auto;
+  /* the cards' column, then the room their life and CT lines take (--turn-stats): the menu beside the unit and
+     "Execute?" keep clear of this box (hud.ts place) */
+  width: calc(120px * var(--t3) + var(--turn-stats, 0px));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: calc(8px * var(--t3));
+  padding: calc(8px * var(--t3)) calc(10px * var(--t3)) calc(10px * var(--t3)) calc(56px * var(--t3));
+  border: 0;
+  scrollbar-width: none;
+  /* the empty column lets the map's hover and taps through; the rows take the mouse for the hover and the wheel */
+  pointer-events: none;
+}
+.hud.turn3d .queue-title {
+  order: 1; /* in a reversed column the last one sits on top */
+  width: calc(100% - var(--turn-stats, 0px)); /* over the cards, not over their lines */
+  position: sticky;
+  top: 0;
+}
+.hud.turn3d .queue-row {
+  flex: none;
+  /* never shorter than the two 16 px lines and two bars beside the card take (Nov 17; queue-view.ts statsLayout): on a
+     low screen the cards stop shrinking and the list scrolls; on a narrow page the floor shrinks with the pieces (--t3f) */
+  width: max(calc(44px * var(--t3)), 41px * var(--t3f, 1));
+  height: max(calc(52px * var(--t3)), 48px * var(--t3f, 1));
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: auto;
+}
+/* the one acting now: a bigger card (the 3D card springs to its row's box) */
+.hud.turn3d .queue-row.now {
+  width: max(calc(54px * var(--t3)), 50px * var(--t3f, 1));
+  height: max(calc(64px * var(--t3)), 59px * var(--t3f, 1));
+}
+/* the bar's sheet shows the one acting (the reference's card 1): its row leaves the list while the sheet shows the
+   list's head (hud.ts .head-on-sheet; Fernando, Nov 16) */
+.hud.turn3d.bar3d.head-on-sheet .queue-row.now {
+  display: none;
+}
+/* the two pieces of HTML still seen, the card's name under the mouse and the turn-the-phone notice: the result board's
+   dark plate and light text (11:1) */
+.turn3d-tip,
+.rotate-card {
+  border-color: var(--ui3d-result-line);
+  background: var(--ui3d-result-plate);
+  color: var(--ui3d-result-text);
+}
+/* name and life of the card under the mouse, beside it */
+.turn3d-tip {
+  translate: 0 -50%;
+  padding: 4px 10px;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* "Execute?" (confirm3d): the HTML window takes the drawing's sizes, in px of the reference (confirm3d.ts SIZE), and
+   its serif and weight, so the notes wrap where the drawn ones do */
+.hud.confirm3d .confirm {
+  width: calc(440 * var(--lay-u));
+  font-family: var(--font-ui3d);
+  font-weight: 500;
+  padding: 0 calc(12 * var(--lay-u)) calc(12 * var(--lay-u));
+  opacity: 0;
+}
+.hud.confirm3d .confirm .panel-head,
+.hud.confirm3d .confirm .item {
+  font-family: inherit;
+  font-weight: inherit;
+}
+.hud.confirm3d .confirm .panel-head {
+  padding: calc(10 * var(--lay-u)) calc(14 * var(--lay-u));
+  font-size: max(var(--fs-3d-min), 26 * var(--lay-u));
+  line-height: 1.3;
+}
+.hud.confirm3d .confirm p {
+  margin: calc(8 * var(--lay-u)) calc(6 * var(--lay-u)) 0;
+  font-size: max(var(--fs-3d-min), 18 * var(--lay-u));
+  line-height: 1.3;
+}
+.hud.confirm3d .confirm p:not(.unit-note) {
+  display: none;
+}
+.hud.confirm3d .confirm .item {
+  min-height: calc(52 * var(--lay-u));
+  font-size: max(var(--fs-3d-min), 24 * var(--lay-u));
+}
+/* a finger keeps its 44 px target (section 8) */
+@media (pointer: coarse) {
+  .hud.confirm3d .confirm .item {
+    min-height: max(var(--tap), 52 * var(--lay-u));
+  }
+}
+
+/* corner menu (tools3d): the menu button, Back and the open list take the drawing's sizes, in px of the reference: a
+   head like the command menu's (42), rows touching each other, never under the 44 px touch target */
+.hud.tools3d .tools {
+  opacity: 0;
+}
+.hud.tools3d .tools .burger,
+.hud.tools3d .tools .back,
+.hud.tools3d .tools .undo {
+  width: max(var(--tap), 56 * var(--lay-u));
+  height: max(var(--tap), 56 * var(--lay-u));
+}
+.hud.tools3d .tools-menu {
+  top: calc(max(var(--tap), 56 * var(--lay-u)) + 10 * var(--lay-u));
+  width: max(300px, 430 * var(--lay-u));
+  padding: 0;
+  border: 0 solid transparent;
+  border-top-width: calc(42 * var(--lay-u)); /* the head: a border, so it stays while the rows scroll */
+  max-height: calc(100dvh - var(--inset-t) - max(var(--tap), 56 * var(--lay-u)) - 10 * var(--lay-u) - var(--inset-b));
+}
+.hud.tools3d .panel.tools-menu .item {
+  min-height: max(var(--tap), 52 * var(--lay-u));
+  border-radius: 0;
+}
+.hud.tools3d .tools-menu .item + .item {
+  margin-top: 0;
+}
+
+/* Status (status3d): the window sits over the drawn sheet, unseen, with the ✕ on its top right corner */
+.dialog.status3d {
+  position: absolute;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+.dialog.status3d .dialog-head button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--tap);
+  height: var(--tap);
+}
+
+/* town (town3d hud3d.ts, talk3d.ts): the town's HUD pieces stay in place unseen; the speech box shows only its painted
+   face over the drawn parchment, and the town is not darkened */
+.hud.townhud3d > .tile-info,
+.hud.townhud3d > .town-prompt,
+.hud.townhud3d > .town-act,
+.hud.townhud3d .tools .burger,
+.talk-overlay.talk3d :is(.talk-name, .talk-text, .talk-next, .talk-keys, .talk-title, .talk-skip) {
+  opacity: 0;
+}
+.talk-overlay.talk3d .panel.talk {
+  border-color: transparent;
+  background: none;
+  outline: none;
+}
+/* Party, Shop and Tavern: the list's rows inside a real scrolling box */
 .town3d-list {
   position: absolute;
   overflow-y: auto;
@@ -2289,55 +1780,10 @@ body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
 .town3d-rows {
   position: relative;
 }
-body:has(.town3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.town3d-overlay) .overlay:not(.town3d-overlay) {
-  visibility: hidden;
-}
-/* the town menu under the window hides the whole HUD (a `title` window): the layer still shows */
-body:has(.town3d-overlay) .hud > .ui3d-layer {
-  visibility: visible;
-}
 
-/* ---- 3D town HUD and speech box (?townhud=3d, ?talk=3d; src/client/town3d hud3d.ts, talk3d.ts) ---- */
-/* Drawn on the town's 3D layer. The HTML pieces stay in place unseen (opacity, not visibility: they are the layout, and
-   their real buttons take the mouse, the taps, the pad and the screen reader) */
-.hud.townhud3d > .tile-info,
-.hud.townhud3d > .town-prompt,
-.hud.townhud3d > .town-act,
-.hud.townhud3d .tools .burger {
-  opacity: 0;
-}
-/* the speech box: only its painted face shows, over the drawn parchment; the town is not darkened, as the reference */
-.talk-overlay.talk3d {
-  background: none;
-}
-.talk-overlay.talk3d .panel.talk {
-  animation: none;
-  border-color: transparent;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  outline: none;
-}
-.talk-overlay.talk3d :is(.talk-name, .talk-text, .talk-next, .talk-keys, .talk-title, .talk-skip) {
-  opacity: 0;
-  animation: none;
-}
-/* someone talking hides the whole HUD (above): the layer still shows, with the box drawn on it */
-body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
-
-/* ---- 3D expedition map (?map=3d; src/client/town3d/map3d.ts) ---- */
-/* The map is drawn in 3D on the town's layer. Its own window stays, unseen (by opacity: the places and the commands
-   must still take the focus, a tap and the screen reader), covering the page, its parts moved under the drawn ones:
-   map3d.ts seats the chart, the party, the place's box and the commands and sets --map-step, --m3-place, --m3-boss,
-   --m3-cmd and --m3-gap. The whole descent shows: nothing scrolls. Information and the chest window open over it */
+/* expedition map (map3d.ts): its window covers the page, unseen, its parts moved under the drawn ones (map3d.ts seats
+   the chart, the party, the place's box and the commands and sets --map-step and the --m3-* sizes). Nothing scrolls */
 .overlay.crawl-map.map3d {
-  display: block;
-  padding: 0;
-  background: none;
   overflow: hidden;
 }
 .crawl-map.map3d .dialog.title {
@@ -2352,9 +1798,6 @@ body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
   padding: 0;
   border: 0;
   opacity: 0;
-  animation: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
   overflow: hidden;
 }
 .crawl-map.map3d :is(.map-scroll, .map-party, .map-info, .map-commands) {
@@ -2388,186 +1831,9 @@ body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
   border: 0;
   overflow: hidden;
 }
-/* a `title` window hides the whole HUD: the layer the map is drawn on still shows */
-body:has(.crawl-map.map3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
 
-/* ---- 3D turn list (?turn3d; src/client/turn3d) ---- */
-/* The list is drawn in 3D on the layer. The HTML list stays where it is, unseen, as the layout, the scroll and the hover:
-   its rows take the cards' sizes measured on the reference screenshots (1280x720) times --t3, the page's scale (set by
-   turn3d.ts); the HUD hands their boxes to the 3D list. The column stacks from the bottom, 1 above the acting panel and
-   counting up, like FFT's combat timeline. It sits on the reference's place (ui3d/layout.ts `turn`, set by turn3d.ts),
-   and ends above the acting panel where that one, still HTML, is taller than the reference's (--active-h: the room it takes from the bottom, hud.ts) */
-.hud.turn3d .queue {
-  left: var(--turn-x);
-  top: var(--turn-y);
-  bottom: max(var(--turn-b), var(--active-h, 0px) + 2px);
-  height: auto;
-  /* the cards' column, then the room their life and CT lines take (--turn-stats, set by turn3d.ts): the menu beside the
-     unit and "Execute?" keep clear of this box (hud.ts place) */
-  width: calc(120px * var(--t3) + var(--turn-stats, 0px));
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: calc(8px * var(--t3));
-  padding: calc(8px * var(--t3)) calc(10px * var(--t3)) calc(10px * var(--t3)) calc(56px * var(--t3));
-  background: none;
-  border: 0;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  scrollbar-width: none;
-  /* the empty column lets the map's hover and taps through; the rows take the mouse for the hover and the wheel */
-  pointer-events: none;
-}
-.hud.turn3d .queue-title {
-  order: 1; /* in a reversed column the last one sits on top */
-  width: calc(100% - var(--turn-stats, 0px)); /* over the cards, not over their lines */
-  position: sticky;
-  top: 0;
-  text-shadow: var(--ink-shadow);
-}
-.hud.turn3d .queue-row {
-  flex: none;
-  /* never shorter than the two 16 px lines and two bars beside the card take (Nov 17; queue-view.ts statsLayout): on a
-     low screen the cards stop shrinking and the list scrolls; on a narrow page the floor shrinks with the pieces (--t3f) */
-  width: max(calc(44px * var(--t3)), 41px * var(--t3f, 1));
-  height: max(calc(52px * var(--t3)), 48px * var(--t3f, 1));
-  padding: 0;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: auto;
-}
-/* the one acting now: a bigger card (the 3D card springs to its row's box) */
-.hud.turn3d .queue-row.now {
-  width: max(calc(54px * var(--t3)), 50px * var(--t3f, 1));
-  height: max(calc(64px * var(--t3)), 59px * var(--t3f, 1));
-}
-/* with the 3D bar its sheet's portrait is the one acting (the reference's card 1): its row leaves the list, which starts
-   at 2 right above the sheet (Fernando, Nov 16). Only while the sheet shows the list's head (hud.ts .head-on-sheet): an
-   enemy's strike can play after the state passed the turn on */
-.hud.turn3d.bar3d.head-on-sheet .queue-row.now {
-  display: none;
-}
-/* the turn-the-phone notice: the result board's dark plate and light text (11:1), not the old blue panel */
-.rotate-card {
-  border-color: var(--ui3d-result-line);
-  background: var(--ui3d-result-plate);
-  color: var(--ui3d-result-text);
-}
-
-/* ---- 3D combat bar (?bar=3d; src/client/bar3d) ---- */
-/* The acting sheet, the strike preview and the target's sheet are drawn in 3D on the layer, each on its region of the
-   reference (ui3d/layout.ts `sheet`, `preview`, `target`). The HTML panels stay unseen (opacity, not visibility: the
-   sandbox's `hide` is what hides the 3D bar with them): the acting one takes the sheet's place and size, so the map and
-   the turn list keep clear of what is drawn; the strips and the target panel leave the flow */
-.hud.bar3d .active-slot {
-  left: calc(var(--lay-x) + 100 * var(--lay-u));
-  bottom: calc(var(--lay-y) + 48 * var(--lay-u));
-  width: calc(672 * var(--lay-u));
-  height: calc(214 * var(--lay-u));
-  overflow: hidden;
-  opacity: 0;
-}
-.hud.bar3d .target-slot,
-.hud.bar3d .strikes {
-  display: none;
-}
-
-/* ---- 3D banner, Height and button hints (?banner=3d, ?height=3d, ?hints=3d; src/client/hints3d) ---- */
-/* Each is drawn on the 3D layer at its place of the reference; the HTML it stands for stays in the HUD, unseen: the help
-   line and the ability banner, the tile line, and the key hints inside the HUD's own rows */
-.hud.banner3d .help,
-.hud.banner3d .banner {
-  visibility: hidden;
-  animation: none;
-}
-.hud.height3d .tile-info {
-  visibility: hidden;
-}
-.hud.hints3d .hint {
-  display: none;
-}
-
-/* ---- 3D "Execute?" (?confirm=3d; src/client/confirm3d) ---- */
-/* Drawn on the 3D layer over the HTML window, which stays in place unseen (opacity, not visibility: its real buttons take
-   the mouse, BattleHud.place keeps moving it beside the character, and the sandbox's `hide` hides the drawing with it).
-   Its sizes are the drawing's, in px of the reference (confirm3d.ts SIZE); the strike's numbers are on the preview plate */
-.hud.confirm3d .confirm {
-  width: calc(440 * var(--lay-u));
-  font-family: var(--font-ui3d); /* the drawing's serif and weight, so the notes wrap where the drawn ones do */
-  font-weight: 500;
-  padding: 0 calc(12 * var(--lay-u)) calc(12 * var(--lay-u));
-  opacity: 0;
-  animation: none;
-}
-.hud.confirm3d .confirm .panel-head,
-.hud.confirm3d .confirm .item {
-  font-family: inherit;
-  font-weight: inherit;
-}
-.hud.confirm3d .confirm .panel-head {
-  padding: calc(10 * var(--lay-u)) calc(14 * var(--lay-u));
-  font-size: max(var(--fs-3d-min), 26 * var(--lay-u));
-  line-height: 1.3;
-}
-.hud.confirm3d .confirm p {
-  margin: calc(8 * var(--lay-u)) calc(6 * var(--lay-u)) 0;
-  font-size: max(var(--fs-3d-min), 18 * var(--lay-u));
-  line-height: 1.3;
-}
-.hud.confirm3d .confirm p:not(.unit-note) {
-  display: none;
-}
-.hud.confirm3d .confirm .item {
-  min-height: calc(52 * var(--lay-u));
-  font-size: max(var(--fs-3d-min), 24 * var(--lay-u));
-}
-/* a finger keeps its 44 px target (section 8) */
-@media (pointer: coarse) {
-  .hud.confirm3d .confirm .item {
-    min-height: max(var(--tap), 52 * var(--lay-u));
-  }
-}
-
-/* ---- 3D Options (?options=3d; src/client/flow3d) ---- */
-/* Options are drawn in 3D on the layer. Their window (dialog.ts) covers the page unseen and holds the board's real list
-   and buttons under the drawing, sized by the same layout (options3d.ts sets the list's box and the --o3-* sizes): the
-   keys, the pad, the taps, the list's scroll and the focus stay the window's. Unseen by opacity, never by visibility:
-   the controls must still take the focus. The rest of the HUD hides, as under the result */
-.overlay.options3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-.dialog.options3d {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: auto;
-  height: auto;
-  max-height: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  overflow: hidden;
-  opacity: 0;
-}
-/* no ✕ on a full screen: the drawn Back stands for it, and an unseen ✕ would still take the focus */
-.dialog.options3d .dialog-head {
-  display: none;
-}
-.dialog.options3d .opt-help {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
+/* Options (options3d): the board's real list and buttons under the drawing, sized by the same layout (the list's box
+   and the --o3-* sizes): the list's scroll stays the window's */
 .dialog.options3d .opt-list {
   position: absolute;
   display: block;
@@ -2594,7 +1860,8 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
   white-space: nowrap;
   overflow: hidden;
 }
-.dialog.options3d .opt-label {
+.dialog.options3d .opt-label,
+.dialog.options3d .opt-text {
   flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
@@ -2610,11 +1877,6 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
   min-height: 0;
   height: 100%;
 }
-.dialog.options3d .opt-text {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-}
 /* a bar: the number first, then the track (the drawing's order), the track as wide as the drawn one */
 .dialog.options3d .opt-bar {
   order: 1;
@@ -2629,29 +1891,8 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
 .dialog.options3d .opt-value > .opt-arrow:last-child {
   order: 2;
 }
-.options3d-hits > button {
-  position: absolute;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  cursor: pointer;
-}
-body:has(.options3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.options3d-overlay) .fps {
-  visibility: hidden;
-}
 
-/* ---- 3D title (?title=3d; src/client/flow3d) ---- */
-/* The title is drawn in 3D on the layer. Its own window stays, unseen (by opacity: the buttons must still take the
-   focus), the command list and the language button moved under the drawn ones (title3d.ts sets their places and
-   --t3-row). The battle's HUD stays hidden under the title, except the layer the title is drawn on */
-.overlay.main-title.title3d {
-  display: block;
-  padding: 0;
-  background: none;
-}
+/* title (title3d): the command list and the language button moved under the drawn ones (--t3-row) */
 .main-title.title3d .dialog.title {
   opacity: 0;
 }
@@ -2679,31 +1920,16 @@ body:has(.options3d-overlay) .fps {
   margin: 0;
   padding: 0;
 }
-body:has(.main-title.title3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
 
-/* ---- 3D sheets (?sheets=3d; src/client/flow3d/sheet3d.ts) ---- */
-/* The windows the title and Options open (saved games, quick battle, how to play, credits, tile marks,
-   controls) are drawn in 3D on the layer. Each window stays, unseen (by opacity: its buttons must still take the
-   focus), its own box moved onto the drawn sheet's scrolling window (sheet3d.ts sets its place and the --s3-* sizes),
-   so the wheel, a finger and the focus scroll it and the drawing follows. Not positioned: its ✕ (the drawn Back) and
-   its link (the plate beside it) are placed on the page, outside its scroll */
-.overlay.sheet3d {
-  display: block;
-  padding: 0;
-  background: none;
-}
+/* sheets the title and Options open (sheet3d.ts): each window's own box moved onto the drawn sheet's scrolling window
+   (its place and the --s3-* sizes), so the wheel, a finger and the focus scroll it and the drawing follows. Not
+   positioned: its ✕ (the drawn Back) and its link (the plate beside it) are placed on the page, outside its scroll */
 .overlay.sheet3d > .dialog {
   position: static;
   box-sizing: border-box;
   max-height: none;
   padding: 0;
   border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
   overflow: hidden auto;
   scrollbar-width: none;
   opacity: 0;
@@ -2756,82 +1982,6 @@ body:has(.main-title.title3d) .hud > .ui3d-layer {
   padding: 0;
   border: 0;
   overflow: hidden;
-}
-body:has(.overlay.sheet3d) .hud > :not(.ui3d-layer),
-body:has(.overlay.sheet3d) .fps {
-  visibility: hidden;
-}
-body:has(.overlay.sheet3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
-
-/* ---- 3D corner menu (?tools=3d; src/client/window3d/tools3d.ts) ---- */
-/* The menu button, Back and the open list are drawn on the 3D layer over the HTML ones, which stay in place unseen
-   (opacity, not visibility: their real buttons take the mouse and the taps, and the sandbox's `hide` hides the drawing
-   with them). The list takes the drawing's sizes, in px of the reference: a head like the command menu's (42), rows
-   touching each other (the parchment draws the line between them), never under the 44 px touch target */
-.hud.tools3d .tools {
-  opacity: 0;
-}
-.hud.tools3d .tools .burger,
-.hud.tools3d .tools .back,
-.hud.tools3d .tools .undo {
-  width: max(var(--tap), 56 * var(--lay-u));
-  height: max(var(--tap), 56 * var(--lay-u));
-}
-.hud.tools3d .tools-menu {
-  top: calc(max(var(--tap), 56 * var(--lay-u)) + 10 * var(--lay-u));
-  width: max(300px, 430 * var(--lay-u));
-  padding: 0;
-  border: 0 solid transparent;
-  border-top-width: calc(42 * var(--lay-u)); /* the head: a border, so it stays while the rows scroll */
-  animation: none;
-  max-height: calc(100dvh - var(--inset-t) - max(var(--tap), 56 * var(--lay-u)) - 10 * var(--lay-u) - var(--inset-b));
-}
-.hud.tools3d .panel.tools-menu .item {
-  min-height: max(var(--tap), 52 * var(--lay-u));
-  border-radius: 0;
-}
-.hud.tools3d .tools-menu .item + .item {
-  margin-top: 0;
-}
-
-/* ---- 3D Status window (?status=3d; src/client/window3d/status3d.ts) ---- */
-/* The sheet is drawn on the 3D layer. Its window (dialog.ts) sits over the drawn sheet, unseen (status3d.ts gives it the
-   sheet's box): Esc, the pad, a tap outside and the ✕ on the top right corner stay the window's, and it holds the sheet
-   as real text. The rest of the HUD hides, as on the reference's status screen */
-.overlay.status3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-.dialog.status3d {
-  position: absolute;
-  width: auto;
-  max-height: none;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  opacity: 0;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-.dialog.status3d .dialog-head button {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: var(--tap);
-  height: var(--tap);
-  cursor: pointer;
-}
-body:has(.status3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.status3d-overlay) .fps {
-  visibility: hidden;
-}
-/* the open list sits over the 3D ability sheet's corner, whose icons draw over every panel of the layer: the 3D menu
-   steps aside while the list is open over its submenu */
-.hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
-  visibility: hidden;
 }
 
 /* ---- Loading cover (loading.ts; Fernando, Nov 18) ---- */
