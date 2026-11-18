@@ -17,8 +17,12 @@ export const PIECE_NAMES = [
   'sheets', // the windows the title and Options open
   'town', // the town's windows
   'townhud',
-  'talk', // the town's speech box
+  'talk', // the speech box of the town and the battle
   'map', // the expedition map
+  'dev', // the developer menu
+  'note', // a notice window
+  'effects', // numbers, cursor note, objective banner, confetti, F3
+  'loading', // the loading cover
   'guides', // the labs' drawing guides (?guides=1)
 ] as const;
 export type PieceName = (typeof PIECE_NAMES)[number];

@@ -63,7 +63,7 @@ export class Note3d implements Ui3dScreen {
     this.gold = getComputedStyle(layer.root).getPropertyValue('--ui3d-town-gold').trim();
     this.flat.add(this.veil.group, this.part.group, this.ring.group);
     this.host.addEventListener('pointerover', this.point);
-    layer.add(this);
+    layer.add(this, 'note');
     setNote3d((n, html) => this.show(n, html));
   }
 

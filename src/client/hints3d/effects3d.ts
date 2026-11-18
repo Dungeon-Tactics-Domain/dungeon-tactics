@@ -138,7 +138,7 @@ export class Effects3d implements Ui3dScreen, Effects {
     this.deep.add(this.sword.group);
     layer.root.classList.add('effects3d');
     setEffects3d(this);
-    layer.add(this);
+    layer.add(this, 'effects');
   }
   private token(name: string) {
     return this.css.getPropertyValue(name).trim();

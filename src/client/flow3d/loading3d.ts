@@ -23,7 +23,7 @@ export class Loading3d implements Ui3dScreen {
     this.color = colors(layer);
     this.flat.add(this.fixed.group, this.fill.group);
     this.fixed.want = this.fill.want = 1;
-    layer.add(this);
+    layer.add(this, 'loading');
     const tick = (now: number) => {
       if (!this.live) return;
       layer.frame(now);

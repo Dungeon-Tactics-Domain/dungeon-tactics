@@ -101,7 +101,7 @@ export class Dev3d implements Ui3dScreen {
     document.addEventListener('selectionchange', this.wake, { signal });
     hoverCursor(this.host, signal);
     setDev3d((start, onBack) => this.show(start, onBack));
-    layer.add(this);
+    layer.add(this, 'dev');
   }
 
   private show(start: (setup: DevSetup) => void, onBack?: () => void) {

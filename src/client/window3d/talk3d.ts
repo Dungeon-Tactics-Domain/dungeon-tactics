@@ -55,7 +55,7 @@ export class Talk3d implements Ui3dScreen {
     this.color = colors(layer);
     this.flat.add(this.fixed.group);
     this.fixed.want = 1;
-    layer.add(this);
+    layer.add(this, 'talk');
     this.release = setTalk3d((overlay) => this.take(overlay));
   }
 

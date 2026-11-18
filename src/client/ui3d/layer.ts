@@ -24,9 +24,10 @@ import { getLayout, onLayout } from '../layout-mode.ts';
 import { reducedMotion } from '../motion.ts';
 import { param } from '../store.ts';
 import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
-import { type Stage, stage } from './layout.ts';
+import { type Stage, stage, textPx } from './layout.ts';
 import { QUAD, QUAD_VERT, type Rgb, type Theme } from './panel.ts';
 import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
+import { safeArea } from './safe-area.ts';
 
 export interface Ui3dScreen {
   readonly flat: Group; // panels and text, depth test off, ordered by renderOrder
@@ -147,6 +148,10 @@ export class Ui3dLayer {
     this.wake();
   });
 
+  // a text's size on the page from its size on the reference (layout.ts textPx)
+  px(size: number, floor?: number) {
+    return textPx(size, this.s, floor);
+  }
   // pixel filter on: positions onto the block grid, so a sprite does not shimmer as it moves, and rotation in steps,
   // like the frames of a sprite
   snap(v: number) {
@@ -183,9 +188,10 @@ export class Ui3dLayer {
     const w = this.root.clientWidth,
       h = this.root.clientHeight,
       dpr = Math.min(devicePixelRatio, 2),
-      mode = getLayout();
-    if (w === this.w && h === this.h && dpr === this.dpr && mode === this.mode) return;
-    const st = stage(w, h, mode);
+      mode = getLayout(),
+      st = stage(w, h, mode, safeArea());
+    // the stage too: turning a phone over moves the notch without changing the page's size
+    if (w === this.w && h === this.h && dpr === this.dpr && mode === this.mode && st.x === this.stage.x) return;
     Object.assign(this, { w, h, dpr, mode, stage: st, s: st.s });
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
