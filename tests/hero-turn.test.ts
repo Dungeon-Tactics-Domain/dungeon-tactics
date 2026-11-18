@@ -54,11 +54,27 @@ describe('turn screens, key by key', () => {
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('act') });
   });
 
-  it('Status and Wait are the 4th and 3rd rows', () => {
+  it('Status and Wait run their own commands', () => {
     const { t, calls } = turn();
-    t.chooseCommand(3);
-    t.chooseCommand(2);
+    t.chooseCommand(commandIndex('status'));
+    t.chooseCommand(commandIndex('wait'));
     expect(calls).toEqual(['status', 'endTurn']);
+  });
+
+  // Fernando, Nov 18: after a move both rows show; Move opens the movement left, Undo move takes the step back
+  it('after a move: Move opens the map again, Undo move undoes, and the arrows walk all five rows', () => {
+    const { t, battle, calls, press } = turn();
+    battle.move({ x: 1, y: 2 });
+    expect(battle.reach().size).toBeGreaterThan(0);
+    t.screen = { k: 'menu', index: commandIndex('act') };
+    press({ k: 'cursor', dir: 'up' });
+    expect(t.screen).toEqual({ k: 'menu', index: commandIndex('undo') });
+    press({ k: 'cursor', dir: 'up' });
+    expect(t.screen).toEqual({ k: 'menu', index: commandIndex('move') });
+    t.chooseCommand(commandIndex('undo'));
+    expect(calls).toEqual(['undo']);
+    t.chooseCommand(commandIndex('move'));
+    expect(t.screen).toEqual({ k: 'map', command: 'move' });
   });
 
   it('the facing choice: Confirm passes the turn, Cancel goes back to the menu on Wait', () => {

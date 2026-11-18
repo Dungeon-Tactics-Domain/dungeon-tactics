@@ -11,7 +11,6 @@ import {
   abilityEnabled,
   COMMANDS,
   cancelStep,
-  canUndoMove,
   commandEnabled,
   commandIndex,
   lockStep,
@@ -174,7 +173,7 @@ export class HeroTurn {
     const b = this.game.battle;
     const c = COMMANDS[index];
     if (this.game.busy || !this.game.heroTurn || !c || !commandEnabled(b, c)) return;
-    if (c === 'move' && canUndoMove(b)) return this.game.undo(); // the Move row became "Undo move"
+    if (c === 'undo') return this.game.undo(); // the "Undo move" row
     sfx('confirm');
     if (c === 'status') return this.game.status();
     if (c === 'wait') return void this.game.endTurn();

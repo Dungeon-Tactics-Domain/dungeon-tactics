@@ -7,11 +7,11 @@ import { chargeFromText, chargeNote, counterFromText, counterNote } from './char
 import {
   abilitiesOf,
   abilityEnabled,
-  COMMANDS,
   type Command,
   cancelStep,
-  canUndoMove,
   commandEnabled,
+  commandIndex,
+  menuRows,
   type Screen,
   swimming,
 } from './command.ts';
@@ -130,19 +130,18 @@ export function renderCommands(box: HTMLElement, v: HudView, open: boolean, act:
   // with the submenu open, Act stays marked as the picked command (the focus is in the submenu)
   const state = (c: Command, i: number) =>
     s.k === 'menu' ? (i === s.index ? ' focus' : '') : c === 'act' ? ' picked' : '';
-  // moved and did not act: Move becomes "Undo move" (Esc also undoes), like Tactics Ogre
-  const undo = canUndoMove(b);
+  // after a move "Undo move" shows under Move (Esc also undoes), like Tactics Ogre
   box.replaceChildren(
     menuHead(t('Comandos', 'Commands')),
-    ...COMMANDS.map((c, i) =>
+    ...menuRows(b).map((c) =>
       button(
-        `item${state(c, i)}`,
+        `item${state(c, commandIndex(c))}`,
         [
           marker(c),
-          el('span', { class: 'item-label' }, commandName(c, undo)),
-          c === 'move' && undo ? hint('cancel') : c === 'wait' ? hint('wait') : c === 'status' ? hint('status') : null,
+          el('span', { class: 'item-label' }, commandName(c)),
+          c === 'undo' ? hint('cancel') : c === 'wait' ? hint('wait') : c === 'status' ? hint('status') : null,
         ],
-        () => act.command(i),
+        () => act.command(commandIndex(c)),
         { role: 'menuitem', disabled: !commandEnabled(b, c) },
       ),
     ),

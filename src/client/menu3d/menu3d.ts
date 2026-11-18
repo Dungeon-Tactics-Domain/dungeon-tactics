@@ -110,14 +110,16 @@ export class Menu3d implements Ui3dScreen {
       Object.assign(e.style, { left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`, height: `${b.h}px` });
       this.host.append(e);
     };
+    // a menu row stands for its place in COMMANDS (menuRows leaves Move or Undo move out), an ability for its own
     const rows = (list: 'menu' | 'abilities', col: Box, rs: MenuRow[], pick: (i: number) => void) =>
       rs.forEach((r, i) => {
+        const index = list === 'menu' ? m.commands[i] : i;
         hit(
           rowBox(col, i, at.cs),
           r.label,
           r.off,
-          () => pick(i),
-          () => this.act.hover(list, i),
+          () => pick(index),
+          () => this.act.hover(list, index),
         );
       });
     if (m.sub) {

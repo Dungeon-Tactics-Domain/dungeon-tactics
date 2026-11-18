@@ -63,15 +63,15 @@ const hpRegenText = (def: UnitDef) =>
 export const regenLine = (def: UnitDef) =>
   [...RESOURCES.map((k) => regenText(def, k)), hpRegenText(def)].filter(Boolean).join(' · ');
 
-// A command row's name (HTML menu and 3D menu); `undo`: moved and did not act, so Move undoes the move, like Tactics Ogre
+// A command row's name (HTML menu and 3D menu); "Undo move" is the reference's Reset, a row of its own under Move
 const COMMAND_NAME: Record<Command, () => string> = {
   move: () => t('Mover', 'Move'),
+  undo: () => t('Desfazer movimento', 'Undo move'),
   act: () => t('Habilidades', 'Abilities'), // the reference's name for the row and for its submenu
   wait: () => t('Esperar', 'Wait'),
   status: () => 'Status',
 };
-export const commandName = (c: Command, undo = false) =>
-  c === 'move' && undo ? t('Desfazer movimento', 'Undo move') : COMMAND_NAME[c]();
+export const commandName = (c: Command) => COMMAND_NAME[c]();
 // The note at the end of an ability row: its cost and charge ticks; greyed out, what is missing (a disabled row says why)
 export const abilityNote = (u: UnitState, a: AbilityDef, on: boolean) =>
   on

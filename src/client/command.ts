@@ -1,5 +1,5 @@
 // Command menu FFT style (Fernando's request, Nov 12: "recreate the interface the same way as Final Fantasy
-// Tactics"; Nov 16: the names, order and steps of The Ivalice Chronicles): Move · Abilities · Wait · Status, with the
+// Tactics"; Nov 16: the names, order and steps of The Ivalice Chronicles): Move · Undo move · Abilities · Wait · Status, with the
 // abilities submenu under Abilities (the `act` command). Pure (no DOM, no pixel): what each turn screen shows and what
 // follows each key. The Game executes; the HUD only draws.
 import { ABILITIES } from '../shared/battle/abilities.ts';
@@ -10,8 +10,10 @@ import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
-export type Command = 'move' | 'act' | 'wait' | 'status';
-export const COMMANDS: Command[] = ['move', 'act', 'wait', 'status'];
+export type Command = 'move' | 'undo' | 'act' | 'wait' | 'status';
+// The menu's index is a place in this list; menuRows says which of them show (Fernando, Nov 18: after a move, Move and
+// "Undo move" both show, up to five rows)
+export const COMMANDS: Command[] = ['move', 'undo', 'act', 'wait', 'status'];
 
 // The reference's fifth row, Auto-battle, is left out: the game has no auto play for the player
 export const commandIndex = (c: Command) => COMMANDS.indexOf(c);
@@ -35,8 +37,8 @@ export function needsLock(b: Battle, ability: string, target: Pos): boolean {
   return ABILITIES[ability].charge > 0 && !!on && on.id !== b.actor.id;
 }
 
-// Moved and not yet acted: the Move row becomes "Undo move" and Esc in the menu undoes it (Nov 13, Fernando's request,
-// like Tactics Ogre). Moving draws nothing random, so undoing is free; after acting, only Z (which spends an undo)
+// Moved: the "Undo move" row shows under Move and Esc in the menu undoes it (Nov 13, Fernando's request, like Tactics
+// Ogre; Nov 18: a row of its own, Move stays while movement is left). Moving draws nothing random, so undoing is free; after acting, only Z (which spends an undo)
 // since Nov 13 also after acting ("after attacking and moving you can undo the move"), if the last step was a move
 // that took no counterattack (Battle.lastFree)
 export const canUndoMove = (b: Battle) => b.state.turn.moved && b.lastFree && b.canUndo;
@@ -45,10 +47,19 @@ export const canUndoMove = (b: Battle) => b.state.turn.moved && b.lastFree && b.
 export const swimming = (b: Battle) => isDeep(tileAt(b.grid, b.actor.pos));
 
 export function commandEnabled(b: Battle, c: Command): boolean {
-  if (c === 'move') return b.reach().size > 0 || canUndoMove(b);
+  if (c === 'move') return b.reach().size > 0;
+  if (c === 'undo') return canUndoMove(b);
   if (c === 'act') return !b.state.turn.usedAbility && !swimming(b);
   return true;
 }
+
+// The rows the menu shows, in COMMANDS order: Move leaves once the unit moved and has no movement left (at the turn's
+// start it stays, greyed when boxed in), "Undo move" only while there is a move to take back. 4 rows at the start, 5
+// after a move with movement left
+export const menuRows = (b: Battle): Command[] =>
+  COMMANDS.filter((c) =>
+    c === 'move' ? !b.state.turn.moved || b.reach().size > 0 : c === 'undo' ? canUndoMove(b) : true,
+  );
 
 // ability you can pick right now: without the mana, stamina, stock or MP it costs it's grayed out, as in FFT
 export const abilityEnabled = (b: Battle, id: string) => canPay(b.actor, ABILITIES[id]);
@@ -56,8 +67,8 @@ export const abilitiesOf = (b: Battle) => UNIT_DEFS[b.actor.def].abilities;
 // range of the farthest-reaching ability (the dotted line around the player)
 export const longestRange = (b: Battle) => Math.max(0, ...abilitiesOf(b).map((id) => ABILITIES[id].range[1]));
 
-// where the menu cursor starts: Move if you can still move, otherwise Act, otherwise Wait. "Undo move" doesn't
-// take the cursor: a 2nd Enter after moving would undo the step by accident
+// where the menu cursor starts: Move if you can still move, otherwise Act, otherwise Wait. "Undo move" never takes the
+// cursor: a 2nd Enter after moving would undo the step by accident
 export function startScreen(b: Battle): Screen {
   // already moved and not yet acted: Abilities (the rest of the movement is left for after the hit)
   return {
@@ -67,7 +78,7 @@ export function startScreen(b: Battle): Screen {
         ? 'move'
         : commandEnabled(b, 'act')
           ? 'act'
-          : b.reach().size && !canUndoMove(b)
+          : b.reach().size
             ? 'move'
             : 'wait',
     ),

@@ -50,8 +50,8 @@ do not rearrange the layout only to reach that number.*
   never comes and goes under the finger. The ☰ list's Undo row follows it (`aria-disabled`, drawn in `--ui3d-ink-off`).
 - **Undo says its word**: "↶ Desfazer" (`window3d/tools3d.ts` `WORD`), so Undo and Back (↩, the arrow alone, kept
   narrow to stay clear of the help pill on a phone) are never told apart by the arrow's shape. Undo is "Desfazer" on
-  the button and on its ☰ row; the command menu's "Desfazer movimento" is the Move row itself turned around, not this
-  control.
+  the button and on its ☰ row; the command menu's "Desfazer movimento" is a row of its own right under Move (Nov 18),
+  not this control.
 - **The corner buttons and the Height** share the top right: the Height corner drops under the row of buttons where the
   page has no room for both (`heightBox`, `hints3d/hints-view.ts`; `toolsFoot`, `window3d/tools-layout.ts`). Under the
   Height, the tile line leaves out the height the corner already shows.
@@ -63,7 +63,9 @@ do not rearrange the layout only to reach that number.*
   top to the first whole row (`queueLayout`, `turn3d/queue-layout.ts`).
 - **The command menu never covers the acting unit's sheet** (at 844×390 it hid the end of the stamina, "50/5"); where the
   menu, the submenu and the ability sheet do not all fit beside it, the submenu's cascade over the menu shortens
-  (`menuLayout`, `menu3d/menu-layout.ts`). The menu is as tall as its rows, with no blank fifth row.
+  (`menuLayout`, `menu3d/menu-layout.ts`). The menu is as tall as its rows, with no blank fifth row: four at the turn's
+  start, five after a move with movement left (Move and "Desfazer movimento" both show; `menuRows`, `command.ts`), the
+  fifth growing it upwards from the same foot.
 - No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included).
 - Nothing lives only in hover.
 

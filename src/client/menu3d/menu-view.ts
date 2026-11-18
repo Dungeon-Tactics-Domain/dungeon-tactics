@@ -4,7 +4,7 @@
 import { ABILITIES, type AbilityDef } from '../../shared/battle/abilities.ts';
 import type { Element } from '../../shared/battle/units.ts';
 import { abilityNote, abilityPages, commandName } from '../battle-text.ts';
-import { abilitiesOf, abilityEnabled, COMMANDS, type Command, canUndoMove, commandEnabled } from '../command.ts';
+import { abilitiesOf, abilityEnabled, type Command, commandEnabled, commandIndex, menuRows } from '../command.ts';
 import type { HudView } from '../hud.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
 
@@ -22,6 +22,7 @@ export type IconKind =
 
 export const COMMAND_ICON: Record<Command, IconKind> = {
   move: 'boot',
+  undo: 'boot', // the move it takes back
   act: 'sword',
   wait: 'hourglass',
   status: 'scroll',
@@ -57,8 +58,9 @@ export interface SheetView {
 }
 export interface MenuView {
   head: string; // the acting unit's name, on the command menu's head
-  rows: MenuRow[]; // Move · Abilities · Wait · Status
-  index: number; // the focused command, or the picked one (Act) while the submenu is open
+  rows: MenuRow[]; // menuRows: Move · Undo move · Abilities · Wait · Status, Move and Undo only when they apply
+  commands: number[]; // each row's place in COMMANDS, what a click on it chooses
+  index: number; // the focused row, or the picked one (Abilities) while the submenu is open
   sub: MenuRow[] | null; // the abilities, while the submenu is open
   subIndex: number;
   sheet: SheetView | null; // the focused ability
@@ -80,19 +82,20 @@ export function menuView(v: HudView, open: boolean): MenuView | null {
   if (!open || (s.k !== 'menu' && s.k !== 'abilities')) return null;
   const b = v.battle;
   const owner = unitName(b.actor.def);
-  const undo = canUndoMove(b);
+  const cmds = menuRows(b);
   const ids = s.k === 'abilities' ? abilitiesOf(b) : null;
   const icon = (id: string) => ({ kind: abilityIcon3d(ABILITIES[id]), element: ABILITIES[id].element });
   const id = ids?.[s.index];
   return {
     head: owner,
-    rows: COMMANDS.map((c) => ({
-      label: commandName(c, undo),
+    rows: cmds.map((c) => ({
+      label: commandName(c),
       note: '',
       off: !commandEnabled(b, c),
       kind: COMMAND_ICON[c],
     })),
-    index: s.k === 'menu' ? s.index : COMMANDS.indexOf('act'),
+    commands: cmds.map(commandIndex),
+    index: cmds.map(commandIndex).indexOf(s.k === 'menu' ? s.index : commandIndex('act')),
     sub:
       ids?.map((a) => {
         const on = abilityEnabled(b, a);

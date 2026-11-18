@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
-import type { Screen } from '../src/client/command.ts';
+import { commandIndex, type Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
 import { LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
@@ -104,7 +104,7 @@ const view = (battle: Battle, screen: Screen) => ({ battle, screen }) as HudView
 describe('3D menu: what it shows', () => {
   it('the same rows as the HTML menu, and nothing while it is closed', () => {
     const b = duel();
-    const m = menuView(view(b, { k: 'menu', index: 2 }), true);
+    const m = menuView(view(b, { k: 'menu', index: commandIndex('wait') }), true);
     expect(m?.rows.map((r) => [r.label, r.kind, r.off])).toEqual([
       ['Mover', 'boot', false],
       ['Habilidades', 'sword', false],
@@ -112,8 +112,27 @@ describe('3D menu: what it shows', () => {
       ['Status', 'scroll', false],
     ]);
     expect(m).toMatchObject({ head: 'Guerreiro', index: 2, sub: null, sheet: null });
+    expect(m?.commands).toEqual(['move', 'act', 'wait', 'status'].map((c) => commandIndex(c as 'move')));
     expect(menuView(view(b, { k: 'menu', index: 0 }), false)).toBeNull();
     expect(menuView(view(b, { k: 'map', command: 'move' }), true)).toBeNull();
+  });
+
+  // Fernando, Nov 18: after a move Move stays and "Undo move" shows under it; a row stands for its place in COMMANDS
+  it('after a move: five rows, Undo move under Move, and each row clicks its own command', () => {
+    const b = duel();
+    b.move({ x: 2, y: 2 });
+    const m = menuView(view(b, { k: 'menu', index: commandIndex('act') }), true);
+    expect(m?.rows.map((r) => [r.label, r.off])).toEqual([
+      ['Mover', b.reach().size === 0],
+      ['Desfazer movimento', false],
+      ['Habilidades', false],
+      ['Esperar', false],
+      ['Status', false],
+    ]);
+    expect(m?.commands).toEqual([0, 1, 2, 3, 4]);
+    expect(m?.index).toBe(2); // the cursor on Abilities, never on Undo move
+    // the submenu open: Abilities stays picked on its row
+    expect(menuView(view(b, { k: 'abilities', index: 0 }), true)?.index).toBe(2);
   });
 
   it('the submenu keeps Act picked and opens the focused ability on the page asked for', () => {
@@ -235,9 +254,14 @@ describe('3D menu: where it sits', () => {
       const st = stage(w, h, 'edges', safe),
         bar = sheetBox(st, h);
       for (const touch of [false, true])
-        for (const sub of [0, 6]) {
-          const m = menuLayout(st, 4, sub, touch),
-            say = `${w}x${h} ${touch} ${sub}`;
+        for (const [rows, sub] of [
+          [4, 0],
+          [4, 6],
+          [5, 0], // moved with movement left (Nov 18): Move and Undo move
+        ]) {
+          const m = menuLayout(st, rows, sub, touch),
+            say = `${w}x${h} ${touch} ${rows} ${sub}`;
+          expect(m.main.y, say).toBeGreaterThanOrEqual(st.y); // a fifth row grows it up, still on the page
           expect(m.main.x, say).toBeGreaterThan(bar.x + bar.w);
           expect(m.sub.x, say).toBeGreaterThanOrEqual(m.main.x);
           if (h < 500) expect(m.sub.x + m.sub.w, say).toBeLessThan(m.sheet.x); // a phone: side by side
@@ -248,10 +272,17 @@ describe('3D menu: where it sits', () => {
     expect(ref.sub.x - ref.main.x).toBe(LEAD);
   });
 
-  it('is as tall as its rows: no blank row under four commands', () => {
-    const m = menuLayout(stage(844, 390, 'edges', { x: 47, y: 21 }), 4, 0, true);
-    expect(m.main.h).toBeCloseTo((REF.head + 4 * REF.row + REF.foot) * m.cs);
-    expect(rowBox(m.main, 3, m.cs).y + (REF.row + REF.foot) * m.cs).toBeCloseTo(m.main.y + m.main.h);
+  it('is as tall as its rows: no blank row under four commands, one more row for five, on the same foot', () => {
+    const st = stage(844, 390, 'edges', { x: 47, y: 21 });
+    for (const rows of [3, 4, 5]) {
+      const m = menuLayout(st, rows, 0, true);
+      expect(m.main.h).toBeCloseTo((REF.head + rows * REF.row + REF.foot) * m.cs);
+      expect(rowBox(m.main, rows - 1, m.cs).y + (REF.row + REF.foot) * m.cs).toBeCloseTo(m.main.y + m.main.h);
+    }
+    const four = menuLayout(st, 4, 0, true).main,
+      five = menuLayout(st, 5, 0, true).main;
+    expect(five.y + five.h).toBeCloseTo(four.y + four.h);
+    expect(five.y).toBeCloseTo(four.y - REF.row * touchScale(st));
   });
 
   it('in the frame an ultrawide page keeps the menu where the reference has it', () => {

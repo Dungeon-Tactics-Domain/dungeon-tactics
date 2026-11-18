@@ -9,6 +9,7 @@ import {
   commandIndex,
   lockStep,
   longestRange,
+  menuRows,
   startScreen,
   stepIndex,
   turnPage,
@@ -45,29 +46,30 @@ describe('command menu', () => {
 
   it('starts on Move; after moving, on Act; after moving and acting, on Wait', () => {
     const b = duel();
-    expect(startScreen(b)).toEqual({ k: 'menu', index: 0 });
+    expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
     b.move({ x: 2, y: 2 });
-    expect(startScreen(b)).toEqual({ k: 'menu', index: 1 });
+    expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('act') });
     b.act('strike', { x: 2, y: 1 });
     expect(commandEnabled(b, 'act')).toBe(false);
     // movement left (Nov 13, movement in parts): back to Move
-    expect(startScreen(b)).toEqual({ k: 'menu', index: 0 });
+    expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
   });
 
-  // Nov 13, Fernando's request, as in Tactics Ogre: after moving and before acting, Move becomes "Desfazer movimento" (undo move)
-  it("moved and didn't act: Move undoes the movement (for free), without the menu cursor landing on it", () => {
+  // Nov 13, Fernando's request, as in Tactics Ogre: after moving, "Desfazer movimento" (undo move); Nov 18: its own row
+  it("moved and didn't act: Undo move takes the movement back (for free), without the menu cursor landing on it", () => {
     const b = duel();
     expect(canUndoMove(b)).toBe(false);
     b.move({ x: 2, y: 2 });
     expect(canUndoMove(b)).toBe(true);
-    expect(commandEnabled(b, 'move')).toBe(true);
-    expect(startScreen(b)).toEqual({ k: 'menu', index: 1 }); // the 2nd Enter after moving doesn't undo by accident
+    expect(commandEnabled(b, 'undo')).toBe(true);
+    expect(commandEnabled(b, 'move')).toBe(b.reach().size > 0); // Move is Move again, for the movement left
+    expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('act') }); // a 2nd Enter doesn't undo by accident
     const undos = b.undosLeft;
     expect(b.undo()).toBe(true);
     expect(b.actor.pos).toEqual({ x: 1, y: 1 });
     expect(b.undosLeft).toBe(undos);
     expect(canUndoMove(b)).toBe(false);
-    expect(startScreen(b)).toEqual({ k: 'menu', index: 0 }); // back to the menu from before moving
+    expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') }); // back to the menu from before moving
   });
 
   it('after acting, a move that drew a counter cannot be undone (before or after moving)', () => {
@@ -82,7 +84,7 @@ describe('command menu', () => {
     expect(canUndoMove(acted)).toBe(false);
   });
 
-  it('acted, then a free move: the cursor skips "Undo move" and starts on Wait', () => {
+  it('acted, then a free move: the cursor skips "Undo move" and starts on Move, for the movement left', () => {
     const b = new Battle(
       flat(8, 8),
       stateOf([
@@ -95,8 +97,9 @@ describe('command menu', () => {
     b.move({ x: 1, y: 2 });
     expect(canUndoMove(b)).toBe(true); // a soldier cannot answer a shot, so the move took no counter
     expect(b.reach().size).toBeGreaterThan(0);
-    // the Move row reads "Undo move" now: a 2nd Enter on it would undo the step
-    expect(startScreen(b)).toEqual({ k: 'menu', index: 2 });
+    // Move is still Move (Nov 18); "Undo move" under it never takes the cursor
+    expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
+    expect(menuRows(b)).toEqual(['move', 'undo', 'act', 'wait', 'status']);
   });
 
   // Fernando, Nov 17: the cursor follows what is seen. "On the character" sits left of "On the tile"
@@ -123,15 +126,20 @@ describe('command menu', () => {
 
 // Nov 16: the names, order and steps of FFT: The Ivalice Chronicles
 describe('command list', () => {
-  it('Move, Abilities, Wait, Status, in the order of the reference', () => {
-    expect(COMMANDS).toEqual(['move', 'act', 'wait', 'status']);
-    expect(COMMANDS.map((c) => commandName(c))).toEqual(['Mover', 'Habilidades', 'Esperar', 'Status']);
-    expect(commandName('move', true)).toBe('Desfazer movimento'); // the reference's Reset
+  it('Move, Undo move, Abilities, Wait, Status, in the order of the reference', () => {
+    expect(COMMANDS).toEqual(['move', 'undo', 'act', 'wait', 'status']);
+    expect(COMMANDS.map((c) => commandName(c))).toEqual([
+      'Mover',
+      'Desfazer movimento', // the reference's Reset
+      'Habilidades',
+      'Esperar',
+      'Status',
+    ]);
   });
 
   it('Status always opens; Abilities closes after acting and in deep water it never opened', () => {
     const b = duel();
-    expect(COMMANDS.map((c) => commandEnabled(b, c))).toEqual([true, true, true, true]);
+    expect(COMMANDS.map((c) => commandEnabled(b, c))).toEqual([true, false, true, true, true]); // nothing to undo yet
     b.act('strike', { x: 2, y: 1 });
     expect(commandEnabled(b, 'act')).toBe(false);
     expect(commandEnabled(b, 'wait') && commandEnabled(b, 'status')).toBe(true);
@@ -252,5 +260,57 @@ describe('gamepad', () => {
     const mem = emptyMemory();
     expect(padActions(pad([4, 9]), mem, 0)).toEqual([{ k: 'rotate', dir: -1 }, { k: 'help' }]);
     expect(padActions(pad([8]), emptyMemory(), 0)).toEqual([{ k: 'undo' }]);
+  });
+});
+
+// Fernando, Nov 18: after a move the menu keeps Move (while movement is left) and shows "Undo move" under it
+describe('menu rows in each state of the turn', () => {
+  // an archer far from the soldier: shooting draws no counter, so the move after it stays free to undo
+  const range = () =>
+    new Battle(
+      flat(8, 8),
+      stateOf([
+        { id: 'a', def: 'archer', team: 'hero', x: 1, y: 1 },
+        { id: 'b', def: 'soldier', team: 'enemy', x: 5, y: 1 },
+        { id: 'beacon', def: 'beacon', team: 'hero', x: 7, y: 7 },
+      ]),
+    );
+  // walks one tile at a time until the movement runs out
+  const walkAll = (b: Battle) => {
+    for (let n = 0; n < 50 && b.reach().size; n++) b.move(b.reach().values().next().value!.pos);
+  };
+
+  it('the turn starts with 4 rows: Move, Abilities, Wait, Status', () => {
+    expect(menuRows(range())).toEqual(['move', 'act', 'wait', 'status']);
+  });
+
+  it('moved with movement left: 5 rows, Undo move right under Move', () => {
+    const b = range();
+    b.move({ x: 1, y: 2 });
+    expect(b.reach().size).toBeGreaterThan(0);
+    expect(menuRows(b)).toEqual(['move', 'undo', 'act', 'wait', 'status']);
+  });
+
+  it('moved with no movement left: Move leaves, Undo move stays', () => {
+    const b = range();
+    walkAll(b);
+    expect(b.reach().size).toBe(0);
+    expect(canUndoMove(b)).toBe(true);
+    expect(menuRows(b)).toEqual(['undo', 'act', 'wait', 'status']);
+  });
+
+  it('after attacking: Move for the movement left, no Undo move with nothing to take back', () => {
+    const b = range();
+    b.act('shot', { x: 5, y: 1 });
+    expect(menuRows(b)).toEqual(['move', 'act', 'wait', 'status']);
+    expect(commandEnabled(b, 'act')).toBe(false);
+  });
+
+  it('no step to undo (the move drew a counter): only Move, never Undo move', () => {
+    const b = duel();
+    b.move({ x: 2, y: 2 });
+    b.act('strike', { x: 2, y: 1 });
+    expect(canUndoMove(b)).toBe(false);
+    expect(menuRows(b)).toEqual([...(b.reach().size ? ['move'] : []), 'act', 'wait', 'status']);
   });
 });
