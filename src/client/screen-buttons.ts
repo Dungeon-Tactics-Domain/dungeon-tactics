@@ -10,10 +10,13 @@ export const parseButtons = (v: unknown): boolean | null => (typeof v === 'boole
 // `coarse`: a finger points, (pointer: coarse), as fullscreen.ts and confirm3d.ts ask
 export const buttonsOn = (saved: boolean | null, coarse: boolean) => saved ?? coarse;
 
+// The one question "is this a touch device?" (a finger points: `(pointer: coarse)`): the screen buttons' default, the town's
+// walk line (never the keys on touch) and the town's joystick all ask it, so they agree
+export const touchDevice = () => matchMedia('(pointer: coarse)').matches;
+
 let heard: ((on: boolean) => void) | null = null;
 
-export const screenButtons = () =>
-  buttonsOn(parseButtons(store.json(BUTTONS_KEY)), matchMedia('(pointer: coarse)').matches);
+export const screenButtons = () => buttonsOn(parseButtons(store.json(BUTTONS_KEY)), touchDevice());
 // the open page's buttons show or hide (one page at a time: the last listener stays)
 export function onScreenButtons(show: ((on: boolean) => void) | null) {
   heard = show;

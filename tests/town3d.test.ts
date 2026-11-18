@@ -395,8 +395,28 @@ describe('3D town HUD: the layout without the DOM', () => {
   });
   // review of Nov 18 at 844x390: "Falar com Hugo" twice, the top pill right over the balloon on Hugo's head
   it('says what Enter does once: the balloon over the target, the top pill only with nothing in reach', () => {
-    expect(promptSays('Falar com Hugo', 'Falar com Hugo')).toBe('');
-    expect(promptSays('W A S D andar', '')).toBe('W A S D andar');
+    expect(promptSays('Falar com Hugo', 'Falar com Hugo', true, false, 'keyboard', 'TOQUE')).toBe('');
+    expect(promptSays('W A S D andar', '', true, false, 'keyboard', 'TOQUE')).toBe('W A S D andar');
+  });
+  // Fernando, Nov 18, on his phone: the walk line is the Tutorial and never names keys on a touch device
+  describe('the walk line: Tutorial x touch x what the hints show', () => {
+    const KEYS = 'W A S D andar';
+    const says = (tutorial: boolean, touch: boolean, shown: string) =>
+      promptSays(KEYS, '', tutorial, touch, shown, 'Joystick: andar');
+    it('Tutorial off: no line at all, on a PC, on a phone and with a pad', () => {
+      for (const touch of [false, true])
+        for (const shown of ['keyboard', 'xbox']) expect(says(false, touch, shown)).toBe('');
+    });
+    it('Tutorial on, a PC: the keys, or the pad icons when a pad is in use', () => {
+      expect(says(true, false, 'keyboard')).toBe(KEYS);
+      expect(says(true, false, 'xbox')).toBe(KEYS);
+    });
+    it('Tutorial on, a touch device: the touch line instead of the keys', () => {
+      expect(says(true, true, 'keyboard')).toBe('Joystick: andar');
+    });
+    it('Tutorial on, a phone with a gamepad in use: the pad line stays (a pad button is not a key)', () => {
+      expect(says(true, true, 'xbox')).toBe(KEYS);
+    });
   });
   it('follows the margins of the frame layout and the notch', () => {
     const l = townHud(3440, { top: 12, right: 452, left: 452 }, true);

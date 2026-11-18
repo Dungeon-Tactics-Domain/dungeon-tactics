@@ -19,8 +19,18 @@ export function townHud(pageW: number, inset: { top: number; right: number; left
 
 // What the top pill says. game/town.ts writes the target ("Talk to Hugo") on the help line and as the balloon's name;
 // the HTML balloon shows only its symbol, but the 3D one writes the name, so the pill keeps only what has no balloon
-// (the walk keys): on a phone the balloon sat right under it, the same words twice (review of Nov 18, 844x390)
-export const promptSays = (line: string, balloon: string) => (line === balloon ? '' : line);
+// (the walk line): on a phone the balloon sat right under it, the same words twice (review of Nov 18, 844x390).
+// The walk line is a Tutorial (Fernando, Nov 18, on his phone): nothing with the option off, and on a touch device never
+// the keys: `touchLine` ("Joystick: walk...") in their place; a pad's own icons are not keys and stay (a phone with a
+// gamepad). Pure and tested
+export const promptSays = (
+  line: string,
+  balloon: string,
+  tutorial: boolean,
+  touch: boolean,
+  shown: string,
+  touchLine: string,
+) => (line === balloon || !tutorial ? '' : touch && shown === 'keyboard' ? touchLine : line);
 
 // The town window on a page `w` x `h`: the reference centred, one scale `s` across. Down, a tablet under the PC's
 // smallest scale stretches it into the page's spare height (`sy`) as far as its 14 px text grew past the drawing (a

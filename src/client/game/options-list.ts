@@ -106,8 +106,8 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
       onOff(
         t('Tutorial', 'Tutorial'),
         t(
-          'Mostra no topo da batalha o que fazer agora e por que uma casa não serve. Desligado, fica só o resumo da última ação.',
-          'Shows at the top of the battle what to do now and why a tile does not work. Off, only the last action’s summary stays.',
+          'Mostra no topo da batalha o que fazer agora e por que uma casa não serve, e no topo da cidade como andar. Desligado, fica só o resumo da última ação e a cidade sem a faixa.',
+          'Shows at the top of the battle what to do now and why a tile does not work, and at the top of the town how to walk. Off, only the last action’s summary stays and the town has no strip.',
         ),
         tutorialOn,
         setTutorial,
