@@ -88,11 +88,15 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
 // Where the life and CT lines sit beside a card `h` px tall, at the list's scale `s` (1 at 1280x720), in px from the
 // card's top: each line's middle and, right under it, its bar's top. The text never goes under the game's 16 px, so the
 // rows never get shorter than what two lines and two bars take (style.css .hud.turn3d .queue-row)
+// Under LIST_MIN (a narrow page, where the whole interface shrinks: ui3d/layout.ts) those floors shrink with the list
+export const LIST_MIN = 0.9; // the list's scale at layout.ts MIN_SCALE (1.5 of it: turn3d.ts)
+export const listFloor = (s: number) => Math.min(1, s / LIST_MIN);
 export function statsLayout(h: number, s: number) {
-  const size = Math.max(16, Math.round(12 * s)),
-    bar = Math.max(4, Math.round(4 * s)),
+  const f = listFloor(s),
+    size = Math.max(16 * f, Math.round(12 * s)),
+    bar = Math.max(4 * f, Math.round(4 * s)),
     line = size * 1.1,
-    gap = Math.max(2, Math.round(3 * s)),
+    gap = Math.max(2 * f, Math.round(3 * s)),
     top = (h - 2 * (line + bar) - gap) / 2,
     second = top + line + bar + gap;
   return {

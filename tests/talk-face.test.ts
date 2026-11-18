@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { faceOf, faceSize, mouthFrame } from '../src/client/talk.ts';
+import { charMs, faceOf, faceSize, mouthFrame } from '../src/client/talk.ts';
 import FACES from '../src/content/faces.json';
 
 const TALK = [1, 2]; // the painted sheets' mouthFrames
@@ -53,5 +53,16 @@ describe('faceOf', () => {
   it('has nothing for a speaker without a sheet, who keeps portrait()', () => {
     expect(faceOf('beacon')).toBeUndefined();
     expect(faceOf('warrior', {})).toBeUndefined();
+  });
+});
+
+describe('charMs: the pause between two letters of a sentence', () => {
+  it('types slower on Normal than on Fast, and not at all on Instant', () => {
+    expect(charMs('normal', false)).toBeGreaterThan(charMs('fast', false));
+    expect(charMs('fast', false)).toBeGreaterThan(0);
+    expect(charMs('instant', false)).toBe(0);
+  });
+  it('shows the whole sentence at once under Reduce motion, whatever the speed', () => {
+    for (const speed of ['normal', 'fast', 'instant'] as const) expect(charMs(speed, true)).toBe(0);
   });
 });

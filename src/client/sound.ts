@@ -134,10 +134,12 @@ function unlock() {
 if (typeof addEventListener !== 'undefined')
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
     addEventListener(ev, unlock, { capture: true });
-// coming back to the tab or app: the system may have suspended the context while it was away
+// leaving the tab or app stops the music (Nov 18: on a phone it kept playing behind another app); coming back starts it
+// again, and wakes the context the system may have suspended while it was away
 if (typeof document !== 'undefined')
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && ctx) unlock();
+    if (document.hidden) for (const v of voices.values()) v.audio.pause();
+    else if (ctx) unlock();
   });
 
 const load = (name: string) => {

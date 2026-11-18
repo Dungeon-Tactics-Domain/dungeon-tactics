@@ -1,0 +1,40 @@
+/* ---- 3D notice window (?note=3d; src/client/window3d/note3d.ts) ---- */
+/* The sheet is drawn on the 3D layer. Its window (dialog.ts) sits over the drawn sheet, unseen (note3d.ts gives it the
+   sheet's box and each button its plaque's): Enter, Esc, the pad, a tap, a tap outside and the ✕ on the top right
+   corner stay the window's, and it holds the notice as real text for the screen reader. Unseen by opacity, never by
+   visibility: its buttons must still take the focus and a tap */
+.overlay.note3d-overlay {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.dialog.note3d {
+  position: absolute;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+  animation: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.dialog.note3d .dialog-head button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--tap);
+  height: var(--tap);
+  cursor: pointer;
+}
+.note3d-body button {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}

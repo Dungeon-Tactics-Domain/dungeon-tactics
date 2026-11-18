@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { menuLayout, REF, rowBox } from '../src/client/menu3d/menu-layout.ts';
+import { menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
 import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
-import { matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
+import { LIST_MIN, listFloor, matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
 import { stage } from '../src/client/ui3d/layout.ts';
 import { pixelBlock } from '../src/client/ui3d/pixel.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
@@ -188,7 +188,38 @@ describe('3D menu: where it sits', () => {
     expect(main.x + main.w).toBeCloseTo(1280 - 354 * s);
     expect(main.y + main.h).toBeCloseTo(720 - 65 * s);
     expect(menuLayout(at(2560, 1080), 4, 0).main.x).toBe(2560 - 354 - 414);
-    expect(menuLayout(at(400, 700), 4, 0).main.x).toBe(REF.hand * 0.6);
+    expect(menuLayout(at(250, 700), 4, 0).main.x).toBeCloseTo(REF.hand / 3); // under the narrow floor's page
+  });
+
+  // Fernando, Nov 18: phone and tablet; the pieces shrink with a narrow page, a finger's rows as little as it lets them
+  it('on touch the columns keep the smallest full scale where the page is tall enough, and half of it on a phone', () => {
+    const phone = stage(844, 390, 'edges', { x: 47, y: 21 }); // s 0.39
+    expect(touchScale(phone)).toBeCloseTo(348 / 700);
+    expect(touchScale(stage(768, 1024, 'edges'))).toBe(0.6);
+    expect(touchScale(stage(1920, 1080, 'edges'))).toBe(1); // never under the stage's
+    const mouse = menuLayout(phone, 4, 4),
+      finger = menuLayout(phone, 4, 4, true);
+    expect(mouse.cs).toBe(phone.s);
+    expect(rowBox(finger.main, 0, finger.cs).h).toBeGreaterThan(28);
+    expect(rowBox(finger.main, 0, finger.cs).h).toBeGreaterThan(rowBox(mouse.main, 0, mouse.cs).h);
+    expect(finger.main.y + finger.main.h).toBeCloseTo(390 - 21 - 65 * finger.cs); // still on its corner
+    expect(finger.sub.x + finger.sub.w).toBeLessThanOrEqual(844 - 47);
+    // the sheet's page arrows: the drawn foot is 19 px there, the finger's box 44 about its middle
+    expect(mouse.prev.h).toBeCloseTo(48 * phone.s);
+    expect(finger.prev.h).toBe(44);
+    expect(finger.prev.y + 22).toBeCloseTo(mouse.prev.y + mouse.prev.h / 2);
+  });
+
+  it('on a short page the columns step left of the sheet they would sit under', () => {
+    for (const touch of [false, true]) {
+      const { main, sub, sheet } = menuLayout(stage(844, 390, 'edges', { x: 47, y: 21 }), 4, 4, touch);
+      expect(sheet.y + sheet.h, String(touch)).toBeGreaterThan(main.y); // side by side, not one over the other
+      expect(sub.x + sub.w, String(touch)).toBeLessThan(sheet.x);
+      expect(main.x, String(touch)).toBeGreaterThan(47);
+    }
+    // a page tall enough keeps the reference's corner
+    const { main } = menuLayout(stage(1024, 768, 'edges'), 4, 4, true);
+    expect(main.x + main.w).toBeCloseTo(1024 - 354 * 0.6);
   });
 
   it('in the frame an ultrawide page keeps the menu where the reference has it', () => {
@@ -311,12 +342,13 @@ describe('3D turn list: life and CT lines', () => {
     expect(cards.filter((c) => !c.id.charge).every((c) => c.stats)).toBe(true);
   });
 
-  it('the lines never go under 16 px and fit the card at every scale the rows allow', () => {
-    // the rows' sizes in style.css (.hud.turn3d .queue-row): 52 design px tall, never under 48 px
-    for (const s of [0.3, 0.54, 0.87, 1, 1.5, 2, 3]) {
-      const h = Math.max(52 * s, 48);
+  it('the lines never go under 16 px from the smallest full scale up, and fit the card at every scale', () => {
+    // the rows' sizes in style.css (.hud.turn3d .queue-row): 52 design px tall, never under 48 px times --t3f
+    for (const s of [0.5, 0.585, 0.87, 0.9, 1, 1.5, 2, 3]) {
+      const h = Math.max(52 * s, 48 * listFloor(s));
       const l = statsLayout(h, s);
-      expect(l.size).toBeGreaterThanOrEqual(16);
+      // a narrow page (under LIST_MIN) shrinks the floor with the pieces
+      expect(l.size).toBeGreaterThanOrEqual(16 * Math.min(1, s / LIST_MIN));
       expect(l.fits).toBe(true);
       // top to bottom: life text, its bar, CT text, its bar, all inside the card
       expect(l.hp.text).toBeLessThan(l.hp.bar);

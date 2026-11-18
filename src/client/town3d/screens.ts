@@ -1,5 +1,5 @@
 // The town's 3D windows at work (hud-skin.ts loads this for the town): the layer over the town's HUD, the HUD itself
-// (hud3d.ts), the speech box (talk3d.ts), the street's windows (street.ts) and, for each window of a building (Shop,
+// (hud3d.ts), the speech box (window3d/talk3d.ts), the street's windows (street.ts) and, for each window of a building (Shop,
 // Tavern, Party), the loop the HTML one runs: read the saved game, show its page (shop-view.ts,
 // party-view.ts), run the pressed button through the same rules (chest.ts, group.ts), save and show again. While
 // mounted, the town's openers hand their windows over (town-ui.ts `town3d`); a page too small for the drawing, a
@@ -16,13 +16,14 @@ import { openBar, openShop } from '../town-shop.ts';
 import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
+import { Note3d } from '../window3d/note3d.ts';
+import { Talk3d } from '../window3d/talk3d.ts';
 import { TownHud3d } from './hud3d.ts';
 import { Map3d } from './map3d.ts';
 import type { Hit, Page } from './page.ts';
 import { PAGES, partyPage } from './party-view.ts';
 import { barPage, type ShopTab, shopPage } from './shop-view.ts';
 import { streetWindows } from './street.ts';
-import { Talk3d } from './talk3d.ts';
 import { Town3d } from './town3d.ts';
 
 const save = (key: string, v: unknown) => store.set(key, JSON.stringify(v));
@@ -34,7 +35,7 @@ const rowOf = (page: Page, sel: string) =>
 
 export function mountTown3d(
   root: HTMLElement,
-  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean; map: boolean },
+  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean; map: boolean; note?: boolean },
 ) {
   let again: (() => void) | undefined; // the open window as its HTML one, should the drawing go away
   let layer: Ui3dLayer;
@@ -276,6 +277,7 @@ export function mountTown3d(
       streetWindows(ui, fits, (fn) => (again = fn)),
     );
   if (on.hud) new TownHud3d(layer, root);
-  if (on.talk) new Talk3d(layer, fits);
+  if (on.talk) new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
+  if (on.note) new Note3d(layer); // takes each notice window by itself (note.ts `setNote3d`)
   requestAnimationFrame(tick);
 }

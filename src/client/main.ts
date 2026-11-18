@@ -115,7 +115,7 @@ export class Game implements TurnHost {
     this.scene.setSpin(!!document.querySelector('.title-overlay') && !reducedMotion());
     this.placeMenu();
     this.hud.showFaces(this.scene.now);
-    this.readPad();
+    if (!document.querySelector('.loading-cover')) this.readPad(); // the pad waits for the cover, like the keys
   }
 
   private runKey(a: KeyAction) {
