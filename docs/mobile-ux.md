@@ -45,8 +45,25 @@ do not rearrange the layout only to reach that number.*
 - Controls stay out of the play area and away from the far corners (a thumb reaches the lower sides best; the corners
   hold the notch and the system gestures).
 - About five or six active controls at a time: the command menu's rows, Back, Undo, ☰.
-- **Undo is a button on screen** (`.tools .undo`, beside Back and ☰) whenever the battle has a move to undo
-  (`undoShown`, `hud-menus.ts`). It is no longer only inside ☰.
+- **Undo is always a button on screen** (`.tools .undo`, beside Back and ☰; Fernando, Nov 18): live whenever the battle
+  has a step to undo (`undoShown`, `hud-menus.ts`), faded to 45% (`OFF_ALPHA`, `tool-rows.ts`) and dead with none, so it
+  never comes and goes under the finger. The ☰ list's Undo row follows it (`aria-disabled`, drawn in `--ui3d-ink-off`).
+- **Undo says its word**: "↶ Desfazer" (`window3d/tools3d.ts` `WORD`), so Undo and Back (↩, the arrow alone, kept
+  narrow to stay clear of the help pill on a phone) are never told apart by the arrow's shape. Undo is "Desfazer" on
+  the button and on its ☰ row; the command menu's "Desfazer movimento" is the Move row itself turned around, not this
+  control.
+- **The corner buttons and the Height** share the top right: the Height corner drops under the row of buttons where the
+  page has no room for both (`heightBox`, `hints3d/hints-view.ts`; `toolsFoot`, `window3d/tools-layout.ts`). Under the
+  Height, the tile line leaves out the height the corner already shows.
+- **The ☰ list says when it scrolls**: while rows wait under it, its foot reads "▼ Mais abaixo" in the room the layout
+  keeps for it (`below`, `cue`, `tools-layout.ts`). The Pixel size row shows the size in use ("2 px", "desligado").
+- **No pointing glove for a finger**: the command menu's and the ☰ list's glove hide while a finger plays (the layer's
+  `finger`, `ui3d/layer.ts`, the same switch that hides the key hints); a key or a pad brings it back.
+- **The turn list starts under the top margin** and its title never covers a card: a list longer than its box drops its
+  top to the first whole row (`queueLayout`, `turn3d/queue-layout.ts`).
+- **The command menu never covers the acting unit's sheet** (at 844×390 it hid the end of the stamina, "50/5"); where the
+  menu, the submenu and the ability sheet do not all fit beside it, the submenu's cascade over the menu shortens
+  (`menuLayout`, `menu3d/menu-layout.ts`). The menu is as tall as its rows, with no blank fifth row.
 - No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included).
 - Nothing lives only in hover.
 

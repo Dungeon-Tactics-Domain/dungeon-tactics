@@ -18,6 +18,7 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { type Act, hintLine, type Shown } from '../glyphs.ts';
+import { KEYS } from '../hud-pieces.ts';
 import { el } from '../icons.ts';
 import { keysShown, onShown } from '../key-hints.ts';
 import { getLayout, onLayout } from '../layout-mode.ts';
@@ -125,6 +126,9 @@ export class Ui3dLayer {
     }
     root.classList.add('ui3d');
     root.append(this.canvas);
+    const o = { signal: this.heard.signal, capture: true };
+    addEventListener('keydown', () => this.input(false), o);
+    addEventListener('pointerdown', (e) => e.pointerType !== 'mouse' && this.input(true), o);
     this.sized = new ResizeObserver(() => this.fit());
     this.sized.observe(root);
     this.fit();
@@ -148,10 +152,17 @@ export class Ui3dLayer {
     return hintLine(keysShown(), pairs);
   }
   // the hints changed between the keys and a pad's icons (key-hints.ts): every screen draws again, as on a resize
-  private readonly unhear = onShown(() => {
+  private readonly unhear = onShown(() => this.input(false, true));
+  // A finger is playing (no key or pad button since the last touch): no key hints and no pointing glove, the focus is
+  // where the finger is (Fernando, Nov 17 the hints, Nov 18 the glove). The mouse changes nothing
+  finger = !KEYS;
+  private readonly heard = new AbortController();
+  private input(finger: boolean, redraw = false) {
+    if (finger === this.finger && !redraw) return;
+    this.finger = finger;
     for (const s of this.screens) s.resize();
     this.wake();
-  });
+  }
 
   // a text's size on the page from its size on the reference (layout.ts textPx)
   px(size: number, floor?: number) {
@@ -279,6 +290,7 @@ export class Ui3dLayer {
     this.canvas.removeEventListener('webglcontextlost', this.lost);
     this.sized.disconnect();
     this.unhear();
+    this.heard.abort();
     for (const stop of this.unheard) stop();
     for (const s of [...this.screens]) s.dispose();
     this.over?.material.dispose();

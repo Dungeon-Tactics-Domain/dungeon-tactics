@@ -6,7 +6,7 @@ import type { HudActions } from './hud.ts';
 import { hint } from './hud-pieces.ts';
 import { t } from './i18n.ts';
 import { button, type Child, el, icon, iconButton, UI_ICON } from './icons.ts';
-import { type Tool, toolRows } from './tool-rows.ts';
+import { pixelValue, type Tool, toolRows } from './tool-rows.ts';
 
 export class ToolsMenu {
   private readonly toolsMenu = el('div', { class: 'panel tools-menu', role: 'menu', hidden: true });
@@ -16,10 +16,13 @@ export class ToolsMenu {
     () => this.showTools(!!this.toolsMenu.hidden),
     { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' },
   );
-  // Undo on the screen, left of Back and the menu button (hud-menus.ts renderBack shows it): for the fingers, as Back is
+  // Undo on the screen, left of Back and the menu button: for the fingers, as Back is. Always there, faded with no step
+  // to take back (Fernando, Nov 18; setUndo)
   readonly undo: HTMLElement;
+  private readonly undoRow: HTMLElement;
   private readonly fastBtn: HTMLElement;
   private readonly fpsBtn: HTMLElement;
+  private readonly pixelBtn: HTMLElement;
   // a menu button (3 bars) on the HUD panel colour in place of the row of 7 stone buttons (Nov 13, Fernando's request:
   // "crude and inconsistent"); the keys still work and show on each row
   readonly root = el('div', { class: 'tools' }, this.burger, this.toolsMenu);
@@ -31,15 +34,16 @@ export class ToolsMenu {
   };
 
   constructor(act: HudActions) {
+    const off = () => this.undo.getAttribute('aria-disabled') === 'true';
     const undo = () => {
       this.close();
-      act.undo();
+      if (!off()) act.undo();
     };
-    this.undo = iconButton('↶', t('Desfazer', 'Undo'), undo, { class: 'icon undo', hidden: true });
+    this.undo = iconButton('↶', t('Desfazer', 'Undo'), undo, { class: 'icon undo', 'aria-disabled': 'true' });
     this.root.prepend(this.undo);
     // the rows are tool-rows.ts'; here only what each runs and the four that have an icon of the atlas
     const run: Record<Tool, () => void> = {
-      undo: () => act.undo(),
+      undo: () => off() || act.undo(),
       rotateLeft: () => act.rotate(-1),
       rotateRight: () => act.rotate(1),
       recenter: () => act.recenter(),
@@ -63,9 +67,23 @@ export class ToolsMenu {
     );
     this.fpsBtn = items.get('fps')!;
     this.fastBtn = items.get('fast')!;
+    this.pixelBtn = items.get('pixel')!;
+    this.pixelBtn.querySelector('.tool-label')?.after(el('span', { class: 'tool-value' }));
+    this.undoRow = items.get('undo')!;
     this.toolsMenu.append(...items.values());
+    this.setUndo(false);
   }
 
+  // a step to take back or none: the button and the list's row stay, faded and dead with none
+  setUndo(can: boolean) {
+    for (const e of [this.undo, this.undoRow]) e.setAttribute('aria-disabled', String(!can));
+  }
+  // the pixel size in use, on its row (tools3d.ts reads it back)
+  setPixel(size: number) {
+    const v = this.pixelBtn.querySelector('.tool-value')!;
+    v.textContent = pixelValue(size);
+    this.pixelBtn.dataset.value = v.textContent;
+  }
   setFps(on: boolean) {
     this.fpsBtn.setAttribute('aria-checked', String(on));
   }

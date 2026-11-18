@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { type LayoutMode, stage } from '../src/client/ui3d/layout.ts';
-import { rowSeen, type ToolsSpec, toolsLayout } from '../src/client/window3d/tools-layout.ts';
+import { rowSeen, type ToolsSpec, toolsFoot, toolsLayout } from '../src/client/window3d/tools-layout.ts';
 
 // The 3D corner menu's own layout (Nov 18: the 3D pieces stop measuring the HTML). Each case is what the browser
 // measured on the unseen HTML menu with its list open, on a sandbox scene, the day before the numbers moved to
@@ -156,6 +156,34 @@ describe('3D corner menu: its layout with no DOM', () => {
     const hair = toolsLayout(spec(844, 390, 'edges', { scroll: 1 }));
     expect(rowSeen(hair, hair.rows[0])).toBe(true);
     expect(rowSeen(hair, toolsLayout(spec(844, 390, 'edges', { scroll: 2 })).rows[0])).toBe(false);
+  });
+
+  // Fernando, Nov 18: Undo carries its word ("↶ Desfazer"), so ↶ and ↩ are told apart
+  it('a button with its word is as wide as the word, the row still 8 px apart and on the corner', () => {
+    const [back, undo, menu] = toolsLayout(spec(844, 390, 'edges', { buttons: 3, widths: [80, 100, 0] })).buttons;
+    expect([back.w, undo.w, menu.w]).toEqual([80, 100, 44]);
+    expect(menu.x + menu.w).toBe(844 - 12);
+    expect(menu.x - (undo.x + undo.w)).toBe(8);
+    expect(undo.x - (back.x + back.w)).toBe(8);
+    expect(back.h).toBe(44);
+    // never narrower than tall
+    expect(toolsLayout(spec(844, 390, 'edges', { buttons: 2, widths: [10, 0] })).buttons[0].w).toBe(44);
+  });
+
+  // Fernando, Nov 18: on a phone "FPS counter" and "Options and help" were found only by scrolling by chance
+  it('while rows wait under the list, its foot keeps room for a cue and no row is drawn over it', () => {
+    const top = toolsLayout(spec(844, 390, 'edges'));
+    expect(top.below).toBe(true);
+    expect(top.cue).toBeGreaterThanOrEqual(16);
+    for (const r of top.rows) if (rowSeen(top, r)) expect(r.y + r.h).toBeLessThanOrEqual(top.list.h - top.cue + 1);
+    const end = toolsLayout(spec(844, 390, 'edges', { scroll: top.more }));
+    expect([end.below, end.cue]).toEqual([false, 0]);
+    expect(toolsLayout(spec(1920, 1080, 'edges')).below).toBe(false); // a list that fits says nothing
+  });
+
+  it('the Height corner keeps under the row of buttons', () => {
+    expect(toolsFoot(0.39, 12)).toBe(12 + 44 + 8);
+    expect(toolsFoot(1, 12)).toBe(12 + 56 + 8);
   });
 
   it('the head is a whole number of px, as the browser draws a frame', () => {

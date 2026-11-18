@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
+import { LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
 import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import { LIST_MIN, listFloor, matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
-import { stage } from '../src/client/ui3d/layout.ts';
+import { sheetBox, stage } from '../src/client/ui3d/layout.ts';
 import { pixelBlock } from '../src/client/ui3d/pixel.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
 import { wrapLines } from '../src/client/ui3d/text.ts';
@@ -166,7 +166,8 @@ describe('3D menu: where it sits', () => {
   it('on the reference places at the reference size, in both layouts', () => {
     for (const mode of ['edges', 'frame'] as const) {
       const { main, sub, sheet, prev, next } = menuLayout(at(1920, 1080, mode), 4, 0);
-      expect(main).toEqual({ x: 1152, y: 688, w: 414, h: 327 });
+      // as tall as its rows (Nov 18: no blank fifth row), on the region's foot
+      expect(main).toEqual({ x: 1152, y: 745, w: 414, h: REF.head + 4 * REF.row + REF.foot });
       expect(sub.x).toBe(1284);
       expect(sheet).toEqual({ x: 1450, y: 100, w: 400, h: 564 });
       expect(prev.x + prev.w).toBe(next.x);
@@ -222,10 +223,41 @@ describe('3D menu: where it sits', () => {
     expect(main.x + main.w).toBeCloseTo(1024 - 354 * 0.6);
   });
 
+  // Fernando, Nov 18: at 844x390 the menu covered the end of the acting unit's stamina ("50/5")
+  it("never covers the acting unit's sheet in the combat bar; on a phone the cascade shortens instead", () => {
+    for (const [w, h, safe] of [
+      [844, 390, { x: 47, y: 21 }],
+      [667, 375, { x: 0, y: 0 }],
+      [1024, 768, { x: 0, y: 0 }],
+      [768, 1024, { x: 0, y: 0 }],
+      [1280, 720, { x: 0, y: 0 }],
+    ] as const) {
+      const st = stage(w, h, 'edges', safe),
+        bar = sheetBox(st, h);
+      for (const touch of [false, true])
+        for (const sub of [0, 6]) {
+          const m = menuLayout(st, 4, sub, touch),
+            say = `${w}x${h} ${touch} ${sub}`;
+          expect(m.main.x, say).toBeGreaterThan(bar.x + bar.w);
+          expect(m.sub.x, say).toBeGreaterThanOrEqual(m.main.x);
+          if (h < 500) expect(m.sub.x + m.sub.w, say).toBeLessThan(m.sheet.x); // a phone: side by side
+        }
+    }
+    // a page with room keeps the full cascade
+    const ref = menuLayout(stage(1920, 1080, 'edges'), 4, 6);
+    expect(ref.sub.x - ref.main.x).toBe(LEAD);
+  });
+
+  it('is as tall as its rows: no blank row under four commands', () => {
+    const m = menuLayout(stage(844, 390, 'edges', { x: 47, y: 21 }), 4, 0, true);
+    expect(m.main.h).toBeCloseTo((REF.head + 4 * REF.row + REF.foot) * m.cs);
+    expect(rowBox(m.main, 3, m.cs).y + (REF.row + REF.foot) * m.cs).toBeCloseTo(m.main.y + m.main.h);
+  });
+
   it('in the frame an ultrawide page keeps the menu where the reference has it', () => {
     const { main, sheet } = menuLayout(at(3440, 1440, 'frame'), 4, 0);
     expect(main.x).toBeCloseTo(440 + (1152 * 4) / 3);
-    expect(main.y).toBeCloseTo((688 * 4) / 3);
+    expect(main.y).toBeCloseTo((745 * 4) / 3);
     expect(sheet.x).toBeCloseTo(440 + (1450 * 4) / 3);
   });
 

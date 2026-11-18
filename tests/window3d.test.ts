@@ -3,7 +3,7 @@ import scene from '../scripts/sandbox/bench/window3d.json';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { type Act, keysText } from '../src/client/glyphs.ts';
 import { keyAction } from '../src/client/keyboard.ts';
-import { toolRows } from '../src/client/tool-rows.ts';
+import { pixelValue, toolRows } from '../src/client/tool-rows.ts';
 import { stage } from '../src/client/ui3d/layout.ts';
 import { neighbour } from '../src/client/ui3d/walk.ts';
 import { REF as NOTE, noteLayout, noteWidths } from '../src/client/window3d/note-view.ts';
@@ -13,6 +13,21 @@ import { REF, statusLayout, valueWidth } from '../src/client/window3d/status-vie
 // checked on the bench (docs/sandbox.md: window3d.json)
 describe('corner menu: one list of rows for the HTML menu and the 3D one', () => {
   const rows = toolRows();
+
+  // Fernando, Nov 18: Undo stays in the list with no step to take back, faded and dead
+  it('Undo is marked off with no step to take back, and only Undo', () => {
+    expect(
+      toolRows(false)
+        .filter((r) => r.off)
+        .map((r) => r.tool),
+    ).toEqual(['undo']);
+    expect(toolRows(true).some((r) => r.off)).toBe(false);
+    expect(toolRows(false)[0].label).toBe('Desfazer'); // the same word as the button on the screen
+  });
+
+  it('the pixel size row says the size in use', () => {
+    expect([0, 2, 3, 4].map(pixelValue)).toEqual(['desligado', '2 px', '3 px', '4 px']);
+  });
 
   it('has each tool once, with a name and a glyph', () => {
     expect(new Set(rows.map((r) => r.tool)).size).toBe(rows.length);

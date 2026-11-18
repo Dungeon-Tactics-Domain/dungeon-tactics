@@ -16,7 +16,7 @@ import { type Expression, frameOf } from './battle-face.ts';
 import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
-import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm } from './hud-menus.ts';
+import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm, undoShown } from './hud-menus.ts';
 import { helpWidth, hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
 import type { HudSkin } from './hud-skin.ts';
 import { ToolsMenu } from './hud-tools.ts';
@@ -76,6 +76,9 @@ export class BattleHud {
   }
   setFps(on: boolean) {
     this.tools.setFps(on);
+  }
+  setPixel(size: number) {
+    this.tools.setPixel(size);
   }
   scrollQueue(dir: 1 | -1) {
     const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;
@@ -175,7 +178,8 @@ export class BattleHud {
     this.renderQueue(b, aim);
     this.help.textContent = helpText(v, heroTurn);
     this.p3d.hints?.update(v, open, this.help.textContent);
-    renderBack(this.back, this.tools.undo, v, open);
+    renderBack(this.back, v, open);
+    this.tools.setUndo(undoShown(b, open));
     renderCommands(this.commands, v, open, this.act);
     renderAbilities(this.abilities, v, open, this.act);
     this.menu3d?.update(v, open);

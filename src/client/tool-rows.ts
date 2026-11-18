@@ -11,10 +11,13 @@ export interface ToolRow {
   label: string;
   key: Act | ''; // the action whose key the row shows (glyphs.ts); '' when it has none (fast battle: hold Confirm)
   toggle?: true; // a switch: the row shows whether it is on
+  off?: true; // nothing to run now: drawn faded and does nothing (Undo with no step to take back)
 }
 
-export const toolRows = (): ToolRow[] => [
-  { tool: 'undo', glyph: '↶', label: t('Desfazer', 'Undo'), key: 'undo' },
+// `canUndo`: the battle has a step to take back (Battle.canUndo). Fernando, Nov 18: Undo stays in the list and on the
+// screen, faded, instead of coming and going
+export const toolRows = (canUndo = true): ToolRow[] => [
+  { tool: 'undo', glyph: '↶', label: t('Desfazer', 'Undo'), key: 'undo', ...(!canUndo && { off: true as const }) },
   { tool: 'rotateLeft', glyph: '⟲', label: t('Girar à esquerda', 'Rotate left'), key: 'rotateLeft' },
   { tool: 'rotateRight', glyph: '⟳', label: t('Girar à direita', 'Rotate right'), key: 'rotateRight' },
   { tool: 'recenter', glyph: '⌖', label: t('Ver o mapa inteiro', 'Show the whole map'), key: 'recenter' },
@@ -23,3 +26,8 @@ export const toolRows = (): ToolRow[] => [
   { tool: 'fps', glyph: '▤', label: t('Contador de fps', 'FPS counter'), key: 'fps', toggle: true },
   { tool: 'menu', glyph: '⚙', label: t('Opções e ajuda', 'Options and help'), key: 'help' },
 ];
+
+// what the Pixel size row shows on its right: the size it is on now (pixel-settings.ts PIXEL_SIZES, 0 = none)
+export const pixelValue = (size: number) => (size ? `${size} px` : t('desligado', 'off'));
+// a faded control, Undo with no step (Fernando, Nov 18: 45%, still seen, plainly not live)
+export const OFF_ALPHA = 0.45;

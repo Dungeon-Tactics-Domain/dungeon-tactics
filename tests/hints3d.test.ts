@@ -2,8 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { canUndoMove, commandIndex, type Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { keysText } from '../src/client/glyphs.ts';
-import { type Device, heightShown, hintsFor, layRow, ROW, tileLine } from '../src/client/hints3d/hints-view.ts';
+import {
+  type Device,
+  heightBox,
+  heightShown,
+  hintsFor,
+  layRow,
+  ROW,
+  tileLine,
+} from '../src/client/hints3d/hints-view.ts';
 import { cursorInfo, tileHeight } from '../src/client/tile-info.ts';
+import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
+import { toolsFoot } from '../src/client/window3d/tools-layout.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
@@ -97,12 +107,25 @@ describe('Height corner', () => {
     expect(heightShown(b, { k: 'abilities', index: 0 }, at)).toBeNull();
   });
 
-  // Fernando, Nov 16: what the HTML tile line said (floor, water, spikes, a charge landing) goes small under the Height
-  it("the tile line under it is the HTML corner's own text, and hides with the Height", () => {
+  // Fernando, Nov 18: on a phone the corner sat under the menu button and Undo
+  it('the corner keeps its region where there is room, and drops under the corner buttons where not', () => {
+    const ref = stage(1920, 1080, 'edges');
+    expect(heightBox(ref, 12)).toEqual(place(REGIONS.height, ref));
+    const phone = stage(844, 390, 'edges', { x: 47, y: 21 });
+    expect(place(REGIONS.height, phone).y).toBeLessThan(toolsFoot(phone.s, 12)); // the region alone: by the buttons
+    expect(heightBox(phone, 12).y).toBe(toolsFoot(phone.s, 12));
+    expect(heightBox(phone, 12).x).toBe(place(REGIONS.height, phone).x);
+  });
+
+  // Fernando, Nov 16: what the HTML tile line said (floor, water, spikes, a charge landing) goes small under the Height;
+  // Nov 18: without the height, which the corner shows over it in large
+  it("the tile line under it is the HTML corner's own text but the height, and hides with the Height", () => {
     const b = battle();
     const at = { x: 3, y: 3 };
-    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at));
-    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2));
+    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at, 1, false));
+    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2, false));
+    expect(tileLine(b, menu, at)).toBe('Casa 3,3 · chão');
+    expect(cursorInfo(b.grid, b.state, at)).toBe('Casa 3,3 · altura 0 · chão');
     expect(tileLine(b, { k: 'abilities', index: 0 }, at)).toBe('');
   });
 });

@@ -9,9 +9,7 @@
 // .height3d, .hints3d). It takes no input. Colours are the reference's, as constants here, until the look is styled.
 import { Group, Mesh, ShaderMaterial, Vector2, Vector4 } from 'three';
 import type { HudView } from '../hud.ts';
-import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
-import { onShown } from '../key-hints.ts';
 import { pieceHidden } from '../ui-pieces.ts';
 import { capMeshes } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -19,7 +17,7 @@ import { place, REGIONS } from '../ui3d/layout.ts';
 import { QUAD, QUAD_VERT } from '../ui3d/panel.ts';
 import { ease, land, settled, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
-import { type Device, type Hint, heightShown, hintsFor, layRow, ROW, tileLine } from './hints-view.ts';
+import { type Device, type Hint, heightBox, heightShown, hintsFor, layRow, ROW, tileLine } from './hints-view.ts';
 
 export interface Parts {
   banner: boolean;
@@ -124,8 +122,6 @@ export class Hints3d implements Ui3dScreen {
   private readonly open = spring(0); // the banner: 0 away, 1 in place
   private readonly pop = spring(1); // the Height number's size as it changes
   private num?: Quad;
-  private touch = !KEYS; // a finger gets no hints; a key or a pad button brings them back
-  private readonly ac = new AbortController();
   private last?: { v: HudView; open: boolean; help: string };
   private said: string | null = null;
 
@@ -135,25 +131,13 @@ export class Hints3d implements Ui3dScreen {
   ) {
     this.flat.add(this.banner.group, this.height.group, this.tile.group, this.hints.group);
     for (const [part, on] of Object.entries(parts)) layer.root.classList.toggle(`${part}3d`, on);
-    // what the hints are drawn as is key-hints.ts' (the Options, the input last used); here only the finger, which
-    // hides them. The mouse changes nothing (Fernando, Nov 17)
-    const o = { signal: this.ac.signal, capture: true };
-    addEventListener('keydown', () => this.finger(false), o);
-    addEventListener('pointerdown', (e) => e.pointerType !== 'mouse' && this.finger(true), o);
-    this.ac.signal.addEventListener(
-      'abort',
-      onShown(() => this.finger(false, true)),
-    );
+    // what the hints are drawn as is key-hints.ts' (the Options, the input last used); a finger hides them (the
+    // layer's `finger`, which redraws every screen when it changes)
     layer.add(this, null);
   }
 
   private get device(): Device {
-    return this.touch ? 'touch' : this.layer.keys;
-  }
-  private finger(on: boolean, redraw = false) {
-    if (on === this.touch && !redraw) return;
-    this.touch = on;
-    this.draw();
+    return this.layer.finger ? 'touch' : this.layer.keys;
   }
 
   // Called by the HUD with each turn screen; `open`: a hero's turn with nothing playing; `help`: the help line's text
@@ -229,7 +213,7 @@ export class Hints3d implements Ui3dScreen {
         part.clear();
         part.key = key;
         // layout-fft-ic.json altura.*: the label from x 1582, the number ending on x 1832, the line under both
-        const r = place(REGIONS.height, st);
+        const r = heightBox(st, layer.inset.top);
         part.box(r.x, r.y + 82 * s, r.w, Math.max(1, 2 * s), 0, LINE, NONE, 1);
         const name = this.label(t('Altura', 'Height'), 24, WHITE);
         part.text(name, r.x + 82 * s + name.scale.x / 2, r.y + 55 * s);
@@ -245,7 +229,7 @@ export class Hints3d implements Ui3dScreen {
       if (line && tkey !== tile.key) {
         tile.clear();
         tile.key = tkey;
-        const r = place(REGIONS.height, st),
+        const r = heightBox(st, layer.inset.top),
           pad = 8 * s,
           x = r.x + 82 * s;
         const m = this.label(line, 18, WHITE, r.x + r.w - x - 2 * pad - 8 * s);
@@ -325,7 +309,6 @@ export class Hints3d implements Ui3dScreen {
 
   dispose() {
     this.layer.remove(this);
-    this.ac.abort();
     for (const p of [this.banner, this.height, this.tile, this.hints]) p.clear();
     for (const part of Object.keys(this.parts)) this.layer.root.classList.remove(`${part}3d`);
   }

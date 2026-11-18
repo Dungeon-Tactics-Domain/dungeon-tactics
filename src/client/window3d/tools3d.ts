@@ -14,13 +14,13 @@ import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { alpha, clamp01, Icon, move } from '../menu3d/column.ts';
 import { REF } from '../menu3d/menu-layout.ts';
-import { toolRows } from '../tool-rows.ts';
+import { OFF_ALPHA, toolRows } from '../tool-rows.ts';
 import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import type { Box } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, quad } from '../ui3d/panel.ts';
 import { ease, land, settled, spring } from '../ui3d/spring.ts';
-import { textMesh } from '../ui3d/text.ts';
+import { textMesh, textWidth } from '../ui3d/text.ts';
 import { rowSeen, type ToolsLayout, toolsLayout } from './tools-layout.ts';
 
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
@@ -29,6 +29,11 @@ const BAR: Rgba = [0.96, 0.95, 0.9, 1];
 // text sizes in px of the reference (never under 16 px on the page; a key cap's letters 12)
 const SIZE = { head: 24, row: 26, glyph: 26, state: 18, back: 28 };
 const OVER = 40; // the list draws over the Height corner and the hints, which share the layer
+// Undo carries its word beside the arrow, the same as its row in the list (Fernando, Nov 18: ↶ and ↩ looked the same);
+// Back keeps the arrow alone, so on a phone it stays clear of the help pill. Undo fades to OFF_ALPHA with no step
+const WORD = { back: () => '↩', undo: () => t('↶ Desfazer', '↶ Undo') };
+const dim = (c: Rgba): Rgba => [c[0], c[1], c[2], c[3] * OFF_ALPHA];
+const DIM_WHITE = WHITE + Math.round(OFF_ALPHA * 255).toString(16);
 const px = (v: number) => `${v}px`;
 
 export class Tools3d implements Ui3dScreen {
@@ -73,7 +78,7 @@ export class Tools3d implements Ui3dScreen {
     this.watch.observe(host, {
       subtree: true,
       attributes: true,
-      attributeFilter: ['hidden', 'aria-checked', 'aria-expanded'],
+      attributeFilter: ['hidden', 'aria-checked', 'aria-expanded', 'aria-disabled', 'data-value'],
     });
     const point = (e: Event) => {
       const row = e.target instanceof Element ? e.target.closest('.item') : null;
@@ -93,9 +98,14 @@ export class Tools3d implements Ui3dScreen {
     this.draw();
   }
 
+  private px(size: number, floor = 16) {
+    return Math.max(floor, size * this.layer.s); // the list keeps its width and 44 px rows on a narrow page: so does its text
+  }
   private label(str: string, size: number, color: string, floor = 16) {
-    const px = Math.max(floor, size * this.layer.s); // the list keeps its width and 44 px rows on a narrow page: so does its text
-    return textMesh(str, { size: px, color, font: this.layer.theme.font }, this.layer.dpr) as Quad;
+    return textMesh(str, { size: this.px(size, floor), color, font: this.layer.theme.font }, this.layer.dpr) as Quad;
+  }
+  private word(e: HTMLElement) {
+    return e === this.back ? WORD.back() : WORD.undo();
   }
 
   // The unseen HTML menu takes the drawn one's places: the corner, each button's size, the list's box and head and
@@ -103,7 +113,7 @@ export class Tools3d implements Ui3dScreen {
   private seat(l: ToolsLayout, shown: HTMLElement[], items: HTMLElement[]) {
     const { inset } = this.layer;
     Object.assign(this.host.style, { top: px(inset.top), right: px(inset.right), gap: '8px' });
-    for (const b of shown) b.style.width = b.style.height = px(l.size);
+    shown.forEach((b, i) => Object.assign(b.style, { width: px(l.buttons[i].w), height: px(l.size) }));
     Object.assign(this.menu.style, {
       top: px(l.drop),
       width: px(l.list.w),
@@ -121,30 +131,34 @@ export class Tools3d implements Ui3dScreen {
       s = layer.s;
     layer.wake();
     const open = !this.menu.hidden,
-      // left to right; Back and Undo are for a finger, and only while there is a step to go back
+      // left to right; Back and Undo are for a finger: Back while there is a screen to go back, Undo always (faded
+      // with no step to take back)
       els = [this.back, this.undo, this.burger].filter((e) => e === this.burger || !(KEYS || e.hidden)),
       items = [...this.menu.querySelectorAll<HTMLElement>('.item')],
+      font = layer.theme.font,
       lay = toolsLayout({
         pageW: layer.w,
         pageH: layer.h,
         s,
         inset: layer.inset,
         buttons: els.length,
+        widths: els.map((e) => (e === this.burger ? 0 : textWidth(this.word(e), this.px(SIZE.back), font) + 24)),
         rows: items.length,
         open,
         scroll: this.menu.scrollTop,
       });
     this.seat(lay, els, items);
-    const shown = els.map((e, i) => ({ e, r: lay.buttons[i] }));
-    const key = JSON.stringify([shown.map((b) => b.r), open, layer.dpr, s]);
+    const shown = els.map((e, i) => ({ e, r: lay.buttons[i], off: e.getAttribute('aria-disabled') === 'true' }));
+    const key = JSON.stringify([shown.map((b) => [b.r, b.off]), open, layer.dpr, s]);
     buttons.want = 1;
     if (key !== buttons.key) {
       buttons.clear();
       buttons.key = key;
-      for (const { e, r } of shown) {
-        buttons.box(r.x, r.y, r.w, r.h, 10 * s, e === this.burger && open ? LIT : PILL, EDGE);
+      for (const { e, r, off } of shown) {
+        const fill = e === this.burger && open ? LIT : PILL;
+        buttons.box(r.x, r.y, r.w, r.h, 10 * s, off ? dim(fill) : fill, off ? dim(EDGE) : EDGE);
         const mid = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
-        if (e !== this.burger) buttons.text(this.label(e === this.back ? '↩' : '↶', SIZE.back, WHITE), mid.x, mid.y);
+        if (e !== this.burger) buttons.text(this.label(this.word(e), SIZE.back, off ? DIM_WHITE : WHITE), mid.x, mid.y);
         else {
           // the 3 bars
           const w = r.w * 0.46,
@@ -166,14 +180,16 @@ export class Tools3d implements Ui3dScreen {
       all = lay.rows,
       rows = all.map((r) => (rowSeen(lay, r) ? r : undefined)),
       on = items.map((e) => e.getAttribute('aria-checked') === 'true'),
-      data = toolRows();
+      // what a row says on its right beside a switch's state: the pixel size in use
+      value = items.map((e) => e.dataset.value ?? ''),
+      data = toolRows(this.undo.getAttribute('aria-disabled') !== 'true');
     this.at = { x: box.x, y: box.y };
     this.rows = rows as Box[];
-    const lkey = JSON.stringify([box.w, box.h, rows, on, layer.dpr, s, layer.keys]);
+    const lkey = JSON.stringify([box.w, box.h, rows, on, value, data[0].off, layer.dpr, s, layer.keys]);
     if (lkey === list.key || !all.length) return;
     this.drop();
     list.key = lkey;
-    const { ink, inkSoft } = layer.theme,
+    const { ink, inkSoft, inkOff } = layer.theme,
       pad = 44 * s,
       iconW = REF.iconW * s;
     this.rowH = all[0].h;
@@ -200,12 +216,16 @@ export class Tools3d implements Ui3dScreen {
     // rows scrolled out above or below: an arrow on the head says so
     if (all.some((r) => r.y < head - 1)) list.text(this.label('▲', 16, inkSoft), box.w - 38 * s, head / 2);
     if (all.some((r) => r.y + r.h > box.h + 1)) list.text(this.label('▼', 16, inkSoft), box.w - 16 * s, head / 2);
+    // and in words right under the last whole row, in the room the layout keeps for it, while rows wait under it
+    const end = Math.max(head, ...rows.map((r) => (r ? r.y + r.h : 0)));
+    if (lay.below)
+      left(this.label(t('▼ Mais abaixo', '▼ More below'), SIZE.state, ink), iconW + 8 * s, end + lay.cue / 2);
     rows.forEach((r, i) => {
       const d = data[i];
       if (!d || !r) return;
       const mid = r.y + r.h / 2;
-      list.text(this.label(d.glyph, SIZE.glyph, inkSoft), iconW / 2, mid);
-      left(this.label(d.label, SIZE.row, ink), iconW + 8 * s, mid);
+      list.text(this.label(d.glyph, SIZE.glyph, d.off ? inkOff : inkSoft), iconW / 2, mid);
+      left(this.label(d.label, SIZE.row, d.off ? inkOff : ink), iconW + 8 * s, mid);
       // from the right edge: the key on its cap, then a switch's state in words (colour is never the only signal)
       let x = box.w - 12 * s;
       const caps = KEYS && d.key && capMeshes(d.key, layer.keys, Math.max(22, 28 * s), layer.dpr, layer.theme.font);
@@ -214,8 +234,9 @@ export class Tools3d implements Ui3dScreen {
         capRun((m, cx, cy) => list.text(m, cx, cy), caps, x, mid, 4 * s);
         x -= 10 * s;
       }
-      if (d.toggle) {
-        const state = this.label(on[i] ? t('ligado', 'on') : t('desligado', 'off'), SIZE.state, on[i] ? ink : inkSoft);
+      if (d.toggle || value[i]) {
+        const said = value[i] || (on[i] ? t('ligado', 'on') : t('desligado', 'off'));
+        const state = this.label(said, SIZE.state, on[i] || value[i] ? ink : inkSoft);
         left(state, x - state.scale.x, mid);
       }
     });
@@ -254,7 +275,7 @@ export class Tools3d implements Ui3dScreen {
       u.uFocus.value.set(this.focusY.x / s, this.rowH / s, this.glow, 0);
     }
     // the glove points at the row under the mouse
-    const shown = this.glow * list.alpha;
+    const shown = layer.finger ? 0 : this.glow * list.alpha; // a finger is its own pointer
     glove.group.visible = shown > 0.004;
     if (glove.group.visible) {
       const nudge = still ? 0 : Math.sin(time * 5.2) * 3.2 * s;

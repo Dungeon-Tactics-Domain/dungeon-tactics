@@ -110,6 +110,9 @@ describe('tile info', () => {
   it('position, height, ramp and floor of the map', () => {
     expect(tileInfo(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 })).toBe('Casa 0,1 · altura 1 (rampa) · grama');
     expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 })).toBe('Casa 2,1 · altura 0 · árvore · não dá para pisar');
+    // beside the 3D Height corner, which shows the number (Nov 18): the slope stays, the height goes
+    expect(tileInfo(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 }, false)).toBe('Casa 0,1 · rampa · grama');
+    expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 }, false)).toBe('Casa 2,1 · árvore · não dá para pisar');
   });
 
   it('deep and shallow water (same drawing) are told apart by the text', () => {

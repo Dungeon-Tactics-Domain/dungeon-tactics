@@ -144,7 +144,8 @@ export class Menu3d implements Ui3dScreen {
     this.gloveOut = shown > 0.004;
     move(this.gx, dt, still, 330, 25);
     move(this.gy, dt, still, 330, 25);
-    glove.group.visible = this.gloveOut;
+    // a finger is its own pointer: the glove only covers the map (Fernando, Nov 18; a key or a pad brings it back)
+    glove.group.visible = this.gloveOut && !layer.finger;
     const nudge = still ? 0 : Math.sin(time * 5.2) * 3.2 * s + col.flash * 10 * s;
     glove.group.position.set(layer.snap(this.gx.x + nudge), -layer.snap(this.gy.x), 300);
     glove.group.scale.setScalar(REF.hand * s * shown);

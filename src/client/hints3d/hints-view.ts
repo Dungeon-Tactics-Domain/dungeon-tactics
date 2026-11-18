@@ -8,7 +8,8 @@ import { cancelStep, type Screen } from '../command.ts';
 import type { Act, Shown } from '../glyphs.ts';
 import { t } from '../i18n.ts';
 import { cursorInfo, tileHeight } from '../tile-info.ts';
-import type { Box } from '../ui3d/layout.ts';
+import { type Box, place, REGIONS, type Stage } from '../ui3d/layout.ts';
+import { toolsFoot } from '../window3d/tools-layout.ts';
 
 // what the row is drawn for: the keys or a pad's family (glyphs.ts, key-hints.ts), or a finger, which gets no hints
 export type Device = Shown | 'touch';
@@ -56,10 +57,17 @@ export const heightShown = (b: Battle, s: Screen, cursor: Pos): number | null =>
   b.over || s.k === 'abilities' ? null : tileHeight(b.grid, cursor);
 
 // The small line under the Height corner (Fernando, Nov 16): the same tile line the HTML corner shows (floor, slope,
-// shallow or deep water, spikes, a charge about to land), shown and hidden with the Height. `size`: the square of a big
-// unit choosing where to stop (HudView.hl.size)
+// shallow or deep water, spikes, a charge about to land), shown and hidden with the Height and without its number,
+// which the corner already shows (Nov 18). `size`: the square of a big unit choosing where to stop (HudView.hl.size)
 export const tileLine = (b: Battle, s: Screen, cursor: Pos, size = 1): string =>
-  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
+  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size, false);
+
+// The Height corner on the page: its region, moved down under the corner buttons (menu, Back, Undo) where the page is
+// too small for both (a phone: it sat under the menu button and Undo; Fernando, Nov 18). `top`: the panels' margin
+export function heightBox(st: Stage, top: number): Box {
+  const r = place(REGIONS.height, st);
+  return { ...r, y: Math.max(r.y, toolsFoot(st.s, top)) };
+}
 
 // Sizes of a hint row in px of the 1920x1080 reference (layout-fft-ic.json dicas.direita: a 26 px glyph, text of about
 // 22 px, 12 px between them and 40 px to the next hint). Our cap is 28, the region's height, so a key's letters reach
