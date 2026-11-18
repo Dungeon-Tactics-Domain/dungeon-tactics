@@ -355,29 +355,6 @@ button[hidden],
   box-shadow: var(--paper-frame);
   text-shadow: var(--ink-shadow);
 }
-/* "▼ More below" at the foot of a scroll box that hides more (dialog.ts scrollCue): sticky over the last line, its
-   negative margin taking no room; a 44 px tap target that scrolls a page; still, so nothing moves under Reduce motion */
-.scroll-more {
-  position: sticky;
-  bottom: 6px;
-  z-index: 1;
-  display: none;
-  align-items: center;
-  width: fit-content;
-  min-height: 44px;
-  margin: -44px auto 0;
-  padding: 0 18px;
-  border: 1px solid var(--paper-edge);
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--shade) 90%, transparent);
-  color: var(--ink);
-  font-size: var(--fs-sm);
-  font-weight: 800;
-  cursor: pointer;
-}
-.has-more > .scroll-more {
-  display: flex;
-}
 /* every blue surface blurs what is behind it when glass is on (glass.ts); the windows with no background of their own
    reset it below, so no invisible rectangle is blurred */
 .dialog,
@@ -553,69 +530,6 @@ button[hidden],
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-/* the board (resultBoard): no window, the battle behind darkened at 45%; the title on its own band (wine on a defeat).
-   The hero rows and the Result window are laid out in the FFT block at the end of this file */
-.result-overlay:has(.result-board) {
-  background: color-mix(in srgb, var(--shade) 45%, transparent);
-}
-.dialog.result.result-board {
-  width: min(1176px, 100%);
-  max-height: calc(100dvh - 32px); /* the overlay's padding */
-  padding: 4px; /* room for the panels' outer line and drop shadow inside the scroll box */
-  background: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  border: none;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-.result-board .dialog-head,
-.hero-card,
-.result-panel {
-  border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  background: linear-gradient(var(--glass-hi), var(--glass) 45%, var(--glass-lo)), var(--panel-veil);
-  box-shadow: var(--paper-frame);
-}
-.result-board .dialog-head {
-  margin: 0;
-  padding: 16px 56px;
-}
-.result-board.lost .dialog-head {
-  background: var(--enemy-paper);
-  -webkit-backdrop-filter: none; /* the wine band stays opaque: nothing to blur behind it */
-  backdrop-filter: none;
-}
-.dialog.result.result-board h2 {
-  font-size: var(--fs-banner);
-  line-height: 1;
-  letter-spacing: 1px;
-}
-/* the actions close the board (Esc still does): the mockup has no ✕ */
-.result-board .dialog-head button.icon {
-  display: none;
-}
-.hero-card.fell :is(.portrait, .still-face) {
-  filter: grayscale(1) brightness(0.7);
-}
-.hero-card-mvp {
-  font-size: var(--fs-sm);
-  color: var(--focus);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.hero-card-line {
-  color: var(--ink-muted);
-}
-.hero-card-line.gain {
-  color: var(--heal);
-}
-.hero-card-line.fell {
-  color: var(--enemy-hi);
-}
 /* the key drawn on the primary, like the kit's Continue [Enter]; only where a keyboard is likely */
 .key-chip {
   display: inline-flex;
@@ -737,96 +651,11 @@ button[hidden],
   min-height: 0;
   margin-top: 12px;
 }
-.menu-nav {
-  margin: 0;
-  padding-right: 24px;
-  border-right: 2px solid var(--paper-lo);
-}
-.menu-nav .choice-label {
-  display: none;
-} /* the group name stays in the aria-label: on screen, the sections themselves are enough */
-.menu-nav .choice-row {
-  flex-direction: column;
-  flex-wrap: nowrap;
-}
 /* the sections as the command menu's rows (Nov 15): bare, the open one marked like Act with its submenu open (sunken
    band, yellow edge and ▸), the focused one on the focus band with the ▶ */
-.menu-nav .choice-row {
-  gap: 0;
-}
-.menu-nav .choice-row button {
-  position: relative;
-  flex: none;
-  min-width: 0; /* the 240 px column: at --fs-lg "Video and effects" and its ▸ ran past it */
-  min-height: 48px;
-  justify-content: flex-start;
-  padding: 0 12px 0 40px;
-  font: 500 var(--fs) / 1.1 var(--font-title);
-  text-align: left;
-  background: none;
-  border-color: transparent;
-  box-shadow: none;
-}
-@media (hover: hover) {
-  .menu-nav .choice-row button:hover {
-    background: var(--row-hi);
-  }
-}
-.menu-nav .choice-row button[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--shade) 45%, transparent);
-  border-color: transparent;
-  box-shadow: inset 4px 0 0 var(--focus);
-}
-.menu-nav .choice-row button[aria-pressed="true"]::before {
-  content: none;
-}
-.menu-nav .choice-row button[aria-pressed="true"]::after {
-  content: "▸";
-  margin-left: auto;
-  color: var(--focus);
-}
-.menu-nav .choice-row button:focus-visible {
-  outline: none;
-  background: var(--focus-band);
-  box-shadow: inset 0 0 0 1px var(--focus);
-}
-.menu-nav .choice-row button:focus-visible::before {
-  content: "▶";
-  position: absolute;
-  left: 12px;
-  font-size: var(--fs);
-  color: var(--focus);
-  animation: nudge var(--t-nudge) steps(1, end) infinite;
-}
-.menu-body {
-  overflow: auto;
-  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
-  min-height: 0;
-  padding-right: 8px;
-}
-.menu-section h3 {
-  margin-top: 0;
-  font-size: var(--fs-lg);
-}
-.menu-section .legend {
-  margin-bottom: 20px;
-}
-.menu-section .choice,
-.menu-section .slider {
-  max-width: 560px;
-}
 @media (max-width: 600px) {
   .menu-layout {
     grid-template-columns: 1fr;
-  }
-  .menu-nav {
-    padding: 0 0 8px;
-    border-right: none;
-    border-bottom: 2px solid var(--paper-lo);
-  }
-  .menu-nav .choice-row {
-    flex-direction: row;
-    flex-wrap: wrap;
   }
 }
 
@@ -838,9 +667,6 @@ button[hidden],
 .dialog.title h2 {
   font-size: var(--fs-display);
   letter-spacing: 1px;
-}
-.title-sub {
-  margin: 4px 0 14px;
 }
 .continue-where {
   font: 400 var(--fs) var(--font);
@@ -1949,24 +1775,6 @@ button[hidden],
 .float.heal {
   color: var(--heal);
 }
-/* the counter a Move destination draws (Nov 15): the strike icon and the damage, beside the cursor (scene.ts setCursorNote) */
-.cursor-note {
-  position: absolute;
-  transform: translate(16px, -120%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  background: var(--strike);
-  border: 2px solid var(--mark-counter);
-  color: var(--strike-dmg);
-  font: 700 var(--fs-sm) / 1.2 var(--font);
-  text-shadow: var(--ink-shadow);
-  white-space: nowrap;
-}
-.cursor-note[hidden] {
-  display: none;
-}
 /* the town's action balloon (Nov 16, Fernando): a panel over what Enter or A acts on, its kind's symbol and the key;
    game/town.ts sets left and top every frame, the bottom middle sits on that point */
 .town-act {
@@ -2345,132 +2153,15 @@ p.gold strong::before,
 }
 /* Shop and Tavern rows (dialog.ts priceRow, Nov 15 lab mockup): name with its kind in small type, the price after a coin
    in its own column and the button at the right with why it is off under it; a faint line on top of each row */
-.price-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 8em;
-  align-items: center;
-  gap: 16px;
-  min-height: 52px;
-  padding: 2px 0;
-  border-top: 1px solid color-mix(in srgb, var(--paper-edge) 18%, transparent);
-}
-.price-what {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: var(--fs-lg);
-}
-.price-what small {
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-}
 .price {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-.price-act {
-  display: grid;
-  justify-items: end;
-  gap: 2px;
-}
-.price-act button {
-  min-height: 36px;
-  min-width: 112px;
-}
-/* touch: Buy, Sell and Recruit reach the 44 px finger target (Nov 16 tablet audit); the PC keeps 36 so 9 rows fit at 1280x720 */
-@media (pointer: coarse) {
-  .price-act button {
-    min-height: var(--tap);
-  }
-}
-.price-act small {
-  font-size: var(--fs-sm);
-  line-height: 1; /* with a why under every button (no gold) the 9 rows still fit at 1280x720 */
-  font-style: italic;
-  color: var(--ink-muted);
 }
 
 /* ---- Developer menu (dev-menu.ts) ---- */
 /* Developer menu (Nov 12): wide for the two teams side by side on PC; on narrow screens, one below the other */
 .dialog.dev {
   width: min(980px, 100%);
-}
-.dev-teams {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--gap);
-}
-.dev-list {
-  list-style: none;
-  margin: 0 0 var(--gap);
-  padding: 0;
-  display: grid;
-  gap: var(--gap);
-}
-.dev-unit {
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--r);
-  background: var(--paper-hi);
-  padding: var(--gap);
-  display: grid;
-  gap: 6px;
-}
-.dev-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: end;
-}
-.dev-line select,
-.dev-line input[type="text"] {
-  flex: 1;
-  min-width: 0;
-  min-height: 36px;
-  font: inherit;
-  background: var(--paper-white);
-  color: var(--ink);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--r);
-  padding: 0 8px;
-}
-.dev-num {
-  display: grid;
-  gap: 2px;
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-}
-.dev-num input {
-  width: 84px;
-  min-height: 32px;
-  font: inherit;
-  background: var(--paper-white);
-  color: var(--ink);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--r);
-  padding: 0 6px;
-}
-.dev-skills summary {
-  cursor: pointer;
-  color: var(--focus);
-  font-size: var(--fs-sm);
-}
-.dev-skills {
-  font-size: var(--fs-sm);
-}
-.dev-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 2px 10px 2px 0;
-  color: var(--ink);
-}
-.dialog .dev-issues {
-  color: var(--focus);
-  margin: var(--gap) 0;
-}
-.dialog .dev-msg {
-  color: var(--focus);
-  min-height: 1em;
 }
 /* developer menu: the start and export buttons pinned to the bottom of the window, always in view (review of Nov 13: Start
    was below the fold) */
@@ -2505,49 +2196,6 @@ p.gold strong::before,
   content: "▸";
   margin-left: auto;
   color: var(--focus);
-}
-/* the town: the menu in the top right corner, the backdrop battle in full view */
-.town-menu {
-  place-items: start end;
-  padding: var(--inset-t) var(--inset-r) var(--inset-b) var(--inset-l);
-  background: none;
-}
-.town-menu .dialog.title {
-  /* a fixed width, so the windows beside it know where it starts: the kit's 422 px plus room for Continue the
-     expedition and its floor on one line (432 px in English); a longer row (the quest's 2nd tap) wraps */
-  width: min(440px, 100%);
-  padding: 0 0 8px;
-  text-align: left;
-}
-.town-menu .dialog-head {
-  margin: 0;
-  padding: 6px 14px 7px;
-}
-.town-menu .dialog.title h2 {
-  font: 400 var(--fs) / 1.2 var(--font-title);
-  letter-spacing: 0;
-}
-.town-menu .menu-actions {
-  margin-top: 0;
-}
-.town-menu .command-list > button {
-  white-space: normal;
-}
-/* Shop, Tavern, Party and Sheet open beside the menu, which stays in view and clickable (another row swaps the window):
-   no veil, top right next to the menu, as wide as the screen leaves (the kit's 1100 px at 1920, ~820 px at 1280) */
-@media (min-width: 901px) {
-  body:has(.town-menu) .overlay:not(.town-menu) {
-    place-items: start end;
-    /* clear of the menu's 440 px */
-    padding: var(--inset-t) calc(440px + var(--inset) + var(--inset-r)) var(--inset-b) var(--inset-l);
-    background: none;
-    pointer-events: none;
-  }
-  body:has(.town-menu) .overlay:not(.town-menu) > .dialog {
-    pointer-events: auto;
-    width: min(1100px, 100%);
-    max-height: calc(100dvh - var(--inset-t) - var(--inset-b));
-  }
 }
 
 /* ---- FFT title/options/saves (agent title) ---- */
@@ -2588,9 +2236,6 @@ p.gold strong::before,
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   overflow: hidden;
-}
-.dialog .opt-goal {
-  margin: 0 0 8px;
 }
 .opt-list {
   display: flex;
@@ -2712,151 +2357,6 @@ p.gold strong::before,
   }
 }
 /* ---- FFT results/dialogue (agent results) ---- */
-/* End of battle after FFT's (Nov 16; game/end-screens.ts resultBoard): the banner, then the party as a list of rows
-   (face, name, life, damage, takedowns) beside the Result window, whose foot holds the commands. Up to 900 px wide the
-   window goes under the rows */
-.dialog.result.result-board {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  align-items: start;
-  justify-items: stretch;
-  gap: 16px 20px;
-}
-.result-board .dialog-head {
-  grid-column: 1 / -1;
-  justify-self: center;
-}
-.hero-cards {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-.hero-card {
-  display: grid;
-  grid-template-columns: 64px minmax(110px, 1fr) minmax(200px, 1.6fr) auto;
-  align-items: center;
-  gap: 4px 14px;
-  padding: 8px 14px 8px 8px;
-}
-/* a class with no painted sheet: the portrait at the face's height */
-.hero-card .portrait {
-  width: 48px;
-  height: 64px;
-  justify-self: center;
-}
-.hero-card-who,
-.hero-card-life {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.hero-card-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--gap);
-  font: 700 var(--fs-lg) / 1.1 var(--font-title);
-}
-.hero-card .unit-class {
-  margin: 0;
-}
-/* what the hero did: the number big under its label, a column each, like the lines of FFT's unit list */
-.hero-card-did {
-  display: flex;
-  gap: 14px;
-  margin: 0;
-  text-align: right;
-}
-.hero-card-did dt {
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-}
-.hero-card-did dd {
-  margin: 0;
-  font: 700 var(--fs-lg) / 1.1 var(--font);
-  font-variant-numeric: tabular-nums;
-}
-/* the Result window: one line per result, the label at the left and the value at the right */
-.result-panel dl {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px 16px;
-  margin: 0;
-  padding: 12px 16px 0;
-  font-size: var(--fs-lg);
-}
-.result-panel dt {
-  color: var(--ink-muted);
-}
-.result-panel dd {
-  margin: 0;
-  text-align: right;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.result-panel p {
-  margin: 12px 16px 0;
-}
-.result-actions {
-  display: grid;
-  gap: 10px;
-  padding: 14px 16px 16px;
-}
-@media (max-width: 900px) {
-  .dialog.result.result-board {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-/* a phone: the life bar and the numbers go under the name */
-@media (max-width: 560px) {
-  .hero-card {
-    grid-template-columns: 64px minmax(0, 1fr);
-  }
-  .hero-card-life,
-  .hero-card-did {
-    grid-column: 1 / -1;
-  }
-  .hero-card-did {
-    text-align: left;
-  }
-}
-/* one step at a time, like FFT's results: the banner, each row, then the window (about half a second in all) */
-.result-board .dialog-head {
-  animation: result-band 160ms ease-out;
-}
-.hero-card,
-.result-panel {
-  animation: result-in 160ms ease-out both;
-}
-.hero-card:nth-child(1) {
-  animation-delay: 120ms;
-}
-.hero-card:nth-child(2) {
-  animation-delay: 190ms;
-}
-.hero-card:nth-child(3) {
-  animation-delay: 260ms;
-}
-.hero-card:nth-child(n + 4) {
-  animation-delay: 330ms;
-}
-.result-panel {
-  animation-delay: 400ms;
-}
-@keyframes result-band {
-  from {
-    transform: scaleX(0.2);
-    opacity: 0;
-  }
-}
-@keyframes result-in {
-  from {
-    transform: translateY(8px);
-    opacity: 0;
-  }
-}
 
 /* Dialogue box after FFT's (Nov 16; talk.ts): wider, the speaker's name on a tab over the box's top left corner, the
    face at the left, the text typing beside it and the small ▼ at the bottom right */
@@ -2900,14 +2400,6 @@ p.gold strong::before,
   .panel.talk {
     padding-bottom: 36px;
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) :is(.result-board .dialog-head, .hero-card, .result-panel) {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] :is(.result-board .dialog-head, .hero-card, .result-panel) {
-  animation: none;
 }
 
 /* ---- FFT expedition map (agent map) ---- */
@@ -3144,13 +2636,6 @@ p.gold strong::before,
   background: color-mix(in srgb, var(--shade) 25%, transparent);
 }
 /* the gate window's box (game/crawl.ts questGate): the dungeon and the expedition in progress, under its commands */
-.gate-info {
-  margin-top: 12px;
-  text-align: left;
-}
-.dialog .gate-info p {
-  margin: 0;
-}
 .map-info {
   grid-area: info;
   min-height: 8em; /* three lines of facts: the box keeps its height from place to place */
@@ -3207,13 +2692,6 @@ p.gold strong::before,
 }
 .dialog .map-commands > button {
   white-space: normal; /* the 2nd tap's sentence wraps inside the column */
-}
-.map-help .dialog.title {
-  width: min(600px, 100%);
-  text-align: left;
-}
-.map-help .legend li {
-  gap: 12px;
 }
 @media (hover: hover) {
   .map-field .map-place:hover {
@@ -3280,162 +2758,7 @@ p.gold strong::before,
   display: flex;
   flex-direction: column;
   container-type: inline-size; /* its columns follow the window's own width: beside the town menu it is far narrower than the screen */
-}
-.roster-cols {
-  display: grid;
-  grid-template: minmax(0, 1fr) / 300px minmax(0, 1fr);
-  gap: 16px 24px;
-  min-height: 0;
-  margin-top: 12px;
-}
-.roster-list,
-.roster-page {
-  overflow: auto;
-  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
-  padding: 1px 8px 1px 1px; /* the focus ring's 1 px line inside the scroll box */
-}
-/* the unit list: window list rows (.camp-list gives the focus band, its yellow line and the ▶) holding the 64 px face, the
-   name, the class and the bars */
-.roster-list {
-  margin: 0;
-  flex-wrap: nowrap; /* .menu-actions wraps: in a box with a height the rows made a second column */
-}
-.dialog .roster-list h3 {
-  margin: 0 0 4px;
-}
-.dialog .roster-list button + h3 {
-  margin-top: 12px;
-}
-.dialog .roster-list > button {
-  min-height: 76px;
-  gap: 12px;
-  padding: 6px 8px 6px 36px;
-}
-.roster-who {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: baseline;
-  gap: 2px 8px;
-}
-.roster-who .party-class {
-  font-size: var(--fs-sm);
-}
-/* the bars in a 300 px column: a short label and the number at note size leave the bar its room */
-.roster-who .gauge {
-  grid-column: 1 / -1;
-  grid-template-columns: 2.8em 1fr auto;
-}
-.roster-who .gauge-num {
-  font-size: var(--fs-sm);
-}
-/* the class is muted: on the hover and focus bands it turns --ink (4.3:1 and 3.8:1 otherwise) */
-@media (hover: hover) {
-  .roster-list > button:hover .party-class {
-    color: var(--ink);
-  }
-}
-.roster-list > button:focus .party-class {
-  color: var(--ink);
-}
-/* whose pages are open: the picked row of a command menu (sunken band, yellow edge, ▸); the focus band wins over it */
-.dialog .roster-list > button.picked:not(:focus) {
-  background: color-mix(in srgb, var(--shade) 45%, transparent);
-  box-shadow: inset 4px 0 0 var(--focus);
-}
-.dialog .roster-list > button.picked::after {
-  content: "▸";
-  color: var(--focus);
-}
-.roster-tabs .choice-label {
-  display: none;
 } /* the group name stays in the aria-label */
-/* the four pages on one line in the ~430 px the page has at 1280 ("Equipamento" and "Habilidades" wrapped Classe) */
-.roster-tabs .choice-row {
-  flex-wrap: nowrap;
-  gap: 4px;
-}
-.roster-tabs .choice-row button {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding-inline: 4px;
-}
-/* Status: who the unit is, as the HUD's unit panel (the hero's side stripe, the 128 px face, the bars) */
-.unit-head {
-  display: flex;
-  flex-wrap: wrap; /* a narrow page puts the name and bars under the face instead of cutting them */
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-left: 6px solid var(--hero);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
-}
-/* a class without a painted face keeps its portrait, at the party sizes */
-.roster-list .portrait {
-  width: 48px;
-  height: 64px;
-}
-.unit-head .portrait {
-  width: 96px;
-  height: 128px;
-}
-.unit-head > div {
-  flex: 1 1 180px;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: baseline;
-  gap: 2px 10px;
-}
-.unit-head strong {
-  font-size: var(--fs-lg);
-}
-.unit-head .gauge,
-.unit-head p {
-  grid-column: 1 / -1;
-}
-.unit-head p {
-  margin: 0;
-  font-size: var(--fs-sm);
-}
-.roster-page > .menu-actions {
-  margin-top: 12px;
-}
-.roster-page > p {
-  margin: 8px 0 0;
-  font-size: var(--fs-sm);
-}
-/* each total with its bar (sheet-lines.ts share) and, under it, where it comes from */
-.stat-rows {
-  --bar: var(--ct);
-  display: grid;
-  gap: 3px;
-  margin: 12px 0 0;
-  font-size: var(--fs-sm);
-}
-.stat-rows > div {
-  display: grid;
-  grid-template-columns: minmax(0, 11em) minmax(24px, 1fr) 3.4em; /* a narrow page wraps the name, never cuts the number */
-  align-items: center;
-  gap: 0 12px;
-}
-.stat-rows dt {
-  font-weight: 800;
-}
-.stat-rows dd {
-  display: contents;
-}
-.stat-rows strong {
-  text-align: right;
-  font-size: var(--fs);
-  font-variant-numeric: tabular-nums;
-}
-.stat-rows .from {
-  grid-column: 1 / -1;
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-}
 /* Abilities: the 32 px icon and the name, what it does under them */
 .keys.skills {
   grid-template-columns: 1fr;
@@ -3451,46 +2774,6 @@ p.gold strong::before,
 .keys.skills dd {
   margin-left: 40px;
 }
-/* Equipment (town-gear.ts; FFT's equip screen): the slots as Options' section column, the open slot beside it from 1600 px
-   (the PC band), under it on anything narrower, where the page is ~440 px wide */
-.gear-page {
-  display: grid;
-  gap: 12px 24px;
-  align-items: start;
-}
-@media (min-width: 1600px) {
-  .gear-page {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  }
-}
-.gear-page .menu-nav {
-  padding: 0;
-  border: none;
-}
-.gear-page .menu-nav .choice-row {
-  flex-direction: column; /* a column on a phone too, where Options' sections wrap in a row */
-  flex-wrap: nowrap;
-}
-.gear-page .menu-nav .choice-row button {
-  min-height: var(--tap);
-  padding-block: 4px;
-  white-space: normal; /* "Mão secundária: Escudo do Véu" takes two lines in the column */
-}
-.gear-page h3:first-child {
-  margin-top: 0;
-}
-/* no price column here: the piece and what it changes take the row, the button its right end */
-.gear-page .price-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-.gear-page .price-row > span:empty {
-  display: none;
-}
-.gear-page .price-what {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-}
 /* what a piece would change, now → after: the ▲ or ▼ says the direction, the colour only repeats it */
 .compare {
   display: grid;
@@ -3504,57 +2787,10 @@ p.gold strong::before,
 .compare .down {
   color: var(--enemy-hi);
 }
-/* A tablet on its side (1024 px, the page beside the town menu): the four tabs do not fit one line, so they take two
-   instead of squeezing to 29 px with their names over each other (docs/mobile-ux-auditoria.md) */
-@media (max-width: 1100px) {
-  .roster-tabs .choice-row {
-    flex-wrap: wrap;
-  }
-}
-/* A window too narrow for the 300 px list and a page beside it (next to the town menu on a 1024x768 tablet: 512 px inside;
-   Nov 18 review, the page had 184 px and cut the name, the bars and every number): the list keeps faces and names, its
-   bars go (the page shows the picked one's), and the page gets the rest. A phone (760 px media below) stacks instead */
-@container (max-width: 600px) {
-  .roster-cols {
-    grid-template-columns: 200px minmax(0, 1fr);
-    gap: 12px;
-  }
-  .dialog .roster-list > button {
-    padding-left: 30px; /* the focus ▶ still fits left of the face */
-  }
-  /* the picked ▸ in the top right corner, beside the short name: in line it took the class's room */
-  .dialog .roster-list > button.picked::after {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-  }
-  .roster-who {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .roster-who .gauge {
-    display: none;
-  }
-}
-/* a page under ~360 px (a 1180 px screen beside the menu: 340) has no room for the four tabs on one line */
-@container (max-width: 720px) {
-  .roster-tabs .choice-row {
-    flex-wrap: wrap;
-  }
-}
 /* Narrow: the list on top of the page, the window scrolling as a whole */
 @media (max-width: 760px) {
   .dialog.roster {
     display: block;
-  }
-  .roster-cols {
-    grid-template: none / 1fr;
-  }
-  .roster-list,
-  .roster-page {
-    overflow: visible;
-  }
-  .roster-tabs .choice-row {
-    flex-wrap: wrap; /* a 390 px phone holds two tabs a line */
   }
 }
 
@@ -3569,160 +2805,11 @@ p.gold strong::before,
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
-.counter-layout {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 380px);
-  grid-template-rows: minmax(0, 1fr);
-  gap: 0 20px;
-  align-items: start;
-  min-height: 0;
-}
-.counter-list,
-.counter-detail {
-  max-height: 100%;
-  overflow: auto;
-  touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
-}
-.counter-layout > .command-list {
-  margin-top: 0;
-  white-space: nowrap; /* "Sell (4)" broke in two lines */
-}
-.counter-list h3 {
-  margin: 12px 0 4px;
-}
-.counter-list h3:first-child {
-  margin-top: 0;
-}
-/* a list row: the name over its kind, how many are owned, the price after a coin with why it cannot be had under it */
-.dialog .counter-list > button {
-  gap: 12px;
-  min-height: 52px;
-  padding-block: 2px;
-  font: 500 var(--fs) / 1.2 var(--font-title);
-  border-top: 1px solid color-mix(in srgb, var(--paper-edge) 18%, transparent);
-}
-/* the picked row, whose detail is in the box: the sunken band and yellow edge of an open command, under the real focus */
-.dialog .counter-list > button[aria-current]:not(:focus) {
-  background: color-mix(in srgb, var(--shade) 45%, transparent);
-  box-shadow: inset 4px 0 0 var(--focus);
-}
-.counter-what {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-.counter-list small,
-.counter-own {
-  font: 500 var(--fs-sm) / 1.2 var(--font);
-  color: var(--ink-muted);
-}
-.counter-own {
-  white-space: nowrap;
-}
-.counter-price {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-}
-.counter-price small {
-  font-style: italic;
-}
-/* the muted text turns --ink on the focus and hover bands, where it drops under 4.5:1 (as the Party rows) */
-.counter-list > button:focus :is(small, .counter-own) {
-  color: var(--ink);
-}
-@media (hover: hover) {
-  .counter-list > button:hover :is(small, .counter-own) {
-    color: var(--ink);
-  }
-}
-.counter-detail {
-  padding: 12px 16px;
-  border-left: 6px solid var(--focus);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
-}
-/* the Tavern's recruit in the box: the face beside the name, the numbers and abilities in small type (the old Party
-   list's rules, which left with it when the Party screen came) */
-.party-card {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.party-stats,
-.party-skills {
-  margin: 2px 0 0;
-  font-size: var(--fs-sm);
-}
-.party-stats {
-  font-variant-numeric: tabular-nums;
-}
-.counter-detail h3:first-child,
-.counter-detail .party-card h3 {
-  margin-top: 0;
-  font-size: var(--fs-lg);
-}
-.counter-detail p {
-  margin: 0 0 8px;
-}
-.counter-detail .keys dd,
-.dialog .counter-gives,
-.dialog .counter-said {
-  color: var(--ink);
-}
-.dialog .counter-gives,
-.dialog .counter-said {
-  font-weight: 700;
-}
-.counter-fit {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-}
-.counter-fit strong {
-  color: var(--ink);
-}
-@media (max-width: 1599px) {
-  .counter-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .counter-layout > .command-list {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    margin-bottom: 8px;
-  }
-  .dialog .counter-layout > .command-list > button {
-    flex: 1 1 0;
-    width: auto;
-  }
-}
 /* a phone: one column, the box over the list, and the whole window scrolls again (its head band with it) */
 @media (max-width: 600px) {
   .dialog.counter {
     display: block;
     overflow: auto;
-  }
-  .counter-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: none;
-  }
-  .counter-layout > .command-list {
-    order: -2;
-  }
-  .counter-list,
-  .counter-detail {
-    max-height: none;
-  }
-  .counter-detail {
-    order: -1;
-    margin-bottom: 8px;
   }
 }
 
