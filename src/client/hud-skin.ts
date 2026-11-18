@@ -6,6 +6,7 @@ import type { Hints3d } from './hints3d/hints3d.ts';
 import type { HudActions } from './hud.ts';
 import { showLayout } from './layout-mode.ts';
 import type { Menu3d } from './menu3d/menu3d.ts';
+import { no3d } from './no3d.ts';
 import { param } from './store.ts';
 import type { Turn3d } from './turn3d/turn3d.ts';
 import type { Ui3dLayer } from './ui3d/layer.ts';
@@ -13,7 +14,7 @@ import { parseLayout } from './ui3d/layout.ts';
 import type { Tools3d } from './window3d/tools3d.ts';
 
 export interface HudSkin {
-  layer: (root: HTMLElement, lost: () => void) => Ui3dLayer | undefined; // undefined: no WebGL here
+  layer: (root: HTMLElement, lost: () => void) => Ui3dLayer | undefined; // undefined: no WebGL here, the warning shows
   menu3d: (layer: Ui3dLayer, act: HudActions) => Menu3d;
   turn3d: (layer: Ui3dLayer, queue: HTMLElement) => Turn3d;
   bar3d: (layer: Ui3dLayer, active: HTMLElement) => Bar3d;
@@ -69,10 +70,15 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   ]);
   return {
     layer: (root, lost) => {
+      // no WebGL here (old device, blocked) or the context lost: the warning, never the HTML under the layer
       try {
-        return new Ui3dLayer(root, pixel, lost);
+        return new Ui3dLayer(root, pixel, () => {
+          lost();
+          no3d();
+        });
       } catch {
-        return undefined; // no WebGL here (old device, blocked)
+        no3d();
+        return undefined;
       }
     },
     menu3d: (layer, act) => new Menu3d(layer, act),

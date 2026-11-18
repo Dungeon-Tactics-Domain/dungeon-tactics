@@ -55,7 +55,8 @@ parseGrid and withRamps (grid.ts).
 
 - `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game, behind the loading cover until everything landed; the start banner (announce).
 - `src/client/ready-gate.ts` — the readiness gate (`whenReady`): the interface is built only once the models, the 3D pieces' chunks and the fonts landed, and the cover leaves after it drew; the loading bar's share and the 3D loading screen's layout; pure.
-- `src/client/loading.ts` — the loading cover over the whole page (`loadingCover`): the files' count as a line and a bar, drawn in 3D or, with ?ui=html or no WebGL, in HTML; holds the hosted fonts too.
+- `src/client/loading.ts` — the loading cover over the whole page (`loadingCover`): the files' count as a line and a bar, drawn in 3D over the unseen HTML ones; holds the hosted fonts too.
+- `src/client/no3d.ts` — no3d(): the warning that replaces the page when there is no WebGL or its context is lost (the interface is only 3D).
 - `src/client/main.ts` — Game: wires rules, scene, HUD and input for one battle and owns the turn loop.
 - `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, strike preview "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.

@@ -5,7 +5,7 @@
 import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { TOWN } from '../../content/crawl/town.ts';
 import { descentGold } from '../../shared/crawl/expedition.ts';
-import { depart, liveExpedition, questGate, toTitle, toTown, townMenu } from '../game/crawl.ts';
+import { depart, liveExpedition, toTitle, toTown, townMenu } from '../game/crawl.ts';
 import { expeditionScreen, floorOf } from '../game/expedition-map.ts';
 import { GROUP_MAX } from '../group.ts';
 import { t } from '../i18n.ts';
@@ -72,8 +72,8 @@ function quest(leave: () => void, redraw: () => void) {
   };
 }
 
-// `fits`: the page holds the drawing; `keep`: the open window as its HTML one, should the drawing go away
-export function streetWindows(ui: Town3d, fits: () => boolean, keep: (again: () => void) => void) {
+// `fits`: the page holds the drawing
+export function streetWindows(ui: Town3d, fits: () => boolean) {
   const gold = () => loadChest().gold;
 
   // `extra`: the town's own switches (game/town.ts), each a choice() of two buttons that this menu reads and presses
@@ -133,7 +133,6 @@ export function streetWindows(ui: Town3d, fits: () => boolean, keep: (again: () 
         } else flip(id);
       },
     });
-    keep(() => townMenu(extra));
     draw(start);
     return true;
   };
@@ -169,7 +168,6 @@ export function streetWindows(ui: Town3d, fits: () => boolean, keep: (again: () 
         toTown();
       },
     });
-    keep(() => says === undefined && questGate(name)); // a place still to come only closes
     draw('');
     return true;
   };

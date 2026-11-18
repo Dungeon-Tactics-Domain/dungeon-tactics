@@ -2,17 +2,17 @@
 // (hud3d.ts), the speech box (window3d/talk3d.ts), the street's windows (street.ts) and, for each window of a building (Shop,
 // Tavern, Party), the loop the HTML one runs: read the saved game, show its page (shop-view.ts,
 // party-view.ts), run the pressed button through the same rules (chest.ts, group.ts), save and show again. While
-// mounted, the town's openers hand their windows over (town-ui.ts `town3d`); a page too small for the drawing, a
-// browser without WebGL or a lost context leave the HTML windows as they are.
+// mounted, the town's openers hand their windows over (town-ui.ts `town3d`); a browser without WebGL or a lost
+// context shows the warning (no3d.ts).
 import type { Slot } from '../../shared/battle/equipment.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, sell } from '../chest.ts';
 import { changeClass, dismiss, type Job, recruit, toggleDeploy } from '../group.ts';
 import { t } from '../i18n.ts';
+import { no3d } from '../no3d.ts';
 import { loadChest, loadEquip } from '../sheet-lines.ts';
 import { sfx } from '../sound.ts';
 import { store } from '../store.ts';
-import { openParty, type PartyView } from '../town-party.ts';
-import { openBar, openShop } from '../town-shop.ts';
+import type { PartyView } from '../town-party.ts';
 import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
@@ -34,20 +34,19 @@ const rowOf = (page: Page, sel: string) =>
     : (page.hits.find((h) => h.id.startsWith('row:'))?.id.slice(4) ?? '');
 
 export function mountTown3d(root: HTMLElement) {
-  let again: (() => void) | undefined; // the open window as its HTML one, should the drawing go away
   let layer: Ui3dLayer;
   let live = true;
+  // no WebGL here or the context lost: the warning, never the HTML windows under the drawing
   const lost = () => {
     live = false;
-    const open = !!document.querySelector('.town3d-overlay'); // a window closed earlier does not come back
     for (const k of Object.keys(town3d) as (keyof typeof town3d)[]) delete town3d[k];
-    layer.dispose(); // with the screens (the HTML HUD and speech box show again) and the open window
-    if (open) again?.();
+    layer.dispose();
+    no3d();
   };
   try {
     layer = new Ui3dLayer(root, false, lost);
   } catch {
-    return; // no WebGL here: the HTML windows are all there is
+    return no3d();
   }
   const ui = new Town3d(layer);
   new Map3d(layer); // the expedition map draws over its own window, which it takes by itself (map3d.ts)
@@ -98,7 +97,6 @@ export function mountTown3d(root: HTMLElement) {
         }
       },
     });
-    again = () => openShop(back, tab, sel);
     draw(sel ? `row:${sel}` : '');
     return true;
   };
@@ -141,7 +139,6 @@ export function mountTown3d(root: HTMLElement) {
         }
       },
     });
-    again = () => openBar(back, sel, said);
     draw(sel ? `row:${sel}` : '');
     return true;
   };
@@ -261,16 +258,11 @@ export function mountTown3d(root: HTMLElement) {
         done(!!r, `slot:${slot}`);
       },
     });
-    again = () => openParty(back, { id, page, slot });
     draw('');
     return true;
   };
 
-  Object.assign(
-    town3d,
-    { shop, bar, party },
-    streetWindows(ui, fits, (fn) => (again = fn)),
-  );
+  Object.assign(town3d, { shop, bar, party }, streetWindows(ui, fits));
   new TownHud3d(layer, root);
   new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
   new Note3d(layer); // takes each notice window by itself (note.ts `setNote3d`)

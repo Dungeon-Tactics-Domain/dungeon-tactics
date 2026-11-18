@@ -2,14 +2,15 @@
 // until the interface under it is built and drawn (ready-gate.ts), so no title, HUD or window is seen half made or in
 // a look it will not keep. It counts the scene's files (Three's default manager: the total grows as the models name
 // their parts, since no loader knows the bytes ahead) as a line and a bar.
-//   One look, picked before anything shows: drawn in 3D (flow3d/loading3d.ts) when the interface is the 3D one, with
-//   the HTML line and bar unseen under it for the screen reader; with ?ui=html, or where the 3D layer cannot be made
-//   (no WebGL), the HTML line and bar are the screen. Until the 3D chunk lands the cover is only dark.
+//   Drawn in 3D (flow3d/loading3d.ts), with the HTML line and bar unseen under it for the screen reader. Until the 3D
+//   chunk lands the cover is only dark; with no WebGL, or its context lost, the page is the warning (no3d.ts). Only a
+//   chunk that never lands leaves the HTML line as the screen, to say the game could not load.
 import { DefaultLoadingManager } from 'three';
 import { loadLoading3d } from './hud-skin.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { reducedMotion } from './motion.ts';
+import { no3d } from './no3d.ts';
 import { type Cover, loadShare } from './ready-gate.ts';
 
 const FADE_MS = 300;
@@ -64,11 +65,11 @@ export function loadingCover(hold = true): Cover {
     drawn = undefined;
     root.classList.remove('loading3d');
   };
-  void loadLoading3d(root, html).then((made) => {
+  void loadLoading3d(root, no3d).then((made) => {
     if (!root.isConnected) return made?.dispose();
     drawn = made;
     if (made) made.set(share, line.textContent ?? '');
-    else html();
+    else no3d();
   }, html);
   return {
     fail() {
