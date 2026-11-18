@@ -46,6 +46,9 @@ export class Ui3dLayer {
   dpr = 1;
   s = 1; // one reference px (the 1920x1080 layout the pieces were measured on) in CSS px: the stage's scale
   stage: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 }; // where the pieces are laid out (layout.ts), as the player picked
+  // the whole reference fitted to the page, whatever the layout: a screen that is the whole 1920x1080 (the town's
+  // windows, the expedition map) stays on the page on a short one too, where `edges` keeps the pieces wider
+  whole: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 };
   // a panel's margin to each edge of the page (the design system's 12 px), clear of the notch and inside the frame
   inset = { top: 12, right: 12, bottom: 12, left: 12 };
   private mode = getLayout();
@@ -72,11 +75,11 @@ export class Ui3dLayer {
   private dirty = true;
   private moved = false;
 
-  // `lost`: the WebGL context went away; the owner drops the screens and the layer, and the HTML HUD shows again
+  // `lost`: the WebGL context went away; the owner drops the screens and the layer, and shows the warning (no3d.ts)
   constructor(
     readonly root: HTMLElement,
     readonly pixel: boolean,
-    lost: () => void,
+    private readonly lost: () => void,
   ) {
     // smooth icons need their edges softened: the canvas's own multisampling, only where a pixel is big enough to show
     // a stair (density under 2), so a dense screen does not pay 4 samples of its whole size
@@ -195,7 +198,7 @@ export class Ui3dLayer {
       st = stage(w, h, mode, safeOf(sides));
     // the stage too: turning a phone over moves the notch without changing the page's size
     if (w === this.w && h === this.h && dpr === this.dpr && mode === this.mode && st.x === this.stage.x) return;
-    Object.assign(this, { w, h, dpr, mode, stage: st, s: st.s });
+    Object.assign(this, { w, h, dpr, mode, stage: st, s: st.s, whole: stage(w, h, 'frame') });
     const [fx, fy] = mode === 'frame' ? [st.x, st.y] : [0, 0];
     this.inset = {
       top: 12 + sides.top + fy,
@@ -272,6 +275,8 @@ export class Ui3dLayer {
   }
 
   dispose() {
+    // a layer let go is not a lost one: the browser may still take its context back later, with no warning to show
+    this.canvas.removeEventListener('webglcontextlost', this.lost);
     this.sized.disconnect();
     this.unhear();
     for (const stop of this.unheard) stop();

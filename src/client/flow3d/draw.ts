@@ -4,7 +4,7 @@ import type { Group } from 'three';
 import type { Part, Quad, Rgba } from '../hints3d/hints3d.ts';
 import { Icon, move } from '../menu3d/column.ts';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
-import type { Box } from '../ui3d/layout.ts';
+import { type Box, textPx } from '../ui3d/layout.ts';
 import type { Rgb } from '../ui3d/panel.ts';
 import { land, spring } from '../ui3d/spring.ts';
 import { textMesh } from '../ui3d/text.ts';
@@ -31,7 +31,7 @@ export function lift(p: Part, by: number) {
 
 // text in the theme's serif, `size` in px of the 1080p layout (`s`: its scale) and never under the game's 16 px
 export function label(layer: Ui3dLayer, s: number, str: string, size: number, hex: string, wrap?: number) {
-  const px = Math.max(16, size * s);
+  const px = textPx(size, s);
   return textMesh(
     str,
     { size: px, color: hex, font: layer.theme.font, width: wrap, line: wrap && px * 1.35 },

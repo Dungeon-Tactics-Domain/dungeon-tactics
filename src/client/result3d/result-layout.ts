@@ -104,7 +104,8 @@ export function resultLayout(st: Stage, page: number, heroes: number, spoils: nu
     },
     buttons: Array.from({ length: actions }, (_, i) => ({
       x: hints.x + hints.w - (actions - i) * bw - (actions - 1 - i) * gap,
-      y: hints.y + hints.h / 2 - bh / 2,
+      // on a short page the 44 px tap is taller than the hints row: kept on the page, 4 px over its bottom edge
+      y: Math.min(hints.y + hints.h / 2 - bh / 2, st.y + st.h - bh - 4),
       w: bw,
       h: bh,
     })),

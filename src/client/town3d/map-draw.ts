@@ -28,8 +28,8 @@ export class Pen {
 
   // the reference's px on the page: the whole screen is the town windows' region, centred and scaled as one
   box(b: Box): Box {
-    const o = place(REGIONS.town, this.layer.stage),
-      s = this.layer.stage.s;
+    const o = place(REGIONS.town, this.layer.whole),
+      s = this.layer.whole.s;
     return { x: o.x + b.x * s, y: o.y + b.y * s, w: b.w * s, h: b.h * s };
   }
   // text with its middle (or the end `align` names) on a spot of the reference; `room`: shrinks to this width
@@ -43,13 +43,13 @@ export class Pen {
     align?: 'left' | 'centre' | 'right',
     room = Infinity,
   ) {
-    const s = this.layer.stage.s,
+    const s = this.layer.whole.s,
       at = this.box({ x, y, w: 0, h: 0 });
     return put(p, label(this.layer, s, str, size, hex), at.x, at.y, align, room * s);
   }
   fill(p: Part, b: Box, color: Rgba, radius = 0, edge?: Rgba) {
     const at = this.box(b);
-    p.box(at.x, at.y, at.w, at.h, radius * this.layer.stage.s, color, edge);
+    p.box(at.x, at.y, at.w, at.h, radius * this.layer.whole.s, color, edge);
     return last(p);
   }
 

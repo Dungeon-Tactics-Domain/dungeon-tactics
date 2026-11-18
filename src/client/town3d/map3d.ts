@@ -154,7 +154,7 @@ export class Map3d implements Ui3dScreen {
   private build() {
     const { layer, view, color: c, tone, pen } = this;
     if (!view) return;
-    const s = layer.stage.s,
+    const s = layer.whole.s,
       { theme } = layer,
       { chart: S, party: P, info: I } = M;
     const L = (this.L = mapLayout(
@@ -263,7 +263,7 @@ export class Map3d implements Ui3dScreen {
   private picked() {
     const { L, view, layer, info, halo } = this;
     if (!L || !view) return;
-    const s = layer.stage.s,
+    const s = layer.whole.s,
       { theme } = layer,
       { info: I } = M,
       f = view.picked,
@@ -324,7 +324,7 @@ export class Map3d implements Ui3dScreen {
     if (this.view && !this.view.overlay.isConnected) this.release();
     const { L, view, layer, focus, help } = this;
     if (!L || !view) return false;
-    const s = layer.stage.s,
+    const s = layer.whole.s,
       still = layer.still || dt === 0;
     const o = (this.open = still ? 1 : ease(this.open, 1, dt, 8));
     const set = (p: Part, a: number) => {

@@ -12,7 +12,7 @@ import { el } from '../icons.ts';
 import { modelOf } from '../markers.ts';
 import { alpha, clamp01, Icon, move } from '../menu3d/column.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
-import { place, REGIONS } from '../ui3d/layout.ts';
+import { place, REGIONS, textPx } from '../ui3d/layout.ts';
 import { bandMaterial, paintTexture, paperMaterial, QUAD, QUAD_VERT, quad, type Rgb } from '../ui3d/panel.ts';
 import { land, spring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
@@ -161,7 +161,7 @@ export class Town3d implements Ui3dScreen {
     this.opts?.key?.(e);
     if (e.defaultPrevented || !this.opts?.byPlace || !this.page || !e.key.startsWith('Arrow')) return;
     e.preventDefault();
-    const top = this.scroller.scrollTop / this.layer.stage.s;
+    const top = this.scroller.scrollTop / this.layer.whole.s;
     this.buttons.get(step(this.page, top, this.focus, e.key.slice(5).toLowerCase() as Dir) ?? '')?.focus();
   }
 
@@ -183,8 +183,8 @@ export class Town3d implements Ui3dScreen {
 
   // the reference's px on the page: the whole window is one region, centred and scaled as one
   private box(b: Box): Box {
-    const o = place(REGIONS.town, this.layer.stage),
-      s = this.layer.stage.s;
+    const o = place(REGIONS.town, this.layer.whole),
+      s = this.layer.whole.s;
     return { x: o.x + b.x * s, y: o.y + b.y * s, w: b.w * s, h: b.h * s };
   }
 
@@ -193,7 +193,7 @@ export class Town3d implements Ui3dScreen {
     this.parts = [];
     this.plates = [];
     const { layer, page } = this,
-      s = layer.stage.s;
+      s = layer.whole.s;
     const add = (mesh: Mesh, order: number, a = 1, row?: number) => {
       mesh.renderOrder = order;
       (row === undefined ? this.flat : this.list).add(mesh);
@@ -219,7 +219,7 @@ export class Town3d implements Ui3dScreen {
         return add(band(this.box(it.box), this.tones[it.tone]), it.tone === 'veil' ? 60 : 63, it.a, it.row);
       if (it.k === 'face') return this.face(it.def, this.box(it.box), (m) => add(m, 64, 1, it.row));
       if (!it.str && !it.keys) return;
-      const px = Math.max(16, it.size * s);
+      const px = textPx(it.size, s);
       const m = textMesh(
         it.keys ? layer.keysLine(it.keys) : it.str,
         {
@@ -317,7 +317,7 @@ export class Town3d implements Ui3dScreen {
     const lb = page.list && this.box(page.list.box);
     if (lb && page.list) {
       Object.assign(this.scroller.style, px(lb));
-      this.rows.style.height = `${page.list.rows * page.list.rowH * this.layer.stage.s}px`;
+      this.rows.style.height = `${page.list.rows * page.list.rowH * this.layer.whole.s}px`;
     }
     for (const h of page.hits) {
       const b = this.buttons.get(h.id)!,
@@ -343,7 +343,7 @@ export class Town3d implements Ui3dScreen {
     if (this.win && !this.win.overlay.isConnected) this.hide(); // closed from outside (Esc, the game)
     const { page, layer, glove } = this;
     if (!page) return false;
-    const s = layer.stage.s,
+    const s = layer.whole.s,
       still = layer.still;
     move(this.open, dt, still, 240, 31);
     const o = clamp01(this.open.x);

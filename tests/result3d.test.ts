@@ -145,6 +145,9 @@ describe('3D result: where it sits', () => {
     expect(at.buttons[0].h).toBe(44);
     expect(at.buttons[0].x + at.buttons[0].w).toBeLessThan(at.buttons[1].x);
     expect(at.buttons[0].x).toBeGreaterThanOrEqual(0);
+    // a phone on its side: the 44 px tap stays on the page (Nov 18, it was cut at 844x390)
+    const phone = resultLayout(stage(844, 390, 'edges'), 844, 4, 0, 2);
+    for (const b of phone.buttons) expect(b.y + b.h).toBeLessThanOrEqual(390);
   });
 });
 
