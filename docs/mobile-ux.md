@@ -46,7 +46,8 @@ do not rearrange the layout only to reach that number.*
 
 - A phone upright (`(pointer: coarse) and (max-width: 600px) and (orientation: portrait)`) shows `.rotate-note` over
   everything, title and town included (`src/client/rotate-note.ts`, called from `entry.ts`). Nothing under it takes taps.
-- A tablet is never asked to rotate. Nothing locks the orientation.
+- A tablet is never asked to rotate. Only a phone is locked to landscape, and only when it enters fullscreen
+  (`toggleFullscreen`, `src/client/fullscreen.ts`: the page's shorter side under 600 px); a tablet keeps both ways.
 
 ## 3. Safe area
 
@@ -84,6 +85,13 @@ do not rearrange the layout only to reach that number.*
   fifth growing it upwards from the same foot.
 - No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included).
 - Nothing lives only in hover.
+- **Fullscreen in reach without Options** (Fernando, Nov 18: a phone in the browser opened the game under Chrome's
+  bar): on a touch device in the browser the title's main button is "Jogar em tela cheia" (`fullscreenOffer`,
+  `fullscreen.ts`, pure and tested: `(pointer: coarse)`, not `display-mode: fullscreen` or `standalone`, not
+  `navigator.standalone`, not in fullscreen); it leaves once fullscreen settles. Elsewhere the title keeps a quiet
+  "Tela cheia" / "Sair da tela cheia" over the language button, and the battle's ☰ list has the same row before
+  Options and help (at 844×390 it waits under "▼ Mais abaixo"). None of them where the browser has no Fullscreen API
+  (an iPhone: the home screen, below, is the way there).
 
 ## 5. Gestures on the map
 

@@ -171,7 +171,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/options-row.ts` — one row of the 3D Options drawn: its name and a choice in a box, a bar with its number or a switch.
 - `src/client/flow3d/title3d.ts` — Title3d: the title in 3D, drawn over the title's own window, which it takes when the layer arrives and gives back.
 - `src/client/flow3d/loading3d.ts` — Loading3d: the loading screen in 3D (the line over a bar, or the Reload button), on a layer of its own over the loading cover, for the download alone.
-- `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button) and the boxes an arrow walks (`stops`); pure.
+- `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button, the fullscreen main button and shortcut) and the boxes an arrow walks (`stops`); pure.
 - `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D, drawn over each window's own controls, which it takes and gives back.
 - `src/client/flow3d/sheet-draw.ts` — what a 3D sheet draws piece by piece: a list's row (number, face, two lines, second button), a text's line, the head and the foot plates.
 - `src/client/flow3d/sheet-layout.ts` — where a 3D sheet sits (head, parchment, rows and each one's second button, foot plates), the scroll fade and mark, and a text's blocks as lines (flow); pure.

@@ -18,6 +18,11 @@ export const REF = {
   footY: 1030, // the keys' line, centred
   end: 1000, // the plate ends over this, clear of the keys' line
   lang: { x: 1660, y: 986, w: 200, h: 48 },
+  // fullscreen (Fernando, Nov 18): the quiet shortcut right over the language button, wide enough for "Sair da tela
+  // cheia" at its 16 px floor; the main button of a phone in the browser at the top of the right column, beside the
+  // list's first row, so the name and the 44 px rows keep their room on a phone on its side
+  fs: { x: 1500, w: 360, gap: 12 },
+  main: { x: 1330, w: 530, h: 96, min: 56, size: 40 },
 };
 
 export interface TitleLayout {
@@ -29,10 +34,18 @@ export interface TitleLayout {
   inset: number;
   foot: { x: number; y: number }; // middle
   lang: Box;
+  fs: Box; // the quiet fullscreen shortcut
+  main: Box; // the main "Play in fullscreen" (a phone in the browser)
 }
 
-// what an arrow or the d-pad walks (ui3d/walk.ts), in order: the commands, then the language button when there is one
-export const stops = (L: TitleLayout, lang: boolean): Box[] => (lang ? [...L.rows, L.lang] : L.rows);
+// what an arrow or the d-pad walks (ui3d/walk.ts), in order: the main fullscreen button, the commands, the quiet
+// fullscreen shortcut and the language button, each when there is one (title3d.ts walks its buttons in this order)
+export const stops = (L: TitleLayout, lang: boolean, fs = false, main = false): Box[] => [
+  ...(main ? [L.main] : []),
+  ...L.rows,
+  ...(fs ? [L.fs] : []),
+  ...(lang ? [L.lang] : []),
+];
 
 export function titleLayout(w: number, h: number, rows: number): TitleLayout {
   const st = stage(w, h, 'frame'),
@@ -61,5 +74,7 @@ export function titleLayout(w: number, h: number, rows: number): TitleLayout {
     inset: REF.inset * s,
     foot: at(SCREEN.w / 2, REF.footY),
     lang: { ...lang, y: lang.y + lang.h - lh, h: lh },
+    fs: { ...at(REF.fs.x, 0, REF.fs.w), y: lang.y + lang.h - 2 * lh - REF.fs.gap * s, h: lh },
+    main: { ...at(REF.main.x, 0, REF.main.w), y: list.y, h: Math.max(REF.main.min, REF.main.h * s) },
   };
 }

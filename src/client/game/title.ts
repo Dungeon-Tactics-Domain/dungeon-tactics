@@ -5,6 +5,7 @@ import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
+import { FULLSCREEN_CTA, fullscreenEnv, fullscreenLabel, fullscreenOffer, toggleFullscreen } from '../fullscreen.ts';
 import { hintLine } from '../glyphs.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { LANG, setLang, t } from '../i18n.ts';
@@ -247,14 +248,24 @@ export function titleScreen() {
   setTrack('title');
   // read here, not at load: crawl.ts imports this module back
   const saved = savedGames().length;
+  // fullscreen (Fernando, Nov 18): a phone in the browser gets it as the window's one main button, before the
+  // commands; elsewhere a quiet shortcut beside the language. The title opens again once it settles, so the main
+  // button leaves and the shortcut says what a tap does now
+  const env = fullscreenEnv(),
+    offer = fullscreenOffer(env),
+    main = offer === 'main',
+    leave = new AbortController();
   const go = (fn: () => void) => () => {
+    leave.abort();
     d.close();
     fn();
   };
+  document.addEventListener('fullscreenchange', go(titleScreen), { signal: leave.signal, once: true });
   const d = dialog(
     'title',
     'Dungeon Tactics',
     [
+      ...(main ? [button('primary title-main', FULLSCREEN_CTA(), () => toggleFullscreen(true))] : []),
       el(
         'div',
         { class: 'menu-actions camp-list' },
@@ -263,14 +274,14 @@ export function titleScreen() {
         ...(saved
           ? [
               button(
-                'primary',
+                main ? 'secondary' : 'primary',
                 [t('Continuar', 'Continue'), el('small', { class: 'continue-where' }, savedCount(saved))],
                 go(() => openSaves(titleScreen)),
               ),
             ]
           : []),
         button(
-          saved ? 'secondary' : 'primary',
+          saved || main ? 'secondary' : 'primary',
           t('Novo jogo', 'New game'),
           go(() => startNewGame(titleScreen)),
         ),
@@ -301,6 +312,7 @@ export function titleScreen() {
                 ' · ',
               )} · `,
           ),
+        offer === 'quiet' && button('title-fs', fullscreenLabel(env.on), () => toggleFullscreen()),
         // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
         button('title-lang', LANG === 'pt' ? 'English' : 'Português', () => setLang(LANG === 'pt' ? 'en' : 'pt')),
       ),

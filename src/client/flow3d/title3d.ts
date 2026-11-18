@@ -10,7 +10,7 @@ import { Group } from 'three';
 import { Part, type Quad } from '../hints3d/hints3d.ts';
 import { fill } from '../looks3d.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
-import { textPx } from '../ui3d/layout.ts';
+import { type Box, textPx } from '../ui3d/layout.ts';
 import { ease } from '../ui3d/spring.ts';
 import { textMesh } from '../ui3d/text.ts';
 import { neighbour, type Way } from '../ui3d/walk.ts';
@@ -34,11 +34,12 @@ export class Title3d implements Ui3dScreen {
   // with none there: no way round from the last command to the first
   private readonly walk = (e: Event) => {
     const L = this.at,
-      els = [...this.rows, ...(this.lang ? [this.lang] : [])];
+      { main, fs, lang } = this,
+      els = [main, ...this.rows, fs, lang].filter((b) => !!b);
     if (!this.taken || !L) return;
     e.preventDefault();
     const at = els.indexOf(document.activeElement as HTMLButtonElement);
-    els[at < 0 ? 0 : neighbour(stops(L, !!this.lang), at, (e as CustomEvent<Way>).detail)]?.focus();
+    els[at < 0 ? 0 : neighbour(stops(L, !!lang, !!fs, !!main), at, (e as CustomEvent<Way>).detail)]?.focus();
   };
 
   constructor(private readonly layer: Ui3dLayer) {
@@ -53,6 +54,13 @@ export class Title3d implements Ui3dScreen {
   }
   private get lang() {
     return this.title?.querySelector<HTMLButtonElement>('.title-lang');
+  }
+  // fullscreen: the quiet shortcut beside the language, or the main button of a phone in the browser
+  private get fs() {
+    return this.title?.querySelector<HTMLButtonElement>('.title-fs');
+  }
+  private get main() {
+    return this.title?.querySelector<HTMLButtonElement>('.title-main');
   }
 
   // a title opened
@@ -70,7 +78,8 @@ export class Title3d implements Ui3dScreen {
     if (!this.taken) return;
     this.taken = false;
     this.title?.classList.remove('title3d');
-    for (const e of [this.title?.querySelector<HTMLElement>('.camp-list'), this.lang]) e?.removeAttribute('style');
+    for (const e of [this.title?.querySelector<HTMLElement>('.camp-list'), this.lang, this.fs, this.main])
+      e?.removeAttribute('style');
     if (this.layer.solo === this) this.layer.solo = undefined;
     this.at = undefined;
     this.fixed.clear();
@@ -91,15 +100,18 @@ export class Title3d implements Ui3dScreen {
     const { layer, fixed, color: c, title } = this,
       rows = this.rows,
       list = title?.querySelector<HTMLElement>('.camp-list'),
-      lang = this.lang;
+      { lang, fs, main } = this;
     if (!title || !list) return;
     const L = (this.at = titleLayout(layer.w, layer.h, rows.length)),
       s = L.s;
     const px = (v: number) => `${v}px`;
     Object.assign(list.style, { left: px(L.rows[0].x), top: px(L.rows[0].y), width: px(L.rows[0].w) });
     list.style.setProperty('--t3-row', px(L.rows[0].h));
-    if (lang)
-      Object.assign(lang.style, { left: px(L.lang.x), top: px(L.lang.y), width: px(L.lang.w), height: px(L.lang.h) });
+    const seat = (b: HTMLElement | null | undefined, r: Box) =>
+      b && Object.assign(b.style, { left: px(r.x), top: px(r.y), width: px(r.w), height: px(r.h) });
+    seat(lang, L.lang);
+    seat(fs, L.fs);
+    seat(main, L.main);
     // `px`: page px; the other texts shrink with the pieces on a small page (textPx), as Options' do
     const mesh = (str: string, px: number, hex: string) =>
       textMesh(str, { size: px, color: hex, font: layer.theme.font }, layer.dpr) as Quad;
@@ -133,10 +145,34 @@ export class Title3d implements Ui3dScreen {
     const foot = title.querySelector('.title-foot')?.firstChild;
     const keys = foot && foot.nodeName !== 'BUTTON' ? (foot.textContent ?? '').replace(/[\s·]+$/, '') : '';
     if (keys) put(fixed, text(keys, REF.size.foot, c.text), L.foot.x, L.foot.y, 'centre');
-    if (lang) {
-      fixed.box(L.lang.x, L.lang.y, L.lang.w, L.lang.h, 6 * s, rgba(c.plate, 0.95), rgba(c.line, 0.8));
-      const other = text(lang.textContent ?? '', REF.size.lang, c.text);
-      put(fixed, other, L.lang.x + L.lang.w / 2, L.lang.y + L.lang.h / 2, 'centre', L.lang.w - 16 * s);
+    // the language button and the quiet fullscreen shortcut: a dark plate each, the same look
+    for (const [b, r] of [
+      [lang, L.lang],
+      [fs, L.fs],
+    ] as const)
+      if (b) {
+        fixed.box(r.x, r.y, r.w, r.h, 6 * s, rgba(c.plate, 0.95), rgba(c.line, 0.8));
+        put(
+          fixed,
+          text(b.textContent ?? '', REF.size.lang, c.text),
+          r.x + r.w / 2,
+          r.y + r.h / 2,
+          'centre',
+          r.w - 16 * s,
+        );
+      }
+    // the window's one main button (a phone in the browser): light plate, dark words, apart from every other control
+    if (main) {
+      const r = L.main;
+      fixed.box(r.x, r.y, r.w, r.h, 8 * s, rgba(c.title), rgba(c.line));
+      put(
+        fixed,
+        text(main.textContent ?? '', REF.main.size, c.veil),
+        r.x + r.w / 2,
+        r.y + r.h / 2,
+        'centre',
+        r.w - 24 * s,
+      );
     }
     lift(fixed, 40);
     this.band.clear();
@@ -164,7 +200,16 @@ export class Title3d implements Ui3dScreen {
     set(this.fixed, o);
     const active = document.activeElement,
       row = this.rows.indexOf(active as HTMLButtonElement);
-    const r = row >= 0 ? L.rows[row] : active === this.lang ? L.lang : null;
+    const r =
+      row >= 0
+        ? L.rows[row]
+        : active === this.lang
+          ? L.lang
+          : active === this.fs
+            ? L.fs
+            : active === this.main
+              ? L.main
+              : null;
     set(this.band, row >= 0 ? o : 0);
     if (r) this.band.group.position.set(r.x, -r.y, 0);
     // on a command the glove stands inside its row, as the reference; on the language button, at its left

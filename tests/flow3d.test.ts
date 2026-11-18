@@ -23,6 +23,7 @@ import {
 } from '../src/client/flow3d/sheet-layout.ts';
 import { REF as TITLE, titleLayout, stops as titleStops } from '../src/client/flow3d/title-layout.ts';
 import { percent, pick } from '../src/client/option-row.ts';
+import type { Box } from '../src/client/ui3d/layout.ts';
 import { neighbour, type Way } from '../src/client/ui3d/walk.ts';
 
 // The flow screens in 3D (flow3d/; Nov 17): the pure parts behind the drawing. The drawing itself and the real
@@ -224,6 +225,59 @@ describe('3D title: where it sits', () => {
         expect(L.lang.y + L.lang.h, name).toBeLessThanOrEqual(h);
         expect(L.lang.x, name).toBeGreaterThan(last.x + last.w); // beside the list, never over it
       }
+  });
+});
+
+// Fernando, Nov 18: fullscreen in reach on the title; the main button for a phone in the browser, a quiet shortcut else
+describe('3D title: the fullscreen buttons', () => {
+  const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  it('fit on every page beside the list and over nothing, with a 44 px tap (56 px for the main one)', () => {
+    for (const [w, h] of [
+      [1920, 1080],
+      [1280, 720],
+      [1152, 648],
+      [844, 390],
+      [667, 375],
+      [1024, 768],
+      [768, 1024],
+    ])
+      for (const n of [5, 6]) {
+        const L = titleLayout(w, h, n),
+          name = `${w}x${h}, ${n} rows`;
+        expect(L.fs.h, name).toBeGreaterThanOrEqual(44);
+        expect(L.main.h, name).toBeGreaterThanOrEqual(56);
+        for (const b of [L.fs, L.main]) {
+          expect(b.x, name).toBeGreaterThan(L.plate.x + L.plate.w); // beside the list, never over it
+          expect(b.x + b.w, name).toBeLessThanOrEqual(w);
+          expect(b.y, name).toBeGreaterThanOrEqual(0);
+          expect(b.y + b.h, name).toBeLessThanOrEqual(h);
+          expect(overlap(b, L.lang), name).toBe(false);
+        }
+        expect(L.fs.y + L.fs.h, name).toBeLessThan(L.lang.y); // right over the language button
+        expect(L.main.y, name).toBe(L.rows[0].y); // level with the first command
+        // the quiet shortcut is wide enough for "Sair da tela cheia" at 16 px
+        expect(L.fs.w, name).toBeGreaterThanOrEqual(L.lang.w);
+      }
+  });
+
+  const L = titleLayout(1920, 1080, 5),
+    boxes = titleStops(L, true, true, true); // main, 5 commands, shortcut, language
+  it('walks in order: the main button first, then the commands, the shortcut and the language', () => {
+    expect(boxes).toEqual([L.main, ...L.rows, L.fs, L.lang]);
+    expect(titleStops(L, true)).toEqual([...L.rows, L.lang]);
+  });
+  it('left from the main button goes to the first command and right comes back; up and right stay', () => {
+    expect(neighbour(boxes, 0, 'left')).toBe(1);
+    expect(neighbour(boxes, 1, 'right')).toBe(0);
+    for (const way of ['up', 'right'] as const) expect(neighbour(boxes, 0, way)).toBe(0);
+  });
+  it('the shortcut sits over the language in the right column: up and down walk it, and stay at the bottom', () => {
+    const fs = 6,
+      lang = 7;
+    expect(neighbour(boxes, fs, 'down')).toBe(lang);
+    expect(neighbour(boxes, lang, 'up')).toBe(fs);
+    expect(neighbour(boxes, fs, 'up')).toBe(0); // the right column: the main button over it
+    expect(neighbour(boxes, lang, 'down')).toBe(lang);
   });
 });
 

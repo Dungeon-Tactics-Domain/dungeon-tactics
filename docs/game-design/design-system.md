@@ -263,6 +263,12 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   lit band or plate, on every control. The HTML window stays unseen under the drawing (opacity, not visibility) and
   keeps keys, pad, taps, scroll and screen reader; text never under 16 px, rows and buttons never under 44 px; under
   1152x648 the HTML window shows instead.
+  **Fullscreen on the title** (`fullscreen.ts` `fullscreenOffer`, Nov 18): on a touch device in the browser, not yet in
+  fullscreen, the window's one main button, "Jogar em tela cheia", at the top of the right column level with the first
+  command (a light `-title` plate with `-veil` words, 17:1; at least 56 px tall; first in Tab, focused on opening, the
+  other commands secondary); elsewhere (a mouse, an installed game, already in fullscreen) a quiet shortcut "Tela
+  cheia" / "Sair da tela cheia" right over the language button, in its look. Neither where the browser has no
+  Fullscreen API (an iPhone). The title opens again once fullscreen settles, so the main button leaves by itself.
 - **Corner menu** (`window3d/tools3d.ts`): the menu button (3 bars) and Back as dark slate plates like
   the pill (the button lighter while its list is open), and the list as a parchment panel like the command menu's: a
   head, a row per tool (`tool-rows.ts`) with its glyph in the icon column, its name, its key on a cap and "on"/"off" in
