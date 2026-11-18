@@ -276,12 +276,13 @@ export function titleScreen() {
         ),
         button('secondary', t('Batalha avulsa', 'Quick battle'), go(quickBattle)),
         button('secondary', t('Como jogar', 'How to play'), go(howToPlay)),
+        button('secondary', t('Créditos', 'Credits'), go(credits)),
+        // the tool, not the game: last, under a rule (flow3d/title3d.ts draws it on `dev-row`; Nov 18 review)
         button(
-          'secondary',
+          'secondary dev-row',
           t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'),
           go(() => devMenu(titleScreen)),
         ),
-        button('secondary', t('Créditos', 'Credits'), go(credits)),
       ),
       el(
         'p',

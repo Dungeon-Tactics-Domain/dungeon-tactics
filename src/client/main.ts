@@ -45,6 +45,7 @@ const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battl
 export class Game implements TurnHost {
   private readonly turn: HeroTurn; // the hero's turn screens: screen, Ui and cursor (hero-turn.ts)
   busy = false;
+  private behindTitle = false; // the title is open over this battle (pollPad)
   private log = '';
   private acting: string | null = null;
   private readonly hud: BattleHud;
@@ -112,7 +113,14 @@ export class Game implements TurnHost {
   private pollPad() {
     requestAnimationFrame(() => this.pollPad());
     // the standalone battle is the backdrop of the title screen (and of the screens that leave it): it rotates while any is open
-    this.scene.setSpin(!!document.querySelector('.title-overlay') && !reducedMotion());
+    const title = !!document.querySelector('.title-overlay');
+    this.scene.setSpin(title && !reducedMotion());
+    // and it is scenery: no tile marks, cursor, rings, bars or turn numbers behind the title (Nov 18 review)
+    if (title !== this.behindTitle) {
+      this.behindTitle = title;
+      this.scene.hideMarkers(title);
+      this.update(this.turn.ui);
+    }
     this.placeMenu();
     this.hud.showFaces(this.scene.now);
     if (!document.querySelector('.loading-cover')) this.readPad(); // the pad waits for the cover, like the keys
@@ -189,7 +197,8 @@ export class Game implements TurnHost {
     if (isSurvival(this.battle.state.scenario))
       this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.turn.screen;
-    const { hl, ...m } = turnMarks(this.battle, s, ui, this.turn.cursor, this.heroTurn && !this.busy);
+    const live = this.heroTurn && !this.busy && !this.behindTitle;
+    const { hl, ...m } = turnMarks(this.battle, s, ui, this.turn.cursor, live);
     this.scene.setHighlights(hl);
     this.scene.setChargePreview(m.charge);
     this.scene.setCounters(m.counters);

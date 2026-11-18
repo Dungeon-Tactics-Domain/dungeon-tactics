@@ -216,9 +216,10 @@ export class BattleScene {
     this.units.celebrate(team, state);
   }
 
-  // the walkable town (game/town.ts): people without battle markers, walking cell by cell (Units.glide)
-  hideMarkers() {
-    this.units.hideMarkers();
+  // the walkable town (game/town.ts): people without battle markers, walking cell by cell (Units.glide); the title's
+  // backdrop battle hides them while the title shows (`hide` false brings them back)
+  hideMarkers(hide = true) {
+    this.units.hideMarkers(hide);
   }
   glide(unitId: string, to: Pos, ms: number) {
     return this.units.glide(unitId, to, ms);

@@ -255,9 +255,14 @@ export class Units {
   }
 
   // The walkable town (game/town.ts): no ring, arrow or bar on anyone, the ones there now and the ones still to come
-  hideMarkers() {
-    this.markers = false;
-    for (const v of this.views.values()) v.ground.visible = v.holder.getObjectByName('bar')!.visible = false;
+  // `hide` false brings them back: the battle behind the title hides them only while the title shows (main.ts)
+  hideMarkers(hide = true) {
+    this.markers = !hide;
+    for (const v of this.views.values()) {
+      v.ground.visible = !hide;
+      const bar = v.holder.getObjectByName('bar'); // the fallen have none left
+      if (bar) bar.visible = !hide;
+    }
   }
 
   // The town's walk, one cell at a time at a steady pace: no start and brake per cell like the battle's walk, so a
