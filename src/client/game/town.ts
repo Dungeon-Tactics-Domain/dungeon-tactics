@@ -21,6 +21,7 @@ import { liveText, padSeen } from '../key-hints.ts';
 import { type KeyAction, keyAction, pageKeeps, type ScreenDir } from '../keyboard.ts';
 import { type Cover, whenReady } from '../ready-gate.ts';
 import { BattleScene } from '../scene.ts';
+import { touchDevice } from '../screen-buttons.ts';
 import { setTrack, sfx } from '../sound.ts';
 import { store } from '../store.ts';
 import { TIMING } from '../timing.ts';
@@ -50,7 +51,7 @@ import {
 import { homeScreen, townMenu } from './crawl.ts';
 import { optionsMenu, townGridChoice } from './options.ts';
 import { Folk, windowOpen } from './town-folk.ts';
-import { openPlace, townHud } from './town-hud.ts';
+import { openPlace, townHud, townPad } from './town-hud.ts';
 
 const STEP_MS = TIMING.step / SUB; // a cell at the battle's walking pace (Nov 13, Fernando: slow walking)
 // the help line with nothing in front of the walker: how to walk, act and open the menu
@@ -75,6 +76,13 @@ class Town {
   private showGrid = parseTownGrid(store.json(GRID_KEY));
   private dots?: Pos[]; // the debug grid's, worked out when it first shows
   private at: Pos; // the walker's centre, in cells; the unit's pos is the square snapped under it (cellUnder)
+  private joy: Pos = { x: 0, y: 0 }; // the touch pad's stick, a screen vector of length up to 1
+  private readonly touchPad = touchDevice()
+    ? townPad(
+        (v) => (this.joy = v),
+        () => this.act(),
+      )
+    : undefined; // touch only
   private moving = false; // walked on the last frame
   private last = performance.now(); // the last frame, for the walk's pace
   // what Enter does here, at the top in the middle like the battle's help line
@@ -96,6 +104,7 @@ class Town {
       this.balloon,
       () => optionsMenu({ relayout: () => {} }),
       (dir) => scene.rotate(dir),
+      this.touchPad?.root,
     );
     host.append(hud);
     skin(hud); // on the page already: the layer reads its tokens and its size there
@@ -154,6 +163,7 @@ class Town {
       this.showGrid = parseTownGrid(store.json(GRID_KEY)); // Options may have turned the grid
     }
     this.wasOpen = open;
+    if (open) this.touchPad?.release(); // a window under the thumb: the stick lets go
     this.place(open);
     this.scene.setDebugGrid(
       this.showGrid
@@ -199,6 +209,7 @@ class Town {
   private steer(gp?: Gamepad | null): Pos {
     const s = gp ? stick(gp.axes[0] ?? 0, gp.axes[1] ?? 0) : { x: 0, y: 0 };
     if (s.x || s.y) return s;
+    if (this.joy.x || this.joy.y) return stick(this.joy.x, this.joy.y);
     const on = (d: ScreenDir) => Number(this.keys.includes(d) || this.pad.held[`d${d}`] !== undefined);
     const x = on('right') - on('left'),
       y = on('down') - on('up');
@@ -292,6 +303,16 @@ class Town {
     this.balloon.dataset.say = label ?? '';
     this.balloon.setAttribute('aria-label', label ?? '');
     this.balloon.replaceChildren(...(tg ? [icon(UI_ICON[tg.act]), hint('confirm')] : []));
+    this.padUse(tg);
+  }
+
+  // the touch pad's button: lit with something in reach, its word says what it does (town3d/pad3d.ts draws both)
+  private padUse(tg: TownTarget | null) {
+    const b = this.touchPad?.use;
+    if (!b) return;
+    b.setAttribute('aria-disabled', String(!tg));
+    b.dataset.word = !tg ? t('Agir', 'Act') : 'unit' in tg ? t('Falar', 'Talk') : t('Entrar', 'Enter');
+    b.setAttribute('aria-label', this.balloon.dataset.say || t('Falar ou entrar', 'Talk or go in'));
   }
 
   // The balloon over what the action button acts on, every frame (the camera slides and turns, people walk); only its

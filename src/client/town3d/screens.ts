@@ -25,6 +25,7 @@ import { Talk3d } from '../window3d/talk3d.ts';
 import { Tools3d } from '../window3d/tools3d.ts';
 import { TownHud3d } from './hud3d.ts';
 import { Map3d } from './map3d.ts';
+import { Pad3d } from './pad3d.ts';
 import type { Hit, Page } from './page.ts';
 import { PAGES, partyPage } from './party-view.ts';
 import { barPage, type ShopTab, shopPage } from './shop-view.ts';
@@ -275,6 +276,8 @@ export function mountTown3d(root: HTMLElement) {
   new TownHud3d(layer, root);
   // the gear and ↺ ↻, as in battle, and what the gear opens: Options, its Help sheets and the developer's window
   new Tools3d(layer, root.querySelector<HTMLElement>('.tools')!, 'row');
+  const pad = root.querySelector<HTMLElement>('.town-pad'); // a touch device's joystick and button
+  if (pad) new Pad3d(layer, pad);
   for (const Screen of [Options3d, Sheet3d, Dev3d]) new Screen(layer);
   new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
   new Note3d(layer); // takes each notice window by itself (note.ts)

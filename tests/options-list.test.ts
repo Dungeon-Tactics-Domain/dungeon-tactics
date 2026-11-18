@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { type OptionsGroup, settings } from '../src/client/game/options-list.ts';
 
 vi.stubGlobal('document', { fullscreenEnabled: false }); // the rows are read with no page: no Fullscreen API
+let touch = false; // (pointer: coarse): a finger points
+vi.stubGlobal('matchMedia', () => ({ matches: touch }));
 
 // Fernando, Nov 18 night: no ☰ menu, so its rows moved into Options; the battle's own rows only show in a battle
 const battle = { room: false, busy: false, restart() {}, fast: () => false, setFast() {}, fps() {} };
@@ -24,5 +26,13 @@ describe('Options rows', () => {
       expect(inTown).not.toContain(row);
     }
     for (const row of ['Botões na tela', 'Voltar ao título']) expect(inTown).toContain(row);
+  });
+  // the town's joystick and button (Nov 18): a PC has no pad, so no row for its side
+  it('Joystick and button: a row of Game on a touch device only, for the town', () => {
+    touch = false;
+    expect(names(group({ relayout() {} }, 'Jogo'))).not.toContain('Joystick e botão');
+    touch = true;
+    expect(names(group({ relayout() {} }, 'Jogo'))).toContain('Joystick e botão');
+    touch = false;
   });
 });

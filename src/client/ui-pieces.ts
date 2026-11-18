@@ -17,6 +17,7 @@ export const PIECE_NAMES = [
   'sheets', // the windows the title and Options open
   'town', // the town's windows
   'townhud',
+  'townpad', // the town's joystick and action button, on a touch device
   'talk', // the speech box of the town and the battle
   'map', // the expedition map
   'dev', // the developer menu
