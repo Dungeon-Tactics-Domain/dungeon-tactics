@@ -48,7 +48,7 @@ import {
   townState,
 } from '../town-map.ts';
 import { homeScreen, townMenu } from './crawl.ts';
-import { townGridChoice } from './options.ts';
+import { optionsMenu, townGridChoice } from './options.ts';
 import { Folk, windowOpen } from './town-folk.ts';
 import { openPlace, townHud } from './town-hud.ts';
 
@@ -89,9 +89,14 @@ class Town {
     host: HTMLElement,
     skin: (hud: HTMLElement) => void, // the 3D look, already downloaded (hud-skin.ts loadTownSkin)
   ) {
-    // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the menu button in the
-    // top right corner; as a .hud it hides while someone talks (style.css)
-    const hud = townHud(this.prompt, this.balloon, () => this.run({ k: 'cancel' }));
+    // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the gear (Options, which
+    // has no battle rows here) and ↺ ↻ in the top right corner; as a .hud it hides while someone talks (style.css)
+    const hud = townHud(
+      this.prompt,
+      this.balloon,
+      () => optionsMenu({ relayout: () => {} }),
+      (dir) => scene.rotate(dir),
+    );
     host.append(hud);
     skin(hud); // on the page already: the layer reads its tokens and its size there
     const canvas = host.querySelector('canvas')!;
@@ -144,7 +149,10 @@ class Town {
   private poll() {
     requestAnimationFrame(() => this.poll());
     const open = windowOpen();
-    if (this.wasOpen && !open) this.refresh();
+    if (this.wasOpen && !open) {
+      this.refresh();
+      this.showGrid = parseTownGrid(store.json(GRID_KEY)); // Options may have turned the grid
+    }
     this.wasOpen = open;
     this.place(open);
     this.scene.setDebugGrid(

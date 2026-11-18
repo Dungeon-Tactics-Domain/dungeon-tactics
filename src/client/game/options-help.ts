@@ -65,12 +65,12 @@ export const controls = (): Block[] => [
     ),
   },
   // only what touch-input.ts and the HUD do today (Nov 16, the tablet audit: this section said nothing about touch;
-  // Nov 18: Undo left the ☰ menu for a button beside it, and two fingers turn the camera, gesture.ts)
+  // Nov 18: two fingers turn the camera, gesture.ts; Nov 18 night: no ☰, the gear and the screen buttons)
   {
     k: 'text',
     str: t(
-      'Toque: toque numa casa para marcar e toque de novo nela para confirmar; arraste com um dedo para mover a câmera e afaste ou aproxime dois dedos para o zoom. O botão Voltar (↩) aparece ao lado do ☰, no alto. O botão Desfazer (↶) aparece ao lado do ☰ depois de mover; gire dois dedos para girar a câmera. Ver o mapa inteiro está no menu ☰.',
-      'Touch: tap a tile to mark it and tap it again to confirm; drag with one finger to move the camera and pinch with two to zoom. The Back button (↩) shows beside the ☰ at the top. The Undo button (↶) shows beside the ☰ after you move; twist two fingers to turn the camera. The whole map is in the ☰ menu.',
+      'Toque: toque numa casa para marcar e toque de novo nela para confirmar; arraste com um dedo para mover a câmera e afaste ou aproxime dois dedos para o zoom. No alto, a engrenagem abre as Opções; ao lado dela ficam Desfazer (↶) e, quando há para onde voltar, Voltar (↩). Os botões ↺ ↻ giram a câmera, e girar dois dedos também. Opções › Imagem › Botões na tela liga ou desliga Desfazer e ↺ ↻.',
+      'Touch: tap a tile to mark it and tap it again to confirm; drag with one finger to move the camera and pinch with two to zoom. At the top, the gear opens Options; beside it sit Undo (↶) and, when there is somewhere to go back to, Back (↩). The ↺ ↻ buttons turn the camera, and so does twisting two fingers. Options › Display › Screen buttons turns Undo and ↺ ↻ on or off.',
     ),
   },
   // the short "+N" of the turn list and of the unit sheets (Fernando, Nov 17): two different clocks

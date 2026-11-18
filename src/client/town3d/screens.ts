@@ -6,6 +6,9 @@
 // the warning (no3d.ts).
 import type { Slot } from '../../shared/battle/equipment.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, sell } from '../chest.ts';
+import { Dev3d } from '../flow3d/dev3d.ts';
+import { Options3d } from '../flow3d/options3d.ts';
+import { Sheet3d } from '../flow3d/sheet3d.ts';
 import { changeClass, dismiss, type Job, recruit, toggleDeploy } from '../group.ts';
 import { Effects3d } from '../hints3d/effects3d.ts';
 import { t } from '../i18n.ts';
@@ -19,6 +22,7 @@ import { loadGroup, saveGroup } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { Note3d } from '../window3d/note3d.ts';
 import { Talk3d } from '../window3d/talk3d.ts';
+import { Tools3d } from '../window3d/tools3d.ts';
 import { TownHud3d } from './hud3d.ts';
 import { Map3d } from './map3d.ts';
 import type { Hit, Page } from './page.ts';
@@ -269,6 +273,9 @@ export function mountTown3d(root: HTMLElement) {
     fill('soon', street.soon),
   );
   new TownHud3d(layer, root);
+  // the gear and ↺ ↻, as in battle, and what the gear opens: Options, its Help sheets and the developer's window
+  new Tools3d(layer, root.querySelector<HTMLElement>('.tools')!, 'row');
+  for (const Screen of [Options3d, Sheet3d, Dev3d]) new Screen(layer);
   new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
   new Note3d(layer); // takes each notice window by itself (note.ts)
   new Effects3d(layer); // the effects over the page (looks3d.ts `effects`), as in a battle

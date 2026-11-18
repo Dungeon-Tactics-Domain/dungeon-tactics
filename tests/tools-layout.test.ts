@@ -1,206 +1,92 @@
 import { describe, expect, it } from 'vitest';
-import { type LayoutMode, stage } from '../src/client/ui3d/layout.ts';
-import { rowSeen, type ToolsSpec, toolShown, toolsFoot, toolsLayout } from '../src/client/window3d/tools-layout.ts';
+import { type Box, type LayoutMode, place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
+import { type ToolsSpec, toolShown, toolsFoot, toolsLayout } from '../src/client/window3d/tools-layout.ts';
 
-// The 3D corner menu's own layout (Nov 18: the 3D pieces stop measuring the HTML). Each case is what the browser
-// measured on the unseen HTML menu with its list open, on a sandbox scene, the day before the numbers moved to
-// tools-layout.ts. Boxes as [x, y, w, h] on the page.
-type Four = [number, number, number, number];
-interface Measured {
-  name: string;
-  w: number;
-  h: number;
-  mode: LayoutMode;
-  buttons: Four[]; // left to right, the menu button last, sunk 2 px while its list is open
-  list: Four;
-  head: number;
-}
-const MEASURED = [
-  {
-    name: 'the reference (1920x1080)',
-    ...{ w: 1920, h: 1080, mode: 'edges', head: 42 },
-    buttons: [[1852, 14, 56, 56]],
-    list: [1478, 78, 430, 458],
-  },
-  {
-    name: 'ultrawide, edges (3440x1440)',
-    ...{ w: 3440, h: 1440, mode: 'edges', head: 56 },
-    buttons: [[3353.344, 14, 74.656, 74.656]],
-    list: [2854.672, 100, 573.328, 610.625],
-  },
-  {
-    name: 'ultrawide, frame (3440x1440)',
-    ...{ w: 3440, h: 1440, mode: 'frame', head: 56 },
-    buttons: [[2913.344, 14, 74.656, 74.656]],
-    list: [2414.672, 100, 573.328, 610.625],
-  },
-  {
-    name: 'a phone on its side: the list ends at the page (844x390)',
-    ...{ w: 844, h: 390, mode: 'edges', head: 18 },
-    buttons: [[788, 14, 44, 44]],
-    list: [532, 60.391, 300, 317.594],
-  },
-  {
-    name: 'the reference with Back for a finger',
-    ...{ w: 1920, h: 1080, mode: 'edges', head: 42 },
-    buttons: [
-      [1788, 12, 56, 56],
-      [1852, 14, 56, 56],
-    ],
-    list: [1478, 78, 430, 458],
-  },
-  {
-    name: 'a phone on its side with Back for a finger',
-    ...{ w: 844, h: 390, mode: 'edges', head: 18 },
-    buttons: [
-      [736, 12, 44, 44],
-      [788, 14, 44, 44],
-    ],
-    list: [532, 60.391, 300, 317.594],
-  },
-] as Measured[];
-
-const near = (got: { x: number; y: number; w: number; h: number }, [x, y, w, h]: Four) => {
-  expect(got.x).toBeCloseTo(x, 1);
-  expect(got.y).toBeCloseTo(y, 1);
-  expect(got.w).toBeCloseTo(w, 1);
-  expect(got.h).toBeCloseTo(h, 1);
-};
-// the page's margins: 12 px, plus the frame's own in the `frame` layout (ui3d/layer.ts `inset`)
-const spec = (w: number, h: number, mode: LayoutMode, over: Partial<ToolsSpec> = {}): ToolsSpec => {
-  const st = stage(w, h, mode),
+// The corner buttons' own layout (Fernando, Nov 18 night: the ☰ list gave way to a gear, Undo and ↺ ↻ on the screen).
+// `notch`: a phone's safe side, as ui3d/layer.ts adds it to the stage and to the margins
+const spec = (w: number, h: number, mode: LayoutMode, over: Partial<ToolsSpec> = {}, notch = 0): ToolsSpec => {
+  const st = stage(w, h, mode, { x: notch, y: 0 }),
     [fx, fy] = mode === 'frame' ? [st.x, st.y] : [0, 0];
   return {
     pageW: w,
-    pageH: h,
-    s: st.s,
-    inset: { top: 12 + fy, right: 12 + fx, bottom: 12 + fy },
-    buttons: 1,
-    rows: 8,
-    open: true,
-    scroll: 0,
+    stage: st,
+    inset: { top: 12 + fy, right: 12 + notch + fx },
+    row: [44, 120, 0], // Back, "↶ Undo" and the gear
+    pair: 'list',
     ...over,
   };
 };
+const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const PAGES: [string, number, number, LayoutMode, number][] = [
+  ['a phone on its side (844x390)', 844, 390, 'edges', 0],
+  ['the same phone with its notch (844x390)', 844, 390, 'edges', 47],
+  ['a small phone (667x375)', 667, 375, 'edges', 0],
+  ['a tablet (1024x768)', 1024, 768, 'edges', 0],
+  ['a tablet in the 16:9 frame (1024x768)', 1024, 768, 'frame', 0],
+  ['a laptop (1280x720)', 1280, 720, 'edges', 0],
+  ['the reference (1920x1080)', 1920, 1080, 'edges', 0],
+];
 
-describe('3D corner menu: its layout with no DOM', () => {
-  for (const m of MEASURED)
-    it(`sits where the HTML menu sat: ${m.name}`, () => {
-      const l = toolsLayout(spec(m.w, m.h, m.mode, { buttons: m.buttons.length }));
-      expect(l.buttons).toHaveLength(m.buttons.length);
-      l.buttons.forEach((b, i) => near(b, m.buttons[i]));
-      near(l.list, m.list);
-      expect(l.head).toBe(m.head);
+describe('corner buttons: their layout with no DOM', () => {
+  for (const [name, w, h, mode, notch] of PAGES)
+    it(`the gear on the corner, ↺ ↻ after the turn list and clear of everything: ${name}`, () => {
+      const q = spec(w, h, mode, {}, notch),
+        l = toolsLayout(q),
+        gear = l.row.at(-1)!,
+        list = place(REGIONS.turn, q.stage);
+      expect(gear.x + gear.w).toBe(w - q.inset.right);
+      expect(l.pair[0].x).toBe(list.x + list.w + 8);
+      expect(l.pair[1].x - (l.pair[0].x + l.pair[0].w)).toBe(8);
+      // the pair ends left of the row, with Back and Undo shown or not, and keeps off the instruction banner
+      expect(l.pair[1].x + l.pair[1].w).toBeLessThan(l.row[0].x);
+      for (const b of l.pair) expect(overlap(b, place(REGIONS.banner, q.stage)), name).toBe(false);
+      for (const b of [...l.pair, ...l.row]) expect(b.y).toBe(q.inset.top);
     });
 
-  it('the rows touch each other under the head, every one the same height', () => {
-    // from 1690 px of width up the browser measured the same rows: 52 px of the reference each. Under it the HTML
-    // rows, 44 px by then, sat up to 5 px apart by an accident of their text lines; the drawn rows never did
-    const l = toolsLayout(spec(1920, 1080, 'edges'));
-    expect(l.rows.map((r) => r.y)).toEqual([42, 94, 146, 198, 250, 302, 354, 406]);
-    for (const r of l.rows) expect(r).toMatchObject({ x: 0, w: 430, h: 52 });
-    const wide = toolsLayout(spec(3440, 1440, 'edges'));
-    [56, 125.328, 194.656, 263.984, 333.313, 402.641, 471.969, 541.297].forEach((y, i) => {
-      expect(wide.rows[i].y).toBeCloseTo(y, 1);
-      expect(wide.rows[i].h).toBeCloseTo(69.328, 2);
-    });
-    const small = toolsLayout(spec(844, 390, 'edges'));
-    expect(small.rows.map((r) => r.y)).toEqual([18, 62, 106, 150, 194, 238, 282, 326]);
+  it('the town has no list: its pair stands left of the gear, 8 px apart', () => {
+    const l = toolsLayout(spec(844, 390, 'edges', { row: [0], pair: 'row' }));
+    expect(l.row).toHaveLength(1);
+    const [left, right] = l.pair;
+    expect(right.x - (left.x + left.w)).toBe(8);
+    expect(l.row[0].x - (right.x + right.w)).toBe(8);
+    expect(l.row[0].x + l.row[0].w).toBe(844 - 12);
   });
 
-  it('no button or row goes under the 44 px of a finger, and the list never under 300 px wide', () => {
-    const l = toolsLayout(spec(640, 360, 'edges'));
+  it('no pair when the switch hides it', () => {
+    expect(toolsLayout(spec(1920, 1080, 'edges', { pair: 'none' })).pair).toEqual([]);
+  });
+
+  it('no button goes under the 44 px of a finger, and a button is never narrower than tall', () => {
+    const l = toolsLayout(spec(640, 360, 'edges', { row: [10, 0] }));
     expect(l.size).toBe(44);
-    expect(l.rowH).toBe(44);
-    expect(l.list.w).toBe(300);
+    expect(l.row.map((b) => b.w)).toEqual([44, 44]);
     expect(toolsLayout(spec(1920, 1080, 'edges')).size).toBe(56);
   });
 
-  it('the menu button sinks 2 px only while its list is open; Back and Undo never do', () => {
-    const at = (open: boolean) => toolsLayout(spec(1920, 1080, 'edges', { buttons: 3, open })).buttons.map((b) => b.y);
-    expect(at(false)).toEqual([12, 12, 12]);
-    expect(at(true)).toEqual([12, 12, 14]);
-  });
-
-  it('the buttons stand 8 px apart, the menu button on the corner', () => {
-    const [back, undo, menu] = toolsLayout(spec(1920, 1080, 'edges', { buttons: 3, open: false })).buttons;
-    expect(menu.x + menu.w).toBe(1920 - 12);
-    expect(menu.x - (undo.x + undo.w)).toBe(8);
-    expect(undo.x - (back.x + back.w)).toBe(8);
-    expect(toolsLayout(spec(1920, 1080, 'edges', { buttons: 0 })).buttons).toEqual([]);
-  });
-
-  it('a list that fits the page does not scroll', () => {
-    const l = toolsLayout(spec(1920, 1080, 'edges'));
-    expect(l.more).toBe(0);
-    expect(l.list.h).toBe(l.head + 8 * l.rowH);
-    expect(l.rows.every((r) => rowSeen(l, r))).toBe(true);
-  });
-
-  it('on a low page the list ends 12 px above the page, and scrolls by the rows left out', () => {
-    const l = toolsLayout(spec(844, 390, 'edges'));
-    expect(l.list.y + l.list.h).toBeCloseTo(390 - 12, 5);
-    expect(l.more).toBeCloseTo(18 + 8 * 44 - l.list.h, 5);
-    // 299.6 px under the 18 px head: six whole rows show, the seventh is cut and left out
-    expect(l.rows.map((r) => rowSeen(l, r))).toEqual([true, true, true, true, true, true, false, false]);
-  });
-
-  it('scrolling moves the rows up: one that passes under the head is left out, the last one comes in', () => {
-    const top = toolsLayout(spec(844, 390, 'edges'));
-    const end = toolsLayout(spec(844, 390, 'edges', { scroll: top.more }));
-    expect(end.rows[0].y).toBeCloseTo(18 - top.more, 5);
-    expect(rowSeen(end, end.rows[0])).toBe(false); // under the head
-    expect(rowSeen(end, end.rows[7])).toBe(true);
-    expect(end.rows[7].y + end.rows[7].h).toBeCloseTo(end.list.h, 5); // the last row ends with the list
-    // one px of scroll is not yet a row out (the same slack the drawing always had)
-    const hair = toolsLayout(spec(844, 390, 'edges', { scroll: 1 }));
-    expect(rowSeen(hair, hair.rows[0])).toBe(true);
-    expect(rowSeen(hair, toolsLayout(spec(844, 390, 'edges', { scroll: 2 })).rows[0])).toBe(false);
-  });
-
   // Fernando, Nov 18: Undo carries its word ("↶ Desfazer"), so ↶ and ↩ are told apart
-  it('a button with its word is as wide as the word, the row still 8 px apart and on the corner', () => {
-    const [back, undo, menu] = toolsLayout(spec(844, 390, 'edges', { buttons: 3, widths: [80, 100, 0] })).buttons;
-    expect([back.w, undo.w, menu.w]).toEqual([80, 100, 44]);
-    expect(menu.x + menu.w).toBe(844 - 12);
-    expect(menu.x - (undo.x + undo.w)).toBe(8);
+  it('a button with its word is as wide as the word, the row 8 px apart and on the corner', () => {
+    const [back, undo, gear] = toolsLayout(spec(844, 390, 'edges', { row: [80, 100, 0] })).row;
+    expect([back.w, undo.w, gear.w]).toEqual([80, 100, 44]);
+    expect(gear.x - (undo.x + undo.w)).toBe(8);
     expect(undo.x - (back.x + back.w)).toBe(8);
-    expect(back.h).toBe(44);
-    // never narrower than tall
-    expect(toolsLayout(spec(844, 390, 'edges', { buttons: 2, widths: [10, 0] })).buttons[0].w).toBe(44);
-  });
-
-  // Fernando, Nov 18: on a phone "FPS counter" and "Options and help" were found only by scrolling by chance
-  it('while rows wait under the list, its foot keeps room for a cue and no row is drawn over it', () => {
-    const top = toolsLayout(spec(844, 390, 'edges'));
-    expect(top.below).toBe(true);
-    expect(top.cue).toBeGreaterThanOrEqual(16);
-    for (const r of top.rows) if (rowSeen(top, r)) expect(r.y + r.h).toBeLessThanOrEqual(top.list.h - top.cue + 1);
-    const end = toolsLayout(spec(844, 390, 'edges', { scroll: top.more }));
-    expect([end.below, end.cue]).toEqual([false, 0]);
-    expect(toolsLayout(spec(1920, 1080, 'edges')).below).toBe(false); // a list that fits says nothing
   });
 
   it('the Height corner keeps under the row of buttons', () => {
     expect(toolsFoot(0.39, 12)).toBe(12 + 44 + 8);
     expect(toolsFoot(1, 12)).toBe(12 + 56 + 8);
   });
-
-  it('the head is a whole number of px, as the browser draws a frame', () => {
-    expect(toolsLayout(spec(844, 390, 'edges')).head).toBe(18); // 42 x 0.4396 = 18.46
-    expect(toolsLayout(spec(1600, 560, 'edges')).head).toBe(25); // 25.2
-    expect(toolsLayout(spec(1024, 768, 'frame')).head).toBe(22); // 22.4
-  });
 });
 
-// Fernando, Nov 18: Undo on the screen with a mouse too; Back stays a finger's (Esc and the right button go back)
+// Fernando, Nov 18 night: Undo and ↺ ↻ follow the screen buttons switch; Back stays a finger's (Esc and the right
+// button go back)
 describe('which corner buttons show', () => {
-  it('the menu button and Undo always, on the PC and on touch; Back only for a finger with a screen to go back', () => {
+  it('the gear always; Undo and the pair with the switch; Back only for a finger with a screen to go back', () => {
     for (const keys of [true, false])
-      for (const hidden of [true, false]) {
-        expect(toolShown('menu', keys, hidden)).toBe(true);
-        expect(toolShown('undo', keys, hidden)).toBe(true);
-        expect(toolShown('back', keys, hidden)).toBe(!keys && !hidden);
-      }
+      for (const hidden of [true, false])
+        for (const on of [true, false]) {
+          expect(toolShown('gear', keys, hidden, on)).toBe(true);
+          for (const k of ['undo', 'left', 'right'] as const) expect(toolShown(k, keys, hidden, on)).toBe(on);
+          expect(toolShown('back', keys, hidden, on)).toBe(!keys && !hidden);
+        }
   });
 });

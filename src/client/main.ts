@@ -76,14 +76,7 @@ export class Game implements TurnHost {
       page: (dir) => this.turn.turnPage(dir),
       hover: (list, i) => this.turn.hoverRow(list, i),
       rotate: (dir) => scene.rotate(dir),
-      recenter: () => scene.resetView(),
-      fast: () => {
-        pace.toggle = !pace.toggle;
-        store.set(FAST_KEY, pace.toggle ? '1' : '');
-        this.hud.setFast(pace.toggle);
-      },
       menu: () => this.menu(),
-      fps: () => this.hud.setFps(this.toggleFps()),
       undo: () => this.runKey({ k: 'undo' }),
       cancel: () => this.runKey({ k: 'cancel' }),
     };
@@ -95,7 +88,6 @@ export class Game implements TurnHost {
     });
     this.toggleFps = fpsCounter(host, scene, () => this.hud.stats3d());
     pace.toggle = store.get(FAST_KEY) === '1';
-    this.hud.setFast(pace.toggle);
     requestAnimationFrame(() => this.pollPad());
     // Options changed the mark style: the scene builds its marks again and the turn's marks go back on them
     onMarkStyle(() => {
@@ -132,7 +124,7 @@ export class Game implements TurnHost {
     if (a.k === 'status') return this.status();
     if (a.k === 'info') return this.abilitySheet();
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
-    if (a.k === 'fps') return this.hud.setFps(this.toggleFps());
+    if (a.k === 'fps') return void this.toggleFps();
     if (this.busy || !this.heroTurn) return;
     this.turn.key(a);
   }
@@ -368,11 +360,18 @@ export class Game implements TurnHost {
   // the Options window (game/options.ts), with what it shows and changes of this battle
   private menu() {
     optionsMenu({
-      room: this.sel.room !== null,
-      scenario: this.sel.scenario,
-      busy: this.busy,
       relayout: () => this.hud.relayout(),
-      restart: () => this.restart(),
+      battle: {
+        room: this.sel.room !== null,
+        busy: this.busy,
+        restart: () => this.restart(),
+        fast: () => pace.toggle,
+        setFast: (on) => {
+          pace.toggle = on;
+          store.set(FAST_KEY, on ? '1' : '');
+        },
+        fps: () => void this.toggleFps(),
+      },
     });
   }
 }

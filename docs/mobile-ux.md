@@ -64,23 +64,26 @@ do not rearrange the layout only to reach that number.*
 
 - Controls stay out of the play area and away from the far corners (a thumb reaches the lower sides best; the corners
   hold the notch and the system gestures).
-- About five or six active controls at a time: the command menu's rows, Back, Undo, ☰.
-- **Undo is always a button on screen** (`.tools .undo`, beside Back and ☰; Fernando, Nov 18; on the PC with a mouse
-  too, the same day, `toolShown` in `window3d/tools-layout.ts`, while Back stays a finger's): live whenever the battle
-  has a step to undo (`undoShown`, `hud-menus.ts`), faded to 45% (`OFF_ALPHA`, `tool-rows.ts`) and dead with none, so it
-  never comes and goes under the finger. The ☰ list's Undo row follows it (`aria-disabled`, drawn in `--ui3d-ink-off`).
+- About five or six active controls at a time: the command menu's rows, Back, Undo, ↺ ↻ and the gear.
+- **No ☰ menu anywhere** (Fernando, Nov 18 night grill, items 1 and 2): the corner holds a gear that opens Options
+  straight away, in battle and in town (`hud-tools.ts` `gearButtons`). Fast battle, Back to title and the fps counter
+  moved into Options; the buttons are dark plates with a gold edge, the end of battle's, never the panel blue.
+- **Undo and ↺ ↻ are buttons on screen** (`.tools .undo`, `.turn-left`, `.turn-right`): on by default for a finger
+  (`(pointer: coarse)`), off on a PC, where Z and R do both; Options › Display › "Screen buttons" turns them on or off
+  for good (`screen-buttons.ts`, `dt:screen-buttons`). Undo is live whenever the battle has a step to undo
+  (`undoShown`, `hud-menus.ts`), faded to 45% and dead with none, so it never comes and goes under the finger. ↺ ↻ sit
+  on the top left right after the turn list's column, clear of the banner (`toolsLayout`, tested from 667×375 to
+  1920×1080 and with a notch); in town, where there is no list, beside the gear. Back stays a finger's.
 - **Undo says its word**: "↶ Desfazer" (`window3d/tools3d.ts` `WORD`), so Undo and Back (↩, the arrow alone, kept
   narrow to stay clear of the help pill on a phone) are never told apart by the arrow's shape. Undo is "Desfazer" on
-  the button and on its ☰ row; the command menu's "Desfazer movimento" is a row of its own right under Move (Nov 18),
+  the button; the command menu's "Desfazer movimento" is a row of its own right under Move (Nov 18),
   not this control.
 - **The corner buttons and the Height** share the top right: the Height corner drops under the row of buttons where the
   page has no room for both (`heightBox`, `hints3d/hints-view.ts`; `toolsFoot`, `window3d/tools-layout.ts`). Under the
   Height, the tile line names the tile's X, Y and Z ("X 16 · Y 20 · Z 1 · grama"; Z is the corner's number). Neither
   has a plate (Fernando, Nov 18): white text with a near-black outline and a drop shadow (`shadow` in `ui3d/text.ts`),
   measured at 12.4:1 or more against its own outline over snow and over the crypt at 844×390, 1024×768 and 1280×720.
-- **The ☰ list says when it scrolls**: while rows wait under it, its foot reads "▼ Mais abaixo" in the room the layout
-  keeps for it (`below`, `cue`, `tools-layout.ts`). The Pixel size row shows the size in use ("2 px", "desligado").
-- **No pointing glove for a finger**: the command menu's and the ☰ list's glove hide while a finger plays (the layer's
+- **No pointing glove for a finger**: the command menu's glove hides while a finger plays (the layer's
   `finger`, `ui3d/layer.ts`, the same switch that hides the key hints); a key or a pad brings it back.
 - **The turn list starts under the top margin** and its title never covers a card: a list longer than its box drops its
   top to the first whole row (`queueLayout`, `turn3d/queue-layout.ts`).
@@ -89,7 +92,7 @@ do not rearrange the layout only to reach that number.*
   (`menuLayout`, `menu3d/menu-layout.ts`). The menu is as tall as its rows, with no blank fifth row: four at the turn's
   start, five after a move with movement left (Move and "Desfazer movimento" both show; `menuRows`, `command.ts`), the
   fifth growing it upwards from the same foot.
-- No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included). The
+- No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test). The
   battle's foot of hints follows Options › Key and button hints (`dt:hints`, Fernando, Nov 18): Automatic (the default)
   shows it only while a key or a pad is the input last used, never for a finger; Always and Never hold (`hintsDevice`,
   `hints3d/hints-view.ts`). A pad pressed after a finger brings it back even with the same icons (`padSeen`).
@@ -106,8 +109,8 @@ do not rearrange the layout only to reach that number.*
   bar): on a touch device in the browser the title's main button is "Jogar em tela cheia" (`fullscreenOffer`,
   `fullscreen.ts`, pure and tested: `(pointer: coarse)`, not `display-mode: fullscreen` or `standalone`, not
   `navigator.standalone`, not in fullscreen); it leaves once fullscreen settles. Elsewhere the title keeps a quiet
-  "Tela cheia" / "Sair da tela cheia" over the language button, and the battle's ☰ list has the same row before
-  Options and help (at 844×390 it waits under "▼ Mais abaixo"). None of them where the browser has no Fullscreen API
+  "Tela cheia" / "Sair da tela cheia" over the language button, and Options › Display has the same row (the ☰
+  list that also had it is gone, Nov 18 night). None of them where the browser has no Fullscreen API
   (an iPhone: the home screen is the way there, section 3).
 - **Fullscreen across screens** (Fernando, Nov 18, bug: the bar came back at each change of screen): every screen is its
   own page (`location.search`: town, expedition map, room, title, language), and an unloading page leaves fullscreen
@@ -127,7 +130,7 @@ do not rearrange the layout only to reach that number.*
 | Two fingers pinching | zooms | `touch-input.ts` |
 | Two fingers twisting | turns the camera one of its eight angles per 30° (`TWIST_STEP`), the map following the fingers | `gesture.ts` (pure, `tests/gesture.test.ts`) |
 
-A gesture is never the only way: the keyboard, the pad and the ☰ menu reach the same actions. `body` has
+A gesture is never the only way: the keyboard, the pad and the on-screen buttons reach the same actions. `body` has
 `touch-action: none` and `user-select: none`; scrolling boxes have `pan-y`; buttons `manipulation` (no double-tap zoom).
 
 ## 6. Leaving and coming back

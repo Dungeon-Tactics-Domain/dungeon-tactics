@@ -185,7 +185,7 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       t('ficha da habilidade em foco no submenu Habilidades', 'sheet of the ability in focus in the Abilities submenu'),
     ],
     [['fps'], '', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
-    [['help'], 'H · ?', t('esta ajuda e o menu', 'this help and the menu')],
+    [['help'], 'H · ?', t('as Opções e esta ajuda', 'Options and this help')],
   ];
   const menu = pad ? `${k('cancel')} · ${k('help')}` : 'Esc · H';
   return [

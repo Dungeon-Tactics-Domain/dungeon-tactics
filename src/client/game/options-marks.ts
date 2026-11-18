@@ -8,8 +8,8 @@ export const marksOption = (): Option =>
   pick(
     t('Marcações', 'Marks'),
     t(
-      'Como as casas, o cursor, os aros dos personagens e as linhas aparecem no mapa. Simples é o desenho chapado, o mais leve.',
-      'How the tiles, the cursor, the rings round the characters and the lines show on the map. Simple is the flat drawing, the lightest.',
+      'Como as casas, o cursor, os aros dos personagens e as linhas aparecem no mapa. Simples: o desenho chapado, o mais leve. Luz: luz gravada no chão. Pedra: peças de pedra e metal. Neon: tubos de luz.',
+      'How the tiles, the cursor, the rings round the characters and the lines show on the map. Simple: the flat drawing, the lightest. Light: light etched in the ground. Stone: stone and metal pieces. Neon: tubes of light.',
     ),
     [
       ['simples', t('Simples', 'Simple')],

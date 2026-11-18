@@ -1,17 +1,21 @@
 // The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Help is
 // options.ts's own, since its rows open windows). Out of options.ts so that file stays under the 400 lines.
+import { secondTap } from '../dialog.ts';
+import { fpsOn } from '../fps.ts';
 import { fullscreenLabel, fullscreenOn, toggleFullscreen } from '../fullscreen.ts';
 import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { glyphsOption, hintsOption, setTutorial, tutorialOn } from '../key-hints.ts';
 import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
-import { type Option, percent, pick } from '../option-row.ts';
+import { type Go, type Option, percent, pick } from '../option-row.ts';
+import { screenButtons, setScreenButtons } from '../screen-buttons.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import type { LayoutMode } from '../ui3d/layout.ts';
+import { toTitle } from './crawl.ts';
 import type { OptionsContext } from './options.ts';
 import { marksOption } from './options-marks.ts';
 
@@ -57,15 +61,22 @@ const flag = (key: string, parse: (raw: unknown) => boolean) =>
 export interface OptionsGroup {
   title: string;
   help: string;
-  rows: Option[];
+  rows: (Option | Go)[];
 }
+// Fernando, Nov 18 night: no ☰ menu anywhere, so what it held moved here: Fast battle and Back to title in Game, the
+// screen buttons switch and the fps counter in Display; the battle's own rows only show in a battle
 export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Jogo', 'Game'),
-    help: t(
-      'O texto das conversas, o idioma, os ícones das teclas e a grade da cidade.',
-      'The conversations’ text, the language, the key icons and the town grid.',
-    ),
+    help: o.battle
+      ? t(
+          'O texto das conversas, o idioma, as dicas e os ícones das teclas, a batalha rápida e a grade da cidade.',
+          'The conversations’ text, the language, the key hints and icons, the fast battle and the town grid.',
+        )
+      : t(
+          'O texto das conversas, o idioma, as dicas e os ícones das teclas e a grade da cidade.',
+          'The conversations’ text, the language, the key hints and icons and the town grid.',
+        ),
     rows: [
       pick(
         t('Velocidade do texto', 'Text speed'),
@@ -103,6 +114,20 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
       ),
       hintsOption(), // when the battle's footer shows the key and button hints (Nov 18, Fernando; key-hints.ts)
       glyphsOption(), // what the key hints show: the keys or a pad's icons (Nov 17, Fernando; key-hints.ts)
+      ...(o.battle
+        ? [
+            onOff(
+              t('Batalha rápida (3×)', 'Fast battle (3×)'),
+              t(
+                'As animações da batalha passam três vezes mais rápido. No teclado, segurar Enter faz o mesmo.',
+                'The battle’s animations play three times faster. On a keyboard, holding Enter does the same.',
+              ),
+              o.battle.fast,
+              o.battle.setFast,
+              true,
+            ),
+          ]
+        : []),
       onOff(
         townGrid(),
         t(
@@ -112,6 +137,19 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         ...flag(GRID_KEY, parseTownGrid),
         true,
       ),
+      {
+        link: t('Voltar ao título', 'Back to title'),
+        help: o.battle?.room
+          ? t(
+              'Volta à tela de título. Sair de uma sala perde a expedição.',
+              'Goes back to the title. Leaving a room loses the expedition.',
+            )
+          : t('Volta à tela de título.', 'Goes back to the title.'),
+        // from a room the 2nd tap confirms losing the expedition, as "Leave the room" does
+        run: (e) =>
+          (o.battle?.room && !secondTap(e, t('Confirmar: perde a expedição', 'Confirm: the expedition is lost'))) ||
+          toTitle(),
+      },
     ],
   },
   {
@@ -135,10 +173,11 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Imagem', 'Display'),
     help: t(
-      'O visual da interface, as marcas do mapa e a câmera.',
-      'The look of the interface, the marks on the map and the camera.',
+      'As marcações do mapa, a tela cheia, o movimento, a interface, os botões na tela e a câmera.',
+      'The marks on the map, fullscreen, motion, the interface, the screen buttons and the camera.',
     ),
     rows: [
+      marksOption(), // how the marks on the board are drawn (Nov 17, Fernando; options-marks.ts); on top since Nov 18 night
       ...fullscreenOption(),
       pick(
         t('Reduzir movimento', 'Reduce motion'),
@@ -171,7 +210,16 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
           o.relayout();
         },
       ),
-      marksOption(), // how the marks on the board are drawn (Nov 17, Fernando; options-marks.ts)
+      // Undo and the camera pair on the screen: on by default for a finger, off on a PC (screen-buttons.ts)
+      onOff(
+        t('Botões na tela', 'Screen buttons'),
+        t(
+          'Mostra no alto da tela os botões Desfazer (↶) e Girar a câmera (↺ ↻). Ligados no celular e no tablet; no PC, as teclas fazem os dois: Z desfaz e R gira a câmera.',
+          'Shows the Undo (↶) and Turn the camera (↺ ↻) buttons at the top of the screen. On for phones and tablets; on a PC, the keys do both: Z undoes and R turns the camera.',
+        ),
+        screenButtons,
+        setScreenButtons,
+      ),
       // Fernando's grill of Nov 15: the last enemy's or the last hero's death in slow motion with a close-up (narrowed Nov 16), this turns it off
       onOff(
         t('Câmera lenta nas mortes', 'Slow motion on deaths'),
@@ -182,6 +230,19 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         ...flag(SLOWMO_KEY, parseSlowmo),
         true,
       ),
+      ...(o.battle
+        ? [
+            onOff(
+              t('Contador de fps', 'FPS counter'),
+              t(
+                'Mostra no canto quadros por segundo, desenhos e memória da cena. No teclado, F3.',
+                'Shows frames per second, draw calls and the scene’s memory in the corner. On a keyboard, F3.',
+              ),
+              fpsOn,
+              o.battle.fps,
+            ),
+          ]
+        : []),
     ],
   },
 ];

@@ -1,10 +1,10 @@
 // The walkable town's HUD drawn in 3D, a screen of the town's 3D layer in the look of the
 // battle's 3D HUD (hints3d/, window3d/tools3d.ts; the reference has no walkable town): the town's name on a dark slate
 // sign top left (square, unframed: not a button), what Enter does on a pill over what it acts on (the pill top centre only with nothing in reach: the
-// walk keys), and the menu button (3 bars).
+// walk keys). The gear and ↺ ↻ are window3d/tools3d.ts', as in battle.
 //   Words and input: the HTML HUD (game/town-hud.ts, game/town.ts) stays, unseen (style.css .hud.townhud3d): it says
 //   what to write, and its real buttons take the mouse, the taps and the screen reader. Where each part goes is
-//   town-layout.ts townHud, no measure of the HTML; the menu button is seated from the same numbers. Nothing here
+//   town-layout.ts townHud, no measure of the HTML. Nothing here
 //   decides anything.
 import { Group } from 'three';
 import type { Act } from '../glyphs.ts';
@@ -16,17 +16,15 @@ import { promptSays, townHud } from './town-layout.ts';
 
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
 const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the button in focus
-const BAR: Rgba = [0.96, 0.95, 0.9, 1];
 const SIZE = { name: 28, prompt: 28, act: 26 }; // px of the reference; never under 16 on the page
 
 export class TownHud3d implements Ui3dScreen {
   readonly flat = new Group();
   readonly host: HTMLElement; // the town's name: hidden with the HUD (a window, someone talking), the drawing goes too
-  private readonly fixed = new Part(); // the name, the prompt and the menu button
+  private readonly fixed = new Part(); // the name and the prompt
   private readonly act = new Part(); // the balloon, moved every frame
   private readonly prompt: HTMLElement;
   private readonly balloon: HTMLElement;
-  private readonly burger: HTMLElement;
   private readonly watch = new MutationObserver(() => this.draw());
   private readonly ac = new AbortController();
   private actH = 0;
@@ -40,7 +38,6 @@ export class TownHud3d implements Ui3dScreen {
     this.host = find('.tile-info');
     this.prompt = find('.town-prompt');
     this.balloon = find('.town-act');
-    this.burger = find('.burger');
     this.flat.add(this.fixed.group, this.act.group);
     this.fixed.want = 1;
     hud.classList.add('townhud3d');
@@ -88,27 +85,14 @@ export class TownHud3d implements Ui3dScreen {
       // the action of the HTML hint (key-hints.ts) and what it shows now, so a change of input redraws
       key = (e: Element) => (keys ? (e.querySelector<HTMLElement>('.hint')?.dataset.act ?? '') : ''),
       focus = document.activeElement;
-    const { name, menu, prompt: line } = townHud(layer.w, layer.inset, !!key(this.prompt)),
+    const { name, prompt: line } = townHud(layer.w, layer.inset, !!key(this.prompt)),
       says = promptSays(this.prompt.firstChild?.textContent ?? '', this.balloon.dataset.say ?? '');
-    const fkey = JSON.stringify([
-      name,
-      menu,
-      line,
-      says,
-      key(this.prompt),
-      layer.keys,
-      focus === this.burger,
-      layer.dpr,
-      s,
-    ]);
+    const fkey = JSON.stringify([name, line, says, key(this.prompt), layer.keys, layer.dpr, s]);
     if (fkey !== fixed.key) {
       fixed.clear();
       fixed.key = fkey;
-      // the real button under the drawn one, whatever the style sheet says
-      Object.assign(this.burger.parentElement!.style, { left: `${menu.x}px`, top: `${menu.y}px`, right: 'auto' });
-      this.burger.style.width = this.burger.style.height = `${menu.w}px`;
       // the town's name, on its corner: a square plate with no frame and a rule under the name, so it reads as a sign
-      // and not as a button like the ☰ beside it (Nov 18 review: both wore the same rounded, framed slate)
+      // and not as a button like the ☰ that stood in the other corner (Nov 18 review: both wore the same rounded, framed slate)
       const town = this.label(this.host.textContent ?? '', SIZE.name, WHITE),
         w = town.scale.x + 44 * s,
         h = Math.max(name.h, 44 * s);
@@ -116,20 +100,6 @@ export class TownHud3d implements Ui3dScreen {
       fixed.box(name.x + 16 * s, name.y + h - 8 * s, w - 32 * s, Math.max(1, 2 * s), 0, LINE, NONE);
       fixed.text(town, name.x + w / 2, name.y + h / 2 - 2 * s);
       if (says) this.pill(fixed, says, key(this.prompt), SIZE.prompt, line.x, line.y, Math.max(line.h, 48 * s));
-      // the menu button: the 3 bars
-      fixed.box(menu.x, menu.y, menu.w, menu.h, 10 * s, focus === this.burger ? LIT : PILL, EDGE);
-      const bw = menu.w * 0.46,
-        bh = Math.max(2, Math.round(menu.h * 0.07));
-      for (const k of [-1, 0, 1])
-        fixed.box(
-          menu.x + (menu.w - bw) / 2,
-          Math.round(menu.y + menu.h / 2 + k * 2.4 * bh - bh / 2),
-          bw,
-          bh,
-          bh / 2,
-          BAR,
-          NONE,
-        );
     }
     // the balloon: what the action button does, drawn around the origin and moved over its target every frame
     const what = this.balloon.dataset.say ?? '';
@@ -171,7 +141,5 @@ export class TownHud3d implements Ui3dScreen {
     this.act.clear();
     this.hud.classList.remove('townhud3d');
     this.balloon.style.minWidth = this.balloon.style.minHeight = '';
-    this.burger.parentElement?.removeAttribute('style');
-    this.burger.style.width = this.burger.style.height = '';
   }
 }

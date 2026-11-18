@@ -19,7 +19,7 @@ import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm, undoShown } from './hud-menus.ts';
 import { helpWidth, hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
 import type { HudSkin } from './hud-skin.ts';
-import { ToolsMenu } from './hud-tools.ts';
+import { CornerButtons } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, el, iconButton } from './icons.ts';
 import type { Highlights } from './interaction.ts';
@@ -46,12 +46,9 @@ export interface HudActions {
   lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
   page(dir: 1 | -1): void; // the ability sheet's arrows (menu3d/)
   hover(list: 'menu' | 'abilities', index: number): void; // the mouse (or Tab) over a 3D menu row moves the focus there
-  rotate(dir: 1 | -1): void;
-  recenter(): void;
-  fast(): void; // toggles the 3x faster battle (the touch way; on the keyboard, hold Enter)
+  rotate(dir: 1 | -1): void; // the camera pair on the screen (R and Shift+R)
   undo(): void; // undoes the last step (same as the Z key): whoever plays with a mouse only had no way to
-  menu(): void;
-  fps(): void; // the menu's performance counter switch (the F3 key on a keyboard)
+  menu(): void; // the gear: Options
   cancel(): void; // the Back button, the same as Esc, B and the right button (a finger has none of them)
 }
 export interface HudView {
@@ -73,13 +70,7 @@ export class BattleHud {
     'aria-label': t('Ordem dos turnos', 'Turn order'),
     tabIndex: -1, // a scroller is a Tab stop of its own in Chrome; PgUp and PgDn scroll it, the 3D list draws no focus
   });
-  private readonly tools: ToolsMenu;
-  setFast(on: boolean) {
-    this.tools.setFast(on);
-  }
-  setFps(on: boolean) {
-    this.tools.setFps(on);
-  }
+  private readonly tools: CornerButtons;
   scrollQueue(dir: 1 | -1) {
     const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;
     this.queue.scrollBy({ top: dir * pageStep(this.queue.clientHeight, row) });
@@ -88,16 +79,11 @@ export class BattleHud {
   private queueScroll = 0;
   private queueTurn = '';
   private readonly help = el('div', { class: 'panel help', 'aria-live': 'polite' });
-  // Back beside the menu button (Nov 16, Fernando): the only way out of the Move and Act maps without Esc, B or a right button
-  private readonly back = iconButton(
-    '↩',
-    t('Voltar', 'Back'),
-    () => {
-      this.tools.close(); // the open corner list counts a tap anywhere in .tools as inside
-      this.act.cancel();
-    },
-    { class: 'icon back', hidden: true },
-  );
+  // Back beside Undo and the gear (Nov 16, Fernando): the only way out of the Move and Act maps without Esc, B or a right button
+  private readonly back = iconButton('↩', t('Voltar', 'Back'), () => this.act.cancel(), {
+    class: 'icon back',
+    hidden: true,
+  });
   private readonly bannerEl = el('div', { class: 'panel banner', role: 'status', hidden: true });
   private readonly commands = el('div', {
     class: 'panel commands',
@@ -126,7 +112,7 @@ export class BattleHud {
     private readonly act: HudActions,
     skin: HudSkin,
   ) {
-    this.tools = new ToolsMenu(act);
+    this.tools = new CornerButtons(act);
     this.tools.root.prepend(this.back);
     this.root = el(
       'div',
@@ -390,7 +376,6 @@ export class BattleHud {
 
   dispose() {
     this.drop3d();
-    this.tools.close();
     this.root.remove();
   }
 }

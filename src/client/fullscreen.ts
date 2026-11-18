@@ -1,10 +1,10 @@
 // Fullscreen (Fernando, Nov 18: a phone opened the game under Chrome's bar): one switch and one name for Options, the
-// title and the battle's ☰ list, and the rule for how loudly the title offers it. Only where the API exists (an
+// title, and the rule for how loudly the title offers it. Only where the API exists (an
 // iPhone has none). The request settles later, so whoever shows the state reads it again on `fullscreenchange`.
 import { t } from './i18n.ts';
 
 export const fullscreenOn = () => !!document.fullscreenElement;
-// in fullscreen now, or undefined where the browser has no Fullscreen API (what tool-rows.ts takes)
+// in fullscreen now, or undefined where the browser has no Fullscreen API
 export const fullscreenNow = () => (document.fullscreenEnabled ? fullscreenOn() : undefined);
 // what the shortcut says: what a tap does now
 export const fullscreenLabel = (on: boolean) =>

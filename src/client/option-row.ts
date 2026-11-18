@@ -47,6 +47,13 @@ export const percent = (label: string, help: string, get: () => number, set: (v:
   bar: { fill: get, set: (pct) => set(pctAt(pct / 100, min)) },
 });
 
+// A row that goes somewhere instead of holding a value (Voltar ao título): its name and ▸, as Help's rows
+export interface Go {
+  link: string;
+  help: string;
+  run: (e: Event) => void;
+}
+
 // One cursor for mouse, keyboard and gamepad, as in the battle menus: a pointer moving over a row takes the focus there.
 // Only a real move: the list scrolling under a still mouse (the arrows walking it) must not pull the focus back
 export const hoverFocus = (e: PointerEvent) => {
@@ -99,3 +106,11 @@ export function optionRow(o: Option, describe: (help: string) => void): HTMLButt
   draw();
   return row;
 }
+
+export const goRow = (g: Go, describe: (help: string) => void): HTMLButtonElement =>
+  button(
+    'opt-row',
+    [el('span', { class: 'opt-label' }, g.link), el('span', { class: 'opt-arrow', 'aria-hidden': 'true' }, '▸')],
+    g.run,
+    { onfocus: () => describe(g.help), onpointermove: hoverFocus },
+  );

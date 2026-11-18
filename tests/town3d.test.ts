@@ -380,12 +380,11 @@ describe('3D town windows: the cursor goes to the neighbour on that side', () =>
 describe('3D town HUD: the layout without the DOM', () => {
   // what the browser measured on the unseen HTML HUD (Nov 18, the day before hud3d.ts stopped reading it)
   const inset = { top: 12, right: 12, left: 12 };
-  it('lands where the browser put the name, the menu button and the prompt', () => {
+  it('lands where the browser put the name and the prompt', () => {
     for (const pageW of [1920, 540]) {
       const l = townHud(pageW, inset, true);
       expect([l.name.x, l.name.y]).toEqual([12, 12]);
       expect(l.name.h).toBeCloseTo(40.797, 2);
-      expect(l.menu).toEqual({ x: pageW - 56, y: 12, w: 44, h: 44 });
       expect(l.prompt).toEqual({ x: pageW / 2, y: 36, h: 48 });
     }
   });
@@ -402,7 +401,6 @@ describe('3D town HUD: the layout without the DOM', () => {
   it('follows the margins of the frame layout and the notch', () => {
     const l = townHud(3440, { top: 12, right: 452, left: 452 }, true);
     expect(l.name.x).toBe(452);
-    expect(l.menu.x + l.menu.w).toBe(3440 - 452);
   });
 });
 
