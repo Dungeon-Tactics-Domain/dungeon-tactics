@@ -1,5 +1,6 @@
 // The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Help is
 // options.ts's own, since its rows open windows). Out of options.ts so that file stays under the 400 lines.
+import { fullscreenLabel, fullscreenOn, toggleFullscreen } from '../fullscreen.ts';
 import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { glyphsOption } from '../key-hints.ts';
@@ -15,25 +16,19 @@ import type { LayoutMode } from '../ui3d/layout.ts';
 import type { OptionsContext } from './options.ts';
 import { marksOption } from './options-marks.ts';
 
-// Fullscreen (Nov 18, Fernando: a phone showed the game under Chrome's bar). Only where the API exists (an iPhone has none);
-// the row follows `fullscreenchange`, since the request settles later, and the landscape lock only works while fullscreen
+// Fullscreen (Nov 18, Fernando: a phone showed the game under Chrome's bar), the switch of fullscreen.ts; only where
+// the API exists (an iPhone has none)
 const fullscreenOption = (): Option[] =>
   document.fullscreenEnabled
     ? [
         onOff(
-          t('Tela cheia', 'Fullscreen'),
+          fullscreenLabel(false),
           t(
             'Esconde a barra do navegador. No celular, também trava a tela deitada.',
             'Hides the browser bar. On a phone it also locks the screen to landscape.',
           ),
-          () => !!document.fullscreenElement,
-          (on) => {
-            if (!on) return void document.exitFullscreen().catch(() => {});
-            document.documentElement
-              .requestFullscreen()
-              .then(() => screen.orientation?.lock?.('landscape'))
-              .catch(() => {}); // refused (no gesture, or a browser that never locks): the page stays as it was
-          },
+          fullscreenOn,
+          toggleFullscreen,
           true,
         ),
       ]

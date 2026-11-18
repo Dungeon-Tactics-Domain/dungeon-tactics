@@ -204,6 +204,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/talk.ts` — dialogue box: typed text, blips, talking faces and text speed (dt:text).
 - `src/client/touch-input.ts` — tap, drag and pinch or wheel on the map.
 - `src/client/rotate-note.ts` — the turn-the-phone notice over every screen (a touch phone held upright): the plain HTML line before any 3D layer, its query (ROTATE) and who draws it in 3D.
+- `src/client/fullscreen.ts` — fullscreen: the switch and its name for Options, the title and the ☰ list, and the rule for how loudly the title offers it (`fullscreenOffer`, pure).
 - `src/client/ui3d/safe-area.ts` — the safe area in px (notch, home bar) for the 3D layer, read from a CSS probe.
 - `src/client/ui3d/rotate-layout.ts` — rotateLayout: the 3D turn-the-phone notice's plate, phone and words on the page; pure.
 - `src/client/ui3d/rotate3d.ts` — Rotate3d: the turn-the-phone notice drawn on every 3D layer, over every screen, with the HTML one unseen under it.
