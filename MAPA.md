@@ -67,6 +67,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town-party.ts` — openParty(): the Party screen (FFT's formation and unit menus), handed to the 3D town (town3d/screens.ts) with the member and page to open on.
 - `src/client/sheet-lines.ts` — the numbers a sheet and a piece show: one line per stat, with where each total comes from, its bar and what a piece would change.
 - `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid; the walk's circle, stick and target.
+- `src/client/town-pad.ts` — the town's touch pad: the saved side of the joystick (dt:town-pad), the stick's vector from the finger; pure. Drawn by town3d/pad3d.ts, its unseen skeleton in game/town-hud.ts.
 - `src/client/dev-roster.ts` — developer cast rules: build and validate sheets, DEV_MAPS, parseSetup and buildDevScenario.
 - `src/client/survival.ts` — "Until dawn" standalone mode: its scenario, turn goal and best-record save.
 
@@ -162,6 +163,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town3d/street-view.ts` — the pages of the 3D town menu, gate and place still to come; pure.
 - `src/client/town3d/street.ts` — streetWindows(): the 3D town menu, gate and place still to come at work, over the rules of game/crawl.ts.
 - `src/client/town3d/hud3d.ts` — TownHud3d: the walkable town's HUD drawn in 3D from townHud's numbers; the unseen HTML pieces give the words and take the input.
+- `src/client/town3d/pad-layout.ts` — where the touch pad's joystick and action button sit in the bottom corners, and the joystick's touch zone; pure.
+- `src/client/town3d/pad3d.ts` — Pad3d: the town's joystick and action button drawn in 3D (touch only), over their unseen skeleton.
 - `src/client/town3d/town-layout.ts` — where the 3D town windows put their parts, in reference px, and the walkable town's HUD on the page (townHud); pure numbers.
 - `src/client/town3d/map3d.ts` — Map3d: the expedition map in 3D, drawn over its own unseen HTML window, which keeps every input.
 - `src/client/town3d/map-draw.ts` — what the 3D expedition map draws with: the pen (text, boxes, faces) and the chart (floors, ways, seals, flag).
@@ -194,7 +197,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer, and the screens that take their own window (Options, title, Status, speech box...); types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — gearButtons and CornerButtons: the gear (Options), ↺ ↻ and Undo on the screen, battle and town (no ☰ menu since Nov 18 night).
-- `src/client/screen-buttons.ts` — the Undo and camera buttons switch: on for a finger, off on a PC, kept by Options (dt:screen-buttons).
+- `src/client/screen-buttons.ts` — touchDevice(), the one "is a finger pointing" test (also the town's walk line and pad), and the Undo and camera buttons switch: on for a finger, off on a PC, kept by Options (dt:screen-buttons).
 - `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts), drawn by the 3D look (window3d/status3d.ts); unitSheet and abilitySheet fill it.
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.

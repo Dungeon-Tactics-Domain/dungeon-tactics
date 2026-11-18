@@ -9,11 +9,12 @@ import { glyphsOption, hintsOption, setTutorial, tutorialOn } from '../key-hints
 import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
 import { type Go, type Option, percent, pick } from '../option-row.ts';
-import { screenButtons, setScreenButtons } from '../screen-buttons.ts';
+import { screenButtons, setScreenButtons, touchDevice } from '../screen-buttons.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { GRID_KEY, parseTownGrid } from '../town-map.ts';
+import { type PadSide, padSide, setPadSide } from '../town-pad.ts';
 import type { LayoutMode } from '../ui3d/layout.ts';
 import { toTitle } from './crawl.ts';
 import type { OptionsContext } from './options.ts';
@@ -33,6 +34,26 @@ const fullscreenOption = (): Option[] =>
           fullscreenOn,
           toggleFullscreen,
           true,
+        ),
+      ]
+    : [];
+
+// the town's joystick and button, where a finger plays (Nov 18, Fernando): which side each is on; a PC has no pad, so no row
+const padOption = (): Option[] =>
+  touchDevice()
+    ? [
+        pick(
+          t('Joystick e botão', 'Joystick and button'),
+          t(
+            'Na cidade, o joystick anda com o grupo e o botão fala ou entra. Escolha o lado de cada um.',
+            'In town, the joystick walks the group and the button talks or goes in. Pick which side each is on.',
+          ),
+          [
+            ['left', t('Joystick à esquerda', 'Joystick left')],
+            ['right', t('Joystick à direita', 'Joystick right')],
+          ] as [PadSide, string][],
+          padSide,
+          setPadSide,
         ),
       ]
     : [];
@@ -106,12 +127,13 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
       onOff(
         t('Tutorial', 'Tutorial'),
         t(
-          'Mostra no topo da batalha o que fazer agora e por que uma casa não serve. Desligado, fica só o resumo da última ação.',
-          'Shows at the top of the battle what to do now and why a tile does not work. Off, only the last action’s summary stays.',
+          'Mostra no topo da batalha o que fazer agora e por que uma casa não serve, e no topo da cidade como andar. Desligado, fica só o resumo da última ação e a cidade sem a faixa.',
+          'Shows at the top of the battle what to do now and why a tile does not work, and at the top of the town how to walk. Off, only the last action’s summary stays and the town has no strip.',
         ),
         tutorialOn,
         setTutorial,
       ),
+      ...padOption(),
       hintsOption(), // when the battle's footer shows the key and button hints (Nov 18, Fernando; key-hints.ts)
       glyphsOption(), // what the key hints show: the keys or a pad's icons (Nov 17, Fernando; key-hints.ts)
       ...(o.battle

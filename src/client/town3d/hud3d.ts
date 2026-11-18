@@ -9,6 +9,9 @@
 import { Group } from 'three';
 import type { Act } from '../glyphs.ts';
 import { LINE, NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
+import { t } from '../i18n.ts';
+import { onHelp, tutorialOn } from '../key-hints.ts';
+import { touchDevice } from '../screen-buttons.ts';
 import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { textMesh } from '../ui3d/text.ts';
@@ -27,6 +30,7 @@ export class TownHud3d implements Ui3dScreen {
   private readonly balloon: HTMLElement;
   private readonly watch = new MutationObserver(() => this.draw());
   private readonly ac = new AbortController();
+  private readonly unhelp = onHelp(() => this.draw()); // Options › Tutorial changed
   private actH = 0;
   private at = '';
 
@@ -86,7 +90,14 @@ export class TownHud3d implements Ui3dScreen {
       key = (e: Element) => (keys ? (e.querySelector<HTMLElement>('.hint')?.dataset.act ?? '') : ''),
       focus = document.activeElement;
     const { name, prompt: line } = townHud(layer.w, layer.inset, !!key(this.prompt)),
-      says = promptSays(this.prompt.firstChild?.textContent ?? '', this.balloon.dataset.say ?? '');
+      says = promptSays(
+        this.prompt.firstChild?.textContent ?? '',
+        this.balloon.dataset.say ?? '',
+        tutorialOn(),
+        touchDevice(),
+        layer.keys,
+        t('Joystick: andar · Botão: falar ou entrar', 'Joystick: walk · Button: talk or go in'),
+      );
     const fkey = JSON.stringify([name, line, says, key(this.prompt), layer.keys, layer.dpr, s]);
     if (fkey !== fixed.key) {
       fixed.clear();
@@ -136,6 +147,7 @@ export class TownHud3d implements Ui3dScreen {
   dispose() {
     this.layer.remove(this);
     this.watch.disconnect();
+    this.unhelp();
     this.ac.abort();
     this.fixed.clear();
     this.act.clear();
