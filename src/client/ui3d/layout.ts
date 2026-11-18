@@ -12,8 +12,22 @@ export const LAYOUT_MODES: readonly LayoutMode[] = ['edges', 'frame']; // the fi
 export const parseLayout = (v: unknown): LayoutMode => (v === 'frame' ? 'frame' : 'edges');
 
 export const SCREEN = { w: 1920, h: 1080 }; // the reference
-// `edges` never shrinks a piece below this (a phone); `frame` always fits the reference whole
+// under this a full-screen 3D page (Options, the title, the town's windows) keeps its HTML window; `frame` always fits
+// the reference whole
 export const MIN_SCALE = 0.6;
+// `edges` on a narrow page (a phone on its side, an upright tablet; Fernando, Nov 18: the pieces may shrink with the
+// screen): the combat bar spans the reference's width, so under MIN_SCALE the width alone shrinks the pieces, down to
+// this (a 640 px page). The height never does: each piece holds on to its own edge and the short page shows less map
+export const NARROW_SCALE = 1 / 3;
+// The smallest text a 3D piece draws, in page px: the game's 16 px (`floor`) down to MIN_SCALE, and under it shrinking
+// with the pieces (Fernando, Nov 18), or a line would no longer fit the plate it sits on
+export const textPx = (size: number, s: number, floor = 16) => Math.max(floor * Math.min(1, s / MIN_SCALE), size * s);
+// what the notch, the rounded corners and the home bar take on each side (env(safe-area-inset-*)), the larger of the
+// two sides on each axis so the interface stays centred
+export interface Safe {
+  x: number;
+  y: number;
+}
 
 export interface Box {
   x: number;
@@ -54,10 +68,17 @@ export const REGIONS = {
 export interface Stage extends Box {
   s: number;
 }
-export function stage(w: number, h: number, mode: LayoutMode): Stage {
+export function stage(w: number, h: number, mode: LayoutMode, safe: Safe = { x: 0, y: 0 }): Stage {
   const fit = Math.min(w / SCREEN.w, h / SCREEN.h);
-  if (mode === 'edges') return { x: 0, y: 0, w, h, s: Math.max(MIN_SCALE, fit) };
-  return { x: (w - SCREEN.w * fit) / 2, y: (h - SCREEN.h * fit) / 2, w: SCREEN.w * fit, h: SCREEN.h * fit, s: fit };
+  if (mode === 'frame')
+    return { x: (w - SCREEN.w * fit) / 2, y: (h - SCREEN.h * fit) / 2, w: SCREEN.w * fit, h: SCREEN.h * fit, s: fit };
+  const iw = w - 2 * safe.x,
+    ih = h - 2 * safe.y;
+  const s = Math.max(
+    Math.min(iw / SCREEN.w, ih / SCREEN.h),
+    Math.min(MIN_SCALE, Math.max(NARROW_SCALE, iw / SCREEN.w)),
+  );
+  return { x: safe.x, y: safe.y, w: iw, h: ih, s };
 }
 
 // one axis: the distance to the near edge (or to the middle) is the reference's, times the scale

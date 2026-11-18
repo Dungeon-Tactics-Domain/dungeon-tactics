@@ -105,10 +105,14 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
 }
 
 // the Back button's name for what it does now; hidden with nothing to go back to
-export function renderBack(btn: HTMLElement, v: HudView, open: boolean) {
-  const kind = backKind(v.battle, v.screen, open);
-  btn.hidden = !kind;
-  if (kind) btn.title = btn.ariaLabel = kind === 'undo' ? t('Desfazer movimento', 'Undo move') : t('Voltar', 'Back');
+// Undo on the screen (Fernando, Nov 18, for the fingers: until then it sat only inside the corner menu): shown on the
+// hero's turn whenever the rules have a step to take back (Battle.canUndo), the same as the Z key
+export const undoShown = (b: Battle, open: boolean) => open && b.canUndo;
+
+// Back leaves a screen; where Back would undo the move (the menu after moving), the Undo button beside it already does
+export function renderBack(btn: HTMLElement, undo: HTMLElement, v: HudView, open: boolean) {
+  btn.hidden = backKind(v.battle, v.screen, open) !== 'back';
+  undo.hidden = !undoShown(v.battle, open);
 }
 
 export function renderCommands(box: HTMLElement, v: HudView, open: boolean, act: HudActions) {

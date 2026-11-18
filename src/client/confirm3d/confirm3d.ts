@@ -87,7 +87,7 @@ export class Confirm3d implements Ui3dScreen {
 
   // a text in `r` (relative to the window), from its left plus `left`, or centred; wrapped at `width`
   private text(str: string, size: number, color: string, r: Rect, left: number, width?: number, centre = false) {
-    const px = Math.max(16, size * this.layer.s);
+    const px = this.layer.px(size);
     const m = textMesh(
       str,
       { size: px, color, font: this.layer.theme.font, width, line: px * 1.3 },

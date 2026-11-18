@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import pieces from '../scripts/sandbox/bench/ui-pecas.json';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
-import { LAYOUT_MODES, parseLayout, place, REGIONS, type Region, stage } from '../src/client/ui3d/layout.ts';
+import { LAYOUT_MODES, parseLayout, place, REGIONS, type Region, stage, textPx } from '../src/client/ui3d/layout.ts';
 import { type Flags, PIECES, skinFlags, specFlags, VARIANTS } from '../src/client/ui3d/skin-flags.ts';
 
 // Where the battle interface sits (ui3d/layout.ts) and which look each piece takes (ui3d/skin-flags.ts); Nov 16
@@ -52,9 +52,43 @@ describe('interface layout: the reference regions on a page', () => {
     expect(framed.y).toBeCloseTo(menu.y);
   });
 
-  it('edges never shrinks below the smallest scale; the frame always fits', () => {
-    expect(stage(640, 360, 'edges').s).toBe(0.6);
+  it('edges: a short page keeps the smallest full scale; the frame always fits', () => {
+    expect(stage(1920, 600, 'edges').s).toBe(0.6);
+    expect(stage(1280, 720, 'edges').s).toBeCloseTo(2 / 3);
+    expect(stage(1180, 820, 'edges').s).toBeCloseTo(1180 / 1920);
     expect(stage(640, 360, 'frame').s).toBeCloseTo(1 / 3);
+  });
+
+  // Fernando, Nov 18: on a phone and a tablet the pieces may shrink with the screen
+  it('edges: a narrow page shrinks the pieces by its width alone, down to a third', () => {
+    expect(stage(1024, 768, 'edges').s).toBeCloseTo(1024 / 1920); // the combat bar spans the reference's width
+    expect(stage(768, 1024, 'edges').s).toBeCloseTo(0.4);
+    expect(stage(844, 390, 'edges').s).toBeCloseTo(844 / 1920); // not 390 / 1080: the height never shrinks them
+    expect(stage(480, 320, 'edges').s).toBeCloseTo(1 / 3);
+    // the whole combat bar fits between the edges wherever the floor is not reached
+    for (const w of [667, 768, 844, 1024]) {
+      const bar = place(REGIONS.bar, stage(w, 400, 'edges'));
+      expect(bar.x, String(w)).toBeGreaterThanOrEqual(0);
+      expect(bar.x + bar.w, String(w)).toBeLessThanOrEqual(w);
+    }
+  });
+
+  it('edges: the pieces anchor inside the safe area, the larger side of each axis on both; the frame ignores it', () => {
+    const st = stage(844, 390, 'edges', { x: 47, y: 21 });
+    expect(st).toEqual({ x: 47, y: 21, w: 750, h: 348, s: 750 / 1920 });
+    expect(place(REGIONS.turn, st).x).toBeCloseTo(47 + 18 * st.s); // clear of the notch
+    const menu = place(REGIONS.menu, st);
+    expect(menu.y + menu.h).toBeCloseTo(390 - 21 - 65 * st.s); // clear of the home bar
+    expect(stage(844, 390, 'frame', { x: 47, y: 21 })).toEqual(stage(844, 390, 'frame'));
+  });
+
+  it("a 3D piece's smallest text is 16 px down to the smallest full scale, then shrinks with the pieces", () => {
+    expect(textPx(26, 1)).toBe(26);
+    expect(textPx(12, 1)).toBe(16);
+    expect(textPx(12, 0.6)).toBe(16);
+    expect(textPx(12, 0.3)).toBe(8);
+    expect(textPx(40, 0.3)).toBe(12);
+    expect(textPx(12, 1, 22)).toBe(22);
   });
 
   it('an unknown layout is the default', () => {

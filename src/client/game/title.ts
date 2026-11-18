@@ -239,8 +239,8 @@ function howToPlay() {
   showSheet(d.overlay, { title, blocks });
 }
 
-// The 3D title (flow3d/title3d.ts) draws over the title's own window: it is told when one opens, and takes the one
-// already on screen when it arrives (the layer comes with the battle behind the title, after the title itself)
+// The 3D title (flow3d/title3d.ts) draws over the title's own window: it is told when one opens (the first opens
+// after the HUD's layer is built, entry.ts), and takes one already on screen when it arrives
 let title3d: ((overlay: HTMLElement) => void) | undefined;
 export function setTitle3d(take?: (overlay: HTMLElement) => void) {
   title3d = take;

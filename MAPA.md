@@ -53,7 +53,9 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — wiring and windows
 
-- `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game; the title before the models; the start banner (announce).
+- `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game, behind the loading cover until everything landed; the start banner (announce).
+- `src/client/ready-gate.ts` — the readiness gate (`whenReady`): the interface is built only once the models, the 3D pieces' chunks and the fonts landed, and the cover leaves after it drew; the loading bar's share and the 3D loading screen's layout; pure.
+- `src/client/loading.ts` — the loading cover over the whole page (`loadingCover`): the files' count as a line and a bar, drawn in 3D or, with ?ui=html or no WebGL, in HTML; holds the hosted fonts too.
 - `src/client/main.ts` — Game: wires rules, scene, HUD and input for one battle and owns the turn loop.
 - `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, strike preview "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
@@ -91,6 +93,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/chest.ts` — gold, items and per-member equipment (dt:chest, dt:equip) with their parsers.
 - `src/client/saves.ts` — save slots: the dt:saves manifest, new game, load and delete, slot summaries.
 - `src/client/store.ts` — dt:* storage with a memory fallback, the key MIGRATIONS and the URL param reader.
+- `src/client/gesture.ts` — two fingers on the map: the twist that turns the camera an eighth (twist, angleOf); pure.
 - `src/client/keyboard.ts` — key to action (keyAction), grid steps by screen direction and the help list.
 - `src/client/gamepad.ts` — gamepad button state to keyboard actions.
 - `src/client/glyphs.ts` — the key hints' one table (action, key, pad button), the controller's family by its id (familyOf) and what the hints show by the Options and the input last used (shownFor, capsOf, hintLine); pure.
@@ -99,6 +102,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/pixel-settings.ts` — pixel art options (dt:pixel) and their parser.
 - `src/client/markers.ts` — unit heights and marker heights above them (ring, bar, cursor) and the model of each sheet.
 - `src/client/water-levels.ts` — water surface and wading heights for drawing.
+- `src/client/away.ts` — the game left in the background is paused: the first frame back drops the time away (awayFactor).
 - `src/client/timing.ts` — turn-flow timings in one place and the speed-up.
 - `src/client/i18n.ts` — game language, t('pt', 'en'), unitName and abilityName.
 
@@ -160,6 +164,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
 - `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, the commands under the list, message band), the scroll fade and mark, where an arrow takes the cursor (`optionsWalk`), and the smallest page that takes the 3D look (`fits`); pure.
 - `src/client/flow3d/title3d.ts` — Title3d: the title in 3D (?title=3d), drawn over the title's own window, which it takes when the layer arrives and gives back.
+- `src/client/flow3d/loading3d.ts` — Loading3d: the loading screen in 3D (the count over a bar), on a layer of its own over the loading cover, for the download alone.
 - `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button) and the boxes an arrow walks (`stops`); pure.
 - `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D (?sheets=3d), drawn over each window's own controls, which it takes and gives back.
 - `src/client/flow3d/sheet-draw.ts` — what a 3D sheet draws piece by piece: a list's row (number, face, two lines, second button), a text's line, the head and the foot plates.
@@ -169,6 +174,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D (?status=3d): a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
 - `src/client/window3d/talk3d.ts` — Talk3d: the speech box and the boxless opening narration drawn in 3D (?talk=3d) over the unseen box of talk.ts, in town and in battle.
 - `src/client/window3d/status-view.ts` — where the 3D Status sheet sits and where each of its rows goes (statusLayout); pure.
+- `src/client/window3d/note3d.ts` — Note3d: a notice window in 3D (?note=3d): title, legend of marks, paragraphs, a figure and 1 to 3 plaques on a parchment sheet, over an unseen window of dialog.ts with the real buttons.
+- `src/client/window3d/note-view.ts` — where the 3D notice sheet sits and where its legend, paragraphs, figure and buttons go (noteLayout); pure.
+- `src/client/game/notices.ts` — the town's and the expedition's notice windows: the map's Information and opened chest, the expedition lost, a room that would not open.
+- `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), handed to the 3D look (setNote3d) or opened in HTML.
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer; types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
@@ -181,6 +190,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/icons.ts` — el(), button(), iconButton() and icon() over the icon sprite, and the ability icon atlas.
 - `src/client/talk.ts` — dialogue box: typed text, blips, talking faces and text speed (dt:text).
 - `src/client/touch-input.ts` — tap, drag and pinch or wheel on the map.
+- `src/client/rotate-note.ts` — the turn-the-phone notice over every screen (a touch phone held upright).
+- `src/client/ui3d/safe-area.ts` — the safe area in px (notch, home bar) for the 3D layer, read from a CSS probe.
 - `src/client/style.css` — theme tokens (:root[data-theme]) and every component's style.
 
 ## src/client — 3D drawing (Three.js) and sound
@@ -210,7 +221,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client/game — what opens around the battle
 
-- `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, developer, map, standalone); the loading line over a scene still downloading (loadNote).
+- `src/client/game/boot.ts` — reads the URL and picks the battle to open (expedition room, crawl room, developer, map, standalone).
 - `src/client/game/title.ts` — title screen (the name over the art, a small command window) and its windows (new game, continue, battle, how to play, credits, developer).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/town-folk.ts` — the townsfolk: who strolls, who is being talked to, the rumour each tells next.
