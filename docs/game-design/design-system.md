@@ -232,7 +232,7 @@ the choice (`dt:marks`, `?marks=`; a player option) and
 
 Detail, relief and measured cost: [client-scene.md](client-scene.md), "Mark styles".
 
-### Experiment: 3D interface kit (`?menu3d`, `?menu3d=pixel`, `?turn3d`, Nov 16)
+### Experiment: 3D interface kit (`?menu3d`, `?menu3d=pixel`, `?turn3d`, Nov 16 to Nov 18; the flags are gone, the kit is the only interface)
 
 Localhost only, each look behind its own flag (address or sandbox spec), each its own chunk (`hud-skin.ts`); without a
 flag the game is the one of always, checked by the hash of the bench shots. Fernando's decisions of Nov 16:
@@ -285,7 +285,7 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   an edge. Every other 3D screen stays out while it shows.
 - **Result tokens** (`result3d/`): `--ui3d-result-title`, `-lost`, `-note`, `-text`, `-soft`, `-veil`,
   `-band`, `-plate` and `-line`, measured on the reference's victory screen (light text on the darkened battle); `-lost`
-  (the defeat's title) and `-soft` are ours. Contrast not computed yet.
+  (the defeat's title, a faded red #c98f7f since Nov 18: 6.2:1 on the veil over white, 7.3:1 on the bare veil) and `-soft` are ours.
 - **Town tokens** (`town3d/`): `--ui3d-town-gold` (the plaque or row in focus), `-picked`
   (the open tab, the member whose pages show), `-track`, `-hp`, `-mp`, `-sp`, `-stat` (the bars) and `-up`, `-down` (a
   change, always with its arrow). The windows reuse the paper and result tokens for panels and light text. The gold

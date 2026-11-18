@@ -69,7 +69,11 @@ export interface HudView {
 
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
-  private readonly queue = el('ol', { class: 'panel queue', 'aria-label': t('Ordem dos turnos', 'Turn order') });
+  private readonly queue = el('ol', {
+    class: 'panel queue',
+    'aria-label': t('Ordem dos turnos', 'Turn order'),
+    tabIndex: -1, // a scroller is a Tab stop of its own in Chrome; PgUp and PgDn scroll it, the 3D list draws no focus
+  });
   private readonly tools: ToolsMenu;
   setFast(on: boolean) {
     this.tools.setFast(on);
