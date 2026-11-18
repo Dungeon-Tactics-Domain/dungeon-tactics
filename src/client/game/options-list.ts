@@ -207,7 +207,7 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
       ),
       // Undo and the camera pair on the screen: on by default for a finger, off on a PC (screen-buttons.ts)
       onOff(
-        t('Botões de desfazer e girar câmera na tela', 'Undo and camera buttons on the screen'),
+        t('Botões na tela', 'Screen buttons'),
         t(
           'Mostra no alto da tela os botões Desfazer (↶) e Girar a câmera (↺ ↻). Ligados no celular e no tablet; no PC, as teclas fazem os dois: Z desfaz e R gira a câmera.',
           'Shows the Undo (↶) and Turn the camera (↺ ↻) buttons at the top of the screen. On for phones and tablets; on a PC, the keys do both: Z undoes and R turns the camera.',

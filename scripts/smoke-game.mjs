@@ -37,6 +37,7 @@ const PAGES = [
     check: async () => {
       const bare =
         !document.querySelector('.overlay') &&
+        !!document.querySelector('.hud .tools .gear') && // the gear in place of the ☰ (Nov 18 night)
         [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl'));
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       await new Promise((r) => setTimeout(r, 800)); // the 3D menu opens a moment later

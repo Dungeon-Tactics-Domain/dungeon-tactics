@@ -549,25 +549,6 @@ button[hidden],
 .kbd .tools .back {
   display: none;
 }
-.burger-bars,
-.burger-bars::before,
-.burger-bars::after {
-  display: block;
-  width: 22px;
-  height: 3px;
-}
-.burger-bars {
-  position: relative;
-}
-.burger-bars::before,
-.burger-bars::after {
-  content: "";
-  position: absolute;
-  left: 0;
-}
-.burger-bars::after {
-  top: 7px;
-}
 /* the turn-the-phone notice (rotate-note.ts): only on a touch phone held upright, over every screen (Nov 18: a phone
    plays on its side only; a tablet, wider than 600 px, is never asked). The query is rotate-note.ts ROTATE; once a 3D
    layer draws the notice (ui3d/rotate3d.ts) this one goes unseen */
@@ -1664,7 +1645,6 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
 .hud.townhud3d > .tile-info,
 .hud.townhud3d > .town-prompt,
 .hud.townhud3d > .town-act,
-.hud.townhud3d .tools .burger,
 .talk-overlay.talk3d :is(.talk-name, .talk-text, .talk-next, .talk-keys, .talk-title, .talk-skip) {
   opacity: 0;
 }
