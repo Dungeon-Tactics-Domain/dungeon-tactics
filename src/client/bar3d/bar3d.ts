@@ -50,7 +50,7 @@ class Part {
   }
   // a text on its spot; an unchanged one keeps its texture
   text(layer: Ui3dLayer, id: string, str: string, sp: Spot, color: string) {
-    const px = layer.px(sp.size); // never under the game's smallest text (design system, section 8)
+    const px = layer.smallPx(sp.size); // never under the game's smallest text (design system, section 8)
     const key = JSON.stringify([str, px, color, layer.dpr]);
     const old = this.texts.get(id);
     if (old?.key !== key) {
@@ -66,15 +66,15 @@ class Part {
     }
     const m = this.texts.get(id)?.mesh;
     if (!m) return;
-    const { x, k } = hang(sp, m.userData.w, layer.s, TEXT_PAD);
+    const { x, k } = hang(sp, m.userData.w, layer.small.s, TEXT_PAD);
     m.scale.set(m.userData.w * k, m.userData.h * k, 1);
-    m.position.set(layer.snap(x), -layer.snap(sp.y * layer.s), 0);
+    m.position.set(layer.snap(x), -layer.snap(sp.y * layer.small.s), 0);
     return m;
   }
   // the quad over its region, `PAD` reference px larger on every side
   fit(layer: Ui3dLayer) {
-    const b = place(this.region, layer.stage),
-      s = layer.s,
+    const b = place(this.region, layer.small),
+      s = layer.small.s,
       w = b.w + 2 * PAD * s,
       h = b.h + 2 * PAD * s;
     this.mesh.scale.set(w, h, 1);
@@ -90,7 +90,7 @@ class Part {
     this.group.visible = this.alpha > 0;
     this.mesh.material.uniforms.uAlpha.value = this.alpha;
     for (const { mesh } of this.texts.values()) mesh.material.uniforms.uAlpha.value = this.alpha;
-    const off = this.from * SLIDE * layer.s * (1 - this.alpha);
+    const off = this.from * SLIDE * layer.small.s * (1 - this.alpha);
     this.group.position.set(layer.snap(this.at.x + off), -layer.snap(this.at.y), 0);
     return this.alpha !== this.want;
   }
@@ -135,10 +135,12 @@ class Sheet {
     if (this.faceOf !== v.unit.def) this.setFace(v.unit, load);
     part.text(layer, 'name', v.name, l.name, INK);
     part.text(layer, 'tag', v.tag, l.tag, ENEMY);
-    const gap = Math.max(6, 10 * layer.s); // a space's width at any page size
+    const gap = Math.max(6, 10 * layer.small.s); // a space's width at any page size
     // "+4" starts a space after the label's ink, as drawn (the 16 px floor widens "Vida" on a phone, as it does "100")
     const hp = part.text(layer, 'hpLabel', v.hp.label, l.hpLabel, SOFT);
-    const after = hp ? { ...l.hpRegen, x: (hp.position.x + hp.scale.x / 2 - TEXT_PAD + gap) / layer.s } : l.hpRegen;
+    const after = hp
+      ? { ...l.hpRegen, x: (hp.position.x + hp.scale.x / 2 - TEXT_PAD + gap) / layer.small.s }
+      : l.hpRegen;
     part.text(layer, 'hpRegen', v.hpRegen, after, SOFT);
     part.text(layer, 'hpValue', value(v.hp), l.hpValue, INK);
     const [first, second] = v.pools;
@@ -151,7 +153,7 @@ class Sheet {
     // the gain ends a fixed gap before the value's ink, as drawn: on a small page the 16 px floor widens "100" past its
     // reference room and "+12" ran into it ("+12100", Nov 18 review)
     const inkLeft = ct ? ct.position.x - ct.scale.x / 2 + TEXT_PAD : 0;
-    const gain = ct ? { ...l.ctGain, align: 'r' as const, x: (inkLeft - gap) / layer.s } : l.ctGain;
+    const gain = ct ? { ...l.ctGain, align: 'r' as const, x: (inkLeft - gap) / layer.small.s } : l.ctGain;
     part.text(layer, 'ctGain', v.ctGain, gain, SOFT);
     part.text(layer, 'line', v.line, l.line, INK);
   }

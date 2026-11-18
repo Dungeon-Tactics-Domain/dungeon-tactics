@@ -22,8 +22,10 @@ import {
 } from './command.ts';
 import { aimStep, freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction } from './keyboard.ts';
+import { cardTap, type MenuTap, menuKey, menuScreen, menuTap } from './menu-state.ts';
 import type { BattleScene } from './scene.ts';
 import { sfx } from './sound.ts';
+import { peekMenu } from './unit-peek.ts';
 
 // What the turn screens read from and ask of the Game. `battle` changes on Restart, so it is read on every use.
 export interface TurnHost {
@@ -41,8 +43,19 @@ export interface TurnHost {
 export class HeroTurn {
   // the Game also sets these three when a turn starts over (after an action, the enemies, undo, Restart, the sandbox)
   ui: Ui;
-  screen: Screen;
   cursor: Pos; // cursor tile (keyboard, mouse and gamepad move the same cursor)
+  // the menu's screens hidden by a tap on an empty tile (menu-state.ts); a new screen shows them again
+  closed = false;
+  range: string | null = null; // the unit whose walk and strike range the map paints (its mini menu's Show range)
+  private now!: Screen;
+  get screen() {
+    return this.now;
+  }
+  set screen(s: Screen) {
+    this.now = s;
+    this.closed = false;
+    this.range = null;
+  }
 
   constructor(
     private readonly game: TurnHost,
@@ -55,8 +68,15 @@ export class HeroTurn {
   }
 
   tap(x: number, y: number) {
+    if (this.game.busy || !this.game.heroTurn) return;
+    if (this.range) return this.paintRange(null); // the painted range takes the tap that closes it
     const pos = this.scene.pick(x, y, this.pickSize);
-    if (!pos || this.game.busy || !this.game.heroTurn) return;
+    const m = menuTap(this.game.battle, this.screen, pos);
+    // the tap comes on pointerup and its click lands next, on the window just opened, as "a tap outside" that closed
+    // it at once (measured in Chrome, touch and mouse): the mini menu opens after that click
+    if (m?.k === 'peek') return void setTimeout(() => this.menu(m));
+    if (m) return this.menu(m);
+    if (!pos) return;
     if (this.screen.k === 'facing') return this.faceTo(pos);
     // on the map the tile is already chosen by mouse hover (or the 1st tap): clicking it confirms
     if (this.screen.k === 'map' && this.ui.pending && samePos(pos, this.ui.pending)) return void this.mapConfirm();
@@ -82,9 +102,22 @@ export class HeroTurn {
   // a key or pad action on the hero's turn (the Game already took the ones that always work and checked it is not busy)
   key(a: KeyAction) {
     const b = this.game.battle;
+    if (this.range) return this.paintRange(null);
     if (a.k === 'undo') return this.game.undo();
     if (a.k === 'face') return this.face();
     const s = this.screen;
+    const shown = menuKey(b, s, this.closed, a);
+    // shut, Confirm on another unit opens its mini menu, as a tap would: the keys reach it too
+    const peek = shown === 'open' && a.k === 'confirm' ? menuTap(b, s, this.cursor) : null;
+    if (peek?.k === 'peek') return this.menu(peek);
+    if (shown) return this.menu(shown === 'open' ? { k: 'open' } : { k: 'close', at: this.cursor });
+    if (this.closed && a.k === 'cursor') {
+      // closed, the arrows look around the map: the cursor walks the tiles, the camera following
+      const st = gridStep(a.dir, this.scene.heading),
+        next = { x: this.cursor.x + st.x, y: this.cursor.y + st.y };
+      if (inBounds(b.grid, next)) this.moveCursor(next, false);
+      return;
+    }
     if (a.k === 'slot') {
       // number shortcut: 1 = Move, 2 onwards = the abilities in submenu order
       if (a.index === 0) return this.chooseCommand(commandIndex('move'));
@@ -142,6 +175,30 @@ export class HeroTurn {
       if (next && inBounds(b.grid, next) && !samePos(next, this.cursor)) this.moveCursor(next);
     } else if (a.k === 'cycle') this.moveCursor(cycleUnit(b.state, this.cursor, a.dir));
     else if (a.k === 'confirm') void this.mapConfirm();
+  }
+
+  // the menu shown or closed, or another unit's mini menu (menu-state.ts)
+  menu(m: MenuTap) {
+    if (this.game.busy || !this.game.heroTurn) return;
+    if (this.range) return this.paintRange(null);
+    if (m.k === 'peek') {
+      sfx('confirm');
+      return peekMenu(this.game.battle.state, m.unit, () => this.paintRange(m.unit));
+    }
+    if (m.k === 'open' && (!this.closed || !menuScreen(this.screen))) return;
+    sfx(m.k === 'open' ? 'confirm' : 'cancel');
+    this.closed = m.k === 'close';
+    if (m.k === 'close') this.cursor = m.at;
+    this.game.update(this.ui);
+  }
+  // a card of the turn list (hud-queue.ts): the hero acting now, or another unit
+  card(unit: string) {
+    this.menu(cardTap(this.game.battle, unit));
+  }
+  private paintRange(unit: string | null) {
+    this.range = unit;
+    if (!unit) sfx('cancel');
+    this.game.update(this.ui);
   }
 
   // Cancel (Esc, B, right button, the Back button, the preview's Back): one step back (cancelStep)
@@ -260,10 +317,10 @@ export class HeroTurn {
     await this.game.execute(on);
   }
 
-  private moveCursor(p: Pos) {
+  private moveCursor(p: Pos, aim = true) {
     this.cursor = p;
     this.scene.focusOn(p); // the camera follows the cursor, like FFT
-    this.game.update(hoverTile(this.game.battle, this.ui, p));
+    this.game.update(aim ? hoverTile(this.game.battle, this.ui, p) : this.ui);
   }
 
   // cursor goes back to the acting unit (start of turn, after acting, undo)

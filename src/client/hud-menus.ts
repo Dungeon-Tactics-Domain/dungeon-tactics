@@ -74,6 +74,16 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
     return v.log || (v.acting ? t(`Vez do inimigo: ${unitName(v.acting)}`, `Enemy turn: ${unitName(v.acting)}`) : '');
   const s = v.screen;
   const say = (pt: string, en: string) => (v.log ? `${v.log} — ` : '') + t(pt, en);
+  // another unit's painted range (unit-peek.ts), then the menu shut by a tap on an empty tile (menu-state.ts)
+  const seen = v.range && b.state.units.find((u) => u.id === v.range);
+  if (seen)
+    return touch
+      ? t(`Alcance: ${unitName(seen.def)}. Toque para fechar.`, `Range: ${unitName(seen.def)}. Tap to close.`)
+      : t(`Alcance: ${unitName(seen.def)}. Esc fecha.`, `Range: ${unitName(seen.def)}. Esc closes.`);
+  if (v.closed)
+    return touch
+      ? t('Menu: toque no herói ou na ficha.', 'Menu: tap the hero or the sheet.')
+      : t('Menu: confirme ou clique no herói.', 'Menu: confirm or click the hero.');
   if (s.k === 'menu')
     return swimming(b)
       ? say('Água funda: só andar ou esperar.', 'Deep water: only move or wait.')

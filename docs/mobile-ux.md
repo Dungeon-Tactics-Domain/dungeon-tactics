@@ -85,6 +85,10 @@ do not rearrange the layout only to reach that number.*
   measured at 12.4:1 or more against its own outline over snow and over the crypt at 844×390, 1024×768 and 1280×720.
 - **No pointing glove for a finger**: the command menu's glove hides while a finger plays (the layer's
   `finger`, `ui3d/layer.ts`, the same switch that hides the key hints); a key or a pad brings it back.
+- **On a phone the turn list and the combat bar are 65% of their size** (Fernando, Nov 18 night: they covered the map):
+  `PHONE_SHRINK` and `phonePage` (`ui3d/layout.ts`: a finger and the page's shorter side under 600 px), the layer's
+  `small` stage; their 3D text keeps a 9 px floor (`PHONE_TEXT`). A tablet and a PC do not change. The bar's unseen
+  panel follows (`--bar-k`, style.css).
 - **The turn list starts under the top margin** and its title never covers a card: a list longer than its box drops its
   top to the first whole row (`queueLayout`, `turn3d/queue-layout.ts`).
 - **The command menu never covers the acting unit's sheet** (at 844×390 it hid the end of the stamina, "50/5"); where the
@@ -125,6 +129,9 @@ do not rearrange the layout only to reach that number.*
 | Gesture | What it does | Where |
 |---|---|---|
 | Tap a tile | selects it and shows the range, path or target | `interaction.ts` |
+| Tap an empty tile with the menu up | shuts the menu, only the cursor and the tile line move; the hero, its sheet, Confirm or Esc bring it back | `menu-state.ts` |
+| Tap another unit (map or turn card) | its look-only mini menu: Status, Abilities, Show range (painted until the next tap or key) | `menu-state.ts`, `unit-peek.ts` |
+| One finger dragging on the turn list | scrolls the list (the whole card, its life and CT lines too), never the camera | `turn3d/queue-seat.ts` |
 | Tap the same tile again | confirms | `interaction.ts` |
 | One finger dragging | moves the camera (past the 8 px slop) | `touch-input.ts` |
 | Two fingers pinching | zooms | `touch-input.ts` |

@@ -9,22 +9,25 @@ import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import { longestRange, type Screen } from './command.ts';
-import { aimMark, facingHighlights, type Highlights, highlights, type Ui } from './interaction.ts';
+import { aimMark, facingHighlights, type Highlights, highlights, rangeMarks, type Ui } from './interaction.ts';
 
-// `live`: a hero is choosing (its turn, nothing playing); otherwise nothing is marked
-export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boolean) {
+// `live`: a hero is choosing (its turn, nothing playing); otherwise nothing is marked. `range`: another unit whose
+// range its mini menu painted (unit-peek.ts), in place of the screen's marks until the next tap or key
+export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boolean, range: string | null = null) {
   // on the menu and submenu only the acting unit's tile is marked; the range shows when choosing (like FFT)
   const hl: Highlights | null = !live
     ? null
-    : s.k === 'facing'
-      ? facingHighlights(b)
-      : s.k === 'map' || s.k === 'confirm'
-        ? highlights(b, ui, cursor)
-        : {
-            tiles: footprint(b.actor).map((pos) => ({ pos, kind: 'actor' as const })),
-            path: null,
-            preview: null,
-          };
+    : range
+      ? rangeMarks(b, range)
+      : s.k === 'facing'
+        ? facingHighlights(b)
+        : s.k === 'map' || s.k === 'confirm'
+          ? highlights(b, ui, cursor)
+          : {
+              tiles: footprint(b.actor).map((pos) => ({ pos, kind: 'actor' as const })),
+              path: null,
+              preview: null,
+            };
   const moving = s.k === 'map' && ui.mode.k === 'move';
   const landing = hl && moving && b.reach().has(posKey(cursor)); // the cursor is on a tile the move can end on
   // counters (Nov 15, Fernando): aiming, who the strike would leave owed a counter; walking, what that destination draws
@@ -43,7 +46,7 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
   // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
   // it can be reached), to see where the strike reaches before moving
   const ringAt =
-    !hl || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving)
+    !hl || range || s.k === 'facing' || (s.k !== 'menu' && s.k !== 'abilities' && !moving)
       ? null
       : landing
         ? cursor

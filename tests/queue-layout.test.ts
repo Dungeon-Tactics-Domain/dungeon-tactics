@@ -1,5 +1,8 @@
+import type { Group } from 'three';
 import { describe, expect, it } from 'vitest';
 import { HEAD, type QueueSpec, queueLayout } from '../src/client/turn3d/queue-layout.ts';
+import { seatQueue } from '../src/client/turn3d/queue-seat.ts';
+import type { Ui3dLayer } from '../src/client/ui3d/layer.ts';
 import { type LayoutMode, lu, place, REGIONS, sheetBox, stage } from '../src/client/ui3d/layout.ts';
 
 // The 3D turn list's own layout (Nov 18: the 3D pieces stop measuring the HTML). Each case is what the browser measured
@@ -211,5 +214,23 @@ describe('3D turn list: its layout with no DOM', () => {
     expect(lu(10.8)).toBe(691 / 64);
     expect(lu(-5.6)).toBe(-358 / 64);
     expect(lu(48 * 0.9999999999999999)).toBe(48); // the noise of a float is not a px less
+  });
+});
+
+describe('seatQueue', () => {
+  // a finger dragging over a card's life and CT lines scrolled the map (Nov 18 night): each row now reaches over them
+  it('each shown row reaches past its card over the stats column, so a drag there scrolls the list', () => {
+    const l = queueLayout(plain({ rows: 2, at: { x: 12, y: 40, w: 200, h: 500 }, pageH: 720, stats: 90 }));
+    const row = (now: boolean) => ({ style: {} as Record<string, string>, classList: { contains: () => now } });
+    const rows = [row(true), row(false), row(false)];
+    const queue = { style: {}, querySelector: () => null, querySelectorAll: () => rows };
+    seatQueue(queue as unknown as HTMLElement, l, true, {} as Ui3dLayer, {} as Group);
+    expect(rows[0].style.display).toBe('none'); // the acting row: the 3D bar stands for it
+    for (const r of rows.slice(1)) {
+      expect(r.style.boxSizing).toBe('content-box');
+      expect(r.style.paddingRight).toBe(`${l.seat.stats}px`);
+      expect(l.seat.stats).toBeGreaterThan(0);
+      expect(r.style.width).toBe(`${l.seat.row.w}px`);
+    }
   });
 });
