@@ -4,7 +4,6 @@ import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { keysText } from '../src/client/glyphs.ts';
 import { type Device, heightShown, hintsFor, layRow, ROW, tileLine } from '../src/client/hints3d/hints-view.ts';
 import { cursorInfo, tileHeight } from '../src/client/tile-info.ts';
-import { skinFlags, specFlags } from '../src/client/ui3d/skin-flags.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
@@ -142,32 +141,13 @@ describe('hint rows: where each hint sits', () => {
   });
 });
 
-describe('3D banner, Height and hints: flags and scenes', () => {
-  it('each piece takes its own flag, the preset takes the three', () => {
-    const flags = (q: string, spec = {}) => {
-      const p = new URLSearchParams(q);
-      const { banner, height, hints } = skinFlags((n) => p.get(n), specFlags(spec));
-      return `${banner} ${height} ${hints}`;
-    };
-    expect(flags('')).toBe('3d 3d 3d');
-    expect(flags('ui=html')).toBe('html html html');
-    expect(flags('height=html')).toBe('3d html 3d');
-    expect(flags('banner=html&hints=html')).toBe('html 3d html');
-    expect(flags('ui=3d')).toBe('3d 3d 3d');
-    expect(flags('hints=html', { banner: '3d', hints: '3d' })).toBe('3d 3d html');
-    expect(flags('banner=css')).toBe('3d 3d 3d');
-  });
-
-  it('the bench scenes are valid specs, and a look a piece does not have fails', () => {
+describe('3D banner, Height and hints: bench scenes', () => {
+  it('the bench scenes are valid specs', () => {
     const scenes = import.meta.glob<object>('../scripts/sandbox/bench/hints3d*.json', {
       import: 'default',
       eager: true,
     });
     expect(Object.keys(scenes).length).toBe(2);
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
-    expect(parseSpec({ banner: 'css', height: 3, hints: '3d' }).problems).toEqual([
-      'banner must be one of html, 3d',
-      'height must be one of html, 3d',
-    ]);
   });
 });

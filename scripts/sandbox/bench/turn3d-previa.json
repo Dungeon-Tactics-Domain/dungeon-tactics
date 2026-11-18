@@ -6,6 +6,5 @@
   "actor": "h-archer",
   "units": { "h-archer": { "x": 5, "y": 7 }, "e-soldier": { "x": 5, "y": 3, "facing": 0 } },
   "screen": { "aim": "shot", "target": { "x": 5, "y": 3 }, "confirm": true },
-  "turn3d": true,
   "hide": ["fps"]
 }

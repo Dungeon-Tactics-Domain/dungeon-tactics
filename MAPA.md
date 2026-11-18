@@ -122,10 +122,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ui3d/field.ts` — 3D kit: form fields (number, pick, check, text, area, button, head, note), their column layout (flowFields, fieldParts), the cursor's walk (fieldWalk) and number limits (clampNumber); pure.
 - `src/client/ui3d/field-dom.ts` — 3D kit: the real unseen control under each drawn field (fieldEls, syncField, placeField; field.css), the mouse's cursor (hoverCursor) and a form's file out and in (saveFile, openFile).
 - `src/client/ui3d/face.ts` — a painted face (a frame of the face sheet, or the portrait's top) as a quad on the 3D layer, grey for the fallen (faceMesh).
-- `src/client/ui3d/skin-flags.ts` — which look each interface piece takes (?menu=, ?turn=, ?ui=, ?pixel and the older flags) and the table of pieces (PIECES); pure.
-- `src/client/hud-skin.ts` — the HUD's localhost looks under comparison, piece by piece: loadSkin() fetches each as its own chunk.
-- `src/client/hud-menucss.ts` — MenuCss: the command menu as parchment in HTML and CSS (?menucss), with the glove and the ability sheet.
-- `src/client/menucss.css` — the styles of ?menucss, fetched only with the flag.
+- `src/client/hud-skin.ts` — loadSkin() and loadTownSkin(): fetch the 3D pieces of the battle and of the town, each its own chunk, behind the loading cover.
 - `src/client/ui3d/layer.ts` — Ui3dLayer: the one transparent WebGL canvas over the HUD every 3D screen draws on (Ui3dScreen), on the battle clock, with the pixel filter and the F3 cost.
 - `src/client/ui3d/panel.ts` — 3D kit: the parchment panel and inset band shaders, the theme (--ui3d-* tokens) and the quad helper.
 - `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText), the same for a drawing made elsewhere (imageMesh); a line's width and line count with no HTML (textWidth, lineCount); pure wrapLines.
@@ -195,7 +192,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/window3d/note-view.ts` — where the 3D notice sheet sits and where its legend, paragraphs, figure and buttons go (noteLayout); pure.
 - `src/client/game/notices.ts` — the town's and the expedition's notice windows: the map's Information and opened chest, the expedition lost, a room that would not open.
 - `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), handed to the 3D look (setNote3d) or opened in HTML.
-- `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer; types only.
+- `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer, and the screens that take their own window (Options, title, Status, speech box...); types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
 - `src/client/tool-rows.ts` — the corner menu's rows (tool, glyph, name, key, switch) for the HTML menu and the 3D one; pure.

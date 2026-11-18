@@ -41,7 +41,7 @@ describe('mana and stamina in words (Nov 16)', () => {
   });
 });
 
-describe('ability sheet pages (?menucss)', () => {
+describe('ability sheet pages', () => {
   it('splits the help line facts in three pages without changing the line', () => {
     const [hit, , cost] = abilityPages('heal');
     expect(hit.some((l) => l.startsWith('cura'))).toBe(true);

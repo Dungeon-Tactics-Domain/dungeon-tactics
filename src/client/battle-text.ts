@@ -81,7 +81,7 @@ export const abilityNote = (u: UnitState, a: AbilityDef, on: boolean) =>
 // ability sheet (submenu and status window)
 export const abilityDetail = (id: string) => abilityPages(id).flat().join(' · ');
 
-// The same facts as the three pages of the FFT-style ability sheet (?menu3d and ?menucss): reach and hit, what else it
+// The same facts as the three pages of the FFT-style ability sheet (menu3d/): reach and hit, what else it
 // does, what it costs. In abilityDetail's order, so the help line reads the same
 export function abilityPages(id: string): [hit: string[], more: string[], cost: string[]] {
   const a = ABILITIES[id];

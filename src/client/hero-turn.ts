@@ -48,7 +48,7 @@ export class HeroTurn {
   constructor(
     private readonly game: TurnHost,
     private readonly scene: BattleScene,
-    private readonly pages = false, // ?menu3d, ?menucss: the ability sheet, its pages turned with left and right
+    private readonly pages = false, // the 3D menu's ability sheet, its pages turned with left and right
   ) {
     this.ui = freshUi(game.battle);
     this.screen = startScreen(game.battle);

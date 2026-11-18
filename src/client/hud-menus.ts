@@ -2,7 +2,7 @@
 // sets its own `hidden` before anything else: BattleHud.menuOpen and its size cache read it right after.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { abilityDetail, abilityNote, abilityPages, commandName, spendNote } from './battle-text.ts';
+import { abilityDetail, abilityNote, commandName, spendNote } from './battle-text.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
   abilitiesOf,
@@ -12,7 +12,6 @@ import {
   cancelStep,
   canUndoMove,
   commandEnabled,
-  PAGES,
   type Screen,
   swimming,
 } from './command.ts';
@@ -167,50 +166,7 @@ export function renderAbilities(box: HTMLElement, v: HudView, open: boolean, act
   );
 }
 
-const PAGE_NAME = [() => t('Descrição', 'Description'), () => t('Efeitos', 'Effects'), () => t('Custo', 'Cost')];
-// ?menucss: the FFT ability sheet over the submenu: the unit's name, the big icon and the ability's name, and one of the
-// three pages of its facts (abilityPages), turned with left and right or its arrows
-export function renderSheet(box: HTMLElement, v: HudView, open: boolean, act: HudActions) {
-  const s = v.screen;
-  const id = s.k === 'abilities' ? abilitiesOf(v.battle)[s.index] : undefined;
-  box.hidden = !open || !id;
-  if (s.k !== 'abilities' || !id || box.hidden) return;
-  const page = s.page ?? 0;
-  const lines = abilityPages(id)[page];
-  const turn = (dir: 1 | -1, glyph: string, name: string) =>
-    button('page-turn', glyph, () => act.page(dir), { title: name, 'aria-label': name });
-  box.replaceChildren(
-    el(
-      'div',
-      { class: 'panel-head' },
-      el('span', { class: 'diamond', 'aria-hidden': 'true' }),
-      unitName(v.battle.actor.def),
-    ),
-    el(
-      'div',
-      { class: 'sheet-title' },
-      el('span', { class: 'big-icon' }, abilityIcon(id)),
-      el('strong', { class: 'sheet-name' }, abilityName(id)),
-    ),
-    el('div', { class: 'sheet-band' }, PAGE_NAME[page]()),
-    el(
-      'div',
-      { class: 'sheet-body' },
-      ...(lines.length ? lines : [t('nada além do básico', 'nothing beyond the basics')]).map((l) => el('p', {}, l)),
-    ),
-    el(
-      'div',
-      { class: 'sheet-foot' },
-      turn(-1, '‹', t('Página anterior', 'Previous page')),
-      el('span', { class: 'sheet-page' }, `${page + 1} / ${PAGES}`),
-      turn(1, '›', t('Próxima página', 'Next page')),
-      hint('sides'),
-    ),
-  );
-}
-
-// What "Execute?" says besides the strike's numbers, for the HTML window and the 3D one (confirm3d/): its title, the notes
-// (what it spends, the charge, a counter owed) and its two choices with the one in focus. On the preview the focus stays
+// What "Execute?" says// (what it spends, the charge, a counter owed) and its two choices with the one in focus. On the preview the focus stays
 // on Confirm (Enter runs it, Esc goes back, nothing to toggle); the lock step (Nov 15) puts its two choices in their place
 export type ConfirmPick = 'yes' | 'no' | 'unit' | 'tile';
 export interface ConfirmParts {

@@ -10,6 +10,5 @@
     "e-archer": { "x": 5, "y": 6, "facing": 0 }
   },
   "screen": { "aim": "blast", "target": { "x": 4, "y": 6 }, "confirm": true },
-  "ui": "3d",
   "hide": ["fps"]
 }

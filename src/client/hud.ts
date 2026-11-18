@@ -16,7 +16,6 @@ import { type Expression, frameOf } from './battle-face.ts';
 import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
-import type { MenuCss } from './hud-menucss.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm } from './hud-menus.ts';
 import { helpWidth, hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
 import type { HudSkin } from './hud-skin.ts';
@@ -45,7 +44,7 @@ export interface HudActions {
   ability(index: number): void; // click on a submenu ability
   answer(yes: boolean): void; // the "Execute?" preview: Confirm or Back
   lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
-  page(dir: 1 | -1): void; // the ability sheet's arrows (?menu3d, ?menucss)
+  page(dir: 1 | -1): void; // the ability sheet's arrows (menu3d/)
   hover(list: 'menu' | 'abilities', index: number): void; // ?menu3d: the mouse over a row moves the focus there
   rotate(dir: 1 | -1): void;
   recenter(): void;
@@ -112,9 +111,7 @@ export class BattleHud {
   private readonly target = el('div', { class: 'target-slot' });
   private readonly strikesEl = el('div', { class: 'strikes' });
   private readonly root: HTMLElement;
-  // localhost looks under comparison (hud-skin.ts). The 3D ones draw on one layer over the HUD; the HTML they replace
-  // stays in place unseen, and comes back if the WebGL context is lost
-  private readonly menucss?: MenuCss;
+  // the 3D pieces (hud-skin.ts) draw on one layer over the HUD; the HTML they stand for stays in place unseen
   private layer?: Ui3dLayer;
   private menu3d?: Menu3d;
   private turn3d?: Turn3d;
@@ -124,7 +121,7 @@ export class BattleHud {
   constructor(
     host: HTMLElement,
     private readonly act: HudActions,
-    skin: HudSkin = {},
+    skin: HudSkin,
   ) {
     this.tools = new ToolsMenu(act);
     this.tools.root.prepend(this.back);
@@ -144,11 +141,10 @@ export class BattleHud {
       this.target,
     );
     host.append(this.root);
-    this.menucss = skin.menucss?.(this.root, this.commands, this.abilities, act);
-    this.layer = skin.layer?.(this.root, () => this.drop3d());
+    this.layer = skin.layer(this.root, () => this.drop3d());
     if (!this.layer) return;
-    this.menu3d = skin.menu3d?.(this.layer, act);
-    this.turn3d = skin.turn3d?.(this.layer, this.queue);
+    this.menu3d = skin.menu3d(this.layer, act);
+    this.turn3d = skin.turn3d(this.layer, this.queue);
     this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox, this.tools.root);
   }
   private drop3d() {
@@ -180,11 +176,8 @@ export class BattleHud {
     this.help.textContent = helpText(v, heroTurn);
     this.p3d.hints?.update(v, open, this.help.textContent);
     renderBack(this.back, this.tools.undo, v, open);
-    if (this.menucss) this.menucss.render(v, open);
-    else {
-      renderCommands(this.commands, v, open, this.act);
-      renderAbilities(this.abilities, v, open, this.act);
-    }
+    renderCommands(this.commands, v, open, this.act);
+    renderAbilities(this.abilities, v, open, this.act);
     this.menu3d?.update(v, open);
     renderConfirm(this.confirmBox, v, open, this.act);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
@@ -265,10 +258,9 @@ export class BattleHud {
   // the menu is open (the camera slides and rotates): only left/top change, and only when the px changes. `target`: the target of
   // "Execute?", which the window does not cover (nor the turn list, which shows where the charge fires)
   place(a: Anchor | null, target: Anchor | null = null) {
-    this.menucss?.point();
     if (!a || !this.menuOpen) return;
-    // ?menu3d and ?menucss keep the menu and the submenu bottom right; only "Execute?" follows the character
-    if ((this.menu3d || this.menucss) && this.confirmBox.hidden) return;
+    // the 3D menu keeps the menu and the submenu bottom right; only "Execute?" follows the character
+    if (this.menu3d && this.confirmBox.hidden) return;
     // free: below the help line and the menu button (which stay at the top), above the bottom unit panels
     const area = {
       left: 12,

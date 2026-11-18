@@ -102,13 +102,10 @@ describe('parseSpec', () => {
     ]);
   });
 
-  it('takes the CSS command menu and a sheet page only on the abilities screen', () => {
-    const ok = { scenario: 'ash_wood', screen: 'abilities', page: 2, menucss: true };
+  it('takes a sheet page only on the abilities screen', () => {
+    const ok = { scenario: 'ash_wood', screen: 'abilities', page: 2 };
     expect(parseSpec(ok)).toEqual({ spec: ok, problems: [] });
-    expect(parseSpec({ screen: 'menu', page: 2, menucss: 'yes' }).problems).toEqual([
-      'menucss must be true',
-      'page must be 1 to 3, with screen "abilities"',
-    ]);
+    expect(parseSpec({ screen: 'menu', page: 2 }).problems).toEqual(['page must be 1 to 3, with screen "abilities"']);
     expect(parseSpec({ screen: 'abilities', page: 4 }).problems).toEqual([
       'page must be 1 to 3, with screen "abilities"',
     ]);

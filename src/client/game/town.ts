@@ -95,13 +95,13 @@ class Town {
     private readonly grid: Grid,
     private readonly state: BattleState,
     host: HTMLElement,
-    skin?: (hud: HTMLElement) => void, // the 3D look, already downloaded (hud-skin.ts loadTownSkin)
+    skin: (hud: HTMLElement) => void, // the 3D look, already downloaded (hud-skin.ts loadTownSkin)
   ) {
     // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the menu button in the
     // top right corner; as a .hud it hides while someone talks (style.css)
     const hud = townHud(this.prompt, this.balloon, () => this.run({ k: 'cancel' }));
     host.append(hud);
-    skin?.(hud); // on the page already: the layer reads its tokens and its size there
+    skin(hud); // on the page already: the layer reads its tokens and its size there
     const canvas = host.querySelector('canvas')!;
     new TouchInput(canvas, {
       tap: (x, y) => this.tap(x, y),

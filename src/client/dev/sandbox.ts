@@ -29,7 +29,6 @@ import {
   sideAngle,
 } from './sandbox-play.ts';
 import {
-  dropOld,
   hiddenPieces,
   inCells,
   PANELS,
@@ -86,9 +85,7 @@ let castFits = true;
 // the spec's whole tiles become cells and an added sheet becomes its token, as `halve` does for the map's own spawns.
 export async function stage(selected: Scenario): Promise<{ scenario: Scenario; battle: Battle; spec: SceneSpec }> {
   const read = await readSpec();
-  // the looks' keys from before the interface was all 3D: said in the console and left out (docs/sandbox.md)
-  const { dropped } = ({ spec } = dropOld(read.spec));
-  if (dropped.length) console.warn(`sandbox: old keys ignored, every piece is 3D: ${dropped.join(', ')}`);
+  spec = read.spec;
   problems.push(...read.problems);
   // the page's map comes from the address (boot.ts), so a spec that names another one is an error, not a different map
   if (spec.scenario && spec.scenario !== asked)

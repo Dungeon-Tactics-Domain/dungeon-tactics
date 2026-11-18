@@ -5,6 +5,5 @@
   "viewport": { "width": 1280, "height": 720 },
   "actor": "h-warrior",
   "screen": "menu",
-  "turn3d": true,
   "hide": ["fps"]
 }

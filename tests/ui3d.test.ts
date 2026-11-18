@@ -15,7 +15,7 @@ import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
-// The 3D interface behind localhost flags (?menu3d, ?turn3d; Nov 16): the pure parts behind the drawing. The drawing
+// The 3D interface (Nov 16; the only one since Nov 18): the pure parts behind the drawing. The drawing
 // itself is checked on the bench shots (docs/sandbox.md)
 describe('3D kit: motion', () => {
   const run = (k: number, c: number, dt = 1 / 60) => {
@@ -359,25 +359,13 @@ describe('3D turn list: life and CT lines', () => {
   });
 });
 
-describe('3D interface: flags and boundaries', () => {
-  it('a spec turns each look on by its own key', () => {
-    expect(parseSpec({ menu3d: true, turn3d: true }).problems).toEqual([]);
-    expect(parseSpec({ menu3d: 'pixel' }).problems).toEqual([]);
-    expect(parseSpec({ menu3d: 'big', turn3d: 1 }).problems).toEqual([
-      'menu3d must be true or "pixel"',
-      'turn3d must be true',
-    ]);
-  });
-
+describe('3D interface: bench scenes and boundaries', () => {
   it('every bench scene of the looks is a valid spec', () => {
-    const scenes = import.meta.glob<object>(
-      '../scripts/sandbox/bench/{menu3d,turn3d,menucss,ui3d,layout,preset,batalha}*.json',
-      {
-        import: 'default',
-        eager: true,
-      },
-    );
-    expect(Object.keys(scenes).length).toBe(25);
+    const scenes = import.meta.glob<object>('../scripts/sandbox/bench/{menu3d,turn3d,ui3d,layout,batalha}*.json', {
+      import: 'default',
+      eager: true,
+    });
+    expect(Object.keys(scenes).length).toBe(19);
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
   });
 
@@ -390,7 +378,7 @@ describe('3D interface: flags and boundaries', () => {
   // import. The layout and the flags are the exception: small and pure, the Options and the HUD read them
   it('the rest of the client takes the 3D folders and the CSS menu by type or by dynamic import only', () => {
     const value =
-      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts|skin-flags\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|confirm3d\/|result3d\/|town3d\/|flow3d\/|window3d\/|hud-menucss)/m;
+      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|confirm3d\/|result3d\/|town3d\/|flow3d\/|window3d\/)/m;
     expect(value.test("import { Menu3d } from './menu3d/menu3d.ts';")).toBe(true);
     expect(value.test("import { Ui3dLayer } from './ui3d/layer.ts';")).toBe(true);
     expect(value.test("import { stage } from './ui3d/layout.ts';")).toBe(false);
@@ -406,7 +394,6 @@ describe('3D interface: flags and boundaries', () => {
       'ui3d/spring',
       'ui3d/pixel',
       'ui3d/layout',
-      'ui3d/skin-flags',
       'menu3d/menu-view',
       'menu3d/menu-layout',
       'turn3d/queue-view',
@@ -433,7 +420,7 @@ describe('3D interface: flags and boundaries', () => {
       'flow3d/dev-view',
     ];
     // and the two the main chunk takes by value bring no other file along
-    for (const name of ['ui3d/layout', 'ui3d/skin-flags'])
+    for (const name of ['ui3d/layout'])
       expect(/^import /m.test(code(sources[`../src/client/${name}.ts`])), name).toBe(false);
     for (const name of pure) {
       const text = code(sources[`../src/client/${name}.ts`]);

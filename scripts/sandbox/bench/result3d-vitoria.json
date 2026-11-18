@@ -12,7 +12,6 @@
     "e-mage": { "remove": true },
     "e-brute": { "remove": true }
   },
-  "result": "3d",
   "hide": ["fps"],
   "loop": true,
   "steps": [{ "act": { "unit": "h-warrior", "ability": "strike", "target": { "x": 5, "y": 6 } } }]

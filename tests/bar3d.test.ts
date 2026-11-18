@@ -5,7 +5,6 @@ import { barView, plateView, sheetView } from '../src/client/bar3d/bar-view.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { forecast } from '../src/client/forecast.ts';
 import { REGIONS } from '../src/client/ui3d/layout.ts';
-import { skinFlags } from '../src/client/ui3d/skin-flags.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
@@ -167,22 +166,8 @@ describe('3D combat bar: where it sits', () => {
   });
 });
 
-describe('3D combat bar: flag and boundaries', () => {
-  const url = (q: string) => (name: string) => new URLSearchParams(q).get(name);
-
-  it('the 3D bar is the default; ?bar=html and ?ui=html turn it off, and a look it does not have is skipped', () => {
-    expect(skinFlags(url('')).bar).toBe('3d');
-    expect(skinFlags(url('ui=html')).bar).toBe('html');
-    expect(skinFlags(url('bar=3d')).bar).toBe('3d');
-    expect(skinFlags(url('ui=3d')).bar).toBe('3d');
-    expect(skinFlags(url('ui=3d&bar=html')).bar).toBe('html');
-    expect(skinFlags(url('bar=css')).bar).toBe('3d');
-    expect(skinFlags(url('menu=3d&turn=3d')).bar).toBe('3d');
-  });
-
-  it('a spec names the look, and its bench scenes are valid', () => {
-    expect(parseSpec({ bar: '3d' }).problems).toEqual([]);
-    expect(parseSpec({ bar: 'css' }).problems).toEqual(['bar must be one of html, 3d']);
+describe('3D combat bar: bench scenes and boundaries', () => {
+  it('its bench scenes are valid', () => {
     const scenes = import.meta.glob<object>('../scripts/sandbox/bench/bar3d*.json', { import: 'default', eager: true });
     expect(Object.keys(scenes).length).toBe(3);
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);

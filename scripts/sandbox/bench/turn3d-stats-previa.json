@@ -50,13 +50,11 @@
     "target": {
       "x": 5,
       "y": 3
-    },
-    "confirm": true
+    }
   },
   "hide": ["fps"],
   "viewport": {
     "width": 1920,
     "height": 1080
-  },
-  "ui": "3d"
+  }
 }

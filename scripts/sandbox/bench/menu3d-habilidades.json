@@ -4,6 +4,5 @@
   "viewport": { "width": 1920, "height": 1080 },
   "actor": "h-warrior",
   "screen": "abilities",
-  "menu3d": true,
   "hide": ["fps"]
 }

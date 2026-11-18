@@ -9,7 +9,6 @@ import { resultView } from '../src/client/result3d/result-view.ts';
 import { survivalCols } from '../src/client/survival.ts';
 import { type CardLine, tallyLine } from '../src/client/tally.ts';
 import { stage } from '../src/client/ui3d/layout.ts';
-import { skinFlags, specFlags } from '../src/client/ui3d/skin-flags.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
@@ -149,20 +148,7 @@ describe('3D result: where it sits', () => {
   });
 });
 
-describe('3D result: flag and bench scenes', () => {
-  const url = (q: string) => (name: string) => new URLSearchParams(q).get(name);
-
-  it('?result=3d, the preset and a spec turn it on; the 3D window is the default', () => {
-    expect(skinFlags(url('')).result).toBe('3d');
-    expect(skinFlags(url('ui=html')).result).toBe('html');
-    expect(skinFlags(url('result=3d')).result).toBe('3d');
-    expect(skinFlags(url('ui=3d')).result).toBe('3d');
-    expect(skinFlags(url('ui=3d&result=html')).result).toBe('html');
-    expect(skinFlags(url('result=css')).result).toBe('3d');
-    expect(skinFlags(url(''), specFlags({ result: '3d' })).result).toBe('3d');
-    expect(parseSpec({ result: 'css' }).problems).toEqual(['result must be one of html, 3d']);
-  });
-
+describe('3D result: bench scenes', () => {
   // the scene's steps on the rules, as tests/sandbox-spec.test.ts plays the other bench scenes
   const played = (raw: unknown) => {
     const { spec, problems } = parseSpec(raw);
@@ -190,7 +176,6 @@ describe('3D result: flag and bench scenes', () => {
     const r = played(raw);
     expect(r.p).toEqual([]);
     expect(r.spec.name).toBe(name);
-    expect(r.spec.result).toBe('3d');
     expect(r.outcome).toBe(outcome);
   });
 });

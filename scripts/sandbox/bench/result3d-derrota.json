@@ -10,7 +10,6 @@
     "h-rogue": { "remove": true },
     "e-soldier": { "x": 5, "y": 6, "facing": 0 }
   },
-  "result": "3d",
   "hide": ["fps"],
   "loop": true,
   "steps": [

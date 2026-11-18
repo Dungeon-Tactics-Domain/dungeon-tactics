@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropOld, hiddenPieces, OLD_KEYS, PANELS, parseSpec } from '../src/client/dev/sandbox-spec.ts';
+import { hiddenPieces, PANELS, parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { hidePieces, onHidden, PIECE_NAMES, pieceHidden } from '../src/client/ui-pieces.ts';
 
 // The sandbox hides the 3D layer's pieces by the name each registers (ui-pieces.ts), with no selector of an HTML panel
@@ -39,38 +39,12 @@ describe('sandbox hide by piece name', () => {
   });
 });
 
-// Fernando, Nov 18: the whole interface is 3D. A spec's keys for the HTML and CSS looks still parse, then are left out
+// Fernando, Nov 18: the whole interface is 3D; a spec's keys for the HTML and CSS looks are gone
 describe('old look keys of a spec', () => {
-  it('still checks them, so an old spec opens and a typo in one is still named', () => {
-    expect(
-      parseSpec({ ui: 'html', menu: 'css', turn: '3d', menu3d: 'pixel', turn3d: true, menucss: true }).problems,
-    ).toEqual([]);
-    expect(parseSpec({ menu: 'paper' }).problems).toEqual(['menu must be one of html, css, 3d']);
-  });
-
-  it('leaves them out of what the page uses and names them for the console', () => {
-    const spec = { scenario: 'ash_wood', screen: 'menu', ui: 'html', bar: '3d', menucss: true, uiPixel: true } as const;
-    expect(dropOld(spec)).toEqual({
-      spec: { scenario: 'ash_wood', screen: 'menu', uiPixel: true },
-      dropped: ['ui', 'bar', 'menucss'],
-    });
-    expect(dropOld({ scenario: 'ash_wood', layout: 'frame' }).dropped).toEqual([]);
-  });
-
-  it('every bench scene opens with the old keys dropped, and the pixel ones keep the filter by uiPixel', () => {
-    const scenes = import.meta.glob<Record<string, unknown>>('../scripts/sandbox/bench/*.json', {
-      import: 'default',
-      eager: true,
-    });
-    expect(Object.keys(scenes).length).toBeGreaterThan(50);
-    for (const [path, raw] of Object.entries(scenes)) {
-      if (path.endsWith('ui-pecas.json')) continue; // the labs' table of pieces, not a scene
-      const { spec, problems } = parseSpec(raw);
-      expect(problems, path).toEqual([]);
-      const kept = dropOld(spec).spec;
-      for (const k of OLD_KEYS) expect(kept, path).not.toHaveProperty(k);
-      expect(parseSpec(kept).problems, path).toEqual([]);
-      if (raw.menu3d === 'pixel') expect(kept.uiPixel, path).toBe(true);
-    }
+  it('fail a spec, and every bench scene is a valid one', () => {
+    expect(parseSpec({ ui: 'html', menucss: true }).problems).toEqual(['unknown key "ui"', 'unknown key "menucss"']);
+    const scenes = import.meta.glob<object>('../scripts/sandbox/bench/*.json', { import: 'default', eager: true });
+    expect(Object.keys(scenes).length).toBeGreaterThan(40);
+    for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
   });
 });

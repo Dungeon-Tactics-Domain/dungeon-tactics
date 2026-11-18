@@ -11,8 +11,6 @@ import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { reducedMotion } from './motion.ts';
 import { type Cover, loadShare } from './ready-gate.ts';
-import { param } from './store.ts';
-import { skinFlags } from './ui3d/skin-flags.ts';
 
 const FADE_MS = 300;
 const IDLE_MS = 5000; // ponytail: a texture or a font that never answers stops holding the cover after this; no retry
@@ -60,20 +58,18 @@ export function loadingCover(hold = true): Cover {
   // is seen. A face that fails keeps the fallback
   const fonts = Promise.all([...document.fonts].map((f) => f.load())).catch(() => {});
   document.body.append(root);
-  if (Object.values(skinFlags(param)).includes('3d')) {
-    root.classList.add('loading3d');
-    const html = () => {
-      drawn?.dispose();
-      drawn = undefined;
-      root.classList.remove('loading3d');
-    };
-    void loadLoading3d(root, html).then((made) => {
-      if (!root.isConnected) return made?.dispose();
-      drawn = made;
-      if (made) made.set(share, line.textContent ?? '');
-      else html();
-    }, html);
-  }
+  root.classList.add('loading3d');
+  const html = () => {
+    drawn?.dispose();
+    drawn = undefined;
+    root.classList.remove('loading3d');
+  };
+  void loadLoading3d(root, html).then((made) => {
+    if (!root.isConnected) return made?.dispose();
+    drawn = made;
+    if (made) made.set(share, line.textContent ?? '');
+    else html();
+  }, html);
   return {
     fail() {
       show(t('Não deu para carregar o jogo. Recarregue a página.', 'The game could not load. Reload the page.'));

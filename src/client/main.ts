@@ -60,7 +60,7 @@ export class Game implements TurnHost {
     host: HTMLElement,
     private pixel: PixelSettings,
     private readonly sel: BattleSelection,
-    skin: HudSkin = {}, // localhost looks under comparison: ?menu=, ?turn=, ?ui= (hud-skin.ts)
+    skin: HudSkin, // the 3D pieces (hud-skin.ts)
   ) {
     this.resetTally();
     // every painted face of the battle starts loading with it, so the HUD's redraws find them decoded (like talk())
@@ -68,7 +68,7 @@ export class Game implements TurnHost {
       const f = battleFace(u.def);
       if (f) new Image().src = `/chars/${f.sheet}`;
     }
-    this.turn = new HeroTurn(this, scene, !!(skin.menu3d || skin.menucss));
+    this.turn = new HeroTurn(this, scene, true);
     const act: HudActions = {
       command: (i) => this.turn.chooseCommand(i),
       ability: (i) => this.turn.chooseAbility(i),

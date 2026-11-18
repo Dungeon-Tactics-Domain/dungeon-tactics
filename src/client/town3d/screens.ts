@@ -33,10 +33,7 @@ const rowOf = (page: Page, sel: string) =>
     ? sel
     : (page.hits.find((h) => h.id.startsWith('row:'))?.id.slice(4) ?? '');
 
-export function mountTown3d(
-  root: HTMLElement,
-  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean; map: boolean; note?: boolean },
-) {
+export function mountTown3d(root: HTMLElement) {
   let again: (() => void) | undefined; // the open window as its HTML one, should the drawing go away
   let layer: Ui3dLayer;
   let live = true;
@@ -53,7 +50,7 @@ export function mountTown3d(
     return; // no WebGL here: the HTML windows are all there is
   }
   const ui = new Town3d(layer);
-  if (on.map) new Map3d(layer); // the expedition map draws over its own window, which it takes by itself (map3d.ts)
+  new Map3d(layer); // the expedition map draws over its own window, which it takes by itself (map3d.ts)
   // the town has no battle clock: the layer ticks on the page's own frames, and draws only while a window moves
   const tick = (now: number) => {
     if (!live) return;
@@ -269,15 +266,13 @@ export function mountTown3d(
     return true;
   };
 
-  if (on.shop) Object.assign(town3d, { shop, bar });
-  if (on.party) town3d.party = party;
-  if (on.menu)
-    Object.assign(
-      town3d,
-      streetWindows(ui, fits, (fn) => (again = fn)),
-    );
-  if (on.hud) new TownHud3d(layer, root);
-  if (on.talk) new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
-  if (on.note) new Note3d(layer); // takes each notice window by itself (note.ts `setNote3d`)
+  Object.assign(
+    town3d,
+    { shop, bar, party },
+    streetWindows(ui, fits, (fn) => (again = fn)),
+  );
+  new TownHud3d(layer, root);
+  new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
+  new Note3d(layer); // takes each notice window by itself (note.ts `setNote3d`)
   requestAnimationFrame(tick);
 }

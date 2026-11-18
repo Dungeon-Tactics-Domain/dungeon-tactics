@@ -254,16 +254,10 @@ A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open
 | Shop and Tavern without the reason | grey Buy and Recruit with only an error sound → "N short" and a line with what is missing; buttons aligned right |
 | Two disabled looks | dark grey (dialog) and faded (menu) → faded in both |
 
-### Experiment: parchment command menu (`?menucss`, Nov 16)
+### Experiment: parchment command menu (`?menucss`, Nov 16 to Nov 18)
 
-Localhost only. `src/client/menucss.css` redraws the command menu, the abilities submenu, an ability sheet (unit, big
-icon, name, 3 pages: Description, Effects, Cost) and a pointing glove as FFT: The Ivalice Chronicles' parchment, to
-compare with the 3D versions. Its tokens (`--parch*`, `--glove-*`, `--mc-serif`, `--mc-spring`, `--t-mc`) live in that
-file's `:root`, so the game without the flag has none of them. It breaks two rules on purpose: parchment instead of
-`--glass*` panels (no backdrop blur) and a serif letter. Contrast: ink 9.3:1 on the rows, 5.9:1 on the darkest band;
-muted and disabled text 5.1:1 on the sunken row. Motion: spring cascade 320 ms, Esc fold 170 ms, confirm flash 300 ms,
-page slide 260 ms; nothing moves with Reduce motion (`data-motion`, `motion.ts`). With `?menu3d` too, the 3D menu wins.
-Its places and its scale (`--u`) come from the interface layout below (`--lay-u`, `--lay-x`, `--lay-y`).
+A parchment command menu in HTML and CSS, compared with the 3D one; removed on Nov 18 with every HTML look
+(Fernando: the interface is only 3D).
 
 ### Interface layout: edges or frame (Options, `?layout=`, Nov 16)
 
@@ -284,26 +278,20 @@ Fernando, Nov 16: the pieces of the battle interface take the exact places of FF
   0 in `edges`), switched by `data-layout` on `<html>`. In `frame` the HUD's `--inset-*` margins grow by them, so the
   HTML panels move into the frame at their own size (they are not scaled: a debt until each one is rebuilt on its
   region).
-- **Who follows it today:** the 3D command menu (`menu3d/menu-layout.ts`), the 3D turn list (`--turn-x`, `--turn-y`,
-  `--turn-b`, set by `turn3d.ts`) and the CSS menu. Without a localhost look, `edges` changes nothing and `frame` only
-  moves the HTML panels inwards.
+- **Who follows it:** every 3D piece, through `stage()` and `place()`.
 
-### Interface looks piece by piece (`?menu=`, `?turn=`, `?ui=`, Nov 16)
+### Interface looks piece by piece (`?menu=`, `?turn=`, `?ui=`, Nov 16 to Nov 18)
 
-Localhost only. `src/client/ui3d/skin-flags.ts` (pure, tested) is the one reader of the flags and holds the table of
-pieces and the looks each has today: `menu` (html, css, 3d), `turn`, `bar`, `banner`, `height`, `hints`, `confirm` and `result`
-(html, 3d), and `sheet`, `preview` reserved with html only (the 3D `bar` draws both). `?menu=css&turn=3d` picks piece by piece; `?ui=html|css|3d` is a
-preset for every piece that has that look; `?pixel=1` turns the pixel filter on. A piece's own flag beats the older
-shortcuts (`?menu3d`, `?menu3d=pixel`, `?menucss`, `?turn3d`), a shortcut beats the preset, and the address beats a
-sandbox spec. The labs page builds its selector from `scripts/sandbox/bench/ui-pecas.json`, the same table (a test
-keeps them equal).
+Each piece of the interface could take an HTML, CSS or 3D look by its own flag. Gone on Nov 18 (Fernando: the
+interface is only 3D): `hud-skin.ts` loads every 3D piece, and a piece is named only to hide it in the sandbox
+(`ui-pieces.ts`). `?pixel=1` (the spec's `uiPixel`) still draws the 3D pieces through the pixel filter.
 
 ### Marks on the board: four styles (Options, `?marks=`, Nov 17)
 
 The tile marks, cursor, unit rings, range ring, map border, charge and counter lines and the shot preview are drawn in
 one of four styles: `simples` (the flat drawing), `luz` (default: chamfered strips and glass that glow), `pedra` (stone
 curbs and metal rings with reflection and cast shadow) and `neon` (tubes with a halo). `src/client/mark-style.ts` holds
-the choice (`dt:marks`, `?marks=`; it is a player option, not a localhost look, so it is not in `skin-flags.ts`) and
+the choice (`dt:marks`, `?marks=`; a player option) and
 `src/client/scene/mark-kit.ts` the pieces. Rules that hold in every style:
 
 - The colours are the ones of `MARK` (`scene/mark-looks.ts`) and the team colours; a style changes the material, never

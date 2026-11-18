@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import pieces from '../scripts/sandbox/bench/ui-pecas.json';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { LAYOUT_MODES, parseLayout, place, REGIONS, type Region, stage, textPx } from '../src/client/ui3d/layout.ts';
-import { type Flags, PIECES, skinFlags, specFlags, VARIANTS } from '../src/client/ui3d/skin-flags.ts';
 
-// Where the battle interface sits (ui3d/layout.ts) and which look each piece takes (ui3d/skin-flags.ts); Nov 16
+// Where the battle interface sits (ui3d/layout.ts); Nov 16
 describe('interface layout: the reference regions on a page', () => {
   const all = Object.entries(REGIONS) as [string, Region][];
   const box = ({ x, y, w, h }: Region) => ({ x, y, w, h });
@@ -97,90 +95,12 @@ describe('interface layout: the reference regions on a page', () => {
   });
 });
 
-describe('interface looks: one flag reader for the address and the spec', () => {
-  const url = (q: string): Flags => {
-    const p = new URLSearchParams(q);
-    return (name) => p.get(name);
-  };
-  const looks = (q: string, spec: Record<string, unknown> = {}) => {
-    const { menu, turn, pixel } = skinFlags(url(q), specFlags(spec));
-    return `${menu} ${turn}${pixel ? ' pixel' : ''}`;
-  };
-
-  it('without a flag every piece that has a 3D look takes it, and ?ui=html brings back the HTML one', () => {
-    const skin = skinFlags(url(''), specFlags({}));
-    expect(skin.pixel).toBe(false);
-    for (const [piece, looks] of Object.entries(PIECES))
-      expect(skin[piece as keyof typeof PIECES], piece).toBe(
-        (looks as readonly string[]).includes('3d') ? '3d' : 'html',
-      );
-    const html = skinFlags(url('ui=html'), specFlags({}));
-    for (const piece of Object.keys(PIECES)) expect(html[piece as keyof typeof PIECES], piece).toBe('html');
-  });
-
-  it.each([
-    // one piece each
-    ['menu=3d', '3d 3d'],
-    ['menu=css', 'css 3d'],
-    ['turn=3d', '3d 3d'],
-    ['menu=css&turn=3d', 'css 3d'],
-    // the preset sets every piece that has that look
-    ['ui=3d', '3d 3d'],
-    ['ui=css', 'css 3d'],
-    ['ui=html', 'html html'],
-    // a piece's own flag beats the preset and the shortcut
-    ['ui=3d&menu=css', 'css 3d'],
-    ['ui=3d&turn=html', '3d html'],
-    ['menu3d&menu=html', 'html 3d'],
-    ['turn3d&turn=html', '3d html'],
-    // the older flags still work, and beat the preset
-    ['menu3d', '3d 3d'],
-    ['menu3d=pixel', '3d 3d pixel'],
-    ['turn3d', '3d 3d'],
-    ['menucss', 'css 3d'],
-    ['menu3d&turn3d', '3d 3d'],
-    ['menu3d&menucss', '3d 3d'],
-    ['ui=3d&menucss', 'css 3d'],
-    // the pixel filter
-    ['ui=3d&pixel=1', '3d 3d pixel'],
-    ['menu=3d&pixel', '3d 3d pixel'],
-    ['menu3d=pixel&pixel=0', '3d 3d'],
-    // a value the piece does not have is skipped
-    ['menu=big', '3d 3d'],
-    ['turn=css', '3d 3d'],
-    ['turn=css&ui=3d', '3d 3d'],
-    ['ui=4d', '3d 3d'],
-  ])('?%s', (q, want) => {
-    expect(looks(q)).toBe(want);
-  });
-
-  it('the address beats the spec, piece by piece', () => {
-    expect(looks('', { menu3d: true, turn3d: true })).toBe('3d 3d');
-    expect(looks('', { menu3d: 'pixel' })).toBe('3d 3d pixel');
-    expect(looks('', { ui: '3d', uiPixel: true })).toBe('3d 3d pixel');
-    expect(looks('', { ui: 'css' })).toBe('css 3d');
-    expect(looks('menu=css', { menu3d: true, turn3d: true })).toBe('css 3d');
-    expect(looks('ui=html', { menu: '3d', turn: '3d' })).toBe('html html');
-    expect(looks('menucss', { menu: '3d' })).toBe('css 3d');
-    expect(looks('pixel=0', { ui: '3d', uiPixel: true })).toBe('3d 3d');
-    // the spec's own `pixel` is the scene's pixel art, not the filter
-    expect(looks('', { ui: '3d', pixel: 3 })).toBe('3d 3d');
-  });
-
-  it('a spec names the looks and the layout, and a typo fails it', () => {
-    expect(parseSpec({ ui: '3d', menu: 'css', turn: '3d', uiPixel: true, layout: 'frame' }).problems).toEqual([]);
-    expect(parseSpec({ ui: 'x', menu: '4d', turn: 'css', uiPixel: 1, layout: 'wide' }).problems).toEqual([
-      'ui must be one of html, css, 3d',
-      'menu must be one of html, css, 3d',
-      'turn must be one of html, 3d',
+describe('interface layout: the spec', () => {
+  it('a spec names the layout and the pixel filter, and a typo fails it', () => {
+    expect(parseSpec({ uiPixel: true, layout: 'frame' }).problems).toEqual([]);
+    expect(parseSpec({ uiPixel: 1, layout: 'wide' }).problems).toEqual([
       'uiPixel must be true or false',
       'layout must be one of edges, frame',
     ]);
-  });
-
-  it('the table the labs page reads is the one the game reads', () => {
-    expect(pieces).toEqual({ pieces: PIECES, presets: VARIANTS, layouts: LAYOUT_MODES, pixel: ['0', '1'] });
-    for (const piece of ['menu', 'turn', 'bar', 'sheet', 'height', 'banner', 'hints', 'preview'])
-      expect(PIECES[piece as keyof typeof PIECES], piece).toContain('html');
   });
 });

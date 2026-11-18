@@ -20,7 +20,7 @@ export const commandIndex = (c: Command) => COMMANDS.indexOf(c);
 // Wait leads to the facing choice (every map since Nov 13). Cancel goes back one step (cancelStep).
 export type Screen =
   | { k: 'menu'; index: number }
-  // `page`: the ability sheet's page (?menucss), 0 to PAGES - 1; a new ability opens on the first
+  // `page`: the ability sheet's page (menu3d/), 0 to PAGES - 1; a new ability opens on the first
   | { k: 'abilities'; index: number; page?: number }
   | { k: 'map'; command: 'move' | 'act' }
   // the strike preview on a picked target: Confirm runs it, Cancel goes back to aiming (no Yes/No to toggle, Nov 16)

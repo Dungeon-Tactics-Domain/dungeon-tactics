@@ -10,7 +10,6 @@ import { MARK_STYLES, type MarkStyle } from '../mark-style.ts';
 import { TIMING } from '../timing.ts';
 import { PIECE_NAMES, type PieceName } from '../ui-pieces.ts';
 import { LAYOUT_MODES, type LayoutMode } from '../ui3d/layout.ts';
-import { PIECES, VARIANTS, type Variant } from '../ui3d/skin-flags.ts';
 
 // What `hide` accepts beside a piece's own name (ui-pieces.ts): the names from before the interface was 3D, each with
 // the pieces of the 3D layer it stands for. One with no piece yet names only HTML still on the page (sandbox-html.ts)
@@ -90,26 +89,10 @@ export interface SceneSpec {
   loop?: boolean; // bench: the page plays the steps by itself, then rewinds the scene and plays them again, forever
   timing?: Partial<Record<keyof typeof TIMING, number>>; // bench: TIMING values for this page only
   speed?: number; // bench: battle clock rate, 0.25 is slow motion
-  // OLD_KEYS, from before the whole interface was 3D: the look of each piece (ui3d/skin-flags.ts) and the older
-  // shortcuts. Still checked, so the old specs open, but the page drops them (`dropOld`): every piece is the 3D one
-  ui?: Variant;
-  menu?: Variant;
-  turn?: Variant;
-  bar?: Variant;
-  banner?: Variant;
-  height?: Variant;
-  hints?: Variant;
-  confirm?: Variant;
-  result?: Variant;
-  tools?: Variant;
-  status?: Variant;
-  menu3d?: true | 'pixel';
-  turn3d?: true;
-  menucss?: true;
   uiPixel?: boolean; // the 3D pieces through the pixel filter (`pixel` is the scene's)
   layout?: LayoutMode; // edges or frame (ui3d/layout.ts), as ?layout= in the address
   marks?: MarkStyle; // how the board's marks are drawn (mark-style.ts), as ?marks= in the address
-  page?: number; // with screen "abilities": the ability sheet's page, 1 to 3 (shows with menu3d or menucss)
+  page?: number; // with screen "abilities": the ability sheet's page, 1 to 3
 }
 
 const KEYS = [
@@ -134,35 +117,12 @@ const KEYS = [
   'loop',
   'timing',
   'speed',
-  'ui',
-  'menu',
-  'turn',
-  'bar',
-  'banner',
-  'height',
-  'hints',
-  'confirm',
-  'result',
-  'tools',
-  'status',
   'uiPixel',
-  'menu3d',
-  'turn3d',
-  'menucss',
   'layout',
   'marks',
   'page',
 ];
 const HIDDEN = new Set<string>([...Object.keys(PANELS), ...PIECE_NAMES, 'all', 'marks']);
-
-// The looks' keys of a spec (Fernando, Nov 18: the whole interface is 3D, the HTML and CSS looks go): read and checked
-// as before, then left out of what the page uses. `dropped` is for the page's console; they leave the parser with the looks
-const LOOKS = ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result', 'tools', 'status'] as const;
-export const OLD_KEYS: readonly string[] = ['ui', ...LOOKS, 'menu3d', 'turn3d', 'menucss'];
-export function dropOld(spec: SceneSpec): { spec: SceneSpec; dropped: string[] } {
-  const kept = Object.fromEntries(Object.entries(spec).filter(([k]) => !OLD_KEYS.includes(k)));
-  return { spec: kept, dropped: Object.keys(spec).filter((k) => OLD_KEYS.includes(k)) };
-}
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v: unknown, min = -Infinity, max = Infinity): v is number =>
@@ -287,12 +247,6 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   }
   if (r.speed !== undefined && !(typeof r.speed === 'number' && r.speed > 0 && r.speed <= 4))
     p.push('speed must be above 0, up to 4 (pause with __sandbox.pause)');
-  if (r.menu3d !== undefined && r.menu3d !== true && r.menu3d !== 'pixel') p.push('menu3d must be true or "pixel"');
-  for (const k of ['turn3d', 'menucss']) if (r[k] !== undefined && r[k] !== true) p.push(`${k} must be true`);
-  if (r.ui !== undefined && !VARIANTS.includes(r.ui as Variant)) p.push(`ui must be one of ${VARIANTS.join(', ')}`);
-  for (const k of LOOKS)
-    if (r[k] !== undefined && !(PIECES[k] as readonly unknown[]).includes(r[k]))
-      p.push(`${k} must be one of ${PIECES[k].join(', ')}`);
   if (r.uiPixel !== undefined && typeof r.uiPixel !== 'boolean') p.push('uiPixel must be true or false');
   if (r.layout !== undefined && !LAYOUT_MODES.includes(r.layout as LayoutMode))
     p.push(`layout must be one of ${LAYOUT_MODES.join(', ')}`);

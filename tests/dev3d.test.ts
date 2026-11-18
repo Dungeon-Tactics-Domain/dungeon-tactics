@@ -16,7 +16,6 @@ import {
   thumb,
 } from '../src/client/ui3d/field.ts';
 import type { Box } from '../src/client/ui3d/layout.ts';
-import { skinFlags } from '../src/client/ui3d/skin-flags.ts';
 import { SUB } from '../src/shared/battle/half.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 
@@ -315,15 +314,5 @@ describe('3D developer menu: the cast as a form', () => {
     expect(readSetup('{ not json')).toBeNull();
     expect(readSetup('{"map":"nowhere","heroes":[],"enemies":[]}')).toBeNull();
     expect(readSetup('null')).toBeNull();
-  });
-});
-
-describe('3D developer menu: the look it takes', () => {
-  const url = (q: string) => (name: string) => new URLSearchParams(q).get(name);
-  it('3D by default, the HTML window with ?ui=html or ?dev=html', () => {
-    expect(skinFlags(url('')).dev).toBe('3d');
-    expect(skinFlags(url('ui=html')).dev).toBe('html');
-    expect(skinFlags(url('dev=html')).dev).toBe('html');
-    expect(skinFlags(url('ui=html&dev=3d')).dev).toBe('3d');
   });
 });

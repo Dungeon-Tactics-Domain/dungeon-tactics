@@ -45,7 +45,5 @@
   "viewport": {
     "width": 1280,
     "height": 720
-  },
-  "ui": "3d",
-  "bar": "html"
+  }
 }

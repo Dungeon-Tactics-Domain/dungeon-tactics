@@ -9,7 +9,6 @@ import {
   numberPose,
   slipAt,
 } from '../src/client/hints3d/effects-view.ts';
-import { PIECES, skinFlags } from '../src/client/ui3d/skin-flags.ts';
 
 // The effects over the battle on the 3D layer (hints3d/effects3d.ts; Nov 18): the pure parts behind the drawing
 describe('3D effects: a floating number', () => {
@@ -77,16 +76,6 @@ describe('3D effects: the victory confetti', () => {
     expect(slipAt(s, 2.6, 800, 400)).toBeNull();
     expect(slipAt(s, 1, 800, 400)?.x).toBe(s.x * 800);
     expect(slipAt(s, 1, 800, 400)?.rx).toBe(0.5 * s.spin[0]); // it tumbles as it falls
-  });
-});
-
-describe('3D effects: the flag', () => {
-  it('is 3D by default and HTML with its own flag or the preset', () => {
-    const flags = (o: Record<string, string>) => (name: string) => o[name];
-    expect(PIECES.effects).toEqual(['html', '3d']);
-    expect(skinFlags(flags({})).effects).toBe('3d');
-    expect(skinFlags(flags({ effects: 'html' })).effects).toBe('html');
-    expect(skinFlags(flags({ ui: 'html' })).effects).toBe('html');
   });
 });
 

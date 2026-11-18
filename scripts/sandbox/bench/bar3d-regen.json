@@ -19,6 +19,5 @@
     }
   },
   "screen": "menu",
-  "bar": "3d",
   "hide": ["fps"]
 }
