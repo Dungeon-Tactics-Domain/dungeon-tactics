@@ -1,6 +1,5 @@
 // The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Help is
 // options.ts's own, since its rows open windows). Out of options.ts so that file stays under the 400 lines.
-import { ALPHA_MIN, type Blur, getGlass, glassEnv, setGlass } from '../glass.ts';
 import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
 import { glyphsOption } from '../key-hints.ts';
@@ -11,7 +10,6 @@ import type { PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
-import { getTheme, setTheme, THEMES } from '../theme.ts';
 import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts';
 import type { LayoutMode } from '../ui3d/layout.ts';
 import type { OptionsContext } from './options.ts';
@@ -132,13 +130,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         motion,
         setMotion,
       ),
-      pick(
-        t('Tema', 'Theme'),
-        t('O visual das janelas e dos painéis.', 'The look of the windows and panels.'),
-        THEMES.map(([id, pt, en]) => [id, t(pt, en)]),
-        getTheme,
-        setTheme,
-      ),
       // where the interface sits (Nov 16, Fernando: FFT The Ivalice Chronicles' places; ui3d/layout.ts)
       pick(
         t('Disposição da interface', 'Interface layout'),
@@ -157,45 +148,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         },
       ),
       marksOption(), // how the marks on the board are drawn (Nov 17, Fernando; options-marks.ts)
-      // panel glass (Nov 16, Fernando's request): opacity of the blue panels and the blur of what shows through them
-      percent(
-        t('Opacidade dos painéis', 'Panel opacity'),
-        t(
-          'Quanto os painéis azuis deixam ver o que está atrás; 100% é o painel cheio.',
-          'How much the blue panels let through what is behind them; 100% is the solid panel.',
-        ),
-        () => getGlass().alpha,
-        (alpha) => setGlass({ ...getGlass(), alpha }),
-        ALPHA_MIN,
-      ),
-      pick(
-        t('Desfoque atrás dos painéis', 'Blur behind the panels'),
-        // every notice that applies: an old browser can also be asked for less transparency
-        [
-          !glassEnv().blur &&
-            t('Este navegador não desfoca o fundo dos painéis.', 'This browser cannot blur behind the panels.'),
-          glassEnv().reducedTransparency &&
-            t(
-              'O sistema pede menos transparência: os painéis ficam opacos.',
-              'The system asks for less transparency: the panels stay opaque.',
-            ),
-          glassEnv().blur &&
-            !glassEnv().reducedTransparency &&
-            t(
-              'O desfoque aparece com a opacidade abaixo de 100%; no celular ele pesa.',
-              'The blur shows with the opacity below 100%; on a phone it is heavy.',
-            ),
-        ]
-          .filter(Boolean)
-          .join(' '),
-        [
-          ['off', t('Desligado', 'Off')],
-          ['light', t('Leve', 'Light')],
-          ['strong', t('Forte', 'Strong')],
-        ] as [Blur, string][],
-        () => getGlass().blur,
-        (blur) => setGlass({ ...getGlass(), blur }),
-      ),
       pick(
         t('Tamanho do pixel', 'Pixel size'),
         t(
