@@ -113,6 +113,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only): the 16:9 area, thirds, centre and every region of layout.ts as placed.
 - `src/client/ui3d/layout.ts` — the battle interface's regions measured on FFT The Ivalice Chronicles (REGIONS) and where each sits on a page in the two layouts (stage, place); pure.
 - `src/client/ui3d/walk.ts` — where the cursor goes on a 3D screen: from the box in focus, an arrow or the d-pad takes the nearest box seen that way, and stays with none there (neighbour); pure.
+- `src/client/ui3d/field.ts` — 3D kit: form fields (number, pick, check, text, area, button, head, note), their column layout (flowFields, fieldParts), the cursor's walk (fieldWalk) and number limits (clampNumber); pure.
+- `src/client/ui3d/field-dom.ts` — 3D kit: the real unseen control under each drawn field (fieldEls, syncField, placeField; field.css), the mouse's cursor (hoverCursor) and a form's file out and in (saveFile, openFile).
 - `src/client/ui3d/face.ts` — a painted face (a frame of the face sheet, or the portrait's top) as a quad on the 3D layer, grey for the fallen (faceMesh).
 - `src/client/ui3d/skin-flags.ts` — which look each interface piece takes (?menu=, ?turn=, ?ui=, ?pixel and the older flags) and the table of pieces (PIECES); pure.
 - `src/client/hud-skin.ts` — the HUD's localhost looks under comparison, piece by piece: loadSkin() fetches each as its own chunk; the turn list's boxes and input for the 3D list.
@@ -166,6 +168,9 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/sheet-draw.ts` — what a 3D sheet draws piece by piece: a list's row (number, face, two lines, second button), a text's line, the head and the foot plates.
 - `src/client/flow3d/sheet-layout.ts` — where a 3D sheet sits (head, parchment, rows and each one's second button, foot plates), the scroll fade and mark, and a text's blocks as lines (flow); pure.
 - `src/client/flow3d/draw.ts` — what the flow screens in 3D draw with: the dark tokens, text, and the glove that points at the control in focus (Hand).
+- `src/client/flow3d/dev3d.ts` — Dev3d: the developer menu in 3D (?dev=3d, the default): the cast's form on a parchment sheet, over one real unseen control per field; any page size; the HTML menu stays for ?ui=html and no WebGL.
+- `src/client/flow3d/dev-view.ts` — the cast as the 3D developer menu's fields (devFields), what an edit makes of it (devEdit, readSetup) and where the page's parts sit (devLayout); pure.
+- `src/client/flow3d/field-draw.ts` — what a 3D form draws field by field (FieldArt): wells pressed into the sheet, raised plates for arrows and buttons, the typed text with its selection and caret.
 - `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D (?tools=3d): the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu that keeps its place and buttons.
 - `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D (?status=3d): a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
 - `src/client/window3d/status-view.ts` — where the 3D Status sheet sits and where each of its rows goes (statusLayout); pure.

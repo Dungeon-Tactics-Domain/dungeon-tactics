@@ -392,6 +392,8 @@ describe('3D interface: flags and boundaries', () => {
       'flow3d/sheet-layout',
       'ui3d/walk',
       'window3d/status-view',
+      'ui3d/field',
+      'flow3d/dev-view',
     ];
     // and the two the main chunk takes by value bring no other file along
     for (const name of ['ui3d/layout', 'ui3d/skin-flags'])

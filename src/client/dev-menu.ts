@@ -27,7 +27,21 @@ import { store } from './store.ts';
 
 const mapName = (id: string) => t(SCENARIOS[id].name, SCENARIOS[id].en);
 
+// The 3D menu (flow3d/dev3d.ts; Fernando, Nov 18) takes the opening while it is set: the default on localhost. This
+// HTML window stays for ?ui=html, for a browser without WebGL and for a lost context, until it leaves in a later phase
+type Dev3d = (start: (setup: DevSetup) => void, onBack?: () => void) => boolean;
+let dev3d: Dev3d | undefined;
+let html: { overlay: HTMLElement; close(): void; again(): void } | undefined; // this window, while it is on screen
+// the 3D layer comes after the title: a menu opened before it changes look in place (every edit is already saved)
+export function setDev3d(show?: Dev3d) {
+  dev3d = show;
+  if (!show || !html?.overlay.isConnected) return;
+  html.close();
+  html.again();
+}
+
 export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => void) {
+  if (dev3d?.(start, onBack)) return;
   let setup = parseSetup(store.json(DEV_KEY)) ?? defaultSetup('beacon_hill');
   const body = el('div', { class: 'dev-body' });
   const save = () => store.set(DEV_KEY, JSON.stringify(setup));
@@ -249,5 +263,6 @@ export function openDevMenu(start: (setup: DevSetup) => void, onBack?: () => voi
     );
   }
   const d = dialog('dev', t('Desenvolvedor', 'Developer'), [body], { onBack });
+  html = { ...d, again: () => openDevMenu(start, onBack) };
   render();
 }
