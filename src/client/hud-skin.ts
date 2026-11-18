@@ -18,7 +18,9 @@ import type { QueueBoxes, Turn3d } from './turn3d/turn3d.ts';
 import type { Ui3dLayer } from './ui3d/layer.ts';
 import { parseLayout } from './ui3d/layout.ts';
 import { skinFlags, specFlags } from './ui3d/skin-flags.ts';
+import type { Note3d } from './window3d/note3d.ts';
 import type { Status3d } from './window3d/status3d.ts';
+import type { Talk3d } from './window3d/talk3d.ts';
 import type { Tools3d } from './window3d/tools3d.ts';
 
 export interface HudSkin {
@@ -34,6 +36,8 @@ export interface HudSkin {
   tools3d?: (layer: Ui3dLayer, tools: HTMLElement) => Tools3d; // the corner menu in 3D (window3d/)
   status3d?: (layer: Ui3dLayer) => Status3d; // the Status window in 3D (window3d/)
   effects3d?: (layer: Ui3dLayer) => unknown; // numbers, cursor note, objective banner, confetti, F3 (hints3d/effects3d.ts)
+  talk3d?: (layer: Ui3dLayer) => Talk3d; // the speech box and the opening narration in 3D (window3d/)
+  note3d?: (layer: Ui3dLayer) => Note3d; // a notice window in 3D (window3d/)
 }
 
 // `spec`: a sandbox spec's keys (docs/sandbox.md); the address wins over it
@@ -84,6 +88,10 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Sheet3d } = await import('./flow3d/sheet3d.ts');
     (skin.flow3d ??= []).push((layer) => new Sheet3d(layer));
   }
+  if (flags.dev === '3d') {
+    const { Dev3d } = await import('./flow3d/dev3d.ts');
+    (skin.flow3d ??= []).push((layer) => new Dev3d(layer));
+  }
   if (flags.tools === '3d') {
     const { Tools3d } = await import('./window3d/tools3d.ts');
     skin.tools3d = (layer, tools) => new Tools3d(layer, tools);
@@ -96,6 +104,14 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Effects3d } = await import('./hints3d/effects3d.ts');
     skin.effects3d = (layer) => new Effects3d(layer);
   }
+  if (flags.talk === '3d') {
+    const { Talk3d } = await import('./window3d/talk3d.ts');
+    skin.talk3d = (layer) => new Talk3d(layer);
+  }
+  if (flags.note === '3d') {
+    const { Note3d } = await import('./window3d/note3d.ts');
+    skin.note3d = (layer) => new Note3d(layer);
+  }
   if (
     skin.effects3d ||
     skin.menu3d ||
@@ -106,7 +122,9 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     skin.result3d ||
     skin.flow3d ||
     skin.tools3d ||
-    skin.status3d
+    skin.status3d ||
+    skin.talk3d ||
+    skin.note3d
   ) {
     const { Ui3dLayer } = await import('./ui3d/layer.ts');
     skin.layer = (root, lost) => {
@@ -120,9 +138,10 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   return skin;
 }
 
-// The town's windows, HUD and speech box and the expedition map in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
-// with ?ui=html or the piece's own flag, the HTML windows open
-export async function loadTownSkin(root: HTMLElement) {
+// The town's windows, HUD and speech box and the expedition map in 3D (town3d/): its own layer over the town's HUD.
+// The chunk lands behind the loading cover (ready-gate.ts) and the town mounts it on its HUD as it builds it, so no
+// HTML window opens first; with ?ui=html or the piece's own flag, the HTML windows open
+export async function loadTownSkin(): Promise<((root: HTMLElement) => void) | undefined> {
   const flags = skinFlags(param);
   const on = {
     party: flags.party === '3d',
@@ -131,10 +150,25 @@ export async function loadTownSkin(root: HTMLElement) {
     hud: flags.townhud === '3d',
     talk: flags.talk === '3d',
     map: flags.map === '3d',
+    note: flags.note === '3d',
   };
   if (!Object.values(on).some(Boolean)) return;
   const { mountTown3d } = await import('./town3d/screens.ts');
-  mountTown3d(root, on);
+  return (root) => mountTown3d(root, on);
+}
+
+// The loading screen in 3D (flow3d/loading3d.ts) on a layer of its own over the loading cover (loading.ts);
+// undefined with no WebGL: the cover's HTML line is the screen. `lost`: its context went away
+export async function loadLoading3d(root: HTMLElement, lost: () => void) {
+  const [{ Ui3dLayer }, { Loading3d }] = await Promise.all([
+    import('./ui3d/layer.ts'),
+    import('./flow3d/loading3d.ts'),
+  ]);
+  try {
+    return new Loading3d(new Ui3dLayer(root, false, lost));
+  } catch {
+    return undefined;
+  }
 }
 
 // The turn list's boxes for the 3D list, which draws over them and never reads the DOM itself: each row in the list's

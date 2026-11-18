@@ -21,7 +21,9 @@
     "townhud": ["html", "3d"],
     "townmenu": ["html", "3d"],
     "effects": ["html", "3d"],
-    "talk": ["html", "3d"]
+    "talk": ["html", "3d"],
+    "dev": ["html", "3d"],
+    "note": ["html", "3d"]
   },
   "presets": ["html", "css", "3d"],
   "layouts": ["edges", "frame"],
