@@ -22,7 +22,7 @@ import { ease } from '../ui3d/spring.ts';
 import { wrapLines } from '../ui3d/text.ts';
 import { neighbour, type Way } from '../ui3d/walk.ts';
 import { type Colors, colors, Hand, lift, rgba, solid } from './draw.ts';
-import { fits, REF as OPT } from './options-layout.ts';
+import { REF as OPT } from './options-layout.ts';
 import { drawHead, drawLine, drawRow, type Piece } from './sheet-draw.ts';
 import { flow, rowBox, type SheetLayout, scrollOf, sheetLayout, shown, sideBox, stops, thumb } from './sheet-layout.ts';
 
@@ -189,7 +189,6 @@ export class Sheet3d implements Ui3dScreen {
   resize() {
     const { overlay, sheet, layer } = this;
     if (!overlay?.isConnected || !sheet) return;
-    if (!fits(layer.w, layer.h)) return this.drop();
     if (!this.taken) {
       this.taken = true;
       this.under = layer.solo === this ? undefined : layer.solo;

@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  fits,
-  fitsOptions,
   itemBox,
   optionsLayout,
   optionsTab,
@@ -121,18 +119,12 @@ describe('3D Options: where it sits', () => {
   });
 
   it('shrinks with the page down to a phone on its side, a row and a command never under a 44 px tap', () => {
-    // the sheets still leave the pages under 1152x648 to their HTML windows; the title shrinks as Options do
-    expect(fits(1152, 648)).toBe(true);
-    expect(fits(1024, 768)).toBe(false);
-    expect(fitsOptions(1024, 768)).toBe(true);
-    expect(fitsOptions(844, 390)).toBe(true);
-    expect(fitsOptions(667, 375)).toBe(true);
-    expect(fitsOptions(568, 320)).toBe(false);
-    expect(fitsOptions(768, 1024)).toBe(false); // a tablet standing: the frame would be a narrow band
+    // every page takes the 3D screen (Fernando, Nov 18: the interface is only 3D), a tablet standing included
     for (const [w, h] of [
       [1152, 648],
       [1180, 820],
       [1024, 768],
+      [768, 1024],
       [844, 390],
       [667, 375],
     ]) {
@@ -214,12 +206,13 @@ describe('3D title: where it sits', () => {
       [844, 390],
       [667, 375],
       [1024, 768],
+      [1180, 820],
+      [768, 1024],
     ])
       for (const n of [5, 6]) {
         const L = titleLayout(w, h, n),
           name = `${w}x${h}, ${n} rows`,
           last = L.rows[n - 1];
-        expect(fitsOptions(w, h), name).toBe(true); // the gate title3d.ts takes the page with
         for (const r of L.rows) expect(r.h, name).toBe(44);
         // top to bottom: the name (its top on the page), the rule, the plate, its last row, the keys' line
         expect(L.name.y - L.name.size / 2, name).toBeGreaterThan(0);

@@ -16,7 +16,6 @@ import { ease } from '../ui3d/spring.ts';
 import { textMesh } from '../ui3d/text.ts';
 import { neighbour, type Way } from '../ui3d/walk.ts';
 import { type Colors, colors, FOCUS, Hand, lift, put, rgba } from './draw.ts';
-import { fitsOptions } from './options-layout.ts';
 import { REF, stops, type TitleLayout, titleLayout } from './title-layout.ts';
 
 export class Title3d implements Ui3dScreen {
@@ -82,7 +81,6 @@ export class Title3d implements Ui3dScreen {
 
   resize() {
     if (!this.title?.isConnected) return;
-    if (!fitsOptions(this.layer.w, this.layer.h)) return this.drop();
     this.taken = true;
     this.title.classList.add('title3d');
     this.layer.solo = this; // the battle's own 3D pieces stay out of the title, as its HUD does

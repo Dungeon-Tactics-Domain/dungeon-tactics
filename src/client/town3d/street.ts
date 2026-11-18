@@ -72,13 +72,11 @@ function quest(leave: () => void, redraw: () => void) {
   };
 }
 
-// `fits`: the page holds the drawing
-export function streetWindows(ui: Town3d, fits: () => boolean) {
+export function streetWindows(ui: Town3d) {
   const gold = () => loadChest().gold;
 
   // `extra`: the town's own switches (game/town.ts), each a choice() of two buttons that this menu reads and presses
   const menu = (extra?: Node, start = ''): boolean => {
-    if (!fits()) return false;
     const choices = [...((extra as ParentNode | undefined)?.querySelectorAll<HTMLElement>('.choice') ?? [])];
     const page = (at: string) =>
       menuPage({
@@ -139,7 +137,6 @@ export function streetWindows(ui: Town3d, fits: () => boolean) {
 
   // a place's window: the gate with the quest's rows, or (with `says`) a place still to come
   const place = (name: string, says?: string): boolean => {
-    if (!fits()) return false;
     let shown: Page;
     const draw = (focus?: string) => {
       const at = focus ?? win.at();

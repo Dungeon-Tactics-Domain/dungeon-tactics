@@ -5,7 +5,7 @@
 // refs/fft-ivalice/15 and 16, 1280x720 read as 1920x1080, +-6 px). A full screen, so it is always the centred 16:9
 // frame, whatever layout the battle pieces take. One layout for what is drawn and for the real controls under it. Pure
 // and tested (tests/flow3d.test.ts): no DOM, no Three.
-import { type Box, MIN_SCALE, NARROW_SCALE, SCREEN, type Stage, stage } from '../ui3d/layout.ts';
+import { type Box, SCREEN, type Stage, stage } from '../ui3d/layout.ts';
 import { neighbour, type Way } from '../ui3d/walk.ts';
 
 export type { Box };
@@ -33,14 +33,6 @@ export const REF = {
   button: { h: 56, gap: 16, over: 24 }, // the commands' strip, and the room between it and the columns
   help: { h: 84, foot: 52 }, // the band at the foot and what is left under it
 };
-
-// a page smaller than the smallest the layout scales to keeps the HTML window: its text and taps would not fit
-export const fits = (w: number, h: number) => Math.min(w / SCREEN.w, h / SCREEN.h) >= MIN_SCALE;
-// Options and the title (title3d.ts) go on shrinking with the page down to a phone on its side (Fernando, Nov 18: the
-// pieces may get smaller with the screen): their rows keep a 44 px tap, so only the drawing shrinks.
-// An upright page under `fits` (a tablet standing) keeps the HTML window: the frame would be a narrow band of small text
-export const fitsOptions = (w: number, h: number) =>
-  fits(w, h) || (w > h && Math.min(w / SCREEN.w, h / SCREEN.h) >= NARROW_SCALE);
 
 export interface OptionsLayout {
   s: number;

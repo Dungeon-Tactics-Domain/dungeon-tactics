@@ -9,10 +9,10 @@
 //   Input: the board's own rows and buttons and a button per category, unseen, under the drawing, inside a window of
 //   dialog.ts, sized by the same layout: the arrows, Enter, Esc, the pad, a tap on an arrow or on the bar and the list's
 //   own scroll work as in the HTML window, and so does a screen reader. The glove points at whatever holds the focus.
-//   A page too small for the layout (options-layout.ts `fitsOptions`) and a lost WebGL context get the HTML window.
+//   Every page size takes it (Fernando, Nov 18: the interface is only 3D): the drawing shrinks, the rows keep a 44 px tap.
 import { Group } from 'three';
 import { dialog } from '../dialog.ts';
-import { type OptionsBoard, optionsWindow, setOptions3d } from '../game/options.ts';
+import { type OptionsBoard, setOptions3d } from '../game/options.ts';
 import { Part, type Quad } from '../hints3d/hints3d.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
@@ -25,7 +25,6 @@ import { textMesh } from '../ui3d/text.ts';
 import type { Way } from '../ui3d/walk.ts';
 import { type Colors, colors, FOCUS, Hand, lift, put, rgba } from './draw.ts';
 import {
-  fitsOptions,
   itemBox,
   type OptionsLayout,
   optionsLayout,
@@ -60,7 +59,6 @@ export class Options3d implements Ui3dScreen {
   private keys?: AbortController; // Q and E, while the screen is open
   private at?: OptionsLayout;
   private win?: { overlay: HTMLElement; close(): void };
-  private html?: { close(): void }; // the HTML window that took over (no room, or the context was lost)
   private stale = false;
   private open = 0;
 
@@ -82,9 +80,7 @@ export class Options3d implements Ui3dScreen {
   }
 
   private show(board: OptionsBoard) {
-    if (!fitsOptions(this.layer.w, this.layer.h)) return undefined;
     this.hide();
-    this.html = undefined;
     this.board = board;
     // a category is open while the cursor is on it. Enter, Space and the pad's A (a click with no pointer) go into its
     // rows; a tap or a click only opens it, for the next one to land on a row
@@ -124,7 +120,7 @@ export class Options3d implements Ui3dScreen {
     this.layer.solo = this; // the battle's own 3D pieces stay out, as its HUD does
     this.tabs[0].focus();
     this.hand.reset();
-    return { close: () => (this.html ?? this.win)?.close() };
+    return { close: () => this.win?.close() };
   }
 
   // where the cursor is, by what holds the focus
@@ -204,23 +200,9 @@ export class Options3d implements Ui3dScreen {
     this.layer.wake();
   }
 
-  // the HTML window takes the same board, where it was
-  private fall() {
-    // only a screen still open: one already closed (a command restarted the battle) has nothing to hand over
-    const board = this.win?.overlay.isConnected ? this.board : undefined,
-      focus = document.activeElement,
-      first = board?.sections[this.cat]?.rows[0];
-    this.hide();
-    if (!board) return;
-    this.html = optionsWindow(board);
-    // a category has no button there: the first row of the one that was open
-    (focus instanceof HTMLElement && focus.isConnected ? focus : first)?.focus();
-  }
-
   resize() {
     if (!this.board) return;
-    if (fitsOptions(this.layer.w, this.layer.h)) this.build();
-    else this.fall();
+    this.build();
   }
 
   // text in the theme's serif, `size` in px of the 1080p layout, shrinking with the pieces on a small page (textPx)
@@ -383,7 +365,7 @@ export class Options3d implements Ui3dScreen {
   }
 
   dispose() {
-    this.fall(); // the layer went (a lost context): the HTML window opens in its place
+    this.hide();
     setOptions3d();
     this.unhear();
     this.layer.remove(this);

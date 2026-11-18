@@ -15,7 +15,6 @@ import { store } from '../store.ts';
 import type { PartyView } from '../town-party.ts';
 import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
-import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
 import { Note3d } from '../window3d/note3d.ts';
 import { Talk3d } from '../window3d/talk3d.ts';
 import { TownHud3d } from './hud3d.ts';
@@ -56,13 +55,10 @@ export function mountTown3d(root: HTMLElement) {
     layer.frame(now);
     requestAnimationFrame(tick);
   };
-  // the drawing is the 1920x1080 reference scaled to the page: under MIN_SCALE its text no longer fits its panels
-  const fits = () => Math.min(innerWidth / SCREEN.w, innerHeight / SCREEN.h) >= MIN_SCALE;
 
   // Shop: focusing a row shows it in the box, pressing it moves the cursor to the box's action, so nothing is bought by
   // the first press; after a purchase or a sale the cursor is back on the row
   const shop = (back?: () => void, tab: ShopTab = 'buy', sel = '') => {
-    if (!fits()) return false;
     const draw = (focus?: string) => {
       const state = { chest: loadChest(), eq: loadEquip(), group: loadGroup() };
       sel = rowOf(shopPage(state, tab, sel), sel);
@@ -103,7 +99,6 @@ export function mountTown3d(root: HTMLElement) {
 
   // Tavern: the same counter; a recruit costs gold and says who joined
   const bar = (back: () => void, sel = '', said = '') => {
-    if (!fits()) return false;
     const draw = (focus?: string) => {
       const g = loadGroup();
       sel = rowOf(barPage(0, g, sel), sel);
@@ -149,7 +144,6 @@ export function mountTown3d(root: HTMLElement) {
   // turn the pages; Enter goes into the member's page, where the four walk its buttons by where they are seen, and
   // Esc comes back to the roster. `inside` follows the cursor, so a click or a touch on the page goes in as well
   const party = (back?: () => void, view: PartyView = {}) => {
-    if (!fits()) return false;
     let { id, page = 'status', slot = 'main' } = view;
     let armed = false,
       inside = false,
@@ -262,7 +256,7 @@ export function mountTown3d(root: HTMLElement) {
     return true;
   };
 
-  Object.assign(town3d, { shop, bar, party }, streetWindows(ui, fits));
+  Object.assign(town3d, { shop, bar, party }, streetWindows(ui));
   new TownHud3d(layer, root);
   new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
   new Note3d(layer); // takes each notice window by itself (note.ts `setNote3d`)

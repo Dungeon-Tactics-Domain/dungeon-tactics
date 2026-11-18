@@ -13,7 +13,7 @@ import { Part } from '../hints3d/hints3d.ts';
 import { t } from '../i18n.ts';
 import type { Icon } from '../menu3d/column.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
-import { type Box, MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
+import { type Box, SCREEN } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, quad } from '../ui3d/panel.ts';
 import { ease } from '../ui3d/spring.ts';
 import { drawChart, Pen, type Tones, tint } from './map-draw.ts';
@@ -144,10 +144,8 @@ export class Map3d implements Ui3dScreen {
   }
 
   resize() {
-    const { view, layer } = this;
+    const { view } = this;
     if (!view?.overlay.isConnected) return;
-    // the drawing is the 1920x1080 reference scaled to the page, as the town's windows (screens.ts `fits`)
-    if (Math.min(layer.w / SCREEN.w, layer.h / SCREEN.h) < MIN_SCALE) return this.drop();
     this.taken = true;
     view.overlay.classList.add('map3d', 'spot-walk'); // the arrows go to what is straight that way (dialog.ts)
     this.build();

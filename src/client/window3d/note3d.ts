@@ -9,8 +9,7 @@
 //   each over its plaque: Enter, a tap, Tab and the screen reader are the window's, Esc, the pad's B, a tap outside
 //   and the ✕ close it unless it is `fixed`, and an arrow or the d-pad goes to the plaque seen that way (dialog.ts
 //   `walked`, ui3d/walk.ts).
-//   A sheet taller than the page, an HTML window still seen under it (it would cover the layer) or a lost WebGL
-//   context while it shows open the HTML window in its place.
+//   A page too short for the sheet takes the wide one, across the page (note-view.ts), at every size.
 import { Group, type Mesh, type ShaderMaterial } from 'three';
 import { dialog } from '../dialog.ts';
 import { type Colors, colors, Hand, rgba } from '../flow3d/draw.ts';
@@ -80,9 +79,6 @@ export class Note3d implements Ui3dScreen {
   // false: the sheet does not fit this page, the HTML window is the one to open
   private show(n: Note, html: NoteHtml): boolean {
     this.hide();
-    // a window still seen in HTML (a page too small for its 3D look) lies over the layer: the notice over it is HTML too
-    const seen = (d: Element) => d.checkVisibility({ opacityProperty: true });
-    if ([...document.querySelectorAll('.overlay > .dialog')].some(seen)) return false;
     const leave = (then?: () => void) => () => {
       this.hide();
       then?.();
@@ -104,11 +100,7 @@ export class Note3d implements Ui3dScreen {
     });
     this.under = this.layer.solo;
     this.layer.solo = this;
-    if (!this.build()) {
-      this.now.from = null; // the HTML window takes the focus by itself
-      this.hide();
-      return false;
-    }
+    this.build();
     this.at = 0;
     buttons[0].focus();
     this.hand.reset();
@@ -130,12 +122,7 @@ export class Note3d implements Ui3dScreen {
   }
 
   resize() {
-    if (!this.now || this.build()) return;
-    // the page shrank under the sheet: the HTML window, which scrolls
-    const { html } = this.now;
-    this.now.from = null;
-    this.hide();
-    html();
+    if (this.now) this.build();
   }
 
   private label(str: string, size: number, color: string, u: number, width?: number) {
@@ -165,7 +152,6 @@ export class Note3d implements Ui3dScreen {
     part.text(this.label(m.glyph, SIZE.mark, hex, u), x + size / 2, y + size / 2);
   }
 
-  // false when the sheet is taller than the page even across it
   private build(wide = false): boolean {
     const { layer, part, veil, now } = this;
     if (!now) return false;
@@ -192,9 +178,9 @@ export class Note3d implements Ui3dScreen {
       left(m, r.x + (REF.mark + REF.markGap) * u, r.y + Math.max(size, m.scale.y) / 2);
     });
     text.forEach((m, i) => left(m, L.text[i].x, L.text[i].y + m.scale.y / 2));
-    if (!L.fits) {
+    if (!L.fits && !wide) {
       this.drop();
-      return wide ? false : this.build(true);
+      return this.build(true);
     }
     this.L = L;
     veil.box(-8, -8, layer.w + 16, layer.h + 16, 0, VEIL);
