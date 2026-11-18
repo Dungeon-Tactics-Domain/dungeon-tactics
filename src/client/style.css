@@ -1550,9 +1550,10 @@ body:has(.result-overlay) .fps {
   }
 }
 
-/* ---- 3D interface layer (localhost ?menu3d and ?turn3d; src/client/ui3d) ---- */
-/* One transparent WebGL canvas over the HUD for every 3D screen. It takes no input: each screen brings its own controls,
-   which come after it in the HUD and so sit over it. "Execute?" stays over the 3D drawing */
+/* ---- 3D interface: the layer and the unseen HTML skeleton under it (src/client/ui3d and the *3d folders) ---- */
+/* Every screen is drawn on one transparent WebGL canvas over the HUD. It takes no input: each screen keeps its HTML
+   under the drawing, unseen, as the layout the code measures, the keyboard, the pad, the taps and the screen reader.
+   Unseen by opacity, never by visibility, wherever the buttons must still take the focus; the focus is drawn in 3D */
 .ui3d-layer {
   position: absolute;
   inset: 0;
@@ -1564,15 +1565,34 @@ body:has(.result-overlay) .fps {
 .hud.ui3d .confirm {
   z-index: 2;
 }
+/* text for the screen reader only */
+.sr-only,
+.dialog.options3d .opt-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
 
-/* ---- 3D command menu (?menu3d; src/client/menu3d) ---- */
-/* The menu and the submenu are drawn in 3D, bottom right. The HTML ones only keep the HUD's open state; the input is the
-   3D menu's own: one transparent button over each drawn row and over each page arrow of the sheet (menu3d.ts places
-   them from the same layout it draws) */
-.hud.menu3d .commands,
-.hud.menu3d .abilities {
-  visibility: hidden;
-  animation: none;
+/* the transparent buttons each screen seats over its drawn ones (menu3d.ts, result3d.ts, town3d.ts, options3d.ts) */
+.menu3d-hits button,
+.result3d-hits button,
+.town3d-hits button,
+.options3d-hits > button {
+  position: absolute;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+.menu3d-hits button,
+.result3d-hits button,
+.town3d-hits button {
+  opacity: 0;
+}
+.options3d-hits > button {
+  margin: 0;
+  overflow: hidden;
 }
 .menu3d-hits {
   position: absolute;
@@ -1581,106 +1601,273 @@ body:has(.result-overlay) .fps {
   z-index: 1;
 }
 .menu3d-hits button {
-  position: absolute;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  opacity: 0;
-  cursor: pointer;
   pointer-events: auto;
-}
-.menu3d-hits button:disabled {
-  cursor: default;
-}
-
-/* ---- 3D battle result (?result=3d; src/client/result3d) ---- */
-/* The end of battle is drawn in 3D on the layer. Its window (dialog.ts) covers the page unseen and only holds the
-   board's real buttons, each over its drawn one (result3d.ts places them): the keys, the pad and the focus stay the
-   window's. The rest of the HUD hides, as under the HTML result */
-.overlay.result3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-.dialog.result3d {
-  position: absolute;
-  inset: 0;
-  width: auto;
-  max-height: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  overflow: hidden;
-}
-.dialog.result3d .dialog-head {
-  display: none;
-}
-.result3d-hits button {
-  position: absolute;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  opacity: 0;
-  cursor: pointer;
-}
-body:has(.result3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.result3d-overlay) .fps {
-  visibility: hidden;
-}
-
-/* ---- 3D town windows (?party=3d, ?shop=3d; src/client/town3d) ---- */
-/* Party, Shop and Tavern are drawn in 3D on the town's layer. Their window (dialog.ts) covers the page unseen and only
-   holds the page's real buttons, each over its drawn one (town3d.ts places them), the list's rows inside a real
-   scrolling box. The town's HUD and the town menu under the window hide while it shows */
-/* `body:has(...)`: over the rules that seat a window beside the town menu, which this one covers */
-body:has(.town3d-overlay) .overlay.town3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
-  position: absolute;
-  inset: 0;
-  width: auto;
-  max-width: none;
-  max-height: none;
-  animation: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  overflow: hidden;
-}
-.dialog.town3d .dialog-head {
-  display: none;
 }
 .town3d-hits {
   position: absolute;
   inset: 0;
 }
-.town3d-hits button {
-  position: absolute;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  opacity: 0;
-  cursor: pointer;
-}
+/* over `.dialog button:disabled`'s fade */
 .town3d-hits button:disabled {
   opacity: 0;
-  cursor: default;
 }
+
+/* a full screen drawn in 3D: its window (dialog.ts) covers the page, unseen */
+.overlay.result3d-overlay,
+.overlay.options3d-overlay,
+.overlay.status3d-overlay,
+.overlay.main-title.title3d,
+.overlay.sheet3d,
+.overlay.crawl-map.map3d {
+  display: block;
+  padding: 0;
+}
+/* `body:has(...)`: over the rules that seat a window beside the town menu, which this one covers */
+body:has(.town3d-overlay) .overlay.town3d-overlay {
+  display: block;
+  padding: 0;
+}
+.dialog.result3d,
+.dialog.options3d,
+body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+.dialog.options3d {
+  display: block;
+  height: auto;
+  opacity: 0;
+}
+body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
+  max-width: none;
+}
+/* no ✕ on a full screen: the drawn Back stands for it, and an unseen ✕ would still take the focus */
+.dialog.result3d .dialog-head,
+.dialog.options3d .dialog-head,
+.dialog.town3d .dialog-head {
+  display: none;
+}
+/* the rest of the HUD hides under a full screen, as on the reference */
+body:has(.result3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.result3d-overlay) .fps,
+body:has(.options3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.options3d-overlay) .fps,
+body:has(.status3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.status3d-overlay) .fps,
+body:has(.overlay.sheet3d) .hud > :not(.ui3d-layer),
+body:has(.overlay.sheet3d) .fps,
+body:has(.town3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.town3d-overlay) .overlay:not(.town3d-overlay) {
+  visibility: hidden;
+}
+/* a `title` window hides the whole HUD: the layer the screen is drawn on still shows */
+body:has(.town3d-overlay) .hud > .ui3d-layer,
+body:has(.talk-overlay.talk3d) .hud > .ui3d-layer,
+body:has(.crawl-map.map3d) .hud > .ui3d-layer,
+body:has(.main-title.title3d) .hud > .ui3d-layer,
+body:has(.overlay.sheet3d) .hud > .ui3d-layer {
+  visibility: visible;
+}
+
+/* battle HUD: the HTML each piece stands for stays in the HUD, unseen. The menus only keep the HUD's open state (the
+   input is .menu3d-hits); the help line, the banner and the tile line are drawn by hints3d; the strips and the target
+   panel leave the flow; the acting panel, "Execute?" and the corner menu keep the drawing's place and size, so the
+   map, the turn list and BattleHud.place keep clear of what is drawn */
+.hud.menu3d .commands,
+.hud.menu3d .abilities,
+.hud.banner3d .help,
+.hud.banner3d .banner,
+.hud.height3d .tile-info {
+  visibility: hidden;
+}
+.hud.hints3d .hint,
+.hud.bar3d .target-slot,
+.hud.bar3d .strikes {
+  display: none;
+}
+/* the open corner list sits over the 3D ability sheet's corner: the 3D menu steps aside while both are open */
+.hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
+  visibility: hidden;
+}
+.hud.bar3d .active-slot {
+  left: calc(var(--lay-x) + 100 * var(--lay-u));
+  bottom: calc(var(--lay-y) + 48 * var(--lay-u));
+  width: calc(672 * var(--lay-u));
+  height: calc(214 * var(--lay-u));
+  overflow: hidden;
+  opacity: 0;
+}
+
+/* turn list (turn3d): the HTML list stays as the layout, the scroll and the hover. Its rows take the cards' sizes
+   measured on the reference (1280x720) times --t3, the page's scale; the column stacks from the bottom like FFT's
+   combat timeline, on the reference's place (--turn-x, --turn-y, --turn-b), above the acting panel (--active-h, hud.ts) */
+.hud.turn3d .queue {
+  left: var(--turn-x);
+  top: var(--turn-y);
+  bottom: max(var(--turn-b), var(--active-h, 0px) + 2px);
+  height: auto;
+  /* the cards' column, then the room their life and CT lines take (--turn-stats): the menu beside the unit and
+     "Execute?" keep clear of this box (hud.ts place) */
+  width: calc(120px * var(--t3) + var(--turn-stats, 0px));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: calc(8px * var(--t3));
+  padding: calc(8px * var(--t3)) calc(10px * var(--t3)) calc(10px * var(--t3)) calc(56px * var(--t3));
+  border: 0;
+  scrollbar-width: none;
+  /* the empty column lets the map's hover and taps through; the rows take the mouse for the hover and the wheel */
+  pointer-events: none;
+}
+.hud.turn3d .queue-title {
+  order: 1; /* in a reversed column the last one sits on top */
+  width: calc(100% - var(--turn-stats, 0px)); /* over the cards, not over their lines */
+  position: sticky;
+  top: 0;
+  text-shadow: var(--ink-shadow);
+}
+.hud.turn3d .queue-row {
+  flex: none;
+  /* never shorter than the two 16 px lines and two bars beside the card take (Nov 17; queue-view.ts statsLayout): on a
+     low screen the cards stop shrinking and the list scrolls; on a narrow page the floor shrinks with the pieces (--t3f) */
+  width: max(calc(44px * var(--t3)), 41px * var(--t3f, 1));
+  height: max(calc(52px * var(--t3)), 48px * var(--t3f, 1));
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: auto;
+}
+/* the one acting now: a bigger card (the 3D card springs to its row's box) */
+.hud.turn3d .queue-row.now {
+  width: max(calc(54px * var(--t3)), 50px * var(--t3f, 1));
+  height: max(calc(64px * var(--t3)), 59px * var(--t3f, 1));
+}
+/* the bar's sheet shows the one acting (the reference's card 1): its row leaves the list while the sheet shows the
+   list's head (hud.ts .head-on-sheet; Fernando, Nov 16) */
+.hud.turn3d.bar3d.head-on-sheet .queue-row.now {
+  display: none;
+}
+/* the two pieces of HTML still seen, the card's name under the mouse and the turn-the-phone notice: the result board's
+   dark plate and light text (11:1) */
+.turn3d-tip,
+.rotate-card {
+  border-color: var(--ui3d-result-line);
+  background: var(--ui3d-result-plate);
+  color: var(--ui3d-result-text);
+}
+/* name and life of the card under the mouse, beside it */
+.turn3d-tip {
+  translate: 0 -50%;
+  padding: 4px 10px;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* "Execute?" (confirm3d): the HTML window takes the drawing's sizes, in px of the reference (confirm3d.ts SIZE), and
+   its serif and weight, so the notes wrap where the drawn ones do */
+.hud.confirm3d .confirm {
+  width: calc(440 * var(--lay-u));
+  font-family: var(--font-ui3d);
+  font-weight: 500;
+  padding: 0 calc(12 * var(--lay-u)) calc(12 * var(--lay-u));
+  opacity: 0;
+}
+.hud.confirm3d .confirm .panel-head,
+.hud.confirm3d .confirm .item {
+  font-family: inherit;
+  font-weight: inherit;
+}
+.hud.confirm3d .confirm .panel-head {
+  padding: calc(10 * var(--lay-u)) calc(14 * var(--lay-u));
+  font-size: max(var(--fs-3d-min), 26 * var(--lay-u));
+  line-height: 1.3;
+}
+.hud.confirm3d .confirm p {
+  margin: calc(8 * var(--lay-u)) calc(6 * var(--lay-u)) 0;
+  font-size: max(var(--fs-3d-min), 18 * var(--lay-u));
+  line-height: 1.3;
+}
+.hud.confirm3d .confirm p:not(.unit-note) {
+  display: none;
+}
+.hud.confirm3d .confirm .item {
+  min-height: calc(52 * var(--lay-u));
+  font-size: max(var(--fs-3d-min), 24 * var(--lay-u));
+}
+/* a finger keeps its 44 px target (section 8) */
+@media (pointer: coarse) {
+  .hud.confirm3d .confirm .item {
+    min-height: max(var(--tap), 52 * var(--lay-u));
+  }
+}
+
+/* corner menu (tools3d): the menu button, Back and the open list take the drawing's sizes, in px of the reference: a
+   head like the command menu's (42), rows touching each other, never under the 44 px touch target */
+.hud.tools3d .tools {
+  opacity: 0;
+}
+.hud.tools3d .tools .burger,
+.hud.tools3d .tools .back,
+.hud.tools3d .tools .undo {
+  width: max(var(--tap), 56 * var(--lay-u));
+  height: max(var(--tap), 56 * var(--lay-u));
+}
+.hud.tools3d .tools-menu {
+  top: calc(max(var(--tap), 56 * var(--lay-u)) + 10 * var(--lay-u));
+  width: max(300px, 430 * var(--lay-u));
+  padding: 0;
+  border: 0 solid transparent;
+  border-top-width: calc(42 * var(--lay-u)); /* the head: a border, so it stays while the rows scroll */
+  max-height: calc(100dvh - var(--inset-t) - max(var(--tap), 56 * var(--lay-u)) - 10 * var(--lay-u) - var(--inset-b));
+}
+.hud.tools3d .panel.tools-menu .item {
+  min-height: max(var(--tap), 52 * var(--lay-u));
+  border-radius: 0;
+}
+.hud.tools3d .tools-menu .item + .item {
+  margin-top: 0;
+}
+
+/* Status (status3d): the window sits over the drawn sheet, unseen, with the ✕ on its top right corner */
+.dialog.status3d {
+  position: absolute;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+.dialog.status3d .dialog-head button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--tap);
+  height: var(--tap);
+}
+
+/* town (town3d hud3d.ts, talk3d.ts): the town's HUD pieces stay in place unseen; the speech box shows only its painted
+   face over the drawn parchment, and the town is not darkened */
+.hud.townhud3d > .tile-info,
+.hud.townhud3d > .town-prompt,
+.hud.townhud3d > .town-act,
+.hud.townhud3d .tools .burger,
+.talk-overlay.talk3d :is(.talk-name, .talk-text, .talk-next, .talk-keys, .talk-title, .talk-skip) {
+  opacity: 0;
+}
+.talk-overlay.talk3d .panel.talk {
+  border-color: transparent;
+  background: none;
+  outline: none;
+}
+/* Party, Shop and Tavern: the list's rows inside a real scrolling box */
 .town3d-list {
   position: absolute;
   overflow-y: auto;
@@ -1690,55 +1877,10 @@ body:has(.town3d-overlay) .overlay.town3d-overlay > .dialog.town3d {
 .town3d-rows {
   position: relative;
 }
-body:has(.town3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.town3d-overlay) .overlay:not(.town3d-overlay) {
-  visibility: hidden;
-}
-/* the town menu under the window hides the whole HUD (a `title` window): the layer still shows */
-body:has(.town3d-overlay) .hud > .ui3d-layer {
-  visibility: visible;
-}
 
-/* ---- 3D town HUD and speech box (?townhud=3d, ?talk=3d; src/client/town3d hud3d.ts, talk3d.ts) ---- */
-/* Drawn on the town's 3D layer. The HTML pieces stay in place unseen (opacity, not visibility: they are the layout, and
-   their real buttons take the mouse, the taps, the pad and the screen reader) */
-.hud.townhud3d > .tile-info,
-.hud.townhud3d > .town-prompt,
-.hud.townhud3d > .town-act,
-.hud.townhud3d .tools .burger {
-  opacity: 0;
-}
-/* the speech box: only its painted face shows, over the drawn parchment; the town is not darkened, as the reference */
-.talk-overlay.talk3d {
-  background: none;
-}
-.talk-overlay.talk3d .panel.talk {
-  animation: none;
-  border-color: transparent;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  outline: none;
-}
-.talk-overlay.talk3d :is(.talk-name, .talk-text, .talk-next, .talk-keys, .talk-title, .talk-skip) {
-  opacity: 0;
-  animation: none;
-}
-/* someone talking hides the whole HUD (above): the layer still shows, with the box drawn on it */
-body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
-
-/* ---- 3D expedition map (?map=3d; src/client/town3d/map3d.ts) ---- */
-/* The map is drawn in 3D on the town's layer. Its own window stays, unseen (by opacity: the places and the commands
-   must still take the focus, a tap and the screen reader), covering the page, its parts moved under the drawn ones:
-   map3d.ts seats the chart, the party, the place's box and the commands and sets --map-step, --m3-place, --m3-boss,
-   --m3-cmd and --m3-gap. The whole descent shows: nothing scrolls. Information and the chest window open over it */
+/* expedition map (map3d.ts): its window covers the page, unseen, its parts moved under the drawn ones (map3d.ts seats
+   the chart, the party, the place's box and the commands and sets --map-step and the --m3-* sizes). Nothing scrolls */
 .overlay.crawl-map.map3d {
-  display: block;
-  padding: 0;
-  background: none;
   overflow: hidden;
 }
 .crawl-map.map3d .dialog.title {
@@ -1753,9 +1895,6 @@ body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
   padding: 0;
   border: 0;
   opacity: 0;
-  animation: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
   overflow: hidden;
 }
 .crawl-map.map3d :is(.map-scroll, .map-party, .map-info, .map-commands) {
@@ -1789,197 +1928,9 @@ body:has(.talk-overlay.talk3d) .hud > .ui3d-layer {
   border: 0;
   overflow: hidden;
 }
-/* a `title` window hides the whole HUD: the layer the map is drawn on still shows */
-body:has(.crawl-map.map3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
 
-/* ---- 3D turn list (?turn3d; src/client/turn3d) ---- */
-/* The list is drawn in 3D on the layer. The HTML list stays where it is, unseen, as the layout, the scroll and the hover:
-   its rows take the cards' sizes measured on the reference screenshots (1280x720) times --t3, the page's scale (set by
-   turn3d.ts); the HUD hands their boxes to the 3D list. The column stacks from the bottom, 1 above the acting panel and
-   counting up, like FFT's combat timeline. It sits on the reference's place (ui3d/layout.ts `turn`, set by turn3d.ts),
-   and ends above the acting panel where that one, still HTML, is taller than the reference's (--active-h: the room it takes from the bottom, hud.ts) */
-.hud.turn3d .queue {
-  left: var(--turn-x);
-  top: var(--turn-y);
-  bottom: max(var(--turn-b), var(--active-h, 0px) + 2px);
-  height: auto;
-  /* the cards' column, then the room their life and CT lines take (--turn-stats, set by turn3d.ts): the menu beside the
-     unit and "Execute?" keep clear of this box (hud.ts place) */
-  width: calc(120px * var(--t3) + var(--turn-stats, 0px));
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: calc(8px * var(--t3));
-  padding: calc(8px * var(--t3)) calc(10px * var(--t3)) calc(10px * var(--t3)) calc(56px * var(--t3));
-  background: none;
-  border: 0;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  scrollbar-width: none;
-  /* the empty column lets the map's hover and taps through; the rows take the mouse for the hover and the wheel */
-  pointer-events: none;
-}
-.hud.turn3d .queue-title {
-  order: 1; /* in a reversed column the last one sits on top */
-  width: calc(100% - var(--turn-stats, 0px)); /* over the cards, not over their lines */
-  position: sticky;
-  top: 0;
-  text-shadow: var(--ink-shadow);
-}
-.hud.turn3d .queue-row {
-  flex: none;
-  /* never shorter than the two 16 px lines and two bars beside the card take (Nov 17; queue-view.ts statsLayout): on a
-     low screen the cards stop shrinking and the list scrolls; on a narrow page the floor shrinks with the pieces (--t3f) */
-  width: max(calc(44px * var(--t3)), 41px * var(--t3f, 1));
-  height: max(calc(52px * var(--t3)), 48px * var(--t3f, 1));
-  padding: 0;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: auto;
-}
-/* the one acting now: a bigger card (the 3D card springs to its row's box) */
-.hud.turn3d .queue-row.now {
-  width: max(calc(54px * var(--t3)), 50px * var(--t3f, 1));
-  height: max(calc(64px * var(--t3)), 59px * var(--t3f, 1));
-}
-/* with the 3D bar its sheet's portrait is the one acting (the reference's card 1): its row leaves the list, which starts
-   at 2 right above the sheet (Fernando, Nov 16). Only while the sheet shows the list's head (hud.ts .head-on-sheet): an
-   enemy's strike can play after the state passed the turn on */
-.hud.turn3d.bar3d.head-on-sheet .queue-row.now {
-  display: none;
-}
-/* the two pieces of HTML still seen, the card's name under the mouse and the turn-the-phone notice: the result board's
-   dark plate and light text (11:1), not the old blue panel */
-.turn3d-tip,
-.rotate-card {
-  border-color: var(--ui3d-result-line);
-  background: var(--ui3d-result-plate);
-  color: var(--ui3d-result-text);
-}
-/* name and life of the card under the mouse, beside it */
-.turn3d-tip {
-  translate: 0 -50%;
-  padding: 4px 10px;
-  font-size: var(--fs-sm);
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ---- 3D combat bar (?bar=3d; src/client/bar3d) ---- */
-/* The acting sheet, the strike preview and the target's sheet are drawn in 3D on the layer, each on its region of the
-   reference (ui3d/layout.ts `sheet`, `preview`, `target`). The HTML panels stay unseen (opacity, not visibility: the
-   sandbox's `hide` is what hides the 3D bar with them): the acting one takes the sheet's place and size, so the map and
-   the turn list keep clear of what is drawn; the strips and the target panel leave the flow */
-.hud.bar3d .active-slot {
-  left: calc(var(--lay-x) + 100 * var(--lay-u));
-  bottom: calc(var(--lay-y) + 48 * var(--lay-u));
-  width: calc(672 * var(--lay-u));
-  height: calc(214 * var(--lay-u));
-  overflow: hidden;
-  opacity: 0;
-}
-.hud.bar3d .target-slot,
-.hud.bar3d .strikes {
-  display: none;
-}
-
-/* ---- 3D banner, Height and button hints (?banner=3d, ?height=3d, ?hints=3d; src/client/hints3d) ---- */
-/* Each is drawn on the 3D layer at its place of the reference; the HTML it stands for stays in the HUD, unseen: the help
-   line and the ability banner, the tile line, and the key hints inside the HUD's own rows */
-.hud.banner3d .help,
-.hud.banner3d .banner {
-  visibility: hidden;
-  animation: none;
-}
-.hud.height3d .tile-info {
-  visibility: hidden;
-}
-.hud.hints3d .hint {
-  display: none;
-}
-
-/* ---- 3D "Execute?" (?confirm=3d; src/client/confirm3d) ---- */
-/* Drawn on the 3D layer over the HTML window, which stays in place unseen (opacity, not visibility: its real buttons take
-   the mouse, BattleHud.place keeps moving it beside the character, and the sandbox's `hide` hides the drawing with it).
-   Its sizes are the drawing's, in px of the reference (confirm3d.ts SIZE); the strike's numbers are on the preview plate */
-.hud.confirm3d .confirm {
-  width: calc(440 * var(--lay-u));
-  font-family: var(--font-ui3d); /* the drawing's serif and weight, so the notes wrap where the drawn ones do */
-  font-weight: 500;
-  padding: 0 calc(12 * var(--lay-u)) calc(12 * var(--lay-u));
-  opacity: 0;
-  animation: none;
-}
-.hud.confirm3d .confirm .panel-head,
-.hud.confirm3d .confirm .item {
-  font-family: inherit;
-  font-weight: inherit;
-}
-.hud.confirm3d .confirm .panel-head {
-  padding: calc(10 * var(--lay-u)) calc(14 * var(--lay-u));
-  font-size: max(var(--fs-3d-min), 26 * var(--lay-u));
-  line-height: 1.3;
-}
-.hud.confirm3d .confirm p {
-  margin: calc(8 * var(--lay-u)) calc(6 * var(--lay-u)) 0;
-  font-size: max(var(--fs-3d-min), 18 * var(--lay-u));
-  line-height: 1.3;
-}
-.hud.confirm3d .confirm p:not(.unit-note) {
-  display: none;
-}
-.hud.confirm3d .confirm .item {
-  min-height: calc(52 * var(--lay-u));
-  font-size: max(var(--fs-3d-min), 24 * var(--lay-u));
-}
-/* a finger keeps its 44 px target (section 8) */
-@media (pointer: coarse) {
-  .hud.confirm3d .confirm .item {
-    min-height: max(var(--tap), 52 * var(--lay-u));
-  }
-}
-
-/* ---- 3D Options (?options=3d; src/client/flow3d) ---- */
-/* Options are drawn in 3D on the layer. Their window (dialog.ts) covers the page unseen and holds the board's real list
-   and buttons under the drawing, sized by the same layout (options3d.ts sets the list's box and the --o3-* sizes): the
-   keys, the pad, the taps, the list's scroll and the focus stay the window's. Unseen by opacity, never by visibility:
-   the controls must still take the focus. The rest of the HUD hides, as under the result */
-.overlay.options3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-.dialog.options3d {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: auto;
-  height: auto;
-  max-height: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  overflow: hidden;
-  opacity: 0;
-}
-/* no ✕ on a full screen: the drawn Back stands for it, and an unseen ✕ would still take the focus */
-.dialog.options3d .dialog-head {
-  display: none;
-}
-.dialog.options3d .opt-help {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
+/* Options (options3d): the board's real list and buttons under the drawing, sized by the same layout (the list's box
+   and the --o3-* sizes): the list's scroll stays the window's */
 .dialog.options3d .opt-list {
   position: absolute;
   display: block;
@@ -2006,7 +1957,8 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
   white-space: nowrap;
   overflow: hidden;
 }
-.dialog.options3d .opt-label {
+.dialog.options3d .opt-label,
+.dialog.options3d .opt-text {
   flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
@@ -2022,11 +1974,6 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
   min-height: 0;
   height: 100%;
 }
-.dialog.options3d .opt-text {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-}
 /* a bar: the number first, then the track (the drawing's order), the track as wide as the drawn one */
 .dialog.options3d .opt-bar {
   order: 1;
@@ -2041,29 +1988,8 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
 .dialog.options3d .opt-value > .opt-arrow:last-child {
   order: 2;
 }
-.options3d-hits > button {
-  position: absolute;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  cursor: pointer;
-}
-body:has(.options3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.options3d-overlay) .fps {
-  visibility: hidden;
-}
 
-/* ---- 3D title (?title=3d; src/client/flow3d) ---- */
-/* The title is drawn in 3D on the layer. Its own window stays, unseen (by opacity: the buttons must still take the
-   focus), the command list and the language button moved under the drawn ones (title3d.ts sets their places and
-   --t3-row). The battle's HUD stays hidden under the title, except the layer the title is drawn on */
-.overlay.main-title.title3d {
-  display: block;
-  padding: 0;
-  background: none;
-}
+/* title (title3d): the command list and the language button moved under the drawn ones (--t3-row) */
 .main-title.title3d .dialog.title {
   opacity: 0;
 }
@@ -2091,31 +2017,16 @@ body:has(.options3d-overlay) .fps {
   margin: 0;
   padding: 0;
 }
-body:has(.main-title.title3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
 
-/* ---- 3D sheets (?sheets=3d; src/client/flow3d/sheet3d.ts) ---- */
-/* The windows the title and Options open (saved games, quick battle, how to play, credits, tile marks,
-   controls) are drawn in 3D on the layer. Each window stays, unseen (by opacity: its buttons must still take the
-   focus), its own box moved onto the drawn sheet's scrolling window (sheet3d.ts sets its place and the --s3-* sizes),
-   so the wheel, a finger and the focus scroll it and the drawing follows. Not positioned: its ✕ (the drawn Back) and
-   its link (the plate beside it) are placed on the page, outside its scroll */
-.overlay.sheet3d {
-  display: block;
-  padding: 0;
-  background: none;
-}
+/* sheets the title and Options open (sheet3d.ts): each window's own box moved onto the drawn sheet's scrolling window
+   (its place and the --s3-* sizes), so the wheel, a finger and the focus scroll it and the drawing follows. Not
+   positioned: its ✕ (the drawn Back) and its link (the plate beside it) are placed on the page, outside its scroll */
 .overlay.sheet3d > .dialog {
   position: static;
   box-sizing: border-box;
   max-height: none;
   padding: 0;
   border: 0;
-  background: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
   overflow: hidden auto;
   scrollbar-width: none;
   opacity: 0;
@@ -2168,82 +2079,6 @@ body:has(.main-title.title3d) .hud > .ui3d-layer {
   padding: 0;
   border: 0;
   overflow: hidden;
-}
-body:has(.overlay.sheet3d) .hud > :not(.ui3d-layer),
-body:has(.overlay.sheet3d) .fps {
-  visibility: hidden;
-}
-body:has(.overlay.sheet3d) .hud > .ui3d-layer {
-  visibility: visible;
-}
-
-/* ---- 3D corner menu (?tools=3d; src/client/window3d/tools3d.ts) ---- */
-/* The menu button, Back and the open list are drawn on the 3D layer over the HTML ones, which stay in place unseen
-   (opacity, not visibility: their real buttons take the mouse and the taps, and the sandbox's `hide` hides the drawing
-   with them). The list takes the drawing's sizes, in px of the reference: a head like the command menu's (42), rows
-   touching each other (the parchment draws the line between them), never under the 44 px touch target */
-.hud.tools3d .tools {
-  opacity: 0;
-}
-.hud.tools3d .tools .burger,
-.hud.tools3d .tools .back,
-.hud.tools3d .tools .undo {
-  width: max(var(--tap), 56 * var(--lay-u));
-  height: max(var(--tap), 56 * var(--lay-u));
-}
-.hud.tools3d .tools-menu {
-  top: calc(max(var(--tap), 56 * var(--lay-u)) + 10 * var(--lay-u));
-  width: max(300px, 430 * var(--lay-u));
-  padding: 0;
-  border: 0 solid transparent;
-  border-top-width: calc(42 * var(--lay-u)); /* the head: a border, so it stays while the rows scroll */
-  animation: none;
-  max-height: calc(100dvh - var(--inset-t) - max(var(--tap), 56 * var(--lay-u)) - 10 * var(--lay-u) - var(--inset-b));
-}
-.hud.tools3d .panel.tools-menu .item {
-  min-height: max(var(--tap), 52 * var(--lay-u));
-  border-radius: 0;
-}
-.hud.tools3d .tools-menu .item + .item {
-  margin-top: 0;
-}
-
-/* ---- 3D Status window (?status=3d; src/client/window3d/status3d.ts) ---- */
-/* The sheet is drawn on the 3D layer. Its window (dialog.ts) sits over the drawn sheet, unseen (status3d.ts gives it the
-   sheet's box): Esc, the pad, a tap outside and the ✕ on the top right corner stay the window's, and it holds the sheet
-   as real text. The rest of the HUD hides, as on the reference's status screen */
-.overlay.status3d-overlay {
-  display: block;
-  padding: 0;
-  background: none;
-}
-.dialog.status3d {
-  position: absolute;
-  width: auto;
-  max-height: none;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  opacity: 0;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-.dialog.status3d .dialog-head button {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: var(--tap);
-  height: var(--tap);
-  cursor: pointer;
-}
-body:has(.status3d-overlay) .hud > :not(.ui3d-layer),
-body:has(.status3d-overlay) .fps {
-  visibility: hidden;
-}
-/* the open list sits over the 3D ability sheet's corner, whose icons draw over every panel of the layer: the 3D menu
-   steps aside while the list is open over its submenu */
-.hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
-  visibility: hidden;
 }
 
 /* ---- Loading cover (loading.ts; Fernando, Nov 18) ---- */
