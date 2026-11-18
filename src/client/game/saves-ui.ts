@@ -4,6 +4,7 @@ import { dialog, secondTap } from '../dialog.ts';
 import { stillFace } from '../hud-pieces.ts';
 import { LOCALE, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { navigate } from '../nav.ts';
 import { noteWindow } from '../note.ts';
 import { byPlayed, deleteSlot, loadSlot, newGame, readSaves, type SlotSummary, summary } from '../saves.ts';
 import { store } from '../store.ts';
@@ -44,7 +45,7 @@ export function startNewGame(onBack: () => void) {
 function resume() {
   const room = savedRoom();
   if (room === null) goHome();
-  else location.search = `?room=${room}`;
+  else navigate(`?room=${room}`);
 }
 
 const where = (s: SlotSummary) =>

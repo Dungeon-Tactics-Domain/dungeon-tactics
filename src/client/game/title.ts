@@ -12,7 +12,7 @@ import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { liveText } from '../key-hints.ts';
 import { looks3d } from '../looks3d.ts';
-import { onLeave } from '../nav.ts';
+import { navigate, onLeave } from '../nav.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
@@ -25,7 +25,7 @@ import { type Block, blocksHtml, showSheet } from './sheets.ts';
 export function devMenu(onBack?: () => void) {
   looks3d.dev?.(() => {
     store.set(`dt:battle:${DEV_SCENARIO}`, '');
-    location.search = `?scenario=${DEV_SCENARIO}`;
+    navigate(`?scenario=${DEV_SCENARIO}`);
   }, onBack);
 }
 
@@ -56,7 +56,7 @@ function quickBattle() {
           button(i ? 'secondary' : 'primary', name + (right && ` (${right})`), () => {
             d.close();
             if (id !== SURVIVAL_ID) setTrack(null);
-            location.search = `?scenario=${id}`;
+            navigate(`?scenario=${id}`);
           }),
         ),
       ),
