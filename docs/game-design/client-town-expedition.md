@@ -60,7 +60,9 @@ Nov 13, delivery 5 of [towns-party-equipment.md](towns-party-equipment.md).
   interface in the 3D look; default, `?townmenu=html`, `?townhud=html`, `?talk=html` or `?ui=html` bring the HTML back):
   the town menu (dark rows down the left with the glove, after the reference's list of places, the town's box beside
   them, the help band saying the row in focus), the gate's quest and a place still to come (plaques and a parchment
-  box), the HUD (slate plates as the battle's 3D HUD: the reference has no walkable town) and the speech box
+  box), the HUD (slate plates as the battle's 3D HUD: the reference has no walkable town; its balloon writes what Enter
+  does, so the top pill says it only with nothing in reach, the walk keys, never twice: `promptSays`, Nov 18 review at
+  844x390) and the speech box
   (parchment, the name on a dark plaque; the painted face stays the HTML one, over it). Same rules as the HTML ones;
   a 3D window covers the page, so Shop, Tavern and Party opened from the menu replace it and give it back, on their
   row, when they close. New expedition over a live one asks a 2nd press (disarmed by moving off it or after 5 s; Esc

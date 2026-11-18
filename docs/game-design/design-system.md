@@ -376,7 +376,8 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   plaque is darker than the reference's so the light label keeps its contrast. Contrast not computed yet.
 - **The rest of the town** (`?townmenu=3d`, `?townhud=3d`, `?talk=3d`; `town3d/street.ts`, `hud3d.ts`, `window3d/talk3d.ts`;
   Nov 17): no new token. The town menu, the gate and a place still to come are pages of the same windows (town and
-  result tokens); the HUD takes the battle 3D HUD's slate plates and key caps (`hints3d/`); the speech box is the
+  result tokens); the HUD takes the battle 3D HUD's slate plates and key caps (`hints3d/`), with what Enter does
+  written once, on the balloon (the top pill only with nothing in reach; Nov 18); the speech box is the
   parchment with the name on a result plate.
 - **Contrast** (computed, WCAG): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the darkest band; soft ink 5.7:1
   on the rows, 4.7:1 on the head, 3.6:1 on the band, so the band's title takes the full ink; the disabled ink (1.9:1)

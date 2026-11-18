@@ -18,6 +18,11 @@ export function townHud(pageW: number, inset: { top: number; right: number; left
   };
 }
 
+// What the top pill says. game/town.ts writes the target ("Talk to Hugo") on the help line and as the balloon's name;
+// the HTML balloon shows only its symbol, but the 3D one writes the name, so the pill keeps only what has no balloon
+// (the walk keys): on a phone the balloon sat right under it, the same words twice (review of Nov 18, 844x390)
+export const promptSays = (line: string, balloon: string) => (line === balloon ? '' : line);
+
 // around every window
 export const T = {
   title: { x: 42, y: 40, size: 32 }, // the window's name, left end and middle
