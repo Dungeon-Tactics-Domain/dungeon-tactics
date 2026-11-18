@@ -40,10 +40,8 @@ const PAGES = [
         [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl'));
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       await new Promise((r) => setTimeout(r, 800)); // the 3D menu opens a moment later
-      // the menu is the HTML one (9 buttons) or its 3D look (8 invisible hit buttons over it)
-      return (
-        bare && [9, 8].includes(document.querySelectorAll('.town-menu .camp-list button, .town3d-hits button').length)
-      );
+      // the menu is drawn in 3D: its 8 unseen hit buttons over the drawing (town3d/street.ts)
+      return bare && document.querySelectorAll('.town3d-hits button').length === 8;
     },
   },
   {
@@ -66,12 +64,7 @@ const PAGES = [
       const bare = !document.querySelector('.overlay');
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       await new Promise((r) => setTimeout(r, 800)); // the 3D menu opens a moment later
-      return (
-        bare &&
-        (!!document.querySelector('.town-menu button.primary .continue-where') ||
-          !!document.querySelector('.town3d-hits button')) &&
-        [10, 9].includes(document.querySelectorAll('.town-menu .camp-list button, .town3d-hits button').length)
-      );
+      return bare && document.querySelectorAll('.town3d-hits button').length === 9;
     },
   },
   {
@@ -140,6 +133,13 @@ try {
       // the screen is built under the loading cover (src/client/loading.ts), which holds the keys until it leaves
       await page.waitForSelector('.loading-cover', { state: 'detached', timeout: TIMEOUT });
       if (!(await page.evaluate(p.check))) errors.push('screen incomplete');
+      // the interface is only 3D (Nov 18): the game's page stays, never the plain warning of no WebGL (no3d.ts)
+      if (
+        !(await page.evaluate(
+          () => !!document.querySelector('#app') && !document.querySelector('body > p[role=alert]'),
+        ))
+      )
+        errors.push('no #app, or the warning that WebGL is missing');
       // models and textures keep loading after the first screen: wait for them so a missing asset still shows up
       await page.waitForLoadState('networkidle', { timeout: TIMEOUT });
     } catch (e) {
