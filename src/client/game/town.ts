@@ -19,7 +19,6 @@ import { t } from '../i18n.ts';
 import { button, el, icon, tabbed, UI_ICON } from '../icons.ts';
 import { liveText, padSeen } from '../key-hints.ts';
 import { type KeyAction, keyAction, pageKeeps, type ScreenDir } from '../keyboard.ts';
-import { PIXEL_KEY, parsePixel } from '../pixel-settings.ts';
 import { type Cover, whenReady } from '../ready-gate.ts';
 import { BattleScene } from '../scene.ts';
 import { setTrack, sfx } from '../sound.ts';
@@ -324,10 +323,9 @@ export async function bootTown(host: HTMLElement, cover: Cover) {
   const sc = townScenario();
   const state = townState(sc);
   castParty(state, group());
-  const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   // every class's model loads, so a recruit or a class change in town finds theirs
   const models = [...JOBS, ...TOWNSFOLK.map((f) => f.def)];
-  await whenReady(cover, [BattleScene.create(host, sc.grid, state, pixel, models), loadTownSkin()], ([scene, skin]) => {
+  await whenReady(cover, [BattleScene.create(host, sc.grid, state, models), loadTownSkin()], ([scene, skin]) => {
     new Town(scene, sc.grid, state, host, skin);
     homeScreen();
   });

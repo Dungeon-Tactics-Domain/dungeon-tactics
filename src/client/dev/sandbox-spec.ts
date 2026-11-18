@@ -83,13 +83,11 @@ export interface SceneSpec {
   cursor?: Pos;
   camera?: CameraSpec;
   hide?: Hidden[];
-  pixel?: 0 | 2 | 3 | 4;
   daylight?: number; // 0 night to 1 day (the light the Until Dawn mode uses)
   steps?: Step[]; // played in order by __sandbox.play (the CLI plays them after the scene settles)
   loop?: boolean; // bench: the page plays the steps by itself, then rewinds the scene and plays them again, forever
   timing?: Partial<Record<keyof typeof TIMING, number>>; // bench: TIMING values for this page only
   speed?: number; // bench: battle clock rate, 0.25 is slow motion
-  uiPixel?: boolean; // the 3D pieces through the pixel filter (`pixel` is the scene's)
   layout?: LayoutMode; // edges or frame (ui3d/layout.ts), as ?layout= in the address
   marks?: MarkStyle; // how the board's marks are drawn (mark-style.ts), as ?marks= in the address
   page?: number; // with screen "abilities": the ability sheet's page, 1 to 3
@@ -111,13 +109,11 @@ const KEYS = [
   'cursor',
   'camera',
   'hide',
-  'pixel',
   'daylight',
   'steps',
   'loop',
   'timing',
   'speed',
-  'uiPixel',
   'layout',
   'marks',
   'page',
@@ -227,7 +223,6 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   }
   if (r.hide !== undefined && !(Array.isArray(r.hide) && r.hide.every((h) => HIDDEN.has(h))))
     p.push(`hide entries must be among ${[...HIDDEN].join(', ')}`);
-  if (r.pixel !== undefined && ![0, 2, 3, 4].includes(r.pixel as number)) p.push('pixel must be 0, 2, 3 or 4');
   if (r.daylight !== undefined && !(typeof r.daylight === 'number' && r.daylight >= 0 && r.daylight <= 1))
     p.push('daylight must be between 0 and 1');
   if (r.steps !== undefined) {
@@ -247,7 +242,6 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   }
   if (r.speed !== undefined && !(typeof r.speed === 'number' && r.speed > 0 && r.speed <= 4))
     p.push('speed must be above 0, up to 4 (pause with __sandbox.pause)');
-  if (r.uiPixel !== undefined && typeof r.uiPixel !== 'boolean') p.push('uiPixel must be true or false');
   if (r.layout !== undefined && !LAYOUT_MODES.includes(r.layout as LayoutMode))
     p.push(`layout must be one of ${LAYOUT_MODES.join(', ')}`);
   if (r.marks !== undefined && !MARK_STYLES.includes(r.marks as MarkStyle))

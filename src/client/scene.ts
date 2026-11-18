@@ -1,4 +1,4 @@
-// Three.js battle scene: the renderer with RenderPixelatedPass (the spec's SNES pixel art), the lights, the frame loop and
+// Three.js battle scene: the renderer (smooth 3D; the pixel art pass left on Nov 18), the lights, the frame loop and
 // the public API the game and the HUD use. It only draws: it knows no rules, it receives state, highlights and events.
 // The parts live in scene/: board (terrain and pieces), marks (tile marks and cursor), units (characters and events),
 // camera (orbit and action camera), space (tile to world) and timeline (the battle clock).
@@ -7,8 +7,6 @@ import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import type { Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import type { Ambience } from './ambience.ts';
@@ -16,7 +14,6 @@ import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
 import { el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { no3d } from './no3d.ts';
-import type { PixelSettings } from './pixel-settings.ts';
 import { Board } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
 import { ChargeLines } from './scene/charge-lines.ts';
@@ -24,7 +21,6 @@ import { CursorNote } from './scene/float-numbers.ts';
 import { loadBattleAssets } from './scene/load.ts';
 import { Marks } from './scene/marks.ts';
 import { PerfCounter } from './scene/perf.ts';
-import { applyPixel, EDGES, PALETTE_SHADER } from './scene/post.ts';
 import { squareUnder, TileSpace } from './scene/space.ts';
 import { Timeline } from './scene/timeline.ts';
 import { Units } from './scene/units.ts';
@@ -37,10 +33,6 @@ export class BattleScene {
   private readonly cam: CameraRig;
   private readonly camera: THREE.OrthographicCamera;
   private readonly composer = new EffectComposer(this.renderer);
-  private readonly renderPass: RenderPass; // no pixel art
-  private readonly pixelPass: RenderPixelatedPass;
-  private readonly palettePass = new ShaderPass(PALETTE_SHADER);
-  private pixel: PixelSettings;
   private readonly board: Board;
   private marks: Marks; // rebuilt on a change of mark style (restyle)
   private chargeLines: ChargeLines;
@@ -61,16 +53,14 @@ export class BattleScene {
     private readonly grid: Grid,
     models: Map<string, GLTF>,
     pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>,
-    pixel: PixelSettings,
     lookPieces: Map<string, THREE.Object3D>,
     packClips: THREE.AnimationClip[],
     terrainTex: TerrainTextures | null = null,
   ) {
-    this.pixel = pixel;
     this.space = new TileSpace(grid);
     this.renderer.shadowMap.enabled = true;
     this.renderer.info.autoReset = false; // zeroed by hand at the start of each frame (performance counter)
-    // pixel art draws the scene twice per frame (color and normals); the shadow only needs the first (requested in frame)
+    // the shadow is drawn once per frame, requested in frame
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.domElement.className = 'board';
     // the map's context lost: the warning, as the layer's; not a disposed scene's, which the browser may drop for room
@@ -81,11 +71,11 @@ export class BattleScene {
     this.cam = new CameraRig(host, this.renderer.domElement, this.space, (ms, step) => this.time.animate(ms, step));
     this.camera = this.cam.camera;
     this.note = new CursorNote(this.camera, this.renderer.domElement, () => this.marks.cursorAt());
-    this.renderPass = new RenderPass(this.scene, this.camera);
-    this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
-    // the palette comes after the sRGB output; it toggles without rebuilding the chain
-    for (const pass of [this.renderPass, this.pixelPass, new OutputPass(), this.palettePass])
-      this.composer.addPass(pass);
+    for (const pass of [new RenderPass(this.scene, this.camera), new OutputPass()]) this.composer.addPass(pass);
+    // screen sharpness up to 2x: a 3x phone draws at 2x, where the difference does not show and the phone is grateful
+    const ratio = Math.min(devicePixelRatio, 2);
+    this.renderer.setPixelRatio(ratio);
+    this.composer.setPixelRatio(ratio);
     this.scene.background = new THREE.Color('#1b1626');
     this.scene.add(this.sky);
     const sun = this.sun;
@@ -108,21 +98,15 @@ export class BattleScene {
       this.renderer.domElement,
     );
     addEventListener('resize', this.onResize);
-    this.setPixel(pixel);
+    this.resize();
     this.renderer.setAnimationLoop(() => this.frame());
   }
 
   // `all`: sheets for the whole scenario, not just the ones alive in the save (Nov 13, review): without this, reopening a save where a model
   // had already died and pressing "Play again" brought the unit back as the Beacon crystal
-  static async create(
-    host: HTMLElement,
-    grid: Grid,
-    state: BattleState,
-    pixel: PixelSettings,
-    all: string[] = [],
-  ): Promise<BattleScene> {
+  static async create(host: HTMLElement, grid: Grid, state: BattleState, all: string[] = []): Promise<BattleScene> {
     const a = await loadBattleAssets(grid, state, all);
-    const s = new BattleScene(host, grid, a.models, a.pieces, pixel, a.looks, a.pack, a.terrainTex);
+    const s = new BattleScene(host, grid, a.models, a.pieces, a.looks, a.pack, a.terrainTex);
     s.ambience = a.ambience.mount(s.scene);
     s.sync(state);
     return s;
@@ -309,13 +293,6 @@ export class BattleScene {
     this.resize();
   }
 
-  // Applies the pixel art options right away, without reloading the page
-  setPixel(p: PixelSettings) {
-    this.pixel = p;
-    applyPixel(p, this.renderer, this.composer, this.renderPass, this.pixelPass, this.palettePass);
-    this.resize();
-  }
-
   setInsets(top: number, bottom: number) {
     if (this.cam.setInsets(top, bottom)) this.resize();
   }
@@ -365,7 +342,7 @@ export class BattleScene {
     this.time.tick(dt * 1000 * fast);
     this.cam.update(dt);
     this.marks.update(dt);
-    this.cam.place(this.pixel, this.units.shake(this.time.t), this.time.t);
+    this.cam.place(this.units.shake(this.time.t), this.time.t);
     // the note follows the sliding cursor and the camera every frame, like the menu beside the unit
     this.note.follow();
     if (this.board.hasTrees)

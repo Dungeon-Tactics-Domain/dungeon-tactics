@@ -10,7 +10,6 @@ import { button, el } from '../icons.ts';
 import { keysShown } from '../key-hints.ts';
 import { looks3d } from '../looks3d.ts';
 import { type Option, optionRow } from '../option-row.ts';
-import type { PixelSettings } from '../pixel-settings.ts';
 import { store } from '../store.ts';
 import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import { goHome, homeLabel } from './crawl.ts';
@@ -22,8 +21,6 @@ export interface OptionsContext {
   room: boolean; // an expedition room: leaving it loses the expedition (crawl.ts leftRoom)
   scenario: Scenario;
   busy: boolean; // animation or enemy turn running: restart is disabled
-  pixel: () => PixelSettings; // the current settings, read on every change
-  setPixel: (p: PixelSettings) => void;
   relayout: () => void; // the interface layout changed: what is not laid out by CSS fits again
   restart: () => void;
 }

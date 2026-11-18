@@ -18,14 +18,14 @@ Nov 13, Fernando's request: "prettier water… transparent… with water physics
 - The water reacts to the characters by itself, through their position every frame (`Water.update`, called every frame through `Board.update`): entering splashes by the speed on the ground (jump ~2.2 m/s, push ~3.8: the push splashes more; sync and undo, which place the character in one frame, do not splash), walking leaves a wake, standing still emits rings and gets a foam collar.
 - Since the night of Nov 13 (Fernando's request: "truly volumetric water, with physics") it is real physics: `WaveField` (`water-field.ts`, pure, tested in `tests/water-field.test.ts`) is an 8x8-cell-per-tile height field with a damped wave equation on the CPU, in fixed steps of 1/60 s of the battle clock. The wave reflects off the shore and the step, the river current (`River` in `terrain-outer.ts`) drags the field and the drawing, and the field sleeps when it calms.
 - The field goes up to the GPU in an 8-bit texture and displaces the vertices of a single subdivided mesh (8x8 per tile; neighbouring tiles at the same height become one continuous surface). Colour in 3 bands by depth (shallow transparent, deep dark); a water step becomes an arched waterfall and the map edge shows the cut of the volume.
-- Touch is an invisible plane per tile (`pickTiles`). In the pixel art normals pass the mesh stays flat with an up normal (the displacement and the wave lighting exist only in the colour shader), so the waves get no outline. The water comes before the other transparents (`renderOrder -1`), so marks, path, cursor and team ring stay on top.
+- Touch is an invisible plane per tile (`pickTiles`). The water comes before the other transparents (`renderOrder -1`), so marks, path, cursor and team ring stay on top.
 
 ## Board surroundings
 
 Nov 13, Fernando's request: "more realistic scenery… fog, lighting, godrays".
 
 - `ambience.ts` (the moods are in `ambience-moods.ts`, the air effects in `ambience-effects.ts`), one mood per map (`MOODS`: forest, field, crypt, frost and, for the crawl dungeon, cave; the map comes from the `Grid`). Ground that continues past the edge, models in rings, fog by distance from the edge (only on the surroundings' materials: the board stays sharp), low mist, light rays, torches and particles, on the battle clock.
-- Nothing goes past `LIMIT` (it covers no tile or character at any rotation). A transparent effect does not draw in the pixel art normals pass (`skipNormalPass`).
+- Nothing goes past `LIMIT` (it covers no tile or character at any rotation).
 - A mood may darken the scene's sky and sun and change the sun's position (`MOODS.*.light`, today only Ash Wood: low light from the side), which changes the board's light too; it applies on top of the map's light.
 - The scene only calls `loadAmbience`/`mount`, `update`, `setDaylight` and `dispose`.
 
@@ -47,7 +47,7 @@ Fernando's request, Nov 12: "more responsive and enjoyable to play". On Nov 13 h
 Nov 13, Fernando's request: "more diagonal tiles… it doesn't need to be all straight" and "bigger trees… some can take up more than 1 tile". All drawing in `scene/board.ts` (the climb in `scene/space.ts`).
 
 - **Ramp** (`Tile.ramp`, data in `src/content/maps/`): `slope`/`surfaceY` (`TileSpace` in `scene/space.ts`) are the single calculation of the climb; the tile top, the character (`world`), the marks, the cursor (`lay`) and the character's ring and arrow (`tiltGround`) lie on it. Walking to/from a ramp follows the ground (`walkY`) at the flat step's pace; going up from the ramp to the tile above is still a jump (the rule measures by standing height, and the footstep sound counts on that). Dungeon floor (`LOOK.stairs`) draws the ramp as stairs (`buildStairs`), sunk 1 step so nothing disappears behind the steps.
-- **Trees** (`TreeCrowns` in `scene/tree-crowns.ts`): bigger than the tile (`TREE_SIZE`); neighbouring forest tiles at the same height become one tree (2x2, then 2x1). The canopy has a cutout (`cutMaterial`): the part in front of a character, the cursor or a marked tile disappears, with a checkerboard edge. The tree does not accept the pixel art normals material (`allowOverride = false`) and returns its own normal in the normals pass, otherwise the outline of the cut canopy showed up over the character.
+- **Trees** (`TreeCrowns` in `scene/tree-crowns.ts`): bigger than the tile (`TREE_SIZE`); neighbouring forest tiles at the same height become one tree (2x2, then 2x1). The canopy has a cutout (`cutMaterial`): the part in front of a character, the cursor or a marked tile disappears, with a checkerboard edge.
 - **Painted pieces** (Nov 13, Fernando put this front on "model the maps and objects" in the painted style he chose): on the open maps, trees (`trees.ts`) and objects (`props.ts`: crates, barrels, rocks, bottles, sacks, bridge debris and the remains beside corpses) are assembled by code and take the place of the KayKit pieces by the same name (`swapTrees`, `swapProps`); the crypts stay with KayKit.
   - A single material (`painted.ts`): paint colour per vertex in tone masses (`ramp`, with a short step) and the neutral `tex/paint.jpg` ink on top; one mesh per piece. Base pieces: `tube` (trunk, branch, root, barrel), `lump` (canopy tuft, rock, sack), `slab` (plank).
   - Convention: y = 0 is the ground and what goes below (trunk skirt, root) enters the earth; `userData.box` is the box above ground, the one that counts for measuring (`boxOf`), `userData.foot` the foot radius (the scene does not let it go past the flat core of the tile, 0.4) and `userData.tall` lets the pine go past the `TREE_SIZE` ceiling.
@@ -82,8 +82,7 @@ page. No automatic fallback: the player picks. A change applies at once (`Battle
 - **Pedra:** pieces of stone and metal. A chiselled stone curb round each tile (the terrain's own `tex/cliff.jpg` under
   a normal map drawn by code) with a glossy inlay, and metal rings, cursor and lines that reflect a small sky drawn by
   code. Rings and cursor cast shadows; the tile curbs only receive them (casting cost two more draw calls a tile).
-- **Neon:** tubes of light with a hot core and an additive halo round them (no bloom pass: it would hit the whole frame
-  and the pixel art).
+- **Neon:** tubes of light with a hot core and an additive halo round them (no bloom pass: it would hit the whole frame).
 - **How they are built** (`scene/mark-kit.ts`): a profile swept along a path (`sweep`, `piece`), `MeshStandardMaterial`
   under the scene's sun, sky and shadow map (`litPaint`), kept in the transparent queue like the flat marks. The
   patterns of `MARK` stay in every style as the glass's drawing and relief (stripes, cross, full), since colour is never
@@ -95,8 +94,7 @@ page. No automatic fallback: the player picks. A change applies at once (`Battle
 - **Cost, measured on Nov 17** in Edge at 1920x1080 on Ash Wood's move screen (`bench/marks-*.json`, 148 marked cells, which is 37 whole tiles, counted from the draw calls;
   plain 3D, a 72 Hz monitor, the machine shared with other work): the median frame was 13.9 ms in all four, the
   monitor's own rate, so the styles could not be told apart by frame time there. Draw calls: Simple 438, Light 586,
-  Stone 595, Neon 743; triangles 612k, 639k, 663k, 709k. Not measured: a phone or tablet, and pixel art (which draws
-  the scene twice a frame). Light is the default on that: same frame time as the flat marks, the fewest extra calls.
+  Stone 595, Neon 743; triangles 612k, 639k, 663k, 709k. Not measured: a phone or tablet. Light is the default on that: same frame time as the flat marks, the fewest extra calls.
 - **Not done:** the town's debug grid and the charge aura stay flat; no textures were downloaded.
 
 ## Dialogue box and music

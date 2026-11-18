@@ -121,10 +121,6 @@ export class TreeCrowns {
     for (const [name, at] of batches) {
       for (const inst of this.board.instanced(prepare(pieceOf(name).clone()), at)) {
         inst.material = this.cutMaterial(inst.material as THREE.MeshStandardMaterial);
-        // the pixel art normal pass swaps everyone's material; the tree uses its own, with the same cutout, and only
-        // returns the normal (without this the outline of the cut crown showed up over the unit)
-        inst.onBeforeRender = (_r, scene) =>
-          void (this.cuts.normals.value = (scene as THREE.Scene).overrideMaterial ? 1 : 0);
         this.has = true;
       }
     }
@@ -132,11 +128,10 @@ export class TreeCrowns {
 
   // Crown cutout: discards the piece of the tree that is in front (closer to the camera) of a protected point and
   // within `w` of it on screen; the hole's edge comes out checkered, in the 16-bit way. Points in camera coordinates,
-  // updated every frame (updateCuts). With `cutNormals`, it returns the normal like pixel art's MeshNormalMaterial.
+  // updated every frame (updateCuts).
   private readonly cuts = {
     points: { value: Array.from({ length: CUT_MAX }, () => new THREE.Vector4()) },
     count: { value: 0 },
-    normals: { value: 0 },
   };
   private cutMaterial(src: THREE.MeshStandardMaterial) {
     const m = src.clone();
@@ -146,13 +141,9 @@ export class TreeCrowns {
       Object.assign(s.uniforms, {
         cutPoints: this.cuts.points,
         cutCount: this.cuts.count,
-        cutNormals: this.cuts.normals,
       });
       s.fragmentShader = s.fragmentShader
-        .replace(
-          'void main() {',
-          `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nuniform float cutNormals;\nvoid main() {`,
-        )
+        .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nvoid main() {`)
         .replace(
           '#include <clipping_planes_fragment>',
           `#include <clipping_planes_fragment>
@@ -163,10 +154,6 @@ export class TreeCrowns {
             float d = distance(viewPos.xy, c.xy);
             if (viewPos.z > c.z + 0.3 && d < c.w && (d < c.w * 0.7 || mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0)) discard;
           }`,
-        )
-        .replace(
-          '#include <dithering_fragment>',
-          '#include <dithering_fragment>\n  if (cutNormals > 0.5) gl_FragColor = vec4(normalize(normal) * 0.5 + 0.5, 1.0);',
         );
     };
     return m;

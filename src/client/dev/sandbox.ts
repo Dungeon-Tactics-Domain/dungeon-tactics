@@ -11,7 +11,6 @@ import { abilitiesOf, type Screen, startScreen } from '../command.ts';
 import { freshUi, hoverTile, selectMode, type Ui } from '../interaction.ts';
 import type { Game } from '../main.ts';
 import { showMarkStyle } from '../mark-style.ts';
-import { defaultPixel } from '../pixel-settings.ts';
 import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
 import { bench, TIMING } from '../timing.ts';
@@ -254,7 +253,6 @@ export function install(game: Game, scene: BattleScene) {
       hideHtml(style, s.hide); // the HTML still on the page, until it is deleted
       for (const [, redo] of marked) redo();
     }
-    if (s.pixel !== undefined) scene.setPixel({ ...defaultPixel(false), size: s.pixel });
     if (s.daylight !== undefined) scene.setDaylight(s.daylight);
     return p;
   }

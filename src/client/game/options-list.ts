@@ -7,7 +7,6 @@ import { glyphsOption } from '../key-hints.ts';
 import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
 import { type Option, percent, pick } from '../option-row.ts';
-import type { PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
@@ -125,8 +124,8 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Imagem', 'Display'),
     help: t(
-      'O visual da interface, as marcas do mapa, o estilo de pixel e a câmera.',
-      'The look of the interface, the marks on the map, the pixel style and the camera.',
+      'O visual da interface, as marcas do mapa e a câmera.',
+      'The look of the interface, the marks on the map and the camera.',
     ),
     rows: [
       ...fullscreenOption(),
@@ -162,44 +161,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         },
       ),
       marksOption(), // how the marks on the board are drawn (Nov 17, Fernando; options-marks.ts)
-      pick(
-        t('Tamanho do pixel', 'Pixel size'),
-        t(
-          'Desenha a batalha em pixels maiores, como um jogo antigo.',
-          'Draws the battle in bigger pixels, like an old game.',
-        ),
-        [
-          [0, t('Desligado', 'Off')],
-          [2, '2 px'],
-          [3, '3 px'],
-          [4, '4 px'],
-        ] as [PixelSize, string][],
-        () => o.pixel().size,
-        (size) => o.setPixel({ ...o.pixel(), size }),
-      ),
-      onOff(
-        t('Contorno', 'Outline'),
-        t('Linha escura em volta dos personagens e do terreno.', 'A dark line around the characters and the terrain.'),
-        () => o.pixel().outline,
-        (outline) => o.setPixel({ ...o.pixel(), outline }),
-      ),
-      onOff(
-        t('Paleta reduzida (16 bits)', 'Reduced palette (16-bit)'),
-        t('Menos cores na tela, como nos consoles de 16 bits.', 'Fewer colours on screen, like the 16-bit consoles.'),
-        () => o.pixel().palette,
-        (palette) => o.setPixel({ ...o.pixel(), palette }),
-        true,
-      ),
-      onOff(
-        t('Câmera presa à grade de pixels', 'Camera locked to the pixel grid'),
-        t(
-          'A câmera anda de pixel em pixel, sem tremer a imagem ao deslizar.',
-          'The camera moves pixel by pixel, so the picture does not shimmer as it slides.',
-        ),
-        () => o.pixel().snap,
-        (snap) => o.setPixel({ ...o.pixel(), snap }),
-        true,
-      ),
       // Fernando's grill of Nov 15: the last enemy's or the last hero's death in slow motion with a close-up (narrowed Nov 16), this turns it off
       onOff(
         t('Câmera lenta nas mortes', 'Slow motion on deaths'),

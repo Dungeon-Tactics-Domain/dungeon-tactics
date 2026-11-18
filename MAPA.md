@@ -98,7 +98,6 @@ parseGrid and withRamps (grid.ts).
 - `src/client/glyphs.ts` — the key hints' one table (action, key, pad button), the controller's family by its id (familyOf) and what the hints show by the Options and the input last used (shownFor, capsOf, hintLine); pure.
 - `src/client/glyph-art.ts` — a key cap or a pad button drawn on a canvas in the game's style (capCanvas), from the proportions and colours of glyph-art.json.
 - `src/client/key-hints.ts` — the key hints' live state (dt:glyphs, the input last used, padSeen) and the HTML hint that redraws itself (hint, live, liveText).
-- `src/client/pixel-settings.ts` — pixel art options (dt:pixel) and their parser.
 - `src/client/markers.ts` — unit heights and marker heights above them (ring, bar, cursor) and the model of each sheet.
 - `src/client/water-levels.ts` — water surface and wading heights for drawing.
 - `src/client/away.ts` — the game left in the background is paused: the first frame back drops the time away (awayFactor).
@@ -120,12 +119,11 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ui3d/field-dom.ts` — 3D kit: the real unseen control under each drawn field (fieldEls, syncField, placeField; field.css), the mouse's cursor (hoverCursor) and a form's file out and in (saveFile, openFile).
 - `src/client/ui3d/face.ts` — a painted face (a frame of the face sheet, or the portrait's top) as a quad on the 3D layer, grey for the fallen (faceMesh).
 - `src/client/hud-skin.ts` — loadSkin() and loadTownSkin(): fetch the 3D pieces of the battle and of the town, each its own chunk, behind the loading cover.
-- `src/client/ui3d/layer.ts` — Ui3dLayer: the one transparent WebGL canvas over the HUD every 3D screen draws on (Ui3dScreen), on the battle clock, with the pixel filter and the F3 cost.
+- `src/client/ui3d/layer.ts` — Ui3dLayer: the one transparent WebGL canvas over the HUD every 3D screen draws on (Ui3dScreen), on the battle clock, with the F3 cost.
 - `src/client/ui3d/panel.ts` — 3D kit: the parchment panel and inset band shaders, the theme (--ui3d-* tokens) and the quad helper.
 - `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText), the same for a drawing made elsewhere (imageMesh); a line's width and line count with no HTML (textWidth, lineCount); pure wrapLines.
 - `src/client/ui3d/caps.ts` — 3D kit: an action's keys or pad buttons as quads showing glyph-art.ts' drawing (capMeshes, capRun).
 - `src/client/ui3d/icons.ts` — 3D kit: low-poly parts merged into one tinted geometry, the shared geometry cache and the icon shader.
-- `src/client/ui3d/pixel.ts` — 3D kit: the pixel filter (block size and the shader that reads the small target); pure.
 - `src/client/ui3d/spring.ts` — 3D kit: damped spring, ease and the page ring step; pure.
 - `src/client/menu3d/menu3d.ts` — Menu3d: the command menu in 3D, on the reference's places, with its own transparent buttons.
 - `src/client/menu3d/menu-view.ts` — what the 3D menu shows (rows, sheet pages, icon of each ability) and what changed between two draws; pure.
@@ -192,7 +190,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), drawn by the 3D look (window3d/note3d.ts).
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer, and the screens that take their own window (Options, title, Status, speech box...); types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
-- `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
+- `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, fast battle, Options).
 - `src/client/tool-rows.ts` — the corner menu's rows (tool, glyph, name, key, switch) for the HTML menu and the 3D one; pure.
 - `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) , drawn by the 3D look (window3d/status3d.ts).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
@@ -212,7 +210,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — 3D drawing (Three.js) and sound
 
-- `src/client/scene.ts` — BattleScene: renderer with the pixel pass, lights, frame loop and the scene's public API.
+- `src/client/scene.ts` — BattleScene: renderer (smooth 3D), lights, frame loop and the scene's public API.
 - `src/client/three-util.ts` — small shared Three helpers: seeded draws, noise, grid triangles and KayKit palette textures without mipmaps.
 - `src/client/terrain.ts` — smooth painted terrain mesh with its paint per look and textures, and the invisible tiles the pointer picks.
 - `src/client/terrain-outer.ts` — heights of the extension ring around the map and the river that continues off it, with its mesh.
@@ -230,7 +228,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ambience-moods.ts` — the surroundings' moods (forest, field, crypt, frost, cave), the map each goes with and the URL switches.
 - `src/client/ambience-effects.ts` — AirEffects: torch and crystal glows, low mist, light rays and particles.
 - `src/client/ambience-crypt.ts` — the crypt surroundings: walls, torches, lit corner posts and crystals.
-- `src/client/ambience-fog.ts` — the surroundings' fog shader pieces, its material and the skip for the pixel normal pass.
+- `src/client/ambience-fog.ts` — the surroundings' fog shader pieces and its material.
 - `src/client/fx.ts` — gesture clip and effect per ability (playFx on impact, chargeAura while charging).
 - `src/client/sound.ts` — music playback, effects, fanfares and blips in WebAudio, and sound settings (dt:sound).
 - `src/client/music.ts` — track list, each track's file and gain.
@@ -276,7 +274,6 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.
 - `src/client/scene/timeline.ts` — Timeline: the battle clock behind every animate and wait (no setTimeout).
 - `src/client/scene/load.ts` — what a battle downloads before it draws: models, painted pieces, animation pack and surroundings.
-- `src/client/scene/post.ts` — the pixel art chain: outline strengths, reduced palette and the options that switch them.
 - `src/client/scene/perf.ts` — PerfCounter: frames and average time between two readings of the performance counter.
 
 ## src/client/dev — localhost only

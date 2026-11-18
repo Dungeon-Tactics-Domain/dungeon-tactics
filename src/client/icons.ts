@@ -58,7 +58,6 @@ export const UI_ICON = {
   undo: 'anticlockwise-rotation',
   menu: 'cog',
   recenter: 'on-target',
-  pixel: 'tv',
   talk: 'talk',
   party: 'character',
   shop: 'shop',

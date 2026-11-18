@@ -30,9 +30,6 @@ export interface HudSkin {
 export async function loadSkin(from: object = {}): Promise<HudSkin> {
   const spec = from as Record<string, unknown>;
   if (spec.layout && param('layout') === null) showLayout(parseLayout(spec.layout));
-  // ?pixel=1 (or the spec's uiPixel): the 3D pieces through the pixel filter
-  const p = param('pixel');
-  const pixel = p !== null ? p !== '0' && p !== 'false' : spec.uiPixel === true;
   const [
     { Menu3d },
     { Turn3d },
@@ -72,7 +69,7 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     layer: (root, lost) => {
       // no WebGL here (old device, blocked) or the context lost: the warning, never the HTML under the layer
       try {
-        return new Ui3dLayer(root, pixel, () => {
+        return new Ui3dLayer(root, () => {
           lost();
           no3d();
         });
@@ -108,7 +105,7 @@ export async function loadLoading3d(root: HTMLElement, lost: () => void) {
     import('./flow3d/loading3d.ts'),
   ]);
   try {
-    return new Loading3d(new Ui3dLayer(root, false, lost));
+    return new Loading3d(new Ui3dLayer(root, lost));
   } catch {
     return undefined;
   }

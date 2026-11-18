@@ -14,7 +14,6 @@ export type KeyAction =
   | { k: 'undo' }
   | { k: 'wait' }
   | { k: 'rotate'; dir: 1 | -1 }
-  | { k: 'pixel' }
   | { k: 'zoom'; factor: number }
   | { k: 'recenter' }
   | { k: 'face' }
@@ -51,7 +50,6 @@ const SIMPLE: Record<string, KeyAction> = {
   f: { k: 'recenter' },
   h: { k: 'help' },
   '?': { k: 'help' },
-  v: { k: 'pixel' },
   // the page keys scroll the turn list, which since Nov 15 holds every unit (Fernando's decision)
   pageup: { k: 'turns', dir: -1 },
   pagedown: { k: 'turns', dir: 1 },
@@ -176,11 +174,6 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
     [['rotateLeft', 'rotateRight'], 'R · Shift+R', t('girar a câmera 45°', 'rotate the camera 45°')],
     [['zoom'], 'Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
     [['recenter'], '', t('ver o mapa inteiro', 'show the whole map')],
-    [
-      ['pixel'],
-      '',
-      t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)'),
-    ],
     [
       ['turns'],
       'PgUp · PgDn',

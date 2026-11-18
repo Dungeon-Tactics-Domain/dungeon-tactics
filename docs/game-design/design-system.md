@@ -210,7 +210,7 @@ Fernando, Nov 16: the pieces of the battle interface take the exact places of FF
 
 Each piece of the interface could take an HTML, CSS or 3D look by its own flag. Gone on Nov 18 (Fernando: the
 interface is only 3D): `hud-skin.ts` loads every 3D piece, and a piece is named only to hide it in the sandbox
-(`ui-pieces.ts`). `?pixel=1` (the spec's `uiPixel`) still draws the 3D pieces through the pixel filter.
+(`ui-pieces.ts`). The pixel filter (`?pixel=1`, the spec's `uiPixel`) left on Nov 18 with the pixel art.
 
 ### Marks on the board: four styles (Options, `?marks=`, Nov 17)
 
@@ -239,8 +239,7 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   every 3D screen draws on it. It breaks the `--glass*` rule on purpose: parchment and cards are opaque shader paint.
 - **The kit** (`src/client/ui3d/`): `panel.ts` (parchment panel and inset band: outline, bevel, shadow, grain, focus
   band), `text.ts` (a texture per distinct string, redrawn only when the words change), `icons.ts` (low-poly parts
-  merged into one geometry, shaded by a small toon shader), `pixel.ts` (the switchable pixel filter: the icons go to a
-  small target read block by block) and `spring.ts`. A new 3D screen is a thin `Ui3dScreen` built from these.
+  merged into one geometry, shaded by a small toon shader), and `spring.ts` (`pixel.ts`, the switchable pixel filter, left on Nov 18). A new 3D screen is a thin `Ui3dScreen` built from these.
 - **Tokens:** `--ui3d-paper`, `-paper-shade`, `-paper-lit`, `-paper-band`, `--ui3d-edge`, `--ui3d-ink`, `-ink-soft`,
   `-ink-off` and `--font-ui3d` in `:root`, read once by the layer (hex only). The turn cards keep their colours as
   shader constants measured on the reference (a debt).

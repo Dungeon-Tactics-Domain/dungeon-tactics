@@ -1,5 +1,4 @@
-// The fog of the board surroundings: the shader pieces, the Lambert material that carries them, and the switch that keeps
-// the air effects out of the pixel art normal pass.
+// The fog of the board surroundings: the shader pieces and the Lambert material that carries them.
 import * as THREE from 'three';
 import { nearestPixels } from './three-util.ts';
 
@@ -28,12 +27,6 @@ if (vAmbZ < 1.5) discard;
 ambF = max(ambF, 1.0 - smoothstep(1.5, 5.0, vAmbZ));
 gl_FragColor.rgb = mix(gl_FragColor.rgb, mix(ambLow, ambHigh, clamp(vAmbY, 0.0, 1.0)), ambF);
 #include <tonemapping_fragment>`;
-
-// Pixel art redraws the scene with the normal material (RenderPixelatedPass): light, fog and particles turned into solid
-// plates with outlines. In that pass they do not draw (onBeforeRender runs before each object is drawn).
-export const skipNormalPass = (o: THREE.Object3D) => {
-  o.onBeforeRender = (_r, scene, _c, geo) => geo.setDrawRange(0, scene.overrideMaterial ? 0 : Infinity);
-};
 
 // a surroundings model's material with the fog: `u` holds the fog uniforms (read when the shader compiles), `shade` the
 // mood's canopy shade, and `textures` collects the maps the surroundings release on dispose

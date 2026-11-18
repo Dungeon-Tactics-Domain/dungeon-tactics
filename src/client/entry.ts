@@ -10,7 +10,6 @@ import { el } from './icons.ts';
 import { loadingCover } from './loading.ts';
 import { looks3d } from './looks3d.ts';
 import { Game, LOCAL } from './main.ts';
-import { PIXEL_KEY, parsePixel } from './pixel-settings.ts';
 import { whenReady } from './ready-gate.ts';
 import { rotateNote } from './rotate-note.ts';
 import { BattleScene } from './scene.ts';
@@ -39,16 +38,15 @@ async function boot() {
   const battle = staged?.battle ?? (saved ? loaded : newBattle(scenario, run.room));
   // a room is saved from its first frame, so leaving it before any action still counts as leaving (crawl.ts leftRoom)
   if (run.room && !saved) store.set(run.saveKey, battle.save());
-  const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   // nothing of the interface before everything landed (Fernando, Nov 18: the HTML title and HUD showed first and
   // changed into the 3D ones; the title of Nov 16, opened before the models, left with that). The title opens after
   // the Game: the HUD's layer is there, so the 3D title takes its window as it opens
   const models = scenario.spawns.map((s) => s.def);
   await whenReady(
     cover,
-    [BattleScene.create(host, battle.grid, battle.state, pixel, models), loadSkin(staged?.spec)],
+    [BattleScene.create(host, battle.grid, battle.state, models), loadSkin(staged?.spec)],
     ([scene, skin]) => {
-      const game = new Game(battle, scene, host, pixel, run, skin);
+      const game = new Game(battle, scene, host, run, skin);
       sandbox?.install(game, scene);
       if (sel.title) titleScreen();
     },

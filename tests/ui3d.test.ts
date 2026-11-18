@@ -8,7 +8,6 @@ import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/m
 import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import { LIST_MIN, listFloor, matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
 import { setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
-import { pixelBlock } from '../src/client/ui3d/pixel.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
 import { wrapLines } from '../src/client/ui3d/text.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
@@ -73,13 +72,6 @@ describe('3D kit: motion', () => {
     expect(pageStep(2, 0, 3)).toBe(1);
     expect(pageStep(0, 2, 3)).toBe(-1);
     expect(pageStep(1, 1, 3)).toBe(0);
-  });
-
-  it('a 40 px icon becomes a 16 px sprite, and the blocks never vanish', () => {
-    expect(pixelBlock(1, 1)).toBe(3);
-    expect(pixelBlock(1, 2)).toBe(5);
-    expect(pixelBlock(0.6, 1)).toBe(2);
-    expect(pixelBlock(0.1, 1)).toBe(2);
   });
 
   it('text wraps at spaces, keeps paragraphs and never splits a word', () => {
@@ -438,7 +430,7 @@ describe('3D interface: bench scenes and boundaries', () => {
       import: 'default',
       eager: true,
     });
-    expect(Object.keys(scenes).length).toBe(19);
+    expect(Object.keys(scenes).length).toBe(17); // the two pixel filter scenes left with it (Nov 18)
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
   });
 
@@ -465,7 +457,6 @@ describe('3D interface: bench scenes and boundaries', () => {
   it('the pure parts stay free of Three.js and of the DOM', () => {
     const pure = [
       'ui3d/spring',
-      'ui3d/pixel',
       'ui3d/layout',
       'menu3d/menu-view',
       'menu3d/menu-layout',

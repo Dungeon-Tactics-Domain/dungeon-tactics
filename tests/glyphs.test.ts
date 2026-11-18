@@ -80,7 +80,6 @@ describe('the table: action, key, pad button', () => {
     face: [{ k: 'face' }],
     cycle: [{ k: 'cycle', dir: 1 }],
     recenter: [{ k: 'recenter' }],
-    pixel: [{ k: 'pixel' }],
     fps: [{ k: 'fps' }],
     turns: [
       { k: 'turns', dir: -1 },
@@ -120,7 +119,7 @@ describe('the table: action, key, pad button', () => {
   });
 
   it('the actions the pad has no button for hide with its icons', () => {
-    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'pixel', 'fps']);
+    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'fps']);
     for (const a of PADLESS) {
       expect(capsOf(a, 'xbox'), a).toBeNull();
       expect(capsOf(a, 'keyboard')?.length, a).toBeGreaterThan(0);
@@ -172,7 +171,7 @@ describe('the screens read the table', () => {
   });
   it("the corner menu's rows name actions of the table", () => {
     const keys = (shown: 'keyboard' | 'xbox') => toolRows().map((r) => r.key && keysText(r.key, shown));
-    expect(keys('keyboard')).toEqual(['Z', '⇧R', 'R', 'F', 'V', '', 'F3', 'H']);
-    expect(keys('xbox')).toEqual(['View', 'LB', 'RB', null, null, '', null, 'Menu']);
+    expect(keys('keyboard')).toEqual(['Z', '⇧R', 'R', 'F', '', 'F3', 'H']);
+    expect(keys('xbox')).toEqual(['View', 'LB', 'RB', null, '', null, 'Menu']);
   });
 });

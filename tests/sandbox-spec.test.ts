@@ -65,7 +65,6 @@ describe('parseSpec', () => {
       cursor: { x: 5, y: 3 },
       camera: { angle: 7, zoom: 1.5, focus: { x: 5, y: 5 }, action: { from: 'h-archer', to: { x: 5, y: 3 } } },
       hide: ['queue', 'marks'],
-      pixel: 3,
       daylight: 0.5,
     };
     expect(parseSpec(raw)).toEqual({ spec: raw, problems: [] });
@@ -81,7 +80,6 @@ describe('parseSpec', () => {
       screen: 'attack',
       camera: { angle: 8, zoom: 0, spin: true },
       hide: ['everything'],
-      pixel: 5,
       daylight: 2,
     });
     expect(spec).toEqual({});
@@ -97,7 +95,6 @@ describe('parseSpec', () => {
       'camera.angle must be 0-7',
       'camera.zoom must be > 0',
       expect.stringContaining('hide entries must be among'),
-      'pixel must be 0, 2, 3 or 4',
       'daylight must be between 0 and 1',
     ]);
   });
