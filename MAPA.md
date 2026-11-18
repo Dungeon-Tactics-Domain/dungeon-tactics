@@ -108,6 +108,7 @@ parseGrid and withRamps (grid.ts).
 ## src/client — DOM interface
 
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
+- `src/client/hud-queue.ts` — the HTML turn list under the 3D one: its title and a row per turn of the queue projection.
 - `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
 - `src/client/mark-style.ts` — how the board's marks are drawn: simples, luz, pedra or neon (dt:marks, ?marks=), and the listener the open battle redraws on.
 - `src/client/looks3d.ts` — the one place the client hands its windows to the 3D screens (`looks3d`): each screen fills its slot when built and empties it on dispose (`fill`); also the effects' types (`Effects`, `NumberMark`).
@@ -194,7 +195,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
 - `src/client/tool-rows.ts` — the corner menu's rows (tool, glyph, name, key, switch) for the HTML menu and the 3D one; pure.
-- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) , drawn by the 3D look (window3d/status3d.ts).
+- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts), drawn by the 3D look (window3d/status3d.ts); unitSheet and abilitySheet fill it.
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/spot-walk.ts` — nextSpot(): the nearest box in a direction, for windows whose arrows follow where things are on screen; pure.

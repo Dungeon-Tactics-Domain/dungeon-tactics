@@ -8,7 +8,6 @@ import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.t
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { battleInput } from './battle-input.ts';
-import { abilityDetail } from './battle-text.ts';
 import { beforeEvent } from './before-event.ts';
 import { abilitiesOf, type Screen, startScreen } from './command.ts';
 import { fpsCounter } from './fps.ts';
@@ -17,9 +16,9 @@ import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { finishRoom } from './game/room-end.ts';
 import { HeroTurn, type TurnHost } from './hero-turn.ts';
-import { BattleHud, eventLog, type HudActions, unitStatus } from './hud.ts';
+import { BattleHud, eventLog, type HudActions } from './hud.ts';
 import type { HudSkin } from './hud-skin.ts';
-import { abilityName, t, unitName } from './i18n.ts';
+import { t } from './i18n.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
 import { onMarkStyle } from './mark-style.ts';
@@ -27,7 +26,7 @@ import { reducedMotion } from './motion.ts';
 import { nextSize, PIXEL_KEY, type PixelSettings } from './pixel-settings.ts';
 import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
-import { statusWindow } from './status-window.ts';
+import { abilitySheet, unitSheet } from './status-window.ts';
 import { store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
@@ -272,15 +271,13 @@ export class Game implements TurnHost {
     const s = this.turn.screen;
     if (s.k !== 'abilities') return;
     const id = abilitiesOf(this.battle)[s.index];
-    if (id) statusWindow({ title: abilityName(id), rows: [], text: abilityDetail(id) });
+    if (id) abilitySheet(id);
   }
 
   status() {
     const s = this.battle.state;
     const id = unitAt(s, this.turn.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit
-    if (!id) return;
-    const u = s.units.find((x) => x.id === id)!;
-    statusWindow({ title: unitName(u.def), rows: unitStatus(s, id) });
+    if (id) unitSheet(s, id);
   }
 
   save() {

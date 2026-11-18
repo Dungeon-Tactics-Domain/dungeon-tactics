@@ -17,16 +17,16 @@ import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm, undoShown } from './hud-menus.ts';
-import { helpWidth, hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
+import { helpWidth, KEYS, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
+import { queueItems } from './hud-queue.ts';
 import type { HudSkin } from './hud-skin.ts';
 import { ToolsMenu } from './hud-tools.ts';
-import { abilityName, t, unitName } from './i18n.ts';
-import { abilityIcon, el, iconButton } from './icons.ts';
+import { t } from './i18n.ts';
+import { el, iconButton } from './icons.ts';
 import type { Highlights } from './interaction.ts';
 import type { Menu3d } from './menu3d/menu3d.ts';
 import { type Anchor, helpEnd, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
-import { isSurvival, turnsLeft } from './survival.ts';
 import type { Face } from './talk.ts';
 import { cursorInfo } from './tile-info.ts';
 import { anchorScroll, pageStep, queueRows } from './turn-list.ts';
@@ -36,7 +36,7 @@ import type { Ui3dLayer } from './ui3d/layer.ts';
 import { sheetBox } from './ui3d/layout.ts';
 
 // main.ts and game/town.ts read these through hud.ts
-export { eventLog, unitStatus } from './battle-text.ts';
+export { eventLog } from './battle-text.ts';
 export { hint, KEYS } from './hud-pieces.ts';
 
 export interface HudActions {
@@ -326,44 +326,8 @@ export class BattleHud {
 
   private renderQueue(b: Battle, aim: { ability: string; target: Pos } | null) {
     this.queued = b.over ? null : queueRows(b, aim);
-    const { rows, targets, at } = this.queued ?? { rows: [], targets: new Set<string>(), at: -1 };
-    // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
-    const left = isSurvival(b.state.scenario) ? turnsLeft(b.state) : null;
     this.queueScroll = this.queue.scrollTop;
-    this.queue.replaceChildren(
-      el(
-        'li',
-        { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined },
-        left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`),
-        hint('turns'),
-      ),
-      // a charge row: the caster's face, the ability's icon and name, and the ticks until it goes off
-      ...rows.map(({ unit, charge, ticks, round }, i) => {
-        const u = b.state.units.find((x) => x.id === unit)!;
-        const mark =
-          !charge && i > 0 && targets.has(unit) ? el('span', { class: 'queue-target' }, t('◎ alvo', '◎ target')) : null;
-        return el(
-          'li',
-          {
-            class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}`,
-          },
-          this.face(u),
-          charge ? abilityIcon(charge) : null,
-          el(
-            'span',
-            { class: 'queue-text' },
-            el(
-              'span',
-              { class: 'queue-n' },
-              charge ? t(`resolve em ${ticks}`, `resolves in ${ticks}`) : i === 0 ? t('AGORA', 'NOW') : String(i),
-              mark,
-            ),
-            el('span', { class: 'queue-name' }, charge ? abilityName(charge) : unitName(u.def)),
-          ),
-          ...queueEnd(u, !!charge, round),
-        );
-      }),
-    );
+    this.queue.replaceChildren(...queueItems(b, this.queued, (u) => this.face(u)));
   }
 
   private anchorQueue(b: Battle) {
