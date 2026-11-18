@@ -51,8 +51,9 @@ export function tileHeight(grid: Grid, p: Pos): number {
   return tile.depth === 1 ? standH(tile) : tile.h;
 }
 
-// `height`: false beside the 3D Height corner, which already shows the number in large (Fernando, Nov 18)
-export function tileInfo(grid: Grid, p: Pos, height = true): string {
+// The tile's three coordinates by name (Fernando, Nov 18: "X 16 · Y 20 · Z 1 · grama"): X and Y the cell, as every
+// Pos; Z its height, the same number as the Height corner (tileHeight)
+export function tileInfo(grid: Grid, p: Pos): string {
   const tile = tileAt(grid, p);
   const kind = tile.look ? (LOOK_NAME[tile.look]?.() ?? tile.look) : TERRAIN_NAME[tile.terrain]();
   // shallow and deep water share the same drawing: the tile text is what says which is which (found looking at the Crypt Heart)
@@ -69,24 +70,22 @@ export function tileInfo(grid: Grid, p: Pos, height = true): string {
           ` · spikes: −${COMBAT.SPIKE_DAMAGE} when ending a turn or pushed here`,
         )
       : '');
-  const h = tileHeight(grid, p);
-  const [pt, en] = height
-    ? [`altura ${h}${tile.ramp ? ' (rampa)' : ''} · `, `height ${h}${tile.ramp ? ' (slope)' : ''} · `]
-    : tile.ramp
-      ? ['rampa · ', 'slope · ']
-      : ['', ''];
-  return t(`Casa ${p.x},${p.y} · ${pt}${kind}${blocked}`, `Tile ${p.x},${p.y} · ${en}${kind}${blocked}`);
+  const at = `X ${p.x} · Y ${p.y} · Z ${tileHeight(grid, p)}`;
+  return t(
+    `${at}${tile.ramp ? ' (rampa)' : ''} · ${kind}${blocked}`,
+    `${at}${tile.ramp ? ' (slope)' : ''} · ${kind}${blocked}`,
+  );
 }
 
 // The tile line under the cursor. `size` > 1 (a token choosing where to stop): its whole square counts, because a charge hits
 // a token on any of its cells (combat.ts inArea over the footprint) and spikes hurt on any cell at the turn's end (battle.ts)
-export function cursorInfo(grid: Grid, state: BattleState, p: Pos, size = 1, height = true): string {
+export function cursorInfo(grid: Grid, state: BattleState, p: Pos, size = 1): string {
   const square = cellsOf(p, size).filter((c) => inBounds(grid, c));
   const danger = chargeDanger(grid, state);
   const hit = square.map((c) => danger.get(posKey(c))).find((a) => a);
   const spikes = !tileAt(grid, p).spikes && square.some((c) => tileAt(grid, c).spikes);
   return (
-    tileInfo(grid, p, height) +
+    tileInfo(grid, p) +
     (spikes
       ? t(
           ` · espinhos sob a unidade: −${COMBAT.SPIKE_DAMAGE} ao terminar a vez aqui`,

@@ -7,8 +7,9 @@ import type { Pos } from '../../shared/battle/types.ts';
 import { cancelStep, type Screen } from '../command.ts';
 import type { Act, Shown } from '../glyphs.ts';
 import { t } from '../i18n.ts';
+import type { HintsMode } from '../key-hints.ts';
 import { cursorInfo, tileHeight } from '../tile-info.ts';
-import { type Box, place, REGIONS, type Stage } from '../ui3d/layout.ts';
+import { type Box, place, REGIONS, type Stage, TABLET_SIDE } from '../ui3d/layout.ts';
 import { toolsFoot } from '../window3d/tools-layout.ts';
 
 // what the row is drawn for: the keys or a pad's family (glyphs.ts, key-hints.ts), or a finger, which gets no hints
@@ -51,16 +52,33 @@ export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device): H
   return { left, right: [...right, ...(s.k === 'abilities' ? [hint('info', t('Detalhes', 'Details'))] : camera)] };
 }
 
+// Who the foot's hints are drawn for (Options › Key and button hints, Fernando, Nov 18): Automatic follows the input
+// last used (a finger hides them, a key or a pad brings them back), Always draws the keys or the pad even for a finger,
+// Never hides them
+export const hintsDevice = (mode: HintsMode, finger: boolean, keys: Shown): Device =>
+  mode === 'never' || (mode === 'auto' && finger) ? 'touch' : keys;
+
+// The banner's line (Fernando, Nov 18: the teaching lines are the Tutorial option, off by default). Off, a hero's turn
+// keeps only the last action's summary; the enemy's turn, the battle playing and an ability's sheet are not teaching
+// and stay. The HUD's help line keeps the whole text for the screen reader
+export const bannerLine = (help: string, log: string | undefined, open: boolean, s: Screen, tutorial: boolean) =>
+  tutorial || !open || s.k === 'abilities' ? help : (log ?? '');
+
+// A phone (the page's shorter side under a tablet's) draws its banner at 70% of the size (Fernando, Nov 18: smaller
+// messages on the phone)
+export const PHONE_MESSAGE = 0.7;
+export const messageScale = (w: number, h: number) => (Math.min(w, h) < TABLET_SIDE ? PHONE_MESSAGE : 1);
+
 // The number of the Height corner: the tile under the cursor. null hides the corner: the battle is over, or the
 // abilities submenu is open (the reference's description sheet takes that corner)
 export const heightShown = (b: Battle, s: Screen, cursor: Pos): number | null =>
   b.over || s.k === 'abilities' ? null : tileHeight(b.grid, cursor);
 
 // The small line under the Height corner (Fernando, Nov 16): the same tile line the HTML corner shows (floor, slope,
-// shallow or deep water, spikes, a charge about to land), shown and hidden with the Height and without its number,
-// which the corner already shows (Nov 18). `size`: the square of a big unit choosing where to stop (HudView.hl.size)
+// shallow or deep water, spikes, a charge about to land), shown and hidden with the Height, with the tile's X, Y and Z
+// spelled out (Nov 18). `size`: the square of a big unit choosing where to stop (HudView.hl.size)
 export const tileLine = (b: Battle, s: Screen, cursor: Pos, size = 1): string =>
-  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size, false);
+  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
 
 // The Height corner on the page: its region, moved down under the corner buttons (menu, Back, Undo) where the page is
 // too small for both (a phone: it sat under the menu button and Undo; Fernando, Nov 18). `top`: the panels' margin

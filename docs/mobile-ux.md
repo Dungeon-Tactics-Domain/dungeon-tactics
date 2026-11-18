@@ -75,7 +75,9 @@ do not rearrange the layout only to reach that number.*
   not this control.
 - **The corner buttons and the Height** share the top right: the Height corner drops under the row of buttons where the
   page has no room for both (`heightBox`, `hints3d/hints-view.ts`; `toolsFoot`, `window3d/tools-layout.ts`). Under the
-  Height, the tile line leaves out the height the corner already shows.
+  Height, the tile line names the tile's X, Y and Z ("X 16 · Y 20 · Z 1 · grama"; Z is the corner's number). Neither
+  has a plate (Fernando, Nov 18): white text with a near-black outline and a drop shadow (`shadow` in `ui3d/text.ts`),
+  measured at 12.4:1 or more against its own outline over snow and over the crypt at 844×390, 1024×768 and 1280×720.
 - **The ☰ list says when it scrolls**: while rows wait under it, its foot reads "▼ Mais abaixo" in the room the layout
   keeps for it (`below`, `cue`, `tools-layout.ts`). The Pixel size row shows the size in use ("2 px", "desligado").
 - **No pointing glove for a finger**: the command menu's and the ☰ list's glove hide while a finger plays (the layer's
@@ -87,7 +89,18 @@ do not rearrange the layout only to reach that number.*
   (`menuLayout`, `menu3d/menu-layout.ts`). The menu is as tall as its rows, with no blank fifth row: four at the turn's
   start, five after a move with movement left (Move and "Desfazer movimento" both show; `menuRows`, `command.ts`), the
   fifth growing it upwards from the same foot.
-- No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included).
+- No key or pad hint shows on touch: touch is not a gamepad (`KEYS` test; the 3D corner menu's caps included). The
+  battle's foot of hints follows Options › Key and button hints (`dt:hints`, Fernando, Nov 18): Automatic (the default)
+  shows it only while a key or a pad is the input last used, never for a finger; Always and Never hold (`hintsDevice`,
+  `hints3d/hints-view.ts`). A pad pressed after a finger brings it back even with the same icons (`padSeen`).
+- **The teaching lines are a Tutorial, off by default** (Options › Jogo › Tutorial, `dt:tutorial`, Fernando, Nov 18):
+  off, the banner shows no instruction ("Ladino: o que fazer?") and no refusal reason ("Não cabe aqui…"), only the
+  last action's summary, the enemy's turn and an ability's sheet (`bannerLine`). A refused tile still shows its red
+  cross mark, and Confirm on it (key or pad) plays the cancel sound (`hero-turn.ts` `mapConfirm`); a tap on it makes
+  no sound yet. The HUD's unseen help line keeps the whole text for the screen
+  reader.
+- **Messages on a phone are smaller** (Fernando, Nov 18): the banner draws at 70% on a page whose shorter side is under
+  600 px (`messageScale`): 9.2 px text at 844×390 (13.2 px before), under section 1's floors, by his request.
 - Nothing lives only in hover.
 - **Fullscreen in reach without Options** (Fernando, Nov 18: a phone in the browser opened the game under Chrome's
   bar): on a touch device in the browser the title's main button is "Jogar em tela cheia" (`fullscreenOffer`,
@@ -96,6 +109,13 @@ do not rearrange the layout only to reach that number.*
   "Tela cheia" / "Sair da tela cheia" over the language button, and the battle's ☰ list has the same row before
   Options and help (at 844×390 it waits under "▼ Mais abaixo"). None of them where the browser has no Fullscreen API
   (an iPhone: the home screen is the way there, section 3).
+- **Fullscreen across screens** (Fernando, Nov 18, bug: the bar came back at each change of screen): every screen is its
+  own page (`location.search`: town, expedition map, room, title, language), and an unloading page leaves fullscreen
+  with no `fullscreenchange` (measured in headless Chrome). `keepFullscreen` (`fullscreen.ts`, called by `entry.ts`)
+  keeps the wish for the tab in `sessionStorage` and asks again on the new page's first tap or key; leaving on purpose
+  (Esc, back gesture, the switch) forgets it. Between the load and that gesture the bar shows: a browser grants
+  fullscreen only inside a gesture. Changing screens without a new page would need one boot for the title, town and
+  battle (entry.ts builds one per address): not done.
 
 ## 5. Gestures on the map
 

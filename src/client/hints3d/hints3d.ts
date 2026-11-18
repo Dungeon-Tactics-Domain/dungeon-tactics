@@ -3,13 +3,15 @@
 // when its option is (hud-skin.ts turns all three on; a test may leave one off):
 //   banner: the dark pill top centre with what to do now (the HUD's help line; an ability's name while it plays),
 //   springing in and out; height: "Height", the number of the tile under the cursor and the line under them, top right,
-//   with the tile's own line (floor, water, spikes, a charge landing) small on a dark box below;
+//   with the tile's own line (X, Y, Z, floor, water, spikes, a charge landing) small below, both with no plate, their
+//   letters outlined and shadowed (Fernando, Nov 18);
 //   hints: what each button does on this screen, at the foot, for the device last touched (hints-view.ts).
 // Each sits on its region of ui3d/layout.ts. The HTML it replaces stays in the HUD, unseen (style.css .hud.banner3d,
 // .height3d, .hints3d). It takes no input. Colours are the reference's, as constants here, until the look is styled.
 import { Group, Mesh, ShaderMaterial, Vector2, Vector4 } from 'three';
 import type { HudView } from '../hud.ts';
 import { t } from '../i18n.ts';
+import { hintsMode, onHelp, tutorialOn } from '../key-hints.ts';
 import { pieceHidden } from '../ui-pieces.ts';
 import { capMeshes } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -17,7 +19,19 @@ import { place, REGIONS } from '../ui3d/layout.ts';
 import { QUAD, QUAD_VERT } from '../ui3d/panel.ts';
 import { ease, land, settled, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
-import { type Device, type Hint, heightBox, heightShown, hintsFor, layRow, ROW, tileLine } from './hints-view.ts';
+import {
+  bannerLine,
+  type Device,
+  type Hint,
+  heightBox,
+  heightShown,
+  hintsDevice,
+  hintsFor,
+  layRow,
+  messageScale,
+  ROW,
+  tileLine,
+} from './hints-view.ts';
 
 export interface Parts {
   banner: boolean;
@@ -124,6 +138,7 @@ export class Hints3d implements Ui3dScreen {
   private num?: Quad;
   private last?: { v: HudView; open: boolean; help: string };
   private said: string | null = null;
+  private readonly unhelp = onHelp(() => this.draw()); // Options › Tutorial or Key and button hints changed
 
   constructor(
     private readonly layer: Ui3dLayer,
@@ -137,7 +152,7 @@ export class Hints3d implements Ui3dScreen {
   }
 
   private get device(): Device {
-    return this.layer.finger ? 'touch' : this.layer.keys;
+    return hintsDevice(hintsMode(), this.layer.finger, this.layer.keys);
   }
 
   // Called by the HUD with each turn screen; `open`: a hero's turn with nothing playing; `help`: the help line's text
@@ -154,12 +169,13 @@ export class Hints3d implements Ui3dScreen {
     this.draw();
   }
 
-  // Text in the theme's serif. `size` in px of the reference; on the page never under 16 px, the game's minimum
-  private label(str: string, size: number, color: string, width?: number, floor = 16) {
-    const px = this.layer.px(size, floor);
+  // Text in the theme's serif. `size` in px of the reference; on the page never under 16 px, the game's minimum.
+  // `shadow`: outlined and shadowed, for a text with no plate; `k`: a scale under that floor (a phone's banner)
+  private label(str: string, size: number, color: string, width?: number, shadow = false, k = 1) {
+    const px = this.layer.px(size) * k;
     return textMesh(
       str,
-      { size: px, color, font: this.layer.theme.font, width, line: px * 1.3 },
+      { size: px, color, font: this.layer.theme.font, width, line: px * 1.3, shadow },
       this.layer.dpr,
     ) as Quad;
   }
@@ -181,8 +197,10 @@ export class Hints3d implements Ui3dScreen {
       // nor while "Execute?" is open: its head asks the same question beside the character (Nov 18 review: "Tiro:
       // executar?" twice on screen); the help line keeps it for the screen reader
       const asking = last.open && v.screen.k === 'confirm';
-      const text = this.said ?? (b.over || asking ? '' : last.help);
+      const text =
+        this.said ?? (b.over || asking ? '' : bannerLine(last.help, v.log, last.open, v.screen, tutorialOn()));
       const part = this.banner,
+        k = messageScale(layer.w, layer.h),
         key = text + at;
       part.want = this.open.to = text ? 1 : 0; // without text it keeps what it showed and leaves
       if (text && key !== part.key) {
@@ -191,17 +209,17 @@ export class Hints3d implements Ui3dScreen {
         part.key = key;
         // the pill takes its text's width, up to the region's; a longer line wraps and the pill grows down
         const r = place(REGIONS.banner, st),
-          pad = 50 * s;
-        let m = this.label(text, 30, WHITE);
+          pad = 50 * s * k;
+        let m = this.label(text, 30, WHITE, undefined, false, k);
         if (m.scale.x > r.w - 2 * pad) {
           dropText(m);
-          m = this.label(text, 30, WHITE, r.w - 2 * pad);
+          m = this.label(text, 30, WHITE, r.w - 2 * pad, false, k);
         }
         const w = Math.min(r.w, m.scale.x + 2 * pad),
-          h = Math.max(r.h, m.scale.y + 36 * s);
+          h = Math.max(r.h * k, m.scale.y + 36 * s * k);
         // the group's origin is the pill's middle, so it grows from there
         part.group.userData = { x: r.x + r.w / 2, y: r.y + h / 2 };
-        part.box(-w / 2, -h / 2, w, h, 39 * s, PILL);
+        part.box(-w / 2, -h / 2, w, h, 39 * s * k, PILL);
         part.text(m, 0, 0);
       }
     }
@@ -218,19 +236,15 @@ export class Hints3d implements Ui3dScreen {
         // layout-fft-ic.json altura.*: the label from x 1582, the number ending on x 1832, the line under both
         const r = heightBox(st, layer.inset.top);
         part.box(r.x, r.y + 82 * s, r.w, Math.max(1, 2 * s), 0, LINE, NONE, 1);
-        const name = this.label(t('Altura', 'Height'), 24, WHITE);
+        // "Height" and its number with no plate (Fernando, Nov 18: no blue box, the text with a drop shadow), each
+        // outlined so it reads over a light floor and a dark one
+        const name = this.label(t('Altura', 'Height'), 24, WHITE, undefined, true);
         part.text(name, r.x + 82 * s + name.scale.x / 2, r.y + 55 * s);
-        this.num = this.label(String(n), 96, GREEN);
+        this.num = this.label(String(n), 96, GREEN, undefined, true);
         part.text(this.num, r.x + 332 * s - this.num.scale.x / 2, r.y + 46 * s);
         this.num.userData.size = this.num.scale.clone();
-        // "Height" and its number on a dark plate, as the tile line under them is (Nov 18 review: the word floated
-        // loose over the map); measured on the drawn texts, which the 16 px floor widens on a phone
-        const left = Math.min(r.x + 82 * s, r.x + 332 * s - this.num.scale.x) - 12 * s,
-          top = Math.min(r.y + 55 * s - name.scale.y / 2, r.y + 46 * s - this.num.scale.y / 2),
-          bottom = Math.max(r.y + 55 * s + name.scale.y / 2, r.y + 46 * s + this.num.scale.y / 2);
-        part.box(left, top, r.x + 344 * s - left, bottom - top, 12 * s, PILL);
       }
-      // the tile line: a dark box under the Height's line, from the label's x, wrapping at the region's right edge
+      // the tile line under the Height's line, from the label's x, wrapping at the region's right edge, with no plate
       const line = tileLine(b, v.screen, v.cursor, v.hl?.size),
         tile = this.tile,
         tkey = line + at;
@@ -239,11 +253,9 @@ export class Hints3d implements Ui3dScreen {
         tile.clear();
         tile.key = tkey;
         const r = heightBox(st, layer.inset.top),
-          pad = 8 * s,
           x = r.x + 82 * s;
-        const m = this.label(line, 18, WHITE, r.x + r.w - x - 2 * pad - 8 * s);
-        tile.box(x, r.y + 92 * s, m.scale.x + 2 * pad, m.scale.y + 2 * pad, 10 * s, PILL);
-        tile.text(m, x + pad + m.scale.x / 2, r.y + 92 * s + pad + m.scale.y / 2);
+        const m = this.label(line, 18, WHITE, r.x + r.w - x - 16 * s, true);
+        tile.text(m, x + m.scale.x / 2, r.y + 92 * s + m.scale.y / 2);
       }
     }
 
@@ -317,6 +329,7 @@ export class Hints3d implements Ui3dScreen {
   }
 
   dispose() {
+    this.unhelp();
     this.layer.remove(this);
     for (const p of [this.banner, this.height, this.tile, this.hints]) p.clear();
     for (const part of Object.keys(this.parts)) this.layer.root.classList.remove(`${part}3d`);

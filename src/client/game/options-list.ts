@@ -3,7 +3,7 @@
 import { fullscreenLabel, fullscreenOn, toggleFullscreen } from '../fullscreen.ts';
 import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
-import { glyphsOption } from '../key-hints.ts';
+import { glyphsOption, hintsOption, setTutorial, tutorialOn } from '../key-hints.ts';
 import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
 import { type Option, percent, pick } from '../option-row.ts';
@@ -93,6 +93,17 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         () => LANG,
         setLang,
       ),
+      // the battle's teaching lines, off by default (Fernando, Nov 18; key-hints.ts)
+      onOff(
+        t('Tutorial', 'Tutorial'),
+        t(
+          'Mostra no topo da batalha o que fazer agora e por que uma casa não serve. Desligado, fica só o resumo da última ação.',
+          'Shows at the top of the battle what to do now and why a tile does not work. Off, only the last action’s summary stays.',
+        ),
+        tutorialOn,
+        setTutorial,
+      ),
+      hintsOption(), // when the battle's footer shows the key and button hints (Nov 18, Fernando; key-hints.ts)
       glyphsOption(), // what the key hints show: the keys or a pad's icons (Nov 17, Fernando; key-hints.ts)
       onOff(
         townFree(),

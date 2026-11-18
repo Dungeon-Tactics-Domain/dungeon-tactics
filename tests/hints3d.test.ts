@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { canUndoMove, commandIndex, type Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
-import { keysText } from '../src/client/glyphs.ts';
+import { keysText, type Shown } from '../src/client/glyphs.ts';
 import {
+  bannerLine,
   type Device,
   heightBox,
   heightShown,
+  hintsDevice,
   hintsFor,
   layRow,
+  messageScale,
+  PHONE_MESSAGE,
   ROW,
   tileLine,
 } from '../src/client/hints3d/hints-view.ts';
+import { type HintsMode, parseHintsMode, parseTutorial } from '../src/client/key-hints.ts';
 import { cursorInfo, tileHeight } from '../src/client/tile-info.ts';
 import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
 import { toolsFoot } from '../src/client/window3d/tools-layout.ts';
@@ -118,14 +123,13 @@ describe('Height corner', () => {
   });
 
   // Fernando, Nov 16: what the HTML tile line said (floor, water, spikes, a charge landing) goes small under the Height;
-  // Nov 18: without the height, which the corner shows over it in large
-  it("the tile line under it is the HTML corner's own text but the height, and hides with the Height", () => {
+  // later on Nov 18: with X, Y and Z spelled out (the Z is the corner's number)
+  it("the tile line under it is the HTML corner's own text, and hides with the Height", () => {
     const b = battle();
     const at = { x: 3, y: 3 };
-    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at, 1, false));
-    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2, false));
-    expect(tileLine(b, menu, at)).toBe('Casa 3,3 · chão');
-    expect(cursorInfo(b.grid, b.state, at)).toBe('Casa 3,3 · altura 0 · chão');
+    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at, 1));
+    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2));
+    expect(tileLine(b, menu, at)).toBe('X 3 · Y 3 · Z 0 · chão');
     expect(tileLine(b, { k: 'abilities', index: 0 }, at)).toBe('');
   });
 });
@@ -172,5 +176,70 @@ describe('3D banner, Height and hints: bench scenes', () => {
     });
     expect(Object.keys(scenes).length).toBe(2);
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
+  });
+});
+
+// Fernando, Nov 18: Options › Key and button hints. Automatic is the input in use: a finger hides the foot's hints, a
+// key or a pad brings them back; Always and Never hold whatever the input
+describe('key and button hints: who the foot is drawn for', () => {
+  it('Automatic follows the input last used; Always and Never hold', () => {
+    const table: [HintsMode, boolean, Shown, Device][] = [
+      ['auto', true, 'keyboard', 'touch'], // a phone or a tablet with no key pressed
+      ['auto', false, 'keyboard', 'keyboard'], // a key pressed
+      ['auto', false, 'xbox', 'xbox'], // a pad pressed
+      ['always', true, 'keyboard', 'keyboard'],
+      ['always', true, 'playstation', 'playstation'],
+      ['never', false, 'keyboard', 'touch'],
+      ['never', false, 'xbox', 'touch'],
+    ];
+    for (const [mode, finger, keys, want] of table)
+      expect(hintsDevice(mode, finger, keys), `${mode} ${finger} ${keys}`).toBe(want);
+  });
+
+  it('Automatic is the default, and anything else read back is Automatic', () => {
+    expect(parseHintsMode(null)).toBe('auto');
+    expect(parseHintsMode('always')).toBe('always');
+    expect(parseHintsMode('never')).toBe('never');
+    expect(parseHintsMode('sometimes')).toBe('auto');
+    expect(parseHintsMode(1)).toBe('auto');
+  });
+
+  it('a finger gets no hint rows at all', () => {
+    const b = battle();
+    expect(hintsFor(b, menu, true, hintsDevice('auto', true, 'keyboard'))).toEqual({ left: [], right: [] });
+    expect(hintsFor(b, menu, true, hintsDevice('always', true, 'keyboard')).right.length).toBeGreaterThan(0);
+  });
+});
+
+// Fernando, Nov 18: the teaching lines (what to do now, why a tile is refused) are the Tutorial option, off by default
+describe('Tutorial: the banner', () => {
+  const help = 'Mover — Guerreiro: o que fazer?';
+  it('is off unless saved as on', () => {
+    expect(parseTutorial(null)).toBe(false);
+    expect(parseTutorial('true')).toBe(false); // the saved JSON, read back by store.json, is a boolean
+    expect(parseTutorial(true)).toBe(true);
+  });
+  it('off, a hero turn keeps only the last action, and nothing when there is none', () => {
+    expect(bannerLine(help, 'Mover', true, menu, false)).toBe('Mover');
+    expect(bannerLine('Não cabe aqui: precisa de chão plano.', '', true, { k: 'map', command: 'move' }, false)).toBe(
+      '',
+    );
+  });
+  it('on, the whole line', () => {
+    expect(bannerLine(help, 'Mover', true, menu, true)).toBe(help);
+  });
+  it("the enemy's turn and an ability's sheet are not teaching: they stay either way", () => {
+    expect(bannerLine('Vez do inimigo: Soldado', '', false, menu, false)).toBe('Vez do inimigo: Soldado');
+    expect(bannerLine('Golpe: dano 10', '', true, { k: 'abilities', index: 0 }, false)).toBe('Golpe: dano 10');
+  });
+});
+
+describe('messages on a phone', () => {
+  it('a phone on its side draws them at 70%; a tablet and a PC at full size', () => {
+    expect(messageScale(844, 390)).toBe(PHONE_MESSAGE);
+    expect(messageScale(390, 844)).toBe(PHONE_MESSAGE);
+    expect(messageScale(1024, 768)).toBe(1);
+    expect(messageScale(768, 1024)).toBe(1);
+    expect(messageScale(1280, 720)).toBe(1);
   });
 });
