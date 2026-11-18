@@ -7,7 +7,7 @@ import { t } from './i18n.ts';
 import { button, type Child, el, iconButton } from './icons.ts';
 import type { KeyAction } from './keyboard.ts';
 import { nextSpot, type WalkDir } from './spot-walk.ts';
-import { moreBelow, type ScrollBox, scrollPick, scrollStep } from './window-scroll.ts';
+import { type ScrollBox, scrollPick, scrollStep } from './window-scroll.ts';
 
 // A `.spot-walk` window (the 3D expedition map; Fernando, Nov 17) walks its buttons by where they are on screen: a
 // direction goes to the nearest button that way, and stays where nothing lies (spot-walk.ts), keys and pad alike. An
@@ -144,25 +144,6 @@ const walked = (overlay: HTMLElement, way: string) =>
 // more lies below, "▼ More below" (a tablet shows its scrollbar only while a finger moves; a tap scrolls a page). The
 // page keys and the pad's right stick scroll it (scrollWindow). Its class `has-more` follows the scroll and the size
 const measure = (b: HTMLElement): ScrollBox => ({ top: b.scrollTop, view: b.clientHeight, height: b.scrollHeight });
-export function scrollCue(box: HTMLElement) {
-  const more = el(
-    'span',
-    {
-      class: 'scroll-more',
-      'aria-hidden': 'true', // the screen reader reads on past the fold; the cue is for the eye
-      onclick: () => box.scrollBy({ top: scrollStep(measure(box), 1) }),
-      onmousedown: (e: Event) => e.preventDefault(), // the focus stays on its button, not on the page behind
-    },
-    `▼ ${t('Mais abaixo', 'More below')}`,
-  );
-  box.classList.add('scroll-cue');
-  box.append(more);
-  const sync = () => box.classList.toggle('has-more', moreBelow(measure(box)));
-  box.addEventListener('scroll', sync, { passive: true });
-  // the box and what is in it: a face that loads late makes the page taller
-  const seen = new ResizeObserver(sync);
-  for (const e of [box, ...box.children]) seen.observe(e);
-}
 // the focused element's box first, then the window's others; false when none can move that way
 function scrollWindow(overlay: HTMLElement, dir: 1 | -1): boolean {
   const own = document.activeElement?.closest<HTMLElement>('.scroll-cue');
@@ -219,18 +200,6 @@ export function padDialog(a: KeyAction): boolean {
   } else if (a.k === 'cursor') buttons[(at + (a.dir === 'up' ? -1 : 1) + buttons.length) % buttons.length]?.focus();
   return true;
 }
-
-// A row of the lab kit's list (the Equipment window): what it is, with its kind in small type, the price after a gold coin, and
-// the action at the right with why it is off in small type under it (a disabled button says why). A null price leaves
-// its column empty, without the coin: the Equipment window's rows (Nov 16)
-export const priceRow = (what: Child[], price: number | null, action: HTMLButtonElement, why = '') =>
-  el(
-    'div',
-    { class: 'price-row' },
-    el('span', { class: 'price-what' }, ...what),
-    price === null ? el('span') : el('span', { class: 'price' }, String(price)),
-    el('span', { class: 'price-act' }, action, why ? el('small', {}, why) : null),
-  );
 
 export type Orb = 'gold' | 'blue' | 'bronze';
 // A row of the lab kit's command menu inside a window (town, title): a glass orb before the name, in a `.command-list`

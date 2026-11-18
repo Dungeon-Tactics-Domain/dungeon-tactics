@@ -61,10 +61,9 @@ export class Units {
     private readonly models: Map<string, GLTF>,
     private readonly packClips: THREE.AnimationClip[],
     private readonly canvas: HTMLCanvasElement,
-    floats: HTMLElement,
   ) {
     this.camera = cam.camera;
-    this.numbers = new FloatNumbers(this.camera, canvas, floats);
+    this.numbers = new FloatNumbers(this.camera, canvas);
   }
 
   all(): Iterable<UnitView> {

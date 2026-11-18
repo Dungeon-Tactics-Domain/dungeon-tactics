@@ -63,13 +63,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
 - `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
 - `src/client/town-ui.ts` — what the town's windows share: the saved party's load and save, the gold counter and the reasons a button is off.
-- `src/client/town-shop.ts` — the Shop (Buy, Sell, Leave) and the Tavern (recruits) as the FFT counter screen: commands, list, detail box.
-- `src/client/town-party.ts` — the Party screen (FFT's formation and unit menus): the unit list and who goes to battle, the picked unit's Status, Abilities and Class pages.
-- `src/client/town-gear.ts` — the Party screen's Equipment page: the 7 slots, compare, swap and the chest.
+- `src/client/town-shop.ts` — openShop() and openBar(): the Shop and the Tavern, handed to the 3D town (town3d/screens.ts); what an item and a recruit say.
+- `src/client/town-party.ts` — openParty(): the Party screen (FFT's formation and unit menus), handed to the 3D town (town3d/screens.ts) with the member and page to open on.
 - `src/client/sheet-lines.ts` — the numbers a sheet and a piece show: one line per stat, with where each total comes from, its bar and what a piece would change.
-- `src/client/window-focus.ts` — the focus a window that rebuilds itself gives back after each action.
 - `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid; the fluid walk's circle, stick and target (dt:town-free).
-- `src/client/dev-menu.ts` — developer menu screen (map, cast, JSON import/export); rules in dev-roster.ts.
 - `src/client/dev-roster.ts` — developer cast rules: build and validate sheets, DEV_MAPS, parseSetup and buildDevScenario.
 - `src/client/survival.ts` — "Until dawn" standalone mode: its scenario, turn goal and best-record save.
 
@@ -242,16 +239,16 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/town.ts` — the walkable town: drawn by the battle scene, walked by the first deployed hero, talking and doors on the action button.
 - `src/client/game/town-folk.ts` — the townsfolk: who strolls, who is being talked to, the rumour each tells next.
 - `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
-- `src/client/game/crawl.ts` — the town menu and quest gate (its commands and information box), the expedition save and its gold, and the way home.
+- `src/client/game/crawl.ts` — the town menu and quest gate (drawn by town3d/street.ts), the quest's commands, the expedition save and its gold, and the way home.
 - `src/client/game/expedition-map.ts` — the expedition map: the descent as a chart of places, the picked place's box, the travel commands, the party's state, Information and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
-- `src/client/game/sheets.ts` — the title's and Options' windows as data (rows or text blocks), shown by the HTML window or handed to the 3D sheet (showSheet, blocksHtml).
-- `src/client/game/options.ts` — Options window: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
+- `src/client/game/sheets.ts` — the title's and Options' windows as data (rows or text blocks), over an unseen window, drawn by the 3D sheet (showSheet, blocksHtml).
+- `src/client/game/options.ts` — Options, drawn by flow3d/options3d.ts: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
 - `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display), and the town grid and fluid movement names.
 - `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
 - `src/client/game/options-marks.ts` — the Options row that picks the mark style (Simple, Light, Stone, Neon), in its own file so options.ts takes one line.
-- `src/client/game/end-screens.ts` — end-of-battle window, the result board and the victory confetti.
+- `src/client/game/end-screens.ts` — the end of a battle's board (drawn by result3d/) and the victory confetti (the 3D effects).
 
 ## src/client/scene — the parts BattleScene composes
 

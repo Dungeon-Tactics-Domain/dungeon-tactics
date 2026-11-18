@@ -1,6 +1,6 @@
 // Pure side of the 3D developer menu (dev3d.ts; Fernando, Nov 18: the whole interface in 3D, forms too): the cast
 // (dev-roster.ts) as the list of fields the screen shows, what an edit makes of the cast, and where the page's parts
-// sit. The same rules as the HTML menu (dev-menu.ts): the map cuts what does not fit its starting tiles, a new class
+// sit. The rules: the map cuts what does not fit its starting tiles, a new class
 // restarts the numbers and keeps a name of the player's own, Move and Jump show in half tiles, the 1st ability marked
 // is the basic attack. One unit is open at a time: a closed one is a single row, so the list stays short enough to
 // walk with a d-pad. No DOM, no Three; tested in tests/dev3d.test.ts.

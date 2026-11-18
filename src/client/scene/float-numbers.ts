@@ -1,9 +1,8 @@
 // The floating numbers over the units: each pops from a chest, lifted over any number still showing, follows it on
-// screen and leaves with its CSS animation; also where a world point falls on the canvas, and the note over the cursor.
+// screen and leaves when its time is up; also where a world point falls on the canvas, and the note over the cursor.
 // The 3D layer draws both (hints3d/effects3d.ts, through looks3d.ts); what is kept and for how long stays here.
 import * as THREE from 'three';
 import { liftOver, type NumberBox } from '../hit-weight.ts';
-import { abilityIcon, el } from '../icons.ts';
 import { looks3d, type NumberMark } from '../looks3d.ts';
 import { TIMING } from '../timing.ts';
 
@@ -15,27 +14,12 @@ export function onScreen(w: THREE.Vector3, camera: THREE.Camera, canvas: HTMLCan
   return { x: ((p.x + 1) / 2) * canvas.clientWidth, y: ((1 - p.y) / 2) * canvas.clientHeight };
 }
 
-// the number as HTML: its CSS animation moves it from the point it is placed on
-function htmlNumber(floats: HTMLElement, text: string, cls: string, px: number): NumberMark {
-  const node = el('div', { class: `float ${cls}`, style: `font-size:${px}px` }, text);
-  floats.append(node);
-  return {
-    w: node.offsetWidth,
-    place(x, y) {
-      node.style.left = `${x}px`;
-      node.style.top = `${y}px`;
-    },
-    remove: () => node.remove(),
-  };
-}
-
 export class FloatNumbers {
   private readonly numbers: { mark: NumberMark; at: THREE.Vector3; box: NumberBox }[] = []; // kept on their chest
 
   constructor(
     private readonly camera: THREE.Camera,
     private readonly canvas: HTMLCanvasElement,
-    private readonly floats: HTMLElement,
   ) {}
 
   // the numbers follow their chest while the camera slides or closes in
@@ -81,22 +65,17 @@ export class FloatNumbers {
 // The counter a Move destination draws (Nov 15, Fernando): a sword and the damage the counters there would deal, beside
 // the cursor, following its slide and the camera every frame like the menu beside the unit
 export class CursorNote {
-  private readonly node = el('div', { class: 'cursor-note', hidden: true }, abilityIcon('strike'), el('span'));
   private text: string | null = null;
 
   constructor(
-    floats: HTMLElement,
     private readonly camera: THREE.Camera,
     private readonly canvas: HTMLCanvasElement,
     private readonly cursorAt: () => THREE.Vector3 | null,
-  ) {
-    floats.append(this.node);
-  }
+  ) {}
 
   // null hides it
   set(text: string | null) {
     this.text = text;
-    this.node.lastElementChild!.textContent = text ?? '';
   }
 
   follow() {

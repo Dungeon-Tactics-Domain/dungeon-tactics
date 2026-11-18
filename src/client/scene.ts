@@ -77,7 +77,7 @@ export class BattleScene {
     host.append(this.floats);
     this.cam = new CameraRig(host, this.renderer.domElement, this.space, (ms, step) => this.time.animate(ms, step));
     this.camera = this.cam.camera;
-    this.note = new CursorNote(this.floats, this.camera, this.renderer.domElement, () => this.marks.cursorAt());
+    this.note = new CursorNote(this.camera, this.renderer.domElement, () => this.marks.cursorAt());
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
     // the palette comes after the sRGB output; it toggles without rebuilding the chain
@@ -103,7 +103,6 @@ export class BattleScene {
       models,
       packClips,
       this.renderer.domElement,
-      this.floats,
     );
     addEventListener('resize', this.onResize);
     this.setPixel(pixel);

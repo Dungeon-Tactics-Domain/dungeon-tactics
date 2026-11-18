@@ -1,5 +1,3 @@
-import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
-import { TOWN } from '../../content/crawl/town.ts';
 import { bonusOf, withGear } from '../../shared/battle/equipment.ts';
 import { HALF } from '../../shared/battle/half.ts';
 import type { Scenario } from '../../shared/battle/scenarios.ts';
@@ -7,7 +5,6 @@ import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import {
   classMana,
   cleared,
-  descentGold,
   type Expedition,
   expeditionMap,
   goldHome,
@@ -19,17 +16,13 @@ import {
 import { roomId } from '../../shared/crawl/generate.ts';
 import { CHEST_KEY, EQUIP_KEY, parseChest, parseEquip } from '../chest.ts';
 import { buildDevScenario, type DevUnit, slotsOf, unitFrom } from '../dev-roster.ts';
-import { commandRow, dialog, secondTap } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t } from '../i18n.ts';
-import { el } from '../icons.ts';
 import { looks3d } from '../looks3d.ts';
 import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
-import { openBar, openShop } from '../town-shop.ts';
-import { goldNote, openParty, sideWindows } from '../town-ui.ts';
-import { expeditionScreen, floorOf } from './expedition-map.ts';
+import { expeditionScreen } from './expedition-map.ts';
 import { lostScreen, noRoomScreen } from './notices.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
@@ -39,8 +32,6 @@ export interface CrawlRoom {
   node: number;
   heroes: Record<string, { id: string; hp: number; mana?: number }>;
 }
-
-const townGold = () => parseChest(store.json(CHEST_KEY)).gold;
 
 // The descent ends: its gold goes to the town's (all of it alive, half when the party fell: goldHome) and the save is
 // cleared in the same step, so a reload cannot bank it twice. Capped where parseChest reads it (above, it reads 0)
@@ -178,40 +169,6 @@ export const toTitle = () => {
 
 // back to walking the town after a window over it (its music, Pastoral D: Fernando, Nov 15)
 export const toTown = () => setTrack('world');
-
-// The quest's rows, at the gate and in the town menu: an expedition in progress is continued; a new quest over it asks a
-// 2nd tap, since it abandons it (Fernando, Nov 15)
-function questRows(go: (fn: () => void) => () => void) {
-  const live = liveExpedition();
-  return [
-    ...(live
-      ? [
-          commandRow(
-            'gold',
-            [
-              t('Continuar a expedição', 'Continue the expedition'),
-              el('small', { class: 'continue-where' }, floorOf(live)),
-            ],
-            go(() => expeditionScreen(live)),
-            'primary',
-          ),
-        ]
-      : []),
-    commandRow(
-      'gold',
-      t('Nova expedição', 'New expedition'),
-      (e: Event) => {
-        const again = t(
-          'Confirmar: encerra a expedição atual, o ouro achado vai à cidade',
-          'Confirm: ends the current expedition, the gold found goes to town',
-        );
-        if (live && !secondTap(e, again)) return;
-        go(depart)();
-      },
-      live ? 'secondary' : 'primary',
-    ),
-  ];
-}
 
 // The dungeon gate at the north end of the town (Nov 15, Fernando: the quest opens at its spot): the quest's rows and the
 // way back to the street

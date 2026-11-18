@@ -2,12 +2,12 @@
 // options-list.ts), the tile marks and the controls in windows over it, plus restart, home and developer at the foot.
 // It reads and changes the battle only through OptionsContext.
 import type { Scenario } from '../../shared/battle/scenarios.ts';
-import { choice, dialog, secondTap } from '../dialog.ts';
+import { choice, secondTap } from '../dialog.ts';
 import { hintLine } from '../glyphs.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
-import { keysShown, liveText } from '../key-hints.ts';
+import { keysShown } from '../key-hints.ts';
 import { looks3d } from '../looks3d.ts';
 import { type Option, optionRow } from '../option-row.ts';
 import type { PixelSettings } from '../pixel-settings.ts';
@@ -74,14 +74,6 @@ export interface OptionsBoard {
   list: HTMLElement; // each section's heading and rows
   help: HTMLElement; // what the row under the cursor does
   actions: HTMLButtonElement[]; // restart, home, developer
-}
-export function optionsWindow(b: OptionsBoard): { close(): void } {
-  const d = dialog('menu', b.title, [b.list, b.help, el('div', { class: 'menu-actions' }, ...b.actions)], {
-    note: liveText('opt-keys', () => b.note),
-  });
-  // the goal line left the window (Fernando, Nov 18: the battle's banner already says it): the window's rows without it
-  d.overlay.querySelector<HTMLElement>('.dialog')!.style.gridTemplateRows = 'auto minmax(0, 1fr) auto auto';
-  return d;
 }
 
 // Options (Nov 16, Fernando: the interface on its Final Fantasy Tactics counterpart): the current value at the right of

@@ -1,8 +1,8 @@
-// Pure side of the 3D Party screen (town3d.ts draws it): what the HTML one shows (town-party.ts, town-gear.ts), laid
+// Pure side of the 3D Party screen (town3d.ts draws it; town-party.ts opens it): the member's pages, laid
 // out like FFT: The Ivalice Chronicles' unit Status (labs refs/fft-ivalice/44, 02): the picked member across the top
 // (face, bars, the sheet's totals), the pages as plaques on the left (Status, Equipment, Abilities, Class), the page on
 // a parchment panel and, where the reference pages with L1 and R1, the whole roster down the right. Wording and numbers
-// come from the HTML screen's helpers. No DOM or Three here; tested in tests/town3d.test.ts.
+// come from sheet-lines.ts and battle-text.ts. No DOM or Three here; tested in tests/town3d.test.ts.
 import { ITEMS, kindOf, SLOTS, type Slot, withGear, worn } from '../../shared/battle/equipment.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { abilityDetail, regenLine } from '../battle-text.ts';
