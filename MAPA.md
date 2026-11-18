@@ -133,6 +133,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/menu3d/column.ts` — a column of the 3D menu (panel, rows, text) and the Icon on its plate.
 - `src/client/menu3d/sheet.ts` — the 3D menu's ability sheet and its sliding pages.
 - `src/client/menu3d/models.ts` — the low-poly models of the 3D menu (command and ability icons, plates, emblem, glove).
+- `src/client/turn3d/card-tip.ts` — CardTip: the name, life and CT of the card under the mouse, on a dark plate beside it, in 3D.
 - `src/client/turn3d/turn3d.ts` — Turn3d: the turn list in 3D (?turn3d), a card per row over the HUD's unseen list.
 - `src/client/turn3d/queue-layout.ts` — queueLayout: where the 3D turn list puts its head and each row on the page, and how far it scrolls and where its name goes, with no DOM; pure.
 - `src/client/turn3d/queue-seat.ts` — seats the unseen HTML turn list on the layout's numbers and draws the list's name in 3D (seatQueue), and passes its scroll and hover to the 3D list (wireQueue).

@@ -12,7 +12,7 @@ import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from '../battle-face.ts';
 import type { Forecast } from '../forecast.ts';
-import { ATLAS_COLUMNS, atlasCell, el } from '../icons.ts';
+import { ATLAS_COLUMNS, atlasCell } from '../icons.ts';
 import { modelOf } from '../markers.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { place, REGIONS, sheetBox } from '../ui3d/layout.ts';
@@ -20,6 +20,7 @@ import { QUAD } from '../ui3d/panel.ts';
 import { ease, land, type Spring, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
 import { cardMaterial, hex, INK, LEFT, PAD, RIGHT, sharedUniforms } from './card.ts';
+import { CardTip } from './card-tip.ts';
 import { type QueueBoxes, type QueueLayout, queueLayout } from './queue-layout.ts';
 import { dropName, seatQueue, wireQueue } from './queue-seat.ts';
 import { headOnSheet, matchRows, type Queue, type QueueCard, queueCards, statsLayout } from './queue-view.ts';
@@ -54,8 +55,7 @@ const ramp = (a: number, b: number, v: number) => {
 
 export class Turn3d implements Ui3dScreen {
   readonly flat = new Group();
-  // name and life of the card under the mouse: the 3D rows carry no text
-  private readonly tip = el('div', { class: 'panel turn3d-tip', 'aria-hidden': 'true', hidden: true });
+  private readonly tip: CardTip; // name and life of the card under the mouse
   private readonly loader = new TextureLoader();
   // one load per image; `waiting` holds what to run when it arrives (null once it has)
   private readonly textures = new Map<string, { tex: Texture; waiting: ((img: HTMLImageElement) => void)[] | null }>();
@@ -80,7 +80,8 @@ export class Turn3d implements Ui3dScreen {
     private readonly headless = false,
   ) {
     layer.root.classList.add('turn3d');
-    layer.root.append(this.tip);
+    this.tip = new CardTip(layer);
+    this.flat.add(this.tip.group);
     this.shared.uIconGrid.value.set(ATLAS_COLUMNS, 1);
     this.shared.uIcons.value = this.texture('/ui/fft/atlas-32.png', (img) =>
       this.shared.uIconGrid.value.set(img.width / ATLAS_CELL, img.height / ATLAS_CELL),
@@ -371,17 +372,16 @@ export class Turn3d implements Ui3dScreen {
         }
       }
     }
-    this.tip.hidden = !tipped;
-    if (tipped) {
-      this.tip.textContent = tipped.d.tip;
-      const m = tipped.mesh.material.uniforms;
-      // the tip opens after the card, or after its own lines
-      const past = tipped.texts ? m.uStat.value.x + m.uStat.value.y : tipped.box.w.x;
-      this.tip.style.left = `${Math.round(g.left + tipped.box.x.x + past + (12 + 8 * m.uTarget.value) * s)}px`;
-      this.tip.style.top = `${Math.round(g.top + tipped.box.y.x - this.scroll.x + tipped.box.h.x / 2)}px`;
-    }
+    // the tip opens after the card, or after its own lines
+    const m = tipped?.mesh.material.uniforms,
+      past = m && (tipped.texts ? m.uStat.value.x + m.uStat.value.y : tipped.box.w.x);
+    this.tip.show(
+      tipped ? tipped.d.tip : null,
+      g.left + (tipped?.box.x.x ?? 0) + (past ?? 0) + (12 + 8 * (m?.uTarget.value ?? 0)) * s,
+      g.top + (tipped?.box.y.x ?? 0) - this.scroll.x + (tipped?.box.h.x ?? 0) / 2,
+    );
     // the acting card breathes and a light sweeps it: the list moves for as long as it shows
-    return !still && this.cards.length + this.leaving.length > 0;
+    return (this.tip.frame(e) || !still) && this.cards.length + this.leaving.length > 0;
   }
 
   dispose() {
@@ -394,7 +394,7 @@ export class Turn3d implements Ui3dScreen {
     this.shared.uPaint.value.dispose();
     this.shared.uDigits.value.dispose();
     dropName();
-    this.tip.remove();
+    this.tip.dispose();
     this.layer.root.classList.remove('turn3d');
   }
 }

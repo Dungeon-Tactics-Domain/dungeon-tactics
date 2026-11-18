@@ -2455,22 +2455,11 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
 .hud.turn3d.bar3d.head-on-sheet .queue-row.now {
   display: none;
 }
-/* the two pieces of HTML still seen, the card's name under the mouse and the turn-the-phone notice: the result board's
-   dark plate and light text (11:1), not the old blue panel */
-.turn3d-tip,
+/* the turn-the-phone notice: the result board's dark plate and light text (11:1), not the old blue panel */
 .rotate-card {
   border-color: var(--ui3d-result-line);
   background: var(--ui3d-result-plate);
   color: var(--ui3d-result-text);
-}
-/* name and life of the card under the mouse, beside it */
-.turn3d-tip {
-  translate: 0 -50%;
-  padding: 4px 10px;
-  font-size: var(--fs-sm);
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 1;
 }
 
 /* ---- 3D combat bar (?bar=3d; src/client/bar3d) ---- */
