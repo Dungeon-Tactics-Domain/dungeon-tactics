@@ -7,11 +7,10 @@ import { glyphsOption, hintsOption, setTutorial, tutorialOn } from '../key-hints
 import { getLayout, setLayout } from '../layout-mode.ts';
 import { type Motion, motion, setMotion } from '../motion.ts';
 import { type Option, percent, pick } from '../option-row.ts';
-import type { PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
-import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts';
+import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import type { LayoutMode } from '../ui3d/layout.ts';
 import type { OptionsContext } from './options.ts';
 import { marksOption } from './options-marks.ts';
@@ -35,7 +34,6 @@ const fullscreenOption = (): Option[] =>
     : [];
 
 export const townGrid = () => t('Grade da cidade', 'Town grid');
-export const townFree = () => t('Movimento fluido na cidade', 'Fluid movement in town');
 
 // `fem`: the Portuguese word agrees with the setting's name ("Paleta … Ligada")
 const onOff = (label: string, help: string, get: () => boolean, set: (on: boolean) => void, fem = false): Option => ({
@@ -65,8 +63,8 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Jogo', 'Game'),
     help: t(
-      'O texto das conversas, o idioma, os ícones das teclas e como se anda na cidade.',
-      'The conversations’ text, the language, the key icons and how the town is walked.',
+      'O texto das conversas, o idioma, os ícones das teclas e a grade da cidade.',
+      'The conversations’ text, the language, the key icons and the town grid.',
     ),
     rows: [
       pick(
@@ -106,11 +104,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
       hintsOption(), // when the battle's footer shows the key and button hints (Nov 18, Fernando; key-hints.ts)
       glyphsOption(), // what the key hints show: the keys or a pad's icons (Nov 17, Fernando; key-hints.ts)
       onOff(
-        townFree(),
-        t('Anda livre pela cidade em vez de passo a passo.', 'Walk the town freely instead of step by step.'),
-        ...flag(FREE_KEY, parseTownFree),
-      ),
-      onOff(
         townGrid(),
         t(
           'Mostra as casas do chão da cidade e o espaço que cada um ocupa: uma conferência, não ajuda a jogar.',
@@ -142,8 +135,8 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Imagem', 'Display'),
     help: t(
-      'O visual da interface, as marcas do mapa, o estilo de pixel e a câmera.',
-      'The look of the interface, the marks on the map, the pixel style and the camera.',
+      'O visual da interface, as marcas do mapa e a câmera.',
+      'The look of the interface, the marks on the map and the camera.',
     ),
     rows: [
       ...fullscreenOption(),
@@ -179,44 +172,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         },
       ),
       marksOption(), // how the marks on the board are drawn (Nov 17, Fernando; options-marks.ts)
-      pick(
-        t('Tamanho do pixel', 'Pixel size'),
-        t(
-          'Desenha a batalha em pixels maiores, como um jogo antigo.',
-          'Draws the battle in bigger pixels, like an old game.',
-        ),
-        [
-          [0, t('Desligado', 'Off')],
-          [2, '2 px'],
-          [3, '3 px'],
-          [4, '4 px'],
-        ] as [PixelSize, string][],
-        () => o.pixel().size,
-        (size) => o.setPixel({ ...o.pixel(), size }),
-      ),
-      onOff(
-        t('Contorno', 'Outline'),
-        t('Linha escura em volta dos personagens e do terreno.', 'A dark line around the characters and the terrain.'),
-        () => o.pixel().outline,
-        (outline) => o.setPixel({ ...o.pixel(), outline }),
-      ),
-      onOff(
-        t('Paleta reduzida (16 bits)', 'Reduced palette (16-bit)'),
-        t('Menos cores na tela, como nos consoles de 16 bits.', 'Fewer colours on screen, like the 16-bit consoles.'),
-        () => o.pixel().palette,
-        (palette) => o.setPixel({ ...o.pixel(), palette }),
-        true,
-      ),
-      onOff(
-        t('Câmera presa à grade de pixels', 'Camera locked to the pixel grid'),
-        t(
-          'A câmera anda de pixel em pixel, sem tremer a imagem ao deslizar.',
-          'The camera moves pixel by pixel, so the picture does not shimmer as it slides.',
-        ),
-        () => o.pixel().snap,
-        (snap) => o.setPixel({ ...o.pixel(), snap }),
-        true,
-      ),
       // Fernando's grill of Nov 15: the last enemy's or the last hero's death in slow motion with a close-up (narrowed Nov 16), this turns it off
       onOff(
         t('Câmera lenta nas mortes', 'Slow motion on deaths'),

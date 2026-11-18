@@ -5,7 +5,6 @@ import * as THREE from 'three';
 import { posKey, subOf } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { reducedMotion } from '../motion.ts';
-import type { PixelSettings } from '../pixel-settings.ts';
 import { param } from '../store.ts';
 import { STEP, type TileSpace } from './space.ts';
 
@@ -263,15 +262,15 @@ export class CameraRig {
   }
 
   // `shake` (0 = none) and `t` (battle clock, ms) come from the scene's strong-strike shake
-  place(pixel: PixelSettings, shake: number, t: number) {
+  place(shake: number, t: number) {
     // strong strike shake: shifts the focus only in this frame, vanishes by itself (nothing accumulates in the real focus)
     const jitter = new THREE.Vector3(Math.sin(t * 0.09) * shake, 0, Math.cos(t * 0.13) * shake);
     this.focus.add(jitter);
-    this.placeCamera(pixel);
+    this.placeCamera();
     this.focus.sub(jitter);
   }
 
-  private placeCamera(pixel: PixelSettings) {
+  private placeCamera() {
     const off = new THREE.Vector3(
       Math.sin(this.yaw) * Math.cos(this.pitch),
       Math.sin(this.pitch),
@@ -279,17 +278,6 @@ export class CameraRig {
     ).multiplyScalar(CAM_DIST);
     this.camera.position.copy(this.focus).add(off);
     this.camera.lookAt(this.focus);
-    this.camera.updateMatrixWorld();
-    // locks the camera to the pixel grid: without this the ground "boils" when the camera moves (same idea as Warlock)
-    if (!pixel.snap || !pixel.size) return;
-    const block = ((this.camera.top - this.camera.bottom) / this.canvas.height) * pixel.size;
-    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
-    const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
-    const px = this.camera.position.dot(right),
-      py = this.camera.position.dot(up);
-    this.camera.position
-      .addScaledVector(right, Math.round(px / block) * block - px)
-      .addScaledVector(up, Math.round(py / block) * block - py);
     this.camera.updateMatrixWorld();
   }
 }

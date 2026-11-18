@@ -81,32 +81,14 @@ export type TownAct = 'talk' | 'party' | 'shop' | 'tavern' | 'enter' | 'quest' |
 const PLACE_ACT: Partial<Record<PlaceId, TownAct>> = { guild: 'party', shop: 'shop', tavern: 'tavern', gate: 'quest' };
 export type TownTarget = { act: TownAct } & ({ unit: UnitState } | { place: Place });
 
-// What the action button acts on: whoever stands in front (the way the walker last stepped), else the door the walker
-// stands at, else whoever is beside
-export function townTarget(state: BattleState, facing: Pos): TownTarget | null {
-  const me = state.units.find((u) => u.id === ME)!;
-  const centre = (p: Pos) => ({ x: p.x + SUB / 2, y: p.y + SUB / 2 });
-  const ahead = (u: UnitState) =>
-    (centre(u.pos).x - centre(me.pos).x) * facing.x + (centre(u.pos).y - centre(me.pos).y) * facing.y > 0;
-  const beside = state.units
-    .filter((u) => u.id !== ME && near(me.pos, u))
-    .sort((a, b) => dist(a.pos, me.pos) - dist(b.pos, me.pos));
-  const unit = beside.find(ahead);
-  if (unit) return { act: 'talk', unit };
-  const place = TOWN_PLACES.find((p) => atDoor(me.pos, p));
-  if (place) return doorTarget(place);
-  return beside[0] ? { act: 'talk', unit: beside[0] } : null;
-}
 const doorTarget = (place: Place): TownTarget => ({
   act: place.soon ? 'soon' : (PLACE_ACT[place.id] ?? 'enter'),
   place,
 });
 
-// Fluid movement (Nov 16, Fernando's grill): an option beside the town grid, off by default, to compare with the cell
-// steps. The walker is a circle that slides along walls and people; its unit keeps the square snapped under it
-// (`cellUnder`), so every cell rule here (route, clear, near, castParty) goes on reading a whole cell
-export const FREE_KEY = 'dt:town-free';
-export const parseTownFree = (v: unknown) => v === true;
+// Fluid movement (Nov 16, Fernando's grill; the only walk since Nov 18, with no option and no key). The walker is a
+// circle that slides along walls and people; its unit keeps the square snapped under it (`cellUnder`), so every cell
+// rule here (route, clear, near, castParty) goes on reading a whole cell
 // The circle's radius, in cells. Above √½ the snapped square never overlaps a wall or anyone (the fuzz walk in
 // tests/town.test.ts holds it); below 1 it passes the 2-cell lanes with room to slide
 export const BODY = 0.8;
@@ -180,8 +162,8 @@ export function slide(grid: Grid, state: BattleState, at: Pos, d: Pos): Pos {
   return { x, y };
 }
 
-// townTarget for the fluid walk, measured from the walker's centre: the nearest within TALK inside the cone in front,
-// else the door whose step the centre is over, else the nearest within TALK
+// What the action button (Enter, A, a click on the balloon) acts on, measured from the walker's centre: the nearest
+// within TALK inside the cone in front, else the door whose step the centre is over, else the nearest within TALK
 export function freeTarget(state: BattleState, at: Pos, facing: Pos): TownTarget | null {
   const off = (u: UnitState) => ({ x: centreOf(u.pos).x - at.x, y: centreOf(u.pos).y - at.y });
   const far = (u: UnitState) => Math.hypot(off(u).x, off(u).y);

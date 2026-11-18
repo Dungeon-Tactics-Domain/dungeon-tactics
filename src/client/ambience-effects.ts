@@ -1,6 +1,6 @@
 // What moves in the air around the board: torch and crystal glows, the low mist, the light rays and the particles.
 import * as THREE from 'three';
-import { FOG_HEAD, skipNormalPass } from './ambience-fog.ts';
+import { FOG_HEAD } from './ambience-fog.ts';
 import type { Mood, Pair } from './ambience-moods.ts';
 
 const SUN = new THREE.Vector3(6, -12, -4).normalize(); // the light ray comes from where the scene's sun comes from (sun.position -6, 12, 4)
@@ -63,7 +63,6 @@ export class AirEffects {
       }),
     );
     mesh.position.copy(p);
-    skipNormalPass(mesh);
     this.root.add(mesh);
     this.glows.push({ mesh, size, seed: seed * 100, light });
   }
@@ -91,7 +90,6 @@ export class AirEffects {
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size).rotateX(-Math.PI / 2), mat);
     mesh.position.y = -0.35;
     mesh.renderOrder = 1; // after the ground and the models, which are opaque
-    skipNormalPass(mesh);
     this.root.add(mesh);
   }
 
@@ -134,7 +132,6 @@ export class AirEffects {
       );
       const mesh = new THREE.Mesh(g, mat);
       mesh.matrixAutoUpdate = false;
-      skipNormalPass(mesh);
       const r = onBoard ? 0 : 1 + rand() * 7;
       const a = rand() * Math.PI * 2;
       const x = onBoard ? (rand() - 0.5) * this.hw * 1.6 : Math.cos(a) * (this.hw + r),

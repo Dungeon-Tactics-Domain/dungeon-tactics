@@ -48,7 +48,6 @@ export interface HudActions {
   hover(list: 'menu' | 'abilities', index: number): void; // the mouse (or Tab) over a 3D menu row moves the focus there
   rotate(dir: 1 | -1): void;
   recenter(): void;
-  pixel(): void;
   fast(): void; // toggles the 3x faster battle (the touch way; on the keyboard, hold Enter)
   undo(): void; // undoes the last step (same as the Z key): whoever plays with a mouse only had no way to
   menu(): void;
@@ -80,9 +79,6 @@ export class BattleHud {
   }
   setFps(on: boolean) {
     this.tools.setFps(on);
-  }
-  setPixel(size: number) {
-    this.tools.setPixel(size);
   }
   scrollQueue(dir: 1 | -1) {
     const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;

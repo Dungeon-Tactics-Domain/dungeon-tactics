@@ -62,9 +62,7 @@ different picture.
 | `cursor` | `{x,y}`: the tile under the cursor (tile info, target panel, move preview); on a split map `x.5` puts it between tiles, where a token's square can stop | load and live |
 | `camera` | `{ "angle": 0-7, "zoom": 1.5, "focus": {x,y}, "action": { "from": "<unit id>", "to": {x,y} }, "fixed": "side" \| "three-quarter" }` | load and live |
 | `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all`; or a piece of the 3D layer by its own name (`ui-pieces.ts`): `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result`, `tools`, `status`, `options`, `title`, `sheets`, `guides` | load and live |
-| `pixel` | `0` (plain 3D), `2`, `3`, `4`: pixel-art block size | load and live |
 | `daylight` | `0` night to `1` day: the light that Until Dawn uses | load and live |
-| `uiPixel` | `true`: the 3D pieces through the pixel filter (`?pixel=1` in the address; the spec's `pixel` is the scene's) | page load |
 | `layout` | `"edges"` or `"frame"`: the interface layout (`ui3d/layout.ts`; the address's `?layout=` wins), for this page only | page load |
 | `marks` | `"simples"`, `"luz"`, `"pedra"` or `"neon"`: how the board's marks are drawn (`mark-style.ts`; the address's `?marks=` wins), for this page only | page load |
 | `page` | `1` to `3`: the ability sheet's page, with `screen: "abilities"` | load and live |
@@ -269,8 +267,8 @@ Still scenes of the 3D interface (no loop; `hide` takes them by name: `menu` hid
 
 | Spec | What it shows |
 |---|---|
-| `menu3d`, `menu3d-pixel` | the 3D command menu at 1920x1080, smooth and through the pixel filter |
-| `menu3d-habilidades`, `menu3d-habilidades-pixel` | the submenu open in a cascade and the ability sheet |
+| `menu3d` | the 3D command menu at 1920x1080 |
+| `menu3d-habilidades` | the submenu open in a cascade and the ability sheet |
 | `turn3d`, `turn3d-previa`, `turn3d-previa-carga` | the 3D turn list at 1280x720: plain, with a strike aimed, with a charge previewed |
 | `turn3d-stats`, `turn3d-stats-720`, `turn3d-stats-baixa`, `turn3d-stats-previa` | the turn list's life and CT lines (Nov 17) with hurt units, life regen (`units.<id>.hpRegen`) and mixed CT: at 1920x1080, at 1280x720, on a 844x390 screen (the rows' smallest size), and with a strike aimed |
 | `bar3d`, `bar3d-previa` | the 3D combat bar at 1920x1080: the acting unit's sheet alone, and with a strike aimed (preview plate and the target's sheet) |

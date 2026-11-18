@@ -46,7 +46,7 @@ export function mountTown3d(root: HTMLElement) {
     no3d();
   };
   try {
-    layer = new Ui3dLayer(root, false, lost);
+    layer = new Ui3dLayer(root, lost);
   } catch {
     return no3d();
   }

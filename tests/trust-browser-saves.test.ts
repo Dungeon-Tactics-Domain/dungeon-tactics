@@ -3,7 +3,6 @@ import { parseChest, parseEquip } from '../src/client/chest.ts';
 import { parseSetup } from '../src/client/dev-roster.ts';
 import { DEPLOY_MAX, GROUP_MAX, parseGroup } from '../src/client/group.ts';
 import { pickLang } from '../src/client/i18n.ts';
-import { parsePixel } from '../src/client/pixel-settings.ts';
 import { parseManifest, summary } from '../src/client/saves.ts';
 import { parseSound } from '../src/client/sound.ts';
 import { migrate, store } from '../src/client/store.ts';
@@ -54,7 +53,6 @@ const PARSERS: [string, (raw: unknown) => unknown][] = [
   ['parseManifest', parseManifest],
   ['parseExpedition', parseExpedition],
   ['parseSetup', parseSetup],
-  ['parsePixel', (r) => parsePixel(r, false)],
   ['parseSound', parseSound],
   ['parseBest', parseBest],
   ['parseTownGrid', parseTownGrid],
@@ -245,14 +243,8 @@ describe('dt:dev (parseSetup)', () => {
   ])('%s is rejected', (_, raw) => expect(parseSetup(raw)).toBeNull());
 });
 
-describe('settings: dt:pixel, dt:sound, dt:dawn, dt:town-grid, dt:lang', () => {
+describe('settings: dt:sound, dt:dawn, dt:town-grid, dt:lang', () => {
   it('each bad field falls back alone', () => {
-    expect(parsePixel({ size: 5, outline: 'no', palette: true, snap: 0 }, false)).toEqual({
-      size: 0,
-      outline: true,
-      palette: true,
-      snap: true,
-    });
     expect(parseSound({ music: 7, sfx: Number.NaN })).toEqual(parseSound(null));
     expect(parseSound({ music: 105, sfx: -5 })).toEqual(parseSound(null));
     for (const v of ['-1', '1.5', '1e9', 'NaN', 'Infinity', null]) expect(parseBest(v)).toBe(0);

@@ -86,7 +86,6 @@ export const ACTIONS = {
   cycle: { keys: ['Tab'], pad: [] },
   slots: { keys: ['1 – 7'], pad: [] },
   recenter: { keys: ['F'], pad: [] },
-  pixel: { keys: ['V'], pad: [] },
   fps: { keys: ['F3'], pad: [] },
 } as const satisfies Record<string, { keys: readonly string[]; pad: readonly PadGlyph[] }>;
 export type Act = keyof typeof ACTIONS;

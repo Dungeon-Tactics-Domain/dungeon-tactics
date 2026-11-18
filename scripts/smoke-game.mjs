@@ -30,7 +30,7 @@ const PAGES = [
   },
   {
     // home with no expedition: the walkable town (Nov 15), drawn with no window over it; Esc opens its menu: quest, shop,
-    // tavern, party and the title. The check presses Esc itself (the town's keys listen on the window) (its 5 rows plus the two buttons of the debug grid and of fluid movement: 9, 10 with an expedition)
+    // tavern, party and the title. The check presses Esc itself (the town's keys listen on the window) (its 5 rows plus the debug grid's switch)
     name: 'town',
     path: '/?home',
     ready: '.town-prompt',
@@ -41,7 +41,7 @@ const PAGES = [
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       await new Promise((r) => setTimeout(r, 800)); // the 3D menu opens a moment later
       // the menu is drawn in 3D: its 8 unseen hit buttons over the drawing (town3d/street.ts)
-      return bare && document.querySelectorAll('.town3d-hits button').length === 8;
+      return bare && document.querySelectorAll('.town3d-hits button').length === 7;
     },
   },
   {
@@ -64,7 +64,7 @@ const PAGES = [
       const bare = !document.querySelector('.overlay');
       dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       await new Promise((r) => setTimeout(r, 800)); // the 3D menu opens a moment later
-      return bare && document.querySelectorAll('.town3d-hits button').length === 9;
+      return bare && document.querySelectorAll('.town3d-hits button').length === 8;
     },
   },
   {

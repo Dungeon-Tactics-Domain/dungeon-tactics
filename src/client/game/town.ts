@@ -3,12 +3,11 @@
 // walks it (keyboard, gamepad, a click on the ground); the rest of the party waits at the Guild and the townsfolk stroll
 // and tell rumours. Talking and a place's window only come with the action button (Nov 16, Fernando): Enter, A or a click
 // on the balloon over what is in front; walking or clicking only walks there. Nothing new is saved: the town starts the
-// same on every visit. With "Fluid movement in town" on (Nov 16, Fernando; off by default) the walker moves freely instead
-// of cell by cell (freeStep); the cell walk (walk) is untouched by it.
+// same on every visit. The walker moves freely, not cell by cell (freeStep; Fernando, Nov 18: fluid always, no option).
 import { type Place, TOWNSFOLK } from '../../content/crawl/town.ts';
-import { type Grid, posKey, samePos } from '../../shared/battle/grid.ts';
+import { type Grid, samePos } from '../../shared/battle/grid.ts';
 import { SUB } from '../../shared/battle/half.ts';
-import { footprint, reachable } from '../../shared/battle/pathing.ts';
+import { footprint } from '../../shared/battle/pathing.ts';
 import type { BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { padDialog } from '../dialog.ts';
 import { emptyMemory, padActions } from '../gamepad.ts';
@@ -19,8 +18,7 @@ import { loadTownSkin } from '../hud-skin.ts';
 import { t } from '../i18n.ts';
 import { button, el, icon, tabbed, UI_ICON } from '../icons.ts';
 import { liveText, padSeen } from '../key-hints.ts';
-import { gridStep, type KeyAction, keyAction, pageKeeps, type ScreenDir } from '../keyboard.ts';
-import { PIXEL_KEY, parsePixel } from '../pixel-settings.ts';
+import { type KeyAction, keyAction, pageKeeps, type ScreenDir } from '../keyboard.ts';
 import { type Cover, whenReady } from '../ready-gate.ts';
 import { BattleScene } from '../scene.ts';
 import { setTrack, sfx } from '../sound.ts';
@@ -33,14 +31,12 @@ import {
   cell,
   cellUnder,
   centreOf,
-  FREE_KEY,
   floorCells,
   freeTarget,
   GRID_KEY,
   groundDir,
   ME,
   near,
-  parseTownFree,
   parseTownGrid,
   placeAt,
   route,
@@ -50,15 +46,13 @@ import {
   townScenario,
   townSquares,
   townState,
-  townTarget,
 } from '../town-map.ts';
 import { homeScreen, townMenu } from './crawl.ts';
-import { townFreeChoice, townGridChoice } from './options.ts';
+import { townGridChoice } from './options.ts';
 import { Folk, windowOpen } from './town-folk.ts';
 import { openPlace, townHud } from './town-hud.ts';
 
 const STEP_MS = TIMING.step / SUB; // a cell at the battle's walking pace (Nov 13, Fernando: slow walking)
-const DIRS: ScreenDir[] = ['up', 'down', 'left', 'right'];
 // the help line with nothing in front of the walker: how to walk, act and open the menu
 const PROMPT = (): [Act, string][] => [
   ['walk', t('andar', 'walk')],
@@ -72,7 +66,6 @@ class Town {
   private keys: ScreenDir[] = []; // directions held on the keyboard, the last pressed last
   private readonly pad = emptyMemory();
   private padPrimed = false;
-  private walking = false;
   private goal: ((p: Pos) => boolean) | null = null; // where a click sends the walker
   private face: Pos | null = null; // what the click was on: the walker turns to it on arrival
   private facing: Pos = { x: 0, y: -1 }; // the walker's last step, for who stands in front
@@ -81,10 +74,9 @@ class Town {
   private tg: TownTarget | null = null; // what the action button acts on now
   private showGrid = parseTownGrid(store.json(GRID_KEY));
   private dots?: Pos[]; // the debug grid's, worked out when it first shows
-  private free = parseTownFree(store.json(FREE_KEY)); // fluid movement instead of the cell steps
-  private at: Pos; // fluid: the walker's centre, in cells; the unit's pos is the square snapped under it (cellUnder)
-  private moving = false; // fluid: walked on the last frame
-  private last = performance.now(); // the last frame, for the fluid walk's pace
+  private at: Pos; // the walker's centre, in cells; the unit's pos is the square snapped under it (cellUnder)
+  private moving = false; // walked on the last frame
+  private last = performance.now(); // the last frame, for the walk's pace
   // what Enter does here, at the top in the middle like the battle's help line
   private readonly prompt = el('div', { class: 'panel help town-prompt', role: 'status' });
   // the same, as a balloon over what it acts on (Nov 16, Fernando); a click on it acts too. Placed every frame (poll)
@@ -163,7 +155,7 @@ class Town {
     const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g?.connected);
     const now = performance.now();
     // a frame after a hidden tab counts as 50 ms, not as the whole absence; under a window (0) the walker stands
-    if (this.free) this.freeStep(open ? 0 : Math.min(50, now - this.last), gp);
+    this.freeStep(open ? 0 : Math.min(50, now - this.last), gp);
     this.last = now;
     if (!gp || document.querySelector('.loading-cover')) return; // the pad waits for the cover, like the keys
     padSeen(gp);
@@ -180,76 +172,18 @@ class Town {
   private run(a: KeyAction) {
     if (a.k === 'cursor') {
       this.goal = null;
-      return void (this.free || this.walk()); // fluid: freeStep reads what is held, every frame
+      return; // freeStep reads what is held, every frame
     }
     if (a.k === 'confirm') return this.act();
     if (a.k === 'cancel' || a.k === 'help') {
-      // a fragment: both switches land as rows of the menu's own list
+      // a fragment: the switch lands as a row of the menu's own list
       const foot = document.createDocumentFragment();
-      foot.append(
-        townGridChoice((on) => (this.showGrid = on)),
-        townFreeChoice((on) => this.setFree(on)),
-      );
+      foot.append(townGridChoice((on) => (this.showGrid = on)));
       return townMenu(foot);
     }
     if (a.k === 'rotate') return this.scene.rotate(a.dir);
     if (a.k === 'zoom') return this.scene.zoom(a.factor);
     if (a.k === 'recenter') return this.scene.resetView(); // F: the whole town, as in battle
-  }
-
-  // the direction held now: the last key pressed, else the gamepad's d-pad or stick
-  private held(): ScreenDir | undefined {
-    return this.keys.at(-1) ?? DIRS.find((d) => this.pad.held[`d${d}`] !== undefined);
-  }
-
-  // Walks while a direction is held, one cell at a time (a blocked cell ends it), else toward the clicked goal; on arrival
-  // from a click it turns to what was clicked, so the balloon offers that
-  private async walk() {
-    if (this.walking) return;
-    this.walking = true;
-    let arrived = false;
-    for (;;) {
-      if (windowOpen()) break;
-      const dir = this.held();
-      let next: Pos | undefined;
-      if (dir) {
-        this.goal = null;
-        this.face = null;
-        const s = gridStep(dir, this.scene.heading);
-        next = { x: this.me.pos.x + s.x, y: this.me.pos.y + s.y };
-        this.facing = s;
-        if (!reachable(this.grid, this.state, ME, 1).has(posKey(next))) break;
-      } else if (this.goal) {
-        // the way again from every cell: a townsperson may have stepped into the old one (review of Nov 15)
-        const way = route(this.grid, this.state, this.goal);
-        if (!way) sfx('cancel');
-        arrived = way?.length === 0;
-        next = way?.[0];
-      }
-      if (!next) break;
-      this.facing = { x: Math.sign(next.x - this.me.pos.x), y: Math.sign(next.y - this.me.pos.y) };
-      this.me.pos = next;
-      this.showPrompt(); // the balloon follows each step, not only the walk's end
-      this.scene.focusOn(next);
-      await this.scene.glide(ME, next, STEP_MS);
-    }
-    this.walking = false;
-    const face = arrived ? this.face : null;
-    if (face) this.facing = { x: Math.sign(face.x - this.me.pos.x), y: Math.sign(face.y - this.me.pos.y) };
-    this.scene.rest(ME, face ?? undefined);
-    this.showPrompt();
-    this.goal = null;
-    this.face = null;
-  }
-
-  // Fluid movement: both ways start from the middle of the walker's cell, standing
-  private setFree(on: boolean) {
-    this.free = on;
-    this.moving = false;
-    this.at = centreOf(this.me.pos);
-    this.scene.slide(ME, this.me.pos);
-    this.scene.rest(ME);
-    this.showPrompt();
   }
 
   // where the keys, the d-pad and the stick point, on screen (x right, y down): the stick by how far it tilts, the rest
@@ -264,10 +198,10 @@ class Town {
     return { x: x / m, y: y / m };
   }
 
-  // The fluid walk, every frame: the way held (screen directions turned with the camera), else toward the clicked goal
-  // through the middles of route's cells, worked out again every frame like the cell walk does at every cell. A cell
-  // per STEP_MS at full pace, the cell walk's own, so the two compare. No easing of its own: the camera's slide is the
-  // only smoothing, as in the cell walk (nothing more to switch off under prefers-reduced-motion)
+  // The walk, every frame: the way held (screen directions turned with the camera), else toward the clicked goal through
+  // the middles of route's cells, worked out again every frame (a townsperson may have stepped into the old one). A cell
+  // per STEP_MS at full pace, the battle's walking pace. No easing of its own: the camera's slide is the only smoothing
+  // (nothing more to switch off under prefers-reduced-motion)
   private freeStep(dt: number, gp?: Gamepad | null) {
     if (!dt) this.goal = this.face = null;
     let v = dt ? groundDir(this.steer(gp), this.scene.heading) : { x: 0, y: 0 };
@@ -322,7 +256,6 @@ class Town {
     }
     this.goal = ok;
     this.face = face;
-    if (!this.free) void this.walk();
   }
 
   // the action button (Enter, A, a click on the balloon): talk, or open the place's window
@@ -335,7 +268,7 @@ class Town {
 
   // what the action button does here, in the help line and the balloon; their content changes only with the target
   private showPrompt() {
-    const tg = this.free ? freeTarget(this.state, this.at, this.facing) : townTarget(this.state, this.facing);
+    const tg = freeTarget(this.state, this.at, this.facing);
     const label = !tg
       ? null
       : 'unit' in tg
@@ -378,7 +311,7 @@ class Town {
     for (const id of castParty(this.state, group())) this.scene.drop(id);
     this.scene.sync(this.state);
     // sync stood the walker on its cell: back to where it is
-    if (this.free) this.scene.slide(ME, { x: this.at.x - SUB / 2, y: this.at.y - SUB / 2 });
+    this.scene.slide(ME, { x: this.at.x - SUB / 2, y: this.at.y - SUB / 2 });
     this.showPrompt();
   }
 }
@@ -390,10 +323,9 @@ export async function bootTown(host: HTMLElement, cover: Cover) {
   const sc = townScenario();
   const state = townState(sc);
   castParty(state, group());
-  const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   // every class's model loads, so a recruit or a class change in town finds theirs
   const models = [...JOBS, ...TOWNSFOLK.map((f) => f.def)];
-  await whenReady(cover, [BattleScene.create(host, sc.grid, state, pixel, models), loadTownSkin()], ([scene, skin]) => {
+  await whenReady(cover, [BattleScene.create(host, sc.grid, state, models), loadTownSkin()], ([scene, skin]) => {
     new Town(scene, sc.grid, state, host, skin);
     homeScreen();
   });

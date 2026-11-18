@@ -17,7 +17,6 @@ import {
   ME,
   memberUnit,
   near,
-  parseTownFree,
   parseTownGrid,
   placeAt,
   route,
@@ -31,7 +30,6 @@ import {
   townScenario,
   townSquares,
   townState,
-  townTarget,
 } from '../src/client/town-map.ts';
 import { GUILD_SPOTS, TOWN, TOWN_PLACES, TOWN_START, TOWNSFOLK } from '../src/content/crawl/town.ts';
 import { posKey, tileAt } from '../src/shared/battle/grid.ts';
@@ -179,33 +177,10 @@ describe('the walkable town (src/content/crawl/town.ts, town-map.ts)', () => {
     expect(state.units.find((u) => u.id === ME)).toMatchObject({ def: halfDef(g.members[1].cls), pos: walker.pos });
   });
 
-  it('acts on whoever stands in front, else the door, else whoever is beside, each kind with its balloon symbol', () => {
+  it('acts at each door by its kind, each kind with its balloon symbol', () => {
     const state = party();
-    const me = state.units.find((u) => u.id === ME)!;
-    const hugo = state.units.find((u) => u.id === 'f-smith')!;
-    me.pos = cell(place('tavern').door);
-    expect(townTarget(state, { x: 0, y: -1 })).toMatchObject({ act: 'tavern', place: place('tavern') });
-    // someone in front wins over the door
-    hugo.pos = { x: me.pos.x, y: me.pos.y - SUB };
-    expect(townTarget(state, { x: 0, y: -1 })).toMatchObject({ act: 'talk', unit: hugo });
-    // behind the walker: the door first, someone beside only off it
-    expect(townTarget(state, { x: 0, y: 1 })).toMatchObject({ act: 'tavern' });
-    me.pos = { x: me.pos.x + 2 * SUB, y: me.pos.y };
-    hugo.pos = { x: me.pos.x, y: me.pos.y - SUB };
-    expect(townTarget(state, { x: 0, y: 1 })).toMatchObject({ act: 'talk', unit: hugo });
-    // two people beside: one target, the one in front (a single balloon, never one per person)
-    const other = state.units.find((u) => u.id !== ME && u !== hugo)!;
-    other.pos = { x: me.pos.x - SUB, y: me.pos.y };
-    expect(townTarget(state, { x: -1, y: 0 })).toMatchObject({ unit: other });
-    expect(townTarget(state, { x: 0, y: -1 })).toMatchObject({ unit: hugo });
-    other.pos = { x: 0, y: 2 * SUB };
-    hugo.pos = { x: 0, y: 0 };
-    expect(townTarget(state, { x: 0, y: 1 })).toBeNull();
-    state.units = [me]; // nobody by the doors
-    const actAt = (id: string) => {
-      me.pos = cell(place(id).door);
-      return townTarget(state, { x: 0, y: 1 })?.act;
-    };
+    state.units = state.units.filter((u) => u.id === ME); // nobody by the doors
+    const actAt = (id: string) => freeTarget(state, centreOf(cell(place(id).door)), { x: 0, y: 1 })?.act;
     expect(TOWN_PLACES.map((p) => actAt(p.id))).toEqual(['quest', 'party', 'soon', 'shop', 'tavern', 'soon']);
     for (const act of ['talk', 'party', 'shop', 'tavern', 'enter', 'quest', 'soon'] as TownAct[])
       expect(UI_ICON[act], act).toBeTruthy();
@@ -249,11 +224,6 @@ describe('fluid movement in the walkable town (town-map.ts)', () => {
       Math.hypot(at.x - Math.min(Math.max(at.x, c.x), c.x + 1), at.y - Math.min(Math.max(at.y, c.y), c.y + 1));
     return Math.min(...boxes.map(far)) - BODY;
   };
-
-  it('is off unless the saved value is exactly true', () => {
-    expect([null, 'true', 1, {}, []].map(parseTownFree)).toEqual([false, false, false, false, false]);
-    expect(parseTownFree(true)).toBe(true);
-  });
 
   it('stops at a wall, slides along it and never jumps it on a long frame', () => {
     const { state } = alone();

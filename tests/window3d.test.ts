@@ -3,7 +3,7 @@ import scene from '../scripts/sandbox/bench/window3d.json';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import { type Act, keysText } from '../src/client/glyphs.ts';
 import { keyAction } from '../src/client/keyboard.ts';
-import { pixelValue, toolRows } from '../src/client/tool-rows.ts';
+import { toolRows } from '../src/client/tool-rows.ts';
 import { stage } from '../src/client/ui3d/layout.ts';
 import { neighbour } from '../src/client/ui3d/walk.ts';
 import { REF as NOTE, noteLayout, noteWidths } from '../src/client/window3d/note-view.ts';
@@ -34,10 +34,6 @@ describe('corner menu: one list of rows for the HTML menu and the 3D one', () =>
     expect(toolRows(true, false).at(-1)?.tool).toBe('menu'); // Options stays the last row
   });
 
-  it('the pixel size row says the size in use', () => {
-    expect([0, 2, 3, 4].map(pixelValue)).toEqual(['desligado', '2 px', '3 px', '4 px']);
-  });
-
   it('has each tool once, with a name and a glyph', () => {
     expect(new Set(rows.map((r) => r.tool)).size).toBe(rows.length);
     for (const r of rows) expect(r.label && r.glyph, r.tool).toBeTruthy();
@@ -56,7 +52,6 @@ describe('corner menu: one list of rows for the HTML menu and the 3D one', () =>
     const key = (tool: string) => keysText(rows.find((r) => r.tool === tool)!.key as Act, 'keyboard')!;
     expect(run(key('undo').toLowerCase())).toEqual({ k: 'undo' });
     expect(run(key('recenter').toLowerCase())).toEqual({ k: 'recenter' });
-    expect(run(key('pixel').toLowerCase())).toEqual({ k: 'pixel' });
     expect(run(key('menu').toLowerCase())).toEqual({ k: 'help' });
     expect(run(key('rotateRight').toLowerCase())).toEqual({ k: 'rotate', dir: 1 });
     expect(key('rotateLeft')).toBe('⇧R');

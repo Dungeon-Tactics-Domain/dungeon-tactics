@@ -146,10 +146,10 @@ describe('interface layout: the reference regions on a page', () => {
 });
 
 describe('interface layout: the spec', () => {
-  it('a spec names the layout and the pixel filter, and a typo fails it', () => {
-    expect(parseSpec({ uiPixel: true, layout: 'frame' }).problems).toEqual([]);
-    expect(parseSpec({ uiPixel: 1, layout: 'wide' }).problems).toEqual([
-      'uiPixel must be true or false',
+  it('a spec names the layout, and a typo fails it', () => {
+    expect(parseSpec({ layout: 'frame' }).problems).toEqual([]);
+    expect(parseSpec({ uiPixel: true, layout: 'wide' }).problems).toEqual([
+      'unknown key "uiPixel"', // the pixel filter left on Nov 18
       'layout must be one of edges, frame',
     ]);
   });

@@ -1,22 +1,11 @@
 // The one WebGL layer every 3D screen of the HUD draws on (Fernando, Nov 16: one shared layer, no glass blur): a
 // transparent canvas over the HUD with a single context and an orthographic camera in CSS px. A screen (menu3d/, turn3d/)
 // registers two groups whose origin is the HUD's top left, x right and y down as -y: `flat` for panels and text, drawn
-// back to front, and `deep` for low-poly icons with a depth buffer, drawn over them. With `pixel`, the icons go to a
-// small target read block by block (pixel.ts); without it they go straight to the canvas, with no full-screen target.
+// back to front, and `deep` for low-poly icons with a depth buffer, drawn over them, straight to the canvas.
 //   Clock: the HUD ticks the layer on the battle clock (BattleHud.showFaces), so the bench's pause and the speed-up
 //   reach it. It draws only while a screen moves or after `wake()`; a still layer costs no draw call.
 //   The canvas takes no input and is hidden from the screen reader: each screen brings its own controls.
-import {
-  Group,
-  Mesh,
-  NearestFilter,
-  OrthographicCamera,
-  Scene,
-  ShaderMaterial,
-  Vector2,
-  WebGLRenderer,
-  WebGLRenderTarget,
-} from 'three';
+import { Group, OrthographicCamera, Scene, WebGLRenderer } from 'three';
 import { type Act, hintLine, type Shown } from '../glyphs.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { el } from '../icons.ts';
@@ -26,14 +15,13 @@ import { reducedMotion } from '../motion.ts';
 import { param } from '../store.ts';
 import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
 import { type Stage, setPageFloor, stage, textPx } from './layout.ts';
-import { QUAD, QUAD_VERT, type Rgb, type Theme } from './panel.ts';
-import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
+import type { Rgb, Theme } from './panel.ts';
 import type { Rotate3d } from './rotate3d.ts';
 import { safeOf, safeSides } from './safe-area.ts';
 
 export interface Ui3dScreen {
   readonly flat: Group; // panels and text, depth test off, ordered by renderOrder
-  readonly deep?: Group; // icons with depth (through the pixel filter when it is on)
+  readonly deep?: Group; // icons with depth
   readonly host?: HTMLElement; // its input; unseen (a window closed, the piece hidden by name), the screen is not drawn
   resize(): void; // the layer's size, density or scale changed
   frame(dt: number, t: number): boolean; // one step; true while it still moves
@@ -54,7 +42,6 @@ export class Ui3dLayer {
   // a panel's margin to each edge of the page (the design system's 12 px), clear of the notch and inside the frame
   inset = { top: 12, right: 12, bottom: 12, left: 12 };
   private mode = getLayout();
-  block = 1; // CSS px of a pixel filter block
   solo?: Ui3dScreen; // a full screen over the game (the title): while set, only it is drawn
   still = reducedMotion(); // reduced motion (Options, motion.ts), read once a frame: everything lands at once, nothing sways
   readonly theme: Theme;
@@ -68,10 +55,6 @@ export class Ui3dLayer {
   private readonly screens: Ui3dScreen[] = [];
   private readonly names = new Map<Ui3dScreen, PieceName>(); // the piece each screen is (ui-pieces.ts)
   private rotate?: Rotate3d; // the turn-the-phone notice: while it shows, over everything, alone
-  // pixel filter only: the icons' target and the quad that lays it over the panels
-  private target?: WebGLRenderTarget;
-  private readonly texel = new Vector2(1, 1);
-  private readonly over?: Mesh<typeof QUAD, ShaderMaterial>;
   private readonly sized: ResizeObserver;
   private last = 0;
   private t = 0;
@@ -81,7 +64,6 @@ export class Ui3dLayer {
   // `lost`: the WebGL context went away; the owner drops the screens and the layer, and shows the warning (no3d.ts)
   constructor(
     readonly root: HTMLElement,
-    readonly pixel: boolean,
     private readonly lost: () => void,
   ) {
     // smooth icons need their edges softened: the canvas's own multisampling, only where a pixel is big enough to show
@@ -89,7 +71,7 @@ export class Ui3dLayer {
     this.renderer = new WebGLRenderer({
       canvas: this.canvas,
       alpha: true,
-      antialias: !pixel && devicePixelRatio < 2,
+      antialias: devicePixelRatio < 2,
     });
     this.renderer.setClearColor(0, 0);
     this.renderer.autoClear = false;
@@ -110,22 +92,6 @@ export class Ui3dLayer {
     };
     this.flat.add(this.flatRoot);
     this.deep.add(this.deepRoot);
-    if (pixel) {
-      this.over = new Mesh(
-        QUAD,
-        new ShaderMaterial({
-          vertexShader: QUAD_VERT,
-          fragmentShader: PIXEL_FRAG,
-          transparent: true,
-          premultipliedAlpha: true, // the target holds colour already multiplied by its coverage
-          depthTest: false,
-          depthWrite: false,
-          uniforms: { uMap: { value: null }, uTexel: { value: this.texel } },
-        }),
-      );
-      this.over.renderOrder = 100;
-      this.flat.add(this.over);
-    }
     root.classList.add('ui3d');
     root.append(this.canvas);
     const o = { signal: this.heard.signal, capture: true };
@@ -178,13 +144,13 @@ export class Ui3dLayer {
   px(size: number, floor?: number) {
     return textPx(size, this.s, floor);
   }
-  // pixel filter on: positions onto the block grid, so a sprite does not shimmer as it moves, and rotation in steps,
-  // like the frames of a sprite
+  // ponytail: the pixel filter's grid left on Nov 18, so a position passes as it is; kept because the pieces of the
+  // parallel fronts (menu3d/, turn3d/, bar3d/, hints3d/) still call it. Inline it once their branches land
   snap(v: number) {
-    return this.pixel ? Math.round(v / this.block) * this.block : v;
+    return v;
   }
   turn(a: number) {
-    return this.pixel ? Math.round(a / (Math.PI / 8)) * (Math.PI / 8) : a;
+    return a;
   }
 
   // `name`: the piece the screen is, so it can be hidden by name; null for a screen of several, which hides its own
@@ -233,20 +199,6 @@ export class Ui3dLayer {
     Object.assign(this.camera, { right: w, top: h });
     this.camera.updateProjectionMatrix();
     this.flatRoot.position.y = this.deepRoot.position.y = h;
-    if (this.over) {
-      // one texel per block, read unfiltered
-      const cut = pixelBlock(this.s, dpr);
-      this.block = cut / dpr;
-      this.target?.dispose();
-      this.target = new WebGLRenderTarget(Math.ceil((w * dpr) / cut), Math.ceil((h * dpr) / cut), {
-        minFilter: NearestFilter,
-        magFilter: NearestFilter,
-      });
-      this.texel.set(1 / this.target.width, 1 / this.target.height);
-      this.over.material.uniforms.uMap.value = this.target.texture;
-      this.over.scale.set(w, h, 1);
-      this.over.position.set(w / 2, h / 2, 0);
-    }
     for (const s of this.screens) s.resize();
     this.wake();
   }
@@ -276,19 +228,10 @@ export class Ui3dLayer {
     if (!moving && !this.moved && !this.dirty) return;
     this.moved = moving;
     this.dirty = false;
-    if (this.target) {
-      r.setRenderTarget(this.target);
-      r.clear();
-      r.render(this.deep, this.camera);
-      r.setRenderTarget(null);
-      r.clear();
-      r.render(this.flat, this.camera);
-    } else {
-      r.clear();
-      r.render(this.flat, this.camera);
-      r.clearDepth();
-      r.render(this.deep, this.camera);
-    }
+    r.clear();
+    r.render(this.flat, this.camera);
+    r.clearDepth();
+    r.render(this.deep, this.camera);
   }
 
   // cost of the last frame for the F3 counter (fps.ts): 0 draw calls while nothing moves
@@ -305,8 +248,6 @@ export class Ui3dLayer {
     this.heard.abort();
     for (const stop of this.unheard) stop();
     for (const s of [...this.screens]) s.dispose();
-    this.over?.material.dispose();
-    this.target?.dispose();
     this.renderer.dispose();
     this.canvas.remove();
     this.root.classList.remove('ui3d');

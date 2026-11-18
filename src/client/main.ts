@@ -19,12 +19,11 @@ import { finishRoom } from './game/room-end.ts';
 import { HeroTurn, type TurnHost } from './hero-turn.ts';
 import { BattleHud, eventLog, type HudActions, unitStatus } from './hud.ts';
 import type { HudSkin } from './hud-skin.ts';
-import { abilityName, t, unitName } from './i18n.ts';
+import { abilityName, unitName } from './i18n.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
 import { onMarkStyle } from './mark-style.ts';
 import { reducedMotion } from './motion.ts';
-import { nextSize, PIXEL_KEY, type PixelSettings } from './pixel-settings.ts';
 import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
 import { statusWindow } from './status-window.ts';
@@ -59,7 +58,6 @@ export class Game implements TurnHost {
     public battle: Battle,
     private readonly scene: BattleScene,
     host: HTMLElement,
-    private pixel: PixelSettings,
     private readonly sel: BattleSelection,
     skin: HudSkin, // the 3D pieces (hud-skin.ts)
   ) {
@@ -79,7 +77,6 @@ export class Game implements TurnHost {
       hover: (list, i) => this.turn.hoverRow(list, i),
       rotate: (dir) => scene.rotate(dir),
       recenter: () => scene.resetView(),
-      pixel: () => this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) }),
       fast: () => {
         pace.toggle = !pace.toggle;
         store.set(FAST_KEY, pace.toggle ? '1' : '');
@@ -99,7 +96,6 @@ export class Game implements TurnHost {
     this.toggleFps = fpsCounter(host, scene, () => this.hud.stats3d());
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
-    this.hud.setPixel(this.pixel.size);
     requestAnimationFrame(() => this.pollPad());
     // Options changed the mark style: the scene builds its marks again and the turn's marks go back on them
     onMarkStyle(() => {
@@ -133,7 +129,6 @@ export class Game implements TurnHost {
     if (a.k === 'zoom') return this.scene.zoom(a.factor);
     if (a.k === 'recenter') return this.scene.resetView();
     if (a.k === 'help') return this.menu();
-    if (a.k === 'pixel') return this.setPixel({ ...this.pixel, size: nextSize(this.pixel.size) });
     if (a.k === 'status') return this.status();
     if (a.k === 'info') return this.abilitySheet();
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
@@ -176,18 +171,6 @@ export class Game implements TurnHost {
     this.turn.screen = startScreen(this.battle);
     this.turn.cursorToActor();
     this.update(freshUi(this.battle));
-  }
-
-  private setPixel(p: PixelSettings) {
-    this.pixel = p;
-    store.set(PIXEL_KEY, JSON.stringify(p));
-    this.scene.setPixel(p);
-    this.hud.setPixel(p.size);
-    this.log = t(
-      `Pixel art: ${p.size ? `${p.size} px` : 'desligado'}`,
-      `Pixel art: ${p.size ? `${p.size} px` : 'off'}`,
-    );
-    this.update(this.turn.ui);
   }
 
   get heroTurn() {
@@ -388,8 +371,6 @@ export class Game implements TurnHost {
       room: this.sel.room !== null,
       scenario: this.sel.scenario,
       busy: this.busy,
-      pixel: () => this.pixel,
-      setPixel: (p) => this.setPixel(p),
       relayout: () => this.hud.relayout(),
       restart: () => this.restart(),
     });

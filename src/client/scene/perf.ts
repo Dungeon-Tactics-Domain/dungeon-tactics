@@ -1,5 +1,5 @@
 // Performance counter numbers (Fernando's request, Nov 12): frames and average time since the last reading, and Three's
-// resources. Pixel art draws the scene more than once per frame: info sums everything and zeroes only at the start of the frame.
+// resources. The shadow and the scene are two draws a frame: info sums everything and zeroes only at the start of the frame.
 import type * as THREE from 'three';
 
 export class PerfCounter {
