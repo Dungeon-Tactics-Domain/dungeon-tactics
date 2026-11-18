@@ -11,6 +11,7 @@ import { loadingCover } from './loading.ts';
 import { Game, LOCAL } from './main.ts';
 import { PIXEL_KEY, parsePixel } from './pixel-settings.ts';
 import { whenReady } from './ready-gate.ts';
+import { rotateNote } from './rotate-note.ts';
 import { BattleScene } from './scene.ts';
 import { sfx } from './sound.ts';
 import { param, store } from './store.ts';
@@ -20,6 +21,7 @@ async function boot() {
   const host = document.getElementById('app')!;
   // before anything else shows; the sandbox settles its own page, so there the cover leaves as soon as it is built
   const cover = loadingCover(param('sandbox') === null);
+  rotateNote(); // "turn the phone" over every screen (mobile-ux), cover included
   // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
   if (param('home') !== null) return bootTown(host, cover);
   const sel = await selectBattle();
