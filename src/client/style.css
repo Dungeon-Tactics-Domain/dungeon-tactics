@@ -254,24 +254,8 @@ button {
   cursor: pointer;
   touch-action: manipulation;
 }
-/* pressed: inverted bevel and the button drops 2 px, like a key */
-button:not(:disabled):active {
-  transform: translateY(2px);
-}
 button:disabled {
   cursor: default;
-}
-/* over the scene the yellow ring alone gives 1.4:1 on a white sky; the dark halo carries it */
-button.primary {
-  font: 400 var(--fs-lg) / 1 var(--font-title);
-  flex: 1;
-}
-button.secondary {
-  padding: 0 14px;
-}
-button.icon {
-  padding: 0;
-  font-size: var(--fs-lg);
 }
 /* the button's display beat the hidden attribute: the rotate ↻ showed up on maps without direction (Nov 12) */
 button[hidden],
@@ -291,21 +275,6 @@ button[hidden],
   /* a finger scrolls the window and nothing else: without this a pinch inside it zoomed the whole page 5x (Nov 16 tablet audit) */
   touch-action: pan-y;
   border: 2px solid var(--paper-edge);
-}
-/* buttons inside the window: the lab kit's dark blue button with the steel trim and a drop shadow (the primary keeps its
-   brighter blue); both at --fs like the kit, the primary in bold */
-.dialog button:not(.primary) {
-  font: 500 var(--fs) / 1.1 var(--font);
-}
-.dialog button.primary {
-  font: 700 var(--fs) / 1.1 var(--font-title);
-}
-/* chosen (choice()): the kit's lighter band, yellow border and a ✓, so it is not told by colour alone */
-.dialog button[aria-pressed="true"]:not(.primary) {
-  font-weight: 700;
-}
-.dialog button[aria-pressed="true"]:not(.primary)::before {
-  content: "✓";
 }
 /* disabled in a window: faded; the stone's dark grey looked like a pressed button */
 .dialog button:disabled {
@@ -330,11 +299,6 @@ button[hidden],
   padding: 4px 8px 4px 18px;
   border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
 }
-/* ✕ on the band: a bare glyph like the kit's, no button frame */
-.dialog .dialog-head button.icon {
-  font-size: var(--fs-lg);
-}
-/* hover only where a mouse hovers: on touch the tapped row kept the hover look */
 .dialog h2,
 .dialog h3 {
   font-family: var(--font-title);
@@ -349,24 +313,9 @@ button[hidden],
 }
 .dialog .primary {
   width: 100%;
-} /* link in the ink highlight color, underlined: not by color alone */
-.menu-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap);
-  margin-top: 16px;
 }
-.menu-actions button {
-  flex: 1 1 40%;
-} /* 2 per row: with 5 in a row, "Developer" got cut off (review of Nov 13) */
-.camp-list {
-  flex-direction: column;
-} /* a list of places: one per row, full name */
 /* a list of places to go (title, quick battle, town) is a menu like the battle's (Nov 15, theme screens): bare rows, the
    real focus draws the lighter band, the yellow line and the ▶ (keyboard, mouse and gamepad move the same focus) */
-.dialog .camp-list {
-  gap: 0;
-}
 .dialog .camp-list > button {
   position: relative;
   flex: none;
@@ -377,31 +326,12 @@ button[hidden],
   text-align: left;
   font: 500 var(--fs-lg) / 1.2 var(--font-title);
 }
-.dialog .camp-list > button:focus::before {
-  content: "▶";
-  position: absolute;
-  left: 12px;
-  font-size: var(--fs);
-}
 .dialog .learned {
   font-weight: 700;
   margin: 2px 0;
-} /* what is missing to recruit in the Tavern; .dialog in front to beat .dialog p */
+}
 
-/* ---- End of battle: result window (game/end-screens.ts) ---- */
-/* the title yellow on a victory; the rest is the lab mockup's board below */
-.result-label {
-  font-size: var(--fs-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-/* the key drawn on the primary, like the kit's Continue [Enter]; only where a keyboard is likely */
-.key-chip {
-  display: inline-flex;
-  gap: 3px;
-  font-size: var(--fs-xs);
-  vertical-align: middle;
-}
+/* the key drawn on a button: only where a keyboard is likely */
 @media (hover: none) {
   .key-chip {
     display: none;
@@ -415,11 +345,6 @@ button[hidden],
   margin: 0 0 8px;
   display: grid;
   gap: 6px;
-}
-.legend li {
-  display: flex;
-  align-items: center;
-  gap: var(--gap);
 }
 .sw {
   width: 20px;
@@ -454,13 +379,6 @@ button[hidden],
   gap: 4px 12px;
   margin: 0 0 12px;
   font-size: var(--fs-sm);
-}
-.keys dt {
-  font-weight: 800;
-  white-space: nowrap;
-}
-.keys dd {
-  margin: 0;
 }
 /* volume bar (slider in dialog.ts): track in the ink highlight color, number in % alongside */
 .slider {
@@ -504,9 +422,6 @@ button[hidden],
 
 /* ---- Title screen ---- */
 /* title screen (game/title.ts, titleScreen): big name and the three doors of the game */
-.dialog.title {
-  text-align: center;
-}
 .dialog.title h2 {
   font-size: var(--fs-display);
   letter-spacing: 1px;
@@ -518,10 +433,6 @@ button[hidden],
 /* Continue's saved games (saves-ui.ts, Nov 15): the load row and its Delete side by side as menu rows of the window
    list, the face before who goes and the where-gold-when line; scrolls past a screenful. Delete keeps its width when its
    2nd-tap text shows, so the rows do not jump. How to play takes the same width: at 460 px it was 2.5 screens long */
-.save-slots .dialog.title,
-.how-to-play .dialog.title {
-  width: min(760px, 100%);
-}
 .dialog .save-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 12em;
@@ -541,64 +452,14 @@ button[hidden],
 .save-text .continue-where {
   margin-left: 0;
 }
-/* Credits: left-aligned list even in the title's centered dialog */
-.dialog.title .legend {
-  text-align: left;
-}
 /* title screen (Nov 13, "I want a real title screen"): no window, the big name over the rotating map, the panel menu
    below it; does not close (dialog fixed). Since Nov 15 as the Design lab's mockup: the name at 96 px in capitals, the
    kit's 422 px command menu 48 px below, the key hint alone at the foot of the screen */
-.main-title .dialog.title {
-  border: none;
-  width: min(1100px, 100%);
-  overflow: visible;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 48px;
-}
 .main-title .dialog-head {
   justify-content: center;
   margin: 0;
   padding: 0;
   border: none;
-}
-.main-title .dialog.title h2 {
-  font: 700 min(var(--fs-logo), 8vw) / 1 var(--font-title); /* 8vw: the name stays on one line on a phone */
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0;
-}
-.main-title .title-foot {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  font-size: var(--fs-sm);
-  margin: 0; /* full opacity: at .85 it fell to ~4.2:1 over the veil on a white sky */
-}
-/* a short screen (800x600, 1024x640) left the fixed foot 3 to 9 px under the menu: there it follows the menu instead */
-@media (max-height: 700px) {
-  .main-title .title-foot {
-    position: static;
-  }
-}
-
-.main-title .title-lang {
-  min-height: 32px;
-  padding: 0 12px;
-  font-size: var(--fs-sm);
-  vertical-align: middle;
-}
-/* touch: the 44 px finger target (Nov 16 tablet audit); the PC keeps the slim 32 px button on the foot line */
-@media (pointer: coarse) {
-  .main-title .title-lang {
-    min-height: var(--tap);
-  }
-}
-.main-title .menu-actions {
-  border: 2px solid var(--paper-edge);
-  padding: 12px;
 }
 
 /* ---- Battle HUD: panels, turn list, help, corner menu, command menu ---- */
@@ -633,11 +494,6 @@ button[hidden],
   border: 2px solid var(--paper-edge);
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
-.tile-info {
-  top: var(--inset-t);
-  left: var(--inset-l);
-  font-size: var(--fs-sm);
-}
 .tile-info:empty {
   display: none;
 } /* end of battle: with no tile under the cursor, the empty box lost its meaning */
@@ -679,9 +535,6 @@ button[hidden],
 }
 /* the row's round, 1 for the current one and 2 for the next (Nov 15, Fernando's decision): a small tag on the face's
    bottom right corner, so it takes no width from the name (at the row's end it cut "Skeleton archer" at 1280) */
-.queue-row {
-  position: relative;
-}
 .queue-round {
   position: absolute;
   left: 30px; /* row padding 4 + face 36, less the tag's overlap */
@@ -710,18 +563,6 @@ button[hidden],
 .queue-stat {
   padding-bottom: 5px;
 }
-.queue-stat.hp {
-  --bar: var(--side);
-}
-.queue-stat.ct {
-  --bar: var(--ct);
-}
-.queue-row.hero {
-  --side: var(--hero);
-}
-.queue-row.enemy {
-  --side: var(--enemy);
-}
 .queue-n {
   font-weight: 700;
   line-height: 1;
@@ -737,9 +578,6 @@ button[hidden],
 }
 .queue-row.now {
   font-weight: 700;
-}
-.queue-row.charge {
-  font-style: italic;
 }
 /* after .charge, which won by coming later and left the "fires here" row in faded italics (review of Nov 13) */
 .queue-row.pending {
@@ -815,9 +653,6 @@ button[hidden],
   position: absolute;
   left: 0;
 }
-.burger-bars::before {
-  top: -7px;
-}
 .burger-bars::after {
   top: 7px;
 }
@@ -832,17 +667,6 @@ button[hidden],
   overflow-y: auto;
   touch-action: pan-y;
   transform-origin: top;
-}
-.tools-menu .item {
-  font: 400 var(--fs) / 1 var(--font-title);
-}
-/* 44 px on every screen, the PC too (Nov 16); .panel in front to beat the later `.panel .item` 40 px: the old 38 here
-   never applied, the rows measured 40 and 42 */
-.panel.tools-menu .item {
-  min-height: var(--tap);
-}
-.tools-menu .item + .item {
-  margin-top: 4px; /* a gap between targets, so a finger on the edge does not take the row next to it */
 }
 .tool-label {
   display: flex;
@@ -918,10 +742,6 @@ button[hidden],
   width: 422px;
   padding: 0 0 8px;
 }
-.abilities {
-  width: 460px;
-  --slide: -24px;
-}
 .panel-head {
   display: flex;
   align-items: center;
@@ -937,11 +757,6 @@ button[hidden],
   gap: 14px;
   white-space: nowrap;
   font: 500 var(--fs-lg) / 1 var(--font-title);
-}
-.panel.commands .item.focus::before,
-.panel.abilities .item.focus::before {
-  left: 14px;
-  font-size: var(--fs);
 }
 /* Act with the submenu open: marked as picked, with a pointer toward the submenu (the focus is in the submenu) */
 .panel.commands .item.picked::after {
@@ -963,10 +778,6 @@ button[hidden],
     gap: 10px;
     font-size: var(--fs);
   }
-  .panel.commands .item.focus::before,
-  .panel.abilities .item.focus::before {
-    left: 12px;
-  }
   .hud .unit-panel .portrait {
     width: 72px;
     height: 96px;
@@ -978,35 +789,8 @@ button[hidden],
   margin: 0 2px; /* centred in the 32 px icon column */
   flex: none;
 }
-.orb.act,
-.orb.blue {
-  --orb: var(--orb-blue);
-}
-.orb.status,
-.orb.gold {
-  --orb: var(--orb-gold);
-}
-.orb.bronze {
-  --orb: var(--orb-bronze);
-}
 .panel .item:disabled .orb {
   --orb: var(--orb-off);
-}
-.confirm {
-  width: 460px;
-  padding: 0 0 8px;
-}
-.confirm .panel-head {
-  font: 400 var(--fs-lg) / 1.2 var(--font-title);
-}
-.confirm p {
-  margin: 6px 14px 0;
-  font-size: var(--fs-sm);
-}
-.yes-no {
-  display: flex;
-  gap: 6px;
-  margin: 10px 8px 0;
 }
 .panel .item {
   width: 100%;
@@ -1017,34 +801,11 @@ button[hidden],
   border: none;
   font: 700 var(--fs-lg) / 1 var(--font-title);
 }
-/* touch: every menu row and "Execute?"'s Yes and No reach the 44 px finger target (Nov 16 tablet audit: 40 px); the PC
-   keeps the compact rows. The corner list's rows are 44 px on every screen (.panel.tools-menu .item, above) */
-@media (pointer: coarse) {
-  .panel .item {
-    min-height: var(--tap);
-  }
-}
-/* FFT's hand replaced by an arrow of ours marking the focused item */
-.panel .item.focus::before {
-  content: "▶";
-  position: absolute;
-  left: 8px;
-}
 /* menus open instead of popping in (Nov 12, game feel): 90 ms, fast enough not to slow down whoever knows what they want;
    the submenu comes from the side of the menu it left (hud.ts sets .from-right when it opens to the left of the menu); the ability
    name banner opens from the middle */
 .abilities.from-right {
   --slide: 24px;
-}
-.panel .item:not(:disabled):active {
-  transform: none;
-}
-.item-cost {
-  font: 400 var(--fs-sm) / 1 var(--font);
-}
-.item-label {
-  flex: 1;
-  text-align: left;
 }
 /* ability icon (icons.ts abilityIcon): the theme's 32 px atlas cell at 1:1; the cell is transparent, so the game-icons symbol
    is hidden when the ability has one and shows only when it has no cell */
@@ -1055,18 +816,6 @@ button[hidden],
   width: 32px;
   height: 32px;
   flex: none;
-}
-.ability-icon .gi {
-  width: 28px;
-  height: 28px;
-}
-.ability-icon.in-atlas::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-.ability-icon.in-atlas .gi {
-  visibility: hidden;
 }
 .panel .item:disabled .ability-icon {
   opacity: 0.5;
@@ -1109,9 +858,6 @@ button[hidden],
   bottom: var(--inset-b);
   width: var(--slot-w);
   pointer-events: none;
-}
-.active-slot {
-  left: var(--inset-l);
 }
 .target-slot {
   right: var(--inset-r);
@@ -1163,23 +909,11 @@ button[hidden],
   gap: 12px;
 }
 /* side in words and by shape (● hero, ◆ enemy), never by colour alone */
-.unit-side {
-  font: 500 var(--fs-sm) / 1 var(--font);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.unit-side::before {
-  content: "● ";
-}
 .enemy .unit-side::before {
   content: "◆ ";
 }
 .unit-class {
   margin-top: -4px;
-}
-.unit-note {
-  margin: 0;
-  font-size: var(--fs-sm);
 }
 .gauge {
   display: grid;
@@ -1188,19 +922,10 @@ button[hidden],
   gap: var(--gap);
   font-size: var(--fs-sm);
 }
-.gauge-label {
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 .gauge-bar {
   position: relative;
   height: 10px;
   border: 1px solid var(--edge);
-}
-.gauge-bar i {
-  display: block;
-  height: 100%;
 }
 /* strike preview on the target bar (hud-pieces.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
    green stripes, like Tactics Ogre. Stripe and the number "life 25 → 13–16" alongside: never color alone */
@@ -1292,18 +1017,6 @@ button[hidden],
   padding: 2px 10px;
   font-size: var(--fs-sm);
 }
-.gauge.hp {
-  --bar: var(--hp);
-}
-.gauge.mp {
-  --bar: var(--mp);
-}
-.gauge.sp {
-  --bar: var(--sp);
-}
-.gauge.ct {
-  --bar: var(--ct);
-}
 .gauge-num {
   text-align: right;
   font-size: var(--fs);
@@ -1311,12 +1024,6 @@ button[hidden],
 }
 
 /* ---- Battle HUD: touch and narrow screens (Nov 16, Fernando: the game must play on a tablet with the fingers) ---- */
-/* no menu wider than the screen: "Execute?" (460 px) cut its No button on a 390 px phone */
-.commands,
-.abilities,
-.confirm {
-  max-width: calc(100vw - var(--inset-l) - var(--inset-r));
-}
 /* the submenu took the menu's place (hud.ts place: no room for both side by side) */
 .commands.covered {
   visibility: hidden;
@@ -1325,9 +1032,6 @@ button[hidden],
    narrow PC window had the same 2 px bars. An upright phone (under 600 px) gets a "turn the phone" notice instead of a
    layout of its own (Fernando, Nov 16) */
 @media (max-width: 900px) {
-  .hud {
-    --slot-w: max(35vw, 300px); /* on .hud: a theme's :root block would win over a plain :root here */
-  }
   .hud .unit-panel {
     gap: 10px;
     padding: 10px 12px;
@@ -1418,49 +1122,11 @@ body:has(.result-overlay) .fps {
 
 /* ---- Dialogue box (talk.ts) and the opening narration ---- */
 /* dialogue box (talk.ts): at the bottom, wide, the same panel as the rest of the HUD; the ▼ blinks when the sentence is done */
-.talk-overlay {
-  place-items: end center;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  gap: 12px;
-  align-content: end;
-}
 .talk-title {
   position: static;
   padding: 8px 28px;
   font: 400 var(--fs-lg) / 1 var(--font-title);
   justify-self: center;
-}
-.panel.talk {
-  position: relative;
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  text-align: left;
-  width: min(860px, 100%);
-  min-height: 132px;
-  padding: 14px 40px 14px 14px;
-}
-.talk-body {
-  display: grid;
-  gap: 6px;
-  flex: 1;
-}
-.talk-name {
-  font: 400 var(--fs-lg) / 1 var(--font-title);
-}
-.talk-text {
-  margin: 0;
-  font: 400 var(--fs-lg) / 1.35 var(--font);
-  min-height: 3.6em;
-}
-.talk-next {
-  position: absolute;
-  right: 16px;
-  bottom: 10px;
-  visibility: hidden;
-}
-.talk.done .talk-next {
-  visibility: visible;
 }
 /* painted face sheet in the dialogue box (talk.ts, faceSheet): a box one frame wide over the strip, moved frame by frame
    at a whole-ratio size; only an enlarged sheet (the 64 px skeletons) scales pixelated, the painted 128 px ones scale smooth */
@@ -1529,72 +1195,18 @@ body:has(.result-overlay) .fps {
 }
 :root[data-motion="reduce"] .talk-face.pop {
   animation: none;
-}
-.talk-skip {
-  justify-self: end;
-  min-height: var(--tap);
-  min-width: var(--tap);
-}
-.talk-overlay.dark .talk-skip {
-  display: none;
-}
-.talk-keys {
-  position: absolute;
-  right: 40px;
-  bottom: 8px;
-  font-size: var(--fs-sm);
-}
-.talk-overlay.dark .talk-keys {
-  right: 50%;
-  transform: translateX(50%);
-  bottom: -28px;
 } /* dialogue key hint (talk.ts) */
 /* opening (new game): big narration in the center, no frame, with the Beacon's blue glow pulsing behind */
-.talk-overlay.dark {
-  place-items: center;
-  align-content: center;
-}
 .talk-overlay.dark .panel.talk {
   border: none;
   text-align: center;
   min-height: 0;
   padding: 0 24px;
-}
-.talk-overlay.dark .talk-text {
-  font-size: var(--fs-title);
-  line-height: 1.5;
-  max-width: 34em;
-  margin: 0 auto;
 } /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 
 /* ---- Tavern and Shop windows (town-ui.ts); the Party screen has its own block at the end ---- */
 .dialog.party {
   width: min(640px, 100%);
-} /* 560 px scrolled the pt Tavern by a few px once the text grew to 20 px (Nov 15) */
-/* gold in the shop as the lab kit's counter: small uppercase label and the number after a gold coin (`p.gold`: a bare
-   `.gold` also caught the result window's gold orbs and took their margin) */
-.dialog p.gold {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0 0 8px;
-}
-p.gold strong {
-  font-size: var(--fs-lg);
-  font-variant-numeric: tabular-nums;
-}
-p.gold strong::before,
-.price::before {
-  content: "";
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  vertical-align: -1px;
-}
-/* the gold counter on the head band (Shop, Tavern), at the right before the ✕, like the kit's "Gold in chest" */
-.dialog-head p.gold {
-  margin: 0 0 0 auto;
 }
 /* Shop and Tavern rows (dialog.ts priceRow, Nov 15 lab mockup): name with its kind in small type, the price after a coin
    in its own column and the button at the right with why it is off under it; a faint line on top of each row */
@@ -1621,16 +1233,8 @@ p.gold strong::before,
 /* ---- Town menu and the windows beside it (game/crawl.ts; Design lab mockups, Nov 15) ---- */
 /* the lab kit's command menu inside a window (town, title): 60 px rows with a glass orb before the name; the row whose
    window is open stays picked like Act with its submenu open (sunken band, yellow edge, ▸) */
-.dialog .command-list > button {
-  min-height: 60px;
-  gap: 14px;
-  padding-left: 46px;
-}
 .dialog .command-list .continue-where {
   margin-left: auto; /* at the row's right end, like the kit's values */
-}
-.dialog .command-list > button:focus::before {
-  left: 14px;
 }
 .dialog .command-list > button.picked::after {
   content: "▸";
@@ -1641,16 +1245,6 @@ p.gold strong::before,
 /* Nov 16, Fernando: these three screens on their Final Fantasy Tactics counterparts (structure and pacing only; art,
    text and numbers are ours). Title: the name in the upper part of the art and a small plain command window under it,
    the gap growing with the screen's height; rows on one line where there is room, a phone wraps them */
-.main-title .dialog.title {
-  gap: clamp(32px, 14vh, 180px);
-}
-.main-title .camp-list {
-  min-width: min(340px, 100%);
-  max-width: 100%;
-  margin: 0;
-  padding: 8px;
-  text-align: left;
-}
 .main-title .camp-list .continue-where {
   margin-left: auto; /* the number of saved games at the row's right end, like a value */
   padding-left: 16px;
@@ -1676,11 +1270,7 @@ p.gold strong::before,
   overflow: hidden;
 }
 .opt-list {
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
   touch-action: pan-y; /* as .dialog: no page zoom from a pinch inside */
-  padding-right: 4px;
 }
 .opt-list h3 {
   margin: 12px 0 4px;
@@ -1697,27 +1287,11 @@ p.gold strong::before,
   padding-right: 0;
   font-size: var(--fs);
 }
-.opt-label {
-  flex: 1 1 11em;
-}
 .opt-value {
   flex: 0 1 340px;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.opt-text {
-  flex: 1;
-  text-align: center;
-  font-weight: 700;
-}
-/* drawn marks, not buttons (the row is the button); still a finger's 44 px, since a tap is told apart by where it lands */
-.opt-arrow {
-  flex: none;
-  width: var(--tap);
-  min-height: var(--tap);
-  display: grid;
-  place-items: center;
 }
 .opt-bar {
   flex: 1;
@@ -1755,9 +1329,6 @@ p.gold strong::before,
     height: auto;
     overflow: auto;
   }
-  .opt-list {
-    overflow: visible;
-  }
 }
 /* the tile marks and the controls, in a window over Options: the controls' text needs the width */
 .dialog.menu-help {
@@ -1789,31 +1360,6 @@ p.gold strong::before,
   }
 }
 /* ---- FFT results/dialogue (agent results) ---- */
-
-/* Dialogue box after FFT's (Nov 16; talk.ts): wider, the speaker's name on a tab over the box's top left corner, the
-   face at the left, the text typing beside it and the small ▼ at the bottom right */
-.panel.talk {
-  width: min(1100px, 100%);
-  margin-top: 40px; /* the tab's room, so it never covers the place strip above */
-  padding-top: 18px;
-}
-.talk-name {
-  position: absolute;
-  left: 10px;
-  bottom: calc(100% - 2px); /* over the box's top line: the tab and the box read as one piece */
-  padding: 6px 18px;
-  border: 2px solid var(--paper-edge);
-  /* set here, not in the blue surfaces' list above, so this block stays in one place */
-}
-/* the opening narration has no box, so no tab either, nor its room */
-.talk-overlay.dark .panel.talk {
-  margin-top: 0;
-}
-.talk-overlay.dark .talk-name {
-  position: static;
-  padding: 0;
-  border: none;
-}
 /* a phone: the face at half size (a whole ratio), so the text keeps most of the line, and a line of its own for the
    hint, which four lines of text ran under */
 @media (max-width: 560px) {
@@ -1830,9 +1376,7 @@ p.gold strong::before,
    party in its top right corner, the picked place's box along the foot and the travel commands beside it. The overlay
    scrolls where the window does not fit (a phone); top-aligned with auto margins, so the top stays in reach */
 .crawl-map {
-  overflow-y: auto;
   touch-action: pan-y; /* body has none: a finger scrolls the map */
-  align-items: start;
 }
 .crawl-map .dialog.title {
   --map-step: 64px; /* a row of the chart: a 48 px place and room for the ways between rows */
@@ -1846,22 +1390,9 @@ p.gold strong::before,
   margin-block: auto;
   text-align: left;
 }
-.crawl-map .dialog-head {
-  grid-area: head;
-  margin-bottom: 0;
-}
-.crawl-map .dialog.title h2 {
-  font-size: var(--fs-title);
-}
-.crawl-map .dialog-head .gold {
-  white-space: nowrap;
-}
 /* the chart's window: a dark well with a faint grid of dots; only it scrolls when the descent is taller than the screen */
 .map-scroll {
-  grid-area: map;
-  overflow: auto;
   touch-action: pan-y;
-  border: 2px solid var(--edge);
 }
 .map-chart {
   position: relative;
@@ -1898,16 +1429,8 @@ p.gold strong::before,
   height: 100%;
   overflow: visible;
 }
-.map-ways line {
-  vector-effect: non-scaling-stroke;
-  stroke-linecap: round;
-  stroke-width: 2px;
-}
 .map-ways .off {
   stroke-dasharray: 1 7;
-}
-.map-ways .open {
-  stroke-width: 3px;
 }
 .map-ways .walked {
   stroke-width: 5px;
@@ -1926,107 +1449,20 @@ p.gold strong::before,
   border: 2px solid var(--trim);
   font: 700 var(--fs) / 1 var(--font-title);
 }
-.map-place.boss {
-  --size: 60px;
-}
-.map-place .gi {
-  width: 32px;
-  height: 32px;
-}
 .crawl-map .map-place.skipped,
 .map-help .map-place.skipped {
   border-style: dashed;
 }
-/* the picked place: the focus ring and the menus' ▶ beside it, whether or not the focus is still on it */
-.map-place[aria-current="true"]::before {
-  content: "▶";
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  margin-top: -0.5em;
-  font: 700 var(--fs) / 1 var(--font);
-}
-/* the chest: a box with its lid line and a yellow lock, drawn here (the icon sprite has none) */
-.map-chest {
-  position: relative;
-  width: 24px;
-  height: 18px;
-  border: 2px solid currentColor;
-}
-.map-chest::before {
-  content: "";
-  position: absolute;
-  inset: 4px 0 auto;
-  border-top: 2px solid currentColor;
-}
-.map-chest::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 3px;
-  width: 6px;
-  height: 6px;
-  margin-left: -3px;
-}
-.map-gate {
-  padding: 4px 12px;
-  border: 2px solid var(--paper-edge);
-  font: 700 var(--fs-sm) / 1.2 var(--font);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 /* the party's flag: a pole and a yellow pennant, planted up and to the right of the place it stands on */
 .map-flag {
-  width: 22px;
-  height: 30px;
-  border-left: 3px solid var(--ink);
   pointer-events: none;
-}
-.map-field > .map-flag {
-  translate: 14px -52px;
-}
-.map-flag::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 12px 0;
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 .legend .map-flag {
   position: relative;
   flex: none;
   margin: 0 3px 0 23px; /* as wide as the 48 px marks above it, the pole on their middle */
 }
-/* the boxes around the chart: sunken bands on the window's blue */
-.map-box {
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
-}
 /* the gate window's box (game/crawl.ts questGate): the dungeon and the expedition in progress, under its commands */
-.map-info {
-  grid-area: info;
-  min-height: 8em; /* three lines of facts: the box keeps its height from place to place */
-}
-.dialog .map-info h3 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0 12px;
-  margin: 0 0 8px;
-  font-size: var(--fs-lg);
-}
-.map-info h3 small {
-  font: 400 var(--fs-sm) / 1.2 var(--font);
-}
-.map-info .keys {
-  margin: 0;
-}
-.map-party {
-  grid-area: party;
-  align-self: start;
-  display: grid;
-  gap: 10px;
-}
 .map-hero {
   display: flex;
   align-items: center;
@@ -2037,46 +1473,6 @@ p.gold strong::before,
   min-width: 0;
   display: grid;
   gap: 2px;
-}
-.map-hero strong {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.map-hero-class {
-  font: 400 var(--fs-sm) / 1.2 var(--font);
-}
-.dialog .map-commands {
-  grid-area: cmds;
-  align-self: end;
-  margin-top: 0;
-}
-.dialog .map-commands > button {
-  white-space: normal; /* the 2nd tap's sentence wraps inside the column */
-}
-/* a short wide screen (a phone lying down, as the rotate note asks): the window grows with its content and the overlay
-   scrolls, so the chart keeps five rows and the party box never runs over the commands */
-@media (max-height: 700px) {
-  .crawl-map .dialog.title {
-    height: auto;
-  }
-  .map-scroll {
-    height: 330px; /* as tall as the party box of four beside it */
-  }
-}
-/* a tablet upright: the chart over the box, the commands and the party side by side under them; the chart keeps a
-   window of its own so the commands stay near it */
-@media (max-width: 900px) {
-  .crawl-map .dialog.title {
-    grid-template: "head head" auto "map map" auto "info info" auto "cmds party" auto / minmax(0, 1fr) minmax(0, 1fr);
-    height: auto;
-  }
-  .map-scroll {
-    height: clamp(260px, 46dvh, 520px); /* never under four rows, on a phone lying down either */
-  }
-  .dialog .map-commands {
-    align-self: start;
-  }
 }
 /* a phone: one column, the party last */
 @media (max-width: 600px) {
