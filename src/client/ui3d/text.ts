@@ -2,6 +2,7 @@
 // soaked into the paper. One texture per distinct text, size and colour, shared by every mesh that shows it and counted,
 // so a screen that leaves frees only what nobody else uses; a move of the focus redraws nothing.
 import { CanvasTexture, LinearFilter, Mesh, ShaderMaterial, type Texture } from 'three';
+import { wrapLines } from '../wrap-lines.ts';
 import { QUAD, QUAD_VERT } from './panel.ts';
 
 export interface TextOpts {
@@ -13,22 +14,23 @@ export interface TextOpts {
   centre?: boolean; // each line in the middle of the widest one (the opening narration); from the left without it
 }
 
-// Lines of `str` no wider than `max` by `measure`, broken at spaces; "\n" starts a new paragraph. A word wider than
-// `max` stays whole on its own line. Pure, so the wrap is tested without a canvas
-export function wrapLines(str: string, max: number, measure: (s: string) => number): string[] {
-  const lines: string[] = [];
-  for (const para of str.split('\n')) {
-    let line = '';
-    for (const word of para.split(' ')) {
-      const next = line ? `${line} ${word}` : word;
-      if (line && measure(next) > max) {
-        lines.push(line);
-        line = word;
-      } else line = next;
-    }
-    lines.push(line);
-  }
-  return lines;
+export { wrapLines };
+
+let pen: CanvasRenderingContext2D | undefined;
+// How many lines `str` takes drawn with `o`, by the same wrap as the label itself: for a layout that sizes a box by
+// the words it holds, with no HTML to measure
+export function lineCount(str: string, o: Pick<TextOpts, 'size' | 'font' | 'width'>, dpr: number): number {
+  pen ??= document.createElement('canvas').getContext('2d')!;
+  const g = pen;
+  g.font = `500 ${o.size * dpr}px ${o.font}`;
+  return wrapLines(str, o.width ? o.width * dpr : Infinity, (s) => g.measureText(s).width).length;
+}
+
+// A line's width in CSS px as the labels write it, for a layout that sizes a plate by its words
+export function textWidth(str: string, size: number, font: string): number {
+  pen ??= document.createElement('canvas').getContext('2d')!;
+  pen.font = `500 ${size}px ${font}`;
+  return pen.measureText(str).width;
 }
 
 interface Label {

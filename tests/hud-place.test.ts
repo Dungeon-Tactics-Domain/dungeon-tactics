@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { placeBeside } from '../src/client/place-beside.ts';
+import { helpEnd, placeBeside } from '../src/client/place-beside.ts';
 
 // Command menu beside the unit, as in FFT (Nov 13, Fernando's request)
 const area = { left: 12, top: 72, right: 1268, bottom: 560 }; // 1280x720 without the top strip and the bottom panels
@@ -71,5 +71,25 @@ describe('menu beside the unit', () => {
     expect(placeBeside({ x: 600, y: 300, r: 20 }, 420, 200, area, 'left').side).toBe('left');
     // no room on the left, stays on the right anyway
     expect(placeBeside({ x: 200, y: 300, r: 20 }, 420, 200, area, 'left').side).toBe('right');
+  });
+});
+
+describe('help line: where it ends with no DOM', () => {
+  const wide = (s: string) => s.length * 10; // 10 px a letter
+  it('says nothing: takes no room', () => {
+    expect(helpEnd('', 1920, 12, wide)).toBe(0);
+  });
+  it('one row ends 52.797 px down the page, as the browser measured (12 px margin, 20 px of box, a 20.797 px row)', () => {
+    expect(helpEnd('Move', 1920, 12, wide)).toBeCloseTo(52.797, 3);
+  });
+  it('wraps at half the page less its 28 px of box, never past 760 px', () => {
+    const text = 'aaaa '.repeat(10).trim(); // 49 letters: 490 px
+    expect(helpEnd(text, 1920, 12, wide)).toBeCloseTo(52.797, 3); // 732 px of room: one row
+    expect(helpEnd(text, 844, 12, wide)).toBeCloseTo(12 + 20 + 2 * 20.797, 2); // 394 px of room: two rows
+    const long = 'aaaa '.repeat(16).trim(); // 790 px
+    expect(helpEnd(long, 3440, 12, wide)).toBeCloseTo(12 + 20 + 2 * 20.797, 2); // 760 - 28, not half of 3440
+  });
+  it('starts at the page margin it is given (a notch, the frame layout)', () => {
+    expect(helpEnd('Move', 1920, 40, wide) - helpEnd('Move', 1920, 12, wide)).toBe(28);
   });
 });

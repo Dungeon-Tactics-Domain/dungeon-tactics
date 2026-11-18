@@ -50,6 +50,18 @@ export function gauge(
 // The end of a turn list row, after the name: a turn's life and CT (Fernando, Nov 17), the short line of each over a
 // thin bar of how full it is, the same numbers the 3D list draws beside its cards (turn-list.ts unitStats); then the
 // round's tag. A charge's row has only the tag: it is a spell going off, not a turn
+let pen: CanvasRenderingContext2D | null | undefined;
+// The width of a text in the help line's letters (16 px of --font), for the line's height with no HTML to measure
+// (place-beside.ts helpEnd)
+export function helpWidth(text: string): number {
+  if (pen === undefined) {
+    pen = document.createElement('canvas').getContext('2d');
+    if (pen)
+      pen.font = `16px ${getComputedStyle(document.documentElement).getPropertyValue('--font').trim() || 'sans-serif'}`;
+  }
+  return pen?.measureText(text).width ?? 0;
+}
+
 // A panel's right edge on the page, 0 while it is hidden: a sandbox spec hides panels with `visibility`, keeping their box
 export const shownRight = (el: HTMLElement) =>
   getComputedStyle(el).visibility === 'hidden' ? 0 : el.getBoundingClientRect().right;

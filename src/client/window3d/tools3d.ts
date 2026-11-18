@@ -4,9 +4,10 @@
 // open list as a parchment panel like the command menu's (the reference has no corner menu; its System Menu is a hint
 // of the paused battle, refs 12 and 26): a head, one row per tool with its glyph in the icon column, its name, its key
 // on a cap and "on"/"off" for the two switches, the row under the mouse lit with the glove beside it.
-//   Layout and input: the HTML menu (hud-tools.ts) stays in place, unseen (style.css .hud.tools3d .tools), at the
-//   drawn sizes: it is the layout, and its real buttons take the mouse and the taps. A key closes the list and runs its
-//   own action, as always. What the rows say is tool-rows.ts'.
+//   Layout and input: where the buttons, the list and its rows sit is tools-layout.ts' (pure). The HTML menu
+//   (hud-tools.ts) stays under the drawing, unseen (style.css .hud.tools3d .tools) and seated from the same numbers:
+//   its real buttons take the mouse and the taps, and the list's scroll is its own. A key closes the list and runs
+//   its own action, as always. What the rows say is tool-rows.ts'.
 import { Group, type Mesh, type ShaderMaterial } from 'three';
 import { NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
 import { KEYS } from '../hud-pieces.ts';
@@ -20,6 +21,7 @@ import type { Box } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, quad } from '../ui3d/panel.ts';
 import { ease, land, settled, spring } from '../ui3d/spring.ts';
 import { textMesh } from '../ui3d/text.ts';
+import { rowSeen, type ToolsLayout, toolsLayout } from './tools-layout.ts';
 
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
 const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the menu button while its list is open
@@ -27,6 +29,7 @@ const BAR: Rgba = [0.96, 0.95, 0.9, 1];
 // text sizes in px of the reference (never under 16 px on the page; a key cap's letters 12)
 const SIZE = { head: 24, row: 26, glyph: 26, state: 18, back: 28 };
 const OVER = 40; // the list draws over the Height corner and the hints, which share the layer
+const px = (v: number) => `${v}px`;
 
 export class Tools3d implements Ui3dScreen {
   readonly flat = new Group();
@@ -95,18 +98,44 @@ export class Tools3d implements Ui3dScreen {
     return textMesh(str, { size: px, color, font: this.layer.theme.font }, this.layer.dpr) as Quad;
   }
 
+  // The unseen HTML menu takes the drawn one's places: the corner, each button's size, the list's box and head and
+  // every row's height. No size of it comes from a style sheet
+  private seat(l: ToolsLayout, shown: HTMLElement[], items: HTMLElement[]) {
+    const { inset } = this.layer;
+    Object.assign(this.host.style, { top: px(inset.top), right: px(inset.right), gap: '8px' });
+    for (const b of shown) b.style.width = b.style.height = px(l.size);
+    Object.assign(this.menu.style, {
+      top: px(l.drop),
+      width: px(l.list.w),
+      maxHeight: px(l.maxH),
+      padding: '0',
+      borderWidth: `${px(l.head)} 0 0`,
+    });
+    // a block each, so no text line under a row pushes the next one down
+    for (const e of items) Object.assign(e.style, { display: 'flex', height: px(l.rowH), minHeight: '0', margin: '0' });
+  }
+
   // Rebuilds only the part whose state or place changed
   private draw() {
     const { layer, buttons, list } = this,
-      s = layer.s,
-      page = layer.root.getBoundingClientRect();
-    const rect = (e: Element, from = page): Box => {
-      const r = e.getBoundingClientRect();
-      return { x: r.left - from.left, y: r.top - from.top, w: r.width, h: r.height };
-    };
+      s = layer.s;
     layer.wake();
-    const open = !this.menu.hidden;
-    const shown = [this.burger, this.back, this.undo].filter((e) => e.offsetParent).map((e) => ({ e, r: rect(e) }));
+    const open = !this.menu.hidden,
+      // left to right; Back and Undo are for a finger, and only while there is a step to go back
+      els = [this.back, this.undo, this.burger].filter((e) => e === this.burger || !(KEYS || e.hidden)),
+      items = [...this.menu.querySelectorAll<HTMLElement>('.item')],
+      lay = toolsLayout({
+        pageW: layer.w,
+        pageH: layer.h,
+        s,
+        inset: layer.inset,
+        buttons: els.length,
+        rows: items.length,
+        open,
+        scroll: this.menu.scrollTop,
+      });
+    this.seat(lay, els, items);
+    const shown = els.map((e, i) => ({ e, r: lay.buttons[i] }));
     const key = JSON.stringify([shown.map((b) => b.r), open, layer.dpr, s]);
     buttons.want = 1;
     if (key !== buttons.key) {
@@ -131,14 +160,11 @@ export class Tools3d implements Ui3dScreen {
       this.focus = -1;
       return; // it keeps what it showed while it leaves
     }
-    const box = rect(this.menu),
-      items = [...this.menu.querySelectorAll<HTMLElement>('.item')],
-      from = this.menu.getBoundingClientRect();
-    // the head is the list's top border, which does not scroll; a row shows only while the whole of it is in the list
-    const head = this.menu.clientTop,
-      all = items.map((e) => rect(e, from)),
-      seen = (r: Box) => r.y >= head - 1 && r.y + r.h <= box.h + 1,
-      rows = all.map((r) => (seen(r) ? r : undefined)),
+    // the head does not scroll; a row shows only while the whole of it is in the list
+    const box = lay.list,
+      head = lay.head,
+      all = lay.rows,
+      rows = all.map((r) => (rowSeen(lay, r) ? r : undefined)),
       on = items.map((e) => e.getAttribute('aria-checked') === 'true'),
       data = toolRows();
     this.at = { x: box.x, y: box.y };

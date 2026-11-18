@@ -1,16 +1,17 @@
 // The walkable town's HUD drawn in 3D (?townhud=3d, the default), a screen of the town's 3D layer in the look of the
 // battle's 3D HUD (hints3d/, window3d/tools3d.ts; the reference has no walkable town): the town's name on a dark slate
 // plate top left, what Enter does on the pill top centre, the same over what it acts on, and the menu button (3 bars).
-//   Layout and input: the HTML HUD (game/town-hud.ts, game/town.ts) stays in place, unseen (style.css .hud.townhud3d):
-//   it says what to write and where, and its real buttons take the mouse, the taps and the screen reader. Nothing here
+//   Words and input: the HTML HUD (game/town-hud.ts, game/town.ts) stays, unseen (style.css .hud.townhud3d): it says
+//   what to write, and its real buttons take the mouse, the taps and the screen reader. Where each part goes is
+//   town-layout.ts townHud, no measure of the HTML; the menu button is seated from the same numbers. Nothing here
 //   decides anything.
 import { Group } from 'three';
 import type { Act } from '../glyphs.ts';
 import { NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
 import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
-import type { Box } from '../ui3d/layout.ts';
 import { textMesh } from '../ui3d/text.ts';
+import { townHud } from './town-layout.ts';
 
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
 const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the button in focus
@@ -80,20 +81,13 @@ export class TownHud3d implements Ui3dScreen {
   // Rebuilds only the part whose words, place or focus changed
   private draw() {
     const { layer, fixed, act, hud } = this,
-      s = layer.s,
-      page = layer.root.getBoundingClientRect();
-    const rect = (e: Element): Box => {
-      const r = e.getBoundingClientRect();
-      return { x: r.left - page.left, y: r.top - page.top, w: r.width, h: r.height };
-    };
+      s = layer.s;
     layer.wake();
     const keys = hud.classList.contains('kbd'),
       // the action of the HTML hint (key-hints.ts) and what it shows now, so a change of input redraws
       key = (e: Element) => (keys ? (e.querySelector<HTMLElement>('.hint')?.dataset.act ?? '') : ''),
       focus = document.activeElement;
-    const name = rect(this.host),
-      menu = rect(this.burger),
-      line = rect(this.prompt),
+    const { name, menu, prompt: line } = townHud(layer.w, layer.inset, !!key(this.prompt)),
       says = this.prompt.firstChild?.textContent ?? '';
     const fkey = JSON.stringify([
       name,
@@ -109,22 +103,16 @@ export class TownHud3d implements Ui3dScreen {
     if (fkey !== fixed.key) {
       fixed.clear();
       fixed.key = fkey;
+      // the real button under the drawn one, whatever the style sheet says
+      Object.assign(this.burger.parentElement!.style, { left: `${menu.x}px`, top: `${menu.y}px`, right: 'auto' });
+      this.burger.style.width = this.burger.style.height = `${menu.w}px`;
       // the town's name, on its corner
       const town = this.label(this.host.textContent ?? '', SIZE.name, WHITE),
         w = town.scale.x + 44 * s,
         h = Math.max(name.h, 44 * s);
       fixed.box(name.x, name.y, w, h, 10 * s, PILL, EDGE);
       fixed.text(town, name.x + w / 2, name.y + h / 2);
-      if (says)
-        this.pill(
-          fixed,
-          says,
-          key(this.prompt),
-          SIZE.prompt,
-          line.x + line.w / 2,
-          line.y + line.h / 2,
-          Math.max(line.h, 48 * s),
-        );
+      if (says) this.pill(fixed, says, key(this.prompt), SIZE.prompt, line.x, line.y, Math.max(line.h, 48 * s));
       // the menu button: the 3 bars
       fixed.box(menu.x, menu.y, menu.w, menu.h, 10 * s, focus === this.burger ? LIT : PILL, EDGE);
       const bw = menu.w * 0.46,
@@ -180,5 +168,7 @@ export class TownHud3d implements Ui3dScreen {
     this.act.clear();
     this.hud.classList.remove('townhud3d');
     this.balloon.style.minWidth = this.balloon.style.minHeight = '';
+    this.burger.parentElement?.removeAttribute('style');
+    this.burger.style.width = this.burger.style.height = '';
   }
 }

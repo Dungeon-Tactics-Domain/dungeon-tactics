@@ -3,6 +3,21 @@
 // +-6 px) and widened where our screens hold more text than theirs. The whole window is the `town` region of
 // ui3d/layout.ts, centred and scaled as one. Pure numbers: no DOM, no Three.
 
+import { type Box, lu } from '../ui3d/layout.ts';
+
+// The walkable town's HUD (hud3d.ts) in px of the page, not of the reference: the town's name on the top left corner,
+// the menu button on the top right one (a finger's 44 px) and what Enter does in the middle of the top edge, taller
+// while it shows its key. `inset`: a panel's margin to the page's edges (ui3d/layer.ts)
+export function townHud(pageW: number, inset: { top: number; right: number; left: number }, key: boolean) {
+  const h = 20 + lu(20.8), // a 16 px line in its panel
+    line = key ? 48 : h;
+  return {
+    name: { x: inset.left, y: inset.top, h },
+    menu: { x: pageW - inset.right - 44, y: inset.top, w: 44, h: 44 } as Box,
+    prompt: { x: pageW / 2, y: inset.top + line / 2, h: line }, // its middle
+  };
+}
+
 // around every window
 export const T = {
   title: { x: 42, y: 40, size: 32 }, // the window's name, left end and middle

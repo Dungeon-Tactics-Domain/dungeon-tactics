@@ -27,7 +27,7 @@ import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
 import { type Stage, stage, textPx } from './layout.ts';
 import { QUAD, QUAD_VERT, type Rgb, type Theme } from './panel.ts';
 import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
-import { safeArea } from './safe-area.ts';
+import { safeOf, safeSides } from './safe-area.ts';
 
 export interface Ui3dScreen {
   readonly flat: Group; // panels and text, depth test off, ordered by renderOrder
@@ -46,6 +46,8 @@ export class Ui3dLayer {
   dpr = 1;
   s = 1; // one reference px (the 1920x1080 layout the pieces were measured on) in CSS px: the stage's scale
   stage: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 }; // where the pieces are laid out (layout.ts), as the player picked
+  // a panel's margin to each edge of the page (the design system's 12 px), clear of the notch and inside the frame
+  inset = { top: 12, right: 12, bottom: 12, left: 12 };
   private mode = getLayout();
   block = 1; // CSS px of a pixel filter block
   solo?: Ui3dScreen; // a full screen over the game (the title): while set, only it is drawn
@@ -189,10 +191,18 @@ export class Ui3dLayer {
       h = this.root.clientHeight,
       dpr = Math.min(devicePixelRatio, 2),
       mode = getLayout(),
-      st = stage(w, h, mode, safeArea());
+      sides = safeSides(),
+      st = stage(w, h, mode, safeOf(sides));
     // the stage too: turning a phone over moves the notch without changing the page's size
     if (w === this.w && h === this.h && dpr === this.dpr && mode === this.mode && st.x === this.stage.x) return;
     Object.assign(this, { w, h, dpr, mode, stage: st, s: st.s });
+    const [fx, fy] = mode === 'frame' ? [st.x, st.y] : [0, 0];
+    this.inset = {
+      top: 12 + sides.top + fy,
+      right: 12 + sides.right + fx,
+      bottom: 12 + sides.bottom + fy,
+      left: 12 + sides.left + fx,
+    };
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
     Object.assign(this.camera, { right: w, top: h });

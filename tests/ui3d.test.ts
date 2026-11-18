@@ -410,6 +410,10 @@ describe('3D interface: flags and boundaries', () => {
       'menu3d/menu-view',
       'menu3d/menu-layout',
       'turn3d/queue-view',
+      'turn3d/queue-layout',
+      'confirm3d/confirm-layout',
+      'window3d/tools-layout',
+      'window3d/talk-layout',
       'hints3d/hints-view',
       'hints3d/effects-view',
       'result3d/result-view',
@@ -435,5 +439,36 @@ describe('3D interface: flags and boundaries', () => {
       const text = code(sources[`../src/client/${name}.ts`]);
       expect(/from\s+['"]three['"]|document\.|window\./.test(text), name).toBe(false);
     }
+  });
+
+  // Nov 18 (the 3D-only plan, phase 2): a 3D piece lays itself out by its own numbers (the *-layout.ts and *-view.ts
+  // files), so the style sheet can go without moving the drawing. What still reads the page is listed here, file by
+  // file, with how many reads and why; a new one fails until it is either made pure or argued for on this list.
+  //   page: the canvas's own size, the one measure everything else is computed from
+  //   notch: env(safe-area-inset-*) through a probe, which CSS alone can tell
+  //   colour: a colour or a font NAME off :root's custom properties (--ui3d-*, --mark-*), never a size
+  //   scroll: how far the unseen list under the drawing can scroll (the skeleton scrolls, the drawing follows it)
+  it('no 3D piece measures the HTML outside the listed reads', () => {
+    const MEASURE =
+      /getBoundingClientRect|getComputedStyle|offset(?:Width|Height|Left|Top|Parent)|client(?:Width|Height|Left|Top)|scroll(?:Width|Height)/g;
+    const ALLOWED: Record<string, [number, string]> = {
+      'ui3d/layer': [3, 'page: the layer root clientWidth and clientHeight; colour: the theme off :root'],
+      'ui3d/safe-area': [1, 'notch: the padding of the env() probe'],
+      'flow3d/draw': [1, 'colour'],
+      'flow3d/sheet-draw': [1, 'colour: a mark of the how-to-play sheet'],
+      'flow3d/dev3d': [1, 'colour'],
+      'flow3d/sheet3d': [7, 'scroll: the sheet scroller range and its page step for PageUp, PageDown, Home, End'],
+      'hints3d/effects3d': [1, 'colour: the floating numbers and the counter'],
+      'result3d/result3d': [1, 'colour'],
+      'town3d/town3d': [3, 'colour; scroll: whether the open list has more under its foot'],
+      'town3d/map3d': [1, 'colour'],
+      'window3d/note3d': [1, 'colour'],
+    };
+    const found: Record<string, number> = {};
+    for (const [path, text] of Object.entries(sources)) {
+      const n = is3d(path) ? (code(text).match(MEASURE)?.length ?? 0) : 0;
+      if (n) found[path.replace('../src/client/', '').replace('.ts', '')] = n;
+    }
+    expect(found).toEqual(Object.fromEntries(Object.entries(ALLOWED).map(([file, [n]]) => [file, n])));
   });
 });

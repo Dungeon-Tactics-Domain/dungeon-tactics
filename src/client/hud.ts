@@ -18,14 +18,14 @@ import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import type { MenuCss } from './hud-menucss.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm } from './hud-menus.ts';
-import { hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
-import { type HudSkin, queueBoxes, wireQueue } from './hud-skin.ts';
+import { helpWidth, hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
+import type { HudSkin } from './hud-skin.ts';
 import { ToolsMenu } from './hud-tools.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, el, iconButton } from './icons.ts';
 import type { Highlights } from './interaction.ts';
 import type { Menu3d } from './menu3d/menu3d.ts';
-import { type Anchor, placeBeside } from './place-beside.ts';
+import { type Anchor, helpEnd, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import type { Face } from './talk.ts';
@@ -34,6 +34,7 @@ import { anchorScroll, pageStep, queueRows } from './turn-list.ts';
 import type { Queue } from './turn3d/queue-view.ts';
 import type { Turn3d } from './turn3d/turn3d.ts';
 import type { Ui3dLayer } from './ui3d/layer.ts';
+import { sheetBox } from './ui3d/layout.ts';
 
 // main.ts and game/town.ts read these through hud.ts
 export { eventLog, unitStatus } from './battle-text.ts';
@@ -148,7 +149,6 @@ export class BattleHud {
     if (!this.layer) return;
     this.menu3d = skin.menu3d?.(this.layer, act);
     this.turn3d = skin.turn3d?.(this.layer, this.queue);
-    if (this.turn3d) wireQueue(this.root, this.queue, this.turn3d);
     this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox, this.tools.root);
   }
   private drop3d() {
@@ -193,14 +193,12 @@ export class BattleHud {
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me, this.face(me))] : []));
     const head = this.queued?.rows[0]; // the sheet shows the list's head (the 3D bar takes its card: queue-view.ts)
     this.root.classList.toggle('head-on-sheet', !!me && !head?.charge && head?.unit === me.id);
-    // the turn list ends a gap above the acting panel, whose height changes with the screen width
-    // 56px + the top safe area is the list's own top in style.css; the panel below sits --inset-b off the edge
-    // the 3D list sits on the reference's place instead (style.css .hud.turn3d .queue), and only needs the room the
-    // panel takes from the bottom
-    this.queue.style.maxHeight = this.turn3d
-      ? ''
-      : `calc(100% - 56px - env(safe-area-inset-top, 0px) - var(--inset) - var(--inset-b) - ${this.active.offsetHeight}px)`;
-    if (this.turn3d) this.root.style.setProperty('--active-h', `${this.root.clientHeight - this.active.offsetTop}px`);
+    // the HTML turn list ends a gap above the acting panel (56px + the top safe area is its own top in style.css). The
+    // 3D list lays itself out (turn3d/queue-layout.ts) and seats this one: it only asks the room of an HTML acting panel
+    const room = this.sheet ? undefined : this.root.clientHeight - this.active.offsetTop;
+    if (this.turn3d) this.turn3d.seat(this.queued, me?.id, room);
+    else
+      this.queue.style.maxHeight = `calc(100% - 56px - env(safe-area-inset-top, 0px) - var(--inset) - var(--inset-b) - ${this.active.offsetHeight}px)`;
     this.anchorQueue(b);
     // unit under the cursor (or the "Execute?" target)
     const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
@@ -214,20 +212,29 @@ export class BattleHud {
     const other = main ? undefined : found?.id !== me?.id ? found : undefined;
     this.target.replaceChildren(...(other ? [unitPanel(b.state, other, this.face(other))] : []));
     this.strikesEl.replaceChildren(...(main ? strikes([main, ...fs.filter((f) => f !== main)], ability!) : []));
-    this.turn3d?.update(b, this.queued, fs, v.face, queueBoxes(this.root, this.queue), me?.id);
+    this.turn3d?.update(b, this.queued, fs, v.face, me?.id);
     this.p3d.bar?.update(b.state, me, other, main ? [main, ...fs.filter((f) => f !== main)] : [], ability, v.face);
     this.p3d.confirm?.update(v, open);
-    // size of the panels that move with the character, measured once per draw (each frame's `place` only reads the cache);
-    // the strips enter the bottom height so "Execute?" does not land on top of them
+    // size of the panels that move with the character, once per draw (each frame's `place` only reads the cache); the
+    // strips enter the bottom height so "Execute?" does not land on them. A 3D piece's size is its own layout's (Nov 18)
     const box = (e: HTMLElement) => ({ w: e.offsetWidth, h: e.offsetHeight });
+    const { layer, sheet, help } = this;
+    const end = layer
+      ? helpEnd(help.textContent ?? '', layer.w, layer.inset.top, helpWidth)
+      : help.getBoundingClientRect().bottom;
     this.sizes = {
       commands: box(this.commands),
       abilities: box(this.abilities),
-      confirm: box(this.confirmBox),
-      bottom: Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight),
-      // the help line wraps to several rows on a narrow screen: the menus start below it
-      top: Math.max(72, this.help.getBoundingClientRect().bottom + 8),
+      confirm: this.p3d.confirm?.size ?? box(this.confirmBox),
+      bottom: Math.round(
+        sheet?.h ?? Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight),
+      ),
+      top: Math.max(72, end + 8), // the menus start below the help line, which wraps on a narrow screen
     };
+  }
+  // the 3D bar's sheet on the page, from the layout alone; null with the HTML panels, which are measured
+  private get sheet() {
+    return this.layer && this.p3d.bar ? sheetBox(this.layer.stage, this.layer.h) : null;
   }
 
   // Painted faces (battle-face.ts) in the unit panels and the turn list, drawn with the dialogue box's sheet at the size
@@ -269,7 +276,7 @@ export class BattleHud {
       right: this.root.clientWidth - 12,
       bottom: this.root.clientHeight - 24 - this.sizes.bottom,
     };
-    const q = this.queue.getBoundingClientRect();
+    const q = this.turn3d?.box ?? this.queue.getBoundingClientRect();
     // the character on screen goes from ~1.5 half widths above the middle (health bar) to ~1.5 below (ring on the ground)
     const avoid = [
       { left: q.left, top: q.top, right: q.right, bottom: q.bottom },
@@ -377,7 +384,12 @@ export class BattleHud {
   // height the HUD covers at the bottom (acting unit panel), so the scene centers the map on what is left. Only the acting one: the
   // target's grows with the strike preview and the map jumped each time the cursor passed over a target
   insets() {
-    return { bottom: this.active.getBoundingClientRect().height, left: shownRight(this.queue) };
+    // a piece the sandbox hides keeps its box but covers nothing (the 3D layer hides its host: ui3d/layer.ts veil)
+    const list = this.turn3d && (this.queue.style.visibility === 'hidden' ? 0 : this.turn3d.box.right);
+    return {
+      bottom: this.sheet?.h ?? this.active.getBoundingClientRect().height,
+      left: list ?? shownRight(this.queue),
+    };
   }
 
   dispose() {

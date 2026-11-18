@@ -2,6 +2,7 @@
 // its 1.5 s, how the objective banner stretches in, and where each piece of confetti is as it falls. No DOM or Three
 // here; tested in tests/effects3d.test.ts.
 import type { NumberKind } from '../hit-weight.ts';
+import { lu } from '../ui3d/layout.ts';
 
 // What the number's classes say (scene/unit-hits.ts: "phys crit", "magic", "heal", "miss"): the kind picks the colour,
 // magic also gets its star (colour is never the only signal), a strong strike the gold ring
@@ -85,4 +86,13 @@ export function slipAt(c: Slip, t: number, w: number, h: number) {
     ry: a * c.spin[1],
     rz: a * c.spin[2],
   };
+}
+
+// The performance counter's plate (fps.ts), with no DOM: on the page's right edge under the corner menu, as wide as its
+// widest line. `safe`: the notch (ui3d/safe-area.ts); the counter keeps the page's corner in the `frame` layout too
+export const FPS = { size: 16, font: 'ui-monospace, Consolas, monospace' };
+export function fpsBox(pageW: number, safe: { top: number; right: number }, widths: number[]) {
+  const line = lu(FPS.size * 1.35),
+    w = Math.max(...widths) + 16;
+  return { x: pageW - 12 - safe.right - w, y: 72 + safe.top, w, h: 8 + widths.length * line, line };
 }

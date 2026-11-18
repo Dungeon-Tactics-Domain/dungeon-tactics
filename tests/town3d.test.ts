@@ -4,7 +4,7 @@ import { type Dir, type Hit, neighbour, type Page, seen, step } from '../src/cli
 import { PAGES, partyPage } from '../src/client/town3d/party-view.ts';
 import { barPage, shopPage } from '../src/client/town3d/shop-view.ts';
 import { gatePage, menuPage, soonPage } from '../src/client/town3d/street-view.ts';
-import { C, G, M, P, T } from '../src/client/town3d/town-layout.ts';
+import { C, G, M, P, T, townHud } from '../src/client/town3d/town-layout.ts';
 import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
 
 // The town's windows in 3D (?shop=3d, ?party=3d; Nov 17): the pages the drawing is handed, built from the saved game.
@@ -367,5 +367,29 @@ describe('3D town windows: the cursor goes to the neighbour on that side', () =>
     const gate = gatePage({ name: 'Portão', gold: 0, floors: 3, quest: {} });
     expect(neighbour(gate.hits, 'quest:new', 'down')).toBe('stay');
     expect(neighbour(gate.hits, 'stay', 'down')).toBeUndefined();
+  });
+});
+
+describe('3D town HUD: the layout without the DOM', () => {
+  // what the browser measured on the unseen HTML HUD (Nov 18, the day before hud3d.ts stopped reading it)
+  const inset = { top: 12, right: 12, left: 12 };
+  it('lands where the browser put the name, the menu button and the prompt', () => {
+    for (const pageW of [1920, 540]) {
+      const l = townHud(pageW, inset, true);
+      expect([l.name.x, l.name.y]).toEqual([12, 12]);
+      expect(l.name.h).toBeCloseTo(40.797, 2);
+      expect(l.menu).toEqual({ x: pageW - 56, y: 12, w: 44, h: 44 });
+      expect(l.prompt).toEqual({ x: pageW / 2, y: 36, h: 48 });
+    }
+  });
+  it('with no key to show (a finger), the prompt is one line tall', () => {
+    const l = townHud(1280, inset, false);
+    expect(l.prompt.h).toBeCloseTo(40.797, 2);
+    expect(l.prompt.y).toBeCloseTo(12 + 40.797 / 2, 2);
+  });
+  it('follows the margins of the frame layout and the notch', () => {
+    const l = townHud(3440, { top: 12, right: 452, left: 452 }, true);
+    expect(l.name.x).toBe(452);
+    expect(l.menu.x + l.menu.w).toBe(3440 - 452);
   });
 });

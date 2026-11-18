@@ -2,10 +2,10 @@
 // Chronicles rebuilt in Three.js), a screen of the shared 3D layer (ui3d/layer.ts). One quad per row: a framed card with
 // the unit's face on its side's colour, the life bar under it and the order number beside it, 1 at the bottom and
 // counting up, like the reference (card.ts holds the shader).
-//   Layout and input: the HTML list (hud.ts renderQueue) stays in place, unseen, at the cards' sizes (style.css,
-//   .hud.turn3d): it is the layout, the scroll and the hover. The HUD measures it and hands the boxes over (`place`,
-//   `hover`); nothing here reads the DOM. Each card springs to its row's box.
-//   Sizes were measured at 1280x720, so 1 design px = --t3 CSS px; the list sits on the reference's place (layout.ts).
+//   Layout and input: where the list and each row sit is queue-layout.ts' (pure), on the reference's place (layout.ts);
+//   sizes were measured at 1280x720. The HTML list (hud.ts renderQueue) stays under the drawing, unseen and seated
+//   from the same numbers (queue-seat.ts): it is the scroll and the hover, and only its scroll is read back. Each card
+//   springs to its row's box.
 import { Group, Mesh, type ShaderMaterial, Texture, TextureLoader, type Vector2 } from 'three';
 import type { Battle } from '../../shared/battle/battle.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
@@ -15,12 +15,14 @@ import type { Forecast } from '../forecast.ts';
 import { ATLAS_COLUMNS, atlasCell, el } from '../icons.ts';
 import { modelOf } from '../markers.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
-import { place, REGIONS } from '../ui3d/layout.ts';
+import { place, REGIONS, sheetBox } from '../ui3d/layout.ts';
 import { QUAD } from '../ui3d/panel.ts';
 import { ease, land, type Spring, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
-import { cardMaterial, hex, LEFT, PAD, RIGHT, sharedUniforms } from './card.ts';
-import { listFloor, matchRows, type Queue, type QueueCard, queueCards, statsLayout } from './queue-view.ts';
+import { cardMaterial, hex, INK, LEFT, PAD, RIGHT, sharedUniforms } from './card.ts';
+import { type QueueBoxes, type QueueLayout, queueLayout } from './queue-layout.ts';
+import { dropName, seatQueue, wireQueue } from './queue-seat.ts';
+import { headOnSheet, matchRows, type Queue, type QueueCard, queueCards, statsLayout } from './queue-view.ts';
 
 const INNER = 40.2 / 43; // the picture's width over its height inside the frame: how a face is cropped
 const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
@@ -28,27 +30,9 @@ const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
 // third of a second
 const K = 170;
 const C = 18;
-const INK = '#f1ebd2'; // the light ink of the 3D bar's numbers (bar3d.ts), on the same dark ground
 const TEXT_PAD = 3; // the empty margin a label carries on each side (ui3d/text.ts)
 
-interface Box {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-// The HTML list as the HUD measured it (hud-skin.ts queueBoxes): each row's box in the list's scroll space, the list's
-// own place in the HUD, the height of its pinned title, where it is scrolled and how much list there is past its box
-export interface QueueBoxes {
-  rows: Box[];
-  left: number;
-  top: number;
-  height: number;
-  head: number;
-  scroll: number;
-  more: number;
-}
-
+type Box = QueueBoxes['rows'][number];
 interface Card {
   d: QueueCard;
   mesh: Mesh<typeof QUAD, ShaderMaterial>;
@@ -84,6 +68,8 @@ export class Turn3d implements Ui3dScreen {
   private statW = 0; // the widest life or CT line of the list, px: every bar takes it, so they compare at a glance
   private readonly scroll = spring(0);
   private geo: QueueBoxes = { rows: [], left: 0, top: 0, height: 0, head: 0, scroll: 0, more: 0 };
+  private lay!: QueueLayout; // set by the layer's first resize, in the constructor
+  private shown = { rows: 0, now: false, head: false, room: undefined as number | undefined, stats: 0 };
   private expression: (u: UnitState) => Expression = () => 'neutral';
 
   // `host`: the HUD's own list; hidden by CSS (the sandbox's `hide`), the layer hides the cards with it. `headless`: the
@@ -100,23 +86,43 @@ export class Turn3d implements Ui3dScreen {
       this.shared.uIconGrid.value.set(img.width / ATLAS_CELL, img.height / ATLAS_CELL),
     );
     layer.add(this, 'turn');
+    wireQueue(host, this);
   }
 
-  // The list's scale: the cards were measured at 720 px tall, 1.5 of them to a reference px. The HTML rows take it as
-  // --t3 and the list its place on the reference (layout.ts `turn`) as --turn-x, --turn-y and --turn-b (style.css)
+  // The list's scale: the cards were measured at 720 px tall, 1.5 of them to a reference px
   resize() {
-    const { layer } = this,
-      s = layer.s * 1.5,
-      at = place(REGIONS.turn, layer.stage),
-      css = layer.root.style;
-    this.shared.uS.value = s;
-    this.shared.uH.value = layer.h;
-    css.setProperty('--t3', String(s));
-    css.setProperty('--t3f', String(listFloor(s)));
-    css.setProperty('--turn-x', `${at.x}px`);
-    css.setProperty('--turn-y', `${at.y}px`);
-    css.setProperty('--turn-b', `${layer.h - at.y - at.h}px`);
+    this.shared.uS.value = this.layer.s * 1.5;
+    this.shared.uH.value = this.layer.h;
     this.retext(); // the lines' size follows the scale
+    this.relay();
+  }
+
+  // The list on the page, from its own layout: the cards head for it and the unseen HTML list is seated on it
+  private relay() {
+    const { layer, shown } = this;
+    this.lay = queueLayout({
+      rows: shown.rows,
+      now: shown.now,
+      s: this.shared.uS.value,
+      at: place(REGIONS.turn, layer.stage),
+      pageH: layer.h,
+      // the acting panel: the 3D bar's sheet, or what the HUD measured of its HTML one
+      sheet: shown.room ?? layer.h - Math.round(sheetBox(layer.stage, layer.h).y),
+      stats: shown.stats,
+    });
+    seatQueue(this.host, this.lay, shown.head, layer, this.flat);
+    this.place();
+  }
+  // what keeps clear of the list (hud.ts place, insets)
+  get box() {
+    return this.lay.box;
+  }
+  // A redrawn list's rows, before the HUD anchors its scroll. `sheet`: the acting sheet's unit; `room`: an HTML panel's
+  seat(q: Queue | null, sheet?: string, room?: number) {
+    const head = this.headless && headOnSheet(q, sheet),
+      rows = (q?.rows.length ?? 0) - (head ? 1 : 0);
+    Object.assign(this.shown, { rows, now: rows > 0 && !head, head, room });
+    this.relay();
   }
 
   private texture(url: string, loaded: (img: HTMLImageElement) => void) {
@@ -202,11 +208,11 @@ export class Turn3d implements Ui3dScreen {
       0,
       ...this.cards.map((c) => (c.texts ? Math.max(c.texts.hp.scale.x, c.texts.ct.scale.x) : 0)),
     );
-    // the HUD's list grows by the room the lines take past its cards' column (20 design px are already there), so what
-    // keeps clear of the list keeps clear of them too (style.css .hud.turn3d .queue)
+    // the list grows by the room the lines take past its cards' column (20 design px are already there), so what
+    // keeps clear of the list keeps clear of them too (queue-layout.ts `stats`)
     const s = this.shared.uS.value,
       room = this.statW ? statsLayout(0, s).x + this.statW + (6 - 20) * s : 0;
-    this.layer.root.style.setProperty('--turn-stats', `${Math.max(0, Math.ceil(room))}px`);
+    this.shown.stats = Math.max(0, Math.ceil(room));
   }
   private dropTexts(c: Card) {
     if (c.texts) for (const m of [c.texts.hp, c.texts.ct]) dropText(m);
@@ -216,14 +222,7 @@ export class Turn3d implements Ui3dScreen {
   // A redrawn list (BattleHud.render): the same rows as the HTML, with the strike preview's targets. Each row keeps its
   // card (matchRows), new rows get one and the rest leave: the one that just played slides out, the others fade
   // `sheet`: the unit the HUD's acting sheet shows
-  update(
-    b: Battle,
-    q: Queue | null,
-    fs: Forecast[],
-    face: (u: UnitState) => Expression,
-    geo: QueueBoxes,
-    sheet?: string,
-  ) {
+  update(b: Battle, q: Queue | null, fs: Forecast[], face: (u: UnitState) => Expression, sheet?: string) {
     this.expression = face;
     const next = queueCards(b, q, fs, this.headless ? sheet : undefined);
     const turn = q ? `${b.state.turnsPlayed}:${b.state.turn.actor}` : '';
@@ -261,14 +260,15 @@ export class Turn3d implements Ui3dScreen {
       return c;
     });
     this.retext();
-    this.place(geo, !this.drawn);
+    this.relay(); // the lines' room may have changed the list's width
+    if (!this.drawn) this.place(true);
     this.drawn = true;
   }
 
   // The list's boxes changed (a redraw, a scroll, a resize): each card heads for its row's. `first` puts them there at
   // once, as reduced motion does
-  place(geo: QueueBoxes, first = false) {
-    this.geo = geo;
+  place(first = false) {
+    const geo = (this.geo = { ...this.lay, scroll: this.host.scrollTop });
     const snap = first || this.layer.still;
     for (const c of this.cards) {
       const r = geo.rows[c.row];
@@ -393,6 +393,7 @@ export class Turn3d implements Ui3dScreen {
     for (const tex of [...this.textures.values()].map((e) => e.tex)) tex.dispose();
     this.shared.uPaint.value.dispose();
     this.shared.uDigits.value.dispose();
+    dropName();
     this.tip.remove();
     this.layer.root.classList.remove('turn3d');
   }

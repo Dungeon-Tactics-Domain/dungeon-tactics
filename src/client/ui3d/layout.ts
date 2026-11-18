@@ -96,3 +96,15 @@ export const place = (r: Region, st: Stage): Box => ({
   w: r.w * st.s,
   h: r.h * st.s,
 });
+
+// The browser's layout grid, for a piece that seats an unseen HTML skeleton under its drawing: a CSS length is a 32-bit
+// float cut to 1/64 px. A pure layout that passes its lengths through it lands on the px the browser gives the skeleton
+export const lu = (v: number) => Math.trunc(Math.fround(v) * 64) / 64;
+
+// The acting sheet (REGIONS.sheet) on a page `pageH` tall, as the 3D bar's unseen panel sits: what the turn list, the
+// menus beside the unit and the camera keep clear of
+export function sheetBox(st: Stage, pageH: number): Box {
+  const r = REGIONS.sheet,
+    h = lu(r.h * st.s);
+  return { x: lu(st.x + r.x * st.s), y: pageH - lu(st.y + (SCREEN.h - r.y - r.h) * st.s) - h, w: lu(r.w * st.s), h };
+}

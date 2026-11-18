@@ -15,12 +15,15 @@ import { Icon } from '../menu3d/column.ts';
 import { type Effects, type NumberMark, setEffects3d } from '../screen-effects.ts';
 import { TIMING } from '../timing.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
+import { safeSides } from '../ui3d/safe-area.ts';
 import { dropText, imageMesh, textMesh } from '../ui3d/text.ts';
 import {
   ANNOUNCE,
   announceStretch,
   CONFETTI,
   confettiSlips,
+  FPS,
+  fpsBox,
   numberLook,
   numberPose,
   type Slip,
@@ -254,7 +257,7 @@ export class Effects3d implements Ui3dScreen, Effects {
     this.rain = undefined;
   }
 
-  // Twice a second from fps.ts: the node's lines over a dark plate on the node's own box, each ending on its right edge
+  // Twice a second from fps.ts: the node's lines over a dark plate (effects-view.ts fpsBox), each ending on its right edge
   fps(node: HTMLElement) {
     const part = this.counter,
       text = !node.hidden && node.checkVisibility({ visibilityProperty: true }) ? (node.textContent ?? '') : '';
@@ -264,23 +267,17 @@ export class Effects3d implements Ui3dScreen, Effects {
     part.key = text;
     part.want = part.alpha = text ? 1 : 0;
     if (!text) return;
-    const r = node.getBoundingClientRect(),
-      host = this.layer.root.getBoundingClientRect(),
-      css = getComputedStyle(node),
-      size = Number.parseFloat(css.fontSize),
-      line = Number.parseFloat(css.lineHeight) || size * 1.35,
-      x = r.left - host.left,
-      y = r.top - host.top;
-    part.box(x, y, r.width, r.height, 6, PILL);
-    text.split('\n').forEach((str, i) => {
-      const m = textMesh(str, { size, color: css.color, font: css.fontFamily }, this.layer.dpr) as Quad;
+    const lines = text
+        .split('\n')
+        .map((str) => textMesh(str, { ...FPS, color: this.token('--fg') }, this.layer.dpr) as Quad),
       // the text mesh carries 3 px of margin (ui3d/text.ts)
-      part.text(
-        m,
-        x + r.width - Number.parseFloat(css.paddingRight) + 3 - m.scale.x / 2,
-        y + Number.parseFloat(css.paddingTop) + line * (i + 0.5),
+      b = fpsBox(
+        this.layer.w,
+        safeSides(),
+        lines.map((m) => m.scale.x - 6),
       );
-    });
+    part.box(b.x, b.y, b.w, b.h, 6, PILL);
+    lines.forEach((m, i) => part.text(m, b.x + b.w - 8 + 3 - m.scale.x / 2, b.y + 4 + b.line * (i + 0.5)));
     // over every other piece, as the HTML counter is (it shares its corner with the Height)
     for (const m of part.group.children) m.renderOrder += 60;
   }

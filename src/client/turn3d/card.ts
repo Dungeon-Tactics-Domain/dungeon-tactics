@@ -5,6 +5,7 @@ import { DataTexture, LinearFilter, RepeatWrapping, ShaderMaterial, Texture, Vec
 
 // room around a row's box inside its quad, in design px: the number and the gold plate on the left, the target band on
 // the right, the glow and the shadow above and below
+export const INK = '#f1ebd2'; // the light ink of the 3D bar's numbers (bar3d.ts), on the same dark ground
 export const LEFT = 46;
 export const RIGHT = 176;
 export const PAD = 14;

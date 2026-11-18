@@ -14,7 +14,7 @@ import { showLayout } from './layout-mode.ts';
 import type { Menu3d } from './menu3d/menu3d.ts';
 import type { Result3d } from './result3d/result3d.ts';
 import { param } from './store.ts';
-import type { QueueBoxes, Turn3d } from './turn3d/turn3d.ts';
+import type { Turn3d } from './turn3d/turn3d.ts';
 import type { Ui3dLayer } from './ui3d/layer.ts';
 import { parseLayout } from './ui3d/layout.ts';
 import { skinFlags, specFlags } from './ui3d/skin-flags.ts';
@@ -168,41 +168,4 @@ export async function loadLoading3d(root: HTMLElement, lost: () => void) {
   } catch {
     return undefined;
   }
-}
-
-// The turn list's boxes for the 3D list, which draws over them and never reads the DOM itself: each row in the list's
-// scroll space, the list in the HUD, its pinned title, its scroll and the list left past its box
-// the rows the 3D list draws: the shown ones (with the 3D bar, the acting row is hidden; style.css)
-const shownRows = (queue: HTMLElement) =>
-  [...queue.querySelectorAll<HTMLElement>('.queue-row')].filter((r) => r.offsetParent);
-export function queueBoxes(root: HTMLElement, queue: HTMLElement): QueueBoxes {
-  const box = queue.getBoundingClientRect(),
-    host = root.getBoundingClientRect();
-  return {
-    rows: shownRows(queue).map((r) => ({
-      x: r.offsetLeft,
-      y: r.offsetTop,
-      w: r.offsetWidth,
-      h: r.offsetHeight,
-    })),
-    left: box.left - host.left + queue.clientLeft,
-    top: box.top - host.top + queue.clientTop,
-    height: queue.clientHeight,
-    head: queue.querySelector<HTMLElement>('.queue-title')?.offsetHeight ?? 0,
-    scroll: queue.scrollTop,
-    more: queue.scrollHeight - queue.clientHeight,
-  };
-}
-
-// The 3D list's input, from the HTML list under it: a scroll or a new size moves the cards, the mouse over a row lifts
-// its card
-export function wireQueue(root: HTMLElement, queue: HTMLElement, list: Turn3d) {
-  const place = () => list.place(queueBoxes(root, queue));
-  queue.addEventListener('scroll', place);
-  new ResizeObserver(place).observe(queue);
-  queue.addEventListener('pointermove', (e) => {
-    const row = e.target instanceof Element ? e.target.closest('.queue-row') : null;
-    list.hover(row ? shownRows(queue).indexOf(row as HTMLElement) : -1);
-  });
-  queue.addEventListener('pointerleave', () => list.hover(-1));
 }

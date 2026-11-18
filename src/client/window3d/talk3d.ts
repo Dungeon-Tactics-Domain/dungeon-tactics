@@ -3,12 +3,12 @@
 // speaker's name on a dark plaque over its top left corner, the words in the paper's ink, the ▼ when the sentence is
 // out. The opening narration (`dark`) has no box: the page goes to night under the Beacon's blue glow, which breathes
 // (still under Reduce motion), and the words stand large in its middle, with Skip drawn at the foot for a finger.
-//   State and input: the box of talk.ts stays as it is, unseen but for the painted face, which shows over the
-//   parchment as it is (its mouth, its hop and the portrait that stands in for it are the box's own). The box types the
-//   words, takes Enter, the click, the pad and Esc, and is what a screen reader hears; this screen only copies what it
-//   shows, where it shows it, at any size of page: its boxes are the HTML's own, which already fit a phone.
-//   style.css is not this file's to change while the HTML look still lives there: what the narration needs unseen
-//   or moved is set on the elements here, and taken back when the drawing goes.
+//   State and input: the box of talk.ts stays, unseen but for the painted face, which shows over the parchment as it
+//   is (its mouth, its hop and the portrait that stands in for it are the box's own). The box types the words, takes
+//   Enter, the click, the pad and Esc, and is what a screen reader hears; this screen copies what it says. Where each
+//   part goes is talk-layout.ts, no measure of the HTML: the box, the strip and Skip are seated from the same numbers
+//   by style on the elements, the face in the box's corner too, taken back when the drawing goes. Of the style
+//   sheet the face keeps only its own look (its frame and the size of its picture).
 import { Group, type Mesh, ShaderMaterial, Vector2 } from 'three';
 import { colors, label, lift, rgba } from '../flow3d/draw.ts';
 import { Part, type Quad } from '../hints3d/hints3d.ts';
@@ -16,7 +16,9 @@ import { setTalk3d } from '../talk.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import type { Box } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, QUAD_VERT, quad, type Rgb } from '../ui3d/panel.ts';
-import { dropText, textMesh } from '../ui3d/text.ts';
+import { safeSides } from '../ui3d/safe-area.ts';
+import { dropText, lineCount, textMesh, textWidth } from '../ui3d/text.ts';
+import { talkLayout } from './talk-layout.ts';
 
 const OVER = 40; // over the HUD's own pieces, which share the layer
 
@@ -32,8 +34,6 @@ void main() {
   gl_FragColor = vec4(mix(uVeil, vec3(0.35, 0.67, 1.0), uGlow * (1.0 - smoothstep(0.0, 0.4, d))), 0.96);
 }`;
 const GLOW = 0.3;
-// where Skip stands in the narration, which the HTML one leaves out: the page's bottom right corner
-const SKIP_AT = 'display:block;position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom, 0px))';
 
 export class Talk3d implements Ui3dScreen {
   readonly flat = new Group();
@@ -69,10 +69,7 @@ export class Talk3d implements Ui3dScreen {
     this.dark = overlay.classList.contains('dark');
     overlay.classList.add('talk3d');
     this.layer.solo = this; // the HUD's own 3D pieces stay out, as the HUD does while someone talks
-    if (this.dark) {
-      overlay.style.animation = 'none'; // the HTML night's pulse, which would tint the page over the drawn one
-      overlay.querySelector<HTMLElement>('.talk-skip')?.setAttribute('style', SKIP_AT);
-    }
+    if (this.dark) overlay.style.animation = 'none'; // the HTML night's pulse, which would tint the page over the drawn one
     this.watch.observe(overlay, {
       subtree: true,
       childList: true,
@@ -95,7 +92,8 @@ export class Talk3d implements Ui3dScreen {
     this.watch.disconnect();
     this.overlay?.classList.remove('talk3d');
     this.overlay?.style.removeProperty('animation');
-    this.overlay?.querySelector('.talk-skip')?.removeAttribute('style');
+    for (const e of this.overlay?.querySelectorAll('.panel.talk, .talk-title, .talk-skip, .talk-face') ?? [])
+      e.removeAttribute('style');
     this.overlay = undefined;
     if (this.layer.solo === this) this.layer.solo = undefined;
     this.fixed.clear();
@@ -110,12 +108,8 @@ export class Talk3d implements Ui3dScreen {
     const { layer, overlay, fixed, dark, color: c } = this;
     if (!overlay) return;
     const s = layer.s,
-      page = layer.root.getBoundingClientRect(),
+      font = layer.theme.font,
       find = (cls: string) => overlay.querySelector<HTMLElement>(cls);
-    const rect = (e: Element): Box => {
-      const r = e.getBoundingClientRect();
-      return { x: r.left - page.left, y: r.top - page.top, w: r.width, h: r.height };
-    };
     const box = find('.panel.talk'),
       body = find('.talk-text'),
       name = find('.talk-name'),
@@ -123,10 +117,36 @@ export class Talk3d implements Ui3dScreen {
       skip = find('.talk-skip'),
       title = find('.talk-title');
     if (!box || !body) return;
-    const b = rect(box),
-      done = box.classList.contains('done'),
+    const done = box.classList.contains('done'),
       who = name && !name.hidden ? (name.textContent ?? '') : '',
+      str = body.textContent ?? '',
       focus = document.activeElement;
+    const L = talkLayout({
+        pageW: layer.w,
+        pageH: layer.h,
+        safe: safeSides(),
+        dark,
+        face: !!who,
+        name: textWidth(who, 24, font),
+        title: textWidth(title?.textContent ?? '', 24, font),
+        skip: textWidth(skip?.textContent ?? '', 16, font),
+        lines: (width, size) => lineCount(str, { size, font, width }, layer.dpr),
+      }),
+      b = L.box;
+    // the real box under the drawn one (the face stands in it), the strip and Skip too, whatever the style sheet says
+    // (the narration's style sheet leaves Skip out: `display` brings it back)
+    const seat = (e: HTMLElement | null, r: Box | undefined, more = '') =>
+      r &&
+      e?.setAttribute(
+        'style',
+        `position:fixed;margin:0;left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;min-height:0;${more}`,
+      );
+    seat(box, b);
+    seat(title, L.title);
+    seat(skip, L.skip, 'display:block');
+    // the face in the box's corner, at half size on a phone (`zoom` scales its own offsets too)
+    const zoom = L.face / 132 || 1;
+    find('.talk-face')?.setAttribute('style', `position:absolute;left:${14 / zoom}px;top:${18 / zoom}px;zoom:${zoom}`);
     const key = JSON.stringify([b, who, done, focus === skip, title?.textContent, layer.dpr, s]);
     if (key !== fixed.key) {
       fixed.clear();
@@ -174,27 +194,26 @@ export class Talk3d implements Ui3dScreen {
         fixed.text(m, r.x + r.w / 2, r.y + r.h / 2);
       };
       // the speaker's name: a dark plaque over the box's top left corner, where the HTML tab stands
-      if (who && name) plate(rect(name), who, 30, c.title);
-      if (title) plate(rect(title), title.textContent ?? '', 30, c.text);
-      if (skip) plate(rect(skip), skip.textContent ?? '', 24, c.text, focus === skip);
+      if (L.name) plate(L.name, who, 30, c.title);
+      if (title && L.title) plate(L.title, title.textContent ?? '', 30, c.text);
+      if (skip) plate(L.skip, skip.textContent ?? '', 24, c.text, focus === skip);
       const inkSoft = dark ? c.soft : layer.theme.inkSoft;
       let foot = b.y + b.h; // under the narration's last line: its hint, then its ▼
-      if (keys?.offsetParent) {
-        const k = rect(keys),
-          m = label(layer, s, keys.textContent ?? '', 20, inkSoft);
+      if (keys?.textContent) {
+        const k = L.keys,
+          m = label(layer, s, keys.textContent, 20, inkSoft);
         // the narration's hint is centred under the words; the box's ends at its right
-        fixed.text(m, dark ? k.x + k.w / 2 : k.x + k.w - m.scale.x / 2, k.y + k.h / 2);
-        foot = k.y + k.h;
+        fixed.text(m, dark ? k.x : k.x - m.scale.x / 2, k.y);
+        foot = b.y + b.h + 28;
       }
       // the box's ▼ sits in its corner; the narration has no corner, so it goes under the words, in the middle
       if (done && dark) fixed.text(label(layer, s, '▼', 22, c.text), b.x + b.w / 2, foot + 20 * s);
       else if (done) fixed.text(label(layer, s, '▼', 22, inkSoft), b.x + b.w - 26 * s, b.y + b.h - 22 * s);
       lift(fixed, OVER);
     }
-    // the words, as far as the box has typed them, at the box's own text size and never under 16 px
-    const str = body.textContent ?? '',
-      at = rect(body),
-      px = Math.max(16, Number.parseFloat(getComputedStyle(body).fontSize));
+    // the words, as far as the box has typed them
+    const at = L.text,
+      px = L.size;
     const old = this.words; // dropped after the new one is made, so the same words keep their texture
     this.words = undefined;
     if (old) queueMicrotask(() => dropText(old));
@@ -207,7 +226,7 @@ export class Talk3d implements Ui3dScreen {
         color: dark ? c.text : layer.theme.ink,
         font: layer.theme.font,
         width: at.w,
-        line: px * (dark ? 1.5 : 1.35),
+        line: L.line,
         centre: dark,
       },
       layer.dpr,
