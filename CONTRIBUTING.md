@@ -15,6 +15,7 @@ npx vitest run      # tests
 npm run coverage    # tests with a coverage summary; lcov report in coverage/
 npx vite build      # production build in dist/
 npm run smoke       # after the build: title, town, expedition and battles in headless Chrome
+npm run navcheck    # after the build: 10 rounds title, town, map, battle in one page; fails on a reload, fullscreen lost or a leak
 ```
 
 On localhost, `?auto=1` lets the AI play the heroes, `?scenario=<id>` opens a map directly (`ash_wood`, `beacon_hill`, `half` for half tiles) and `?home` opens the town (or the expedition map in progress). Links with the Portuguese names used before Nov 14 (`?cenario`, `?musica`…) still work.

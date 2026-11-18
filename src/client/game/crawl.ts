@@ -19,6 +19,7 @@ import { buildDevScenario, type DevUnit, slotsOf, unitFrom } from '../dev-roster
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t } from '../i18n.ts';
 import { looks3d } from '../looks3d.ts';
+import { navigate } from '../nav.ts';
 import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
@@ -103,14 +104,10 @@ export function castRoom(room: Scenario, exp: Expedition, node: number): { scena
 }
 
 // home (?home): the town (homeScreen), over the standalone battle; the bare address is the title
-export const goHome = () => {
-  location.search = '?home';
-};
+export const goHome = () => navigate('?home');
 // home after a crawl room that could not be built: the town says so (notices.ts noRoomScreen)
 const NO_ROOM = 'noroom';
-export const goHomeNoRoom = () => {
-  location.search = `?home=${NO_ROOM}`;
-};
+export const goHomeNoRoom = () => navigate(`?home=${NO_ROOM}`);
 
 // the way home is always the town (Fernando, Nov 15: the game always opens there; a live expedition is one tap away)
 export const homeLabel = () => t('Cidade', 'Town');
@@ -162,10 +159,8 @@ function openHome() {
   if (exp && param('home') === 'expedition') expeditionScreen(exp);
 }
 
-// the title over its own spinning backdrop battle, the bare address (an empty `search` left a "?" on it)
-export const toTitle = () => {
-  location.href = location.pathname;
-};
+// the title over its own spinning backdrop battle, the bare address
+export const toTitle = () => navigate('');
 
 // back to walking the town after a window over it (its music, Pastoral D: Fernando, Nov 15)
 export const toTown = () => setTrack('world');

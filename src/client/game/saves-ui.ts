@@ -4,6 +4,7 @@ import { dialog, secondTap } from '../dialog.ts';
 import { stillFace } from '../hud-pieces.ts';
 import { LOCALE, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { navigate } from '../nav.ts';
 import { noteWindow } from '../note.ts';
 import { byPlayed, deleteSlot, loadSlot, newGame, readSaves, type SlotSummary, summary } from '../saves.ts';
 import { store } from '../store.ts';
@@ -32,7 +33,7 @@ export const savedCount = (n: number) =>
   n === 1 ? t('1 jogo salvo', '1 saved game') : t(`${n} jogos salvos`, `${n} saved games`);
 
 // the title closes before this runs: a refused save reopens it (onBack), so the screen is never left empty. The town is
-// its own page (?home, game/town.ts), not a window over the title's backdrop battle
+// its own screen (?home, game/town.ts), not a window over the title's backdrop battle
 export function startNewGame(onBack: () => void) {
   if (!newGame(live, Date.now())) {
     return full(onBack);
@@ -44,7 +45,7 @@ export function startNewGame(onBack: () => void) {
 function resume() {
   const room = savedRoom();
   if (room === null) goHome();
-  else location.search = `?room=${room}`;
+  else navigate(`?room=${room}`);
 }
 
 const where = (s: SlotSummary) =>

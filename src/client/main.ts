@@ -22,6 +22,7 @@ import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
 import { onMarkStyle } from './mark-style.ts';
 import { reducedMotion } from './motion.ts';
+import { onLeave, screenSignal } from './nav.ts';
 import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
 import { abilitySheet, unitSheet } from './status-window.ts';
@@ -51,6 +52,7 @@ export class Game implements TurnHost {
   // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)
   private tally = emptyTally();
   private roster: Roster = {};
+  private readonly gone = screenSignal(); // aborted when this battle's screen leaves (nav.ts)
 
   constructor(
     public battle: Battle,
@@ -94,12 +96,17 @@ export class Game implements TurnHost {
       scene.restyle(this.battle.state);
       this.update(this.turn.ui);
     });
+    onLeave(() => {
+      onMarkStyle(null);
+      this.hud.dispose();
+    });
     this.update(this.turn.ui);
     void this.runEnemies(); // the save may have stopped on the enemy turn
   }
 
   // every frame; the gamepad goes through the same path as the keyboard (battle-input.ts)
   private pollPad() {
+    if (this.gone.aborted) return;
     requestAnimationFrame(() => this.pollPad());
     // the standalone battle is the backdrop of the title screen (and of the screens that leave it): it rotates while any is open
     const title = !!document.querySelector('.title-overlay');
@@ -259,6 +266,7 @@ export class Game implements TurnHost {
   }
 
   save() {
+    if (this.gone.aborted) return; // a turn still playing when the screen left must not write the room back
     store.set(this.sel.saveKey, this.battle.over ? '' : this.battle.save());
   }
 

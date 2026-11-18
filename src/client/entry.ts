@@ -1,6 +1,8 @@
 // Entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game, all of it
-// behind the loading cover until everything landed (ready-gate.ts).
+// behind the loading cover until everything landed (ready-gate.ts). The whole game is this one page (nav.ts): a change
+// of screen lets the screen in view go and runs the same path on the new address, with no reload.
 import { Battle } from '../shared/battle/battle.ts';
+import { syncInert } from './dialog.ts';
 import { keepFullscreen } from './fullscreen.ts';
 import { newBattle, selectBattle } from './game/boot.ts';
 import { titleScreen } from './game/title.ts';
@@ -11,23 +13,46 @@ import { el } from './icons.ts';
 import { loadingCover } from './loading.ts';
 import { looks3d } from './looks3d.ts';
 import { Game, LOCAL } from './main.ts';
-import { whenReady } from './ready-gate.ts';
+import { leaveScreen, onLeave, onNavigate } from './nav.ts';
+import { type Cover, whenReady } from './ready-gate.ts';
 import { rotateNote } from './rotate-note.ts';
 import { BattleScene } from './scene.ts';
-import { sfx } from './sound.ts';
+import { setTrack, sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { isSurvival, survivalGoal } from './survival.ts';
 
-async function boot() {
-  const host = document.getElementById('app')!;
+const host = document.getElementById('app')!;
+let covering: Cover | null = null; // the cover while a screen is built: a screen asked for under it keeps the same one
+let asked = 0; // counts the screens asked for: one that lands after another was asked for is let go, never mounted
+
+// `search`: the address of the screen to change to (nav.ts navigate); none: the one the page opened with
+async function boot(search?: string) {
+  const mine = ++asked;
+  const stale = () => mine !== asked;
+  if (search !== undefined) history.replaceState(null, '', search || location.pathname);
   // before anything else shows; the sandbox settles its own page, so there the cover leaves as soon as it is built
-  const cover = loadingCover(param('sandbox') === null);
-  rotateNote(); // "turn the phone" over every screen (mobile-ux), cover included
-  keepFullscreen(); // fullscreen chosen on another screen comes back with this page's first gesture
+  const up = (covering ??= loadingCover(param('sandbox') === null));
+  const cover: Cover = {
+    fail: () => void (stale() || up.fail()),
+    async open() {
+      if (stale()) return;
+      covering = null;
+      await up.open();
+    },
+  };
+  // under the cover, the screen in view goes: its scene, 3D layer, listeners and timers (nav.ts onLeave), then the
+  // windows it left open, each through its own close so its keys go with it (dialog.ts)
+  leaveScreen();
+  for (const o of document.querySelectorAll('.overlay')) o.dispatchEvent(new Event('close'));
+  for (const o of document.querySelectorAll('.overlay, .talk-overlay')) o.remove();
+  host.replaceChildren();
+  syncInert();
   // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
-  if (param('home') !== null) return bootTown(host, cover);
+  if (param('home') !== null) return bootTown(host, cover, stale);
   const sel = await selectBattle();
-  if (!sel) return; // went home instead: the cover stays until that page comes
+  if (!sel || stale()) return; // went home instead: the cover stays until that screen comes
+  // a battle plays its own track, whatever the screen before it played (a new page started silent); the title, its own
+  setTrack(sel.title ? 'title' : null);
   // localhost ?sandbox=<spec>: a battle staged for screenshots (docs/sandbox.md); its own chunk, never fetched online
   const sandbox = LOCAL && param('sandbox') !== null ? await import('./dev/sandbox.ts') : null;
   const staged = await sandbox?.stage(sel.scenario);
@@ -48,13 +73,15 @@ async function boot() {
     cover,
     [BattleScene.create(host, battle.grid, battle.state, models), loadSkin(staged?.spec)],
     ([scene, skin]) => {
+      if (stale()) return scene.dispose();
+      onLeave(() => scene.dispose());
       const game = new Game(battle, scene, host, run, skin);
       sandbox?.install(game, scene);
       if (sel.title) titleScreen();
     },
   );
   // by the battle in play, not the address: a crawl room opened with ?scenario=survival is not one
-  if (isSurvival(scenario.id) && !saved && !sandbox) announce(survivalGoal(t));
+  if (isSurvival(scenario.id) && !saved && !sandbox && !stale()) announce(survivalGoal(t));
 }
 
 // Large banner in the middle of the screen for 2 s (Until Dawn's goal at the start); disappears by itself and does not take clicks
@@ -66,4 +93,7 @@ function announce(text: string) {
   setTimeout(() => box.remove(), 2200);
 }
 
+rotateNote(); // "turn the phone" over every screen (mobile-ux), cover included
+keepFullscreen(); // fullscreen from before a real reload (the language) comes back with this page's first gesture
+onNavigate((search) => void boot(search));
 void boot();

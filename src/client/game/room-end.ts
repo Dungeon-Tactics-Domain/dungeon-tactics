@@ -5,6 +5,7 @@ import { poolOf } from '../../shared/battle/combat.ts';
 import type { BattleState } from '../../shared/battle/types.ts';
 import { cleared, descentGold, expeditionMap, nodeGold, openNodes, winRoom } from '../../shared/crawl/expedition.ts';
 import { t } from '../i18n.ts';
+import { navigate } from '../nav.ts';
 import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { store } from '../store.ts';
 import { roomLine } from '../tally.ts';
@@ -42,9 +43,7 @@ export function finishRoom(room: CrawlRoom, won: boolean, state: BattleState, he
   if (!settled) return goHome();
   const { next, done, node, gold, down, map } = settled;
   // on to the expedition map while it goes on (home alone opens the town), else home
-  const home = () => {
-    location.search = next && !done ? '?home=expedition' : '?home';
-  };
+  const home = () => navigate(next && !done ? '?home=expedition' : '?home');
   const carried = (h: EndHero) => (next && !done ? next.party.find((p) => p.id === room.heroes[h.id]?.id) : undefined);
   resultBoard({
     won: !!next, // a cleared room and a won expedition get the victory's look

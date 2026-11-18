@@ -25,7 +25,12 @@ import { squareUnder, TileSpace } from './scene/space.ts';
 import { Timeline } from './scene/timeline.ts';
 import { Units } from './scene/units.ts';
 import type { TerrainTextures } from './terrain.ts';
+import { letGo } from './three-util.ts';
 import { speed } from './timing.ts';
+
+// the map's context lost: the warning, as the layer's; not a disposed scene's, which is off the page (and holds
+// nothing of its scene: no closure of the constructor)
+const contextLost = (e: Event) => (e.target as Element).isConnected && no3d();
 
 export class BattleScene {
   private readonly renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -63,8 +68,7 @@ export class BattleScene {
     // the shadow is drawn once per frame, requested in frame
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.domElement.className = 'board';
-    // the map's context lost: the warning, as the layer's; not a disposed scene's, which the browser may drop for room
-    this.renderer.domElement.addEventListener('webglcontextlost', (e) => (e.target as Element).isConnected && no3d());
+    this.renderer.domElement.addEventListener('webglcontextlost', contextLost);
     host.append(this.renderer.domElement);
     this.floats = el('div', { class: 'floats', 'aria-hidden': 'true' });
     host.append(this.floats);
@@ -360,15 +364,14 @@ export class BattleScene {
   dispose() {
     this.renderer.setAnimationLoop(null);
     removeEventListener('resize', this.onResize);
+    letGo(this.renderer, this.scene);
     this.ambience?.dispose();
-    this.scene.traverse((o) => {
-      const m = o as THREE.Mesh;
-      m.geometry?.dispose();
-      for (const mat of [m.material].flat()) (mat as THREE.Material | undefined)?.dispose();
-    });
     this.composer.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+    // a browser keeps few WebGL contexts (16 in Chrome, fewer on a phone) and frees a let-go one only when it likes:
+    // given back now, off the page already, so the listener above does not take it for a loss (one page, nav.ts)
+    this.renderer.forceContextLoss();
     this.floats.remove();
   }
 }

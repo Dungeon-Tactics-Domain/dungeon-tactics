@@ -17,6 +17,7 @@ import { gauge, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el, icon, UI_ICON } from '../icons.ts';
 import { looks3d } from '../looks3d.ts';
+import { navigate } from '../nav.ts';
 import { setTrack } from '../sound.ts';
 import { goldNote } from '../town-ui.ts';
 import { current, group, retreat, takeChest, toTown } from './crawl.ts';
@@ -165,10 +166,7 @@ export function expeditionScreen(exp: Expedition) {
   ];
 
   const enter = (node: number) => {
-    if (!map[node].chest) {
-      location.search = `?room=${node}`;
-      return;
-    }
+    if (!map[node].chest) return navigate(`?room=${node}`);
     d.close();
     const next = takeChest(exp, node);
     if (next) {

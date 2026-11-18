@@ -53,7 +53,8 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — wiring and windows
 
-- `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game, behind the loading cover until everything landed; the start banner (announce).
+- `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game, behind the loading cover until everything landed; a change of screen lets the one in view go and runs the same path on the new address, in the same page; the start banner (announce).
+- `src/client/nav.ts` — the one page's screens: `navigate` (to the screen an address opens, with no reload; the address replaced, never pushed) and what leaves with a screen (`screenSignal`, `onLeave`, `leaveScreen`); no imports.
 - `src/client/ready-gate.ts` — the readiness gate (`whenReady`): the interface is built only once the models, the 3D pieces' chunks and the fonts landed, and the cover leaves after it drew; the loading bar's share, how long the cover waits for files and the 3D loading screen's layout; pure.
 - `src/client/loading.ts` — the loading cover over the whole page (`loadingCover`): "Loading the game" over a bar filled by the files landed, and a Reload button when the load fails, drawn in 3D over the unseen HTML ones; holds the hosted fonts too.
 - `src/client/no3d.ts` — no3d(): the warning that replaces the page when there is no WebGL or its context is lost (the interface is only 3D).
@@ -217,7 +218,7 @@ parseGrid and withRamps (grid.ts).
 ## src/client — 3D drawing (Three.js) and sound
 
 - `src/client/scene.ts` — BattleScene: renderer (smooth 3D), lights, frame loop and the scene's public API.
-- `src/client/three-util.ts` — small shared Three helpers: seeded draws, noise, grid triangles and KayKit palette textures without mipmaps.
+- `src/client/three-util.ts` — small shared Three helpers: seeded draws, noise, grid triangles and KayKit palette textures without mipmaps, and `letGo` (what a renderer drew is disposed before the renderer goes, so nothing kept between screens holds it).
 - `src/client/terrain.ts` — smooth painted terrain mesh with its paint per look and textures, and the invisible tiles the pointer picks.
 - `src/client/terrain-outer.ts` — heights of the extension ring around the map and the river that continues off it, with its mesh.
 - `src/client/water.ts` — Water: builds the water of a map and makes the units disturb it (pokes, splash drops, foam collars).

@@ -61,3 +61,28 @@ export function prepare(o: THREE.Object3D) {
   });
   return o;
 }
+
+// One page (nav.ts): what outlives a screen (Three's own DFG table, the caches of marks, labels and paint, a quad the
+// 3D pieces share) holds every renderer that ever drew it, by the listener each leaves on it, and with the renderer
+// its canvas and its WebGL context. So before a renderer is let go, every geometry, material and texture under `root`
+// is disposed: the GPU's copy goes and the data stays, uploaded again by the next renderer that draws it
+export function letGo(renderer: THREE.WebGLRenderer, root: THREE.Object3D) {
+  const free = (v: unknown) => {
+    if ((v as THREE.Texture | null)?.isTexture) (v as THREE.Texture).dispose();
+  };
+  const { background, environment } = root as THREE.Scene;
+  free(background);
+  free(environment);
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    m.geometry?.dispose();
+    for (const mat of [m.material].flat()) {
+      if (!mat) continue;
+      // what the renderer drew it with (the DFG table is only there), then what it names itself (envMap's source)
+      const drawn = (renderer.properties.get(mat) as { uniforms?: Record<string, { value: unknown }> }).uniforms;
+      for (const u of Object.values(drawn ?? {})) free(u.value);
+      for (const v of Object.values(mat)) free(v);
+      mat.dispose();
+    }
+  });
+}
