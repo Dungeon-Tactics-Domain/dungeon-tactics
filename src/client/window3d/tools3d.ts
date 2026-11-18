@@ -9,6 +9,7 @@
 //   own action, as always. What the rows say is tool-rows.ts'.
 import { Group, type Mesh, type ShaderMaterial } from 'three';
 import { NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
+import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { alpha, clamp01, Icon, move } from '../menu3d/column.ts';
 import { REF } from '../menu3d/menu-layout.ts';
@@ -38,6 +39,7 @@ export class Tools3d implements Ui3dScreen {
   private readonly focusY = spring(0);
   private readonly burger: HTMLElement;
   private readonly back: HTMLElement;
+  private readonly undo: HTMLElement;
   private readonly menu: HTMLElement;
   private readonly watch = new MutationObserver(() => this.draw());
   private readonly ac = new AbortController();
@@ -57,6 +59,7 @@ export class Tools3d implements Ui3dScreen {
     const find = (cls: string) => host.querySelector<HTMLElement>(cls)!;
     this.burger = find('.burger');
     this.back = find('.back');
+    this.undo = find('.undo');
     this.menu = find('.tools-menu');
     this.flat.add(this.buttons.group, this.list.group);
     this.glove.model.rotation.set(0.2, -0.3, 0);
@@ -88,7 +91,7 @@ export class Tools3d implements Ui3dScreen {
   }
 
   private label(str: string, size: number, color: string, floor = 16) {
-    const px = Math.max(floor, size * this.layer.s);
+    const px = Math.max(floor, size * this.layer.s); // the list keeps its width and 44 px rows on a narrow page: so does its text
     return textMesh(str, { size: px, color, font: this.layer.theme.font }, this.layer.dpr) as Quad;
   }
 
@@ -103,7 +106,7 @@ export class Tools3d implements Ui3dScreen {
     };
     layer.wake();
     const open = !this.menu.hidden;
-    const shown = [this.burger, this.back].filter((e) => e.offsetParent).map((e) => ({ e, r: rect(e) }));
+    const shown = [this.burger, this.back, this.undo].filter((e) => e.offsetParent).map((e) => ({ e, r: rect(e) }));
     const key = JSON.stringify([shown.map((b) => b.r), open, layer.dpr, s]);
     buttons.want = 1;
     if (key !== buttons.key) {
@@ -112,7 +115,7 @@ export class Tools3d implements Ui3dScreen {
       for (const { e, r } of shown) {
         buttons.box(r.x, r.y, r.w, r.h, 10 * s, e === this.burger && open ? LIT : PILL, EDGE);
         const mid = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
-        if (e === this.back) buttons.text(this.label('↩', SIZE.back, WHITE), mid.x, mid.y);
+        if (e !== this.burger) buttons.text(this.label(e === this.back ? '↩' : '↶', SIZE.back, WHITE), mid.x, mid.y);
         else {
           // the 3 bars
           const w = r.w * 0.46,
@@ -179,7 +182,7 @@ export class Tools3d implements Ui3dScreen {
       left(this.label(d.label, SIZE.row, ink), iconW + 8 * s, mid);
       // from the right edge: the key on its cap, then a switch's state in words (colour is never the only signal)
       let x = box.w - 12 * s;
-      const caps = d.key && capMeshes(d.key, layer.keys, Math.max(22, 28 * s), layer.dpr, layer.theme.font);
+      const caps = KEYS && d.key && capMeshes(d.key, layer.keys, Math.max(22, 28 * s), layer.dpr, layer.theme.font);
       if (caps) {
         x -= capsWidth(caps, 4 * s);
         capRun((m, cx, cy) => list.text(m, cx, cy), caps, x, mid, 4 * s);

@@ -46,6 +46,9 @@ const PORTRAIT_START = 8.3;
 // PC: opens with ~10 of view height (before up to 16, almost the whole map and the unit at ~30 px at 1280x720). FFT shows
 // few tiles and big units; the camera follows the cursor and whoever acts, and F still shows the whole map (Nov 12)
 const PC_START = 10;
+// a phone on its side (under 500 px tall; Nov 18): 6 of view height, so a half tile is about 32 px wide for the finger
+// instead of 20; the pinch and the whole-map button still show more
+const SHORT_START = 6;
 
 export class CameraRig {
   readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
@@ -77,7 +80,7 @@ export class CameraRig {
     this.viewH =
       innerWidth < innerHeight
         ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START * this.k)
-        : Math.min(this.fitView, PC_START * this.k);
+        : Math.min(this.fitView, (innerHeight < 500 ? SHORT_START : PC_START) * this.k);
     this.focus.set(0, STEP, 0);
   }
 

@@ -8,6 +8,7 @@ import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { Game, LOCAL } from './main.ts';
 import { PIXEL_KEY, parsePixel } from './pixel-settings.ts';
+import { rotateNote } from './rotate-note.ts';
 import { BattleScene } from './scene.ts';
 import { sfx } from './sound.ts';
 import { param, store } from './store.ts';
@@ -15,6 +16,7 @@ import { isSurvival, survivalGoal } from './survival.ts';
 
 async function boot() {
   const host = document.getElementById('app')!;
+  rotateNote();
   // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
   if (param('home') !== null) return bootTown(host);
   const sel = await selectBattle();
