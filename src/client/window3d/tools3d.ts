@@ -9,6 +9,7 @@
 //   its real buttons take the mouse and the taps, and the list's scroll is its own. A key closes the list and runs
 //   its own action, as always. What the rows say is tool-rows.ts'.
 import { Group, type Mesh, type ShaderMaterial } from 'three';
+import { fullscreenNow } from '../fullscreen.ts';
 import { NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
@@ -90,6 +91,7 @@ export class Tools3d implements Ui3dScreen {
     this.menu.addEventListener('focusin', point, o);
     this.menu.addEventListener('pointerleave', point, o);
     this.menu.addEventListener('scroll', () => this.draw(), o); // a phone lying down: the list scrolls
+    document.addEventListener('fullscreenchange', () => this.draw(), o); // the fullscreen row's name follows it
     // a button Tab reached is lit, as the town's (Nov 18)
     for (const ev of ['focusin', 'focusout']) host.addEventListener(ev, () => queueMicrotask(() => this.draw()), o);
     layer.add(this, 'tools');
@@ -186,10 +188,21 @@ export class Tools3d implements Ui3dScreen {
       on = items.map((e) => e.getAttribute('aria-checked') === 'true'),
       // what a row says on its right beside a switch's state: the pixel size in use
       value = items.map((e) => e.dataset.value ?? ''),
-      data = toolRows(this.undo.getAttribute('aria-disabled') !== 'true');
+      data = toolRows(this.undo.getAttribute('aria-disabled') !== 'true', fullscreenNow());
     this.at = { x: box.x, y: box.y };
     this.rows = rows as Box[];
-    const lkey = JSON.stringify([box.w, box.h, rows, on, value, data[0].off, layer.dpr, s, layer.keys]);
+    const lkey = JSON.stringify([
+      box.w,
+      box.h,
+      rows,
+      on,
+      value,
+      data[0].off,
+      data.map((d) => d.label),
+      layer.dpr,
+      s,
+      layer.keys,
+    ]);
     if (lkey === list.key || !all.length) return;
     this.drop();
     list.key = lkey;

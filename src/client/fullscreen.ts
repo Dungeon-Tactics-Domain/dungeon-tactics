@@ -4,6 +4,8 @@
 import { t } from './i18n.ts';
 
 export const fullscreenOn = () => !!document.fullscreenElement;
+// in fullscreen now, or undefined where the browser has no Fullscreen API (what tool-rows.ts takes)
+export const fullscreenNow = () => (document.fullscreenEnabled ? fullscreenOn() : undefined);
 // what the shortcut says: what a tap does now
 export const fullscreenLabel = (on: boolean) =>
   on ? t('Sair da tela cheia', 'Exit fullscreen') : t('Tela cheia', 'Fullscreen');

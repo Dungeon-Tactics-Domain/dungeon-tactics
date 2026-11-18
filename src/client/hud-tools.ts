@@ -1,6 +1,7 @@
 // The battle HUD's corner menu (3 bars): undo, rotate, whole map, pixel size, fast battle, fps counter and Options, each with its key.
 // Owns its document listeners while open; close() removes them.
 import { fpsOn } from './fps.ts';
+import { fullscreenLabel, fullscreenNow, toggleFullscreen } from './fullscreen.ts';
 import type { Act } from './glyphs.ts';
 import type { HudActions } from './hud.ts';
 import { hint } from './hud-pieces.ts';
@@ -23,6 +24,7 @@ export class ToolsMenu {
   private readonly fastBtn: HTMLElement;
   private readonly fpsBtn: HTMLElement;
   private readonly pixelBtn: HTMLElement;
+  private readonly fullBtn?: HTMLElement;
   // a menu button (3 bars) on the HUD panel colour in place of the row of 7 stone buttons (Nov 13, Fernando's request:
   // "crude and inconsistent"); the keys still work and show on each row
   readonly root = el('div', { class: 'tools' }, this.burger, this.toolsMenu);
@@ -50,6 +52,7 @@ export class ToolsMenu {
       pixel: () => act.pixel(),
       fast: () => act.fast(),
       fps: () => act.fps(),
+      fullscreen: () => toggleFullscreen(),
       menu: () => act.menu(),
     };
     const drawn: Partial<Record<Tool, string>> = {
@@ -59,7 +62,7 @@ export class ToolsMenu {
       menu: UI_ICON.menu,
     };
     const items = new Map(
-      toolRows().map((r) => {
+      toolRows(true, fullscreenNow()).map((r) => {
         const glyph = drawn[r.tool] ? icon(drawn[r.tool]!) : r.glyph;
         const props = r.toggle && { role: 'menuitemcheckbox', 'aria-checked': String(r.tool === 'fps' && fpsOn()) };
         return [r.tool, this.toolItem(glyph, r.label, r.key, run[r.tool], props)] as const;
@@ -68,6 +71,7 @@ export class ToolsMenu {
     this.fpsBtn = items.get('fps')!;
     this.fastBtn = items.get('fast')!;
     this.pixelBtn = items.get('pixel')!;
+    this.fullBtn = items.get('fullscreen');
     this.pixelBtn.querySelector('.tool-label')?.after(el('span', { class: 'tool-value' }));
     this.undoRow = items.get('undo')!;
     this.toolsMenu.append(...items.values());
@@ -95,6 +99,9 @@ export class ToolsMenu {
   }
 
   private showTools(open: boolean) {
+    // the fullscreen row says what a tap does now: it settles after the menu closed, so it is read again on opening
+    const full = this.fullBtn?.querySelector('.tool-label')?.lastChild;
+    if (open && full) full.textContent = fullscreenLabel(!!fullscreenNow());
     this.toolsMenu.hidden = !open;
     this.burger.setAttribute('aria-expanded', String(open));
     for (const ev of ['pointerdown', 'keydown']) {

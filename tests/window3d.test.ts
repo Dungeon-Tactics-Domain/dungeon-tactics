@@ -25,6 +25,15 @@ describe('corner menu: one list of rows for the HTML menu and the 3D one', () =>
     expect(toolRows(false)[0].label).toBe('Desfazer'); // the same word as the button on the screen
   });
 
+  // Fernando, Nov 18: fullscreen in reach of a phone in the browser; an iPhone has no Fullscreen API
+  it('the fullscreen row says what a tap does, and is left out with no Fullscreen API', () => {
+    const full = (on?: boolean) => toolRows(true, on).find((r) => r.tool === 'fullscreen');
+    expect(full()).toBeUndefined();
+    expect(full(false)).toMatchObject({ label: 'Tela cheia', key: '' });
+    expect(full(true)?.label).toBe('Sair da tela cheia');
+    expect(toolRows(true, false).at(-1)?.tool).toBe('menu'); // Options stays the last row
+  });
+
   it('the pixel size row says the size in use', () => {
     expect([0, 2, 3, 4].map(pixelValue)).toEqual(['desligado', '2 px', '3 px', '4 px']);
   });
