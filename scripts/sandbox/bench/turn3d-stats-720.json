@@ -41,9 +41,7 @@
     }
   },
   "screen": "menu",
-  "hide": [
-    "fps"
-  ],
+  "hide": ["fps"],
   "viewport": {
     "width": 1280,
     "height": 720
