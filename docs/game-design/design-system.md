@@ -19,117 +19,60 @@ How the Dungeon Tactics interface is built: tokens, pieces, states, input and co
 
 ## 1. Tokens
 
-### Tokens (Nov 18: one set, no themes)
+### Tokens (Nov 18: one set, no themes, no blue)
 
-The `:root` block at the top of `style.css` holds every token. The swappable themes (`theme.ts`, `dt:theme`, Options → Theme, Nov 15) and the panel glass (`glass.ts`, `dt:glass`, Options → Panel opacity and Blur behind the panels, Nov 16) were removed on Nov 18 with the HTML look they dressed: the interface is only 3D, drawn with the `--ui3d-*` tokens, so there is no panel left to tint or blur.
+The `:root` block at the top of `style.css` holds every token. The swappable themes (`theme.ts`, `dt:theme`, Options → Theme, Nov 15) and the panel glass (`glass.ts`, `dt:glass`, Options → Panel opacity and Blur behind the panels, Nov 16) were removed on Nov 18 with the HTML look they dressed. With it went the blue panel tokens (`--paper*`, `--glass*`, `--stone*`, `--frame`, `--focus-band`, `--well`, `--shade`, `--overlay` and the rest no rule read any more): the interface is only 3D, drawn with the `--ui3d-*` tokens, and the HTML under it is an unseen skeleton whose borders keep their width with no colour.
 
-- **Kit names:** the kit's `--font-px` is `--font-title` here (both point to `--font`).
-- **Font:** Alegreya Sans hosted in `public/fonts` (`@font-face` under the token block; SIL OFL 1.1, licence beside the files). No Google Fonts.
-- **Aliases on purpose:** some tokens share a value today (`--fg` = `--ink` = `--on-accent`; `--muted` = `--ink-muted`; `--trim-hi` = `--accent` = `--focus`; `--stone-lo` = `--paper-lo`; `--paper-white` = `--stone`). Each keeps its own name so a theme can split them; use the one that names the role.
-- **Literals inside composite tokens:** `--glow` repeats `--focus` as `rgba(255,215,94,.55)`, `--focus-halo` repeats `--bg` (`#0a1028`), `--ink-shadow` and `--paper-frame` repeat `--shade` (`#050a18`). A theme that changes `--focus` or `--shade` must redefine these too (listed under Debts).
+- **Font:** Alegreya Sans hosted in `public/fonts` (`@font-face` under the token block; SIL OFL 1.1, licence beside the files). No Google Fonts. The 3D pieces use `--font-ui3d` (a system serif).
+- **Read by name from TS:** the 3D code reads some tokens with `getComputedStyle`: `--ui3d-*` (`ui3d/layer.ts`, `town3d/`, `result3d/`, `flow3d/`), `--mark-*` (`flow3d/sheet-draw.ts`), and `--fg`, `--heal`, `--float-*`, `--strike`, `--strike-dmg`, `--mark-counter`, `--font-title` (`hints3d/effects3d.ts`). Grep for the name before removing a token.
 
 ### Colour
 
 | Group | Tokens | Use |
 |---|---|---|
-| Panel | `--paper-hi` `--paper` `--paper-lo` `--paper-edge` | top, middle and foot of the blue gradient of panels and dialogs; light frame |
-| Panel glass | `--glass-hi` `--glass` `--glass-lo` `--panel-veil` `--panel-rim` `--panel-filter` | the panel stops at the chosen opacity, the dark veil under them, the light rim and the backdrop filter; opaque defaults (Panel glass, above) |
-| Ink | `--ink` `--ink-muted` `--ink-off` `--ink-shadow` `--focus` | text, muted text, disabled row text, the hard dark text shadow, yellow highlight/focus/link |
-| Focus row | `--focus-band` `--row-hi` `--row-off` | menu row under focus (lighter blue band), row under hover, disabled row (sunken dark band, focused or not) |
-| Dark scene | `--bg` `--fg` `--muted` `--overlay` `--shade` | page background, text over the scene, veil behind dialogs; `--shade` is the dark navy the other veils mix with `color-mix()` at their own alpha: debug readout 65%, ability banner 88%, dialogue veil 35% |
-| Stone | `--stone` `--stone-lo` `--edge` `--trim` `--trim-hi` `--bevel-*` `--well` | button outside the panels (almost unused today), bar background |
-| Primary | `--gold-btn` `--gold-trim` `--on-accent` `--accent` | primary button (brighter blue; the names stayed from the gold one), battle highlight (yellow) |
-| Sides | `--hero` `--enemy` | side stripe of panels and queue rows |
-| Bars | `--hp` `--mp` `--sp` `--ct` `--heal` | HP, mana (MP), stamina (ST, Nov 16), CT, healing |
-| Strike preview | `--strike-dmg` `--enemy-paper` `--enemy-hi` `--strike` | damage number; the wine gradient of an enemy target's half and its ◆; `--strike` is now only the translucent band of the "+N targets" line |
-| Fields | `--paper-white` | Developer fields (dark blue field) |
-| Damage number | `--float-phys` `--float-magic` `--heal` `--float-miss` `--float-crit-edge` | floating number from the unit's chest, coloured by kind (Nov 15 grill): white physical (push, wall, fall and spikes too), violet magic with a ✦ after the number (colour is not the only cue), green heal (its +), grey miss (its word); on a strike of 25% of life or more from an attack, a gold ring outside the glyph's black outline (white and violet straight on gold read at 1.0 to 1.6:1). Its size comes inline from the share of life it takes (`numberPx` in `hit-weight.ts`: 26 px at 10%, 38 at 25%, up to 56, x1.4 on a strong strike), so it reads the same at x5 life |
+| Page | `--bg` `--fg` | page background under the scene and the loading cover (`#0b0a0e`, neutral; `theme-color` in `index.html` is the same), its text |
+| 3D kit | `--ui3d-paper*` `--ui3d-edge` `--ui3d-ink*` | the parchment the 3D shaders paint and its ink (contrast in the `:root` comment) |
+| 3D result and town | `--ui3d-result-*` `--ui3d-town-*` | the dark plate, veil, band and light text of the result board, the town windows and the two pieces of HTML still seen (the card's name under the mouse, the turn-the-phone notice) and the painted face's frame |
+| Damage number | `--float-phys` `--float-magic` `--heal` `--float-miss` `--float-crit-edge` | floating number by kind (Nov 15 grill): white physical, violet magic with a ✦, green heal, grey miss; a gold ring on a strike of 25% of life or more. Size from `numberPx` in `hit-weight.ts` |
+| Strike preview | `--strike` `--strike-dmg` | the "+N targets" band and the damage number on the 3D preview plate |
 | Tile marks | `--mark-move` `--mark-range` `--mark-blocked` `--mark-threat` `--mark-nogo` `--mark-counter` | legend; same as `MARK` in `src/client/scene/mark-looks.ts` |
-| Command orbs | `--orb-blue` `--orb-gold` `--orb-bronze` `--orb-off` | glass orb (`.orb` with `act`/`blue`, `status`/`gold` or `bronze`) before Act and Status in the command menu, before each row of a window's command menu (town, title: bronze marks the row that leaves, like the kit's Leave and Options) and before each row of the stage-end window; `--orb-off` on a disabled row |
+| Loading bar | `--orb-gold` | `accent-color` of the loading cover's bar (with no WebGL) |
 
-### Contrast (measured on Nov 15, WCAG 2.1 formula, script over the CSS hex values; translucent colours blended over their worst background)
+### Contrast
 
-| Pair | On `--paper-hi` (top) | On `--paper` | On `--paper-lo` (foot) | Bar |
-|---|---|---|---|---|
-| `--ink` | 7.8 | 9.3 | 15.3 | 4.5 ✓ |
-| `--ink-muted` | 5.6 | 6.7 | — | 4.5 ✓ |
-| `--focus` / `--accent` (titles, names, battle highlight) | 6.0 | 7.2 | — | 4.5 ✓ |
-| `--ink-off` (disabled row; the kit's `#8592b4` gave 2.7, raised to `#b4bedc`) on its `--row-off` band | 6.8 (4.5 without the band) | 7.6 | 9.7 | 4.5 ✓ |
-
-| Other pair | Value | Bar |
-|---|---|---|
-| `--ink` on `--focus-band` (top / foot) | 5.3 / 6.3 | ✓ (every text in a focused row turns `--ink`; the queue's current row has no band since Nov 15, its NOW is `--focus` on the panel: on the band `--ink-muted` gives 3.8, `--focus` 4.1, `--ink-off` 3.1, so a focused disabled row keeps its `--row-off` band and `--ink-off` text and shows only the ▶) |
-| `--on-accent` on `--gold-btn` (top / foot) | 4.9 / 6.7 | ✓ |
-| `--ink` on `--paper-white` (fields) | 13.0 | ✓ |
-| `--fg` on `--bg` | 17.4 | ✓ |
-| `--muted` on `--stone` | 9.3 | ✓ |
-| `--fg` on the "+N targets" band over a white sky | 11.2 | ✓ |
-| Strike preview, action half on `--paper-hi` (top): `--ink` / `--strike-dmg` / `--heal` | 7.8 / 5.5 / 4.9 | ✓ (Nov 15) |
-| Strike preview, enemy half on `--enemy-paper` (top `#7a2436`): `--ink` / `--ink-muted` | 9.1 / 6.6 | ✓ (Nov 15) |
-| Strike preview, hero half on `--paper`: `--ink-muted` / `--accent` (ALLY!) | 6.7 / 7.2 | ✓ (Nov 15) |
-| Menu head band (6% `--ink` over `--paper-hi`) / picked row (45% `--shade` over `--paper-hi`): `--ink` | 6.7 / 12.4 | ✓ (Nov 15) |
-| ◆ on `--enemy-paper` (not text, the word beside it carries the side): `--enemy-hi` / `--enemy` | 4.9 / 2.6 | hence `--enemy-hi` |
-| Expedition map (Nov 16; WCAG formula on the token hex values, not measured on screen): an open place's count `--on-accent` on `--gold-btn` (top / foot) / a path not taken's ✕ `--ink-muted` on `--well` / a cleared place's ✓ `--heal` on `--paper-lo` / the walked way `--focus` and the open way `--ink` on `--well` | 4.9 / 6.7; 12.5; 9.7; 13.5 and 17.3 | ✓ (the ways to come and the closed ones are `--ink-muted` at 75% and 40% over `--well`, not computed: weight and dash tell them apart) |
-| Hero card's last line (it sits below the card's middle, on `--paper` or darker): `--heal` / `--enemy-hi` / `--ink-muted` | 5.9 / 5.0 / 6.7 | ✓ (Nov 15; `--enemy-hi` on `--paper-hi` would give 4.1, so it never goes at the top of a panel) |
-| Defeat band: `--ink` on `--enemy-paper` (top `#7a2436`) | 9.1 | ✓ (Nov 15) |
-| Window head band (6% `--ink` over `--paper-hi`): `--ink` / `--focus` (victory title) | 6.7 / 5.2 | ✓ (Nov 15) |
-| Regular button: `--ink` on `--stone` / `--stone-lo` | 13.0 / 15.3 | ✓ (Nov 15) |
-| Result highlight band (25% `--shade` over `--paper-hi`): `--ink-muted` | 7.3 | ✓ (Nov 15; the same band under the Sheet head) |
-| Hover band `--row-hi` over `--paper-hi`: `--ink` / `--ink-muted` | 6.0 / 4.3 | ✓ / ✗ → the party row's muted lines turn `--ink` on hover and focus (Nov 15) |
-| Marks on `--focus-band`: the chosen option's ✓ in `--ink` / the ▶ and ▸ focus marks in `--focus` | 5.3 / 4.1 | ✓ (Nov 15, review: the ✓ was `--focus` at 4.1; the ▶ and ▸ are non-text marks, bar 3:1; a scan of the title, Quick battle, Options, world map and Party found no `--ink-muted` text on the band) |
-| `--focus` alone on the white sky | 1.4 | ✗ → hence `--focus-halo` (dark band: 18.8 on white, 13.5 against the ring) |
-| Panel glass over a white backdrop (Nov 16; panel stops at the chosen opacity over `--panel-veil` over white, every step from 40% to 100%, `tests/glass.test.ts`), at 40%: `--ink` / `--ink-muted` / `--focus` / `--heal` / `--strike-dmg` on `--paper-hi`, `--ink-muted` / `--enemy-hi` on `--paper` | 8.3 / 6.0 / 6.5 / 5.3 / 5.9, 6.5 / 4.8 | ✓ (worst over all steps: `--enemy-hi` on `--paper` at 40%, 4.8; without the veil `--heal` on `--paper-hi` fell to 4.3 at 95%. The browser's pixel at 40% over white, top of a window: `rgb(57,73,105)`, the formula's own) |
+The 3D kit's pairs are measured in the `:root` comment of `style.css` (ink 7.7:1 on the rows; the result board's light text 11:1 on its plate). The Nov 15 tables for the blue HTML panels went with them (Nov 18); they are in the git history of this file.
 
 ### Typography
 
 | Token | Value | Use |
 |---|---|---|
-| `--font` | Alegreya Sans (hosted), weights 400, 500 (body), 700, 800, italic 400 | all text |
-| `--font-title` | `var(--font)` | titles, menu rows, primary button, queue (FFT uses one plain letter; kept as its own token so a theme can change it) |
-| `--fs-xs` / `--fs-min` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 16 / 16 / 16 / 20 / 24 / 34 px | key drawn on a button (keyboard only) / smallest text a touch screen shows: the turn list's round tag, the fps counter (Nov 16) / note and help / body / menu item and name / preview damage |
-| `--fs-title` / `--fs-display` | 28 / 38 px | dialog title and opening narration / game title in a window and big damage number |
-| `--fs-banner` | 64 px | the end-of-battle title band (Result board) |
-| `--fs-logo` | 96 px (8vw on a narrow screen) | the game's name on the title screen, in capitals |
+| `--font` | Alegreya Sans (hosted), weights 400, 500 (body), 700, 800, italic 400 | all HTML text |
+| `--font-title` | `var(--font)` | titles; the floating numbers' letter |
+| `--font-ui3d` | Palatino Linotype, Palatino, Book Antiqua, Georgia, serif | every 3D piece's text |
+| `--fs-min` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 16 / 16 / 20 / 24 / 34 px | smallest text / note and help / body / menu item and name / large number |
+| `--fs-title` / `--fs-display` | 28 / 38 px | window title / game title in a window |
+| `--fs-3d-min` | `min(16px, 16 / 0.6 × --lay-u)` | the 3D pieces' smallest text (`ui3d/layout.ts textPx`) |
 
-Minimum text: 16 px with no exception, touch included (Fernando, Nov 16): `--fs-xs` and `--fs-min` are 16 px too, and the key hint and the key drawn on a button grew from 11 and 12. Panel and dialog text carries `--ink-shadow`.
+Minimum text: 16 px with no exception, touch included (Fernando, Nov 16).
 
-### Space, corner, shadow
+### Space
 
 | Token | Value | Use |
 |---|---|---|
-| `--gap` | 8 px | default gap between pieces; multiples of 4 (4, 6, 8, 12, 16, 24) |
-| `--tap` | 44 px | minimum button height; on touch (`pointer: coarse`) also the menu rows, "Execute?"'s Confirm and Back, Buy, Sell, Recruit and the title's language button, which stay compact on a PC; the corner list's rows everywhere, 4 px apart (Nov 16) |
-| `--r` | 2 px | corner of everything |
-| `--slot-w` | `min(672px, 35vw)` | bottom unit panels (the lab kit's 35% of 1920; 448 px at 1280) |
-| `--frame` / `--frame-pressed` | bevel with a steel trim | button outside the panels |
-| `--glow` | yellow glow | selected button outside the panels |
-| `--focus-halo` | 2 px of `#0a1028` | focus outside the panels (see Focus) |
-| `--paper-frame` | dark outer line, thin inner line, inner top glow, 3 px drop shadow | `.panel`, `.dialog`, menu button, title menu |
-
-| `--inset` | 12 px | panel margin to the screen edge |
-| `--inset-t` `--inset-r` `--inset-b` `--inset-l` | `--inset` + `env(safe-area-inset-*)` | the same margin clear of the notch and home bar, on every piece anchored to an edge; `.overlay` pads by the safe areas too (Nov 16) |
+| `--gap` | 8 px | default gap between pieces |
+| `--tap` | 44 px | minimum touch target: every transparent button over a 3D drawing keeps it on touch (`pointer: coarse`) |
+| `--slot-w` | `min(672px, 35vw)` | bottom unit panels (the lab kit's 35% of 1920) |
+| `--inset` | 12 px | margin to the screen edge |
+| `--inset-t` `--inset-r` `--inset-b` `--inset-l` | `--inset` + `env(safe-area-inset-*)` | the same margin clear of the notch and home bar; `.overlay` pads by the safe areas too (Nov 16) |
+| `--lay-u` `--lay-x` `--lay-y` | one px of the 1920x1080 reference, the frame's margins | where a piece sits (`ui3d/layout.ts stage`) |
 
 ### Motion
 
-| What | Time | Where |
-|---|---|---|
-| Command menu, "Execute?", corner list | 90 ms (`--t-menu`) | `menu-in` |
-| Ability submenu | 110 ms | `menu-in-side` |
-| Ability name banner, dialogue box | 120 ms (`--t-open`) | `banner-in`, `menu-in` |
-| Conversation title (no caller since Nov 15) | 160 ms | `banner-in` |
-| Speaker portrait | 220 ms | `face-pop` |
-| Speaker mouth (painted face) | 180 ms per frame while the text types: talk1 from the first instant, then talk2, talk1, neutral…; neutral when the sentence is out | `mouthFrame` in `talk.ts` (JS: it follows the typing, not a CSS loop) |
-| Game title | 600 ms | `title-in` |
-| Focus ▶ and dialogue ▼ | 0.6 s in 2 steps (`--t-nudge`) | `nudge` |
-| Damage number | 1.5 s; pops on the impact frame and follows the chest on screen; lifted over any number still showing (`liftOver`, an area strike's targets side by side); leaves on the wall clock, slow motion or not | `pop` = `TIMING.float` |
-| Objective banner | 2.2 s | `announce` |
-| Bar loss stripes | 1 s in 2 steps | `loss-blink` |
-| Confetti (victory) | 1.6–2.6 s, 0–0.8 s delay | `fall` (`confetti()` in `game/end-screens.ts`) |
-| Opening veil pulse (no caller since Nov 15) | 4 s | `beacon` |
-
-Battle timing (step, jump, strike) lives in `timing.ts`, never in CSS. With `prefers-reduced-motion`, nothing animates; in battle the strong strike does not shake the screen and the action camera stays off (Nov 16).
+The 3D pieces move on springs on the battle clock (`ui3d/spring.ts`) and draw only while something moves; Reduce motion stills them (`layer.still`). The CSS keeps one animation, the speaker portrait's `face-pop` (220 ms), off with Reduce motion. The speaker's mouth follows the typing (`mouthFrame` in `talk.ts`, 180 ms per frame). Battle timing (step, jump, strike) lives in `timing.ts`, never in CSS. With `prefers-reduced-motion`, nothing animates; in battle the strong strike does not shake the screen and the action camera stays off (Nov 16).
 
 ## 2. Pieces
+
+Since Nov 18 every piece below is drawn in 3D; the HTML named here stays as the unseen skeleton (its box, input and screen reader), and the colour tokens it names (`--paper*`, `--stone*`, `--focus-band`…) were removed with the blue look. The table keeps each piece's behaviour and history.
 
 States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 
@@ -398,8 +341,6 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
 - **Options only opens from a battle** (Nov 16): the title and the town have no Options row (the town menu keeps its two switches); `optionsMenu` needs the battle's `OptionsContext` for the pixel rows, the goal and the foot.
 - **Second tap** is written by hand in four places (`data-armed`); the armed state never disarms, and the labels now say "Confirm" on every device (Nov 16).
 - **Piece showcase** (`?vitrine`) to see every piece in every state on one screen.
-- **Panel glass (Nov 16):** no "Glass" preset yet (two controls only); the enemy's wine half of the strike preview and the defeat band stay opaque; the blur over the 3D scene re-blurs every frame, never profiled on a phone or tablet; a browser without `color-mix()` (from memory: Chrome before 111, Safari before 16.2, Firefox before 113; not checked) loses the panel background only when glass is on below 100%, the default stays plain hex; with glass on, the gradient's middle interpolates in oklab instead of sRGB.
-- **`--stone*` tokens** are almost unused since every window took the panel look (Nov 13): only the base `button` (no screen shows it bare today) and the selected class card (`button[aria-pressed="true"]` adds `--frame` and `--glow`) still draw with them. The unused `--star`, `--star-ink` and `--heal-ink` were removed on Nov 14.
 
 ## 7. What was and was not checked
 

@@ -1,85 +1,26 @@
 :root {
-  /* every colour and size of the page comes from here (one set since Nov 18: the themes and the panel glass went with
-     the HTML look; the 3D layer reads the --ui3d-* ones) */
-  --bg: #0a1028;
-  --fg: #f4f6ff;
-  --muted: #c8d3ee;
-  --accent: #ffd75e;
-  --on-accent: #f4f6ff; /* text on the primary button */
-  --hero: #5aa8ff;
-  --enemy: #e0525a;
-  --heal: #6fdc8c;
-  --overlay: rgba(5, 10, 24, 0.8);
-  /* button outside the panels (almost unused): the kit's dark blue button with a light steel trim */
-  --stone: #18295a;
-  --stone-lo: #0f1d40;
-  --edge: #050a18;
-  --trim: #8fa0c8;
-  --trim-hi: #ffd75e;
-  --bevel-hi: rgba(255, 255, 255, 0.14);
-  --bevel-lo: rgba(0, 0, 0, 0.5);
-  --well: #08112a;
-  --gold-btn: linear-gradient(#3b6ab8, #2a55a0); /* primary button: the kit's brighter blue */
-  --gold-trim: #dfe6f8;
-  --r: 2px; /* near-square corner: pixel art has no rounded corners */
-  --frame:
-    inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-hi), inset -4px -4px 0 0 var(--bevel-lo),
-    0 3px 0 var(--edge);
-  --frame-pressed: inset 0 0 0 2px var(--trim), inset 4px 4px 0 0 var(--bevel-lo), inset -4px -4px 0 0 var(--bevel-hi);
-  --glow: 0 0 0 2px var(--trim-hi), 0 0 14px rgba(255, 215, 94, 0.55);
-  /* same colors as the scene markings (MARK in scene/mark-looks.ts), so the legend matches the map */
+  /* every colour and size of the page comes from here (one set since Nov 18: the themes, the panel glass and the blue
+     panels went with the HTML look; the 3D layer reads the --ui3d-* ones and a few by name, listed below) */
+  --bg: #0b0a0e; /* the page under the scene and the loading cover: a neutral near-black, no blue (Nov 18) */
+  --fg: #f4f6ff; /* text of the loading cover; the fps counter (effects3d.ts) */
+  /* same colors as the scene markings (MARK in scene/mark-looks.ts), so the legend matches the map; the 3D tile-marks
+     sheet reads them by name (flow3d/sheet-draw.ts) */
   --mark-move: #6fc0ff;
   --mark-range: #ff7a3c;
   --mark-blocked: #b07ae0;
   --mark-threat: #ff2d55;
   --mark-nogo: #ff4040;
   --mark-counter: #ff3b3b;
-  /* HUD panels: blue gradient (top --paper-hi, foot --paper-lo) with a light frame; contrast in the design system */
-  --paper: #21407c;
-  --paper-lo: #0f1d40;
-  --paper-hi: #2a4c8c;
-  --paper-edge: #dfe6f8;
-  --ink: #f4f6ff;
-  --ink-muted: #c8d3ee;
-  --ink-off: #b4bedc; /* text of a disabled menu row: 4.5:1 on --paper-hi (the kit's #8592b4 gave 2.7:1) */
-  --row-off: rgba(
-    5,
-    10,
-    24,
-    0.4
-  ); /* sunken disabled menu row: lifts --ink-off to 6.8:1 and sets it apart from active rows */
-  --ink-shadow: 1px 1px 0 #050a18; /* light text on the blue panels gets a hard dark shadow */
-  --focus: #ffd75e; /* focus ring and highlight: FFT yellow */
-  --focus-band: linear-gradient(#3e66ad, #33599f); /* menu row under focus: lighter blue than the panel */
-  --hp: #5ccf5f;
-  --mp: #4f9cf0;
-  --sp: #f0884a; /* stamina bar (Nov 16): orange, apart from the CT amber; the ST label says it too */
-  --ct: #e8b030;
-  /* translucent band of the strike preview's "+N targets" line: dark enough for light text over the bright sky */
+  /* read by name by the 3D effects (hints3d/effects3d.ts): the "+N targets" band of the strike preview (dark enough for
+     light text over the bright sky), its damage number, and the floating numbers by kind (Nov 15 grill): green heal,
+     white physical, violet magic, grey miss, a gold edge on a strike of 25% of life or more */
   --strike: rgba(5, 10, 24, 0.82);
   --strike-dmg: #ffc2c2;
-  --enemy-paper: linear-gradient(
-    #7a2436,
-    #3e0f1c
-  ); /* target half of the strike preview when it is an enemy (lab kit) */
-  --enemy-hi: #ff9aa2; /* the enemy's ◆ on --enemy-paper, where --enemy is too dark to see */
-  /* focus outside the panels (menu button over the scene, map node, language on the title, dialogue box): a dark band
-     hugging the yellow ring, so the ring shows on the bright sky and on the grass */
-  --focus-halo: 0 0 0 2px #0a1028;
-  /* frame of panels, dialogs and the menu button: dark outer line, the glass rim (transparent unless glass is on), thin inner
-     line, inner top glow and a drop shadow */
-  --paper-frame:
-    0 0 0 1px #050a18, inset 0 0 0 1px rgba(5, 10, 24, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.14),
-    0 3px 0 rgba(0, 0, 0, 0.45);
-  --paper-white: #18295a; /* field background: Developer fields and the class card */
-  --row-hi: rgba(255, 255, 255, 0.1); /* menu row under hover */
-  /* floating number by kind (Nov 15 grill): white physical, violet magic, grey miss (heal: --heal); gold edge on a
-     strike of 25% of life or more */
+  --heal: #6fdc8c;
   --float-phys: #ffffff;
   --float-magic: #d7a6ff;
   --float-miss: #bdbdbd;
   --float-crit-edge: #ffc531;
-  --shade: #050a18; /* dark navy of the veils and tags over the scene; each piece sets its alpha with color-mix */
   --tap: 44px; /* touch target: >= 44 px (spec) */
   --gap: 8px;
   --inset: 12px; /* panel margin to the screen edge */
@@ -99,31 +40,17 @@
   --fs-3d-min: min(16px, 16 / 0.6 * var(--lay-u)); /* the 3D pieces' smallest text (ui3d/layout.ts textPx) */
   --lay-x: var(--safe-x);
   --lay-y: var(--safe-y);
-  --slot-w: min(
-    672px,
-    35vw
-  ); /* bottom unit panels: the lab kit's 35% of the 1920 screen; the strike preview sits beside the acting one */
+  --slot-w: min(672px, 35vw); /* bottom unit panels: the lab kit's 35% of the 1920 screen */
   --font: "Alegreya Sans", "Segoe UI", system-ui, sans-serif; /* hosted in public/fonts (@font-face below) */
-  --font-title: var(--font); /* titles, options and queue: FFT uses one plain letter, no title serif */
-  --fs-xs: 16px; /* the key drawn on a button; 16 like every text since Nov 16 (was 12) */
-  --fs-min: 16px; /* the smallest text anywhere (Fernando, Nov 16: no exception, touch included): the round tag, the fps counter */
+  --font-title: var(--font); /* titles; the floating numbers' letter (effects3d.ts) */
+  --fs-min: 16px; /* the smallest text anywhere (Fernando, Nov 16: no exception, touch included) */
   --fs-sm: 16px;
   --fs: 20px;
   --fs-lg: 24px;
-  --fs-xl: 34px; /* xl: the hit chance of the strike preview */
-  --fs-title: 28px; /* dialog title, opening narration */
-  --fs-display: 38px; /* game title in a window, big damage number */
-  --fs-banner: 64px; /* the end-of-battle title band (lab mockup) */
-  --fs-logo: 96px; /* the game's name on the title screen (lab mockup) */
-  /* motion: menus open in 90 ms, banners and the dialogue box in 120 ms; the ▶ and ▼ nudge every 0.6 s */
-  --t-menu: 90ms;
-  --t-open: 120ms;
-  --t-nudge: 0.6s;
-  /* glass orb before the commands with no atlas icon (Act, Status), the lab kit's command markers; off when disabled */
-  --orb-gold: #c8a040;
-  --orb-blue: #4a78d0;
-  --orb-bronze: #b06a30; /* the kit's leave and options rows */
-  --orb-off: #4a5068;
+  --fs-xl: 34px;
+  --fs-title: 28px;
+  --fs-display: 38px;
+  --orb-gold: #c8a040; /* the loading bar (accent-color) */
   /* 3D interface kit (src/client/ui3d; localhost ?menu3d and ?turn3d, Nov 16): the parchment its shaders paint and the ink
      of its text, measured on FFT: The Ivalice Chronicles' menus. Read once by ui3d/layer.ts, hex only. Contrast (computed on the
      drawn colours): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the title band; soft ink 5.7:1 on the rows and
@@ -244,7 +171,7 @@ button {
   font: 700 var(--fs-sm) / 1.1 var(--font);
   min-height: var(--tap);
   min-width: var(--tap);
-  border: 2px solid var(--edge);
+  border: 2px solid transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -262,9 +189,7 @@ button[hidden],
   display: none;
 }
 
-/* ---- Dialog: window on the panel blue, its buttons, title, text and action row ---- */
-/* windows on the same blue as the HUD panels (Nov 15, FFT Classic). One shade lighter than the battle panel (paper-hi →
-   paper) so the muted text (ink-muted) passes 4.5:1 all the way down */
+/* ---- Dialog: the window's box, its buttons, title, text and action row (unseen under its 3D screen) ---- */
 .dialog {
   padding: 0 18px 18px;
   width: min(460px, 100%);
@@ -272,7 +197,7 @@ button[hidden],
   overflow: auto;
   /* a finger scrolls the window and nothing else: without this a pinch inside it zoomed the whole page 5x (Nov 16 tablet audit) */
   touch-action: pan-y;
-  border: 2px solid var(--paper-edge);
+  border: 2px solid transparent;
 }
 /* disabled in a window: faded; the stone's dark grey looked like a pressed button */
 .dialog button:disabled {
@@ -295,7 +220,7 @@ button[hidden],
   gap: var(--gap);
   margin: 0 -18px 12px;
   padding: 4px 8px 4px 18px;
-  border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
+  border-bottom: 2px solid transparent;
 }
 .dialog h2,
 .dialog h3 {
@@ -348,7 +273,7 @@ button[hidden],
   width: 20px;
   height: 20px;
   flex: none;
-  border: 1px solid var(--ink);
+  border: 1px solid transparent;
 }
 .sw.counter {
   /* the map mark is a plain red frame (scene/mark-looks.ts counter) */
@@ -461,10 +386,8 @@ button[hidden],
 }
 
 /* ---- Battle HUD: panels, turn list, help, corner menu, command menu ---- */
-/* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Blue
-   gradient panel with light text and a light frame, built here in CSS (nothing from the original art). Fixed positions on
-   the PC's 1920x1080 screen, except the command menu, which moves beside the character (hud.ts place); mobile gets its
-   own stage later. */
+/* HUD in the style of the FFT battle screen (Fernando's request, Nov 12): only the layout and flow come from there. Fixed
+   positions on the PC's 1920x1080 screen, except the command menu, which moves beside the character (hud.ts place) */
 .hud {
   position: absolute;
   inset: 0;
@@ -489,7 +412,7 @@ button[hidden],
   pointer-events: auto;
   margin: 0;
   padding: 8px 12px;
-  border: 2px solid var(--paper-edge);
+  border: 2px solid transparent;
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
 .tile-info:empty {
@@ -538,7 +461,7 @@ button[hidden],
   left: 30px; /* row padding 4 + face 36, less the tag's overlap */
   bottom: 1px;
   font: 700 var(--fs-min) / 1 var(--font);
-  border: 1px solid var(--paper-edge);
+  border: 1px solid transparent;
   padding: 1px 3px;
 }
 /* one line each, so every row keeps the face's height and a long name ends in … instead of growing the row */
@@ -587,14 +510,6 @@ button[hidden],
   height: 36px;
   flex: none;
   object-position: top;
-  border-color: var(--side);
-}
-/* the one acting now: yellow frame with a glow, and NOW in yellow above it */
-.queue-row.now .portrait {
-  border-color: var(--focus);
-  box-shadow:
-    0 0 0 1px var(--edge),
-    0 0 10px color-mix(in srgb, var(--focus) 60%, transparent);
 }
 /* what-to-do-now help and ability name banner: at the top, in the middle */
 .help {
@@ -697,7 +612,7 @@ button[hidden],
     z-index: 100; /* over every window */
     pointer-events: auto;
     place-items: center;
-    background: var(--overlay);
+    background: color-mix(in srgb, var(--ui3d-result-veil) 80%, transparent);
     padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
       max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
   }
@@ -746,7 +661,7 @@ button[hidden],
   gap: 10px;
   padding: 6px 14px 7px;
   font: 400 var(--fs) / 1.2 var(--font-title);
-  border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
+  border-bottom: 2px solid transparent;
 }
 .panel.commands .item,
 .panel.abilities .item {
@@ -786,9 +701,6 @@ button[hidden],
   height: 28px;
   margin: 0 2px; /* centred in the 32 px icon column */
   flex: none;
-}
-.panel .item:disabled .orb {
-  --orb: var(--orb-off);
 }
 .panel .item {
   width: 100%;
@@ -866,26 +778,20 @@ button[hidden],
   align-items: center;
   gap: 18px;
   padding: 14px 22px;
-  border-left: 6px solid var(--side);
+  border-left: 6px solid transparent;
 }
 /* the portrait at the lab kit's 128 px height, scoped here so the other portraits keep their size */
 .unit-panel .portrait {
   width: 96px;
   height: 128px;
 }
-.unit-panel.hero {
-  --side: var(--hero);
-}
-.unit-panel.enemy {
-  --side: var(--enemy);
-}
 .portrait {
   width: 72px;
   height: 96px;
   object-fit: cover;
   flex: none;
-  background: var(--paper-hi);
-  border: 2px solid var(--paper-edge);
+  background: var(--ui3d-result-plate);
+  border: 2px solid var(--ui3d-result-line);
 }
 .portrait.tinted,
 .face-strip.tinted {
@@ -923,7 +829,7 @@ button[hidden],
 .gauge-bar {
   position: relative;
   height: 10px;
-  border: 1px solid var(--edge);
+  border: 1px solid transparent;
 }
 /* strike preview on the target bar (hud-pieces.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
    green stripes, like Tactics Ogre. Stripe and the number "life 25 → 13–16" alongside: never color alone */
@@ -935,12 +841,12 @@ button[hidden],
 /* mirrored target panel (portrait on the right), like Tactics Ogre's status bar: attacker and target face each other */
 .target-slot .unit-panel {
   flex-direction: row-reverse;
-  border-left: 2px solid var(--paper-edge);
-  border-right: 6px solid var(--side);
+  border-left: 2px solid transparent;
+  border-right: 6px solid transparent;
 }
 /* strike preview (hud-pieces.ts strikes; Tactics Ogre's idea from Nov 13, the lab kit's two-colour strip since Nov 15): beside the
-   acting unit's panel, in the target panel's place, anchored at the bottom; the action half on the panel blue, the target
-   half on its side's colour (wine for an enemy). Up to 3 strips, then "+N targets"; no click (the mouse reaches the tiles) */
+   acting unit's panel, in the target panel's place, anchored at the bottom. Up to 3 strips, then "+N targets"; no click
+   (the mouse reaches the tiles) */
 .strikes {
   position: absolute;
   bottom: var(--inset-b);
@@ -954,7 +860,7 @@ button[hidden],
 .strike {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border: 2px solid var(--paper-edge);
+  border: 2px solid transparent;
   overflow: hidden;
 }
 .strike-main,
@@ -970,7 +876,7 @@ button[hidden],
   column-gap: 12px;
 }
 .strike-target {
-  border-left: 2px solid var(--paper-edge);
+  border-left: 2px solid transparent;
 }
 /* the ◆ in --enemy vanished on the wine half */
 .strike-name,
@@ -1131,8 +1037,8 @@ body:has(.result-overlay) .fps {
 .face-sheet {
   display: block;
   overflow: hidden;
-  background: var(--paper-hi);
-  border: 2px solid var(--paper-edge);
+  background: var(--ui3d-result-plate);
+  border: 2px solid var(--ui3d-result-line);
   box-sizing: content-box;
 }
 .face-strip {
@@ -1225,7 +1131,7 @@ body:has(.result-overlay) .fps {
   position: sticky;
   bottom: -18px;
   padding: 8px 0;
-  border-top: 2px solid var(--paper-edge);
+  border-top: 2px solid transparent;
 }
 
 /* ---- Town menu and the windows beside it (game/crawl.ts; Design lab mockups, Nov 15) ---- */
@@ -1294,7 +1200,7 @@ body:has(.result-overlay) .fps {
 .opt-bar {
   flex: 1;
   height: 12px;
-  border: 1px solid var(--shade);
+  border: 1px solid transparent;
 }
 .opt-bar i {
   display: block;
@@ -1310,7 +1216,7 @@ body:has(.result-overlay) .fps {
   margin: 8px 0 0;
   padding: 8px 12px;
   min-height: calc(2 * 1.3em + 18px);
-  border: 1px solid var(--paper-edge);
+  border: 1px solid transparent;
   font-size: var(--fs-sm);
   line-height: 1.3;
 }
@@ -1402,7 +1308,7 @@ body:has(.result-overlay) .fps {
   left: 0;
   right: 0;
   padding-top: 10px; /* at the top of its band: the chest and its ▶ take the edge on the rows below */
-  border-top: 2px dashed color-mix(in srgb, var(--paper-edge) 35%, transparent);
+  border-top: 2px dashed transparent;
   font: 700 var(--fs-sm) / var(--map-gutter) var(--font);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1444,7 +1350,7 @@ body:has(.result-overlay) .fps {
   height: var(--size);
   min-height: 0;
   padding: 0;
-  border: 2px solid var(--trim);
+  border: 2px solid transparent;
   font: 700 var(--fs) / 1 var(--font-title);
 }
 .crawl-map .map-place.skipped,
@@ -1727,7 +1633,6 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   width: calc(100% - var(--turn-stats, 0px)); /* over the cards, not over their lines */
   position: sticky;
   top: 0;
-  text-shadow: var(--ink-shadow);
 }
 .hud.turn3d .queue-row {
   flex: none;
