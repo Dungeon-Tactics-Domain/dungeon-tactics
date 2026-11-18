@@ -259,13 +259,9 @@ body {
 /* small labels in the text font (the pixel font at 12 px was unreadable); the pixel font stays on titles, Confirm and queue */
 button {
   font: 700 var(--fs-sm) / 1.1 var(--font);
-  color: var(--fg);
   min-height: var(--tap);
   min-width: var(--tap);
-  border-radius: var(--r);
   border: 2px solid var(--edge);
-  background: linear-gradient(var(--stone), var(--stone-lo));
-  box-shadow: var(--frame);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -273,56 +269,17 @@ button {
   cursor: pointer;
   touch-action: manipulation;
 }
-@media (hover: hover) {
-  button:not(:disabled):hover {
-    filter: brightness(1.18);
-  }
-}
 /* pressed: inverted bevel and the button drops 2 px, like a key */
 button:not(:disabled):active {
-  box-shadow: var(--frame-pressed);
   transform: translateY(2px);
 }
 button:disabled {
-  filter: grayscale(0.85) brightness(0.65);
   cursor: default;
 }
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-summary:focus-visible,
-a:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-} /* FFT yellow: 7:1 on the blue panels */
-button[aria-pressed="true"] {
-  box-shadow: var(--frame), var(--glow);
-}
 /* over the scene the yellow ring alone gives 1.4:1 on a white sky; the dark halo carries it */
-.tools .burger:focus-visible,
-.tools .back:focus-visible,
-.tools .undo:focus-visible,
-.main-title .title-lang:focus-visible,
-.town-act:focus-visible,
-.panel.talk:focus-visible {
-  box-shadow: var(--focus-halo);
-}
 button.primary {
-  background: var(--gold-btn);
-  color: var(--on-accent);
   font: 400 var(--fs-lg) / 1 var(--font-title);
   flex: 1;
-  box-shadow:
-    inset 0 0 0 2px var(--gold-trim),
-    inset 4px 4px 0 0 rgba(255, 255, 255, 0.35),
-    inset -4px -4px 0 0 rgba(0, 0, 0, 0.25),
-    0 3px 0 var(--edge);
-}
-button.primary:not(:disabled):active {
-  box-shadow:
-    inset 0 0 0 2px var(--gold-trim),
-    inset 4px 4px 0 0 rgba(0, 0, 0, 0.25),
-    inset -4px -4px 0 0 rgba(255, 255, 255, 0.35);
 }
 button.secondary {
   padding: 0 14px;
@@ -349,68 +306,29 @@ button[hidden],
   /* a finger scrolls the window and nothing else: without this a pinch inside it zoomed the whole page 5x (Nov 16 tablet audit) */
   touch-action: pan-y;
   border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  color: var(--ink);
-  background: linear-gradient(var(--glass-hi), var(--glass)), var(--panel-veil);
-  box-shadow: var(--paper-frame);
-  text-shadow: var(--ink-shadow);
-}
-/* every blue surface blurs what is behind it when glass is on (glass.ts); the windows with no background of their own
-   reset it below, so no invisible rectangle is blurred */
-.dialog,
-.result-board .dialog-head,
-.hero-card,
-.result-panel,
-.main-title .menu-actions,
-.panel,
-.tools .burger,
-.tools .back,
-.tools .undo,
-.strike {
-  -webkit-backdrop-filter: var(--panel-filter);
-  backdrop-filter: var(--panel-filter);
 }
 /* buttons inside the window: the lab kit's dark blue button with the steel trim and a drop shadow (the primary keeps its
    brighter blue); both at --fs like the kit, the primary in bold */
 .dialog button:not(.primary) {
-  color: var(--ink);
   font: 500 var(--fs) / 1.1 var(--font);
-  background: linear-gradient(var(--stone), var(--stone-lo));
-  border-color: var(--trim);
-  box-shadow:
-    0 0 0 1px var(--edge),
-    0 3px 0 var(--bevel-lo);
 }
 .dialog button.primary {
   font: 700 var(--fs) / 1.1 var(--font-title);
 }
-.dialog button:not(.primary):not(:disabled):active {
-  box-shadow:
-    0 0 0 1px var(--edge),
-    inset 0 2px 4px var(--bevel-lo);
-}
 /* chosen (choice()): the kit's lighter band, yellow border and a ✓, so it is not told by colour alone */
 .dialog button[aria-pressed="true"]:not(.primary) {
-  background: var(--focus-band);
-  border-color: var(--focus);
   font-weight: 700;
 }
 .dialog button[aria-pressed="true"]:not(.primary)::before {
   content: "✓";
-  color: var(--ink); /* the ✓ always sits on the band, where the yellow gives only 4.1:1 */
-}
-.dialog button:focus-visible {
-  outline-color: var(--focus);
 }
 /* disabled in a window: faded; the stone's dark grey looked like a pressed button */
 .dialog button:disabled {
-  filter: none;
   opacity: 0.5;
 }
 .overlay {
   position: fixed;
   inset: 0;
-  background: var(--overlay);
   display: grid;
   place-items: center;
   padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
@@ -426,21 +344,12 @@ button[hidden],
   margin: 0 -18px 12px;
   padding: 4px 8px 4px 18px;
   border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
 /* ✕ on the band: a bare glyph like the kit's, no button frame */
 .dialog .dialog-head button.icon {
   font-size: var(--fs-lg);
-  background: none;
-  border-color: transparent;
-  box-shadow: none;
 }
 /* hover only where a mouse hovers: on touch the tapped row kept the hover look */
-@media (hover: hover) {
-  .dialog .dialog-head button.icon:hover {
-    background: var(--row-hi);
-  }
-}
 .dialog h2,
 .dialog h3 {
   font-family: var(--font-title);
@@ -452,18 +361,9 @@ button[hidden],
 .dialog h3 {
   font-size: var(--fs);
   margin: 16px 0 8px;
-  color: var(--focus);
-}
-.dialog p,
-.dialog .title-sub,
-.dialog .party-class {
-  color: var(--ink-muted);
 }
 .dialog .primary {
   width: 100%;
-}
-.dialog a {
-  color: var(--focus);
 } /* link in the ink highlight color, underlined: not by color alone */
 .menu-actions {
   display: flex;
@@ -491,42 +391,22 @@ button[hidden],
   padding: 0 14px 0 40px;
   text-align: left;
   font: 500 var(--fs-lg) / 1.2 var(--font-title);
-  background: none;
-  border-color: transparent;
-  box-shadow: none;
-}
-@media (hover: hover) {
-  .dialog .camp-list > button:hover {
-    background: var(--row-hi);
-  }
-}
-.dialog .camp-list > button:focus {
-  outline: none;
-  background: var(--focus-band);
-  box-shadow: inset 0 0 0 1px var(--focus);
 }
 .dialog .camp-list > button:focus::before {
   content: "▶";
   position: absolute;
   left: 12px;
   font-size: var(--fs);
-  color: var(--focus);
-  animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 .dialog .learned {
   font-weight: 700;
-  color: var(--focus);
   margin: 2px 0;
 } /* what is missing to recruit in the Tavern; .dialog in front to beat .dialog p */
 
 /* ---- End of battle: result window (game/end-screens.ts) ---- */
 /* the title yellow on a victory; the rest is the lab mockup's board below */
-.dialog.result.won h2 {
-  color: var(--focus);
-}
 .result-label {
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -562,24 +442,6 @@ button[hidden],
   flex: none;
   border: 1px solid var(--ink);
 }
-.sw.move {
-  background: var(--mark-move);
-}
-.sw.range {
-  background: var(--mark-range);
-}
-.sw.blocked {
-  background: var(--mark-blocked);
-}
-.sw.threat {
-  background: var(--mark-threat);
-}
-.sw.nogo {
-  /* the map mark's cross: the plain swatch was the same red as the threat's (Nov 14 review) */
-  background:
-    linear-gradient(45deg, transparent 40%, var(--paper) 40% 60%, transparent 60%),
-    linear-gradient(-45deg, transparent 40%, var(--paper) 40% 60%, transparent 60%), var(--mark-nogo);
-}
 .sw.counter {
   /* the map mark is a plain red frame (scene/mark-looks.ts counter) */
   border: 3px solid var(--mark-counter);
@@ -590,7 +452,6 @@ button[hidden],
 .choice-label {
   display: block;
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
   margin-bottom: 4px;
 }
 .choice-row {
@@ -615,7 +476,6 @@ button[hidden],
 }
 .keys dd {
   margin: 0;
-  color: var(--ink-muted);
 }
 /* volume bar (slider in dialog.ts): track in the ink highlight color, number in % alongside */
 .slider {
@@ -631,14 +491,12 @@ button[hidden],
   flex: 1;
   min-height: var(--tap);
   margin: 0;
-  accent-color: var(--focus);
   cursor: pointer;
 }
 .slider-value {
   min-width: 4ch;
   text-align: right;
   font: 400 var(--fs-lg) / 1 var(--font-title);
-  color: var(--ink);
 }
 
 /* ---- Options window ---- */
@@ -670,16 +528,7 @@ button[hidden],
 }
 .continue-where {
   font: 400 var(--fs) var(--font);
-  color: var(--ink-muted);
   margin-left: 8px;
-} /* where Continue leads, on the same line; --ink on the hover and focus bands, where the muted tone drops to 4.3 and 3.8:1 */
-.camp-list > button:focus .continue-where {
-  color: var(--ink);
-}
-@media (hover: hover) {
-  .camp-list > button:hover .continue-where {
-    color: var(--ink);
-  }
 }
 /* Continue's saved games (saves-ui.ts, Nov 15): the load row and its Delete side by side as menu rows of the window
    list, the face before who goes and the where-gold-when line; scrolls past a screenful. Delete keeps its width when its
@@ -715,11 +564,7 @@ button[hidden],
    below it; does not close (dialog fixed). Since Nov 15 as the Design lab's mockup: the name at 96 px in capitals, the
    kit's 422 px command menu 48 px below, the key hint alone at the foot of the screen */
 .main-title .dialog.title {
-  background: none;
-  -webkit-backdrop-filter: none; /* its fixed foot must stay fixed to the screen */
-  backdrop-filter: none;
   border: none;
-  box-shadow: none;
   width: min(1100px, 100%);
   overflow: visible;
   display: flex;
@@ -732,25 +577,12 @@ button[hidden],
   margin: 0;
   padding: 0;
   border: none;
-  background: none;
 }
 .main-title .dialog.title h2 {
   font: 700 min(var(--fs-logo), 8vw) / 1 var(--font-title); /* 8vw: the name stays on one line on a phone */
-  color: var(--fg);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 0;
-  text-shadow:
-    3px 4px 0 var(--edge),
-    0 0 24px color-mix(in srgb, var(--shade) 80%, transparent);
-  animation: title-in 600ms ease-out;
-}
-.main-title .title-sub,
-.main-title .title-foot {
-  color: var(--fg);
-  text-shadow:
-    0 2px 0 var(--edge),
-    0 0 8px var(--edge);
 }
 .main-title .title-foot {
   position: fixed;
@@ -780,29 +612,8 @@ button[hidden],
   }
 }
 .main-title .menu-actions {
-  background: linear-gradient(var(--glass-hi), var(--glass) 45%, var(--glass-lo)), var(--panel-veil);
   border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  box-shadow: var(--paper-frame);
   padding: 12px;
-}
-@keyframes title-in {
-  from {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.96);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .main-title .dialog.title h2 {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] .main-title .dialog.title h2 {
-  animation: none;
-}
-/* the rotating map behind is the title's art: no battle HUD on top and only the edges darkened */
-.title-overlay {
-  background: radial-gradient(ellipse at 50% 50%, transparent 25%, var(--overlay) 85%);
 }
 
 /* ---- Battle HUD: panels, turn list, help, corner menu, command menu ---- */
@@ -834,12 +645,7 @@ button[hidden],
   pointer-events: auto;
   margin: 0;
   padding: 8px 12px;
-  color: var(--ink);
-  border-radius: var(--r);
-  background: linear-gradient(var(--glass-hi), var(--glass) 45%, var(--glass-lo)), var(--panel-veil);
   border: 2px solid var(--paper-edge);
-  box-shadow: var(--paper-frame);
-  text-shadow: var(--ink-shadow);
 }
 /* tile under the cursor and turn list: top left corner, like FFT */
 .tile-info {
@@ -868,11 +674,9 @@ button[hidden],
 .queue-target {
   margin-left: 6px;
   font-weight: 700;
-  color: var(--focus);
 }
 .queue-title {
   font: 400 var(--fs-sm) / 1 var(--font-title);
-  color: var(--ink-muted);
   text-align: center;
   padding: 2px 0 4px;
 }
@@ -898,10 +702,7 @@ button[hidden],
   left: 30px; /* row padding 4 + face 36, less the tag's overlap */
   bottom: 1px;
   font: 700 var(--fs-min) / 1 var(--font);
-  color: var(--ink);
-  background: var(--paper-lo);
   border: 1px solid var(--paper-edge);
-  border-radius: var(--r);
   padding: 1px 3px;
 }
 /* one line each, so every row keeps the face's height and a long name ends in … instead of growing the row */
@@ -923,7 +724,6 @@ button[hidden],
 }
 .queue-stat {
   padding-bottom: 5px;
-  background: linear-gradient(to right, var(--bar) var(--f), var(--well) 0) bottom / 100% 3px no-repeat;
 }
 .queue-stat.hp {
   --bar: var(--side);
@@ -942,12 +742,10 @@ button[hidden],
   line-height: 1;
 }
 .queue-row.now .queue-n {
-  color: var(--focus);
   letter-spacing: 0.06em;
 }
 .queue-name::before {
   content: "● ";
-  color: var(--side);
 }
 .queue-row.enemy .queue-name::before {
   content: "◆ ";
@@ -957,14 +755,11 @@ button[hidden],
 }
 .queue-row.charge {
   font-style: italic;
-  color: var(--ink-muted);
 }
 /* after .charge, which won by coming later and left the "fires here" row in faded italics (review of Nov 13) */
 .queue-row.pending {
-  box-shadow: inset 0 0 0 2px var(--focus);
   font-weight: 700;
   font-style: normal;
-  color: var(--ink);
 }
 .queue-row .portrait {
   width: 36px;
@@ -1011,24 +806,12 @@ button[hidden],
   display: flex;
   gap: var(--gap);
 } /* the open list goes over the counter and the command menu */
-/* menu button on the same blue as the panels, with 3 bars; open, it is sunken */
-.tools .burger,
-.tools .back,
-.tools .undo {
-  background: linear-gradient(var(--glass), var(--glass-lo)), var(--panel-veil);
-  border-color: var(--paper-edge);
-  color: var(--ink);
-  box-shadow: var(--paper-frame);
-}
 /* the back button is for fingers; with a keyboard or mouse Esc and the right button already go back */
 .kbd .tools .back,
 .kbd .tools .undo {
   display: none;
 }
 .tools .burger[aria-expanded="true"] {
-  box-shadow:
-    inset 0 0 0 2px var(--paper-hi),
-    inset 0 3px 0 rgba(0, 0, 0, 0.2);
   transform: translateY(2px);
 }
 .burger-bars,
@@ -1037,8 +820,6 @@ button[hidden],
   display: block;
   width: 22px;
   height: 3px;
-  background: currentColor;
-  border-radius: 1px;
 }
 .burger-bars {
   position: relative;
@@ -1065,7 +846,6 @@ button[hidden],
   max-height: calc(100dvh - var(--inset-t) - var(--tap) - 8px - var(--inset-b));
   overflow-y: auto;
   touch-action: pan-y;
-  animation: menu-in var(--t-menu) ease-out;
   transform-origin: top;
 }
 .tools-menu .item {
@@ -1079,12 +859,6 @@ button[hidden],
 .tools-menu .item + .item {
   margin-top: 4px; /* a gap between targets, so a finger on the edge does not take the row next to it */
 }
-@media (hover: hover) {
-  .tools-menu .item:hover {
-    background: var(--row-hi);
-    filter: none;
-  }
-}
 .tool-label {
   display: flex;
   align-items: center;
@@ -1096,13 +870,11 @@ button[hidden],
   width: 22px;
   display: inline-flex;
   justify-content: center;
-  color: var(--ink-muted);
   font-size: var(--fs-lg);
 }
 /* fast battle on: shows ✓ and the text "on", not just color */
 .tools-menu [aria-checked="true"] .tool-label::after {
   content: "✓";
-  color: var(--focus);
   font-weight: 700;
 }
 /* the turn-the-phone notice (rotate-note.ts): only on a touch phone held upright, over every screen (Nov 18: a phone
@@ -1149,10 +921,7 @@ button[hidden],
     var(--fs-min) / 1.35 ui-monospace,
     Consolas,
     monospace;
-  color: var(--fg);
-  background: color-mix(in srgb, var(--shade) 65%, transparent); /* 55% gave 4.1:1 over a white sky */
   padding: 4px 8px;
-  border-radius: var(--r);
 }
 /* command menu, abilities submenu and "Execute?": beside the acting character, like FFT (Nov 13); left and top
    come from hud.ts (place), which follows the camera every frame. Hence no transform here: the open animations use it */
@@ -1175,7 +944,6 @@ button[hidden],
   padding: 6px 14px 7px;
   font: 400 var(--fs) / 1.2 var(--font-title);
   border-bottom: 2px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
 .panel.commands .item,
 .panel.abilities .item {
@@ -1191,13 +959,8 @@ button[hidden],
   font-size: var(--fs);
 }
 /* Act with the submenu open: marked as picked, with a pointer toward the submenu (the focus is in the submenu) */
-.panel.commands .item.picked {
-  background: color-mix(in srgb, var(--shade) 45%, transparent);
-  box-shadow: inset 4px 0 0 var(--focus);
-}
 .panel.commands .item.picked::after {
   content: "▸";
-  color: var(--focus);
 }
 /* below 1600 px wide the kit's sizes (measured on 1920) left no room beside the unit: menu and submenu together are ~890 px,
    and at 1280 they fell on top of it. Here the menu takes the width of its longest row and the rows shrink */
@@ -1229,11 +992,6 @@ button[hidden],
   height: 28px;
   margin: 0 2px; /* centred in the 32 px icon column */
   flex: none;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--ink) 55%, transparent) 0 15%, var(--orb) 45%);
-  box-shadow:
-    inset -3px -4px 6px var(--bevel-lo),
-    0 0 0 2px var(--edge);
 }
 .orb.act,
 .orb.blue {
@@ -1271,12 +1029,8 @@ button[hidden],
   justify-content: space-between;
   position: relative;
   padding: 4px 10px 4px 36px; /* room for the ▶ at the 24 px menu size */
-  background: transparent;
   border: none;
-  box-shadow: none;
-  color: var(--ink);
   font: 700 var(--fs-lg) / 1 var(--font-title);
-  text-shadow: var(--ink-shadow);
 }
 /* touch: every menu row and "Execute?"'s Yes and No reach the 44 px finger target (Nov 16 tablet audit: 40 px); the PC
    keeps the compact rows. The corner list's rows are 44 px on every screen (.panel.tools-menu .item, above) */
@@ -1285,96 +1039,23 @@ button[hidden],
     min-height: var(--tap);
   }
 }
-.panel .item.focus {
-  background: var(--focus-band);
-}
 /* FFT's hand replaced by an arrow of ours marking the focused item */
 .panel .item.focus::before {
   content: "▶";
   position: absolute;
   left: 8px;
-  color: var(--focus);
-  animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 /* menus open instead of popping in (Nov 12, game feel): 90 ms, fast enough not to slow down whoever knows what they want;
    the submenu comes from the side of the menu it left (hud.ts sets .from-right when it opens to the left of the menu); the ability
    name banner opens from the middle */
-.commands:not([hidden]),
-.confirm:not([hidden]) {
-  animation: menu-in var(--t-menu) ease-out;
-}
 .abilities.from-right {
   --slide: 24px;
 }
-.abilities:not([hidden]) {
-  animation: menu-in-side 110ms ease-out;
-}
-.banner:not([hidden]) {
-  animation: banner-in var(--t-open) ease-out;
-}
-@keyframes menu-in {
-  from {
-    opacity: 0;
-    transform: scaleY(0.8);
-  }
-}
-@keyframes menu-in-side {
-  from {
-    opacity: 0;
-    transform: translateX(var(--slide));
-  }
-}
-@keyframes banner-in {
-  from {
-    transform: translateX(-50%) scaleX(0.2);
-    opacity: 0;
-  }
-}
-@keyframes nudge {
-  50% {
-    transform: translateX(3px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .commands,
-  :root:not([data-motion="full"]) .confirm,
-  :root:not([data-motion="full"]) .abilities,
-  :root:not([data-motion="full"]) .banner,
-  :root:not([data-motion="full"]) .tools-menu,
-  :root:not([data-motion="full"]) .panel .item.focus::before,
-  :root:not([data-motion="full"]) .dialog .camp-list > button:focus::before,
-  :root:not([data-motion="full"]) .menu-nav .choice-row button:focus-visible::before {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] .commands,
-:root[data-motion="reduce"] .confirm,
-:root[data-motion="reduce"] .abilities,
-:root[data-motion="reduce"] .banner,
-:root[data-motion="reduce"] .tools-menu,
-:root[data-motion="reduce"] .panel .item.focus::before,
-:root[data-motion="reduce"] .dialog .camp-list > button:focus::before,
-:root[data-motion="reduce"] .menu-nav .choice-row button:focus-visible::before {
-  animation: none;
-}
-.panel .item:disabled {
-  filter: none;
-  color: var(--ink-off);
-  text-shadow: none; /* flat, not raised like the active rows: not by colour alone */
-  background: var(--row-off); /* after .focus, so a focused disabled row keeps it and shows only the ▶, not the band */
-}
-.panel .item.focus:not(:disabled),
-.panel .item.focus:not(:disabled) *,
-.panel .item.focus:not(:disabled) .tool-label::after {
-  color: var(--ink); /* on --focus-band the muted text, the yellow and --ink-off drop under 4.5:1 (3.1 to 4.1) */
-}
 .panel .item:not(:disabled):active {
   transform: none;
-  box-shadow: none;
 }
 .item-cost {
   font: 400 var(--fs-sm) / 1 var(--font);
-  color: var(--ink-muted);
 }
 .item-label {
   flex: 1;
@@ -1389,7 +1070,6 @@ button[hidden],
   width: 32px;
   height: 32px;
   flex: none;
-  color: var(--ink-muted);
 }
 .ability-icon .gi {
   width: 28px;
@@ -1399,7 +1079,6 @@ button[hidden],
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--ability-atlas) calc(var(--cell-x) * -32px) calc(var(--cell-y) * -32px) no-repeat;
 }
 .ability-icon.in-atlas .gi {
   visibility: hidden;
@@ -1501,26 +1180,21 @@ button[hidden],
 /* side in words and by shape (● hero, ◆ enemy), never by colour alone */
 .unit-side {
   font: 500 var(--fs-sm) / 1 var(--font);
-  color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 .unit-side::before {
   content: "● ";
-  color: var(--hero);
 }
 .enemy .unit-side::before {
   content: "◆ ";
-  color: var(--enemy-hi);
 }
 .unit-class {
   margin-top: -4px;
-  color: var(--ink-muted);
 }
 .unit-note {
   margin: 0;
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
 }
 .gauge {
   display: grid;
@@ -1537,14 +1211,11 @@ button[hidden],
 .gauge-bar {
   position: relative;
   height: 10px;
-  background: var(--well);
   border: 1px solid var(--edge);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .gauge-bar i {
   display: block;
   height: 100%;
-  background: linear-gradient(color-mix(in srgb, var(--ink) 35%, transparent), transparent 60%), var(--bar);
 }
 /* strike preview on the target bar (hud-pieces.ts gauge): the part that goes away in flashing red stripes, what the heal adds in
    green stripes, like Tactics Ogre. Stripe and the number "life 25 → 13–16" alongside: never color alone */
@@ -1552,26 +1223,6 @@ button[hidden],
   position: absolute;
   top: 0;
   bottom: 0;
-}
-.gauge-change.loss {
-  background: repeating-linear-gradient(135deg, var(--enemy) 0 3px, var(--well) 3px 6px);
-  animation: loss-blink 1s steps(2, jump-none) infinite;
-}
-.gauge-change.gain {
-  background: repeating-linear-gradient(135deg, var(--heal) 0 3px, var(--well) 3px 6px);
-}
-@keyframes loss-blink {
-  50% {
-    opacity: 0.35;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .gauge-change {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] .gauge-change {
-  animation: none;
 }
 /* mirrored target panel (portrait on the right), like Tactics Ogre's status bar: attacker and target face each other */
 .target-slot .unit-panel {
@@ -1596,10 +1247,6 @@ button[hidden],
   display: grid;
   grid-template-columns: 1fr 1fr;
   border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  box-shadow: var(--paper-frame);
-  color: var(--ink);
-  text-shadow: var(--ink-shadow);
   overflow: hidden;
 }
 .strike-main,
@@ -1613,19 +1260,11 @@ button[hidden],
   grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: 12px;
-  background: linear-gradient(var(--glass-hi), var(--glass-lo)), var(--panel-veil);
 }
 .strike-target {
-  background: linear-gradient(var(--glass), var(--glass-lo)), var(--panel-veil);
   border-left: 2px solid var(--paper-edge);
 }
-.strike-target.enemy {
-  background: var(--enemy-paper);
-}
 /* the ◆ in --enemy vanished on the wine half */
-.strike-target.enemy .unit-side::before {
-  color: var(--enemy-hi);
-}
 .strike-name,
 .strike-who {
   display: flex;
@@ -1642,11 +1281,7 @@ button[hidden],
 }
 .strike-pts {
   font: 400 var(--fs-xl) / 1 var(--font-title);
-  color: var(--strike-dmg);
   font-variant-numeric: tabular-nums;
-}
-.strike.gain .strike-pts {
-  color: var(--heal);
 }
 .strike-pts small {
   margin-left: 4px;
@@ -1663,18 +1298,14 @@ button[hidden],
 }
 .strike-info {
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
 }
 .strike.ally .strike-info {
-  color: var(--accent);
   font-weight: 700;
 }
 .strike-more {
   margin: 0;
   padding: 2px 10px;
   font-size: var(--fs-sm);
-  color: var(--fg);
-  background: var(--strike);
 }
 .gauge.hp {
   --bar: var(--hp);
@@ -1731,49 +1362,12 @@ button[hidden],
   transform: translate(-50%, -50%);
   white-space: nowrap; /* near the right edge the magic star would break onto a line of its own */
   font: 400 26px / 1 var(--font-title);
-  text-shadow:
-    0 2px 0 #000,
-    2px 0 0 #000,
-    -2px 0 0 #000,
-    0 -2px 0 #000;
-  animation: pop 1.5s linear forwards;
-}
-/* the size comes inline from the share of life (hit-weight.ts numberPx); the colour says the kind */
-.float.phys {
-  color: var(--float-phys);
-}
-.float.magic {
-  color: var(--float-magic);
 }
 /* the second signal for magic; small, since the fallback font draws the star twice a digit's size */
 .float.magic::after {
   content: "\2009\2726";
   font-size: 0.6em;
   vertical-align: 0.3em;
-}
-.float.crit {
-  /* the glyph keeps its black outline (white and violet on gold read at 1.0 to 1.6:1); the gold ring goes outside it,
-     closed by black again */
-  text-shadow:
-    0 2px 0 #000,
-    2px 0 0 #000,
-    -2px 0 0 #000,
-    0 -2px 0 #000,
-    0 4px 0 var(--float-crit-edge),
-    4px 0 0 var(--float-crit-edge),
-    -4px 0 0 var(--float-crit-edge),
-    0 -4px 0 var(--float-crit-edge),
-    3px 3px 0 var(--float-crit-edge),
-    -3px 3px 0 var(--float-crit-edge),
-    3px -3px 0 var(--float-crit-edge),
-    -3px -3px 0 var(--float-crit-edge),
-    0 0 6px #000;
-} /* strike of 25% of life or more (scene/unit-hits.ts): bigger, with a gold ring */
-.float.miss {
-  color: var(--float-miss);
-}
-.float.heal {
-  color: var(--heal);
 }
 /* the town's action balloon (Nov 16, Fernando): a panel over what Enter or A acts on, its kind's symbol and the key;
    game/town.ts sets left and top every frame, the bottom middle sits on that point */
@@ -1794,41 +1388,6 @@ button[hidden],
 .town-act[hidden] {
   display: none;
 }
-@keyframes pop {
-  0% {
-    transform: translate(-50%, -50%) scale(0.6);
-    opacity: 0;
-  }
-  8% {
-    transform: translate(-50%, -140%) scale(1.15);
-    opacity: 1;
-  }
-  16% {
-    transform: translate(-50%, -90%) scale(1);
-  }
-  22% {
-    transform: translate(-50%, -110%);
-  }
-  28%,
-  75% {
-    transform: translate(-50%, -100%);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -130%);
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .float {
-    animation-duration: 1.6s;
-    animation-timing-function: steps(1, end);
-  }
-}
-:root[data-motion="reduce"] .float {
-  animation-duration: 1.6s;
-  animation-timing-function: steps(1, end);
-}
 /* objective banner at the start of the stage (entry.ts, announce): enters stretching, holds to be read, fades; takes no clicks */
 .announce {
   position: fixed;
@@ -1839,45 +1398,11 @@ button[hidden],
   pointer-events: none;
   padding: 14px 36px;
   font: 400 30px / 1.2 var(--font-title);
-  color: var(--fg);
   text-align: center;
   white-space: nowrap;
   max-width: 92vw;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--shade) 88%, transparent) 15%,
-    color-mix(in srgb, var(--shade) 88%, transparent) 85%,
-    transparent
-  );
-  text-shadow: 0 2px 0 #000;
-  animation: announce 2.2s ease-out forwards;
-}
-@keyframes announce {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scaleX(0.3);
-  }
-  12% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scaleX(1);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .announce {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] .announce {
-  animation: none;
 }
 /* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye; and on
    the result, the empty turn list and the help line behind the end dialog said nothing */
@@ -1904,19 +1429,12 @@ body:has(.result-overlay) .fps {
   top: -12px;
   width: 8px;
   height: 12px;
-  animation: fall linear forwards;
-}
-@keyframes fall {
-  to {
-    transform: translateY(105vh) rotate(540deg);
-  }
 }
 
 /* ---- Dialogue box (talk.ts) and the opening narration ---- */
 /* dialogue box (talk.ts): at the bottom, wide, the same panel as the rest of the HUD; the ▼ blinks when the sentence is done */
 .talk-overlay {
   place-items: end center;
-  background: color-mix(in srgb, var(--shade) 35%, transparent);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   gap: 12px;
   align-content: end;
@@ -1925,9 +1443,7 @@ body:has(.result-overlay) .fps {
   position: static;
   padding: 8px 28px;
   font: 400 var(--fs-lg) / 1 var(--font-title);
-  color: var(--ink);
   justify-self: center;
-  animation: banner-in 160ms ease-out;
 }
 .panel.talk {
   position: relative;
@@ -1938,8 +1454,6 @@ body:has(.result-overlay) .fps {
   width: min(860px, 100%);
   min-height: 132px;
   padding: 14px 40px 14px 14px;
-  color: var(--ink);
-  animation: menu-in var(--t-open) ease-out;
 }
 .talk-body {
   display: grid;
@@ -1948,7 +1462,6 @@ body:has(.result-overlay) .fps {
 }
 .talk-name {
   font: 400 var(--fs-lg) / 1 var(--font-title);
-  color: var(--focus);
 }
 .talk-text {
   margin: 0;
@@ -1959,24 +1472,10 @@ body:has(.result-overlay) .fps {
   position: absolute;
   right: 16px;
   bottom: 10px;
-  color: var(--focus);
   visibility: hidden;
 }
 .talk.done .talk-next {
   visibility: visible;
-  animation: nudge var(--t-nudge) steps(1, end) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .talk-title,
-  :root:not([data-motion="full"]) .panel.talk,
-  :root:not([data-motion="full"]) .talk.done .talk-next {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] .talk-title,
-:root[data-motion="reduce"] .panel.talk,
-:root[data-motion="reduce"] .talk.done .talk-next {
-  animation: none;
 }
 /* painted face sheet in the dialogue box (talk.ts, faceSheet): a box one frame wide over the strip, moved frame by frame
    at a whole-ratio size; only an enlarged sheet (the 64 px skeletons) scales pixelated, the painted 128 px ones scale smooth */
@@ -2059,30 +1558,19 @@ body:has(.result-overlay) .fps {
   right: 40px;
   bottom: 8px;
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
 }
 .talk-overlay.dark .talk-keys {
-  color: var(--muted);
   right: 50%;
   transform: translateX(50%);
   bottom: -28px;
 } /* dialogue key hint (talk.ts) */
 /* opening (new game): big narration in the center, no frame, with the Beacon's blue glow pulsing behind */
 .talk-overlay.dark {
-  background:
-    radial-gradient(circle at 50% 30%, rgba(90, 170, 255, 0.28), transparent 40%),
-    color-mix(in srgb, var(--shade) 96%, transparent);
   place-items: center;
   align-content: center;
-  animation: beacon 4s ease-in-out infinite;
 }
 .talk-overlay.dark .panel.talk {
-  background: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
   border: none;
-  box-shadow: none;
-  color: var(--fg);
   text-align: center;
   min-height: 0;
   padding: 0 24px;
@@ -2092,25 +1580,6 @@ body:has(.result-overlay) .fps {
   line-height: 1.5;
   max-width: 34em;
   margin: 0 auto;
-}
-.talk-overlay.dark .talk-next {
-  color: var(--fg);
-}
-@keyframes beacon {
-  50% {
-    background-color: color-mix(in srgb, var(--shade) 90%, transparent);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .talk-overlay.dark {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] .talk-overlay.dark {
-  animation: none;
-}
-.talk-overlay.dark .panel.talk:focus-visible {
-  outline: none;
 } /* the whole scene is the button; the blinking ▼ already shows that it can continue */
 
 /* ---- Tavern and Shop windows (town-ui.ts); the Party screen has its own block at the end ---- */
@@ -2127,7 +1596,6 @@ body:has(.result-overlay) .fps {
 }
 p.gold strong {
   font-size: var(--fs-lg);
-  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 p.gold strong::before,
@@ -2138,14 +1606,6 @@ p.gold strong::before,
   height: 16px;
   margin-right: 8px;
   vertical-align: -1px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 30%,
-    color-mix(in srgb, var(--ink) 55%, transparent) 0 15%,
-    var(--ct) 45%,
-    var(--orb-gold)
-  );
-  box-shadow: 0 0 0 1px var(--edge);
 }
 /* the gold counter on the head band (Shop, Tavern), at the right before the ✕, like the kit's "Gold in chest" */
 .dialog-head p.gold {
@@ -2169,7 +1629,6 @@ p.gold strong::before,
 .dialog.dev .menu-actions:last-child {
   position: sticky;
   bottom: -18px;
-  background: var(--paper);
   padding: 8px 0;
   border-top: 2px solid var(--paper-edge);
 }
@@ -2188,14 +1647,9 @@ p.gold strong::before,
 .dialog .command-list > button:focus::before {
   left: 14px;
 }
-.dialog .command-list > button.picked {
-  background: color-mix(in srgb, var(--shade) 45%, transparent);
-  box-shadow: inset 4px 0 0 var(--focus);
-}
 .dialog .command-list > button.picked::after {
   content: "▸";
   margin-left: auto;
-  color: var(--focus);
 }
 
 /* ---- FFT title/options/saves (agent title) ---- */
@@ -2225,7 +1679,6 @@ p.gold strong::before,
 .opt-keys {
   margin-left: auto;
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
 }
 
 /* Options: one list like FFT's option menu. The list scrolls between the goal line and the description box, so the
@@ -2280,18 +1733,15 @@ p.gold strong::before,
   min-height: var(--tap);
   display: grid;
   place-items: center;
-  color: var(--focus);
 }
 .opt-bar {
   flex: 1;
   height: 12px;
   border: 1px solid var(--shade);
-  background: var(--well);
 }
 .opt-bar i {
   display: block;
   height: 100%;
-  background: var(--focus);
 }
 .opt-bar + .opt-text {
   flex: none;
@@ -2304,8 +1754,6 @@ p.gold strong::before,
   padding: 8px 12px;
   min-height: calc(2 * 1.3em + 18px);
   border: 1px solid var(--paper-edge);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
-  color: var(--ink);
   font-size: var(--fs-sm);
   line-height: 1.3;
 }
@@ -2340,7 +1788,6 @@ p.gold strong::before,
   flex: none;
   min-width: 2ch;
   font: 700 var(--fs-lg) / 1 var(--font-title);
-  color: var(--focus); /* 24 px bold: large text, 4.1:1 on the focus band passes its 3:1 */
 }
 .save-load .save-text {
   flex: 1;
@@ -2371,12 +1818,7 @@ p.gold strong::before,
   bottom: calc(100% - 2px); /* over the box's top line: the tab and the box read as one piece */
   padding: 6px 18px;
   border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
-  background: linear-gradient(var(--glass-hi), var(--glass)), var(--panel-veil);
   /* set here, not in the blue surfaces' list above, so this block stays in one place */
-  -webkit-backdrop-filter: var(--panel-filter);
-  backdrop-filter: var(--panel-filter);
-  box-shadow: var(--paper-frame);
 }
 /* the opening narration has no box, so no tab either, nor its room */
 .talk-overlay.dark .panel.talk {
@@ -2386,10 +1828,6 @@ p.gold strong::before,
   position: static;
   padding: 0;
   border: none;
-  background: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
 }
 /* a phone: the face at half size (a whole ratio), so the text keeps most of the line, and a line of its own for the
    hint, which four lines of text ran under */
@@ -2429,7 +1867,6 @@ p.gold strong::before,
 }
 .crawl-map .dialog.title h2 {
   font-size: var(--fs-title);
-  color: var(--ink);
 }
 .crawl-map .dialog-head .gold {
   white-space: nowrap;
@@ -2440,10 +1877,6 @@ p.gold strong::before,
   overflow: auto;
   touch-action: pan-y;
   border: 2px solid var(--edge);
-  border-radius: var(--r);
-  background:
-    radial-gradient(color-mix(in srgb, var(--paper-edge) 14%, transparent) 1px, transparent 1.5px) 0 0 / 16px 16px,
-    var(--well);
 }
 .map-chart {
   position: relative;
@@ -2459,11 +1892,7 @@ p.gold strong::before,
   font: 700 var(--fs-sm) / var(--map-gutter) var(--font);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-muted);
   writing-mode: vertical-lr; /* down the left gutter */
-}
-.map-floor:nth-of-type(even) {
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
 /* the places, their ways and the flag, each by its middle on the spot the code gives (left and top in %), inside the
    gutters */
@@ -2487,19 +1916,15 @@ p.gold strong::before,
 .map-ways line {
   vector-effect: non-scaling-stroke;
   stroke-linecap: round;
-  stroke: color-mix(in srgb, var(--ink-muted) 75%, transparent);
   stroke-width: 2px;
 }
 .map-ways .off {
-  stroke: color-mix(in srgb, var(--ink-muted) 40%, transparent);
   stroke-dasharray: 1 7;
 }
 .map-ways .open {
-  stroke: var(--ink);
   stroke-width: 3px;
 }
 .map-ways .walked {
-  stroke: var(--focus);
   stroke-width: 5px;
 }
 /* a place: a round mark for a room (its enemy count inside), square for the chest, bigger for the boss */
@@ -2514,16 +1939,7 @@ p.gold strong::before,
   min-height: 0;
   padding: 0;
   border: 2px solid var(--trim);
-  border-radius: 50%;
   font: 700 var(--fs) / 1 var(--font-title);
-  color: var(--ink);
-  text-shadow: var(--ink-shadow);
-  background: linear-gradient(var(--stone), var(--stone-lo));
-  box-shadow: 0 0 0 2px var(--shade);
-}
-.crawl-map .map-place.chest,
-.map-help .map-place.chest {
-  border-radius: var(--r);
 }
 .map-place.boss {
   --size: 60px;
@@ -2532,34 +1948,11 @@ p.gold strong::before,
   width: 32px;
   height: 32px;
 }
-.crawl-map .map-place.open,
-.map-help .map-place.open {
-  border-color: var(--focus);
-  color: var(--on-accent);
-  background: var(--gold-btn);
-  box-shadow:
-    0 0 0 2px var(--shade),
-    0 0 12px 2px color-mix(in srgb, var(--focus) 55%, transparent);
-}
-.crawl-map .map-place.cleared,
-.map-help .map-place.cleared {
-  border-color: var(--heal);
-  color: var(--heal);
-  background: var(--paper-lo);
-}
 .crawl-map .map-place.skipped,
 .map-help .map-place.skipped {
   border-style: dashed;
-  border-color: color-mix(in srgb, var(--ink-muted) 60%, transparent);
-  color: var(--ink-muted);
-  background: var(--well);
-  box-shadow: none;
 }
 /* the picked place: the focus ring and the menus' ▶ beside it, whether or not the focus is still on it */
-.map-place[aria-current="true"] {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-}
 .map-place[aria-current="true"]::before {
   content: "▶";
   position: absolute;
@@ -2567,8 +1960,6 @@ p.gold strong::before,
   top: 50%;
   margin-top: -0.5em;
   font: 700 var(--fs) / 1 var(--font);
-  color: var(--focus);
-  animation: nudge var(--t-nudge) steps(1, end) infinite;
 }
 /* the chest: a box with its lid line and a yellow lock, drawn here (the icon sprite has none) */
 .map-chest {
@@ -2576,8 +1967,6 @@ p.gold strong::before,
   width: 24px;
   height: 18px;
   border: 2px solid currentColor;
-  border-radius: 3px 3px 1px 1px;
-  background: var(--orb-bronze);
 }
 .map-chest::before {
   content: "";
@@ -2593,24 +1982,19 @@ p.gold strong::before,
   width: 6px;
   height: 6px;
   margin-left: -3px;
-  background: var(--focus);
-  box-shadow: 0 0 0 1px var(--shade);
 }
 .map-gate {
   padding: 4px 12px;
   border: 2px solid var(--paper-edge);
-  border-radius: var(--r);
   font: 700 var(--fs-sm) / 1.2 var(--font);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: var(--paper-lo);
 }
 /* the party's flag: a pole and a yellow pennant, planted up and to the right of the place it stands on */
 .map-flag {
   width: 22px;
   height: 30px;
   border-left: 3px solid var(--ink);
-  filter: drop-shadow(0 2px 0 var(--shade));
   pointer-events: none;
 }
 .map-field > .map-flag {
@@ -2620,7 +2004,6 @@ p.gold strong::before,
   content: "";
   position: absolute;
   inset: 0 0 12px 0;
-  background: var(--focus);
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 .legend .map-flag {
@@ -2632,8 +2015,6 @@ p.gold strong::before,
 .map-box {
   padding: 10px 14px;
   border: 1px solid color-mix(in srgb, var(--paper-edge) 55%, transparent);
-  border-radius: var(--r);
-  background: color-mix(in srgb, var(--shade) 25%, transparent);
 }
 /* the gate window's box (game/crawl.ts questGate): the dungeon and the expedition in progress, under its commands */
 .map-info {
@@ -2651,13 +2032,9 @@ p.gold strong::before,
 }
 .map-info h3 small {
   font: 400 var(--fs-sm) / 1.2 var(--font);
-  color: var(--ink-muted);
 }
 .map-info .keys {
   margin: 0;
-}
-.map-info .keys dd {
-  color: var(--ink);
 }
 .map-party {
   grid-area: party;
@@ -2683,7 +2060,6 @@ p.gold strong::before,
 }
 .map-hero-class {
   font: 400 var(--fs-sm) / 1.2 var(--font);
-  color: var(--ink-muted);
 }
 .dialog .map-commands {
   grid-area: cmds;
@@ -2692,11 +2068,6 @@ p.gold strong::before,
 }
 .dialog .map-commands > button {
   white-space: normal; /* the 2nd tap's sentence wraps inside the column */
-}
-@media (hover: hover) {
-  .map-field .map-place:hover {
-    filter: brightness(1.18);
-  }
 }
 /* a short wide screen (a phone lying down, as the rotate note asks): the window grows with its content and the overlay
    scrolls, so the chart keeps five rows and the party box never runs over the commands */
@@ -2740,14 +2111,6 @@ p.gold strong::before,
     font-size: var(--fs-lg);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .map-place[aria-current="true"]::before {
-    animation: none;
-  }
-}
-:root[data-motion="reduce"] .map-place[aria-current="true"]::before {
-  animation: none;
-}
 /* ---- FFT party/sheet/equipment (agent party) ---- */
 /* The Party screen (town-party.ts, Nov 16; FFT's formation and unit menus in one window): the unit list on the left, the
    picked unit's page on the right; one column on a Narrow screen */
@@ -2778,14 +2141,7 @@ p.gold strong::before,
 .compare {
   display: grid;
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
-}
-.compare .up {
-  color: var(--heal);
-}
-.compare .down {
-  color: var(--enemy-hi);
 }
 /* Narrow: the list on top of the page, the window scrolling as a whole */
 @media (max-width: 760px) {
@@ -3113,6 +2469,14 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
    enemy's strike can play after the state passed the turn on */
 .hud.turn3d.bar3d.head-on-sheet .queue-row.now {
   display: none;
+}
+/* the two pieces of HTML still seen, the card's name under the mouse and the turn-the-phone notice: the result board's
+   dark plate and light text (11:1), not the old blue panel */
+.turn3d-tip,
+.rotate-card {
+  border-color: var(--ui3d-result-line);
+  background: var(--ui3d-result-plate);
+  color: var(--ui3d-result-text);
 }
 /* name and life of the card under the mouse, beside it */
 .turn3d-tip {
