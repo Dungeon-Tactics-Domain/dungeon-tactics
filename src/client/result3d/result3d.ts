@@ -139,7 +139,7 @@ export class Result3d implements Ui3dScreen {
       add(quad(bandMaterial(b.w, b.h, s, rgb(hex)), b.x, b.y, b.w, b.h, order), a, at);
     // text in the theme's serif, `size` in px of the 1080p layout and never under the game's 16 px; shrunk to `room`
     const text = (str: string, size: number, hex: string, wrap?: number) => {
-      const px = Math.max(16, size * s);
+      const px = layer.px(size);
       return textMesh(
         str,
         {

@@ -1,9 +1,13 @@
-// Touch and mouse on the map: a short tap picks the tile, dragging with one finger moves the camera, two fingers (or the wheel) zoom.
+// Touch and mouse on the map: a short tap picks the tile, dragging with one finger moves the camera, two fingers zoom (as
+// the wheel does) and, twisting, turn it (gesture.ts).
+import { angleOf, twist } from './gesture.ts';
+
 export interface TouchHandlers {
   tap(x: number, y: number, mouse: boolean): void;
   hover?(x: number, y: number): void; // mouse only, no button pressed: the PC uses it like the keyboard cursor
   pan(dx: number, dy: number): void;
   zoom(factor: number): void;
+  rotate?(dir: 1 | -1): void; // two fingers twisting: 1 clockwise on screen
 }
 
 // above this the finger dragged, didn't tap (8 px: a thumb tap slips about 3 to 5 px)
@@ -15,6 +19,8 @@ export class TouchInput {
   private downAt: { x: number; y: number } | null = null;
   private dragged = false;
   private pinch = 0;
+  private angle = 0; // the two fingers' angle at their last move, and the twist kept since the last turn
+  private twisted = 0;
 
   constructor(target: HTMLElement, h: TouchHandlers) {
     const opts = { signal: this.ac.signal };
@@ -32,6 +38,8 @@ export class TouchInput {
           this.dragged = true; // second finger: it's a pinch, never a tap
           const [a, b] = [...this.pointers.values()];
           this.pinch = Math.hypot(a.x - b.x, a.y - b.y);
+          this.angle = angleOf(a, b);
+          this.twisted = 0;
         }
       },
       opts,
@@ -50,6 +58,10 @@ export class TouchInput {
           const d = Math.hypot(a.x - b.x, a.y - b.y);
           if (this.pinch && d) h.zoom(this.pinch / d);
           this.pinch = d;
+          const t = twist(this.twisted, this.angle, angleOf(a, b));
+          this.angle = angleOf(a, b);
+          this.twisted = t.acc;
+          if (t.turn) h.rotate?.(t.turn);
           return;
         }
         if (this.downAt && Math.hypot(e.clientX - this.downAt.x, e.clientY - this.downAt.y) > TAP_SLOP)

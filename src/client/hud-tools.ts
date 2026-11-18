@@ -16,6 +16,8 @@ export class ToolsMenu {
     () => this.showTools(!!this.toolsMenu.hidden),
     { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' },
   );
+  // Undo on the screen, left of Back and the menu button (hud-menus.ts renderBack shows it): for the fingers, as Back is
+  readonly undo: HTMLElement;
   private readonly fastBtn: HTMLElement;
   private readonly fpsBtn: HTMLElement;
   // a menu button (3 bars) on the HUD panel colour in place of the row of 7 stone buttons (Nov 13, Fernando's request:
@@ -29,6 +31,12 @@ export class ToolsMenu {
   };
 
   constructor(act: HudActions) {
+    const undo = () => {
+      this.close();
+      act.undo();
+    };
+    this.undo = iconButton('↶', t('Desfazer', 'Undo'), undo, { class: 'icon undo', hidden: true });
+    this.root.prepend(this.undo);
     // the rows are tool-rows.ts'; here only what each runs and the four that have an icon of the atlas
     const run: Record<Tool, () => void> = {
       undo: () => act.undo(),

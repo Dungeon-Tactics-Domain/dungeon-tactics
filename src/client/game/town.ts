@@ -109,6 +109,7 @@ class Town {
       hover: (x, y) => this.scene.setCursor(this.scene.pick(x, y, SUB), SUB),
       pan: (dx, dy) => scene.pan(dx, dy),
       zoom: (f) => scene.zoom(f),
+      rotate: (dir) => scene.rotate(dir),
     });
     // right button: back, like the battle's; in town that is the menu
     canvas.addEventListener('contextmenu', (e) => {

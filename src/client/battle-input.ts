@@ -21,6 +21,7 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     hover: (x, y) => act.hover(x, y),
     pan: (dx, dy) => scene.pan(dx, dy),
     zoom: (f) => scene.zoom(f),
+    rotate: (dir) => scene.rotate(dir),
   });
   // right button cancels, like FFT's "back"
   canvas.addEventListener('contextmenu', (e) => {

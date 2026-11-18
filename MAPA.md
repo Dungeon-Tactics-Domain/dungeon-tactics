@@ -93,6 +93,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/chest.ts` — gold, items and per-member equipment (dt:chest, dt:equip) with their parsers.
 - `src/client/saves.ts` — save slots: the dt:saves manifest, new game, load and delete, slot summaries.
 - `src/client/store.ts` — dt:* storage with a memory fallback, the key MIGRATIONS and the URL param reader.
+- `src/client/gesture.ts` — two fingers on the map: the twist that turns the camera an eighth (twist, angleOf); pure.
 - `src/client/keyboard.ts` — key to action (keyAction), grid steps by screen direction and the help list.
 - `src/client/gamepad.ts` — gamepad button state to keyboard actions.
 - `src/client/glyphs.ts` — the key hints' one table (action, key, pad button), the controller's family by its id (familyOf) and what the hints show by the Options and the input last used (shownFor, capsOf, hintLine); pure.
@@ -101,6 +102,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/pixel-settings.ts` — pixel art options (dt:pixel) and their parser.
 - `src/client/markers.ts` — unit heights and marker heights above them (ring, bar, cursor) and the model of each sheet.
 - `src/client/water-levels.ts` — water surface and wading heights for drawing.
+- `src/client/away.ts` — the game left in the background is paused: the first frame back drops the time away (awayFactor).
 - `src/client/timing.ts` — turn-flow timings in one place and the speed-up.
 - `src/client/i18n.ts` — game language, t('pt', 'en'), unitName and abilityName.
 
@@ -184,6 +186,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/icons.ts` — el(), button(), iconButton() and icon() over the icon sprite, and the ability icon atlas.
 - `src/client/talk.ts` — dialogue box: typed text, blips, talking faces and text speed (dt:text).
 - `src/client/touch-input.ts` — tap, drag and pinch or wheel on the map.
+- `src/client/rotate-note.ts` — the turn-the-phone notice over every screen (a touch phone held upright).
+- `src/client/ui3d/safe-area.ts` — the safe area in px (notch, home bar) for the 3D layer, read from a CSS probe.
 - `src/client/style.css` — theme tokens (:root[data-theme]) and every component's style.
 
 ## src/client — 3D drawing (Three.js) and sound
