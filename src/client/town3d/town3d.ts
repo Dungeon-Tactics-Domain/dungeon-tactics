@@ -283,7 +283,7 @@ export class Town3d implements Ui3dScreen {
     else tex.addEventListener('ready' as never, () => crop(tex));
     mat.uniforms.uMap.value = tex;
     const m = new Mesh(QUAD, mat);
-    m.scale.setScalar(Math.min(b.w, b.h)); // square in a box stretched down (townFrame)
+    m.scale.set(b.w, (b.h * this.at().s) / this.at().sy, 1); // not stretched down with the window (townFrame)
     m.position.set(b.x + b.w / 2, -(b.y + b.h / 2), 0);
     add(m);
   }

@@ -214,6 +214,7 @@ describe('3D "Execute?": its layout with no DOM', () => {
     expect(upright.choices[0].w).toBeGreaterThan(110); // "▶ Atirar" at 14 px is about 60 px, with the button's padding
     expect(at(844, 390).w).toBe(Math.trunc(Math.fround(440 * (844 / 1920)) * 64) / 64);
     expect(at(1920, 1080).w).toBe(440);
+    expect(at(1152, 648).w).toBe(Math.trunc(Math.fround(440 * 0.6) * 64) / 64);
     setPageFloor(0, 0);
   });
 });

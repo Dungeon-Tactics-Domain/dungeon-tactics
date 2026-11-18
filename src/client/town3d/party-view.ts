@@ -137,7 +137,7 @@ export function partyPage({ group: g, eq, chest }: PartyState, at: PartyAt): { i
     items.push(
       { k: 'face', box: { x: R.x + 52, y: y + 3, w: 48, h: 48 }, def: x.cls },
       text(x.name, R.x + 112, y + box.h / 2, 26, 'light', { max: 120 }),
-      text(unitName(x.cls), R.x + R.w - 12, y + box.h / 2, 20, 'dim', { align: 'r', max: 110 }),
+      text(unitName(x.cls), R.x + R.w - 12, y + box.h / 2, 20, 'dim', { align: 'r', max: 110, maxH: R.rowH - 8 }),
     );
     y += R.rowH;
   });

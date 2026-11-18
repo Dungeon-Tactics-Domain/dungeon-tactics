@@ -24,14 +24,18 @@ do not rearrange the layout only to reach that number.*
   (a phone on its side: accepted, Nov 18). A **tablet** (the page's shorter side at least 600 px, either way up:
   `pageFloor`, set by the 3D layer on each resize; CSS mirrors it with `@media (min-width: 600px) and (min-height:
   600px)`) never draws 3D text under **14 px** (Fernando, Nov 18): 768×1024 goes from 10.7 to 14 px; 1024×768 is
-  already 14.2 px by its scale; 1180×820 and every PC page of 1152×648 or more keep 16 px. Tests:
+  already 14.2 px by its scale; a page of 1152×648 or more (a PC, a large tablet as 1180×820) has no page floor and
+  keeps its 16 px, so nothing laid out for the tablet moves there. Tests:
   `tests/layout.test.ts` (each viewport), `tests/confirm-layout.test.ts`, `tests/ui3d.test.ts`, `tests/town3d.test.ts`.
 - **Where the tablet's 14 px did not fit, the layout gives room instead of cutting or shrinking the text:** the town
   windows stretch down the page's spare height under scale 0.6 (`townFrame`: 768×1024 draws them 756 px tall instead of
-  432, so each row holds its line); a town menu row and an Options row break a long name in two lines; "Execute?"
+  432, so each row holds its line); a town menu row, an Options row, the shop's kind column and the roster's tag break
+  a long name in two lines; "Execute?"
   widens as far as its text grew; the turn list's cards grow with their lines and the list scrolls as before. Still
   shrunk to their column on a 768 px wide page (a portrait layout of the town would be a new decision): the Status
-  rows' "Resistência física/mágica", the shop's "Mão principal/secundária" and the roster's class tags.
+  rows' "Resistência física/mágica", the sheet's totals, the Equipment slots' names, one-word roster tags and the
+  ability detail that overflows its block. The expedition map does not stretch yet (its party panel's lines touch at
+  768×1024), and the turn list scrolls with a fade but no arrow, as on a phone.
 - **The hit area is as generous as the room allows, without covering a neighbour.** The battle menu's rows use
   `touchScale()` (`menu3d/menu-layout.ts`): on touch they are drawn larger than the rest of the stage when the page is
   tall enough. The ability sheet's page arrows get a hit box 44 px tall on touch. HTML controls keep `--tap` (44 px).

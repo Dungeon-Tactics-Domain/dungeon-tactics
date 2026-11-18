@@ -24,7 +24,9 @@ export const NARROW_SCALE = 1 / 3;
 // 1152x648 or more is at MIN_SCALE already, where the 16 px floor is above it
 export const TABLET_SIDE = 600;
 export const TABLET_TEXT = 14;
-export const pageFloor = (w: number, h: number) => (Math.min(w, h) >= TABLET_SIDE ? TABLET_TEXT : 0);
+// (a PC page, 1152x648 or more, has none: its 16 px already holds and nothing laid out for the tablet moves there)
+export const pageFloor = (w: number, h: number) =>
+  Math.min(w, h) >= TABLET_SIDE && !(w >= 1152 && h >= 648) ? TABLET_TEXT : 0;
 // the page's own floor, set by the 3D layer on each fit (layer.ts), so every piece's text follows it without passing it
 let least = 0;
 export const setPageFloor = (w: number, h: number) => {

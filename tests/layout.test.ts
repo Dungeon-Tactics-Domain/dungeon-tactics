@@ -129,6 +129,10 @@ describe('interface layout: the reference regions on a page', () => {
     expect([pageFloor(844, 390), pageFloor(390, 844), pageFloor(768, 1024), pageFloor(599, 900)]).toEqual([
       0, 0, 14, 0,
     ]);
+    // a page of 1152x648 or more (a PC, a large tablet as 1180x820) has none: its 16 px holds by the scale already
+    expect([pageFloor(1152, 648), pageFloor(1280, 720), pageFloor(1280, 1024), pageFloor(1180, 820)]).toEqual([
+      0, 0, 0, 0,
+    ]);
     setPageFloor(768, 1024);
     expect(textPx(12, 0.4)).toBe(14);
     setPageFloor(844, 390);

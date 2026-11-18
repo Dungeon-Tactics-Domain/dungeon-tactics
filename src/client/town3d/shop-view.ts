@@ -80,7 +80,7 @@ function counter(o: Counter): Page {
     if (r.face) items.push({ k: 'face', box: { x: L.x + C.face, y: rowY(n) + 5, w: 56, h: 56 }, def: r.face, row: n });
     items.push(
       text(r.name, left, mid, 30, 'ink', { max: L.x + C.kind - left - 12, row: n }),
-      text(r.kind, L.x + C.kind, mid, 22, 'soft', { max: 150, row: n }),
+      text(r.kind, L.x + C.kind, mid, 22, 'soft', { max: 150, maxH: C.rowH - 8, row: n }),
       text(String(r.price), L.x + C.price, mid, 30, ink, { align: 'r', row: n }),
     );
     if (r.own) items.push(text(String(r.own), L.x + C.own, mid, 26, 'soft', { align: 'r', row: n }));
