@@ -909,22 +909,7 @@ button[hidden],
     position: static;
   }
 }
-/* boot.ts loadNote: the scene's download count over the title (Nov 16), lettered like the title's foot */
-.load-note {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: calc(12px + env(safe-area-inset-top, 0px));
-  z-index: 11;
-  margin: 0;
-  pointer-events: none;
-  text-align: center;
-  font-size: var(--fs-sm);
-  color: var(--fg);
-  text-shadow:
-    0 2px 0 var(--edge),
-    0 0 8px var(--edge);
-}
+
 .main-title .title-lang {
   min-height: 32px;
   padding: 0 12px;
@@ -4352,4 +4337,38 @@ body:has(.status3d-overlay) .fps {
    steps aside while the list is open over its submenu */
 .hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
   visibility: hidden;
+}
+
+/* ---- Loading cover (loading.ts; Fernando, Nov 18) ---- */
+/* One screen over the whole page, the page's own colour, until the interface under it is built and drawn: nothing shows
+   half made. The line and the bar are the screen with ?ui=html or no WebGL; drawn in 3D (flow3d/loading3d.ts) they
+   stay under the drawing, unseen, for the screen reader */
+.loading-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: var(--fs);
+}
+.loading-line {
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+}
+.loading-bar {
+  width: min(560px, 100vw - 64px);
+  height: 14px;
+  accent-color: var(--orb-gold);
+}
+.loading-cover.loading3d > :not(canvas) {
+  opacity: 0;
+}
+.loading-cover.leaving {
+  opacity: 0;
+  transition: opacity 300ms ease-out; /* loading.ts FADE_MS; no class with Reduce motion: it leaves at once */
 }

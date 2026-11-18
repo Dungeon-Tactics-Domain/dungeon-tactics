@@ -114,9 +114,10 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   return skin;
 }
 
-// The town's windows, HUD and speech box and the expedition map in 3D (town3d/): its own layer over the town's HUD, mounted once the chunk lands; until then, and
-// with ?ui=html or the piece's own flag, the HTML windows open
-export async function loadTownSkin(root: HTMLElement) {
+// The town's windows, HUD and speech box and the expedition map in 3D (town3d/): its own layer over the town's HUD.
+// The chunk lands behind the loading cover (ready-gate.ts) and the town mounts it on its HUD as it builds it, so no
+// HTML window opens first; with ?ui=html or the piece's own flag, the HTML windows open
+export async function loadTownSkin(): Promise<((root: HTMLElement) => void) | undefined> {
   const flags = skinFlags(param);
   const on = {
     party: flags.party === '3d',
@@ -128,7 +129,21 @@ export async function loadTownSkin(root: HTMLElement) {
   };
   if (!Object.values(on).some(Boolean)) return;
   const { mountTown3d } = await import('./town3d/screens.ts');
-  mountTown3d(root, on);
+  return (root) => mountTown3d(root, on);
+}
+
+// The loading screen in 3D (flow3d/loading3d.ts) on a layer of its own over the loading cover (loading.ts);
+// undefined with no WebGL: the cover's HTML line is the screen. `lost`: its context went away
+export async function loadLoading3d(root: HTMLElement, lost: () => void) {
+  const [{ Ui3dLayer }, { Loading3d }] = await Promise.all([
+    import('./ui3d/layer.ts'),
+    import('./flow3d/loading3d.ts'),
+  ]);
+  try {
+    return new Loading3d(new Ui3dLayer(root, false, lost));
+  } catch {
+    return undefined;
+  }
 }
 
 // The turn list's boxes for the 3D list, which draws over them and never reads the DOM itself: each row in the list's
