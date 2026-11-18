@@ -251,8 +251,10 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   on a keyboard, pad buttons on a gamepad, none for a finger), on the regions `banner`, `height`, `hints` and
   `hintsLeft`. Their colours are the reference's, as constants in `hints3d.ts` (the same debt). Zoom and rotate share one
   "Camera" hint and the labels are one or two words, so the row fits its region at 1280x720 too, where the 16 px floor
-  widens it (Fernando, Nov 16). The tile line (floor, water, spikes, a charge landing) sits small on a dark box under
-  the Height, and every help-line instruction fits the pill in one line.
+  widens it (Fernando, Nov 16). The tile line ("X 16 · Y 20 · Z 1 · grama", then water, spikes, a charge landing)
+  sits small under the Height; neither has a plate (Fernando, Nov 18): white text with a near-black outline and a drop
+  shadow (`TextOpts.shadow`, `ui3d/text.ts`), 12.4:1 or more against its outline over snow and the crypt. Every
+  help-line instruction fits the pill in one line.
 - **"Execute?"** (`confirm3d/`): the strike's confirmation as a dark slate box like the pill, beside the
   character: title, notes and the two choices, the one in focus on a gold band with ▶. The HTML window stays unseen at
   the drawn sizes and keeps the place, the buttons and the mouse; the colours are constants in `confirm3d.ts`.

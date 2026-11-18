@@ -111,19 +111,17 @@ describe('status window', () => {
 });
 
 describe('tile info', () => {
-  it('position, height, ramp and floor of the map', () => {
-    expect(tileInfo(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 })).toBe('Casa 0,1 · altura 1 (rampa) · grama');
-    expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 })).toBe('Casa 2,1 · altura 0 · árvore · não dá para pisar');
-    // beside the 3D Height corner, which shows the number (Nov 18): the slope stays, the height goes
-    expect(tileInfo(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 }, false)).toBe('Casa 0,1 · rampa · grama');
-    expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 }, false)).toBe('Casa 2,1 · árvore · não dá para pisar');
+  // Fernando, Nov 18: X, Y and Z by name; Z is the Height corner's number (tileHeight)
+  it('X, Y, Z, ramp and floor of the map', () => {
+    expect(tileInfo(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 })).toBe('X 0 · Y 1 · Z 1 (rampa) · grama');
+    expect(tileInfo(SCENARIOS.skirmish.grid, { x: 2, y: 1 })).toBe('X 2 · Y 1 · Z 0 · árvore · não dá para pisar');
   });
 
   it('deep and shallow water (same drawing) are told apart by the text', () => {
     expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 3 })).toBe(
-      'Casa 0,3 · altura 0 · água · funda: não se age nela',
+      'X 0 · Y 3 · Z 0 · água · funda: não se age nela',
     );
-    expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe('Casa 0,7 · altura 0 · água · rasa');
+    expect(tileInfo(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe('X 0 · Y 7 · Z 0 · água · rasa');
     // the number alone, for the reference's "Height" corner: the same one the line says
     expect(tileHeight(SCENARIOS.beacon_hill.grid, { x: 0, y: 1 })).toBe(1);
     expect(tileHeight(SCENARIOS.crypt_heart.grid, { x: 0, y: 7 })).toBe(0);
@@ -138,13 +136,13 @@ describe('cursor info for a square', () => {
   state.charges = [{ unit: 'b', ability: 'strike', target: { x: 2, y: 3 }, follow: null, ticks: 3 }];
 
   it('warns of a charge or spikes under any cell of the square, not only its corner', () => {
-    expect(cursorInfo(g, state, { x: 2, y: 2 })).toBe('Casa 2,2 · altura 0 · chão');
+    expect(cursorInfo(g, state, { x: 2, y: 2 })).toBe('X 2 · Y 2 · Z 0 · chão');
     const square = cursorInfo(g, state, { x: 2, y: 2 }, 2);
     expect(square).toContain('espinhos');
     expect(square).toContain('vai cair aqui');
   });
 
   it('the part of the square off the map is ignored', () => {
-    expect(cursorInfo(g, state, { x: 7, y: 7 }, 2)).toBe('Casa 7,7 · altura 0 · chão');
+    expect(cursorInfo(g, state, { x: 7, y: 7 }, 2)).toBe('X 7 · Y 7 · Z 0 · chão');
   });
 });

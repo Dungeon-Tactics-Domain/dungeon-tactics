@@ -12,6 +12,7 @@ export interface TextOpts {
   width?: number; // wraps at this many CSS px; one line without it
   line?: number; // line height in CSS px
   centre?: boolean; // each line in the middle of the widest one (the opening narration); from the left without it
+  shadow?: boolean; // a hard dark outline and a drop shadow, for a text with no plate over the map (the Height corner)
 }
 
 export { wrapLines };
@@ -48,11 +49,25 @@ function draw(str: string, o: TextOpts, dpr: number): Label {
   g.font = font;
   const lines = wrapLines(str, o.width ? o.width * dpr : Infinity, (s) => g.measureText(s).width);
   const lh = (o.line ?? o.size * 1.3) * dpr;
-  const pad = 3 * dpr;
+  // the shadow's room: its outline, blur and drop must not be cut at the canvas's edge
+  const pad = (o.shadow ? 3 + Math.max(2, o.size * 0.16) : 3) * dpr;
   cv.width = Math.ceil(Math.max(1, ...lines.map((l) => g.measureText(l).width)) + 2 * pad);
   cv.height = Math.ceil(lines.length * lh + 2 * pad);
   g.font = font; // sizing the canvas reset it
   g.textBaseline = 'middle';
+  if (o.shadow) {
+    // Fernando, Nov 18: the Height and the tile line lost their plate. A blur alone vanished on snow and sand, so a
+    // near-black outline holds the letters' edge on a light floor and a soft drop below it on a dark one
+    g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(10, 8, 6, 0.92)';
+    g.lineWidth = Math.max(2, o.size * 0.16) * dpr;
+    g.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    g.shadowBlur = 3 * dpr;
+    g.shadowOffsetY = 1.5 * dpr;
+    lines.forEach((l, i) => {
+      g.strokeText(l, o.centre ? (cv.width - g.measureText(l).width) / 2 : pad, pad + lh * (i + 0.5));
+    });
+  }
   g.fillStyle = o.color;
   g.shadowColor = 'rgba(60, 50, 30, 0.55)';
   g.shadowBlur = 2 * dpr;

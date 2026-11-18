@@ -75,7 +75,9 @@ do not rearrange the layout only to reach that number.*
   not this control.
 - **The corner buttons and the Height** share the top right: the Height corner drops under the row of buttons where the
   page has no room for both (`heightBox`, `hints3d/hints-view.ts`; `toolsFoot`, `window3d/tools-layout.ts`). Under the
-  Height, the tile line leaves out the height the corner already shows.
+  Height, the tile line names the tile's X, Y and Z ("X 16 · Y 20 · Z 1 · grama"; Z is the corner's number). Neither
+  has a plate (Fernando, Nov 18): white text with a near-black outline and a drop shadow (`shadow` in `ui3d/text.ts`),
+  measured at 12.4:1 or more against its own outline over snow and over the crypt at 844×390, 1024×768 and 1280×720.
 - **The ☰ list says when it scrolls**: while rows wait under it, its foot reads "▼ Mais abaixo" in the room the layout
   keeps for it (`below`, `cue`, `tools-layout.ts`). The Pixel size row shows the size in use ("2 px", "desligado").
 - **No pointing glove for a finger**: the command menu's and the ☰ list's glove hide while a finger plays (the layer's

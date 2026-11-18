@@ -79,7 +79,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/turn-marks.ts` — what the scene marks on the hero's turn: tiles, cursor frame, range ring, shot line, charge preview and counters (turnMarks).
 - `src/client/turn-list.ts` — rows of the turn list: the queue projection while aiming (queueRows), round length, two rounds and scrolling, and each unit's number on the map (turnOrder).
 - `src/client/battle-text.ts` — battle texts: ability sheet, last action summary (eventLog), attribute rows and the Status sheet.
-- `src/client/tile-info.ts` — the tile line under the cursor: height, floor, water, spikes and a charge landing there.
+- `src/client/tile-info.ts` — the tile line under the cursor: X, Y and Z (height), floor, water, spikes and a charge landing there.
 - `src/client/forecast.ts` — strike preview per target (hit, damage or heal, push, life after) and its texts.
 - `src/client/place-beside.ts` — where a menu goes beside the acting unit on screen (placeBeside) and where the help line above it ends (helpEnd); pure.
 - `src/client/wrap-lines.ts` — wrapLines: a text broken into the lines that fit a width, given a measurer; pure, shared by the 3D text and the HUD's sizes.
@@ -122,7 +122,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-skin.ts` — loadSkin() and loadTownSkin(): fetch the 3D pieces of the battle and of the town, each its own chunk, behind the loading cover.
 - `src/client/ui3d/layer.ts` — Ui3dLayer: the one transparent WebGL canvas over the HUD every 3D screen draws on (Ui3dScreen), on the battle clock, with the pixel filter and the F3 cost.
 - `src/client/ui3d/panel.ts` — 3D kit: the parchment panel and inset band shaders, the theme (--ui3d-* tokens) and the quad helper.
-- `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText), the same for a drawing made elsewhere (imageMesh); a line's width and line count with no HTML (textWidth, lineCount); pure wrapLines.
+- `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText), the same for a drawing made elsewhere (imageMesh), outlined and shadowed for a text with no plate (`shadow`); a line's width and line count with no HTML (textWidth, lineCount); pure wrapLines.
 - `src/client/ui3d/caps.ts` — 3D kit: an action's keys or pad buttons as quads showing glyph-art.ts' drawing (capMeshes, capRun).
 - `src/client/ui3d/icons.ts` — 3D kit: low-poly parts merged into one tinted geometry, the shared geometry cache and the icon shader.
 - `src/client/ui3d/pixel.ts` — 3D kit: the pixel filter (block size and the shader that reads the small target); pure.
@@ -143,7 +143,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/bar3d/bar-view.ts` — what the 3D combat bar shows (sheet numbers, the bar's changing part, the plate's forecast texts); pure.
 - `src/client/bar3d/bar-layout.ts` — where each part of a sheet and of the plate sits inside its region, and how a text hangs on its spot; pure.
 - `src/client/bar3d/plates.ts` — the 3D combat bar's shaders: a whole unit sheet (band, bars, framed portrait) and the arrow plate.
-- `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D, each on its region of the reference; the tile line (floor, water, spikes, a charge landing) small under the Height.
+- `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D, each on its region of the reference; the tile line (X, Y, Z, floor, water, spikes, a charge landing) small under the Height, both with no plate.
 - `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D beside the character, drawn over the unseen HTML window, which it seats and whose buttons keep the input; text from hud-menus.ts confirmParts.
 - `src/client/confirm3d/confirm-layout.ts` — confirmLayout: the "Execute?" window's size, head, notes and choices with no DOM; pure.
 - `src/client/hints3d/hints-view.ts` — the button hints of each turn screen, each an action of glyphs.ts (hintsFor), the Height number and where each hint of a row sits (layRow); pure.

@@ -57,10 +57,10 @@ export const heightShown = (b: Battle, s: Screen, cursor: Pos): number | null =>
   b.over || s.k === 'abilities' ? null : tileHeight(b.grid, cursor);
 
 // The small line under the Height corner (Fernando, Nov 16): the same tile line the HTML corner shows (floor, slope,
-// shallow or deep water, spikes, a charge about to land), shown and hidden with the Height and without its number,
-// which the corner already shows (Nov 18). `size`: the square of a big unit choosing where to stop (HudView.hl.size)
+// shallow or deep water, spikes, a charge about to land), shown and hidden with the Height, with the tile's X, Y and Z
+// spelled out (Nov 18). `size`: the square of a big unit choosing where to stop (HudView.hl.size)
 export const tileLine = (b: Battle, s: Screen, cursor: Pos, size = 1): string =>
-  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size, false);
+  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
 
 // The Height corner on the page: its region, moved down under the corner buttons (menu, Back, Undo) where the page is
 // too small for both (a phone: it sat under the menu button and Undo; Fernando, Nov 18). `top`: the panels' margin

@@ -118,14 +118,13 @@ describe('Height corner', () => {
   });
 
   // Fernando, Nov 16: what the HTML tile line said (floor, water, spikes, a charge landing) goes small under the Height;
-  // Nov 18: without the height, which the corner shows over it in large
-  it("the tile line under it is the HTML corner's own text but the height, and hides with the Height", () => {
+  // later on Nov 18: with X, Y and Z spelled out (the Z is the corner's number)
+  it("the tile line under it is the HTML corner's own text, and hides with the Height", () => {
     const b = battle();
     const at = { x: 3, y: 3 };
-    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at, 1, false));
-    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2, false));
-    expect(tileLine(b, menu, at)).toBe('Casa 3,3 · chão');
-    expect(cursorInfo(b.grid, b.state, at)).toBe('Casa 3,3 · altura 0 · chão');
+    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at, 1));
+    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2));
+    expect(tileLine(b, menu, at)).toBe('X 3 · Y 3 · Z 0 · chão');
     expect(tileLine(b, { k: 'abilities', index: 0 }, at)).toBe('');
   });
 });
