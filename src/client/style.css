@@ -1,9 +1,6 @@
-:root,
-:root[data-theme="fft"] {
-  /* FFT Classic theme, the default (Nov 15, Fernando's request: "FFT Classic" as the first theme, ported from the lab kit
-     design/src/fft-kit.css; our colours, nothing from the original art). A theme is a :root[data-theme="<id>"] block that
-     redefines tokens (src/client/theme.ts lists them); outside these blocks, CSS and code use only tokens and never name a
-     theme. Every colour and size in the game comes from here */
+:root {
+  /* every colour and size of the page comes from here (one set since Nov 18: the themes and the panel glass went with
+     the HTML look; the 3D layer reads the --ui3d-* ones) */
   --bg: #0a1028;
   --fg: #f4f6ff;
   --muted: #c8d3ee;
@@ -51,16 +48,6 @@
     24,
     0.4
   ); /* sunken disabled menu row: lifts --ink-off to 6.8:1 and sets it apart from active rows */
-  /* panel glass (glass.ts, Options → Video and effects, Nov 16): the panels paint the --glass-* stops over the veil, with the
-     rim in their frame and the filter behind. These defaults are the opaque look, plain hex and no extra layer, so nothing
-     changes at 100% in any browser; below 100% glass.ts swaps in translucent stops, the dark veil that keeps light text at
-     4.5:1 over a white sky (tests/glass.test.ts), the rim and the blur */
-  --panel-filter: none;
-  --glass-hi: var(--paper-hi);
-  --glass: var(--paper);
-  --glass-lo: var(--paper-lo);
-  --panel-veil: transparent;
-  --panel-rim: transparent;
   --ink-shadow: 1px 1px 0 #050a18; /* light text on the blue panels gets a hard dark shadow */
   --focus: #ffd75e; /* focus ring and highlight: FFT yellow */
   --focus-band: linear-gradient(#3e66ad, #33599f); /* menu row under focus: lighter blue than the panel */
@@ -82,9 +69,7 @@
   /* frame of panels, dialogs and the menu button: dark outer line, the glass rim (transparent unless glass is on), thin inner
      line, inner top glow and a drop shadow */
   --paper-frame:
-    0 0 0 1px #050a18,
-    inset 0 0 0 1px var(--panel-rim),
-    inset 0 0 0 1px rgba(5, 10, 24, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.14),
+    0 0 0 1px #050a18, inset 0 0 0 1px rgba(5, 10, 24, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.14),
     0 3px 0 rgba(0, 0, 0, 0.45);
   --paper-white: #18295a; /* field background: Developer fields and the class card */
   --row-hi: rgba(255, 255, 255, 0.1); /* menu row under hover */

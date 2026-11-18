@@ -107,8 +107,6 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — DOM interface
 
-- `src/client/theme.ts` — interface theme choice (dt:theme), set as data-theme on the page.
-- `src/client/glass.ts` — panel opacity and backdrop blur (dt:glass), set as CSS variables on the page; pure parse and mapping.
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
 - `src/client/mark-style.ts` — how the board's marks are drawn: simples, luz, pedra or neon (dt:marks, ?marks=), and the listener the open battle redraws on.
@@ -205,7 +203,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/touch-input.ts` — tap, drag and pinch or wheel on the map.
 - `src/client/rotate-note.ts` — the turn-the-phone notice over every screen (a touch phone held upright).
 - `src/client/ui3d/safe-area.ts` — the safe area in px (notch, home bar) for the 3D layer, read from a CSS probe.
-- `src/client/style.css` — theme tokens (:root[data-theme]) and every component's style.
+- `src/client/style.css` — the :root tokens (the --ui3d-* ones the 3D layer reads) and the unseen HTML skeleton under the 3D screens.
 
 ## src/client — 3D drawing (Three.js) and sound
 
