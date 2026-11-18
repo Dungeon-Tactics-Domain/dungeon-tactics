@@ -277,7 +277,7 @@ Still scenes of the 3D interface (no loop; `hide` takes them by name: `menu` hid
 | `layout-edges`, `layout-frame` | the 3D menu and turn list at 1920x1080 in each layout: the same picture, the menu at 1152,688 and card 2 of the list at 102,711 like the reference |
 | `layout-ultrawide-edges`, `layout-ultrawide-frame` | the same with the submenu and the sheet at 3440x1440: spread to the edges, or in the centred 16:9 frame (one file each: a spec is one shot) |
 | `hints3d`, `hints3d-alvo` | the 3D instruction banner, Height corner and button hints at 1920x1080: with the menu open, and aiming at a target |
-| `window3d` | the corner menu and the Status window in 3D at 1920x1080 (`tools`, `status`): the menu button top right; click it for the list, press C for the Status sheet (a spec cannot open either) |
+| `window3d` | the corner buttons and the Status window in 3D at 1920x1080 (`tools`, `status`): the gear top right opens Options; press C for the Status sheet (a spec cannot open it) |
 | `result3d-vitoria`, `result3d-derrota` | the end of battle in 3D at 1920x1080: the warrior downs the last enemy, or the soldier downs the two heroes left. `loop` plays the steps on the page; steps that end the battle open its end screen and the loop stops there |
 | `marks-simples`, `marks-luz`, `marks-pedra`, `marks-neon` | the four mark styles on the same move screen of Ash Wood at 1920x1080 (148 marked cells, path, cursor, rings, border, turn-order numbers) |
 | `marks-degraus-simples`, `marks-degraus-luz`, `marks-degraus-pedra`, `marks-degraus-neon` | the same on the ramps and steps of Beacon Hill's middle hill: the lit marks bend over the ground |

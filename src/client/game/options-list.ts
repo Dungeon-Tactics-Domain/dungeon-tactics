@@ -68,10 +68,15 @@ export interface OptionsGroup {
 export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Jogo', 'Game'),
-    help: t(
-      'O texto das conversas, o idioma, as dicas e os ícones das teclas, a batalha rápida e a grade da cidade.',
-      'The conversations’ text, the language, the key hints and icons, the fast battle and the town grid.',
-    ),
+    help: o.battle
+      ? t(
+          'O texto das conversas, o idioma, as dicas e os ícones das teclas, a batalha rápida e a grade da cidade.',
+          'The conversations’ text, the language, the key hints and icons, the fast battle and the town grid.',
+        )
+      : t(
+          'O texto das conversas, o idioma, as dicas e os ícones das teclas e a grade da cidade.',
+          'The conversations’ text, the language, the key hints and icons and the town grid.',
+        ),
     rows: [
       pick(
         t('Velocidade do texto', 'Text speed'),
@@ -139,7 +144,7 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
               'Volta à tela de título. Sair de uma sala perde a expedição.',
               'Goes back to the title. Leaving a room loses the expedition.',
             )
-          : t('Volta à tela de título. O jogo fica salvo.', 'Goes back to the title. The game stays saved.'),
+          : t('Volta à tela de título.', 'Goes back to the title.'),
         // from a room the 2nd tap confirms losing the expedition, as "Leave the room" does
         run: (e) =>
           (o.battle?.room && !secondTap(e, t('Confirmar: perde a expedição', 'Confirm: the expedition is lost'))) ||

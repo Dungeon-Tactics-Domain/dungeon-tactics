@@ -72,12 +72,27 @@ export function optionsMenu(o: OptionsContext) {
   const marks = t('Marcas do mapa', 'Tile marks'),
     keys = t('Controles', 'Controls');
   const sections: OptionsSection[] = [
-    ...settings(o).map((g) => ({
-      title: g.title,
-      help: g.help,
-      items: g.rows.map((r): OptionsItem => ('run' in r ? { link: r.link } : { option: r })),
-      rows: g.rows.map((r) => ('run' in r ? goRow(r, describe) : optionRow(r, describe))),
-    })),
+    ...settings(o).map((g) => {
+      const rows = g.rows.map((r) => ('run' in r ? goRow(r, describe) : optionRow(r, describe)));
+      // a link row armed by its 1st tap (secondTap: "Confirm: the expedition is lost") says so in the 3D list too
+      const said = (b: HTMLElement, link: string) =>
+        b.dataset.armed === undefined ? link : (b.lastChild?.textContent ?? link);
+      return {
+        title: g.title,
+        help: g.help,
+        items: g.rows.map(
+          (r, i): OptionsItem =>
+            'run' in r
+              ? {
+                  get link() {
+                    return said(rows[i], r.link);
+                  },
+                }
+              : { option: r },
+        ),
+        rows,
+      };
+    }),
     {
       title: t('Ajuda', 'Help'),
       help: t('O que as marcas do mapa querem dizer e como se joga.', 'What the tile marks mean and how to play.'),

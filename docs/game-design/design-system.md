@@ -134,7 +134,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 ### Focus
 
 - 3 px ring in `--focus`, offset 3 px, on every button, form field (text, number, select, checkbox, `details` summary) and the volume bar (`:focus-visible`).
-- On the blue panels the yellow ring alone exceeds 6:1. **Outside the panels** (menu button and Back button over the scene, title language button, the town's action balloon, dialogue box) `--focus-halo` is added: a dark band hugging the ring, so it shows on the bright sky (18.8:1) and on the grass.
+- On the blue panels the yellow ring alone exceeds 6:1. **Outside the panels** (the corner buttons over the scene, title language button, the town's action balloon, dialogue box) `--focus-halo` is added: a dark band hugging the ring, so it shows on the bright sky (18.8:1) and on the grass.
 - Menu rows do not use a ring: focus is the ▶ and the light background (`.focus`), moved by the same cursor from keyboard, mouse and gamepad.
 - A dialog that rebuilds itself after an action (the Party screen) returns focus to the button with the same name (`aria-label`, else its text), else to its first control: by position it landed on another button once a row came or went (Nov 16).
 
@@ -322,7 +322,7 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   blink) and CT in gold (`#d2a91e`); the label in words, never colour alone. The text is
   12 px at 1280x720 scale and never under 16 px, so a row never gets shorter than 48 px (`statsLayout` in
   `queue-view.ts`): on a low screen the cards stop shrinking and the list scrolls. What each "+" counts (per turn, per
-  tick) is in the tip beside the card under the mouse and in the controls window of the ☰ menu
+  tick) is in the tip beside the card under the mouse and in Options › Help › Controls
   (`game/options-help.ts`); a charge's row has no lines. The 3D bar's sheets say the same two gains (`bar-view.ts`
   `hpRegen`, `ctGain`): "+4" after the "Vida" label and "+8" between the CT bar, 100 px instead of the reference's 130,
   and its number.
@@ -398,7 +398,7 @@ Checked in the browser (measured on Nov 13, size confirmed through innerWidth an
 
 Not checked:
 
-- The halo with a real Tab on the menu button, the title language button and the dialogue box (same rule as the map node).
+- The halo with a real Tab on the corner buttons, the title language button and the dialogue box (same rule as the map node).
 - English copy of the Sheet, Shop and Tavern on screen (read in the code only); the legend's 4th line ("Red, stripes") came in after the check.
 - A physical gamepad (the Gamepad API does not run under automation) and mobile.
 - Vitest and the build ran on the final tree; typecheck ran on every commit.
@@ -444,12 +444,12 @@ Written on Nov 16 from the touch audit (headless Chrome with touch emulated, `is
 
 What the code does on master today, and the gaps the audits found (computed or read on Nov 16, not seen on screen unless said). A new piece keeps every "holds" below.
 
-- **Focus is always visible** (holds). A 3 px `--focus` ring, offset 3 px, on `button`, `input`, `select` and `summary` (`:focus-visible`); outside the panels the dark `--focus-halo` hugs it (menu button, title language button, dialogue box); menu rows show focus as the band and the ▶, text and mark besides colour. A window opens with the focus inside it, `#app` behind is `inert`, and the Sheet returns the focus to the same button after an action. *Gaps:* the town's action balloon (`.town-act`, a button over the scene) has no halo, so its ring falls to 1.4:1 on a white sky; links (`.dialog a`, Credits) have no `:focus-visible` rule and keep the browser's default ring (not measured); on the title, closing a window does not return the focus to the row that opened it (Nov 16 windows review).
+- **Focus is always visible** (holds). A 3 px `--focus` ring, offset 3 px, on `button`, `input`, `select` and `summary` (`:focus-visible`); outside the panels the dark `--focus-halo` hugs it (corner buttons, title language button, dialogue box); menu rows show focus as the band and the ▶, text and mark besides colour. A window opens with the focus inside it, `#app` behind is `inert`, and the Sheet returns the focus to the same button after an action. *Gaps:* the town's action balloon (`.town-act`, a button over the scene) has no halo, so its ring falls to 1.4:1 on a white sky; links (`.dialog a`, Credits) have no `:focus-visible` rule and keep the browser's default ring (not measured); on the title, closing a window does not return the focus to the row that opened it (Nov 16 windows review).
 - **Reduced motion** (Options → Video and effects → Reduce motion: System (default), Yes, No; System follows `prefers-reduced-motion: reduce`, Yes forces it, No cancels the system's request; `motion.ts`, `dt:motion`, `data-motion` on `<html>`). Every CSS animation in Motion stops, the confetti does not fall, the battle behind the title stops turning, the painted mouth stays still and each sentence of the dialogue box shows whole instead of typing (`charMs` in `talk.ts`, Nov 18), the camera shake, the action camera's zoom and turn, the death slow motion and the recoil, bounce, dust and sparks of a hit are off, and the damage number stands still (`steps(1, end)` over 1.6 s). *Gap:* the hit-stop pause stays (a pause, not motion).
 - **Reduced transparency** (`prefers-reduced-transparency: reduce`). Master reads it nowhere: panels and windows are opaque, and the translucent pieces are veils and bands whose text was measured over its worst background (`--strike` at 82%, the ability banner at 88%, the fps band at 55%, the window veil). Rule: a new translucent surface ships with an opaque fallback under this query and its contrast computed at its most transparent setting over a white sky (Panel glass, under Themes, does both in its branch).
 - **Contrast minimum.** Text 4.5:1; large text (24 px, or 18.66 px bold) and non-text marks 3:1; over the worst background the piece can sit on (the white sky for anything over the scene); colour is never the only cue. Measured pairs are in section 1. *Gaps (computed from `:root`):* the corner menu's key hint on a hovered row, 4.3:1 (`--ink-muted` on `--row-hi`; the Party row and the window list already turn their muted text `--ink`); the fps counter over a white sky, 4.1:1; the title's foot (`--fg` at 0.85 opacity on the radial veil), about 4.2:1 (the veil's opacity there is a deduction from the gradient); the enemy's side stripe and face frame, 2.6:1 on the panel blue (decorative, and the word ENEMY carries the side; the ◆ itself is `--enemy-hi`, 4.1:1, since Nov 16). A disabled control is exempt from the bar, so its reason goes in text outside it (Disabled).
 - **Text size.** 16 px minimum on a PC and 14 px on a touch screen, with the exceptions listed under Typography; the interface has no text size setting.
-- **Names and roles** (holds, read). Icon buttons are named by `title` and `aria-label`; decorative symbols and menu heads are `aria-hidden` (the menu's `aria-label` names it); the corner menu is a `menu` of `menuitem` rows with a `menuitemcheckbox`; `choice()` uses `aria-pressed`; the objective and ability banners are `role="status"`, the help line and the dialogue text `aria-live="polite"`. Never checked with a screen reader.
+- **Names and roles** (holds, read). Icon buttons are named by `title` and `aria-label`; decorative symbols and menu heads are `aria-hidden` (the menu's `aria-label` names it); the corner buttons are named buttons (Options, Undo, Back, Turn the camera left or right); `choice()` uses `aria-pressed`; the objective and ability banners are `role="status"`, the help line and the dialogue text `aria-live="polite"`. Never checked with a screen reader.
 
 ## 10. Wide screens (Nov 16)
 
@@ -458,7 +458,7 @@ Measured at 3440×1440 in headless Chrome (muted) on master `1c63faf` (audit C, 
 **Rules (hold today)**
 
 - HUD sizes are fixed px tokens and do not grow with the screen: fonts in px, `--slot-w` capped at 672 px (`min(672px, 35vw)`), command menu 422 px, submenu 460 px, turn list 330 px, strike strips up to 760 px.
-- HUD pieces anchor to the corners and edges at `--inset`: tile line and turn list top left, help line top middle, menu button top right, unit panels bottom left and right, the strike preview beside the acting panel; the command menu sits beside the unit (`placeBeside`).
+- HUD pieces anchor to the corners and edges at `--inset`: tile line and turn list top left, help line top middle, the gear row top right (↺ ↻ right after the turn list), unit panels bottom left and right, the strike preview beside the acting panel; the command menu sits beside the unit (`placeBeside`).
 - Windows have a maximum width and sit in the middle: `dialog()` 460 px, Options 860, the Result board 1176, saved games 900, the expedition map 1180; the town's windows open beside the town menu at the top right, up to 1100 px.
 - The camera is orthographic with its zoom set by the view's height: a wider screen shows more map at the sides, never a bigger map.
 
