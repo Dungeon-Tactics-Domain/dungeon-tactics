@@ -2,6 +2,7 @@
 // settings: the name, then a choice in a box between two arrows, a bar with its number, or a switch beside its word.
 import { NONE, type Part, type Quad, type Rgba } from '../hints3d/hints3d.ts';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
+import { pageText } from '../ui3d/layout.ts';
 import { type Colors, lift, put, rgba, solid } from './draw.ts';
 import { type OptionsLayout, REF } from './options-layout.ts';
 import type { RowView } from './options-view.ts';
@@ -16,7 +17,7 @@ export function drawRow(
   L: OptionsLayout,
   layer: Ui3dLayer,
   c: Colors,
-  label: (str: string, size: number, hex: string) => Quad,
+  label: (str: string, size: number, hex: string, wrap?: number) => Quad,
 ) {
   const { paper, ink } = layer.theme,
     s = L.s,
@@ -24,7 +25,9 @@ export function drawRow(
   const mid = L.rowH / 2,
     left = w - L.value + L.arrow, // the value between the two arrows
     right = w - L.arrow;
-  put(p, label(v.label, REF.size.label, c.text), L.inset, mid, 'left', w - L.value - L.inset - 12 * s);
+  // a name too long for its room breaks into two lines on a tablet (its 14 px floor: ui3d/layout.ts), shrinks elsewhere
+  const room = w - L.value - L.inset - 12 * s;
+  put(p, label(v.label, REF.size.label, c.text, pageText() ? room : undefined), L.inset, mid, 'left', room);
   const arrow = (str: string, x: number) => put(p, label(str, REF.size.label, c.soft), x, mid, 'centre');
   if (v.kind === 'link') {
     arrow('▸', right + L.arrow / 2);

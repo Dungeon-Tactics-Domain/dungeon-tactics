@@ -19,9 +19,22 @@ export const MIN_SCALE = 0.6;
 // screen): the combat bar spans the reference's width, so under MIN_SCALE the width alone shrinks the pieces, down to
 // this (a 640 px page). The height never does: each piece holds on to its own edge and the short page shows less map
 export const NARROW_SCALE = 1 / 3;
+// A tablet's text floor (Fernando, Nov 18): a page whose shorter side is at least 600 px, either way up, never draws 3D
+// text under 14 px; a phone on its side (shorter side under 600) keeps shrinking with its pieces, and a PC page of
+// 1152x648 or more is at MIN_SCALE already, where the 16 px floor is above it
+export const TABLET_SIDE = 600;
+export const TABLET_TEXT = 14;
+export const pageFloor = (w: number, h: number) => (Math.min(w, h) >= TABLET_SIDE ? TABLET_TEXT : 0);
+// the page's own floor, set by the 3D layer on each fit (layer.ts), so every piece's text follows it without passing it
+let least = 0;
+export const setPageFloor = (w: number, h: number) => {
+  least = pageFloor(w, h);
+};
+export const pageText = () => least;
 // The smallest text a 3D piece draws, in page px: the game's 16 px (`floor`) down to MIN_SCALE, and under it shrinking
-// with the pieces (Fernando, Nov 18), or a line would no longer fit the plate it sits on
-export const textPx = (size: number, s: number, floor = 16) => Math.max(floor * Math.min(1, s / MIN_SCALE), size * s);
+// with the pieces (Fernando, Nov 18), or a line would no longer fit the plate it sits on; never under the page's floor
+export const textPx = (size: number, s: number, floor = 16, page = least) =>
+  Math.max(Math.min(floor, page), floor * Math.min(1, s / MIN_SCALE), size * s);
 // what the notch, the rounded corners and the home bar take on each side (env(safe-area-inset-*)), the larger of the
 // two sides on each axis so the interface stays centred
 export interface Safe {

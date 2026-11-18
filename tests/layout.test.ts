@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
-import { LAYOUT_MODES, parseLayout, place, REGIONS, type Region, stage, textPx } from '../src/client/ui3d/layout.ts';
+import {
+  LAYOUT_MODES,
+  pageFloor,
+  parseLayout,
+  place,
+  REGIONS,
+  type Region,
+  setPageFloor,
+  stage,
+  textPx,
+} from '../src/client/ui3d/layout.ts';
 
 // Where the battle interface sits (ui3d/layout.ts); Nov 16
 describe('interface layout: the reference regions on a page', () => {
@@ -87,6 +97,42 @@ describe('interface layout: the reference regions on a page', () => {
     expect(textPx(12, 0.3)).toBe(8);
     expect(textPx(40, 0.3)).toBe(12);
     expect(textPx(12, 1, 22)).toBe(22);
+  });
+
+  it('a tablet never draws 3D text under 14 px; a phone on its side and a PC keep their sizes', () => {
+    // the smallest (12 px) and a mid-size (26 px) text of the reference, on the page; `was` is before Nov 18's floor
+    const at = (w: number, h: number, safe = { x: 0, y: 0 }) => {
+      const s = stage(w, h, 'edges', safe).s;
+      return {
+        small: textPx(12, s, 16, pageFloor(w, h)),
+        mid: textPx(26, s, 16, pageFloor(w, h)),
+        was: textPx(12, s, 16, 0),
+      };
+    };
+    const phone = at(844, 390, { x: 47, y: 21 });
+    expect(phone.small).toBeCloseTo(10.42, 2); // unchanged: the phone on its side (decisions.md, Nov 18)
+    expect(phone.small).toBe(phone.was);
+    expect(at(667, 375).small).toBeCloseTo(9.26, 2);
+    expect(at(667, 375).small).toBe(at(667, 375).was);
+    expect(at(768, 1024).was).toBeCloseTo(10.67, 2); // the upright tablet, before
+    expect(at(768, 1024)).toMatchObject({ small: 14, mid: 14 });
+    expect(at(1024, 768).small).toBeCloseTo(14.22, 2); // already over 14 by its scale
+    expect(at(1180, 820)).toMatchObject({ small: 16, mid: 16 });
+    expect(at(1280, 720).small).toBe(16);
+    expect(at(1280, 720).mid).toBeCloseTo(17.33, 2);
+    expect(at(1920, 1080)).toMatchObject({ small: 16, mid: 26, was: 16 });
+    // a caller's own higher floor stays; the page floor only lifts what is under 14
+    expect(textPx(12, 0.4, 22, 14)).toBeCloseTo(14.67, 2);
+  });
+
+  it('the page floor follows the shorter side, set by the 3D layer', () => {
+    expect([pageFloor(844, 390), pageFloor(390, 844), pageFloor(768, 1024), pageFloor(599, 900)]).toEqual([
+      0, 0, 14, 0,
+    ]);
+    setPageFloor(768, 1024);
+    expect(textPx(12, 0.4)).toBe(14);
+    setPageFloor(844, 390);
+    expect(textPx(12, 0.4)).toBeCloseTo(10.67, 2);
   });
 
   it('an unknown layout is the default', () => {

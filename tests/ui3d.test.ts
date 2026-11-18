@@ -7,7 +7,7 @@ import { LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
 import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import { LIST_MIN, listFloor, matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
-import { sheetBox, stage } from '../src/client/ui3d/layout.ts';
+import { setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
 import { pixelBlock } from '../src/client/ui3d/pixel.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
 import { wrapLines } from '../src/client/ui3d/text.ts';
@@ -388,6 +388,16 @@ describe('3D turn list: life and CT lines', () => {
       expect(l.ct.bar + l.bar).toBeLessThanOrEqual(h);
     }
     expect(statsLayout(40, 1).fits).toBe(false);
+  });
+
+  it("a tablet's 14 px floor lifts the turn list's lines and its rows with them (768x1024: list scale 0.6)", () => {
+    setPageFloor(768, 1024);
+    expect(listFloor(0.6)).toBeCloseTo(14 / 16, 5);
+    const h = Math.max(52 * 0.6, 48 * listFloor(0.6));
+    expect(statsLayout(h, 0.6)).toMatchObject({ size: 14, fits: true });
+    setPageFloor(844, 390); // a phone on its side keeps its shrunk lines
+    expect(statsLayout(h, 0.6).size).toBeCloseTo((16 * 0.6) / LIST_MIN, 5);
+    setPageFloor(0, 0);
   });
 });
 

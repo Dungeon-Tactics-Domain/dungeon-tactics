@@ -110,7 +110,7 @@ export function menuPage(o: {
     ...rows.flatMap((r, i) => {
       const mid = box(i).y + R.h / 2;
       return [
-        text(r.label, R.x + M.label, mid, 30, 'light', { max: R.w - M.label - (r.note ? 200 : 30) }),
+        text(r.label, R.x + M.label, mid, 30, 'light', { max: R.w - M.label - (r.note ? 200 : 30), maxH: R.h - 8 }),
         ...(r.note ? [text(r.note, R.x + R.w - 28, mid, 24, 'dim', { align: 'r' as const })] : []),
       ];
     }),

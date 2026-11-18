@@ -51,7 +51,7 @@ The 3D kit's pairs are measured in the `:root` comment of `style.css` (ink 7.7:1
 | `--font-ui3d` | Palatino Linotype, Palatino, Book Antiqua, Georgia, serif | every 3D piece's text |
 | `--fs-min` / `--fs-sm` / `--fs` / `--fs-lg` / `--fs-xl` | 16 / 16 / 20 / 24 / 34 px | smallest text / note and help / body / menu item and name / large number |
 | `--fs-title` / `--fs-display` | 28 / 38 px | window title / game title in a window |
-| `--fs-3d-min` | `min(16px, 16 / 0.6 × --lay-u)` | the 3D pieces' smallest text (`ui3d/layout.ts textPx`) |
+| `--fs-3d-min` | `min(16px, 16 / 0.6 × --lay-u)`; on a tablet (both sides ≥ 600 px) never under 14px | the 3D pieces' smallest text (`ui3d/layout.ts textPx`, `pageFloor`) |
 
 Minimum text: 16 px with no exception, touch included (Fernando, Nov 16).
 

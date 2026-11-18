@@ -6,6 +6,7 @@ import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import type { Forecast } from '../forecast.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
 import { type queueRows, statsText, unitStats } from '../turn-list.ts';
+import { pageText } from '../ui3d/layout.ts';
 
 export type Queue = ReturnType<typeof queueRows>;
 
@@ -90,7 +91,8 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
 // rows never get shorter than what two lines and two bars take (style.css .hud.turn3d .queue-row)
 // Under LIST_MIN (a narrow page, where the whole interface shrinks: ui3d/layout.ts) those floors shrink with the list
 export const LIST_MIN = 0.9; // the list's scale at layout.ts MIN_SCALE (1.5 of it: turn3d.ts)
-export const listFloor = (s: number) => Math.min(1, s / LIST_MIN);
+// a tablet's 14 px (layout.ts pageFloor) lifts the shrunk floors, the rows growing with their text
+export const listFloor = (s: number, page = pageText()) => Math.max(Math.min(1, s / LIST_MIN), page / 16);
 export function statsLayout(h: number, s: number) {
   const f = listFloor(s),
     size = Math.max(16 * f, Math.round(12 * s)),
