@@ -209,21 +209,12 @@ export class Talk3d implements Ui3dScreen {
         fixed.text(m, r.x + r.w / 2, r.y + r.h / 2);
       };
       // the speaker's name: a dark plaque over the box's top left corner, where the HTML tab stands
-      // the face's frame: the HTML one's colours (style.css .face-sheet); the Beacon, with no picture, its gem
+      // the face's frame on the result's plate and line (the --paper tokens it read went with the HTML look, Nov 18);
+      // the Beacon, with no picture, its gem
       if (at) {
-        const css = getComputedStyle(document.documentElement),
-          k = L.face / 132,
+        const k = L.face / 132,
           def = this.faceEl?.dataset.def ?? '';
-        if (faceOf(def) || modelOf(def))
-          fixed.box(
-            at.x,
-            at.y,
-            at.w,
-            at.h,
-            0,
-            rgba(css.getPropertyValue('--paper-hi').trim()),
-            rgba(css.getPropertyValue('--paper-edge').trim()),
-          );
+        if (faceOf(def) || modelOf(def)) fixed.box(at.x, at.y, at.w, at.h, 0, rgba(c.plate), rgba(c.line));
         else fixed.box(at.x + 18 * k, at.y + 18 * k, 96 * k, 96 * k, 48 * k, rgba('#2bb8d6'), rgba('#bff7ff'));
       }
       if (L.name) plate(L.name, who, 30, c.title);

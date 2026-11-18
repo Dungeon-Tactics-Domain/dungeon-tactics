@@ -275,10 +275,6 @@ button[hidden],
   flex: none;
   border: 1px solid transparent;
 }
-.sw.counter {
-  /* the map mark is a plain red frame (scene/mark-looks.ts counter) */
-  border: 3px solid var(--mark-counter);
-}
 .choice {
   margin: 0 0 10px;
 }
@@ -785,16 +781,12 @@ button[hidden],
   height: 96px;
   object-fit: cover;
   flex: none;
-  background: var(--ui3d-result-plate);
-  border: 2px solid var(--ui3d-result-line);
+  border: 2px solid transparent; /* the frame is drawn in 3D; its width stays the box's */
 }
 .portrait.tinted,
 .face-strip.tinted {
   filter: sepia(0.4) hue-rotate(220deg) saturate(2) brightness(1.1);
 } /* Acolyte: the mage portrait with the character's violet glow (UnitDef.tint) */
-.portrait.gem {
-  background: radial-gradient(circle, #bff7ff, #2bb8d6 60%, #0c4a5a);
-}
 .unit-body {
   flex: 1;
   display: grid;
@@ -944,19 +936,6 @@ button[hidden],
   pointer-events: none;
   overflow: hidden;
 }
-/* damage number at FFT's rhythm (Nov 12): it jumps, holds still to be read and fades; 1.5 s = TIMING.float in timing.ts */
-.float {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  white-space: nowrap; /* near the right edge the magic star would break onto a line of its own */
-  font: 400 26px / 1 var(--font-title);
-}
-/* the second signal for magic; small, since the fallback font draws the star twice a digit's size */
-.float.magic::after {
-  content: "\2009\2726";
-  font-size: 0.6em;
-  vertical-align: 0.3em;
-}
 /* the town's action balloon (Nov 16, Fernando): a panel over what Enter or A acts on, its kind's symbol and the key;
    game/town.ts sets left and top every frame, the bottom middle sits on that point */
 .town-act {
@@ -992,14 +971,11 @@ button[hidden],
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye; and on
-   the result, the empty turn list and the help line behind the end dialog said nothing */
+/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye */
 body:has(.title-overlay) .hud,
 body:has(.title-overlay) .fps,
 body:has(.talk-overlay) .hud,
-body:has(.talk-overlay) .fps,
-body:has(.result-overlay) .hud,
-body:has(.result-overlay) .fps {
+body:has(.talk-overlay) .fps {
   visibility: hidden;
 }
 
@@ -1032,8 +1008,7 @@ body:has(.result-overlay) .fps {
 .face-sheet {
   display: block;
   overflow: hidden;
-  background: var(--ui3d-result-plate);
-  border: 2px solid var(--ui3d-result-line);
+  border: 2px solid transparent; /* drawn in 3D (window3d/talk3d.ts); the 132 px box keeps its border */
   box-sizing: content-box;
 }
 .face-strip {
@@ -1335,8 +1310,7 @@ body:has(.result-overlay) .fps {
   stroke-width: 5px;
 }
 /* a place: a round mark for a room (its enemy count inside), square for the chest, bigger for the boss */
-.crawl-map .map-place,
-.map-help .map-place {
+.crawl-map .map-place {
   --size: 48px;
   display: grid;
   place-items: center;
@@ -1348,8 +1322,7 @@ body:has(.result-overlay) .fps {
   border: 2px solid transparent;
   font: 700 var(--fs) / 1 var(--font-title);
 }
-.crawl-map .map-place.skipped,
-.map-help .map-place.skipped {
+.crawl-map .map-place.skipped {
   border-style: dashed;
 }
 /* the party's flag: a pole and a yellow pennant, planted up and to the right of the place it stands on */
@@ -1465,7 +1438,6 @@ body:has(.result-overlay) .fps {
   z-index: 2;
 }
 /* text for the screen reader only */
-.sr-only,
 .dialog.options3d .opt-help {
   position: absolute;
   width: 1px;
