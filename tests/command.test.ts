@@ -284,6 +284,21 @@ describe('menu rows in each state of the turn', () => {
     expect(menuRows(range())).toEqual(['move', 'act', 'wait', 'status']);
   });
 
+  it('boxed in at the turn start: still 4 rows, Move greyed', () => {
+    const b = new Battle(
+      flat(6, 6),
+      stateOf([
+        { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+        { id: 'b', def: 'soldier', team: 'enemy', x: 1, y: 0 },
+        { id: 'c', def: 'soldier', team: 'enemy', x: 0, y: 1 },
+        { id: 'beacon', def: 'beacon', team: 'hero', x: 5, y: 5 },
+      ]),
+    );
+    expect(b.reach().size).toBe(0);
+    expect(menuRows(b)).toEqual(['move', 'act', 'wait', 'status']);
+    expect(commandEnabled(b, 'move')).toBe(false);
+  });
+
   it('moved with movement left: 5 rows, Undo move right under Move', () => {
     const b = range();
     b.move({ x: 1, y: 2 });

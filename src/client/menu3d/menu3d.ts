@@ -99,7 +99,8 @@ export class Menu3d implements Ui3dScreen {
   private hits() {
     const m = this.view,
       at = this.at;
-    const key = m && at ? JSON.stringify([at, (m.sub ?? m.rows).map((r) => r.off), !!m.sub]) : '';
+    // the commands too: two menus of as many rows and greyed states may hold other commands (after Undo move)
+    const key = m && at ? JSON.stringify([at, (m.sub ?? m.rows).map((r) => r.off), !!m.sub, m.commands]) : '';
     if (key === this.hitKey) return;
     this.hitKey = key;
     this.host.replaceChildren();
