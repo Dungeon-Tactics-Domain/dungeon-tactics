@@ -72,11 +72,13 @@ export class Confirm3d implements Ui3dScreen {
     parts.choices.forEach((c, i) => {
       const r = choices[i];
       if (!r) return;
-      if (c.focus) {
-        part.box(r.x, r.y, r.w, r.h, 8 * s1, BAND, BAND_EDGE);
-        this.text('▶', SIZE.choice * 0.7, GOLD, r, 10 * s1);
-      }
-      this.text(c.label, SIZE.choice, WHITE, r, 0, undefined, true);
+      if (c.focus) part.box(r.x, r.y, r.w, r.h, 8 * s1, BAND, BAND_EDGE);
+      const word = this.text(c.label, SIZE.choice, WHITE, r, 0, undefined, true);
+      if (!c.focus) return;
+      const mark = this.text('▶', SIZE.choice * 0.7, GOLD, r, 10 * s1);
+      // a space between ▶ and the word: centred, a word on a phone's 16 px floor started 8 px after it (Nov 18 review)
+      const clear = mark.position.x + mark.scale.x / 2 + Math.max(8, 12 * s1) + word.scale.x / 2;
+      word.position.x = Math.max(word.position.x, clear);
     });
     // over the combat bar and the hints, which share the layer
     for (const m of part.group.children) m.renderOrder += 20;
@@ -107,7 +109,7 @@ export class Confirm3d implements Ui3dScreen {
       this.layer.dpr,
     ) as Quad;
     const x = centre ? r.x + r.w / 2 : r.x + left + m.scale.x / 2;
-    this.part.text(m, x, r.y + r.h / 2);
+    return this.part.text(m, x, r.y + r.h / 2);
   }
 
   // the page's size or scale changed: lay out and draw again

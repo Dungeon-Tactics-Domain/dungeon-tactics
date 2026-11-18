@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Screen } from '../src/client/command.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { backKind, confirmParts, helpText, runPick, undoShown } from '../src/client/hud-menus.ts';
+import { actionVerb, backKind, confirmParts, helpText, runPick, undoShown } from '../src/client/hud-menus.ts';
 import { freshUi, highlights, hoverTile, selectMode, tapTile, type Ui } from '../src/client/interaction.ts';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, stateOf } from './battle-helpers.ts';
@@ -150,7 +151,7 @@ describe('"Execute?": its title, notes and choices', () => {
     const preview = confirmParts(b, { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } });
     expect(preview.title).toBe('Golpe: executar?');
     expect(preview.choices.map((c) => [c.label, c.focus, c.pick])).toEqual([
-      ['Confirmar', true, 'yes'],
+      ['Atacar', true, 'yes'],
       ['Voltar', false, 'no'],
     ]);
     const lock = confirmParts(b, { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 }, lock: 'tile' });
@@ -158,6 +159,13 @@ describe('"Execute?": its title, notes and choices', () => {
       ['No personagem', false, 'unit'],
       ['Na casa', true, 'tile'],
     ]);
+  });
+
+  // the confirm button's verb comes from the ability's stats (Nov 18): every ability gets one, short enough for its half
+  // of the window
+  it('the confirm button says what the press does', () => {
+    expect(['strike', 'shot', 'firebolt', 'heal'].map(actionVerb)).toEqual(['Atacar', 'Atirar', 'Lançar', 'Curar']);
+    for (const id of Object.keys(ABILITIES)) expect(actionVerb(id).length, id).toBeGreaterThan(0);
   });
 
   it('a click runs the same action as the HTML button', () => {

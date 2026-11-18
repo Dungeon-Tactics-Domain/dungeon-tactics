@@ -38,6 +38,15 @@ const marker = (c: Command) => (ORB.has(c) ? el('span', { class: `orb ${c}`, 'ar
 const menuHead = (...text: Child[]) => el('div', { class: 'panel-head', 'aria-hidden': 'true' }, ...text);
 // the "Execute?" question, in the help line and on top of its window
 const executeText = (id: string) => t(`${abilityName(id)}: executar?`, `${abilityName(id)}: execute?`);
+// The confirm button names what the press does (Nov 18 review: "Confirmar" under "Tiro: executar?" said nothing new),
+// from the ability's general stats, never its id
+export function actionVerb(id: string): string {
+  const a = ABILITIES[id];
+  if (a.heal[1]) return t('Curar', 'Heal');
+  if (a.magic) return t('Lançar', 'Cast'); // a spell, flying or not
+  if (a.needsSight) return t('Atirar', 'Shoot');
+  return a.damage[1] ? t('Atacar', 'Attack') : t('Usar', 'Use');
+}
 
 // The on-screen Back button (Nov 16: a tablet has no Esc, B or right button, and the Move and Act maps had no way out):
 // what it does now, the same as Esc. null hides it: nothing to go back to
@@ -166,8 +175,9 @@ export function renderAbilities(box: HTMLElement, v: HudView, open: boolean, act
   );
 }
 
-// What "Execute?" says// (what it spends, the charge, a counter owed) and its two choices with the one in focus. On the preview the focus stays
-// on Confirm (Enter runs it, Esc goes back, nothing to toggle); the lock step (Nov 15) puts its two choices in their place
+// What "Execute?" says (what it spends, the charge, a counter owed) and its two choices with the one in focus. On the
+// preview the focus stays on the action's verb (Enter runs it, Esc goes back, nothing to toggle); the lock step (Nov 15)
+// puts its two choices in their place
 export type ConfirmPick = 'yes' | 'no' | 'unit' | 'tile';
 export interface ConfirmParts {
   title: string;
@@ -194,7 +204,7 @@ export function confirmParts(b: Battle, s: Extract<Screen, { k: 'confirm' }>): C
         title: executeText(s.ability),
         notes,
         choices: [
-          { label: t('Confirmar', 'Confirm'), focus: true, pick: 'yes', key: 'confirm' },
+          { label: actionVerb(s.ability), focus: true, pick: 'yes', key: 'confirm' },
           { label: t('Voltar', 'Back'), focus: false, pick: 'no', key: 'cancel' },
         ],
       };
