@@ -72,6 +72,8 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — pure interface logic (no DOM, no Three.js)
 
+- `src/client/menu-state.ts` — whether the command menu shows and what a tap on an empty tile, the hero, its sheet, another unit or a turn card does to it; pure.
+- `src/client/unit-peek.ts` — another unit's look-only mini menu (Status, Abilities, Show range) in the notice window.
 - `src/client/command.ts` — FFT command menu (Move, Abilities, Wait, Status): which turn screen shows, what each key leads to and where Cancel goes back to.
 - `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
 - `src/client/corpse-squares.ts` — groups a resumed battle's corpse cells into one body per token square (corpseSquares).
@@ -107,6 +109,7 @@ parseGrid and withRamps (grid.ts).
 ## src/client — DOM interface
 
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
+- `src/client/hud-queue.ts` — the HTML turn list under the 3D one: its title and a row per turn of the queue projection.
 - `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
 - `src/client/mark-style.ts` — how the board's marks are drawn: simples, luz, pedra or neon (dt:marks, ?marks=), and the listener the open battle redraws on.
 - `src/client/looks3d.ts` — the one place the client hands its windows to the 3D screens (`looks3d`): each screen fills its slot when built and empties it on dispose (`fill`); also the effects' types (`Effects`, `NumberMark`).
@@ -192,7 +195,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — gearButtons and CornerButtons: the gear (Options), ↺ ↻ and Undo on the screen, battle and town (no ☰ menu since Nov 18 night).
 - `src/client/screen-buttons.ts` — the Undo and camera buttons switch: on for a finger, off on a PC, kept by Options (dt:screen-buttons).
-- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) , drawn by the 3D look (window3d/status3d.ts).
+- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts), drawn by the 3D look (window3d/status3d.ts); unitSheet and abilitySheet fill it.
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/spot-walk.ts` — nextSpot(): the nearest box in a direction, for windows whose arrows follow where things are on screen; pure.

@@ -8,7 +8,6 @@ import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.t
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { battleInput } from './battle-input.ts';
-import { abilityDetail } from './battle-text.ts';
 import { beforeEvent } from './before-event.ts';
 import { abilitiesOf, type Screen, startScreen } from './command.ts';
 import { fpsCounter } from './fps.ts';
@@ -17,16 +16,15 @@ import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { finishRoom } from './game/room-end.ts';
 import { HeroTurn, type TurnHost } from './hero-turn.ts';
-import { BattleHud, eventLog, type HudActions, unitStatus } from './hud.ts';
+import { BattleHud, eventLog, type HudActions } from './hud.ts';
 import type { HudSkin } from './hud-skin.ts';
-import { abilityName, unitName } from './i18n.ts';
 import { confirm, freshUi, type Ui } from './interaction.ts';
 import type { KeyAction } from './keyboard.ts';
 import { onMarkStyle } from './mark-style.ts';
 import { reducedMotion } from './motion.ts';
 import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
-import { statusWindow } from './status-window.ts';
+import { abilitySheet, unitSheet } from './status-window.ts';
 import { store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
@@ -79,6 +77,8 @@ export class Game implements TurnHost {
       menu: () => this.menu(),
       undo: () => this.runKey({ k: 'undo' }),
       cancel: () => this.runKey({ k: 'cancel' }),
+      sheet: () => this.turn.menu({ k: 'open' }),
+      card: (unit) => this.turn.card(unit),
     };
     this.hud = new BattleHud(host, act, skin);
     this.readPad = battleInput(host.querySelector('canvas')!, scene, {
@@ -175,7 +175,7 @@ export class Game implements TurnHost {
       this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.turn.screen;
     const live = this.heroTurn && !this.busy && !this.behindTitle;
-    const { hl, ...m } = turnMarks(this.battle, s, ui, this.turn.cursor, live);
+    const { hl, ...m } = turnMarks(this.battle, s, ui, this.turn.cursor, live, this.turn.range);
     this.scene.setHighlights(hl);
     this.scene.setChargePreview(m.charge);
     this.scene.setCounters(m.counters);
@@ -192,6 +192,8 @@ export class Game implements TurnHost {
       acting: this.acting,
       cursor: this.turn.cursor,
       ability: ui.mode.k === 'ability' ? ui.mode.id : null,
+      closed: this.turn.closed,
+      range: this.turn.range,
       face: (u) => this.expression(u),
     });
     // every unit's place in the turn list beside its health bar, from the rows the list itself shows (Nov 17, Fernando)
@@ -247,15 +249,13 @@ export class Game implements TurnHost {
     const s = this.turn.screen;
     if (s.k !== 'abilities') return;
     const id = abilitiesOf(this.battle)[s.index];
-    if (id) statusWindow({ title: abilityName(id), rows: [], text: abilityDetail(id) });
+    if (id) abilitySheet(id);
   }
 
   status() {
     const s = this.battle.state;
     const id = unitAt(s, this.turn.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit
-    if (!id) return;
-    const u = s.units.find((x) => x.id === id)!;
-    statusWindow({ title: unitName(u.def), rows: unitStatus(s, id) });
+    if (id) unitSheet(s, id);
   }
 
   save() {

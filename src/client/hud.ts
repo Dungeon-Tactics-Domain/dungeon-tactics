@@ -17,16 +17,16 @@ import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm, undoShown } from './hud-menus.ts';
-import { helpWidth, hint, KEYS, queueEnd, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
+import { helpWidth, KEYS, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
+import { queueItems, wireCards } from './hud-queue.ts';
 import type { HudSkin } from './hud-skin.ts';
 import { CornerButtons } from './hud-tools.ts';
-import { abilityName, t, unitName } from './i18n.ts';
-import { abilityIcon, el, iconButton } from './icons.ts';
+import { t } from './i18n.ts';
+import { el, iconButton } from './icons.ts';
 import type { Highlights } from './interaction.ts';
 import type { Menu3d } from './menu3d/menu3d.ts';
 import { type Anchor, helpEnd, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
-import { isSurvival, turnsLeft } from './survival.ts';
 import type { Face } from './talk.ts';
 import { cursorInfo } from './tile-info.ts';
 import { anchorScroll, pageStep, queueRows } from './turn-list.ts';
@@ -36,7 +36,7 @@ import type { Ui3dLayer } from './ui3d/layer.ts';
 import { sheetBox } from './ui3d/layout.ts';
 
 // main.ts and game/town.ts read these through hud.ts
-export { eventLog, unitStatus } from './battle-text.ts';
+export { eventLog } from './battle-text.ts';
 export { hint, KEYS } from './hud-pieces.ts';
 
 export interface HudActions {
@@ -50,6 +50,8 @@ export interface HudActions {
   undo(): void; // undoes the last step (same as the Z key): whoever plays with a mouse only had no way to
   menu(): void; // the gear: Options
   cancel(): void; // the Back button, the same as Esc, B and the right button (a finger has none of them)
+  sheet(): void; // a tap on the acting unit's sheet: the closed menu shows again (menu-state.ts)
+  card(unit: string): void; // a tap on a turn card: that unit's mini menu, or the menu for the hero acting now
 }
 export interface HudView {
   battle: Battle;
@@ -61,6 +63,8 @@ export interface HudView {
   cursor: Pos; // tile under the cursor (keyboard, mouse or gamepad)
   ability: string | null; // ability being aimed on the map (the strike preview on the target panel)
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
+  closed?: boolean; // the menu hidden by a tap on an empty tile (menu-state.ts)
+  range?: string | null; // the unit whose range the map paints (unit-peek.ts)
 }
 
 export class BattleHud {
@@ -130,6 +134,8 @@ export class BattleHud {
       this.target,
     );
     host.append(this.root);
+    this.active.addEventListener('click', () => act.sheet()); // takes taps only while the menu is shut (style.css)
+    wireCards(this.queue, () => this.queued, act.card);
     this.layer = skin.layer(this.root, () => this.drop3d());
     if (!this.layer) return;
     this.menu3d = skin.menu3d(this.layer, act);
@@ -154,6 +160,9 @@ export class BattleHud {
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
+    const shut = !!v.closed || !!v.range, // the menu, its Back and "Execute?" wait while the map is looked at
+      menu = open && !shut;
+    this.root.classList.toggle('menu-shut', open && shut);
     // `size` is set only while choosing where to move: the square the unit would stand on
     this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
     this.faces = [];
@@ -164,11 +173,11 @@ export class BattleHud {
     this.renderQueue(b, aim);
     this.help.textContent = helpText(v, heroTurn);
     this.p3d.hints?.update(v, open, this.help.textContent);
-    renderBack(this.back, v, open);
+    renderBack(this.back, v, menu);
     this.tools.setUndo(undoShown(b, open));
-    renderCommands(this.commands, v, open, this.act);
-    renderAbilities(this.abilities, v, open, this.act);
-    this.menu3d?.update(v, open);
+    renderCommands(this.commands, v, menu, this.act);
+    renderAbilities(this.abilities, v, menu, this.act);
+    this.menu3d?.update(v, menu);
     renderConfirm(this.confirmBox, v, open, this.act);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
@@ -217,7 +226,7 @@ export class BattleHud {
   }
   // the 3D bar's sheet on the page, from the layout alone; null with the HTML panels, which are measured
   private get sheet() {
-    return this.layer && this.p3d.bar ? sheetBox(this.layer.stage, this.layer.h) : null;
+    return this.layer && this.p3d.bar ? sheetBox(this.layer.small, this.layer.h) : null;
   }
 
   // Painted faces (battle-face.ts) in the unit panels and the turn list, drawn with the dialogue box's sheet at the size
@@ -308,44 +317,8 @@ export class BattleHud {
 
   private renderQueue(b: Battle, aim: { ability: string; target: Pos } | null) {
     this.queued = b.over ? null : queueRows(b, aim);
-    const { rows, targets, at } = this.queued ?? { rows: [], targets: new Set<string>(), at: -1 };
-    // in Until Dawn mode, the title counts the turns left: the same number the rule uses (all turns)
-    const left = isSurvival(b.state.scenario) ? turnsLeft(b.state) : null;
     this.queueScroll = this.queue.scrollTop;
-    this.queue.replaceChildren(
-      el(
-        'li',
-        { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined },
-        left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`),
-        hint('turns'),
-      ),
-      // a charge row: the caster's face, the ability's icon and name, and the ticks until it goes off
-      ...rows.map(({ unit, charge, ticks, round }, i) => {
-        const u = b.state.units.find((x) => x.id === unit)!;
-        const mark =
-          !charge && i > 0 && targets.has(unit) ? el('span', { class: 'queue-target' }, t('◎ alvo', '◎ target')) : null;
-        return el(
-          'li',
-          {
-            class: `queue-row ${u.team}${i === 0 ? ' now' : ''}${charge ? ' charge' : ''}${i === at ? ' pending' : ''}`,
-          },
-          this.face(u),
-          charge ? abilityIcon(charge) : null,
-          el(
-            'span',
-            { class: 'queue-text' },
-            el(
-              'span',
-              { class: 'queue-n' },
-              charge ? t(`resolve em ${ticks}`, `resolves in ${ticks}`) : i === 0 ? t('AGORA', 'NOW') : String(i),
-              mark,
-            ),
-            el('span', { class: 'queue-name' }, charge ? abilityName(charge) : unitName(u.def)),
-          ),
-          ...queueEnd(u, !!charge, round),
-        );
-      }),
-    );
+    this.queue.replaceChildren(...queueItems(b, this.queued, (u) => this.face(u)));
   }
 
   private anchorQueue(b: Battle) {
