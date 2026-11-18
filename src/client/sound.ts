@@ -10,9 +10,9 @@ export interface SoundSettings {
   music: number;
   sfx: number;
 }
-// music off by default for now (Nov 17, Fernando's request: "the game's music must always be off by default for now");
-// whoever turns it up in Options keeps their volume (45 is the step the slider used to start at)
-export const DEFAULT_SOUND: SoundSettings = { music: 0, sfx: 100 };
+// music on at 25% and effects at 50% by default (Nov 18, Fernando's request; before, music was off since Nov 17): the
+// browser still starts the sound only after the first click or key. A saved volume of someone who set it wins
+export const DEFAULT_SOUND: SoundSettings = { music: 25, sfx: 50 };
 // 100% = the old "loud" (0.8): the levels measured in dB in the comments below still hold at maximum
 const volume = (p: number) => (p / 100) * 0.8;
 

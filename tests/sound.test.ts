@@ -12,6 +12,10 @@ describe('sound preference', () => {
     expect(parseSound({ music: 1, sfx: 2 })).toEqual({ music: 45, sfx: 100 });
     expect(parseSound({ music: 0, sfx: 1 })).toEqual({ music: 0, sfx: 45 });
   });
+  it('starts with the music on at 25% and the effects at 50% (Nov 18)', () => {
+    expect(DEFAULT_SOUND).toEqual({ music: 25, sfx: 50 });
+    expect(parseSound(undefined)).toEqual({ music: 25, sfx: 50 });
+  });
   it('odd value falls back to the default', () => {
     expect(parseSound({ music: 7, sfx: 'alto' })).toEqual(DEFAULT_SOUND);
     expect(parseSound({ music: 105, sfx: -5 })).toEqual(DEFAULT_SOUND);
@@ -82,7 +86,7 @@ describe('audio wake', () => {
     );
     vi.resetModules();
     const { setSound } = await import('../src/client/sound.ts');
-    setSound({ music: 45, sfx: 100 }); // the default is off: turn the song on to test it
+    setSound({ music: 45, sfx: 100 }); // set the song's volume for the test
     expect([...heard.keys()]).toEqual(['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']);
     for (const h of heard.values()) expect(h.opts?.once).toBeFalsy();
     heard.get('pointerdown')!.run(); // makes the context and starts the song, which the browser refuses (still paused)
