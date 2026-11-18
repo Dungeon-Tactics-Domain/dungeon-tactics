@@ -341,13 +341,14 @@ class Town {
       : 'unit' in tg
         ? t(`Falar com ${this.folk.nameOf(tg.unit)}`, `Talk to ${this.folk.nameOf(tg.unit)}`)
         : t(...tg.place.name);
-    const same = tg && this.tg && tg.act === this.tg.act && label === this.balloon.title;
+    const same = tg && this.tg && tg.act === this.tg.act && label === this.balloon.dataset.say;
     this.tg = tg;
     if (same) return;
     this.prompt.replaceChildren(
       ...(label ? [label, hint('confirm')] : [liveText('', (s) => hintLine(s, PROMPT(), ' · '))]),
     );
-    this.balloon.title = label ?? '';
+    // what the 3D balloon writes (town3d/hud3d.ts); not `title`, whose browser tooltip would show over the drawing
+    this.balloon.dataset.say = label ?? '';
     this.balloon.setAttribute('aria-label', label ?? '');
     this.balloon.replaceChildren(...(tg ? [icon(UI_ICON[tg.act]), hint('confirm')] : []));
   }

@@ -46,7 +46,7 @@ export class TownHud3d implements Ui3dScreen {
     hud.classList.add('townhud3d');
     // what the prompt and the balloon say changes with what is in front of the walker
     this.watch.observe(this.prompt, { childList: true, characterData: true, subtree: true });
-    this.watch.observe(this.balloon, { attributes: true, attributeFilter: ['title'] });
+    this.watch.observe(this.balloon, { attributes: true, attributeFilter: ['data-say'] });
     const o = { signal: this.ac.signal };
     hud.addEventListener('focusin', () => this.draw(), o);
     hud.addEventListener('focusout', () => this.draw(), o);
@@ -89,7 +89,7 @@ export class TownHud3d implements Ui3dScreen {
       key = (e: Element) => (keys ? (e.querySelector<HTMLElement>('.hint')?.dataset.act ?? '') : ''),
       focus = document.activeElement;
     const { name, menu, prompt: line } = townHud(layer.w, layer.inset, !!key(this.prompt)),
-      says = promptSays(this.prompt.firstChild?.textContent ?? '', this.balloon.title);
+      says = promptSays(this.prompt.firstChild?.textContent ?? '', this.balloon.dataset.say ?? '');
     const fkey = JSON.stringify([
       name,
       menu,
@@ -132,7 +132,7 @@ export class TownHud3d implements Ui3dScreen {
         );
     }
     // the balloon: what the action button does, drawn around the origin and moved over its target every frame
-    const what = this.balloon.title;
+    const what = this.balloon.dataset.say ?? '';
     const akey = JSON.stringify([what, key(this.balloon), layer.keys, focus === this.balloon, layer.dpr, s]);
     if (akey !== act.key) {
       act.clear();

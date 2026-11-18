@@ -30,13 +30,14 @@ export const button = (
   props: Record<string, unknown> = {},
 ) => el('button', { type: 'button', class: cls, onclick, ...props }, ...[label].flat());
 
-// icon-only button: the name becomes title and aria-label (screen reader and long press on mobile); several children = icon + key hint
+// icon-only button: the name becomes its aria-label (screen reader); several children = icon + key hint. No `title`: the
+// browser's own tooltip would show an HTML plate over the 3D drawing (Fernando, Nov 18: everything the player sees is 3D)
 export const iconButton = (
   child: Child | Child[],
   name: string,
   onclick: () => void,
   props: Record<string, unknown> = {},
-) => button('icon', child, onclick, { title: name, 'aria-label': name, ...props });
+) => button('icon', child, onclick, { 'aria-label': name, ...props });
 
 // sprite symbol → <svg> at font size; decorative (the name goes on the button that contains it)
 export function icon(id: string): SVGSVGElement {
