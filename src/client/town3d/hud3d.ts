@@ -1,6 +1,6 @@
 // The walkable town's HUD drawn in 3D (?townhud=3d, the default), a screen of the town's 3D layer in the look of the
 // battle's 3D HUD (hints3d/, window3d/tools3d.ts; the reference has no walkable town): the town's name on a dark slate
-// plate top left, what Enter does on a pill over what it acts on (the pill top centre only with nothing in reach: the
+// sign top left (square, unframed: not a button), what Enter does on a pill over what it acts on (the pill top centre only with nothing in reach: the
 // walk keys), and the menu button (3 bars).
 //   Words and input: the HTML HUD (game/town-hud.ts, game/town.ts) stays, unseen (style.css .hud.townhud3d): it says
 //   what to write, and its real buttons take the mouse, the taps and the screen reader. Where each part goes is
@@ -8,7 +8,7 @@
 //   decides anything.
 import { Group } from 'three';
 import type { Act } from '../glyphs.ts';
-import { NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
+import { LINE, NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
 import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { textMesh } from '../ui3d/text.ts';
@@ -107,12 +107,14 @@ export class TownHud3d implements Ui3dScreen {
       // the real button under the drawn one, whatever the style sheet says
       Object.assign(this.burger.parentElement!.style, { left: `${menu.x}px`, top: `${menu.y}px`, right: 'auto' });
       this.burger.style.width = this.burger.style.height = `${menu.w}px`;
-      // the town's name, on its corner
+      // the town's name, on its corner: a square plate with no frame and a rule under the name, so it reads as a sign
+      // and not as a button like the ☰ beside it (Nov 18 review: both wore the same rounded, framed slate)
       const town = this.label(this.host.textContent ?? '', SIZE.name, WHITE),
         w = town.scale.x + 44 * s,
         h = Math.max(name.h, 44 * s);
-      fixed.box(name.x, name.y, w, h, 10 * s, PILL, EDGE);
-      fixed.text(town, name.x + w / 2, name.y + h / 2);
+      fixed.box(name.x, name.y, w, h, 0, PILL, NONE);
+      fixed.box(name.x + 16 * s, name.y + h - 8 * s, w - 32 * s, Math.max(1, 2 * s), 0, LINE, NONE);
+      fixed.text(town, name.x + w / 2, name.y + h / 2 - 2 * s);
       if (says) this.pill(fixed, says, key(this.prompt), SIZE.prompt, line.x, line.y, Math.max(line.h, 48 * s));
       // the menu button: the 3 bars
       fixed.box(menu.x, menu.y, menu.w, menu.h, 10 * s, focus === this.burger ? LIT : PILL, EDGE);
