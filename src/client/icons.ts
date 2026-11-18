@@ -68,8 +68,7 @@ export const UI_ICON = {
 };
 
 // Ability icons (Nov 15, Fernando approved the 32 px set): one 6x4 atlas of 32 px cells, in the order of its .json (abilities,
-// then the Move and Wait commands). The image comes from the theme (--ability-atlas in style.css); a theme that brings its own
-// atlas keeps this layout.
+// then the Move and Wait commands): /ui/fft/atlas-32.png, drawn by the 3D turn list (turn3d.ts).
 const ATLAS = [
   'strike',
   'heavy_strike',

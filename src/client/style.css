@@ -119,8 +119,6 @@
   --t-menu: 90ms;
   --t-open: 120ms;
   --t-nudge: 0.6s;
-  /* art of the theme: the 32 px ability icon atlas (icons.ts abilityIcon; the soft set with a transparent background, approved Nov 15), shown at its own pixel size */
-  --ability-atlas: url("/ui/fft/atlas-32.png");
   /* glass orb before the commands with no atlas icon (Act, Status), the lab kit's command markers; off when disabled */
   --orb-gold: #c8a040;
   --orb-blue: #4a78d0;
