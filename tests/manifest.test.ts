@@ -10,10 +10,18 @@ describe('web app manifest', () => {
   it('opens fullscreen and landscape, from the site root', () => {
     expect(manifest).toMatchObject({ display: 'fullscreen', orientation: 'landscape', start_url: '/' });
   });
-  it('has the 192 and 512 px icons, and the files exist', () => {
-    const sizes = manifest.icons.map((i: { sizes: string }) => i.sizes);
-    expect(sizes).toEqual(['192x192', '512x512']);
+  // Nov 18: `any` and `maskable` apart, so the whole icon is not shrunk for a crop it may never get
+  it('has the 192 and 512 px icons whole and a 512 px maskable one, and the files exist', () => {
+    const icons = manifest.icons.map((i: { sizes: string; purpose: string }) => `${i.sizes} ${i.purpose}`);
+    expect(icons).toEqual(['192x192 any', '512x512 any', '512x512 maskable']);
     for (const i of manifest.icons) expect(existsSync(new URL(`public${i.src}`, root))).toBe(true);
+  });
+  it('gives iOS its own icon and full screen from the home screen', () => {
+    const html = readFileSync(new URL('index.html', root), 'utf8');
+    expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png">');
+    expect(html).toContain('<meta name="apple-mobile-web-app-capable" content="yes">');
+    expect(html).toContain('<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">');
+    expect(existsSync(new URL('public/apple-touch-icon.png', root))).toBe(true);
   });
   it('is linked from index.html', () => {
     expect(readFileSync(new URL('index.html', root), 'utf8')).toContain(

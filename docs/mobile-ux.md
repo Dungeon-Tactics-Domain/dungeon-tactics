@@ -56,6 +56,10 @@ do not rearrange the layout only to reach that number.*
   `env(safe-area-inset-*)` through `--safe-x`, `--safe-y`). The inset is symmetric (the larger of the two sides), so the
   stage stays centred whichever way the phone lies. The `frame` layout is already centred and ignores it.
 
+- **iOS has no Fullscreen API**: the way to full screen there is Share › Add to Home Screen. `index.html` gives it
+  `apple-touch-icon.png` (180 px) and `apple-mobile-web-app-capable` with a `black-translucent` status bar, since iOS
+  ignores the manifest's icons and `display`.
+
 ## 4. Where controls go
 
 - Controls stay out of the play area and away from the far corners (a thumb reaches the lower sides best; the corners
@@ -91,7 +95,7 @@ do not rearrange the layout only to reach that number.*
   `navigator.standalone`, not in fullscreen); it leaves once fullscreen settles. Elsewhere the title keeps a quiet
   "Tela cheia" / "Sair da tela cheia" over the language button, and the battle's ☰ list has the same row before
   Options and help (at 844×390 it waits under "▼ Mais abaixo"). None of them where the browser has no Fullscreen API
-  (an iPhone: the home screen, below, is the way there).
+  (an iPhone: the home screen is the way there, section 3).
 
 ## 5. Gestures on the map
 

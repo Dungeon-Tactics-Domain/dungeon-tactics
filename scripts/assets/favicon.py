@@ -1,6 +1,6 @@
 # Site icon: a sword planted in a raised isometric tile, the board piece of the game, in the gold and stone of the interface.
 # One list of shapes draws the vector public/favicon.svg, the raster public/favicon.ico (32 and 48 px) and, for the web app
-# manifest, public/icon-192.png and icon-512.png (the sword on the dark --bg, inside the 80% safe zone of a maskable icon).
+# manifest, public/icon-192.png, icon-512.png and icon-maskable-512.png, and iOS's public/apple-touch-icon.png.
 # python -I scripts/assets/favicon.py public   (needs Pillow)
 import sys
 from PIL import Image, ImageDraw
@@ -49,9 +49,17 @@ for k, s, c in SHAPES:
 big = img.resize((256, 256), Image.LANCZOS)
 big.save(f'{out}/favicon.ico', sizes=[(32, 32), (48, 48)])
 
-# manifest icons: square, opaque and maskable-safe (a phone may crop to a circle), so the sword sits in the middle 70%
+# home-screen icons, square and opaque on the dark --bg: `any` shown whole, so the sword fills 86%; `maskable` may be
+# cropped to a circle or a squircle (the safe zone is the middle 80%), so it keeps a 20% margin and fills 60%; iOS's
+# apple-touch-icon (180 px) is only rounded at the corners, so it fills 80%
+def card(name, size, fill):
+    c = Image.new('RGBA', (size, size), INK)
+    inner = round(size * fill)
+    c.alpha_composite(img.resize((inner, inner), Image.LANCZOS), ((size - inner) // 2, (size - inner) // 2))
+    c.convert('RGB').save(f'{out}/{name}', optimize=True)
+
+
 for size in (192, 512):
-    card = Image.new('RGBA', (size, size), INK)
-    inner = round(size * 0.7)
-    card.alpha_composite(img.resize((inner, inner), Image.LANCZOS), ((size - inner) // 2, (size - inner) // 2))
-    card.convert('RGB').save(f'{out}/icon-{size}.png', optimize=True)
+    card(f'icon-{size}.png', size, 0.86)
+card('icon-maskable-512.png', 512, 0.6)
+card('apple-touch-icon.png', 180, 0.8)
