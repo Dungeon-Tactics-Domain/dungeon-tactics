@@ -106,7 +106,7 @@ export class Map3d implements Ui3dScreen {
     this.view = undefined;
   }
 
-  // the HTML map again: its own look and places
+  // the map left: nothing drawn, its window's places back
   private drop() {
     if (!this.taken) return;
     this.taken = false;

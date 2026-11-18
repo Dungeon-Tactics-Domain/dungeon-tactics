@@ -1,6 +1,6 @@
 // The town's 3D windows at work (hud-skin.ts loads this for the town): the layer over the town's HUD, the HUD itself
 // (hud3d.ts), the speech box (window3d/talk3d.ts), the street's windows (street.ts) and, for each window of a building (Shop,
-// Tavern, Party), the loop the HTML one runs: read the saved game, show its page (shop-view.ts,
+// Tavern, Party), the loop of the window: read the saved game, show its page (shop-view.ts,
 // party-view.ts), run the pressed button through the same rules (chest.ts, group.ts), save and show again. While
 // mounted, the town's openers hand their windows over (looks3d.ts); a browser without WebGL or a lost context shows
 // the warning (no3d.ts).

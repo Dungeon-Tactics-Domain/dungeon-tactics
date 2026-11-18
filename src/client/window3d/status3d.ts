@@ -8,7 +8,7 @@
 //   sheet the HTML window would get; status-view.ts says where each row goes.
 //   Input: a window of dialog.ts, unseen, over the drawn sheet: Esc, the pad's B, a tap outside and its ✕ (over the
 //   drawn one) close it, as in every other window, and it holds the sheet as real text.
-//   If the WebGL context goes while it shows, the HTML window opens in its place.
+//   If the WebGL context goes while it shows, the page shows the warning (no3d.ts).
 import { Group, type Mesh, type ShaderMaterial } from 'three';
 import { dialog } from '../dialog.ts';
 import { NONE, Part, type Quad, type Rgba } from '../hints3d/hints3d.ts';

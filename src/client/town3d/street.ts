@@ -1,6 +1,5 @@
-// The 3D windows the street opens, at work (?townmenu=3d; screens.ts mounts them): the town menu, the gate's quest and
-// a place still to come, each the loop its HTML window runs (game/crawl.ts townMenu and questGate, game/town-hud.ts
-// openPlace) over the same rules. A 3D window covers the page, so it closes before anything else opens and the menu
+// The 3D windows the street opens, at work (screens.ts mounts them): the town menu, the gate's quest and a place still
+// to come, opened by game/crawl.ts townMenu and questGate and game/town-hud.ts openPlace. A 3D window covers the page, so it closes before anything else opens and the menu
 // comes back, on the row that opened it, when that closes.
 import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { TOWN } from '../../content/crawl/town.ts';
@@ -106,7 +105,6 @@ export function streetWindows(ui: Town3d) {
     );
     const beside = (id: string, open: (back: () => void) => void) => {
       win.close();
-      // through the hook: with the drawing gone (a lost context, a page shrunk) the HTML menu comes back instead
       open(() => {
         looks3d.menu?.(extra, id);
       });

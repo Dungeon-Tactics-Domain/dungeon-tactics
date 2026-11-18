@@ -37,9 +37,6 @@ export const loadGroup = () => parseGroup(store.json(GROUP_KEY));
 export const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
 export { openParty } from './town-party.ts';
 
-// the windows open beside the town menu (crawl.ts): every overlay but the menu's own
-export const sideWindows = <T>(overlays: Iterable<T>, menu: T) => [...overlays].filter((o) => o !== menu);
-
 // what is missing to buy, under the Shop row's turned-off button; nothing when the gold covers it
 export const shortBy = (gold: number, price: number) =>
   gold < price ? t(`faltam ${price - gold} de ouro`, `${price - gold} gold short`) : '';

@@ -1,7 +1,7 @@
-// Pure side of the 3D Shop and Tavern (town3d.ts draws them): the same counter the HTML windows build (town-shop.ts:
+// Pure side of the 3D Shop and Tavern (town3d.ts draws them; town-shop.ts opens them): the counter's
 // commands, the list with each price, the picked row's box with its action and why it is off), as a page laid out like
 // FFT: The Ivalice Chronicles' Inventory (labs refs/fft-ivalice/49) with the Tavern's plaques on the left (61). The
-// wording and the numbers come from the same helpers as the HTML ones. No DOM or Three here; tested in
+// wording and the numbers come from sheet-lines.ts and town-ui.ts. No DOM or Three here; tested in
 // tests/town3d.test.ts.
 import { CONSUMABLES } from '../../content/items.ts';
 import { ITEMS } from '../../shared/battle/equipment.ts';
