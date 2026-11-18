@@ -20,7 +20,7 @@ do not rearrange the layout only to reach that number.*
   shrink with the **width** down to `NARROW_SCALE` (1/3), so they stop covering each other on a phone. CSS mirrors it in
   `--lay-u`. Tests: `tests/layout.test.ts`.
 - **Text shrinks with its piece.** The 16 px floor holds down to scale 0.6 and then shrinks in proportion
-  (`textPx`, `--fs-3d-min`): about 10 px of floor at 844×390. Text that is HTML (windows, title, town) keeps 16 px.
+  (`textPx`, `--fs-3d-min`): about 10 px of floor at 844×390. Text that is HTML (windows, town) keeps 16 px.
 - **The hit area is as generous as the room allows, without covering a neighbour.** The battle menu's rows use
   `touchScale()` (`menu3d/menu-layout.ts`): on touch they are drawn larger than the rest of the stage when the page is
   tall enough. The ability sheet's page arrows get a hit box 44 px tall on touch. HTML controls keep `--tap` (44 px).

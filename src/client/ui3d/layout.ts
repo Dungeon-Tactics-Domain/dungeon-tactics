@@ -12,8 +12,8 @@ export const LAYOUT_MODES: readonly LayoutMode[] = ['edges', 'frame']; // the fi
 export const parseLayout = (v: unknown): LayoutMode => (v === 'frame' ? 'frame' : 'edges');
 
 export const SCREEN = { w: 1920, h: 1080 }; // the reference
-// under this a full-screen 3D page (Options, the title, the town's windows) keeps its HTML window; `frame` always fits
-// the reference whole
+// under this a full-screen 3D page (the sheets, the town's windows) keeps its HTML window, except Options and the title
+// (options-layout.ts `fitsOptions`); `frame` always fits the reference whole
 export const MIN_SCALE = 0.6;
 // `edges` on a narrow page (a phone on its side, an upright tablet; Fernando, Nov 18: the pieces may shrink with the
 // screen): the combat bar spans the reference's width, so under MIN_SCALE the width alone shrinks the pieces, down to

@@ -5,16 +5,18 @@
 //   the drawn ones by title-layout.ts: the arrows, Enter, the pad, a tap and a screen reader work as before. This
 //   screen only takes the open title (setTitle3d) and gives it back.
 //   The title opens once the battle behind it and its layer are built, behind the loading cover (ready-gate.ts), so
-//   it is drawn in 3D from its first frame. A page too small for the layout (options-layout.ts `fits`) and a lost
-//   WebGL context keep the HTML title.
+//   it is drawn in 3D from its first frame. It shrinks with the page down to a phone on its side, as Options do
+//   (options-layout.ts `fitsOptions`); a smaller or upright page and a lost WebGL context keep the HTML title.
 import { Group } from 'three';
 import { setTitle3d } from '../game/title.ts';
-import { Part } from '../hints3d/hints3d.ts';
+import { Part, type Quad } from '../hints3d/hints3d.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
+import { textPx } from '../ui3d/layout.ts';
 import { ease } from '../ui3d/spring.ts';
+import { textMesh } from '../ui3d/text.ts';
 import { neighbour, type Way } from '../ui3d/walk.ts';
-import { type Colors, colors, FOCUS, Hand, label, lift, put, rgba } from './draw.ts';
-import { fits } from './options-layout.ts';
+import { type Colors, colors, FOCUS, Hand, lift, put, rgba } from './draw.ts';
+import { fitsOptions } from './options-layout.ts';
 import { REF, stops, type TitleLayout, titleLayout } from './title-layout.ts';
 
 export class Title3d implements Ui3dScreen {
@@ -80,7 +82,7 @@ export class Title3d implements Ui3dScreen {
 
   resize() {
     if (!this.title?.isConnected) return;
-    if (!fits(this.layer.w, this.layer.h)) return this.drop();
+    if (!fitsOptions(this.layer.w, this.layer.h)) return this.drop();
     this.taken = true;
     this.title.classList.add('title3d');
     this.layer.solo = this; // the battle's own 3D pieces stay out of the title, as its HUD does
@@ -100,17 +102,20 @@ export class Title3d implements Ui3dScreen {
     list.style.setProperty('--t3-row', px(L.rows[0].h));
     if (lang)
       Object.assign(lang.style, { left: px(L.lang.x), top: px(L.lang.y), width: px(L.lang.w), height: px(L.lang.h) });
-    const text = (str: string, size: number, hex: string) => label(layer, s, str, size, hex);
+    // `px`: page px; the other texts shrink with the pieces on a small page (textPx), as Options' do
+    const mesh = (str: string, px: number, hex: string) =>
+      textMesh(str, { size: px, color: hex, font: layer.theme.font }, layer.dpr) as Quad;
+    const text = (str: string, size: number, hex: string) => mesh(str, textPx(size, s), hex);
     fixed.clear();
     // the art darkened a little, the name and the list over it
     fixed.box(-8, -8, layer.w + 16, layer.h + 16, 0, rgba(c.veil, 0.5));
     // the name with its own dark copy under it: it must read over grass, snow or sand
     const name = (title.querySelector('h2')?.textContent ?? '').toUpperCase();
     for (const [hex, off] of [
-      [c.veil, 5 * s],
+      [c.veil, L.name.size / 24], // 5 px of the reference's 120 px name
       [c.title, 0],
     ] as const)
-      put(fixed, text(name, REF.size.name, hex), L.name.x + off * 0.7, L.name.y + off, 'centre', layer.w - 48 * s);
+      put(fixed, mesh(name, L.name.size, hex), L.name.x + off * 0.7, L.name.y + off, 'centre', layer.w - 48 * s);
     fixed.box(L.rule.x, L.rule.y, L.rule.w, L.rule.h, 0, rgba(c.line, 0.9));
     put(fixed, text('◆', 14, c.line), L.name.x, L.rule.y + L.rule.h / 2, 'centre');
     fixed.box(L.plate.x, L.plate.y, L.plate.w, L.plate.h, 8 * s, rgba(c.band, 0.78), rgba(c.line, 0.7));
