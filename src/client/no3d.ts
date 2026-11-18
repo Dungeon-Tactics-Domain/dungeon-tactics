@@ -1,5 +1,6 @@
 // No WebGL here, or its context lost (Fernando, Nov 18: the interface is only 3D, never an HTML one): one plain line in
-// place of the whole page, the only text the game shows outside its 3D layer.
+// place of the whole page, the only text the game shows outside its 3D layer but for the turn-the-phone notice before
+// a layer exists (rotate-note.ts).
 import { t } from './i18n.ts';
 
 export function no3d() {

@@ -41,6 +41,7 @@ export function talkLayout(q: TalkSpec) {
       size,
       line,
       face: 0,
+      faceAt: undefined,
       name: undefined,
       title: undefined,
       skip: { x: q.pageW - 24 - skipW, y: foot - TAP, w: skipW, h: TAP }, // on the page's corner
@@ -64,7 +65,8 @@ export function talkLayout(q: TalkSpec) {
     text: { x: tx, y: y + 20, w: tw },
     size,
     line,
-    face, // its side; it stands 16 px in and 20 down from the box's corner
+    face, // its side
+    faceAt: face ? { x: x + 16, y: y + 20, w: face, h: face } : undefined, // the face's frame, in the box's corner
     name,
     title,
     skip: { x: right - skipW, y: foot - TAP, w: skipW, h: TAP },

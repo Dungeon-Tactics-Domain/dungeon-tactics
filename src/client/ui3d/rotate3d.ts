@@ -35,13 +35,13 @@ export class Rotate3d implements Ui3dScreen {
 
   private draw() {
     const { layer, part } = this,
-      c = colors(layer),
       str = ROTATE_TEXT(),
       font = layer.theme.font;
     const key = JSON.stringify([layer.w, layer.h, layer.dpr, str]);
     if (key === part.key) return;
     part.clear();
     part.key = key;
+    const c = colors(layer);
     const L = rotateLayout(layer.w, layer.h, (width) => lineCount(str, { size: 24, font, width }, layer.dpr)),
       { plate: b, phone: p } = L,
       ink = rgba(c.text),

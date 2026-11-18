@@ -151,7 +151,7 @@ export class Talk3d implements Ui3dScreen {
     // the face in the box's corner, drawn: the HTML one stays in place, unseen, as the rest of the box
     this.faceEl = find('.talk-face');
     this.faceEl?.setAttribute('style', 'opacity:0');
-    const at = L.face && who ? { x: b.x + 16, y: b.y + 20, w: L.face, h: L.face } : undefined;
+    const at = who ? L.faceAt : undefined;
     this.face.set(this.faceEl?.dataset.def ?? '', who, at, performance.now());
     const key = JSON.stringify([
       b,

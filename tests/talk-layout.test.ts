@@ -114,3 +114,44 @@ describe('3D speech box: the layout without the DOM', () => {
     expect(talkLayout({ ...spec, skip: 5, lines: () => 1 }).skip.w).toBe(44);
   });
 });
+
+// The face's frame in the box's corner (Nov 18, drawn in 3D): where the browser put the HTML face before it moved
+describe('3D speech box: the face', () => {
+  for (const [pageW, pageH, x, y, side] of [
+    [1280, 720, 106, 492, 132],
+    [1024, 768, 32, 540, 132],
+    [844, 390, 32, 162, 132],
+    [540, 900, 32, 695.609, 66],
+  ])
+    it(`stands at ${x},${y} on ${pageW}x${pageH}`, () => {
+      const l = talkLayout({
+        pageW,
+        pageH,
+        safe: NONE,
+        dark: false,
+        face: true,
+        name: 40,
+        title: 0,
+        skip: 34,
+        lines: () => 1,
+      });
+      expect(l.faceAt).toBeDefined();
+      near(l.faceAt!.x, x);
+      near(l.faceAt!.y, y);
+      expect(l.faceAt!.w).toBe(side);
+    });
+  it('has none for the narrator', () => {
+    const l = talkLayout({
+      pageW: 1280,
+      pageH: 720,
+      safe: NONE,
+      dark: false,
+      face: false,
+      name: 0,
+      title: 0,
+      skip: 34,
+      lines: () => 1,
+    });
+    expect(l.faceAt).toBeUndefined();
+  });
+});
