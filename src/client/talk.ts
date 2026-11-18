@@ -4,6 +4,7 @@
 
 import faces from '../content/faces.json';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { syncInert } from './dialog.ts';
 import { hintLine } from './glyphs.ts';
 import { LANG, t } from './i18n.ts';
 import { button, el } from './icons.ts';
@@ -133,7 +134,13 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
     ) as HTMLButtonElement;
     const overlay = el(
       'div',
-      { class: `overlay talk-overlay${dark ? ' dark' : ''}` },
+      {
+        class: `overlay talk-overlay${dark ? ' dark' : ''}`,
+        // a modal for the screen reader, named by the place or as a conversation (Nov 18)
+        role: 'dialog',
+        'aria-modal': 'true',
+        'aria-label': title ?? t('Conversa', 'Conversation'),
+      },
       ...(title ? [el('div', { class: 'panel talk-title' }, title)] : []),
       box,
       // a 44 px button for what Esc does, outside the box (a button cannot hold a button); it ends the whole conversation
@@ -153,6 +160,7 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
       finish();
       removeEventListener('keydown', onEsc, true);
       overlay.remove();
+      syncInert();
       done();
     };
     const show = () => {
@@ -223,6 +231,7 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
     // a click beside the box left the focus on the page, and Enter, Space and A no longer moved the conversation on
     overlay.addEventListener('mousedown', (e) => e.preventDefault());
     document.body.append(overlay);
+    syncInert();
     looks3d.talk?.(overlay); // the box drawn over it (window3d/talk3d.ts); the box below stays, unseen
     box.focus();
     show();

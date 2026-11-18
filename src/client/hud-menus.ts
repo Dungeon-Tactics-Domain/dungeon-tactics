@@ -215,7 +215,13 @@ export const runPick = (act: HudActions, pick: ConfirmPick) =>
 export function renderConfirm(box: HTMLElement, v: HudView, open: boolean, act: HudActions) {
   const s = v.screen;
   box.hidden = !open || s.k !== 'confirm';
+  // a modal named by its title (Nov 18): the rest of the HUD sits out, so Tab and a screen reader stay in it; the
+  // canvases keep the map's taps
+  for (const e of box.parentElement?.children ?? [])
+    if (e !== box && e.tagName !== 'CANVAS') e.toggleAttribute('inert', !box.hidden);
   if (s.k !== 'confirm' || box.hidden) return;
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-labelledby', 'confirm-title');
   const b = v.battle;
   const preview = b.preview(s.ability, s.target);
   const rows = forecast(b, s.ability, preview).map((f) =>
@@ -230,7 +236,7 @@ export function renderConfirm(box: HTMLElement, v: HudView, open: boolean, act: 
   );
   const parts = confirmParts(b, s);
   box.replaceChildren(
-    el('strong', { class: 'panel-head' }, abilityIcon(s.ability), parts.title),
+    el('strong', { class: 'panel-head', id: 'confirm-title' }, abilityIcon(s.ability), parts.title),
     ...rows,
     ...parts.notes.map((n) => el('p', { class: 'unit-note' }, n)),
     el(

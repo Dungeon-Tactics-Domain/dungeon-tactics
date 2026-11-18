@@ -162,7 +162,7 @@ States: N normal · H hover · F focus · P pressed · D disabled · S selected.
 | Turn list | PgUp, PgDn (a page less one row) | wheel over the list | right stick up and down (the bumpers and triggers already turn and zoom the camera) |
 | Conversation | Enter next, Esc skip | click | A next |
 
-A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog open `#app` is `inert`. Touch has no column here: what a finger does, and what it cannot do yet, is in section 8.
+A new key goes into `keyAction`, `keyHelp` and as a `hint()`. With a dialog or a conversation open (`.talk-overlay`, a named `aria-modal` dialog since Nov 18) `#app` is `inert`; "Execute?" lives inside `#app`, so it is a named modal (`aria-labelledby` its title) whose HUD siblings go `inert` while it is up, the map's canvases excepted (`renderConfirm`, Nov 18). Touch has no column here: what a finger does, and what it cannot do yet, is in section 8.
 
 ## 4. Copy
 
