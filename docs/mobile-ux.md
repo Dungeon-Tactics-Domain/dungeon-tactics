@@ -19,8 +19,23 @@ do not rearrange the layout only to reach that number.*
   reference: the page's fit, never under `MIN_SCALE` (0.6) while the page is at least 1152 px wide; under that the pieces
   shrink with the **width** down to `NARROW_SCALE` (1/3), so they stop covering each other on a phone. CSS mirrors it in
   `--lay-u`. Tests: `tests/layout.test.ts`.
-- **Text shrinks with its piece.** The 16 px floor holds down to scale 0.6 and then shrinks in proportion
-  (`textPx`, `--fs-3d-min`): about 10 px of floor at 844×390. Text that is HTML (windows, town) keeps 16 px.
+- **Text shrinks with its piece, down to a floor that depends on the device.** The 16 px floor holds down to scale 0.6
+  and then shrinks in proportion (`textPx`, `--fs-3d-min`): about 10.4 px at 844×390 with the notch, 9.3 px at 667×375
+  (a phone on its side: accepted, Nov 18). A **tablet** (the page's shorter side at least 600 px, either way up:
+  `pageFloor`, set by the 3D layer on each resize; CSS mirrors it with `@media (min-width: 600px) and (min-height:
+  600px)`) never draws 3D text under **14 px** (Fernando, Nov 18): 768×1024 goes from 10.7 to 14 px; 1024×768 is
+  already 14.2 px by its scale; a page of 1152×648 or more (a PC, a large tablet as 1180×820) has no page floor and
+  keeps its 16 px, so nothing laid out for the tablet moves there. Tests:
+  `tests/layout.test.ts` (each viewport), `tests/confirm-layout.test.ts`, `tests/ui3d.test.ts`, `tests/town3d.test.ts`.
+- **Where the tablet's 14 px did not fit, the layout gives room instead of cutting or shrinking the text:** the town
+  windows stretch down the page's spare height under scale 0.6 (`townFrame`: 768×1024 draws them 756 px tall instead of
+  432, so each row holds its line); a town menu row, an Options row, the shop's kind column and the roster's tag break
+  a long name in two lines; "Execute?"
+  widens as far as its text grew; the turn list's cards grow with their lines and the list scrolls as before. Still
+  shrunk to their column on a 768 px wide page (a portrait layout of the town would be a new decision): the Status
+  rows' "Resistência física/mágica", the sheet's totals, the Equipment slots' names, one-word roster tags and the
+  ability detail that overflows its block. The expedition map does not stretch yet (its party panel's lines touch at
+  768×1024), and the turn list scrolls with a fade but no arrow, as on a phone.
 - **The hit area is as generous as the room allows, without covering a neighbour.** The battle menu's rows use
   `touchScale()` (`menu3d/menu-layout.ts`): on touch they are drawn larger than the rest of the stage when the page is
   tall enough. The ability sheet's page arrows get a hit box 44 px tall on touch. HTML controls keep `--tap` (44 px).

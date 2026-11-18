@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { confirmLayout, SIZE } from '../src/client/confirm3d/confirm-layout.ts';
-import { type Box, type LayoutMode, stage } from '../src/client/ui3d/layout.ts';
+import { type Box, type LayoutMode, setPageFloor, stage } from '../src/client/ui3d/layout.ts';
 
 // The 3D "Execute?" window's own layout (Nov 18: the 3D pieces stop measuring the HTML). Each case is what the browser
 // measured on the unseen HTML window, on a sandbox scene (a charged strike: what it spends, then the charge's note),
@@ -201,5 +201,20 @@ describe('3D "Execute?": its layout with no DOM', () => {
     expect(touch.h - l.h).toBe(18);
     // on the reference the row is already 52 px: a finger changes nothing
     expect(confirmLayout({ title: 't', notes: [], choices: 2 }, 1, true, one).choices[0].h).toBe(52);
+  });
+
+  it("on a tablet the window widens with its 14 px text; a phone and a PC keep the reference's width", () => {
+    const at = (w: number, h: number) => {
+      setPageFloor(w, h);
+      return confirmLayout({ title: 't', notes: [], choices: 2 }, stage(w, h, 'edges').s, true, one);
+    };
+    // 768x1024: scale 0.4, the choice's 24 px drawn at 14 instead of 9.6, the window 440 x 0.4 x 14 / 9.6 wide
+    const upright = at(768, 1024);
+    expect(upright.w).toBeCloseTo((440 * 0.4 * 14) / 9.6, 1);
+    expect(upright.choices[0].w).toBeGreaterThan(110); // "▶ Atirar" at 14 px is about 60 px, with the button's padding
+    expect(at(844, 390).w).toBe(Math.trunc(Math.fround(440 * (844 / 1920)) * 64) / 64);
+    expect(at(1920, 1080).w).toBe(440);
+    expect(at(1152, 648).w).toBe(Math.trunc(Math.fround(440 * 0.6) * 64) / 64);
+    setPageFloor(0, 0);
   });
 });

@@ -13,7 +13,7 @@ import { type Box, place, REGIONS } from '../ui3d/layout.ts';
 import { QUAD, QUAD_VERT, type Rgb } from '../ui3d/panel.ts';
 import { M, type MapLayout } from './map-layout.ts';
 
-const FACE_FRAG = `
+export const FACE_FRAG = `
 precision highp float;
 varying vec2 vUv; uniform sampler2D uMap; uniform vec4 uUv; uniform float uAlpha;
 void main() { vec4 c = texture2D(uMap, uUv.xy + vUv * uUv.zw); gl_FragColor = vec4(c.rgb, c.a * uAlpha); }`;

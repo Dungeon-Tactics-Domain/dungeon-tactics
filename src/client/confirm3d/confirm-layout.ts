@@ -2,7 +2,7 @@
 // are the drawing's, in px of the reference, and a note is as tall as the lines its words take. The unseen HTML window
 // under the drawing is seated from these same numbers. Pure and tested (tests/confirm-layout.test.ts) against what the
 // browser measured before the numbers moved here.
-import { type Box, lu, textPx } from '../ui3d/layout.ts';
+import { type Box, lu, pageText, textPx } from '../ui3d/layout.ts';
 
 // text sizes in px of the reference (never under 16 px on the page: layout.ts textPx)
 export const SIZE = { head: 26, note: 18, choice: 24 };
@@ -26,8 +26,11 @@ export function confirmLayout(
   coarse: boolean,
   lines: (str: string, px: number, width: number) => number,
 ): ConfirmLayout {
-  const u = (v: number) => lu(v * s),
-    w = u(W),
+  // on a tablet the window widens as far as its text grew past the drawing (layout.ts pageFloor), so a choice's word
+  // stays inside its button; a phone and a PC keep the reference's width
+  const wide = pageText() ? Math.max(1, textPx(SIZE.choice, s) / (SIZE.choice * s)) : 1,
+    u = (v: number) => lu(v * s),
+    w = u(W * wide),
     side = EDGE + u(12),
     inner = w - 2 * side,
     line = (size: number) => lu(LINE * textPx(size, s));

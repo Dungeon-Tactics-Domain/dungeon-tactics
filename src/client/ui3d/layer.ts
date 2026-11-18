@@ -25,7 +25,7 @@ import { getLayout, onLayout } from '../layout-mode.ts';
 import { reducedMotion } from '../motion.ts';
 import { param } from '../store.ts';
 import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
-import { type Stage, stage, textPx } from './layout.ts';
+import { type Stage, setPageFloor, stage, textPx } from './layout.ts';
 import { QUAD, QUAD_VERT, type Rgb, type Theme } from './panel.ts';
 import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
 import type { Rotate3d } from './rotate3d.ts';
@@ -220,6 +220,7 @@ export class Ui3dLayer {
     // the stage too: turning a phone over moves the notch without changing the page's size
     if (w === this.w && h === this.h && dpr === this.dpr && mode === this.mode && st.x === this.stage.x) return;
     Object.assign(this, { w, h, dpr, mode, stage: st, s: st.s, whole: stage(w, h, 'frame') });
+    setPageFloor(w, h);
     const [fx, fy] = mode === 'frame' ? [st.x, st.y] : [0, 0];
     this.inset = {
       top: 12 + sides.top + fy,

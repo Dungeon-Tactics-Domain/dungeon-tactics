@@ -4,7 +4,7 @@ import { type Dir, type Hit, neighbour, type Page, seen, step } from '../src/cli
 import { PAGES, partyPage } from '../src/client/town3d/party-view.ts';
 import { barPage, shopPage } from '../src/client/town3d/shop-view.ts';
 import { gatePage, menuPage, soonPage } from '../src/client/town3d/street-view.ts';
-import { C, G, M, P, promptSays, T, townHud } from '../src/client/town3d/town-layout.ts';
+import { C, G, M, P, promptSays, T, townFrame, townHud } from '../src/client/town3d/town-layout.ts';
 import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
 
 // The town's windows in 3D (?shop=3d, ?party=3d; Nov 17): the pages the drawing is handed, built from the saved game.
@@ -396,5 +396,25 @@ describe('3D town HUD: the layout without the DOM', () => {
     const l = townHud(3440, { top: 12, right: 452, left: 452 }, true);
     expect(l.name.x).toBe(452);
     expect(l.menu.x + l.menu.w).toBe(3440 - 452);
+  });
+});
+
+describe('3D town: the window on a tall tablet', () => {
+  it('stretches down the spare height as far as its 14 px text grew; a phone and a PC keep one scale', () => {
+    const f = (w: number, h: number) => townFrame(w, h, Math.min(w, h) >= 600 ? 14 : 0);
+    expect(f(768, 1024)).toMatchObject({ s: 0.4, sy: 0.7 }); // 20 px of the reference drawn at 14: 0.7 per px
+    expect(f(768, 1024).y).toBeCloseTo((1024 - 756) / 2, 5);
+    expect(f(1024, 768).sy).toBeCloseTo(768 / 1080, 5); // as far as the page goes
+    for (const [w, h] of [
+      [844, 390],
+      [667, 375],
+      [1152, 648],
+      [1280, 720],
+      [1280, 1024],
+      [1920, 1080],
+    ]) {
+      const { s, sy } = f(w, h);
+      expect(sy).toBe(s);
+    }
   });
 });

@@ -3,7 +3,7 @@
 // +-6 px) and widened where our screens hold more text than theirs. The whole window is the `town` region of
 // ui3d/layout.ts, centred and scaled as one. Pure numbers: no DOM, no Three.
 
-import { type Box, lu } from '../ui3d/layout.ts';
+import { type Box, lu, MIN_SCALE, pageText, SCREEN, textPx } from '../ui3d/layout.ts';
 
 // The walkable town's HUD (hud3d.ts) in px of the page, not of the reference: the town's name on the top left corner,
 // the menu button on the top right one (a finger's 44 px) and what Enter does in the middle of the top edge, taller
@@ -22,6 +22,16 @@ export function townHud(pageW: number, inset: { top: number; right: number; left
 // the HTML balloon shows only its symbol, but the 3D one writes the name, so the pill keeps only what has no balloon
 // (the walk keys): on a phone the balloon sat right under it, the same words twice (review of Nov 18, 844x390)
 export const promptSays = (line: string, balloon: string) => (line === balloon ? '' : line);
+
+// The town window on a page `w` x `h`: the reference centred, one scale `s` across. Down, a tablet under the PC's
+// smallest scale stretches it into the page's spare height (`sy`) as far as its 14 px text grew past the drawing (a
+// window's common text, 20 px of the reference; ui3d/layout.ts pageFloor), so a row still holds its line (Fernando, Nov
+// 18). A phone on its side (no page floor) and a PC (at MIN_SCALE or over) keep one scale both ways
+export function townFrame(w: number, h: number, page = pageText()) {
+  const s = Math.min(w / SCREEN.w, h / SCREEN.h),
+    sy = page && s < MIN_SCALE ? Math.min(h / SCREEN.h, textPx(20, s, 16, page) / 20) : s;
+  return { x: (w - SCREEN.w * s) / 2, y: (h - SCREEN.h * sy) / 2, s, sy };
+}
 
 // around every window
 export const T = {

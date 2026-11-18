@@ -38,7 +38,7 @@ export interface Text extends InList {
   align?: 'l' | 'c' | 'r'; // which end `x` is; left when absent
   max?: number; // shrinks to this width
   wrap?: number; // wraps at this width
-  maxH?: number; // a wrapped block shrinks to this height
+  maxH?: number; // a wrapped block shrinks to this height; with `max`, a tablet breaks a long line in two (town3d.ts)
   keys?: [Act, string][]; // a line of key hints in place of `str`: the drawing words it for the input in use (glyphs.ts hintLine)
 }
 export interface Face extends InList {
