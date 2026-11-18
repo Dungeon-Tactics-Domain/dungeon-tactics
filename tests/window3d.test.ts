@@ -1,61 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import scene from '../scripts/sandbox/bench/window3d.json';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
-import { type Act, keysText } from '../src/client/glyphs.ts';
+import { keysText } from '../src/client/glyphs.ts';
 import { keyAction } from '../src/client/keyboard.ts';
-import { toolRows } from '../src/client/tool-rows.ts';
 import { stage } from '../src/client/ui3d/layout.ts';
 import { neighbour } from '../src/client/ui3d/walk.ts';
 import { REF as NOTE, noteLayout, noteWidths } from '../src/client/window3d/note-view.ts';
 import { REF, statusLayout, valueWidth } from '../src/client/window3d/status-view.ts';
 
-// The 3D corner menu and Status window (window3d/; Nov 17): the pure parts behind the drawing. The drawing itself is
+// The 3D corner buttons and Status window (window3d/; Nov 17): the pure parts behind the drawing. The drawing itself is
 // checked on the bench (docs/sandbox.md: window3d.json)
-describe('corner menu: one list of rows for the HTML menu and the 3D one', () => {
-  const rows = toolRows();
-
-  // Fernando, Nov 18: Undo stays in the list with no step to take back, faded and dead
-  it('Undo is marked off with no step to take back, and only Undo', () => {
-    expect(
-      toolRows(false)
-        .filter((r) => r.off)
-        .map((r) => r.tool),
-    ).toEqual(['undo']);
-    expect(toolRows(true).some((r) => r.off)).toBe(false);
-    expect(toolRows(false)[0].label).toBe('Desfazer'); // the same word as the button on the screen
-  });
-
-  // Fernando, Nov 18: fullscreen in reach of a phone in the browser; an iPhone has no Fullscreen API
-  it('the fullscreen row says what a tap does, and is left out with no Fullscreen API', () => {
-    const full = (on?: boolean) => toolRows(true, on).find((r) => r.tool === 'fullscreen');
-    expect(full()).toBeUndefined();
-    expect(full(false)).toMatchObject({ label: 'Tela cheia', key: '' });
-    expect(full(true)?.label).toBe('Sair da tela cheia');
-    expect(toolRows(true, false).at(-1)?.tool).toBe('menu'); // Options stays the last row
-  });
-
-  it('has each tool once, with a name and a glyph', () => {
-    expect(new Set(rows.map((r) => r.tool)).size).toBe(rows.length);
-    for (const r of rows) expect(r.label && r.glyph, r.tool).toBeTruthy();
-  });
-
+describe('corner buttons: the keys beside them', () => {
   it('its bench scene is a valid spec', () => {
     expect(parseSpec(scene).problems).toEqual([]);
   });
 
-  it('marks only the two switches', () => {
-    expect(rows.filter((r) => r.toggle).map((r) => r.tool)).toEqual(['fast', 'fps']);
-  });
-
-  it('shows the key that really runs the row', () => {
+  // Fernando, Nov 18 night: Undo and ↺ ↻ are off on a PC by default, so the keys do it there
+  it('Z undoes and R and Shift+R turn the camera', () => {
     const run = (key: string, shiftKey = false) => keyAction({ key, shiftKey } as KeyboardEvent);
-    const key = (tool: string) => keysText(rows.find((r) => r.tool === tool)!.key as Act, 'keyboard')!;
-    expect(run(key('undo').toLowerCase())).toEqual({ k: 'undo' });
-    expect(run(key('recenter').toLowerCase())).toEqual({ k: 'recenter' });
-    expect(run(key('menu').toLowerCase())).toEqual({ k: 'help' });
-    expect(run(key('rotateRight').toLowerCase())).toEqual({ k: 'rotate', dir: 1 });
-    expect(key('rotateLeft')).toBe('⇧R');
+    expect(run('z')).toEqual({ k: 'undo' });
+    expect(run('r')).toEqual({ k: 'rotate', dir: 1 });
     expect(run('R', true)).toEqual({ k: 'rotate', dir: -1 });
+    expect([keysText('undo', 'keyboard'), keysText('rotateLeft', 'keyboard')]).toEqual(['Z', '⇧R']);
   });
 });
 

@@ -1,81 +1,56 @@
-// Where the 3D corner menu puts its buttons and its open list (tools3d.ts), with no DOM: the menu button on the page's
-// top right corner with Back and Undo to its left, and the list hanging under them: a head, then one row per tool, as
-// much of them as the page's height holds (the rest scrolls). The unseen HTML menu under the drawing is seated from
-// these same numbers. Pure and tested (tests/tools-layout.test.ts) against what the browser measured before the numbers
-// moved here.
-import { type Box, lu } from '../ui3d/layout.ts';
+// Where the corner buttons sit (tools3d.ts), with no DOM: the gear on the page's top right corner with Back and Undo to
+// its left, and the two camera buttons (↺ ↻) on the top left, right after the turn list's column, where nothing else
+// lives at that height on any page (Fernando, Nov 18 night: the ☰ list gave way to these). The town has no list: its
+// pair sits beside the gear. The unseen HTML buttons under the drawing are seated from these same numbers. Pure and
+// tested (tests/tools-layout.test.ts).
+import { type Box, lu, place, REGIONS, type Stage } from '../ui3d/layout.ts';
 
-const TAP = 44; // a finger's target (design system, section 8): no button or row is ever smaller
+const TAP = 44; // a finger's target (design system, section 8): no button is ever smaller
 const GAP = 8; // between the buttons
-const PRESS = 2; // the menu button sinks while its list is open
-const CUE = 24; // the list's foot while rows wait under it: one 16 px line of text and its margin
+
+export type Tool = 'back' | 'undo' | 'left' | 'right' | 'gear';
+
+// Which buttons show: the gear always; Undo and the camera pair while the screen buttons are on (screen-buttons.ts: a
+// finger's default, an Options switch on a PC); Back only for a finger while there is a screen to go back to (Esc and
+// the right button go back on a PC). style.css .kbd .tools .back hides the same one, so no unseen button takes a click
+export const toolShown = (tool: Tool, keys: boolean, hidden: boolean, buttons: boolean) =>
+  tool === 'gear' || (tool === 'back' ? !(keys || hidden) : buttons);
+
+const buttonSize = (s: number) => Math.max(TAP, lu(56 * s));
+// a button's height, and where the row on the right ends at the bottom with its gap: what the Height corner keeps
+// under (hints3d.ts; Fernando, Nov 18: on a phone it sat under the menu button and Undo)
+export const toolsFoot = (s: number, top: number) => top + buttonSize(s) + GAP;
 
 export interface ToolsSpec {
   pageW: number;
-  pageH: number;
-  s: number; // one reference px on the page
-  inset: { top: number; right: number; bottom: number }; // a panel's margin to the page's edges (ui3d/layer.ts)
-  buttons: number; // the ones shown: the menu button, and Back and Undo to its left while they show
-  // each button's drawn width, left to right (Back and Undo carry their word, Nov 18); a button is never narrower than
-  // it is tall
-  widths?: number[];
-  rows: number; // the tools on the list
-  open: boolean;
-  scroll: number; // of the open list, px
+  stage: Stage; // where the regions are laid out (ui3d/layer.ts)
+  inset: { top: number; right: number }; // a panel's margin to the page's edges
+  // the row on the right, left to right, gear last: each button's drawn width (Back and Undo carry their word); a
+  // button is never narrower than it is tall
+  row: number[];
+  pair: 'list' | 'row' | 'none'; // the camera pair after the turn list, at the row's left end, or not shown
 }
-
-// a button's height, and where the row of buttons ends at the bottom with its gap: what the Height corner keeps under
-// (hints3d.ts; Fernando, Nov 18: on a phone it sat under the menu button and Undo)
-// Which corner buttons show: the menu button and Undo always (Undo faded with no step; Fernando, Nov 18: on the PC with
-// a mouse too), Back only for a finger while there is a screen to go back to (Esc and the right button go back on a PC).
-// style.css .kbd .tools .back hides the same one, so no unseen button takes a click
-export const toolShown = (tool: 'back' | 'undo' | 'menu', keys: boolean, hidden: boolean) =>
-  tool !== 'back' || !(keys || hidden);
-
-const buttonSize = (s: number) => Math.max(TAP, lu(56 * s));
-export const toolsFoot = (s: number, top: number) => top + buttonSize(s) + GAP;
 
 export function toolsLayout(q: ToolsSpec) {
-  const u = (v: number) => lu(v * q.s),
-    size = buttonSize(q.s),
-    right = q.pageW - q.inset.right,
+  const size = buttonSize(q.stage.s),
     top = q.inset.top,
-    // left to right, the menu button last (on the corner)
-    wide = (i: number) => Math.max(size, q.widths?.[i] ?? 0),
-    buttons: Box[] = [];
+    row: Box[] = [],
+    widths = [...(q.pair === 'row' ? [size, size] : []), ...q.row];
   // right to left, from the corner
-  for (let i = q.buttons - 1, x = right; i >= 0; i--) {
-    const w = wide(i);
+  for (let i = widths.length - 1, x = q.pageW - q.inset.right; i >= 0; i--) {
+    const w = Math.max(size, widths[i]);
     x -= w;
-    buttons.unshift({ x, y: top + (i === q.buttons - 1 && q.open ? PRESS : 0), w, h: size });
+    row.unshift({ x, y: top, w, h: size });
     x -= GAP;
   }
-  const w = Math.max(300, u(430)),
-    drop = size + u(10),
-    head = Math.floor(u(42)), // whole px, as the browser draws a frame
-    rowH = Math.max(TAP, u(52)),
-    full = head + q.rows * rowH,
-    maxH = q.pageH - top - drop - q.inset.bottom,
-    h = Math.min(full, maxH),
-    below = full - q.scroll > h + 1;
-  return {
-    buttons,
-    size,
-    list: { x: right - w, y: top + drop, w, h },
-    drop, // from the buttons' top down to the list's
-    head,
-    rowH,
-    maxH,
-    more: Math.max(0, full - h), // how far the list scrolls
-    // rows hidden under the list's foot where it is scrolled: the foot says so (Nov 18: the arrow on the head went
-    // unseen on a phone, and "FPS counter" and "Options and help" were found only by chance)
-    below,
-    cue: below ? CUE : 0,
-    // each row from the list's top left, where it is scrolled
-    rows: Array.from({ length: q.rows }, (_, i): Box => ({ x: 0, y: head + i * rowH - q.scroll, w, h: rowH })),
-  };
+  const list = place(REGIONS.turn, q.stage),
+    at = list.x + list.w + GAP;
+  const pair =
+    q.pair === 'list'
+      ? [0, 1].map((i): Box => ({ x: at + i * (size + GAP), y: top, w: size, h: size }))
+      : q.pair === 'row'
+        ? row.splice(0, 2)
+        : [];
+  return { size, row, pair };
 }
 export type ToolsLayout = ReturnType<typeof toolsLayout>;
-
-// a row shows only while the whole of it is in the list, under the head and over the foot's cue
-export const rowSeen = (l: ToolsLayout, r: Box) => r.y >= l.head - 1 && r.y + r.h <= l.list.h - l.cue + 1;

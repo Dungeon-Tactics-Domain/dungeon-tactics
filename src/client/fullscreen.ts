@@ -4,7 +4,7 @@
 import { t } from './i18n.ts';
 
 export const fullscreenOn = () => !!document.fullscreenElement;
-// in fullscreen now, or undefined where the browser has no Fullscreen API (what tool-rows.ts takes)
+// in fullscreen now, or undefined where the browser has no Fullscreen API
 export const fullscreenNow = () => (document.fullscreenEnabled ? fullscreenOn() : undefined);
 // what the shortcut says: what a tap does now
 export const fullscreenLabel = (on: boolean) =>

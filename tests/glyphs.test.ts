@@ -15,7 +15,6 @@ import {
   shownFor,
 } from '../src/client/glyphs.ts';
 import { type KeyAction, keyAction, keyHelp } from '../src/client/keyboard.ts';
-import { toolRows } from '../src/client/tool-rows.ts';
 
 // The key hints' rules (glyphs.ts; Fernando, Nov 17: gamepad icons in place of the keys). The tests run in Portuguese
 
@@ -168,10 +167,5 @@ describe('the screens read the table', () => {
     ]);
     expect(pad.find(([k]) => k === 'A')?.[1]).toContain('o 2º A age');
     expect(pad.at(-1)?.[1]).toContain('B · Menu abre o menu da cidade');
-  });
-  it("the corner menu's rows name actions of the table", () => {
-    const keys = (shown: 'keyboard' | 'xbox') => toolRows().map((r) => r.key && keysText(r.key, shown));
-    expect(keys('keyboard')).toEqual(['Z', '⇧R', 'R', 'F', '', 'F3', 'H']);
-    expect(keys('xbox')).toEqual(['View', 'LB', 'RB', null, '', null, 'Menu']);
   });
 });

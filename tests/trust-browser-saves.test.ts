@@ -4,6 +4,7 @@ import { parseSetup } from '../src/client/dev-roster.ts';
 import { DEPLOY_MAX, GROUP_MAX, parseGroup } from '../src/client/group.ts';
 import { pickLang } from '../src/client/i18n.ts';
 import { parseManifest, summary } from '../src/client/saves.ts';
+import { parseButtons } from '../src/client/screen-buttons.ts';
 import { parseSound } from '../src/client/sound.ts';
 import { migrate, store } from '../src/client/store.ts';
 import { parseBest } from '../src/client/survival.ts';
@@ -56,6 +57,7 @@ const PARSERS: [string, (raw: unknown) => unknown][] = [
   ['parseSound', parseSound],
   ['parseBest', parseBest],
   ['parseTownGrid', parseTownGrid],
+  ['parseButtons', parseButtons],
 ];
 
 describe('every parse* survives the hostile table', () => {

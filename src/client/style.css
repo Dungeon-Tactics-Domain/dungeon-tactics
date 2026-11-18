@@ -532,25 +532,22 @@ button[hidden],
   padding: 8px 28px;
   font: 400 var(--fs-lg) / 1 var(--font-title);
 }
-/* camera tools and the menu: top right corner; the performance counter right below */
+/* the gear, Undo and ↺ ↻ (hud-tools.ts): top right corner; the performance counter right below */
 .tools {
   position: absolute;
   top: var(--inset-t);
   right: var(--inset-r);
   pointer-events: auto;
   z-index: 2;
-  /* Back (hud.ts back, Nov 16, Fernando) to the left of the menu button, only while there is something to go back to: the
-     same cancel as Esc, B and the right button, for a finger */
+  /* Back (hud.ts back, Nov 16, Fernando) to the left of Undo and the gear, only while there is something to go back to:
+     the same cancel as Esc, B and the right button, for a finger */
   display: flex;
   gap: var(--gap);
-} /* the open list goes over the counter and the command menu */
-/* the back button is for fingers; with a keyboard or mouse Esc and the right button already go back. Undo shows on
-   the PC too (Fernando, Nov 18), the same as its drawing (window3d/tools-layout.ts toolShown) */
+}
+/* the back button is for fingers; with a keyboard or mouse Esc and the right button already go back. Undo and ↺ ↻
+   follow the screen buttons switch (screen-buttons.ts), the same as their drawing (window3d/tools-layout.ts toolShown) */
 .kbd .tools .back {
   display: none;
-}
-.tools .burger[aria-expanded="true"] {
-  transform: translateY(2px);
 }
 .burger-bars,
 .burger-bars::before,
@@ -570,36 +567,6 @@ button[hidden],
 }
 .burger-bars::after {
   top: 7px;
-}
-/* the list opens below the button, right-aligned, with the same rows as the command menu */
-.tools-menu {
-  top: calc(var(--tap) + 8px);
-  right: 0;
-  width: 360px; /* "Show the whole map" pushed its key out at the 20 px size */
-  padding: 6px;
-  /* a phone lying down (844x390): the 7 rows at 44 px are 344 px and ran 18 px under the screen; the list scrolls there */
-  max-height: calc(100dvh - var(--inset-t) - var(--tap) - 8px - var(--inset-b));
-  overflow-y: auto;
-  touch-action: pan-y;
-  transform-origin: top;
-}
-.tool-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
-  margin-right: 16px;
-}
-.tool-glyph {
-  width: 22px;
-  display: inline-flex;
-  justify-content: center;
-  font-size: var(--fs-lg);
-}
-/* fast battle on: shows ✓ and the text "on", not just color */
-.tools-menu [aria-checked="true"] .tool-label::after {
-  content: "✓";
-  font-weight: 700;
 }
 /* the turn-the-phone notice (rotate-note.ts): only on a touch phone held upright, over every screen (Nov 18: a phone
    plays on its side only; a tablet, wider than 600 px, is never asked). The query is rotate-note.ts ROTATE; once a 3D
@@ -1567,10 +1534,6 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
 .hud.bar3d .strikes {
   display: none;
 }
-/* the open corner list sits over the 3D ability sheet's corner: the 3D menu steps aside while both are open */
-.hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
-  visibility: hidden;
-}
 .hud.bar3d .active-slot {
   left: calc(var(--lay-x) + 100 * var(--lay-u));
   bottom: calc(var(--lay-y) + 48 * var(--lay-u));
@@ -1673,31 +1636,9 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   }
 }
 
-/* corner menu (tools3d): the menu button, Back and the open list take the drawing's sizes, in px of the reference: a
-   head like the command menu's (42), rows touching each other, never under the 44 px touch target */
+/* corner buttons (tools3d): the HTML buttons stay unseen under their drawn plates, which seat them (tools3d.ts) */
 .hud.tools3d .tools {
   opacity: 0;
-}
-.hud.tools3d .tools .burger,
-.hud.tools3d .tools .back,
-.hud.tools3d .tools .undo {
-  width: max(var(--tap), 56 * var(--lay-u));
-  height: max(var(--tap), 56 * var(--lay-u));
-}
-.hud.tools3d .tools-menu {
-  top: calc(max(var(--tap), 56 * var(--lay-u)) + 10 * var(--lay-u));
-  width: max(300px, 430 * var(--lay-u));
-  padding: 0;
-  border: 0 solid transparent;
-  border-top-width: calc(42 * var(--lay-u)); /* the head: a border, so it stays while the rows scroll */
-  max-height: calc(100dvh - var(--inset-t) - max(var(--tap), 56 * var(--lay-u)) - 10 * var(--lay-u) - var(--inset-b));
-}
-.hud.tools3d .panel.tools-menu .item {
-  min-height: max(var(--tap), 52 * var(--lay-u));
-  border-radius: 0;
-}
-.hud.tools3d .tools-menu .item + .item {
-  margin-top: 0;
 }
 
 /* Status (status3d): the window sits over the drawn sheet, unseen, with the ✕ on its top right corner */

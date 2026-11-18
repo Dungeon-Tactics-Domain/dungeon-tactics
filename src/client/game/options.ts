@@ -1,7 +1,6 @@
-// Options window, opened from the battle's corner menu (H): the settings in four categories (Game, Sound, Display, Help;
-// options-list.ts), the tile marks and the controls in windows over it, plus restart, home and developer at the foot.
-// It reads and changes the battle only through OptionsContext.
-import type { Scenario } from '../../shared/battle/scenarios.ts';
+// Options window, opened from the gear on the battle's and the town's corner (H): the settings in four categories
+// (Game, Sound, Display, Help; options-list.ts), the tile marks and the controls in windows over it, plus restart, home
+// and developer at the foot (the town: developer only). It reads and changes the battle only through OptionsContext.
 import { choice, secondTap } from '../dialog.ts';
 import { hintLine } from '../glyphs.ts';
 import { KEYS } from '../hud-pieces.ts';
@@ -9,7 +8,7 @@ import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { keysShown } from '../key-hints.ts';
 import { looks3d } from '../looks3d.ts';
-import { type Option, optionRow } from '../option-row.ts';
+import { goRow, type Option, optionRow } from '../option-row.ts';
 import { store } from '../store.ts';
 import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import { goHome, homeLabel } from './crawl.ts';
@@ -18,11 +17,16 @@ import { settings, townGrid } from './options-list.ts';
 import { devMenu } from './title.ts';
 
 export interface OptionsContext {
-  room: boolean; // an expedition room: leaving it loses the expedition (crawl.ts leftRoom)
-  scenario: Scenario;
-  busy: boolean; // animation or enemy turn running: restart is disabled
   relayout: () => void; // the interface layout changed: what is not laid out by CSS fits again
-  restart: () => void;
+  // opened from a battle (not the town): its own rows and actions
+  battle?: {
+    room: boolean; // an expedition room: leaving it loses the expedition (crawl.ts leftRoom)
+    busy: boolean; // animation or enemy turn running: restart is disabled
+    restart: () => void;
+    fast: () => boolean; // the 3x faster battle
+    setFast: (on: boolean) => void;
+    fps: () => void; // the performance counter's switch (F3)
+  };
 }
 
 // The walkable town's debug grid (Nov 16, Fernando: off by default): here and in the town menu, since the town has no Options
@@ -71,8 +75,8 @@ export function optionsMenu(o: OptionsContext) {
     ...settings(o).map((g) => ({
       title: g.title,
       help: g.help,
-      items: g.rows.map((option): OptionsItem => ({ option })),
-      rows: g.rows.map((r) => optionRow(r, describe)),
+      items: g.rows.map((r): OptionsItem => ('run' in r ? { link: r.link } : { option: r })),
+      rows: g.rows.map((r) => ('run' in r ? goRow(r, describe) : optionRow(r, describe))),
     })),
     {
       title: t('Ajuda', 'Help'),
@@ -112,26 +116,7 @@ export function optionsMenu(o: OptionsContext) {
     list: el('div', { class: 'camp-list opt-list' }, ...sections.flatMap((s) => [el('h3', {}, s.title), ...s.rows])),
     help,
     actions: [
-      // during the animation or the enemy turn the loop is still running the old battle
-      // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
-      // a disabled button says why in its own text (design system, Disabled)
-      button(
-        'secondary',
-        o.busy
-          ? t('Reiniciar batalha: espere a sua vez', 'Restart battle: wait for your turn')
-          : t('Reiniciar batalha', 'Restart battle'),
-        (e: Event) => {
-          if (!secondTap(e, t('Confirmar: reiniciar a batalha', 'Confirm: restart the battle'))) return;
-          d.close();
-          o.restart();
-        },
-        { disabled: o.busy },
-      ),
-      // home: the town (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
-      button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
-        if (o.room && !secondTap(e, t('Confirmar: perde a expedição', 'Confirm: the expedition is lost'))) return;
-        goHome();
-      }),
+      ...(o.battle ? battleActions(o.battle, () => d.close()) : []),
       button('secondary', t('Desenvolvedor', 'Developer'), () => {
         d.close();
         devMenu();
@@ -140,4 +125,30 @@ export function optionsMenu(o: OptionsContext) {
   };
   // drawn by flow3d/options3d.ts, which puts the cursor on its first category; nothing once the context is lost
   const d = looks3d.options?.(board) ?? { close() {} };
+}
+
+// restart and home, a battle's only
+function battleActions(o: NonNullable<OptionsContext['battle']>, close: () => void) {
+  return [
+    // during the animation or the enemy turn the loop is still running the old battle
+    // the 1st tap only asks: restart erases the saved battle and cannot be undone (mobile audit of Oct 25)
+    // a disabled button says why in its own text (design system, Disabled)
+    button(
+      'secondary',
+      o.busy
+        ? t('Reiniciar batalha: espere a sua vez', 'Restart battle: wait for your turn')
+        : t('Reiniciar batalha', 'Restart battle'),
+      (e: Event) => {
+        if (!secondTap(e, t('Confirmar: reiniciar a batalha', 'Confirm: restart the battle'))) return;
+        close();
+        o.restart();
+      },
+      { disabled: o.busy },
+    ),
+    // home: the town (crawl.ts homeScreen); from a room the 2nd tap confirms losing the expedition
+    button('secondary', o.room ? t('Sair da sala', 'Leave the room') : homeLabel(), (e: Event) => {
+      if (o.room && !secondTap(e, t('Confirmar: perde a expedição', 'Confirm: the expedition is lost'))) return;
+      goHome();
+    }),
+  ];
 }

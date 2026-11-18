@@ -177,8 +177,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/dev3d.ts` — Dev3d: the developer menu in 3D: the cast's form on a parchment sheet, over one real unseen control per field; any page size.
 - `src/client/flow3d/dev-view.ts` — the cast as the 3D developer menu's fields (devFields), what an edit makes of it (devEdit, readSetup) and where the page's parts sit (devLayout); pure.
 - `src/client/flow3d/field-draw.ts` — what a 3D form draws field by field (FieldArt): wells pressed into the sheet, raised plates for arrows and buttons, the typed text with its selection and caret.
-- `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D: the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu, which it seats and whose buttons keep the input.
-- `src/client/window3d/tools-layout.ts` — toolsLayout: the corner menu's buttons, open list, rows and scroll with no DOM; pure.
+- `src/client/window3d/tools3d.ts` — Tools3d: the corner buttons in 3D (gear, Back, Undo, ↺ ↻) on dark plates with a gold edge, drawn over the unseen HTML buttons, which it seats; battle and town.
+- `src/client/window3d/tools-layout.ts` — toolsLayout: where the gear row and the ↺ ↻ pair sit, and which buttons show, with no DOM; pure.
 - `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D: a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
 - `src/client/window3d/talk3d.ts` — Talk3d: the speech box and the boxless opening narration drawn in 3D from talk-layout's numbers, the face too (talk-face.ts), the unseen box of talk.ts seated under it, in town and in battle.
 - `src/client/window3d/talk-face.ts` — TalkFace: the speaker's painted face (or portrait) in the 3D speech box, on the frame its mouth is on, with the new speaker's hop; hop and faceFit pure.
@@ -190,8 +190,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), drawn by the 3D look (window3d/note3d.ts).
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer, and the screens that take their own window (Options, title, Status, speech box...); types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
-- `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, fast battle, Options).
-- `src/client/tool-rows.ts` — the corner menu's rows (tool, glyph, name, key, switch) for the HTML menu and the 3D one; pure.
+- `src/client/hud-tools.ts` — gearButtons and CornerButtons: the gear (Options), ↺ ↻ and Undo on the screen, battle and town (no ☰ menu since Nov 18 night).
+- `src/client/screen-buttons.ts` — the Undo and camera buttons switch: on for a finger, off on a PC, kept by Options (dt:screen-buttons).
 - `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) , drawn by the 3D look (window3d/status3d.ts).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
