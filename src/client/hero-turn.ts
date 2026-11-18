@@ -187,7 +187,7 @@ export class HeroTurn {
     this.game.update(hoverTile(b, selectMode(b, this.ui, { k: 'move' }), this.cursor));
   }
 
-  // ?menu3d: the mouse over a row of the open list moves the focus there, as the arrows would (never onto a greyed row)
+  // the mouse (or Tab) on a 3D menu row moves the focus there, as the arrows would (never onto a greyed row)
   hoverRow(list: 'menu' | 'abilities', index: number) {
     const b = this.game.battle,
       s = this.screen;

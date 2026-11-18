@@ -1,4 +1,4 @@
-// The title drawn in 3D (localhost ?title=3d or the ?ui=3d preset; Fernando, Nov 17), a screen of the shared 3D layer
+// The title drawn in 3D (Fernando, Nov 17), a screen of the shared 3D layer
 // (ui3d/layer.ts), in the structure of FFT: The Ivalice Chronicles' title (labs refs/fft-ivalice/50): the name over
 // the turning map, a short plain list of commands with the glove on the one in focus, the keys at the foot.
 //   State and input: the title's own window (game/title.ts) stays as it is, unseen, with its real buttons moved under

@@ -7,7 +7,7 @@ import { gatePage, menuPage, soonPage } from '../src/client/town3d/street-view.t
 import { C, G, M, P, promptSays, T, townHud } from '../src/client/town3d/town-layout.ts';
 import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
 
-// The town's windows in 3D (?shop=3d, ?party=3d; Nov 17): the pages the drawing is handed, built from the saved game.
+// The town's windows in 3D (Nov 17): the pages the drawing is handed, built from the saved game.
 // The drawing itself is checked on the bench (docs/media/ui3d-cidade-grupo)
 const hit = (p: Page, id: string) => p.hits.find((h) => h.id === id) as Hit;
 const ids = (p: Page, kind: string) => p.hits.filter((h) => h.id.startsWith(kind)).map((h) => h.id);

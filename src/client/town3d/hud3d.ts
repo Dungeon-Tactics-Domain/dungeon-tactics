@@ -1,4 +1,4 @@
-// The walkable town's HUD drawn in 3D (?townhud=3d, the default), a screen of the town's 3D layer in the look of the
+// The walkable town's HUD drawn in 3D, a screen of the town's 3D layer in the look of the
 // battle's 3D HUD (hints3d/, window3d/tools3d.ts; the reference has no walkable town): the town's name on a dark slate
 // sign top left (square, unframed: not a button), what Enter does on a pill over what it acts on (the pill top centre only with nothing in reach: the
 // walk keys), and the menu button (3 bars).

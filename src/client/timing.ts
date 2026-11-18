@@ -21,7 +21,7 @@ export const TIMING = {
   crash: 320, // 220: crash and fall
   push: 260, // 140: one tile pushed
   die: 1000, // 700: fall of whoever dies
-  float: 1500, // 1200: damage number pops, holds to be read and fades (the same value is in the CSS, .float's pop animation)
+  float: 1500, // 1200: damage number pops, holds to be read and fades (effects3d.ts paces the 3D number's pop by it)
   enemyAfter: 450, // 250: breather between one enemy and the next
   // weight of a blow (Fernando's grill of Nov 15, the Mechanics lab's peso.json; distances in hit-weight.ts)
   hitStop: 70, // 110: everything stops at the impact, the target flashes white; this is what gives the hit weight

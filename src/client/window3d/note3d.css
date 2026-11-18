@@ -1,4 +1,4 @@
-/* ---- 3D notice window (?note=3d; src/client/window3d/note3d.ts) ---- */
+/* ---- 3D notice window (src/client/window3d/note3d.ts) ---- */
 /* The sheet is drawn on the 3D layer. Its window (dialog.ts) sits over the drawn sheet, unseen (note3d.ts gives it the
    sheet's box and each button its plaque's): Enter, Esc, the pad, a tap, a tap outside and the ✕ on the top right
    corner stay the window's, and it holds the notice as real text for the screen reader. Unseen by opacity, never by

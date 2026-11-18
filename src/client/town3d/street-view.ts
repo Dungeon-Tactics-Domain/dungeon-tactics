@@ -1,4 +1,4 @@
-// The pages of the 3D windows the street opens (?townmenu=3d; street.ts runs them): the town menu, the dungeon gate's
+// The pages of the 3D windows the street opens (street.ts runs them): the town menu, the dungeon gate's
 // quest and what a place still to come says. Built from what the caller read of the saved game; pure, tested in
 // tests/town3d.test.ts.
 import { type Act, keysText, type Shown } from '../glyphs.ts';

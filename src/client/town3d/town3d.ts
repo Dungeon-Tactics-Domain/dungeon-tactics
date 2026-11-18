@@ -1,4 +1,4 @@
-// The town's windows drawn in 3D (Shop, Tavern, Party; ?shop=3d, ?party=3d, the default; Fernando, Nov 17), one
+// The town's windows drawn in 3D (Shop, Tavern, Party; Fernando, Nov 17), one
 // screen of the shared 3D layer (ui3d/layer.ts) for all of them, after FFT: The Ivalice Chronicles' menus: the town
 // darkened, parchment panels, dark plaques down the left edge and the pointing glove.
 //   State: nothing here decides anything. A window hands it a page (page.ts: what to draw and the buttons, in px of

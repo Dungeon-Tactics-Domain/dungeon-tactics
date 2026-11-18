@@ -51,7 +51,7 @@
   --fs-title: 28px;
   --fs-display: 38px;
   --orb-gold: #c8a040; /* the loading bar (accent-color) */
-  /* 3D interface kit (src/client/ui3d; localhost ?menu3d and ?turn3d, Nov 16): the parchment its shaders paint and the ink
+  /* 3D interface kit (src/client/ui3d, Nov 16): the parchment its shaders paint and the ink
      of its text, measured on FFT: The Ivalice Chronicles' menus. Read once by ui3d/layer.ts, hex only. Contrast (computed on the
      drawn colours): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the title band; soft ink 5.7:1 on the rows and
      4.7:1 on the head (never on the title band, 3.6:1); the disabled ink (1.9:1) is the faded label only, its reason
@@ -64,9 +64,9 @@
   --ui3d-ink: #474129;
   --ui3d-ink-soft: #5b5440;
   --ui3d-ink-off: #a9a28e;
-  /* a serif close to the reference's, from the fonts the system already has (no font file for a test behind a flag) */
+  /* a serif close to the reference's, from the fonts the system already has (no font file for it) */
   --font-ui3d: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  /* the 3D battle result (?result=3d), measured on the reference's victory screen (labs refs/fft-ivalice/73): light
+  /* the 3D battle result (result3d/), measured on the reference's victory screen (labs refs/fft-ivalice/73): light
      text on the darkened battle. `lost` is the defeat's title, a faded red (Nov 18: no blue; 6.2:1 on the defeat's
      veil over a white sky, 7.3:1 on the bare veil); `soft` is `text` dimmed for labels */
   --ui3d-result-title: #fdebb4;
@@ -391,7 +391,7 @@ button[hidden],
   font-size: var(--fs);
 }
 /* `frame`: the interface in a centred 16:9 frame, scaled to fit. The HTML panels keep their size and move in with the
-   frame through their margins; the pieces laid out on the reference (3D, ?menu=css) also take its scale */
+   frame through their margins; the 3D pieces laid out on the reference also take its scale */
 :root[data-layout="frame"] {
   --lay-u: min(100vw / 1920, 100vh / 1080);
   --lay-x: calc((100vw - 1920 * var(--lay-u)) / 2);
@@ -1942,8 +1942,8 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
 
 /* ---- Loading cover (loading.ts; Fernando, Nov 18) ---- */
 /* One screen over the whole page, the page's own colour, until the interface under it is built and drawn: nothing shows
-   half made. The line and the bar are the screen with ?ui=html or no WebGL; drawn in 3D (flow3d/loading3d.ts) they
-   stay under the drawing, unseen, for the screen reader */
+   half made. Drawn in 3D (flow3d/loading3d.ts), the line and the bar stay under the drawing, unseen, for the screen
+   reader; they are the screen only when the load fails before the 3D line draws (no WebGL shows no3d.ts) */
 .loading-cover {
   position: fixed;
   inset: 0;

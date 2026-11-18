@@ -1,4 +1,4 @@
-// The windows the title and Options open, drawn in 3D (localhost ?sheets=3d, the default; Fernando, Nov 17: what was
+// The windows the title and Options open, drawn in 3D (Fernando, Nov 17: what was
 // left in HTML outside the battle): the saved games, quick battle, how to play, credits, the tile marks and the controls,
 // one screen of the shared 3D layer (ui3d/layer.ts) for all of them. FFT: The Ivalice
 // Chronicles' captures have no counterpart for these, so the look is the game's own 3D screens': the Options' head, a

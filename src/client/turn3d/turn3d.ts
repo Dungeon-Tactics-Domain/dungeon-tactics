@@ -1,4 +1,4 @@
-// The turn list drawn in 3D (localhost ?turn3d; Fernando's request, Nov 16: the combat timeline of FFT The Ivalice
+// The turn list drawn in 3D (Fernando's request, Nov 16: the combat timeline of FFT The Ivalice
 // Chronicles rebuilt in Three.js), a screen of the shared 3D layer (ui3d/layer.ts). One quad per row: a framed card with
 // the unit's face on its side's colour, the life bar under it and the order number beside it, 1 at the bottom and
 // counting up, like the reference (card.ts holds the shader).

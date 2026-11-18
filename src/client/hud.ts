@@ -45,7 +45,7 @@ export interface HudActions {
   answer(yes: boolean): void; // the "Execute?" preview: Confirm or Back
   lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
   page(dir: 1 | -1): void; // the ability sheet's arrows (menu3d/)
-  hover(list: 'menu' | 'abilities', index: number): void; // ?menu3d: the mouse over a row moves the focus there
+  hover(list: 'menu' | 'abilities', index: number): void; // the mouse (or Tab) over a 3D menu row moves the focus there
   rotate(dir: 1 | -1): void;
   recenter(): void;
   pixel(): void;

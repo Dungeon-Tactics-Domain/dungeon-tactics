@@ -1,4 +1,4 @@
-// The speech box drawn in 3D (?talk=3d, the default), a screen of the 3D layer of the town and of the battle alike,
+// The speech box drawn in 3D, a screen of the 3D layer of the town and of the battle alike,
 // after the dialogue of FFT: The Ivalice Chronicles (labs refs/fft-ivalice/66 to 68): a parchment box with the
 // speaker's name on a dark plaque over its top left corner, the words in the paper's ink, the ▼ when the sentence is
 // out. The opening narration (`dark`) has no box: the page goes to night under the Beacon's blue glow, which breathes

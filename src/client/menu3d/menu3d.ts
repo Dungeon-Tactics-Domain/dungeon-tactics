@@ -1,4 +1,4 @@
-// The command menu drawn in 3D (localhost ?menu3d or ?menu3d=pixel, or `menu3d` in a sandbox spec; Fernando, Nov 16), a
+// The command menu drawn in 3D (Fernando, Nov 16; through the pixel filter with ?pixel=1 or a spec's `uiPixel`), a
 // screen of the shared 3D layer (ui3d/layer.ts): the menu, the abilities submenu that opens over it as a cascade, the
 // pointing glove and the ability sheet, on the reference's places (menu-layout.ts); art, text and models are our own.
 //   State: nothing here decides anything. The HUD hands it each turn screen; menu-view.ts turns that into what to show

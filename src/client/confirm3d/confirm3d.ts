@@ -1,4 +1,4 @@
-// The "Execute?" window drawn in 3D (localhost ?confirm=3d or the ?ui=3d preset; Fernando, Nov 16: the strike's
+// The "Execute?" window drawn in 3D (Fernando, Nov 16: the strike's
 // confirmation in the look of the 3D battle, beside the character as today), a screen of the shared 3D layer
 // (ui3d/layer.ts): a dark slate box like the banner's pill, the title, the notes (what it spends, the charge, a counter
 // owed) and the two choices, the one in focus lit. The strike's numbers stay on the preview plate (bar3d/), which shows

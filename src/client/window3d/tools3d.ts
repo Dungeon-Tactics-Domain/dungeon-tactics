@@ -1,4 +1,4 @@
-// The battle HUD's corner menu drawn in 3D (localhost ?tools=3d or the ?ui=3d preset; Fernando, Nov 17: every piece of
+// The battle HUD's corner menu drawn in 3D (Fernando, Nov 17: every piece of
 // the interface in the 3D look, compared with FFT The Ivalice Chronicles), a screen of the shared 3D layer
 // (ui3d/layer.ts): the menu button (3 bars) and the Back button as dark slate plates like the banner's pill, and the
 // open list as a parchment panel like the command menu's (the reference has no corner menu; its System Menu is a hint

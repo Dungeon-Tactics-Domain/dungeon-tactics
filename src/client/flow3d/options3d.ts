@@ -1,4 +1,4 @@
-// Options drawn in 3D (localhost ?options=3d or the ?ui=3d preset; Fernando, Nov 17: every piece of the interface in the
+// Options drawn in 3D (Fernando, Nov 17: every piece of the interface in the
 // 3D look, beside its FFT counterpart), a screen of the shared 3D layer (ui3d/layer.ts): the battle darkened, the title
 // over a hairline and, since Nov 18 (Fernando), three columns: the categories, the open category's rows with the glove
 // on the one in focus and each value drawn as what it is (options-row.ts), and what the option in focus does. The

@@ -1,4 +1,4 @@
-// The expedition map drawn in 3D (?map=3d, the default; Fernando, Nov 17), a screen of the town's 3D layer, in the
+// The expedition map drawn in 3D (Fernando, Nov 17), a screen of the town's 3D layer, in the
 // look of the town's 3D windows (town3d.ts: the town darkened, parchment, dark plaques down the left edge, the glove)
 // and after FFT: The Ivalice Chronicles' world map (labs refs/fft-ivalice/05-mapa): the whole descent on one sheet,
 // the places as seals joined by their ways, the picked place's text beside it.

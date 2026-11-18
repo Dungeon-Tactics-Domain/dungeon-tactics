@@ -1,7 +1,7 @@
 // Low-poly icons of the 3D UI kit (ui3d/; Fernando, Nov 16: low-poly icons, pixel filter on demand): the builder that
 // merges boxes, cones and cylinders into one geometry with a colour per part, the counted cache of built models, and the
 // material that shades them flat in a few tone steps. The pixel-art look comes from the blocky shapes and the short ramp;
-// ?menu3d=pixel adds the filter on top (pixel.ts). A model fits a cube of side 1 around the origin and faces +z.
+// ?pixel=1 adds the filter on top (pixel.ts). A model fits a cube of side 1 around the origin and faces +z.
 import {
   BackSide,
   BoxGeometry,

@@ -1,4 +1,4 @@
-// The battle's Status window drawn in 3D (localhost ?status=3d or the ?ui=3d preset; Fernando, Nov 17: every piece of
+// The battle's Status window drawn in 3D (Fernando, Nov 17: every piece of
 // the interface in the 3D look, compared with FFT The Ivalice Chronicles), a screen of the shared 3D layer
 // (ui3d/layer.ts), read the way the reference shows a unit (labs refs/fft-ivalice/14-ficha.jpg): the battle darkened
 // and the rest of the HUD away, and one parchment sheet in the middle with the unit's name on its head, its numbers in
