@@ -1,6 +1,7 @@
 // The walkable town's HUD drawn in 3D (?townhud=3d, the default), a screen of the town's 3D layer in the look of the
 // battle's 3D HUD (hints3d/, window3d/tools3d.ts; the reference has no walkable town): the town's name on a dark slate
-// plate top left, what Enter does on the pill top centre, the same over what it acts on, and the menu button (3 bars).
+// plate top left, what Enter does on a pill over what it acts on (the pill top centre only with nothing in reach: the
+// walk keys), and the menu button (3 bars).
 //   Words and input: the HTML HUD (game/town-hud.ts, game/town.ts) stays, unseen (style.css .hud.townhud3d): it says
 //   what to write, and its real buttons take the mouse, the taps and the screen reader. Where each part goes is
 //   town-layout.ts townHud, no measure of the HTML; the menu button is seated from the same numbers. Nothing here
@@ -11,7 +12,7 @@ import { NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3
 import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { textMesh } from '../ui3d/text.ts';
-import { townHud } from './town-layout.ts';
+import { promptSays, townHud } from './town-layout.ts';
 
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
 const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the button in focus
@@ -88,7 +89,7 @@ export class TownHud3d implements Ui3dScreen {
       key = (e: Element) => (keys ? (e.querySelector<HTMLElement>('.hint')?.dataset.act ?? '') : ''),
       focus = document.activeElement;
     const { name, menu, prompt: line } = townHud(layer.w, layer.inset, !!key(this.prompt)),
-      says = this.prompt.firstChild?.textContent ?? '';
+      says = promptSays(this.prompt.firstChild?.textContent ?? '', this.balloon.title);
     const fkey = JSON.stringify([
       name,
       menu,

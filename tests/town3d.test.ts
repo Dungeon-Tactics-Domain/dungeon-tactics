@@ -4,7 +4,7 @@ import { type Dir, type Hit, neighbour, type Page, seen, step } from '../src/cli
 import { PAGES, partyPage } from '../src/client/town3d/party-view.ts';
 import { barPage, shopPage } from '../src/client/town3d/shop-view.ts';
 import { gatePage, menuPage, soonPage } from '../src/client/town3d/street-view.ts';
-import { C, G, M, P, T, townHud } from '../src/client/town3d/town-layout.ts';
+import { C, G, M, P, promptSays, T, townHud } from '../src/client/town3d/town-layout.ts';
 import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
 
 // The town's windows in 3D (?shop=3d, ?party=3d; Nov 17): the pages the drawing is handed, built from the saved game.
@@ -386,6 +386,11 @@ describe('3D town HUD: the layout without the DOM', () => {
     const l = townHud(1280, inset, false);
     expect(l.prompt.h).toBeCloseTo(40.797, 2);
     expect(l.prompt.y).toBeCloseTo(12 + 40.797 / 2, 2);
+  });
+  // review of Nov 18 at 844x390: "Falar com Hugo" twice, the top pill right over the balloon on Hugo's head
+  it('says what Enter does once: the balloon over the target, the top pill only with nothing in reach', () => {
+    expect(promptSays('Falar com Hugo', 'Falar com Hugo')).toBe('');
+    expect(promptSays('W A S D andar', '')).toBe('W A S D andar');
   });
   it('follows the margins of the frame layout and the notch', () => {
     const l = townHud(3440, { top: 12, right: 452, left: 452 }, true);

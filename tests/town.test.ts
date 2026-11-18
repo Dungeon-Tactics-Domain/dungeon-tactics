@@ -193,6 +193,12 @@ describe('the walkable town (src/content/crawl/town.ts, town-map.ts)', () => {
     me.pos = { x: me.pos.x + 2 * SUB, y: me.pos.y };
     hugo.pos = { x: me.pos.x, y: me.pos.y - SUB };
     expect(townTarget(state, { x: 0, y: 1 })).toMatchObject({ act: 'talk', unit: hugo });
+    // two people beside: one target, the one in front (a single balloon, never one per person)
+    const other = state.units.find((u) => u.id !== ME && u !== hugo)!;
+    other.pos = { x: me.pos.x - SUB, y: me.pos.y };
+    expect(townTarget(state, { x: -1, y: 0 })).toMatchObject({ unit: other });
+    expect(townTarget(state, { x: 0, y: -1 })).toMatchObject({ unit: hugo });
+    other.pos = { x: 0, y: 2 * SUB };
     hugo.pos = { x: 0, y: 0 };
     expect(townTarget(state, { x: 0, y: 1 })).toBeNull();
     state.units = [me]; // nobody by the doors
