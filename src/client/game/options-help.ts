@@ -64,12 +64,13 @@ export const controls = (): Block[] => [
       'Mouse: hover to pick, click to confirm, right click goes back; drag to move the camera and use the wheel to zoom. Gamepad: d-pad or stick moves, A (×) confirms, B (○) goes back, X (□) opens Status, Y (△) opens the ability sheet, Back undoes, shoulders rotate the camera, triggers zoom, right stick scrolls the turn list, Start opens this menu.',
     ),
   },
-  // only what touch-input.ts and the HUD do today (Nov 16, the tablet audit: this section said nothing about touch)
+  // only what touch-input.ts and the HUD do today (Nov 16, the tablet audit: this section said nothing about touch;
+  // Nov 18: Undo left the ☰ menu for a button beside it, and two fingers turn the camera, gesture.ts)
   {
     k: 'text',
     str: t(
-      'Toque: toque numa casa para marcar e toque de novo nela para confirmar; arraste com um dedo para mover a câmera e afaste ou aproxime dois dedos para o zoom. O botão Voltar (↩) aparece ao lado do ☰, no alto; girar a câmera, desfazer e ver o mapa inteiro estão no menu ☰.',
-      'Touch: tap a tile to mark it and tap it again to confirm; drag with one finger to move the camera and pinch with two to zoom. The Back button (↩) shows beside the ☰ at the top; rotating the camera, undo and the whole map are in the ☰ menu.',
+      'Toque: toque numa casa para marcar e toque de novo nela para confirmar; arraste com um dedo para mover a câmera e afaste ou aproxime dois dedos para o zoom. O botão Voltar (↩) aparece ao lado do ☰, no alto. O botão Desfazer (↶) aparece ao lado do ☰ depois de mover; gire dois dedos para girar a câmera. Ver o mapa inteiro está no menu ☰.',
+      'Touch: tap a tile to mark it and tap it again to confirm; drag with one finger to move the camera and pinch with two to zoom. The Back button (↩) shows beside the ☰ at the top. The Undo button (↶) shows beside the ☰ after you move; twist two fingers to turn the camera. The whole map is in the ☰ menu.',
     ),
   },
   // the short "+N" of the turn list and of the unit sheets (Fernando, Nov 17): two different clocks
