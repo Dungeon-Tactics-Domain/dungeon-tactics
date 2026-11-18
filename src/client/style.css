@@ -2,7 +2,7 @@
   /* every colour and size of the page comes from here (one set since Nov 18: the themes, the panel glass and the blue
      panels went with the HTML look; the 3D layer reads the --ui3d-* ones and a few by name, listed below) */
   --bg: #0b0a0e; /* the page under the scene and the loading cover: a neutral near-black, no blue (Nov 18) */
-  --fg: #f4f6ff; /* text of the loading cover; the fps counter (effects3d.ts) */
+  --fg: #f4f4f4; /* text of the loading cover; the fps counter (effects3d.ts); neutral, no blue (Nov 18) */
   /* same colors as the scene markings (MARK in scene/mark-looks.ts), so the legend matches the map; the 3D tile-marks
      sheet reads them by name (flow3d/sheet-draw.ts) */
   --mark-move: #6fc0ff;
@@ -14,7 +14,7 @@
   /* read by name by the 3D effects (hints3d/effects3d.ts): the "+N targets" band of the strike preview (dark enough for
      light text over the bright sky), its damage number, and the floating numbers by kind (Nov 15 grill): green heal,
      white physical, violet magic, grey miss, a gold edge on a strike of 25% of life or more */
-  --strike: rgba(5, 10, 24, 0.82);
+  --strike: rgba(0, 0, 0, 0.82); /* neutral black, no blue (Nov 18) */
   --strike-dmg: #ffc2c2;
   --heal: #6fdc8c;
   --float-phys: #ffffff;
@@ -67,10 +67,10 @@
   /* a serif close to the reference's, from the fonts the system already has (no font file for a test behind a flag) */
   --font-ui3d: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   /* the 3D battle result (?result=3d), measured on the reference's victory screen (labs refs/fft-ivalice/73): light
-     text on the darkened battle. `lost` is the defeat's title, the cold blue the classic game writes "Game Over" in
-     (described, not measured); `soft` is `text` dimmed for labels */
+     text on the darkened battle. `lost` is the defeat's title, a faded red (Nov 18: no blue; 6.2:1 on the defeat's
+     veil over a white sky, 7.3:1 on the bare veil); `soft` is `text` dimmed for labels */
   --ui3d-result-title: #fdebb4;
-  --ui3d-result-lost: #9db4d6;
+  --ui3d-result-lost: #c98f7f;
   --ui3d-result-note: #ddf3b5;
   --ui3d-result-text: #dcd5ac;
   --ui3d-result-soft: #a8a184;
