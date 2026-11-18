@@ -78,12 +78,10 @@ describe('crawl rooms in the client', () => {
 
   it('two seeds with no room go back home with a message, without throwing', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const alert = vi.fn();
-    vi.stubGlobal('alert', alert);
     const location = open('?crawl=1');
     expect(await selectBattle()).toBeNull();
-    expect(alert).toHaveBeenCalledOnce();
-    expect(location.search).toBe('?home');
+    // the town says it, in a notice window (game/notices.ts noRoomScreen), in place of the native alert
+    expect(location.search).toBe('?home=noroom');
   });
 
   it('?room= opens an open expedition room with the town party at its carried life; a closed one goes home', async () => {

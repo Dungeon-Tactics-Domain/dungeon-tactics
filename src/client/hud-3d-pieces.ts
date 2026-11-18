@@ -28,5 +28,7 @@ export function pieces3d(
   for (const make of skin.flow3d ?? []) make(layer); // each takes its screen by itself (options.ts `setOptions3d`)
   skin.tools3d?.(layer, tools); // reads the HTML menu's own state
   skin.status3d?.(layer); // takes the Status window by itself (status-window.ts `setStatus3d`)
+  skin.talk3d?.(layer); // takes each conversation by itself (talk.ts `setTalk3d`)
+  skin.note3d?.(layer); // takes each notice window by itself (note.ts `setNote3d`)
   return { bar: skin.bar3d?.(layer, active), hints: skin.hints3d?.(layer), confirm: skin.confirm3d?.(layer, confirm) };
 }

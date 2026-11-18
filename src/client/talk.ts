@@ -19,6 +19,8 @@ import { store } from './store.ts';
 export const TEXT_KEY = 'dt:text';
 export type TextSpeed = 'normal' | 'fast' | 'instant';
 const CHAR_MS: Record<TextSpeed, number> = { normal: 28, fast: 10, instant: 0 };
+// ms between two letters; 0 shows the whole sentence at once, which Reduce motion asks for whatever the speed
+export const charMs = (speed: TextSpeed, still: boolean): number => (still ? 0 : CHAR_MS[speed]);
 export const textSpeed = (): TextSpeed => {
   const v = store.get(TEXT_KEY);
   return v === 'fast' || v === 'instant' ? v : 'normal';
@@ -88,16 +90,21 @@ export interface TalkOptions {
   dark?: true; // nearly black screen behind (story opening)
 }
 
-// The box's 3D look (town3d/talk3d.ts, set while the town's 3D layer is up): handed each conversation's overlay, it
-// draws the box over it; the box itself stays the one below, unseen
+// The box's 3D look (window3d/talk3d.ts, set while a 3D layer is up, the town's or the battle's): handed each
+// conversation's overlay, the narration's too, it draws the box over it; the box itself stays the one below, unseen.
+// Returns what takes the look back, unless another layer set its own since
 let look: ((overlay: HTMLElement) => void) | undefined;
-export const setTalk3d = (take?: (overlay: HTMLElement) => void) => {
+export const setTalk3d = (take: (overlay: HTMLElement) => void) => {
   look = take;
+  return () => {
+    if (look === take) look = undefined;
+  };
 };
 
 export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<void> {
-  // reduced motion: the face stays still, like the portrait hop
+  // reduced motion: the face stays still, like the portrait hop, and each sentence shows whole
   const still = reducedMotion();
+  const ms = () => charMs(textSpeed(), still);
   // every sheet of the conversation starts loading with it, so later lines find theirs decoded
   for (const sheet of new Set(lines.map((l) => faceOf(l.who.def)?.sheet)))
     if (sheet) new Image().src = `/chars/${sheet}`;
@@ -140,13 +147,15 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
       ...(title ? [el('div', { class: 'panel talk-title' }, title)] : []),
       box,
       // a 44 px button for what Esc does, outside the box (a button cannot hold a button); it ends the whole conversation
-      button('talk-skip', t('Pular', 'Skip'), () => end()),
+      // its name says what it skips: "Pular" alone could be this sentence only
+      button('talk-skip', t('Pular', 'Skip'), () => end(), { 'aria-label': t('Pular conversa', 'Skip conversation') }),
     );
     const full = () => (LANG === 'pt' ? lines[i].pt : lines[i].en);
     const typing = () => shown < full().length;
     // the sentence is out (typed, completed by a click, instant, or the box closing): the mouth rests closed
     const finish = () => {
       clearInterval(timer);
+      text.removeAttribute('aria-busy');
       box.classList.add('done');
       mouth?.(0);
     };
@@ -173,6 +182,7 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
       name.textContent = LANG === 'en' && who.en ? who.en : who.name; // proper names are the same in both languages
       name.hidden = face.hidden = !who.name; // narrator: no portrait or name
       shown = 0;
+      text.setAttribute('aria-busy', 'true'); // a screen reader hears the sentence once, whole, not each letter typed
       text.textContent = '';
       box.classList.remove('done');
       clearInterval(timer);
@@ -184,9 +194,9 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
         if (shown % (textSpeed() === 'fast' ? 4 : 2) === 1 && /\p{L}/u.test(s[shown - 1])) blip(who.pitch);
         if (typing()) mouth?.(mouthFrame(talking, performance.now() - start));
         else finish();
-      }, CHAR_MS[textSpeed()] || 1);
+      }, ms() || 1);
       mouth?.(mouthFrame(talking, 0)); // open from the first instant, before the first letter's tick
-      if (!CHAR_MS[textSpeed()]) {
+      if (!ms()) {
         // instant: the whole sentence at once, with a single beep to mark who speaks
         shown = full().length;
         text.textContent = full();
@@ -217,7 +227,7 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
     // a click beside the box left the focus on the page, and Enter, Space and A no longer moved the conversation on
     overlay.addEventListener('mousedown', (e) => e.preventDefault());
     document.body.append(overlay);
-    if (!dark) look?.(overlay);
+    look?.(overlay);
     box.focus();
     show();
   });

@@ -19,6 +19,7 @@ import { button, el, icon, UI_ICON } from '../icons.ts';
 import { setTrack } from '../sound.ts';
 import { goldNote } from '../town-ui.ts';
 import { current, group, retreat, takeChest, toTown } from './crawl.ts';
+import { chestScreen, infoScreen } from './notices.ts';
 
 // What the map's 3D look (town3d/map3d.ts; ?map=3d, the default) draws over this window, which stays under it unseen
 // with every button, key and screen reader line: plain data, each place's kind and mark by node ('' where the kind has
@@ -175,7 +176,10 @@ export function expeditionScreen(exp: Expedition) {
     }
     d.close();
     const next = takeChest(exp, node);
-    if (next) return chestScreen(next, nodeGold(map[node]));
+    if (next) {
+      expeditionScreen(next);
+      return chestScreen(nodeGold(map[node]));
+    }
     // a stale map: the expedition as it is now, or the town when it ended
     const now = current(exp);
     if (now) expeditionScreen(now);
@@ -310,91 +314,4 @@ export function expeditionScreen(exp: Expedition) {
   // the open place in the middle of the chart's window, wherever the party is on the way down
   marks.get(first.node)!.scrollIntoView({ block: 'center' });
   marks.get(first.node)!.focus({ preventScroll: true });
-}
-
-// Information (FFT's map command): what the chart's marks mean and what the descent's rules give and take
-function infoScreen(back: () => void) {
-  const sample = (cls: string, child: Parameters<typeof el>[2], text: string) =>
-    el('li', {}, el('span', { class: `map-place ${cls}`, 'aria-hidden': 'true' }, child), text);
-  const d = dialog(
-    'title',
-    t('Informações', 'Information'),
-    [
-      el(
-        'ul',
-        { class: 'legend' },
-        sample(
-          'room open',
-          '3',
-          t('Sala aberta: o número é quantos inimigos ela tem', 'Open room: the number is how many enemies it holds'),
-        ),
-        sample(
-          'room ahead',
-          '3',
-          t('Sala mais adiante: abre depois da anterior', 'Room further on: opens after the one before'),
-        ),
-        sample('chest open', el('i', { class: 'map-chest' }), t('Baú: ouro sem batalha', 'Chest: gold with no battle')),
-        sample('boss ahead', icon(UI_ICON.quest), t('Chefe: a última sala', 'Boss: the last room')),
-        sample('room cleared', '✓', t('Sala vencida ou baú aberto', 'Room cleared or chest opened')),
-        sample('room skipped', '✕', t('Caminho não tomado: não abre mais', 'Path not taken: it will not open')),
-        el(
-          'li',
-          {},
-          el('span', { class: 'map-flag', 'aria-hidden': 'true' }),
-          t('Onde o grupo está', 'Where the party is'),
-        ),
-      ),
-      el(
-        'p',
-        {},
-        t(
-          `Vencer uma sala: quem ficou de pé recupera ${CRAWL_RUN.roomHeal}% da vida e da mana, quem caiu volta com ${CRAWL_RUN.fallen}%. Descer um andar: +${CRAWL_RUN.floorHeal}% para todos.`,
-          `Clearing a room: whoever stood recovers ${CRAWL_RUN.roomHeal}% of their life and mana, the fallen come back at ${CRAWL_RUN.fallen}%. Going down a floor: +${CRAWL_RUN.floorHeal}% to everyone.`,
-        ),
-      ),
-      el(
-        'p',
-        {},
-        t(
-          'Voltar à cidade pelo mapa leva todo o ouro achado. Cair ou deixar uma sala no meio da luta encerra a expedição com metade dele.',
-          'Going back to town from the map takes all the gold found. Falling or leaving a room mid-fight ends the expedition with half of it.',
-        ),
-      ),
-      el(
-        'div',
-        { class: 'menu-actions' },
-        button('primary', t('Voltar ao mapa', 'Back to the map'), () => {
-          d.close();
-          back();
-        }),
-      ),
-    ],
-    { onBack: back },
-  );
-  d.overlay.classList.add('map-help');
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
-}
-
-// The chest just opened (already saved): its gold in a window over the map as it is now, which takes the focus back
-function chestScreen(exp: Expedition, gold: number) {
-  expeditionScreen(exp);
-  const place = document.activeElement as HTMLElement;
-  const back = () => place.focus();
-  const d = dialog(
-    'result',
-    t('Baú aberto', 'Chest opened'),
-    [
-      goldNote(t('Ouro', 'Gold'), gold),
-      el(
-        'div',
-        { class: 'menu-actions' },
-        button('primary', t('Seguir no mapa', 'On to the map'), () => {
-          d.close();
-          back();
-        }),
-      ),
-    ],
-    { onBack: back },
-  );
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }

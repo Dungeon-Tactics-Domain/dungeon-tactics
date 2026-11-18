@@ -137,6 +137,8 @@ try {
     try {
       await page.goto(`http://localhost:${PORT}${p.path}`);
       await page.waitForSelector(p.ready, { state: p.attached ? 'attached' : 'visible', timeout: TIMEOUT });
+      // the screen is built under the loading cover (src/client/loading.ts), which holds the keys until it leaves
+      await page.waitForSelector('.loading-cover', { state: 'detached', timeout: TIMEOUT });
       if (!(await page.evaluate(p.check))) errors.push('screen incomplete');
       // models and textures keep loading after the first screen: wait for them so a missing asset still shows up
       await page.waitForLoadState('networkidle', { timeout: TIMEOUT });

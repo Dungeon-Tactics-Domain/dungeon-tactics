@@ -1,6 +1,5 @@
 // What the page opens, read from the URL: an expedition room, a crawl room, a study or developer battle, another map, or
 // the standalone battle behind the title (and the town).
-import { DefaultLoadingManager } from 'three';
 import { Battle } from '../../shared/battle/battle.ts';
 import { regen } from '../../shared/battle/combat.ts';
 import { subOf } from '../../shared/battle/grid.ts';
@@ -11,10 +10,9 @@ import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
 import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
 import { t } from '../i18n.ts';
-import { el } from '../icons.ts';
 import { param, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
-import { type CrawlRoom, castRoom, goHome, heldRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
+import { type CrawlRoom, castRoom, goHome, goHomeNoRoom, heldRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
 
 // the battle the page opens: the scenario, where it is saved and what it belongs to
 export interface BattleSelection {
@@ -41,7 +39,7 @@ export function newBattle(scenario: Scenario, room: CrawlRoom | null = null): Ba
 }
 
 // A crawl room from its seed; a seed whose 200 layouts all fail (none of the 500 tested; 4 to 7 s each) moves on to the
-// next one; a second failure means the rules, not the dice, so the page goes back home saying so instead of retrying
+// next one; a second failure means the rules, not the dice, so the page goes back home, which says so, instead of retrying
 function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
   for (let s = seed; s < seed + 2; s++)
     try {
@@ -49,13 +47,7 @@ function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
     } catch (err) {
       console.error(err);
     }
-  alert(
-    t(
-      'Não deu para abrir esta sala. Você volta para a cidade.',
-      'This room wouldn’t open. You’re heading back to town.',
-    ),
-  );
-  goHome();
+  goHomeNoRoom(); // the town says the room would not open (crawl.ts noRoomScreen)
   return null;
 }
 
@@ -124,16 +116,4 @@ export async function selectBattle(): Promise<BattleSelection | null> {
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
   return { scenario, saveKey, title: !study && crawl === null && !room, room };
-}
-
-// Discreet line at the top while a page's scene downloads (the title's backdrop, a battle, the town): Three's default
-// manager counts every model and texture, files found so far (the total grows as models name their parts), since no
-// loader knows the bytes ahead. The caller removes it once its scene is built
-export function loadNote() {
-  const note = el('p', { class: 'load-note', role: 'status' }, t('Carregando modelos 3D…', 'Loading 3D models…'));
-  DefaultLoadingManager.onProgress = (_url, done, total) => {
-    note.textContent = t(`Carregando modelos 3D… ${done}/${total}`, `Loading 3D models… ${done}/${total}`);
-  };
-  document.body.append(note);
-  return note;
 }
