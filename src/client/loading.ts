@@ -127,6 +127,7 @@ export function loadingCover(hold = true): Cover {
         await new Promise((r) => setTimeout(r, FADE_MS));
       }
       drawn?.dispose();
+      drawn = undefined; // the loading manager keeps this cover's last handlers: they must not keep its 3D layer
       unveil();
       root.remove();
     },

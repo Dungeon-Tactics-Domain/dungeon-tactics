@@ -19,6 +19,7 @@ import { t } from '../i18n.ts';
 import { button, el, icon, tabbed, UI_ICON } from '../icons.ts';
 import { liveText, padSeen } from '../key-hints.ts';
 import { type KeyAction, keyAction, pageKeeps, type ScreenDir } from '../keyboard.ts';
+import { onLeave, screenSignal } from '../nav.ts';
 import { type Cover, whenReady } from '../ready-gate.ts';
 import { BattleScene } from '../scene.ts';
 import { setTrack, sfx } from '../sound.ts';
@@ -77,6 +78,7 @@ class Town {
   private at: Pos; // the walker's centre, in cells; the unit's pos is the square snapped under it (cellUnder)
   private moving = false; // walked on the last frame
   private last = performance.now(); // the last frame, for the walk's pace
+  private readonly gone = screenSignal(); // aborted when the town's screen leaves (nav.ts)
   // what Enter does here, at the top in the middle like the battle's help line
   private readonly prompt = el('div', { class: 'panel help town-prompt', role: 'status' });
   // the same, as a balloon over what it acts on (Nov 16, Fernando); a click on it acts too. Placed every frame (poll)
@@ -87,7 +89,7 @@ class Town {
     private readonly grid: Grid,
     private readonly state: BattleState,
     host: HTMLElement,
-    skin: (hud: HTMLElement) => void, // the 3D look, already downloaded (hud-skin.ts loadTownSkin)
+    skin: (hud: HTMLElement) => (() => void) | undefined, // the 3D look, already downloaded (hud-skin.ts loadTownSkin)
   ) {
     // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the gear (Options, which
     // has no battle rows here) and ↺ ↻ in the top right corner; as a .hud it hides while someone talks (style.css)
@@ -98,9 +100,14 @@ class Town {
       (dir) => scene.rotate(dir),
     );
     host.append(hud);
-    skin(hud); // on the page already: the layer reads its tokens and its size there
+    const unskin = skin(hud); // on the page already: the layer reads its tokens and its size there
+    onLeave(() => {
+      unskin?.();
+      hud.remove();
+      touch.dispose();
+    });
     const canvas = host.querySelector('canvas')!;
-    new TouchInput(canvas, {
+    const touch = new TouchInput(canvas, {
       tap: (x, y) => this.tap(x, y),
       // the square the walker would stop on, under the pointer
       hover: (x, y) => this.scene.setCursor(this.scene.pick(x, y, SUB), SUB),
@@ -109,11 +116,12 @@ class Town {
       rotate: (dir) => scene.rotate(dir),
     });
     // right button: back, like the battle's; in town that is the menu
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-    canvas.addEventListener('contextmenu', () => this.run({ k: 'cancel' }));
-    addEventListener('keydown', (e) => this.onKey(e, true));
-    addEventListener('keyup', (e) => this.onKey(e, false));
-    addEventListener('blur', () => (this.keys = []));
+    const heard = { signal: this.gone };
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault(), heard);
+    canvas.addEventListener('contextmenu', () => this.run({ k: 'cancel' }), heard);
+    addEventListener('keydown', (e) => this.onKey(e, true), heard);
+    addEventListener('keyup', (e) => this.onKey(e, false), heard);
+    addEventListener('blur', () => (this.keys = []), heard);
     this.folk = new Folk({ scene, grid, state, me: () => this.me, showPrompt: () => this.showPrompt() });
     scene.hideMarkers();
     this.at = centreOf(this.me.pos);
@@ -147,6 +155,7 @@ class Town {
   // Every frame: the gamepad (in a window, the shared dialog handling; else the same actions as the keyboard), and a
   // window that closed sends the party back to its places (a recruit, a class change, a new leader)
   private poll() {
+    if (this.gone.aborted) return;
     requestAnimationFrame(() => this.poll());
     const open = windowOpen();
     if (this.wasOpen && !open) {
@@ -326,7 +335,8 @@ class Town {
 
 // ?home: the town instead of a battle (entry.ts boot), then what home opens over it (crawl.ts homeScreen). All of it
 // is built under the loading cover, once the models and the 3D look landed, so a window opens in its final look
-export async function bootTown(host: HTMLElement, cover: Cover) {
+// `stale`: another screen was asked for while this one loaded (entry.ts)
+export async function bootTown(host: HTMLElement, cover: Cover, stale: () => boolean) {
   setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
   const sc = townScenario();
   const state = townState(sc);
@@ -334,6 +344,8 @@ export async function bootTown(host: HTMLElement, cover: Cover) {
   // every class's model loads, so a recruit or a class change in town finds theirs
   const models = [...JOBS, ...TOWNSFOLK.map((f) => f.def)];
   await whenReady(cover, [BattleScene.create(host, sc.grid, state, models), loadTownSkin()], ([scene, skin]) => {
+    if (stale()) return scene.dispose();
+    onLeave(() => scene.dispose());
     new Town(scene, sc.grid, state, host, skin);
     homeScreen();
   });

@@ -32,7 +32,7 @@ export const savedCount = (n: number) =>
   n === 1 ? t('1 jogo salvo', '1 saved game') : t(`${n} jogos salvos`, `${n} saved games`);
 
 // the title closes before this runs: a refused save reopens it (onBack), so the screen is never left empty. The town is
-// its own page (?home, game/town.ts), not a window over the title's backdrop battle
+// its own screen (?home, game/town.ts), not a window over the title's backdrop battle
 export function startNewGame(onBack: () => void) {
   if (!newGame(live, Date.now())) {
     return full(onBack);

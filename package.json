@@ -10,6 +10,7 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "smoke": "node scripts/smoke-game.mjs",
+    "navcheck": "node scripts/nav-check.mjs",
     "sandbox": "node scripts/sandbox.mjs",
     "bench": "vite --port 5291 --strictPort",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.scripts.json",

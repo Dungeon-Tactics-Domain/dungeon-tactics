@@ -4,6 +4,7 @@ import { emptyMemory, padActions } from './gamepad.ts';
 import { tabbed } from './icons.ts';
 import { padSeen } from './key-hints.ts';
 import { type KeyAction, keyAction, pageKeeps } from './keyboard.ts';
+import { onLeave, screenSignal } from './nav.ts';
 import type { BattleScene } from './scene.ts';
 import { pace } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
@@ -16,8 +17,9 @@ export interface InputActions {
 
 // attaches the listeners and returns the gamepad reader, which the Game calls every frame
 export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: InputActions): () => void {
+  const signal = screenSignal(); // the window's listeners leave with the battle's screen (nav.ts)
   // TouchInput attaches its listeners to the canvas in the constructor; nothing else needs a reference
-  new TouchInput(canvas, {
+  const touch = new TouchInput(canvas, {
     tap: (x, y) => act.tap(x, y),
     hover: (x, y) => act.hover(x, y),
     pan: (dx, dy) => scene.pan(dx, dy),
@@ -25,13 +27,17 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     rotate: (dir) => scene.rotate(dir),
   });
   // right button cancels, like FFT's "back"
-  canvas.addEventListener('contextmenu', (e) => {
+  // the canvas outlives the screen a while (its renderer may be held by a texture kept between screens): what
+  // listens on it leaves too, so it holds nothing of the battle
+  onLeave(() => touch.dispose());
+  const back = (e: Event) => {
     e.preventDefault();
     act.key({ k: 'cancel' });
-  });
+  };
+  canvas.addEventListener('contextmenu', back, { signal });
   // Keyboard (Fernando's request, Oct 25): every action has a key. The key -> action translation is pure (keyboard.ts).
   // With a dialog open, the keys belong to it (Esc closes, Tab moves between buttons, up and down walk its list: dialog.ts).
-  addEventListener('keydown', (e) => {
+  const onKey = (e: KeyboardEvent) => {
     if (document.querySelector('.overlay')) return;
     const a = keyAction(e);
     if (!a) return;
@@ -44,13 +50,16 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     // a focus Tab put on the 3D menu stays, and follows the game's (Menu3d.update)
     if (!document.activeElement?.closest('.menu3d-hits')) (document.activeElement as HTMLElement | null)?.blur();
     act.key(a);
-  });
+  };
+  addEventListener('keydown', onKey, { signal });
   // holding Enter or Space fast-forwards the battle (timing.ts); switching tabs releases it, otherwise it stayed fast-forwarded with no key held
   const hold = (on: boolean) => (e: KeyboardEvent) =>
     e.key === 'Enter' || e.key === ' ' ? (pace.key = on) : undefined;
-  addEventListener('keydown', hold(true));
-  addEventListener('keyup', hold(false));
-  addEventListener('blur', () => (pace.key = false));
+  addEventListener('keydown', hold(true), { signal });
+  addEventListener('keyup', hold(false), { signal });
+  addEventListener('blur', () => (pace.key = false), { signal });
+  // the Enter that left the screen is never heard coming up: the next screen does not open fast-forwarded
+  onLeave(() => (pace.key = pace.pad = false));
 
   // Gamepad (gamepad.ts): reads the first pad every frame and sends actions through the same path as the keyboard. With a
   // dialog open, the pad moves between its buttons (A presses, B closes).

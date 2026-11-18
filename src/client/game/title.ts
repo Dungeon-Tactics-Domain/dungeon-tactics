@@ -12,6 +12,7 @@ import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { liveText } from '../key-hints.ts';
 import { looks3d } from '../looks3d.ts';
+import { onLeave } from '../nav.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
@@ -261,6 +262,7 @@ export function titleScreen() {
     fn();
   };
   document.addEventListener('fullscreenchange', go(titleScreen), { signal: leave.signal, once: true });
+  onLeave(() => leave.abort()); // the title left with its screen: fullscreen settling later must not open it again
   const d = dialog(
     'title',
     'Dungeon Tactics',

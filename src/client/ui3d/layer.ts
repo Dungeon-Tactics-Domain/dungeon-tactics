@@ -13,6 +13,7 @@ import { keysShown, onShown } from '../key-hints.ts';
 import { getLayout, onLayout } from '../layout-mode.ts';
 import { reducedMotion } from '../motion.ts';
 import { param } from '../store.ts';
+import { letGo } from '../three-util.ts';
 import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
 import { PHONE_SHRINK, phonePage, type Stage, setPageFloor, stage, textPx } from './layout.ts';
 import type { Rgb, Theme } from './panel.ts';
@@ -255,8 +256,10 @@ export class Ui3dLayer {
     this.unhear();
     this.heard.abort();
     for (const stop of this.unheard) stop();
+    for (const scene of [this.flat, this.deep]) letGo(this.renderer, scene); // the labels and their quad outlive it
     for (const s of [...this.screens]) s.dispose();
     this.renderer.dispose();
+    this.renderer.forceContextLoss(); // given back now: every screen of the one page makes a layer (scene.ts dispose)
     this.canvas.remove();
     this.root.classList.remove('ui3d');
   }

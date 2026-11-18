@@ -2,6 +2,7 @@
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { looks3d } from './looks3d.ts';
+import { onLeave } from './nav.ts';
 import type { BattleScene } from './scene.ts';
 import { store } from './store.ts';
 
@@ -47,7 +48,8 @@ export function fpsCounter(
   host.append(fps);
   fps.hidden = !fpsOn();
   // the text changes 2 times per second, not every frame (almost zero cost)
-  setInterval(show, 500);
+  const timer = setInterval(show, 500);
+  onLeave(() => clearInterval(timer));
   return () => {
     fps.hidden = !fps.hidden;
     store.set(FPS_KEY, fps.hidden ? '0' : '1');
