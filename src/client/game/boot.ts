@@ -14,7 +14,7 @@ import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import { param, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
-import { type CrawlRoom, castRoom, goHome, heldRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
+import { type CrawlRoom, castRoom, goHome, goHomeNoRoom, heldRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
 
 // the battle the page opens: the scenario, where it is saved and what it belongs to
 export interface BattleSelection {
@@ -41,7 +41,7 @@ export function newBattle(scenario: Scenario, room: CrawlRoom | null = null): Ba
 }
 
 // A crawl room from its seed; a seed whose 200 layouts all fail (none of the 500 tested; 4 to 7 s each) moves on to the
-// next one; a second failure means the rules, not the dice, so the page goes back home saying so instead of retrying
+// next one; a second failure means the rules, not the dice, so the page goes back home, which says so, instead of retrying
 function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
   for (let s = seed; s < seed + 2; s++)
     try {
@@ -49,13 +49,7 @@ function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
     } catch (err) {
       console.error(err);
     }
-  alert(
-    t(
-      'Não deu para abrir esta sala. Você volta para a cidade.',
-      'This room wouldn’t open. You’re heading back to town.',
-    ),
-  );
-  goHome();
+  goHomeNoRoom(); // the town says the room would not open (crawl.ts noRoomScreen)
   return null;
 }
 

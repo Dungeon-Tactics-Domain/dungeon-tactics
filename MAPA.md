@@ -169,6 +169,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D (?tools=3d): the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu that keeps its place and buttons.
 - `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D (?status=3d): a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
 - `src/client/window3d/status-view.ts` — where the 3D Status sheet sits and where each of its rows goes (statusLayout); pure.
+- `src/client/window3d/note3d.ts` — Note3d: a notice window in 3D (?note=3d): title, legend of marks, paragraphs, a figure and 1 to 3 plaques on a parchment sheet, over an unseen window of dialog.ts with the real buttons.
+- `src/client/window3d/note-view.ts` — where the 3D notice sheet sits and where its legend, paragraphs, figure and buttons go (noteLayout); pure.
+- `src/client/game/notices.ts` — the town's and the expedition's notice windows: the map's Information and opened chest, the expedition lost, a room that would not open.
+- `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), handed to the 3D look (setNote3d) or opened in HTML.
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer; types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).

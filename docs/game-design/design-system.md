@@ -357,6 +357,15 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   two columns (label in soft ink, value in ink, a hairline under each; `status-view.ts`), "Esc Close" on the foot ("Tap
   outside to close" on touch). An ability's facts are the same sheet, narrower, with one paragraph. An unseen window of
   `dialog.ts` over the sheet keeps Esc, the pad, the tap outside, the ✕ and the sheet as real text.
+- **Notice window** (`?note=3d`, `window3d/note3d.ts`; Nov 18): the Status sheet's look for every small window that
+  only tells something and asks for a button (the map's Information and opened chest, the expedition lost, a room that
+  would not open, a save refused; `note.ts` `noteWindow`): the title on the head, a legend of marks drawn as the map's
+  seals, paragraphs, a figure (label in soft ink, the number in ink at the right, a hairline over it) and one to three
+  dark plaques side by side, the one in focus gold with the glove on it (the ✕ in focus takes a dark line), "Enter Choose · Esc Close" on the foot.
+  On a page too short for it the sheet goes across the page with the legend in two columns (`note-view.ts`); if it
+  still does not fit, or an HTML window is still seen under it, the HTML window opens. An unseen window of `dialog.ts`
+  holds the text and the real buttons, each under its plaque: an arrow goes to the plaque seen that way and stays at
+  an edge. Every other 3D screen stays out while it shows.
 - **Result tokens** (`?result=3d`, `result3d/`): `--ui3d-result-title`, `-lost`, `-note`, `-text`, `-soft`, `-veil`,
   `-band`, `-plate` and `-line`, measured on the reference's victory screen (light text on the darkened battle); `-lost`
   (the defeat's title) and `-soft` are ours. Contrast not computed yet.

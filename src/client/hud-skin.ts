@@ -18,6 +18,7 @@ import type { QueueBoxes, Turn3d } from './turn3d/turn3d.ts';
 import type { Ui3dLayer } from './ui3d/layer.ts';
 import { parseLayout } from './ui3d/layout.ts';
 import { skinFlags, specFlags } from './ui3d/skin-flags.ts';
+import type { Note3d } from './window3d/note3d.ts';
 import type { Status3d } from './window3d/status3d.ts';
 import type { Tools3d } from './window3d/tools3d.ts';
 
@@ -33,6 +34,7 @@ export interface HudSkin {
   flow3d?: ((layer: Ui3dLayer) => unknown)[]; // the screens around the battle in 3D (flow3d/): Options, the title
   tools3d?: (layer: Ui3dLayer, tools: HTMLElement) => Tools3d; // the corner menu in 3D (window3d/)
   status3d?: (layer: Ui3dLayer) => Status3d; // the Status window in 3D (window3d/)
+  note3d?: (layer: Ui3dLayer) => Note3d; // a notice window in 3D (window3d/)
 }
 
 // `spec`: a sandbox spec's keys (docs/sandbox.md); the address wins over it
@@ -91,6 +93,10 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Status3d } = await import('./window3d/status3d.ts');
     skin.status3d = (layer) => new Status3d(layer);
   }
+  if (flags.note === '3d') {
+    const { Note3d } = await import('./window3d/note3d.ts');
+    skin.note3d = (layer) => new Note3d(layer);
+  }
   if (
     skin.menu3d ||
     skin.turn3d ||
@@ -100,7 +106,8 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     skin.result3d ||
     skin.flow3d ||
     skin.tools3d ||
-    skin.status3d
+    skin.status3d ||
+    skin.note3d
   ) {
     const { Ui3dLayer } = await import('./ui3d/layer.ts');
     skin.layer = (root, lost) => {
@@ -125,6 +132,7 @@ export async function loadTownSkin(root: HTMLElement) {
     hud: flags.townhud === '3d',
     talk: flags.talk === '3d',
     map: flags.map === '3d',
+    note: flags.note === '3d',
   };
   if (!Object.values(on).some(Boolean)) return;
   const { mountTown3d } = await import('./town3d/screens.ts');

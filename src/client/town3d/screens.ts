@@ -16,6 +16,7 @@ import { openBar, openShop } from '../town-shop.ts';
 import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { MIN_SCALE, SCREEN } from '../ui3d/layout.ts';
+import { Note3d } from '../window3d/note3d.ts';
 import { TownHud3d } from './hud3d.ts';
 import { Map3d } from './map3d.ts';
 import type { Hit, Page } from './page.ts';
@@ -34,7 +35,7 @@ const rowOf = (page: Page, sel: string) =>
 
 export function mountTown3d(
   root: HTMLElement,
-  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean; map: boolean },
+  on: { party: boolean; shop: boolean; menu: boolean; hud: boolean; talk: boolean; map: boolean; note?: boolean },
 ) {
   let again: (() => void) | undefined; // the open window as its HTML one, should the drawing go away
   let layer: Ui3dLayer;
@@ -277,5 +278,6 @@ export function mountTown3d(
     );
   if (on.hud) new TownHud3d(layer, root);
   if (on.talk) new Talk3d(layer, fits);
+  if (on.note) new Note3d(layer); // takes each notice window by itself (note.ts `setNote3d`)
   requestAnimationFrame(tick);
 }
