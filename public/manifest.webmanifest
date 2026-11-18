@@ -2,6 +2,7 @@
   "name": "Dungeon Tactics",
   "short_name": "Dungeon Tactics",
   "description": "Turn-based tactics in the browser: height, facing, charged spells and a descent into the dungeon.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "fullscreen",

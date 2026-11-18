@@ -36,18 +36,21 @@ export interface TitleLayout {
   lang: Box;
   fs: Box; // the quiet fullscreen shortcut
   main: Box; // the main "Play in fullscreen" (a phone in the browser)
+  install: Box; // "Install the game": over the fullscreen shortcut, or in its place where there is none
 }
 
 // what an arrow or the d-pad walks (ui3d/walk.ts), in order: the main fullscreen button, the commands, the quiet
-// fullscreen shortcut and the language button, each when there is one (title3d.ts walks its buttons in this order)
-export const stops = (L: TitleLayout, lang: boolean, fs = false, main = false): Box[] => [
+// install line, fullscreen shortcut and the language button, each when there is one (title3d.ts walks its buttons in this order)
+export const stops = (L: TitleLayout, lang: boolean, fs = false, main = false, install = false): Box[] => [
   ...(main ? [L.main] : []),
   ...L.rows,
+  ...(install ? [L.install] : []),
   ...(fs ? [L.fs] : []),
   ...(lang ? [L.lang] : []),
 ];
 
-export function titleLayout(w: number, h: number, rows: number): TitleLayout {
+// `fs`: the quiet fullscreen shortcut is on the title (the install line then stacks over it)
+export function titleLayout(w: number, h: number, rows: number, fs = true): TitleLayout {
   const st = stage(w, h, 'frame'),
     s = st.s;
   const at = (x: number, y: number, bw = 0, bh = 0): Box => ({
@@ -76,5 +79,10 @@ export function titleLayout(w: number, h: number, rows: number): TitleLayout {
     lang: { ...lang, y: lang.y + lang.h - lh, h: lh },
     fs: { ...at(REF.fs.x, 0, REF.fs.w), y: lang.y + lang.h - 2 * lh - REF.fs.gap * s, h: lh },
     main: { ...at(REF.main.x, 0, REF.main.w), y: list.y, h: Math.max(REF.main.min, REF.main.h * s) },
+    install: {
+      ...at(REF.fs.x, 0, REF.fs.w),
+      y: lang.y + lang.h - (fs ? 3 : 2) * lh - (fs ? 2 : 1) * REF.fs.gap * s,
+      h: lh,
+    },
   };
 }

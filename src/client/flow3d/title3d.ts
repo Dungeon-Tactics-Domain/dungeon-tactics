@@ -34,12 +34,12 @@ export class Title3d implements Ui3dScreen {
   // with none there: no way round from the last command to the first
   private readonly walk = (e: Event) => {
     const L = this.at,
-      { main, fs, lang } = this,
-      els = [main, ...this.rows, fs, lang].filter((b) => !!b);
+      { main, fs, lang, install } = this,
+      els = [main, ...this.rows, install, fs, lang].filter((b) => !!b);
     if (!this.taken || !L) return;
     e.preventDefault();
     const at = els.indexOf(document.activeElement as HTMLButtonElement);
-    els[at < 0 ? 0 : neighbour(stops(L, !!lang, !!fs, !!main), at, (e as CustomEvent<Way>).detail)]?.focus();
+    els[at < 0 ? 0 : neighbour(stops(L, !!lang, !!fs, !!main, !!install), at, (e as CustomEvent<Way>).detail)]?.focus();
   };
 
   constructor(private readonly layer: Ui3dLayer) {
@@ -58,6 +58,10 @@ export class Title3d implements Ui3dScreen {
   // fullscreen: the quiet shortcut beside the language, or the main button of a phone in the browser
   private get fs() {
     return this.title?.querySelector<HTMLButtonElement>('.title-fs');
+  }
+  // the install line (install.ts), at the bottom of the right column
+  private get install() {
+    return this.title?.querySelector<HTMLButtonElement>('.title-install');
   }
   private get main() {
     return this.title?.querySelector<HTMLButtonElement>('.title-main');
@@ -78,7 +82,7 @@ export class Title3d implements Ui3dScreen {
     if (!this.taken) return;
     this.taken = false;
     this.title?.classList.remove('title3d');
-    for (const e of [this.title?.querySelector<HTMLElement>('.camp-list'), this.lang, this.fs, this.main])
+    for (const e of [this.title?.querySelector<HTMLElement>('.camp-list'), this.lang, this.fs, this.main, this.install])
       e?.removeAttribute('style');
     if (this.layer.solo === this) this.layer.solo = undefined;
     this.at = undefined;
@@ -100,9 +104,9 @@ export class Title3d implements Ui3dScreen {
     const { layer, fixed, color: c, title } = this,
       rows = this.rows,
       list = title?.querySelector<HTMLElement>('.camp-list'),
-      { lang, fs, main } = this;
+      { lang, fs, main, install } = this;
     if (!title || !list) return;
-    const L = (this.at = titleLayout(layer.w, layer.h, rows.length)),
+    const L = (this.at = titleLayout(layer.w, layer.h, rows.length, !!fs)),
       s = L.s;
     const px = (v: number) => `${v}px`;
     Object.assign(list.style, { left: px(L.rows[0].x), top: px(L.rows[0].y), width: px(L.rows[0].w) });
@@ -111,6 +115,7 @@ export class Title3d implements Ui3dScreen {
       b && Object.assign(b.style, { left: px(r.x), top: px(r.y), width: px(r.w), height: px(r.h) });
     seat(lang, L.lang);
     seat(fs, L.fs);
+    seat(install, L.install);
     seat(main, L.main);
     // `px`: page px; the other texts shrink with the pieces on a small page (textPx), as Options' do
     const mesh = (str: string, px: number, hex: string) =>
@@ -149,6 +154,7 @@ export class Title3d implements Ui3dScreen {
     for (const [b, r] of [
       [lang, L.lang],
       [fs, L.fs],
+      [install, L.install],
     ] as const)
       if (b) {
         fixed.box(r.x, r.y, r.w, r.h, 6 * s, rgba(c.plate, 0.95), rgba(c.line, 0.8));
@@ -207,9 +213,11 @@ export class Title3d implements Ui3dScreen {
           ? L.lang
           : active === this.fs
             ? L.fs
-            : active === this.main
-              ? L.main
-              : null;
+            : active === this.install
+              ? L.install
+              : active === this.main
+                ? L.main
+                : null;
     set(this.band, row >= 0 ? o : 0);
     if (r) this.band.group.position.set(r.x, -r.y, 0);
     // on a command the glove stands inside its row, as the reference; on the language button, at its left
