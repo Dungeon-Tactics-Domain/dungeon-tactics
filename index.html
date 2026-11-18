@@ -13,6 +13,12 @@
   <link rel="stylesheet" href="/src/client/style.css">
 </head>
 <body>
+  <!-- shown while the code downloads (about 1 s on a phone, review of Nov 18), over the loading cover until its 3D line
+       draws (src/client/loading.ts): the same words, font, size and place (flow3d/loading3d.ts, 22 px of 1080p,
+       28 px over the middle) on the same dark veil -->
+  <p id="preload" style="position: fixed; inset: 0; z-index: 21; margin: 0; display: grid; place-content: center; background: var(--ui3d-result-veil, #070908); color: var(--ui3d-result-text, #dcd5ac); padding-bottom: min(2.92vw, 5.19vh); font: 700 max(16px, min(1.15vw, 2.04vh)) / 1.4 var(--font-ui3d, serif)">Carregando o jogo…</p>
+  <!-- the language as i18n.ts pickLang picks it -->
+  <script>try { const l = localStorage.getItem('dt:lang'); if (l === 'en' || (l !== 'pt' && !/^pt\b/i.test(navigator.language))) document.getElementById('preload').textContent = 'Loading the game…' } catch {}</script>
   <main id="app"></main>
   <script type="module" src="/src/client/entry.ts"></script>
 </body>

@@ -16,6 +16,7 @@ export class Loading3d implements Ui3dScreen {
   private readonly fill = new Part();
   private line = '';
   private share = 0;
+  private button?: HTMLButtonElement; // Reload, when the load failed
   private shown = -1; // the share the fill was last drawn at
   private live = true;
 
@@ -32,11 +33,12 @@ export class Loading3d implements Ui3dScreen {
     requestAnimationFrame(tick);
   }
 
-  // `share`: 0 to 1 of the files; `line`: what the cover says
-  set(share: number, line: string) {
+  // `share`: 0 to 1 of the files; `line`: what the cover says; `button`: Reload, once the load failed
+  set(share: number, line: string, button?: HTMLButtonElement) {
     this.share = share;
-    if (line !== this.line) {
+    if (line !== this.line || button !== this.button) {
       this.line = line;
+      this.button = button;
       this.resize();
     }
     this.layer.wake();
@@ -47,7 +49,21 @@ export class Loading3d implements Ui3dScreen {
       L = loadingLayout(layer.w, layer.h, layer.s);
     fixed.clear();
     put(fixed, label(layer, layer.s, this.line, 22, c.text), L.line.x, L.line.y, 'centre', layer.w - 32);
-    fixed.box(L.bar.x, L.bar.y, L.bar.w, L.bar.h, L.bar.h / 2, rgba(c.band, 1), rgba(c.line, 0.9));
+    const k = L.button,
+      button = this.button;
+    if (button) {
+      // the title's colour on its edge: the one control, and the one in focus
+      fixed.box(k.x, k.y, k.w, k.h, 8 * layer.s, rgba(c.plate, 1), rgba(c.title, 1));
+      put(
+        fixed,
+        label(layer, layer.s, button.textContent ?? '', 22, c.title),
+        k.x + k.w / 2,
+        k.y + k.h / 2,
+        'centre',
+        k.w - 16,
+      );
+      button.style.cssText = `position: absolute; z-index: 2; left: ${k.x}px; top: ${k.y}px; width: ${k.w}px; height: ${k.h}px`;
+    } else fixed.box(L.bar.x, L.bar.y, L.bar.w, L.bar.h, L.bar.h / 2, rgba(c.band, 1), rgba(c.line, 0.9));
     this.shown = -1;
     layer.wake();
   }
@@ -61,7 +77,7 @@ export class Loading3d implements Ui3dScreen {
     if (at !== this.shown) {
       const L = loadingLayout(layer.w, layer.h, layer.s);
       fill.clear();
-      if (at > 0)
+      if (at > 0 && !this.button)
         fill.box(L.bar.x, L.bar.y, Math.max(L.bar.h, L.bar.w * at), L.bar.h, L.bar.h / 2, rgba(this.color.title, 1));
       this.shown = at;
     }

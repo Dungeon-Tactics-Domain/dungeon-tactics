@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import entry from '../src/client/entry.ts?raw';
 import town from '../src/client/game/town.ts?raw';
 import townHud from '../src/client/game/town-hud.ts?raw';
-import { loadingLayout, loadShare, whenReady } from '../src/client/ready-gate.ts';
+import { IDLE_MS, loadingLayout, loadShare, stillLoading, whenReady } from '../src/client/ready-gate.ts';
 
 // The readiness gate (Nov 18, Fernando: the HTML title and HUD showed while the models loaded and then changed into
 // the 3D ones): nothing of the interface is built before every part landed, and the cover leaves only after it
@@ -95,6 +95,30 @@ describe('readiness gate', () => {
     expect(phone.bar.x).toBe(32);
     expect(phone.bar.x + phone.bar.w).toBe(360 - 32);
     expect(phone.bar.h).toBeGreaterThanOrEqual(8);
+  });
+
+  it('the cover waits while files keep landing, however long, and gives up only after IDLE_MS with none', () => {
+    // a slow phone: a file every 4 s for a minute keeps the cover (it left at 5 s before, review of Nov 18)
+    for (let now = 0; now < 60_000; now += 4000) expect(stillLoading(true, now, now + 3999)).toBe(true);
+    expect(stillLoading(true, 10_000, 10_000 + IDLE_MS)).toBe(false); // a file that never answers
+    expect(stillLoading(false, 10_000, 10_001)).toBe(false); // nothing in flight: no wait at all
+  });
+
+  it('the Reload button of a failed load is a finger wide on a landscape phone, under the line, inside the page', () => {
+    for (const [w, h, s] of [
+      [844, 390, 390 / 1080],
+      [360, 640, 0.33],
+      [1920, 1080, 1],
+    ]) {
+      const { line, bar, button } = loadingLayout(w, h, s);
+      expect(button.h).toBeGreaterThanOrEqual(44);
+      expect(button.w).toBeGreaterThanOrEqual(44);
+      expect(button.y).toBeGreaterThan(line.y + 16);
+      expect(button.y).toBeGreaterThanOrEqual(bar.y + bar.h);
+      expect(button.x).toBeGreaterThanOrEqual(32);
+      expect(button.x + button.w).toBeLessThanOrEqual(w - 32);
+      expect(button.y + button.h).toBeLessThanOrEqual(h);
+    }
   });
 });
 

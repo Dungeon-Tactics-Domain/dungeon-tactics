@@ -31,10 +31,28 @@ export async function whenReady<T extends readonly unknown[], R>(
 // file takes a share of what is left (half way at 28 files, 92% at 100); the cover fills the rest as it leaves
 export const loadShare = (was: number, done: number) => Math.max(was, 1 - Math.exp(-done / 40));
 
-// where the 3D loading screen draws (flow3d/loading3d.ts): the line over the bar, both in the middle of the page;
+// ponytail: a texture or a font that never answers stops holding the cover after this long with no file landing; no retry
+export const IDLE_MS = 5000;
+// the cover waits while files are in flight and one landed in the last IDLE_MS (a slow phone keeps it up as long as
+// files keep coming; a fixed 5 s from the build let the cover go with the models still landing, review of Nov 18)
+export const stillLoading = (busy: boolean, lastFile: number, now: number) => busy && now - lastFile < IDLE_MS;
+
+// where the 3D loading screen draws (flow3d/loading3d.ts): the line over the bar, both in the middle of the page, and
+// under them the Reload button of a failed load (44 px at least: a finger, design system section 8);
 // `s`: one px of the 1080p reference
-export function loadingLayout(w: number, h: number, s: number): { line: { x: number; y: number }; bar: Box } {
+export function loadingLayout(
+  w: number,
+  h: number,
+  s: number,
+): { line: { x: number; y: number }; bar: Box; button: Box } {
   const bw = Math.min(560 * s, w - 64),
-    bh = Math.max(8, 14 * s);
-  return { line: { x: w / 2, y: h / 2 - 28 * s }, bar: { x: (w - bw) / 2, y: h / 2 + 8 * s, w: bw, h: bh } };
+    bh = Math.max(8, 14 * s),
+    bar = { x: (w - bw) / 2, y: h / 2 + 8 * s, w: bw, h: bh },
+    kw = Math.min(Math.max(160, 260 * s), w - 64),
+    kh = Math.max(44, 64 * s);
+  return {
+    line: { x: w / 2, y: h / 2 - 28 * s },
+    bar,
+    button: { x: (w - kw) / 2, y: bar.y + bh + Math.max(16, 32 * s), w: kw, h: kh },
+  };
 }

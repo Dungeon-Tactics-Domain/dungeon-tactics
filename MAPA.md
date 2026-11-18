@@ -54,8 +54,8 @@ parseGrid and withRamps (grid.ts).
 ## src/client — wiring and windows
 
 - `src/client/entry.ts` — the entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game, behind the loading cover until everything landed; the start banner (announce).
-- `src/client/ready-gate.ts` — the readiness gate (`whenReady`): the interface is built only once the models, the 3D pieces' chunks and the fonts landed, and the cover leaves after it drew; the loading bar's share and the 3D loading screen's layout; pure.
-- `src/client/loading.ts` — the loading cover over the whole page (`loadingCover`): the files' count as a line and a bar, drawn in 3D over the unseen HTML ones; holds the hosted fonts too.
+- `src/client/ready-gate.ts` — the readiness gate (`whenReady`): the interface is built only once the models, the 3D pieces' chunks and the fonts landed, and the cover leaves after it drew; the loading bar's share, how long the cover waits for files and the 3D loading screen's layout; pure.
+- `src/client/loading.ts` — the loading cover over the whole page (`loadingCover`): "Loading the game" over a bar filled by the files landed, and a Reload button when the load fails, drawn in 3D over the unseen HTML ones; holds the hosted fonts too.
 - `src/client/no3d.ts` — no3d(): the warning that replaces the page when there is no WebGL or its context is lost (the interface is only 3D).
 - `src/client/main.ts` — Game: wires rules, scene, HUD and input for one battle and owns the turn loop.
 - `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, strike preview "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
@@ -171,7 +171,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, the commands under the list, message band), the scroll fade and mark, where an arrow takes the cursor (`optionsWalk`), and the smallest page that takes the 3D look (`fits`); pure.
 - `src/client/flow3d/options-row.ts` — one row of the 3D Options drawn: its name and a choice in a box, a bar with its number or a switch.
 - `src/client/flow3d/title3d.ts` — Title3d: the title in 3D, drawn over the title's own window, which it takes when the layer arrives and gives back.
-- `src/client/flow3d/loading3d.ts` — Loading3d: the loading screen in 3D (the count over a bar), on a layer of its own over the loading cover, for the download alone.
+- `src/client/flow3d/loading3d.ts` — Loading3d: the loading screen in 3D (the line over a bar, or the Reload button), on a layer of its own over the loading cover, for the download alone.
 - `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button) and the boxes an arrow walks (`stops`); pure.
 - `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D, drawn over each window's own controls, which it takes and gives back.
 - `src/client/flow3d/sheet-draw.ts` — what a 3D sheet draws piece by piece: a list's row (number, face, two lines, second button), a text's line, the head and the foot plates.
