@@ -22,6 +22,34 @@ export function toggleFullscreen(on = !fullscreenOn()) {
     .catch(() => {}); // refused (no gesture, or a browser that never locks): the page stays as it was
 }
 
+// Fernando, Nov 18 (bug): on a phone the browser's bar came back at each change of screen. Every screen is its own page
+// (location.search in crawl.ts goHome and toTitle, title.ts, room-end.ts, expedition-map.ts, saves-ui.ts, i18n.ts), and
+// a page that unloads leaves fullscreen with no fullscreenchange (measured in Chrome). So the wish is kept for the tab
+// (sessionStorage, not store.ts: it must die with the tab) and the new page's first gesture asks again; a browser only
+// grants fullscreen inside one. Leaving it on purpose (Esc, the back gesture, the switch) fires fullscreenchange and
+// forgets the wish
+const WANT = 'dt:fullscreen';
+const wish = (on?: boolean) => {
+  try {
+    if (on === undefined) return sessionStorage.getItem(WANT) === '1';
+    if (on) sessionStorage.setItem(WANT, '1');
+    else sessionStorage.removeItem(WANT);
+  } catch {} // storage blocked: fullscreen just stays one page long, as before
+  return false;
+};
+export function keepFullscreen() {
+  if (!document.fullscreenEnabled) return;
+  document.addEventListener('fullscreenchange', () => wish(fullscreenOn()));
+  if (!wish() || fullscreenOn()) return;
+  // pointerdown carries a mouse's gesture, pointerup a finger's; Escape and the like carry none, so it waits for the next
+  const again = () => {
+    if (!navigator.userActivation?.isActive) return;
+    for (const type of ['pointerdown', 'pointerup', 'keydown']) removeEventListener(type, again, true);
+    toggleFullscreen(true);
+  };
+  for (const type of ['pointerdown', 'pointerup', 'keydown']) addEventListener(type, again, true);
+}
+
 export interface FullscreenEnv {
   api: boolean; // document.fullscreenEnabled
   touch: boolean; // a finger points: (pointer: coarse), as confirm3d.ts and talk.ts ask

@@ -109,6 +109,13 @@ do not rearrange the layout only to reach that number.*
   "Tela cheia" / "Sair da tela cheia" over the language button, and the battle's ☰ list has the same row before
   Options and help (at 844×390 it waits under "▼ Mais abaixo"). None of them where the browser has no Fullscreen API
   (an iPhone: the home screen is the way there, section 3).
+- **Fullscreen across screens** (Fernando, Nov 18, bug: the bar came back at each change of screen): every screen is its
+  own page (`location.search`: town, expedition map, room, title, language), and an unloading page leaves fullscreen
+  with no `fullscreenchange` (measured in headless Chrome). `keepFullscreen` (`fullscreen.ts`, called by `entry.ts`)
+  keeps the wish for the tab in `sessionStorage` and asks again on the new page's first tap or key; leaving on purpose
+  (Esc, back gesture, the switch) forgets it. Between the load and that gesture the bar shows: a browser grants
+  fullscreen only inside a gesture. Changing screens without a new page would need one boot for the title, town and
+  battle (entry.ts builds one per address): not done.
 
 ## 5. Gestures on the map
 

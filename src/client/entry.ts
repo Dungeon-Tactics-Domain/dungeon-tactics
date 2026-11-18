@@ -1,6 +1,7 @@
 // Entry point (index.html): opens the town or builds the battle the address asks for, its scene and its Game, all of it
 // behind the loading cover until everything landed (ready-gate.ts).
 import { Battle } from '../shared/battle/battle.ts';
+import { keepFullscreen } from './fullscreen.ts';
 import { newBattle, selectBattle } from './game/boot.ts';
 import { titleScreen } from './game/title.ts';
 import { bootTown } from './game/town.ts';
@@ -23,6 +24,7 @@ async function boot() {
   // before anything else shows; the sandbox settles its own page, so there the cover leaves as soon as it is built
   const cover = loadingCover(param('sandbox') === null);
   rotateNote(); // "turn the phone" over every screen (mobile-ux), cover included
+  keepFullscreen(); // fullscreen chosen on another screen comes back with this page's first gesture
   // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
   if (param('home') !== null) return bootTown(host, cover);
   const sel = await selectBattle();
