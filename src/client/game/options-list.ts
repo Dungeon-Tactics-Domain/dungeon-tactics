@@ -15,6 +15,30 @@ import type { LayoutMode } from '../ui3d/layout.ts';
 import type { OptionsContext } from './options.ts';
 import { marksOption } from './options-marks.ts';
 
+// Fullscreen (Nov 18, Fernando: a phone showed the game under Chrome's bar). Only where the API exists (an iPhone has none);
+// the row follows `fullscreenchange`, since the request settles later, and the landscape lock only works while fullscreen
+const fullscreenOption = (): Option[] =>
+  document.fullscreenEnabled
+    ? [
+        onOff(
+          t('Tela cheia', 'Fullscreen'),
+          t(
+            'Esconde a barra do navegador. No celular, também trava a tela deitada.',
+            'Hides the browser bar. On a phone it also locks the screen to landscape.',
+          ),
+          () => !!document.fullscreenElement,
+          (on) => {
+            if (!on) return void document.exitFullscreen().catch(() => {});
+            document.documentElement
+              .requestFullscreen()
+              .then(() => screen.orientation?.lock?.('landscape'))
+              .catch(() => {}); // refused (no gesture, or a browser that never locks): the page stays as it was
+          },
+          true,
+        ),
+      ]
+    : [];
+
 export const townGrid = () => t('Grade da cidade', 'Town grid');
 export const townFree = () => t('Movimento fluido na cidade', 'Fluid movement in town');
 
@@ -116,6 +140,7 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
       'The look of the interface, the marks on the map, the pixel style and the camera.',
     ),
     rows: [
+      ...fullscreenOption(),
       pick(
         t('Reduzir movimento', 'Reduce motion'),
         t(
