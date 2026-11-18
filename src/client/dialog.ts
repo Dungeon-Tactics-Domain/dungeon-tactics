@@ -7,6 +7,7 @@ import { t } from './i18n.ts';
 import { button, type Child, el, iconButton } from './icons.ts';
 import type { KeyAction } from './keyboard.ts';
 import { nextSpot, type WalkDir } from './spot-walk.ts';
+import { moreBelow, type ScrollBox, scrollPick, scrollStep } from './window-scroll.ts';
 
 // A `.spot-walk` window (the 3D expedition map; Fernando, Nov 17) walks its buttons by where they are on screen: a
 // direction goes to the nearest button that way, and stays where nothing lies (spot-walk.ts), keys and pad alike. An
@@ -78,6 +79,9 @@ export function dialog(
         e.preventDefault();
         return spotWalk(overlay, WAYS[e.code], walk);
       }
+      // the page keys scroll a window that has `.scroll-cue` boxes, as the pad's right stick does (padDialog)
+      const page = { PageUp: -1, PageDown: 1 }[e.code] as 1 | -1 | undefined;
+      if (page && top && scrollWindow(overlay, page)) return e.preventDefault();
       const sideways = e.code === 'ArrowLeft' || e.code === 'ArrowRight';
       if (dir && items.length && top && !sideways) {
         e.preventDefault();
@@ -136,6 +140,40 @@ export function secondTap(e: Event, text: string): boolean {
 // moves the cursor to the box seen in that direction (Fernando, Nov 17), in place of the walk in the window's own order
 const walked = (overlay: HTMLElement, way: string) =>
   !overlay.dispatchEvent(new CustomEvent('walk', { detail: way, cancelable: true }));
+// A scroll box of a window that may hold more than it shows (Nov 18 tablet review): `.scroll-cue` and, at its foot while
+// more lies below, "▼ More below" (a tablet shows its scrollbar only while a finger moves; a tap scrolls a page). The
+// page keys and the pad's right stick scroll it (scrollWindow). Its class `has-more` follows the scroll and the size
+const measure = (b: HTMLElement): ScrollBox => ({ top: b.scrollTop, view: b.clientHeight, height: b.scrollHeight });
+export function scrollCue(box: HTMLElement) {
+  const more = el(
+    'span',
+    {
+      class: 'scroll-more',
+      'aria-hidden': 'true', // the screen reader reads on past the fold; the cue is for the eye
+      onclick: () => box.scrollBy({ top: scrollStep(measure(box), 1) }),
+      onmousedown: (e: Event) => e.preventDefault(), // the focus stays on its button, not on the page behind
+    },
+    `▼ ${t('Mais abaixo', 'More below')}`,
+  );
+  box.classList.add('scroll-cue');
+  box.append(more);
+  const sync = () => box.classList.toggle('has-more', moreBelow(measure(box)));
+  box.addEventListener('scroll', sync, { passive: true });
+  // the box and what is in it: a face that loads late makes the page taller
+  const seen = new ResizeObserver(sync);
+  for (const e of [box, ...box.children]) seen.observe(e);
+}
+// the focused element's box first, then the window's others; false when none can move that way
+function scrollWindow(overlay: HTMLElement, dir: 1 | -1): boolean {
+  const own = document.activeElement?.closest<HTMLElement>('.scroll-cue');
+  const boxes = [...new Set([own, ...overlay.querySelectorAll<HTMLElement>('.scroll-cue')])].filter(
+    (b): b is HTMLElement => !!b && overlay.contains(b),
+  );
+  const i = scrollPick(boxes.map(measure), dir);
+  if (i < 0) return false;
+  boxes[i].scrollBy({ top: scrollStep(measure(boxes[i]), dir) });
+  return true;
+}
 
 // The gamepad inside the topmost window (the battle's and the town's loops): A presses the focused button, B closes
 // the window like Esc, the d-pad's up and down move between its visible buttons, and its left and right are the arrow
@@ -160,6 +198,7 @@ export function padDialog(a: KeyAction): boolean {
   else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
   // the shoulders turn a window's pages where it has them (the 3D Options' categories, flow3d/options3d.ts)
   else if (a.k === 'rotate') overlay.dispatchEvent(new CustomEvent('shoulder', { detail: a.dir }));
+  else if (a.k === 'turns') scrollWindow(overlay, a.dir);
   else if (a.k === 'cursor' && overlay.matches('.spot-walk')) spotWalk(overlay, a.dir);
   else if (a.k === 'cursor' && walked(overlay, a.dir)) return true;
   else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {

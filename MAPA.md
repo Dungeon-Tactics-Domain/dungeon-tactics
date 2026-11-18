@@ -203,6 +203,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/spot-walk.ts` — nextSpot(): the nearest box in a direction, for windows whose arrows follow where things are on screen; pure.
+- `src/client/window-scroll.ts` — a window's scroll boxes: whether one hides more below (moreBelow), which one a scroll key or the right stick moves (scrollPick) and by how much (scrollStep); pure.
 - `src/client/option-row.ts` — the Options list's row: a setting's name, its value between ◀ ▶, the pure steps (cycle, pctAt).
 - `src/client/icons.ts` — el(), button(), iconButton() and icon() over the icon sprite, and the ability icon atlas.
 - `src/client/talk.ts` — dialogue box: typed text, blips, talking faces and text speed (dt:text).

@@ -76,7 +76,7 @@ export const ACTIONS = {
   rotateRight: { keys: ['R'], pad: ['rb'] },
   zoom: { keys: ['Q', 'E'], pad: ['lt', 'rt'] },
   camera: { keys: ['Q', 'E', 'R'], pad: ['lt', 'rt', 'lb', 'rb'] }, // zoom and rotate under one hint
-  turns: { keys: ['PgUp', 'PgDn'], pad: ['rstick'] }, // scroll the turn list
+  turns: { keys: ['PgUp', 'PgDn'], pad: ['rstick'] }, // scroll the turn list, or the open window (dialog.ts scrollWindow)
   move: { keys: ['↑', '↓', '←', '→'], pad: ['dpad'] }, // the cursor, a menu's focus
   sides: { keys: ['←', '→'], pad: ['dpadH'] }, // a value, a page
   tabs: { keys: ['Q', 'E'], pad: ['lb', 'rb'] }, // the category before and after, in Options (flow3d/options3d.ts)
