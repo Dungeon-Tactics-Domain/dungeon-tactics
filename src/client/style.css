@@ -542,9 +542,9 @@ button[hidden],
   display: flex;
   gap: var(--gap);
 } /* the open list goes over the counter and the command menu */
-/* the back button is for fingers; with a keyboard or mouse Esc and the right button already go back */
-.kbd .tools .back,
-.kbd .tools .undo {
+/* the back button is for fingers; with a keyboard or mouse Esc and the right button already go back. Undo shows on
+   the PC too (Fernando, Nov 18), the same as its drawing (window3d/tools-layout.ts toolShown) */
+.kbd .tools .back {
   display: none;
 }
 .tools .burger[aria-expanded="true"] {

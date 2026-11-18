@@ -45,7 +45,8 @@ do not rearrange the layout only to reach that number.*
 - Controls stay out of the play area and away from the far corners (a thumb reaches the lower sides best; the corners
   hold the notch and the system gestures).
 - About five or six active controls at a time: the command menu's rows, Back, Undo, ☰.
-- **Undo is always a button on screen** (`.tools .undo`, beside Back and ☰; Fernando, Nov 18): live whenever the battle
+- **Undo is always a button on screen** (`.tools .undo`, beside Back and ☰; Fernando, Nov 18; on the PC with a mouse
+  too, the same day, `toolShown` in `window3d/tools-layout.ts`, while Back stays a finger's): live whenever the battle
   has a step to undo (`undoShown`, `hud-menus.ts`), faded to 45% (`OFF_ALPHA`, `tool-rows.ts`) and dead with none, so it
   never comes and goes under the finger. The ☰ list's Undo row follows it (`aria-disabled`, drawn in `--ui3d-ink-off`).
 - **Undo says its word**: "↶ Desfazer" (`window3d/tools3d.ts` `WORD`), so Undo and Back (↩, the arrow alone, kept

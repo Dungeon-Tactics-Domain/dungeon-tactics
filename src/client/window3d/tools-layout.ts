@@ -26,6 +26,12 @@ export interface ToolsSpec {
 
 // a button's height, and where the row of buttons ends at the bottom with its gap: what the Height corner keeps under
 // (hints3d.ts; Fernando, Nov 18: on a phone it sat under the menu button and Undo)
+// Which corner buttons show: the menu button and Undo always (Undo faded with no step; Fernando, Nov 18: on the PC with
+// a mouse too), Back only for a finger while there is a screen to go back to (Esc and the right button go back on a PC).
+// style.css .kbd .tools .back hides the same one, so no unseen button takes a click
+export const toolShown = (tool: 'back' | 'undo' | 'menu', keys: boolean, hidden: boolean) =>
+  tool !== 'back' || !(keys || hidden);
+
 const buttonSize = (s: number) => Math.max(TAP, lu(56 * s));
 export const toolsFoot = (s: number, top: number) => top + buttonSize(s) + GAP;
 

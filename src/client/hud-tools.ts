@@ -16,8 +16,8 @@ export class ToolsMenu {
     () => this.showTools(!!this.toolsMenu.hidden),
     { class: 'icon burger', 'aria-haspopup': 'menu', 'aria-expanded': 'false' },
   );
-  // Undo on the screen, left of Back and the menu button: for the fingers, as Back is. Always there, faded with no step
-  // to take back (Fernando, Nov 18; setUndo)
+  // Undo on the screen, left of Back and the menu button: for the fingers, and since Nov 18 for the mouse too. Always
+  // there, faded with no step to take back (Fernando, Nov 18; setUndo)
   readonly undo: HTMLElement;
   private readonly undoRow: HTMLElement;
   private readonly fastBtn: HTMLElement;

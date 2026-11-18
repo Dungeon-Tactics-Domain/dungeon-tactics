@@ -21,7 +21,7 @@ import type { Box } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, quad } from '../ui3d/panel.ts';
 import { ease, land, settled, spring } from '../ui3d/spring.ts';
 import { textMesh, textWidth } from '../ui3d/text.ts';
-import { rowSeen, type ToolsLayout, toolsLayout } from './tools-layout.ts';
+import { rowSeen, type ToolsLayout, toolShown, toolsLayout } from './tools-layout.ts';
 
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
 const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the menu button while its list is open
@@ -131,9 +131,10 @@ export class Tools3d implements Ui3dScreen {
       s = layer.s;
     layer.wake();
     const open = !this.menu.hidden,
-      // left to right; Back and Undo are for a finger: Back while there is a screen to go back, Undo always (faded
-      // with no step to take back)
-      els = [this.back, this.undo, this.burger].filter((e) => e === this.burger || !(KEYS || e.hidden)),
+      // left to right (toolShown): Back for a finger while there is a screen to go back, Undo always
+      els = [this.back, this.undo, this.burger].filter((e) =>
+        toolShown(e === this.back ? 'back' : e === this.undo ? 'undo' : 'menu', KEYS, !!e.hidden),
+      ),
       items = [...this.menu.querySelectorAll<HTMLElement>('.item')],
       font = layer.theme.font,
       lay = toolsLayout({

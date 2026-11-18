@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { type LayoutMode, stage } from '../src/client/ui3d/layout.ts';
-import { rowSeen, type ToolsSpec, toolsFoot, toolsLayout } from '../src/client/window3d/tools-layout.ts';
+import { rowSeen, type ToolsSpec, toolShown, toolsFoot, toolsLayout } from '../src/client/window3d/tools-layout.ts';
 
 // The 3D corner menu's own layout (Nov 18: the 3D pieces stop measuring the HTML). Each case is what the browser
 // measured on the unseen HTML menu with its list open, on a sandbox scene, the day before the numbers moved to
@@ -190,5 +190,17 @@ describe('3D corner menu: its layout with no DOM', () => {
     expect(toolsLayout(spec(844, 390, 'edges')).head).toBe(18); // 42 x 0.4396 = 18.46
     expect(toolsLayout(spec(1600, 560, 'edges')).head).toBe(25); // 25.2
     expect(toolsLayout(spec(1024, 768, 'frame')).head).toBe(22); // 22.4
+  });
+});
+
+// Fernando, Nov 18: Undo on the screen with a mouse too; Back stays a finger's (Esc and the right button go back)
+describe('which corner buttons show', () => {
+  it('the menu button and Undo always, on the PC and on touch; Back only for a finger with a screen to go back', () => {
+    for (const keys of [true, false])
+      for (const hidden of [true, false]) {
+        expect(toolShown('menu', keys, hidden)).toBe(true);
+        expect(toolShown('undo', keys, hidden)).toBe(true);
+        expect(toolShown('back', keys, hidden)).toBe(!keys && !hidden);
+      }
   });
 });
