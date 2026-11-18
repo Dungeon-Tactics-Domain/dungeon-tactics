@@ -43,16 +43,21 @@ export function mountTown3d(root: HTMLElement) {
   let live = true;
   const unfill: (() => void)[] = []; // the windows below are no screens of the layer: they leave its places themselves
   // no WebGL here or the context lost: the warning, never the HTML windows under the drawing
-  const lost = () => {
+  // the town's screen left (nav.ts): the layer, its frames and the windows' places go with it
+  const drop = () => {
     live = false;
     for (const u of unfill) u();
     layer.dispose();
+  };
+  const lost = () => {
+    drop();
     no3d();
   };
   try {
     layer = new Ui3dLayer(root, lost);
   } catch {
-    return no3d();
+    no3d();
+    return;
   }
   const ui = new Town3d(layer);
   new Map3d(layer); // the expedition map draws over its own window, which it takes by itself (map3d.ts)
@@ -280,4 +285,5 @@ export function mountTown3d(root: HTMLElement) {
   new Note3d(layer); // takes each notice window by itself (note.ts)
   new Effects3d(layer); // the effects over the page (looks3d.ts `effects`), as in a battle
   requestAnimationFrame(tick);
+  return drop;
 }

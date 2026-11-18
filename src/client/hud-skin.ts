@@ -92,7 +92,8 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
 
 // The town's windows, HUD and speech box and the expedition map (town3d/): its own layer over the town's HUD. The chunk
 // lands behind the loading cover (ready-gate.ts) and the town mounts it on its HUD as it builds it
-export async function loadTownSkin(): Promise<(root: HTMLElement) => void> {
+// What mounting returns takes it all down again (undefined with no WebGL: the warning shows)
+export async function loadTownSkin(): Promise<(root: HTMLElement) => (() => void) | undefined> {
   const { mountTown3d } = await import('./town3d/screens.ts');
   return mountTown3d;
 }
