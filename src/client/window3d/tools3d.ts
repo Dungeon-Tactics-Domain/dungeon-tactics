@@ -29,9 +29,9 @@ const BAR: Rgba = [0.96, 0.95, 0.9, 1];
 // text sizes in px of the reference (never under 16 px on the page; a key cap's letters 12)
 const SIZE = { head: 24, row: 26, glyph: 26, state: 18, back: 28 };
 const OVER = 40; // the list draws over the Height corner and the hints, which share the layer
-// Back and Undo carry their word beside the arrow (Fernando, Nov 18: ↶ and ↩ looked the same), Undo the same word as
-// its row in the list; faded to OFF_ALPHA with no step to take back
-const WORD = { back: () => t('↩ Voltar', '↩ Back'), undo: () => t('↶ Desfazer', '↶ Undo') };
+// Undo carries its word beside the arrow, the same as its row in the list (Fernando, Nov 18: ↶ and ↩ looked the same);
+// Back keeps the arrow alone, so on a phone it stays clear of the help pill. Undo fades to OFF_ALPHA with no step
+const WORD = { back: () => '↩', undo: () => t('↶ Desfazer', '↶ Undo') };
 const dim = (c: Rgba): Rgba => [c[0], c[1], c[2], c[3] * OFF_ALPHA];
 const DIM_WHITE = WHITE + Math.round(OFF_ALPHA * 255).toString(16);
 const px = (v: number) => `${v}px`;

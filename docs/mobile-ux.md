@@ -48,9 +48,10 @@ do not rearrange the layout only to reach that number.*
 - **Undo is always a button on screen** (`.tools .undo`, beside Back and ☰; Fernando, Nov 18): live whenever the battle
   has a step to undo (`undoShown`, `hud-menus.ts`), faded to 45% (`OFF_ALPHA`, `tool-rows.ts`) and dead with none, so it
   never comes and goes under the finger. The ☰ list's Undo row follows it (`aria-disabled`, drawn in `--ui3d-ink-off`).
-- **Undo and Back say their word**: "↶ Desfazer" and "↩ Voltar" (`window3d/tools3d.ts` `WORD`), so the two arrows are
-  never told apart by their shape alone. Undo is "Desfazer" on the button and on its ☰ row; the command menu's
-  "Desfazer movimento" is the Move row itself turned around, not this control.
+- **Undo says its word**: "↶ Desfazer" (`window3d/tools3d.ts` `WORD`), so Undo and Back (↩, the arrow alone, kept
+  narrow to stay clear of the help pill on a phone) are never told apart by the arrow's shape. Undo is "Desfazer" on
+  the button and on its ☰ row; the command menu's "Desfazer movimento" is the Move row itself turned around, not this
+  control.
 - **The corner buttons and the Height** share the top right: the Height corner drops under the row of buttons where the
   page has no room for both (`heightBox`, `hints3d/hints-view.ts`; `toolsFoot`, `window3d/tools-layout.ts`). Under the
   Height, the tile line leaves out the height the corner already shows.

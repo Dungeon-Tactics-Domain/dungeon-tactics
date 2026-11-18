@@ -158,7 +158,7 @@ describe('3D corner menu: its layout with no DOM', () => {
     expect(rowSeen(hair, toolsLayout(spec(844, 390, 'edges', { scroll: 2 })).rows[0])).toBe(false);
   });
 
-  // Fernando, Nov 18: Back and Undo carry their word ("↩ Voltar", "↶ Desfazer"), so ↶ and ↩ are told apart
+  // Fernando, Nov 18: Undo carries its word ("↶ Desfazer"), so ↶ and ↩ are told apart
   it('a button with its word is as wide as the word, the row still 8 px apart and on the corner', () => {
     const [back, undo, menu] = toolsLayout(spec(844, 390, 'edges', { buttons: 3, widths: [80, 100, 0] })).buttons;
     expect([back.w, undo.w, menu.w]).toEqual([80, 100, 44]);
