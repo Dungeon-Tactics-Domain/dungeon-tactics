@@ -181,7 +181,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D: the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu, which it seats and whose buttons keep the input.
 - `src/client/window3d/tools-layout.ts` — toolsLayout: the corner menu's buttons, open list, rows and scroll with no DOM; pure.
 - `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D: a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
-- `src/client/window3d/talk3d.ts` — Talk3d: the speech box and the boxless opening narration drawn in 3D from talk-layout's numbers, the unseen box of talk.ts seated under it, in town and in battle.
+- `src/client/window3d/talk3d.ts` — Talk3d: the speech box and the boxless opening narration drawn in 3D from talk-layout's numbers, the face too (talk-face.ts), the unseen box of talk.ts seated under it, in town and in battle.
+- `src/client/window3d/talk-face.ts` — TalkFace: the speaker's painted face (or portrait) in the 3D speech box, on the frame its mouth is on, with the new speaker's hop; hop and faceFit pure.
 - `src/client/window3d/talk-layout.ts` — talkLayout: the speech box, its name plaque, strip, Skip, hint and words on the page, growing with the lines typed, with no DOM; pure.
 - `src/client/window3d/status-view.ts` — where the 3D Status sheet sits and where each of its rows goes (statusLayout); pure.
 - `src/client/window3d/note3d.ts` — Note3d: a notice window in 3D: title, legend of marks, paragraphs, a figure and 1 to 3 plaques on a parchment sheet, over an unseen window of dialog.ts with the real buttons.

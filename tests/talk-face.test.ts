@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { charMs, faceOf, faceSize, mouthFrame } from '../src/client/talk.ts';
+import { faceFit, hop } from '../src/client/window3d/talk-face.ts';
 import FACES from '../src/content/faces.json';
 
 const TALK = [1, 2]; // the painted sheets' mouthFrames
@@ -64,5 +65,23 @@ describe('charMs: the pause between two letters of a sentence', () => {
   });
   it('shows the whole sentence at once under Reduce motion, whatever the speed', () => {
     for (const speed of ['normal', 'fast', 'instant'] as const) expect(charMs(speed, true)).toBe(0);
+  });
+});
+
+// The 3D speech box's face (Nov 18): where the picture sits in its frame and the hop of a new speaker, as the HTML face
+describe('3D speech box face', () => {
+  it('fills the 132 px frame less its 2 px border, and a phone half that', () => {
+    expect(faceFit({ x: 106, y: 492, w: 132, h: 132 }, true)).toEqual({ x: 108, y: 494, w: 128, h: 128 });
+    expect(faceFit({ x: 32, y: 100, w: 66, h: 66 }, true)).toEqual({ x: 33, y: 101, w: 64, h: 64 });
+  });
+  it('stands the rendered portrait at 3:4 on the frame left, as .talk-face .portrait (99x132)', () => {
+    expect(faceFit({ x: 0, y: 0, w: 132, h: 132 }, false)).toEqual({ x: 0, y: 0, w: 99, h: 132 });
+  });
+  it('hops from 6 px low, 92 % and 40 % seen to rest in 220 ms, and stays at rest after', () => {
+    expect(hop(0)).toEqual({ dy: 6, scale: 0.92, alpha: 0.4 });
+    for (const ms of [220, 1000]) expect(hop(ms)).toEqual({ dy: 0, scale: 1, alpha: 1 });
+    const mid = hop(110);
+    expect(mid.dy).toBeGreaterThan(0);
+    expect(mid.dy).toBeLessThan(3);
   });
 });

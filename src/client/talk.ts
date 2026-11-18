@@ -167,7 +167,13 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
       const drawn = sheet && faceSheet(who.def, sheet);
       face.replaceChildren(drawn ? drawn.node : portrait(who.def));
       const talking = still ? [] : (sheet?.mouthFrames ?? []);
-      mouth = drawn?.show;
+      // who and which frame, on the face too: the 3D box draws it from there (window3d/talk3d.ts)
+      face.dataset.def = who.def;
+      face.dataset.frame = '0';
+      mouth = (n) => {
+        drawn?.show(n);
+        face.dataset.frame = String(n);
+      };
       const start = performance.now();
       name.textContent = LANG === 'en' && who.en ? who.en : who.name; // proper names are the same in both languages
       name.hidden = face.hidden = !who.name; // narrator: no portrait or name

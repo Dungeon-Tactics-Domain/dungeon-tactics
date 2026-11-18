@@ -3,21 +3,22 @@
 // speaker's name on a dark plaque over its top left corner, the words in the paper's ink, the ▼ when the sentence is
 // out. The opening narration (`dark`) has no box: the page goes to night under the Beacon's blue glow, which breathes
 // (still under Reduce motion), and the words stand large in its middle, with Skip drawn at the foot for a finger.
-//   State and input: the box of talk.ts stays, unseen but for the painted face, which shows over the parchment as it
-//   is (its mouth, its hop and the portrait that stands in for it are the box's own). The box types the words, takes
-//   Enter, the click, the pad and Esc, and is what a screen reader hears; this screen copies what it says. Where each
-//   part goes is talk-layout.ts, no measure of the HTML: the box, the strip and Skip are seated from the same numbers
-//   by style on the elements, the face in the box's corner too, taken back when the drawing goes. Of the style
-//   sheet the face keeps only its own look (its frame and the size of its picture).
+//   State and input: the box of talk.ts stays, unseen, its face too (Nov 18: drawn here, talk-face.ts, on the frame
+//   its mouth is on). The box types the words, takes Enter, the click, the pad and Esc, and is what a screen reader
+//   hears; this screen copies what it says. Where each part goes is talk-layout.ts, no measure of the HTML: the box,
+//   the strip and Skip are seated from the same numbers by style on the elements, taken back when the drawing goes.
 import { Group, type Mesh, ShaderMaterial, Vector2 } from 'three';
 import { colors, label, lift, rgba } from '../flow3d/draw.ts';
 import { Part, type Quad } from '../hints3d/hints3d.ts';
 import { fill } from '../looks3d.ts';
+import { modelOf } from '../markers.ts';
+import { faceOf } from '../talk.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import type { Box } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, QUAD_VERT, quad, type Rgb } from '../ui3d/panel.ts';
 import { safeSides } from '../ui3d/safe-area.ts';
 import { dropText, lineCount, textMesh, textWidth } from '../ui3d/text.ts';
+import { TalkFace } from './talk-face.ts';
 import { talkLayout } from './talk-layout.ts';
 
 const OVER = 40; // over the HUD's own pieces, which share the layer
@@ -50,10 +51,12 @@ export class Talk3d implements Ui3dScreen {
   private readonly release: () => void;
   private words?: Quad;
   private stale = false;
+  private readonly face = new TalkFace(() => this.layer.wake(), 31 + OVER);
+  private faceEl?: HTMLElement | null; // the unseen face of talk.ts: who speaks and the frame its mouth is on
 
   constructor(private readonly layer: Ui3dLayer) {
     this.color = colors(layer);
-    this.flat.add(this.fixed.group);
+    this.flat.add(this.fixed.group, this.face.group);
     this.fixed.want = 1;
     layer.add(this, 'talk');
     this.release = fill('talk', (overlay) => this.take(overlay));
@@ -101,6 +104,7 @@ export class Talk3d implements Ui3dScreen {
     (this.paper?.material as ShaderMaterial | undefined)?.dispose();
     this.paper?.removeFromParent();
     this.paper = this.words = undefined;
+    this.face.set('', '', undefined, 0);
     this.layer.wake();
   }
 
@@ -144,10 +148,21 @@ export class Talk3d implements Ui3dScreen {
     seat(box, b);
     seat(title, L.title);
     seat(skip, L.skip, 'display:block');
-    // the face in the box's corner, at half size on a phone (`zoom` scales its own offsets too)
-    const zoom = L.face / 132 || 1;
-    find('.talk-face')?.setAttribute('style', `position:absolute;left:${14 / zoom}px;top:${18 / zoom}px;zoom:${zoom}`);
-    const key = JSON.stringify([b, who, done, focus === skip, title?.textContent, layer.dpr, s]);
+    // the face in the box's corner, drawn: the HTML one stays in place, unseen, as the rest of the box
+    this.faceEl = find('.talk-face');
+    this.faceEl?.setAttribute('style', 'opacity:0');
+    const at = L.face && who ? { x: b.x + 16, y: b.y + 20, w: L.face, h: L.face } : undefined;
+    this.face.set(this.faceEl?.dataset.def ?? '', who, at, performance.now());
+    const key = JSON.stringify([
+      b,
+      who,
+      this.faceEl?.dataset.def,
+      done,
+      focus === skip,
+      title?.textContent,
+      layer.dpr,
+      s,
+    ]);
     if (key !== fixed.key) {
       fixed.clear();
       fixed.key = key;
@@ -194,6 +209,23 @@ export class Talk3d implements Ui3dScreen {
         fixed.text(m, r.x + r.w / 2, r.y + r.h / 2);
       };
       // the speaker's name: a dark plaque over the box's top left corner, where the HTML tab stands
+      // the face's frame: the HTML one's colours (style.css .face-sheet); the Beacon, with no picture, its gem
+      if (at) {
+        const css = getComputedStyle(document.documentElement),
+          k = L.face / 132,
+          def = this.faceEl?.dataset.def ?? '';
+        if (faceOf(def) || modelOf(def))
+          fixed.box(
+            at.x,
+            at.y,
+            at.w,
+            at.h,
+            0,
+            rgba(css.getPropertyValue('--paper-hi').trim()),
+            rgba(css.getPropertyValue('--paper-edge').trim()),
+          );
+        else fixed.box(at.x + 18 * k, at.y + 18 * k, 96 * k, 96 * k, 48 * k, rgba('#2bb8d6'), rgba('#bff7ff'));
+      }
       if (L.name) plate(L.name, who, 30, c.title);
       if (title && L.title) plate(L.title, title.textContent ?? '', 30, c.text);
       if (skip) plate(L.skip, skip.textContent ?? '', 24, c.text, focus === skip);
@@ -212,7 +244,7 @@ export class Talk3d implements Ui3dScreen {
       lift(fixed, OVER);
     }
     // the words, as far as the box has typed them
-    const at = L.text,
+    const tx = L.text,
       px = L.size;
     const old = this.words; // dropped after the new one is made, so the same words keep their texture
     this.words = undefined;
@@ -225,15 +257,15 @@ export class Talk3d implements Ui3dScreen {
         size: px,
         color: dark ? c.text : layer.theme.ink,
         font: layer.theme.font,
-        width: at.w,
+        width: tx.w,
         line: L.line,
         centre: dark,
       },
       layer.dpr,
     ) as Quad;
     // the box holds its words whatever their length; the narration's grows with them
-    if (!dark) m.scale.multiplyScalar(Math.min(1, (b.y + b.h - at.y - 8 * s) / m.scale.y));
-    m.position.set(dark ? at.x + at.w / 2 : at.x + m.scale.x / 2, -(at.y + m.scale.y / 2), 0);
+    if (!dark) m.scale.multiplyScalar(Math.min(1, (b.y + b.h - tx.y - 8 * s) / m.scale.y));
+    m.position.set(dark ? tx.x + tx.w / 2 : tx.x + m.scale.x / 2, -(tx.y + m.scale.y / 2), 0);
     m.renderOrder = 31 + OVER;
     this.words = m;
     this.flat.add(m);
@@ -246,7 +278,8 @@ export class Talk3d implements Ui3dScreen {
       this.stale = false;
       this.draw();
     }
-    const moving = this.fixed.fade(this.layer.still ? 10 : dt * 3);
+    const hops = this.face.frame(Number(this.faceEl?.dataset.frame ?? 0), performance.now(), this.layer.still);
+    const moving = this.fixed.fade(this.layer.still ? 10 : dt * 3) || hops;
     if (!this.dark || this.layer.still) return moving;
     // the Beacon breathes every 4 s, as the HTML night did
     const glow = (this.paper?.material as ShaderMaterial | undefined)?.uniforms.uGlow;
@@ -259,5 +292,6 @@ export class Talk3d implements Ui3dScreen {
     this.clear();
     this.layer.remove(this);
     this.paint.dispose();
+    this.face.dispose();
   }
 }
