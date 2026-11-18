@@ -74,13 +74,8 @@ export function queueEnd(u: UnitState, charge: boolean, round: number) {
   return [
     charge
       ? null
-      : el(
-          'span',
-          { class: 'queue-stats', title: text.long },
-          line('hp', text.hp, s.hp, s.hpMax),
-          line('ct', text.ct, s.ct, s.ctMax),
-        ),
-    el('span', { class: 'queue-round', title: t(`Rodada ${round}`, `Round ${round}`) }, String(round)),
+      : el('span', { class: 'queue-stats' }, line('hp', text.hp, s.hp, s.hpMax), line('ct', text.ct, s.ct, s.ctMax)),
+    el('span', { class: 'queue-round' }, String(round)),
   ];
 }
 
@@ -115,7 +110,7 @@ function strike(f: Forecast, ability: string) {
               'span',
               { class: 'strike-row' },
               el('strong', { class: 'strike-pts' }, amount, el('small', {}, 'PTS')),
-              el('span', { class: 'strike-hit', title: t('Chance de acerto', 'Chance to hit') }, `⊕ ${f.chance}%`),
+              el('span', { class: 'strike-hit' }, `⊕ ${f.chance}%`),
             )
           : null,
       ),
