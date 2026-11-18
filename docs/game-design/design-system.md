@@ -272,7 +272,8 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
 - **Corner menu** (`window3d/tools3d.ts`): the menu button (3 bars) and Back as dark slate plates like
   the pill (the button lighter while its list is open), and the list as a parchment panel like the command menu's: a
   head, a row per tool (`tool-rows.ts`) with its glyph in the icon column, its name, its key on a cap and "on"/"off" in
-  words for the two switches; the row under the mouse is lit with the glove beside it. The HTML menu stays unseen at the
+  words for the two switches; a Fullscreen row before Options and help says what a tap does now ("Tela cheia" / "Sair
+  da tela cheia", no key; Nov 18), left out with no Fullscreen API; the row under the mouse is lit with the glove beside it. The HTML menu stays unseen at the
   drawn sizes (rows touching, never under `--tap`) and keeps the place, the buttons and the taps. The reference has no
   corner menu; the panel is its command menu's (refs 12, 13).
 - **Status window** (`window3d/status3d.ts`): the battle darkened and the rest of the HUD away, as on the

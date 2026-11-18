@@ -57,8 +57,8 @@ do not rearrange the layout only to reach that number.*
   stage stays centred whichever way the phone lies. The `frame` layout is already centred and ignores it.
 
 - **iOS has no Fullscreen API**: the way to full screen there is Share › Add to Home Screen. `index.html` gives it
-  `apple-touch-icon.png` (180 px) and `apple-mobile-web-app-capable` with a `black-translucent` status bar, since iOS
-  ignores the manifest's icons and `display`.
+  `apple-touch-icon.png` (180 px) and `apple-mobile-web-app-capable` with a `black-translucent` status bar, Safari's
+  own tags for a home-screen app (how much of the manifest each iOS version reads was not checked).
 
 ## 4. Where controls go
 

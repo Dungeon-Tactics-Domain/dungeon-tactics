@@ -1,4 +1,5 @@
-// The battle HUD's corner menu (3 bars): undo, rotate, whole map, pixel size, fast battle, fps counter and Options, each with its key.
+// The battle HUD's corner menu (3 bars): undo, rotate, whole map, pixel size, fast battle, fps counter, fullscreen and
+// Options, each with its key where it has one.
 // Owns its document listeners while open; close() removes them.
 import { fpsOn } from './fps.ts';
 import { fullscreenLabel, fullscreenNow, toggleFullscreen } from './fullscreen.ts';
