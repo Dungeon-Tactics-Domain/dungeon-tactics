@@ -42,7 +42,7 @@ export class Confirm3d implements Ui3dScreen {
   ) {
     this.flat.add(this.part.group);
     layer.root.classList.add('confirm3d');
-    layer.add(this);
+    layer.add(this, 'confirm');
   }
 
   // Called by the HUD after it drew the HTML window; `open`: a hero's turn with nothing playing

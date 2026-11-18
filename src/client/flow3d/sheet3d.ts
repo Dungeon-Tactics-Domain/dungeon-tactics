@@ -58,7 +58,7 @@ export class Sheet3d implements Ui3dScreen {
   constructor(private readonly layer: Ui3dLayer) {
     this.color = colors(layer);
     this.flat.add(this.veil.group, this.band.group, this.band2.group, this.fixed.group, this.mark.group);
-    layer.add(this);
+    layer.add(this, 'sheets');
     setSheet3d((overlay, sheet) => this.take(overlay, sheet));
   }
 

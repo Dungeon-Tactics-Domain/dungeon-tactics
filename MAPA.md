@@ -109,8 +109,9 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
 - `src/client/mark-style.ts` — how the board's marks are drawn: simples, luz, pedra or neon (dt:marks, ?marks=), and the listener the open battle redraws on.
-- `src/client/layout-mode.ts` — interface layout choice, edges or frame (dt:layout, ?layout=), set as data-layout on the page.
-- `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only): the 16:9 area, thirds, centre and every region of layout.ts as placed.
+- `src/client/layout-mode.ts` — interface layout choice, edges or frame (dt:layout, ?layout=), set as data-layout on the page and told to who listens (onLayout: the 3D layer).
+- `src/client/ui-pieces.ts` — the interface's pieces by name (PIECE_NAMES): what each screen registers on the 3D layer as, and which are hidden now (hidePieces, the sandbox's `hide`); pure.
+- `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only), a screen of the 3D layer: lines for the 16:9 area, thirds and centre, and a named box for every region of layout.ts as placed.
 - `src/client/ui3d/layout.ts` — the battle interface's regions measured on FFT The Ivalice Chronicles (REGIONS) and where each sits on a page in the two layouts (stage, place); pure.
 - `src/client/ui3d/walk.ts` — where the cursor goes on a 3D screen: from the box in focus, an arrow or the d-pad takes the nearest box seen that way, and stays with none there (neighbour); pure.
 - `src/client/ui3d/face.ts` — a painted face (a frame of the face sheet, or the portrait's top) as a quad on the 3D layer, grey for the fallen (faceMesh).
@@ -253,7 +254,8 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client/dev — localhost only
 
-- `src/client/dev/sandbox-spec.ts` — sandbox scene spec: types, parsing and the address, shared with scripts/sandbox.mjs.
+- `src/client/dev/sandbox-spec.ts` — sandbox scene spec: types, parsing, the pieces a `hide` list names (hiddenPieces), the old look keys left out (dropOld) and the address, shared with scripts/sandbox.mjs.
+- `src/client/dev/sandbox-html.ts` — the HTML panels a `hide` name still has on the page, hidden by CSS until the HTML interface is deleted (hideHtml).
 - `src/client/dev/sandbox-play.ts` — what a spec does to the battle: cast, patch on live units, placement checks and played steps.
 - `src/client/dev/sandbox.ts` — stages a battle from a spec and exposes window.__sandbox.
 - `src/client/dev/arena.ts` — the animation arena map for the sandbox bench (?scenario=arena).

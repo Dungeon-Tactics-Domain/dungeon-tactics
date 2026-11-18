@@ -44,7 +44,7 @@ export class Menu3d implements Ui3dScreen {
     this.glove.model.rotation.set(0.2, -0.3, 0);
     layer.root.classList.add('menu3d');
     layer.root.append(this.host);
-    layer.add(this);
+    layer.add(this, 'menu');
   }
 
   // Called by the HUD with each turn screen; `open`: a hero's turn with nothing playing

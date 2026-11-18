@@ -79,7 +79,7 @@ export class Tools3d implements Ui3dScreen {
     this.menu.addEventListener('focusin', point, o);
     this.menu.addEventListener('pointerleave', point, o);
     this.menu.addEventListener('scroll', () => this.draw(), o); // a phone lying down: the list scrolls
-    layer.add(this);
+    layer.add(this, 'tools');
   }
 
   resize() {

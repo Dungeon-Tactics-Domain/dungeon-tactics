@@ -61,18 +61,15 @@ different picture.
 | `screen` | `"menu"`, `"abilities"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y}, "confirm": true }` | load and live |
 | `cursor` | `{x,y}`: the tile under the cursor (tile info, target panel, move preview); on a split map `x.5` puts it between tiles, where a token's square can stop | load and live |
 | `camera` | `{ "angle": 0-7, "zoom": 1.5, "focus": {x,y}, "action": { "from": "<unit id>", "to": {x,y} }, "fixed": "side" \| "three-quarter" }` | load and live |
-| `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all` | load and live |
+| `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all`; or a piece of the 3D layer by its own name (`ui-pieces.ts`): `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result`, `tools`, `status`, `options`, `title`, `sheets`, `guides` | load and live |
 | `pixel` | `0` (plain 3D), `2`, `3`, `4`: pixel-art block size | load and live |
 | `daylight` | `0` night to `1` day: the light that Until Dawn uses | load and live |
-| `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result`, `tools`, `status` | the look of one interface piece: `"html"`, `"css"` (menu only) or `"3d"` (`ui3d/skin-flags.ts`; the address's `?menu=`, `?turn=`, `?bar=`, `?banner=`, `?height=`, `?hints=`, `?confirm=`, `?result=`, `?tools=`, `?status=` win) | page load |
-| `ui` | `"html"`, `"css"` or `"3d"`: a preset for every piece that has that look; a piece's own key wins | page load |
+| `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result`, `tools`, `status`, `ui` | old keys (Nov 18: the whole interface is 3D): the look of one piece or of all, `"html"`, `"css"` or `"3d"`. Still checked, so an old spec opens, then ignored with a warning in the console: every piece is the 3D one | ignored |
 | `uiPixel` | `true`: the 3D pieces through the pixel filter (`?pixel=1` in the address; the spec's `pixel` is the scene's) | page load |
 | `layout` | `"edges"` or `"frame"`: the interface layout (`ui3d/layout.ts`; the address's `?layout=` wins), for this page only | page load |
 | `marks` | `"simples"`, `"luz"`, `"pedra"` or `"neon"`: how the board's marks are drawn (`mark-style.ts`; the address's `?marks=` wins), for this page only | page load |
-| `menu3d` | `true` or `"pixel"`: the command menu in 3D, the older shortcut for `menu: "3d"` (the address's `?menu3d` wins) | page load |
-| `turn3d` | `true`: the turn list in 3D | page load |
-| `menucss` | `true`: the command menu as parchment in HTML and CSS (`menu3d` wins over it) | page load |
-| `page` | `1` to `3`: the ability sheet's page, with `screen: "abilities"` and one of the menus above | load and live |
+| `menu3d`, `turn3d`, `menucss` | old keys, ignored like the ones above (`menu3d: "pixel"` no longer turns the filter on: use `uiPixel`) | ignored |
+| `page` | `1` to `3`: the ability sheet's page, with `screen: "abilities"` | load and live |
 | `steps` | `[{ "move": { "unit", "to": {x,y} } }, { "act": { "unit", "ability", "target": {x,y} } }, { "wait": { "unit", "facing"? } }, { "pause": 500 }]` | played after the scene settles (CLI), by `play`, or by the page with `loop` |
 | `loop` | `true`: the page plays the steps by itself and replays them forever ([Bench](#bench-live-game-feel)) | page load |
 | `timing` | `{ "hitStop": 160, "jumpCrouch": 380 }`: `TIMING` values (`src/client/timing.ts`) for this page only | page load |
@@ -95,8 +92,12 @@ Notes:
   - `angle` is one of the 8 rotations, 45° apart; 0 is the opening view.
   - `zoom` is relative to the whole map: 1 shows all of it, 2 is twice as close.
   - `action` runs the strike camera from that unit to the tile, as during an attack.
-- **Hiding:** panels are hidden with `visibility`, so they keep their space and the camera frames the map exactly as
-  with the interface on (compare the two Ash Wood examples). `marks` removes the 3D tile marks, cursor, range ring,
+- **Hiding:** a piece of the 3D layer is hidden by the name it registers (`ui-pieces.ts`; `layer.add(screen, name)`):
+  it is not drawn and takes no input, and its box stays, so the camera frames the map exactly as with the interface on
+  (compare the two Ash Wood examples). The older names stand for pieces: `queue` is `turn`, `units` is `bar`, `menu` is
+  `menu` and `confirm`, `dialogs` is `result`, `status`, `options`, `title` and `sheets`. The HTML panels still on the
+  page (`tile`, `help`, `strikes`, `numbers`, `fps` and the ones under the 3D pieces) are hidden with `visibility` by
+  `dev/sandbox-html.ts`, which goes away with them. `marks` removes the 3D tile marks, cursor, range ring,
   shot line, charge lines, counter marks and the cursor note, and stays off through the game's own redraws.
 - **Turns:** the AI never plays on its own, because the sandbox puts a hero on the turn. Acting in the battle by hand saves to `dt:battle:sandbox`, never to the real save.
 - **Restart resets the sandbox:** Options → Restart builds a new battle the sandbox no longer holds; reload the
@@ -115,7 +116,7 @@ On a page opened with `?sandbox=`:
 
 ```js
 await __sandbox.idle();                       // waits until every unit holds still on screen, then 300 ms for the menus
-__sandbox.list();                             // maps, unit defs, panels, the units here (id, def, team, x, y, hp, ct, facing)
+__sandbox.list();                             // maps, unit defs, panels, pieces, the units here (id, def, team, x, y, hp, ct, facing)
 __sandbox.apply({ camera: { angle: 3, zoom: 2 }, hide: ['all'] });                 // returns the problems ([] = ok)
 __sandbox.apply({ units: { 'e-brute': { x: 4, y: 5, hp: 10 } }, actor: 'h-mage', screen: 'abilities' });
 __sandbox.apply({ screen: { aim: 'firebolt', target: { x: 4, y: 5 }, confirm: true } });
@@ -264,8 +265,9 @@ Each loops, hides every panel and fixes a side camera. Seeds were picked so the 
 | `arena-wall` | arena | Shield Bash into the wall: hit 4, bump |
 | `arena-spikes` | arena | Shield Bash pushes the soldier 2 tiles onto the spikes |
 
-Still scenes of the localhost looks (no loop; `hide` takes them like the HTML they replace: `menu` hides the 3D menu
-and its buttons, `queue` the 3D turn list):
+Still scenes of the localhost looks (no loop; `hide` takes them by name: `menu` hides the 3D menu and its buttons,
+`queue` or `turn` the 3D turn list). The ones of an HTML or CSS look (`menucss*`, `preset-css`, `turn3d-stats-html`,
+the HTML bar of `turn3d-stats-720`) open with every piece in 3D since Nov 18: their look keys are ignored:
 
 | Spec | What it shows |
 |---|---|

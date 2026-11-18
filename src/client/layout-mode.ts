@@ -7,6 +7,12 @@ import { type LayoutMode, parseLayout } from './ui3d/layout.ts';
 export const LAYOUT_KEY = 'dt:layout';
 
 let mode = parseLayout(param('layout') ?? store.get(LAYOUT_KEY));
+// what lays itself out with no CSS (the 3D layer) hears a change here; the call it returns stops it
+const heard = new Set<() => void>();
+export const onLayout = (tell: () => void) => {
+  heard.add(tell);
+  return () => void heard.delete(tell);
+};
 
 export const getLayout = (): LayoutMode => mode;
 
@@ -14,6 +20,7 @@ export const getLayout = (): LayoutMode => mode;
 export function showLayout(m: LayoutMode) {
   mode = m;
   document.documentElement.dataset.layout = m;
+  for (const tell of heard) tell();
 }
 export function setLayout(m: LayoutMode) {
   store.set(LAYOUT_KEY, m);

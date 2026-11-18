@@ -99,7 +99,7 @@ export class Turn3d implements Ui3dScreen {
     this.shared.uIcons.value = this.texture('/ui/fft/atlas-32.png', (img) =>
       this.shared.uIconGrid.value.set(img.width / ATLAS_CELL, img.height / ATLAS_CELL),
     );
-    layer.add(this);
+    layer.add(this, 'turn');
   }
 
   // The list's scale: the cards were measured at 720 px tall, 1.5 of them to a reference px. The HTML rows take it as

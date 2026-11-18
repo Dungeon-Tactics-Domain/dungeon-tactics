@@ -43,7 +43,7 @@ export class Title3d implements Ui3dScreen {
   constructor(private readonly layer: Ui3dLayer) {
     this.color = colors(layer);
     this.flat.add(this.band.group, this.fixed.group);
-    layer.add(this);
+    layer.add(this, 'title');
     setTitle3d((overlay) => this.take(overlay));
   }
 

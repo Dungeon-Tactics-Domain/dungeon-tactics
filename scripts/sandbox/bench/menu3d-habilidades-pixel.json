@@ -5,5 +5,6 @@
   "actor": "h-warrior",
   "screen": "abilities",
   "menu3d": "pixel",
+  "uiPixel": true,
   "hide": ["fps"]
 }

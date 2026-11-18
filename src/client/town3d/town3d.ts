@@ -134,7 +134,7 @@ export class Town3d implements Ui3dScreen {
     });
     this.hits.addEventListener('keydown', (e) => this.key(e));
     this.scroller.addEventListener('scroll', () => this.layer.wake());
-    layer.add(this);
+    layer.add(this, 'town');
   }
 
   // A window over the town: closes the one before it, without its onBack

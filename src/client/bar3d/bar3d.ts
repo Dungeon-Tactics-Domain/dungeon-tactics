@@ -238,7 +238,7 @@ export class Bar3d implements Ui3dScreen {
   ) {
     layer.root.classList.add('bar3d');
     this.flat.add(this.sheet.part.group, this.plate.group, this.target.part.group);
-    layer.add(this);
+    layer.add(this, 'bar');
   }
 
   private readonly texture: Load = (url, loaded) => {

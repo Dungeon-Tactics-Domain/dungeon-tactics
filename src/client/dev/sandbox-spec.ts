@@ -8,27 +8,35 @@ import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { PAGES } from '../command.ts';
 import { MARK_STYLES, type MarkStyle } from '../mark-style.ts';
 import { TIMING } from '../timing.ts';
+import { PIECE_NAMES, type PieceName } from '../ui-pieces.ts';
 import { LAYOUT_MODES, type LayoutMode } from '../ui3d/layout.ts';
 import { PIECES, VARIANTS, type Variant } from '../ui3d/skin-flags.ts';
 
-// HUD parts that `hide` accepts, by the class the HUD gives them (hud.ts, talk.ts, dialog.ts, entry.ts, fps.ts)
+// What `hide` accepts beside a piece's own name (ui-pieces.ts): the names from before the interface was 3D, each with
+// the pieces of the 3D layer it stands for. One with no piece yet names only HTML still on the page (sandbox-html.ts)
 export const PANELS = {
-  tile: '.panel.tile-info',
-  queue: '.panel.queue, .turn3d-tip',
-  help: '.panel.help',
-  banner: '.panel.banner, .announce',
-  tools: '.hud .tools',
-  // .menu3d-hits and .turn3d-tip stand for the 3D menu and the 3D turn list: the shared layer hides a screen with them
-  menu: '.panel.commands, .panel.abilities, .panel.confirm, .panel.sheet, .glove, .menu3d-hits',
-  units: '.active-slot, .target-slot',
-  strikes: '.strikes',
-  numbers: '.floats',
-  fps: '.fps',
-  dialogs: '.overlay',
-} as const;
+  tile: [],
+  queue: ['turn'],
+  help: [],
+  banner: ['banner'],
+  tools: ['tools'],
+  menu: ['menu', 'confirm'],
+  units: ['bar'],
+  strikes: [],
+  numbers: [],
+  fps: [],
+  dialogs: ['result', 'status', 'options', 'title', 'sheets'],
+} as const satisfies Record<string, readonly PieceName[]>;
 export type Panel = keyof typeof PANELS;
-// 'all' is every panel; 'marks' is the 3D tile marks, cursor, range ring and shot line (not DOM)
-export type Hidden = Panel | 'all' | 'marks';
+// 'all' is every panel and piece; 'marks' is the board's tile marks, cursor, range ring and shot line
+export type Hidden = Panel | PieceName | 'all' | 'marks';
+// The pieces a `hide` list hides, by name. The drawing guides are no part of the interface: only their own name hides them
+export function hiddenPieces(hide: readonly Hidden[]): PieceName[] {
+  if (hide.includes('all')) return PIECE_NAMES.filter((n) => n !== 'guides' || hide.includes(n));
+  const of = (h: Hidden): readonly PieceName[] =>
+    h in PANELS ? PANELS[h as Panel] : PIECE_NAMES.includes(h as PieceName) ? [h as PieceName] : [];
+  return [...new Set(hide.flatMap(of))];
+}
 
 export interface UnitPatch {
   x?: number;
@@ -82,8 +90,8 @@ export interface SceneSpec {
   loop?: boolean; // bench: the page plays the steps by itself, then rewinds the scene and plays them again, forever
   timing?: Partial<Record<keyof typeof TIMING, number>>; // bench: TIMING values for this page only
   speed?: number; // bench: battle clock rate, 0.25 is slow motion
-  // the look of each interface piece (ui3d/skin-flags.ts), as ?menu=, ?turn=, ?ui= and ?pixel=1 in the address, and
-  // the older shortcuts ?menu3d, ?menu3d=pixel, ?turn3d and ?menucss
+  // OLD_KEYS, from before the whole interface was 3D: the look of each piece (ui3d/skin-flags.ts) and the older
+  // shortcuts. Still checked, so the old specs open, but the page drops them (`dropOld`): every piece is the 3D one
   ui?: Variant;
   menu?: Variant;
   turn?: Variant;
@@ -95,10 +103,10 @@ export interface SceneSpec {
   result?: Variant;
   tools?: Variant;
   status?: Variant;
-  uiPixel?: boolean; // the 3D pieces through the pixel filter (`pixel` is the scene's)
   menu3d?: true | 'pixel';
   turn3d?: true;
   menucss?: true;
+  uiPixel?: boolean; // the 3D pieces through the pixel filter (`pixel` is the scene's)
   layout?: LayoutMode; // edges or frame (ui3d/layout.ts), as ?layout= in the address
   marks?: MarkStyle; // how the board's marks are drawn (mark-style.ts), as ?marks= in the address
   page?: number; // with screen "abilities": the ability sheet's page, 1 to 3 (shows with menu3d or menucss)
@@ -145,7 +153,16 @@ const KEYS = [
   'marks',
   'page',
 ];
-const HIDDEN = new Set<string>([...Object.keys(PANELS), 'all', 'marks']);
+const HIDDEN = new Set<string>([...Object.keys(PANELS), ...PIECE_NAMES, 'all', 'marks']);
+
+// The looks' keys of a spec (Fernando, Nov 18: the whole interface is 3D, the HTML and CSS looks go): read and checked
+// as before, then left out of what the page uses. `dropped` is for the page's console; they leave the parser with the looks
+const LOOKS = ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result', 'tools', 'status'] as const;
+export const OLD_KEYS: readonly string[] = ['ui', ...LOOKS, 'menu3d', 'turn3d', 'menucss'];
+export function dropOld(spec: SceneSpec): { spec: SceneSpec; dropped: string[] } {
+  const kept = Object.fromEntries(Object.entries(spec).filter(([k]) => !OLD_KEYS.includes(k)));
+  return { spec: kept, dropped: Object.keys(spec).filter((k) => OLD_KEYS.includes(k)) };
+}
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v: unknown, min = -Infinity, max = Infinity): v is number =>
@@ -273,7 +290,7 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   if (r.menu3d !== undefined && r.menu3d !== true && r.menu3d !== 'pixel') p.push('menu3d must be true or "pixel"');
   for (const k of ['turn3d', 'menucss']) if (r[k] !== undefined && r[k] !== true) p.push(`${k} must be true`);
   if (r.ui !== undefined && !VARIANTS.includes(r.ui as Variant)) p.push(`ui must be one of ${VARIANTS.join(', ')}`);
-  for (const k of ['menu', 'turn', 'bar', 'banner', 'height', 'hints', 'confirm', 'result', 'tools', 'status'] as const)
+  for (const k of LOOKS)
     if (r[k] !== undefined && !(PIECES[k] as readonly unknown[]).includes(r[k]))
       p.push(`${k} must be one of ${PIECES[k].join(', ')}`);
   if (r.uiPixel !== undefined && typeof r.uiPixel !== 'boolean') p.push('uiPixel must be true or false');

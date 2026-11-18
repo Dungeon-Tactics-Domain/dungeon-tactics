@@ -12,6 +12,7 @@ import type { HudView } from '../hud.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { onShown } from '../key-hints.ts';
+import { pieceHidden } from '../ui-pieces.ts';
 import { capMeshes } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { place, REGIONS } from '../ui3d/layout.ts';
@@ -143,7 +144,7 @@ export class Hints3d implements Ui3dScreen {
       'abort',
       onShown(() => this.finger(false, true)),
     );
-    layer.add(this);
+    layer.add(this, null);
   }
 
   private get device(): Device {
@@ -314,6 +315,10 @@ export class Hints3d implements Ui3dScreen {
     banner.group.scale.setScalar(0.9 + 0.1 * o);
     const size = this.num?.userData.size as Vector2 | undefined;
     if (this.num && size) this.num.scale.set(size.x * this.pop.x, size.y * this.pop.x, 1);
+    // three pieces on one screen: each hidden by its own name (ui-pieces.ts; the sandbox's `hide`)
+    banner.group.visible = !pieceHidden('banner');
+    height.group.visible = tile.group.visible = !pieceHidden('height');
+    hints.group.visible = !pieceHidden('hints');
     const fading = [banner, height, tile, hints].map((p) => p.fade(e)).some(Boolean);
     return !still && (fading || !settled(this.open) || !settled(this.pop));
   }

@@ -53,7 +53,7 @@ export class Options3d implements Ui3dScreen {
     this.host.addEventListener('focusin', () => this.touch());
     this.host.addEventListener('scroll', () => this.layer.wake(), { capture: true, passive: true });
     setOptions3d((b) => this.show(b));
-    layer.add(this);
+    layer.add(this, 'options');
   }
 
   // what the controls say changed (a value, an armed button's text, a button going off): draw it again

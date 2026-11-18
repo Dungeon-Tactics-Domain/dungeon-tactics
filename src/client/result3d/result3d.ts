@@ -79,7 +79,7 @@ export class Result3d implements Ui3dScreen {
       if (e.repeat && (e.key === 'Enter' || e.key === ' ')) e.preventDefault();
     });
     setBoard3d((b) => this.show(b));
-    layer.add(this);
+    layer.add(this, 'result');
   }
 
   // The end of a battle (resultBoard): opens over whatever it showed before

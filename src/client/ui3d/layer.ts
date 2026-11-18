@@ -20,8 +20,10 @@ import {
 import { type Act, hintLine, type Shown } from '../glyphs.ts';
 import { el } from '../icons.ts';
 import { keysShown, onShown } from '../key-hints.ts';
-import { getLayout } from '../layout-mode.ts';
+import { getLayout, onLayout } from '../layout-mode.ts';
 import { reducedMotion } from '../motion.ts';
+import { param } from '../store.ts';
+import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
 import { type Stage, stage } from './layout.ts';
 import { QUAD, QUAD_VERT, type Rgb, type Theme } from './panel.ts';
 import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
@@ -29,7 +31,7 @@ import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
 export interface Ui3dScreen {
   readonly flat: Group; // panels and text, depth test off, ordered by renderOrder
   readonly deep?: Group; // icons with depth (through the pixel filter when it is on)
-  readonly host?: HTMLElement; // hiding it by CSS (the sandbox's `hide`) hides the screen
+  readonly host?: HTMLElement; // its input; unseen (a window closed, the piece hidden by name), the screen is not drawn
   resize(): void; // the layer's size, density or scale changed
   frame(dt: number, t: number): boolean; // one step; true while it still moves
   dispose(): void;
@@ -56,6 +58,7 @@ export class Ui3dLayer {
   private readonly flatRoot = new Group();
   private readonly deepRoot = new Group();
   private readonly screens: Ui3dScreen[] = [];
+  private readonly names = new Map<Ui3dScreen, PieceName>(); // the piece each screen is (ui-pieces.ts)
   // pixel filter only: the icons' target and the quad that lays it over the panels
   private target?: WebGLRenderTarget;
   private readonly texel = new Vector2(1, 1);
@@ -119,6 +122,17 @@ export class Ui3dLayer {
     this.sized = new ResizeObserver(() => this.fit());
     this.sized.observe(root);
     this.fit();
+    // the labs' drawing guides, a screen like the others (localhost ?guides=1)
+    if (param('guides') === '1')
+      void import('./guides.ts').then((m) => this.canvas.isConnected && this.add(new m.Guides(this), 'guides'));
+  }
+  // a piece hidden or shown by name (ui-pieces.ts): its input goes with its drawing, keeping its box (visibility), and
+  // a screen of several pieces draws again. The layout picked changed: the layer fits again, with no CSS in between
+  private readonly unheard = [onHidden(() => this.veil()), onLayout(() => this.fit())];
+  private veil() {
+    for (const [s, name] of this.names) if (s.host) s.host.style.visibility = pieceHidden(name) ? 'hidden' : '';
+    for (const s of this.screens) s.resize();
+    this.wake();
   }
   // what the key hints show now (key-hints.ts), for the screens that draw them, and a line of hints in words
   get keys(): Shown {
@@ -142,8 +156,11 @@ export class Ui3dLayer {
     return this.pixel ? Math.round(a / (Math.PI / 8)) * (Math.PI / 8) : a;
   }
 
-  add(s: Ui3dScreen) {
+  // `name`: the piece the screen is, so it can be hidden by name; null for a screen of several, which hides its own
+  add(s: Ui3dScreen, name: PieceName | null) {
     this.screens.push(s);
+    if (name) this.names.set(s, name);
+    if (name && s.host && pieceHidden(name)) s.host.style.visibility = 'hidden';
     this.flatRoot.add(s.flat);
     if (s.deep) this.deepRoot.add(s.deep);
     s.resize();
@@ -151,6 +168,7 @@ export class Ui3dLayer {
   }
   remove(s: Ui3dScreen) {
     this.screens.splice(this.screens.indexOf(s), 1);
+    this.names.delete(s);
     s.flat.removeFromParent();
     s.deep?.removeFromParent();
     this.wake();
@@ -202,7 +220,11 @@ export class Ui3dLayer {
     r.info.reset();
     let moving = false;
     for (const s of this.screens) {
-      const shown = (!this.solo || s === this.solo) && (s.host?.checkVisibility({ visibilityProperty: true }) ?? true);
+      const name = this.names.get(s);
+      const shown =
+        (!this.solo || s === this.solo) &&
+        !(name && pieceHidden(name)) &&
+        (s.host?.checkVisibility({ visibilityProperty: true }) ?? true);
       if (shown !== s.flat.visible) this.dirty = true;
       s.flat.visible = shown;
       if (s.deep) s.deep.visible = shown;
@@ -236,6 +258,7 @@ export class Ui3dLayer {
   dispose() {
     this.sized.disconnect();
     this.unhear();
+    for (const stop of this.unheard) stop();
     for (const s of [...this.screens]) s.dispose();
     this.over?.material.dispose();
     this.target?.dispose();

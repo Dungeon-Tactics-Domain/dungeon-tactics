@@ -41,7 +41,6 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
   if (spec.layout && param('layout') === null) showLayout(parseLayout(spec.layout));
   const flags = skinFlags(param, specFlags(spec));
   const skin: HudSkin = {};
-  if (param('guides') === '1') void import('./ui3d/guides.ts').then((m) => m.showGuides());
   if (flags.menu === '3d') {
     const { Menu3d } = await import('./menu3d/menu3d.ts');
     skin.menu3d = (layer, act) => new Menu3d(layer, act);

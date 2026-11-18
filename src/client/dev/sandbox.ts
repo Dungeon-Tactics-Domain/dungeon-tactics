@@ -15,7 +15,9 @@ import { defaultPixel } from '../pixel-settings.ts';
 import type { BattleScene } from '../scene.ts';
 import { param, store } from '../store.ts';
 import { bench, TIMING } from '../timing.ts';
+import { hidePieces, PIECE_NAMES } from '../ui-pieces.ts';
 import { ARENA } from './arena.ts';
+import { hideHtml } from './sandbox-html.ts';
 import {
   castOf,
   giveTurn,
@@ -27,9 +29,10 @@ import {
   sideAngle,
 } from './sandbox-play.ts';
 import {
+  dropOld,
+  hiddenPieces,
   inCells,
   PANELS,
-  type Panel,
   parseSpec,
   readParam,
   type SceneSpec,
@@ -83,7 +86,9 @@ let castFits = true;
 // the spec's whole tiles become cells and an added sheet becomes its token, as `halve` does for the map's own spawns.
 export async function stage(selected: Scenario): Promise<{ scenario: Scenario; battle: Battle; spec: SceneSpec }> {
   const read = await readSpec();
-  spec = read.spec;
+  // the looks' keys from before the interface was all 3D: said in the console and left out (docs/sandbox.md)
+  const { dropped } = ({ spec } = dropOld(read.spec));
+  if (dropped.length) console.warn(`sandbox: old keys ignored, every piece is 3D: ${dropped.join(', ')}`);
   problems.push(...read.problems);
   // the page's map comes from the address (boot.ts), so a spec that names another one is an error, not a different map
   if (spec.scenario && spec.scenario !== asked)
@@ -178,7 +183,6 @@ export function install(game: Game, scene: BattleScene) {
   const insets = scene.setInsets.bind(scene);
   scene.setInsets = (top, bottom) => insets(fixed ? 0 : top, fixed ? 0 : bottom);
   if (arena) scene.bare();
-  // visibility, not display: the panels keep their size, so the camera frames the map the same with or without the HUD
   const style = document.head.appendChild(document.createElement('style'));
 
   const show = (screen: Screen, cursor = battle.actor.pos, ui: Ui = freshUi(battle)) =>
@@ -249,10 +253,8 @@ export function install(game: Game, scene: BattleScene) {
     }
     if (s.hide) {
       marks = !s.hide.includes('marks') && !s.hide.includes('all');
-      const panels = s.hide.includes('all') ? Object.keys(PANELS) : s.hide.filter((h) => h in PANELS);
-      style.textContent = panels.length
-        ? `${panels.map((h) => PANELS[h as Panel]).join(', ')} { visibility: hidden !important; }`
-        : '';
+      hidePieces(hiddenPieces(s.hide)); // the 3D layer's, by name
+      hideHtml(style, s.hide); // the HTML still on the page, until it is deleted
       for (const [, redo] of marked) redo();
     }
     if (s.pixel !== undefined) scene.setPixel({ ...defaultPixel(false), size: s.pixel });
@@ -287,6 +289,7 @@ export function install(game: Game, scene: BattleScene) {
       scenarios: Object.keys(SCENARIOS),
       defs: Object.keys(UNIT_DEFS),
       panels: Object.keys(PANELS),
+      pieces: PIECE_NAMES,
       actor: battle.actor.id,
       // in whole tiles like the spec (x.5 is a token standing between tiles)
       units: battle.state.units.map((u) => ({

@@ -48,7 +48,7 @@ export class TownHud3d implements Ui3dScreen {
     const o = { signal: this.ac.signal };
     hud.addEventListener('focusin', () => this.draw(), o);
     hud.addEventListener('focusout', () => this.draw(), o);
-    layer.add(this);
+    layer.add(this, 'townhud');
   }
 
   resize() {

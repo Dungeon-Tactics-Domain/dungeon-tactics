@@ -64,7 +64,7 @@ export class Map3d implements Ui3dScreen {
     };
     const parts = [this.back, this.cmd, this.focus, this.ways, this.halo, this.marks, this.party, this.info, this.help];
     this.flat.add(...parts.map((p) => p.group));
-    layer.add(this);
+    layer.add(this, 'map');
     setMap3d((v) => this.take(v));
   }
 

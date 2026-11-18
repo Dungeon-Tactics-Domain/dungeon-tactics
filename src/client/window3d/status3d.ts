@@ -46,7 +46,7 @@ export class Status3d implements Ui3dScreen {
   constructor(private readonly layer: Ui3dLayer) {
     this.flat.add(this.veil.group, this.part.group);
     setStatus3d((s) => this.show(s));
-    layer.add(this);
+    layer.add(this, 'status');
   }
 
   private show(s: StatusSheet) {
