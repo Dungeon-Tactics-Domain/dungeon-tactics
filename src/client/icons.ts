@@ -116,3 +116,6 @@ export function abilityIcon(id: string): HTMLElement {
     icon(UI_ICON.recenter),
   );
 }
+
+// a button the keyboard reached (Tab), not one a click left focused: Enter there presses it (keyboard.ts pageKeeps)
+export const tabbed = () => !!document.activeElement?.matches('button:focus-visible');

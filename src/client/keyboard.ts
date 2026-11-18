@@ -84,6 +84,12 @@ function action(e: KeyInput): KeyAction | null {
   return SIMPLE[k] ?? null;
 }
 
+// Keys the page keeps (Nov 18, accessibility): with a menu or "Execute?" open, Tab walks its buttons as on any page
+// (on the map it jumps between units), and Enter or Space press the button Tab reached instead of the game's focus
+export function pageKeeps(a: KeyAction, menuOpen: boolean, tabbed: boolean): boolean {
+  return (a.k === 'cycle' && menuOpen) || (a.k === 'confirm' && tabbed);
+}
+
 // The map appears as a diamond, so no grid axis points straight up. Each key takes the axis closest to its
 // diagonal on screen, rotated 45° clockwise (W = up-right, D = down-right, S = down-left,
 // A = up-left): the four land on different axes and follow the camera when it rotates.
@@ -152,7 +158,10 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
     [
       ['cycle'],
       'Tab · Shift+Tab',
-      t('no mapa, pula de unidade em unidade (vida e alcance)', 'on the map, jump between units (HP and reach)'),
+      t(
+        'no mapa, pula de unidade em unidade (vida e alcance); com um menu aberto, anda pelos botões dele',
+        'on the map, jump between units (HP and reach); with a menu open, walk its buttons',
+      ),
     ],
     [['undo'], '', t('desfazer', 'undo')],
     [['face'], '', t('virar a unidade da vez', 'turn the active unit')],

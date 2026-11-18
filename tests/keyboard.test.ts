@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cancel, freshUi, hoverTile, selectMode } from '../src/client/interaction.ts';
-import { cycleUnit, gridStep, keyAction } from '../src/client/keyboard.ts';
+import { cycleUnit, gridStep, keyAction, pageKeeps } from '../src/client/keyboard.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
@@ -125,5 +125,25 @@ describe('cursor in battle', () => {
     expect(cycleUnit(b.state, at(4, 1), 1)).toEqual(at(0, 1));
     expect(cycleUnit(b.state, at(0, 1), -1)).toEqual(at(4, 1));
     expect(cycleUnit(b.state, at(7, 2), 1)).toEqual(at(0, 1)); // cursor on an empty tile: starts from the first
+  });
+});
+
+describe('Tab and the 3D menu (Nov 18, accessibility)', () => {
+  it('with a menu open Tab stays with the page; on the map it cycles units', () => {
+    const tab = key('Tab')!;
+    expect(pageKeeps(tab, true, false)).toBe(true);
+    expect(pageKeeps(key('Tab', { shiftKey: true })!, true, false)).toBe(true);
+    expect(pageKeeps(tab, false, false)).toBe(false);
+    expect(pageKeeps(tab, false, true)).toBe(false); // a tabbed ☰ on the map: Tab still jumps between units
+  });
+  it('Enter and Space press the button Tab reached, else they go to the game', () => {
+    for (const k of ['Enter', ' ']) {
+      expect(pageKeeps(key(k)!, true, true)).toBe(true);
+      expect(pageKeeps(key(k)!, false, true)).toBe(true);
+      expect(pageKeeps(key(k)!, true, false)).toBe(false);
+    }
+  });
+  it('arrows and every other key stay with the game', () => {
+    for (const k of ['ArrowDown', 'Escape', 'z', 'c']) expect(pageKeeps(key(k)!, true, true)).toBe(false);
   });
 });

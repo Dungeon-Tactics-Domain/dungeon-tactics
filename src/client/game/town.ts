@@ -17,9 +17,9 @@ import { GROUP_KEY, JOBS, parseGroup } from '../group.ts';
 import { hint } from '../hud.ts';
 import { loadTownSkin } from '../hud-skin.ts';
 import { t } from '../i18n.ts';
-import { button, el, icon, UI_ICON } from '../icons.ts';
+import { button, el, icon, tabbed, UI_ICON } from '../icons.ts';
 import { liveText, padSeen } from '../key-hints.ts';
-import { gridStep, type KeyAction, keyAction, type ScreenDir } from '../keyboard.ts';
+import { gridStep, type KeyAction, keyAction, pageKeeps, type ScreenDir } from '../keyboard.ts';
 import { PIXEL_KEY, parsePixel } from '../pixel-settings.ts';
 import { type Cover, whenReady } from '../ready-gate.ts';
 import { BattleScene } from '../scene.ts';
@@ -112,10 +112,8 @@ class Town {
       rotate: (dir) => scene.rotate(dir),
     });
     // right button: back, like the battle's; in town that is the menu
-    canvas.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      this.run({ k: 'cancel' });
-    });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvas.addEventListener('contextmenu', () => this.run({ k: 'cancel' }));
     addEventListener('keydown', (e) => this.onKey(e, true));
     addEventListener('keyup', (e) => this.onKey(e, false));
     addEventListener('blur', () => (this.keys = []));
@@ -140,7 +138,9 @@ class Town {
     if (!down) return;
     // the Enter held into a door would click the window's focused ✕ on its first repeat and close what it just opened
     if (windowOpen()) return void (e.repeat && a.k === 'confirm' && e.preventDefault());
+    if (pageKeeps(a, true, tabbed())) return; // no units to cycle here: Tab walks the menu button and the balloon
     e.preventDefault();
+    (document.activeElement as HTMLElement | null)?.blur(); // the next Enter acts on the street, as in battle
     if (a.k === 'cursor') {
       if (!this.keys.includes(a.dir)) this.keys.push(a.dir);
     } else if (e.repeat) return;

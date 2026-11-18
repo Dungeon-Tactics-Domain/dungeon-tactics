@@ -24,7 +24,7 @@ import { textMesh, textWidth } from '../ui3d/text.ts';
 import { rowSeen, type ToolsLayout, toolShown, toolsLayout } from './tools-layout.ts';
 
 const EDGE: Rgba = [0.82, 0.86, 0.92, 0.35];
-const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the menu button while its list is open
+const LIT: Rgba = [0.33, 0.37, 0.44, 0.95]; // the menu button while its list is open, and a button Tab reached
 const BAR: Rgba = [0.96, 0.95, 0.9, 1];
 // text sizes in px of the reference (never under 16 px on the page; a key cap's letters 12)
 const SIZE = { head: 24, row: 26, glyph: 26, state: 18, back: 28 };
@@ -90,6 +90,8 @@ export class Tools3d implements Ui3dScreen {
     this.menu.addEventListener('focusin', point, o);
     this.menu.addEventListener('pointerleave', point, o);
     this.menu.addEventListener('scroll', () => this.draw(), o); // a phone lying down: the list scrolls
+    // a button Tab reached is lit, as the town's (Nov 18)
+    for (const ev of ['focusin', 'focusout']) host.addEventListener(ev, () => queueMicrotask(() => this.draw()), o);
     layer.add(this, 'tools');
   }
 
@@ -149,14 +151,15 @@ export class Tools3d implements Ui3dScreen {
         scroll: this.menu.scrollTop,
       });
     this.seat(lay, els, items);
+    const tabbed = els.find((e) => e.matches(':focus-visible'));
     const shown = els.map((e, i) => ({ e, r: lay.buttons[i], off: e.getAttribute('aria-disabled') === 'true' }));
-    const key = JSON.stringify([shown.map((b) => [b.r, b.off]), open, layer.dpr, s]);
+    const key = JSON.stringify([shown.map((b) => [b.r, b.off, b.e === tabbed]), open, layer.dpr, s]);
     buttons.want = 1;
     if (key !== buttons.key) {
       buttons.clear();
       buttons.key = key;
       for (const { e, r, off } of shown) {
-        const fill = e === this.burger && open ? LIT : PILL;
+        const fill = (e === this.burger && open) || e === tabbed ? LIT : PILL;
         buttons.box(r.x, r.y, r.w, r.h, 10 * s, off ? dim(fill) : fill, off ? dim(EDGE) : EDGE);
         const mid = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
         if (e !== this.burger) buttons.text(this.label(this.word(e), SIZE.back, off ? DIM_WHITE : WHITE), mid.x, mid.y);
