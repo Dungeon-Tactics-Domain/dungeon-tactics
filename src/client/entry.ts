@@ -9,6 +9,7 @@ import { el } from './icons.ts';
 import { Game, LOCAL } from './main.ts';
 import { PIXEL_KEY, parsePixel } from './pixel-settings.ts';
 import { BattleScene } from './scene.ts';
+import { effects3d } from './screen-effects.ts';
 import { sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { isSurvival, survivalGoal } from './survival.ts';
@@ -54,6 +55,7 @@ function announce(text: string) {
   sfx('confirm');
   const box = el('div', { class: 'announce', role: 'status' }, text);
   document.body.append(box);
+  effects3d()?.announce(text); // drawn on the 3D layer; the node stays, unseen, for the screen reader (effects3d.css)
   setTimeout(() => box.remove(), 2200);
 }
 

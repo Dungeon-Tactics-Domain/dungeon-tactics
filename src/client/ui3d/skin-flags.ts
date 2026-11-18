@@ -40,6 +40,7 @@ export const PIECES = {
   status: ['html', '3d'], // the Status window: a unit's sheet and an ability's facts
   townhud: ['html', '3d'], // the walkable town's HUD: its name, what Enter does (line and balloon), the menu button
   townmenu: ['html', '3d'], // the town menu, the gate's quest and a place still to come (town3d/street.ts)
+  effects: ['html', '3d'], // over the battle: numbers, cursor note, objective banner, confetti, F3 (hints3d/effects3d.ts)
   talk: ['html', '3d'], // the speech box, in town (town3d/talk3d.ts); a battle's conversations keep the HTML one
 } as const satisfies Record<string, readonly Variant[]>;
 export type Piece = keyof typeof PIECES;

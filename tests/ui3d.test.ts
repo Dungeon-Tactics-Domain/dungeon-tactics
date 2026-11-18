@@ -379,6 +379,7 @@ describe('3D interface: flags and boundaries', () => {
       'menu3d/menu-layout',
       'turn3d/queue-view',
       'hints3d/hints-view',
+      'hints3d/effects-view',
       'result3d/result-view',
       'result3d/result-layout',
       'town3d/page',

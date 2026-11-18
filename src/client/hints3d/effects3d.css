@@ -1,0 +1,8 @@
+/* 3D effects over the battle (effects3d.ts), fetched only with them. The HTML they stand for stays in place, unseen by
+   opacity, never visibility: the performance counter's node is the drawing's box and what the windows hide, and the
+   objective banner's is what the screen reader reads (role="status") */
+body:has(.hud.effects3d) .fps,
+body:has(.hud.effects3d) .announce {
+  opacity: 0;
+  animation: none;
+}

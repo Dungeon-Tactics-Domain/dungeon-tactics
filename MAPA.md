@@ -141,6 +141,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D (?banner=3d, ?height=3d, ?hints=3d), each on its region of the reference; the tile line (floor, water, spikes, a charge landing) small under the Height.
 - `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D (?confirm=3d) beside the character, drawn over the unseen HTML window that keeps its place, sizes and buttons; text from hud-menus.ts confirmParts.
 - `src/client/hints3d/hints-view.ts` — the button hints of each turn screen, each an action of glyphs.ts (hintsFor), the Height number and where each hint of a row sits (layRow); pure.
+- `src/client/hints3d/effects3d.ts` — Effects3d: the effects over the battle on the 3D layer (?effects=3d): floating numbers, the cursor note, the objective banner, the victory confetti and the performance counter.
+- `src/client/hints3d/effects-view.ts` — a floating number's look and its pose along its time, the objective banner's stretch and where each slip of confetti falls; pure.
+- `src/client/hints3d/effects3d.css` — hides, by opacity, the HTML the 3D effects stand for (performance counter, objective banner); fetched only with them.
+- `src/client/screen-effects.ts` — the hook through which the 3D layer takes the effects over the battle from their HTML (setEffects3d, effects3d).
 - `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
 - `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.

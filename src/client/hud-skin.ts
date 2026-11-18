@@ -33,6 +33,7 @@ export interface HudSkin {
   flow3d?: ((layer: Ui3dLayer) => unknown)[]; // the screens around the battle in 3D (flow3d/): Options, the title
   tools3d?: (layer: Ui3dLayer, tools: HTMLElement) => Tools3d; // the corner menu in 3D (window3d/)
   status3d?: (layer: Ui3dLayer) => Status3d; // the Status window in 3D (window3d/)
+  effects3d?: (layer: Ui3dLayer) => unknown; // numbers, cursor note, objective banner, confetti, F3 (hints3d/effects3d.ts)
 }
 
 // `spec`: a sandbox spec's keys (docs/sandbox.md); the address wins over it
@@ -91,7 +92,12 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Status3d } = await import('./window3d/status3d.ts');
     skin.status3d = (layer) => new Status3d(layer);
   }
+  if (flags.effects === '3d') {
+    const { Effects3d } = await import('./hints3d/effects3d.ts');
+    skin.effects3d = (layer) => new Effects3d(layer);
+  }
   if (
+    skin.effects3d ||
     skin.menu3d ||
     skin.turn3d ||
     skin.bar3d ||
