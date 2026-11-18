@@ -11,7 +11,7 @@ import type { PixelSize } from '../pixel-settings.ts';
 import { setSound, soundSettings } from '../sound.ts';
 import { store } from '../store.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
-import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts';
+import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import type { LayoutMode } from '../ui3d/layout.ts';
 import type { OptionsContext } from './options.ts';
 import { marksOption } from './options-marks.ts';
@@ -35,7 +35,6 @@ const fullscreenOption = (): Option[] =>
     : [];
 
 export const townGrid = () => t('Grade da cidade', 'Town grid');
-export const townFree = () => t('Movimento fluido na cidade', 'Fluid movement in town');
 
 // `fem`: the Portuguese word agrees with the setting's name ("Paleta … Ligada")
 const onOff = (label: string, help: string, get: () => boolean, set: (on: boolean) => void, fem = false): Option => ({
@@ -65,8 +64,8 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Jogo', 'Game'),
     help: t(
-      'O texto das conversas, o idioma, os ícones das teclas e como se anda na cidade.',
-      'The conversations’ text, the language, the key icons and how the town is walked.',
+      'O texto das conversas, o idioma, os ícones das teclas e a grade da cidade.',
+      'The conversations’ text, the language, the key icons and the town grid.',
     ),
     rows: [
       pick(
@@ -94,11 +93,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         setLang,
       ),
       glyphsOption(), // what the key hints show: the keys or a pad's icons (Nov 17, Fernando; key-hints.ts)
-      onOff(
-        townFree(),
-        t('Anda livre pela cidade em vez de passo a passo.', 'Walk the town freely instead of step by step.'),
-        ...flag(FREE_KEY, parseTownFree),
-      ),
       onOff(
         townGrid(),
         t(

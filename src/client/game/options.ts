@@ -12,10 +12,10 @@ import { looks3d } from '../looks3d.ts';
 import { type Option, optionRow } from '../option-row.ts';
 import type { PixelSettings } from '../pixel-settings.ts';
 import { store } from '../store.ts';
-import { FREE_KEY, GRID_KEY, parseTownFree, parseTownGrid } from '../town-map.ts';
+import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import { goHome, homeLabel } from './crawl.ts';
 import { controls, helpRow, tileMarks } from './options-help.ts';
-import { settings, townFree, townGrid } from './options-list.ts';
+import { settings, townGrid } from './options-list.ts';
 import { devMenu } from './title.ts';
 
 export interface OptionsContext {
@@ -39,20 +39,6 @@ export const townGridChoice = (onPick: (on: boolean) => void = () => {}) =>
     parseTownGrid(store.json(GRID_KEY)),
     (on) => {
       store.set(GRID_KEY, JSON.stringify(on));
-      onPick(on);
-    },
-  );
-// Fluid movement in the walkable town instead of the half-tile steps (Nov 16, Fernando: off by default, to compare the two)
-export const townFreeChoice = (onPick: (on: boolean) => void = () => {}) =>
-  choice(
-    townFree(),
-    [
-      [false, t('Desligado', 'Off')],
-      [true, t('Ligado', 'On')],
-    ],
-    parseTownFree(store.json(FREE_KEY)),
-    (on) => {
-      store.set(FREE_KEY, JSON.stringify(on));
       onPick(on);
     },
   );

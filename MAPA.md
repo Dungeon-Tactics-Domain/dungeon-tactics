@@ -66,7 +66,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town-shop.ts` — openShop() and openBar(): the Shop and the Tavern, handed to the 3D town (town3d/screens.ts); what an item and a recruit say.
 - `src/client/town-party.ts` — openParty(): the Party screen (FFT's formation and unit menus), handed to the 3D town (town3d/screens.ts) with the member and page to open on.
 - `src/client/sheet-lines.ts` — the numbers a sheet and a piece show: one line per stat, with where each total comes from, its bar and what a piece would change.
-- `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid; the fluid walk's circle, stick and target (dt:town-free).
+- `src/client/town-map.ts` — walkable town rules: the halved map, who stands where, places and doors, routes and strolls; dt:town-grid; the walk's circle, stick and target.
 - `src/client/dev-roster.ts` — developer cast rules: build and validate sheets, DEV_MAPS, parseSetup and buildDevScenario.
 - `src/client/survival.ts` — "Until dawn" standalone mode: its scenario, turn goal and best-record save.
 
@@ -247,8 +247,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
 - `src/client/game/sheets.ts` — the title's and Options' windows as data (rows or text blocks), over an unseen window, drawn by the 3D sheet (showSheet, blocksHtml).
-- `src/client/game/options.ts` — Options, drawn by flow3d/options3d.ts: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
-- `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display), and the town grid and fluid movement names.
+- `src/client/game/options.ts` — Options, drawn by flow3d/options3d.ts: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid switch.
+- `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display), and the town grid's name.
 - `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
 - `src/client/game/options-marks.ts` — the Options row that picks the mark style (Simple, Light, Stone, Neon), in its own file so options.ts takes one line.
 - `src/client/game/end-screens.ts` — the end of a battle's board (drawn by result3d/) and the victory confetti (the 3D effects).
