@@ -58,6 +58,10 @@ export function seatQueue(queue: HTMLElement, l: QueueLayout, headless: boolean,
     const z = shown++ ? seat.row : seat.first;
     row.style.width = px(z.w);
     row.style.height = px(z.h);
+    // the row reaches over the card's life and CT lines too: a finger dragging there scrolled the map, not the list
+    // (Fernando, Nov 18 night); the card still springs to the width above, read from the layout, not from here
+    row.style.boxSizing = 'content-box';
+    row.style.paddingRight = px(seat.stats);
   }
 }
 

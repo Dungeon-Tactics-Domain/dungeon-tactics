@@ -102,6 +102,9 @@ do not rearrange the layout only to reach that number.*
 | Gesture | What it does | Where |
 |---|---|---|
 | Tap a tile | selects it and shows the range, path or target | `interaction.ts` |
+| Tap an empty tile with the menu up | shuts the menu, only the cursor and the tile line move; the hero, its sheet, Confirm or Esc bring it back | `menu-state.ts` |
+| Tap another unit (map or turn card) | its look-only mini menu: Status, Abilities, Show range (painted until the next tap or key) | `menu-state.ts`, `unit-peek.ts` |
+| One finger dragging on the turn list | scrolls the list (the whole card, its life and CT lines too), never the camera | `turn3d/queue-seat.ts` |
 | Tap the same tile again | confirms | `interaction.ts` |
 | One finger dragging | moves the camera (past the 8 px slop) | `touch-input.ts` |
 | Two fingers pinching | zooms | `touch-input.ts` |

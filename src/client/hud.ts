@@ -18,7 +18,7 @@ import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm, undoShown } from './hud-menus.ts';
 import { helpWidth, KEYS, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
-import { queueItems } from './hud-queue.ts';
+import { queueItems, wireCards } from './hud-queue.ts';
 import type { HudSkin } from './hud-skin.ts';
 import { ToolsMenu } from './hud-tools.ts';
 import { t } from './i18n.ts';
@@ -54,6 +54,8 @@ export interface HudActions {
   menu(): void;
   fps(): void; // the menu's performance counter switch (the F3 key on a keyboard)
   cancel(): void; // the Back button, the same as Esc, B and the right button (a finger has none of them)
+  sheet(): void; // a tap on the acting unit's sheet: the closed menu shows again (menu-state.ts)
+  card(unit: string): void; // a tap on a turn card: that unit's mini menu, or the menu for the hero acting now
 }
 export interface HudView {
   battle: Battle;
@@ -65,6 +67,8 @@ export interface HudView {
   cursor: Pos; // tile under the cursor (keyboard, mouse or gamepad)
   ability: string | null; // ability being aimed on the map (the strike preview on the target panel)
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
+  closed?: boolean; // the menu hidden by a tap on an empty tile (menu-state.ts)
+  range?: string | null; // the unit whose range the map paints (unit-peek.ts)
 }
 
 export class BattleHud {
@@ -148,6 +152,8 @@ export class BattleHud {
       this.target,
     );
     host.append(this.root);
+    this.active.addEventListener('click', () => act.sheet()); // takes taps only while the menu is shut (style.css)
+    wireCards(this.queue, () => this.queued, act.card);
     this.layer = skin.layer(this.root, () => this.drop3d());
     if (!this.layer) return;
     this.menu3d = skin.menu3d(this.layer, act);
@@ -172,6 +178,9 @@ export class BattleHud {
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
+    const shut = !!v.closed || !!v.range, // the menu, its Back and "Execute?" wait while the map is looked at
+      menu = open && !shut;
+    this.root.classList.toggle('menu-shut', open && shut);
     // `size` is set only while choosing where to move: the square the unit would stand on
     this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
     this.faces = [];
@@ -182,11 +191,11 @@ export class BattleHud {
     this.renderQueue(b, aim);
     this.help.textContent = helpText(v, heroTurn);
     this.p3d.hints?.update(v, open, this.help.textContent);
-    renderBack(this.back, v, open);
+    renderBack(this.back, v, menu);
     this.tools.setUndo(undoShown(b, open));
-    renderCommands(this.commands, v, open, this.act);
-    renderAbilities(this.abilities, v, open, this.act);
-    this.menu3d?.update(v, open);
+    renderCommands(this.commands, v, menu, this.act);
+    renderAbilities(this.abilities, v, menu, this.act);
+    this.menu3d?.update(v, menu);
     renderConfirm(this.confirmBox, v, open, this.act);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;

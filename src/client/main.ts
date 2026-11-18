@@ -88,6 +88,8 @@ export class Game implements TurnHost {
       fps: () => this.hud.setFps(this.toggleFps()),
       undo: () => this.runKey({ k: 'undo' }),
       cancel: () => this.runKey({ k: 'cancel' }),
+      sheet: () => this.turn.menu({ k: 'open' }),
+      card: (unit) => this.turn.card(unit),
     };
     this.hud = new BattleHud(host, act, skin);
     this.readPad = battleInput(host.querySelector('canvas')!, scene, {
@@ -199,7 +201,7 @@ export class Game implements TurnHost {
       this.scene.setDaylight(1 - turnsLeft(this.battle.state) / SURVIVE_TURNS);
     const s = this.turn.screen;
     const live = this.heroTurn && !this.busy && !this.behindTitle;
-    const { hl, ...m } = turnMarks(this.battle, s, ui, this.turn.cursor, live);
+    const { hl, ...m } = turnMarks(this.battle, s, ui, this.turn.cursor, live, this.turn.range);
     this.scene.setHighlights(hl);
     this.scene.setChargePreview(m.charge);
     this.scene.setCounters(m.counters);
@@ -216,6 +218,8 @@ export class Game implements TurnHost {
       acting: this.acting,
       cursor: this.turn.cursor,
       ability: ui.mode.k === 'ability' ? ui.mode.id : null,
+      closed: this.turn.closed,
+      range: this.turn.range,
       face: (u) => this.expression(u),
     });
     // every unit's place in the turn list beside its health bar, from the rows the list itself shows (Nov 17, Fernando)

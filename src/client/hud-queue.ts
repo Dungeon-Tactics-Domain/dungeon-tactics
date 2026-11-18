@@ -8,6 +8,19 @@ import { abilityIcon, el } from './icons.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import type { Queue } from './turn3d/queue-view.ts';
 
+// the unit a row of the list stands for (a charge row: its caster), by the row's place among all of them: the acting
+// row stays in the list unseen while the 3D bar's sheet shows it (queue-seat.ts), so the place is the queue's own
+export const rowUnit = (q: Queue | null, i: number): string | null => q?.rows[i]?.unit ?? null;
+
+// a tap or click on a card (a drag scrolls the list instead and never clicks): the unit it stands for
+export function wireCards(list: HTMLElement, q: () => Queue | null, card: (unit: string) => void) {
+  list.addEventListener('click', (e) => {
+    const row = e.target instanceof Element ? e.target.closest('.queue-row') : null;
+    const unit = row && rowUnit(q(), [...list.querySelectorAll('.queue-row')].indexOf(row));
+    if (unit) card(unit);
+  });
+}
+
 // the list's items: its title, then a row per entry of `q`, in the queue's order (a charge row: the caster's face, the
 // ability's icon and name, and the ticks until it goes off)
 export function queueItems(b: Battle, q: Queue | null, face: (u: UnitState) => Node): HTMLElement[] {

@@ -131,6 +131,22 @@ function threat(b: Battle, unitId: string): Pos[] {
   );
 }
 
+// Another unit's range, from its mini menu (unit-peek.ts; Fernando, Nov 18 night): where it walks in blue, what it
+// could strike after walking in red (the threat above), its own square and the acting hero's as the actor
+export function rangeMarks(b: Battle, unitId: string): Highlights {
+  const tiles = new Map<string, { pos: Pos; kind: TileKind }>();
+  const mark = (pos: Pos, kind: TileKind) => tiles.set(posKey(pos), { pos, kind });
+  const u = b.state.units.find((x) => x.id === unitId);
+  if (u) {
+    for (const p of threat(b, unitId)) mark(p, 'threat');
+    const size = UNIT_DEFS[u.def].size ?? 1;
+    for (const s of reachable(b.grid, b.state, unitId).values()) for (const c of cellsOf(s.pos, size)) mark(c, 'move');
+    for (const c of footprint(u)) mark(c, 'actor');
+  }
+  for (const c of footprint(b.actor)) mark(c, 'actor');
+  return { tiles: [...tiles.values()], path: null, preview: null };
+}
+
 // `cursor`: the tile under the cursor, whose square shows as not fitting when a unit bigger than one cell cannot stop there (Move)
 export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   const tiles = new Map<string, { pos: Pos; kind: TileKind }>();

@@ -1579,6 +1579,11 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   overflow: hidden;
   opacity: 0;
 }
+/* with the command menu shut by a tap on the map (menu-state.ts), a tap on the acting sheet shows it again */
+.hud.menu-shut .active-slot {
+  pointer-events: auto;
+  cursor: pointer;
+}
 
 /* turn list (turn3d): the HTML list stays as the layout, the scroll and the hover. Its rows take the cards' sizes
    measured on the reference (1280x720) times --t3, the page's scale; the column stacks from the bottom like FFT's
