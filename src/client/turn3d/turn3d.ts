@@ -106,8 +106,8 @@ export class Turn3d implements Ui3dScreen {
       s: this.shared.uS.value,
       at: place(REGIONS.turn, layer.stage),
       pageH: layer.h,
-      // the acting panel: the 3D bar's sheet, or what the HUD measured of its HTML one
-      sheet: shown.room ?? layer.h - Math.round(sheetBox(layer.stage, layer.h).y),
+      margin: layer.inset.top,
+      sheet: shown.room ?? layer.h - Math.round(sheetBox(layer.stage, layer.h).y), // the 3D bar's sheet or an HTML one
       stats: shown.stats,
     });
     seatQueue(this.host, this.lay, shown.head, layer, this.flat);

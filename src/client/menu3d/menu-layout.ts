@@ -37,25 +37,32 @@ export interface MenuLayout {
 }
 
 // `st`: where the interface is laid out and its scale (ui3d/layout.ts `stage`). Both columns share one height: the
-// region's (five rows, as on the capture, the paper left blank under a shorter list) or the longer list's, growing
-// upwards from the region's foot. A page too narrow for the menu keeps the glove on screen and lets the submenu run off
-// the right. On a short page the sheet reaches down past the columns' top: they step left, clear of it
+// longer list's, growing upwards from the region's foot (Fernando, Nov 18: no blank fifth row under four commands, as
+// the capture's five rows left). A page too narrow for the menu keeps the glove on screen and lets the submenu run off
+// the right. On a short page the sheet reaches down past the columns' top: they step left, clear of it, but never over
+// the acting unit's sheet in the combat bar (at 844x390 the menu covered the end of its stamina, "50/5"); where the
+// two do not both fit, the submenu's cascade over the menu shortens
 export function menuLayout(st: Stage, rows: number, subRows: number, touch = false): MenuLayout {
   const s = st.s,
     cs = touch ? touchScale(st) : s;
   const at = place(REGIONS.menu, { ...st, s: cs });
-  const h = Math.max(at.h, (REF.head + Math.max(rows, subRows) * REF.row + REF.foot) * cs);
+  const h = (REF.head + Math.max(rows, subRows) * REF.row + REF.foot) * cs;
   const page = place(REGIONS.detail, st);
   const sheet = { ...page, y: Math.max(st.y + 72, page.y) }; // under the help line and the corner buttons
-  const x = sheet.y + sheet.h > at.y ? Math.min(at.x, sheet.x - 8 * s - LEAD * cs - at.w) : at.x;
-  const main = { x: Math.max(st.x + REF.hand * cs, x), y: at.y + at.h - h, w: at.w, h };
+  const low = sheet.y + sheet.h > at.y,
+    x = low ? Math.min(at.x, sheet.x - 8 * s - LEAD * cs - at.w) : at.x;
+  // the acting sheet's right end and a gap; a page too narrow for both lets the menu stay on it
+  const end = st.x + (REGIONS.sheet.x + REGIONS.sheet.w + 8) * s,
+    bar = end + at.w <= st.x + st.w ? end : 0;
+  const main = { x: Math.max(st.x + REF.hand * cs, bar, x), y: at.y + at.h - h, w: at.w, h };
+  const lead = low ? Math.max(0, Math.min(LEAD * cs, sheet.x - 8 * s - at.w - main.x)) : LEAD * cs;
   // the page arrows: each half of the foot; a finger's box is 44 px tall about the foot's middle (nothing sits under it)
   const fh = Math.max(REF.sheetFoot * s, touch ? TAP : 0);
   const foot = { y: sheet.y + sheet.h - (REF.sheetFoot * s + fh) / 2, w: sheet.w / 2, h: fh };
   return {
     cs,
     main,
-    sub: { ...main, x: main.x + LEAD * cs },
+    sub: { ...main, x: main.x + lead },
     sheet,
     prev: { x: sheet.x, ...foot },
     next: { x: sheet.x + sheet.w / 2, ...foot },

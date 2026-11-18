@@ -27,11 +27,15 @@ export interface QueueSpec {
   pageH: number;
   sheet: number; // the room the acting panel takes from the page's bottom
   stats: number; // the room the life and CT lines take past the cards' column
+  margin?: number; // the page's top margin (ui3d/layer.ts inset.top): the list starts under it
 }
 
 // The sizes are the reference's (1280x720) times the scale; a row is never shorter than its two 16 px lines and two
 // bars (queue-view.ts statsLayout), a floor that shrinks with the pieces on a narrow page. The column stacks from the
-// bottom, 1 above the acting panel and counting up, so a row's y falls as the list grows and the scroll is 0 at rest
+// bottom, 1 above the acting panel and counting up, so a row's y falls as the list grows and the scroll is 0 at rest.
+// The list starts under the page's top margin (on a phone its region began above the page) and its title stays out of
+// the rows: a list longer than its box drops its top to the row that fits whole under the title, so at rest no card
+// shows cut under it (Fernando, Nov 18)
 export function queueLayout(q: QueueSpec) {
   const f = listFloor(q.s),
     px = (v: number) => lu(v * q.s),
@@ -42,15 +46,27 @@ export function queueLayout(q: QueueSpec) {
     gap = px(8),
     pad = { top: px(8), right: px(10), bottom: px(10), left: px(56) },
     left = lu(q.at.x),
-    top = lu(q.at.y),
     // it ends above the acting panel where that one is taller than the reference's
-    height = q.pageH - lu(Math.max(q.pageH - q.at.y - q.at.h, q.sheet + 2)) - top,
+    bottom = q.pageH - lu(Math.max(q.pageH - q.at.y - q.at.h, q.sheet + 2)),
+    sizes = Array.from({ length: q.rows }, (_, i) => size(q.now && i === 0)),
+    head = pad.top + HEAD, // where the rows end under the title
     width = lu(120 * q.s + q.stats),
     rows: Box[] = [];
+  let top = lu(Math.max(q.at.y, q.margin ?? q.at.y));
+  const room = bottom - top - head - pad.bottom; // under the title
+  if (sizes.reduce((a, z) => a + z.h + gap, -gap) > room) {
+    // a row and the gap over it, from the bottom, while the whole of them fits
+    let stack = 0;
+    for (const z of sizes) {
+      if (stack + z.h + gap > room) break;
+      stack += z.h + gap;
+    }
+    top += Math.floor(room - stack);
+  }
+  const height = bottom - top;
   let y = height - pad.bottom,
     content = pad.top + HEAD + pad.bottom;
-  for (let i = 0; i < q.rows; i++) {
-    const z = size(q.now && i === 0);
+  for (const z of sizes) {
     y -= z.h;
     // whole px, as the cards always sat: the browser hands a row's box rounded
     rows.push({ x: Math.round(pad.left), y: Math.round(y), w: Math.round(z.w), h: Math.round(z.h) });
@@ -62,7 +78,7 @@ export function queueLayout(q: QueueSpec) {
     left,
     top,
     height: Math.round(height),
-    head: HEAD,
+    head, // the rows' clip line: under the title, which does not scroll with them
     // the middle of the list's name: a 16 px line right over the top row, pinned under the list's top padding while
     // the rows scroll under it; over the cards, not over their lines
     title: {

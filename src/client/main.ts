@@ -98,6 +98,7 @@ export class Game implements TurnHost {
     this.toggleFps = fpsCounter(host, scene, () => this.hud.stats3d());
     pace.toggle = store.get(FAST_KEY) === '1';
     this.hud.setFast(pace.toggle);
+    this.hud.setPixel(this.pixel.size);
     requestAnimationFrame(() => this.pollPad());
     // Options changed the mark style: the scene builds its marks again and the turn's marks go back on them
     onMarkStyle(() => {
@@ -173,6 +174,7 @@ export class Game implements TurnHost {
     this.pixel = p;
     store.set(PIXEL_KEY, JSON.stringify(p));
     this.scene.setPixel(p);
+    this.hud.setPixel(p.size);
     this.log = t(
       `Pixel art: ${p.size ? `${p.size} px` : 'desligado'}`,
       `Pixel art: ${p.size ? `${p.size} px` : 'off'}`,

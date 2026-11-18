@@ -99,20 +99,53 @@ describe('3D turn list: its layout with no DOM', () => {
         sheet,
         stats: m.stats,
       });
+      // Nov 18: a list longer than its box drops its top by whole px to the row that fits whole under the title; the
+      // rows stay on the page px they had, the list scrolls by as much more
+      const cut = Math.round(l.top - m.top); // whole px; the measured top was written to 1/1000 px
+      expect(l.top - m.top).toBeCloseTo(cut, 2);
+      expect(cut).toBeGreaterThanOrEqual(0);
       expect(l.left).toBeCloseTo(m.left, 2);
-      expect(l.top).toBeCloseTo(m.top, 2);
       expect(l.box.right - l.box.left).toBeCloseTo(m.width, 2);
-      expect(l.height).toBe(m.height);
-      expect(l.head).toBe(HEAD);
-      expect(l.more).toBe(m.more);
-      expect(l.rows.slice(0, m.ys.length).map((r) => r.y)).toEqual(m.ys);
+      expect(l.height).toBe(m.height - cut);
+      expect(l.head).toBe(l.seat.pad.top + HEAD);
+      expect(l.more).toBe(m.more + cut);
+      expect(l.rows.slice(0, m.ys.length).map((r) => r.y + cut)).toEqual(m.ys);
       for (const r of l.rows) expect(r).toMatchObject({ x: m.x, w: m.rw, h: m.rh });
+      // no card at rest is cut by the title's line: each is wholly under it or over it (clipped), but for the rounding
+      // of a row's box to whole px (under 2 px)
+      for (const r of l.rows) expect(r.y >= l.head || r.y + r.h <= l.head + 2, String(r.y)).toBe(true);
+      expect(l.rows.some((r) => r.y >= l.head && r.y - l.seat.gap < l.head + 2)).toBe(true); // the top one a gap under it
       // the list's name, drawn: on the middle of the HTML title's 16 px line (2 px under its top)
       if (m.title) {
         expect(l.title.x).toBeCloseTo(m.title[0], 1);
-        expect(l.title.y - 10).toBeCloseTo(m.title[1], 1);
+        expect(l.title.y - 10).toBeCloseTo(m.title[1] + cut, 1);
       }
     });
+
+  // Fernando, Nov 18: on a phone the list's region began above the page, its name and first card cut by the edge
+  it('starts under the top margin, its name and every card inside the page', () => {
+    for (const [w, h, safe] of [
+      [844, 390, { x: 47, y: 21 }],
+      [667, 375, { x: 0, y: 0 }],
+      [1024, 768, { x: 0, y: 0 }],
+      [768, 1024, { x: 0, y: 0 }],
+    ] as const) {
+      const st = stage(w, h, 'edges', safe),
+        l = queueLayout({
+          rows: 12,
+          now: false,
+          s: st.s * 1.5,
+          at: place(REGIONS.turn, st),
+          pageH: h,
+          sheet: h - Math.round(sheetBox(st, h).y),
+          stats: 90,
+          margin: 12,
+        });
+      expect(l.top, `${w}`).toBeGreaterThanOrEqual(12);
+      expect(l.title.y - 8, `${w}`).toBeGreaterThanOrEqual(12); // the 16 px line's top
+      for (const r of l.rows) expect(r.y >= l.head || r.y + r.h <= l.head + 2, `${w} ${r.y}`).toBe(true);
+    }
+  });
 
   it('the name sits right over the top row of a list that fits, over the cards', () => {
     const l = queueLayout(plain({ rows: 3, at: { x: 12, y: 40, w: 200, h: 500 }, pageH: 720 }));
@@ -144,9 +177,11 @@ describe('3D turn list: its layout with no DOM', () => {
     expect(fill(0).more).toBe(0);
     expect(fill(0).rows).toEqual([]);
     expect(fill(4).more).toBe(0);
-    expect(fill(5).more).toBe(42);
+    // a fifth row does not fit: the list drops its top 18 px to the fourth row's (gap under the title), 42 + 18 to scroll
+    expect(fill(5).top).toBe(18);
+    expect(fill(5).more).toBe(60);
     expect(fill(5).rows[4].y).toBeLessThan(0); // up the list, past its top
-    expect(fill(6).more).toBe(102);
+    expect(fill(6).more).toBe(120);
   });
 
   it('ends above the acting panel when that one is taller than the reference, 2 px clear', () => {
