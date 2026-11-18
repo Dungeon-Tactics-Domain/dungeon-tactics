@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { hang, PLATE, type Spot, sheetLayout } from '../src/client/bar3d/bar-layout.ts';
 import { barView, plateView, sheetView } from '../src/client/bar3d/bar-view.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
+import { buildDevScenario, unitFrom } from '../src/client/dev-roster.ts';
 import { forecast } from '../src/client/forecast.ts';
 import { REGIONS } from '../src/client/ui3d/layout.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { initialState } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
@@ -31,7 +33,8 @@ describe('3D combat bar: what it shows', () => {
   it("the acting unit's sheet reads the same numbers as the HTML panel", () => {
     const b = duel();
     const s = sheetView(b.state, b.actor);
-    expect(s).toMatchObject({ name: 'Guerreiro', enemy: false, tag: '', line: 'Guerreiro' });
+    // the class is the name here: the strip leaves it out rather than say "Guerreiro" twice (Nov 18)
+    expect(s).toMatchObject({ name: 'Guerreiro', enemy: false, tag: '', line: '' });
     expect(s.hp).toEqual({ label: 'Vida', value: 210, max: 210 });
     expect(s.change).toEqual({ left: 1, upTo: 1, gain: false });
     expect(s.pools).toEqual([{ label: 'ST', value: 50, max: 50 }]);
@@ -58,7 +61,14 @@ describe('3D combat bar: what it shows', () => {
   it('a unit charging says so on its strip', () => {
     const b = duel();
     b.state.charges.push({ ...b.state.charges[0], unit: 'a', ability: 'strike', ticks: 3 });
-    expect(sheetView(b.state, b.actor).line).toBe('Guerreiro · Carregando Golpe (3 tiques)');
+    expect(sheetView(b.state, b.actor).line).toBe('Carregando Golpe (3 tiques)');
+  });
+
+  it('a hero with a name of its own keeps its class on the strip', () => {
+    const sc = buildDevScenario({ map: 'skirmish', heroes: [unitFrom('rogue', 'Hugo')], enemies: [unitFrom('brute')] });
+    const hugo = sc.spawns.find((s) => s.team === 'hero' && UNIT_DEFS[s.def].name === 'Hugo')!;
+    const st = initialState(sc, 1);
+    expect(sheetView(st, st.units.find((u) => u.id === hugo.id)!)).toMatchObject({ name: 'Hugo', line: 'Ladino' });
   });
 
   it('without a strike aimed: no plate, and the unit under the cursor on the right', () => {
@@ -85,7 +95,7 @@ describe('3D combat bar: what it shows', () => {
     });
     const max = 225;
     expect(v.target?.change).toEqual({ left: f.after[0] / max, upTo: 1, gain: false });
-    expect(v.target?.line).toBe(`Soldado · vida ${max} → ${f.after[0]}–${f.after[1]}`);
+    expect(v.target?.line).toBe(`vida ${max} → ${f.after[0]}–${f.after[1]}`);
   });
 
   it('more targets are counted, a heal adds and a strike on an ally warns', () => {

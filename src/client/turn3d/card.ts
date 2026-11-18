@@ -28,7 +28,7 @@ void main() {
 }`;
 
 // One shader draws the whole row, back to front: target band and gold plate, the life and CT bars beside the card,
-// shadow, halo, frame, picture, charge badge and number. Shapes are rounded-rectangle distances; the small painted texture (uPaint) wears the frame,
+// shadow, halo, frame, picture, a foe's diamond, charge badge and number. Shapes are rounded-rectangle distances; the small painted texture (uPaint) wears the frame,
 // the plate and the picture's ground so the flat gradients read as painted pieces
 const FRAG = `
 precision highp float;
@@ -143,6 +143,13 @@ void main() {
   pic += uNow * 0.16 * exp(-pow((uv.x + uv.y) * 0.5 - sweep, 2.0) / 0.012);
   pic += 0.07 * uHover;
   col = over(col, pic, cov(dI));
+
+  // a foe's card also wears a mark, not only its colour (Nov 18 accessibility review: cyan and pink alone): a pink
+  // diamond on a dark rim over the top left corner of the frame
+  vec2 dq = p - c0 - vec2(3.5 * k, 3.5 * k);
+  float dd = (abs(dq.x) + abs(dq.y)) * 0.7071 - 4.6 * k;
+  col = over(col, ${glsl('#050c18')}, uTeam * cov(dd - 1.4 * k));
+  col = over(col, ${glsl('#f0608e')}, uTeam * cov(dd));
 
   // a charge going off: the ability's icon on a dark medal over the caster's face
   if (uIcon.z > 0.5) {

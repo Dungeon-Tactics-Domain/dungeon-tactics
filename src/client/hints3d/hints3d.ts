@@ -178,7 +178,10 @@ export class Hints3d implements Ui3dScreen {
     if (parts.banner) {
       // the battle over: the pill leaves like the Height and the hints, the end screen says who won (result3d/ draws
       // on this same layer, and the pill showed through its veil)
-      const text = this.said ?? (b.over ? '' : last.help);
+      // nor while "Execute?" is open: its head asks the same question beside the character (Nov 18 review: "Tiro:
+      // executar?" twice on screen); the help line keeps it for the screen reader
+      const asking = last.open && v.screen.k === 'confirm';
+      const text = this.said ?? (b.over || asking ? '' : last.help);
       const part = this.banner,
         key = text + at;
       part.want = this.open.to = text ? 1 : 0; // without text it keeps what it showed and leaves
@@ -220,6 +223,12 @@ export class Hints3d implements Ui3dScreen {
         this.num = this.label(String(n), 96, GREEN);
         part.text(this.num, r.x + 332 * s - this.num.scale.x / 2, r.y + 46 * s);
         this.num.userData.size = this.num.scale.clone();
+        // "Height" and its number on a dark plate, as the tile line under them is (Nov 18 review: the word floated
+        // loose over the map); measured on the drawn texts, which the 16 px floor widens on a phone
+        const left = Math.min(r.x + 82 * s, r.x + 332 * s - this.num.scale.x) - 12 * s,
+          top = Math.min(r.y + 55 * s - name.scale.y / 2, r.y + 46 * s - this.num.scale.y / 2),
+          bottom = Math.max(r.y + 55 * s + name.scale.y / 2, r.y + 46 * s + this.num.scale.y / 2);
+        part.box(left, top, r.x + 344 * s - left, bottom - top, 12 * s, PILL);
       }
       // the tile line: a dark box under the Height's line, from the label's x, wrapping at the region's right edge
       const line = tileLine(b, v.screen, v.cursor, v.hl?.size),

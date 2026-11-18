@@ -124,6 +124,10 @@ export class Title3d implements Ui3dScreen {
       const tag = note ? put(fixed, text(note, REF.size.note, c.soft), r.x + r.w - 12 * s, mid, 'right') : null;
       const room = r.w - L.inset - (tag ? tag.scale.x + 24 * s : 12 * s);
       put(fixed, text(b.firstChild?.textContent ?? '', REF.size.row, c.text), r.x + L.inset, mid, 'left', room);
+      // the developer's row closes the list under a hairline: a tool apart from the game's commands. On the row's own
+      // top edge, so no row moves and every unseen button stays under its drawing
+      if (b.classList.contains('dev-row'))
+        fixed.box(r.x + 12 * s, r.y, r.w - 24 * s, Math.max(1, s), 0, rgba(c.line, 0.7));
     });
     // the keys, only where there is a keyboard (the title's own foot says them or not)
     const foot = title.querySelector('.title-foot')?.firstChild;

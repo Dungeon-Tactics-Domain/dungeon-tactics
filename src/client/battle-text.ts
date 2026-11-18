@@ -200,10 +200,16 @@ export const defenceRows = (def: UnitDef): [string, string][] => [
   [t('Esquiva', 'Dodge'), `${dodgeOf(def)}%`],
 ];
 
+// Move and Jump with their unit: half tiles for a token of the split map (half.ts halfDef), whole ones on a whole map
+const tiles = (n: number, half: boolean) =>
+  half
+    ? t(`${n} ${n === 1 ? 'meia casa' : 'meias casas'}`, `${n} half ${n === 1 ? 'tile' : 'tiles'}`)
+    : t(`${n} ${n === 1 ? 'casa' : 'casas'}`, `${n} ${n === 1 ? 'tile' : 'tiles'}`);
 // Status window sheet (like FFT's): what the unit is now. [label, value] rows; pure for the test.
 export function unitStatus(state: BattleState, unitId: string): [string, string][] {
   const u = state.units.find((x) => x.id === unitId)!;
   const def = UNIT_DEFS[u.def];
+  const half = baseDef(u.def) !== u.def;
   const bonus = (k: string) => (u.vars?.[k] ? ` (${u.vars[k] > 0 ? '+' : ''}${u.vars[k]})` : '');
   const rows: [string, string][] = [
     [t('Lado', 'Side'), sideName(u.team)],
@@ -212,10 +218,12 @@ export function unitStatus(state: BattleState, unitId: string): [string, string]
   rows.push(...poolRows(def, u));
   rows.push(
     ['CT', `${Math.max(0, Math.min(u.ct, TURN_THRESHOLD))}/${TURN_THRESHOLD}`], // the panel already capped it at 100; Status showed 108/100
-    [t('Velocidade', 'Speed'), `${def.speed}${bonus('sp')}`],
-    // in half tiles on the split map, the points the game spends (Nov 15, Fernando: "the move and jump values double")
-    [t('Movimento', 'Move'), String(def.move)],
-    [t('Salto', 'Jump'), String(jumpOf(state, u.def) * ((def.size ?? 1) / (UNIT_DEFS[baseDef(u.def)].size ?? 1)))],
+    // each number with its unit (Nov 18 review: "Movimento 10" said nothing): Speed is the CT gained each tick
+    [t('Velocidade', 'Speed'), t(`${def.speed} de CT por tique`, `${def.speed} CT per tick`) + bonus('sp')],
+    // in half tiles on the split map, the points the game spends (Nov 15, Fernando: "the move and jump values double");
+    // the unit in How to play's words (town-ui.ts jumpHelp)
+    [t('Movimento', 'Move'), tiles(def.move, half)],
+    [t('Salto', 'Jump'), tiles(jumpOf(state, u.def) * ((def.size ?? 1) / (UNIT_DEFS[baseDef(u.def)].size ?? 1)), half)],
     ...attrRows(def),
   );
   const c = state.charges.find((x) => x.unit === u.id);

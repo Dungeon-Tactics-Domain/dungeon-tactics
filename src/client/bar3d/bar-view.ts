@@ -30,7 +30,7 @@ export interface SheetView {
   // each of its turns (empty without a piece that gives it), and "+8", the CT gained each tick (empty with no CT)
   hpRegen: string;
   ctGain: string;
-  line: string; // the strip under the bars: the class, then the aimed strike's small line or a charge in progress
+  line: string; // the strip under the bars: the class (unless it is the name), then the aimed strike's small line or a charge in progress
 }
 export interface PlateView {
   chance: string; // "⊕ 85%"; empty for a support with no number
@@ -59,7 +59,9 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
   // the study's own MP counter, as the HTML panel shows it
   if (u.vars?.mp !== undefined) pools.push({ label: 'MP', value: u.vars.mp, max: def.vars?.mp ?? u.vars.mp });
   const charge = state.charges.find((c) => c.unit === u.id);
-  // the class always leads the strip, as on the reference (Fernando, Nov 16); a plain unit's class is its own name
+  // the class leads the strip, as on the reference (Fernando, Nov 16), unless it is the name above it (a plain unit, a
+  // hero with no name of its own): "Ladino" twice read as a mistake (Nov 18 review)
+  const name = unitName(u.def);
   const cls = unitName(classOf(u.def) ?? u.def);
   const now = frac(u.hp, def.hp);
   const struck = f && !f.support && (f.heal || f.dmg);
@@ -69,7 +71,7 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
     ctGain: def.speed > 0 ? `+${st.ctGain}` : '',
     unit: u,
     enemy: u.team === 'enemy',
-    name: unitName(u.def),
+    name,
     tag: u.team === 'enemy' ? t('Inimigo', 'Enemy') : '',
     hp: { label: t('Vida', 'HP'), value: Math.max(0, u.hp), max: def.hp },
     change: !struck
@@ -80,7 +82,7 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
     pools: pools.slice(0, 2),
     ct: def.speed > 0 ? { label: 'CT', value: Math.min(u.ct, TURN_THRESHOLD), max: TURN_THRESHOLD } : null,
     line: [
-      cls,
+      cls !== name && cls,
       f && ability
         ? strikeInfo(f, ability).slice(1).join(' · ')
         : charge

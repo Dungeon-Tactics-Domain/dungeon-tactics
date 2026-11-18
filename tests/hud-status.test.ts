@@ -59,9 +59,9 @@ describe('status window', () => {
       Lado: 'herói',
       Vida: '210/210',
       CT: '0/100',
-      Velocidade: '8',
-      Movimento: '4',
-      Salto: '1',
+      Velocidade: '8 de CT por tique',
+      Movimento: '4 casas',
+      Salto: '1 casa',
       'Poder físico': '0',
       'Poder mágico': '0',
       'Resistência física': '+10%',
@@ -102,7 +102,11 @@ describe('status window', () => {
 
   it('a half-tile token shows Move and Jump in cells, doubled (Nov 15)', () => {
     const s = initialState(halve(SCENARIOS.skirmish), 1);
-    expect(Object.fromEntries(unitStatus(s, 'h-warrior'))).toMatchObject({ Movimento: '8', Salto: '2' });
+    // with their unit (Nov 18 review: "Movimento 10" said nothing)
+    expect(Object.fromEntries(unitStatus(s, 'h-warrior'))).toMatchObject({
+      Movimento: '8 meias casas',
+      Salto: '2 meias casas',
+    });
   });
 });
 
