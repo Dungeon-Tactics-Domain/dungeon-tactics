@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import {
   LAYOUT_MODES,
+  PHONE_SHRINK,
+  PHONE_TEXT,
   pageFloor,
   parseLayout,
+  phonePage,
   place,
   REGIONS,
   type Region,
   setPageFloor,
+  sheetBox,
   stage,
+  TABLET_TEXT,
   textPx,
 } from '../src/client/ui3d/layout.ts';
 
@@ -152,5 +157,37 @@ describe('interface layout: the spec', () => {
       'uiPixel must be true or false',
       'layout must be one of edges, frame',
     ]);
+  });
+});
+
+// Fernando, Nov 18 night: on a phone the turn list and the combat bar draw at 65%, text no smaller than 9 px
+describe('phone shrink', () => {
+  it('only a finger on a page under 600 px on its shorter side is a phone', () => {
+    expect(phonePage(844, 390, true)).toBe(true);
+    expect(phonePage(667, 375, true)).toBe(true);
+    expect(phonePage(844, 390, false)).toBe(false); // a small window on a PC
+    expect(phonePage(1024, 768, true)).toBe(false); // a tablet
+    expect(phonePage(768, 1024, true)).toBe(false);
+  });
+
+  it('the phone floor is 9 px; the tablet keeps 14 and the PC none', () => {
+    expect(pageFloor(844, 390, true)).toBe(PHONE_TEXT);
+    expect(pageFloor(844, 390)).toBe(0);
+    expect(pageFloor(1024, 768, true)).toBe(TABLET_TEXT);
+    expect(pageFloor(1920, 1080, true)).toBe(0);
+    // a shrunk piece's text at 844x390: 65% of the scale would draw it near 7.6 px, the floor keeps 9
+    const s = stage(844, 390, 'edges').s * PHONE_SHRINK;
+    expect(textPx(12, s, 16, 0)).toBeLessThan(PHONE_TEXT);
+    expect(textPx(12, s, 16, PHONE_TEXT)).toBe(PHONE_TEXT);
+  });
+
+  it('the acting sheet at 65% keeps its corner and takes 65% of the room', () => {
+    const st = stage(844, 390, 'edges');
+    const full = sheetBox(st, 390),
+      small = sheetBox({ ...st, s: st.s * PHONE_SHRINK }, 390);
+    expect(small.w / full.w).toBeCloseTo(PHONE_SHRINK, 2);
+    expect(small.h / full.h).toBeCloseTo(PHONE_SHRINK, 2);
+    expect(small.y + small.h).toBeGreaterThan(full.y + full.h - 6); // still at the bottom, a smaller margin under it
+    expect(small.x).toBeLessThanOrEqual(full.x);
   });
 });

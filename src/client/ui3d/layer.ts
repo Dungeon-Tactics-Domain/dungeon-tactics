@@ -25,7 +25,7 @@ import { getLayout, onLayout } from '../layout-mode.ts';
 import { reducedMotion } from '../motion.ts';
 import { param } from '../store.ts';
 import { onHidden, type PieceName, pieceHidden } from '../ui-pieces.ts';
-import { type Stage, setPageFloor, stage, textPx } from './layout.ts';
+import { PHONE_SHRINK, phonePage, type Stage, setPageFloor, stage, textPx } from './layout.ts';
 import { QUAD, QUAD_VERT, type Rgb, type Theme } from './panel.ts';
 import { PIXEL_FRAG, pixelBlock } from './pixel.ts';
 import type { Rotate3d } from './rotate3d.ts';
@@ -48,6 +48,8 @@ export class Ui3dLayer {
   dpr = 1;
   s = 1; // one reference px (the 1920x1080 layout the pieces were measured on) in CSS px: the stage's scale
   stage: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 }; // where the pieces are laid out (layout.ts), as the player picked
+  // the stage of the turn list and the combat bar: the same, at PHONE_SHRINK of the scale on a phone (layout.ts)
+  small: Stage = this.stage;
   // the whole reference fitted to the page, whatever the layout: a screen that is the whole 1920x1080 (the town's
   // windows, the expedition map) stays on the page on a short one too, where `edges` keeps the pieces wider
   whole: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 };
@@ -178,6 +180,10 @@ export class Ui3dLayer {
   px(size: number, floor?: number) {
     return textPx(size, this.s, floor);
   }
+  // the same for a piece on the `small` stage
+  smallPx(size: number) {
+    return textPx(size, this.small.s);
+  }
   // pixel filter on: positions onto the block grid, so a sprite does not shimmer as it moves, and rotation in steps,
   // like the frames of a sprite
   snap(v: number) {
@@ -220,7 +226,9 @@ export class Ui3dLayer {
     // the stage too: turning a phone over moves the notch without changing the page's size
     if (w === this.w && h === this.h && dpr === this.dpr && mode === this.mode && st.x === this.stage.x) return;
     Object.assign(this, { w, h, dpr, mode, stage: st, s: st.s, whole: stage(w, h, 'frame') });
-    setPageFloor(w, h);
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    setPageFloor(w, h, coarse);
+    this.small = { ...st, s: st.s * (phonePage(w, h, coarse) ? PHONE_SHRINK : 1) };
     const [fx, fy] = mode === 'frame' ? [st.x, st.y] : [0, 0];
     this.inset = {
       top: 12 + sides.top + fy,

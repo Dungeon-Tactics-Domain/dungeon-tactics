@@ -244,7 +244,7 @@ export class BattleHud {
   }
   // the 3D bar's sheet on the page, from the layout alone; null with the HTML panels, which are measured
   private get sheet() {
-    return this.layer && this.p3d.bar ? sheetBox(this.layer.stage, this.layer.h) : null;
+    return this.layer && this.p3d.bar ? sheetBox(this.layer.small, this.layer.h) : null;
   }
 
   // Painted faces (battle-face.ts) in the unit panels and the turn list, drawn with the dialogue box's sheet at the size

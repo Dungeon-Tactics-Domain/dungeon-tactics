@@ -1572,12 +1572,18 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   visibility: hidden;
 }
 .hud.bar3d .active-slot {
-  left: calc(var(--lay-x) + 100 * var(--lay-u));
-  bottom: calc(var(--lay-y) + 48 * var(--lay-u));
-  width: calc(672 * var(--lay-u));
-  height: calc(214 * var(--lay-u));
+  left: calc(var(--lay-x) + 100 * var(--lay-u) * var(--bar-k, 1));
+  bottom: calc(var(--lay-y) + 48 * var(--lay-u) * var(--bar-k, 1));
+  width: calc(672 * var(--lay-u) * var(--bar-k, 1));
+  height: calc(214 * var(--lay-u) * var(--bar-k, 1));
   overflow: hidden;
   opacity: 0;
+}
+/* a phone draws the combat bar at 65% (ui3d/layout.ts PHONE_SHRINK, phonePage): its unseen panel follows */
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  .hud.bar3d {
+    --bar-k: 0.65;
+  }
 }
 /* with the command menu shut by a tap on the map (menu-state.ts), a tap on the acting sheet shows it again */
 .hud.menu-shut .active-slot {

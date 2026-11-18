@@ -25,12 +25,18 @@ export const NARROW_SCALE = 1 / 3;
 export const TABLET_SIDE = 600;
 export const TABLET_TEXT = 14;
 // (a PC page, 1152x648 or more, has none: its 16 px already holds and nothing laid out for the tablet moves there)
-export const pageFloor = (w: number, h: number) =>
-  Math.min(w, h) >= TABLET_SIDE && !(w >= 1152 && h >= 648) ? TABLET_TEXT : 0;
+// A phone (a finger, `coarse`, on a page whose shorter side is under TABLET_SIDE) draws the turn list and the combat
+// bar at PHONE_SHRINK of their size, the same drawing (Fernando, Nov 18 night: they covered the map), and no 3D text
+// under PHONE_TEXT (he accepted 9 to 10 px on the phone); a tablet and a PC do not change
+export const PHONE_SHRINK = 0.65;
+export const PHONE_TEXT = 9;
+export const phonePage = (w: number, h: number, coarse: boolean) => coarse && Math.min(w, h) < TABLET_SIDE;
+export const pageFloor = (w: number, h: number, coarse = false) =>
+  Math.min(w, h) >= TABLET_SIDE && !(w >= 1152 && h >= 648) ? TABLET_TEXT : phonePage(w, h, coarse) ? PHONE_TEXT : 0;
 // the page's own floor, set by the 3D layer on each fit (layer.ts), so every piece's text follows it without passing it
 let least = 0;
-export const setPageFloor = (w: number, h: number) => {
-  least = pageFloor(w, h);
+export const setPageFloor = (w: number, h: number, coarse = false) => {
+  least = pageFloor(w, h, coarse);
 };
 export const pageText = () => least;
 // The smallest text a 3D piece draws, in page px: the game's 16 px (`floor`) down to MIN_SCALE, and under it shrinking

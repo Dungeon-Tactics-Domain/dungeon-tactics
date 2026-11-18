@@ -80,6 +80,10 @@ do not rearrange the layout only to reach that number.*
   keeps for it (`below`, `cue`, `tools-layout.ts`). The Pixel size row shows the size in use ("2 px", "desligado").
 - **No pointing glove for a finger**: the command menu's and the ☰ list's glove hide while a finger plays (the layer's
   `finger`, `ui3d/layer.ts`, the same switch that hides the key hints); a key or a pad brings it back.
+- **On a phone the turn list and the combat bar are 65% of their size** (Fernando, Nov 18 night: they covered the map):
+  `PHONE_SHRINK` and `phonePage` (`ui3d/layout.ts`: a finger and the page's shorter side under 600 px), the layer's
+  `small` stage; their 3D text keeps a 9 px floor (`PHONE_TEXT`). A tablet and a PC do not change. The bar's unseen
+  panel follows (`--bar-k`, style.css).
 - **The turn list starts under the top margin** and its title never covers a card: a list longer than its box drops its
   top to the first whole row (`queueLayout`, `turn3d/queue-layout.ts`).
 - **The command menu never covers the acting unit's sheet** (at 844×390 it hid the end of the stamina, "50/5"); where the
