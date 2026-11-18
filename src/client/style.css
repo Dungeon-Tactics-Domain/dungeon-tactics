@@ -355,6 +355,29 @@ button[hidden],
   box-shadow: var(--paper-frame);
   text-shadow: var(--ink-shadow);
 }
+/* "▼ More below" at the foot of a scroll box that hides more (dialog.ts scrollCue): sticky over the last line, its
+   negative margin taking no room; a 44 px tap target that scrolls a page; still, so nothing moves under Reduce motion */
+.scroll-more {
+  position: sticky;
+  bottom: 6px;
+  z-index: 1;
+  display: none;
+  align-items: center;
+  width: fit-content;
+  min-height: 44px;
+  margin: -44px auto 0;
+  padding: 0 18px;
+  border: 1px solid var(--paper-edge);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--shade) 90%, transparent);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  cursor: pointer;
+}
+.has-more > .scroll-more {
+  display: flex;
+}
 /* every blue surface blurs what is behind it when glass is on (glass.ts); the windows with no background of their own
    reset it below, so no invisible rectangle is blurred */
 .dialog,
@@ -3256,6 +3279,7 @@ p.gold strong::before,
   width: min(1180px, 100%);
   display: flex;
   flex-direction: column;
+  container-type: inline-size; /* its columns follow the window's own width: beside the town menu it is far narrower than the screen */
 }
 .roster-cols {
   display: grid;
@@ -3340,6 +3364,7 @@ p.gold strong::before,
 /* Status: who the unit is, as the HUD's unit panel (the hero's side stripe, the 128 px face, the bars) */
 .unit-head {
   display: flex;
+  flex-wrap: wrap; /* a narrow page puts the name and bars under the face instead of cutting them */
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
@@ -3356,7 +3381,7 @@ p.gold strong::before,
   height: 128px;
 }
 .unit-head > div {
-  flex: 1;
+  flex: 1 1 180px;
   min-width: 0;
   display: grid;
   grid-template-columns: auto 1fr;
@@ -3391,7 +3416,7 @@ p.gold strong::before,
 }
 .stat-rows > div {
   display: grid;
-  grid-template-columns: 11em 1fr 3.4em;
+  grid-template-columns: minmax(0, 11em) minmax(24px, 1fr) 3.4em; /* a narrow page wraps the name, never cuts the number */
   align-items: center;
   gap: 0 12px;
 }
@@ -3482,6 +3507,36 @@ p.gold strong::before,
 /* A tablet on its side (1024 px, the page beside the town menu): the four tabs do not fit one line, so they take two
    instead of squeezing to 29 px with their names over each other (docs/mobile-ux-auditoria.md) */
 @media (max-width: 1100px) {
+  .roster-tabs .choice-row {
+    flex-wrap: wrap;
+  }
+}
+/* A window too narrow for the 300 px list and a page beside it (next to the town menu on a 1024x768 tablet: 512 px inside;
+   Nov 18 review, the page had 184 px and cut the name, the bars and every number): the list keeps faces and names, its
+   bars go (the page shows the picked one's), and the page gets the rest. A phone (760 px media below) stacks instead */
+@container (max-width: 600px) {
+  .roster-cols {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .dialog .roster-list > button {
+    padding-left: 30px; /* the focus ▶ still fits left of the face */
+  }
+  /* the picked ▸ in the top right corner, beside the short name: in line it took the class's room */
+  .dialog .roster-list > button.picked::after {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+  .roster-who {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .roster-who .gauge {
+    display: none;
+  }
+}
+/* a page under ~360 px (a 1180 px screen beside the menu: 340) has no room for the four tabs on one line */
+@container (max-width: 720px) {
   .roster-tabs .choice-row {
     flex-wrap: wrap;
   }

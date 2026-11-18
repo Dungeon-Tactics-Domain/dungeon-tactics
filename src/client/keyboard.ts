@@ -172,7 +172,11 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       '',
       t('trocar o tamanho do pixel art (Desligado, 2, 3, 4 px)', 'change the pixel art size (Off, 2, 3, 4 px)'),
     ],
-    [['turns'], 'PgUp · PgDn', t('rolar a lista de turnos', 'scroll the turn list')],
+    [
+      ['turns'],
+      'PgUp · PgDn',
+      t('rolar a lista de turnos ou a janela aberta', 'scroll the turn list or the open window'),
+    ],
     [
       ['info'],
       '',

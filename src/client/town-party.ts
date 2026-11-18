@@ -7,7 +7,7 @@ import { type Slot, withGear } from '../shared/battle/equipment.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { abilityDetail, regenLine } from './battle-text.ts';
 import { CHEST_KEY, CHEST_MAX, EQUIP_KEY } from './chest.ts';
-import { choice, dialog, secondTap } from './dialog.ts';
+import { choice, dialog, scrollCue, secondTap } from './dialog.ts';
 import { changeClass, DEPLOY_MAX, dismiss, JOBS, type Member, roster, toggleDeploy } from './group.ts';
 import { gauge, poolGauges, stillFace } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
@@ -243,6 +243,8 @@ export function openParty(back?: () => void, view: PartyView = {}) {
     ],
     { onBack: back },
   );
+  // the list and the page scroll each on their own; on a phone the whole window does (style.css)
+  for (const box of d.overlay.querySelectorAll<HTMLElement>('.roster-list, .roster-page, .dialog')) scrollCue(box);
   // left and right turn the pages (FFT's paging) wherever the focus is; on a tab the focus follows the page
   d.overlay.addEventListener('keydown', (e) => {
     const dir = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
