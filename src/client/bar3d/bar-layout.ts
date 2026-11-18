@@ -32,7 +32,7 @@ export interface SheetLayout {
   poolLabel: Spot;
   poolValue: Spot;
   ctLabel: Spot;
-  ctGain: Spot; // "+8" between the bar and the number: the CT gained each tick
+  ctGain: Spot; // "+8" between the bar and the number: the CT gained each tick (bar3d.ts ends it a space before the number)
   ctValue: Spot;
   boxLabel: Spot;
   boxValue: Spot;
@@ -61,7 +61,9 @@ export function sheetLayout(mirror: boolean): SheetLayout {
     mirror,
     hpBar: box(178, 84, 234, 16),
     poolBar: box(428, 84, 234, 16),
-    ctBar: box(226, 123, 100, 10), // 130 on the reference: the last 30 px hold the CT gain, which it does not show
+    // 130 on the reference: the rest holds the CT gain, which it does not show; 80 leaves the gain room on a phone, where
+    // the 16 px text floor widens it and bar3d.ts hangs it a space before the value (Nov 18)
+    ctBar: box(226, 123, 80, 10),
     box: box(428, 114, 234, 34),
     boxBar: box(480, 126, 96, 10),
     strip: box(170, 156, 498, 38),

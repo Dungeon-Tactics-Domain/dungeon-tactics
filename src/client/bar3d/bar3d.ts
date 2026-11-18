@@ -69,6 +69,7 @@ class Part {
     const { x, k } = hang(sp, m.userData.w, layer.s, TEXT_PAD);
     m.scale.set(m.userData.w * k, m.userData.h * k, 1);
     m.position.set(layer.snap(x), -layer.snap(sp.y * layer.s), 0);
+    return m;
   }
   // the quad over its region, `PAD` reference px larger on every side
   fit(layer: Ui3dLayer) {
@@ -134,8 +135,11 @@ class Sheet {
     if (this.faceOf !== v.unit.def) this.setFace(v.unit, load);
     part.text(layer, 'name', v.name, l.name, INK);
     part.text(layer, 'tag', v.tag, l.tag, ENEMY);
-    part.text(layer, 'hpLabel', v.hp.label, l.hpLabel, SOFT);
-    part.text(layer, 'hpRegen', v.hpRegen, l.hpRegen, SOFT);
+    const gap = Math.max(6, 10 * layer.s); // a space's width at any page size
+    // "+4" starts a space after the label's ink, as drawn (the 16 px floor widens "Vida" on a phone, as it does "100")
+    const hp = part.text(layer, 'hpLabel', v.hp.label, l.hpLabel, SOFT);
+    const after = hp ? { ...l.hpRegen, x: (hp.position.x + hp.scale.x / 2 - TEXT_PAD + gap) / layer.s } : l.hpRegen;
+    part.text(layer, 'hpRegen', v.hpRegen, after, SOFT);
     part.text(layer, 'hpValue', value(v.hp), l.hpValue, INK);
     const [first, second] = v.pools;
     part.text(layer, 'poolLabel', first?.label ?? '', l.poolLabel, SOFT);
@@ -143,8 +147,12 @@ class Sheet {
     part.text(layer, 'boxLabel', second?.label ?? '', l.boxLabel, SOFT);
     part.text(layer, 'boxValue', second ? value(second) : '', l.boxValue, INK);
     part.text(layer, 'ctLabel', v.ct?.label ?? '', l.ctLabel, SOFT);
-    part.text(layer, 'ctGain', v.ctGain, l.ctGain, SOFT);
-    part.text(layer, 'ctValue', v.ct ? String(v.ct.value) : '', l.ctValue, INK);
+    const ct = part.text(layer, 'ctValue', v.ct ? String(v.ct.value) : '', l.ctValue, INK);
+    // the gain ends a fixed gap before the value's ink, as drawn: on a small page the 16 px floor widens "100" past its
+    // reference room and "+12" ran into it ("+12100", Nov 18 review)
+    const inkLeft = ct ? ct.position.x - ct.scale.x / 2 + TEXT_PAD : 0;
+    const gain = ct ? { ...l.ctGain, align: 'r' as const, x: (inkLeft - gap) / layer.s } : l.ctGain;
+    part.text(layer, 'ctGain', v.ctGain, gain, SOFT);
     part.text(layer, 'line', v.line, l.line, INK);
   }
   private targets(v: SheetView) {
