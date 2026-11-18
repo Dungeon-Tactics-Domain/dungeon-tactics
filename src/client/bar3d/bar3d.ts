@@ -50,7 +50,7 @@ class Part {
   }
   // a text on its spot; an unchanged one keeps its texture
   text(layer: Ui3dLayer, id: string, str: string, sp: Spot, color: string) {
-    const px = Math.max(16, sp.size * layer.s); // never under the game's smallest text (design system, section 8)
+    const px = layer.px(sp.size); // never under the game's smallest text (design system, section 8)
     const key = JSON.stringify([str, px, color, layer.dpr]);
     const old = this.texts.get(id);
     if (old?.key !== key) {

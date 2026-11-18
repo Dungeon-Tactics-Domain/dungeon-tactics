@@ -8,6 +8,7 @@ import { gauge, hint, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { reducedMotion } from '../motion.ts';
+import { effects3d } from '../screen-effects.ts';
 import { survivalCols } from '../survival.ts';
 import { type CardLine, tallyLine } from '../tally.ts';
 import { goHome, homeLabel } from './crawl.ts';
@@ -15,6 +16,8 @@ import { goHome, homeLabel } from './crawl.ts';
 // Victory: confetti falling for 2.5 s (DOM and CSS, no cost in the 3D frame); disappears by itself. With reduced motion, nothing.
 export function confetti() {
   if (reducedMotion()) return;
+  // with the 3D result on, slips of paper on the 3D layer; the HTML result hides that layer with the HUD
+  if (board3d && effects3d()) return effects3d()?.confetti();
   const colors = ['#f2c14e', '#4aa3ff', '#ff6b6b', '#7dffa8', '#ffffff'];
   const box = el(
     'div',

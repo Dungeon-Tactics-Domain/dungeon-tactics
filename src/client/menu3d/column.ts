@@ -6,6 +6,7 @@ import { Group, Mesh, type ShaderMaterial, type Texture } from 'three';
 import type { Element } from '../../shared/battle/units.ts';
 import { iconMaterial } from '../ui3d/icons.ts';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
+import { textPx } from '../ui3d/layout.ts';
 import { paperMaterial, quad } from '../ui3d/panel.ts';
 import { land, type Spring, settled, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
@@ -16,6 +17,7 @@ import { dropModel, type ModelKind, takeModel } from './models.ts';
 // what the columns and the sheet draw with
 export interface Ctx {
   layer: Ui3dLayer;
+  s?: number; // a scale of its own instead of the layer's (the columns on touch: menu-layout.ts touchScale)
   paint: Texture; // the panels' painted detail (ui3d/panel.ts)
 }
 export const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -27,11 +29,18 @@ export function move(sp: Spring, dt: number, still: boolean, k?: number, c?: num
 }
 // Text in the theme's serif. `size` is in px of the 1080p layout; on the page it never goes under 16 px, the game's
 // minimum (design system, section 8)
-export function label({ layer }: Ctx, str: string, size: number, color: string, width?: number, line?: number) {
-  const px = Math.max(16, size * layer.s);
+export function label(
+  { layer, s = layer.s }: Ctx,
+  str: string,
+  size: number,
+  color: string,
+  width?: number,
+  line?: number,
+) {
+  const px = textPx(size, s);
   return textMesh(
     str,
-    { size: px, color, font: layer.theme.font, width, line: line && Math.max(line * layer.s, px * 1.3) },
+    { size: px, color, font: layer.theme.font, width, line: line && Math.max(line * s, px * 1.3) },
     layer.dpr,
   );
 }
@@ -121,7 +130,7 @@ export class Column {
 
   set(d: ColumnData, ctx: Ctx) {
     const { layer } = ctx;
-    const s = (this.s = layer.s);
+    const s = (this.s = ctx.s ?? layer.s);
     const key = JSON.stringify([d, s, layer.dpr]);
     this.data = d;
     if (key === this.key) return;

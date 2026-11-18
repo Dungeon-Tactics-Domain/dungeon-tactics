@@ -22,13 +22,14 @@ import { buildDevScenario, type DevUnit, slotsOf, unitFrom } from '../dev-roster
 import { commandRow, dialog, secondTap } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t } from '../i18n.ts';
-import { button, el } from '../icons.ts';
+import { el } from '../icons.ts';
 import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
 import { openBar, openShop } from '../town-shop.ts';
 import { goldNote, openParty, sideWindows, town3d } from '../town-ui.ts';
 import { expeditionScreen, floorOf } from './expedition-map.ts';
+import { lostScreen, noRoomScreen } from './notices.ts';
 
 export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in saves.ts
 
@@ -113,6 +114,11 @@ export function castRoom(room: Scenario, exp: Expedition, node: number): { scena
 export const goHome = () => {
   location.search = '?home';
 };
+// home after a crawl room that could not be built: the town says so (notices.ts noRoomScreen)
+const NO_ROOM = 'noroom';
+export const goHomeNoRoom = () => {
+  location.search = `?home=${NO_ROOM}`;
+};
 
 // the way home is always the town (Fernando, Nov 15: the game always opens there; a live expedition is one tap away)
 export const homeLabel = () => t('Cidade', 'Town');
@@ -154,6 +160,10 @@ export function savedRoom(): number | null {
 // expedition lost if the party left a room, the expedition map on ?home=expedition, where a room's result window goes;
 // else the town alone, which offers to continue a live expedition at its gate
 export function homeScreen() {
+  if (param('home') === NO_ROOM) noRoomScreen(openHome);
+  else openHome();
+}
+function openHome() {
   const kept = leftRoom();
   if (kept !== null) return lostScreen(kept);
   const exp = liveExpedition();
@@ -317,34 +327,6 @@ export function townMenu(extra?: Node) {
   );
   d.overlay.classList.add('town-menu');
   addEventListener('click', follow);
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
-}
-
-function lostScreen(kept: number) {
-  const d = dialog(
-    'result',
-    t('Expedição perdida', 'Expedition lost'),
-    [
-      el(
-        'p',
-        {},
-        t(
-          'O grupo deixou a sala no meio da luta. A expedição acabou, e metade do ouro achado vai à cidade.',
-          'The party left the room mid-fight. The expedition is over, and half the gold found goes to town.',
-        ),
-      ),
-      goldNote(t('Ouro para a cidade', 'Gold to town'), kept),
-      el(
-        'div',
-        { class: 'menu-actions' },
-        button('primary', t('Voltar à cidade', 'Back to town'), () => {
-          d.close();
-          toTown();
-        }),
-      ),
-    ],
-    { onBack: toTown },
-  );
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
 }
 

@@ -172,7 +172,7 @@ export class Hints3d implements Ui3dScreen {
 
   // Text in the theme's serif. `size` in px of the reference; on the page never under 16 px, the game's minimum
   private label(str: string, size: number, color: string, width?: number, floor = 16) {
-    const px = Math.max(floor, size * this.layer.s);
+    const px = this.layer.px(size, floor);
     return textMesh(
       str,
       { size: px, color, font: this.layer.theme.font, width, line: px * 1.3 },

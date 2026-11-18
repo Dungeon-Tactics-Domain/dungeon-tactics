@@ -6,6 +6,8 @@
 //   ?townhud=, ?townmenu=, ?talk=html|3d   the town's HUD, its menu with the gate and the places, its speech box
 //   ?options=html|3d, ?title=html|3d, ?sheets=html|3d  the flow screens around the battle (flow3d/)
 //   ?tools=html|3d, ?status=html|3d    the corner menu and the Status window (window3d/)
+//   ?dev=html|3d                       the developer menu (flow3d/dev3d.ts)
+//   ?note=html|3d                      a notice window, in battle and in town (window3d/note3d.ts)
 //   ?ui=html|css|3d                    a preset: every piece that has that look takes it
 //   ?menu3d, ?menu3d=pixel, ?menucss, ?turn3d   the older flags, kept as shortcuts
 //   ?pixel=1                           the 3D pieces through the pixel filter (as ?menu3d=pixel)
@@ -40,7 +42,10 @@ export const PIECES = {
   status: ['html', '3d'], // the Status window: a unit's sheet and an ability's facts
   townhud: ['html', '3d'], // the walkable town's HUD: its name, what Enter does (line and balloon), the menu button
   townmenu: ['html', '3d'], // the town menu, the gate's quest and a place still to come (town3d/street.ts)
+  effects: ['html', '3d'], // over the battle: numbers, cursor note, objective banner, confetti, F3 (hints3d/effects3d.ts)
   talk: ['html', '3d'], // the speech box, in town (town3d/talk3d.ts); a battle's conversations keep the HTML one
+  dev: ['html', '3d'], // the developer menu: the cast's form (flow3d/dev3d.ts)
+  note: ['html', '3d'], // a notice window: the map's Information and opened chest, the expedition lost, a refused save
 } as const satisfies Record<string, readonly Variant[]>;
 export type Piece = keyof typeof PIECES;
 

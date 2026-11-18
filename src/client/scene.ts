@@ -13,12 +13,13 @@ import type { Grid } from '../shared/battle/grid.ts';
 import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import type { Ambience } from './ambience.ts';
 import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
-import { abilityIcon, el } from './icons.ts';
+import { el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { Board } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
 import { ChargeLines } from './scene/charge-lines.ts';
+import { CursorNote } from './scene/float-numbers.ts';
 import { loadBattleAssets } from './scene/load.ts';
 import { Marks } from './scene/marks.ts';
 import { PerfCounter } from './scene/perf.ts';
@@ -44,7 +45,7 @@ export class BattleScene {
   private chargeLines: ChargeLines;
   private readonly units: Units;
   private readonly floats: HTMLElement;
-  private readonly note: HTMLElement; // the counter a Move destination draws, over the cursor
+  private readonly note: CursorNote; // the counter a Move destination draws, over the cursor
   private readonly clock = new THREE.Clock();
   private readonly perf = new PerfCounter();
   private readonly time = new Timeline();
@@ -73,11 +74,10 @@ export class BattleScene {
     this.renderer.domElement.className = 'board';
     host.append(this.renderer.domElement);
     this.floats = el('div', { class: 'floats', 'aria-hidden': 'true' });
-    this.note = el('div', { class: 'cursor-note', hidden: true }, abilityIcon('strike'), el('span'));
-    this.floats.append(this.note);
     host.append(this.floats);
     this.cam = new CameraRig(host, this.renderer.domElement, this.space, (ms, step) => this.time.animate(ms, step));
     this.camera = this.cam.camera;
+    this.note = new CursorNote(this.floats, this.camera, this.renderer.domElement, () => this.marks.cursorAt());
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.pixelPass = new RenderPixelatedPass(Math.max(2, pixel.size), this.scene, this.camera, EDGES);
     // the palette comes after the sRGB output; it toggles without rebuilding the chain
@@ -168,8 +168,7 @@ export class BattleScene {
 
   // a sword and the damage the counters there would deal, over the cursor (Nov 15, Fernando); null hides it
   setCursorNote(text: string | null) {
-    this.note.hidden = !text;
-    this.note.lastElementChild!.textContent = text ?? '';
+    this.note.set(text);
   }
 
   // rotation to where the camera is going (not the mid-animation one): WASD already walks right after R
@@ -365,12 +364,7 @@ export class BattleScene {
     this.marks.update(dt);
     this.cam.place(this.pixel, this.units.shake(this.time.t), this.time.t);
     // the note follows the sliding cursor and the camera every frame, like the menu beside the unit
-    const at = this.note.hidden ? null : this.marks.cursorAt();
-    if (at) {
-      const p = at.clone().project(this.camera);
-      this.note.style.left = `${((p.x + 1) / 2) * 100}%`;
-      this.note.style.top = `${((1 - p.y) / 2) * 100}%`;
-    }
+    this.note.follow();
     if (this.board.hasTrees)
       this.board.updateCuts(this.camera.matrixWorldInverse, (add) => {
         this.units.protect(add);

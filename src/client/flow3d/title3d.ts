@@ -4,9 +4,9 @@
 //   State and input: the title's own window (game/title.ts) stays as it is, unseen, with its real buttons moved under
 //   the drawn ones by title-layout.ts: the arrows, Enter, the pad, a tap and a screen reader work as before. This
 //   screen only takes the open title (setTitle3d) and gives it back.
-//   The layer comes with the battle behind the title, after the title itself: the HTML title shows until then, and
-//   changes look in place, the cursor where it was. A page too small for the layout (options-layout.ts `fits`) and a
-//   lost WebGL context keep the HTML title.
+//   The title opens once the battle behind it and its layer are built, behind the loading cover (ready-gate.ts), so
+//   it is drawn in 3D from its first frame. A page too small for the layout (options-layout.ts `fits`) and a lost
+//   WebGL context keep the HTML title.
 import { Group } from 'three';
 import { setTitle3d } from '../game/title.ts';
 import { Part } from '../hints3d/hints3d.ts';

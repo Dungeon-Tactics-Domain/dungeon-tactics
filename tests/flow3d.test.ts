@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { fits, itemBox, optionsLayout, optionsWalk, REF, shown, thumb } from '../src/client/flow3d/options-layout.ts';
-import { optionsView } from '../src/client/flow3d/options-view.ts';
+import {
+  fits,
+  fitsOptions,
+  itemBox,
+  optionsLayout,
+  optionsTab,
+  optionsWalk,
+  REF,
+  type Spot,
+  shown,
+  thumb,
+} from '../src/client/flow3d/options-layout.ts';
+import { optionsHints, optionsView } from '../src/client/flow3d/options-view.ts';
 import {
   flow,
   rowBox,
@@ -14,7 +25,7 @@ import {
 } from '../src/client/flow3d/sheet-layout.ts';
 import { REF as TITLE, titleLayout, stops as titleStops } from '../src/client/flow3d/title-layout.ts';
 import { percent, pick } from '../src/client/option-row.ts';
-import { neighbour } from '../src/client/ui3d/walk.ts';
+import { neighbour, type Way } from '../src/client/ui3d/walk.ts';
 
 // The flow screens in 3D (flow3d/; Nov 17): the pure parts behind the drawing. The drawing itself and the real
 // controls under it are checked on the bench (docs/media/ui3d-fluxo-telas)
@@ -69,61 +80,92 @@ describe('3D Options: what each row shows', () => {
 });
 
 describe('3D Options: where it sits', () => {
-  const heads = [true, false, false, true, ...Array<boolean>(14).fill(false)];
+  // four categories, the eleven rows of the longest one (Picture) and the four commands
+  const at = (w: number, h: number, rows = 11) => optionsLayout(w, h, 4, rows, 4);
 
-  it('is the reference at 1920x1080: the list, a 68 px row, the value column at the row’s right end', () => {
-    const L = optionsLayout(1920, 1080, heads, 4);
+  it('is the reference at 1920x1080: three columns, a 68 px row, the value column at the row’s right end', () => {
+    const L = at(1920, 1080);
     expect(L.s).toBe(1);
-    // the four commands take the foot of the list's place: 4 x (56 + 16) px
-    expect(L.list).toEqual({ ...REF.list, h: REF.list.h - 288 });
-    expect(L.tops.slice(0, 5)).toEqual([0, 52, 120, 188, 240]);
-    expect(L.content).toBe(2 * REF.head + 16 * REF.row);
-    expect(itemBox(L, 1, 0)).toEqual({ x: 128, y: 232, w: 908, h: 68 });
-    expect(itemBox(L, 1, 100).y).toBe(132);
+    // the columns start under the title and end over the strip of commands
+    expect(L.list).toEqual({ x: 460, y: 180, w: 860, h: 668 });
+    expect(L.side).toEqual({ x: 1360, y: 180, w: 432, h: 668 });
+    expect(L.cats).toHaveLength(4);
+    expect(L.cats[0]).toEqual({ x: 128, y: 180, w: 292, h: 68 });
+    expect(L.cats[3].y).toBe(180 + 3 * 68);
+    // left to right, none over the next: categories, rows, description
+    expect(L.cats[0].x + L.cats[0].w).toBeLessThan(L.list.x);
+    expect(L.list.x + L.list.w).toBeLessThan(L.side.x);
+    expect(L.content).toBe(11 * REF.row);
+    expect(itemBox(L, 1, 0)).toEqual({ x: 460, y: 248, w: 860, h: 68 });
+    expect(itemBox(L, 1, 100).y).toBe(148);
     expect([L.value, L.arrow, L.number]).toEqual([REF.value, REF.arrow, REF.number]);
     expect(L.help).toEqual({ x: 0, y: 944, w: 1920, h: 84 });
-    // the commands under the list, in its column, one over the other, none touching, the last where the list ended
-    expect(L.buttons).toHaveLength(4);
-    expect(L.buttons[0].y).toBeGreaterThan(L.list.y + L.list.h);
-    for (const b of L.buttons) expect(b.x).toBe(L.list.x);
-    expect(L.buttons[1].y).toBeGreaterThan(L.buttons[0].y + L.buttons[0].h);
-    expect(L.buttons[3].y + L.buttons[3].h).toBe(REF.list.y + REF.list.h);
-    expect(optionsLayout(1920, 1080, heads, 0).list).toEqual(REF.list); // no command, the whole place
   });
 
-  it('stays a centred 16:9 frame on a wide page, the message band still crossing it whole', () => {
-    const L = optionsLayout(2560, 1080, heads, 4);
+  it('keeps the commands in one strip under the three columns, side by side, whatever the category', () => {
+    const L = at(1920, 1080);
+    expect(L.buttons).toEqual([128, 548, 968, 1388].map((x) => ({ x, y: 872, w: 404, h: 56 })));
+    // from the categories' left edge to the description's right one, over the band at the foot
+    expect(L.buttons[3].x + L.buttons[3].w).toBe(L.side.x + L.side.w);
+    expect(L.buttons[0].y).toBeGreaterThan(L.list.y + L.list.h);
+    expect(L.buttons[0].y + L.buttons[0].h).toBeLessThan(L.help.y);
+    expect(at(1920, 1080, 2).buttons).toEqual(L.buttons); // Sound's two rows: the strip does not move
+  });
+
+  it('stays a centred 16:9 frame on a wide page, the band at the foot still crossing it whole', () => {
+    const L = at(2560, 1080);
+    expect(L.cats[0].x).toBe(320 + REF.cats.x);
     expect(L.list.x).toBe(320 + REF.list.x);
     expect(L.title.x).toBe(1280);
     expect(L.help).toMatchObject({ x: 0, w: 2560 });
   });
 
-  it('never goes under a 44 px row or command, and leaves the smaller pages to the HTML window', () => {
-    expect(fits(1920, 1080)).toBe(true);
+  it('shrinks with the page down to a phone on its side, a row and a command never under a 44 px tap', () => {
+    // the title and the sheets still leave the pages under 1152x648 to their HTML windows
     expect(fits(1152, 648)).toBe(true);
-    expect(fits(1180, 820)).toBe(true);
     expect(fits(1024, 768)).toBe(false);
-    expect(fits(900, 500)).toBe(false);
-    const L = optionsLayout(1152, 648, heads, 4);
-    expect(L.rowH).toBe(44);
-    for (const b of L.buttons) expect(b.h).toBe(44);
-    // every command above the message band and under the list, which still shows whole rows
-    expect(L.buttons[3].y + L.buttons[3].h).toBeLessThan(L.help.y);
-    expect(L.buttons[0].y).toBeGreaterThan(L.list.y + L.list.h);
-    expect(L.list.h).toBeGreaterThan(4 * L.rowH);
+    expect(fitsOptions(1024, 768)).toBe(true);
+    expect(fitsOptions(844, 390)).toBe(true);
+    expect(fitsOptions(667, 375)).toBe(true);
+    expect(fitsOptions(568, 320)).toBe(false);
+    expect(fitsOptions(768, 1024)).toBe(false); // a tablet standing: the frame would be a narrow band
+    for (const [w, h] of [
+      [1152, 648],
+      [1180, 820],
+      [1024, 768],
+      [844, 390],
+      [667, 375],
+    ]) {
+      const L = at(w, h),
+        name = `${w}x${h}`;
+      expect(L.rowH, name).toBe(44);
+      for (const b of [...L.buttons, ...L.cats]) expect(b.h, name).toBe(44);
+      expect(L.arrow, name).toBeGreaterThanOrEqual(28);
+      // top to bottom, none over the next: title, columns, strip, band, the page's end
+      expect(L.rule.y, name).toBeLessThan(L.list.y);
+      expect(L.cats[3].y + 44, name).toBeLessThanOrEqual(L.list.y + L.list.h);
+      expect(L.list.h, name).toBeGreaterThan(4 * L.rowH);
+      expect(L.buttons[0].y, name).toBeGreaterThan(L.list.y + L.list.h);
+      expect(L.buttons[0].y + 44, name).toBeLessThan(L.help.y);
+      expect(L.help.y + L.help.h, name).toBeLessThan(h);
+      // and inside the page from side to side
+      expect(L.cats[0].x, name).toBeGreaterThan(0);
+      expect(L.buttons[3].x + L.buttons[3].w, name).toBeLessThan(w);
+      expect(L.value, name).toBeLessThan(L.list.w * 0.6); // room for the row's name
+    }
   });
 
   it('fades a row leaving the list instead of drawing it over the title', () => {
-    const L = optionsLayout(1920, 1080, heads, 4);
-    expect(shown(L, itemBox(L, 1, 0))).toBe(1);
-    expect(shown(L, itemBox(L, 1, 52 + 17))).toBeCloseTo(0.5); // a quarter out: half faded
-    expect(shown(L, itemBox(L, 1, 52 + 34))).toBe(0); // half out: gone
-    expect(shown(L, itemBox(L, 17, 0))).toBe(0); // below the window
+    const L = at(1920, 1080);
+    expect(shown(L, itemBox(L, 0, 0))).toBe(1);
+    expect(shown(L, itemBox(L, 0, 17))).toBeCloseTo(0.5); // a quarter out: half faded
+    expect(shown(L, itemBox(L, 0, 34))).toBe(0); // half out: gone
+    expect(shown(L, itemBox(L, 10, 0))).toBe(0); // below the window
   });
 
-  it('marks the scroll only when the list does not fit, from the top to the bottom of its window', () => {
-    expect(thumb(optionsLayout(1920, 1080, [true, false, false], 4), 0)).toBeNull();
-    const L = optionsLayout(1920, 1080, heads, 4);
+  it('marks the scroll only when the category does not fit, from the top to the bottom of its window', () => {
+    expect(thumb(at(1920, 1080, 2), 0)).toBeNull();
+    const L = at(1920, 1080);
     const top = thumb(L, 0)!,
       end = thumb(L, L.content - L.list.h)!;
     expect(top.y).toBe(L.list.y);
@@ -219,43 +261,122 @@ describe('3D sheets: where a window of the title or of Options sits', () => {
   });
 });
 
-// Fernando, Nov 17: the keys and the pad follow what is seen. The rows of the list (heads left out) and the four
-// commands under them are one column; left and right on a row with a value never get here (they change it)
+// Fernando, Nov 17: the keys and the pad follow what is seen. Nov 18: three zones (the categories, the open category's
+// rows, the strip of commands) and the two ways of walking together. Left and right on a row with a value never get
+// here (they change it)
 describe('3D Options: where an arrow takes the cursor', () => {
-  // the game's own list: 2 rows, 2 rows, 13 rows and the 2 help rows, each group under its head
-  const heads = [2, 2, 13, 2].flatMap((n) => [true, ...Array<boolean>(n).fill(false)]);
-  const L = optionsLayout(1920, 1080, heads, 4);
-  const rows = 19,
-    [restart, town, dev, back] = [19, 20, 21, 22];
-  const walk = (at: number, way: Parameters<typeof optionsWalk>[4]) => optionsWalk(L, heads, 0, at, way);
+  // Game open: five rows; the four commands are Restart, Leave, Developer and Back
+  const L = optionsLayout(1920, 1080, 4, 5, 4);
+  const [restart, leave, dev, back] = [0, 1, 2, 3];
+  const cat = (i: number): Spot => ({ zone: 'cat', i }),
+    row = (i: number): Spot => ({ zone: 'row', i }),
+    cmd = (i: number): Spot => ({ zone: 'cmd', i });
+  const walk = (at: Spot, way: Way, open = 0, off: boolean[] = []) => optionsWalk(L, at, way, open, off);
 
-  it('down and up: the row under and the row over, past a head', () => {
-    expect(walk(0, 'down')).toBe(1);
-    expect(walk(1, 'down')).toBe(2); // the "Sound" head lies between them
-    expect(walk(2, 'up')).toBe(1);
+  it('is drawn so: the categories one under the other, the rows beside them, the commands side by side under both', () => {
+    for (const c of L.cats) expect(c.x).toBe(L.cats[0].x);
+    expect(L.cats.map((c) => c.y)).toEqual([180, 248, 316, 384]);
+    expect(L.cats[0].x + L.cats[0].w).toBeLessThan(L.list.x);
+    for (const b of L.buttons) expect(b.y).toBe(L.buttons[0].y);
+    expect(L.buttons.map((b) => b.x)).toEqual([...L.buttons.map((b) => b.x)].sort((a, b) => a - b));
+    expect(L.buttons[0].y).toBeGreaterThan(L.cats[3].y + L.cats[3].h);
   });
-  it('the commands are under the list: down from the last row is the first of them, and up from it the last row', () => {
-    expect(walk(rows - 1, 'down')).toBe(restart);
-    expect(walk(restart, 'up')).toBe(rows - 1);
-    expect(walk(restart, 'down')).toBe(town);
-    expect(walk(back, 'up')).toBe(dev);
-    // and they are drawn so: each command lower than the one before, all lower than the list, in its column
-    const ys = L.buttons.map((b) => b.y);
-    expect(ys).toEqual([...ys].sort((a, b) => a - b));
-    expect(ys[0]).toBeGreaterThan(L.list.y + L.list.h);
-    for (const b of L.buttons) expect(b.x).toBe(L.list.x);
+
+  describe('on a category', () => {
+    it('down and up: the category under and the one over', () => {
+      expect(walk(cat(0), 'down')).toEqual(cat(1));
+      expect(walk(cat(2), 'up')).toEqual(cat(1));
+    });
+    it('right goes into the rows, at the first; with no row it stays', () => {
+      expect(walk(cat(0), 'right')).toEqual(row(0));
+      expect(walk(cat(3), 'right', 3)).toEqual(row(0)); // from any category: never the row at its own height
+      expect(optionsWalk(optionsLayout(1920, 1080, 4, 0, 4), cat(0), 'right', 0)).toEqual(cat(0));
+    });
+    it('edges: up from the first and left stay; down from the last is the command under the column', () => {
+      expect(walk(cat(0), 'up')).toEqual(cat(0));
+      for (const i of [0, 3]) expect(walk(cat(i), 'left')).toEqual(cat(i));
+      expect(walk(cat(3), 'down')).toEqual(cmd(restart));
+    });
   });
-  it('the two ends of the column meet: one press up from the first row to the commands, not nineteen down', () => {
-    expect(walk(0, 'up')).toBe(back);
-    expect(walk(back, 'down')).toBe(0);
+
+  describe('on a row', () => {
+    it('down and up: the row under and the one over', () => {
+      expect(walk(row(0), 'down')).toEqual(row(1));
+      expect(walk(row(3), 'up')).toEqual(row(2));
+    });
+    it('left goes back to the open category, whatever the row’s height; right stays', () => {
+      expect(walk(row(0), 'left', 0)).toEqual(cat(0));
+      expect(walk(row(3), 'left', 0)).toEqual(cat(0)); // not the category drawn beside the 4th row
+      expect(walk(row(1), 'left', 2)).toEqual(cat(2));
+      expect(walk(row(1), 'right')).toEqual(row(1));
+    });
+    it('edges: up from the first stays; down from the last is the command under the list', () => {
+      expect(walk(row(0), 'up')).toEqual(row(0));
+      expect(walk(row(4), 'down')).toEqual(cmd(leave));
+    });
+    it('a category that scrolls: down is the next row even under the window, the strip only after the last', () => {
+      const long = optionsLayout(1920, 1080, 4, 11, 4);
+      expect(itemBox(long, 10, 0).y).toBeGreaterThan(long.list.y + long.list.h);
+      expect(optionsWalk(long, row(8), 'down', 2)).toEqual(row(9));
+      expect(optionsWalk(long, row(9), 'down', 2)).toEqual(row(10));
+      expect(optionsWalk(long, row(10), 'down', 2)).toEqual(cmd(leave));
+      expect(optionsWalk(long, cmd(leave), 'up', 2)).toEqual(row(10));
+    });
   });
-  it('nothing lies beside the column: left and right stay, on a row and on a command', () => {
-    for (const at of [0, rows - 1, restart, back])
-      for (const way of ['left', 'right'] as const) expect(walk(at, way)).toBe(at);
+
+  describe('on a command', () => {
+    it('left and right walk the strip, and stay at its two ends', () => {
+      expect(walk(cmd(restart), 'right')).toEqual(cmd(leave));
+      expect(walk(cmd(leave), 'right')).toEqual(cmd(dev));
+      expect(walk(cmd(back), 'left')).toEqual(cmd(dev));
+      expect(walk(cmd(restart), 'left')).toEqual(cmd(restart));
+      expect(walk(cmd(back), 'right')).toEqual(cmd(back));
+    });
+    it('up goes back to the column over it: the open category, or the last row; down stays', () => {
+      expect(walk(cmd(restart), 'up', 0)).toEqual(cat(0));
+      expect(walk(cmd(restart), 'up', 2)).toEqual(cat(2)); // the open one: what is shown does not change
+      for (const i of [leave, dev, back]) expect(walk(cmd(i), 'up')).toEqual(row(4));
+      expect(optionsWalk(optionsLayout(1920, 1080, 4, 0, 4), cmd(back), 'up', 1)).toEqual(cat(1));
+      for (const i of [restart, back]) expect(walk(cmd(i), 'down')).toEqual(cmd(i));
+    });
+    it('a command that is off (Restart on the enemy’s turn) is skipped, from above and from the side', () => {
+      const off = [true, false, false, false];
+      expect(walk(cat(3), 'down', 3, off)).toEqual(cmd(leave));
+      expect(walk(cmd(leave), 'left', 0, off)).toEqual(cmd(leave));
+      expect(walk(cmd(dev), 'left', 0, off)).toEqual(cmd(leave));
+      expect(walk(row(4), 'down', 0, [true, true, false, false])).toEqual(cmd(dev));
+      expect(walk(cmd(back), 'left', 0, [false, true, true, false])).toEqual(cmd(restart));
+    });
   });
-  it('nothing in focus, or a place that is not there: it stays', () => {
-    expect(walk(-1, 'down')).toBe(-1);
-    expect(walk(99, 'up')).toBe(99);
+
+  it('a place that is not there: it stays', () => {
+    for (const at of [cat(9), row(-1), row(5), cmd(7)]) expect(walk(at, 'down')).toEqual(at);
+  });
+
+  it('Q and E, LB and RB: the category before and the one after, staying at the first and at the last', () => {
+    expect(optionsTab(0, 4, 1)).toBe(1);
+    expect(optionsTab(2, 4, -1)).toBe(1);
+    expect(optionsTab(0, 4, -1)).toBe(0);
+    expect(optionsTab(3, 4, 1)).toBe(3);
+  });
+});
+
+describe('3D Options: the hints on the band at the foot', () => {
+  it('names the keys of the table for where the cursor is', () => {
+    expect(optionsHints('cat', 'keyboard', true)).toMatch(/^Q E: .+ · {3}Enter: .+ · {3}Esc: /);
+    expect(optionsHints('row', 'keyboard', true)).toMatch(/^Q E: .+ · {3}← →: .+ · {3}Esc: /);
+    expect(optionsHints('cmd', 'keyboard', true)).toMatch(/^Q E: .+ · {3}Enter: .+ · {3}Esc: /);
+  });
+  it('shows the pad’s own buttons while its icons show, each family’s shoulders', () => {
+    expect(optionsHints('row', 'xbox', true)).toMatch(/^LB RB: .+ · {3}B: /);
+    expect(optionsHints('row', 'playstation', true)).toMatch(/^L1 R1: /);
+    expect(optionsHints('cat', 'switch', true)).toMatch(/^L R: .+ · {3}B: .+ · {3}A: /);
+    for (const shown of ['xbox', 'playstation', 'switch'] as const)
+      expect(optionsHints('row', shown, true)).not.toMatch(/Q E|Esc|Enter/);
+  });
+  it('names no key on a touch screen: the two taps instead', () => {
+    for (const zone of ['cat', 'row', 'cmd'] as const)
+      expect(optionsHints(zone, 'keyboard', false)).not.toMatch(/Q|Esc|:/);
   });
 });
 

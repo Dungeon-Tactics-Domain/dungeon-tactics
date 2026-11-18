@@ -1,0 +1,66 @@
+/* ---- 3D forms (src/client/ui3d/field-dom.ts; the developer menu, flow3d/dev3d.ts) ---- */
+/* A form drawn in 3D on the layer keeps a window (dialog.ts) over the page, unseen, with one real control under each
+   drawn field, placed by the same layout (field-dom.ts sets each one's box): the keys, the pad, the taps, the IME, the
+   list's scroll, the focus and the screen reader stay the window's. Unseen by opacity, never by visibility or display:
+   the controls must still take the focus and the taps. The rest of the HUD hides, as under the Options. Nothing here is
+   seen, so there is no colour and no size of the design system: only where things are. */
+.overlay.form3d-overlay {
+  display: block;
+  padding: 0;
+  background: none;
+}
+.dialog.form3d {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden;
+  opacity: 0;
+}
+/* no ✕ on a full screen: the drawn Back stands for it, and an unseen ✕ would still take the focus */
+.dialog.form3d .dialog-head {
+  display: none;
+}
+/* the scrolling window of the form, and its content as tall as the drawn one */
+.f3d-list {
+  position: absolute;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.f3d-list > div {
+  position: relative;
+}
+.f3d {
+  position: absolute;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+button.f3d,
+input[type="checkbox"].f3d {
+  cursor: pointer;
+}
+textarea.f3d {
+  overflow: auto;
+  white-space: pre;
+  resize: none;
+  scrollbar-width: none;
+}
+body:has(.form3d-overlay) .hud > :not(.ui3d-layer),
+body:has(.form3d-overlay) .fps {
+  visibility: hidden;
+}

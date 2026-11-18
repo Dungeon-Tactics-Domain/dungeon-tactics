@@ -2,6 +2,7 @@
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import type { BattleScene } from './scene.ts';
+import { effects3d } from './screen-effects.ts';
 import { store } from './store.ts';
 
 // performance counter on (1) or off (0); off by default since Nov 16 (Fernando: it cluttered the screen, mostly on a tablet),
@@ -17,8 +18,10 @@ export function fpsCounter(
   ui3d?: () => { calls: number; triangles: number } | undefined,
 ): () => boolean {
   const fps = el('div', { class: 'fps', 'aria-hidden': 'true' });
+  // with the 3D effects on, the 3D layer draws the counter over this node, unseen (hints3d/effects3d.css)
+  const draw3d = () => effects3d()?.fps(fps);
   const show = () => {
-    if (fps.hidden) return;
+    if (fps.hidden) return draw3d();
     const s = scene.stats();
     const ui = ui3d?.();
     const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
@@ -37,8 +40,9 @@ export function fpsCounter(
             ),
           ]
         : []),
-      ...(mem ? [`JS ${(mem.usedJSHeapSize / 1048576).toFixed(0)} MB`] : []),
+      ...(mem && Number.isFinite(mem.usedJSHeapSize) ? [`JS ${(mem.usedJSHeapSize / 1048576).toFixed(0)} MB`] : []),
     ].join('\n');
+    draw3d();
   };
   host.append(fps);
   fps.hidden = !fpsOn();

@@ -9,6 +9,7 @@
 //   closes the same way backwards.
 import { Group } from 'three';
 import type { HudActions, HudView } from '../hud.ts';
+import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -79,8 +80,9 @@ export class Menu3d implements Ui3dScreen {
 
   private show(m: MenuView) {
     const { layer, main, sub } = this,
-      ctx = { layer, paint: this.paint };
-    const at = (this.at = menuLayout(layer.stage, m.rows.length, m.sub?.length ?? 0));
+      sheet = { layer, paint: this.paint };
+    const at = (this.at = menuLayout(layer.stage, m.rows.length, m.sub?.length ?? 0, !KEYS));
+    const ctx = { ...sheet, s: at.cs };
     [main.x, main.y] = [at.main.x, at.main.y];
     main.set({ title: m.head, w: at.main.w, h: at.main.h, rows: m.rows }, ctx);
     main.focus = m.index;
@@ -89,7 +91,7 @@ export class Menu3d implements Ui3dScreen {
       sub.set({ title: t('Habilidades', 'Abilities'), w: at.sub.w, h: at.sub.h, rows: m.sub }, ctx);
       sub.focus = m.subIndex;
     }
-    if (m.sheet) this.sheet.set(m.sheet, ctx);
+    if (m.sheet) this.sheet.set(m.sheet, sheet);
   }
 
   // The buttons over the drawing, rebuilt only when a place or a greyed state changed: the rows of the list in play
@@ -111,7 +113,7 @@ export class Menu3d implements Ui3dScreen {
     const rows = (list: 'menu' | 'abilities', col: Box, rs: MenuRow[], pick: (i: number) => void) =>
       rs.forEach((r, i) => {
         hit(
-          rowBox(col, i, this.layer.s),
+          rowBox(col, i, at.cs),
           r.label,
           r.off,
           () => pick(i),
@@ -127,7 +129,7 @@ export class Menu3d implements Ui3dScreen {
 
   frame(dt: number, time: number) {
     const { main, sub, sheet, layer, glove, at } = this,
-      s = layer.s,
+      s = at?.cs ?? layer.s,
       still = layer.still;
     // the menu under the open submenu only steps back a little: on the reference it keeps its light, under the shadow
     main.frame(dt, time, layer, 0, 0, !sub.want);
