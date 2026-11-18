@@ -19,6 +19,7 @@ import type { Ui3dLayer } from './ui3d/layer.ts';
 import { parseLayout } from './ui3d/layout.ts';
 import { skinFlags, specFlags } from './ui3d/skin-flags.ts';
 import type { Status3d } from './window3d/status3d.ts';
+import type { Talk3d } from './window3d/talk3d.ts';
 import type { Tools3d } from './window3d/tools3d.ts';
 
 export interface HudSkin {
@@ -33,6 +34,7 @@ export interface HudSkin {
   flow3d?: ((layer: Ui3dLayer) => unknown)[]; // the screens around the battle in 3D (flow3d/): Options, the title
   tools3d?: (layer: Ui3dLayer, tools: HTMLElement) => Tools3d; // the corner menu in 3D (window3d/)
   status3d?: (layer: Ui3dLayer) => Status3d; // the Status window in 3D (window3d/)
+  talk3d?: (layer: Ui3dLayer) => Talk3d; // the speech box and the opening narration in 3D (window3d/)
 }
 
 // `spec`: a sandbox spec's keys (docs/sandbox.md); the address wins over it
@@ -91,6 +93,10 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     const { Status3d } = await import('./window3d/status3d.ts');
     skin.status3d = (layer) => new Status3d(layer);
   }
+  if (flags.talk === '3d') {
+    const { Talk3d } = await import('./window3d/talk3d.ts');
+    skin.talk3d = (layer) => new Talk3d(layer);
+  }
   if (
     skin.menu3d ||
     skin.turn3d ||
@@ -100,7 +106,8 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     skin.result3d ||
     skin.flow3d ||
     skin.tools3d ||
-    skin.status3d
+    skin.status3d ||
+    skin.talk3d
   ) {
     const { Ui3dLayer } = await import('./ui3d/layer.ts');
     skin.layer = (root, lost) => {

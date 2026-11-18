@@ -10,6 +10,7 @@ export interface TextOpts {
   font: string; // a CSS font family list (the theme's --font-ui3d)
   width?: number; // wraps at this many CSS px; one line without it
   line?: number; // line height in CSS px
+  centre?: boolean; // each line in the middle of the widest one (the opening narration); from the left without it
 }
 
 // Lines of `str` no wider than `max` by `measure`, broken at spaces; "\n" starts a new paragraph. A word wider than
@@ -58,8 +59,9 @@ function draw(str: string, o: TextOpts, dpr: number): Label {
   g.strokeStyle = o.color;
   g.lineWidth = o.size * 0.02 * dpr;
   lines.forEach((l, i) => {
-    g.strokeText(l, pad, pad + lh * (i + 0.5));
-    g.fillText(l, pad, pad + lh * (i + 0.5));
+    const x = o.centre ? (cv.width - g.measureText(l).width) / 2 : pad;
+    g.strokeText(l, x, pad + lh * (i + 0.5));
+    g.fillText(l, x, pad + lh * (i + 0.5));
   });
   const tex = new CanvasTexture(cv);
   tex.minFilter = tex.magFilter = LinearFilter;
