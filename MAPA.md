@@ -162,6 +162,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D (?options=3d), laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
 - `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
 - `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, the commands under the list, message band), the scroll fade and mark, where an arrow takes the cursor (`optionsWalk`), and the smallest page that takes the 3D look (`fits`); pure.
+- `src/client/flow3d/options-row.ts` — one row of the 3D Options drawn: its name and a choice in a box, a bar with its number or a switch.
 - `src/client/flow3d/title3d.ts` — Title3d: the title in 3D (?title=3d), drawn over the title's own window, which it takes when the layer arrives and gives back.
 - `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button) and the boxes an arrow walks (`stops`); pure.
 - `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D (?sheets=3d), drawn over each window's own controls, which it takes and gives back.
@@ -225,6 +226,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
 - `src/client/game/sheets.ts` — the title's and Options' windows as data (rows or text blocks), shown by the HTML window or handed to the 3D sheet (showSheet, blocksHtml).
 - `src/client/game/options.ts` — Options window: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid and fluid movement switches.
+- `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display), and the town grid and fluid movement names.
 - `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
 - `src/client/game/options-marks.ts` — the Options row that picks the mark style (Simple, Light, Stone, Neon), in its own file so options.ts takes one line.
 - `src/client/game/end-screens.ts` — end-of-battle window, the result board and the victory confetti.
