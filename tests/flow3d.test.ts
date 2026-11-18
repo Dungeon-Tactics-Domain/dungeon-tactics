@@ -121,7 +121,7 @@ describe('3D Options: where it sits', () => {
   });
 
   it('shrinks with the page down to a phone on its side, a row and a command never under a 44 px tap', () => {
-    // the title and the sheets still leave the pages under 1152x648 to their HTML windows
+    // the sheets still leave the pages under 1152x648 to their HTML windows; the title shrinks as Options do
     expect(fits(1152, 648)).toBe(true);
     expect(fits(1024, 768)).toBe(false);
     expect(fitsOptions(1024, 768)).toBe(true);
@@ -193,6 +193,44 @@ describe('3D title: where it sits', () => {
     expect(end).toBeLessThan(L.foot.y - 8);
     expect(L.lang.y + L.lang.h).toBeLessThanOrEqual(648);
     expect(L.lang.x).toBeGreaterThan(L.rows[0].x + L.rows[0].w); // beside the list, never over it
+  });
+
+  it('stays where it was on every PC page: nothing closes up while the 44 px rows fit', () => {
+    for (const [w, h] of [
+      [1920, 1080],
+      [1280, 720],
+      [1152, 648],
+    ]) {
+      const L = titleLayout(w, h, 6),
+        s = L.s;
+      expect(L.rows[0].y, `${w}x${h}`).toBeCloseTo(TITLE.list.y * s);
+      expect(L.name.y, `${w}x${h}`).toBeCloseTo(TITLE.nameY * s);
+      expect(L.name.size, `${w}x${h}`).toBeCloseTo(TITLE.size.name * s);
+    }
+  });
+
+  it('fits whole on a phone on its side and on a tablet: every row, the name over its rule, nothing past the page', () => {
+    for (const [w, h] of [
+      [844, 390],
+      [667, 375],
+      [1024, 768],
+    ])
+      for (const n of [5, 6]) {
+        const L = titleLayout(w, h, n),
+          name = `${w}x${h}, ${n} rows`,
+          last = L.rows[n - 1];
+        expect(fitsOptions(w, h), name).toBe(true); // the gate title3d.ts takes the page with
+        for (const r of L.rows) expect(r.h, name).toBe(44);
+        // top to bottom: the name (its top on the page), the rule, the plate, its last row, the keys' line
+        expect(L.name.y - L.name.size / 2, name).toBeGreaterThan(0);
+        expect(L.name.y + L.name.size / 2, name).toBeLessThan(L.rule.y);
+        expect(L.rule.y + L.rule.h, name).toBeLessThan(L.plate.y);
+        expect(L.plate.y + L.plate.h, name).toBeLessThan(L.foot.y - 8);
+        expect(last.y + last.h, name).toBeLessThan(h);
+        expect(L.name.size, name).toBeGreaterThanOrEqual(10);
+        expect(L.lang.y + L.lang.h, name).toBeLessThanOrEqual(h);
+        expect(L.lang.x, name).toBeGreaterThan(last.x + last.w); // beside the list, never over it
+      }
   });
 });
 

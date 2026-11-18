@@ -36,8 +36,8 @@ export const REF = {
 
 // a page smaller than the smallest the layout scales to keeps the HTML window: its text and taps would not fit
 export const fits = (w: number, h: number) => Math.min(w / SCREEN.w, h / SCREEN.h) >= MIN_SCALE;
-// Options go on shrinking with the page down to a phone on its side (Fernando, Nov 18: the pieces may get smaller with
-// the screen): its rows keep a 44 px tap and its list scrolls, so only the drawing shrinks.
+// Options and the title (title3d.ts) go on shrinking with the page down to a phone on its side (Fernando, Nov 18: the
+// pieces may get smaller with the screen): their rows keep a 44 px tap, so only the drawing shrinks.
 // An upright page under `fits` (a tablet standing) keeps the HTML window: the frame would be a narrow band of small text
 export const fitsOptions = (w: number, h: number) =>
   fits(w, h) || (w > h && Math.min(w / SCREEN.w, h / SCREEN.h) >= NARROW_SCALE);

@@ -16,12 +16,13 @@ export const REF = {
   pad: 14, // the plate around the list
   hand: 62,
   footY: 1030, // the keys' line, centred
+  end: 1000, // the plate ends over this, clear of the keys' line
   lang: { x: 1660, y: 986, w: 200, h: 48 },
 };
 
 export interface TitleLayout {
   s: number;
-  name: { x: number; y: number }; // middle
+  name: { x: number; y: number; size: number }; // middle, and the text's size in page px
   rule: Box;
   plate: Box;
   rows: Box[]; // a command each, never under the game's 44 px tap
@@ -42,15 +43,19 @@ export function titleLayout(w: number, h: number, rows: number): TitleLayout {
     w: bw * s,
     h: bh * s,
   });
-  const list = at(REF.list.x, REF.list.y, REF.list.w),
-    rowH = Math.max(44, REF.row * s),
+  const rowH = Math.max(44, REF.row * s),
     pad = REF.pad * s;
+  // A short page (a phone on its side; Fernando, Nov 18: the pieces may shrink with the screen) cannot hold the 44 px
+  // rows at the reference's places: the name, its rule and the list close up towards the top by one factor, the name
+  // shrinking with them, so the list still ends over the keys' line. 1 on the reference and on every PC page
+  const k = Math.min(1, (REF.end * s - pad - rows * rowH) / (REF.list.y * s));
+  const list = at(REF.list.x, REF.list.y * k, REF.list.w);
   const lang = at(REF.lang.x, REF.lang.y, REF.lang.w, REF.lang.h),
     lh = Math.max(44, lang.h);
   return {
     s,
-    name: at(SCREEN.w / 2, REF.nameY),
-    rule: at(REF.rule.x, REF.rule.y, REF.rule.w, REF.rule.h),
+    name: { ...at(SCREEN.w / 2, REF.nameY * k), size: REF.size.name * s * k },
+    rule: at(REF.rule.x, REF.rule.y * k, REF.rule.w, REF.rule.h),
     plate: { x: list.x - pad, y: list.y - pad, w: list.w + 2 * pad, h: rows * rowH + 2 * pad },
     rows: Array.from({ length: rows }, (_, i) => ({ x: list.x, y: list.y + i * rowH, w: list.w, h: rowH })),
     inset: REF.inset * s,
