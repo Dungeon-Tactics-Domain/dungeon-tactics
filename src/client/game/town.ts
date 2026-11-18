@@ -15,11 +15,13 @@ import { emptyMemory, padActions } from '../gamepad.ts';
 import { type Act, hintLine } from '../glyphs.ts';
 import { GROUP_KEY, JOBS, parseGroup } from '../group.ts';
 import { hint } from '../hud.ts';
+import { loadTownSkin } from '../hud-skin.ts';
 import { t } from '../i18n.ts';
 import { button, el, icon, UI_ICON } from '../icons.ts';
 import { liveText, padSeen } from '../key-hints.ts';
 import { gridStep, type KeyAction, keyAction, type ScreenDir } from '../keyboard.ts';
 import { PIXEL_KEY, parsePixel } from '../pixel-settings.ts';
+import { type Cover, whenReady } from '../ready-gate.ts';
 import { BattleScene } from '../scene.ts';
 import { setTrack, sfx } from '../sound.ts';
 import { store } from '../store.ts';
@@ -50,7 +52,6 @@ import {
   townState,
   townTarget,
 } from '../town-map.ts';
-import { loadNote } from './boot.ts';
 import { homeScreen, townMenu } from './crawl.ts';
 import { townFreeChoice, townGridChoice } from './options.ts';
 import { Folk, windowOpen } from './town-folk.ts';
@@ -94,10 +95,13 @@ class Town {
     private readonly grid: Grid,
     private readonly state: BattleState,
     host: HTMLElement,
+    skin?: (hud: HTMLElement) => void, // the 3D look, already downloaded (hud-skin.ts loadTownSkin)
   ) {
     // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the menu button in the
     // top right corner; as a .hud it hides while someone talks (style.css)
-    host.append(townHud(this.prompt, this.balloon, () => this.run({ k: 'cancel' })));
+    const hud = townHud(this.prompt, this.balloon, () => this.run({ k: 'cancel' }));
+    host.append(hud);
+    skin?.(hud); // on the page already: the layer reads its tokens and its size there
     const canvas = host.querySelector('canvas')!;
     new TouchInput(canvas, {
       tap: (x, y) => this.tap(x, y),
@@ -105,6 +109,7 @@ class Town {
       hover: (x, y) => this.scene.setCursor(this.scene.pick(x, y, SUB), SUB),
       pan: (dx, dy) => scene.pan(dx, dy),
       zoom: (f) => scene.zoom(f),
+      rotate: (dir) => scene.rotate(dir),
     });
     // right button: back, like the battle's; in town that is the menu
     canvas.addEventListener('contextmenu', (e) => {
@@ -160,7 +165,7 @@ class Town {
     // a frame after a hidden tab counts as 50 ms, not as the whole absence; under a window (0) the walker stands
     if (this.free) this.freeStep(open ? 0 : Math.min(50, now - this.last), gp);
     this.last = now;
-    if (!gp) return;
+    if (!gp || document.querySelector('.loading-cover')) return; // the pad waits for the cover, like the keys
     padSeen(gp);
     const actions = padActions(
       { buttons: gp.buttons.map((b) => b.pressed), axes: [...gp.axes] },
@@ -377,20 +382,18 @@ class Town {
   }
 }
 
-// ?home: the town instead of a battle (entry.ts boot), then what home opens over it (crawl.ts homeScreen)
-export async function bootTown(host: HTMLElement) {
+// ?home: the town instead of a battle (entry.ts boot), then what home opens over it (crawl.ts homeScreen). All of it
+// is built under the loading cover, once the models and the 3D look landed, so a window opens in its final look
+export async function bootTown(host: HTMLElement, cover: Cover) {
   setTrack('world'); // Pastoral D, the town's music (Fernando, Nov 15)
   const sc = townScenario();
   const state = townState(sc);
   castParty(state, group());
   const pixel = parsePixel(store.json(PIXEL_KEY), innerWidth < 600);
   // every class's model loads, so a recruit or a class change in town finds theirs
-  // the title no longer waits for the models (Nov 16), so New game can arrive here before any is cached
-  const note = loadNote();
-  const scene = await BattleScene.create(host, sc.grid, state, pixel, [
-    ...JOBS,
-    ...TOWNSFOLK.map((f) => f.def),
-  ]).finally(() => note.remove());
-  new Town(scene, sc.grid, state, host);
-  homeScreen();
+  const models = [...JOBS, ...TOWNSFOLK.map((f) => f.def)];
+  await whenReady(cover, [BattleScene.create(host, sc.grid, state, pixel, models), loadTownSkin()], ([scene, skin]) => {
+    new Town(scene, sc.grid, state, host, skin);
+    homeScreen();
+  });
 }

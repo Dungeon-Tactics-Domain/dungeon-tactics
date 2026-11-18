@@ -104,10 +104,16 @@
   --inset-b: calc(var(--inset) + env(safe-area-inset-bottom, 0px));
   --inset-l: calc(var(--inset) + env(safe-area-inset-left, 0px));
   /* interface layout (Options, ?layout=; ui3d/layout.ts `stage`, which these three mirror): --lay-u is one px of the
-     1920x1080 reference, --lay-x and --lay-y the margins of the frame the pieces anchor in. `edges`: the whole page */
-  --lay-u: max(0.6px, min(100vw / 1920, 100vh / 1080));
-  --lay-x: 0px;
-  --lay-y: 0px;
+     1920x1080 reference, --lay-x and --lay-y the margins of the frame the pieces anchor in. `edges`: the whole page
+     inside the safe area (--safe-x, --safe-y: the larger side of each axis, read by ui3d/safe-area.ts for the 3D layer);
+     under 0.6 the width alone shrinks the pieces, down to a third (Nov 18: a phone on its side, an upright tablet) */
+  --safe-x: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --safe-y: max(env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px));
+  --lay-w: calc((100vw - 2 * var(--safe-x)) / 1920);
+  --lay-u: max(min(var(--lay-w), (100vh - 2 * var(--safe-y)) / 1080), min(0.6px, max(1px / 3, var(--lay-w))));
+  --fs-3d-min: min(16px, 16 / 0.6 * var(--lay-u)); /* the 3D pieces' smallest text (ui3d/layout.ts textPx) */
+  --lay-x: var(--safe-x);
+  --lay-y: var(--safe-y);
   --slot-w: min(
     672px,
     35vw
@@ -295,6 +301,7 @@ button[aria-pressed="true"] {
 /* over the scene the yellow ring alone gives 1.4:1 on a white sky; the dark halo carries it */
 .tools .burger:focus-visible,
 .tools .back:focus-visible,
+.tools .undo:focus-visible,
 .main-title .title-lang:focus-visible,
 .town-act:focus-visible,
 .panel.talk:focus-visible {
@@ -358,6 +365,7 @@ button[hidden],
 .panel,
 .tools .burger,
 .tools .back,
+.tools .undo,
 .strike {
   -webkit-backdrop-filter: var(--panel-filter);
   backdrop-filter: var(--panel-filter);
@@ -909,22 +917,7 @@ button[hidden],
     position: static;
   }
 }
-/* boot.ts loadNote: the scene's download count over the title (Nov 16), lettered like the title's foot */
-.load-note {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: calc(12px + env(safe-area-inset-top, 0px));
-  z-index: 11;
-  margin: 0;
-  pointer-events: none;
-  text-align: center;
-  font-size: var(--fs-sm);
-  color: var(--fg);
-  text-shadow:
-    0 2px 0 var(--edge),
-    0 0 8px var(--edge);
-}
+
 .main-title .title-lang {
   min-height: 32px;
   padding: 0 12px;
@@ -1171,14 +1164,16 @@ button[hidden],
 } /* the open list goes over the counter and the command menu */
 /* menu button on the same blue as the panels, with 3 bars; open, it is sunken */
 .tools .burger,
-.tools .back {
+.tools .back,
+.tools .undo {
   background: linear-gradient(var(--glass), var(--glass-lo)), var(--panel-veil);
   border-color: var(--paper-edge);
   color: var(--ink);
   box-shadow: var(--paper-frame);
 }
 /* the back button is for fingers; with a keyboard or mouse Esc and the right button already go back */
-.kbd .tools .back {
+.kbd .tools .back,
+.kbd .tools .undo {
   display: none;
 }
 .tools .burger[aria-expanded="true"] {
@@ -1261,7 +1256,8 @@ button[hidden],
   color: var(--focus);
   font-weight: 700;
 }
-/* the turn-the-phone notice: only on a touch phone held upright, over the battle (Nov 16); the battle fits sideways */
+/* the turn-the-phone notice (rotate-note.ts): only on a touch phone held upright, over every screen (Nov 18: a phone
+   plays on its side only; a tablet, wider than 600 px, is never asked) */
 .rotate-note {
   display: none;
 }
@@ -1270,7 +1266,8 @@ button[hidden],
     display: grid;
     position: fixed;
     inset: 0;
-    z-index: 12;
+    z-index: 100; /* over every window */
+    pointer-events: auto;
     place-items: center;
     background: var(--overlay);
     padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
@@ -3482,6 +3479,13 @@ p.gold strong::before,
 .compare .down {
   color: var(--enemy-hi);
 }
+/* A tablet on its side (1024 px, the page beside the town menu): the four tabs do not fit one line, so they take two
+   instead of squeezing to 29 px with their names over each other (docs/mobile-ux-auditoria.md) */
+@media (max-width: 1100px) {
+  .roster-tabs .choice-row {
+    flex-wrap: wrap;
+  }
+}
 /* Narrow: the list on top of the page, the window scrolling as a whole */
 @media (max-width: 760px) {
   .dialog.roster {
@@ -3949,9 +3953,9 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
 .hud.turn3d .queue-row {
   flex: none;
   /* never shorter than the two 16 px lines and two bars beside the card take (Nov 17; queue-view.ts statsLayout): on a
-     low screen the cards stop shrinking and the list scrolls */
-  width: max(calc(44px * var(--t3)), 41px);
-  height: max(calc(52px * var(--t3)), 48px);
+     low screen the cards stop shrinking and the list scrolls; on a narrow page the floor shrinks with the pieces (--t3f) */
+  width: max(calc(44px * var(--t3)), 41px * var(--t3f, 1));
+  height: max(calc(52px * var(--t3)), 48px * var(--t3f, 1));
   padding: 0;
   overflow: hidden;
   opacity: 0;
@@ -3959,8 +3963,8 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
 }
 /* the one acting now: a bigger card (the 3D card springs to its row's box) */
 .hud.turn3d .queue-row.now {
-  width: max(calc(54px * var(--t3)), 50px);
-  height: max(calc(64px * var(--t3)), 59px);
+  width: max(calc(54px * var(--t3)), 50px * var(--t3f, 1));
+  height: max(calc(64px * var(--t3)), 59px * var(--t3f, 1));
 }
 /* with the 3D bar its sheet's portrait is the one acting (the reference's card 1): its row leaves the list, which starts
    at 2 right above the sheet (Fernando, Nov 16). Only while the sheet shows the list's head (hud.ts .head-on-sheet): an
@@ -4030,12 +4034,12 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
 }
 .hud.confirm3d .confirm .panel-head {
   padding: calc(10 * var(--lay-u)) calc(14 * var(--lay-u));
-  font-size: max(16px, 26 * var(--lay-u));
+  font-size: max(var(--fs-3d-min), 26 * var(--lay-u));
   line-height: 1.3;
 }
 .hud.confirm3d .confirm p {
   margin: calc(8 * var(--lay-u)) calc(6 * var(--lay-u)) 0;
-  font-size: max(16px, 18 * var(--lay-u));
+  font-size: max(var(--fs-3d-min), 18 * var(--lay-u));
   line-height: 1.3;
 }
 .hud.confirm3d .confirm p:not(.unit-note) {
@@ -4043,7 +4047,7 @@ body:has(.crawl-map.map3d) .hud > .ui3d-layer {
 }
 .hud.confirm3d .confirm .item {
   min-height: calc(52 * var(--lay-u));
-  font-size: max(16px, 24 * var(--lay-u));
+  font-size: max(var(--fs-3d-min), 24 * var(--lay-u));
 }
 /* a finger keeps its 44 px target (section 8) */
 @media (pointer: coarse) {
@@ -4295,7 +4299,8 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   opacity: 0;
 }
 .hud.tools3d .tools .burger,
-.hud.tools3d .tools .back {
+.hud.tools3d .tools .back,
+.hud.tools3d .tools .undo {
   width: max(var(--tap), 56 * var(--lay-u));
   height: max(var(--tap), 56 * var(--lay-u));
 }
@@ -4352,4 +4357,38 @@ body:has(.status3d-overlay) .fps {
    steps aside while the list is open over its submenu */
 .hud.tools3d:has(.tools-menu:not([hidden])):has(.abilities:not([hidden])) .menu3d-hits {
   visibility: hidden;
+}
+
+/* ---- Loading cover (loading.ts; Fernando, Nov 18) ---- */
+/* One screen over the whole page, the page's own colour, until the interface under it is built and drawn: nothing shows
+   half made. The line and the bar are the screen with ?ui=html or no WebGL; drawn in 3D (flow3d/loading3d.ts) they
+   stay under the drawing, unseen, for the screen reader */
+.loading-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: var(--fs);
+}
+.loading-line {
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+}
+.loading-bar {
+  width: min(560px, 100vw - 64px);
+  height: 14px;
+  accent-color: var(--orb-gold);
+}
+.loading-cover.loading3d > :not(canvas) {
+  opacity: 0;
+}
+.loading-cover.leaving {
+  opacity: 0;
+  transition: opacity 300ms ease-out; /* loading.ts FADE_MS; no class with Reduce motion: it leaves at once */
 }
