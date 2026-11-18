@@ -129,7 +129,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ui3d/icons.ts` — 3D kit: low-poly parts merged into one tinted geometry, the shared geometry cache and the icon shader.
 - `src/client/ui3d/pixel.ts` — 3D kit: the pixel filter (block size and the shader that reads the small target); pure.
 - `src/client/ui3d/spring.ts` — 3D kit: damped spring, ease and the page ring step; pure.
-- `src/client/menu3d/menu3d.ts` — Menu3d: the command menu in 3D (?menu=3d), on the reference's places, with its own transparent buttons.
+- `src/client/menu3d/menu3d.ts` — Menu3d: the command menu in 3D, on the reference's places, with its own transparent buttons.
 - `src/client/menu3d/menu-view.ts` — what the 3D menu shows (rows, sheet pages, icon of each ability) and what changed between two draws; pure.
 - `src/client/menu3d/menu-layout.ts` — where the 3D menu, its submenu and its sheet sit, and each row's box; pure.
 - `src/client/menu3d/column.ts` — a column of the 3D menu (panel, rows, text) and the Icon on its plate.
@@ -140,53 +140,53 @@ parseGrid and withRamps (grid.ts).
 - `src/client/turn3d/queue-seat.ts` — seats the unseen HTML turn list on the layout's numbers and draws the list's name in 3D (seatQueue), and passes its scroll and hover to the 3D list (wireQueue).
 - `src/client/turn3d/queue-view.ts` — what each card of the 3D turn list shows and which card a redrawn row keeps (matchRows); pure.
 - `src/client/turn3d/card.ts` — the 3D turn card's shader, its painted detail and digits.
-- `src/client/bar3d/bar3d.ts` — Bar3d: the combat bar in 3D (?bar=3d): the acting unit's sheet, the strike preview plate and the target's sheet on their regions, over the HUD's unseen panels.
+- `src/client/bar3d/bar3d.ts` — Bar3d: the combat bar in 3D: the acting unit's sheet, the strike preview plate and the target's sheet on their regions, over the HUD's unseen panels.
 - `src/client/bar3d/bar-view.ts` — what the 3D combat bar shows (sheet numbers, the bar's changing part, the plate's forecast texts); pure.
 - `src/client/bar3d/bar-layout.ts` — where each part of a sheet and of the plate sits inside its region, and how a text hangs on its spot; pure.
 - `src/client/bar3d/plates.ts` — the 3D combat bar's shaders: a whole unit sheet (band, bars, framed portrait) and the arrow plate.
-- `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D (?banner=3d, ?height=3d, ?hints=3d), each on its region of the reference; the tile line (floor, water, spikes, a charge landing) small under the Height.
-- `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D (?confirm=3d) beside the character, drawn over the unseen HTML window, which it seats and whose buttons keep the input; text from hud-menus.ts confirmParts.
+- `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D, each on its region of the reference; the tile line (floor, water, spikes, a charge landing) small under the Height.
+- `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D beside the character, drawn over the unseen HTML window, which it seats and whose buttons keep the input; text from hud-menus.ts confirmParts.
 - `src/client/confirm3d/confirm-layout.ts` — confirmLayout: the "Execute?" window's size, head, notes and choices with no DOM; pure.
 - `src/client/hints3d/hints-view.ts` — the button hints of each turn screen, each an action of glyphs.ts (hintsFor), the Height number and where each hint of a row sits (layRow); pure.
-- `src/client/hints3d/effects3d.ts` — Effects3d: the effects over the battle on the 3D layer (?effects=3d): floating numbers, the cursor note, the objective banner, the victory confetti and the performance counter.
+- `src/client/hints3d/effects3d.ts` — Effects3d: the effects over the battle on the 3D layer: floating numbers, the cursor note, the objective banner, the victory confetti and the performance counter.
 - `src/client/hints3d/effects-view.ts` — a floating number's look and its pose along its time, the objective banner's stretch and where each slip of confetti falls, and the performance counter's plate (fpsBox); pure.
 - `src/client/hints3d/effects3d.css` — hides, by opacity, the HTML the 3D effects stand for (performance counter, objective banner); fetched only with them.
-- `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
+- `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D, laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
 - `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.
-- `src/client/town3d/town3d.ts` — Town3d: the town's windows in 3D (?shop=3d, ?party=3d), one screen that draws the page it is handed over its own unseen buttons.
+- `src/client/town3d/town3d.ts` — Town3d: the town's windows in 3D, one screen that draws the page it is handed over its own unseen buttons.
 - `src/client/town3d/screens.ts` — mountTown3d(): the 3D Shop, Tavern and Party at work (read the saved game, show the page, run the pressed button through the same rules, save).
 - `src/client/town3d/page.ts` — what a 3D town window shows: a flat list of things to draw and of buttons, in reference px, and the buttons the cursor can go to where they are seen (`seen`: the list scrolled) and where an arrow takes it (`step`); pure.
 - `src/client/town3d/shop-view.ts` — the pages of the 3D Shop and Tavern (commands, scrolling list, the picked row's box and action); pure.
 - `src/client/town3d/party-view.ts` — the pages of the 3D Party (member's header, roster, Status, Equipment, Abilities, Class) and which buttons the arrows walk, the roster or the page (`inside`); pure.
-- `src/client/town3d/street-view.ts` — the pages of the 3D town menu, gate and place still to come (?townmenu=3d); pure.
+- `src/client/town3d/street-view.ts` — the pages of the 3D town menu, gate and place still to come; pure.
 - `src/client/town3d/street.ts` — streetWindows(): the 3D town menu, gate and place still to come at work, over the rules of game/crawl.ts.
-- `src/client/town3d/hud3d.ts` — TownHud3d: the walkable town's HUD drawn in 3D (?townhud=3d) from townHud's numbers; the unseen HTML pieces give the words and take the input.
+- `src/client/town3d/hud3d.ts` — TownHud3d: the walkable town's HUD drawn in 3D from townHud's numbers; the unseen HTML pieces give the words and take the input.
 - `src/client/town3d/town-layout.ts` — where the 3D town windows put their parts, in reference px, and the walkable town's HUD on the page (townHud); pure numbers.
-- `src/client/town3d/map3d.ts` — Map3d: the expedition map in 3D (?map=3d), drawn over its own unseen HTML window, which keeps every input.
+- `src/client/town3d/map3d.ts` — Map3d: the expedition map in 3D, drawn over its own unseen HTML window, which keeps every input.
 - `src/client/town3d/map-draw.ts` — what the 3D expedition map draws with: the pen (text, boxes, faces) and the chart (floors, ways, seals, flag).
 - `src/client/town3d/map-layout.ts` — where the 3D expedition map puts its parts, in reference px, and what a command's plaque and help say; pure.
-- `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D (?options=3d), laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
+- `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D, laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
 - `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
 - `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, the commands under the list, message band), the scroll fade and mark, where an arrow takes the cursor (`optionsWalk`), and the smallest page that takes the 3D look (`fits`); pure.
 - `src/client/flow3d/options-row.ts` — one row of the 3D Options drawn: its name and a choice in a box, a bar with its number or a switch.
-- `src/client/flow3d/title3d.ts` — Title3d: the title in 3D (?title=3d), drawn over the title's own window, which it takes when the layer arrives and gives back.
+- `src/client/flow3d/title3d.ts` — Title3d: the title in 3D, drawn over the title's own window, which it takes when the layer arrives and gives back.
 - `src/client/flow3d/loading3d.ts` — Loading3d: the loading screen in 3D (the count over a bar), on a layer of its own over the loading cover, for the download alone.
 - `src/client/flow3d/title-layout.ts` — where the 3D title sits (name, command rows on their plate, foot, language button) and the boxes an arrow walks (`stops`); pure.
-- `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D (?sheets=3d), drawn over each window's own controls, which it takes and gives back.
+- `src/client/flow3d/sheet3d.ts` — Sheet3d: the windows the title and Options open (saved games, quick battle, how to play, credits, tile marks, controls) in 3D, drawn over each window's own controls, which it takes and gives back.
 - `src/client/flow3d/sheet-draw.ts` — what a 3D sheet draws piece by piece: a list's row (number, face, two lines, second button), a text's line, the head and the foot plates.
 - `src/client/flow3d/sheet-layout.ts` — where a 3D sheet sits (head, parchment, rows and each one's second button, foot plates), the scroll fade and mark, and a text's blocks as lines (flow); pure.
 - `src/client/flow3d/draw.ts` — what the flow screens in 3D draw with: the dark tokens, text, and the glove that points at the control in focus (Hand).
-- `src/client/flow3d/dev3d.ts` — Dev3d: the developer menu in 3D (?dev=3d, the default): the cast's form on a parchment sheet, over one real unseen control per field; any page size; the HTML menu stays for ?ui=html and no WebGL.
+- `src/client/flow3d/dev3d.ts` — Dev3d: the developer menu in 3D: the cast's form on a parchment sheet, over one real unseen control per field; any page size.
 - `src/client/flow3d/dev-view.ts` — the cast as the 3D developer menu's fields (devFields), what an edit makes of it (devEdit, readSetup) and where the page's parts sit (devLayout); pure.
 - `src/client/flow3d/field-draw.ts` — what a 3D form draws field by field (FieldArt): wells pressed into the sheet, raised plates for arrows and buttons, the typed text with its selection and caret.
-- `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D (?tools=3d): the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu, which it seats and whose buttons keep the input.
+- `src/client/window3d/tools3d.ts` — Tools3d: the corner menu in 3D: the menu button, Back and the open list as a parchment panel, drawn over the unseen HTML menu, which it seats and whose buttons keep the input.
 - `src/client/window3d/tools-layout.ts` — toolsLayout: the corner menu's buttons, open list, rows and scroll with no DOM; pure.
-- `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D (?status=3d): a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
-- `src/client/window3d/talk3d.ts` — Talk3d: the speech box and the boxless opening narration drawn in 3D (?talk=3d) from talk-layout's numbers, the unseen box of talk.ts seated under it, in town and in battle.
+- `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D: a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
+- `src/client/window3d/talk3d.ts` — Talk3d: the speech box and the boxless opening narration drawn in 3D from talk-layout's numbers, the unseen box of talk.ts seated under it, in town and in battle.
 - `src/client/window3d/talk-layout.ts` — talkLayout: the speech box, its name plaque, strip, Skip, hint and words on the page, growing with the lines typed, with no DOM; pure.
 - `src/client/window3d/status-view.ts` — where the 3D Status sheet sits and where each of its rows goes (statusLayout); pure.
-- `src/client/window3d/note3d.ts` — Note3d: a notice window in 3D (?note=3d): title, legend of marks, paragraphs, a figure and 1 to 3 plaques on a parchment sheet, over an unseen window of dialog.ts with the real buttons.
+- `src/client/window3d/note3d.ts` — Note3d: a notice window in 3D: title, legend of marks, paragraphs, a figure and 1 to 3 plaques on a parchment sheet, over an unseen window of dialog.ts with the real buttons.
 - `src/client/window3d/note-view.ts` — where the 3D notice sheet sits and where its legend, paragraphs, figure and buttons go (noteLayout); pure.
 - `src/client/game/notices.ts` — the town's and the expedition's notice windows: the map's Information and opened chest, the expedition lost, a room that would not open.
 - `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), drawn by the 3D look (window3d/note3d.ts).

@@ -55,48 +55,48 @@ Nov 15, the Design lab's approved mockups.
 Nov 13, delivery 5 of [towns-party-equipment.md](towns-party-equipment.md).
 
 - Pure rules in `group.ts` (`dt:party`): the 4 from the story never leave; recruits join through the town's Tavern (`RECRUIT_COST`, cap `GROUP_MAX` 8) and are dismissed on the sheet (Dismiss asks a 2nd tap since Nov 16, Fernando's grill); anyone switches among the classes of `JOBS` (the 4 starting ones and the Lancer since Nov 13, with the barbarian's character until it gets its own); up to 4 go to battle (`deployed`), never none: the last one going has Leave at camp off, with the reason under it.
-- `heroesFor` builds who fights, with the whole kit of the class and the equipment kept by member id. The Tavern is `openBar` in `town-ui.ts`.
+- `heroesFor` builds who fights, with the whole kit of the class and the equipment kept by member id. The Tavern is `openBar` in `town-shop.ts`.
 - **The rest of the town in 3D** (`town3d/street.ts`, `hud3d.ts`, `window3d/talk3d.ts`, Nov 17, Fernando: every piece of the
-  interface in the 3D look; default, `?townmenu=html`, `?townhud=html`, `?talk=html` or `?ui=html` bring the HTML back):
+  interface in the 3D look; only 3D since Nov 18):
   the town menu (dark rows down the left with the glove, after the reference's list of places, the town's box beside
   them, the help band saying the row in focus), the gate's quest and a place still to come (plaques and a parchment
   box), the HUD (slate plates as the battle's 3D HUD: the reference has no walkable town; its balloon writes what Enter
   does, so the top pill says it only with nothing in reach, the walk keys, never twice: `promptSays`, Nov 18 review at
   844x390) and the speech box
-  (parchment, the name on a dark plaque; the painted face stays the HTML one, over it). Same rules as the HTML ones;
+  (parchment, the name on a dark plaque; the painted face stays the HTML one, over it). The openers hand each window over
+  through `looks3d.ts` (`menu`, `gate`, `soon`);
   a 3D window covers the page, so Shop, Tavern and Party opened from the menu replace it and give it back, on their
   row, when they close. New expedition over a live one asks a 2nd press (disarmed by moving off it or after 5 s; Esc
   closes the menu). The cursor follows what the eye sees (Fernando, Nov 17; `neighbour()` in `town3d/page.ts`, pure and
   tested): an arrow or the d-pad goes to the button on that side, stays when there is none (no wrap), and on a
   switch left and right change its value. "Voltar à rua" is the way out a finger has. Shots in
   `docs/media/ui3d-cidade-resto`.
-- **Shop, Tavern and Party in 3D** (`town3d/`, Nov 17; default, `?shop=html`, `?party=html` or `?ui=html` bring the HTML
-  windows back): the same windows drawn on the shared 3D layer after FFT: The Ivalice Chronicles' menus (town darkened,
+- **Shop, Tavern and Party in 3D** (`town3d/`, Nov 17; only 3D since Nov 18, handed over through `looks3d.ts` `shop`,
+  `bar`, `party`): the windows drawn on the shared 3D layer after FFT: The Ivalice Chronicles' menus (town darkened,
   parchment panels, dark plaques on the left edge, the glove, help band and button hints at the foot). They run the
   same rules (`buy`, `sell`, `equip`, `recruit`, `dismiss`, `toggleDeploy`, `changeClass`) from pure pages
   (`shop-view.ts`, `party-view.ts`). In the counter, focusing a row shows it in the box and pressing it moves the cursor
   to the box's action, so nothing is bought by the first press; in the Party, left and right turn the pages on the
-  keyboard and Dismiss asks a second press. Still HTML: the town HUD and menu, the gate and place windows and the
-  chest.
-- **Expedition map in 3D** (`town3d/map3d.ts`, Nov 17; default, `?map=html` or `?ui=html` bring the HTML window back):
+  keyboard and Dismiss asks a second press.
+- **Expedition map in 3D** (`town3d/map3d.ts`, Nov 17; only 3D since Nov 18):
   the same window (`expeditionScreen`) stays under the drawing, unseen, with every button, so keys, mouse, touch,
-  gamepad and the screen reader are the window's; `setMap3d` hands the 3D screen the window's parts (`MapView`) and
+  gamepad and the screen reader are the window's; `looks3d.ts` (`map`) hands the 3D screen the window's parts (`MapView`) and
   `changed` when the picked place changes. After FFT: The Ivalice Chronicles' world map: the descent on one sheet of
   parchment in the middle (no scroll: the rows pack into the sheet), the party's panel and the picked place's box
   beside it, the commands as the town's plaques on the left edge, the help band at the foot saying the picked place
   or why a command is off. Where everything sits is pure (`map-layout.ts`, tested). The places stand on a grid (rooms in
   columns, every row on the middle one under the gate and over the boss, a chest at the sheet's edge in its room's
   row), so the arrows and the d-pad go straight: down to what is below, sideways to what is beside, never on a slant
-  (`spot-walk.ts`); the HTML look keeps its own chart and walks it in list order. Still HTML over the 3D map:
-  Information and the opened chest's window. A page under 1152x648, no WebGL or a lost context keep the HTML map.
-- **The Party screen** (`openParty` in `town-party.ts`; Nov 16, Fernando: the interface rebuilt on its FFT counterpart, the formation and unit menus) is one window where there were three (Party list, Sheet, Equipment): the unit list on the left (face, name, class, life and pool bars; who goes to battle first, under "Battle party 3/4", in the order `roster` gives) and the picked member's page on the right, one of Status (who goes, Dismiss, each total as a bar with its origin), Equipment (`gearPage` in `town-gear.ts`), Abilities and Class. Up and down walk the list and Enter picks; left and right turn the pages; every action saves and rebuilds the window on the same member and page (`PartyView`), the focus back on the same button. No level shows: the game has none.
+  (`spot-walk.ts`). Information and the opened chest are notices drawn in 3D (`window3d/note3d.ts`). No WebGL or a
+  lost context shows the warning (`no3d.ts`).
+- **The Party screen** (`openParty` in `town-party.ts`; Nov 16, Fernando: the interface rebuilt on its FFT counterpart, the formation and unit menus) is one window where there were three (Party list, Sheet, Equipment): the unit list on the left (face, name, class, life and pool bars; who goes to battle first, under "Battle party 3/4", in the order `roster` gives) and the picked member's page on the right, one of Status (who goes, Dismiss, each total as a bar with its origin), Equipment, Abilities and Class. Up and down walk the list and Enter picks; left and right turn the pages; every action saves and rebuilds the window on the same member and page (`PartyView`), the focus back on the same button. No level shows: the game has none.
 
 ## Equipment in 7 slots
 
 Nov 16, slice 3 of the Nov 15 grill; the rule is `withGear` in `src/shared/battle/equipment.ts` ([shared-battle-rules.md](shared-battle-rules.md)).
 
 - `dt:equip` keeps each member's loadout and `dt:chest` the gold and the loose pieces (`chest.ts`); `parseEquip` rebuilds both field by field and puts each known piece in a slot of its kind, its saved slot first, so a save from the 3-slot days (weapon, armor, accessory) keeps every piece; a member called `__proto__` is dropped. New game (`newGame` in `saves.ts`) writes the story members' weapons (`STARTING_WEAPON` in `src/content/party.ts`) with the chest at 0 gold; a game without the key (one from before, a broken save) gets none, so no load hands them out again (review of Nov 16). The chest keeps `CHEST_MAX` (99) loose pieces, as `parseChest` reads them: buying, taking a piece off and dismissing a recruit stop there, each with the reason on screen.
-- The Party screen's Status page shows the totals the battle counts with their origin (`sheetRows`) and its Equipment page (`gearPage`) the 7 slots and the chest's pieces of the open slot's kind with the totals each would change, now → after (`compareRows`). Both read the sheet as the battle does (`withGear`, the caps of `resistOf` and `dodgeOf`); past a cap they also say the raw sum and, for physical and magic resistance, what a charging unit keeps, since the charging drop comes off the raw sum (combat.ts; whether the cap should come before the drop is Fernando's call, the rule is unchanged).
+- The Party screen's Status page shows the totals the battle counts with their origin (`sheetRows`) and its Equipment page the 7 slots and the chest's pieces of the open slot's kind with the totals each would change, now → after (`compareRows`). Both read the sheet as the battle does (`withGear`, the caps of `resistOf` and `dodgeOf`); past a cap they also say the raw sum and, for physical and magic resistance, what a charging unit keeps, since the charging drop comes off the raw sum (combat.ts; whether the cap should come before the drop is Fernando's call, the rule is unchanged).
 
 ## Standalone crawl rooms
 
