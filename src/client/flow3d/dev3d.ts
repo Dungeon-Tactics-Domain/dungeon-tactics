@@ -7,15 +7,14 @@
 //   by the same layout: typing, the IME, Tab, Enter, Esc, the pad, a tap, the list's own scroll and a screen reader are
 //   the window's. Arrows and the d-pad go to the field seen that way; on a number or a pick left and right change the
 //   value, in a text they move the caret.
-//   Any page size takes it (dev-view.ts devLayout). Without WebGL, with the context lost or with ?ui=html the HTML
-//   menu (dev-menu.ts) opens instead.
+//   Any page size takes it (dev-view.ts devLayout); with no WebGL or the context lost, the warning (no3d.ts).
 import { Group, type Mesh, type ShaderMaterial } from 'three';
-import { openDevMenu, setDev3d } from '../dev-menu.ts';
 import { DEV_KEY, type DevSetup, defaultSetup, parseSetup } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
 import { Part } from '../hints3d/hints3d.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
+import { fill } from '../looks3d.ts';
 import { alpha } from '../menu3d/column.ts';
 import { store } from '../store.ts';
 import { type Field, fieldParts, fieldWalk, flowFields, shown, sideways, thumb } from '../ui3d/field.ts';
@@ -75,6 +74,7 @@ export class Dev3d implements Ui3dScreen {
   private setup: DevSetup = defaultSetup('beacon_hill');
   private ui: DevUi = {};
   private go?: { start: (setup: DevSetup) => void; onBack?: () => void };
+  private readonly release: () => void;
   private open = 0;
   private readonly ac = new AbortController();
   private readonly wake = () => this.layer.wake();
@@ -100,7 +100,7 @@ export class Dev3d implements Ui3dScreen {
     this.host.addEventListener('scroll', this.wake, { capture: true, passive: true, signal });
     document.addEventListener('selectionchange', this.wake, { signal });
     hoverCursor(this.host, signal);
-    setDev3d((start, onBack) => this.show(start, onBack));
+    this.release = fill('dev', (start, onBack) => this.show(start, onBack));
     layer.add(this, 'dev');
   }
 
@@ -116,7 +116,6 @@ export class Dev3d implements Ui3dScreen {
     this.render();
     this.focus();
     this.hand.reset();
-    return true;
   }
 
   // the field in focus, by its place in the list (-1: none)
@@ -386,15 +385,12 @@ export class Dev3d implements Ui3dScreen {
   };
 
   dispose() {
-    // the layer went (a lost context): the HTML menu opens in its place, on the cast as it was saved
-    const go = this.win?.overlay.isConnected ? this.go : undefined;
     this.hide();
-    setDev3d();
+    this.release();
     this.ac.abort();
     this.layer.remove(this);
     this.hand.dispose();
     this.paint.dispose();
     this.host.remove();
-    if (go) openDevMenu(go.start, go.onBack);
   }
 }

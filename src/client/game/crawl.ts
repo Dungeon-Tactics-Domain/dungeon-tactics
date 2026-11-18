@@ -23,11 +23,12 @@ import { commandRow, dialog, secondTap } from '../dialog.ts';
 import { GROUP_KEY, heroesFor, parseGroup } from '../group.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
+import { looks3d } from '../looks3d.ts';
 import { CRAWL_KEY, ROOM_KEY } from '../saves.ts';
 import { setTrack } from '../sound.ts';
 import { param, store } from '../store.ts';
 import { openBar, openShop } from '../town-shop.ts';
-import { goldNote, openParty, sideWindows, town3d } from '../town-ui.ts';
+import { goldNote, openParty, sideWindows } from '../town-ui.ts';
 import { expeditionScreen, floorOf } from './expedition-map.ts';
 import { lostScreen, noRoomScreen } from './notices.ts';
 
@@ -215,119 +216,14 @@ function questRows(go: (fn: () => void) => () => void) {
 // The dungeon gate at the north end of the town (Nov 15, Fernando: the quest opens at its spot): the quest's rows and the
 // way back to the street
 export function questGate(name: string) {
-  if (town3d.gate?.(name)) return; // its 3D look (town3d/street.ts)
-  const live = liveExpedition();
-  const go = (fn: () => void) => () => {
-    d.close();
-    fn();
-  };
-  const d = dialog(
-    'title',
-    name,
-    [
-      el(
-        'div',
-        { class: 'menu-actions camp-list command-list' },
-        ...questRows(go),
-        commandRow('bronze', t('Ficar na cidade', 'Stay in town'), go(toTown)),
-      ),
-      // the place's information box, as on the map: what waits below and where an expedition in progress stands
-      el(
-        'section',
-        { class: 'map-box gate-info' },
-        el(
-          'p',
-          {},
-          t(
-            `${CRAWL_RUN.floors} andares de salas e um chefe no fim.`,
-            `${CRAWL_RUN.floors} floors of rooms and a boss at the end.`,
-          ),
-        ),
-        live &&
-          el(
-            'p',
-            {},
-            t(
-              `Expedição em curso: ${floorOf(live)} · ${descentGold(live)} de ouro achado.`,
-              `Expedition in progress: ${floorOf(live)} · ${descentGold(live)} gold found.`,
-            ),
-          ),
-      ),
-    ],
-    { onBack: toTown },
-  );
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+  looks3d.gate?.(name); // drawn by town3d/street.ts
 }
 
 // The town menu (Esc, Start, the corner button; the lab kit's command menu in the top right corner, Nov 15 mockups):
 // every place without walking there, the quest, Shop, Tavern and Party, and the way back to the title. Over the walkable town.
 // `extra`: the town's own rows at the foot (its debug grid and fluid movement, game/town.ts, which this file cannot import)
 export function townMenu(extra?: Node) {
-  if (town3d.menu?.(extra)) return; // its 3D look (town3d/street.ts)
-  // the window beside the menu, if any (its 'close' skips its onBack)
-  const closeBeside = () => {
-    for (const o of sideWindows(document.querySelectorAll('.overlay'), d.overlay)) o.dispatchEvent(new Event('close'));
-  };
-  // the gold on its head band follows a buy, a sale or a recruit in the window beside it (they all go through a click);
-  // the listener goes when the menu closes (a close from elsewhere drops it at the next click)
-  const follow = () => {
-    if (d.overlay.isConnected) d.overlay.querySelector('.dialog-head .gold strong')!.textContent = String(townGold());
-    else removeEventListener('click', follow);
-  };
-  const stop = () => {
-    removeEventListener('click', follow);
-    closeBeside();
-  };
-  const go = (fn: () => void) => () => {
-    stop();
-    d.close();
-    fn();
-  };
-  // Shop, Tavern and Party open beside the menu, which stays on screen with the open row picked; another row swaps the
-  // window, and closing it gives the focus back to its row
-  const beside = (open: (back: () => void) => void) => (e: Event) => {
-    const row = e.currentTarget as HTMLButtonElement;
-    closeBeside();
-    for (const b of d.overlay.querySelectorAll('.picked')) b.classList.remove('picked');
-    row.classList.add('picked');
-    open(() => {
-      row.classList.remove('picked');
-      row.focus();
-    });
-  };
-  const d = dialog(
-    'title',
-    t(TOWN.name, TOWN.en),
-    [
-      el(
-        'div',
-        { class: 'menu-actions camp-list command-list' },
-        ...questRows(go),
-        commandRow(
-          'gold',
-          t('Loja', 'Shop'),
-          beside((back) => openShop(back)),
-        ),
-        commandRow(
-          'blue',
-          t('Taverna', 'Tavern'),
-          beside((back) => openBar(back)),
-        ),
-        commandRow(
-          'blue',
-          t('Grupo', 'Party'),
-          beside((back) => openParty(back)),
-        ),
-        commandRow('bronze', t('Voltar ao título', 'Back to title'), go(toTitle)),
-        extra,
-      ),
-    ],
-    // closes back to the street; a window beside it closes first (only the topmost window takes Esc)
-    { onBack: stop, note: goldNote(t('Ouro', 'Gold'), townGold()) },
-  );
-  d.overlay.classList.add('town-menu');
-  addEventListener('click', follow);
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+  looks3d.menu?.(extra); // drawn by town3d/street.ts
 }
 
 // the party that goes is the town's (up to 4), each at full life with its equipment

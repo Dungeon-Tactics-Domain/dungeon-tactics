@@ -1,5 +1,5 @@
 // The effects over the battle drawn on the shared 3D layer (ui3d/layer.ts; Fernando, Nov 18: the whole interface in 3D),
-// one screen that takes them from their HTML through screen-effects.ts while it lives:
+// one screen, handed each of them through looks3d.ts while it lives (the battle's layer and the town's):
 //   numbers: damage and healing over a unit's chest, an embossed glyph on its own texture (black outline, gold ring on a
 //   strong strike, a star on magic), kept on the chest by scene/float-numbers.ts and moved through its 1.5 s here;
 //   note: the sword and the damage a Move destination draws, beside the cursor;
@@ -11,8 +11,8 @@
 // confetti. The pure side is effects-view.ts.
 import './effects3d.css';
 import { Color, DoubleSide, Group, InstancedMesh, Object3D, PlaneGeometry, ShaderMaterial } from 'three';
+import { type Effects, fill, type NumberMark } from '../looks3d.ts';
 import { Icon } from '../menu3d/column.ts';
-import { type Effects, type NumberMark, setEffects3d } from '../screen-effects.ts';
 import { TIMING } from '../timing.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { safeSides } from '../ui3d/safe-area.ts';
@@ -132,6 +132,7 @@ export class Effects3d implements Ui3dScreen, Effects {
   private readonly counter = new Part();
   private rain?: { mesh: InstancedMesh<PlaneGeometry, ShaderMaterial>; slips: Slip[]; born: number };
   private readonly dummy = new Object3D();
+  private readonly release: () => void;
 
   constructor(private readonly layer: Ui3dLayer) {
     this.css = getComputedStyle(layer.root);
@@ -140,7 +141,7 @@ export class Effects3d implements Ui3dScreen, Effects {
     this.sword.group.visible = false;
     this.deep.add(this.sword.group);
     layer.root.classList.add('effects3d');
-    setEffects3d(this);
+    this.release = fill('effects', this);
     layer.add(this, 'effects');
   }
   private token(name: string) {
@@ -330,7 +331,7 @@ export class Effects3d implements Ui3dScreen, Effects {
   }
 
   dispose() {
-    setEffects3d(undefined);
+    this.release();
     this.layer.remove(this);
     for (const n of this.numbers) dropText(n.m);
     this.numbers.clear();

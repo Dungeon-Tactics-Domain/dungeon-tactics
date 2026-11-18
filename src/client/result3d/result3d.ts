@@ -11,8 +11,9 @@
 //   If the WebGL context goes while it shows, the HTML window opens in its place.
 import { Group, type Mesh, type ShaderMaterial } from 'three';
 import { dialog } from '../dialog.ts';
-import { type Board, resultBoard, setBoard3d } from '../game/end-screens.ts';
+import type { Board } from '../game/end-screens.ts';
 import { el } from '../icons.ts';
+import { fill } from '../looks3d.ts';
 import { alpha, clamp01, Icon, move } from '../menu3d/column.ts';
 import { type Faces, faceMesh } from '../ui3d/face.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -50,7 +51,7 @@ export class Result3d implements Ui3dScreen {
   private view?: ResultView;
   private at?: ResultLayout;
   private win?: { overlay: HTMLElement; close(): void };
-  private html?: { close(): void }; // the HTML window that took over after the context was lost
+  private readonly release: () => void;
   private parts: Part[] = [];
   private readonly faces: Faces = new Map();
   private buttons: ShaderMaterial[] = [];
@@ -78,7 +79,7 @@ export class Result3d implements Ui3dScreen {
     this.host.addEventListener('keydown', (e) => {
       if (e.repeat && (e.key === 'Enter' || e.key === ' ')) e.preventDefault();
     });
-    setBoard3d((b) => this.show(b));
+    this.release = fill('board', (b) => this.show(b));
     layer.add(this, 'result');
   }
 
@@ -107,7 +108,7 @@ export class Result3d implements Ui3dScreen {
     this.open.to = 1;
     this.build();
     land(this.gx, this.at?.buttons[this.focus]?.x ?? 0);
-    return { close: () => (this.html ?? this.win)?.close() };
+    return { close: () => this.win?.close() };
   }
 
   private hide() {
@@ -276,13 +277,11 @@ export class Result3d implements Ui3dScreen {
   }
 
   dispose() {
-    const board = this.board;
     this.hide();
-    setBoard3d();
+    this.release();
     this.layer.remove(this);
     this.glove.dispose();
     for (const tex of this.faces.values()) tex.dispose();
     this.host.remove();
-    if (board) this.html = resultBoard(board);
   }
 }

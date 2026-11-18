@@ -2,18 +2,20 @@
 // (hud3d.ts), the speech box (window3d/talk3d.ts), the street's windows (street.ts) and, for each window of a building (Shop,
 // Tavern, Party), the loop the HTML one runs: read the saved game, show its page (shop-view.ts,
 // party-view.ts), run the pressed button through the same rules (chest.ts, group.ts), save and show again. While
-// mounted, the town's openers hand their windows over (town-ui.ts `town3d`); a browser without WebGL or a lost
-// context shows the warning (no3d.ts).
+// mounted, the town's openers hand their windows over (looks3d.ts); a browser without WebGL or a lost context shows
+// the warning (no3d.ts).
 import type { Slot } from '../../shared/battle/equipment.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, sell } from '../chest.ts';
 import { changeClass, dismiss, type Job, recruit, toggleDeploy } from '../group.ts';
+import { Effects3d } from '../hints3d/effects3d.ts';
 import { t } from '../i18n.ts';
+import { fill } from '../looks3d.ts';
 import { no3d } from '../no3d.ts';
 import { loadChest, loadEquip } from '../sheet-lines.ts';
 import { sfx } from '../sound.ts';
 import { store } from '../store.ts';
 import type { PartyView } from '../town-party.ts';
-import { loadGroup, saveGroup, town3d } from '../town-ui.ts';
+import { loadGroup, saveGroup } from '../town-ui.ts';
 import { Ui3dLayer } from '../ui3d/layer.ts';
 import { Note3d } from '../window3d/note3d.ts';
 import { Talk3d } from '../window3d/talk3d.ts';
@@ -35,10 +37,11 @@ const rowOf = (page: Page, sel: string) =>
 export function mountTown3d(root: HTMLElement) {
   let layer: Ui3dLayer;
   let live = true;
+  const unfill: (() => void)[] = []; // the windows below are no screens of the layer: they leave its places themselves
   // no WebGL here or the context lost: the warning, never the HTML windows under the drawing
   const lost = () => {
     live = false;
-    for (const k of Object.keys(town3d) as (keyof typeof town3d)[]) delete town3d[k];
+    for (const u of unfill) u();
     layer.dispose();
     no3d();
   };
@@ -256,9 +259,18 @@ export function mountTown3d(root: HTMLElement) {
     return true;
   };
 
-  Object.assign(town3d, { shop, bar, party }, streetWindows(ui));
+  const street = streetWindows(ui);
+  unfill.push(
+    fill('shop', shop),
+    fill('bar', bar),
+    fill('party', party),
+    fill('menu', street.menu),
+    fill('gate', street.gate),
+    fill('soon', street.soon),
+  );
   new TownHud3d(layer, root);
   new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
-  new Note3d(layer); // takes each notice window by itself (note.ts `setNote3d`)
+  new Note3d(layer); // takes each notice window by itself (note.ts)
+  new Effects3d(layer); // the effects over the page (looks3d.ts `effects`), as in a battle
   requestAnimationFrame(tick);
 }

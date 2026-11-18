@@ -3,6 +3,7 @@
 // blocks) or the 3D sheet drawn over it (flow3d/sheet3d.ts; Fernando, Nov 17: what was left in HTML outside the battle
 // goes 3D). The window stays the owner of every key, tap, pad button and of the screen reader; the 3D only draws.
 import { el } from '../icons.ts';
+import { looks3d } from '../looks3d.ts';
 
 // a window's reading text, top to bottom
 export type Block =
@@ -47,16 +48,6 @@ export function blocksHtml(blocks: Block[]): HTMLElement[] {
   return out;
 }
 
-// The 3D sheet takes a window as it opens, and the one already open when the layer arrives (it comes with the battle,
-// after the title's first window). Called last by each opener, with the window already focused
-type Take = (overlay: HTMLElement, sheet: Sheet) => void;
-let take: Take | undefined;
-let open: [HTMLElement, Sheet] | undefined;
-export function showSheet(overlay: HTMLElement, sheet: Sheet) {
-  open = [overlay, sheet];
-  take?.(overlay, sheet);
-}
-export function setSheet3d(fn?: Take) {
-  take = fn;
-  if (open?.[0].isConnected) fn?.(...open);
-}
+// The 3D sheet (flow3d/sheet3d.ts) draws over each window as it opens. Called last by each opener, with the window
+// already focused
+export const showSheet = (overlay: HTMLElement, sheet: Sheet) => looks3d.sheet?.(overlay, sheet);

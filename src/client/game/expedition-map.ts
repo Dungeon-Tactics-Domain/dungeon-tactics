@@ -16,12 +16,13 @@ import { type Chart, chart, goldRange, type Place, type Spot } from '../expediti
 import { gauge, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el, icon, UI_ICON } from '../icons.ts';
+import { looks3d } from '../looks3d.ts';
 import { setTrack } from '../sound.ts';
 import { goldNote } from '../town-ui.ts';
 import { current, group, retreat, takeChest, toTown } from './crawl.ts';
 import { chestScreen, infoScreen } from './notices.ts';
 
-// What the map's 3D look (town3d/map3d.ts; ?map=3d, the default) draws over this window, which stays under it unseen
+// What the map's 3D look (town3d/map3d.ts) draws over this window, which stays under it unseen
 // with every button, key and screen reader line: plain data, each place's kind and mark by node ('' where the kind has
 // its own drawing). `changed` is the drawing's, called when another place is picked
 export interface PlaceFacts {
@@ -39,12 +40,6 @@ export interface MapView {
   heroes: { name: string; job: string; def?: string; hp: number; max: number; mana?: number; manaMax?: number }[];
   picked: PlaceFacts;
   changed?: () => void;
-}
-let shown: MapView | undefined, take3d: ((v: MapView) => void) | undefined;
-// the 3D look arrives after the town (hud-skin.ts): it takes the map already open and every one opened after
-export function setMap3d(take?: (v: MapView) => void) {
-  take3d = take;
-  if (take && shown?.overlay.isConnected) take(shown);
 }
 
 // the floor of the rooms open now
@@ -294,7 +289,7 @@ export function expeditionScreen(exp: Expedition) {
     { fixed: true, note: goldNote(t('Ouro achado', 'Gold found'), descentGold(exp)) },
   );
   d.overlay.classList.add('crawl-map');
-  view = shown = {
+  view = {
     overlay: d.overlay,
     title: [t('Masmorra', 'Dungeon'), floorOf(exp)],
     gold: [t('Ouro achado', 'Gold found'), descentGold(exp)],
@@ -310,7 +305,7 @@ export function expeditionScreen(exp: Expedition) {
     picked: factsOf(first),
   };
   pick(first);
-  take3d?.(view);
+  looks3d.map?.(view);
   // the open place in the middle of the chart's window, wherever the party is on the way down
   marks.get(first.node)!.scrollIntoView({ block: 'center' });
   marks.get(first.node)!.focus({ preventScroll: true });

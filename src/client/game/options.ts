@@ -8,6 +8,7 @@ import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { keysShown, liveText } from '../key-hints.ts';
+import { looks3d } from '../looks3d.ts';
 import { type Option, optionRow } from '../option-row.ts';
 import type { PixelSettings } from '../pixel-settings.ts';
 import { store } from '../store.ts';
@@ -74,11 +75,6 @@ export interface OptionsBoard {
   help: HTMLElement; // what the row under the cursor does
   actions: HTMLButtonElement[]; // restart, home, developer
 }
-// the 3D screen takes the board while it is set (as end-screens.ts setBoard3d); undefined from it: no room, the HTML one
-type Show3d = (board: OptionsBoard) => { close(): void } | undefined;
-let options3d: Show3d | undefined;
-export const setOptions3d = (show?: Show3d) => void (options3d = show);
-
 export function optionsWindow(b: OptionsBoard): { close(): void } {
   const d = dialog('menu', b.title, [b.list, b.help, el('div', { class: 'menu-actions' }, ...b.actions)], {
     note: liveText('opt-keys', () => b.note),
@@ -167,7 +163,6 @@ export function optionsMenu(o: OptionsContext) {
       }),
     ],
   };
-  const three = options3d?.(board); // it puts the cursor on its first category
-  const d = three ?? optionsWindow(board);
-  if (!three) sections[0].rows[0].focus();
+  // drawn by flow3d/options3d.ts, which puts the cursor on its first category; nothing once the context is lost
+  const d = looks3d.options?.(board) ?? { close() {} };
 }

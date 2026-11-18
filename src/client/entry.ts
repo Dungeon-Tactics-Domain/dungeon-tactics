@@ -8,12 +8,12 @@ import { loadSkin } from './hud-skin.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { loadingCover } from './loading.ts';
+import { looks3d } from './looks3d.ts';
 import { Game, LOCAL } from './main.ts';
 import { PIXEL_KEY, parsePixel } from './pixel-settings.ts';
 import { whenReady } from './ready-gate.ts';
 import { rotateNote } from './rotate-note.ts';
 import { BattleScene } from './scene.ts';
-import { effects3d } from './screen-effects.ts';
 import { sfx } from './sound.ts';
 import { param, store } from './store.ts';
 import { isSurvival, survivalGoal } from './survival.ts';
@@ -62,7 +62,7 @@ function announce(text: string) {
   sfx('confirm');
   const box = el('div', { class: 'announce', role: 'status' }, text);
   document.body.append(box);
-  effects3d()?.announce(text); // drawn on the 3D layer; the node stays, unseen, for the screen reader (effects3d.css)
+  looks3d.effects?.announce(text); // drawn on the 3D layer; the node stays, unseen, for the screen reader (effects3d.css)
   setTimeout(() => box.remove(), 2200);
 }
 

@@ -1,10 +1,10 @@
 // The floating numbers over the units: each pops from a chest, lifted over any number still showing, follows it on
 // screen and leaves with its CSS animation; also where a world point falls on the canvas, and the note over the cursor.
-// With the 3D effects on (screen-effects.ts) the 3D layer draws both; what is kept and for how long stays here.
+// The 3D layer draws both (hints3d/effects3d.ts, through looks3d.ts); what is kept and for how long stays here.
 import * as THREE from 'three';
 import { liftOver, type NumberBox } from '../hit-weight.ts';
 import { abilityIcon, el } from '../icons.ts';
-import { effects3d, type NumberMark } from '../screen-effects.ts';
+import { looks3d, type NumberMark } from '../looks3d.ts';
 import { TIMING } from '../timing.ts';
 
 const TMP = new THREE.Vector3(); // per-frame math without creating objects
@@ -53,7 +53,8 @@ export class FloatNumbers {
   // (TIMING.float), so a slow motion, a camera that goes back or a death never leaves one hanging
   show(at: THREE.Vector3, text: string, cls: string, px: number) {
     const s = onScreen(at, this.camera, this.canvas);
-    const mark = effects3d()?.number(text, cls, px) ?? htmlNumber(this.floats, text, cls, px);
+    const mark = looks3d.effects?.number(text, cls, px);
+    if (!mark) return; // the context lost: the warning covers the page
     // measured once on screen, so a wider number (a ✦, a "Miss") keeps its real room; `y` is where it is drawn while
     // it holds: `pop` raises it by its own height from the chest, so a big number sits higher than a small one
     const box = {
@@ -99,13 +100,8 @@ export class CursorNote {
   }
 
   follow() {
-    const fx = effects3d(),
-      at = this.text ? this.cursorAt() : null,
+    const at = this.text ? this.cursorAt() : null,
       s = at && onScreen(at, this.camera, this.canvas);
-    this.node.hidden = !this.text || !!fx;
-    fx?.note(s ? this.text : null, s?.x ?? 0, s?.y ?? 0);
-    if (!s || fx) return;
-    this.node.style.left = `${s.x}px`;
-    this.node.style.top = `${s.y}px`;
+    looks3d.effects?.note(s ? this.text : null, s?.x ?? 0, s?.y ?? 0);
   }
 }

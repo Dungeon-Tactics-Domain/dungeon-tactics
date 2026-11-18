@@ -5,15 +5,16 @@
 import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { TOWN } from '../../content/crawl/town.ts';
 import { descentGold } from '../../shared/crawl/expedition.ts';
-import { depart, liveExpedition, toTitle, toTown, townMenu } from '../game/crawl.ts';
+import { depart, liveExpedition, toTitle, toTown } from '../game/crawl.ts';
 import { expeditionScreen, floorOf } from '../game/expedition-map.ts';
 import { GROUP_MAX } from '../group.ts';
 import { t } from '../i18n.ts';
 import { keysShown } from '../key-hints.ts';
+import { looks3d } from '../looks3d.ts';
 import { loadChest } from '../sheet-lines.ts';
 import { openParty } from '../town-party.ts';
 import { openBar, openShop } from '../town-shop.ts';
-import { loadGroup, town3d } from '../town-ui.ts';
+import { loadGroup } from '../town-ui.ts';
 import { type Dir, neighbour, type Page } from './page.ts';
 import { gatePage, menuPage, type Quest, soonPage } from './street-view.ts';
 import type { Town3d, Window3d } from './town3d.ts';
@@ -107,7 +108,7 @@ export function streetWindows(ui: Town3d) {
       win.close();
       // through the hook: with the drawing gone (a lost context, a page shrunk) the HTML menu comes back instead
       open(() => {
-        if (!town3d.menu?.(extra, id)) townMenu(extra);
+        looks3d.menu?.(extra, id);
       });
     };
     const win: Window3d = ui.window({

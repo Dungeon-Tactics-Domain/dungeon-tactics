@@ -115,6 +115,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
 - `src/client/mark-style.ts` — how the board's marks are drawn: simples, luz, pedra or neon (dt:marks, ?marks=), and the listener the open battle redraws on.
+- `src/client/looks3d.ts` — the one place the client hands its windows to the 3D screens (`looks3d`): each screen fills its slot when built and empties it on dispose (`fill`); also the effects' types (`Effects`, `NumberMark`).
 - `src/client/layout-mode.ts` — interface layout choice, edges or frame (dt:layout, ?layout=), set as data-layout on the page and told to who listens (onLayout: the 3D layer).
 - `src/client/ui-pieces.ts` — the interface's pieces by name (PIECE_NAMES): what each screen registers on the 3D layer as, and which are hidden now (hidePieces, the sandbox's `hide`); pure.
 - `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only), a screen of the 3D layer: lines for the 16:9 area, thirds and centre, and a named box for every region of layout.ts as placed.
@@ -153,7 +154,6 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hints3d/effects3d.ts` — Effects3d: the effects over the battle on the 3D layer (?effects=3d): floating numbers, the cursor note, the objective banner, the victory confetti and the performance counter.
 - `src/client/hints3d/effects-view.ts` — a floating number's look and its pose along its time, the objective banner's stretch and where each slip of confetti falls, and the performance counter's plate (fpsBox); pure.
 - `src/client/hints3d/effects3d.css` — hides, by opacity, the HTML the 3D effects stand for (performance counter, objective banner); fetched only with them.
-- `src/client/screen-effects.ts` — the hook through which the 3D layer takes the effects over the battle from their HTML (setEffects3d, effects3d).
 - `src/client/result3d/result3d.ts` — Result3d: the end of battle in 3D (?result=3d), laid out like FFT The Ivalice Chronicles' victory screen, over the board's own buttons.
 - `src/client/result3d/result-view.ts` — what the 3D result shows from the result board (title, heroes' rows, spoils, highlight, buttons); pure.
 - `src/client/result3d/result-layout.ts` — where the 3D result sits (band, plates, rows, buttons) in either layout; pure.
@@ -192,12 +192,12 @@ parseGrid and withRamps (grid.ts).
 - `src/client/window3d/note3d.ts` — Note3d: a notice window in 3D (?note=3d): title, legend of marks, paragraphs, a figure and 1 to 3 plaques on a parchment sheet, over an unseen window of dialog.ts with the real buttons.
 - `src/client/window3d/note-view.ts` — where the 3D notice sheet sits and where its legend, paragraphs, figure and buttons go (noteLayout); pure.
 - `src/client/game/notices.ts` — the town's and the expedition's notice windows: the map's Information and opened chest, the expedition lost, a room that would not open.
-- `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), handed to the 3D look (setNote3d) or opened in HTML.
+- `src/client/note.ts` — noteWindow(): a notice window (the map's Information and opened chest, the expedition lost, a room that would not open, a save refused), drawn by the 3D look (window3d/note3d.ts).
 - `src/client/hud-3d-pieces.ts` — pieces3d(): builds the 3D pieces the HUD only feeds (bar, banner/Height/hints, "Execute?", result, Options and title, corner menu, Status) on the shared layer, and the screens that take their own window (Options, title, Status, speech box...); types only.
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — ToolsMenu: the battle HUD corner menu (undo, rotate, whole map, pixel size, fast battle, Options).
 - `src/client/tool-rows.ts` — the corner menu's rows (tool, glyph, name, key, switch) for the HTML menu and the 3D one; pure.
-- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) in a window of dialog.ts, or handed to the 3D look (setStatus3d).
+- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts) , drawn by the 3D look (window3d/status3d.ts).
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/spot-walk.ts` — nextSpot(): the nearest box in a direction, for windows whose arrows follow where things are on screen; pure.

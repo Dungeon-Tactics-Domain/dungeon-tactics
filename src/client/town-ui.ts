@@ -10,7 +10,6 @@ import { GROUP_KEY, type Group, parseGroup } from './group.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
 import { store } from './store.ts';
-import type { PartyView } from './town-party.ts';
 
 // a sheet's numbers as the battle counts them: Move and Jump in half tiles (Nov 15, Fernando: "everything in half
 // tiles"); the Tavern's detail box shows them
@@ -37,18 +36,6 @@ export function jumpHelp(): string {
 export const loadGroup = () => parseGroup(store.json(GROUP_KEY));
 export const saveGroup = (g: Group) => store.set(GROUP_KEY, JSON.stringify(g));
 export { openParty } from './town-party.ts';
-
-// The 3D looks of the town's windows (town3d/screens.ts, loaded by hud-skin.ts): while one is set, its opener hands the
-// window over to it; false from it (a page too small for the drawing) leaves the HTML window to open. `menu`, `gate`
-// and `soon` are the street's: the town menu, the gate's quest and a place still to come (town3d/street.ts)
-export const town3d: {
-  party?: (back?: () => void, view?: PartyView) => boolean;
-  shop?: (back?: () => void, tab?: 'buy' | 'sell', sel?: string) => boolean;
-  bar?: (back: () => void, sel?: string, said?: string) => boolean;
-  menu?: (extra?: Node, start?: string) => boolean; // `start`: the row the cursor opens on
-  gate?: (name: string) => boolean;
-  soon?: (name: string, says: string) => boolean;
-} = {};
 
 // the windows open beside the town menu (crawl.ts): every overlay but the menu's own
 export const sideWindows = <T>(overlays: Iterable<T>, menu: T) => [...overlays].filter((o) => o !== menu);

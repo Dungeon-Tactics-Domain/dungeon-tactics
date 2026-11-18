@@ -8,6 +8,7 @@ import { hintLine } from './glyphs.ts';
 import { LANG, t } from './i18n.ts';
 import { button, el } from './icons.ts';
 import { liveText } from './key-hints.ts';
+import { looks3d } from './looks3d.ts';
 import { modelOf } from './markers.ts';
 import { reducedMotion } from './motion.ts';
 import { portrait } from './portrait.ts';
@@ -89,17 +90,6 @@ export interface TalkOptions {
   title?: string; // strip above the box (place name)
   dark?: true; // nearly black screen behind (story opening)
 }
-
-// The box's 3D look (window3d/talk3d.ts, set while a 3D layer is up, the town's or the battle's): handed each
-// conversation's overlay, the narration's too, it draws the box over it; the box itself stays the one below, unseen.
-// Returns what takes the look back, unless another layer set its own since
-let look: ((overlay: HTMLElement) => void) | undefined;
-export const setTalk3d = (take: (overlay: HTMLElement) => void) => {
-  look = take;
-  return () => {
-    if (look === take) look = undefined;
-  };
-};
 
 export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<void> {
   // reduced motion: the face stays still, like the portrait hop, and each sentence shows whole
@@ -227,7 +217,7 @@ export function talk(lines: Line[], { title, dark }: TalkOptions = {}): Promise<
     // a click beside the box left the focus on the page, and Enter, Space and A no longer moved the conversation on
     overlay.addEventListener('mousedown', (e) => e.preventDefault());
     document.body.append(overlay);
-    look?.(overlay);
+    looks3d.talk?.(overlay); // the box drawn over it (window3d/talk3d.ts); the box below stays, unseen
     box.focus();
     show();
   });

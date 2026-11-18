@@ -1,9 +1,9 @@
-// A notice window drawn in 3D (?note=3d, the default; Fernando, Nov 18: the whole interface in the 3D look), a screen
+// A notice window drawn in 3D (Fernando, Nov 18: the whole interface in the 3D look), a screen
 // of the shared 3D layer (ui3d/layer.ts) in the Status sheet's look (status3d.ts): the game darkened, one parchment
 // sheet in the middle with the notice's title on its head, then a legend of marks (the expedition map's seals), its
 // paragraphs, a figure (the gold found) and one to three dark plaques for its buttons, the glove on the one in focus.
-//   State: nothing here decides anything. While this screen lives, noteWindow (note.ts) hands it each notice with the
-//   HTML window it stands for; note-view.ts says where everything goes. Every other screen of the layer stays out
+//   State: nothing here decides anything. While this screen lives, noteWindow (note.ts) hands it each notice;
+//   note-view.ts says where everything goes. Every other screen of the layer stays out
 //   while it shows (`solo`), as under the title and its sheets.
 //   Input: a window of dialog.ts, unseen, over the drawn sheet, holding the notice as real text and its real buttons,
 //   each over its plaque: Enter, a tap, Tab and the screen reader are the window's, Esc, the pad's B, a tap outside
@@ -18,8 +18,9 @@ import { NONE, Part, type Quad, type Rgba } from '../hints3d/hints3d.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { fill } from '../looks3d.ts';
 import { alpha, clamp01, move } from '../menu3d/column.ts';
-import { type Note, type NoteHtml, type NoteMark, setNote3d } from '../note.ts';
+import type { Note, NoteMark } from '../note.ts';
 import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { paintTexture, paperMaterial, quad, type Rgb } from '../ui3d/panel.ts';
@@ -46,12 +47,13 @@ export class Note3d implements Ui3dScreen {
   private readonly part = new Part();
   private readonly ring = new Part(); // around the plaque in focus
   private readonly paint = paintTexture();
+  private readonly release: () => void;
   private readonly hand = new Hand(this.deep);
   private readonly open = spring(0);
   private readonly color: Colors;
   private readonly gold: string;
   private paper?: Mesh;
-  private now?: { n: Note; html: NoteHtml; buttons: HTMLButtonElement[]; from: Element | null };
+  private now?: { n: Note; buttons: HTMLButtonElement[]; from: Element | null };
   private win?: { overlay: HTMLElement; close(): void };
   private L?: NoteLayout;
   private under?: Ui3dScreen; // what the layer showed alone before this
@@ -63,7 +65,7 @@ export class Note3d implements Ui3dScreen {
     this.flat.add(this.veil.group, this.part.group, this.ring.group);
     this.host.addEventListener('pointerover', this.point);
     layer.add(this, 'note');
-    setNote3d((n, html) => this.show(n, html));
+    this.release = fill('note', (n) => this.show(n));
   }
 
   // the cursor follows the focus and the mouse
@@ -76,15 +78,14 @@ export class Note3d implements Ui3dScreen {
     this.mark();
   };
 
-  // false: the sheet does not fit this page, the HTML window is the one to open
-  private show(n: Note, html: NoteHtml): boolean {
+  private show(n: Note) {
     this.hide();
     const leave = (then?: () => void) => () => {
       this.hide();
       then?.();
     };
     const buttons = n.buttons.map((b) => button('primary', b.label, leave(b.run)));
-    this.now = { n, html, buttons, from: document.activeElement };
+    this.now = { n, buttons, from: document.activeElement };
     this.host.replaceChildren(
       ...(n.legend?.length ? [el('ul', {}, ...n.legend.map(([, says]) => el('li', {}, says)))] : []),
       ...(n.text ?? []).map((p) => el('p', {}, p)),
@@ -106,7 +107,6 @@ export class Note3d implements Ui3dScreen {
     this.hand.reset();
     land(this.open, 0);
     this.open.to = this.part.want = this.veil.want = this.ring.want = 1;
-    return true;
   }
 
   private hide() {
@@ -308,13 +308,11 @@ export class Note3d implements Ui3dScreen {
   }
 
   dispose() {
-    const html = this.now?.html;
     if (this.now) this.now.from = null;
     this.hide();
-    setNote3d();
+    this.release();
     this.layer.remove(this);
     this.hand.dispose();
     this.paint.dispose();
-    if (html) html(); // the layer went (a lost context): the HTML window in its place
   }
 }

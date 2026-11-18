@@ -12,12 +12,13 @@
 //   Every page size takes it (Fernando, Nov 18: the interface is only 3D): the drawing shrinks, the rows keep a 44 px tap.
 import { Group } from 'three';
 import { dialog } from '../dialog.ts';
-import { type OptionsBoard, setOptions3d } from '../game/options.ts';
+import type { OptionsBoard } from '../game/options.ts';
 import { Part, type Quad } from '../hints3d/hints3d.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { keysShown, onShown } from '../key-hints.ts';
+import { fill } from '../looks3d.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { textPx } from '../ui3d/layout.ts';
 import { ease } from '../ui3d/spring.ts';
@@ -43,6 +44,7 @@ export class Options3d implements Ui3dScreen {
   readonly deep = new Group();
   // the board's controls under the drawing; it sits in the window, so hiding the windows hides the screen
   readonly host = el('div', { class: 'options3d-hits' });
+  private readonly release: () => void;
   private readonly color: Colors;
   private readonly hand = new Hand(this.deep);
   private readonly veil = new Part();
@@ -69,7 +71,7 @@ export class Options3d implements Ui3dScreen {
     this.host.addEventListener('focusin', () => this.touch());
     this.host.addEventListener('scroll', () => this.layer.wake(), { capture: true, passive: true });
     this.unhear = onShown(() => this.touch()); // the hints follow the input in use
-    setOptions3d((b) => this.show(b));
+    this.release = fill('options', (b) => this.show(b));
     layer.add(this, 'options');
   }
 
@@ -366,7 +368,7 @@ export class Options3d implements Ui3dScreen {
 
   dispose() {
     this.hide();
-    setOptions3d();
+    this.release();
     this.unhear();
     this.layer.remove(this);
     this.hand.dispose();

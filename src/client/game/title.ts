@@ -3,7 +3,6 @@
 // map behind it is just scenery).
 import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
-import { openDevMenu } from '../dev-menu.ts';
 import { DEV_SCENARIO } from '../dev-roster.ts';
 import { dialog } from '../dialog.ts';
 import { hintLine } from '../glyphs.ts';
@@ -11,6 +10,7 @@ import { KEYS } from '../hud-pieces.ts';
 import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { liveText } from '../key-hints.ts';
+import { looks3d } from '../looks3d.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
@@ -19,9 +19,9 @@ import { openSaves, savedCount, savedGames, startNewGame } from './saves-ui.ts';
 import { type Block, blocksHtml, showSheet } from './sheets.ts';
 
 // Developer menu (Nov 12). Starting saves the roster, erases the previous developer battle and reopens the game on it
-// (boot builds the scenario).
+// (boot builds the scenario). Drawn by flow3d/dev3d.ts.
 export function devMenu(onBack?: () => void) {
-  openDevMenu(() => {
+  looks3d.dev?.(() => {
     store.set(`dt:battle:${DEV_SCENARIO}`, '');
     location.search = `?scenario=${DEV_SCENARIO}`;
   }, onBack);
@@ -239,15 +239,6 @@ function howToPlay() {
   showSheet(d.overlay, { title, blocks });
 }
 
-// The 3D title (flow3d/title3d.ts) draws over the title's own window: it is told when one opens (the first opens
-// after the HUD's layer is built, entry.ts), and takes one already on screen when it arrives
-let title3d: ((overlay: HTMLElement) => void) | undefined;
-export function setTitle3d(take?: (overlay: HTMLElement) => void) {
-  title3d = take;
-  const open = document.querySelector<HTMLElement>('.overlay.main-title');
-  if (open) take?.(open);
-}
-
 // Title screen (night of Nov 12): the game opened straight into a battle without saying what it was. Since Nov 15 New
 // game and Continue lead to the town (crawl.ts), the dungeon loop's home; there is no world map or campaign. Since Nov 16
 // (Fernando: the interface on its FFT counterpart) the name over the art and a small plain command window under it, the
@@ -317,5 +308,5 @@ export function titleScreen() {
   ); // real title screen (Nov 13): does not close, and the map behind it is just scenery
   d.overlay.classList.add('main-title');
   d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
-  title3d?.(d.overlay);
+  looks3d.title?.(d.overlay); // drawn over this window, unseen under it (flow3d/title3d.ts)
 }

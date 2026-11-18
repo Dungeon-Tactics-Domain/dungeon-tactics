@@ -7,29 +7,15 @@ import { dialog } from '../dialog.ts';
 import { gauge, hint, stillFace } from '../hud-pieces.ts';
 import { t, unitName } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { looks3d } from '../looks3d.ts';
 import { reducedMotion } from '../motion.ts';
-import { effects3d } from '../screen-effects.ts';
 import { survivalCols } from '../survival.ts';
 import { type CardLine, tallyLine } from '../tally.ts';
 import { goHome, homeLabel } from './crawl.ts';
 
-// Victory: confetti falling for 2.5 s (DOM and CSS, no cost in the 3D frame); disappears by itself. With reduced motion, nothing.
+// Victory: slips of paper falling on the 3D layer for 2.5 s; disappear by themselves. With reduced motion, nothing.
 export function confetti() {
-  if (reducedMotion()) return;
-  // with the 3D result on, slips of paper on the 3D layer; the HTML result hides that layer with the HUD
-  if (board3d && effects3d()) return effects3d()?.confetti();
-  const colors = ['#f2c14e', '#4aa3ff', '#ff6b6b', '#7dffa8', '#ffffff'];
-  const box = el(
-    'div',
-    { class: 'confetti', 'aria-hidden': 'true' },
-    ...Array.from({ length: 60 }, (_, i) =>
-      el('i', {
-        style: `left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${Math.random() * 0.8}s;animation-duration:${1.6 + Math.random()}s`,
-      }),
-    ),
-  );
-  document.body.append(box);
-  setTimeout(() => box.remove(), 3000);
+  if (!reducedMotion()) looks3d.effects?.confetti();
 }
 
 // victory or defeat on the window itself: the overlay keeps the plain `result-overlay` class, which hides the battle HUD
@@ -93,43 +79,10 @@ export interface Board {
   onBack?: () => void;
 }
 
-// localhost ?result=3d (result3d/): while set, the 3D screen takes the board in place of the window below
-type Show3d = (board: Board) => { close(): void };
-let board3d: Show3d | undefined;
-export const setBoard3d = (show?: Show3d) => void (board3d = show);
-
-// End of battle after FFT's (Nov 16): no window over the darkened battle; the title on its own banner (wine on a
-// defeat), the party as a list of rows and the Result window beside it (under it on a narrow screen), which ends on the
-// commands. One board, not pages: the banner, the rows and the window come in one after the other (style.css), and one
-// Enter still goes on
+// End of battle after FFT's (Nov 16): the title on its banner, the party's rows and the Result window, drawn on the 3D
+// layer (result3d/); nothing once the context is lost, the warning covers the page then
 export function resultBoard(board: Board): { close(): void } {
-  if (board3d) return board3d(board);
-  const { won, title, cards, cols, note, actions, onBack } = board;
-  const d = dialog(
-    'result',
-    title,
-    [
-      el('ul', { class: 'hero-cards' }, ...cards.map(([h, line]) => heroCard(h, line, won))),
-      el(
-        'section',
-        { class: 'result-panel' },
-        el('div', { class: 'panel-head' }, t('Resultado', 'Result')),
-        cols.length ? el('dl', {}, ...cols.flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)])) : null,
-        el('p', {}, note),
-        el('div', { class: 'result-actions arrow-walk' }, ...actions), // the arrows walk the commands (dialog.ts)
-      ),
-    ],
-    { onBack },
-  );
-  d.overlay.querySelector('.dialog')!.classList.add('result-board');
-  outcome(d.overlay, won);
-  // a held Enter or Space (the way to speed up the enemy's turn) would press the primary and close the board unread
-  d.overlay.addEventListener('keydown', (e) => {
-    if (e.repeat && (e.key === 'Enter' || e.key === ' ')) e.preventDefault();
-  });
-  // Enter takes the primary (focus went to the X, and closing left the finished battle with no key to go on)
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
-  return d;
+  return looks3d.board?.(board) ?? { close() {} };
 }
 
 export interface BattleEnd {

@@ -1,9 +1,9 @@
 // The Status window of a battle: a unit's sheet (Game.status: side, life, pools, CT, speed, move, jump, attributes,
 // charge, facing, abilities) or an ability's facts (Game.abilitySheet), in a window of dialog.ts. With the 3D look
-// (window3d/status3d.ts, ?status=3d) the same sheet is drawn on the 3D layer instead; this file is all the rest of the
+// (window3d/status3d.ts) the sheet is drawn on the 3D layer, over its unseen body; this file is all the rest of the
 // client names.
-import { dialog } from './dialog.ts';
 import { el } from './icons.ts';
+import { looks3d } from './looks3d.ts';
 
 export interface StatusSheet {
   title: string;
@@ -16,12 +16,5 @@ export const statusBody = (s: StatusSheet) =>
     ? el('dl', { class: 'keys' }, ...s.rows.flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]))
     : el('p', {}, s.text ?? '');
 
-let show3d: ((s: StatusSheet) => void) | undefined;
-// the 3D look takes the window while it lives (status3d.ts); nothing gives it back to the HTML one
-export const setStatus3d = (show?: (s: StatusSheet) => void) => {
-  show3d = show;
-};
-export function statusWindow(s: StatusSheet) {
-  if (show3d) show3d(s);
-  else dialog('status', s.title, [statusBody(s)]);
-}
+// drawn by window3d/status3d.ts
+export const statusWindow = (s: StatusSheet) => looks3d.status?.(s);

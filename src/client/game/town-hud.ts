@@ -6,9 +6,10 @@ import { KEYS } from '../hud.ts';
 import { t } from '../i18n.ts';
 import { button, el, iconButton } from '../icons.ts';
 import { keysShown } from '../key-hints.ts';
+import { looks3d } from '../looks3d.ts';
 import { sfx } from '../sound.ts';
 import { openBar, openShop } from '../town-shop.ts';
-import { openParty, town3d } from '../town-ui.ts';
+import { openParty } from '../town-ui.ts';
 import { questGate } from './crawl.ts';
 
 // the battle HUD's pieces: the name in the tile info's corner, the prompt as the help line, the menu button in the
@@ -43,10 +44,5 @@ export function openPlace(pl: Place) {
   if (pl.id === 'shop') return openShop();
   if (pl.id === 'tavern') return openBar(() => {});
   const says = pl.soon ? t(...pl.soon) : '';
-  if (town3d.soon?.(name, says)) return;
-  const d = dialog('title', name, [
-    el('p', {}, says),
-    button('primary', t('Voltar à rua', 'Back to the street'), () => d.close()),
-  ]);
-  d.overlay.querySelector<HTMLButtonElement>('.primary')!.focus();
+  looks3d.soon?.(name, says); // drawn by town3d/street.ts
 }

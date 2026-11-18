@@ -3,13 +3,12 @@
 // the turning map, a short plain list of commands with the glove on the one in focus, the keys at the foot.
 //   State and input: the title's own window (game/title.ts) stays as it is, unseen, with its real buttons moved under
 //   the drawn ones by title-layout.ts: the arrows, Enter, the pad, a tap and a screen reader work as before. This
-//   screen only takes the open title (setTitle3d) and gives it back.
+//   screen only takes each title as it opens (looks3d.ts `title`).
 //   The title opens once the battle behind it and its layer are built, behind the loading cover (ready-gate.ts), so
-//   it is drawn in 3D from its first frame. It shrinks with the page down to a phone on its side, as Options do
-//   (options-layout.ts `fitsOptions`); a smaller or upright page and a lost WebGL context keep the HTML title.
+//   it is drawn in 3D from its first frame, at every page size.
 import { Group } from 'three';
-import { setTitle3d } from '../game/title.ts';
 import { Part, type Quad } from '../hints3d/hints3d.ts';
+import { fill } from '../looks3d.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { textPx } from '../ui3d/layout.ts';
 import { ease } from '../ui3d/spring.ts';
@@ -22,6 +21,7 @@ export class Title3d implements Ui3dScreen {
   readonly flat = new Group();
   readonly deep = new Group();
   private readonly color: Colors;
+  private readonly release: () => void;
   private readonly hand = new Hand(this.deep);
   private readonly fixed = new Part();
   private readonly band = new Part(); // under the command in focus
@@ -45,7 +45,7 @@ export class Title3d implements Ui3dScreen {
     this.color = colors(layer);
     this.flat.add(this.band.group, this.fixed.group);
     layer.add(this, 'title');
-    setTitle3d((overlay) => this.take(overlay));
+    this.release = fill('title', (overlay) => this.take(overlay));
   }
 
   private get rows() {
@@ -55,7 +55,7 @@ export class Title3d implements Ui3dScreen {
     return this.title?.querySelector<HTMLButtonElement>('.title-lang');
   }
 
-  // a title opened, or was already open when the layer came
+  // a title opened
   private take(overlay: HTMLElement) {
     this.drop();
     this.title = overlay;
@@ -65,7 +65,7 @@ export class Title3d implements Ui3dScreen {
     this.resize();
   }
 
-  // the HTML title again: its own look and places
+  // the title left: nothing drawn, its window's places back
   private drop() {
     if (!this.taken) return;
     this.taken = false;
@@ -170,10 +170,10 @@ export class Title3d implements Ui3dScreen {
   }
 
   dispose() {
-    this.drop(); // the layer went (a lost context): the HTML title is still there, seen again
+    this.drop();
     this.title?.removeEventListener('focusin', this.wake);
     this.title?.removeEventListener('walk', this.walk);
-    setTitle3d();
+    this.release();
     this.layer.remove(this);
     this.hand.dispose();
   }

@@ -5,15 +5,14 @@
 // parchment sheet as the town's counter, dark plates at the foot, the pointing glove.
 //   State and input: the window itself (game/sheets.ts `showSheet`) stays as it is, unseen, its real buttons moved
 //   under the drawn ones by sheet-layout.ts and its own box scrolling under the sheet: the arrows, Enter, Esc, the pad,
-//   a tap, the wheel and a screen reader work as before. This screen only takes the open window and gives it back.
+//   a tap, the wheel and a screen reader work as before. This screen only takes each window as it opens.
 //   What it draws comes from the window's data (a list's rows, a text's blocks), never from its DOM, except what a
 //   button says while armed (Delete's 2nd tap) and which control holds the focus.
-//   The developer menu is a form (selects, text and number fields) and stays the HTML window.
-//   A page too small for the layout (options-layout.ts `fits`), a window opened before the layer came and a lost
-//   WebGL context keep the HTML window.
+//   The developer menu, a form, has its own screen (dev3d.ts).
 import { Group, type Mesh } from 'three';
-import { type Sheet, setSheet3d } from '../game/sheets.ts';
+import type { Sheet } from '../game/sheets.ts';
 import { NONE, Part } from '../hints3d/hints3d.ts';
+import { fill } from '../looks3d.ts';
 import { alpha } from '../menu3d/column.ts';
 import type { Faces } from '../ui3d/face.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -30,6 +29,7 @@ export class Sheet3d implements Ui3dScreen {
   readonly flat = new Group();
   readonly deep = new Group();
   private readonly color: Colors;
+  private readonly release: () => void;
   private readonly hand = new Hand(this.deep);
   private readonly paint = paintTexture();
   private readonly faces: Faces = new Map();
@@ -59,7 +59,7 @@ export class Sheet3d implements Ui3dScreen {
     this.color = colors(layer);
     this.flat.add(this.veil.group, this.band.group, this.band2.group, this.fixed.group, this.mark.group);
     layer.add(this, 'sheets');
-    setSheet3d((overlay, sheet) => this.take(overlay, sheet));
+    this.release = fill('sheet', (overlay, sheet) => this.take(overlay, sheet));
   }
 
   // the window's own parts
@@ -76,7 +76,7 @@ export class Sheet3d implements Ui3dScreen {
     return [...(this.overlay?.querySelectorAll<HTMLButtonElement>('.camp-list > button') ?? [])];
   }
 
-  // a window opened, or was already open when the layer came
+  // a window opened
   private take(overlay: HTMLElement, sheet: Sheet) {
     this.drop();
     this.ac.stop.abort();
@@ -152,7 +152,7 @@ export class Sheet3d implements Ui3dScreen {
     els[at < 0 ? els.length - 1 : neighbour(boxes, at, way)]?.focus();
   }
 
-  // the HTML window again: its own look and places
+  // the window left: nothing drawn, its places back
   private drop() {
     if (!this.taken) return;
     this.taken = false;
@@ -341,10 +341,10 @@ export class Sheet3d implements Ui3dScreen {
   }
 
   dispose() {
-    this.drop(); // the layer went (a lost context): the HTML window is still there, seen again
+    this.drop();
     this.watch.disconnect();
     this.ac.stop.abort();
-    setSheet3d();
+    this.release();
     this.layer.remove(this);
     this.hand.dispose();
     this.paint.dispose();

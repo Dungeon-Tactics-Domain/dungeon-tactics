@@ -4,13 +4,13 @@
 // the places as seals joined by their ways, the picked place's text beside it.
 //   State and input: the map's own window (game/expedition-map.ts) stays as it is, unseen, its places and commands
 //   moved under the drawn ones by map-layout.ts: arrows, Enter, the pad, a tap and a screen reader work as before.
-//   This screen takes the open map (setMap3d) with what to draw as plain data, and gives it back: a page under the
-//   town windows' smallest scale, a lost context or ?map=html keep the HTML map.
+//   This screen takes each map as it opens (looks3d.ts `map`), with what to draw as plain data.
 import { Group, type Mesh, type ShaderMaterial } from 'three';
 import { type Colors, colors, Hand, label, lift, put, rgba } from '../flow3d/draw.ts';
-import { type MapView, setMap3d } from '../game/expedition-map.ts';
+import type { MapView } from '../game/expedition-map.ts';
 import { Part } from '../hints3d/hints3d.ts';
 import { t } from '../i18n.ts';
+import { fill } from '../looks3d.ts';
 import type { Icon } from '../menu3d/column.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { type Box, SCREEN } from '../ui3d/layout.ts';
@@ -29,6 +29,7 @@ export class Map3d implements Ui3dScreen {
   private readonly tone: Tones;
   private readonly pen: Pen;
   private readonly paint = paintTexture();
+  private readonly unfill: () => void;
   private readonly hand = new Hand(this.deep);
   // back to front: the darkened town and its lines, the plaques, the one in focus, what lies on the sheets
   private readonly back = new Part();
@@ -65,7 +66,7 @@ export class Map3d implements Ui3dScreen {
     const parts = [this.back, this.cmd, this.focus, this.ways, this.halo, this.marks, this.party, this.info, this.help];
     this.flat.add(...parts.map((p) => p.group));
     layer.add(this, 'map');
-    setMap3d((v) => this.take(v));
+    this.unfill = fill('map', (v) => this.take(v));
   }
 
   private get rows() {
@@ -362,8 +363,8 @@ export class Map3d implements Ui3dScreen {
   }
 
   dispose() {
-    this.release(); // the layer went (a lost context): the HTML map is still there, seen again
-    setMap3d();
+    this.release();
+    this.unfill();
     this.layer.remove(this);
     this.hand.dispose();
     this.paint.dispose();

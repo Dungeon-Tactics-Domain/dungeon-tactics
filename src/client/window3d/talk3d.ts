@@ -12,7 +12,7 @@
 import { Group, type Mesh, ShaderMaterial, Vector2 } from 'three';
 import { colors, label, lift, rgba } from '../flow3d/draw.ts';
 import { Part, type Quad } from '../hints3d/hints3d.ts';
-import { setTalk3d } from '../talk.ts';
+import { fill } from '../looks3d.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import type { Box } from '../ui3d/layout.ts';
 import { paintTexture, paperMaterial, QUAD_VERT, quad, type Rgb } from '../ui3d/panel.ts';
@@ -56,7 +56,7 @@ export class Talk3d implements Ui3dScreen {
     this.flat.add(this.fixed.group);
     this.fixed.want = 1;
     layer.add(this, 'talk');
-    this.release = setTalk3d((overlay) => this.take(overlay));
+    this.release = fill('talk', (overlay) => this.take(overlay));
   }
 
   // a conversation opened: its box goes unseen and is drawn here until it closes
@@ -256,7 +256,7 @@ export class Talk3d implements Ui3dScreen {
 
   dispose() {
     this.release(); // only its own hook: another layer's box may have taken the place since
-    this.clear(); // the layer went (a lost context): a box on screen is the HTML one again
+    this.clear();
     this.layer.remove(this);
     this.paint.dispose();
   }

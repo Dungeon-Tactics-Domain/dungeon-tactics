@@ -15,8 +15,9 @@ import { NONE, Part, type Quad, type Rgba } from '../hints3d/hints3d.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
+import { fill } from '../looks3d.ts';
 import { alpha, clamp01, move } from '../menu3d/column.ts';
-import { type StatusSheet, setStatus3d, statusBody, statusWindow } from '../status-window.ts';
+import { type StatusSheet, statusBody } from '../status-window.ts';
 import { capMeshes, capRun, capsWidth } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { paintTexture, paperMaterial, quad } from '../ui3d/panel.ts';
@@ -37,6 +38,7 @@ export class Status3d implements Ui3dScreen {
   private readonly veil = new Part();
   private readonly part = new Part();
   private readonly paint = paintTexture();
+  private readonly release: () => void;
   private readonly open = spring(0);
   private paper?: Mesh;
   private sheet?: StatusSheet;
@@ -45,7 +47,7 @@ export class Status3d implements Ui3dScreen {
 
   constructor(private readonly layer: Ui3dLayer) {
     this.flat.add(this.veil.group, this.part.group);
-    setStatus3d((s) => this.show(s));
+    this.release = fill('status', (s) => this.show(s));
     layer.add(this, 'status');
   }
 
@@ -172,11 +174,9 @@ export class Status3d implements Ui3dScreen {
   }
 
   dispose() {
-    const sheet = this.sheet;
     this.hide();
-    setStatus3d();
+    this.release();
     this.layer.remove(this);
     this.paint.dispose();
-    if (sheet) statusWindow(sheet);
   }
 }
