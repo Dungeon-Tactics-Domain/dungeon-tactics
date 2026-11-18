@@ -158,6 +158,8 @@ export function padDialog(a: KeyAction): boolean {
   if (a.k === 'cancel' || a.k === 'help')
     dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
   else if (a.k === 'confirm') (document.activeElement as HTMLElement | null)?.click();
+  // the shoulders turn a window's pages where it has them (the 3D Options' categories, flow3d/options3d.ts)
+  else if (a.k === 'rotate') overlay.dispatchEvent(new CustomEvent('shoulder', { detail: a.dir }));
   else if (a.k === 'cursor' && overlay.matches('.spot-walk')) spotWalk(overlay, a.dir);
   else if (a.k === 'cursor' && walked(overlay, a.dir)) return true;
   else if (a.k === 'cursor' && range && (a.dir === 'left' || a.dir === 'right')) {

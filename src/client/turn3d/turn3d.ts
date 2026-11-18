@@ -20,7 +20,7 @@ import { QUAD } from '../ui3d/panel.ts';
 import { ease, land, type Spring, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
 import { cardMaterial, hex, LEFT, PAD, RIGHT, sharedUniforms } from './card.ts';
-import { matchRows, type Queue, type QueueCard, queueCards, statsLayout } from './queue-view.ts';
+import { listFloor, matchRows, type Queue, type QueueCard, queueCards, statsLayout } from './queue-view.ts';
 
 const INNER = 40.2 / 43; // the picture's width over its height inside the frame: how a face is cropped
 const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
@@ -112,6 +112,7 @@ export class Turn3d implements Ui3dScreen {
     this.shared.uS.value = s;
     this.shared.uH.value = layer.h;
     css.setProperty('--t3', String(s));
+    css.setProperty('--t3f', String(listFloor(s)));
     css.setProperty('--turn-x', `${at.x}px`);
     css.setProperty('--turn-y', `${at.y}px`);
     css.setProperty('--turn-b', `${layer.h - at.y - at.h}px`);

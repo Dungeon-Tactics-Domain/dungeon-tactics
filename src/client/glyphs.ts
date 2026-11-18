@@ -79,6 +79,7 @@ export const ACTIONS = {
   turns: { keys: ['PgUp', 'PgDn'], pad: ['rstick'] }, // scroll the turn list
   move: { keys: ['↑', '↓', '←', '→'], pad: ['dpad'] }, // the cursor, a menu's focus
   sides: { keys: ['←', '→'], pad: ['dpadH'] }, // a value, a page
+  tabs: { keys: ['Q', 'E'], pad: ['lb', 'rb'] }, // the category before and after, in Options (flow3d/options3d.ts)
   walk: { keys: ['W', 'A', 'S', 'D'], pad: ['lstick'] }, // the town
   wait: { keys: ['P'], pad: [] },
   face: { keys: ['T'], pad: [] },

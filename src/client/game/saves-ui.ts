@@ -4,6 +4,7 @@ import { dialog, secondTap } from '../dialog.ts';
 import { stillFace } from '../hud-pieces.ts';
 import { LOCALE, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { noteWindow } from '../note.ts';
 import { byPlayed, deleteSlot, loadSlot, newGame, readSaves, type SlotSummary, summary } from '../saves.ts';
 import { store } from '../store.ts';
 import { goHome, savedRoom } from './crawl.ts';
@@ -11,13 +12,19 @@ import { showSheet } from './sheets.ts';
 
 // through store, so a blocked browser storage still plays in this tab's memory like every other save
 const live = { getItem: store.get, setItem: store.set, saved: store.saved };
-const full = () =>
-  alert(
-    t(
-      'O navegador está sem espaço para salvar. Apague um jogo salvo e tente de novo.',
-      'The browser has no room left to save. Delete a saved game and try again.',
-    ),
+// a refused save, in a notice window (note.ts; a native alert until Nov 18); `then`: what follows once it is read
+function full(then: () => void = () => {}) {
+  const says = t(
+    'O navegador está sem espaço para salvar. Apague um jogo salvo e tente de novo.',
+    'The browser has no room left to save. Delete a saved game and try again.',
   );
+  noteWindow({
+    title: t('Sem espaço para salvar', 'No room left to save'),
+    text: [says],
+    buttons: [{ label: t('Entendi', 'Got it'), run: then }],
+    onBack: then,
+  });
+}
 
 export const savedGames = () => readSaves(live).slots.map(summary).sort(byPlayed);
 
@@ -28,8 +35,7 @@ export const savedCount = (n: number) =>
 // its own page (?home, game/town.ts), not a window over the title's backdrop battle
 export function startNewGame(onBack: () => void) {
   if (!newGame(live, Date.now())) {
-    full();
-    return onBack();
+    return full(onBack);
   }
   goHome();
 }

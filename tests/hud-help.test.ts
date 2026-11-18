@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Screen } from '../src/client/command.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { backKind, confirmParts, helpText, runPick } from '../src/client/hud-menus.ts';
+import { backKind, confirmParts, helpText, runPick, undoShown } from '../src/client/hud-menus.ts';
 import { freshUi, highlights, hoverTile, selectMode, tapTile, type Ui } from '../src/client/interaction.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
@@ -52,6 +52,18 @@ describe('Back button', () => {
     expect(backKind(b, { k: 'menu', index: 1 }, true)).toBe('undo');
     b.act('strike', { x: 2, y: 1 }); // the move drew a counter: nothing to undo for free
     expect(backKind(b, { k: 'menu', index: 2 }, true)).toBeNull();
+  });
+
+  // Fernando, Nov 18: an Undo button on the battle screen
+  it('Undo shows whenever the rules have a step to take back, on the hero turn only', () => {
+    const b = duel();
+    expect(undoShown(b, true)).toBe(false); // nothing done yet
+    b.move({ x: 2, y: 2 });
+    expect(undoShown(b, true)).toBe(b.canUndo);
+    expect(undoShown(b, true)).toBe(true);
+    expect(undoShown(b, false)).toBe(false); // animation or enemy turn
+    b.undo();
+    expect(undoShown(b, true)).toBe(false);
   });
 });
 

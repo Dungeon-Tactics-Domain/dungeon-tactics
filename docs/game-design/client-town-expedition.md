@@ -56,7 +56,7 @@ Nov 13, delivery 5 of [towns-party-equipment.md](towns-party-equipment.md).
 
 - Pure rules in `group.ts` (`dt:party`): the 4 from the story never leave; recruits join through the town's Tavern (`RECRUIT_COST`, cap `GROUP_MAX` 8) and are dismissed on the sheet (Dismiss asks a 2nd tap since Nov 16, Fernando's grill); anyone switches among the classes of `JOBS` (the 4 starting ones and the Lancer since Nov 13, with the barbarian's character until it gets its own); up to 4 go to battle (`deployed`), never none: the last one going has Leave at camp off, with the reason under it.
 - `heroesFor` builds who fights, with the whole kit of the class and the equipment kept by member id. The Tavern is `openBar` in `town-ui.ts`.
-- **The rest of the town in 3D** (`town3d/street.ts`, `hud3d.ts`, `talk3d.ts`, Nov 17, Fernando: every piece of the
+- **The rest of the town in 3D** (`town3d/street.ts`, `hud3d.ts`, `window3d/talk3d.ts`, Nov 17, Fernando: every piece of the
   interface in the 3D look; default, `?townmenu=html`, `?townhud=html`, `?talk=html` or `?ui=html` bring the HTML back):
   the town menu (dark rows down the left with the glove, after the reference's list of places, the town's box beside
   them, the help band saying the row in focus), the gate's quest and a place still to come (plaques and a parchment

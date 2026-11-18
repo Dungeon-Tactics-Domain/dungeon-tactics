@@ -3,7 +3,6 @@ import { type Place, TOWN } from '../../content/crawl/town.ts';
 import { dialog } from '../dialog.ts';
 import { keysText } from '../glyphs.ts';
 import { KEYS } from '../hud.ts';
-import { loadTownSkin } from '../hud-skin.ts';
 import { t } from '../i18n.ts';
 import { button, el, iconButton } from '../icons.ts';
 import { keysShown } from '../key-hints.ts';
@@ -32,7 +31,6 @@ export function townHud(prompt: HTMLElement, balloon: HTMLElement, menu: () => v
       ),
     ),
   );
-  void loadTownSkin(hud); // the windows' 3D look (hud-skin.ts)
   return hud;
 }
 
