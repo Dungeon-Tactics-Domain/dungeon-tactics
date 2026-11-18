@@ -84,15 +84,19 @@ export class Options3d implements Ui3dScreen {
   private show(board: OptionsBoard) {
     this.hide();
     this.board = board;
-    // a category is open while the cursor is on it. Enter, Space and the pad's A (a click with no pointer) go into its
-    // rows; a tap or a click only opens it, for the next one to land on a row
+    // the arrows, the pad and a tap open the category they land on; Tab only stops on it (Nov 18: opening on focus kept
+    // Tab from ever reaching the rows of any but the last), and Enter, Space or the pad's A (a click with no pointer)
+    // open it and go into its rows
     this.tabs = board.sections.map((sec, i) =>
-      button('secondary', sec.title, (e) => void ((e as MouseEvent).detail ? this.tabs[i].focus() : this.go('right')), {
-        onfocus: () => {
+      button(
+        'secondary',
+        sec.title,
+        (e) => {
           this.pick(i);
-          board.help.textContent = sec.help;
+          (e as MouseEvent).detail ? this.tabs[i].focus() : this.go('right');
         },
-      }),
+        { onfocus: () => void (board.help.textContent = sec.help) },
+      ),
     );
     // a full screen has no outside to tap and no ✕: its own way back, the last of the commands
     this.buttons = [...board.actions, button('secondary', t('Voltar', 'Back'), () => this.win?.close())];
@@ -120,6 +124,7 @@ export class Options3d implements Ui3dScreen {
     this.open = 0;
     this.cat = -1;
     this.layer.solo = this; // the battle's own 3D pieces stay out, as its HUD does
+    this.pick(0);
     this.tabs[0].focus();
     this.hand.reset();
     return { close: () => this.win?.close() };
@@ -146,16 +151,17 @@ export class Options3d implements Ui3dScreen {
     if (!at) this.tabs[this.cat]?.focus();
     else if (at.zone === 'row' && way !== 'up' && way !== 'down' && document.activeElement?.querySelector('.opt-value'))
       return false;
-    else
-      this.focus(
-        optionsWalk(
-          L,
-          at,
-          way,
-          this.cat,
-          this.buttons.map((b) => b.disabled),
-        ),
+    else {
+      const to = optionsWalk(
+        L,
+        at,
+        way,
+        this.cat,
+        this.buttons.map((b) => b.disabled),
       );
+      if (to.zone === 'cat') this.pick(to.i);
+      this.focus(to);
+    }
     return true;
   }
   private leave() {
@@ -168,8 +174,8 @@ export class Options3d implements Ui3dScreen {
     const zone = this.spot()?.zone ?? 'cat',
       to = optionsTab(this.cat, this.tabs.length, dir);
     if (to === this.cat) return;
-    if (zone === 'cat') return this.tabs[to].focus();
     this.pick(to);
+    if (zone === 'cat') return this.tabs[to].focus();
     if (zone === 'row') this.focus({ zone, i: 0 });
   }
   // opens a category: only its rows stay in the list, from the top
