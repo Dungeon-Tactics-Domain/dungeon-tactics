@@ -13,7 +13,7 @@ import { Battle } from '../src/shared/battle/battle.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 
-// The end of battle in 3D behind a localhost flag (?result=3d; Nov 16): the pure parts behind the drawing, which is
+// The end of battle in 3D (Nov 16): the pure parts behind the drawing, which is
 // checked on the bench shots (docs/sandbox.md)
 const hero = (def: string, hp: number, dmg = 0, kills = 0, mvp = false): EndHero => ({
   id: `h-${def}`,

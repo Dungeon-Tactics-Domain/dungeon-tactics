@@ -1,4 +1,4 @@
-// The speech box drawn in 3D (?talk=3d, the default), a screen of the 3D layer of the town and of the battle alike,
+// The speech box drawn in 3D, a screen of the 3D layer of the town and of the battle alike,
 // after the dialogue of FFT: The Ivalice Chronicles (labs refs/fft-ivalice/66 to 68): a parchment box with the
 // speaker's name on a dark plaque over its top left corner, the words in the paper's ink, the ▼ when the sentence is
 // out. The opening narration (`dark`) has no box: the page goes to night under the Beacon's blue glow, which breathes
@@ -209,21 +209,12 @@ export class Talk3d implements Ui3dScreen {
         fixed.text(m, r.x + r.w / 2, r.y + r.h / 2);
       };
       // the speaker's name: a dark plaque over the box's top left corner, where the HTML tab stands
-      // the face's frame: the HTML one's colours (style.css .face-sheet); the Beacon, with no picture, its gem
+      // the face's frame on the result's plate and line (the --paper tokens it read went with the HTML look, Nov 18);
+      // the Beacon, with no picture, its gem
       if (at) {
-        const css = getComputedStyle(document.documentElement),
-          k = L.face / 132,
+        const k = L.face / 132,
           def = this.faceEl?.dataset.def ?? '';
-        if (faceOf(def) || modelOf(def))
-          fixed.box(
-            at.x,
-            at.y,
-            at.w,
-            at.h,
-            0,
-            rgba(css.getPropertyValue('--paper-hi').trim()),
-            rgba(css.getPropertyValue('--paper-edge').trim()),
-          );
+        if (faceOf(def) || modelOf(def)) fixed.box(at.x, at.y, at.w, at.h, 0, rgba(c.plate), rgba(c.line));
         else fixed.box(at.x + 18 * k, at.y + 18 * k, 96 * k, 96 * k, 48 * k, rgba('#2bb8d6'), rgba('#bff7ff'));
       }
       if (L.name) plate(L.name, who, 30, c.title);

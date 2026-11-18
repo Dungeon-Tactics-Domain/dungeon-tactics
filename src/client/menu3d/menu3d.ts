@@ -1,10 +1,11 @@
-// The command menu drawn in 3D (localhost ?menu3d or ?menu3d=pixel, or `menu3d` in a sandbox spec; Fernando, Nov 16), a
+// The command menu drawn in 3D (Fernando, Nov 16; through the pixel filter with ?pixel=1 or a spec's `uiPixel`), a
 // screen of the shared 3D layer (ui3d/layer.ts): the menu, the abilities submenu that opens over it as a cascade, the
 // pointing glove and the ability sheet, on the reference's places (menu-layout.ts); art, text and models are our own.
 //   State: nothing here decides anything. The HUD hands it each turn screen; menu-view.ts turns that into what to show
 //   and what changed, menu-layout.ts says where, and this file draws and moves it.
 //   Input: its own. One transparent button over each drawn row and over each half of the sheet's foot (the page
-//   arrows), placed from the same layout; keys and gamepad stay with the turn (hero-turn.ts).
+//   arrows), placed from the same layout, a `menu` Tab walks and a screen reader names; the other keys and the gamepad
+//   stay with the turn (hero-turn.ts).
 //   Motion: a closed column keeps what it last showed and runs on its springs until it settles: the cascade opens and
 //   closes the same way backwards.
 import { Group } from 'three';
@@ -69,7 +70,10 @@ export class Menu3d implements Ui3dScreen {
     }
     main.want = next ? 1 : 0;
     sub.want = sheet.want = next?.sub ? 1 : 0;
+    const tabbed = this.host.contains(document.activeElement);
     this.hits();
+    // a focus Tab brought in follows the game's (arrows, a pad) and outlives the buttons being rebuilt (the submenu)
+    if (tabbed && next) (this.host.children[next.sub ? next.subIndex : next.index] as HTMLElement | undefined)?.focus();
     this.layer.wake();
   }
 
@@ -104,10 +108,14 @@ export class Menu3d implements Ui3dScreen {
     if (key === this.hitKey) return;
     this.hitKey = key;
     this.host.replaceChildren();
-    if (!m || !at) return;
+    // a menu for the screen reader and for Tab (Nov 18), named by its column's head
+    if (!m || !at) return void ['role', 'aria-label'].forEach((k) => this.host.removeAttribute(k));
+    this.host.setAttribute('role', 'menu');
+    this.host.setAttribute('aria-label', m.sub ? t('Habilidades', 'Abilities') : m.head);
     const hit = (b: Box, name: string, off: boolean, click: () => void, over?: () => void) => {
-      const e = el('button', { type: 'button', tabIndex: -1, disabled: off, 'aria-label': name, onclick: click });
-      if (over) e.addEventListener('pointerenter', over);
+      const e = el('button', { type: 'button', role: 'menuitem', disabled: off, 'aria-label': name, onclick: click });
+      // the mouse or Tab on a row moves the drawn focus there
+      if (over) for (const ev of ['pointerenter', 'focus']) e.addEventListener(ev, over);
       Object.assign(e.style, { left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`, height: `${b.h}px` });
       this.host.append(e);
     };

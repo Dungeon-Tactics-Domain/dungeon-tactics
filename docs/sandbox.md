@@ -204,7 +204,7 @@ The Mechanics lab watches the game's own animation on its page (`localhost:5190`
   history: `rewind` in `sandbox-spec.ts`), shows the turn menu, applies the camera again and plays again, forever. A step
   that cannot be played stops the loop with its problem. The CLI drops `loop` and plays the steps once itself.
 - **`timing`** overrides `TIMING` for this page only; an unknown name or a value not above 0 (up to 10000) is a spec
-  error. `float` is also written in the CSS (`.float`), so it only changes when the number leaves the DOM.
+  error. `float` sets how long a floating number holds, read by its 3D drawing (`hints3d/effects3d.ts`) and its removal (`scene/float-numbers.ts`).
 - **`speed`, `pause()`, `step()`, `resume()`** act on the battle clock (`bench` in `timing.ts`, read by `speed()`): walks,
   jumps, strikes, waits, the hit-stop, the body animations and the water. They do not slow or stop the camera's easing,
   the damage numbers (CSS) or the music. `step()` runs exactly one frame of it (the frame's real `dt` times the speed).

@@ -45,7 +45,7 @@ export interface HudActions {
   answer(yes: boolean): void; // the "Execute?" preview: Confirm or Back
   lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
   page(dir: 1 | -1): void; // the ability sheet's arrows (menu3d/)
-  hover(list: 'menu' | 'abilities', index: number): void; // ?menu3d: the mouse over a row moves the focus there
+  hover(list: 'menu' | 'abilities', index: number): void; // the mouse (or Tab) over a 3D menu row moves the focus there
   rotate(dir: 1 | -1): void;
   recenter(): void;
   pixel(): void;
@@ -69,7 +69,11 @@ export interface HudView {
 
 export class BattleHud {
   private readonly tile = el('div', { class: 'panel tile-info', 'aria-live': 'off' });
-  private readonly queue = el('ol', { class: 'panel queue', 'aria-label': t('Ordem dos turnos', 'Turn order') });
+  private readonly queue = el('ol', {
+    class: 'panel queue',
+    'aria-label': t('Ordem dos turnos', 'Turn order'),
+    tabIndex: -1, // a scroller is a Tab stop of its own in Chrome; PgUp and PgDn scroll it, the 3D list draws no focus
+  });
   private readonly tools: ToolsMenu;
   setFast(on: boolean) {
     this.tools.setFast(on);

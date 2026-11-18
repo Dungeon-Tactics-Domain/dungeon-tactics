@@ -1,4 +1,4 @@
-// The "Execute?" window drawn in 3D (localhost ?confirm=3d or the ?ui=3d preset; Fernando, Nov 16: the strike's
+// The "Execute?" window drawn in 3D (Fernando, Nov 16: the strike's
 // confirmation in the look of the 3D battle, beside the character as today), a screen of the shared 3D layer
 // (ui3d/layer.ts): a dark slate box like the banner's pill, the title, the notes (what it spends, the charge, a counter
 // owed) and the two choices, the one in focus lit. The strike's numbers stay on the preview plate (bar3d/), which shows
@@ -6,7 +6,8 @@
 //   Layout and input: where each piece sits is confirm-layout.ts' (pure). The HTML window (hud-menus.ts
 //   renderConfirm) stays under the drawing, unseen (style.css .hud.confirm3d) and seated from the same numbers: its
 //   real buttons take the mouse and the taps, and BattleHud.place moves it beside the character, which the drawing
-//   follows. Keys and the gamepad stay with the turn (hero-turn.ts). What it says comes from the same pure
+//   follows. Tab walks those buttons, the drawn focus with it; the other keys and the gamepad stay with the turn
+//   (hero-turn.ts). What it says comes from the same pure
 //   confirmParts as the HTML window.
 import { Group } from 'three';
 import { LINE, NONE, Part, PILL, type Quad, type Rgba, WHITE } from '../hints3d/hints3d.ts';
@@ -39,6 +40,8 @@ export class Confirm3d implements Ui3dScreen {
     this.flat.add(this.part.group);
     layer.root.classList.add('confirm3d');
     layer.add(this, 'confirm');
+    // Tab on its buttons moves the drawn focus with it (Nov 18); leaving gives it back to the game's
+    for (const ev of ['focusin', 'focusout']) host.addEventListener(ev, () => queueMicrotask(() => this.resize()));
   }
 
   // Called by the HUD after it drew the HTML window; `open`: a hero's turn with nothing playing
@@ -50,6 +53,8 @@ export class Confirm3d implements Ui3dScreen {
     this.layer.wake();
     if (!part.want || s.k !== 'confirm') return;
     const parts = confirmParts(v.battle, s);
+    const tabbed = [...this.host.querySelectorAll('.yes-no .item')].indexOf(document.activeElement as Element);
+    if (tabbed >= 0) parts.choices.forEach((c, i) => (c.focus = i === tabbed));
     const { dpr, theme } = this.layer,
       s1 = this.layer.s;
     // the window's pieces, from its own top left: the head, each note, each choice

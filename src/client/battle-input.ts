@@ -1,8 +1,9 @@
 // Battle input: the keyboard, the mouse or touch on the canvas and the gamepad, all sent to the Game as the same actions.
 import { padDialog } from './dialog.ts';
 import { emptyMemory, padActions } from './gamepad.ts';
+import { tabbed } from './icons.ts';
 import { padSeen } from './key-hints.ts';
-import { type KeyAction, keyAction } from './keyboard.ts';
+import { type KeyAction, keyAction, pageKeeps } from './keyboard.ts';
 import type { BattleScene } from './scene.ts';
 import { pace } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
@@ -36,8 +37,12 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     if (!a) return;
     // confirm only on press: holding Enter to speed up the enemy must not pick the hero's 1st command by accident
     if (e.repeat && a.k === 'confirm') return void e.preventDefault();
-    e.preventDefault(); // Tab does not jump between buttons, Space does not scroll, F3 does not open the browser search
-    (document.activeElement as HTMLElement | null)?.blur();
+    // the 3D menu's buttons and "Execute?"'s, when one is open (menu3d.ts hits, hud-menus.ts renderConfirm)
+    if (pageKeeps(a, !!document.querySelector('.menu3d-hits button, .hud .confirm:not([hidden]) button'), tabbed()))
+      return;
+    e.preventDefault(); // on the map Tab does not jump between buttons, Space does not scroll, F3 does not open the browser search
+    // a focus Tab put on the 3D menu stays, and follows the game's (Menu3d.update)
+    if (!document.activeElement?.closest('.menu3d-hits')) (document.activeElement as HTMLElement | null)?.blur();
     act.key(a);
   });
   // holding Enter or Space fast-forwards the battle (timing.ts); switching tabs releases it, otherwise it stayed fast-forwarded with no key held

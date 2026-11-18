@@ -11,7 +11,7 @@ import { initialState } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
-// The 3D combat bar behind ?bar=3d (Nov 16): the pure parts behind the drawing. The drawing itself is checked on the
+// The 3D combat bar (Nov 16): the pure parts behind the drawing. The drawing itself is checked on the
 // bench shots (scripts/sandbox/bench/bar3d*.json)
 const duel = (hp?: number) =>
   new Battle(

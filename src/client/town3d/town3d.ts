@@ -1,4 +1,4 @@
-// The town's windows drawn in 3D (Shop, Tavern, Party; ?shop=3d, ?party=3d, the default; Fernando, Nov 17), one
+// The town's windows drawn in 3D (Shop, Tavern, Party; Fernando, Nov 17), one
 // screen of the shared 3D layer (ui3d/layer.ts) for all of them, after FFT: The Ivalice Chronicles' menus: the town
 // darkened, parchment panels, dark plaques down the left edge and the pointing glove.
 //   State: nothing here decides anything. A window hands it a page (page.ts: what to draw and the buttons, in px of
@@ -321,11 +321,11 @@ export class Town3d implements Ui3dScreen {
       b.setAttribute('aria-label', h.name);
       b.toggleAttribute('aria-current', !!h.picked);
     }
-    // the cursor: where asked, else where it was, else the picked row, else the first button that can be pressed
+    // the cursor: where asked, else where it was, else the picked row or the first the arrows walk, else any live one
     const live = (id?: string) => (id && !this.buttons.get(id)?.disabled ? this.buttons.get(id) : undefined);
     const here = live(focus) ?? (focus === undefined && inside ? live(this.focus) : undefined);
-    const to =
-      here ?? live(page.hits.find((h) => h.picked && h.on === 'paper')?.id) ?? live(page.hits.find((h) => !h.off)?.id);
+    const pick = page.hits.find((h) => h.picked && h.on === 'paper') ?? page.hits.find((h) => !h.off && !h.out);
+    const to = here ?? live(pick?.id) ?? live(page.hits.find((h) => !h.off)?.id);
     if (to && to !== document.activeElement) {
       to.focus();
       land(this.gy, Number.NaN); // a new page: the glove lands where the cursor is

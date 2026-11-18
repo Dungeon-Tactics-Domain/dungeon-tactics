@@ -523,7 +523,6 @@ describe('3D interface: bench scenes and boundaries', () => {
       'town3d/town3d': [3, 'colour; scroll: whether the open list has more under its foot'],
       'town3d/map3d': [1, 'colour'],
       'window3d/note3d': [1, 'colour'],
-      'window3d/talk3d': [1, "colour: the face's frame (--paper-hi, --paper-edge, as the HTML face)"],
     };
     const found: Record<string, number> = {};
     for (const [path, text] of Object.entries(sources)) {

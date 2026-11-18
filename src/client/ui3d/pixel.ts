@@ -1,6 +1,6 @@
-// The pixel filter of the 3D UI kit (?menu3d=pixel; Fernando, Nov 16: low-poly icons with a pixel filter that can be
-// switched on): the size of its blocks (pure, tested) and the shader that reads the small icon target block by block
-// (layer.ts builds the material). No DOM or Three here.
+// The pixel filter of the 3D UI kit (?pixel=1 or a spec's `uiPixel`; Fernando, Nov 16: low-poly icons with a pixel
+// filter that can be switched on): the size of its blocks (pure, tested) and the shader that reads the small icon
+// target block by block (layer.ts builds the material). No DOM or Three here.
 
 // Side of the filter's blocks in device pixels: a 40 px icon of the 1080p layout becomes a 16 px sprite, the size of a
 // classic menu icon. Never under 2, or the filter would show nothing

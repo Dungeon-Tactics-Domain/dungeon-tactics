@@ -2,7 +2,7 @@
   /* every colour and size of the page comes from here (one set since Nov 18: the themes, the panel glass and the blue
      panels went with the HTML look; the 3D layer reads the --ui3d-* ones and a few by name, listed below) */
   --bg: #0b0a0e; /* the page under the scene and the loading cover: a neutral near-black, no blue (Nov 18) */
-  --fg: #f4f6ff; /* text of the loading cover; the fps counter (effects3d.ts) */
+  --fg: #f4f4f4; /* text of the loading cover; the fps counter (effects3d.ts); neutral, no blue (Nov 18) */
   /* same colors as the scene markings (MARK in scene/mark-looks.ts), so the legend matches the map; the 3D tile-marks
      sheet reads them by name (flow3d/sheet-draw.ts) */
   --mark-move: #6fc0ff;
@@ -14,7 +14,7 @@
   /* read by name by the 3D effects (hints3d/effects3d.ts): the "+N targets" band of the strike preview (dark enough for
      light text over the bright sky), its damage number, and the floating numbers by kind (Nov 15 grill): green heal,
      white physical, violet magic, grey miss, a gold edge on a strike of 25% of life or more */
-  --strike: rgba(5, 10, 24, 0.82);
+  --strike: rgba(0, 0, 0, 0.82); /* neutral black, no blue (Nov 18) */
   --strike-dmg: #ffc2c2;
   --heal: #6fdc8c;
   --float-phys: #ffffff;
@@ -51,7 +51,7 @@
   --fs-title: 28px;
   --fs-display: 38px;
   --orb-gold: #c8a040; /* the loading bar (accent-color) */
-  /* 3D interface kit (src/client/ui3d; localhost ?menu3d and ?turn3d, Nov 16): the parchment its shaders paint and the ink
+  /* 3D interface kit (src/client/ui3d, Nov 16): the parchment its shaders paint and the ink
      of its text, measured on FFT: The Ivalice Chronicles' menus. Read once by ui3d/layer.ts, hex only. Contrast (computed on the
      drawn colours): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the title band; soft ink 5.7:1 on the rows and
      4.7:1 on the head (never on the title band, 3.6:1); the disabled ink (1.9:1) is the faded label only, its reason
@@ -64,13 +64,13 @@
   --ui3d-ink: #474129;
   --ui3d-ink-soft: #5b5440;
   --ui3d-ink-off: #a9a28e;
-  /* a serif close to the reference's, from the fonts the system already has (no font file for a test behind a flag) */
+  /* a serif close to the reference's, from the fonts the system already has (no font file for it) */
   --font-ui3d: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  /* the 3D battle result (?result=3d), measured on the reference's victory screen (labs refs/fft-ivalice/73): light
-     text on the darkened battle. `lost` is the defeat's title, the cold blue the classic game writes "Game Over" in
-     (described, not measured); `soft` is `text` dimmed for labels */
+  /* the 3D battle result (result3d/), measured on the reference's victory screen (labs refs/fft-ivalice/73): light
+     text on the darkened battle. `lost` is the defeat's title, a faded red (Nov 18: no blue; 6.2:1 on the defeat's
+     veil over a white sky, 7.3:1 on the bare veil); `soft` is `text` dimmed for labels */
   --ui3d-result-title: #fdebb4;
-  --ui3d-result-lost: #9db4d6;
+  --ui3d-result-lost: #c98f7f;
   --ui3d-result-note: #ddf3b5;
   --ui3d-result-text: #dcd5ac;
   --ui3d-result-soft: #a8a184;
@@ -281,10 +281,6 @@ button[hidden],
   flex: none;
   border: 1px solid transparent;
 }
-.sw.counter {
-  /* the map mark is a plain red frame (scene/mark-looks.ts counter) */
-  border: 3px solid var(--mark-counter);
-}
 .choice {
   margin: 0 0 10px;
 }
@@ -401,7 +397,7 @@ button[hidden],
   font-size: var(--fs);
 }
 /* `frame`: the interface in a centred 16:9 frame, scaled to fit. The HTML panels keep their size and move in with the
-   frame through their margins; the pieces laid out on the reference (3D, ?menu=css) also take its scale */
+   frame through their margins; the 3D pieces laid out on the reference also take its scale */
 :root[data-layout="frame"] {
   --lay-u: min(100vw / 1920, 100vh / 1080);
   --lay-x: calc((100vw - 1920 * var(--lay-u)) / 2);
@@ -791,16 +787,12 @@ button[hidden],
   height: 96px;
   object-fit: cover;
   flex: none;
-  background: var(--ui3d-result-plate);
-  border: 2px solid var(--ui3d-result-line);
+  border: 2px solid transparent; /* the frame is drawn in 3D; its width stays the box's */
 }
 .portrait.tinted,
 .face-strip.tinted {
   filter: sepia(0.4) hue-rotate(220deg) saturate(2) brightness(1.1);
 } /* Acolyte: the mage portrait with the character's violet glow (UnitDef.tint) */
-.portrait.gem {
-  background: radial-gradient(circle, #bff7ff, #2bb8d6 60%, #0c4a5a);
-}
 .unit-body {
   flex: 1;
   display: grid;
@@ -950,19 +942,6 @@ button[hidden],
   pointer-events: none;
   overflow: hidden;
 }
-/* damage number at FFT's rhythm (Nov 12): it jumps, holds still to be read and fades; 1.5 s = TIMING.float in timing.ts */
-.float {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  white-space: nowrap; /* near the right edge the magic star would break onto a line of its own */
-  font: 400 26px / 1 var(--font-title);
-}
-/* the second signal for magic; small, since the fallback font draws the star twice a digit's size */
-.float.magic::after {
-  content: "\2009\2726";
-  font-size: 0.6em;
-  vertical-align: 0.3em;
-}
 /* the town's action balloon (Nov 16, Fernando): a panel over what Enter or A acts on, its kind's symbol and the key;
    game/town.ts sets left and top every frame, the bottom middle sits on that point */
 .town-act {
@@ -998,14 +977,11 @@ button[hidden],
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye; and on
-   the result, the empty turn list and the help line behind the end dialog said nothing */
+/* in battle conversations too (like FFT): the menu and panels behind the dialogue box only competed for the eye */
 body:has(.title-overlay) .hud,
 body:has(.title-overlay) .fps,
 body:has(.talk-overlay) .hud,
-body:has(.talk-overlay) .fps,
-body:has(.result-overlay) .hud,
-body:has(.result-overlay) .fps {
+body:has(.talk-overlay) .fps {
   visibility: hidden;
 }
 
@@ -1038,8 +1014,7 @@ body:has(.result-overlay) .fps {
 .face-sheet {
   display: block;
   overflow: hidden;
-  background: var(--ui3d-result-plate);
-  border: 2px solid var(--ui3d-result-line);
+  border: 2px solid transparent; /* drawn in 3D (window3d/talk3d.ts); the 132 px box keeps its border */
   box-sizing: content-box;
 }
 .face-strip {
@@ -1341,8 +1316,7 @@ body:has(.result-overlay) .fps {
   stroke-width: 5px;
 }
 /* a place: a round mark for a room (its enemy count inside), square for the chest, bigger for the boss */
-.crawl-map .map-place,
-.map-help .map-place {
+.crawl-map .map-place {
   --size: 48px;
   display: grid;
   place-items: center;
@@ -1354,8 +1328,7 @@ body:has(.result-overlay) .fps {
   border: 2px solid transparent;
   font: 700 var(--fs) / 1 var(--font-title);
 }
-.crawl-map .map-place.skipped,
-.map-help .map-place.skipped {
+.crawl-map .map-place.skipped {
   border-style: dashed;
 }
 /* the party's flag: a pole and a yellow pennant, planted up and to the right of the place it stands on */
@@ -1471,7 +1444,6 @@ body:has(.result-overlay) .fps {
   z-index: 2;
 }
 /* text for the screen reader only */
-.sr-only,
 .dialog.options3d .opt-help {
   position: absolute;
   width: 1px;
@@ -1976,8 +1948,8 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
 
 /* ---- Loading cover (loading.ts; Fernando, Nov 18) ---- */
 /* One screen over the whole page, the page's own colour, until the interface under it is built and drawn: nothing shows
-   half made. The line and the bar are the screen with ?ui=html or no WebGL; drawn in 3D (flow3d/loading3d.ts) they
-   stay under the drawing, unseen, for the screen reader */
+   half made. Drawn in 3D (flow3d/loading3d.ts), the line and the bar stay under the drawing, unseen, for the screen
+   reader; they are the screen only when the load fails before the 3D line draws (no WebGL shows no3d.ts) */
 .loading-cover {
   position: fixed;
   inset: 0;
@@ -1999,6 +1971,25 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   width: min(560px, 100vw - 64px);
   height: 14px;
   accent-color: var(--orb-gold);
+}
+/* Reload, when the load failed before the 3D line drew: the result's plate, never the browser's grey or blue (Nov 18) */
+.loading-cover > button {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 24px;
+  border: 2px solid var(--ui3d-result-line);
+  border-radius: 6px;
+  background: var(--ui3d-result-plate);
+  color: var(--ui3d-result-text);
+  font: inherit;
+  cursor: pointer;
+}
+.loading-cover > button:hover {
+  border-color: var(--ui3d-result-text);
+}
+.loading-cover > button:focus-visible {
+  outline: 2px solid var(--ui3d-result-title);
+  outline-offset: 3px;
 }
 .loading-cover.loading3d > :not(canvas) {
   opacity: 0;

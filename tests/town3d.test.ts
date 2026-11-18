@@ -7,7 +7,7 @@ import { gatePage, menuPage, soonPage } from '../src/client/town3d/street-view.t
 import { C, G, M, P, promptSays, T, townFrame, townHud } from '../src/client/town3d/town-layout.ts';
 import { place, REGIONS, stage } from '../src/client/ui3d/layout.ts';
 
-// The town's windows in 3D (?shop=3d, ?party=3d; Nov 17): the pages the drawing is handed, built from the saved game.
+// The town's windows in 3D (Nov 17): the pages the drawing is handed, built from the saved game.
 // The drawing itself is checked on the bench (docs/media/ui3d-cidade-grupo)
 const hit = (p: Page, id: string) => p.hits.find((h) => h.id === id) as Hit;
 const ids = (p: Page, kind: string) => p.hits.filter((h) => h.id.startsWith(kind)).map((h) => h.id);
@@ -135,6 +135,13 @@ describe('3D town windows: the Party', () => {
         step(p, 0, slots[0], 'right') === rows[0] ? (['right', 'left'] as const) : (['left', 'right'] as const);
       expect(step(p, 0, slots[0], over[0])).toBe(rows[0]);
       expect(slots).toContain(step(p, 0, rows[0], over[1]));
+    });
+
+    it('Tab and a screen reader take the buttons as seen: the plaques, the page, then the roster (Nov 18)', () => {
+      for (const inside of [false, true]) {
+        const xs = at('status', inside).hits.map((h) => h.box.x);
+        expect(xs).toEqual([...xs].sort((a, b) => a - b));
+      }
     });
 
     it('every button still takes a click or a touch, whether the arrows walk it or not', () => {

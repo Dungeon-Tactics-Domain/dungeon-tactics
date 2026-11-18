@@ -1,6 +1,6 @@
-// The instruction banner, the Height corner and the button hints drawn in 3D (localhost ?banner=3d, ?height=3d,
-// ?hints=3d; Fernando, Nov 16: the look and the places of FFT The Ivalice Chronicles), one screen of the shared 3D layer
-// (ui3d/layer.ts) with three parts, each on only when its flag is:
+// The instruction banner, the Height corner and the button hints drawn in 3D (Fernando, Nov 16: the look and the
+// places of FFT The Ivalice Chronicles), one screen of the shared 3D layer (ui3d/layer.ts) with three parts, each on
+// when its option is (hud-skin.ts turns all three on; a test may leave one off):
 //   banner: the dark pill top centre with what to do now (the HUD's help line; an ability's name while it plays),
 //   springing in and out; height: "Height", the number of the tile under the cursor and the line under them, top right,
 //   with the tile's own line (floor, water, spikes, a charge landing) small on a dark box below;

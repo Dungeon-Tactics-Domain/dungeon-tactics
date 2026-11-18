@@ -1,4 +1,4 @@
-// The end of a battle drawn in 3D (localhost ?result=3d, or `result` in a sandbox spec; Fernando, Nov 16), a screen of
+// The end of a battle drawn in 3D (Fernando, Nov 16), a screen of
 // the shared 3D layer (ui3d/layer.ts), laid out like FFT: The Ivalice Chronicles' victory screen (labs
 // refs/fft-ivalice/73-vitoria-espolios.webp): the battle darkened, the title in capitals over a hairline, a line under
 // it, and a dark band across the screen with what the battle gave on the left and who did the most on the right. A

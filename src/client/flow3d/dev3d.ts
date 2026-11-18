@@ -1,4 +1,4 @@
-// The developer menu drawn in 3D (localhost ?dev=3d, the default; Fernando, Nov 18: the whole interface in 3D, forms
+// The developer menu drawn in 3D (Fernando, Nov 18: the whole interface in 3D, forms
 // too), a screen of the shared 3D layer (ui3d/layer.ts) in the look of the other flow screens: the game darkened, the
 // name over a hairline, one parchment sheet with the form on it, the glove on the field in focus, the keys at the foot.
 //   State: the cast and its rules are dev-roster.ts'; dev-view.ts turns it into fields and an edit into the next cast.

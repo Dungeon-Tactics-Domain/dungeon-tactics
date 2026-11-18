@@ -1,4 +1,4 @@
-// The windows the title and Options open, drawn in 3D (localhost ?sheets=3d, the default; Fernando, Nov 17: what was
+// The windows the title and Options open, drawn in 3D (Fernando, Nov 17: what was
 // left in HTML outside the battle): the saved games, quick battle, how to play, credits, the tile marks and the controls,
 // one screen of the shared 3D layer (ui3d/layer.ts) for all of them. FFT: The Ivalice
 // Chronicles' captures have no counterpart for these, so the look is the game's own 3D screens': the Options' head, a
@@ -159,6 +159,7 @@ export class Sheet3d implements Ui3dScreen {
     const { overlay, layer } = this;
     overlay?.classList.remove('sheet3d', 'sheet3d-list');
     for (const e of [this.dialog, this.close, this.link]) e?.removeAttribute('style');
+    this.close?.removeAttribute('tabindex');
     // the layer back to whoever had it, if its window is still there (Options under its Controls)
     if (layer.solo === this)
       layer.solo = [...document.querySelectorAll('.overlay')].some((o) => o !== overlay) ? this.under : undefined;
@@ -218,6 +219,9 @@ export class Sheet3d implements Ui3dScreen {
     d.style.setProperty('--s3-side', px(L.side));
     place(this.close, L.foot.at(-1)!);
     place(this.link, L.foot[0]);
+    // a text's own Back, at its end, is Tab's way out: the ✕ first in the window would come before the link drawn left
+    // of it (Nov 18: Tab in the order seen); the arrows, Esc and a click still reach it
+    if (sheet.blocks) this.close?.setAttribute('tabindex', '-1');
     this.draw();
     // the window scrolls as far as the drawing has to: room under its own content for what the drawn one has more
     d.style.setProperty('--s3-more', '0px');

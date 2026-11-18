@@ -23,9 +23,12 @@ function spotWalk(overlay: HTMLElement, dir: WalkDir, within?: string) {
 }
 const WAYS: Record<string, WalkDir> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 
-// With a window open, the game behind is `inert` (Nov 13, review): Tab left the window and Enter acted on the battle behind
-const syncInert = () =>
-  document.getElementById('app')?.toggleAttribute('inert', !!document.querySelector('.overlay > .dialog'));
+// With a window or a conversation open, the game behind is `inert` (Nov 13, review): Tab left the window and Enter acted
+// on the battle behind; the conversation (talk.ts) since Nov 18
+export const syncInert = () =>
+  document
+    .getElementById('app')
+    ?.toggleAttribute('inert', !!document.querySelector('.overlay > .dialog, .talk-overlay'));
 
 // `note`: a counter at the right of the head band, like the kit's "Gold in chest" (Shop, Tavern)
 export function dialog(

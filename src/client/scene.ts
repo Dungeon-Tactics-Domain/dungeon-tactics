@@ -15,6 +15,7 @@ import type { Ambience } from './ambience.ts';
 import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
 import { el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
+import { no3d } from './no3d.ts';
 import type { PixelSettings } from './pixel-settings.ts';
 import { Board } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
@@ -72,6 +73,8 @@ export class BattleScene {
     // pixel art draws the scene twice per frame (color and normals); the shadow only needs the first (requested in frame)
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.domElement.className = 'board';
+    // the map's context lost: the warning, as the layer's; not a disposed scene's, which the browser may drop for room
+    this.renderer.domElement.addEventListener('webglcontextlost', (e) => (e.target as Element).isConnected && no3d());
     host.append(this.renderer.domElement);
     this.floats = el('div', { class: 'floats', 'aria-hidden': 'true' });
     host.append(this.floats);

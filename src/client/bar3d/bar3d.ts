@@ -1,4 +1,4 @@
-// The combat bar drawn in 3D (localhost ?bar=3d; Fernando's request, Nov 16: the bottom bar of FFT The Ivalice
+// The combat bar drawn in 3D (Fernando's request, Nov 16: the bottom bar of FFT The Ivalice
 // Chronicles rebuilt in Three.js), a screen of the shared 3D layer (ui3d/layer.ts): the acting unit's sheet (portrait,
 // name, life, pools and CT), the strike preview plate in the middle and the target's sheet, mirrored, each on its own
 // region of the reference (ui3d/layout.ts `sheet`, `preview`, `target`), so both layouts reach them.
