@@ -1994,6 +1994,25 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   height: 14px;
   accent-color: var(--orb-gold);
 }
+/* Reload, when the load failed before the 3D line drew: the result's plate, never the browser's grey or blue (Nov 18) */
+.loading-cover > button {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 24px;
+  border: 2px solid var(--ui3d-result-line);
+  border-radius: 6px;
+  background: var(--ui3d-result-plate);
+  color: var(--ui3d-result-text);
+  font: inherit;
+  cursor: pointer;
+}
+.loading-cover > button:hover {
+  border-color: var(--ui3d-result-text);
+}
+.loading-cover > button:focus-visible {
+  outline: 2px solid var(--ui3d-result-title);
+  outline-offset: 3px;
+}
 .loading-cover.loading3d > :not(canvas) {
   opacity: 0;
 }
