@@ -137,6 +137,13 @@ describe('3D town windows: the Party', () => {
       expect(slots).toContain(step(p, 0, rows[0], over[1]));
     });
 
+    it('Tab and a screen reader take the buttons as seen: the plaques, the page, then the roster (Nov 18)', () => {
+      for (const inside of [false, true]) {
+        const xs = at('status', inside).hits.map((h) => h.box.x);
+        expect(xs).toEqual([...xs].sort((a, b) => a - b));
+      }
+    });
+
     it('every button still takes a click or a touch, whether the arrows walk it or not', () => {
       for (const inside of [false, true]) expect(at('status', inside).hits.map((h) => h.id)).toContain('deploy');
     });

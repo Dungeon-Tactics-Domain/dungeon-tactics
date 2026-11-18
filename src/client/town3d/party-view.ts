@@ -150,9 +150,10 @@ export function partyPage({ group: g, eq, chest }: PartyState, at: PartyAt): { i
     text(`${m.name}: ${NAME[at.page]()}`, P.page.x + P.pad, P.page.y + P.head / 2, 26, 'soft'),
     ...body.items,
   );
-  // the arrows walk the roster or, once inside, the page's own buttons; the plaques are turned with left and right
+  // the arrows walk the roster or, once inside, the page's own buttons; the plaques are turned with left and right.
+  // Listed as seen, left to right (the plaques, the page, the roster): the order Tab and a screen reader take (Nov 18)
   const out = (hits: Hit[], is: boolean) => hits.map((h) => ({ ...h, out: is }));
-  const hits = [...out(who, !!at.inside), ...out(tabs.hits, true), ...out(body.hits, !at.inside)];
+  const hits = [...out(tabs.hits, true), ...out(body.hits, !at.inside), ...out(who, !!at.inside)];
   return { id: m.id, page: { items, hits, list: body.list } };
 }
 

@@ -201,6 +201,15 @@ export class Map3d implements Ui3dScreen {
       el.dataset.html ??= el.getAttribute('style') ?? '';
       el.setAttribute('style', css);
     }
+    // Tab and a screen reader walk the places as drawn, down the chart and left to right (Nov 18); moved only when out
+    // of order, and the focus kept, since a moved button loses it
+    const seen = L.places.map((p, i) => ({ p, el: view.places[i].el })).sort((a, b) => a.p.y - b.p.y || a.p.x - b.p.x);
+    const field = seen[0]?.el.parentElement;
+    if (field && seen.some((o, i) => field.querySelectorAll('.map-place')[i] !== o.el)) {
+      const had = document.activeElement as HTMLElement | null;
+      field.append(...seen.map((o) => o.el));
+      had?.focus({ preventScroll: true });
+    }
 
     // around the sheets, as every town window: the town darkened, where the party is, the gold found, help and keys
     const { back } = this;

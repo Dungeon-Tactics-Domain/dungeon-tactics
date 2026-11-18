@@ -327,11 +327,11 @@ export class Town3d implements Ui3dScreen {
       b.setAttribute('aria-label', h.name);
       b.toggleAttribute('aria-current', !!h.picked);
     }
-    // the cursor: where asked, else where it was, else the picked row, else the first button that can be pressed
+    // the cursor: where asked, else where it was, else the picked row or the first the arrows walk, else any live one
     const live = (id?: string) => (id && !this.buttons.get(id)?.disabled ? this.buttons.get(id) : undefined);
     const here = live(focus) ?? (focus === undefined && inside ? live(this.focus) : undefined);
-    const to =
-      here ?? live(page.hits.find((h) => h.picked && h.on === 'paper')?.id) ?? live(page.hits.find((h) => !h.off)?.id);
+    const pick = page.hits.find((h) => h.picked && h.on === 'paper') ?? page.hits.find((h) => !h.off && !h.out);
+    const to = here ?? live(pick?.id) ?? live(page.hits.find((h) => !h.off)?.id);
     if (to && to !== document.activeElement) {
       to.focus();
       land(this.gy, Number.NaN); // a new page: the glove lands where the cursor is
