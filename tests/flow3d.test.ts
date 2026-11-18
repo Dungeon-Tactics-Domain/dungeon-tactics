@@ -281,6 +281,28 @@ describe('3D title: the fullscreen buttons', () => {
   });
 });
 
+// Fernando, Nov 18: the install line stacks over the fullscreen shortcut, or takes its place where there is none
+describe('3D title: the install line', () => {
+  it('sits over the shortcut (or in its slot) in the right column, a 44 px tap, inside every page', () => {
+    for (const [w, h] of [
+      [1920, 1080],
+      [844, 390],
+      [667, 375],
+      [1024, 768],
+    ])
+      for (const fs of [true, false]) {
+        const L = titleLayout(w, h, 6, fs),
+          name = `${w}x${h}, shortcut ${fs}`;
+        expect(L.install.h, name).toBeGreaterThanOrEqual(44);
+        expect(L.install.x, name).toBeGreaterThan(L.plate.x + L.plate.w);
+        expect(L.install.y, name).toBeGreaterThanOrEqual(0);
+        expect(L.install.y + L.install.h, name).toBeLessThan(fs ? L.fs.y : L.lang.y);
+      }
+    const L = titleLayout(1920, 1080, 5);
+    expect(titleStops(L, true, true, false, true)).toEqual([...L.rows, L.install, L.fs, L.lang]);
+  });
+});
+
 describe('3D sheets: where a window of the title or of Options sits', () => {
   it('is the reference at 1920x1080: the parchment, a row per saved game, Delete at its right end, Back under it', () => {
     const L = sheetLayout(1920, 1080, { tall: true, side: true });

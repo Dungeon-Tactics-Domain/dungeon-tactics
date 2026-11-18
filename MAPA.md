@@ -210,6 +210,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/touch-input.ts` — tap, drag and pinch or wheel on the map.
 - `src/client/rotate-note.ts` — the turn-the-phone notice over every screen (a touch phone held upright): the plain HTML line before any 3D layer, its query (ROTATE) and who draws it in 3D.
 - `src/client/fullscreen.ts` — fullscreen: the switch and its name for Options, the title and the ☰ list, and the rule for how loudly the title offers it (`fullscreenOffer`, pure); `keepFullscreen` asks again on a new page's first gesture.
+- `src/client/install.ts` — the title's "Install the game" line: keeps the browser's `beforeinstallprompt` (started by `entry.ts` before the first screen), the rule for what the title shows (`installOffer`, pure: prompt, iPhone help or nothing) and the tap's `askInstall`.
+- `src/client/game/install-sheet.ts` — the 3D sheet an iPhone or iPad gets from that line: where Safari's Share menu is.
 - `src/client/ui3d/safe-area.ts` — the safe area in px (notch, home bar) for the 3D layer, read from a CSS probe.
 - `src/client/ui3d/rotate-layout.ts` — rotateLayout: the 3D turn-the-phone notice's plate, phone and words on the page; pure.
 - `src/client/ui3d/rotate3d.ts` — Rotate3d: the turn-the-phone notice drawn on every 3D layer, over every screen, with the HTML one unseen under it.

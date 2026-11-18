@@ -10,6 +10,7 @@ import { bootTown } from './game/town.ts';
 import { loadSkin } from './hud-skin.ts';
 import { t } from './i18n.ts';
 import { el } from './icons.ts';
+import { watchInstall } from './install.ts';
 import { loadingCover } from './loading.ts';
 import { looks3d } from './looks3d.ts';
 import { Game, LOCAL } from './main.ts';
@@ -94,6 +95,7 @@ function announce(text: string) {
 }
 
 rotateNote(); // "turn the phone" over every screen (mobile-ux), cover included
+watchInstall(); // before the first screen: the browser's install event comes once and is kept for the title
 keepFullscreen(); // fullscreen from before a real reload (the language) comes back with this page's first gesture
 onNavigate((search) => void boot(search));
 void boot();

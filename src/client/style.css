@@ -1831,6 +1831,7 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
 }
 .main-title.title3d .title-lang,
 .main-title.title3d .title-fs,
+.main-title.title3d .title-install,
 .main-title.title3d .title-main {
   position: fixed;
   min-height: 0;

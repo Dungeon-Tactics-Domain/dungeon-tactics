@@ -10,6 +10,7 @@ import { hintLine } from '../glyphs.ts';
 import { KEYS } from '../hud-pieces.ts';
 import { LANG, setLang, t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
+import { askInstall, INSTALL_LABEL, installEnv, installOffer, onInstallChange } from '../install.ts';
 import { liveText } from '../key-hints.ts';
 import { looks3d } from '../looks3d.ts';
 import { navigate, onLeave } from '../nav.ts';
@@ -17,6 +18,7 @@ import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
 import { BEST_KEY, parseBest, SURVIVAL_ID } from '../survival.ts';
 import { jumpHelp } from '../town-ui.ts';
+import { installHelp } from './install-sheet.ts';
 import { openSaves, savedCount, savedGames, startNewGame } from './saves-ui.ts';
 import { type Block, blocksHtml, showSheet } from './sheets.ts';
 
@@ -262,6 +264,9 @@ export function titleScreen() {
     fn();
   };
   document.addEventListener('fullscreenchange', go(titleScreen), { signal: leave.signal, once: true });
+  // the install event can come after the title opened, and the install settles later: the line follows
+  onInstallChange(() => d.overlay.isConnected && go(titleScreen)(), leave.signal);
+  const install = installOffer(installEnv());
   onLeave(() => leave.abort()); // the title left with its screen: fullscreen settling later must not open it again
   const d = dialog(
     'title',
@@ -313,6 +318,10 @@ export function titleScreen() {
                 ],
                 ' · ',
               )} · `,
+          ),
+        install !== 'none' &&
+          button('title-install', INSTALL_LABEL(), () =>
+            install === 'prompt' ? askInstall() : go(() => installHelp(titleScreen))(),
           ),
         offer === 'quiet' && button('title-fs', fullscreenLabel(env.on), () => toggleFullscreen()),
         // language right on the title (review of Nov 13: it was only reachable from the menu inside the battle)
