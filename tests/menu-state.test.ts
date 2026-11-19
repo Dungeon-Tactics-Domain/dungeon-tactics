@@ -7,7 +7,7 @@ import { rowUnit } from '../src/client/hud-queue.ts';
 import { freshUi, rangeMarks, type Ui } from '../src/client/interaction.ts';
 import type { KeyAction } from '../src/client/keyboard.ts';
 import { fill } from '../src/client/looks3d.ts';
-import { cardTap, menuKey, menuTap } from '../src/client/menu-state.ts';
+import { cardTap, menuKey, menuTap, menuUp } from '../src/client/menu-state.ts';
 import type { Note } from '../src/client/note.ts';
 import { queueRows } from '../src/client/turn-list.ts';
 import { turnMarks } from '../src/client/turn-marks.ts';
@@ -134,6 +134,36 @@ function turn() {
   };
   return { t, battle, tap };
 }
+
+describe('the menu and "Execute?" wait while the map is looked at', () => {
+  it('the pure rule: nothing shows unless it is a hero turn with the map not looked at', () => {
+    expect(menuUp(true, {})).toBe(true);
+    expect(menuUp(true, { closed: false, range: null })).toBe(true);
+    expect(menuUp(true, { closed: true })).toBe(false);
+    expect(menuUp(true, { range: 'b' })).toBe(false);
+    expect(menuUp(false, {})).toBe(false);
+  });
+
+  it('on "Execute?", a turn card paints a range: the window waits, and comes back when it is closed', async () => {
+    const { t, battle } = turn();
+    const notes: Note[] = [];
+    const drop = fill('note', (n) => void notes.push(n));
+    t.screen = { k: 'confirm', ability: 'strike', target: { x: 5, y: 1 } };
+    expect(menuUp(true, t)).toBe(true);
+    t.card('b'); // the card's mini menu opens after its own click (hero-turn.ts)
+    await new Promise((r) => setTimeout(r));
+    notes[0].buttons[2].run?.(); // Show range
+    expect(t.screen.k).toBe('confirm'); // still the strike preview, only hidden
+    expect(t.range).toBe('b');
+    expect(menuUp(true, t)).toBe(false);
+    t.key({ k: 'cancel' }); // the key that closes the range
+    expect(t.range).toBeNull();
+    expect(t.screen.k).toBe('confirm');
+    expect(menuUp(true, t)).toBe(true);
+    expect(battle.actor.id).toBe('a');
+    drop();
+  });
+});
 
 describe('the hero turn with the menu shut', () => {
   it('a tap on empty ground shuts the menu and moves the cursor; nothing walks', () => {
