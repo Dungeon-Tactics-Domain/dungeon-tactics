@@ -71,6 +71,7 @@ export const REGIONS = {
   sheet: { at: 'bl', x: 100, y: 818, w: 672, h: 214 }, // the acting unit: portrait and the faded band beside it
   menu: { at: 'br', x: 1152, y: 688, w: 414, h: 327 }, // the command menu (five rows)
   submenu: { at: 'br', x: 1284, y: 688, w: 414, h: 327 }, // the Agir primeiro list, opened over the menu
+  detail: { at: 'tr', x: 1450, y: 100, w: 400, h: 564 }, // the sheet of the action in focus
   height: { at: 'tr', x: 1500, y: 95, w: 420, h: 85 }, // "Height", its number and the line under them
   banner: { at: 'tc', x: 650, y: 80, w: 620, h: 78 }, // the instruction pill, centred
   preview: { at: 'bc', x: 790, y: 812, w: 340, h: 218 }, // the strike preview plate between the two sheets

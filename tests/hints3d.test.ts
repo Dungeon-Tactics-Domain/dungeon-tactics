@@ -33,6 +33,7 @@ const battle = () =>
     ]),
   );
 const menu: Screen = { k: 'menu', index: commandIndex('move') };
+const actions: Screen = { k: 'actions', target: { k: 'unit', unit: 'b', pos: { x: 2, y: 1 } }, index: 0 };
 // each hint as the words of its caps (glyphs.ts) and its text
 const row = (b: Battle, s: Screen, open = true, device: Device = 'keyboard') =>
   hintsFor(b, s, open, device).right.map((h) => `${device === 'touch' ? '' : keysText(h.act, device)}=${h.text}`);
@@ -54,6 +55,7 @@ describe('button hints: what each screen shows', () => {
       'Enter=Confirmar',
       'Esc=Cancelar',
     ]);
+    expect(row(b, { k: 'actions', target: foe, index: 0 })).toEqual(['Enter=Confirmar', 'Esc=Cancelar', 'I=Detalhes']);
     expect(row(b, { k: 'map', command: 'move' }).slice(0, 2)).toEqual(['Enter=Mover', 'Esc=Cancelar']);
     expect(row(b, { k: 'facing' }).slice(0, 2)).toEqual(['Enter=Passar a vez', 'Esc=Cancelar']);
   });
@@ -110,8 +112,9 @@ describe('Height corner', () => {
   it('shows the height of the tile under the cursor', () => {
     const b = battle();
     const at = b.actor.pos;
-    expect(heightShown(b, at)).toBe(tileHeight(b.grid, at));
-    expect(heightShown(b, { x: 0, y: 0 })).toBe(tileHeight(b.grid, { x: 0, y: 0 }));
+    expect(heightShown(b, menu, at)).toBe(tileHeight(b.grid, at));
+    expect(heightShown(b, { k: 'targets', index: 0 }, { x: 0, y: 0 })).toBe(tileHeight(b.grid, { x: 0, y: 0 }));
+    expect(heightShown(b, actions, at)).toBeNull(); // the action sheet takes the corner
   });
 
   // Fernando, Nov 18: on a phone the corner sat under the menu button and Undo
@@ -129,9 +132,10 @@ describe('Height corner', () => {
   it("the tile line under it is the HTML corner's own text, and hides with the Height", () => {
     const b = battle();
     const at = { x: 3, y: 3 };
-    expect(tileLine(b, at)).toBe(cursorInfo(b.grid, b.state, at, 1));
-    expect(tileLine(b, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2));
-    expect(tileLine(b, at)).toBe('X 3 · Y 3 · Z 0 · chão');
+    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at, 1));
+    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2));
+    expect(tileLine(b, menu, at)).toBe('X 3 · Y 3 · Z 0 · chão');
+    expect(tileLine(b, actions, at)).toBe('');
   });
 });
 

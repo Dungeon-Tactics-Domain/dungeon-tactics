@@ -7,7 +7,7 @@ import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { actActions, actTargets, bestSpot, runSpot, spotAt, targetAt } from './act-flow.ts';
 import { actScreen, screenAction } from './act-marks.ts';
-import { needsLock, type Screen, stepIndex } from './command.ts';
+import { needsLock, type Screen, stepIndex, turnPage } from './command.ts';
 import type { KeyAction } from './keyboard.ts';
 import { sfx } from './sound.ts';
 
@@ -33,6 +33,11 @@ export function actKey(h: ActHost, a: KeyAction): void {
     return;
   }
   if (a.k === 'confirm') return void actPick(h, s.index);
+  // the action sheet's pages: left and right turn them back and forth, Details (I, the pad's north button) goes on
+  if (s.k === 'actions' && (a.k === 'info' || (a.k === 'cursor' && (a.dir === 'left' || a.dir === 'right')))) {
+    actPage(h, a.k === 'cursor' && a.dir === 'left' ? -1 : 1);
+    return;
+  }
   if (a.k !== 'cursor') return;
   if (s.k === 'spot') {
     const n = screenAction(h.battle, s)?.spots.length ?? 0;
@@ -43,8 +48,21 @@ export function actKey(h: ActHost, a: KeyAction): void {
   }
   if (a.dir !== 'up' && a.dir !== 'down') return;
   const index = stepIndex(s.index, a.dir === 'up' ? -1 : 1, enabledRows(h.battle, s));
-  if (index !== s.index) select(h, { ...s, index });
+  if (index !== s.index) select(h, moved(s, index));
 }
+
+// the action sheet turns to its next or previous page
+export function actPage(h: ActHost, dir: 1 | -1): void {
+  const s = h.screen;
+  if (s.k !== 'actions') return;
+  sfx('cursor');
+  h.screen = { ...s, page: turnPage(s.page ?? 0, dir) };
+  h.update();
+}
+
+// another row of the list is focused: an action opens its sheet on the first page
+const moved = (s: Extract<Screen, { k: 'targets' | 'actions' }>, index: number): Screen =>
+  s.k === 'actions' ? { k: 'actions', target: s.target, index } : { ...s, index };
 
 // the mouse or Tab on a list row moves the focus there, as the arrows would
 export function actHover(h: ActHost, index: number): void {
@@ -54,7 +72,7 @@ export function actHover(h: ActHost, index: number): void {
     return;
   }
   if (!actScreen(s) || s.k === 'spot' || s.index === index || !enabledRows(h.battle, s)[index]) return;
-  select(h, { ...s, index });
+  select(h, moved(s, index));
 }
 
 // a tap on the map: on the target list a unit picks its row (twice: goes on), on the tile choice a tile does the same

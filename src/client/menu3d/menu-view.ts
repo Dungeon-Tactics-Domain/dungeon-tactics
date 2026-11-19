@@ -7,7 +7,7 @@ import type { Element } from '../../shared/battle/units.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { actActions, actTargets } from '../act-flow.ts';
 import { actScreen, screenAction } from '../act-marks.ts';
-import { abilityNote, actReason, commandName, itemName } from '../battle-text.ts';
+import { abilityNote, abilityPages, actReason, commandName, itemDetail, itemName } from '../battle-text.ts';
 import { type Command, commandEnabled, commandIndex, menuRows } from '../command.ts';
 import type { HudView } from '../hud.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
@@ -53,6 +53,14 @@ export interface MenuRow {
   element?: Element;
   below?: boolean; // the note goes on a line under the name (column.ts)
 }
+export interface SheetView {
+  owner: string; // who has the action, on the sheet's head
+  name: string;
+  kind: IconKind;
+  element?: Element;
+  pages: { title: string; text: string }[];
+  page: number;
+}
 export interface MenuView {
   head: string; // the acting unit's name, on the command menu's head
   rows: MenuRow[]; // menuRows: Move · Undo move · Abilities · Wait · Status, Move and Undo only when they apply
@@ -61,6 +69,35 @@ export interface MenuView {
   sub: MenuRow[] | null; // the Agir primeiro lists (act-flow.ts) beside the menu, while one is open
   subTitle: string; // the list's head
   subIndex: number;
+  sheet: SheetView | null; // the focused action on the Agir action list
+}
+
+const PAGE_TITLE = [() => t('Descrição', 'Description'), () => t('Efeitos', 'Effects'), () => t('Custo', 'Cost')];
+const PAGE_EMPTY = [
+  () => '',
+  () => t('Nenhum efeito além do golpe.', 'No effect beyond the strike.'),
+  () => t('Sem custo; sai na hora.', 'No cost; fires at once.'),
+];
+// each fact of the sheet on its own line, as a sentence
+const lines = (facts: string[], i: number) =>
+  facts.length ? facts.map((f) => `${f[0].toUpperCase()}${f.slice(1)}.`).join('\n') : PAGE_EMPTY[i]();
+
+// The sheet of the focused row of the action list: an ability's three pages, or an item's one (what it does, itemDetail:
+// an item has no reach, effects and cost pages to fill)
+export function sheetView(b: Battle, s: Extract<HudView['screen'], { k: 'actions' }>): SheetView | null {
+  const a = actActions(b, s.target)[s.index];
+  if (!a) return null;
+  const owner = unitName(b.actor.def);
+  if (a.k === 'item')
+    return {
+      owner,
+      name: itemName(a.id),
+      kind: 'potion',
+      pages: [{ title: PAGE_TITLE[0](), text: itemDetail(a.id) }],
+      page: 0,
+    };
+  const pages = abilityPages(a.id).map((facts, i) => ({ title: PAGE_TITLE[i](), text: lines(facts, i) }));
+  return { owner, name: abilityName(a.id), ...iconOf(a.id), pages, page: (s.page ?? 0) % pages.length };
 }
 
 // The command menu's column: the acting unit's name on its head and the rows menuRows shows (Move and Undo move only when
@@ -80,7 +117,7 @@ export function menuView(v: HudView, open: boolean): MenuView | null {
   if (open && actScreen(s) && (s.k !== 'spot' || s.lock)) return actView(v, s);
   if (!open || s.k !== 'menu') return null;
   const col = column(v.battle);
-  return { ...col, index: col.commands.indexOf(s.index), sub: null, subTitle: '', subIndex: -1 };
+  return { ...col, index: col.commands.indexOf(s.index), sub: null, subTitle: '', subIndex: -1, sheet: null };
 }
 
 // The Agir primeiro lists in the submenu's place, under the command menu with Act picked: the targets (who, with its life)
@@ -142,13 +179,14 @@ function actView(v: HudView, s: Extract<HudView['screen'], { k: 'targets' | 'act
           ? t('Alvo', 'Target')
           : t('Ação', 'Action'),
     subIndex: s.k === 'spot' ? (s.lock === 'tile' ? 1 : 0) : s.index,
+    sheet: s.k === 'actions' ? sheetView(b, s) : null,
   };
 }
 const iconOf = (id: string) => ({ kind: abilityIcon3d(ABILITIES[id]), element: ABILITIES[id].element });
 
 // What changed from the last draw, for the menu's animations: it comes in or leaves (a confirmed row flashes on its way
-// out), the list opens in a cascade or folds back (Esc), the focus moves
-export type Change = 'enter' | 'leave' | 'cascade' | 'fold' | 'focus';
+// out), the list opens in a cascade or folds back (Esc), the focus moves, the page turns
+export type Change = 'enter' | 'leave' | 'cascade' | 'fold' | 'focus' | 'page';
 export function changes(prev: MenuView | null, next: MenuView | null): Set<Change> {
   const out = new Set<Change>();
   if (!prev && !next) return out;
@@ -162,5 +200,6 @@ export function changes(prev: MenuView | null, next: MenuView | null): Set<Chang
   if (prev.sub && !next.sub) out.add('fold');
   const focus = (v: MenuView) => (v.sub ? `s${v.subIndex}` : `m${v.index}`);
   if (focus(prev) !== focus(next)) out.add('focus');
+  if (prev.sheet && next.sheet && prev.sheet.page !== next.sheet.page) out.add('page');
   return out;
 }

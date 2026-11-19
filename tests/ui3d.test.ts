@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
+import { actActions } from '../src/client/act-flow.ts';
+import { itemDetail } from '../src/client/battle-text.ts';
 import { commandIndex, type Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
@@ -8,7 +10,7 @@ import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/m
 import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import { LIST_MIN, listFloor, matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
 import { setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
-import { ease, land, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
+import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
 import { wrapLines } from '../src/client/ui3d/text.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -67,6 +69,13 @@ describe('3D kit: motion', () => {
     expect(x).toBeGreaterThan(0.99);
   });
 
+  it('the sheet takes the short way around its ring of pages', () => {
+    expect(pageStep(0, 1, 3)).toBe(1);
+    expect(pageStep(2, 0, 3)).toBe(1);
+    expect(pageStep(0, 2, 3)).toBe(-1);
+    expect(pageStep(1, 1, 3)).toBe(0);
+  });
+
   it('text wraps at spaces, keeps paragraphs and never splits a word', () => {
     const wide = (s: string) => s.length;
     expect(wrapLines('one two three', 7, wide)).toEqual(['one two', 'three']);
@@ -96,7 +105,7 @@ describe('3D menu: what it shows', () => {
       ['Esperar', 'hourglass', false],
       ['Status', 'scroll', false],
     ]);
-    expect(m).toMatchObject({ head: 'Guerreiro', index: 2, sub: null });
+    expect(m).toMatchObject({ head: 'Guerreiro', index: 2, sub: null, sheet: null });
     expect(m?.commands).toEqual(['move', 'act', 'wait', 'status'].map((c) => commandIndex(c as 'move')));
     expect(menuView(view(b, { k: 'menu', index: 0 }), false)).toBeNull();
     expect(menuView(view(b, { k: 'map', command: 'move' }), true)).toBeNull();
@@ -131,6 +140,29 @@ describe('3D menu: what it shows', () => {
     expect(actions?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
     expect(actions?.sub?.[1].note).toBe('30 stamina');
     expect(actions?.subIndex).toBe(1);
+    expect(targets?.sheet).toBeNull(); // the sheet is the action list's only
+  });
+
+  it('the action list shows the sheet of the focused ability, on the page asked for', () => {
+    const b = duel();
+    const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
+    const m = menuView(view(b, { k: 'actions', target: foe, index: 1, page: 2 }), true);
+    expect(m?.sheet).toMatchObject({ owner: 'Guerreiro', name: 'Golpe pesado', kind: 'sword', page: 2 });
+    expect(m?.sheet?.pages.map((p) => p.title)).toEqual(['Descrição', 'Efeitos', 'Custo']);
+    expect(m?.sheet?.pages[0].text).toBe('Alcance 1.\nDano 95–130.\nAcerto 75%.');
+    expect(m?.sheet?.pages[1].text).toBe('Nenhum efeito além do golpe.');
+    expect(m?.sheet?.pages[2].text).toBe('Gasta 30 stamina.');
+  });
+
+  it('an item row gets a one-page sheet of what the item does, kept on its first page', () => {
+    const b = duel();
+    b.state.bag = { life_potion: 1 };
+    const target = { k: 'unit' as const, unit: b.actor.id, pos: b.actor.pos };
+    const i = actActions(b, target).findIndex((a) => a.k === 'item');
+    expect(i).toBeGreaterThanOrEqual(0);
+    const m = menuView(view(b, { k: 'actions', target, index: i, page: 2 }), true);
+    expect(m?.sheet).toMatchObject({ name: 'Poção de vida', kind: 'potion', page: 0 });
+    expect(m?.sheet?.pages).toEqual([{ title: 'Descrição', text: itemDetail('life_potion') }]);
   });
 
   it('reads the model from what the ability does', () => {
@@ -159,6 +191,10 @@ describe('3D menu: what it shows', () => {
     expect([...changes(menu, sub)]).toEqual(['cascade', 'focus']);
     expect([...changes(sub, at({ k: 'menu', index: 1 }))]).toEqual(['fold', 'focus']);
     expect([...changes(menu, at({ k: 'menu', index: 2 }))]).toEqual(['focus']);
+    const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
+    expect([
+      ...changes(at({ k: 'actions', target: foe, index: 0 }), at({ k: 'actions', target: foe, index: 0, page: 1 })),
+    ]).toEqual(['page']);
     expect([...changes(menu, menu)]).toEqual([]);
     expect([...changes(null, null)]).toEqual([]);
   });
@@ -169,10 +205,14 @@ describe('3D menu: where it sits', () => {
 
   it('on the reference places at the reference size, in both layouts', () => {
     for (const mode of ['edges', 'frame'] as const) {
-      const { main, sub } = menuLayout(at(1920, 1080, mode), 4, 0);
+      const { main, sub, sheet, prev, next } = menuLayout(at(1920, 1080, mode), 4, 0);
       // as tall as its rows (Nov 18: no blank fifth row), on the region's foot
       expect(main).toEqual({ x: 1152, y: 745, w: 414, h: REF.head + 4 * REF.row + REF.foot });
       expect(sub.x).toBe(1284);
+      expect(sheet).toEqual({ x: 1450, y: 100, w: 400, h: 564 });
+      expect(prev.x + prev.w).toBe(next.x);
+      expect(next.x + next.w).toBe(sheet.x + sheet.w);
+      expect(prev.y + prev.h).toBe(sheet.y + sheet.h);
     }
   });
 
@@ -205,12 +245,17 @@ describe('3D menu: where it sits', () => {
     expect(rowBox(finger.main, 0, finger.cs).h).toBeGreaterThan(rowBox(mouse.main, 0, mouse.cs).h);
     expect(finger.main.y + finger.main.h).toBeCloseTo(390 - 21 - 65 * finger.cs); // still on its corner
     expect(finger.sub.x + finger.sub.w).toBeLessThanOrEqual(844 - 47);
+    // the sheet's page arrows: the drawn foot is 19 px there, the finger's box 44 about its middle
+    expect(mouse.prev.h).toBeCloseTo(48 * phone.s);
+    expect(finger.prev.h).toBe(44);
+    expect(finger.prev.y + 22).toBeCloseTo(mouse.prev.y + mouse.prev.h / 2);
   });
 
-  it('on a short page the columns stay on the page, right of the acting unit sheet', () => {
-    const st = stage(844, 390, 'edges', { x: 47, y: 21 });
+  it('on a short page the columns step left of the sheet they would sit under', () => {
     for (const touch of [false, true]) {
-      const { main } = menuLayout(st, 4, 4, touch);
+      const { main, sub, sheet } = menuLayout(stage(844, 390, 'edges', { x: 47, y: 21 }), 4, 4, touch);
+      expect(sheet.y + sheet.h, String(touch)).toBeGreaterThan(main.y); // side by side, not one over the other
+      expect(sub.x + sub.w, String(touch)).toBeLessThan(sheet.x);
       expect(main.x, String(touch)).toBeGreaterThan(47);
     }
     // a page tall enough keeps the reference's corner
@@ -219,7 +264,7 @@ describe('3D menu: where it sits', () => {
   });
 
   // Fernando, Nov 18: at 844x390 the menu covered the end of the acting unit's stamina ("50/5")
-  it("never covers the acting unit's sheet in the combat bar", () => {
+  it("never covers the acting unit's sheet in the combat bar; on a phone the cascade shortens instead", () => {
     for (const [w, h, safe] of [
       [844, 390, { x: 47, y: 21 }],
       [667, 375, { x: 0, y: 0 }],
@@ -240,6 +285,7 @@ describe('3D menu: where it sits', () => {
           expect(m.main.y, say).toBeGreaterThanOrEqual(st.y); // a fifth row grows it up, still on the page
           expect(m.main.x, say).toBeGreaterThan(bar.x + bar.w);
           expect(m.sub.x, say).toBeGreaterThanOrEqual(m.main.x);
+          if (h < 500) expect(m.sub.x + m.sub.w, say).toBeLessThan(m.sheet.x); // a phone: side by side
         }
     }
     // a page with room keeps the full cascade
@@ -261,9 +307,10 @@ describe('3D menu: where it sits', () => {
   });
 
   it('in the frame an ultrawide page keeps the menu where the reference has it', () => {
-    const { main } = menuLayout(at(3440, 1440, 'frame'), 4, 0);
+    const { main, sheet } = menuLayout(at(3440, 1440, 'frame'), 4, 0);
     expect(main.x).toBeCloseTo(440 + (1152 * 4) / 3);
     expect(main.y).toBeCloseTo((745 * 4) / 3);
+    expect(sheet.x).toBeCloseTo(440 + (1450 * 4) / 3);
   });
 
   it('a row box is the row the column draws', () => {

@@ -136,10 +136,11 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText), the same for a drawing made elsewhere (imageMesh), outlined and shadowed for a text with no plate (`shadow`); a line's width and line count with no HTML (textWidth, lineCount); pure wrapLines.
 - `src/client/ui3d/caps.ts` — 3D kit: an action's keys or pad buttons as quads showing glyph-art.ts' drawing (capMeshes, capRun).
 - `src/client/ui3d/icons.ts` — 3D kit: low-poly parts merged into one tinted geometry, the shared geometry cache and the icon shader.
-- `src/client/ui3d/spring.ts` — 3D kit: damped spring and ease; pure.
+- `src/client/ui3d/spring.ts` — 3D kit: damped spring, ease and the short way around a ring of pages; pure.
 - `src/client/menu3d/menu3d.ts` — Menu3d: the command menu in 3D, on the reference's places, with its own transparent buttons.
-- `src/client/menu3d/menu-view.ts` — what the 3D menu shows (rows, the Agir lists beside it, icon of each ability) and what changed between two draws; pure.
-- `src/client/menu3d/menu-layout.ts` — where the 3D menu and its list sit, and each row's box; pure.
+- `src/client/menu3d/menu-view.ts` — what the 3D menu shows (rows, the Agir lists beside it, icon of each ability, the focused action's sheet) and what changed between two draws; pure.
+- `src/client/menu3d/menu-layout.ts` — where the 3D menu, its list and the action sheet (with its page arrows) sit, and each row's box; pure.
+- `src/client/menu3d/sheet.ts` — Sheet: the action sheet beside the Agir action list: who has it, its icon, name and one page (description, effects, cost) at a time.
 - `src/client/menu3d/column.ts` — a column of the 3D menu (panel, rows, text) and the Icon on its plate.
 - `src/client/menu3d/models.ts` — the low-poly models of the 3D menu (command and ability icons, plates, a gem, glove).
 - `src/client/turn3d/card-tip.ts` — CardTip: the name, life and CT of the card under the mouse, on a dark plate beside it, in 3D.

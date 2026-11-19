@@ -1,5 +1,5 @@
 // Pure motion of the 3D UI kit (ui3d/): the damped spring every 3D screen moves on, the ease for what must not
-// overshoot. No DOM or Three here; tested in tests/ui3d.test.ts.
+// overshoot, and the short way around a ring of pages. No DOM or Three here; tested in tests/ui3d.test.ts.
 
 export interface Spring {
   x: number;
@@ -27,3 +27,10 @@ export function land(s: Spring, to = s.to): void {
 
 // A value that eases to `to` without overshooting (glow, lift, fade): `rate` per second
 export const ease = (x: number, to: number, dt: number, rate: number) => to + (x - to) * Math.exp(-rate * dt);
+
+// Shortest way from one page to another on a ring of `count` pages: a sheet slides one step forward from the last page
+// to the first instead of running back through the middle one
+export function pageStep(from: number, to: number, count: number): number {
+  const d = (((to - from) % count) + count) % count;
+  return d > count / 2 ? d - count : d;
+}

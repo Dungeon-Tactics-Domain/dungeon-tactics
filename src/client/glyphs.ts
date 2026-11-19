@@ -69,6 +69,7 @@ export const ACTIONS = {
   confirm: { keys: ['Enter'], pad: ['south'] },
   cancel: { keys: ['Esc'], pad: ['east'] },
   status: { keys: ['C'], pad: ['west'] },
+  info: { keys: ['I'], pad: ['north'] },
   undo: { keys: ['Z'], pad: ['select'] },
   help: { keys: ['H'], pad: ['start'] },
   rotateLeft: { keys: ['⇧R'], pad: ['lb'] },

@@ -27,7 +27,8 @@ export type Screen =
   // Agir primeiro (Fernando's grill, Nov 19; the only way to act since "Apagar tudo"): the target list, the actions that hit
   // the picked target, the tiles to act from with the best one first; `lock`: a charge aimed at a unit asks where to lock it
   | { k: 'targets'; index: number }
-  | { k: 'actions'; target: ActTarget; index: number }
+  // `page`: the action sheet's page (menu3d/), 0 to PAGES - 1; another action opens on the first
+  | { k: 'actions'; target: ActTarget; index: number; page?: number }
   | { k: 'spot'; target: ActTarget; action: number; index: number; lock?: Lock };
 
 // A charge aimed at someone asks next where to lock it: the tile, or that character (Nov 15). On empty ground
@@ -95,6 +96,10 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
     ? { k: 'spot', target: s.target, action: s.action, index: s.index }
     : { k: 'actions', target: s.target, index: s.action };
 }
+
+// the action sheet's pages (battle-text.ts abilityPages), turned with left and right, wrapping around
+export const PAGES = 3;
+export const turnPage = (page: number, dir: 1 | -1) => (page + dir + PAGES) % PAGES;
 
 // moves up or down the menu skipping what's grayed out, wrapping around as in FFT
 export function stepIndex(index: number, dir: 1 | -1, enabled: boolean[]): number {

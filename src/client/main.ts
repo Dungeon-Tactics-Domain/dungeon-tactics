@@ -71,6 +71,7 @@ export class Game implements TurnHost {
     const act: HudActions = {
       command: (i) => this.turn.chooseCommand(i),
       pick: (i) => this.turn.pick(i),
+      page: (dir) => this.turn.turnPage(dir),
       hover: (list, i) => this.turn.hoverRow(list, i),
       rotate: (dir) => scene.rotate(dir),
       menu: () => this.menu(),

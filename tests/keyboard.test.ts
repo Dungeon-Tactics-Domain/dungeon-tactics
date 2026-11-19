@@ -19,7 +19,7 @@ describe('game keys', () => {
   it('confirm, cancel, cycle, space bar and shortcuts', () => {
     expect(key('Enter')).toEqual({ k: 'confirm' });
     expect(key(' ')).toEqual({ k: 'confirm' });
-    expect(key('i')).toBeNull();
+    expect(key('i')).toEqual({ k: 'info' });
     expect(key('Escape')).toEqual({ k: 'cancel' });
     expect(key('Backspace')).toEqual({ k: 'cancel' });
     expect(key('Tab')).toEqual({ k: 'cycle', dir: 1 });

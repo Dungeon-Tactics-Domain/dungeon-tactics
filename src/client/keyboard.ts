@@ -18,6 +18,7 @@ export type KeyAction =
   | { k: 'recenter' }
   | { k: 'face' }
   | { k: 'status' }
+  | { k: 'info' }
   | { k: 'fps' }
   | { k: 'turns'; dir: 1 | -1 }
   | { k: 'help' };
@@ -43,6 +44,7 @@ const SIMPLE: Record<string, KeyAction> = {
   z: { k: 'undo' },
   t: { k: 'face' },
   c: { k: 'status' },
+  i: { k: 'info' },
   f3: { k: 'fps' },
   p: { k: 'wait' },
   f: { k: 'recenter' },
@@ -176,6 +178,14 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       ['turns'],
       'PgUp · PgDn',
       t('rolar a lista de turnos ou a janela aberta', 'scroll the turn list or the open window'),
+    ],
+    [
+      ['info'],
+      '',
+      t(
+        'vira a página da ficha da ação em foco na lista de ações',
+        'turns the page of the focused action sheet on the action list',
+      ),
     ],
     [['fps'], '', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
     [['help'], 'H · ?', t('as Opções e esta ajuda', 'Options and this help')],

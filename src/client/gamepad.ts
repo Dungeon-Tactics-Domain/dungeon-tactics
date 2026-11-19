@@ -24,6 +24,7 @@ const PRESS: Record<number, KeyAction> = {
   0: { k: 'confirm' },
   1: { k: 'cancel' },
   2: { k: 'status' },
+  3: { k: 'info' },
   4: { k: 'rotate', dir: -1 },
   5: { k: 'rotate', dir: 1 },
   6: { k: 'zoom', factor: 1.15 },

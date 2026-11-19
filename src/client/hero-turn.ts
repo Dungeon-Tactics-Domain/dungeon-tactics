@@ -6,7 +6,7 @@ import { footprint, nearestTile } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { actScreen } from './act-marks.ts';
-import { type ActHost, actHover, actKey, actPick, actTap } from './act-turn.ts';
+import { type ActHost, actHover, actKey, actPage, actPick, actTap } from './act-turn.ts';
 import { COMMANDS, cancelStep, commandEnabled, commandIndex, type Screen, startScreen, stepIndex } from './command.ts';
 import { freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction } from './keyboard.ts';
@@ -226,6 +226,11 @@ export class HeroTurn {
     if (!this.ui.pending) return sfx('cancel');
     sfx('confirm');
     await this.game.execute();
+  }
+
+  // the action sheet's next or previous page (its arrows); nothing off the action list
+  turnPage(dir: 1 | -1) {
+    if (!this.game.busy && this.game.heroTurn) actPage(this.actHost, dir);
   }
 
   // what the Agir primeiro screens read and change (act-turn.ts)

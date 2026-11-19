@@ -48,7 +48,8 @@ export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device): H
   const right = [hint('confirm', confirmText(s))];
   if (back === 'undo') right.push(hint('cancel', t('Desfazer', 'Undo')));
   else if (back) right.push(hint('cancel', t('Cancelar', 'Cancel')));
-  return { left, right: [...right, ...camera] };
+  // the action list's third hint is the sheet's pages; everywhere else the camera, as in the reference
+  return { left, right: [...right, ...(s.k === 'actions' ? [hint('info', t('Detalhes', 'Details'))] : camera)] };
 }
 
 // Who the foot's hints are drawn for (Options › Key and button hints, Fernando, Nov 18): Automatic follows the input
@@ -67,14 +68,16 @@ export const bannerLine = (help: string, log: string | undefined, open: boolean,
 export const PHONE_MESSAGE = 0.7;
 export const messageScale = (w: number, h: number) => (Math.min(w, h) < TABLET_SIDE ? PHONE_MESSAGE : 1);
 
-// The number of the Height corner: the tile under the cursor. null hides the corner: the battle is over
-export const heightShown = (b: Battle, cursor: Pos): number | null => (b.over ? null : tileHeight(b.grid, cursor));
+// The number of the Height corner: the tile under the cursor. null hides the corner: the battle is over, or the
+// action list is open (its sheet takes that corner)
+export const heightShown = (b: Battle, s: Screen, cursor: Pos): number | null =>
+  b.over || s.k === 'actions' ? null : tileHeight(b.grid, cursor);
 
 // The small line under the Height corner (Fernando, Nov 16): the same tile line the HTML corner shows (floor, slope,
 // shallow or deep water, spikes, a charge about to land), shown and hidden with the Height, with the tile's X, Y and Z
 // spelled out (Nov 18). `size`: the square of a big unit choosing where to stop (HudView.hl.size)
-export const tileLine = (b: Battle, cursor: Pos, size = 1): string =>
-  heightShown(b, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
+export const tileLine = (b: Battle, s: Screen, cursor: Pos, size = 1): string =>
+  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
 
 // The Height corner on the page: its region, moved down under the corner buttons (menu, Back, Undo) where the page is
 // too small for both (a phone: it sat under the menu button and Undo; Fernando, Nov 18). `top`: the panels' margin

@@ -34,6 +34,35 @@ const host = (b: Battle, screen: Screen) => {
   return h;
 };
 
+describe('the action sheet pages (Fernando, Nov 19: "Ficha da habilidade no Agir")', () => {
+  const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
+  it('left and right turn the pages back and forth around the three; Details goes on; the list stays', () => {
+    const h = host(battle(), { k: 'actions', target, index: 0 });
+    const page = () => (h.screen as { page?: number }).page ?? 0;
+    actKey(h, { k: 'cursor', dir: 'right' });
+    expect(page()).toBe(1);
+    actKey(h, { k: 'info' });
+    expect(page()).toBe(2);
+    actKey(h, { k: 'cursor', dir: 'right' });
+    expect(page()).toBe(0);
+    actKey(h, { k: 'cursor', dir: 'left' });
+    expect(page()).toBe(2);
+    expect(h.screen).toMatchObject({ k: 'actions', index: 0 });
+  });
+
+  it('another action opens on the first page; off the action list the keys turn nothing', () => {
+    const b = battle();
+    const h = host(b, { k: 'actions', target, index: 0, page: 2 });
+    actKey(h, { k: 'cursor', dir: 'down' });
+    expect(h.screen).toMatchObject({ k: 'actions', index: 1 });
+    expect((h.screen as { page?: number }).page).toBeUndefined();
+    const t = host(b, { k: 'targets', index: 0 });
+    actKey(t, { k: 'info' });
+    actKey(t, { k: 'cursor', dir: 'right' });
+    expect(t.screen).toEqual({ k: 'targets', index: 0 });
+  });
+});
+
 describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
   it('target, action, tile: Confirm goes one screen on each time and the last one runs it', async () => {
     const b = battle();

@@ -191,8 +191,8 @@ Fernando, Nov 16: the pieces of the battle interface take the exact places of FF
 
 - **The places** are in `src/client/ui3d/layout.ts` (`REGIONS`, pure and tested): the battle regions measured on the
   1920x1080 captures (labs, `refs/fft-ivalice/layout-fft-ic.json`, +-4 px), each with the edge or corner it holds on
-  to: `turn` (the combat timeline, left), `sheet` (bottom left), `menu` 1152,688 414x327 and `submenu` at x 1284
-  (bottom right; the Agir primeiro lists), `height`, `banner` (top centre), `preview`, `target`, `bar`,
+  to: `turn` (the combat timeline, left), `sheet` (bottom left), `menu` 1152,688 414x327, `submenu` at x 1284
+  (bottom right; the Agir primeiro lists) and `detail` 1450,100 400x564 (top right; the action sheet), `height`, `banner` (top centre), `preview`, `target`, `bar`,
   `hints` and `hintsLeft`.
 - **Two layouts**, picked in Options → Video and effects → "Interface layout" (saved in `dt:layout`,
   `layout-mode.ts`; the address's `?layout=edges|frame` wins when the page opens): `edges` (default) keeps each region
@@ -304,6 +304,13 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   is the faded name only, and the reason beside it (what is missing) is written in soft ink. On the Agir primeiro
   action list (Nov 19) the reason is a line of its own under the name (`MenuRow.below`: name at 26, reason at 18 of the
   1080p scale, the reason shrinking to the row's width), so a long one never pushes the name out.
+- **Action sheet** (Nov 19, Fernando: "Ficha da habilidade no Agir"; `menu3d/sheet.ts`): on the Agir action list only, a
+  parchment on `detail` with the owner's name and a gem on the head, the action's icon turning on its tile and its name,
+  then one page at a time under its title band (Description, Effects, Cost) and a "‹ 1 / 3 ›" counter on the foot. Left
+  and right turn the pages around the ring and the I key or the pad's north button goes on; the two halves of the foot
+  are its page buttons (transparent `menuitem`s, "Previous page" and "Next page": the foot's height, or 44 px on a
+  finger, the finger's box centred on the foot), so it works with no keyboard. An item has one page (what it does).
+  The columns step left of it where the page is too short for both (`menuLayout`).
 - **Text size:** never under 16 px on the page, whatever the scale; a long ability name beside its cost shrinks to the
   room left (below 16 px only on pages under about 0.7 of 1080p).
 - **Motion:** springs for the cascade, the focus band, the glove and the turn cards; a confirmed row

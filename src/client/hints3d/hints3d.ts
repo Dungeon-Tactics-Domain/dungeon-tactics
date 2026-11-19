@@ -221,7 +221,7 @@ export class Hints3d implements Ui3dScreen {
     }
 
     if (parts.height) {
-      const n = heightShown(b, v.cursor);
+      const n = heightShown(b, v.screen, v.cursor);
       const part = this.height,
         key = n === null ? '' : n + at;
       part.want = n === null ? 0 : 1;
@@ -241,7 +241,7 @@ export class Hints3d implements Ui3dScreen {
         this.num.userData.size = this.num.scale.clone();
       }
       // the tile line under the Height's line, from the label's x, wrapping at the region's right edge, with no plate
-      const line = tileLine(b, v.cursor, v.hl?.size),
+      const line = tileLine(b, v.screen, v.cursor, v.hl?.size),
         tile = this.tile,
         tkey = line + at;
       tile.want = line ? 1 : 0;
