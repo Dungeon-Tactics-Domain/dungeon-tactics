@@ -81,6 +81,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/menu-state.ts` — whether the command menu and "Execute?" show (menuUp) and what a tap on an empty tile, the hero, its sheet, another unit or a turn card does to it; pure.
 - `src/client/unit-peek.ts` — another unit's look-only mini menu (Status, Abilities, Show range) in the notice window.
 - `src/client/command.ts` — FFT command menu (Move, Abilities, Wait, Status): which turn screen shows, what each key leads to and where Cancel goes back to.
+- `src/client/act-flow.ts` — "Agir primeiro" flow, pure: the target list, the actions on a target (off ones with the reason, items included), the best tile to act from, and walking then acting (behind `dt:act-first`).
 - `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
 - `src/client/corpse-squares.ts` — groups a resumed battle's corpse cells into one body per token square (corpseSquares).
 - `src/client/charge-lines.ts` — charge and counter lines and notes computed from the rule that fires them.

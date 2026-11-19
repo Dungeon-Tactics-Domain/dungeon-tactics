@@ -9,6 +9,7 @@ import { isDeep, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { type ActTarget, actTargets, targetIndex } from './act-flow.ts';
 
 export type Command = 'move' | 'undo' | 'act' | 'wait' | 'status';
 // The menu's index is a place in this list; menuRows says which of them show (Fernando, Nov 18: after a move, Move and
@@ -28,7 +29,12 @@ export type Screen =
   // the strike preview on a picked target: Confirm runs it, Cancel goes back to aiming (no Yes/No to toggle, Nov 16)
   // `lock`: the 2nd step of a charge aimed at a unit, tile or character (Nov 15, Fernando), with the one in focus
   | { k: 'confirm'; ability: string; target: Pos; lock?: Lock }
-  | { k: 'facing' };
+  | { k: 'facing' }
+  // Agir primeiro (act-flow.ts, behind `dt:act-first`): the target list, the actions that hit the picked target, the tiles
+  // to act from with the best one first
+  | { k: 'targets'; index: number }
+  | { k: 'actions'; target: ActTarget; index: number }
+  | { k: 'spot'; target: ActTarget; action: number; index: number };
 
 // "Execute?" on a charge aimed at someone asks next where to lock it: the tile, or that character (Nov 15). On empty ground
 // there is only the tile
@@ -94,6 +100,9 @@ export function cancelStep(b: Battle, s: Screen, aiming: string | null = null): 
   if (s.k === 'abilities') return { k: 'menu', index: commandIndex('act') };
   if (s.k === 'map') return s.command === 'move' ? { k: 'menu', index: commandIndex('move') } : row(aiming);
   if (s.k === 'facing') return { k: 'menu', index: commandIndex('wait') };
+  if (s.k === 'targets') return { k: 'menu', index: commandIndex('act') };
+  if (s.k === 'actions') return { k: 'targets', index: targetIndex(actTargets(b), s.target) };
+  if (s.k === 'spot') return { k: 'actions', target: s.target, index: s.action };
   if (s.lock) return { k: 'confirm', ability: s.ability, target: s.target }; // the lock step: back to the preview
   // a self-centred ability never went through the map
   return ABILITIES[s.ability].range[1] === 0 ? row(s.ability) : { k: 'map', command: 'act' };
