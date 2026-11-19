@@ -101,10 +101,11 @@ export function simulatePush(
   else if (!rests(result.to)) {
     const m = move(result.to);
     const level = new Set(cells(result.to).map((c) => standH(tileAt(grid, c)))).size === 1;
-    if (m && stops(m.to) && (level || height(m.to) < height(result.to))) add(m);
+    const fits = !!m && rests(m.to) && (level || height(m.to) < height(result.to));
+    if (m && fits && !onBody(m.to)) add(m);
     else {
       Object.assign(result, even);
-      bumped = true;
+      bumped = !fits; // a body on the extra cell is no wall: back to the last stop with no bump, as above
     }
   }
   if (bumped) {

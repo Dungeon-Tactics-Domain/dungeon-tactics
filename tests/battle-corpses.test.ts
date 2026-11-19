@@ -275,6 +275,20 @@ describe('corpses: a push passes over one', () => {
     expect(push(2).dmg).toBe(0);
   });
 
+  it('a half step that would land on a body next to it slides back unhurt, not bumped', () => {
+    // floor, floor, rubble, floor: the square between tiles 1 and 2 only rests one cell on (cell 4), but a body there is not a wall
+    const whole = gridOf(['....', '....']);
+    for (const y of [0, 1]) whole.tiles[y * 4 + 2].terrain = 'rubble';
+    const g = halve({ id: 't-half-body', name: 't-half-body', en: 't-half-body', grid: whole, spawns: [] }).grid;
+    const s = stateOf([{ id: 'b', def: `soldier${HALF}`, team: 'enemy', x: 1, y: 0 }]);
+    const push = () => simulatePush(g, s, s.units[0], s.units[0].pos, { x: -1, y: 0 }, 1);
+    expect(kinds(push())).toEqual(['push', 'push', 'push']); // no body: the extra cell, as before
+    s.corpses = [{ x: 5, y: 0 }];
+    const r = push();
+    expect(kinds(r)).not.toContain('bump');
+    expect(r.dmg).toBe(0);
+  });
+
   it('the shield bash moves the target where the push said, and the same seed lands the same', () => {
     const bash = () => {
       const s = stateOf(
