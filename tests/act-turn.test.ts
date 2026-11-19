@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { actActions } from '../src/client/act-flow.ts';
+import { actActions, actAims, toward } from '../src/client/act-flow.ts';
 import { actMarks } from '../src/client/act-marks.ts';
 import { type ActHost, actKey, actPick, actTap } from '../src/client/act-turn.ts';
 import { itemDetail } from '../src/client/battle-text.ts';
 import { cancelStep, type Screen } from '../src/client/command.ts';
 import { helpText } from '../src/client/hud-menus.ts';
+import { gridStep } from '../src/client/keyboard.ts';
 import { menuView } from '../src/client/menu3d/menu-view.ts';
 import { ABILITIES, defaultLock } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -30,6 +31,7 @@ const host = (b: Battle, screen: Screen) => {
     update: () => {},
     focus: () => {},
     runAct: async (run) => void ran.push(run(b)),
+    step: (dir) => gridStep(dir, 0),
   };
   return h;
 };
@@ -84,6 +86,10 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     const id = actActions(b, target)[i].id;
     const h = host(b, { k: 'actions', target, index: i });
     actKey(h, { k: 'confirm' });
+    // an area charge picks its aim first: on the target itself, so it can lock on the character
+    const onTarget = actAims(actActions(b, target)[i]).findIndex((p) => p.x === 5 && p.y === 2);
+    if (h.screen.k === 'aim') await actPick(h, onTarget);
+    const aim = (h.screen as { aim?: { x: number; y: number } }).aim;
     const spot = (h.screen as { index: number }).index;
     await actPick(h, spot);
     expect(h.screen).toMatchObject({ k: 'spot', index: spot, lock: defaultLock(ABILITIES[id]) });
@@ -94,12 +100,50 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     expect(helpText({ battle: b, screen: h.screen } as never, true, false)).toMatch(/travar onde\?$/);
     actKey(h, { k: 'cursor', dir: 'down' });
     expect(h.screen).toMatchObject({ lock: 'tile' });
-    expect(cancelStep(b, h.screen)).toEqual({ k: 'spot', target, action: i, index: spot }); // back to the tiles
+    expect(cancelStep(b, h.screen)).toEqual({ k: 'spot', target, action: i, index: spot, aim }); // back to the tiles
     expect(actTap(h, { x: 0, y: 0 })).toBe(true); // a tap on the map does not run it
     expect(h.ran).toHaveLength(0);
     actKey(h, { k: 'confirm' });
     expect(h.ran[0].some((e) => e.k === 'charge')).toBe(true);
     expect(b.state.charges.at(-1)).toMatchObject({ ability: id, follow: null }); // on the tile, as picked
+  });
+
+  it('an area picks where it lands first, then only the tiles aiming there (Nov 19)', async () => {
+    const b = battle();
+    const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
+    const i = actActions(b, target).findIndex((a) => a.enabled && actAims(a).length > 1);
+    expect(i).toBeGreaterThanOrEqual(0); // an area centred on the target or next to it
+    const aims = actAims(actActions(b, target)[i]);
+    const h = host(b, { k: 'actions', target, index: i });
+    await actPick(h, i);
+    expect(h.screen.k).toBe('aim');
+    expect(helpText({ battle: b, screen: h.screen } as never, true, false)).toBe(
+      'Área: escolha onde mirar e confirme.',
+    );
+    expect(menuView({ battle: b, screen: h.screen } as never, true)).toBeNull(); // the map is the choice
+    const pick = aims.findIndex((p) => p.x !== target.pos.x || p.y !== target.pos.y);
+    await actPick(h, pick);
+    expect(h.screen).toMatchObject({ k: 'spot', aim: aims[pick] });
+    const marks = actMarks(b, h.screen as Extract<Screen, { k: 'spot' }>);
+    expect(marks.preview?.targets.some((x) => x.unit === 'near')).toBe(true); // that aim still hits the target
+    expect(marks.tiles.some((m) => m.kind === 'area')).toBe(true); // and its area is lit
+    const onAim = actMarks(b, { k: 'aim', target, action: i, index: pick });
+    expect(onAim.tiles.some((m) => m.kind === 'area')).toBe(true);
+    expect(cancelStep(b, h.screen)).toEqual({ k: 'aim', target, action: i, index: pick });
+    expect(cancelStep(b, { k: 'aim', target, action: i, index: pick })).toEqual({ k: 'actions', target, index: i });
+  });
+
+  it('an arrow on the map goes to the nearest point that way, straight before slanted, and stays at the edge', () => {
+    const pts = [
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 2, y: 2 },
+      { x: 4, y: 1 },
+    ];
+    expect(toward(pts, pts[0], { x: 1, y: 0 })).toBe(1);
+    expect(toward(pts, pts[1], { x: 0, y: 1 })).toBe(2);
+    expect(toward(pts, pts[1], { x: 1, y: 0 })).toBe(3);
+    expect(toward(pts, pts[0], { x: -1, y: 0 })).toBe(-1);
   });
 
   it('the help line says what to pick and what an item does', () => {

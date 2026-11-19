@@ -56,6 +56,10 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
     return swimming(b)
       ? say('Água funda: só andar ou esperar.', 'Deep water: only move or wait.')
       : say(`${unitName(b.actor.def)}: o que fazer?`, `${unitName(b.actor.def)}: what now?`);
+  if (s.k === 'aim')
+    return touch
+      ? t('Área: toque onde mirar; de novo, segue.', 'Area: tap where to aim; again to go on.')
+      : t('Área: escolha onde mirar e confirme.', 'Area: pick where to aim and confirm.');
   if (s.k === 'targets' || s.k === 'actions' || s.k === 'spot') return actHelp(b, s, touch);
   const tap = touch ? tapState(v) : null;
   if (s.k === 'map')

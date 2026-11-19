@@ -4,11 +4,11 @@
 // shows and what follows each key. The Game executes; the HUD only draws.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { isDeep, tileAt } from '../shared/battle/grid.ts';
+import { isDeep, samePos, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { type ActTarget, actTargets, targetIndex } from './act-flow.ts';
+import { type ActTarget, actActions, actAims, actTargets, targetIndex } from './act-flow.ts';
 
 export type Command = 'move' | 'undo' | 'act' | 'wait' | 'status';
 // The menu's index is a place in this list; menuRows says which of them show (Fernando, Nov 18: after a move, Move and
@@ -27,9 +27,10 @@ export type Screen =
   // Agir primeiro (Fernando's grill, Nov 19; the only way to act since "Apagar tudo"): the target list, the actions that hit
   // the picked target, the tiles to act from with the best one first; `lock`: a charge aimed at a unit asks where to lock it
   | { k: 'targets'; index: number }
-  // `page`: the action sheet's page (menu3d/), 0 to PAGES - 1; another action opens on the first
-  | { k: 'actions'; target: ActTarget; index: number; page?: number }
-  | { k: 'spot'; target: ActTarget; action: number; index: number; lock?: Lock };
+  | { k: 'actions'; target: ActTarget; index: number }
+  // an action with several aims (an area) picks where it lands first (`index` into actAims), then the tiles aiming there
+  | { k: 'aim'; target: ActTarget; action: number; index: number }
+  | { k: 'spot'; target: ActTarget; action: number; index: number; lock?: Lock; aim?: Pos };
 
 // A charge aimed at someone asks next where to lock it: the tile, or that character (Nov 15). On empty ground
 // there is only the tile
@@ -92,14 +93,21 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
   if (s.k === 'facing') return { k: 'menu', index: commandIndex('wait') };
   if (s.k === 'targets') return { k: 'menu', index: commandIndex('act') };
   if (s.k === 'actions') return { k: 'targets', index: targetIndex(actTargets(b), s.target) };
-  return s.lock
-    ? { k: 'spot', target: s.target, action: s.action, index: s.index }
-    : { k: 'actions', target: s.target, index: s.action };
+  const back = { target: s.target, action: s.action };
+  if (s.k === 'aim') return { k: 'actions', target: s.target, index: s.action };
+  if (s.lock) return { k: 'spot', ...back, index: s.index, aim: s.aim };
+  if (!s.aim) return { k: 'actions', target: s.target, index: s.action };
+  const aim = s.aim;
+  const aims = actAims(actActions(b, s.target)[s.action]);
+  return {
+    k: 'aim',
+    ...back,
+    index: Math.max(
+      0,
+      aims.findIndex((p) => samePos(p, aim)),
+    ),
+  };
 }
-
-// the action sheet's pages (battle-text.ts abilityPages), turned with left and right, wrapping around
-export const PAGES = 3;
-export const turnPage = (page: number, dir: 1 | -1) => (page + dir + PAGES) % PAGES;
 
 // moves up or down the menu skipping what's grayed out, wrapping around as in FFT
 export function stepIndex(index: number, dir: 1 | -1, enabled: boolean[]): number {

@@ -252,6 +252,7 @@ export class HeroTurn {
         turn.scene.focusOn(p);
       },
       runAct: (run) => turn.game.runAct(run),
+      step: (dir) => gridStep(dir, turn.scene.heading),
     };
   }
 

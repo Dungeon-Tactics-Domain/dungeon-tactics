@@ -67,16 +67,21 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
     .map((o): ActAction => {
       const base = { k: 'ability' as const, id: o.ability };
       if (!o.enabled) return { ...base, enabled: false, reason: o.reason, missing: o.missing, pool: o.pool, spots: [] };
-      const hits = o.targets.filter((t) =>
-        target.k === 'direct'
-          ? t.kind !== 'unit'
-          : t.kind === 'unit'
-            ? t.unit === target.unit
-            : t.kind === 'self' && target.unit === id,
-      );
-      const spots = hits.flatMap((t) =>
-        t.spots.map((s) => ({ pos: s.pos, cost: s.cost, aim: t.kind === 'self' ? s.pos : t.pos, preview: s.preview })),
-      );
+      const area = ABILITIES[o.ability].radius > 0;
+      const spots = o.targets.flatMap((t) => {
+        const all = t.spots.map((s) => ({
+          pos: s.pos,
+          cost: s.cost,
+          aim: t.kind === 'self' ? s.pos : t.pos,
+          preview: s.preview,
+        }));
+        if (target.k === 'direct') return t.kind !== 'unit' ? all : [];
+        if (t.kind === 'self') return target.unit === id ? all : [];
+        if (t.kind === 'unit' && t.unit === target.unit) return all;
+        // an area aimed at the ground or another unit next to the target also hits it (Fernando, Nov 19: "choose where in
+        // the area first, then only the tiles that can use it there")
+        return area ? all.filter((s) => s.preview.targets.some((x) => x.unit === target.unit)) : [];
+      });
       return spots.length ? { ...base, enabled: true, spots } : { ...base, enabled: false, reason: 'range', spots: [] };
     });
   if (target.k === 'direct') return abilities;
@@ -95,6 +100,40 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
     return { ...base, enabled: true, spots };
   });
   return [...abilities, ...items];
+}
+
+// The aim step (Fernando, Nov 19): an ability aimed at more than one place (an area that can be centred on the target or
+// next to it) first picks where it lands, then the tiles that can aim there. Its aims, in the order the engine ranks them
+export function actAims(a: ActAction): Pos[] {
+  if (a.k !== 'ability' || ABILITIES[a.id].range[1] === 0) return [];
+  const out: Pos[] = [];
+  for (const s of a.spots) if (!out.some((p) => samePos(p, s.aim))) out.push(s.aim);
+  return out.length > 1 ? out : [];
+}
+// the action with only the tiles aiming at `aim`
+export const withAim = (a: ActAction, aim: Pos): ActAction => ({
+  ...a,
+  spots: a.spots.filter((s) => samePos(s.aim, aim)),
+});
+
+// An arrow on the map (Fernando, Nov 19: "the arrows don't go the right way"): from `from`, the nearest point that way on
+// screen. `step` is the arrow's grid step for the camera (keyboard.ts gridStep); straight ahead wins over a slant, and at
+// the edge it stays (-1)
+export function toward(points: Pos[], from: Pos, step: Pos): number {
+  let best = -1,
+    score = Infinity;
+  points.forEach((p, i) => {
+    const dx = p.x - from.x,
+      dy = p.y - from.y;
+    const along = dx * step.x + dy * step.y;
+    if (along <= 0) return;
+    const v = along + 2 * Math.abs(dx * step.y - dy * step.x);
+    if (v < score) {
+      score = v;
+      best = i;
+    }
+  });
+  return best;
 }
 
 // The spot picked first (decision 3): staying put when it works, else the best expected result, then the shortest walk.

@@ -114,7 +114,7 @@ function column(b: Battle) {
 // The menu of a turn screen, or null while it is closed (`open`: a hero's turn with nothing playing)
 export function menuView(v: HudView, open: boolean): MenuView | null {
   const s = v.screen;
-  if (open && actScreen(s) && (s.k !== 'spot' || s.lock)) return actView(v, s);
+  if (open && actScreen(s) && s.k !== 'aim' && (s.k !== 'spot' || s.lock)) return actView(v, s);
   if (!open || s.k !== 'menu') return null;
   const col = column(v.battle);
   return { ...col, index: col.commands.indexOf(s.index), sub: null, subTitle: '', subIndex: -1, sheet: null };
