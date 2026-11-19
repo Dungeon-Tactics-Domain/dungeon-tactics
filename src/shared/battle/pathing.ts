@@ -40,9 +40,19 @@ export const squareH = (grid: Grid, p: Pos, size: number) =>
 export const nearestTile = (u: UnitState, p: Pos): Pos =>
   footprint(u).reduce((a, b) => (dist(b, p) < dist(a, p) ? b : a));
 // tiles between two groups of tiles (two units side by side: 1), and their closest pair [in a, in b]
-export const gap = (a: Pos[], b: Pos[]) => Math.min(...a.flatMap((p) => b.map((q) => dist(p, q))));
-export const closest = (a: Pos[], b: Pos[]): [Pos, Pos] =>
-  a.flatMap((p) => b.map((q): [Pos, Pos] => [p, q])).reduce((x, y) => (dist(y[0], y[1]) < dist(x[0], x[1]) ? y : x));
+// (plain loops: actionOptions asks these thousands of times a turn; a tie keeps the first pair, a's order then b's)
+export const closest = (a: Pos[], b: Pos[]): [Pos, Pos] => {
+  let best: [Pos, Pos] = [a[0], b[0]];
+  let d = Infinity;
+  for (const p of a)
+    for (const q of b)
+      if (dist(p, q) < d) {
+        d = dist(p, q);
+        best = [p, q];
+      }
+  return best;
+};
+export const gap = (a: Pos[], b: Pos[]) => dist(...closest(a, b));
 
 // Half tiles (Nov 14, Fernando: half-tile movement in the real battles): abilities keep their ranges and radii in whole
 // tiles and the split map (Grid.sub) measures them in cells between the two squares. Two units D whole tiles apart are
@@ -80,7 +90,11 @@ export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[]) =>
   gap(area, cells) <= farCells(grid, radius);
 
 export const unitAt = (state: BattleState, p: Pos): UnitState | undefined =>
-  state.units.find((u) => footprint(u).some((f) => samePos(f, p)));
+  state.units.find((u) => {
+    const dx = p.x - u.pos.x;
+    const dy = p.y - u.pos.y;
+    return dx >= 0 && dy >= 0 && Math.max(dx, dy) < (UNIT_DEFS[u.def].size ?? 1);
+  });
 // a body lies on the cell: the map's (Tile.noStop) or a unit's that died here (Nov 16). Passed over, never stopped on
 export const noStopAt = (grid: Grid, state: BattleState, p: Pos) =>
   !!tileAt(grid, p).noStop || !!state.corpses?.some((c) => samePos(c, p));
