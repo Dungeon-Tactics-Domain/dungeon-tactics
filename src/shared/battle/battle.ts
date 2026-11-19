@@ -202,12 +202,17 @@ export class Battle {
     const state = parseBattleState(raw.state);
     if (!state || !isInt(raw.undosLeft) || raw.undosLeft < 0 || raw.undosLeft > UNDO_LIMIT) return null;
     if (!Array.isArray(raw.history) || raw.history.length > 4) return null;
-    const history: Entry[] = [];
+    let history: Entry[] = [];
     for (const e of raw.history) {
       if (!isObj(e) || typeof e.paid !== 'boolean' || !isObj(e.before)) return null;
       const frame = parseBattleState({ ...e.before, rng: 0 });
-      // history only lives inside one turn (endTurn clears it): a frame of another map or actor is not this battle's
-      if (!frame || frame.scenario !== state.scenario || frame.turn.actor !== state.turn.actor) return null;
+      if (!frame) return null;
+      // history only lives inside one turn (endTurn clears it): a frame of another map or actor is not this battle's,
+      // so only the undo history is dropped and the rest of the save loads as it is
+      if (frame.scenario !== state.scenario || frame.turn.actor !== state.turn.actor) {
+        history = [];
+        break;
+      }
       const { rng: _rng, ...before } = frame;
       history.push({ before, paid: e.paid });
     }
