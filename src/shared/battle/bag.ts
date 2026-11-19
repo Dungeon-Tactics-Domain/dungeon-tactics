@@ -3,6 +3,7 @@
 // an item always lands, so undoing it is free. The AI does not use items (decision of Nov 19)
 import { CONSUMABLES, type Consumable, ITEM_RANGE } from '../../content/items.ts';
 import { poolOf } from './combat.ts';
+import { addEffect } from './effects.ts';
 import { dist, type Grid } from './grid.ts';
 import { originsOf } from './options.ts';
 import { closest, farCells, footprint, unitAt } from './pathing.ts';
@@ -18,6 +19,7 @@ export interface ItemEffect {
   unit: string;
   heal: number;
   mana: number;
+  turns: number; // a timed effect's turns (effects.ts), 0 without one
 }
 // why an item is off: 'used' (the turn's action is gone), 'none' (none left in the bag), 'water' (swimming), 'no-target'
 export type ItemReason = 'used' | 'none' | 'water' | 'no-target';
@@ -71,6 +73,7 @@ const effectOn = (c: Consumable, u: UnitState): ItemEffect => {
     unit: u.id,
     heal: Math.max(0, Math.min(c.heal ?? 0, d.hp - u.hp)),
     mana: manaMax ? Math.max(0, Math.min(c.mana ?? 0, manaMax - poolOf(u, 'mana'))) : 0,
+    turns: c.buff?.turns ?? 0,
   };
 };
 
@@ -90,6 +93,10 @@ export function applyItem(grid: Grid, state: BattleState, id: string, item: stri
   const events: BattleEvent[] = [{ k: 'item', unit: id, item, target }];
   if (fx.heal) events.push({ k: 'heal', unit: u.id, amount: fx.heal });
   if (fx.mana) events.push({ k: 'mana', unit: u.id, amount: fx.mana });
+  if (fx.turns) {
+    addEffect(state, u.id, item);
+    events.push({ k: 'effect', unit: u.id, item, turns: fx.turns });
+  }
   return events;
 }
 

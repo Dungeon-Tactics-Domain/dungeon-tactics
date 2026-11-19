@@ -1,4 +1,5 @@
 import { regen, resolveAbility } from './combat.ts';
+import { tickEffects } from './effects.ts';
 import { type Grid, samePos } from './grid.ts';
 import { aimTile, nearestTile } from './pathing.ts';
 import type { BattleEvent, BattleState, Charge, Pos } from './types.ts';
@@ -105,6 +106,7 @@ export function chargeAim(state: BattleState, c: Charge): Pos {
 export function finishTurn(state: BattleState): void {
   const actor = state.units.find((u) => u.id === state.turn.actor);
   if (actor) actor.ct = turnCt(actor.ct, state.turn.moved, !!state.turn.usedAbility);
+  tickEffects(state, state.turn.actor);
   state.turnsPlayed++;
 }
 

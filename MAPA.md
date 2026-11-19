@@ -21,6 +21,7 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/turn-queue.ts` — FFT CT queue: turn cost, the next turn, charges firing and previewOrder for the turn list.
 - `src/shared/battle/battle.ts` — Battle: owns the state, move/act/use item/end turn, limited undo (dice never roll back), save/load through parseBattleState.
 - `src/shared/battle/parse-state.ts` — parseBattleState: the save trust boundary that rebuilds the battle state field by field.
+- `src/shared/battle/effects.ts` — timed item effects on units (Fire oil, Stone potion): power, element, resistance and movement bonuses, ticked at the end of the unit's turn, and parseEffects.
 - `src/shared/battle/bag.ts` — items in battle: the heroes' shared bag, the Item command (spends the action, range 3 tiles on self or ally), itemOptions for the Agir list and parseBag.
 - `src/shared/battle/rng.ts` — seeded mulberry32 whose state lives in BattleState (nextRng, rollInt).
 - `src/shared/battle/rules.ts` — calculations a scenario may swap (survival, crawl rooms, the developer battle) and rulesOf.

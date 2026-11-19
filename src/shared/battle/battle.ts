@@ -2,13 +2,13 @@ import { ABILITIES, defaultLock } from './abilities.ts';
 import { applyItem, itemEffect } from './bag.ts';
 import { checkOutcome, counters, type Preview, pay, previewAbility, resolveAbility, spikeAtTurnEnd } from './combat.ts';
 import { canCounter, pendingCounters } from './counter.ts';
+import { moveOf } from './effects.ts';
 import { FACING, facingTo, type Grid, posKey, samePos } from './grid.ts';
 import { isInt, isObj, parseBattleState } from './parse-state.ts';
 import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Lock, Pos, UnitState } from './types.ts';
-import { UNIT_DEFS } from './units.ts';
 
 export { parseBattleState }; // the tests and old callers read it from here
 
@@ -69,7 +69,7 @@ export class Battle {
   reach(): Map<string, Step> {
     // over first: a battle that ended on the actor's death has no actor to read
     if (this.over) return new Map();
-    const left = UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0);
+    const left = moveOf(this.state, this.actor) - (this.state.turn.spent ?? 0);
     return left <= 0 ? new Map() : reachable(this.grid, this.state, this.actor.id, left);
   }
 
@@ -128,7 +128,7 @@ export class Battle {
       // slow action: pays the cost now and joins the queue; a new charge replaces the previous one of the same unit
       pay(this.actor, ability);
       // it may still walk, with half of what is left, rounded down (Nov 15, Fernando: "loses half, rounded up")
-      const left = Math.max(0, UNIT_DEFS[this.actor.def].move - (this.state.turn.spent ?? 0));
+      const left = Math.max(0, moveOf(this.state, this.actor) - (this.state.turn.spent ?? 0));
       this.state.turn.spent = (this.state.turn.spent ?? 0) + Math.ceil(left / 2);
       const follow = (lock ?? defaultLock(ability)) === 'unit' ? (unitAt(this.state, target)?.id ?? null) : null;
       this.state.charges = [

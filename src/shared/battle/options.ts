@@ -3,6 +3,7 @@
 // reading of the state: nothing here changes it, and the AI does not use it (it keeps chooseTurn).
 import { ABILITIES } from './abilities.ts';
 import { canPay, inDeep, type Preview, type PreviewReason, poolOf, previewAbility } from './combat.ts';
+import { moveOf } from './effects.ts';
 import { dist, type Grid, inBounds, posKey, standH, subOf } from './grid.ts';
 import { aimTile, farCells, reachable, unitAt } from './pathing.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
@@ -40,7 +41,7 @@ export interface AbilityOptions {
 // wait (previewAbility's 'water'): those tiles are no place to act from
 export function originsOf(grid: Grid, state: BattleState, actor: UnitState): { pos: Pos; cost: number }[] {
   const spent = state.turn.actor === actor.id ? (state.turn.spent ?? 0) : 0;
-  const left = UNIT_DEFS[actor.def].move - spent;
+  const left = moveOf(state, actor) - spent;
   const walk = left > 0 ? reachable(grid, state, actor.id, left) : new Map();
   return [
     { pos: actor.pos, cost: 0 },

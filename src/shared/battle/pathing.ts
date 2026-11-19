@@ -1,4 +1,5 @@
 import type { AbilityDef } from './abilities.ts';
+import { moveOf } from './effects.ts';
 import {
   canStand,
   dist,
@@ -263,7 +264,7 @@ export function restsOn(grid: Grid, p: Pos, size: number): boolean {
 // `budget`: movement points left in the turn (the whole movement, if absent)
 export function reachable(grid: Grid, state: BattleState, unitId: string, budget?: number): Map<string, Step> {
   const unit = state.units.find((u) => u.id === unitId)!;
-  budget ??= UNIT_DEFS[unit.def].move;
+  budget ??= moveOf(state, unit);
   const jump = jumpOf(state, unit.def);
   if ((UNIT_DEFS[unit.def].size ?? 1) > 1 && UNIT_DEFS[unit.def].move > 0)
     return reachableBig(grid, state, unit, budget, jump);

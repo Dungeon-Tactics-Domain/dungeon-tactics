@@ -6,6 +6,7 @@
 // below is our pick); rares 300 and epics 600 only count for selling, at half. Mana and stamina raise the pool's
 // max and the regens add to the class's (equipment.ts withGear). The old ids stay (saves point to them)
 import type { ItemDef } from '../shared/battle/equipment.ts';
+import type { Element, Resist } from '../shared/battle/units.ts';
 
 export const ITEM_LIST: ItemDef[] = [
   // main hand
@@ -241,7 +242,8 @@ export const ITEM_LIST: ItemDef[] = [
 
 // The consumables (the lab's buffs table): listed in the shop with their price, not sold yet. In battle the Item command
 // spends the turn's action on one (src/shared/battle/bag.ts, Nov 19); `heal` and `mana` are what it gives back, never
-// above the sheet's max. Fire oil and Stone potion still do only what their words say: their timed effects come next
+// above the sheet's max. `buff` is a timed effect on the target (src/shared/battle/effects.ts): it lasts `turns` of that
+// unit's own turns; `move` is in whole tiles like the sheets
 export interface Consumable {
   id: string;
   name: string;
@@ -250,6 +252,14 @@ export interface Consumable {
   use: [pt: string, en: string];
   heal?: number;
   mana?: number;
+  buff?: Buff;
+}
+export interface Buff {
+  turns: number;
+  physPower?: number; // added to a martial ability's damage
+  element?: Element; // a martial hit takes this element (the target's resistance to it applies)
+  resist?: Partial<Record<Resist, number>>;
+  move?: number;
 }
 export const CONSUMABLES: Consumable[] = [
   { id: 'life_potion', name: 'Poção de vida', en: 'Life potion', price: 40, use: ['cura 100', 'heals 100'], heal: 100 },
@@ -263,6 +273,7 @@ export const CONSUMABLES: Consumable[] = [
       'ataques físicos viram fogo, +10 de poder físico, 3 turnos',
       'physical attacks turn to fire, +10 physical power, 3 turns',
     ],
+    buff: { turns: 3, physPower: 10, element: 'fire' },
   },
   {
     id: 'stone_potion',
@@ -271,6 +282,7 @@ export const CONSUMABLES: Consumable[] = [
     price: 50,
     // the lab's −1 move in whole tiles, shown in half tiles like every Move on screen
     use: ['+30% de resistência física, −2 de movimento, 3 turnos', '+30% physical resistance, −2 move, 3 turns'],
+    buff: { turns: 3, resist: { phys: 30 }, move: -1 },
   },
 ];
 // Every item reaches the user or an ally up to 3 whole tiles away (Fernando, Nov 19: one range for all, a throw included)

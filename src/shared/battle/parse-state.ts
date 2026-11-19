@@ -2,6 +2,7 @@
 // back from the browser is rebuilt and checked here; any doubt returns null.
 import { ABILITIES } from './abilities.ts';
 import { CONSUMABLE_IDS, parseBag } from './bag.ts';
+import { parseEffects } from './effects.ts';
 import { canStand, FACING, faceNearest, inBounds, posKey, subOf, tileAt } from './grid.ts';
 import { SCENARIOS } from './scenarios.ts';
 import type { BattleState, Charge, Pos, UnitState } from './types.ts';
@@ -168,7 +169,8 @@ export function parseBattleState(raw: unknown): BattleState | null {
       ) as Record<string, string>;
   }
   const bag = parseBag(raw.bag);
-  if (!bag) return null;
+  const effects = parseEffects(raw.effects, units);
+  if (!bag || !effects) return null;
   return {
     scenario: raw.scenario,
     units,
@@ -180,5 +182,6 @@ export function parseBattleState(raw: unknown): BattleState | null {
     ...(corpses?.length && { corpses }),
     ...(corpseDefs && Object.keys(corpseDefs).length > 0 && { corpseDefs }),
     ...(Object.keys(bag).length > 0 && { bag }),
+    ...(effects.length > 0 && { effects }),
   };
 }

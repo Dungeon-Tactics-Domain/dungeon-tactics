@@ -1,5 +1,6 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
 import { basicOf, type PendingCounter } from './counter.ts';
+import { hitElement, powerBonus, resistBonus } from './effects.ts';
 import {
   dist,
   FACING,
@@ -92,10 +93,10 @@ export function regen(u: UnitState): BattleEvent[] {
   return [{ k: 'regen', unit: u.id, amount }];
 }
 
-// damage range with the user's power (class and equipment): magic on a spell, physical otherwise
-const withPower = (actor: UnitState, a: AbilityDef): [number, number] => {
+// damage range with the user's power (class, equipment and, for martial hits, item effects): magic on a spell, physical otherwise
+const withPower = (state: BattleState, actor: UnitState, a: AbilityDef): [number, number] => {
   const d = UNIT_DEFS[actor.def];
-  const p = a.damage[1] > 0 ? ((a.magic ? d.magPower : d.physPower) ?? 0) : 0;
+  const p = a.damage[1] > 0 ? (a.magic ? (d.magPower ?? 0) : (d.physPower ?? 0) + powerBonus(state, actor.id)) : 0;
   return [a.damage[0] + p, a.damage[1] + p];
 };
 // heal range with the caster's magic power (Fernando, Nov 15: as the lab, magic power counts on heals too)
@@ -142,17 +143,21 @@ function affected(grid: Grid, state: BattleState, actor: UnitState, ability: Abi
 }
 
 // share of a hit `u` keeps, in 1/10000 so the sum stays whole (Nov 15 grill): x (1 - physical or magic resistance)
-// x (1 - the element's); a charging target loses CHARGING_PHYS / CHARGING_MAG
-const defence = (state: BattleState, a: AbilityDef, u: UnitState): number => {
+// x (1 - the element's); a charging target loses CHARGING_PHYS / CHARGING_MAG. Item effects (effects.ts) add to the target's
+// resistance and give the attacker's martial hits an element
+const defence = (state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState): number => {
   const d = UNIT_DEFS[u.def];
   const charging = state.charges.some((c) => c.unit === u.id);
+  const kind = a.magic ? 'mag' : 'phys';
   const drop = !charging ? 0 : a.magic ? COMBAT.CHARGING_MAG : COMBAT.CHARGING_PHYS;
-  return (100 - resistOf(d, a.magic ? 'mag' : 'phys', -drop)) * (100 - (a.element ? resistOf(d, a.element) : 0));
+  const element = a.element ?? (a.magic ? undefined : hitElement(state, actor.id));
+  const elemResist = element ? resistOf(d, element, resistBonus(state, u.id, element)) : 0;
+  return (100 - resistOf(d, kind, resistBonus(state, u.id, kind) - drop)) * (100 - elemResist);
 };
 // Damage that lands: the roll (with power) x the defence, the counter's `scale` and the side share, rounded down, at least
 // 1. Whole numbers until the last division, so 70 at 30% is 49, not 48.99 rounded down
 function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, roll: number, scale = 1): number {
-  const keep = defence(state, a, u);
+  const keep = defence(state, actor, a, u);
   return Math.max(1, Math.floor((roll * keep * scale * sideShare(actor, u, false)) / 10000));
 }
 
@@ -164,7 +169,7 @@ export const afterDodge = (chance: number, dodge: number, side: Side) =>
 
 // the range `actor` would deal `u` with `a` before the hit roll, wherever they stand: the preview and the AI's threat read it
 export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState): [number, number] {
-  const [lo, hi] = withPower(actor, a);
+  const [lo, hi] = withPower(state, actor, a);
   const dmg = (d: number) => (d > 0 ? landed(state, actor, a, u, d) : 0);
   return [dmg(lo), dmg(hi)];
 }
@@ -309,7 +314,8 @@ export function resolveAbility(
     }
     let dmg: number;
     [dmg, state.rng] =
-      rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ?? rollInt(state.rng, ...withPower(actor, ability));
+      rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ??
+      rollInt(state.rng, ...withPower(state, actor, ability));
     dmg = landed(state, actor, ability, unit, dmg, scale);
     events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
