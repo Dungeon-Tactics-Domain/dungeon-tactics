@@ -11,3 +11,19 @@
   Content-Type: application/wasm
 /models/*.gltf
   Content-Type: application/json
+
+# Files with no hash in the name (same URL, content may change on a deploy): one hour, so a returning player skips the
+# revalidation round trip during a session but a new deploy still arrives within the hour. index.html, the manifest and the icons keep
+# the default (revalidate every time, a 304 costs no body)
+/models/*
+  Cache-Control: public, max-age=3600
+/music/*
+  Cache-Control: public, max-age=3600
+/sfx/*
+  Cache-Control: public, max-age=3600
+/chars/*
+  Cache-Control: public, max-age=3600
+/tex/*
+  Cache-Control: public, max-age=3600
+/fonts/*
+  Cache-Control: public, max-age=3600
