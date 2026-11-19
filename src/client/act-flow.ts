@@ -76,10 +76,10 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
           preview: s.preview,
         }));
         if (target.k === 'direct') return t.kind !== 'unit' ? all : [];
-        if (t.kind === 'self') return target.unit === id ? all : [];
+        if (t.kind === 'self' && target.unit === id) return all;
         if (t.kind === 'unit' && t.unit === target.unit) return all;
-        // an area aimed at the ground or another unit next to the target also hits it (Fernando, Nov 19: "choose where in
-        // the area first, then only the tiles that can use it there")
+        // an area aimed at the ground, another unit next to the target or the user itself also hits it (Fernando, Nov 19:
+        // "choose where in the area first, then only the tiles that can use it there")
         return area ? all.filter((s) => s.preview.targets.some((x) => x.unit === target.unit)) : [];
       });
       return spots.length ? { ...base, enabled: true, spots } : { ...base, enabled: false, reason: 'range', spots: [] };
@@ -136,22 +136,31 @@ export function toward(points: Pos[], from: Pos, step: Pos): number {
   return best;
 }
 
-// The spot picked first (decision 3): staying put when it works, else the best expected result, then the shortest walk.
-// Expected: the sum over hit targets of chance x mean damage, or heal; an item's heal and mana
-export function bestSpot(a: ActAction): number {
+// The spot picked first (decision 3): one that keeps allies out of the damage when there is one (Fernando, Nov 19: the
+// Explosion's first tile hit the Archer), then staying put when it works, else the best expected result, then the
+// shortest walk. Expected: chance x mean damage on foes and heal on allies, minus the same on the wrong side; an item's
+// heal and mana
+export function bestSpot(a: ActAction, b: Battle): number {
   if (!a.spots.length) return -1;
+  const own = (unit: string) => b.state.units.find((u) => u.id === unit)?.team === b.actor.team;
+  const hurtsOwn = (s: ActSpot) => !!s.preview?.targets.some((t) => own(t.unit) && t.dmgMax > 0);
   const score = (s: ActSpot) =>
     s.preview
-      ? s.preview.targets.reduce(
-          (sum, t) => sum + (t.chance * (t.dmgMin + t.dmgMax)) / 200 + (t.healMin + t.healMax) / 2,
-          0,
-        )
+      ? s.preview.targets.reduce((sum, t) => {
+          const dmg = (t.chance * (t.dmgMin + t.dmgMax)) / 200,
+            heal = (t.healMin + t.healMax) / 2;
+          return sum + (own(t.unit) ? heal - dmg : dmg - heal);
+        }, 0)
       : (s.heal ?? 0) + (s.mana ?? 0);
+  const better = (s: ActSpot, o: ActSpot) =>
+    hurtsOwn(s) !== hurtsOwn(o)
+      ? !hurtsOwn(s)
+      : (s.cost === 0) !== (o.cost === 0)
+        ? s.cost === 0
+        : score(s) > score(o) || (score(s) === score(o) && s.cost < o.cost);
   let best = 0;
   a.spots.forEach((s, i) => {
-    const b = a.spots[best];
-    if (b.cost === 0) return;
-    if (s.cost === 0 || score(s) > score(b) || (score(s) === score(b) && s.cost < b.cost)) best = i;
+    if (better(s, a.spots[best])) best = i;
   });
   return best;
 }

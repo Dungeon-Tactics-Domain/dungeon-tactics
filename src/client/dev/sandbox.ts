@@ -221,7 +221,7 @@ export function install(game: Game, scene: BattleScene) {
       else {
         const { spots } = actions[action];
         const found = spots.findIndex((x) => samePos(x.aim, sc.target));
-        const index = found < 0 ? bestSpot(actions[action]) : found;
+        const index = found < 0 ? bestSpot(actions[action], battle) : found;
         show({ k: 'spot', target: at, action, index }, spots[index].pos);
       }
     }

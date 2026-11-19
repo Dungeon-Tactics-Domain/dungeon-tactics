@@ -124,12 +124,12 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     // several aims (an area): where it lands first, starting on the best tile's aim
     const aims = actAims(a);
     if (aims.length) {
-      const best = a.spots[bestSpot(a)].aim;
+      const best = a.spots[bestSpot(a, b)].aim;
       h.screen = { k: 'aim', target: s.target, action: index, index: aims.findIndex((p) => samePos(p, best)) };
       h.focus(best);
     } else {
-      h.screen = { k: 'spot', target: s.target, action: index, index: bestSpot(a) };
-      h.focus(a.spots[bestSpot(a)].pos);
+      h.screen = { k: 'spot', target: s.target, action: index, index: bestSpot(a, b) };
+      h.focus(a.spots[bestSpot(a, b)].pos);
     }
     return h.update();
   }
@@ -139,8 +139,8 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     if (!all || !aim) return sfx('cancel');
     sfx('confirm');
     const a = withAim(all, aim);
-    h.screen = { k: 'spot', target: s.target, action: s.action, index: bestSpot(a), aim };
-    h.focus(a.spots[bestSpot(a)].pos);
+    h.screen = { k: 'spot', target: s.target, action: s.action, index: bestSpot(a, b), aim };
+    h.focus(a.spots[bestSpot(a, b)].pos);
     return h.update();
   }
   const a = screenAction(b, s);

@@ -154,6 +154,8 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     const potion = actActions(b, ally).findIndex((a) => a.k === 'item');
     expect(help({ k: 'actions', target: ally, index: potion })).toMatch(/^Poção de vida: cura \d+$/);
     expect(help({ k: 'spot', target: ally, action: potion, index: 0 })).toMatch(/^Poção de vida: cura \d+$/);
+    // an ability's detail is on its sheet: the line stays short (it was tiny on a phone)
+    expect(help({ k: 'actions', target: ally, index: 0 })).toMatch(/: confirme para seguir\.$/);
     expect(itemDetail('stone_potion')).toBe('por 3 turnos: +30% de resistência a dano físico, -1 de movimento');
   });
 

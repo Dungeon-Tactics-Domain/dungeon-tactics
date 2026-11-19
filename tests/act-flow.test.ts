@@ -42,8 +42,35 @@ describe('Agir primeiro flow (act-flow.ts, Nov 19)', () => {
   it('the best spot is staying put when it works, else the best result with the shortest walk', () => {
     const b = scene();
     const bolt = actActions(b, { k: 'unit', unit: 'near', pos: { x: 5, y: 2 } }).find((a) => a.id === 'firebolt')!;
-    expect(bolt.spots[bestSpot(bolt)].cost).toBe(0);
-    expect(bestSpot({ k: 'ability', id: 'x', enabled: false, spots: [] })).toBe(-1);
+    expect(bolt.spots[bestSpot(bolt, b)].cost).toBe(0);
+    expect(bestSpot({ k: 'ability', id: 'x', enabled: false, spots: [] }, b)).toBe(-1);
+  });
+
+  it('an area centred on the user is on for a foe it would hit, with only the tiles that reach it (Nov 19)', () => {
+    const s = stateOf([
+      { id: 'w', def: 'warrior', team: 'hero', x: 1, y: 2 },
+      { id: 'near', def: 'soldier', team: 'enemy', x: 3, y: 2 },
+    ]);
+    s.scenario = 'ash_wood';
+    const b = new Battle(g, s);
+    const spin = actActions(b, { k: 'unit', unit: 'near', pos: { x: 3, y: 2 } }).find((a) => a.id === 'spin')!;
+    expect(spin.enabled).toBe(true);
+    expect(spin.spots.every((sp) => sp.preview?.targets.some((t) => t.unit === 'near'))).toBe(true);
+  });
+
+  it('the best spot of an area keeps an ally out of it when another aim still hits the target (Nov 19)', () => {
+    const s = stateOf([
+      { id: 'm', def: 'mage', team: 'hero', x: 1, y: 2 },
+      { id: 'w', def: 'warrior', team: 'hero', x: 4, y: 2 },
+      { id: 'near', def: 'soldier', team: 'enemy', x: 5, y: 2 },
+    ]);
+    s.scenario = 'ash_wood';
+    const b = new Battle(g, s);
+    const blast = actActions(b, { k: 'unit', unit: 'near', pos: { x: 5, y: 2 } }).find((a) => a.id === 'blast')!;
+    expect(blast.spots.some((sp) => sp.preview?.targets.some((t) => t.unit === 'w'))).toBe(true); // the ally can be hit
+    const hit = blast.spots[bestSpot(blast, b)].preview!.targets.map((t) => t.unit);
+    expect(hit).toContain('near');
+    expect(hit).not.toContain('w');
   });
 
   it('a tap on a unit picks its row; Cancel walks back one screen at a time', () => {

@@ -59,7 +59,7 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
     mark(cellsOfTarget(b, s.target), 'target');
     mark(footprint(b.actor), 'actor');
     if (aims[s.index]) tiles.push(...attackMarks(b, ABILITIES[a.id], aims[s.index]));
-    return { tiles, path: null, preview: here?.spots[bestSpot(here)]?.preview ?? null };
+    return { tiles, path: null, preview: here?.spots[bestSpot(here, b)]?.preview ?? null };
   }
   const spots = a?.spots ?? [];
   const seen = new Set<string>();

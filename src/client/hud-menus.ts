@@ -2,7 +2,7 @@
 // BattleHud.menuOpen and its size cache read it right after.
 import type { Battle } from '../shared/battle/battle.ts';
 import { screenAction } from './act-marks.ts';
-import { abilityDetail, commandName, itemDetail, itemName } from './battle-text.ts';
+import { commandName, itemDetail, itemName } from './battle-text.ts';
 import { chargeFromText, counterFromText } from './charge-lines.ts';
 import { type Command, cancelStep, commandEnabled, commandIndex, menuRows, type Screen, swimming } from './command.ts';
 import type { HudActions, HudView } from './hud.ts';
@@ -87,7 +87,13 @@ function actHelp(b: Battle, s: Extract<Screen, { k: 'targets' | 'actions' | 'spo
   const a = screenAction(b, s);
   if (!a) return '';
   const name = a.k === 'item' ? itemName(a.id) : abilityName(a.id);
-  if (s.k === 'actions') return `${name}: ${a.k === 'item' ? itemDetail(a.id) : abilityDetail(a.id)}`;
+  // an ability's detail is on its sheet beside the list; the long line repeated it in tiny text on a phone (Nov 19)
+  if (s.k === 'actions')
+    return a.k === 'item'
+      ? `${name}: ${itemDetail(a.id)}`
+      : touch
+        ? t(`${name}: toque de novo para seguir.`, `${name}: tap again to go on.`)
+        : t(`${name}: confirme para seguir.`, `${name}: confirm to go on.`);
   if (s.lock) return t(`${name}: travar onde?`, `${name}: lock on?`);
   const spot = a.spots[s.index];
   if (a.k === 'item' && spot) {
