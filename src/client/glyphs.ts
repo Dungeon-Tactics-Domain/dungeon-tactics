@@ -69,7 +69,6 @@ export const ACTIONS = {
   confirm: { keys: ['Enter'], pad: ['south'] },
   cancel: { keys: ['Esc'], pad: ['east'] },
   status: { keys: ['C'], pad: ['west'] },
-  info: { keys: ['I'], pad: ['north'] },
   undo: { keys: ['Z'], pad: ['select'] },
   help: { keys: ['H'], pad: ['start'] },
   rotateLeft: { keys: ['⇧R'], pad: ['lb'] },
@@ -84,7 +83,7 @@ export const ACTIONS = {
   wait: { keys: ['P'], pad: [] },
   face: { keys: ['T'], pad: [] },
   cycle: { keys: ['Tab'], pad: [] },
-  slots: { keys: ['1 – 7'], pad: [] },
+  slots: { keys: ['1'], pad: [] },
   recenter: { keys: ['F'], pad: [] },
   fps: { keys: ['F3'], pad: [] },
 } as const satisfies Record<string, { keys: readonly string[]; pad: readonly PadGlyph[] }>;

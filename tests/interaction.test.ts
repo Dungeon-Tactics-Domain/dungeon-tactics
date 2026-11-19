@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aimStep,
   confirm,
   defaultMode,
   facingHighlights,
@@ -14,7 +13,7 @@ import { squareUnder } from '../src/client/scene/space.ts';
 import { playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { posKey } from '../src/shared/battle/grid.ts';
-import { halfDef, halve } from '../src/shared/battle/half.ts';
+import { halve } from '../src/shared/battle/half.ts';
 import { cellsOf, footprint } from '../src/shared/battle/pathing.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
@@ -65,10 +64,10 @@ describe('two-step touch', () => {
     expect(confirm(b, ui).events).toEqual([]);
   });
 
-  it('after moving, the default mode is the first ability that has a target', () => {
+  it('after moving, nothing is aimed on the map: acting has its own screens', () => {
     const b = scene();
     confirm(b, tapTile(b, freshUi(b), at(1, 2)));
-    expect(defaultMode(b)).toEqual({ k: 'ability', id: 'shot' });
+    expect(defaultMode(b)).toEqual({ k: 'idle' });
   });
 
   it('after moving with no target in reach, no ability is selected', () => {
@@ -105,20 +104,6 @@ describe('two-step touch', () => {
     expect(tapTile(b, freshUi(b), at(2, 1)).invalid).toBe(false);
   });
 
-  it('ability: valid target shows the hit % before confirming', () => {
-    const b = scene();
-    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), at(4, 1));
-    const h = highlights(b, ui);
-    expect(ui.pending).toEqual(at(4, 1));
-    expect(h.preview?.ok).toBe(true);
-    expect(h.preview?.targets[0]).toMatchObject({ unit: 'f', chance: b.preview('shot', at(4, 1)).targets[0].chance });
-    const hp = b.state.units[2].hp;
-    const { events } = confirm(b, ui);
-    expect(b.state.turn.usedAbility).toBe('shot');
-    expect(events).toContainEqual(expect.objectContaining({ k: 'hit', unit: 'f' })); // the scene's seed hits
-    expect(b.state.units[2].hp).toBeLessThan(hp);
-  });
-
   it('tapping an enemy out of ability range shows what it threatens', () => {
     const b = scene();
     const ui = tapTile(b, freshUi(b), at(4, 1));
@@ -133,13 +118,13 @@ describe('two-step touch', () => {
     // spends the rest of the movement (Nov 13: moves in parts until movement runs out)
     while (b.reach().size) b.move([...b.reach().values()][0].pos);
     const ui = selectMode(b, freshUi(b), { k: 'move' });
-    expect(ui.mode).toEqual({ k: 'ability', id: 'shot' });
+    expect(ui.mode).toEqual({ k: 'idle' });
   });
 
   it('with everything done in the turn, there is no mode or marked tile', () => {
     const b = scene();
     confirm(b, tapTile(b, freshUi(b), at(1, 1)));
-    confirm(b, tapTile(b, freshUi(b), at(4, 1)));
+    b.act('shot', at(4, 1));
     expect(defaultMode(b)).toEqual({ k: 'idle' });
     expect(highlights(b, freshUi(b)).tiles.filter((t) => t.kind !== 'actor')).toEqual([]);
   });
@@ -214,97 +199,6 @@ describe('the square of a 2x2 token', () => {
     const ui = selectMode(b, freshUi(b), { k: 'move' });
     expect(of(b, ui, 'nogo', b.actor.pos).size).toBe(0);
     expect(of(b, ui, 'nogo', { x: 7, y: 5 })).toEqual(keys([{ x: 7, y: 5 }]));
-  });
-
-  it('aiming at any cell of a token marks all 4 of its cells', () => {
-    const b = new Battle(
-      halve({ id: 't-aim', name: 't', en: 't', grid: gridOf(['....']), spawns: [] }).grid,
-      stateOf(
-        [
-          { id: 'w', def: 'warrior½', team: 'hero', x: 2, y: 0 },
-          { id: 'f', def: 'soldier½', team: 'enemy', x: 4, y: 0 },
-        ],
-        HIT_SEED,
-      ),
-    );
-    const far = { x: 5, y: 1 };
-    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'strike' }), far);
-    expect(ui.pending).toEqual(far);
-    expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 4, y: 0 }, 2)));
-  });
-
-  // a split map 12 whole tiles wide and `rows` deep
-  const aimAt = (units: { id: string; def: string; team: 'hero' | 'enemy'; x: number; y: number }[], rows = 1) =>
-    new Battle(
-      halve({ id: 't-aim1', name: 't', en: 't', grid: gridOf(Array(rows).fill('............')), spawns: [] }).grid,
-      stateOf(units, HIT_SEED),
-    );
-
-  it('aiming at empty ground marks only the aimed half-tile cell', () => {
-    const b = aimAt([{ id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 }]);
-    const cell = { x: 7, y: 1 };
-    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), cell);
-    expect(ui.pending).toEqual(cell);
-    expect(of(b, ui, 'target')).toEqual(keys([cell]));
-  });
-
-  it('an empty cell whose whole tile the rule lands on a token marks that token, the one the forecast hits', () => {
-    // the soldier straddles two map tiles (cells 5 and 6); cell 7 is empty, but its tile's corner (6) is the soldier's
-    const b = aimAt([
-      { id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 },
-      { id: 'f', def: halfDef('soldier'), team: 'enemy', x: 5, y: 0 },
-    ]);
-    const cell = { x: 7, y: 1 };
-    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), cell);
-    expect(b.preview('shot', cell).targets.map((t) => t.unit)).toEqual(['f']);
-    expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 5, y: 0 }, 2)));
-  });
-
-  it('an area aimed at empty ground keeps one target cell and marks the rest of its area', () => {
-    const b = aimAt([{ id: 'm', def: halfDef('mage'), team: 'hero', x: 0, y: 0 }], 3);
-    const cell = { x: 9, y: 3 };
-    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'blast' }), cell);
-    expect(of(b, ui, 'target')).toEqual(keys([cell]));
-    // the rest of the aimed whole tile is area, and so is the ring of radius 1 around it
-    for (const c of [
-      { x: 8, y: 2 },
-      { x: 9, y: 2 },
-      { x: 8, y: 3 },
-      { x: 10, y: 3 },
-      { x: 7, y: 2 },
-    ])
-      expect(of(b, ui, 'area').has(posKey(c))).toBe(true);
-  });
-
-  it('aiming at any cell of the Colossus marks its whole body', () => {
-    const b = aimAt(
-      [
-        { id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 },
-        { id: 'c', def: halfDef('colossus'), team: 'enemy', x: 6, y: 0 },
-      ],
-      2,
-    );
-    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), { x: 9, y: 3 });
-    expect(of(b, ui, 'target')).toEqual(keys(cellsOf({ x: 6, y: 0 }, 4)));
-  });
-
-  describe('the aiming cursor steps until the mark moves', () => {
-    // soldier on cells 4-5, Colossus on cells 18-21 against the right edge (map 24 cells wide, 4 deep)
-    const b = aimAt(
-      [
-        { id: 'a', def: halfDef('archer'), team: 'hero', x: 0, y: 0 },
-        { id: 'f', def: halfDef('soldier'), team: 'enemy', x: 4, y: 0 },
-        { id: 'c', def: halfDef('colossus'), team: 'enemy', x: 20, y: 0 },
-      ],
-      2,
-    );
-    const step = (from: Pos, x: number, y = 0) => aimStep(b.grid, b.state, from, { x, y });
-
-    it('enters a body from outside on its near cell', () => expect(step({ x: 3, y: 0 }, 1)).toEqual({ x: 4, y: 0 }));
-    it('crosses a token in one press', () => expect(step({ x: 4, y: 0 }, 1)).toEqual({ x: 6, y: 0 }));
-    it('steps one cell on empty ground', () => expect(step({ x: 8, y: 1 }, 1)).toEqual({ x: 9, y: 1 }));
-    it('crosses the Colossus in one press', () => expect(step({ x: 23, y: 2 }, -1)).toEqual({ x: 19, y: 2 }));
-    it('does not move off the map through a body at its edge', () => expect(step({ x: 21, y: 1 }, 1)).toBeNull());
   });
 
   it('the facing marks sit beside each side of the square, none under it', () => {

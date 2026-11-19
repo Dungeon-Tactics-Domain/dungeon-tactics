@@ -2,13 +2,12 @@
 // hidden for now (the sandbox's `hide`, docs/sandbox.md): a hidden piece is not drawn and takes no input. No DOM and no
 // Three.js here: the sandbox's parser and the Node CLI read the names too.
 export const PIECE_NAMES = [
-  'menu', // the command menu, its submenu and the ability sheet
+  'menu', // the command menu and the Agir primeiro lists beside it
   'turn', // the turn list
   'bar', // the combat bar: the acting sheet, the strike preview and the target's sheet
   'banner', // the instruction banner
   'height', // the tile height
   'hints', // the button hints
-  'confirm', // "Execute?"
   'result', // the end of battle
   'tools', // the corner menu
   'status', // the Status window

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Screen } from '../src/client/command.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { actionVerb, backKind, confirmParts, helpText, runPick, undoShown } from '../src/client/hud-menus.ts';
+import { backKind, helpText, undoShown } from '../src/client/hud-menus.ts';
 import { freshUi, highlights, hoverTile, selectMode, tapTile, type Ui } from '../src/client/interaction.ts';
-import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, stateOf } from './battle-helpers.ts';
@@ -27,18 +26,18 @@ const view = (b: Battle, screen: Screen, ui: Ui, cursor: Pos): HudView => ({
   log: '',
   acting: null,
   cursor,
-  ability: ui.mode.k === 'ability' ? ui.mode.id : null,
   face: () => 'neutral',
 });
 
 describe('Back button', () => {
   it('shows on every screen that Esc leaves, and hides on the menu and while nothing responds', () => {
     const b = duel();
+    const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
     for (const s of [
       { k: 'map', command: 'move' },
-      { k: 'map', command: 'act' },
-      { k: 'abilities', index: 0 },
-      { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } },
+      { k: 'targets', index: 0 },
+      { k: 'actions', target: foe, index: 0 },
+      { k: 'spot', target: foe, action: 0, index: 0 },
       { k: 'facing' },
     ] as Screen[]) {
       expect(backKind(b, s, true)).toBe('back');
@@ -70,7 +69,6 @@ describe('Back button', () => {
 
 describe('help line after a tap', () => {
   const move: Screen = { k: 'map', command: 'move' };
-  const act: Screen = { k: 'map', command: 'act' };
 
   it('Move: the 1st tap says to tap again; a tile that does not work says so', () => {
     const b = duel();
@@ -85,18 +83,6 @@ describe('help line after a tap', () => {
     // keyboard and mouse: the hover already marks, the text stays
     expect(helpText(marked, true, false)).toBe(first(false));
     expect(helpText(bad, true, false)).toBe(first(false));
-  });
-
-  it('Act: the same on the target', () => {
-    const b = duel();
-    const ui = selectMode(b, freshUi(b), { k: 'ability', id: 'strike' });
-    const start = helpText(view(b, act, ui, b.actor.pos), true, true);
-    expect(start).toBe('Alvo: área laranja. Roxo: bloqueado.');
-    const marked = view(b, act, tapTile(b, ui, { x: 2, y: 1 }), { x: 2, y: 1 });
-    expect(helpText(marked, true, true)).toBe('Toque de novo para confirmar.');
-    const bad = view(b, act, tapTile(b, ui, { x: 4, y: 4 }), { x: 4, y: 4 });
-    expect(helpText(bad, true, true)).toBe('Toque dentro da área laranja.');
-    expect(helpText(marked, true, false)).toBe(start);
   });
 
   // the warning comes from `Ui.invalid` (Nov 16 review), not from where the cursor is
@@ -126,52 +112,19 @@ describe('help line: one banner line', () => {
     const b = duel();
     const lines: string[] = [];
     for (const touch of [true, false]) {
-      for (const k of ['move', 'ability'] as const) {
-        const ui = selectMode(b, freshUi(b), k === 'move' ? { k } : { k, id: 'strike' });
-        const s: Screen = { k: 'map', command: k === 'move' ? 'move' : 'act' };
-        for (const at of [b.actor.pos, { x: 1, y: 2 }, { x: 2, y: 1 }, { x: 5, y: 0 }, { x: 4, y: 4 }])
-          lines.push(helpText(view(b, s, tapTile(b, ui, at), at), true, touch));
-      }
+      const ui = selectMode(b, freshUi(b), { k: 'move' });
+      for (const at of [b.actor.pos, { x: 1, y: 2 }, { x: 2, y: 1 }, { x: 5, y: 0 }, { x: 4, y: 4 }])
+        lines.push(helpText(view(b, { k: 'map', command: 'move' }, tapTile(b, ui, at), at), true, touch));
+      const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
       for (const s of [
         { k: 'menu', index: 0 },
-        { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } },
-        { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 }, lock: 'unit' },
+        { k: 'targets', index: 0 },
+        { k: 'spot', target: foe, action: 0, index: 0 },
+        { k: 'spot', target: foe, action: 0, index: 0, lock: 'unit' },
         { k: 'facing' },
       ] as Screen[])
         lines.push(helpText(view(b, s, freshUi(b), b.actor.pos), true, touch));
     }
     for (const line of lines) expect(line.length, line).toBeLessThanOrEqual(37);
-  });
-});
-
-// The 3D "Execute?" (confirm3d/; Fernando, Nov 16) draws what the HTML window says, from one pure source
-describe('"Execute?": its title, notes and choices', () => {
-  it('the preview: Confirm in focus and Back; the lock step: its two places, the focus where the screen is', () => {
-    const b = duel();
-    const preview = confirmParts(b, { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } });
-    expect(preview.title).toBe('Golpe: executar?');
-    expect(preview.choices.map((c) => [c.label, c.focus, c.pick])).toEqual([
-      ['Atacar', true, 'yes'],
-      ['Voltar', false, 'no'],
-    ]);
-    const lock = confirmParts(b, { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 }, lock: 'tile' });
-    expect(lock.choices.map((c) => [c.label, c.focus, c.pick])).toEqual([
-      ['No personagem', false, 'unit'],
-      ['Na casa', true, 'tile'],
-    ]);
-  });
-
-  // the confirm button's verb comes from the ability's stats (Nov 18): every ability gets one, short enough for its half
-  // of the window
-  it('the confirm button says what the press does', () => {
-    expect(['strike', 'shot', 'firebolt', 'heal'].map(actionVerb)).toEqual(['Atacar', 'Atirar', 'Lançar', 'Curar']);
-    for (const id of Object.keys(ABILITIES)) expect(actionVerb(id).length, id).toBeGreaterThan(0);
-  });
-
-  it('a click runs the same action as the HTML button', () => {
-    const calls: string[] = [];
-    const act = { answer: (y: boolean) => calls.push(`answer ${y}`), lock: (on: string) => calls.push(`lock ${on}`) };
-    for (const p of ['yes', 'no', 'unit', 'tile'] as const) runPick(act as never, p);
-    expect(calls).toEqual(['answer true', 'answer false', 'lock unit', 'lock tile']);
   });
 });

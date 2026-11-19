@@ -1,4 +1,4 @@
-// Battle texts: the ability sheet, the summary of the last action, the attribute rows and the Status window sheet.
+// Battle texts: the ability facts, the summary of the last action, the attribute rows and the Status window sheet.
 // Pure (strings from the state), shared by the HUD, the party windows and the end of battle.
 import { ABILITIES, type AbilityDef } from '../shared/battle/abilities.ts';
 import { CONSUMABLE } from '../shared/battle/bag.ts';
@@ -42,14 +42,6 @@ export const shortOf = (u: UnitState, a: AbilityDef) =>
         `${a.cost[1] - poolOf(u, a.cost[0])} ${poolName(a.cost[0])} short`,
       )
     : '';
-// "Execute?": what it spends and what is left, paid now even on a charge (it fires later for free)
-export const spendNote = (u: UnitState, a: AbilityDef) =>
-  a.cost
-    ? t(
-        `Gasta ${costText(a)}: ${poolOf(u, a.cost[0])} → ${poolOf(u, a.cost[0]) - a.cost[1]}`,
-        `Spends ${costText(a)}: ${poolOf(u, a.cost[0])} → ${poolOf(u, a.cost[0]) - a.cost[1]}`,
-      )
-    : '';
 const regenText = (def: UnitDef, k: Resource) =>
   def.regen?.[k] ? t(`+${def.regen[k]} de ${k} por turno`, `+${def.regen[k]} ${k} per turn`) : '';
 // the Status window's rows: "Mana · 45/60, +8 mana per turn"
@@ -69,7 +61,7 @@ export const regenLine = (def: UnitDef) =>
 const COMMAND_NAME: Record<Command, () => string> = {
   move: () => t('Mover', 'Move'),
   undo: () => t('Desfazer movimento', 'Undo move'),
-  act: () => t('Habilidades', 'Abilities'), // the reference's name for the row and for its submenu
+  act: () => t('Habilidades', 'Abilities'), // the reference's name for the row
   wait: () => t('Esperar', 'Wait'),
   status: () => 'Status',
 };
@@ -80,11 +72,10 @@ export const abilityNote = (u: UnitState, a: AbilityDef, on: boolean) =>
     ? [costText(a), a.charge ? t(`${a.charge} tiq.`, `${a.charge} tk`) : ''].filter(Boolean).join(' · ')
     : shortOf(u, a);
 
-// ability sheet (submenu and status window)
+// an ability's facts on one line (the help line, the Party's Abilities page)
 export const abilityDetail = (id: string) => abilityPages(id).flat().join(' · ');
 
-// The same facts as the three pages of the FFT-style ability sheet (menu3d/): reach and hit, what else it
-// does, what it costs. In abilityDetail's order, so the help line reads the same
+// The facts in three groups: reach and hit, what else it does, what it costs. In abilityDetail's order, so the help line reads the same
 export function abilityPages(id: string): [hit: string[], more: string[], cost: string[]] {
   const a = ABILITIES[id];
   const hit = [

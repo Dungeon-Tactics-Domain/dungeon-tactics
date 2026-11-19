@@ -1,18 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { actTargets, targetIndex } from '../src/client/act-flow.ts';
 import { commandName } from '../src/client/battle-text.ts';
 import {
-  abilityEnabled,
   COMMANDS,
   cancelStep,
   canUndoMove,
   commandEnabled,
   commandIndex,
-  lockStep,
   longestRange,
   menuRows,
   startScreen,
   stepIndex,
-  turnPage,
 } from '../src/client/command.ts';
 import { emptyMemory, padActions } from '../src/client/gamepad.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
@@ -102,25 +100,10 @@ describe('command menu', () => {
     expect(menuRows(b)).toEqual(['move', 'undo', 'act', 'wait', 'status']);
   });
 
-  // Fernando, Nov 17: the cursor follows what is seen. "On the character" sits left of "On the tile"
-  it('the lock step: left and right go to the choice on that side, stay at the end, and up and down do nothing', () => {
-    expect(lockStep('tile', 'left')).toBe('unit');
-    expect(lockStep('unit', 'right')).toBe('tile');
-    expect(lockStep('unit', 'left')).toBe('unit'); // the left end: no way round
-    expect(lockStep('tile', 'right')).toBe('tile'); // the right end
-    for (const lock of ['unit', 'tile'] as const)
-      for (const dir of ['up', 'down'] as const) expect(lockStep(lock, dir)).toBe(lock);
-  });
-
   it('up and down skip what is disabled and wrap around', () => {
     expect(stepIndex(1, 1, [false, true, true, true])).toBe(2);
     expect(stepIndex(3, 1, [false, true, true, true])).toBe(1);
     expect(stepIndex(1, -1, [false, true, true, true])).toBe(3);
-  });
-
-  it('an ability without stock is greyed out', () => {
-    const b = duel();
-    expect(abilityEnabled(b, 'strike')).toBe(true);
   });
 });
 
@@ -147,49 +130,36 @@ describe('command list', () => {
 });
 
 describe('Cancel goes back one step', () => {
-  const strike = UNIT_DEFS.warrior.abilities.indexOf('strike');
   const target = { x: 2, y: 1 };
+  const foe = { k: 'unit' as const, unit: 'b', pos: target };
 
-  it('submenu to the menu on Abilities; Move map to the menu on Move; facing to the menu on Wait', () => {
+  it('the target list to the menu on Abilities; Move map to the menu on Move; facing to the menu on Wait', () => {
     const b = duel();
-    expect(cancelStep(b, { k: 'abilities', index: 2, page: 1 })).toEqual({ k: 'menu', index: commandIndex('act') });
+    expect(cancelStep(b, { k: 'targets', index: 0 })).toEqual({ k: 'menu', index: commandIndex('act') });
     expect(cancelStep(b, { k: 'map', command: 'move' })).toEqual({ k: 'menu', index: commandIndex('move') });
     expect(cancelStep(b, { k: 'facing' })).toEqual({ k: 'menu', index: commandIndex('wait') });
   });
 
-  it('Act map to the submenu, on the ability that was being aimed', () => {
+  it('the action list back to the target list, on the row of that target', () => {
     const b = duel();
-    expect(cancelStep(b, { k: 'map', command: 'act' }, 'strike')).toEqual({ k: 'abilities', index: strike });
-    const last = UNIT_DEFS.warrior.abilities.at(-1)!;
-    expect(cancelStep(b, { k: 'map', command: 'act' }, last)).toEqual({
-      k: 'abilities',
-      index: UNIT_DEFS.warrior.abilities.length - 1,
+    expect(cancelStep(b, { k: 'actions', target: foe, index: 1 })).toEqual({
+      k: 'targets',
+      index: targetIndex(actTargets(b), foe),
     });
   });
 
-  it('preview back to aiming; the lock step back to the preview', () => {
+  it('the tile choice back to the actions, on the action; the lock step back to the tile choice', () => {
     const b = duel();
-    expect(cancelStep(b, { k: 'confirm', ability: 'strike', target })).toEqual({ k: 'map', command: 'act' });
-    expect(cancelStep(b, { k: 'confirm', ability: 'strike', target, lock: 'unit' })).toEqual({
-      k: 'confirm',
-      ability: 'strike',
-      target,
+    expect(cancelStep(b, { k: 'spot', target: foe, action: 2, index: 1 })).toEqual({
+      k: 'actions',
+      target: foe,
+      index: 2,
     });
-  });
-
-  it('a self-centred ability never went through the map: its preview goes back to the submenu', () => {
-    const self = Object.keys(ABILITIES).find((id) => ABILITIES[id].range[1] === 0)!;
-    const owner = Object.keys(UNIT_DEFS).find((d) => UNIT_DEFS[d].abilities.includes(self))!;
-    const mine = new Battle(
-      flat(6, 6),
-      stateOf([
-        { id: 'a', def: owner, team: 'hero', x: 1, y: 1 },
-        { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 4 },
-      ]),
-    );
-    expect(cancelStep(mine, { k: 'confirm', ability: self, target: mine.actor.pos })).toEqual({
-      k: 'abilities',
-      index: UNIT_DEFS[owner].abilities.indexOf(self),
+    expect(cancelStep(b, { k: 'spot', target: foe, action: 2, index: 1, lock: 'unit' })).toEqual({
+      k: 'spot',
+      target: foe,
+      action: 2,
+      index: 1,
     });
   });
 
@@ -205,19 +175,13 @@ describe('Cancel goes back one step', () => {
   it('walking the whole way back from the lock step ends on the menu, one screen per Cancel', () => {
     const b = duel();
     const seen: string[] = [];
-    let s = cancelStep(b, { k: 'confirm', ability: 'strike', target, lock: 'tile' }, 'strike');
+    let s = cancelStep(b, { k: 'spot', target: foe, action: 0, index: 0, lock: 'tile' });
     while (s && s !== 'undo') {
-      seen.push(s.k === 'confirm' ? 'preview' : s.k === 'map' ? `map:${s.command}` : s.k);
-      s = cancelStep(b, s, 'strike');
+      seen.push(s.k === 'spot' ? 'spot' : s.k);
+      s = cancelStep(b, s);
     }
-    expect(seen).toEqual(['preview', 'map:act', 'abilities', 'menu']);
+    expect(seen).toEqual(['spot', 'actions', 'targets', 'menu']);
     expect(s).toBeNull();
-  });
-});
-
-describe('ability sheet page', () => {
-  it('turns both ways and wraps around the three pages', () => {
-    expect([turnPage(0, 1), turnPage(2, 1), turnPage(0, -1), turnPage(1, -1)]).toEqual([1, 0, 2, 0]);
   });
 });
 

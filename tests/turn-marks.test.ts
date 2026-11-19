@@ -19,7 +19,7 @@ describe('turn marks', () => {
   it('marks nothing while the game is busy or the enemy plays', () => {
     const b = scene();
     const m = turnMarks(b, { k: 'menu', index: 0 }, freshUi(b), at(0, 1), false);
-    expect(m).toMatchObject({ hl: null, cursor: null, ring: null, trajectory: null, charge: null, counters: null });
+    expect(m).toMatchObject({ hl: null, cursor: null, ring: null, charge: null, counters: null });
   });
 
   it('on the menu marks only the acting unit, with the ring of its longest range around it', () => {
@@ -28,7 +28,6 @@ describe('turn marks', () => {
     expect(m.hl?.tiles).toEqual([{ pos: at(0, 1), kind: 'actor' }]);
     expect(m.cursor).toEqual(at(0, 1));
     expect(m.ring?.from).toEqual([at(0, 1)]);
-    expect(m.trajectory).toBeNull();
   });
 
   it('choosing where to move, the ring follows a cursor on a tile the move reaches', () => {
@@ -38,16 +37,8 @@ describe('turn marks', () => {
     expect(turnMarks(b, { k: 'map', command: 'move' }, ui, at(7, 0), true).ring?.from).toEqual([at(0, 1)]);
   });
 
-  it('aiming a shot draws its line from the archer to the cursor, and none on the facing screen', () => {
+  it('the facing screen draws no range ring', () => {
     const b = scene();
-    const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), at(5, 1));
-    const m = turnMarks(b, { k: 'map', command: 'act' }, ui, at(5, 1), true);
-    // the rule's own path (traceShot): from the middle of the archer's tile to the middle of the cursor's, 1.5 m up
-    expect(m.trajectory).toMatchObject({
-      shot: { from: { x: 0.5, y: 1.5, h: 1.5 }, to: { x: 5.5, y: 1.5, h: 1.5 }, stop: null },
-      cast: null,
-    });
-    expect(m.ring).toBeNull();
-    expect(turnMarks(b, { k: 'facing' }, ui, at(5, 1), true).ring).toBeNull();
+    expect(turnMarks(b, { k: 'facing' }, freshUi(b), at(5, 1), true).ring).toBeNull();
   });
 });

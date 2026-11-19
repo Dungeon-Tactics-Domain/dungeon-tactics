@@ -10,10 +10,10 @@ import type { KeyAction } from './keyboard.ts';
 // 'open': the menu shows again; 'close': it hides and the cursor goes to the tile; 'peek': the unit's mini menu
 export type MenuTap = { k: 'open' } | { k: 'close'; at: Pos } | { k: 'peek'; unit: string };
 
-// the screens the menu belongs to: elsewhere (Move or Act map, "Execute?", facing) a tap keeps its own meaning
-export const menuScreen = (s: Screen) => s.k === 'menu' || s.k === 'abilities';
+// the screens the menu belongs to: elsewhere (the Move map, the Act lists, facing) a tap keeps its own meaning
+export const menuScreen = (s: Screen) => s.k === 'menu';
 
-// Whether the menu, its Back and "Execute?" show: a hero's turn with nothing playing (`open`) and the map not being
+// Whether the menu and its Back show: a hero's turn with nothing playing (`open`) and the map not being
 // looked at (a tap on an empty tile shut the menu, or another unit's range is painted). They come back together.
 export const menuUp = (open: boolean, v: { closed?: boolean; range?: string | null }) => open && !v.closed && !v.range;
 

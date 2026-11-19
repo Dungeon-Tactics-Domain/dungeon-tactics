@@ -27,7 +27,7 @@ export interface Hints {
 
 // what Confirm does on each screen (the reference: Move Here on the Move map, Confirm on a target), in a word or two
 function confirmText(s: Screen): string {
-  if (s.k === 'menu' || s.k === 'abilities') return t('Escolher', 'Select');
+  if (s.k === 'menu') return t('Escolher', 'Select');
   if (s.k === 'map' && s.command === 'move') return t('Mover', 'Move');
   if (s.k === 'facing') return t('Passar a vez', 'End Turn');
   return t('Confirmar', 'Confirm');
@@ -47,9 +47,8 @@ export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device): H
   const back = cancelStep(b, s);
   const right = [hint('confirm', confirmText(s))];
   if (back === 'undo') right.push(hint('cancel', t('Desfazer', 'Undo')));
-  else if (back) right.push(hint('cancel', s.k === 'confirm' ? t('Voltar', 'Back') : t('Cancelar', 'Cancel')));
-  // the submenu's third hint is the ability's sheet; everywhere else the camera, as in the reference
-  return { left, right: [...right, ...(s.k === 'abilities' ? [hint('info', t('Detalhes', 'Details'))] : camera)] };
+  else if (back) right.push(hint('cancel', t('Cancelar', 'Cancel')));
+  return { left, right: [...right, ...camera] };
 }
 
 // Who the foot's hints are drawn for (Options › Key and button hints, Fernando, Nov 18): Automatic follows the input
@@ -59,26 +58,23 @@ export const hintsDevice = (mode: HintsMode, finger: boolean, keys: Shown): Devi
   mode === 'never' || (mode === 'auto' && finger) ? 'touch' : keys;
 
 // The banner's line (Fernando, Nov 18: the teaching lines are the Tutorial option, off by default). Off, a hero's turn
-// keeps only the last action's summary; the enemy's turn, the battle playing and an ability's sheet are not teaching
-// and stay. The HUD's help line keeps the whole text for the screen reader
-export const bannerLine = (help: string, log: string | undefined, open: boolean, s: Screen, tutorial: boolean) =>
-  tutorial || !open || s.k === 'abilities' ? help : (log ?? '');
+// keeps only the last action's summary; the enemy's turn and the battle playing are not teaching and stay. The HUD's help line keeps the whole text for the screen reader
+export const bannerLine = (help: string, log: string | undefined, open: boolean, tutorial: boolean) =>
+  tutorial || !open ? help : (log ?? '');
 
 // A phone (the page's shorter side under a tablet's) draws its banner at 70% of the size (Fernando, Nov 18: smaller
 // messages on the phone)
 export const PHONE_MESSAGE = 0.7;
 export const messageScale = (w: number, h: number) => (Math.min(w, h) < TABLET_SIDE ? PHONE_MESSAGE : 1);
 
-// The number of the Height corner: the tile under the cursor. null hides the corner: the battle is over, or the
-// abilities submenu is open (the reference's description sheet takes that corner)
-export const heightShown = (b: Battle, s: Screen, cursor: Pos): number | null =>
-  b.over || s.k === 'abilities' ? null : tileHeight(b.grid, cursor);
+// The number of the Height corner: the tile under the cursor. null hides the corner: the battle is over
+export const heightShown = (b: Battle, cursor: Pos): number | null => (b.over ? null : tileHeight(b.grid, cursor));
 
 // The small line under the Height corner (Fernando, Nov 16): the same tile line the HTML corner shows (floor, slope,
 // shallow or deep water, spikes, a charge about to land), shown and hidden with the Height, with the tile's X, Y and Z
 // spelled out (Nov 18). `size`: the square of a big unit choosing where to stop (HudView.hl.size)
-export const tileLine = (b: Battle, s: Screen, cursor: Pos, size = 1): string =>
-  heightShown(b, s, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
+export const tileLine = (b: Battle, cursor: Pos, size = 1): string =>
+  heightShown(b, cursor) === null ? '' : cursorInfo(b.grid, b.state, cursor, size);
 
 // The Height corner on the page: its region, moved down under the corner buttons (menu, Back, Undo) where the page is
 // too small for both (a phone: it sat under the menu button and Undo; Fernando, Nov 18). `top`: the panels' margin

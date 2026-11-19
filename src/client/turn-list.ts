@@ -39,7 +39,7 @@ export function keepInView(scroll: number, view: number, top: number, height: nu
   return scroll;
 }
 
-// Scroll after a redraw: the "Execute?" charge row in view (it shows whether the target acts before the spell lands);
+// Scroll after a redraw: the charge row of the aimed ability in view (it shows whether the target acts before the spell lands);
 // else a new turn goes back to NOW on top, and the same turn keeps where the player scrolled
 export function anchorScroll(
   scroll: number,
@@ -70,8 +70,8 @@ export const pageStep = (view: number, row: number) => Math.max(row, view - row)
 const QUEUE_CAP = 128;
 
 // Turn list: every unit that plays, from the one acting now, through this round and the next (Nov 15, Fernando's
-// decisions), with each queued charge where it fires and its ticks left (`ticks`). While aiming (`aim`: the Act map
-// and "Execute?", Nov 15) the one acting pays the turn cost of acting, after what it already did, instead of the usual
+// decisions), with each queued charge where it fires and its ticks left (`ticks`). While aiming (`aim`: the Agir tile
+// screen, Nov 15) the one acting pays the turn cost of acting, after what it already did, instead of the usual
 // projection's cost of moving and acting; with a charge (Nov 13, Fernando's request, like FFT's CT list) the spell goes
 // in where it will fire (`at`) and whoever it hits goes in `targets`, to see whether the target acts before it (and
 // leaves the tile) or not. A copy of the queue: the state does not change, and cancelling the aim brings the usual list back

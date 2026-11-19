@@ -1,7 +1,6 @@
 // The interface's 3D pieces (Fernando, Nov 18: the interface is only 3D), each its own chunk, loaded here behind the
 // loading cover (ready-gate.ts): the battle's on one shared WebGL layer over the HUD (ui3d/), the town's on its own.
 import type { Bar3d } from './bar3d/bar3d.ts';
-import type { Confirm3d } from './confirm3d/confirm3d.ts';
 import type { Hints3d } from './hints3d/hints3d.ts';
 import type { HudActions } from './hud.ts';
 import { showLayout } from './layout-mode.ts';
@@ -19,7 +18,6 @@ export interface HudSkin {
   turn3d: (layer: Ui3dLayer, queue: HTMLElement) => Turn3d;
   bar3d: (layer: Ui3dLayer, active: HTMLElement) => Bar3d;
   hints3d: (layer: Ui3dLayer) => Hints3d;
-  confirm3d: (layer: Ui3dLayer, box: HTMLElement) => Confirm3d; // "Execute?" (confirm3d/)
   tools3d: (layer: Ui3dLayer, tools: HTMLElement) => Tools3d; // the corner menu (window3d/)
   // the screens that take their window by themselves: the end of battle, Options, the title, its sheets, the
   // developer menu, Status, the effects over the battle, the speech box and the notices
@@ -35,7 +33,6 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     { Turn3d },
     { Bar3d },
     { Hints3d },
-    { Confirm3d },
     { Result3d },
     { Options3d },
     { Title3d },
@@ -52,7 +49,6 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     import('./turn3d/turn3d.ts'),
     import('./bar3d/bar3d.ts'),
     import('./hints3d/hints3d.ts'),
-    import('./confirm3d/confirm3d.ts'),
     import('./result3d/result3d.ts'),
     import('./flow3d/options3d.ts'),
     import('./flow3d/title3d.ts'),
@@ -82,7 +78,6 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     turn3d: (layer, queue) => new Turn3d(layer, queue, true),
     bar3d: (layer, active) => new Bar3d(layer, active),
     hints3d: (layer) => new Hints3d(layer, { banner: true, height: true, hints: true }),
-    confirm3d: (layer, box) => new Confirm3d(layer, box),
     tools3d: (layer, tools) => new Tools3d(layer, tools),
     screens: [Result3d, Options3d, Title3d, Sheet3d, Dev3d, Status3d, Effects3d, Talk3d, Note3d].map(
       (Screen) => (layer: Ui3dLayer) => new Screen(layer),

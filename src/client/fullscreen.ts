@@ -52,7 +52,7 @@ export function keepFullscreen() {
 
 export interface FullscreenEnv {
   api: boolean; // document.fullscreenEnabled
-  touch: boolean; // a finger points: (pointer: coarse), as confirm3d.ts and talk.ts ask
+  touch: boolean; // a finger points: (pointer: coarse), as talk.ts asks
   installed: boolean; // opened from the home screen (display-mode fullscreen or standalone)
   on: boolean; // in fullscreen now
 }

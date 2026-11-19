@@ -7,7 +7,7 @@ export const BUTTONS_KEY = 'dt:screen-buttons';
 
 // what was saved: on, off, or nothing picked yet (the device decides)
 export const parseButtons = (v: unknown): boolean | null => (typeof v === 'boolean' ? v : null);
-// `coarse`: a finger points, (pointer: coarse), as fullscreen.ts and confirm3d.ts ask
+// `coarse`: a finger points, (pointer: coarse), as fullscreen.ts asks
 export const buttonsOn = (saved: boolean | null, coarse: boolean) => saved ?? coarse;
 
 // The one question "is this a touch device?" (a finger points: `(pointer: coarse)`): the screen buttons' default, the town's

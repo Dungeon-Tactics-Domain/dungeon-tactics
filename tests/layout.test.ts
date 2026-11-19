@@ -27,7 +27,6 @@ describe('interface layout: the reference regions on a page', () => {
       for (const [id, r] of all) expect(place(r, stage(1920, 1080, mode)), `${id} ${mode}`).toEqual(box(r));
     expect(place(REGIONS.menu, stage(1920, 1080, 'frame'))).toEqual({ x: 1152, y: 688, w: 414, h: 327 });
     expect(REGIONS.submenu.x).toBe(1284);
-    expect(box(REGIONS.detail)).toEqual({ x: 1450, y: 100, w: 400, h: 564 });
   });
 
   it('every region lies inside the reference', () => {
@@ -53,7 +52,7 @@ describe('interface layout: the reference regions on a page', () => {
     const menu = place(REGIONS.menu, st);
     expect(menu.x + menu.w).toBeCloseTo(3440 - 354 * s); // right
     expect(menu.y + menu.h).toBeCloseTo(1440 - 65 * s); // bottom
-    expect(place(REGIONS.detail, st).y).toBeCloseTo(100 * s); // top
+    expect(place(REGIONS.height, st).y).toBeCloseTo(95 * s); // top
     const banner = place(REGIONS.banner, st);
     expect(banner.x + banner.w / 2).toBeCloseTo(3440 / 2); // centred
     const turn = place(REGIONS.turn, st);

@@ -18,13 +18,12 @@ export type KeyAction =
   | { k: 'recenter' }
   | { k: 'face' }
   | { k: 'status' }
-  | { k: 'info' }
   | { k: 'fps' }
   | { k: 'turns'; dir: 1 | -1 }
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
-const SLOTS = 7; // Move + 6 abilities: the longest bar it was sized for
+const SLOTS = 1; // the number shortcut: 1 = Move
 
 const DIRS: Record<string, ScreenDir> = {
   w: 'up',
@@ -44,7 +43,6 @@ const SIMPLE: Record<string, KeyAction> = {
   z: { k: 'undo' },
   t: { k: 'face' },
   c: { k: 'status' },
-  i: { k: 'info' },
   f3: { k: 'fps' },
   p: { k: 'wait' },
   f: { k: 'recenter' },
@@ -82,7 +80,7 @@ function action(e: KeyInput): KeyAction | null {
   return SIMPLE[k] ?? null;
 }
 
-// Keys the page keeps (Nov 18, accessibility): with a menu or "Execute?" open, Tab walks its buttons as on any page
+// Keys the page keeps (Nov 18, accessibility): with a menu open, Tab walks its buttons as on any page
 // (on the map it jumps between units), and Enter or Space press the button Tab reached instead of the game's focus
 export function pageKeeps(a: KeyAction, menuOpen: boolean, tabbed: boolean): boolean {
   return (a.k === 'cycle' && menuOpen) || (a.k === 'confirm' && tabbed);
@@ -132,19 +130,19 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       ['confirm'],
       t('Enter · Espaço', 'Enter · Space'),
       t(
-        `andar até a casa sob o cursor; no alvo, pergunta "Executar?" e o 2º ${k('confirm')} age; no fim do turno, confirma a direção; seguro, acelera a batalha 3 vezes`,
-        `move to the tile under the cursor; on a target, asks "Execute?" and the 2nd ${k('confirm')} acts; at turn end, confirms the facing; held, speeds the battle up 3 times`,
+        `andar até a casa sob o cursor; nas listas de Agir, escolhe o alvo, a ação e a casa; no fim do turno, confirma a direção; seguro, acelera a batalha 3 vezes`,
+        `move to the tile under the cursor; on the Act lists, picks the target, the action and the tile; at turn end, confirms the facing; held, speeds the battle up 3 times`,
       ),
     ],
     [
       ['cancel'],
       'Esc · Backspace',
       t(
-        'volta um passo (mapa → habilidades → menu); no menu, desfaz o último movimento se ele não levou contra-ataque',
-        'goes back one step (map → abilities → menu); in the menu, undoes the last move if it drew no counter',
+        'volta um passo (casa → ação → alvo → menu); no menu, desfaz o último movimento se ele não levou contra-ataque',
+        'goes back one step (tile → action → target → menu); in the menu, undoes the last move if it drew no counter',
       ),
     ],
-    [['slots'], '', t('Mover e as habilidades da barra', 'Move and the bar abilities')],
+    [['slots'], '', t('Mover', 'Move')],
     [
       ['status'],
       '',
@@ -178,11 +176,6 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       ['turns'],
       'PgUp · PgDn',
       t('rolar a lista de turnos ou a janela aberta', 'scroll the turn list or the open window'),
-    ],
-    [
-      ['info'],
-      '',
-      t('ficha da habilidade em foco no submenu Habilidades', 'sheet of the ability in focus in the Abilities submenu'),
     ],
     [['fps'], '', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
     [['help'], 'H · ?', t('as Opções e esta ajuda', 'Options and this help')],

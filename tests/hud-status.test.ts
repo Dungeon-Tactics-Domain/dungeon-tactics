@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  abilityDetail,
-  abilityPages,
-  attrRows,
-  regenLine,
-  shortOf,
-  spendNote,
-  unitStatus,
-} from '../src/client/battle-text.ts';
+import { abilityDetail, abilityPages, attrRows, regenLine, shortOf, unitStatus } from '../src/client/battle-text.ts';
 import { cursorInfo, tileHeight, tileInfo } from '../src/client/tile-info.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { tileAt } from '../src/shared/battle/grid.ts';
@@ -25,7 +17,6 @@ describe('mana and stamina in words (Nov 16)', () => {
     w.vars = { stamina: 20 };
     expect(Object.fromEntries(unitStatus(s, 'h-warrior')).Stamina).toBe('20/50, +5 de stamina por turno');
     expect(shortOf(w, ABILITIES.heavy_strike)).toBe('faltam 10 de stamina');
-    expect(spendNote(w, ABILITIES.shield_bash)).toBe('Gasta 10 stamina: 20 → 10');
     expect(abilityDetail('heal')).toContain('gasta 20 mana');
     expect(regenLine(UNIT_DEFS.mage)).toBe('+8 de mana por turno');
   });
@@ -41,8 +32,8 @@ describe('mana and stamina in words (Nov 16)', () => {
   });
 });
 
-describe('ability sheet pages', () => {
-  it('splits the help line facts in three pages without changing the line', () => {
+describe('ability facts in three groups', () => {
+  it('splits the help line facts in three groups without changing the line', () => {
     const [hit, , cost] = abilityPages('heal');
     expect(hit.some((l) => l.startsWith('cura'))).toBe(true);
     expect(cost[0]).toBe('gasta 20 mana');

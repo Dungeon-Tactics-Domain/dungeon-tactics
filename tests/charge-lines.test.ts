@@ -5,12 +5,10 @@ import {
   chargeLines,
   counterDamage,
   counterFromText,
-  counterNote,
   countersFrom,
-  countersOwed,
 } from '../src/client/charge-lines.ts';
 import { needsLock } from '../src/client/command.ts';
-import { confirm, freshUi, highlights } from '../src/client/interaction.ts';
+import { freshUi, highlights } from '../src/client/interaction.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { samePos } from '../src/shared/battle/grid.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
@@ -74,13 +72,12 @@ describe('charge lines (Nov 15)', () => {
     expect(needsLock(b, 'aimed_shot', { x: 5, y: 1 })).toBe(true);
     expect(needsLock(b, 'aimed_shot', { x: 5, y: 3 })).toBe(false); // empty ground: only the tile
     expect(needsLock(b, 'shot', { x: 5, y: 1 })).toBe(false); // no charge
-    const ui = { ...freshUi(b), mode: { k: 'ability' as const, id: 'aimed_shot' }, pending: { x: 5, y: 1 } };
-    confirm(b, ui, 'unit');
+    b.act('aimed_shot', { x: 5, y: 1 }, 'unit');
     expect(b.state.charges[0].follow).toBe('foe');
   });
 });
 
-// Counter indicator (Nov 15, Fernando): aiming shows who would strike back and how; walking, what the destination draws
+// Counter indicator (Nov 15, Fernando): walking shows what the destination draws
 describe('counter indicator (Nov 15)', () => {
   const g = gridOf(['........', '........', '..#.....', '........']);
   const duel = () =>
@@ -93,44 +90,10 @@ describe('counter indicator (Nov 15)', () => {
       ]),
     );
 
-  it('aiming: a ranged foe answers with its line, a melee one with its mark', () => {
-    const b = duel();
-    const owed = countersOwed(b, 'shot', b.preview('shot', { x: 4, y: 1 }));
-    expect(owed.lines.map((l) => [l.from.pos, l.to.pos, l.hits.map((h) => h.unit)])).toEqual([
-      [{ x: 4, y: 1 }, { x: 0, y: 1 }, ['a']],
-    ]);
-    const m = new Battle(
-      flat(4, 3),
-      stateOf([
-        { id: 'w', def: 'warrior', team: 'hero', x: 1, y: 1 },
-        { id: 's', def: 'soldier', team: 'enemy', x: 2, y: 1 },
-      ]),
-    );
-    expect(countersOwed(m, 'strike', m.preview('strike', { x: 2, y: 1 })).melee).toEqual([
-      { from: { pos: { x: 2, y: 1 }, size: 1 }, to: { pos: { x: 1, y: 1 }, size: 1 } },
-    ]);
-  });
-
   it('a charged strike promises no counter: the rule owes none for it', () => {
     const b = duel();
-    const p = b.preview('aimed_shot', { x: 4, y: 1 });
-    expect(countersOwed(b, 'aimed_shot', p)).toEqual({ lines: [], melee: [] });
-    expect(counterNote(b, 'aimed_shot', p)).toBe('');
     b.act('aimed_shot', { x: 4, y: 1 });
     expect(b.state.turn.engaged).toBeUndefined();
-  });
-
-  it('aiming: a struck unit that cannot reach the actor where it stands owes nothing', () => {
-    // the archer shoots a soldier 4 tiles off: walking can never leave a reach it is not in
-    const b = new Battle(
-      flat(8, 4),
-      stateOf([
-        { id: 'a', def: 'archer', team: 'hero', x: 0, y: 1 },
-        { id: 's', def: 'soldier', team: 'enemy', x: 4, y: 1 },
-        { id: 'f', def: 'beacon', team: 'hero', x: 7, y: 3 },
-      ]),
-    );
-    expect(countersOwed(b, 'shot', b.preview('shot', { x: 4, y: 1 }))).toEqual({ lines: [], melee: [] });
   });
 
   // after the strike, the stops out of the struck unit's reach (Nov 15, Fernando): red frame, sword and the damage
@@ -161,7 +124,7 @@ describe('counter indicator (Nov 15)', () => {
   });
 
   // a shooter struck up close fires at the stop once the attacker leaves its contact (Nov 15, Fernando's choice)
-  it('a shooter struck up close: owed when aiming, red where it would shoot, its line ending at the stop', () => {
+  it('a shooter struck up close: red where it would shoot, its line ending at the stop', () => {
     const b = new Battle(
       gridOf(['......', '......', '......', '...#..', '......', '......']),
       stateOf([
@@ -171,10 +134,6 @@ describe('counter indicator (Nov 15)', () => {
       ]),
     );
     const archer = { pos: { x: 3, y: 1 }, size: 1 };
-    expect(countersOwed(b, 'strike', b.preview('strike', archer.pos)).melee).toEqual([
-      { from: archer, to: { pos: { x: 3, y: 2 }, size: 1 } },
-    ]);
-    expect(counterNote(b, 'strike', b.preview('strike', archer.pos))).toContain('contra-ataca');
     b.act('strike', archer.pos);
     const hl = highlights(b, { ...freshUi(b), mode: { k: 'move' } });
     const kind = (p: Pos) => hl.tiles.find((m) => samePos(m.pos, p))?.kind;

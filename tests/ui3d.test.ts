@@ -8,7 +8,7 @@ import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/m
 import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import { LIST_MIN, listFloor, matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
 import { setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
-import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
+import { ease, land, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
 import { wrapLines } from '../src/client/ui3d/text.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -67,13 +67,6 @@ describe('3D kit: motion', () => {
     expect(x).toBeGreaterThan(0.99);
   });
 
-  it('the sheet takes the short way around its ring of pages', () => {
-    expect(pageStep(0, 1, 3)).toBe(1);
-    expect(pageStep(2, 0, 3)).toBe(1);
-    expect(pageStep(0, 2, 3)).toBe(-1);
-    expect(pageStep(1, 1, 3)).toBe(0);
-  });
-
   it('text wraps at spaces, keeps paragraphs and never splits a word', () => {
     const wide = (s: string) => s.length;
     expect(wrapLines('one two three', 7, wide)).toEqual(['one two', 'three']);
@@ -103,7 +96,7 @@ describe('3D menu: what it shows', () => {
       ['Esperar', 'hourglass', false],
       ['Status', 'scroll', false],
     ]);
-    expect(m).toMatchObject({ head: 'Guerreiro', index: 2, sub: null, sheet: null });
+    expect(m).toMatchObject({ head: 'Guerreiro', index: 2, sub: null });
     expect(m?.commands).toEqual(['move', 'act', 'wait', 'status'].map((c) => commandIndex(c as 'move')));
     expect(menuView(view(b, { k: 'menu', index: 0 }), false)).toBeNull();
     expect(menuView(view(b, { k: 'map', command: 'move' }), true)).toBeNull();
@@ -123,20 +116,21 @@ describe('3D menu: what it shows', () => {
     ]);
     expect(m?.commands).toEqual([0, 1, 2, 3, 4]);
     expect(m?.index).toBe(2); // the cursor on Abilities, never on Undo move
-    // the submenu open: Abilities stays picked on its row
-    expect(menuView(view(b, { k: 'abilities', index: 0 }), true)?.index).toBe(2);
+    // an Agir list open: Abilities stays picked on its row
+    expect(menuView(view(b, { k: 'targets', index: 0 }), true)?.index).toBe(2);
   });
 
-  it('the submenu keeps Act picked and opens the focused ability on the page asked for', () => {
-    const m = menuView(view(duel(), { k: 'abilities', index: 1, page: 2 }), true);
-    expect(m?.index).toBe(1); // Act
-    expect(m?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
-    expect(m?.sub?.[1].note).toBe('30 stamina');
-    expect(m?.sheet).toMatchObject({ owner: 'Guerreiro', name: 'Golpe pesado', kind: 'sword', page: 2 });
-    expect(m?.sheet?.pages.map((p) => p.title)).toEqual(['Descrição', 'Efeitos', 'Custo']);
-    expect(m?.sheet?.pages[0].text).toBe('Alcance 1.\nDano 95–130.\nAcerto 75%.');
-    expect(m?.sheet?.pages[1].text).toBe('Nenhum efeito além do golpe.');
-    expect(m?.sheet?.pages[2].text).toBe('Gasta 30 stamina.');
+  it('the target list keeps Act picked and the action list names each ability with its cost', () => {
+    const b = duel();
+    const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
+    const targets = menuView(view(b, { k: 'targets', index: 0 }), true);
+    expect(targets?.index).toBe(1); // Act
+    expect(targets?.subTitle).toBe('Alvo');
+    expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Giro']);
+    const actions = menuView(view(b, { k: 'actions', target: foe, index: 1 }), true);
+    expect(actions?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
+    expect(actions?.sub?.[1].note).toBe('30 stamina');
+    expect(actions?.subIndex).toBe(1);
   });
 
   it('reads the model from what the ability does', () => {
@@ -158,14 +152,13 @@ describe('3D menu: what it shows', () => {
     const b = duel();
     const at = (screen: Screen) => menuView(view(b, screen), true) as MenuView;
     const menu = at({ k: 'menu', index: 0 });
-    const sub = at({ k: 'abilities', index: 0 });
+    const sub = at({ k: 'targets', index: 0 });
     expect([...changes(null, menu)]).toEqual(['enter']);
     expect([...changes(null, sub)]).toEqual(['enter', 'cascade']);
     expect([...changes(menu, null)]).toEqual(['leave']);
     expect([...changes(menu, sub)]).toEqual(['cascade', 'focus']);
     expect([...changes(sub, at({ k: 'menu', index: 1 }))]).toEqual(['fold', 'focus']);
     expect([...changes(menu, at({ k: 'menu', index: 2 }))]).toEqual(['focus']);
-    expect([...changes(sub, at({ k: 'abilities', index: 0, page: 1 }))]).toEqual(['page']);
     expect([...changes(menu, menu)]).toEqual([]);
     expect([...changes(null, null)]).toEqual([]);
   });
@@ -176,14 +169,10 @@ describe('3D menu: where it sits', () => {
 
   it('on the reference places at the reference size, in both layouts', () => {
     for (const mode of ['edges', 'frame'] as const) {
-      const { main, sub, sheet, prev, next } = menuLayout(at(1920, 1080, mode), 4, 0);
+      const { main, sub } = menuLayout(at(1920, 1080, mode), 4, 0);
       // as tall as its rows (Nov 18: no blank fifth row), on the region's foot
       expect(main).toEqual({ x: 1152, y: 745, w: 414, h: REF.head + 4 * REF.row + REF.foot });
       expect(sub.x).toBe(1284);
-      expect(sheet).toEqual({ x: 1450, y: 100, w: 400, h: 564 });
-      expect(prev.x + prev.w).toBe(next.x);
-      expect(next.x + next.w).toBe(sheet.x + sheet.w);
-      expect(prev.y + prev.h).toBe(sheet.y + sheet.h);
     }
   });
 
@@ -216,17 +205,12 @@ describe('3D menu: where it sits', () => {
     expect(rowBox(finger.main, 0, finger.cs).h).toBeGreaterThan(rowBox(mouse.main, 0, mouse.cs).h);
     expect(finger.main.y + finger.main.h).toBeCloseTo(390 - 21 - 65 * finger.cs); // still on its corner
     expect(finger.sub.x + finger.sub.w).toBeLessThanOrEqual(844 - 47);
-    // the sheet's page arrows: the drawn foot is 19 px there, the finger's box 44 about its middle
-    expect(mouse.prev.h).toBeCloseTo(48 * phone.s);
-    expect(finger.prev.h).toBe(44);
-    expect(finger.prev.y + 22).toBeCloseTo(mouse.prev.y + mouse.prev.h / 2);
   });
 
-  it('on a short page the columns step left of the sheet they would sit under', () => {
+  it('on a short page the columns stay on the page, right of the acting unit sheet', () => {
+    const st = stage(844, 390, 'edges', { x: 47, y: 21 });
     for (const touch of [false, true]) {
-      const { main, sub, sheet } = menuLayout(stage(844, 390, 'edges', { x: 47, y: 21 }), 4, 4, touch);
-      expect(sheet.y + sheet.h, String(touch)).toBeGreaterThan(main.y); // side by side, not one over the other
-      expect(sub.x + sub.w, String(touch)).toBeLessThan(sheet.x);
+      const { main } = menuLayout(st, 4, 4, touch);
       expect(main.x, String(touch)).toBeGreaterThan(47);
     }
     // a page tall enough keeps the reference's corner
@@ -235,7 +219,7 @@ describe('3D menu: where it sits', () => {
   });
 
   // Fernando, Nov 18: at 844x390 the menu covered the end of the acting unit's stamina ("50/5")
-  it("never covers the acting unit's sheet in the combat bar; on a phone the cascade shortens instead", () => {
+  it("never covers the acting unit's sheet in the combat bar", () => {
     for (const [w, h, safe] of [
       [844, 390, { x: 47, y: 21 }],
       [667, 375, { x: 0, y: 0 }],
@@ -256,7 +240,6 @@ describe('3D menu: where it sits', () => {
           expect(m.main.y, say).toBeGreaterThanOrEqual(st.y); // a fifth row grows it up, still on the page
           expect(m.main.x, say).toBeGreaterThan(bar.x + bar.w);
           expect(m.sub.x, say).toBeGreaterThanOrEqual(m.main.x);
-          if (h < 500) expect(m.sub.x + m.sub.w, say).toBeLessThan(m.sheet.x); // a phone: side by side
         }
     }
     // a page with room keeps the full cascade
@@ -278,10 +261,9 @@ describe('3D menu: where it sits', () => {
   });
 
   it('in the frame an ultrawide page keeps the menu where the reference has it', () => {
-    const { main, sheet } = menuLayout(at(3440, 1440, 'frame'), 4, 0);
+    const { main } = menuLayout(at(3440, 1440, 'frame'), 4, 0);
     expect(main.x).toBeCloseTo(440 + (1152 * 4) / 3);
     expect(main.y).toBeCloseTo((745 * 4) / 3);
-    expect(sheet.x).toBeCloseTo(440 + (1450 * 4) / 3);
   });
 
   it('a row box is the row the column draws', () => {
@@ -430,20 +412,19 @@ describe('3D interface: bench scenes and boundaries', () => {
       import: 'default',
       eager: true,
     });
-    expect(Object.keys(scenes).length).toBe(17); // the two pixel filter scenes left with it (Nov 18)
+    expect(Object.keys(scenes).length).toBe(16); // the two pixel filter scenes left with it (Nov 18)
     for (const [path, raw] of Object.entries(scenes)) expect(parseSpec(raw).problems, path).toEqual([]);
   });
 
   const sources = import.meta.glob<string>('../src/client/**/*.ts', { query: '?raw', import: 'default', eager: true });
   const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  const is3d = (path: string) =>
-    /\/(ui3d|menu3d|turn3d|bar3d|hints3d|confirm3d|result3d|town3d|flow3d|window3d)\//.test(path);
+  const is3d = (path: string) => /\/(ui3d|menu3d|turn3d|bar3d|hints3d|result3d|town3d|flow3d|window3d)\//.test(path);
 
   // the game online never fetches the looks: outside their folders they are named only as a type or in a dynamic
   // import. The layout and the flags are the exception: small and pure, the Options and the HUD read them
   it('the rest of the client takes the 3D folders and the CSS menu by type or by dynamic import only', () => {
     const value =
-      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|confirm3d\/|result3d\/|town3d\/|flow3d\/|window3d\/)/m;
+      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|result3d\/|town3d\/|flow3d\/|window3d\/)/m;
     expect(value.test("import { Menu3d } from './menu3d/menu3d.ts';")).toBe(true);
     expect(value.test("import { Ui3dLayer } from './ui3d/layer.ts';")).toBe(true);
     expect(value.test("import { stage } from './ui3d/layout.ts';")).toBe(false);
@@ -462,7 +443,6 @@ describe('3D interface: bench scenes and boundaries', () => {
       'menu3d/menu-layout',
       'turn3d/queue-view',
       'turn3d/queue-layout',
-      'confirm3d/confirm-layout',
       'window3d/tools-layout',
       'window3d/talk-layout',
       'hints3d/hints-view',

@@ -5,21 +5,11 @@ import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import {
-  ACT_FIRST_KEY,
-  actActions,
-  actTargets,
-  bestSpot,
-  parseActFirst,
-  runSpot,
-  spotAt,
-  targetAt,
-} from './act-flow.ts';
+import { actActions, actTargets, bestSpot, runSpot, spotAt, targetAt } from './act-flow.ts';
 import { actScreen, screenAction } from './act-marks.ts';
 import { needsLock, type Screen, stepIndex } from './command.ts';
 import type { KeyAction } from './keyboard.ts';
 import { sfx } from './sound.ts';
-import { store } from './store.ts';
 
 // what the Agir screens need of the hero's turn and the Game
 export interface ActHost {
@@ -30,8 +20,6 @@ export interface ActHost {
   runAct(run: (b: Battle) => ReturnType<Battle['move']>): Promise<void>;
 }
 
-// the Options switch (Game › Act first), on by default since Nov 19
-export const actFirstOn = () => parseActFirst(store.json(ACT_FIRST_KEY));
 // the lock step's rows, in order (menu-view.ts draws them)
 export const LOCKS: Lock[] = ['unit', 'tile'];
 

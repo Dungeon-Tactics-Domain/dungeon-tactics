@@ -651,9 +651,7 @@ describe('half tiles: a turn through the interface (on Ash Wood)', () => {
     const hp = foe().hp;
     // the far cell of the enemy square: the attack still reaches, measured between the closest cells
     const far = { x: foe().pos.x + 1, y: foe().pos.y + 1 };
-    const ui = tapTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'strike' }), far);
-    expect(ui.pending).toEqual(far);
-    const { events } = confirm(b, ui);
+    const events = b.act('strike', far);
     expect(events.some((e) => e.k === 'hit' || e.k === 'miss')).toBe(true);
     expect(Battle.load(b.save())?.state).toEqual(b.state);
     expect(b.undo()).toBe(true);

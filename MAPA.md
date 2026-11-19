@@ -63,7 +63,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/loading.ts` — the loading cover over the whole page (`loadingCover`): "Loading the game" over a bar filled by the files landed, and a Reload button when the load fails, drawn in 3D over the unseen HTML ones; holds the hosted fonts too.
 - `src/client/no3d.ts` — no3d(): the warning that replaces the page when there is no WebGL or its context is lost (the interface is only 3D).
 - `src/client/main.ts` — Game: wires rules, scene, HUD and input for one battle and owns the turn loop.
-- `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, submenu, map, strike preview "Execute?", lock, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
+- `src/client/hero-turn.ts` — HeroTurn: the hero's turn screens (menu, Move's map, the Agir primeiro lists, facing); owns the screen, the Ui and the cursor and turns keys, clicks and taps into the next screen.
 - `src/client/battle-input.ts` — battle input: keyboard, mouse or touch on the canvas and the gamepad, sent to the Game as the same actions.
 - `src/client/fps.ts` — the performance counter in the corner of the battle (F3, dt:fps).
 - `src/client/before-event.ts` — what plays before each battle event: its sound, the enemy's destination and the ability banner.
@@ -80,14 +80,14 @@ parseGrid and withRamps (grid.ts).
 
 - `src/client/menu-state.ts` — whether the command menu and "Execute?" show (menuUp) and what a tap on an empty tile, the hero, its sheet, another unit or a turn card does to it; pure.
 - `src/client/unit-peek.ts` — another unit's look-only mini menu (Status, Abilities, Show range) in the notice window.
-- `src/client/command.ts` — FFT command menu (Move, Abilities, Wait, Status): which turn screen shows, what each key leads to and where Cancel goes back to.
+- `src/client/command.ts` — FFT command menu (Move, Abilities, Wait, Status) and the turn screens: which one shows, what each key leads to and where Cancel goes back to.
 - `src/client/act-flow.ts` — "Agir primeiro" flow, pure: the target list, the actions on a target (off ones with the reason, items included), the best tile to act from, and walking then acting (behind `dt:act-first`).
 - `src/client/act-marks.ts` — what the map marks on the Agir primeiro screens: the listed targets, the tiles an action works from, the picked tile's walk and forecast.
-- `src/client/act-turn.ts` — keys, taps and row clicks of the Agir primeiro screens, handed over by hero-turn.ts, and the Options switch reader.
-- `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
+- `src/client/act-turn.ts` — keys, taps and row clicks of the Agir primeiro screens, handed over by hero-turn.ts.
+- `src/client/interaction.ts` — what a tap or confirm does on Move's map and the highlights and threat the scene draws.
 - `src/client/corpse-squares.ts` — groups a resumed battle's corpse cells into one body per token square (corpseSquares).
-- `src/client/charge-lines.ts` — charge and counter lines and notes computed from the rule that fires them.
-- `src/client/turn-marks.ts` — what the scene marks on the hero's turn: tiles, cursor frame, range ring, shot line, charge preview and counters (turnMarks).
+- `src/client/charge-lines.ts` — charge and counter lines computed from the rule that fires them.
+- `src/client/turn-marks.ts` — what the scene marks on the hero's turn: tiles, cursor frame, range ring, charge preview and counters (turnMarks).
 - `src/client/turn-list.ts` — rows of the turn list: the queue projection while aiming (queueRows), round length, two rounds and scrolling, and each unit's number on the map (turnOrder).
 - `src/client/battle-text.ts` — battle texts: ability sheet, last action summary (eventLog), attribute rows and the Status sheet.
 - `src/client/tile-info.ts` — the tile line under the cursor: X, Y and Z (height), floor, water, spikes and a charge landing there.
@@ -119,7 +119,7 @@ parseGrid and withRamps (grid.ts).
 
 - `src/client/hud.ts` — BattleHud: the battle HUD in the FFT layout (tile line, turn list, menus, strike strips, unit panels, help line), built from the modules beside it.
 - `src/client/hud-queue.ts` — the HTML turn list under the 3D one: its title and a row per turn of the queue projection.
-- `src/client/hud-menus.ts` — the menus beside the acting unit (commands, abilities submenu, "Execute?") and the help line text.
+- `src/client/hud-menus.ts` — the command menu beside the acting unit and the help line text.
 - `src/client/mark-style.ts` — how the board's marks are drawn: simples, luz, pedra or neon (dt:marks, ?marks=), and the listener the open battle redraws on.
 - `src/client/looks3d.ts` — the one place the client hands its windows to the 3D screens (`looks3d`): each screen fills its slot when built and empties it on dispose (`fill`); also the effects' types (`Effects`, `NumberMark`).
 - `src/client/layout-mode.ts` — interface layout choice, edges or frame (dt:layout, ?layout=), set as data-layout on the page and told to who listens (onLayout: the 3D layer).
@@ -136,13 +136,12 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ui3d/text.ts` — 3D kit: text drawn once per distinct string to a shared texture (textMesh, dropText), the same for a drawing made elsewhere (imageMesh), outlined and shadowed for a text with no plate (`shadow`); a line's width and line count with no HTML (textWidth, lineCount); pure wrapLines.
 - `src/client/ui3d/caps.ts` — 3D kit: an action's keys or pad buttons as quads showing glyph-art.ts' drawing (capMeshes, capRun).
 - `src/client/ui3d/icons.ts` — 3D kit: low-poly parts merged into one tinted geometry, the shared geometry cache and the icon shader.
-- `src/client/ui3d/spring.ts` — 3D kit: damped spring, ease and the page ring step; pure.
+- `src/client/ui3d/spring.ts` — 3D kit: damped spring and ease; pure.
 - `src/client/menu3d/menu3d.ts` — Menu3d: the command menu in 3D, on the reference's places, with its own transparent buttons.
-- `src/client/menu3d/menu-view.ts` — what the 3D menu shows (rows, sheet pages, icon of each ability) and what changed between two draws; pure.
-- `src/client/menu3d/menu-layout.ts` — where the 3D menu, its submenu and its sheet sit, and each row's box; pure.
+- `src/client/menu3d/menu-view.ts` — what the 3D menu shows (rows, the Agir lists beside it, icon of each ability) and what changed between two draws; pure.
+- `src/client/menu3d/menu-layout.ts` — where the 3D menu and its list sit, and each row's box; pure.
 - `src/client/menu3d/column.ts` — a column of the 3D menu (panel, rows, text) and the Icon on its plate.
-- `src/client/menu3d/sheet.ts` — the 3D menu's ability sheet and its sliding pages.
-- `src/client/menu3d/models.ts` — the low-poly models of the 3D menu (command and ability icons, plates, emblem, glove).
+- `src/client/menu3d/models.ts` — the low-poly models of the 3D menu (command and ability icons, plates, a gem, glove).
 - `src/client/turn3d/card-tip.ts` — CardTip: the name, life and CT of the card under the mouse, on a dark plate beside it, in 3D.
 - `src/client/turn3d/turn3d.ts` — Turn3d: the turn list in 3D, a card per row over the HUD's unseen list.
 - `src/client/turn3d/queue-layout.ts` — queueLayout: where the 3D turn list puts its head and each row on the page, and how far it scrolls and where its name goes, with no DOM; pure.
@@ -154,8 +153,6 @@ parseGrid and withRamps (grid.ts).
 - `src/client/bar3d/bar-layout.ts` — where each part of a sheet and of the plate sits inside its region, and how a text hangs on its spot; pure.
 - `src/client/bar3d/plates.ts` — the 3D combat bar's shaders: a whole unit sheet (band, bars, framed portrait) and the arrow plate.
 - `src/client/hints3d/hints3d.ts` — Hints3d: the instruction banner, the Height corner and the button hints in 3D, each on its region of the reference; the tile line (X, Y, Z, floor, water, spikes, a charge landing) small under the Height, both with no plate.
-- `src/client/confirm3d/confirm3d.ts` — Confirm3d: the "Execute?" window in 3D beside the character, drawn over the unseen HTML window, which it seats and whose buttons keep the input; text from hud-menus.ts confirmParts.
-- `src/client/confirm3d/confirm-layout.ts` — confirmLayout: the "Execute?" window's size, head, notes and choices with no DOM; pure.
 - `src/client/hints3d/hints-view.ts` — the button hints of each turn screen, each an action of glyphs.ts (hintsFor), the Height number, where each hint of a row sits (layRow), who the foot is drawn for (hintsDevice), the banner with Tutorial off (bannerLine) and the phone's message scale; pure.
 - `src/client/hints3d/effects3d.ts` — Effects3d: the effects over the battle on the 3D layer: floating numbers, the cursor note, the objective banner, the victory confetti and the performance counter.
 - `src/client/hints3d/effects-view.ts` — a floating number's look and its pose along its time, the objective banner's stretch and where each slip of confetti falls, and the performance counter's plate (fpsBox); pure.
@@ -207,7 +204,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — gearButtons and CornerButtons: the gear (Options), ↺ ↻ and Undo on the screen, battle and town (no ☰ menu since Nov 18 night).
 - `src/client/screen-buttons.ts` — touchDevice(), the one "is a finger pointing" test (also the town's walk line and pad), and the Undo and camera buttons switch: on for a finger, off on a PC, kept by Options (dt:screen-buttons).
-- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet, an ability's facts), drawn by the 3D look (window3d/status3d.ts); unitSheet and abilitySheet fill it.
+- `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet), drawn by the 3D look (window3d/status3d.ts); unitSheet fills it.
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
 - `src/client/spot-walk.ts` — nextSpot(): the nearest box in a direction, for windows whose arrows follow where things are on screen; pure.
@@ -280,12 +277,11 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
 - `src/client/scene/unit-hits.ts` — how damage lands: hit-stop, flash, recoil, slide into rock, camera shake and the death slow motion.
 - `src/client/scene/float-numbers.ts` — FloatNumbers: the damage and heal numbers popping from a chest and following it on screen.
-- `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring, shot trajectory and the town's debug grid.
+- `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring and the town's debug grid.
 - `src/client/scene/mark-kit.ts` — the lit mark styles' pieces: strips swept along a path, bent over the drawn ground, their lit materials and code-drawn relief.
 - `src/client/scene/mark-textures.ts` — the lit mark styles' textures drawn by code: grain, stone, the reflected sky and each tile drawing as colour and relief.
 - `src/client/scene/mark-looks.ts` — what each tile mark looks like: MARK colours and drawings, the danger purple and markTexture.
 - `src/client/scene/range-ring.ts` — rangeRing: the dotted outline of the tiles within the longest range, laid on the ground.
-- `src/client/scene/trajectory.ts` — trajectory: the shot preview along traceShot's path (flowing dots, landing ring, red past the stop with an X; a cast spell's pulsing circle and dashed line), animateAim and disposeAim.
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
 - `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin and action camera.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.

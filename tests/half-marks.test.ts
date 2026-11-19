@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attackMarks, chargeDanger, freshUi, highlights, threat } from '../src/client/interaction.ts';
+import { attackMarks, chargeDanger, threat } from '../src/client/interaction.ts';
 import { inRing } from '../src/client/scene/range-ring.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -90,13 +90,6 @@ describe('other-unit threat on half tiles', () => {
 describe('area marks on half tiles', () => {
   const aimed = { x: 10, y: 10 };
   const shooter = { x: 6, y: 6 }; // within blast's range of the aimed tile
-  it('the area preview paints every whole tile the area touches (blast: the tile and its 4 sides)', () => {
-    const b = battle(shooter);
-    const ui = { ...freshUi(b), mode: { k: 'ability' as const, id: 'blast' }, pending: aimed };
-    const got = highlights(b, ui).tiles.filter((t) => t.kind === 'area' || t.kind === 'target');
-    expect(keys(got.map((t) => t.pos))).toEqual(keys(cross(aimed)));
-  });
-
   it('chargeDanger paints whole tiles too', () => {
     const b = battle(shooter);
     b.act('blast', aimed);

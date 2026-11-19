@@ -1,4 +1,4 @@
-// A column of the 3D command menu (menu3d.ts): the menu or the submenu, as a parchment panel with a row per command or
+// A column of the 3D command menu (menu3d.ts): the menu or the Agir list, as a parchment panel with a row per command or
 // ability, each with its text and a low-poly icon standing on a plate. Built from data (menu-view.ts) at places the
 // layout gives (menu-layout.ts); rebuilt only when what it shows changes, while the focus and every motion are state of
 // the frame: springs for the opening and the focus band, eases for the glow and the lift.
@@ -14,7 +14,7 @@ import { REF } from './menu-layout.ts';
 import type { MenuRow } from './menu-view.ts';
 import { dropModel, type ModelKind, takeModel } from './models.ts';
 
-// what the columns and the sheet draw with
+// what the columns draw with
 export interface Ctx {
   layer: Ui3dLayer;
   s?: number; // a scale of its own instead of the layer's (the columns on touch: menu-layout.ts touchScale)

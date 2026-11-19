@@ -43,9 +43,8 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     if (!a) return;
     // confirm only on press: holding Enter to speed up the enemy must not pick the hero's 1st command by accident
     if (e.repeat && a.k === 'confirm') return void e.preventDefault();
-    // the 3D menu's buttons and "Execute?"'s, when one is open (menu3d.ts hits, hud-menus.ts renderConfirm)
-    if (pageKeeps(a, !!document.querySelector('.menu3d-hits button, .hud .confirm:not([hidden]) button'), tabbed()))
-      return;
+    // the 3D menu's buttons, when it is open (menu3d.ts hits)
+    if (pageKeeps(a, !!document.querySelector('.menu3d-hits button'), tabbed())) return;
     e.preventDefault(); // on the map Tab does not jump between buttons, Space does not scroll, F3 does not open the browser search
     // a focus Tab put on the 3D menu stays, and follows the game's (Menu3d.update)
     if (!document.activeElement?.closest('.menu3d-hits')) (document.activeElement as HTMLElement | null)?.blur();

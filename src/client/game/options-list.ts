@@ -1,6 +1,5 @@
 // The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Help is
 // options.ts's own, since its rows open windows). Out of options.ts so that file stays under the 400 lines.
-import { ACT_FIRST_KEY, parseActFirst } from '../act-flow.ts';
 import { secondTap } from '../dialog.ts';
 import { fpsOn } from '../fps.ts';
 import { fullscreenLabel, fullscreenOn, toggleFullscreen } from '../fullscreen.ts';
@@ -133,15 +132,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         ),
         tutorialOn,
         setTutorial,
-      ),
-      // the new Act (Fernando's grill of Nov 19), off until he approves it; then it becomes the only one
-      onOff(
-        t('Agir primeiro', 'Act first'),
-        t(
-          'Agir abre a lista de alvos que dá para atingir andando e agindo neste turno, depois as ações sobre o alvo e a casa de onde agir. Desligado, fica o menu de habilidades de antes.',
-          'Act opens the list of targets you can reach by walking and acting this turn, then the actions on the target and the tile to act from. Off, the old abilities menu stays.',
-        ),
-        ...flag(ACT_FIRST_KEY, parseActFirst),
       ),
       ...padOption(),
       hintsOption(), // when the battle's footer shows the key and button hints (Nov 18, Fernando; key-hints.ts)

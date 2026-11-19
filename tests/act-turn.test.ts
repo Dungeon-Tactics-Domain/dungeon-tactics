@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { actActions } from '../src/client/act-flow.ts';
 import { actMarks } from '../src/client/act-marks.ts';
-import { type ActHost, actFirstOn, actKey, actPick, actTap } from '../src/client/act-turn.ts';
+import { type ActHost, actKey, actPick, actTap } from '../src/client/act-turn.ts';
 import { itemDetail } from '../src/client/battle-text.ts';
 import { cancelStep, type Screen } from '../src/client/command.ts';
 import { helpText } from '../src/client/hud-menus.ts';
 import { menuView } from '../src/client/menu3d/menu-view.ts';
-import { store } from '../src/client/store.ts';
 import { ABILITIES, defaultLock } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
@@ -36,14 +35,6 @@ const host = (b: Battle, screen: Screen) => {
 };
 
 describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
-  it('is on until the Options switch turns it off', () => {
-    store.set('dt:act-first', '');
-    expect(actFirstOn()).toBe(true);
-    store.set('dt:act-first', 'false');
-    expect(actFirstOn()).toBe(false);
-    store.set('dt:act-first', '');
-  });
-
   it('target, action, tile: Confirm goes one screen on each time and the last one runs it', async () => {
     const b = battle();
     const h = host(b, { k: 'targets', index: 0 });

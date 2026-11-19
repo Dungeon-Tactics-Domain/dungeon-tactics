@@ -3,21 +3,21 @@
 // colors and portraits are ours (CSS and KayKit characters). Pieces, top to bottom:
 //   top left: the tile under the cursor (height and floor) and, below it, the list of upcoming turns (AT);
 //   top middle: the help line for what to do now and, below it, the banner with the ability name;
-//   beside the acting character: the command menu (Move · Abilities · Wait · Status), the abilities submenu and the
-//   "Execute?" (Nov 13, Fernando's request: "beside the character like in FFT"; `place` follows the camera every frame);
+//   beside the acting character: the command menu (Move · Abilities · Wait · Status) (Nov 13, Fernando's request:
+//   "beside the character like in FFT"; `place` follows the camera every frame);
 //   bottom left: the acting unit (portrait, HP, MP and CT bars); bottom right: the unit under the cursor; when aiming, the
-//   strike preview (Tactics Ogre's idea, Nov 13; the lab kit's two-colour strip, Nov 15) takes its place beside the acting
+//   strike forecast on the Agir tile screen (Tactics Ogre's idea, Nov 13; the lab kit's two-colour strip, Nov 15) takes its place beside the acting
 //   panel: one strip per target with the big damage, the hit chance and the target's bar with the part that goes away.
 // Redraws everything on each change (it is little DOM); the menu position changes only via left/top.
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
-import type { Lock, Pos, UnitState } from '../shared/battle/types.ts';
+import type { Pos, UnitState } from '../shared/battle/types.ts';
 import { spotAim } from './act-marks.ts';
 import { type Expression, frameOf } from './battle-face.ts';
 import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
-import { helpText, renderAbilities, renderBack, renderCommands, renderConfirm, undoShown } from './hud-menus.ts';
+import { helpText, renderBack, renderCommands, undoShown } from './hud-menus.ts';
 import { helpWidth, KEYS, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
 import { queueItems, wireCards } from './hud-queue.ts';
 import type { HudSkin } from './hud-skin.ts';
@@ -43,10 +43,7 @@ export { hint, KEYS } from './hud-pieces.ts';
 
 export interface HudActions {
   command(index: number): void; // click on a command menu item
-  ability(index: number): void; // click on a submenu ability
-  answer(yes: boolean): void; // the "Execute?" preview: Confirm or Back
-  lock(on: Lock): void; // a charge's lock step: on the character or on the tile (Nov 15)
-  page(dir: 1 | -1): void; // the ability sheet's arrows (menu3d/)
+  pick(index: number): void; // click on a row of the Agir primeiro lists (targets, actions, lock step)
   hover(list: 'menu' | 'abilities', index: number): void; // the mouse (or Tab) over a 3D menu row moves the focus there
   rotate(dir: 1 | -1): void; // the camera pair on the screen (R and Shift+R)
   undo(): void; // undoes the last step (same as the Z key): whoever plays with a mouse only had no way to
@@ -63,7 +60,6 @@ export interface HudView {
   log: string; // summary of the last action (eventLog)
   acting: string | null; // def of the enemy playing now (the state has already passed the turn when the animation plays)
   cursor: Pos; // tile under the cursor (keyboard, mouse or gamepad)
-  ability: string | null; // ability being aimed on the map (the strike preview on the target panel)
   face: (u: UnitState) => Expression; // the painted face's expression now (battle-face.ts)
   closed?: boolean; // the menu hidden by a tap on an empty tile (menu-state.ts)
   range?: string | null; // the unit whose range the map paints (unit-peek.ts)
@@ -96,12 +92,6 @@ export class BattleHud {
     role: 'menu',
     'aria-label': t('Comandos', 'Commands'),
   });
-  private readonly abilities = el('div', {
-    class: 'panel abilities',
-    role: 'menu',
-    'aria-label': t('Habilidades', 'Abilities'),
-  });
-  private readonly confirmBox = el('div', { class: 'panel confirm', role: 'dialog' });
   private readonly active = el('div', { class: 'active-slot' });
   private readonly target = el('div', { class: 'target-slot' });
   private readonly strikesEl = el('div', { class: 'strikes' });
@@ -129,8 +119,6 @@ export class BattleHud {
       this.bannerEl,
       this.tools.root,
       this.commands,
-      this.abilities,
-      this.confirmBox,
       this.active,
       this.strikesEl,
       this.target,
@@ -142,7 +130,7 @@ export class BattleHud {
     if (!this.layer) return;
     this.menu3d = skin.menu3d(this.layer, act);
     this.turn3d = skin.turn3d(this.layer, this.queue);
-    this.p3d = pieces3d(skin, this.layer, this.active, this.confirmBox, this.tools.root);
+    this.p3d = pieces3d(skin, this.layer, this.active, this.tools.root);
   }
   private drop3d() {
     this.layer?.dispose(); // with its screens
@@ -162,25 +150,21 @@ export class BattleHud {
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
-    const menu = menuUp(open, v); // the menu, its Back and "Execute?" wait while the map is looked at
+    const menu = menuUp(open, v); // the menu and its Back wait while the map is looked at
     this.root.classList.toggle('menu-shut', open && !menu);
     // `size` is set only while choosing where to move: the square the unit would stand on
     this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
     this.faces = [];
     this.expression = v.face;
-    // the ability being aimed (Act map or "Execute?") and where: the turn list projects it, the strips preview it
-    const s = v.screen;
-    const aim =
-      s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : spotAim(b, s);
+    // the ability aimed on the Agir tile screen and where: the turn list projects it, the strips preview it
+    const aim = spotAim(b, v.screen);
     this.renderQueue(b, aim);
     this.help.textContent = helpText(v, heroTurn);
     this.p3d.hints?.update(v, open, this.help.textContent);
     renderBack(this.back, v, menu);
     this.tools.setUndo(undoShown(b, open));
     renderCommands(this.commands, v, menu, this.act);
-    renderAbilities(this.abilities, v, menu, this.act);
     this.menu3d?.update(v, menu);
-    renderConfirm(this.confirmBox, v, menu, this.act);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
@@ -194,11 +178,9 @@ export class BattleHud {
     else
       this.queue.style.maxHeight = `calc(100% - 56px - env(safe-area-inset-top, 0px) - var(--inset) - var(--inset-b) - ${this.active.offsetHeight}px)`;
     this.anchorQueue(b);
-    // unit under the cursor (or the "Execute?" target)
-    const at = v.screen.k === 'confirm' ? v.screen.target : v.cursor;
-    // unitAt: any tile of the large unit shows its panel
-    const found = unitAt(b.state, at);
-    // aiming (Act map or "Execute?"): the strips beside the acting panel take the target panel's place, the one for the target
+    // unit under the cursor; unitAt: any tile of the large unit shows its panel
+    const found = unitAt(b.state, v.cursor);
+    // aiming (the Agir tile screen): the strips beside the acting panel take the target panel's place, the one for the target
     // under the cursor first. It applies even to someone healing themself (outside aiming, their own panel is not repeated)
     const ability = aim?.ability ?? null;
     const fs = open && ability && v.hl?.preview?.ok ? forecast(b, ability, v.hl.preview) : [];
@@ -208,9 +190,8 @@ export class BattleHud {
     this.strikesEl.replaceChildren(...(main ? strikes([main, ...fs.filter((f) => f !== main)], ability!) : []));
     this.turn3d?.update(b, this.queued, fs, v.face, me?.id);
     this.p3d.bar?.update(b.state, me, other, main ? [main, ...fs.filter((f) => f !== main)] : [], ability, v.face);
-    this.p3d.confirm?.update(v, menu);
     // size of the panels that move with the character, once per draw (each frame's `place` only reads the cache); the
-    // strips enter the bottom height so "Execute?" does not land on them. A 3D piece's size is its own layout's (Nov 18)
+    // strips enter the bottom height so the menu does not land on them
     const box = (e: HTMLElement) => ({ w: e.offsetWidth, h: e.offsetHeight });
     const { layer, sheet, help } = this;
     const end = layer
@@ -218,8 +199,6 @@ export class BattleHud {
       : help.getBoundingClientRect().bottom;
     this.sizes = {
       commands: box(this.commands),
-      abilities: box(this.abilities),
-      confirm: this.p3d.confirm?.size ?? box(this.confirmBox),
       bottom: Math.round(
         sheet?.h ?? Math.max(this.active.offsetHeight, this.target.offsetHeight, this.strikesEl.offsetHeight),
       ),
@@ -250,18 +229,17 @@ export class BattleHud {
     }
   }
 
-  private sizes = { commands: { w: 0, h: 0 }, abilities: { w: 0, h: 0 }, confirm: { w: 0, h: 0 }, bottom: 0, top: 72 };
+  private sizes = { commands: { w: 0, h: 0 }, bottom: 0, top: 72 };
   get menuOpen() {
-    return !this.commands.hidden || !this.confirmBox.hidden;
+    return !this.commands.hidden;
   }
 
-  // Places the menu, submenu or "Execute?" beside the acting character (`a`, in screen px). Called every frame while
-  // the menu is open (the camera slides and rotates): only left/top change, and only when the px changes. `target`: the target of
-  // "Execute?", which the window does not cover (nor the turn list, which shows where the charge fires)
-  place(a: Anchor | null, target: Anchor | null = null) {
+  // Places the command menu beside the acting character (`a`, in screen px). Called every frame while the menu is open (the
+  // camera slides and rotates): only left/top change, and only when the px changes
+  place(a: Anchor | null) {
     if (!a || !this.menuOpen) return;
-    // the 3D menu keeps the menu and the submenu bottom right; only "Execute?" follows the character
-    if (this.menu3d && this.confirmBox.hidden) return;
+    // the 3D menu keeps its columns bottom right
+    if (this.menu3d) return;
     // free: below the help line and the menu button (which stay at the top), above the bottom unit panels
     const area = {
       left: 12,
@@ -270,51 +248,12 @@ export class BattleHud {
       bottom: this.root.clientHeight - 24 - this.sizes.bottom,
     };
     const q = this.turn3d?.box ?? this.queue.getBoundingClientRect();
-    // the character on screen goes from ~1.5 half widths above the middle (health bar) to ~1.5 below (ring on the ground)
-    const avoid = [
-      { left: q.left, top: q.top, right: q.right, bottom: q.bottom },
-      ...(target
-        ? [
-            {
-              left: target.x - target.r,
-              top: target.y - 1.5 * target.r,
-              right: target.x + target.r,
-              bottom: target.y + 1.5 * target.r,
-            },
-          ]
-        : []),
-    ];
-    const prefer = target && target.x > a.x ? 'left' : 'right';
-    const put = (e: HTMLElement, left: number, top: number) => {
-      const l = `${Math.round(left)}px`,
-        tp = `${Math.round(top)}px`;
-      if (e.style.left !== l) e.style.left = l;
-      if (e.style.top !== tp) e.style.top = tp;
-    };
-    const { commands: c, abilities: s, confirm: f } = this.sizes;
-    if (!this.confirmBox.hidden) {
-      let p = placeBeside(a, f.w, f.h, area, prefer, avoid);
-      // no room clear of both (three strips at 1280x720): keep the turn list clear, the strips already show the target's numbers
-      if (!p.free) p = placeBeside(a, f.w, f.h, area, prefer, avoid.slice(0, 1));
-      return put(this.confirmBox, p.left, p.top);
-    }
-    const sub = !this.abilities.hidden;
-    const gap = 8;
-    // a phone has no room for both side by side (164 + 8 + 320 px on a 375 px screen): the submenu takes the menu's place
-    const over = sub && c.w + gap + s.w > area.right - area.left;
-    this.commands.classList.toggle('covered', over);
-    if (over) {
-      const o = placeBeside(a, s.w, s.h, area, 'right', avoid);
-      return put(this.abilities, o.left, o.top);
-    }
-    // with the submenu open, both decide the side together (otherwise the submenu fell on top of the character); the menu stays on its side
-    const p = placeBeside(a, sub ? c.w + gap + s.w : c.w, Math.max(c.h, sub ? s.h : 0), area, 'right', avoid);
-    const right = p.side === 'right';
-    put(this.commands, right || !sub ? p.left : p.left + s.w + gap, p.top);
-    if (!sub) return;
-    put(this.abilities, right ? p.left + c.w + gap : p.left, p.top);
-    // the submenu opens coming out of the menu: from the left when it is on its right, and vice versa
-    this.abilities.classList.toggle('from-right', !right);
+    const { w, h } = this.sizes.commands;
+    const p = placeBeside(a, w, h, area, 'right', [{ left: q.left, top: q.top, right: q.right, bottom: q.bottom }]);
+    const l = `${Math.round(p.left)}px`,
+      tp = `${Math.round(p.top)}px`;
+    if (this.commands.style.left !== l) this.commands.style.left = l;
+    if (this.commands.style.top !== tp) this.commands.style.top = tp;
   }
 
   private renderQueue(b: Battle, aim: { ability: string; target: Pos } | null) {

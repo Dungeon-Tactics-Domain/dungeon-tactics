@@ -2,12 +2,14 @@
 // window.__sandbox. Loaded only on localhost with ?sandbox= (entry.ts), as its own chunk: the online game never fetches it.
 // The map, the cast, the dice and the language are fixed when the page loads (`stage`); everything else changes live (`apply`).
 import { Battle } from '../../shared/battle/battle.ts';
-import { subOf } from '../../shared/battle/grid.ts';
+import { samePos, subOf } from '../../shared/battle/grid.ts';
 import { HALF, halfDef, halve } from '../../shared/battle/half.ts';
+import { unitAt } from '../../shared/battle/pathing.ts';
 import { SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
-import { abilitiesOf, type Screen, startScreen } from '../command.ts';
+import { type ActTarget, actActions, bestSpot } from '../act-flow.ts';
+import { type Screen, startScreen } from '../command.ts';
 import { freshUi, hoverTile, selectMode, type Ui } from '../interaction.ts';
 import type { Game } from '../main.ts';
 import { showMarkStyle } from '../mark-style.ts';
@@ -153,7 +155,6 @@ export function install(game: Game, scene: BattleScene) {
     keep(scene.setHighlights.bind(scene)),
     keep(scene.setCursor.bind(scene)),
     keep(scene.setRangeRing.bind(scene)),
-    keep(scene.setTrajectory.bind(scene)),
     keep(scene.setChargeLines.bind(scene)),
     keep(scene.setChargePreview.bind(scene)),
     keep(scene.setCounters.bind(scene)),
@@ -163,12 +164,11 @@ export function install(game: Game, scene: BattleScene) {
     scene.setHighlights,
     scene.setCursor,
     scene.setRangeRing,
-    scene.setTrajectory,
     scene.setChargeLines,
     scene.setChargePreview,
     scene.setCounters,
     scene.setCursorNote,
-  ] = [marked[0][0], marked[1][0], marked[2][0], marked[3][0], marked[4][0], marked[5][0], marked[6][0], marked[7][0]];
+  ] = [marked[0][0], marked[1][0], marked[2][0], marked[3][0], marked[4][0], marked[5][0], marked[6][0]];
   // a fixed camera (bench) stays where the spec put it: the game's slides to whoever acts are dropped
   const focus = scene.focusOn.bind(scene);
   let fixed = false;
@@ -201,7 +201,6 @@ export function install(game: Game, scene: BattleScene) {
     if (turn) p.push(turn);
     const sc = s.screen ?? (s.units || s.actor || s.cursor ? 'menu' : undefined);
     if (sc === 'menu') show(startScreen(battle), s.cursor);
-    else if (sc === 'abilities') show({ k: 'abilities', index: 0, page: (s.page ?? 1) - 1 }, s.cursor);
     else if (sc === 'facing') show({ k: 'facing' });
     else if (sc === 'move') {
       const at = s.cursor ?? battle.actor.pos;
@@ -211,16 +210,17 @@ export function install(game: Game, scene: BattleScene) {
         hoverTile(battle, selectMode(battle, freshUi(battle), { k: 'move' }), at),
       );
     } else if (sc) {
-      if (!abilitiesOf(battle).includes(sc.aim)) p.push(`screen.aim: ${battle.actor.id} has no ability "${sc.aim}"`);
-      else if (!battle.preview(sc.aim, sc.target).ok)
-        p.push(`screen.aim: ${sc.aim} cannot reach ${sc.target.x / k},${sc.target.y / k}`);
+      // the Agir tile screen of that ability on whoever stands at `target` (a ground tile: the direct action)
+      const on = unitAt(battle.state, sc.target);
+      const at: ActTarget = on ? { k: 'unit', unit: on.id, pos: on.pos } : { k: 'direct', ability: sc.aim };
+      const actions = actActions(battle, at);
+      const action = actions.findIndex((a) => a.k === 'ability' && a.id === sc.aim && a.enabled);
+      if (action < 0) p.push(`screen.aim: ${sc.aim} cannot reach ${sc.target.x / k},${sc.target.y / k}`);
       else {
-        const ui = hoverTile(battle, selectMode(battle, freshUi(battle), { k: 'ability', id: sc.aim }), sc.target);
-        show(
-          sc.confirm ? { k: 'confirm', ability: sc.aim, target: sc.target } : { k: 'map', command: 'act' },
-          sc.target,
-          ui,
-        );
+        const { spots } = actions[action];
+        const found = spots.findIndex((x) => samePos(x.aim, sc.target));
+        const index = found < 0 ? bestSpot(actions[action]) : found;
+        show({ k: 'spot', target: at, action, index }, spots[index].pos);
       }
     }
     const c = s.camera;

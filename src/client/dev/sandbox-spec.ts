@@ -5,7 +5,6 @@ import { CRAWL_THEMES } from '../../content/crawl/rooms.ts';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import type { Pos, Team } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
-import { PAGES } from '../command.ts';
 import { MARK_STYLES, type MarkStyle } from '../mark-style.ts';
 import { TIMING } from '../timing.ts';
 import { PIECE_NAMES, type PieceName } from '../ui-pieces.ts';
@@ -19,7 +18,7 @@ export const PANELS = {
   help: [],
   banner: ['banner'],
   tools: ['tools'],
-  menu: ['menu', 'confirm'],
+  menu: ['menu'],
   units: ['bar'],
   strikes: [],
   numbers: [],
@@ -53,7 +52,8 @@ export interface NewUnit {
   x: number;
   y: number;
 }
-export type ScreenSpec = 'menu' | 'abilities' | 'move' | 'facing' | { aim: string; target: Pos; confirm?: boolean };
+// `{ aim, target }`: the Agir tile screen of that ability on the unit at `target` (or its ground tile), with its forecast
+export type ScreenSpec = 'menu' | 'move' | 'facing' | { aim: string; target: Pos };
 export interface CameraSpec {
   angle?: number; // 0-7, one of the 8 rotations (45° each); 0 is the opening view
   zoom?: number; // 1 = the whole map, 2 = twice as close
@@ -90,7 +90,6 @@ export interface SceneSpec {
   speed?: number; // bench: battle clock rate, 0.25 is slow motion
   layout?: LayoutMode; // edges or frame (ui3d/layout.ts), as ?layout= in the address
   marks?: MarkStyle; // how the board's marks are drawn (mark-style.ts), as ?marks= in the address
-  page?: number; // with screen "abilities": the ability sheet's page, 1 to 3
 }
 
 const KEYS = [
@@ -116,7 +115,6 @@ const KEYS = [
   'speed',
   'layout',
   'marks',
-  'page',
 ];
 const HIDDEN = new Set<string>([...Object.keys(PANELS), ...PIECE_NAMES, 'all', 'marks']);
 
@@ -194,15 +192,10 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
   const s = r.screen;
   if (
     s !== undefined &&
-    !['menu', 'abilities', 'move', 'facing'].includes(s as string) &&
-    !(
-      isObj(s) &&
-      typeof s.aim === 'string' &&
-      isPos(s.target) &&
-      (s.confirm === undefined || typeof s.confirm === 'boolean')
-    )
+    !['menu', 'move', 'facing'].includes(s as string) &&
+    !(isObj(s) && typeof s.aim === 'string' && isPos(s.target))
   )
-    p.push('screen must be menu, abilities, move, facing or { aim, target, confirm? }');
+    p.push('screen must be menu, move, facing or { aim, target }');
   if (r.cursor !== undefined && !isHalfPos(r.cursor)) p.push('cursor must be { x, y } (whole or x.5)');
   const c = r.camera;
   if (c !== undefined) {
@@ -246,8 +239,6 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
     p.push(`layout must be one of ${LAYOUT_MODES.join(', ')}`);
   if (r.marks !== undefined && !MARK_STYLES.includes(r.marks as MarkStyle))
     p.push(`marks must be one of ${MARK_STYLES.join(', ')}`);
-  if (r.page !== undefined && !(isInt(r.page, 1, PAGES) && r.screen === 'abilities'))
-    p.push(`page must be 1 to ${PAGES}, with screen "abilities"`);
   return { spec: p.length ? {} : (r as SceneSpec), problems: p };
 }
 

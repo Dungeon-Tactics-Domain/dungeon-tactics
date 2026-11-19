@@ -590,12 +590,11 @@ button[hidden],
     monospace;
   padding: 4px 8px;
 }
-/* command menu, abilities submenu and "Execute?": beside the acting character, like FFT (Nov 13); left and top
-   come from hud.ts (place), which follows the camera every frame. Hence no transform here: the open animations use it */
-/* command menu and submenu at the lab kit's size (Nov 15, FFT theme block 2): 422 and 460 px wide (22% of the 1920 screen),
-   a head with the menu name, 60 px rows with a marker (glass orb or 32 px ability icon) before the name */
-.commands,
-.abilities {
+/* command menu: beside the acting character, like FFT (Nov 13); left and top come from hud.ts (place), which follows the
+   camera every frame. Hence no transform here: the open animations use it */
+/* command menu at the lab kit's size (Nov 15, FFT theme block 2): 422 px wide (22% of the 1920 screen), a head with the
+   menu name, 60 px rows with a marker (glass orb or 32 px ability icon) before the name */
+.commands {
   display: grid;
   width: 422px;
   padding: 0 0 8px;
@@ -608,29 +607,20 @@ button[hidden],
   font: 400 var(--fs) / 1.2 var(--font-title);
   border-bottom: 2px solid transparent;
 }
-.panel.commands .item,
-.panel.abilities .item {
+.panel.commands .item {
   min-height: 60px;
   padding: 0 18px 0 46px;
   gap: 14px;
   white-space: nowrap;
   font: 500 var(--fs-lg) / 1 var(--font-title);
 }
-/* Act with the submenu open: marked as picked, with a pointer toward the submenu (the focus is in the submenu) */
-.panel.commands .item.picked::after {
-  content: "▸";
-}
-/* below 1600 px wide the kit's sizes (measured on 1920) left no room beside the unit: menu and submenu together are ~890 px,
-   and at 1280 they fell on top of it. Here the menu takes the width of its longest row and the rows shrink */
+/* below 1600 px wide the kit's sizes (measured on 1920) left no room beside the unit: at 1280 the menu fell on top of it.
+   Here the menu takes the width of its longest row and the rows shrink */
 @media (max-width: 1599px) {
   .commands {
     width: auto;
   }
-  .abilities {
-    width: 320px;
-  }
-  .panel.commands .item,
-  .panel.abilities .item {
+  .panel.commands .item {
     min-height: 44px;
     padding-left: 40px;
     gap: 10px;
@@ -657,11 +647,7 @@ button[hidden],
   font: 700 var(--fs-lg) / 1 var(--font-title);
 }
 /* menus open instead of popping in (Nov 12, game feel): 90 ms, fast enough not to slow down whoever knows what they want;
-   the submenu comes from the side of the menu it left (hud.ts sets .from-right when it opens to the left of the menu); the ability
-   name banner opens from the middle */
-.abilities.from-right {
-  --slide: 24px;
-}
+   the ability name banner opens from the middle */
 /* ability icon (icons.ts abilityIcon): the theme's 32 px atlas cell at 1:1; the cell is transparent, so the game-icons symbol
    is hidden when the ability has one and shows only when it has no cell */
 .ability-icon {
@@ -675,10 +661,8 @@ button[hidden],
 .panel .item:disabled .ability-icon {
   opacity: 0.5;
 }
-/* menus beside the character over the fps counter, which covered the submenu */
-.commands,
-.abilities,
-.confirm {
+/* the menu beside the character over the fps counter */
+.commands {
   z-index: 1;
 }
 /* key hint on the buttons, only on PC with a mouse (.hud.kbd) */
@@ -869,10 +853,6 @@ button[hidden],
 }
 
 /* ---- Battle HUD: touch and narrow screens (Nov 16, Fernando: the game must play on a tablet with the fingers) ---- */
-/* the submenu took the menu's place (hud.ts place: no room for both side by side) */
-.commands.covered {
-  visibility: hidden;
-}
 /* narrow tablet: at 35vw the unit panel left the HP and CT bars 2 px wide. By width alone, not by `pointer: coarse`: a
    narrow PC window had the same 2 px bars. An upright phone (under 600 px) gets a "turn the phone" notice instead of a
    layout of its own (Fernando, Nov 16) */
@@ -1388,9 +1368,6 @@ body:has(.talk-overlay) .fps {
   pointer-events: none;
   z-index: 1;
 }
-.hud.ui3d .confirm {
-  z-index: 2;
-}
 /* text for the screen reader only */
 .dialog.options3d .opt-help {
   position: absolute;
@@ -1501,10 +1478,9 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
 
 /* battle HUD: the HTML each piece stands for stays in the HUD, unseen. The menus only keep the HUD's open state (the
    input is .menu3d-hits); the help line, the banner and the tile line are drawn by hints3d; the strips and the target
-   panel leave the flow; the acting panel, "Execute?" and the corner menu keep the drawing's place and size, so the
+   panel leave the flow; the acting panel and the corner menu keep the drawing's place and size, so the
    map, the turn list and BattleHud.place keep clear of what is drawn */
 .hud.menu3d .commands,
-.hud.menu3d .abilities,
 .hud.banner3d .help,
 .hud.banner3d .banner,
 .hud.height3d .tile-info {
@@ -1543,8 +1519,8 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   top: var(--turn-y);
   bottom: max(var(--turn-b), var(--active-h, 0px) + 2px);
   height: auto;
-  /* the cards' column, then the room their life and CT lines take (--turn-stats): the menu beside the unit and
-     "Execute?" keep clear of this box (hud.ts place) */
+  /* the cards' column, then the room their life and CT lines take (--turn-stats): the menu beside the unit
+     keep clear of this box (hud.ts place) */
   width: calc(120px * var(--t3) + var(--turn-stats, 0px));
   box-sizing: border-box;
   display: flex;
@@ -1589,44 +1565,6 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   border-color: var(--ui3d-result-line);
   background: var(--ui3d-result-plate);
   color: var(--ui3d-result-text);
-}
-
-/* "Execute?" (confirm3d): the HTML window takes the drawing's sizes, in px of the reference (confirm3d.ts SIZE), and
-   its serif and weight, so the notes wrap where the drawn ones do */
-.hud.confirm3d .confirm {
-  width: calc(440 * var(--lay-u));
-  font-family: var(--font-ui3d);
-  font-weight: 500;
-  padding: 0 calc(12 * var(--lay-u)) calc(12 * var(--lay-u));
-  opacity: 0;
-}
-.hud.confirm3d .confirm .panel-head,
-.hud.confirm3d .confirm .item {
-  font-family: inherit;
-  font-weight: inherit;
-}
-.hud.confirm3d .confirm .panel-head {
-  padding: calc(10 * var(--lay-u)) calc(14 * var(--lay-u));
-  font-size: max(var(--fs-3d-min), 26 * var(--lay-u));
-  line-height: 1.3;
-}
-.hud.confirm3d .confirm p {
-  margin: calc(8 * var(--lay-u)) calc(6 * var(--lay-u)) 0;
-  font-size: max(var(--fs-3d-min), 18 * var(--lay-u));
-  line-height: 1.3;
-}
-.hud.confirm3d .confirm p:not(.unit-note) {
-  display: none;
-}
-.hud.confirm3d .confirm .item {
-  min-height: calc(52 * var(--lay-u));
-  font-size: max(var(--fs-3d-min), 24 * var(--lay-u));
-}
-/* a finger keeps its 44 px target (section 8) */
-@media (pointer: coarse) {
-  .hud.confirm3d .confirm .item {
-    min-height: max(var(--tap), 52 * var(--lay-u));
-  }
 }
 
 /* corner buttons (tools3d): the HTML buttons stay unseen under their drawn plates, which seat them (tools3d.ts) */

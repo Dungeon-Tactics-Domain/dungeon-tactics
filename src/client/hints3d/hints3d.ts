@@ -12,7 +12,6 @@ import { Group, Mesh, ShaderMaterial, Vector2, Vector4 } from 'three';
 import type { HudView } from '../hud.ts';
 import { t } from '../i18n.ts';
 import { hintsMode, onHelp, tutorialOn } from '../key-hints.ts';
-import { menuUp } from '../menu-state.ts';
 import { pieceHidden } from '../ui-pieces.ts';
 import { capMeshes } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -69,7 +68,7 @@ void main() {
 }`;
 
 export type Quad = Mesh<typeof QUAD, ShaderMaterial>;
-// one of the three parts: its meshes under one group, faded together (the 3D "Execute?", confirm3d/, draws with it too)
+// one of the three parts: its meshes under one group, faded together
 export class Part {
   readonly group = new Group();
   private boxes: Quad[] = [];
@@ -195,11 +194,7 @@ export class Hints3d implements Ui3dScreen {
     if (parts.banner) {
       // the battle over: the pill leaves like the Height and the hints, the end screen says who won (result3d/ draws
       // on this same layer, and the pill showed through its veil)
-      // nor while "Execute?" is open: its head asks the same question beside the character (Nov 18 review: "Tiro:
-      // executar?" twice on screen); the help line keeps it for the screen reader
-      const asking = menuUp(last.open, v) && v.screen.k === 'confirm'; // not while the map is looked at: the window waits
-      const text =
-        this.said ?? (b.over || asking ? '' : bannerLine(last.help, v.log, last.open, v.screen, tutorialOn()));
+      const text = this.said ?? (b.over ? '' : bannerLine(last.help, v.log, last.open, tutorialOn()));
       const part = this.banner,
         k = messageScale(layer.w, layer.h),
         key = text + at;
@@ -226,7 +221,7 @@ export class Hints3d implements Ui3dScreen {
     }
 
     if (parts.height) {
-      const n = heightShown(b, v.screen, v.cursor);
+      const n = heightShown(b, v.cursor);
       const part = this.height,
         key = n === null ? '' : n + at;
       part.want = n === null ? 0 : 1;
@@ -246,7 +241,7 @@ export class Hints3d implements Ui3dScreen {
         this.num.userData.size = this.num.scale.clone();
       }
       // the tile line under the Height's line, from the label's x, wrapping at the region's right edge, with no plate
-      const line = tileLine(b, v.screen, v.cursor, v.hl?.size),
+      const line = tileLine(b, v.cursor, v.hl?.size),
         tile = this.tile,
         tkey = line + at;
       tile.want = line ? 1 : 0;

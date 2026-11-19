@@ -1,4 +1,4 @@
-// What touch does in battle, without DOM or Three (testable): bar mode, chosen tile waiting for Confirm and
+// What touch does in battle, without DOM or Three (testable): Move mode, chosen tile waiting for Confirm and
 // unit under inspection. The scene and the HUD only draw what `highlights` returns.
 import { ABILITIES, type AbilityDef } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
@@ -6,7 +6,6 @@ import { type Preview, previewAbility } from '../shared/battle/combat.ts';
 import { pendingCounters } from '../shared/battle/counter.ts';
 import { FACING, type Grid, inBounds, posKey, samePos, subOf } from '../shared/battle/grid.ts';
 import {
-  aimEnds,
   aimTile,
   areaOf,
   cellsOf,
@@ -18,12 +17,11 @@ import {
   reachable,
   unitAt,
 } from '../shared/battle/pathing.ts';
-import { traceShot } from '../shared/battle/shot.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';
-import type { BattleEvent, BattleState, Lock, Pos } from '../shared/battle/types.ts';
+import type { BattleEvent, BattleState, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 
-export type Mode = { k: 'move' } | { k: 'ability'; id: string } | { k: 'idle' };
+export type Mode = { k: 'move' } | { k: 'idle' };
 export interface Ui {
   mode: Mode;
   pending: Pos | null; // chosen tile; only becomes an action on Confirm (spec: 2nd tap picks, button executes)
@@ -39,73 +37,39 @@ export interface Highlights {
   invalid?: boolean; // `Ui.invalid`, for the HUD's help line: the last tap landed on a tile that does not work
 }
 
-const selfCentered = (id: string) => ABILITIES[id].range[1] === 0;
-
-// some tile with a unit accepts the ability from here and it hits who it should (enemy, or ally for healing): an area
-// that would only hit the ally next to it doesn't count as a target
-function hasTarget(b: Battle, id: string): boolean {
-  const heal = ABILITIES[id].heal[1] > 0;
-  // any tile of the unit (the large one occupies 4; only one of them may be in range)
-  return b.state.units.some((u) =>
-    footprint(u).some((p) =>
-      b.preview(id, p).targets.some((tg) => {
-        const hit = b.state.units.find((x) => x.id === tg.unit)!;
-        return heal === (hit.team === b.actor.team);
-      }),
-    ),
-  );
-}
-
-// not moved yet: Move; already moved: the first ability that has a target from here (no target, none: picking Stab
-// far from everyone only asked for an impossible tap)
+// not moved yet: Move; already moved: nothing to aim here, Act has its own screens (act-flow.ts)
 export function defaultMode(b: Battle): Mode {
-  if (b.over) return { k: 'idle' };
-  if (b.reach().size && !b.state.turn.moved) return { k: 'move' }; // already moved: the default is to act (the rest of the movement is left for after)
-  const id = !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.find((a) => hasTarget(b, a));
-  return id ? { k: 'ability', id } : { k: 'idle' };
+  return !b.over && b.reach().size && !b.state.turn.moved ? { k: 'move' } : { k: 'idle' };
 }
 
-const allowed = (b: Battle, m: Mode) =>
-  m.k === 'idle' ||
-  (m.k === 'move' ? b.reach().size > 0 : !b.state.turn.usedAbility && UNIT_DEFS[b.actor.def].abilities.includes(m.id));
+const allowed = (b: Battle, m: Mode) => m.k === 'idle' || b.reach().size > 0;
 
-// ability centered on the user is born with the target already marked: there's no tile to choose
-const withMode = (b: Battle, mode: Mode): Ui => ({
-  mode,
-  pending: mode.k === 'ability' && selfCentered(mode.id) ? b.actor.pos : null,
-  inspect: null,
-  invalid: false,
-});
+const withMode = (mode: Mode): Ui => ({ mode, pending: null, inspect: null, invalid: false });
 
-export const freshUi = (b: Battle): Ui => withMode(b, defaultMode(b));
-export const selectMode = (b: Battle, ui: Ui, mode: Mode): Ui => (allowed(b, mode) ? withMode(b, mode) : ui);
+export const freshUi = (b: Battle): Ui => withMode(defaultMode(b));
+export const selectMode = (b: Battle, ui: Ui, mode: Mode): Ui => (allowed(b, mode) ? withMode(mode) : ui);
 
 export function tapTile(b: Battle, ui: Ui, pos: Pos): Ui {
   const other = unitAt(b.state, pos);
   const mode = ui.mode;
   if (mode.k === 'move' && b.reach().has(posKey(pos))) return { ...ui, pending: pos, inspect: null, invalid: false };
-  if (mode.k === 'ability' && !selfCentered(mode.id) && b.preview(mode.id, pos).ok)
-    return { ...ui, pending: pos, inspect: null, invalid: false };
-  if (other && other.id !== b.actor.id) return { ...withMode(b, mode), inspect: other.id };
+  if (other && other.id !== b.actor.id) return { ...withMode(mode), inspect: other.id };
   // tapping your own hero clears the choice; so does an empty tile that doesn't work, but it warns
-  return { ...withMode(b, mode), invalid: !other && mode.k !== 'idle' };
+  return { ...withMode(mode), invalid: !other && mode.k !== 'idle' };
 }
 
 // Keyboard cursor: hovering already shows the preview (path or hit %), as in FFT; Enter executes.
 // A tile that doesn't work only clears the choice: a warning on every cursor step would be noise.
 export const hoverTile = (b: Battle, ui: Ui, pos: Pos): Ui => ({ ...tapTile(b, ui, pos), invalid: false });
 
-// Esc: first releases the marked tile and the inspection; again, goes back from the ability to Move (if not moved yet)
-export function cancel(b: Battle, ui: Ui): Ui {
-  if (ui.pending || ui.inspect) return { ...withMode(b, ui.mode), pending: null };
-  if (ui.mode.k === 'ability' && !b.state.turn.moved) return withMode(b, { k: 'move' });
-  return ui;
+// Esc: releases the marked tile and the inspection
+export function cancel(ui: Ui): Ui {
+  return ui.pending || ui.inspect ? { ...withMode(ui.mode), pending: null } : ui;
 }
 
-// `lock`: a charge's lock picked in the "Execute?" window (Nov 15)
-export function confirm(b: Battle, ui: Ui, lock?: Lock): { events: BattleEvent[]; ui: Ui } {
-  if (!ui.pending || ui.mode.k === 'idle') return { events: [], ui };
-  const events = ui.mode.k === 'move' ? b.move(ui.pending) : b.act(ui.mode.id, ui.pending, lock);
+export function confirm(b: Battle, ui: Ui): { events: BattleEvent[]; ui: Ui } {
+  if (ui.mode.k !== 'move' || !ui.pending) return { events: [], ui };
+  const events = b.move(ui.pending);
   // whoever moves may fall into the counterattack (Nov 13): without an actor, the Ui stays as it was and the game passes the turn
   const alive = b.state.units.some((u) => u.id === b.state.turn.actor);
   return { events, ui: events.length && alive ? freshUi(b) : ui };
@@ -156,7 +120,6 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
   const tiles = new Map<string, { pos: Pos; kind: TileKind }>();
   const mark = (pos: Pos, kind: TileKind) => tiles.set(posKey(pos), { pos, kind });
   let path: Pos[] | null = null;
-  let preview: Preview | null = null;
   const size = ui.mode.k === 'move' ? (UNIT_DEFS[b.actor.def].size ?? 1) : 1;
   const reach = ui.mode.k === 'move' ? b.reach() : null; // not cached in Battle: worked out once per cursor change
   if (ui.inspect && b.state.units.some((u) => u.id === ui.inspect))
@@ -176,24 +139,6 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
         } else if (!safe.has(posKey(c))) mark(c, 'counter');
     }
     if (ui.pending) path = pathTo(reach, ui.pending);
-  } else if (ui.mode.k === 'ability') {
-    const a = ABILITIES[ui.mode.id];
-    const own = footprint(b.actor);
-    if (!selfCentered(a.id)) {
-      // measured from the actor's cell nearest to the tile, like the rule (previewAbility)
-      for (const t of allTiles(b)) {
-        const [from, to] = aimEnds(b.grid, b.state, b.actor, t);
-        if (!inAbilityRange(b.grid, a, from, to)) continue;
-        // the rule's own path: a tile the shot would not reach (terrain or a body in the way) is marked blocked
-        mark(t, a.needsSight && traceShot(b.grid, b.state, b.actor, t, !!a.arc).stop ? 'blocked' : 'range');
-      }
-    }
-    if (ui.pending) {
-      preview = b.preview(a.id, ui.pending);
-      const area = areaOf(b.grid, b.state, preview.center);
-      if (a.radius > 0)
-        for (const t of areaCells(b.grid, area, a.radius)) if (!own.some((p) => samePos(p, t))) mark(t, 'area');
-    }
   }
   if (!b.over) for (const c of footprint(b.actor)) mark(c, 'actor');
   // the choice goes over the actor's square: a 2x2 token stepping 1 cell overlaps where it stands
@@ -205,28 +150,8 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
     const fits = !!at && reach.has(posKey(at));
     if (at && !samePos(at, b.actor.pos))
       for (const c of cellsOf(at, size)) if (inBounds(b.grid, c)) mark(c, fits ? 'target' : 'nogo');
-  } else if (ui.pending) {
-    const { pos, size: s } = aimMark(b.grid, b.state, ui.pending);
-    for (const c of cellsOf(pos, s)) mark(c, 'target');
   }
-  return { tiles: [...tiles.values()], path, preview, size, invalid: ui.invalid };
-}
-
-// The square an aim at `p` marks, as corner and cells per side (Nov 15, Fernando: the aim mark is one half-tile cell, and the
-// whole body of the unit it lands on, not a 2x2 whole tile on empty ground). The rule aims at the whole tile (aimTile), so a
-// token on that tile's corner is the one hit even from an empty cell beside it: the mark shows that body
-export function aimMark(grid: Grid, state: BattleState, p: Pos): { pos: Pos; size: number } {
-  const u = unitAt(state, aimTile(grid, state, p));
-  return u ? { pos: u.pos, size: UNIT_DEFS[u.def].size ?? 1 } : { pos: p, size: 1 };
-}
-
-// Keyboard or gamepad step while aiming: a step that stays on the same marked body changes nothing on screen, so it goes on
-// until the mark moves (one press enters or crosses a body). Null when that runs off the map
-export function aimStep(grid: Grid, state: BattleState, from: Pos, step: Pos): Pos | null {
-  const mark = (p: Pos) => JSON.stringify(aimMark(grid, state, p));
-  let next = { x: from.x + step.x, y: from.y + step.y };
-  while (inBounds(grid, next) && mark(next) === mark(from)) next = { x: next.x + step.x, y: next.y + step.y };
-  return inBounds(grid, next) ? next : null;
+  return { tiles: [...tiles.values()], path, preview: null, size, invalid: ui.invalid };
 }
 
 // Direction choice at the end of the turn: the tiles beside each side of the acting unit's square, the faced side marked

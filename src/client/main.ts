@@ -4,12 +4,12 @@
 import { playAiTurn } from '../shared/battle/ai.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
-import type { BattleEvent, Lock, Pos, UnitState } from '../shared/battle/types.ts';
+import type { BattleEvent, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { battleInput } from './battle-input.ts';
 import { beforeEvent } from './before-event.ts';
-import { abilitiesOf, type Screen, startScreen } from './command.ts';
+import { type Screen, startScreen } from './command.ts';
 import { fpsCounter } from './fps.ts';
 import { type BattleSelection, newBattle } from './game/boot.ts';
 import { battleEndScreen, confetti } from './game/end-screens.ts';
@@ -25,7 +25,7 @@ import { reducedMotion } from './motion.ts';
 import { onLeave, screenSignal } from './nav.ts';
 import type { BattleScene } from './scene.ts';
 import { jingle, sfx } from './sound.ts';
-import { abilitySheet, unitSheet } from './status-window.ts';
+import { unitSheet } from './status-window.ts';
 import { store } from './store.ts';
 import { BEST_KEY, isSurvival, parseBest, SURVIVE_TURNS, survived, turnsLeft } from './survival.ts';
 import { addEvents, emptyTally, endHeroes, type Roster, teamsOf } from './tally.ts';
@@ -67,13 +67,10 @@ export class Game implements TurnHost {
       const f = battleFace(u.def);
       if (f) new Image().src = `/chars/${f.sheet}`;
     }
-    this.turn = new HeroTurn(this, scene, true);
+    this.turn = new HeroTurn(this, scene);
     const act: HudActions = {
       command: (i) => this.turn.chooseCommand(i),
-      ability: (i) => this.turn.chooseAbility(i),
-      answer: (yes) => void this.turn.answer(yes),
-      lock: (on) => void this.turn.pickLock(on),
-      page: (dir) => this.turn.turnPage(dir),
+      pick: (i) => this.turn.pick(i),
       hover: (list, i) => this.turn.hoverRow(list, i),
       rotate: (dir) => scene.rotate(dir),
       menu: () => this.menu(),
@@ -129,7 +126,6 @@ export class Game implements TurnHost {
     if (a.k === 'recenter') return this.scene.resetView();
     if (a.k === 'help') return this.menu();
     if (a.k === 'status') return this.status();
-    if (a.k === 'info') return this.abilitySheet();
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
     if (a.k === 'fps') return void this.toggleFps();
     if (this.busy || !this.heroTurn) return;
@@ -154,9 +150,9 @@ export class Game implements TurnHost {
     this.update(freshUi(this.battle));
   }
 
-  // runs what the Ui has marked (move or act) and returns to the menu, on the next command that applies
-  async execute(lock?: Lock) {
-    const { events, ui } = confirm(this.battle, this.turn.ui, lock);
+  // runs the Move the Ui has marked and returns to the menu, on the next command that applies
+  async execute() {
+    const { events, ui } = confirm(this.battle, this.turn.ui);
     if (!events.length) return;
     this.turn.ui = ui;
     await this.played(events);
@@ -200,7 +196,6 @@ export class Game implements TurnHost {
     this.scene.setCursorNote(m.note);
     this.scene.setCursor(m.cursor, m.size, m.fits);
     this.scene.setRangeRing(m.ring);
-    this.scene.setTrajectory(m.trajectory);
     this.hud.render({
       battle: this.battle,
       screen: s,
@@ -209,7 +204,6 @@ export class Game implements TurnHost {
       log: this.log,
       acting: this.acting,
       cursor: this.turn.cursor,
-      ability: ui.mode.k === 'ability' ? ui.mode.id : null,
       closed: this.turn.closed,
       range: this.turn.range,
       face: (u) => this.expression(u),
@@ -223,14 +217,10 @@ export class Game implements TurnHost {
     this.placeMenu(); // already in place on open: waiting for the next frame showed the menu in the corner for 1 frame
   }
 
-  // Command menu, submenu and "Execute?" beside the acting unit (Nov 13, Fernando's request: "beside the character like in
-  // FFT"). Runs every frame (pollPad) because the camera slides and rotates with the menu open. "Execute?" does not cover the target.
+  // Command menu beside the acting unit (Nov 13, Fernando's request: "beside the character like in FFT"). Runs every frame
+  // (pollPad) because the camera slides and rotates with the menu open.
   private placeMenu() {
-    if (!this.hud.menuOpen) return;
-    const b = this.battle,
-      s = this.turn.screen;
-    const foe = s.k === 'confirm' ? unitAt(b.state, s.target) : undefined;
-    this.hud.place(this.scene.screenOf(b.actor.id), foe && foe.id !== b.actor.id ? this.scene.screenOf(foe.id) : null);
+    if (this.hud.menuOpen) this.hud.place(this.scene.screenOf(this.battle.actor.id));
   }
 
   // the face of each unit in the HUD: a mood that events started (battle-face.ts), else wounded or neutral by its life
@@ -262,14 +252,6 @@ export class Game implements TurnHost {
   }
 
   // status window of the unit under the cursor (or of the acting unit), a window of status-window.ts
-  // the sheet of the ability in focus in the Act submenu (the I key, the pad's 4th button): name, numbers and its notes
-  abilitySheet() {
-    const s = this.turn.screen;
-    if (s.k !== 'abilities') return;
-    const id = abilitiesOf(this.battle)[s.index];
-    if (id) abilitySheet(id);
-  }
-
   status() {
     const s = this.battle.state;
     const id = unitAt(s, this.turn.cursor)?.id ?? this.battle.actor?.id; // any tile of the large unit

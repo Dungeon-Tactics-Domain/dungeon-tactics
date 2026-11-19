@@ -1,5 +1,5 @@
 // Strike preview numbers: what an ability does to each target (hit, damage or heal, push, life after) and its texts.
-// Pure for the test; the strips in hud-pieces.ts and the "Execute?" window draw them.
+// Pure for the test; the strips in hud-pieces.ts draw them.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
@@ -9,7 +9,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { abilityDetail, range } from './battle-text.ts';
 import { t, unitName } from './i18n.ts';
 
-// Preview of a strike on each target (the one in "Execute?" and the one in the target panel when aiming): same calculation in both places.
+// Preview of a strike on each target (the turn list and the target panel on the Agir tile screen): same calculation in both places.
 export interface Forecast {
   unit: UnitState;
   chance: number; // hit chance % (heal and support do not miss: 100)

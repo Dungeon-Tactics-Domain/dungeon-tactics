@@ -42,12 +42,11 @@ describe('menu state (pure)', () => {
     expect(menuTap(b, menu, 'sheet')).toEqual({ k: 'open' });
     expect(menuTap(b, menu, { x: 5, y: 1 })).toEqual({ k: 'peek', unit: 'b' });
     expect(menuTap(b, menu, { x: 1, y: 5 })).toEqual({ k: 'peek', unit: 'c' });
-    expect(menuTap(b, { k: 'abilities', index: 0 }, empty)?.k).toBe('close');
   });
 
-  it('aiming keeps its own taps: on the Act map the enemy is a target, not a mini menu', () => {
+  it('the other screens keep their own taps: on the Act lists the enemy is a target, not a mini menu', () => {
     const b = duel();
-    expect(menuTap(b, { k: 'map', command: 'act' }, { x: 5, y: 1 })).toBeNull();
+    expect(menuTap(b, { k: 'targets', index: 0 }, { x: 5, y: 1 })).toBeNull();
     expect(menuTap(b, { k: 'map', command: 'move' }, empty)).toBeNull();
     expect(menuTap(b, { k: 'facing' }, 'sheet')).toBeNull();
     expect(menuTap(b, menu, null)).toBeNull();
@@ -145,21 +144,21 @@ describe('the menu and "Execute?" wait while the map is looked at', () => {
     expect(menuUp(false, {})).toBe(false);
   });
 
-  it('on "Execute?", a turn card paints a range: the window waits, and comes back when it is closed', async () => {
+  it('on the Act lists, a turn card paints a range: the menu waits, and comes back when it is closed', async () => {
     const { t, battle } = turn();
     const notes: Note[] = [];
     const drop = fill('note', (n) => void notes.push(n));
-    t.screen = { k: 'confirm', ability: 'strike', target: { x: 5, y: 1 } };
+    t.screen = { k: 'targets', index: 0 };
     expect(menuUp(true, t)).toBe(true);
     t.card('b'); // the card's mini menu opens after its own click (hero-turn.ts)
     await new Promise((r) => setTimeout(r));
     notes[0].buttons[2].run?.(); // Show range
-    expect(t.screen.k).toBe('confirm'); // still the strike preview, only hidden
+    expect(t.screen.k).toBe('targets'); // still the target list, only hidden
     expect(t.range).toBe('b');
     expect(menuUp(true, t)).toBe(false);
     t.key({ k: 'cancel' }); // the key that closes the range
     expect(t.range).toBeNull();
-    expect(t.screen.k).toBe('confirm');
+    expect(t.screen.k).toBe('targets');
     expect(menuUp(true, t)).toBe(true);
     expect(battle.actor.id).toBe('a');
     drop();
@@ -246,7 +245,6 @@ describe('the hero turn with the menu shut', () => {
       log: '',
       acting: null,
       cursor: empty,
-      ability: null,
       face: () => 'neutral',
       closed: true,
     };

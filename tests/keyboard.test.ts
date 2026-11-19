@@ -19,12 +19,13 @@ describe('game keys', () => {
   it('confirm, cancel, cycle, space bar and shortcuts', () => {
     expect(key('Enter')).toEqual({ k: 'confirm' });
     expect(key(' ')).toEqual({ k: 'confirm' });
-    expect(key('i')).toEqual({ k: 'info' });
+    expect(key('i')).toBeNull();
     expect(key('Escape')).toEqual({ k: 'cancel' });
     expect(key('Backspace')).toEqual({ k: 'cancel' });
     expect(key('Tab')).toEqual({ k: 'cycle', dir: 1 });
     expect(key('Tab', { shiftKey: true })).toEqual({ k: 'cycle', dir: -1 });
-    expect(key('3')).toEqual({ k: 'slot', index: 2 });
+    expect(key('1')).toEqual({ k: 'slot', index: 0 });
+    expect(key('3')).toBeNull(); // the abilities are no longer on the numbers
     expect(key('z')).toEqual({ k: 'undo' });
     expect(key('p')).toEqual({ k: 'wait' });
     expect(key('r')).toEqual({ k: 'rotate', dir: 1 });
@@ -110,13 +111,13 @@ describe('cursor in battle', () => {
     expect(far.invalid).toBe(false);
   });
 
-  it('cancel clears the marked tile; again, goes from ability back to Move', () => {
+  it('cancel clears the marked tile and keeps Move', () => {
     const b = scene();
-    const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'ability', id: 'shot' }), at(4, 1));
-    const once = cancel(b, ui);
+    const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'move' }), at(2, 1));
+    expect(ui.pending).toEqual(at(2, 1));
+    const once = cancel(ui);
     expect(once.pending).toBeNull();
-    expect(once.mode).toEqual({ k: 'ability', id: 'shot' });
-    expect(cancel(b, once).mode).toEqual({ k: 'move' });
+    expect(once.mode).toEqual({ k: 'move' });
   });
 
   it('Tab cycles through living units in order and wraps around', () => {

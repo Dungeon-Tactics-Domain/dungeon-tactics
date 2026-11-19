@@ -4,7 +4,7 @@
 // ability's paragraph takes the whole sheet. No DOM or Three here; tested in tests/window3d.test.ts.
 import type { Box, Stage } from '../ui3d/layout.ts';
 
-// px on the 1920x1080 reference; the head and the foot are the command menu's and its ability sheet's
+// px on the 1920x1080 reference; the head and the foot are the command menu's
 export const REF = { w: 1100, plain: 640, head: 42, foot: 48, row: 46, pad: 22, gap: 36, label: 230, rowPad: 14 };
 
 // The sheet's width and columns. Text never goes under 16 px, so on a small page it is wider than the scale says: the

@@ -90,7 +90,7 @@ describe('parseSpec', () => {
       'units.b: facing must be 0-3',
       'units.b: hp must be an integer ≥ 1',
       'add[0]: unknown def "dragon"',
-      'screen must be menu, abilities, move, facing or { aim, target, confirm? }',
+      'screen must be menu, move, facing or { aim, target }',
       'camera: unknown key "spin"',
       'camera.angle must be 0-7',
       'camera.zoom must be > 0',
@@ -99,12 +99,11 @@ describe('parseSpec', () => {
     ]);
   });
 
-  it('takes a sheet page only on the abilities screen', () => {
-    const ok = { scenario: 'ash_wood', screen: 'abilities', page: 2 };
+  it('takes the Agir tile screen as { aim, target }, and no longer the abilities screen', () => {
+    const ok = { scenario: 'ash_wood', screen: { aim: 'shot', target: { x: 5, y: 3 } } };
     expect(parseSpec(ok)).toEqual({ spec: ok, problems: [] });
-    expect(parseSpec({ screen: 'menu', page: 2 }).problems).toEqual(['page must be 1 to 3, with screen "abilities"']);
-    expect(parseSpec({ screen: 'abilities', page: 4 }).problems).toEqual([
-      'page must be 1 to 3, with screen "abilities"',
+    expect(parseSpec({ screen: 'abilities' }).problems).toEqual([
+      'screen must be menu, move, facing or { aim, target }',
     ]);
   });
 

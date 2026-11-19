@@ -58,14 +58,13 @@ different picture.
 | `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "hpRegen", "remove": true } }`; on a split map `x.5` puts the token between tiles. `hpRegen` (life back each turn, which only equipment gives in the game) goes on the unit's sheet, so every unit of that sheet gets it | load; live (no `remove`, no `hpRegen`) |
 | `add` | `[{ "id", "def", "team": "hero" \| "enemy", "x", "y" }]` | page load |
 | `actor` | the hero whose turn it is (default: the first hero that plays) | load and live |
-| `screen` | `"menu"`, `"abilities"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y}, "confirm": true }` | load and live |
+| `screen` | `"menu"`, `"move"`, `"facing"` or `{ "aim": "<ability>", "target": {x,y} }` (the Agir tile screen: the ability on that target, at its best spot) | load and live |
 | `cursor` | `{x,y}`: the tile under the cursor (tile info, target panel, move preview); on a split map `x.5` puts it between tiles, where a token's square can stop | load and live |
 | `camera` | `{ "angle": 0-7, "zoom": 1.5, "focus": {x,y}, "action": { "from": "<unit id>", "to": {x,y} }, "fixed": "side" \| "three-quarter" }` | load and live |
 | `hide` | any of `tile`, `queue`, `help`, `banner`, `tools`, `menu`, `units`, `strikes`, `numbers`, `fps`, `dialogs`, `marks`, or `all`; or a piece of the 3D layer by its own name (`ui-pieces.ts`): `menu`, `turn`, `bar`, `banner`, `height`, `hints`, `confirm`, `result`, `tools`, `status`, `options`, `title`, `sheets`, `guides` | load and live |
 | `daylight` | `0` night to `1` day: the light that Until Dawn uses | load and live |
 | `layout` | `"edges"` or `"frame"`: the interface layout (`ui3d/layout.ts`; the address's `?layout=` wins), for this page only | page load |
 | `marks` | `"simples"`, `"luz"`, `"pedra"` or `"neon"`: how the board's marks are drawn (`mark-style.ts`; the address's `?marks=` wins), for this page only | page load |
-| `page` | `1` to `3`: the ability sheet's page, with `screen: "abilities"` | load and live |
 | `steps` | `[{ "move": { "unit", "to": {x,y} } }, { "act": { "unit", "ability", "target": {x,y} } }, { "wait": { "unit", "facing"? } }, { "pause": 500 }]` | played after the scene settles (CLI), by `play`, or by the page with `loop` |
 | `loop` | `true`: the page plays the steps by itself and replays them forever ([Bench](#bench-live-game-feel)) | page load |
 | `timing` | `{ "hitStop": 160, "jumpCrouch": 380 }`: `TIMING` values (`src/client/timing.ts`) for this page only | page load |
@@ -114,8 +113,8 @@ On a page opened with `?sandbox=`:
 await __sandbox.idle();                       // waits until every unit holds still on screen, then 300 ms for the menus
 __sandbox.list();                             // maps, unit defs, panels, pieces, the units here (id, def, team, x, y, hp, ct, facing)
 __sandbox.apply({ camera: { angle: 3, zoom: 2 }, hide: ['all'] });                 // returns the problems ([] = ok)
-__sandbox.apply({ units: { 'e-brute': { x: 4, y: 5, hp: 10 } }, actor: 'h-mage', screen: 'abilities' });
-__sandbox.apply({ screen: { aim: 'firebolt', target: { x: 4, y: 5 }, confirm: true } });
+__sandbox.apply({ units: { 'e-brute': { x: 4, y: 5, hp: 10 } }, actor: 'h-mage', screen: 'menu' });
+__sandbox.apply({ screen: { aim: 'firebolt', target: { x: 4, y: 5 } } });
 __sandbox.load({ scenario: 'crypt_heart', lang: 'pt', seed: 4 });                  // another map, cast, seed or language: reloads
 await __sandbox.play({ act: { unit: 'h-archer', ability: 'shot', target: { x: 5, y: 3 } } });  // one step or a list; returns the problems
 await __sandbox.play(__sandbox.spec.steps);   // the steps of the spec in the address
@@ -268,27 +267,26 @@ Still scenes of the 3D interface (no loop; `hide` takes them by name: `menu` hid
 | Spec | What it shows |
 |---|---|
 | `menu3d` | the 3D command menu at 1920x1080 |
-| `menu3d-habilidades` | the submenu open in a cascade and the ability sheet |
 | `turn3d`, `turn3d-previa`, `turn3d-previa-carga` | the 3D turn list at 1280x720: plain, with a strike aimed, with a charge previewed |
 | `turn3d-stats`, `turn3d-stats-720`, `turn3d-stats-baixa`, `turn3d-stats-previa` | the turn list's life and CT lines (Nov 17) with hurt units, life regen (`units.<id>.hpRegen`) and mixed CT: at 1920x1080, at 1280x720, on a 844x390 screen (the rows' smallest size), and with a strike aimed |
 | `bar3d`, `bar3d-previa` | the 3D combat bar at 1920x1080: the acting unit's sheet alone, and with a strike aimed (preview plate and the target's sheet) |
 | `bar3d-regen` | the acting sheet with a hurt unit that has life regen: "+12" after "Vida" and the CT gain between the CT bar and its number (Nov 17) |
-| `ui3d-tudo` | the 3D menu with its submenu and the 3D turn list together, on the one layer |
+| `ui3d-tudo` | the 3D menu and the 3D turn list together, on the one layer |
 | `layout-edges`, `layout-frame` | the 3D menu and turn list at 1920x1080 in each layout: the same picture, the menu at 1152,688 and card 2 of the list at 102,711 like the reference |
-| `layout-ultrawide-edges`, `layout-ultrawide-frame` | the same with the submenu and the sheet at 3440x1440: spread to the edges, or in the centred 16:9 frame (one file each: a spec is one shot) |
+| `layout-ultrawide-edges`, `layout-ultrawide-frame` | the same with the acting sheet at 3440x1440: spread to the edges, or in the centred 16:9 frame (one file each: a spec is one shot) |
 | `hints3d`, `hints3d-alvo` | the 3D instruction banner, Height corner and button hints at 1920x1080: with the menu open, and aiming at a target |
 | `window3d` | the corner buttons and the Status window in 3D at 1920x1080 (`tools`, `status`): the gear top right opens Options; press C for the Status sheet (a spec cannot open it) |
 | `result3d-vitoria`, `result3d-derrota` | the end of battle in 3D at 1920x1080: the warrior downs the last enemy, or the soldier downs the two heroes left. `loop` plays the steps on the page; steps that end the battle open its end screen and the loop stops there |
 | `marks-simples`, `marks-luz`, `marks-pedra`, `marks-neon` | the four mark styles on the same move screen of Ash Wood at 1920x1080 (148 marked cells, path, cursor, rings, border, turn-order numbers) |
 | `marks-degraus-simples`, `marks-degraus-luz`, `marks-degraus-pedra`, `marks-degraus-neon` | the same on the ramps and steps of Beacon Hill's middle hill: the lit marks bend over the ground |
-| `batalha-3d`, `batalha-3d-previa` | the whole battle interface in 3D at 1920x1080: menu, turn list, combat bar, banner, Height and button hints with the menu open, and with a strike aimed (preview plate, target's sheet and the 3D "Execute?") |
-| `batalha-3d-executar` | the same, the Mage's Blast on two enemies: "Execute?" in 3D with its notes (mana spent, charge), the plate's "+1 target"; Enter opens the lock step (On the character / On the tile) |
+| `batalha-3d`, `batalha-3d-previa` | the whole battle interface in 3D at 1920x1080: menu, turn list, combat bar, banner, Height and button hints with the menu open, and with a strike aimed (preview plate, target's sheet) |
+| `batalha-3d-executar` | the same, the Mage's Blast on two enemies on the Agir tile screen, with the plate's "+1 target" |
 
 
 ## Examples (`scripts/sandbox/`)
 
-- `battle-ui.json`: Ash Wood. The archer aims a Shot at a soldier moved across the river, with the "Execute?" window,
-  the strike strip and the shot line.
+- `battle-ui.json`: Ash Wood. The archer aims a Shot at a soldier moved across the river, on the Agir tile screen,
+  with the strike strip and the shot line.
 - `battle-clean.json`: the same scene with `"hide": ["all"]`, framed identically.
 - `battle-move.json`: Ash Wood, the archer's Move screen with the cursor between tiles (`x.5`), where the 2x2 token's
   square would straddle a barrel: drawn as not fitting, and the help line says it cannot stop there.

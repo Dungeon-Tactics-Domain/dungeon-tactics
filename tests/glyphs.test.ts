@@ -66,7 +66,6 @@ describe('the table: action, key, pad button', () => {
     confirm: [{ k: 'confirm' }],
     cancel: [{ k: 'cancel' }],
     status: [{ k: 'status' }],
-    info: [{ k: 'info' }],
     undo: [{ k: 'undo' }],
     help: [{ k: 'help' }],
     rotateLeft: [{ k: 'rotate', dir: -1 }],
@@ -114,7 +113,8 @@ describe('the table: action, key, pad button', () => {
     const used = new Set(
       acts.flatMap((a) => (ACTIONS[a].pad as readonly (keyof typeof PAD_INDEX)[]).map((g) => PAD_INDEX[g])),
     );
-    for (let i = 0; i <= 9; i++) expect(used.has(i), `button ${i}`).toBe(true);
+    // button 3 (the north one) has no action since the ability sheet went (Nov 19)
+    for (let i = 0; i <= 9; i++) if (i !== 3) expect(used.has(i), `button ${i}`).toBe(true);
   });
 
   it('the actions the pad has no button for hide with its icons', () => {
@@ -150,7 +150,7 @@ describe('the screens read the table', () => {
     const keys = keyHelp().map(([k]) => k);
     expect(keys).toContain('W A S D · ← ↑ → ↓');
     expect(keys).toContain('P');
-    expect(keys).toContain('1 – 7');
+    expect(keys).toContain('1');
     const pad = keyHelp('xbox');
     expect(pad.map(([k]) => k)).toEqual([
       'Direcional',
@@ -161,11 +161,10 @@ describe('the screens read the table', () => {
       'LB · RB',
       'LT RT',
       'Analógico direito',
-      'Y',
       'Menu',
       'Na cidade',
     ]);
-    expect(pad.find(([k]) => k === 'A')?.[1]).toContain('o 2º A age');
+    expect(pad.find(([k]) => k === 'A')?.[1]).toContain('nas listas de Agir');
     expect(pad.at(-1)?.[1]).toContain('B · Menu abre o menu da cidade');
   });
 });

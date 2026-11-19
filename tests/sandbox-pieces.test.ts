@@ -6,9 +6,9 @@ import { hidePieces, onHidden, PIECE_NAMES, pieceHidden } from '../src/client/ui
 describe('sandbox hide by piece name', () => {
   it('takes the names from before the 3D interface, a piece by its own name, and both together', () => {
     expect(parseSpec({ hide: ['queue', 'fps', 'turn', 'height', 'guides', 'marks'] }).problems).toEqual([]);
-    expect(hiddenPieces(['queue', 'menu', 'units'])).toEqual(['turn', 'menu', 'confirm', 'bar']);
+    expect(hiddenPieces(['queue', 'menu', 'units'])).toEqual(['turn', 'menu', 'bar']);
     expect(hiddenPieces(['height', 'hints', 'marks'])).toEqual(['height', 'hints']);
-    expect(hiddenPieces(['menu', 'confirm', 'banner'])).toEqual(['menu', 'confirm', 'banner']); // each once
+    expect(hiddenPieces(['menu', 'menu', 'banner'])).toEqual(['menu', 'banner']); // each once
     expect(hiddenPieces(['fps', 'tile', 'marks'])).toEqual([]); // no piece of the layer yet
     expect(parseSpec({ hide: ['sidebar'] }).problems).toEqual([expect.stringContaining('hide entries must be among')]);
   });

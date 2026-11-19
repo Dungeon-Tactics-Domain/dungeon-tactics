@@ -1,15 +1,10 @@
-// Charge lines (Nov 15, Fernando): while a unit charges, a line stays drawn from it to what it is locked on, for every
-// charging unit, enemies included; and while the charging unit picks where to walk, the line from that destination shows
-// where the shot would stop and whom it would hit. Pure (no Three): both come from the rule that fires the charge
-// (previewAbility from where the caster stands, turn-queue.ts), so the drawing never disagrees with the shot.
-import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { COMBAT, type Preview, previewAbility } from '../shared/battle/combat.ts';
-import { basicOf, canCounter, inContact, isRanged, pendingCounters } from '../shared/battle/counter.ts';
+import { basicOf, isRanged, pendingCounters } from '../shared/battle/counter.ts';
 import { type Grid, posKey, subOf } from '../shared/battle/grid.ts';
 import { aimTile, unitAt } from '../shared/battle/pathing.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';
-import type { BattleState, Charge, Lock, Pos, Shot, Team, UnitState } from '../shared/battle/types.ts';
+import type { BattleState, Charge, Pos, Shot, Team, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 
@@ -89,21 +84,6 @@ export function counterDamage(b: Battle, at: Pos): [number, number] | null {
   return [mine.reduce((s, x) => s + half(x.dmgMin), 0), mine.reduce((s, x) => s + half(x.dmgMax), 0)];
 }
 
-// Aiming: who would be owed a counter by this strike: whoever could strike the actor where it stands now (walking out of
-// its reach this turn draws it), and a shooter it stands too close to (walking out of that contact draws its shot), as the
-// mark over its head
-export function countersOwed(b: Battle, ability: string, p: Preview): Counters {
-  const out: Counters = { lines: [], melee: [] };
-  for (const t of p.targets) {
-    const u = b.state.units.find((x) => x.id === t.unit)!;
-    if (!canCounter(b.actor, ability, u)) continue;
-    const back = previewAbility(b.grid, b.state, u.id, basicOf(u.def), b.actor.pos, true);
-    if (back.ok) counterOf(b, out, u, back, b.actor.pos);
-    else if (inContact(b.grid, b.state, u, b.actor.pos)) out.melee.push({ from: square(u), to: square(b.actor) });
-  }
-  return out;
-}
-
 const whose = (b: Battle, c: Counters) =>
   [...c.lines.map((l) => l.from), ...c.melee.map((m) => m.from)].map((s) => unitName(unitAt(b.state, s.pos)!.def));
 
@@ -119,18 +99,6 @@ export function counterFromText(b: Battle, at: Pos): string {
     : '';
 }
 
-// The "Execute?" note about the counters a strike earns: only if the actor walks away this turn (out of a reach, or out of a
-// shooter's contact)
-export function counterNote(b: Battle, ability: string, p: Preview): string {
-  const names = whose(b, countersOwed(b, ability, p));
-  return names.length
-    ? t(
-        `${names.join(', ')} contra-ataca se você se afastar dele neste turno (metade do dano).`,
-        `${names.join(', ')} strikes back if you walk away from it this turn (half damage).`,
-      )
-    : '';
-}
-
 export const chargeLines = (grid: Grid, state: BattleState): ChargeLine[] =>
   state.charges.filter((c) => state.units.some((u) => u.id === c.unit)).map((c) => chargeLine(grid, state, c));
 
@@ -140,27 +108,6 @@ export function chargeFrom(b: Battle, at: Pos): ChargeLine | null {
   if (!c) return null;
   const moved = { ...b.state, units: b.state.units.map((u) => (u.id === b.actor.id ? { ...u, pos: at } : u)) };
   return chargeLine(b.grid, moved, c);
-}
-
-// The "Execute?" note of a charge: when it goes off and the movement it leaves; on the lock step, what each lock does
-export function chargeNote(b: Battle, s: { ability: string; target: Pos; lock?: Lock }): string {
-  const ticks = ABILITIES[s.ability].charge;
-  const on = unitAt(b.state, s.target);
-  if (s.lock === 'unit' && on)
-    return t(
-      `Segue ${unitName(on.def)} aonde for; o tiro sai de onde você estiver quando disparar.`,
-      `Follows ${unitName(on.def)} wherever it goes; the shot leaves from where you stand when it goes off.`,
-    );
-  if (s.lock === 'tile')
-    return t(
-      'Acerta quem estiver nesta casa quando disparar; o tiro sai de onde você estiver.',
-      'Hits whoever stands on this tile when it goes off; the shot leaves from where you stand.',
-    );
-  const left = Math.max(0, UNIT_DEFS[b.actor.def].move - (b.state.turn.spent ?? 0));
-  return t(
-    `Sai em ${ticks} tiques. Começar gasta metade do movimento que sobra: ainda anda ${Math.floor(left / 2)}.`,
-    `Goes off in ${ticks} ticks. Starting it costs half the movement left: you can still walk ${Math.floor(left / 2)}.`,
-  );
 }
 
 // The move help's sentence about that shot, so the line's colours are never the only signal

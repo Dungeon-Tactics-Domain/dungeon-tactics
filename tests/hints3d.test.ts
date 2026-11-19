@@ -48,13 +48,13 @@ describe('button hints: what each screen shows', () => {
 
   it('each step names its Confirm, and Cancel wherever Cancel goes back a step', () => {
     const b = battle();
-    expect(row(b, { k: 'abilities', index: 0 })).toEqual(['Enter=Escolher', 'Esc=Cancelar', 'I=Detalhes']);
-    expect(row(b, { k: 'map', command: 'move' }).slice(0, 2)).toEqual(['Enter=Mover', 'Esc=Cancelar']);
-    expect(row(b, { k: 'map', command: 'act' }).slice(0, 2)).toEqual(['Enter=Confirmar', 'Esc=Cancelar']);
-    expect(row(b, { k: 'confirm', ability: 'strike', target: { x: 0, y: 0 } }).slice(0, 2)).toEqual([
+    const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
+    expect(row(b, { k: 'targets', index: 0 })).toEqual(['Enter=Confirmar', 'Esc=Cancelar', 'Q E R=Câmera']);
+    expect(row(b, { k: 'spot', target: foe, action: 0, index: 0 }).slice(0, 2)).toEqual([
       'Enter=Confirmar',
-      'Esc=Voltar',
+      'Esc=Cancelar',
     ]);
+    expect(row(b, { k: 'map', command: 'move' }).slice(0, 2)).toEqual(['Enter=Mover', 'Esc=Cancelar']);
     expect(row(b, { k: 'facing' }).slice(0, 2)).toEqual(['Enter=Passar a vez', 'Esc=Cancelar']);
   });
 
@@ -87,10 +87,10 @@ describe('button hints: what each screen shows', () => {
   it('every right row keeps to three hints and 26 letters of text, on every screen and device', () => {
     const screens: Screen[] = [
       menu,
-      { k: 'abilities', index: 0 },
+      { k: 'targets', index: 0 },
+      { k: 'actions', target: { k: 'unit', unit: 'b', pos: { x: 2, y: 1 } }, index: 0 },
+      { k: 'spot', target: { k: 'unit', unit: 'b', pos: { x: 2, y: 1 } }, action: 0, index: 0 },
       { k: 'map', command: 'move' },
-      { k: 'map', command: 'act' },
-      { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } },
       { k: 'facing' },
     ];
     const moved = battle();
@@ -107,12 +107,11 @@ describe('button hints: what each screen shows', () => {
 });
 
 describe('Height corner', () => {
-  it('shows the height of the tile under the cursor, and hides under the abilities sheet', () => {
+  it('shows the height of the tile under the cursor', () => {
     const b = battle();
     const at = b.actor.pos;
-    expect(heightShown(b, menu, at)).toBe(tileHeight(b.grid, at));
-    expect(heightShown(b, { k: 'map', command: 'move' }, { x: 0, y: 0 })).toBe(tileHeight(b.grid, { x: 0, y: 0 }));
-    expect(heightShown(b, { k: 'abilities', index: 0 }, at)).toBeNull();
+    expect(heightShown(b, at)).toBe(tileHeight(b.grid, at));
+    expect(heightShown(b, { x: 0, y: 0 })).toBe(tileHeight(b.grid, { x: 0, y: 0 }));
   });
 
   // Fernando, Nov 18: on a phone the corner sat under the menu button and Undo
@@ -130,10 +129,9 @@ describe('Height corner', () => {
   it("the tile line under it is the HTML corner's own text, and hides with the Height", () => {
     const b = battle();
     const at = { x: 3, y: 3 };
-    expect(tileLine(b, menu, at)).toBe(cursorInfo(b.grid, b.state, at, 1));
-    expect(tileLine(b, menu, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2));
-    expect(tileLine(b, menu, at)).toBe('X 3 · Y 3 · Z 0 · chão');
-    expect(tileLine(b, { k: 'abilities', index: 0 }, at)).toBe('');
+    expect(tileLine(b, at)).toBe(cursorInfo(b.grid, b.state, at, 1));
+    expect(tileLine(b, at, 2)).toBe(cursorInfo(b.grid, b.state, at, 2));
+    expect(tileLine(b, at)).toBe('X 3 · Y 3 · Z 0 · chão');
   });
 });
 
@@ -223,17 +221,14 @@ describe('Tutorial: the banner', () => {
     expect(parseTutorial(true)).toBe(true);
   });
   it('off, a hero turn keeps only the last action, and nothing when there is none', () => {
-    expect(bannerLine(help, 'Mover', true, menu, false)).toBe('Mover');
-    expect(bannerLine('Não cabe aqui: precisa de chão plano.', '', true, { k: 'map', command: 'move' }, false)).toBe(
-      '',
-    );
+    expect(bannerLine(help, 'Mover', true, false)).toBe('Mover');
+    expect(bannerLine('Não cabe aqui: precisa de chão plano.', '', true, false)).toBe('');
   });
   it('on, the whole line', () => {
-    expect(bannerLine(help, 'Mover', true, menu, true)).toBe(help);
+    expect(bannerLine(help, 'Mover', true, true)).toBe(help);
   });
-  it("the enemy's turn and an ability's sheet are not teaching: they stay either way", () => {
-    expect(bannerLine('Vez do inimigo: Soldado', '', false, menu, false)).toBe('Vez do inimigo: Soldado');
-    expect(bannerLine('Golpe: dano 10', '', true, { k: 'abilities', index: 0 }, false)).toBe('Golpe: dano 10');
+  it("the enemy's turn is not teaching: it stays either way", () => {
+    expect(bannerLine('Vez do inimigo: Soldado', '', false, false)).toBe('Vez do inimigo: Soldado');
   });
 });
 

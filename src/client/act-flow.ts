@@ -1,7 +1,7 @@
 // "Agir primeiro" (Fernando's grill, Nov 19): Act opens the list of targets the unit can reach this turn by walking and
 // then acting (enemies first, then allies, near to far; then the actions with no unit to aim at), then the actions that hit
 // the picked target (the ones that cannot say why), then the tiles to stand on with the best one picked first. Pure: the
-// screens draw it, hero-turn.ts runs it. Options switch `dt:act-first`, on by default (Fernando, Nov 19: the default flow)
+// screens draw it, act-turn.ts runs it. The only way to act since Fernando's "Apagar tudo" (Nov 19)
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { type ItemReason, itemOptions } from '../shared/battle/bag.ts';
 import type { Battle } from '../shared/battle/battle.ts';
@@ -10,10 +10,6 @@ import { dist, samePos } from '../shared/battle/grid.ts';
 import { actionOptions, type OptionReason } from '../shared/battle/options.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
-
-export const ACT_FIRST_KEY = 'dt:act-first';
-// on unless the player turned it off
-export const parseActFirst = (raw: unknown) => raw !== false;
 
 // A row of the target list: a unit (also the user itself, for a heal or an item), or a direct action (an area aimed at the
 // ground or a self-centred one: decision 4, it picks its tile next)

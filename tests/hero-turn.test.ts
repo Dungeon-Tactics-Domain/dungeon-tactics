@@ -1,15 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { commandIndex } from '../src/client/command.ts';
 import { HeroTurn, type TurnHost } from '../src/client/hero-turn.ts';
 import type { Ui } from '../src/client/interaction.ts';
 import type { KeyAction } from '../src/client/keyboard.ts';
-import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
-import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
-// The turn screens key by key, in the steps of FFT: The Ivalice Chronicles (Nov 16): menu, Abilities, target, preview,
-// and Cancel one step back. The Game and the scene are stand-ins: only what the screens ask of them
+// The turn screens key by key, in the steps of FFT: The Ivalice Chronicles (Nov 16): menu, Abilities (the Agir primeiro
+// lists, act-turn.test.ts) and Cancel one step back. The Game and the scene are stand-ins: only what the screens ask of them
 function turn() {
   const battle = new Battle(
     flat(6, 6),
@@ -44,18 +42,12 @@ function turn() {
 }
 const ok: KeyAction = { k: 'confirm' };
 const esc: KeyAction = { k: 'cancel' };
-const strike = UNIT_DEFS.warrior.abilities.indexOf('strike');
-
-// these cover the classic menu (Act opens the ability list); Agir primeiro, now the default, is act-turn.test.ts
-beforeAll(() => store.set('dt:act-first', 'false'));
-afterAll(() => store.set('dt:act-first', ''));
-
 describe('turn screens, key by key', () => {
-  it('Abilities opens the submenu; Cancel there goes back to the menu on Abilities', () => {
+  it('Abilities opens the target list; Cancel there goes back to the menu on Abilities', () => {
     const { t, press } = turn();
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('move') });
     press({ k: 'cursor', dir: 'down' }, ok);
-    expect(t.screen.k).toBe('abilities');
+    expect(t.screen).toEqual({ k: 'targets', index: 0 });
     press(esc);
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('act') });
   });
@@ -104,53 +96,10 @@ describe('turn screens, key by key', () => {
     expect(calls).toEqual([]);
   });
 
-  it('target, then the preview: arrows toggle nothing, Confirm runs it', async () => {
-    const { t, calls, press } = turn();
-    t.chooseCommand(commandIndex('act'));
-    t.chooseAbility(strike);
-    expect(t.screen).toEqual({ k: 'map', command: 'act' });
-    press({ k: 'cycle', dir: 1 }); // Tab: from the warrior to the soldier
-    expect(t.cursor).toEqual({ x: 2, y: 1 });
-    press(ok);
-    const preview = { k: 'confirm', ability: 'strike', target: { x: 2, y: 1 } };
-    expect(t.screen).toEqual(preview);
-    expect(calls).toEqual([]); // nothing ran yet
-    press({ k: 'cursor', dir: 'left' }, { k: 'cursor', dir: 'down' });
-    expect(t.screen).toEqual(preview);
-    press(ok);
-    await Promise.resolve();
-    expect(calls).toEqual(['execute']);
-  });
-
-  it('Cancel on the preview goes back to aiming with the target kept, then to the submenu on that ability', () => {
-    const { t, calls, press } = turn();
-    t.chooseCommand(commandIndex('act'));
-    t.chooseAbility(strike);
-    press({ k: 'cycle', dir: 1 }, ok, esc);
-    expect(t.screen).toEqual({ k: 'map', command: 'act' });
-    expect(t.ui.pending).toEqual({ x: 2, y: 1 });
-    expect(t.cursor).toEqual({ x: 2, y: 1 });
-    press(esc);
-    expect(t.screen).toEqual({ k: 'abilities', index: strike });
-    expect(t.cursor).toEqual({ x: 1, y: 1 }); // back on the acting unit
-    expect(calls).toEqual([]);
-  });
-
-  it("the preview's Back button is the same Cancel", () => {
+  it('the number 1 picks Move', () => {
     const { t, press } = turn();
-    t.chooseCommand(commandIndex('act'));
-    t.chooseAbility(strike);
-    press({ k: 'cycle', dir: 1 }, ok);
-    void t.answer(false);
-    expect(t.screen).toEqual({ k: 'map', command: 'act' });
-  });
-
-  it('an invalid target opens no preview', () => {
-    const { t, press } = turn();
-    t.chooseCommand(commandIndex('act'));
-    t.chooseAbility(strike);
-    press(ok); // the cursor is still on the warrior itself
-    expect(t.screen).toEqual({ k: 'map', command: 'act' });
+    press({ k: 'slot', index: 0 });
+    expect(t.screen).toEqual({ k: 'map', command: 'move' });
   });
 
   it('after a free move, Cancel on the menu undoes it', () => {
