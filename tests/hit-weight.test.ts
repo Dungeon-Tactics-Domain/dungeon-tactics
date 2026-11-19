@@ -58,7 +58,11 @@ describe('shoved: a strike whose push moves the body, so it gets no recoil', () 
     { k: 'push', unit: 'e', to: { x: 2, y: 0 } },
   ];
   it('looks only until the next attack', () => {
-    expect([1, 2, 5].map((i) => shoved(ev, i))).toEqual([false, true, false]);
+    expect([2, 5].map((i) => shoved(ev, i))).toEqual([true, false]);
+  });
+  // a push that could not move the body (a body in the way, a unit that does not move) leaves no push event: still no recoil
+  it('a push ability that moved nobody shows no recoil either', () => {
+    expect(shoved(ev, 1)).toBe(true);
   });
 });
 

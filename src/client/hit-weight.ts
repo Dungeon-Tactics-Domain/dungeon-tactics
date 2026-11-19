@@ -1,6 +1,7 @@
 // Weight of a blow, drawing only (Fernando's grill of Nov 15; the Mechanics lab's peso.json and its impact scene are the
 // starting point he tunes by playing). Distances in whole tiles, 1 tile = 1 m as in the lab: scene/unit-hits.ts and
 // unit-moves.ts multiply them by the map's `sub`. Timings are in timing.ts
+import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { BattleEvent, Team } from '../shared/battle/types.ts';
 import { BIG } from './battle-face.ts';
 
@@ -76,8 +77,15 @@ export function lastOfSide(
 }
 
 // the strike also pushes its unit (a push or a bump before the next attack): the push moves the body, so no recoil
+// A push ability that moved nobody (a body in the way, a unit a push cannot move) leaves no push event: the body stays put
+// with no recoil, which shows it did not move
 export function shoved(events: BattleEvent[], i: number): boolean {
   const u = events[i].unit;
+  const attack = events
+    .slice(0, i)
+    .reverse()
+    .find((e) => e.k === 'attack');
+  if (attack?.k === 'attack' && ABILITIES[attack.ability]?.push > 0) return true;
   const next = events
     .slice(i + 1)
     .find((e) => e.k === 'attack' || (e.unit === u && (e.k === 'push' || e.k === 'bump')));
