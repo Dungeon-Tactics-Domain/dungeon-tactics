@@ -276,10 +276,14 @@ export class Hints3d implements Ui3dScreen {
 
   // one row of hints on its region: each key or pad button drawn (ui3d/caps.ts) and its text
   private row(all: Hint[], align: 'left' | 'right') {
-    const { layer, hints: part } = this,
-      s = layer.s;
-    const r = place(REGIONS[align === 'right' ? 'hints' : 'hintsLeft'], layer.stage);
-    const h = Math.max(22, ROW.cap * s),
+    const { layer, hints: part } = this;
+    // a phone draws the combat bar at PHONE_SHRINK (layer.small); the foot's hints follow it with smaller caps, or they
+    // rise into the target sheet's forecast line (Nov 19 captures at 844x390)
+    const phone = layer.small.s < layer.stage.s;
+    const st = phone ? layer.small : layer.stage,
+      s = st.s;
+    const r = place(REGIONS[align === 'right' ? 'hints' : 'hintsLeft'], st);
+    const h = Math.max(phone ? 16 : 22, ROW.cap * s),
       mid = r.y + r.h / 2;
     const device = this.device;
     if (device === 'touch') return;
