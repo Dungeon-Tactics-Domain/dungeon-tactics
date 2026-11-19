@@ -6,7 +6,7 @@ import type { Group, Mesh } from 'three';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
 import { INK } from './card.ts';
-import { HEAD, type QueueLayout } from './queue-layout.ts';
+import { HEAD, type QueueLayout, tapGrow } from './queue-layout.ts';
 
 let name: Mesh | undefined; // the list's name as drawn: one turn list at a time
 // the 3D list went: its name with it (the HTML title is written anew, seen, by the HUD's next redraw)
@@ -62,6 +62,11 @@ export function seatQueue(queue: HTMLElement, l: QueueLayout, headless: boolean,
     // (Fernando, Nov 18 night); the card still springs to the width above, read from the layout, not from here
     row.style.boxSizing = 'content-box';
     row.style.paddingRight = px(seat.stats);
+    // a card under 28 px tall gets a taller box with the same place in the column: padding takes the extra height and an
+    // equal negative margin gives it back, so the list's flow and the cards' rows stay as laid out (the gap holds it)
+    const grow = tapGrow(z.h);
+    row.style.paddingTop = row.style.paddingBottom = px(grow);
+    row.style.marginTop = row.style.marginBottom = px(-grow);
   }
 }
 

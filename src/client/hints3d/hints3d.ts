@@ -12,6 +12,7 @@ import { Group, Mesh, ShaderMaterial, Vector2, Vector4 } from 'three';
 import type { HudView } from '../hud.ts';
 import { t } from '../i18n.ts';
 import { hintsMode, onHelp, tutorialOn } from '../key-hints.ts';
+import { menuUp } from '../menu-state.ts';
 import { pieceHidden } from '../ui-pieces.ts';
 import { capMeshes } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -196,7 +197,7 @@ export class Hints3d implements Ui3dScreen {
       // on this same layer, and the pill showed through its veil)
       // nor while "Execute?" is open: its head asks the same question beside the character (Nov 18 review: "Tiro:
       // executar?" twice on screen); the help line keeps it for the screen reader
-      const asking = last.open && v.screen.k === 'confirm';
+      const asking = menuUp(last.open, v) && v.screen.k === 'confirm'; // not while the map is looked at: the window waits
       const text =
         this.said ?? (b.over || asking ? '' : bannerLine(last.help, v.log, last.open, v.screen, tutorialOn()));
       const part = this.banner,

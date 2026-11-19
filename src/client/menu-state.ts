@@ -13,6 +13,10 @@ export type MenuTap = { k: 'open' } | { k: 'close'; at: Pos } | { k: 'peek'; uni
 // the screens the menu belongs to: elsewhere (Move or Act map, "Execute?", facing) a tap keeps its own meaning
 export const menuScreen = (s: Screen) => s.k === 'menu' || s.k === 'abilities';
 
+// Whether the menu, its Back and "Execute?" show: a hero's turn with nothing playing (`open`) and the map not being
+// looked at (a tap on an empty tile shut the menu, or another unit's range is painted). They come back together.
+export const menuUp = (open: boolean, v: { closed?: boolean; range?: string | null }) => open && !v.closed && !v.range;
+
 // A tap on the map (`at`, the tile picked) or on the acting sheet (`sheet`) while the menu's screens are up, shown or
 // closed. null: the tap is not the menu's
 export function menuTap(b: Battle, s: Screen, at: Pos | 'sheet' | null): MenuTap | null {

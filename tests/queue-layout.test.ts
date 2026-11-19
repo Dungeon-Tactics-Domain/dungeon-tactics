@@ -1,9 +1,18 @@
 import type { Group } from 'three';
 import { describe, expect, it } from 'vitest';
-import { HEAD, type QueueSpec, queueLayout } from '../src/client/turn3d/queue-layout.ts';
+import { HEAD, type QueueSpec, queueLayout, TAP_MIN, tapGrow } from '../src/client/turn3d/queue-layout.ts';
 import { seatQueue } from '../src/client/turn3d/queue-seat.ts';
 import type { Ui3dLayer } from '../src/client/ui3d/layer.ts';
-import { type LayoutMode, lu, place, REGIONS, sheetBox, stage } from '../src/client/ui3d/layout.ts';
+import {
+  type LayoutMode,
+  lu,
+  PHONE_SHRINK,
+  place,
+  REGIONS,
+  setPageFloor,
+  sheetBox,
+  stage,
+} from '../src/client/ui3d/layout.ts';
 
 // The 3D turn list's own layout (Nov 18: the 3D pieces stop measuring the HTML). Each case is what the browser measured
 // on the unseen HTML list, on a sandbox scene, the day before the numbers moved to queue-layout.ts: the cards must sit
@@ -232,5 +241,46 @@ describe('seatQueue', () => {
       expect(l.seat.stats).toBeGreaterThan(0);
       expect(r.style.width).toBe(`${l.seat.row.w}px`);
     }
+  });
+
+  // Nov 19: a phone's unseen card row is 27 px tall (its drawn portrait about 23), under the 28 px of the touch rules
+  it('a card under 28 px gets a taller box with the same place: padding out, an equal margin back', () => {
+    expect(TAP_MIN).toBe(28);
+    expect(tapGrow(27)).toBe(1);
+    expect(tapGrow(22)).toBe(3);
+    expect(tapGrow(28)).toBe(0);
+    expect(tapGrow(52)).toBe(0);
+    setPageFloor(844, 390, true); // a phone's 9 px text floor lifts the cards' own floor (queue-view.ts listFloor)
+    const st = stage(844, 390, 'edges', { x: 47, y: 21 });
+    const l = queueLayout({
+      rows: 5,
+      now: false,
+      s: st.s * 1.5 * PHONE_SHRINK,
+      at: place(REGIONS.turn, st),
+      pageH: 390,
+      sheet: 120,
+      stats: 90,
+    });
+    const rows = Array.from({ length: 5 }, () => ({
+      style: {} as Record<string, string>,
+      classList: { contains: () => false },
+    }));
+    seatQueue(
+      { style: {}, querySelector: () => null, querySelectorAll: () => rows } as unknown as HTMLElement,
+      l,
+      false,
+      {} as Ui3dLayer,
+      {} as Group,
+    );
+    for (const r of rows) {
+      const grow = Number.parseFloat(r.style.paddingTop);
+      expect(l.seat.row.h).toBeLessThan(TAP_MIN); // the case the phone is in
+      expect(l.seat.row.h + 2 * grow).toBeGreaterThanOrEqual(TAP_MIN);
+      expect(r.style.paddingBottom).toBe(r.style.paddingTop);
+      expect(r.style.marginTop).toBe(`${-grow}px`);
+      expect(r.style.marginBottom).toBe(r.style.marginTop);
+      expect(2 * grow).toBeLessThanOrEqual(l.seat.gap); // the gap holds the reach: two neighbours never overlap
+    }
+    setPageFloor(1280, 720, false);
   });
 });

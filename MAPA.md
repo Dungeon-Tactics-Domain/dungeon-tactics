@@ -74,7 +74,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client — pure interface logic (no DOM, no Three.js)
 
-- `src/client/menu-state.ts` — whether the command menu shows and what a tap on an empty tile, the hero, its sheet, another unit or a turn card does to it; pure.
+- `src/client/menu-state.ts` — whether the command menu and "Execute?" show (menuUp) and what a tap on an empty tile, the hero, its sheet, another unit or a turn card does to it; pure.
 - `src/client/unit-peek.ts` — another unit's look-only mini menu (Status, Abilities, Show range) in the notice window.
 - `src/client/command.ts` — FFT command menu (Move, Abilities, Wait, Status): which turn screen shows, what each key leads to and where Cancel goes back to.
 - `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
@@ -170,6 +170,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/town3d/map3d.ts` — Map3d: the expedition map in 3D, drawn over its own unseen HTML window, which keeps every input.
 - `src/client/town3d/map-draw.ts` — what the 3D expedition map draws with: the pen (text, boxes, faces) and the chart (floors, ways, seals, flag).
 - `src/client/town3d/map-layout.ts` — where the 3D expedition map puts its parts, in reference px, and what a command's plaque and help say; pure.
+- `src/client/flow3d/marks-preview.ts` — MarksPreview: the sample of the board's marks (walk and strike areas, the acting tile, a path, the cursor) in the style picked, built from `scene/mark-kit.ts` and drawn in Options3d's `deep` group under the Marks row's description.
 - `src/client/flow3d/options3d.ts` — Options3d: the Options screen in 3D, laid out like FFT The Ivalice Chronicles' settings, over the board's own rows and buttons (unseen, sized by the same layout).
 - `src/client/flow3d/options-view.ts` — what each row of the 3D Options shows (heading, choice, bar, switch, link) from the Options board; pure.
 - `src/client/flow3d/options-layout.ts` — where the 3D Options sit (title, list and its rows, value column, goal, the commands under the list, message band), the scroll fade and mark, where an arrow takes the cursor (`optionsWalk`), and the smallest page that takes the 3D look (`fits`); pure.

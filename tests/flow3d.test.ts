@@ -4,6 +4,8 @@ import {
   optionsLayout,
   optionsTab,
   optionsWalk,
+  PREVIEW_MIN,
+  previewBox,
   REF,
   type Spot,
   shown,
@@ -22,6 +24,7 @@ import {
   stops,
 } from '../src/client/flow3d/sheet-layout.ts';
 import { REF as TITLE, titleLayout, stops as titleStops } from '../src/client/flow3d/title-layout.ts';
+import { marksOption } from '../src/client/game/options-marks.ts';
 import { percent, pick } from '../src/client/option-row.ts';
 import type { Box } from '../src/client/ui3d/layout.ts';
 import { neighbour, type Way } from '../src/client/ui3d/walk.ts';
@@ -75,6 +78,47 @@ describe('3D Options: what each row shows', () => {
     const after = optionsView(items);
     expect(after[3]).toMatchObject({ text: 'On', on: true });
     expect(after[2]).toMatchObject({ text: '40%', fill: 0.4 });
+  });
+});
+
+describe('3D Options: the marks sample', () => {
+  it('only the Marks row asks for one, and its value still follows the setting', () => {
+    const [marks, other] = optionsView([
+      { option: marksOption() },
+      {
+        option: pick(
+          'Speed',
+          '',
+          [[1, 'Slow']],
+          () => 1,
+          () => {},
+        ),
+      },
+    ]);
+    expect(marks).toMatchObject({ kind: 'pick', preview: 'marks' });
+    expect(other.preview).toBeUndefined();
+  });
+
+  it('takes what is left of the side box under the text, and nothing when that is too little', () => {
+    for (const [w, h] of [
+      [844, 390],
+      [1024, 768],
+      [1280, 720],
+      [1920, 1080],
+    ]) {
+      const L = optionsLayout(w, h, 4, 7, 4),
+        from = L.side.y + 0.4 * L.side.h, // where six lines of text end, about
+        box = previewBox(L, from);
+      expect(box, `${w}`).not.toBeNull();
+      if (!box) continue;
+      expect(box.x, `${w}`).toBeGreaterThan(L.side.x);
+      expect(box.x + box.w, `${w}`).toBeLessThan(L.side.x + L.side.w);
+      expect(box.y, `${w}`).toBeGreaterThan(from); // under the text, never over it
+      expect(box.y + box.h, `${w}`).toBeLessThan(L.side.y + L.side.h);
+      expect(box.h, `${w}`).toBeGreaterThanOrEqual(PREVIEW_MIN);
+    }
+    const L = optionsLayout(1280, 720, 4, 7, 4);
+    expect(previewBox(L, L.side.y + L.side.h - 10)).toBeNull(); // the words fill the box: no sample
   });
 });
 

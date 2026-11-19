@@ -17,6 +17,12 @@ export interface QueueBoxes {
   more: number;
 }
 
+// The least a finger's target is tall (docs/mobile-ux.md: under 28 px it needs a decision). A phone's cards are drawn at
+// PHONE_SHRINK: the portrait frame is about 23 px and the unseen row that takes the tap 27, so that box reaches over the
+// gap by `tapGrow` px a side, the drawing unchanged; the gap (3 px there) holds it, so two neighbours never overlap
+export const TAP_MIN = 28;
+export const tapGrow = (h: number) => Math.max(0, Math.ceil((TAP_MIN - h) / 2));
+
 export const HEAD = 22; // the pinned title: one 16 px line and its 6 px of padding
 
 export interface QueueSpec {

@@ -24,6 +24,7 @@ import { CornerButtons } from './hud-tools.ts';
 import { t } from './i18n.ts';
 import { el, iconButton } from './icons.ts';
 import type { Highlights } from './interaction.ts';
+import { menuUp } from './menu-state.ts';
 import type { Menu3d } from './menu3d/menu3d.ts';
 import { type Anchor, helpEnd, placeBeside } from './place-beside.ts';
 import { portrait } from './portrait.ts';
@@ -160,9 +161,8 @@ export class BattleHud {
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;
-    const shut = !!v.closed || !!v.range, // the menu, its Back and "Execute?" wait while the map is looked at
-      menu = open && !shut;
-    this.root.classList.toggle('menu-shut', open && shut);
+    const menu = menuUp(open, v); // the menu, its Back and "Execute?" wait while the map is looked at
+    this.root.classList.toggle('menu-shut', open && !menu);
     // `size` is set only while choosing where to move: the square the unit would stand on
     this.tile.textContent = b.over ? '' : cursorInfo(b.grid, b.state, v.cursor, v.hl?.size ?? 1);
     this.faces = [];
@@ -178,7 +178,7 @@ export class BattleHud {
     renderCommands(this.commands, v, menu, this.act);
     renderAbilities(this.abilities, v, menu, this.act);
     this.menu3d?.update(v, menu);
-    renderConfirm(this.confirmBox, v, open, this.act);
+    renderConfirm(this.confirmBox, v, menu, this.act);
     // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
     const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
@@ -206,7 +206,7 @@ export class BattleHud {
     this.strikesEl.replaceChildren(...(main ? strikes([main, ...fs.filter((f) => f !== main)], ability!) : []));
     this.turn3d?.update(b, this.queued, fs, v.face, me?.id);
     this.p3d.bar?.update(b.state, me, other, main ? [main, ...fs.filter((f) => f !== main)] : [], ability, v.face);
-    this.p3d.confirm?.update(v, open);
+    this.p3d.confirm?.update(v, menu);
     // size of the panels that move with the character, once per draw (each frame's `place` only reads the cache); the
     // strips enter the bottom height so "Execute?" does not land on them. A 3D piece's size is its own layout's (Nov 18)
     const box = (e: HTMLElement) => ({ w: e.offsetWidth, h: e.offsetHeight });

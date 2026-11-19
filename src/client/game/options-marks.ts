@@ -4,8 +4,8 @@ import { t } from '../i18n.ts';
 import { getMarkStyle, type MarkStyle, setMarkStyle } from '../mark-style.ts';
 import { type Option, pick } from '../option-row.ts';
 
-export const marksOption = (): Option =>
-  pick(
+export const marksOption = (): Option => ({
+  ...pick(
     t('Marcações', 'Marks'),
     t(
       'Como as casas, o cursor, os aros dos personagens e as linhas aparecem no mapa. Simples: o desenho chapado, o mais leve. Luz: luz gravada no chão. Pedra: peças de pedra e metal. Neon: tubos de luz.',
@@ -19,4 +19,6 @@ export const marksOption = (): Option =>
     ] as [MarkStyle, string][],
     getMarkStyle,
     setMarkStyle,
-  );
+  ),
+  preview: 'marks',
+});

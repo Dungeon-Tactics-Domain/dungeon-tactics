@@ -70,7 +70,10 @@ describe('button hints: what each screen shows', () => {
       '○=Cancelar',
       'L2 R2 L1 R1=Câmera',
     ]);
-    expect(hintsFor(b, menu, true, 'switch').left).toEqual([{ act: 'help', text: 'Menu e ajuda' }]);
+    expect(hintsFor(b, menu, true, 'switch').left).toEqual([{ act: 'help', text: 'Opções' }]);
+    // the left hint opens Options (Game.menu, from H or a pad's Start)
+    expect(keysText('help', 'keyboard')).toBe('H');
+    expect(keysText('help', 'playstation')).toBe('Options');
     expect(hintsFor(b, menu, true, 'touch')).toEqual({ left: [], right: [] });
   });
 

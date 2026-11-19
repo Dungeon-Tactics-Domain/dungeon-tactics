@@ -305,7 +305,12 @@ export function piece(style: Lit, paths: Path[], w: number, color: string, o: Pa
 
 // A marked tile as one geometry bent over the ground of tile p: group 0 the rim, 1 the glass plate, 2 neon's halo
 // (materials in that order: tileMaterials)
-export function tileGeometry(style: Lit, space: TileSpace, ground: Ground, p: Pos): THREE.BufferGeometry {
+export function tileGeometry(
+  style: Lit,
+  space: Pick<TileSpace, 'world'>,
+  ground: Ground,
+  p: Pos,
+): THREE.BufferGeometry {
   // around the tile's own place (the mesh stands there, so the transparent pieces sort by where they are)
   const w = space.world(p);
   const y = (x: number, z: number) => ground(p, x + w.x, z + w.z) - w.y;
