@@ -9,7 +9,7 @@ import type { Preview } from '../shared/battle/combat.ts';
 import { dist, samePos } from '../shared/battle/grid.ts';
 import { actionOptions, type OptionReason } from '../shared/battle/options.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
-import type { Pos } from '../shared/battle/types.ts';
+import type { Lock, Pos } from '../shared/battle/types.ts';
 
 export const ACT_FIRST_KEY = 'dt:act-first';
 // on unless the player turned it off
@@ -142,11 +142,11 @@ export const spotAt = (a: ActAction, p: Pos, size: number) =>
 
 // Runs the picked action: walk to the spot (when it is not where the unit stands), then act or use the item. Returns the
 // events in order for the scene; `act` null when the walk was cut short (a counter-attack downed it or ended the battle).
-// shortcut: a charge locks where its ability says (defaultLock); the lock step comes with the screens of step 4
-export function runSpot(b: Battle, a: ActAction, s: ActSpot) {
+// `lock`: where a charge stays aimed (the tile choice's lock step); without it, the ability's default
+export function runSpot(b: Battle, a: ActAction, s: ActSpot, lock?: Lock) {
   const id = b.actor.id;
   const walk = samePos(s.pos, b.actor.pos) ? [] : b.move(s.pos);
   const me = b.state.units.find((u) => u.id === id);
   if (b.over || !me || b.state.turn.actor !== id || !samePos(me.pos, s.pos)) return { walk, act: null };
-  return { walk, act: a.k === 'item' ? b.useItem(a.id, s.aim) : b.act(a.id, s.aim) };
+  return { walk, act: a.k === 'item' ? b.useItem(a.id, s.aim) : b.act(a.id, s.aim, lock) };
 }

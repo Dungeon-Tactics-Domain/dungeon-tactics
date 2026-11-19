@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { actActions } from '../src/client/act-flow.ts';
 import { actMarks } from '../src/client/act-marks.ts';
 import { type ActHost, actFirstOn, actKey, actPick, actTap } from '../src/client/act-turn.ts';
-import type { Screen } from '../src/client/command.ts';
+import { itemDetail } from '../src/client/battle-text.ts';
+import { cancelStep, type Screen } from '../src/client/command.ts';
+import { helpText } from '../src/client/hud-menus.ts';
 import { menuView } from '../src/client/menu3d/menu-view.ts';
 import { store } from '../src/client/store.ts';
+import { ABILITIES, defaultLock } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import type { BattleEvent } from '../src/shared/battle/types.ts';
 import { flat, stateOf } from './battle-helpers.ts';
@@ -48,7 +52,45 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     actKey(h, { k: 'confirm' });
     expect(h.screen.k).toBe('spot');
     await actPick(h, (h.screen as { index: number }).index);
+    if ((h.screen as { lock?: string }).lock) actKey(h, { k: 'confirm' }); // a charge: the lock step first
     expect(h.ran[0].some((e) => e.k === 'attack' || e.k === 'charge')).toBe(true);
+  });
+
+  it('a charge aimed at a unit asks where to lock it before it walks, and runs locked there', async () => {
+    const b = battle();
+    const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
+    const i = actActions(b, target).findIndex((a) => a.enabled && a.k === 'ability' && ABILITIES[a.id].charge > 0);
+    expect(i).toBeGreaterThanOrEqual(0);
+    const id = actActions(b, target)[i].id;
+    const h = host(b, { k: 'actions', target, index: i });
+    actKey(h, { k: 'confirm' });
+    const spot = (h.screen as { index: number }).index;
+    await actPick(h, spot);
+    expect(h.screen).toMatchObject({ k: 'spot', index: spot, lock: defaultLock(ABILITIES[id]) });
+    expect(h.ran).toHaveLength(0); // nothing walked yet
+    const v = menuView({ battle: b, screen: h.screen } as never, true)!;
+    expect(v.subTitle).toMatch(/travar onde\?$/);
+    expect(v.sub!.map((r) => r.label)).toEqual(['No personagem', 'Na casa']);
+    expect(helpText({ battle: b, screen: h.screen } as never, true, false)).toMatch(/travar onde\?$/);
+    actKey(h, { k: 'cursor', dir: 'down' });
+    expect(h.screen).toMatchObject({ lock: 'tile' });
+    expect(cancelStep(b, h.screen)).toEqual({ k: 'spot', target, action: i, index: spot }); // back to the tiles
+    expect(actTap(h, { x: 0, y: 0 })).toBe(true); // a tap on the map does not run it
+    expect(h.ran).toHaveLength(0);
+    actKey(h, { k: 'confirm' });
+    expect(h.ran[0].some((e) => e.k === 'charge')).toBe(true);
+    expect(b.state.charges.at(-1)).toMatchObject({ ability: id, follow: null }); // on the tile, as picked
+  });
+
+  it('the help line says what to pick and what an item does', () => {
+    const b = battle();
+    const help = (screen: Screen) => helpText({ battle: b, screen } as never, true, false);
+    expect(help({ k: 'targets', index: 0 })).toBe('Alvo: escolha quem e confirme.');
+    const ally = { k: 'unit' as const, unit: 'w', pos: { x: 2, y: 3 } };
+    const potion = actActions(b, ally).findIndex((a) => a.k === 'item');
+    expect(help({ k: 'actions', target: ally, index: potion })).toMatch(/^Poção de vida: cura \d+$/);
+    expect(help({ k: 'spot', target: ally, action: potion, index: 0 })).toMatch(/^Poção de vida: cura \d+$/);
+    expect(itemDetail('stone_potion')).toBe('por 3 turnos: +30% de resistência a dano físico, -1 de movimento');
   });
 
   it('up and down skip the off actions; a tap on a unit picks its row', () => {

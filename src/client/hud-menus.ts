@@ -2,7 +2,8 @@
 // sets its own `hidden` before anything else: BattleHud.menuOpen and its size cache read it right after.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { abilityDetail, abilityNote, commandName, spendNote } from './battle-text.ts';
+import { screenAction } from './act-marks.ts';
+import { abilityDetail, abilityNote, commandName, itemDetail, itemName, spendNote } from './battle-text.ts';
 import { chargeFromText, chargeNote, counterFromText, counterNote } from './charge-lines.ts';
 import {
   abilitiesOf,
@@ -92,6 +93,7 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
     const id = abilitiesOf(b)[s.index];
     return id ? `${abilityName(id)}: ${abilityDetail(id)}` : '';
   }
+  if (s.k === 'targets' || s.k === 'actions' || s.k === 'spot') return actHelp(b, s, touch);
   const tap = touch && s.k === 'map' ? tapState(v) : null;
   if (s.k === 'map' && s.command === 'move')
     return v.hl?.tiles.some((m) => m.kind === 'nogo')
@@ -120,6 +122,29 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
   return touch
     ? t('Toque um lado; de novo, passa a vez.', 'Face which way? Tap a side twice.')
     : t('Para onde olhar? Escolha e confirme.', 'Which way to face? Pick and confirm.');
+}
+
+// The Agir primeiro screens: what to pick on each, the focused action's detail (an item's heal, mana and effect), and on
+// the tile choice what the item gives from there or where a charge locks
+function actHelp(b: Battle, s: Extract<Screen, { k: 'targets' | 'actions' | 'spot' }>, touch: boolean): string {
+  if (s.k === 'targets')
+    return touch
+      ? t('Alvo: toque no alvo ou na lista.', 'Target: tap the unit or the list.')
+      : t('Alvo: escolha quem e confirme.', 'Target: pick who and confirm.');
+  const a = screenAction(b, s);
+  if (!a) return '';
+  const name = a.k === 'item' ? itemName(a.id) : abilityName(a.id);
+  if (s.k === 'actions') return `${name}: ${a.k === 'item' ? itemDetail(a.id) : abilityDetail(a.id)}`;
+  if (s.lock) return t(`${name}: travar onde?`, `${name}: lock on?`);
+  const spot = a.spots[s.index];
+  if (a.k === 'item' && spot) {
+    const got = [spot.heal ? t(`cura ${spot.heal}`, `heals ${spot.heal}`) : '', spot.mana ? `+${spot.mana} mana` : ''];
+    const what = got.filter(Boolean).join(', ') || itemDetail(a.id);
+    return `${name}: ${what}`;
+  }
+  return touch
+    ? t('Casa: toque de novo para agir.', 'Tile: tap it again to act.')
+    : t('Casa: escolha de onde e confirme.', 'Tile: pick where from and confirm.');
 }
 
 // the Back button's name for what it does now; hidden with nothing to go back to

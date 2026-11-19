@@ -31,10 +31,10 @@ export type Screen =
   | { k: 'confirm'; ability: string; target: Pos; lock?: Lock }
   | { k: 'facing' }
   // Agir primeiro (act-flow.ts, behind `dt:act-first`): the target list, the actions that hit the picked target, the tiles
-  // to act from with the best one first
+  // to act from with the best one first; `lock`: a charge aimed at a unit asks where to lock it, as the confirm screen does
   | { k: 'targets'; index: number }
   | { k: 'actions'; target: ActTarget; index: number }
-  | { k: 'spot'; target: ActTarget; action: number; index: number };
+  | { k: 'spot'; target: ActTarget; action: number; index: number; lock?: Lock };
 
 // "Execute?" on a charge aimed at someone asks next where to lock it: the tile, or that character (Nov 15). On empty ground
 // there is only the tile
@@ -102,7 +102,10 @@ export function cancelStep(b: Battle, s: Screen, aiming: string | null = null): 
   if (s.k === 'facing') return { k: 'menu', index: commandIndex('wait') };
   if (s.k === 'targets') return { k: 'menu', index: commandIndex('act') };
   if (s.k === 'actions') return { k: 'targets', index: targetIndex(actTargets(b), s.target) };
-  if (s.k === 'spot') return { k: 'actions', target: s.target, index: s.action };
+  if (s.k === 'spot')
+    return s.lock
+      ? { k: 'spot', target: s.target, action: s.action, index: s.index }
+      : { k: 'actions', target: s.target, index: s.action };
   if (s.lock) return { k: 'confirm', ability: s.ability, target: s.target }; // the lock step: back to the preview
   // a self-centred ability never went through the map
   return ABILITIES[s.ability].range[1] === 0 ? row(s.ability) : { k: 'map', command: 'act' };

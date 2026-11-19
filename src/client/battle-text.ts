@@ -186,6 +186,32 @@ export const itemName = (id: string) => {
   const c = CONSUMABLE[id];
   return c ? t(c.name, c.en) : id;
 };
+// What an item does, for the help line of the Agir lists: its heal and mana, then its timed effect (bag.ts, effects.ts)
+export function itemDetail(id: string): string {
+  const c = CONSUMABLE[id];
+  if (!c) return '';
+  const out: string[] = [];
+  if (c.heal) out.push(t(`cura ${c.heal}`, `heals ${c.heal}`));
+  if (c.mana) out.push(t(`+${c.mana} de mana`, `+${c.mana} mana`));
+  const f = c.buff;
+  if (f) {
+    const parts: string[] = [];
+    if (f.physPower) parts.push(t(`+${f.physPower} de força`, `+${f.physPower} power`));
+    if (f.element) parts.push(t(`golpe de ${ELEMENT_NAME[f.element]()}`, `${ELEMENT_NAME[f.element]()} strikes`));
+    for (const [r, v] of Object.entries(f.resist ?? {})) {
+      const what =
+        r === 'phys'
+          ? t('dano físico', 'physical damage')
+          : r === 'mag'
+            ? t('magia', 'magic')
+            : ELEMENT_NAME[r as Element]();
+      parts.push(t(`${signed(v ?? 0)} de resistência a ${what}`, `${signed(v ?? 0)} ${what} resistance`));
+    }
+    if (f.move) parts.push(t(`${f.move} de movimento`, `${f.move} move`));
+    out.push(t(`por ${f.turns} turnos: `, `for ${f.turns} turns: `) + parts.join(', '));
+  }
+  return out.join(' · ');
+}
 // why an Agir primeiro action is off, in words under its row (Fernando's grill of Nov 19: a short line, always visible)
 export function actReason(a: ActAction): string {
   if (a.reason === 'spent' && a.pool)
