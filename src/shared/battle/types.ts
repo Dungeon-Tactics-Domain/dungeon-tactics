@@ -23,7 +23,7 @@ export interface UnitState {
 export interface TurnState {
   actor: string;
   moved: boolean;
-  usedAbility: string | null; // ability used, for the delay of the next turn
+  usedAbility: string | null; // the ability or the item (bag.ts) used: the turn's one action
   // Movement in parts (Nov 13, Fernando's request: "walk, attack and then walk again with the remaining movement"): points
   // already spent in the turn (absent = 0, the old save stays valid)
   spent?: number;
@@ -62,6 +62,9 @@ export interface BattleState {
   // what died on each corpse cell, by `posKey` (Nov 19: a resumed battle draws the dead unit's model, not a stock body); a save
   // from before has none and the scene falls back to the stock bodies
   corpseDefs?: Record<string, string>;
+  // the heroes' shared bag of consumables, item id to count (Nov 19, bag.ts); absent = empty (a save from before, a battle
+  // outside an expedition)
+  bag?: Record<string, number>;
 }
 
 // A point of a shot's path (pathing.ts traceShot): x and y in cells from the map's corner (a cell's middle is +0.5), h in
@@ -91,6 +94,8 @@ export type BattleEvent =
   | { k: 'miss'; unit: string; chance: number }
   | { k: 'heal'; unit: string; amount: number }
   | { k: 'regen'; unit: string; amount: number } // life regen at the start of its turn: not a heal (no power, no undead harm)
+  | { k: 'item'; unit: string; item: string; target: Pos } // used an item from the bag on the unit at `target`
+  | { k: 'mana'; unit: string; amount: number } // mana given back (an Ether)
   | { k: 'push'; unit: string; to: Pos }
   | { k: 'bump'; unit: string; dmg: number }
   | { k: 'fall'; unit: string; levels: number; dmg: number }

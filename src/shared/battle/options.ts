@@ -36,20 +36,25 @@ export interface AbilityOptions {
 // `grid`, `state` and the unit `id` (the one whose turn it is; another unit reads its whole movement). One entry per ability, in
 // the unit's order: the basic attack is the first. shortcut: an area's ground targets are the tiles around each unit, not
 // every tile in range; the counters a walk would draw are not simulated
-export function actionOptions(grid: Grid, state: BattleState, id: string): AbilityOptions[] {
-  const actor = state.units.find((u) => u.id === id);
-  if (!actor || state.outcome !== 'ongoing') return [];
-  const def = UNIT_DEFS[actor.def];
-  const spent = state.turn.actor === id ? (state.turn.spent ?? 0) : 0;
-  const left = def.move - spent;
-  const walk = left > 0 ? reachable(grid, state, id, left) : new Map();
-  // in deep water you only walk or wait (previewAbility's 'water'): those tiles are no place to act from
-  const origins: { pos: Pos; cost: number }[] = [
+// the tiles a unit may act from this turn, its own first, then by the movement each costs. In deep water you only walk or
+// wait (previewAbility's 'water'): those tiles are no place to act from
+export function originsOf(grid: Grid, state: BattleState, actor: UnitState): { pos: Pos; cost: number }[] {
+  const spent = state.turn.actor === actor.id ? (state.turn.spent ?? 0) : 0;
+  const left = UNIT_DEFS[actor.def].move - spent;
+  const walk = left > 0 ? reachable(grid, state, actor.id, left) : new Map();
+  return [
     { pos: actor.pos, cost: 0 },
     ...[...walk.values()]
       .sort((x, y) => x.cost - y.cost) // a leap is found out of cost order
       .map((s) => ({ pos: s.pos, cost: s.cost })),
   ].filter((o) => !inDeep(grid, { ...actor, pos: o.pos }));
+}
+
+export function actionOptions(grid: Grid, state: BattleState, id: string): AbilityOptions[] {
+  const actor = state.units.find((u) => u.id === id);
+  if (!actor || state.outcome !== 'ongoing') return [];
+  const def = UNIT_DEFS[actor.def];
+  const origins = originsOf(grid, state, actor);
   // the most cells between an origin's corner and an aimed cell that may still be in range: the two squares' own width, and
   // the whole map's height difference for an ability that reaches farther from above. Past it no preview is asked (it would
   // say 'range'): most of the time went there

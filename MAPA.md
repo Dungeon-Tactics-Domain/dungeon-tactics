@@ -19,7 +19,9 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/counter.ts` — who answers a strike with a counter and which counters a move owes.
 - `src/shared/battle/push.ts` — where a push ends and what it costs (bump, fall), without touching the state.
 - `src/shared/battle/turn-queue.ts` — FFT CT queue: turn cost, the next turn, charges firing and previewOrder for the turn list.
-- `src/shared/battle/battle.ts` — Battle: owns the state, move/act/end turn, limited undo (dice never roll back), save/load through parseBattleState.
+- `src/shared/battle/battle.ts` — Battle: owns the state, move/act/use item/end turn, limited undo (dice never roll back), save/load through parseBattleState.
+- `src/shared/battle/parse-state.ts` — parseBattleState: the save trust boundary that rebuilds the battle state field by field.
+- `src/shared/battle/bag.ts` — items in battle: the heroes' shared bag, the Item command (spends the action, range 3 tiles on self or ally), itemOptions for the Agir list and parseBag.
 - `src/shared/battle/rng.ts` — seeded mulberry32 whose state lives in BattleState (nextRng, rollInt).
 - `src/shared/battle/rules.ts` — calculations a scenario may swap (survival, crawl rooms, the developer battle) and rulesOf.
 - `src/shared/battle/half.ts` — half tiles: halve splits a map into 2x2 cells and units into 2x2 tokens (halfDef, SUB, the ?scenario=half test map).

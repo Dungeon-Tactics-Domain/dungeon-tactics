@@ -2,6 +2,8 @@
 // from room to room. Only the seed, the rooms cleared and the party's life and mana are saved; the map comes back from the seed
 // (rng.ts), so the same seed always gives the same floors and rooms, and the gold found comes back from the path.
 import { CRAWL_GOLD, CRAWL_RUN } from '../../content/crawl/rooms.ts';
+import { CONSUMABLES, START_BAG } from '../../content/items.ts';
+import { parseBag } from '../battle/bag.ts';
 import { rollInt } from '../battle/rng.ts';
 import { CRAWL_VERSION, roomGroup } from './generate.ts';
 
@@ -27,6 +29,8 @@ export interface Expedition {
   seed: number;
   path: number[]; // rooms cleared, in order
   party: CrawlHero[];
+  // the heroes' shared bag of items, carried from room to room like the life (Nov 19); absent = empty (a save from before)
+  bag?: Record<string, number>;
 }
 
 export function expeditionMap(seed: number): CrawlNode[] {
@@ -72,6 +76,7 @@ export const startExpedition = (seed: number, party: { id: string; max: number; 
   v: CRAWL_VERSION,
   seed: seed | 0,
   path: [],
+  bag: { ...START_BAG },
   party: party.map(({ manaMax, ...h }) => ({ ...h, hp: h.max, ...(manaMax && { manaMax, mana: manaMax }) })),
 });
 
@@ -92,12 +97,14 @@ const share = (max: number, pct: number) => Math.ceil((max * pct) / 100);
 // After a won room. `left`: each standing hero's life at the end, by member id; a hero missing from it fell and comes back
 // at 25% without the room heal (the lab's reading, kept in the F2 order). Clearing a floor's last row leads down a floor:
 // +50% to everyone, the fallen included. Mana follows the same steps (Nov 15 grill), from `manaLeft` (a standing hero's
-// mana at the end; missing, what it had). A room that is not open changes nothing.
+// mana at the end; missing, what it had). `bagLeft`: the bag at the end of the battle (absent: as it went in). A room that
+// is not open changes nothing.
 export function winRoom(
   exp: Expedition,
   node: number,
   left: Record<string, number>,
   manaLeft: Record<string, number> = {},
+  bagLeft?: Record<string, number>,
 ): Expedition {
   const map = expeditionMap(exp.seed);
   if (!openNodes(map, exp.path).includes(node) || map[node].chest) return exp;
@@ -111,6 +118,7 @@ export function winRoom(
   return {
     ...exp,
     path: [...exp.path, node],
+    ...(bagLeft && { bag: bagLeft }),
     party: exp.party.map((h) => {
       const stood = Object.hasOwn(left, h.id);
       const hp = carry(left[h.id], h.max, stood);
@@ -120,10 +128,20 @@ export function winRoom(
   };
 }
 
-// Opening an open chest: the party walks to it, no battle and no heal; its gold counts in descentGold
+// Opening an open chest: the party walks to it, no battle and no heal; its gold counts in descentGold and its item
+// (chestItem) goes into the bag
 export function openChest(exp: Expedition, node: number): Expedition {
   const map = expeditionMap(exp.seed);
-  return openNodes(map, exp.path).includes(node) && map[node].chest ? { ...exp, path: [...exp.path, node] } : exp;
+  if (!openNodes(map, exp.path).includes(node) || !map[node].chest) return exp;
+  const item = chestItem(map[node]);
+  return { ...exp, path: [...exp.path, node], bag: { ...exp.bag, [item]: (exp.bag?.[item] ?? 0) + 1 } };
+}
+
+// The item a chest holds (Fernando, Nov 19: 1 per chest, any consumable alike): rolled on a stream of its own from the
+// node's seed, salted apart from its gold, so the expedition's map and gold stay as they were (no CRAWL_VERSION bump)
+export function chestItem(n: CrawlNode): string {
+  const [i] = rollInt((n.seed ^ 0x17e3) | 0, 0, CONSUMABLES.length - 1);
+  return CONSUMABLES[i].id;
 }
 
 // The gold a node gives: a chest's, or the drops of every enemy of a won room (it ends with all of them down). Rolled on a
@@ -183,5 +201,7 @@ export function parseExpedition(raw: unknown): Expedition | null {
       ...(manaMax !== undefined && { manaMax: manaMax as number, mana: mana as number }),
     });
   }
-  return party.length >= 1 && party.length <= 4 ? { v: CRAWL_VERSION, seed, path, party } : null;
+  const bag = parseBag(r.bag);
+  if (!bag) return null;
+  return party.length >= 1 && party.length <= 4 ? { v: CRAWL_VERSION, seed, path, party, bag } : null;
 }

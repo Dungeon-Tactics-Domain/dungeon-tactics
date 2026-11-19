@@ -239,18 +239,21 @@ export const ITEM_LIST: ItemDef[] = [
   },
 ];
 
-// The shop's consumables (the lab's buffs table): listed with their price, not sold yet. Using one costs the turn's action
-// and needs the battle's Item command, buffs and, for the Ether, mana (slice 2), so what each does is words until then
+// The consumables (the lab's buffs table): listed in the shop with their price, not sold yet. In battle the Item command
+// spends the turn's action on one (src/shared/battle/bag.ts, Nov 19); `heal` and `mana` are what it gives back, never
+// above the sheet's max. Fire oil and Stone potion still do only what their words say: their timed effects come next
 export interface Consumable {
   id: string;
   name: string;
   en: string;
   price: number;
   use: [pt: string, en: string];
+  heal?: number;
+  mana?: number;
 }
 export const CONSUMABLES: Consumable[] = [
-  { id: 'life_potion', name: 'Poção de vida', en: 'Life potion', price: 40, use: ['cura 100', 'heals 100'] },
-  { id: 'ether', name: 'Éter', en: 'Ether', price: 60, use: ['+30 de mana', '+30 mana'] },
+  { id: 'life_potion', name: 'Poção de vida', en: 'Life potion', price: 40, use: ['cura 100', 'heals 100'], heal: 100 },
+  { id: 'ether', name: 'Éter', en: 'Ether', price: 60, use: ['+30 de mana', '+30 mana'], mana: 30 },
   {
     id: 'fire_oil',
     name: 'Óleo de fogo',
@@ -270,3 +273,7 @@ export const CONSUMABLES: Consumable[] = [
     use: ['+30% de resistência física, −2 de movimento, 3 turnos', '+30% physical resistance, −2 move, 3 turns'],
   },
 ];
+// Every item reaches the user or an ally up to 3 whole tiles away (Fernando, Nov 19: one range for all, a throw included)
+export const ITEM_RANGE = 3;
+// What the party's bag holds when a descent starts (Fernando, Nov 19: a fixed start, then 1 item per chest)
+export const START_BAG: Record<string, number> = { life_potion: 2, ether: 1 };

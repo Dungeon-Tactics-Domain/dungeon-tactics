@@ -32,6 +32,7 @@ export { CRAWL_KEY, ROOM_KEY }; // part of a save slot, so their names live in s
 export interface CrawlRoom {
   node: number;
   heroes: Record<string, { id: string; hp: number; mana?: number }>;
+  bag?: Record<string, number>; // the expedition's bag the battle starts with (Nov 19)
 }
 
 // The descent ends: its gold goes to the town's (all of it alive, half when the party fell: goldHome) and the save is
@@ -100,7 +101,7 @@ export function castRoom(room: Scenario, exp: Expedition, node: number): { scena
     return saved === undefined ? {} : { mana: saved };
   };
   const heroes = Object.fromEntries(ids.map((id, i) => [`h${i}`, { id, hp: hp(id, i), ...mana(id) }]));
-  return { scenario, room: { node, heroes } };
+  return { scenario, room: { node, heroes, ...(exp.bag && { bag: { ...exp.bag } }) } };
 }
 
 // home (?home): the town (homeScreen), over the standalone battle; the bare address is the title

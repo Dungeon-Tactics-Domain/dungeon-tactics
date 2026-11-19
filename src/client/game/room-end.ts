@@ -26,7 +26,7 @@ export function settleRoom(room: CrawlRoom, won: boolean, state: BattleState) {
   });
   const left = Object.fromEntries(standing.map(([id, u]) => [id, u.hp]));
   const manaLeft = Object.fromEntries(standing.map(([id, u]) => [id, poolOf(u, 'mana')]));
-  const next = won ? winRoom(exp, room.node, left, manaLeft) : null;
+  const next = won ? winRoom(exp, room.node, left, manaLeft, { ...state.bag }) : null;
   const done = !!next && cleared(map, next.path);
   // what went to the town when it ended: all of it with the boss down, half when the party fell
   const banked = !next ? endExpedition(exp, true) : done ? endExpedition(next, false) : 0;
