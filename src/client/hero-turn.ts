@@ -4,8 +4,10 @@ import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
 import { footprint, nearestTile } from '../shared/battle/pathing.ts';
-import type { Lock, Pos } from '../shared/battle/types.ts';
+import type { BattleEvent, Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { actScreen } from './act-marks.ts';
+import { type ActHost, actFirstOn, actHover, actKey, actPick, actTap } from './act-turn.ts';
 import {
   abilitiesOf,
   abilityEnabled,
@@ -34,6 +36,7 @@ export interface TurnHost {
   readonly heroTurn: boolean;
   update(ui: Ui): void; // keeps the Ui and redraws the marks and the HUD
   execute(lock?: Lock): Promise<void>; // runs what the Ui has marked
+  runAct(run: (b: Battle) => BattleEvent[]): Promise<void>; // Agir primeiro: walks and acts in one go (act-turn.ts)
   endTurn(): Promise<void>;
   undo(): void;
   status(): void;
@@ -77,6 +80,7 @@ export class HeroTurn {
     if (m?.k === 'peek') return void setTimeout(() => this.menu(m));
     if (m) return this.menu(m);
     if (!pos) return;
+    if (actTap(this.actHost, pos)) return;
     if (this.screen.k === 'facing') return this.faceTo(pos);
     // on the map the tile is already chosen by mouse hover (or the 1st tap): clicking it confirms
     if (this.screen.k === 'map' && this.ui.pending && samePos(pos, this.ui.pending)) return void this.mapConfirm();
@@ -126,6 +130,7 @@ export class HeroTurn {
     }
     if (a.k === 'wait') return this.chooseCommand(commandIndex('wait'));
     if (a.k === 'cancel') return this.cancel();
+    if (actScreen(s)) return actKey(this.actHost, a);
     if (s.k === 'menu' || s.k === 'abilities') {
       const list =
         s.k === 'menu' ? COMMANDS.map((c) => commandEnabled(b, c)) : abilitiesOf(b).map((id) => abilityEnabled(b, id));
@@ -234,6 +239,10 @@ export class HeroTurn {
     sfx('confirm');
     if (c === 'status') return this.game.status();
     if (c === 'wait') return void this.game.endTurn();
+    if (c === 'act' && actFirstOn()) {
+      this.screen = { k: 'targets', index: 0 };
+      return this.game.update(this.ui);
+    }
     if (c === 'act') {
       const list = abilitiesOf(b).map((id) => abilityEnabled(b, id));
       this.screen = { k: 'abilities', index: Math.max(0, list.indexOf(true)) };
@@ -248,6 +257,7 @@ export class HeroTurn {
   hoverRow(list: 'menu' | 'abilities', index: number) {
     const b = this.game.battle,
       s = this.screen;
+    if (list === 'abilities' && actScreen(s)) return !this.game.busy && actHover(this.actHost, index);
     if (this.game.busy || !this.game.heroTurn || s.k !== list || s.index === index) return;
     if (list === 'menu' ? !commandEnabled(b, COMMANDS[index]) : !abilityEnabled(b, abilitiesOf(b)[index])) return;
     sfx('cursor');
@@ -266,6 +276,7 @@ export class HeroTurn {
 
   // submenu ability: goes to the map to choose the target; self-centered goes straight to "Execute?"
   chooseAbility(index: number) {
+    if (actScreen(this.screen)) return void (!this.game.busy && actPick(this.actHost, index));
     const b = this.game.battle;
     const id = abilitiesOf(b)[index];
     if (this.game.busy || !this.game.heroTurn || !id || !commandEnabled(b, 'act') || !abilityEnabled(b, id)) return;
@@ -315,6 +326,28 @@ export class HeroTurn {
     if (this.screen.k !== 'confirm' || !this.screen.lock || this.game.busy) return;
     sfx('confirm');
     await this.game.execute(on);
+  }
+
+  // what the Agir primeiro screens read and change (act-turn.ts)
+  private get actHost(): ActHost {
+    const turn = this;
+    return {
+      get battle() {
+        return turn.game.battle;
+      },
+      get screen() {
+        return turn.screen;
+      },
+      set screen(s: Screen) {
+        turn.screen = s;
+      },
+      update: () => turn.game.update(turn.ui),
+      focus: (p) => {
+        turn.cursor = p;
+        turn.scene.focusOn(p);
+      },
+      runAct: (run) => turn.game.runAct(run),
+    };
   }
 
   private moveCursor(p: Pos, aim = true) {

@@ -3,7 +3,9 @@
 // draws. No DOM or Three here; tested in tests/ui3d.test.ts.
 import { ABILITIES, type AbilityDef } from '../../shared/battle/abilities.ts';
 import type { Element } from '../../shared/battle/units.ts';
-import { abilityNote, abilityPages, commandName } from '../battle-text.ts';
+import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { actActions, actTargets } from '../act-flow.ts';
+import { abilityNote, abilityPages, actReason, commandName, itemName } from '../battle-text.ts';
 import { abilitiesOf, abilityEnabled, type Command, commandEnabled, commandIndex, menuRows } from '../command.ts';
 import type { HudView } from '../hud.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
@@ -47,6 +49,7 @@ export interface MenuRow {
   off: boolean;
   kind: IconKind;
   element?: Element;
+  below?: boolean; // the note goes on a line under the name (column.ts)
 }
 export interface SheetView {
   owner: string; // who has the ability, on the sheet's head
@@ -61,7 +64,8 @@ export interface MenuView {
   rows: MenuRow[]; // menuRows: Move · Undo move · Abilities · Wait · Status, Move and Undo only when they apply
   commands: number[]; // each row's place in COMMANDS, what a click on it chooses
   index: number; // the focused row, or the picked one (Abilities) while the submenu is open
-  sub: MenuRow[] | null; // the abilities, while the submenu is open
+  sub: MenuRow[] | null; // the abilities, while the submenu is open (or the Agir primeiro lists: act-flow.ts)
+  subTitle?: string; // the submenu's head when it is not the abilities
   subIndex: number;
   sheet: SheetView | null; // the focused ability
 }
@@ -79,6 +83,7 @@ const lines = (facts: string[], i: number) =>
 // The menu of a turn screen, or null while it is closed (`open`: a hero's turn with nothing playing)
 export function menuView(v: HudView, open: boolean): MenuView | null {
   const s = v.screen;
+  if (open && (s.k === 'targets' || s.k === 'actions')) return actView(v, s);
   if (!open || (s.k !== 'menu' && s.k !== 'abilities')) return null;
   const b = v.battle;
   const owner = unitName(b.actor.def);
@@ -114,6 +119,61 @@ export function menuView(v: HudView, open: boolean): MenuView | null {
         : null,
   };
 }
+
+// The Agir primeiro lists in the submenu's place, under the command menu with Act picked: the targets (who, with its life)
+// or the actions on the picked one (an off one says why in its note, Fernando's grill of Nov 19: always visible)
+function actView(v: HudView, s: Extract<HudView['screen'], { k: 'targets' | 'actions' }>): MenuView {
+  const b = v.battle;
+  const cmds = menuRows(b);
+  const sub: MenuRow[] =
+    s.k === 'targets'
+      ? actTargets(b).map((r) => {
+          if (r.k === 'direct')
+            return {
+              label: abilityName(r.ability),
+              note: t('na área', 'on the area'),
+              off: false,
+              ...iconOf(r.ability),
+            };
+          const u = b.state.units.find((x) => x.id === r.unit)!;
+          const who =
+            u.id === b.actor.id
+              ? t('você', 'you')
+              : u.team === b.actor.team
+                ? t('aliado', 'ally')
+                : t('inimigo', 'enemy');
+          const kind: IconKind = u.team === b.actor.team ? 'shield' : 'sword';
+          return { label: unitName(u.def), note: `${who} · ${u.hp}/${UNIT_DEFS[u.def].hp}`, off: false, kind };
+        })
+      : actActions(b, s.target).map((a) =>
+          a.k === 'item'
+            ? {
+                label: itemName(a.id),
+                note: a.enabled ? `×${a.count}` : actReason(a),
+                off: !a.enabled,
+                below: !a.enabled,
+                kind: 'potion',
+              }
+            : {
+                label: abilityName(a.id),
+                note: a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a),
+                off: !a.enabled,
+                below: !a.enabled,
+                ...iconOf(a.id),
+              },
+        );
+  return {
+    head: unitName(b.actor.def),
+    rows: cmds.map((c) => ({ label: commandName(c), note: '', off: !commandEnabled(b, c), kind: COMMAND_ICON[c] })),
+    commands: cmds.map(commandIndex),
+    index: cmds.map(commandIndex).indexOf(commandIndex('act')),
+    sub,
+    subTitle: s.k === 'targets' ? t('Alvo', 'Target') : t('Ação', 'Action'),
+    subIndex: s.index,
+    sheet: null,
+  };
+}
+const iconOf = (id: string) => ({ kind: abilityIcon3d(ABILITIES[id]), element: ABILITIES[id].element });
 
 // What changed from the last draw, for the menu's animations: it comes in or leaves (a confirmed row flashes on its way
 // out), the submenu opens in a cascade or folds back (Esc), the focus moves, the page turns

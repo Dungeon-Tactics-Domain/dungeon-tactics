@@ -92,7 +92,7 @@ export class Menu3d implements Ui3dScreen {
     main.focus = m.index;
     if (m.sub) {
       [sub.x, sub.y] = [at.sub.x, at.sub.y];
-      sub.set({ title: t('Habilidades', 'Abilities'), w: at.sub.w, h: at.sub.h, rows: m.sub }, ctx);
+      sub.set({ title: m.subTitle ?? t('Habilidades', 'Abilities'), w: at.sub.w, h: at.sub.h, rows: m.sub }, ctx);
       sub.focus = m.subIndex;
     }
     if (m.sheet) this.sheet.set(m.sheet, sheet);
@@ -111,7 +111,7 @@ export class Menu3d implements Ui3dScreen {
     // a menu for the screen reader and for Tab (Nov 18), named by its column's head
     if (!m || !at) return void ['role', 'aria-label'].forEach((k) => this.host.removeAttribute(k));
     this.host.setAttribute('role', 'menu');
-    this.host.setAttribute('aria-label', m.sub ? t('Habilidades', 'Abilities') : m.head);
+    this.host.setAttribute('aria-label', m.sub ? (m.subTitle ?? t('Habilidades', 'Abilities')) : m.head);
     const hit = (b: Box, name: string, off: boolean, click: () => void, over?: () => void) => {
       const e = el('button', { type: 'button', role: 'menuitem', disabled: off, 'aria-label': name, onclick: click });
       // the mouse or Tab on a row moves the drawn focus there

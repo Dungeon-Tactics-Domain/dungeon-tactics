@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { commandIndex } from '../src/client/command.ts';
 import { HeroTurn, type TurnHost } from '../src/client/hero-turn.ts';
 import type { Ui } from '../src/client/interaction.ts';
 import type { KeyAction } from '../src/client/keyboard.ts';
+import { store } from '../src/client/store.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { flat, stateOf } from './battle-helpers.ts';
@@ -26,6 +27,7 @@ function turn() {
     update: (ui: Ui) => {
       t.ui = ui;
     },
+    runAct: async () => {},
     execute: async () => void calls.push('execute'),
     endTurn: async () => void calls.push('endTurn'),
     undo: () => void calls.push('undo'),
@@ -43,6 +45,10 @@ function turn() {
 const ok: KeyAction = { k: 'confirm' };
 const esc: KeyAction = { k: 'cancel' };
 const strike = UNIT_DEFS.warrior.abilities.indexOf('strike');
+
+// these cover the classic menu (Act opens the ability list); Agir primeiro, now the default, is act-turn.test.ts
+beforeAll(() => store.set('dt:act-first', 'false'));
+afterAll(() => store.set('dt:act-first', ''));
 
 describe('turn screens, key by key', () => {
   it('Abilities opens the submenu; Cancel there goes back to the menu on Abilities', () => {

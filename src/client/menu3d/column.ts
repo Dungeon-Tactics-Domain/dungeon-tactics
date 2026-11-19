@@ -159,14 +159,19 @@ export class Column {
     put(label(ctx, d.title, 24, inkSoft), 10 * s, (REF.head / 2 - 1) * s);
     d.rows.forEach((r, i) => {
       const mid = (REF.head + (i + 0.5) * REF.row) * s;
-      // a greyed row's note says what is missing: it stays readable (soft ink), only the name fades
-      const note = r.note ? label(ctx, r.note, 20, inkSoft) : null;
-      if (note) put(note, d.w - 12 * s - note.scale.x, mid + s);
+      // a greyed row's note says what is missing: it stays readable (soft ink), only the name fades. `below`: the note is
+      // a line under the name (the Agir list's reason, Fernando's grill of Nov 19), so a long one never pushes the name out
+      const below = r.below && !!r.note;
+      const left = (REF.iconW + 8) * s;
+      const width = d.w - (REF.iconW + 8 + 7 + 12) * s;
+      const note = r.note ? label(ctx, r.note, below ? 18 : 20, inkSoft) : null;
+      if (note && below) note.scale.multiplyScalar(Math.min(1, width / note.scale.x));
+      if (note) put(note, below ? left : d.w - 12 * s - note.scale.x, below ? mid + 13 * s : mid + s);
       // a long name beside a note shrinks to the room left (a small page: the 16 px floor widens the text, not the row)
-      const name = label(ctx, r.label, 30, r.off ? inkOff : ink);
-      const room = d.w - (REF.iconW + 8 + 7 + 12) * s - (note ? note.scale.x + 10 * s : 0);
+      const name = label(ctx, r.label, below ? 26 : 30, r.off ? inkOff : ink);
+      const room = width - (note && !below ? note.scale.x + 10 * s : 0);
       name.scale.multiplyScalar(Math.min(1, room / name.scale.x));
-      const text = put(name, (REF.iconW + 8) * s, mid);
+      const text = put(name, left, below ? mid - 9 * s : mid);
       const icon = new Icon(this.plate, r.kind, r.element);
       icon.group.position.set(layer.snap((REF.iconW * s) / 2), -layer.snap(mid), 0);
       this.icons.add(icon.group);

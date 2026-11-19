@@ -159,6 +159,17 @@ export class Game implements TurnHost {
     const { events, ui } = confirm(this.battle, this.turn.ui, lock);
     if (!events.length) return;
     this.turn.ui = ui;
+    await this.played(events);
+  }
+
+  // Agir primeiro (act-flow.ts): the walk and the action run on the battle in one go, then play like a confirmed action
+  async runAct(run: (b: Battle) => BattleEvent[]) {
+    const events = run(this.battle);
+    if (events.length) await this.played(events);
+  }
+
+  // what follows an action of the hero: its animation, the save, and the next screen
+  private async played(events: BattleEvent[]) {
     // fell to a counterattack while retreating: the turn passes by itself before the animation, as the AI's does, since
     // update's heroTurn reads the one acting (it threw on the dead one) and Battle.load refuses a save that still names it
     const fell = !this.battle.over && !this.battle.state.units.some((u) => u.id === this.battle.state.turn.actor);

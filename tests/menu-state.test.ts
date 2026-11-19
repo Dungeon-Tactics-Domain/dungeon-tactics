@@ -117,6 +117,7 @@ function turn() {
     update: (ui: Ui) => {
       t.ui = ui;
     },
+    runAct: async () => {},
     execute: async () => {},
     endTurn: async () => {},
     undo: () => {},

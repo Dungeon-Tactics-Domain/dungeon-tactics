@@ -304,7 +304,9 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   parchment with the name on a result plate.
 - **Contrast** (computed, WCAG): ink 7.7:1 on the rows, 6.4:1 on the head, 4.9:1 on the darkest band; soft ink 5.7:1
   on the rows, 4.7:1 on the head, 3.6:1 on the band, so the band's title takes the full ink; the disabled ink (1.9:1)
-  is the faded name only, and the reason beside it (what is missing) is written in soft ink.
+  is the faded name only, and the reason beside it (what is missing) is written in soft ink. On the Agir primeiro
+  action list (Nov 19) the reason is a line of its own under the name (`MenuRow.below`: name at 26, reason at 18 of the
+  1080p scale, the reason shrinking to the row's width), so a long one never pushes the name out.
 - **Text size:** never under 16 px on the page, whatever the scale; a long ability name beside its cost shrinks to the
   room left (below 16 px only on pages under about 0.7 of 1080p).
 - **Motion:** springs for the cascade, the focus band, the glove, the sheet's pages and the turn cards; a confirmed row

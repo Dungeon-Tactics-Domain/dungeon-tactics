@@ -82,6 +82,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/unit-peek.ts` — another unit's look-only mini menu (Status, Abilities, Show range) in the notice window.
 - `src/client/command.ts` — FFT command menu (Move, Abilities, Wait, Status): which turn screen shows, what each key leads to and where Cancel goes back to.
 - `src/client/act-flow.ts` — "Agir primeiro" flow, pure: the target list, the actions on a target (off ones with the reason, items included), the best tile to act from, and walking then acting (behind `dt:act-first`).
+- `src/client/act-marks.ts` — what the map marks on the Agir primeiro screens: the listed targets, the tiles an action works from, the picked tile's walk and forecast.
+- `src/client/act-turn.ts` — keys, taps and row clicks of the Agir primeiro screens, handed over by hero-turn.ts, and the Options switch reader.
 - `src/client/interaction.ts` — what a tap or confirm does in battle and the highlights, aim mark and threat the scene draws.
 - `src/client/corpse-squares.ts` — groups a resumed battle's corpse cells into one body per token square (corpseSquares).
 - `src/client/charge-lines.ts` — charge and counter lines and notes computed from the rule that fires them.

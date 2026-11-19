@@ -12,6 +12,7 @@
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos, UnitState } from '../shared/battle/types.ts';
+import { spotAim } from './act-marks.ts';
 import { type Expression, frameOf } from './battle-face.ts';
 import type { Screen } from './command.ts';
 import { forecast } from './forecast.ts';
@@ -169,7 +170,8 @@ export class BattleHud {
     this.expression = v.face;
     // the ability being aimed (Act map or "Execute?") and where: the turn list projects it, the strips preview it
     const s = v.screen;
-    const aim = s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : null;
+    const aim =
+      s.k === 'confirm' ? s : s.k === 'map' && v.ability ? { ability: v.ability, target: v.cursor } : spotAim(b, s);
     this.renderQueue(b, aim);
     this.help.textContent = helpText(v, heroTurn);
     this.p3d.hints?.update(v, open, this.help.textContent);

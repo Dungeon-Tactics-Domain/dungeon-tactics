@@ -7,6 +7,7 @@ import { cellsOf, farCells, footprint } from '../shared/battle/pathing.ts';
 import { traceShot } from '../shared/battle/shot.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { actMarks, actScreen } from './act-marks.ts';
 import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import { longestRange, type Screen } from './command.ts';
 import { aimMark, facingHighlights, type Highlights, highlights, rangeMarks, type Ui } from './interaction.ts';
@@ -19,15 +20,17 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
     ? null
     : range
       ? rangeMarks(b, range)
-      : s.k === 'facing'
-        ? facingHighlights(b)
-        : s.k === 'map' || s.k === 'confirm'
-          ? highlights(b, ui, cursor)
-          : {
-              tiles: footprint(b.actor).map((pos) => ({ pos, kind: 'actor' as const })),
-              path: null,
-              preview: null,
-            };
+      : actScreen(s)
+        ? actMarks(b, s)
+        : s.k === 'facing'
+          ? facingHighlights(b)
+          : s.k === 'map' || s.k === 'confirm'
+            ? highlights(b, ui, cursor)
+            : {
+                tiles: footprint(b.actor).map((pos) => ({ pos, kind: 'actor' as const })),
+                path: null,
+                preview: null,
+              };
   const moving = s.k === 'map' && ui.mode.k === 'move';
   const landing = hl && moving && b.reach().has(posKey(cursor)); // the cursor is on a tile the move can end on
   // counters (Nov 15, Fernando): aiming, who the strike would leave owed a counter; walking, what that destination draws

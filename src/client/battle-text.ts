@@ -1,6 +1,7 @@
 // Battle texts: the ability sheet, the summary of the last action, the attribute rows and the Status window sheet.
 // Pure (strings from the state), shared by the HUD, the party windows and the end of battle.
 import { ABILITIES, type AbilityDef } from '../shared/battle/abilities.ts';
+import { CONSUMABLE } from '../shared/battle/bag.ts';
 import { poolOf } from '../shared/battle/combat.ts';
 import { jumpOf } from '../shared/battle/pathing.ts';
 import { SCENARIOS } from '../shared/battle/scenarios.ts';
@@ -17,6 +18,7 @@ import {
   UNIT_DEFS,
   type UnitDef,
 } from '../shared/battle/units.ts';
+import type { ActAction } from './act-flow.ts';
 import type { Command } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 
@@ -140,7 +142,14 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
     if (e.k === 'attack') {
       flush();
       head = `${name(e.unit)}: ${abilityName(e.ability)} → `;
-    } else if (e.k === 'charge') {
+    } else if (e.k === 'item') {
+      flush();
+      head = `${name(e.unit)}: ${itemName(e.item)} → `;
+    } else if (e.k === 'mana')
+      parts.push(t(`${name(e.unit)} +${e.amount} de mana`, `${name(e.unit)} +${e.amount} mana`));
+    else if (e.k === 'effect')
+      parts.push(t(`${name(e.unit)} por ${e.turns} turnos`, `${name(e.unit)} for ${e.turns} turns`));
+    else if (e.k === 'charge') {
       flush();
       out.push(
         t(`${name(e.unit)} carrega ${abilityName(e.ability)}`, `${name(e.unit)} charges ${abilityName(e.ability)}`),
@@ -170,6 +179,26 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
   }
   flush();
   return out.join(' | ');
+}
+
+// an item's name from the bag (src/content/items.ts), in the player's language
+export const itemName = (id: string) => {
+  const c = CONSUMABLE[id];
+  return c ? t(c.name, c.en) : id;
+};
+// why an Agir primeiro action is off, in words under its row (Fernando's grill of Nov 19: a short line, always visible)
+export function actReason(a: ActAction): string {
+  if (a.reason === 'spent' && a.pool)
+    return t(`faltam ${a.missing} de ${poolName(a.pool)}`, `${a.missing} ${poolName(a.pool)} short`);
+  const words: Record<string, () => string> = {
+    used: () => t('já agiu neste turno', 'already acted this turn'),
+    range: () => t('fora de alcance, mesmo andando', 'out of reach, even walking'),
+    sight: () => t('sem linha de visão', 'no line of sight'),
+    'no-target': () => t('não atinge este alvo', 'cannot reach this target'),
+    water: () => t('nadando: só anda ou espera', 'swimming: only walk or wait'),
+    none: () => t('acabou', 'none left'),
+  };
+  return words[a.reason ?? '']?.() ?? '';
 }
 
 export const ELEMENT_NAME: Record<Element, () => string> = {
