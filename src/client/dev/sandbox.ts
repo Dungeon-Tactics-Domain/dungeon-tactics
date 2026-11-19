@@ -155,6 +155,7 @@ export function install(game: Game, scene: BattleScene) {
     keep(scene.setHighlights.bind(scene)),
     keep(scene.setCursor.bind(scene)),
     keep(scene.setRangeRing.bind(scene)),
+    keep(scene.setTrajectory.bind(scene)),
     keep(scene.setChargeLines.bind(scene)),
     keep(scene.setChargePreview.bind(scene)),
     keep(scene.setCounters.bind(scene)),
@@ -164,11 +165,12 @@ export function install(game: Game, scene: BattleScene) {
     scene.setHighlights,
     scene.setCursor,
     scene.setRangeRing,
+    scene.setTrajectory,
     scene.setChargeLines,
     scene.setChargePreview,
     scene.setCounters,
     scene.setCursorNote,
-  ] = [marked[0][0], marked[1][0], marked[2][0], marked[3][0], marked[4][0], marked[5][0], marked[6][0]];
+  ] = [marked[0][0], marked[1][0], marked[2][0], marked[3][0], marked[4][0], marked[5][0], marked[6][0], marked[7][0]];
   // a fixed camera (bench) stays where the spec put it: the game's slides to whoever acts are dropped
   const focus = scene.focusOn.bind(scene);
   let fixed = false;

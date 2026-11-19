@@ -1,6 +1,6 @@
 import type { Battle } from '../shared/battle/battle.ts';
 import { COMBAT, type Preview, previewAbility } from '../shared/battle/combat.ts';
-import { basicOf, isRanged, pendingCounters } from '../shared/battle/counter.ts';
+import { basicOf, canCounter, inContact, isRanged, pendingCounters } from '../shared/battle/counter.ts';
 import { type Grid, posKey, subOf } from '../shared/battle/grid.ts';
 import { aimTile, unitAt } from '../shared/battle/pathing.ts';
 import { chargeAim } from '../shared/battle/turn-queue.ts';
@@ -64,6 +64,24 @@ function counterOf(b: Battle, out: Counters, u: UnitState, p: Preview, at: Pos) 
   const there = { ...b.state, units: b.state.units.map((x) => (x.id === me.id ? { ...x, pos: at } : x)) };
   if (isRanged(basicOf(u.def))) out.lines.push(lineOf(b.grid, there, u.id, p, { pos: at, size: square(me).size }));
   else out.melee.push({ from: square(u), to: square(me) });
+}
+
+// Aiming (Nov 15; from the picked tile since Nov 19): who this strike would leave owed a counter, whoever could strike the
+// actor where it will stand (rom; walking out of that reach draws it) and a shooter it stands too close to (walking out of
+// that contact draws its shot), as the line or the mark over its head
+export function countersOwed(b: Battle, ability: string, p: Preview, from: Pos = b.actor.pos): Counters {
+  const out: Counters = { lines: [], melee: [] };
+  const moved = { ...b.state, units: b.state.units.map((x) => (x.id === b.actor.id ? { ...x, pos: from } : x)) };
+  for (const t of p.targets) {
+    const u = b.state.units.find((x) => x.id === t.unit)!;
+    if (!canCounter(b.actor, ability, u)) continue;
+    const back = previewAbility(b.grid, moved, u.id, basicOf(u.def), from, true);
+    if (back.ok) counterOf(b, out, u, back, from);
+    else if (inContact(b.grid, moved, u, from)) out.melee.push({ from: square(u), to: square(b.actor) });
+  }
+  // a melee mark points at the tile the actor will stand on, not the one it leaves
+  out.melee = out.melee.map((m) => ({ ...m, to: { pos: from, size: square(b.actor).size } }));
+  return out;
 }
 
 // Choosing where to walk: the counters that destination would draw, from the rule's own reading (pendingCounters)

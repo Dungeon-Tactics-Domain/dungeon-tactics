@@ -1,12 +1,14 @@
 // What the scene marks during the hero's turn, from the turn screen, the Ui and the cursor: tiles, counters, cursor frame
 // and range ring. Pure; the Game applies it to the scene.
+import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { posKey, samePos } from '../shared/battle/grid.ts';
 import { cellsOf, farCells, footprint } from '../shared/battle/pathing.ts';
+import { traceShot } from '../shared/battle/shot.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { actMarks, actScreen } from './act-marks.ts';
-import { chargeFrom, counterDamage, countersFrom } from './charge-lines.ts';
+import { actMarks, actScreen, spotAim } from './act-marks.ts';
+import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import { longestRange, type Screen } from './command.ts';
 import { facingHighlights, type Highlights, highlights, rangeMarks, type Ui } from './interaction.ts';
 
@@ -29,6 +31,7 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
                 path: null,
                 preview: null,
               };
+  const spot = live && !range ? spotAim(b, s) : null; // the tile screen of an ability: the strike from the picked tile
   const moving = s.k === 'map';
   const landing = hl && moving && b.reach().has(posKey(cursor)); // the cursor is on a tile the move can end on
   const owed = landing && counterDamage(b, cursor);
@@ -39,13 +42,24 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
   // it can be reached), to see where the strike reaches before moving
   const ringAt =
     !hl || range || s.k === 'facing' || (s.k !== 'menu' && !moving) ? null : landing ? cursor : b.actor.pos;
+  // the shot line and the cast area (Nov 13, "like Tactics Ogre"; the trajectory grill of Nov 15; Nov 19 on the tile screen):
+  // a flying ability shows the rule's own path to its aim, red past where it stops, traced from where the unit will stand
+  // (the picked tile); a spell cast on the target shows its area and a still line instead
+  const a = spot ? ABILITIES[spot.ability] : undefined;
+  const onSelf = !!spot && samePos(spot.from, spot.target);
+  const caster = spot && { ...b.actor, pos: spot.from };
   return {
     hl,
     // a charging unit picking where to walk sees its shot as it would fire from there (Nov 15, Fernando: "so the player
     // knows where to stand"): the destination's square must fit, like the move itself
     charge: landing ? chargeFrom(b, cursor) : null,
-    // walking, what that destination draws in counters
-    counters: landing ? countersFrom(b, cursor) : null,
+    // walking, what that destination draws in counters; on the tile screen, who the strike would leave owed one
+    counters:
+      spot && hl?.preview
+        ? countersOwed(b, spot.ability, hl.preview, spot.from)
+        : landing
+          ? countersFrom(b, cursor)
+          : null,
     note: owed ? `−${owed[0] === owed[1] ? owed[0] : `${owed[0]}–${owed[1]}`}` : null,
     cursor: hl ? cursor : null,
     size,
@@ -53,5 +67,12 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
     ring: ringAt
       ? { from: cellsOf(ringAt, UNIT_DEFS[b.actor.def].size ?? 1), range: farCells(b.grid, longestRange(b)) }
       : null,
+    trajectory:
+      a && caster && spot && (a.needsSight ? !onSelf : a.magic && a.range[1] > 0)
+        ? {
+            shot: traceShot(b.grid, b.state, caster, spot.target, !!a.arc),
+            cast: a.needsSight ? null : { radius: a.radius, heal: a.heal[1] > 0 },
+          }
+        : null,
   };
 }

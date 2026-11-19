@@ -79,7 +79,7 @@ sun-like lights of its own, which follows the style as it is changed.
 - **What takes the style:** the marked tiles (move, strike range, threat, area, target, blocked, no-fit, counter) and
   the charge danger, the path studs, the cursor frame and arrow, the team ring and front arrow under each unit, the
   dotted range ring, the map's dotted border, the charge lines, the counter lines and arrows, and the shot preview
-  (dots, landing ring, cast circle and its dashed line, the X).
+  (dots, landing ring, cast circle and its dashed line, the X; on the Agir tile screen, traced from the picked tile).
 - **Luz (default):** light etched in the ground. A low strip with chamfered edges round each tile and a sheet of deep
   glass inside, glowing in the mark's colour and breathing slowly (FFT's blue move tile and ring of light).
 - **Pedra:** pieces of stone and metal. A chiselled stone curb round each tile (the terrain's own `tex/cliff.jpg` under

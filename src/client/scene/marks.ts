@@ -1,10 +1,10 @@
 // Everything drawn on the board to read a choice: tile marks of each kind (looks in mark-looks.ts), the charge danger, the
-// path dots, the keyboard cursor, the dotted range ring (range-ring.ts) and the town's
+// path dots, the keyboard cursor, the dotted range ring (range-ring.ts), the shot trajectory (trajectory.ts) and the town's
 // debug grid. It only draws what the scene passes in.
 import * as THREE from 'three';
 import { inBounds, posKey } from '../../shared/battle/grid.ts';
 import { cellsOf } from '../../shared/battle/pathing.ts';
-import type { Pos } from '../../shared/battle/types.ts';
+import type { Pos, Shot } from '../../shared/battle/types.ts';
 import type { Highlights } from '../interaction.ts';
 import { MARKER } from '../markers.ts';
 import { reducedMotion } from '../motion.ts';
@@ -24,6 +24,7 @@ import {
 import { DANGER, MARK, type MarkPattern, markTexture } from './mark-looks.ts';
 import { rangeRing } from './range-ring.ts';
 import type { TileSpace } from './space.ts';
+import { type Aim, animateAim, disposeAim, trajectory } from './trajectory.ts';
 
 const CURSOR = { frame: '#ffffff', arrow: '#ffcf4a' }; // the cursor's colors when the square fits
 const NONE = new THREE.BufferGeometry(); // a lit tile mark before its first showing (its geometry is built then)
@@ -191,6 +192,7 @@ export class Marks {
     else
       for (const m of this.marks.values())
         if (m.visible) (m.material as THREE.MeshBasicMaterial).opacity = m.userData.base * (0.8 + 0.2 * wave);
+    if (this.aim) animateAim(this.aim, this.space, this.camera);
   }
 
   // Dotted line of the longest range (Nov 13, Fernando's request: "around the character the range of
@@ -212,6 +214,19 @@ export class Marks {
     const mesh = rangeRing(this.space, r, this.style, this.ground);
     this.root.add(mesh);
     this.ring = { key, mesh };
+  }
+
+  // Shot preview (trajectory.ts), rebuilt on every cursor change, animated in update
+  private aim: Aim | null = null;
+  setTrajectory(t: { shot: Shot; cast: { radius: number; heal: boolean } | null } | null) {
+    if (this.aim) {
+      this.root.remove(this.aim.group);
+      disposeAim(this.aim);
+      this.aim = null;
+    }
+    if (!t) return;
+    this.aim = trajectory(this.space, t, this.style);
+    this.root.add(this.aim.group);
   }
 
   // where the cursor stands now (it slides), null when hidden

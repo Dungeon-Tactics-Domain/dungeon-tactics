@@ -281,6 +281,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/mark-kit.ts` — the lit mark styles' pieces: strips swept along a path, bent over the drawn ground, their lit materials and code-drawn relief.
 - `src/client/scene/mark-textures.ts` — the lit mark styles' textures drawn by code: grain, stone, the reflected sky and each tile drawing as colour and relief.
 - `src/client/scene/mark-looks.ts` — what each tile mark looks like: MARK colours and drawings, the danger purple and markTexture.
+- `src/client/scene/trajectory.ts` — the shot preview on the Agir tile screen: dots along the rule's path (red past where it stops, with an X) or a spell's area and a still line.
 - `src/client/scene/range-ring.ts` — rangeRing: the dotted outline of the tiles within the longest range, laid on the ground.
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
 - `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin and action camera.

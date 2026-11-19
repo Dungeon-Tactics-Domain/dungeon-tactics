@@ -133,6 +133,10 @@ export class BattleScene {
     this.sync(state);
   }
 
+  setTrajectory(t: Parameters<Marks['setTrajectory']>[0]) {
+    this.marks.setTrajectory(t);
+  }
+
   // every charge's line (sync keeps them, Nov 15); a method so the sandbox's `hide: marks` can hold it like the other marks
   setChargeLines(lines: ChargeLine[] | null) {
     this.chargeLines.set(lines);

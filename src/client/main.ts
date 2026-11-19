@@ -196,6 +196,7 @@ export class Game implements TurnHost {
     this.scene.setCursorNote(m.note);
     this.scene.setCursor(m.cursor, m.size, m.fits);
     this.scene.setRangeRing(m.ring);
+    this.scene.setTrajectory(m.trajectory);
     this.hud.render({
       battle: this.battle,
       screen: s,

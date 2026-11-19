@@ -60,10 +60,10 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
 }
 
 // On the tile choice, the ability and where it is aimed from the picked tile, for the HUD's forecast strips and turn list
-// (an item has no strike to forecast)
-export function spotAim(b: Battle, s: Screen): { ability: string; target: Pos } | null {
+// (an item has no strike to forecast). `from`: the picked tile, where the unit will stand to strike
+export function spotAim(b: Battle, s: Screen): { ability: string; target: Pos; from: Pos } | null {
   if (s.k !== 'spot') return null;
   const a = screenAction(b, s);
   const spot = a?.spots[s.index];
-  return a?.k === 'ability' && spot ? { ability: a.id, target: spot.aim } : null;
+  return a?.k === 'ability' && spot ? { ability: a.id, target: spot.aim, from: spot.pos } : null;
 }
