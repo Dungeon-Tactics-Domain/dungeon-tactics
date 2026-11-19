@@ -1564,6 +1564,7 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
 }
 .hud.turn3d .queue-row {
   flex: none;
+  position: relative; /* the round tag is absolute: with no positioned row it sat on the list's corner, over another card's taps */
   /* never shorter than the two 16 px lines and two bars beside the card take (Nov 17; queue-view.ts statsLayout): on a
      low screen the cards stop shrinking and the list scrolls; on a narrow page the floor shrinks with the pieces (--t3f) */
   width: max(calc(44px * var(--t3)), 41px * var(--t3f, 1));

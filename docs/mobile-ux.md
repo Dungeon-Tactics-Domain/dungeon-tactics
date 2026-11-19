@@ -89,6 +89,10 @@ do not rearrange the layout only to reach that number.*
   `PHONE_SHRINK` and `phonePage` (`ui3d/layout.ts`: a finger and the page's shorter side under 600 px), the layer's
   `small` stage; their 3D text keeps a 9 px floor (`PHONE_TEXT`). A tablet and a PC do not change. The bar's unseen
   panel follows (`--bar-k`, style.css).
+- **A turn card's hit area is at least 28 px tall** (Nov 19): the phone's cards, drawn at 65%, have a portrait frame of
+  about 23 px and an unseen row of 27 px that takes the tap, so each unseen row's box reaches `tapGrow` px over the gap on each side (padding and an equal negative margin: the drawing, the
+  column's flow and the scroll do not move; `queue-layout.ts`, `queue-seat.ts`). The row is a positioned box now, so its
+  round tag no longer sits on the list's corner over another card's taps. A drag on a card or its stats still scrolls.
 - **The turn list starts under the top margin** and its title never covers a card: a list longer than its box drops its
   top to the first whole row (`queueLayout`, `turn3d/queue-layout.ts`).
 - **The command menu never covers the acting unit's sheet** (at 844×390 it hid the end of the stamina, "50/5"); where the
