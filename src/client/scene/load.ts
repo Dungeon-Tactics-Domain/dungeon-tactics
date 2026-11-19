@@ -22,8 +22,11 @@ export async function loadBattleAssets(grid: Grid, state: BattleState, all: stri
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   // the map's bodies and a resumed battle's corpses (Units.restoreCorpses) wear these models
   const corpses = grid.tiles.some((t) => t.look === 'corpse') || state.corpses?.length ? CORPSE_MODELS : [];
+  const dead = Object.values(state.corpseDefs ?? {}); // the saved corpses wear their own unit's model
   const defs = [
-    ...new Set([...[...state.units.map((u) => u.def), ...all].map((d) => modelOf(d)), ...corpses].filter(Boolean)),
+    ...new Set(
+      [...[...state.units.map((u) => u.def), ...all, ...dead].map((d) => modelOf(d)), ...corpses].filter(Boolean),
+    ),
   ];
   const [top, side, stone, tree, ...loaded] = await Promise.all([
     ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/square/${n}.gltf`)),

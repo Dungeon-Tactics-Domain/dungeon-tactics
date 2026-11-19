@@ -3,6 +3,14 @@
 // token (a 2x2-cell token lies as one body, not four halves) and any cell left over gets a body of its own.
 import { posKey } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
+import { UNIT_DEFS } from '../shared/battle/units.ts';
+import { modelOf } from './markers.ts';
+import { CORPSE_MODELS } from './scene/board-looks.ts';
+
+// the model a body wears: the dead unit's own (BattleState.corpseDefs, Nov 19), else the stock knight/rogue of a map body or of
+// a save from before the field
+export const corpseModel = (p: Pos, def?: string): string =>
+  (def && UNIT_DEFS[def] && modelOf(def)) || CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length];
 
 export function corpseSquares(cells: Pos[], sub: number): { p: Pos; span: number }[] {
   const left = new Set(cells.map(posKey));

@@ -59,6 +59,9 @@ export interface BattleState {
   // cells the dead lie on, a large unit's whole square (Fernando, Nov 16): nobody stops there, anyone passes over
   // (pathing.ts noStopAt). They stay to the end of the battle; absent = none (a save from before, a battle without deaths)
   corpses?: Pos[];
+  // what died on each corpse cell, by `posKey` (Nov 19: a resumed battle draws the dead unit's model, not a stock body); a save
+  // from before has none and the scene falls back to the stock bodies
+  corpseDefs?: Record<string, string>;
 }
 
 // A point of a shot's path (pathing.ts traceShot): x and y in cells from the map's corner (a cell's middle is +0.5), h in

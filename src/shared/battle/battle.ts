@@ -365,6 +365,7 @@ export function parseBattleState(raw: unknown): BattleState | null {
   // corpses (Nov 16): the rule never saves an empty list nor a cell twice (a repeat would count twice), and nobody stands
   // on a body, so a unit's cell there is an edited save
   let corpses: Pos[] | undefined;
+  let corpseDefs: Record<string, string> | undefined;
   if (raw.corpses !== undefined) {
     if (!Array.isArray(raw.corpses) || raw.corpses.length > grid.width * grid.height) return null;
     const seen = new Set<string>();
@@ -376,6 +377,11 @@ export function parseBattleState(raw: unknown): BattleState | null {
       if (!seen.has(posKey(p))) corpses.push(p);
       seen.add(posKey(p));
     }
+    // what lay there (Nov 19): only a known unit on a kept cell; a bad entry is dropped, the save still loads
+    if (isObj(raw.corpseDefs))
+      corpseDefs = Object.fromEntries(
+        Object.entries(raw.corpseDefs).filter(([k, d]) => seen.has(k) && typeof d === 'string' && d in UNIT_DEFS),
+      ) as Record<string, string>;
   }
   return {
     scenario: raw.scenario,
@@ -386,5 +392,6 @@ export function parseBattleState(raw: unknown): BattleState | null {
     outcome: raw.outcome,
     turnsPlayed: raw.turnsPlayed,
     ...(corpses?.length && { corpses }),
+    ...(corpseDefs && Object.keys(corpseDefs).length > 0 && { corpseDefs }),
   };
 }

@@ -7,6 +7,7 @@ import {
   type Grid,
   inBounds,
   isDeep,
+  posKey,
   type Side,
   sideOf,
   standH,
@@ -325,6 +326,7 @@ function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEv
   state.units = state.units.filter((u) => u !== unit);
   // a new array: the AI's state copies share the old one
   state.corpses = [...(state.corpses ?? []), ...footprint(unit)];
+  state.corpseDefs = { ...state.corpseDefs, ...Object.fromEntries(footprint(unit).map((c) => [posKey(c), unit.def])) };
   // nor does it owe a counter (a friendly shot may kill it mid-move), and a save naming it would not load
   state.turn.engaged = state.turn.engaged?.filter((id) => id !== unit.id);
   // the charge of whoever dies no longer fires; the one that followed the dead unit now aims at the tile where it was
