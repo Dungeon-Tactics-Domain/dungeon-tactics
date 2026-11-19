@@ -1,19 +1,19 @@
 // What touch does in battle, without DOM or Three (testable): bar mode, chosen tile waiting for Confirm and
 // unit under inspection. The scene and the HUD only draw what `highlights` returns.
-import { ABILITIES } from '../shared/battle/abilities.ts';
+import { ABILITIES, type AbilityDef } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { type Preview, previewAbility } from '../shared/battle/combat.ts';
 import { pendingCounters } from '../shared/battle/counter.ts';
-import { FACING, type Grid, inBounds, posKey, samePos } from '../shared/battle/grid.ts';
+import { FACING, type Grid, inBounds, posKey, samePos, subOf } from '../shared/battle/grid.ts';
 import {
   aimEnds,
   aimTile,
   areaOf,
   cellsOf,
+  closest,
   footprint,
   inAbilityRange,
   inArea,
-  nearestTile,
   pathTo,
   reachable,
   unitAt,
@@ -119,16 +119,20 @@ export function allTiles(b: Battle): Pos[] {
 
 // What the unit can hit on its next turn: move and then use any ability (without checking sight;
 // it's the "enemy range" of the puzzle pillar, a wide warning and not the exact prediction)
-function threat(b: Battle, unitId: string): Pos[] {
+export function threat(b: Battle, unitId: string): Pos[] {
   const u = b.state.units.find((x) => x.id === unitId)!;
   const def = UNIT_DEFS[u.def];
   if (!def.abilities.length) return [];
   const spots = [u.pos, ...[...reachable(b.grid, b.state, unitId).values()].map((s) => s.pos)];
-  // from the square's cell nearest to the tile, like the rule (a token occupies 2x2 cells)
-  const from = (s: Pos, t: Pos) => nearestTile({ ...u, pos: s }, t);
-  return allTiles(b).filter((t) =>
-    def.abilities.some((a) => spots.some((s) => inAbilityRange(b.grid, ABILITIES[a], from(s, t), t))),
-  );
+  const size = def.size ?? 1;
+  // the rule's own reading (aimEnds): the square's cell nearest to the aimed whole tile's square; the tile's side is worked out once per cell
+  return allTiles(b).filter((t) => {
+    const area = areaOf(b.grid, b.state, aimTile(b.grid, b.state, t));
+    return spots.some((s) => {
+      const ends = closest(cellsOf(s, size), area);
+      return def.abilities.some((a) => inAbilityRange(b.grid, ABILITIES[a], ...ends));
+    });
+  });
 }
 
 // Another unit's range, from its mini menu (unit-peek.ts; Fernando, Nov 18 night): where it walks in blue, what it
@@ -187,8 +191,8 @@ export function highlights(b: Battle, ui: Ui, cursor?: Pos): Highlights {
     if (ui.pending) {
       preview = b.preview(a.id, ui.pending);
       const area = areaOf(b.grid, b.state, preview.center);
-      for (const t of allTiles(b))
-        if (a.radius > 0 && inArea(b.grid, area, a.radius, [t]) && !own.some((p) => samePos(p, t))) mark(t, 'area');
+      if (a.radius > 0)
+        for (const t of areaCells(b.grid, area, a.radius)) if (!own.some((p) => samePos(p, t))) mark(t, 'area');
     }
   }
   if (!b.over) for (const c of footprint(b.actor)) mark(c, 'actor');
@@ -246,6 +250,26 @@ export function facingHighlights(b: Battle): Highlights {
   };
 }
 
+// Every cell of the whole tiles an area touches: the rule hits any token whose 2x2 touches it, so painting by cell left tiles
+// half lit (Nov 19)
+export function areaCells(grid: Grid, area: Pos[], radius: number): Pos[] {
+  const k = subOf(grid);
+  const out: Pos[] = [];
+  for (let y = 0; y < grid.height; y += k)
+    for (let x = 0; x < grid.width; x += k) {
+      const tile = cellsOf({ x, y }, k);
+      if (inArea(grid, area, radius, tile)) out.push(...tile);
+    }
+  return out;
+}
+
+// What the banner before an attack marks: the aimed cell as the target and the ability's area around it
+export function attackMarks(b: Battle, a: AbilityDef, target: Pos): { pos: Pos; kind: TileKind }[] {
+  const area =
+    a.radius > 0 ? areaCells(b.grid, areaOf(b.grid, b.state, aimTile(b.grid, b.state, target)), a.radius) : [];
+  return [target, ...area.filter((p) => !samePos(p, target))].map((pos, i) => ({ pos, kind: i ? 'area' : 'target' }));
+}
+
 // Tiles the queued charges will hit (night of Nov 12): a charged spell follows the unit (follow) and the Aimed Shot's
 // stays on its tile; the area is the ability's radius around it. The scene paints it purple and the HUD says it in text, to give time to leave.
 export function chargeDanger(grid: Grid, state: BattleState): Map<string, string> {
@@ -261,8 +285,7 @@ export function chargeDanger(grid: Grid, state: BattleState): Map<string, string
     // a charge aimed at a cell lands on its whole tile, as when it fires (previewAbility)
     const r = ABILITIES[c.ability].radius,
       area = areaOf(grid, state, aimTile(grid, state, center));
-    for (let y = 0; y < grid.height; y++)
-      for (let x = 0; x < grid.width; x++) if (inArea(grid, area, r, [{ x, y }])) out.set(posKey({ x, y }), c.ability);
+    for (const p of areaCells(grid, area, r)) out.set(posKey(p), c.ability);
   }
   return out;
 }

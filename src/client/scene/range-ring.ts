@@ -1,11 +1,16 @@
 // The dotted ring of the longest range: the outline of the tiles within reach, laid on the ground as short flat dashes,
 // or in a lit style (mark-kit.ts) as short bevelled strips bent over the ground.
 import * as THREE from 'three';
-import { inBounds, posKey } from '../../shared/battle/grid.ts';
-import { gap } from '../../shared/battle/pathing.ts';
+import { type Grid, inBounds, posKey, subOf } from '../../shared/battle/grid.ts';
+import { cellsOf, gap } from '../../shared/battle/pathing.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { type Ground, type Lit, onGround, type Path, piece } from './mark-kit.ts';
 import type { TileSpace } from './space.ts';
+
+// Is the cell's tile within `range` cells of the unit's cells `from`? Measured to the whole tile's square, like the rule
+export const inRing = (grid: Grid, r: { from: Pos[]; range: number }, p: Pos) =>
+  inBounds(grid, p) && gap(r.from, cellsOf(tileOf(grid, p), subOf(grid))) <= r.range;
+const tileOf = (grid: Grid, p: Pos): Pos => ({ x: p.x - (p.x % subOf(grid)), y: p.y - (p.y % subOf(grid)) });
 
 // Outline of the tiles within `range` cells of the unit's cells `from` (the same distance as the rule), at each tile's
 // ground height
@@ -18,7 +23,7 @@ export function rangeRing(
   const { width: W, height: H } = space.grid,
     pos: number[] = [],
     strips: Path[] = [];
-  const inside = (p: Pos) => inBounds(space.grid, p) && gap(r.from, [p]) <= r.range;
+  const inside = (p: Pos) => inRing(space.grid, r, p);
   const yAt = (p: Pos, x: number, z: number) =>
     (space.levels.get(posKey(p))?.surface ?? space.surfaceY(p, x, z)) + 0.05;
   // flat little dash lying on the ground (WebGL's 1 px line barely showed): 2 triangles from `a` to `b`, 0.07 wide

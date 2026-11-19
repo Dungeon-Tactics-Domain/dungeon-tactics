@@ -2,14 +2,14 @@
 // every strike shows its name in a banner with the hit area marked).
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { dist, samePos, subOf } from '../shared/battle/grid.ts';
+import { dist, subOf } from '../shared/battle/grid.ts';
 import { cellsOf, squareH } from '../shared/battle/pathing.ts';
 import type { BattleEvent } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { lookOf } from './fx.ts';
 import type { BattleHud } from './hud.ts';
 import { abilityName } from './i18n.ts';
-import { allTiles, type Highlights } from './interaction.ts';
+import { attackMarks, type Highlights } from './interaction.ts';
 import { rampLink } from './scene/space.ts';
 import type { BattleScene } from './scene.ts';
 import { type Sfx, sfx } from './sound.ts';
@@ -87,15 +87,8 @@ export async function beforeEvent(e: BattleEvent, enemy: boolean, battle: Battle
     const a = ABILITIES[e.ability];
     const me = battle.state.units.find((u) => u.id === e.unit);
     if (me) scene.focusOn(me.pos, e.target);
-    const area = [
-      e.target,
-      ...allTiles(battle).filter((p) => a.radius > 0 && dist(p, e.target) <= a.radius && !samePos(p, e.target)),
-    ];
     hud.banner(abilityName(e.ability));
-    await show(
-      { tiles: area.map((pos, i) => ({ pos, kind: i ? 'area' : 'target' })), path: null, preview: null },
-      TIMING.banner,
-    );
+    await show({ tiles: attackMarks(battle, a, e.target), path: null, preview: null }, TIMING.banner);
     sound(e, battle, scene);
   }
 }
