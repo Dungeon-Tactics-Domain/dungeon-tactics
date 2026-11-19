@@ -6,6 +6,13 @@ The rules of a battle in `src/shared/battle`, moved out of `src/shared/CLAUDE.md
 
 - **FFT turn rules on every map** (Nov 12, Fernando's request): turn cost 100/80/60, tie-break by the list with enemies first, and actions with charge (`AbilityDef.charge`, `BattleState.charges`), sourced in `turn-queue.ts` (BMG 1.1 and A.2). A strong ability is slow because of its charge, not because of a delay.
 
+## Act first
+
+- **What a unit can do is worked out at the start of the turn** (Nov 19, Fernando's grill "Agir primeiro"; engine only, the interface comes later): `actionOptions(grid, state, id)` (`options.ts`) gives, for each of the unit's abilities (the basic attack first), the targets it can reach by walking and then acting inside the turn's movement budget (`turn.spent`, the same `reachable` as `Battle.reach`, step cost 1), and for each target the tiles it may act from (`Spot`: tile, walking cost, and the `Preview` from there). Targets: units, enemies before allies and near to far; then the user (`self`: centered or support abilities) and ground tiles around units for an area (`tile`).
+- `previewAbility` takes an optional `origin`, the tile the actor would act from (a copy of the state with the actor moved), so range, sight, area, push and the hit chance read that tile; without it, where the actor stands.
+- An ability that works nowhere is off with a reason: `spent` (with the pool and how much is missing), `range` (nothing reachable even walking), `sight` (reachable but the shot is stopped on the way), `no-target` (nothing to hit: a centered area with nobody near), `water` (deep water on every tile it could act from; with a shore within the walk, the action is on from there), `used` (the turn's action is gone). Items are not in it yet. The AI does not read it.
+- Not simulated: the counters a walk would draw, and ground targets are only the tiles around each unit (one per whole tile on the split map), not every tile in range. No preview is asked for a pair of tiles too far apart to be in range. Measured on Nov 19, the worst hero of each of the six maps: 8 to 14 ms at the spawns and 14 to 20 ms with the teams close, on the half-tile maps the game plays; 2 to 5 ms on the whole-tile ones. `closest`, `gap` and `unitAt` (`pathing.ts`) became plain loops for it.
+
 ## Water
 
 - **Water on every map** (Nov 12, Fernando's decision "like FFT", BMG 6.5): `Tile.depth` is optional; 1 = shallow, 2 or more = deep (`isDeep`).

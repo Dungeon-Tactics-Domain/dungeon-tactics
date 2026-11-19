@@ -111,7 +111,7 @@ const sideShare = (actor: UnitState, u: UnitState, heal: boolean) =>
   (u.team === actor.team) !== heal ? COMBAT.FRIENDLY_FIRE : 1;
 const healHurts = (a: AbilityDef, u: UnitState) => a.heal[1] > 0 && !!UNIT_DEFS[u.def].undead;
 // swimming: the whole square in deep water (a token with a foot on the bank still acts)
-const inDeep = (grid: Grid, u: UnitState) => footprint(u).every((c) => isDeep(tileAt(grid, c)));
+export const inDeep = (grid: Grid, u: UnitState) => footprint(u).every((c) => isDeep(tileAt(grid, c)));
 
 // `side`: where the hit catches the target (sideOf); spells too since Nov 15 (Fernando's grill)
 export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, side: Side = 'front'): number {
@@ -171,7 +171,9 @@ export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef,
 
 // What the ability would do if confirmed, without touching the state: the interface shows this before Confirm (pillar "readable luck").
 
-// `charged`: it is the charge firing now; the cost (MP, stock) was already paid when it started
+// `charged`: it is the charge firing now; the cost (MP, stock) was already paid when it started.
+// `origin`: where the actor would stand to act (Agir primeiro, options.ts); without it, where it stands now. A copy of the
+// state with the actor moved, so range, sight, area, push and counters all read the same cell
 export function previewAbility(
   grid: Grid,
   state: BattleState,
@@ -179,8 +181,13 @@ export function previewAbility(
   abilityId: string,
   target: Pos,
   charged = false,
+  origin?: Pos,
 ): Preview {
   const actor = state.units.find((u) => u.id === actorId);
+  if (actor && origin && posKey(origin) !== posKey(actor.pos)) {
+    const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: origin } : u)) };
+    return previewAbility(grid, moved, actorId, abilityId, target, charged);
+  }
   const ability = ABILITIES[abilityId];
   let center = ability && ability.range[1] === 0 && actor ? actor.pos : target;
   const fail = (reason: PreviewReason): Preview => ({ ok: false, reason, center, targets: [] });
