@@ -91,6 +91,18 @@ export function optionsLayout(w: number, h: number, cats: number, rows: number, 
   };
 }
 
+// Where the sample under the description stands (marks-preview.ts): what is left of the side box under the text, which
+// keeps its size (14 px on a tablet, 16 on a PC: the layout makes room, never cuts words). `from`: where the text ends.
+// null when what is left is under PREVIEW_MIN px tall: a sample that small shows nothing
+export const PREVIEW_MIN = 56;
+export const previewBox = (L: OptionsLayout, from: number): Box | null => {
+  const pad = 24 * L.s,
+    y = from + pad / 2,
+    w = L.side.w - 2 * pad,
+    h = Math.min(w * 0.9, L.side.y + L.side.h - pad - y);
+  return h < PREVIEW_MIN ? null : { x: L.side.x + pad, y, w, h };
+};
+
 // row `i` on the page, with the list scrolled by `scroll` px
 export const itemBox = (L: OptionsLayout, i: number, scroll: number): Box => ({
   x: L.list.x,

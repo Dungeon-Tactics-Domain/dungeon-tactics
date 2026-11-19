@@ -72,6 +72,9 @@ want nothing flat". Three lit styles and the flat one of before, picked in Optio
 (Simple, Light, Stone, Neon), saved in `dt:marks` (`mark-style.ts`, pure choice tested in `tests/mark-style.test.ts`);
 `?marks=simples|luz|pedra|neon` in the address wins when the page opens, and a sandbox spec's `marks` sets it for its
 page. No automatic fallback: the player picks. A change applies at once (`BattleScene.restyle` builds the marks again).
+With the Marks row in focus, the 3D Options show a sample under its description (`flow3d/marks-preview.ts`, Nov 19): five by
+five tiles with a walk area, a strike area, the acting tile, a path and the cursor, made of the same `mark-kit` pieces and
+sun-like lights of its own, which follows the style as it is changed.
 
 - **What takes the style:** the marked tiles (move, strike range, threat, area, target, blocked, no-fit, counter) and
   the charge danger, the path studs, the cursor frame and arrow, the team ring and front arrow under each unit, the

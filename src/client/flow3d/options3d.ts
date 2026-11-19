@@ -19,25 +19,28 @@ import { t } from '../i18n.ts';
 import { button, el } from '../icons.ts';
 import { keysShown, onShown } from '../key-hints.ts';
 import { fill } from '../looks3d.ts';
+import { getMarkStyle } from '../mark-style.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { textPx } from '../ui3d/layout.ts';
 import { ease } from '../ui3d/spring.ts';
 import { textMesh } from '../ui3d/text.ts';
 import type { Way } from '../ui3d/walk.ts';
 import { type Colors, colors, FOCUS, Hand, lift, put, rgba } from './draw.ts';
+import { MarksPreview } from './marks-preview.ts';
 import {
   itemBox,
   type OptionsLayout,
   optionsLayout,
   optionsTab,
   optionsWalk,
+  previewBox,
   REF,
   type Spot,
   shown,
   thumb,
 } from './options-layout.ts';
 import { drawRow } from './options-row.ts';
-import { optionsHints, optionsView } from './options-view.ts';
+import { optionsHints, optionsView, type RowView } from './options-view.ts';
 
 export class Options3d implements Ui3dScreen {
   readonly flat = new Group();
@@ -47,6 +50,9 @@ export class Options3d implements Ui3dScreen {
   private readonly release: () => void;
   private readonly color: Colors;
   private readonly hand = new Hand(this.deep);
+  private readonly sample = new MarksPreview(); // the marks' sample, while the Marks row is in focus
+  private view: RowView[] = [];
+  private below = 0; // where the description's text ends
   private readonly veil = new Part();
   private readonly fixed = new Part(); // title, categories, description, commands, hint band
   private readonly band = new Part(); // under the row in focus
@@ -67,6 +73,7 @@ export class Options3d implements Ui3dScreen {
   constructor(private readonly layer: Ui3dLayer) {
     this.color = colors(layer);
     this.flat.add(this.veil.group, this.band.group, this.fixed.group, this.mark.group);
+    this.deep.add(this.sample.group);
     // the focus moved or the list scrolled (scroll does not bubble: taken on its way down)
     this.host.addEventListener('focusin', () => this.touch());
     this.host.addEventListener('scroll', () => this.layer.wake(), { capture: true, passive: true });
@@ -194,6 +201,7 @@ export class Options3d implements Ui3dScreen {
   private hide() {
     this.watch.disconnect();
     this.keys?.abort();
+    this.sample.group.visible = false;
     // the list as the HTML window has it: every category under its name
     for (const e of this.board?.list.children ?? []) e.removeAttribute('style');
     this.board?.list.removeAttribute('style');
@@ -265,7 +273,7 @@ export class Options3d implements Ui3dScreen {
       sec = b?.sections[this.cat];
     if (!b || !L || !sec) return;
     this.stale = false;
-    const view = optionsView(sec.items);
+    const view = (this.view = optionsView(sec.items));
     view.forEach((row, i) => {
       const key = JSON.stringify(row);
       if (key === this.rows[i].key) return;
@@ -318,6 +326,7 @@ export class Options3d implements Ui3dScreen {
       const text = this.label(about[1], REF.size.help, c.text, d.w - 2 * pad);
       text.scale.multiplyScalar(Math.min(1, (d.y + d.h - pad - under - 12 * s) / text.scale.y));
       put(fixed, text, d.x + pad, under + 12 * s + text.scale.y / 2, 'left');
+      this.below = under + 12 * s + text.scale.y; // the sample stands under it
     }
     const focus = at?.zone === 'cmd' ? at.i : -1;
     this.buttons.forEach((e, i) => {
@@ -333,6 +342,11 @@ export class Options3d implements Ui3dScreen {
       fixed.box(-8, y, L.help.w + 16, 2 * s, 0, rgba(c.line, 0.7));
     put(fixed, this.label(hints, REF.size.help, c.text), L.helpText.x, L.helpText.y, 'centre', L.helpText.w);
     lift(fixed, 40);
+  }
+
+  // whether the row in focus has a sample to show under its description
+  private sampled(at: Spot | null) {
+    return at?.zone === 'row' && !!this.view[at.i]?.preview;
   }
 
   frame(dt: number, time: number) {
@@ -368,6 +382,7 @@ export class Options3d implements Ui3dScreen {
     const see = r ? (row ? shown(L, row) : 1) * o : 0;
     set(this.band, row ? see : 0);
     if (row) this.band.group.position.set(row.x, -row.y, 0);
+    this.sample.show((this.sampled(at) && previewBox(L, this.below)) || null, getMarkStyle(), time);
     this.hand.point(layer, r, see, Math.max(22, REF.hand * s), dt, time, still);
     return !layer.still; // the glove sways for as long as the screen shows
   }
@@ -378,6 +393,7 @@ export class Options3d implements Ui3dScreen {
     this.unhear();
     this.layer.remove(this);
     this.hand.dispose();
+    this.sample.dispose();
     this.host.remove();
   }
 }

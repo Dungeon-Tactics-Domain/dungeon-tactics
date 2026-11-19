@@ -14,6 +14,7 @@ export interface RowView {
   text: string; // the value as written
   fill: number; // bar: 0 to 1
   on: boolean; // toggle
+  preview?: 'marks'; // a sample under the description while the row is in focus
 }
 
 export const optionsView = (items: OptionsItem[]): RowView[] =>
@@ -28,6 +29,7 @@ export const optionsView = (items: OptionsItem[]): RowView[] =>
       text: o.text(),
       fill: o.bar ? Math.max(0, Math.min(1, o.bar.fill() / 100)) : 0,
       on: o.on?.() ?? false,
+      preview: o.preview,
     };
   });
 
