@@ -110,6 +110,28 @@ describe('corpses: the save', () => {
     expect(b.clone().state.corpses).toEqual(b.state.corpses);
   });
 
+  it('a kill remembers what died on each cell', () => {
+    const b = killer(flat(6, 6), { def: 'colossus', x: 1, y: 0 });
+    b.act('strike', { x: 1, y: 0 });
+    expect(b.state.corpseDefs).toEqual({ '1,0': 'colossus', '2,0': 'colossus', '1,1': 'colossus', '2,1': 'colossus' });
+  });
+
+  it('the save keeps what died, drops bad entries, and an old save has none', () => {
+    const b = Battle.start(SCENARIOS.skirmish, 7);
+    b.state.corpses = [
+      { x: 2, y: 3 },
+      { x: 4, y: 4 },
+    ];
+    b.state.corpseDefs = { '2,3': 'mage', '4,4': 'soldier' };
+    expect(Battle.load(b.save())?.state.corpseDefs).toEqual(b.state.corpseDefs);
+    expect(b.clone().state.corpseDefs).toEqual(b.state.corpseDefs);
+    const raw = JSON.parse(b.save());
+    raw.state.corpseDefs = { '2,3': 'mage', '9,9': 'mage', '4,4': 'no_such_unit' };
+    expect(Battle.load(JSON.stringify(raw))?.state.corpseDefs).toEqual({ '2,3': 'mage' });
+    delete raw.state.corpseDefs;
+    expect(Battle.load(JSON.stringify(raw))?.state.corpseDefs).toBeUndefined();
+  });
+
   it('an old save without the field loads with none', () => {
     const b = saved(undefined);
     expect(b).not.toBeNull();

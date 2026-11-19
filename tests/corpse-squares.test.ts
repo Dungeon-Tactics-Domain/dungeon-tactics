@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { corpseSquares } from '../src/client/corpse-squares.ts';
+import { corpseModel, corpseSquares } from '../src/client/corpse-squares.ts';
 
 describe('corpseSquares', () => {
   it('a whole-tile map lays one body per cell', () => {
@@ -32,5 +32,14 @@ describe('corpseSquares', () => {
     const out = corpseSquares([...cells, { x: 6, y: 0 }], 2);
     expect(out.filter((b) => b.span === 2)).toHaveLength(4);
     expect(out.find((b) => b.span === 1)).toEqual({ p: { x: 6, y: 0 }, span: 1 });
+  });
+});
+
+describe('corpseModel', () => {
+  it('wears the own model of the dead unit, else the stock knight or rogue', () => {
+    expect(corpseModel({ x: 0, y: 0 }, 'mage')).toBe('mage');
+    expect(corpseModel({ x: 0, y: 0 })).toBe('knight');
+    expect(corpseModel({ x: 1, y: 0 })).toBe('rogue');
+    expect(corpseModel({ x: 0, y: 0 }, 'no_such_unit')).toBe('knight');
   });
 });

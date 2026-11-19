@@ -5,13 +5,14 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { FACING, inBounds, posKey, tileAt } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
+import { corpseModel } from '../corpse-squares.ts';
 import { unitHeight } from '../markers.ts';
 import { boxOf as pieceBox, variant } from '../painted.ts';
 import { LITTER } from '../props.ts';
 import { hash, prepare } from '../three-util.ts';
 import type { WaterLevel } from '../water-levels.ts';
 import type { Board } from './board.ts';
-import { CORPSE_MODELS, DETAIL, LOOK, STAIRS } from './board-looks.ts';
+import { DETAIL, LOOK, STAIRS } from './board-looks.ts';
 import { groundOf, litStyle, onGround, type Path, piece } from './mark-kit.ts';
 
 // Map base as a block (Fernando's requests, Nov 12, looking at FFT's board): all columns end on the same
@@ -63,9 +64,9 @@ const STAIN = new THREE.MeshBasicMaterial({ color: '#2a0f0a', transparent: true,
 
 // A body over a `span` x `span` square from `p`: still on the last frame of the death animation, darkened, with a dark
 // stain on the ground; rotated by tile. Returns what it added to the scene (the battle's restored corpses take it away
-// on undo), nothing when the model is not loaded
-export function layBody(board: Board, p: Pos, span: number): THREE.Object3D[] {
-  const gltf = board.models.get(CORPSE_MODELS[(p.x + p.y) % CORPSE_MODELS.length]);
+// on undo), nothing when the model is not loaded; `def`: the unit that died there, whose model it wears
+export function layBody(board: Board, p: Pos, span: number, def?: string): THREE.Object3D[] {
+  const gltf = board.models.get(corpseModel(p, def)) ?? board.models.get(corpseModel(p));
   if (!gltf) return [];
   const body = prepare(cloneSkinned(gltf.scene));
   body.traverse((m) => {

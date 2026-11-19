@@ -318,7 +318,7 @@ export class Units {
     const now = new Set((state.corpses ?? []).map(posKey));
     this.restored ??= corpseSquares(state.corpses ?? [], subOf(this.board.grid)).map(({ p, span }) => ({
       cells: cellsOf(p, span).map(posKey),
-      parts: layBody(this.board, p, span),
+      parts: layBody(this.board, p, span, state.corpseDefs?.[posKey(p)]),
     }));
     this.restored = this.restored.filter((r) => {
       if (r.cells.every((k) => now.has(k))) return true;
