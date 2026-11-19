@@ -206,23 +206,33 @@ describe('battle save: an inconsistent turn queue', () => {
 });
 
 describe('battle save: the undo history must belong to the same battle', () => {
-  // each frame is parsed on its own grid, so without this check undo would put a state of another map on this map's grid
-  it('a history frame of another scenario is rejected', () => {
+  it('a history of the same map and actor is kept', () => {
+    const b = load(moved());
+    expect(b).not.toBeNull();
+    expect(b!.canUndo).toBe(true);
+  });
+
+  // each frame is parsed on its own grid, so undo would put a state of another map on this map's grid: only the history is dropped
+  it('a history frame of another scenario drops the undo history and loads the rest', () => {
     const raw = moved();
     const { rng: _rng, ...other } = Battle.start(SCENARIOS.beacon_hill, 1).state;
     raw.history[0].before = other;
     const b = load(raw);
-    expect(b).toBeNull();
+    expect(b).not.toBeNull();
+    expect(b!.canUndo).toBe(false);
+    expect(b!.state).toEqual(load(moved())!.state);
   });
 
   // a free (unpaid) frame naming another actor would hand the player an enemy's turn on undo (history never spans a turn)
-  it('a history frame of another actor is rejected', () => {
+  it('a history frame of another actor drops the undo history and loads the rest', () => {
     const raw = moved();
     const foe = raw.state.units.find(
       (u: Raw) => u.team !== raw.state.units.find((x: Raw) => x.id === raw.state.turn.actor).team,
     );
     raw.history[0].before.turn.actor = foe.id;
     raw.history[0].paid = false;
-    expect(load(raw)).toBeNull();
+    const b = load(raw);
+    expect(b).not.toBeNull();
+    expect(b!.canUndo).toBe(false);
   });
 });
