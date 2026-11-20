@@ -101,6 +101,8 @@ export class Column {
   readonly icons = new Group();
   readonly open = spring();
   readonly focusY = spring();
+  // px off its place, settling to 0: a list sliding over from the next column (menu3d.ts, a third column opening)
+  readonly shift = spring();
   want = 0; // 1 open, 0 closed; `open` follows it once `hold` runs out
   hold = 0; // seconds a confirmed column stays up, so its flash is seen before it leaves
   flash = 0;
@@ -189,6 +191,7 @@ export class Column {
     move(this.open, dt, still, 300, 19); // under-damped: the column pops a little past its size and settles
     this.focusY.to = this.rowY;
     move(this.focusY, dt, still, 420, 30);
+    move(this.shift, dt, still, 300, 30);
     this.flash = still ? 0 : this.flash * Math.exp(-dt * 9);
     const ease = still ? 1 : 1 - Math.exp(-dt * 14);
     this.glow += (1 - this.glow) * ease;
@@ -200,7 +203,7 @@ export class Column {
     this.ui.visible = this.icons.visible = a > 0.004 && !!d;
     if (!d || !this.paper) return;
     // scaled about the middle of its left edge, where it hangs from the menu
-    const left = layer.snap(this.x - slide * (1 - o)),
+    const left = layer.snap(this.x + this.shift.x - slide * (1 - o)),
       top = layer.snap(this.y + (d.h / 2) * (1 - size) + 10 * s * (1 - clamp01(o)));
     for (const g of [this.ui, this.icons]) {
       g.position.set(left, -top, g === this.icons ? this.z : 0);
@@ -232,7 +235,7 @@ export class Column {
   }
 
   get busy() {
-    return this.hold > 0 || !settled(this.open) || !settled(this.focusY) || this.flash > 0.01;
+    return this.hold > 0 || !settled(this.open) || !settled(this.focusY) || !settled(this.shift) || this.flash > 0.01;
   }
 
   clear() {

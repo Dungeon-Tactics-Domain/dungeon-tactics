@@ -149,7 +149,7 @@ describe('3D menu: what it shows', () => {
     expect(m?.subTitle).toBe('Agir');
     expect(m?.index).toBe(0);
     expect(m?.sub?.[0].label).toBe('Escolher alvo');
-    expect(m?.sub?.slice(1, 5).map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
+    expect(m?.sub?.slice(1).map((r) => r.label)).toEqual(['Golpe', 'Técnicas']); // the basic attack, then its group
   });
 
   it('the action list shows the sheet of the focused ability, on the page asked for', () => {

@@ -58,6 +58,15 @@ export class Menu3d implements Ui3dScreen {
     // a confirmed row flashes and holds its column a moment: Act as the submenu opens, a command or an ability as the
     // menu leaves for the map. Esc out of the submenu confirms nothing: the cascade just runs backwards
     if (ch.has('cascade')) main.flash = 1;
+    // a third list: the second slides from its place over the menu's and flashes the picked row, the new one opens where
+    // it was; closing it runs backwards (Fernando's grill, Nov 19)
+    const lead = LEAD * (this.at?.cs ?? this.layer.s);
+    if (ch.has('deeper') && !this.layer.still) {
+      main.shift.x = lead;
+      main.flash = 1;
+      sub.open.x = 0;
+    }
+    if (ch.has('shallower') && !this.layer.still) sub.shift.x = -lead;
     if (ch.has('leave')) {
       (sub.want ? sub : main).flash = 1;
       if (!this.layer.still) main.hold = sub.hold = 0.15;

@@ -60,7 +60,7 @@ export function helpText(v: HudView, heroTurn: boolean, touch = !KEYS): string {
     return touch
       ? t('Área: toque onde mirar; de novo, segue.', 'Area: tap where to aim; again to go on.')
       : t('Área: escolha onde mirar e confirme.', 'Area: pick where to aim and confirm.');
-  if (s.k === 'acts') return t('Agir: escolha e confirme.', 'Act: pick and confirm.');
+  if (s.k === 'acts' || s.k === 'group') return t('Agir: escolha e confirme.', 'Act: pick and confirm.');
   if (s.k === 'targets' || s.k === 'actions' || s.k === 'spot') return actHelp(b, s, touch);
   const tap = touch ? tapState(v) : null;
   if (s.k === 'map')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ActRef, actActions, actAims, actList, actTargets } from '../src/client/act-flow.ts';
+import { type ActRef, actActions, actAims, actGroup, actList, actTargets } from '../src/client/act-flow.ts';
 import { actMarks } from '../src/client/act-marks.ts';
 import { type ActHost, actHoverMap, actKey, actPick, actStart, actTap } from '../src/client/act-turn.ts';
 import { itemDetail } from '../src/client/battle-text.ts';
@@ -67,51 +67,58 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
     expect(menuView({ battle: b, screen: { k: 'menu', index: 0 } } as never, true)!.rows[0].off).toBe(false);
   });
 
-  it('each row on says how many targets its target list will show', () => {
+  it('each row on says how many targets of its own side its target list will show', () => {
     const b = battle();
+    const count = (n: number) => (n > 1 ? `${n} alvos` : '1 alvo');
     const rows = rowsOf(b);
     actList(b).forEach((r, i) => {
       if (r.k === 'pick' || !r.enabled) return expect(rows[i].note).not.toMatch(/alvo/);
-      const n = actTargets(b, r).length;
+      if (r.k === 'group') return expect(rows[i].note).toBe(count(r.reach));
+      const n = actTargets(b, r).filter((t) => t.k !== 'side').length;
       expect(n).toBeGreaterThan(0);
-      expect(rows[i].note).toContain(n > 1 ? `${n} alvos` : '1 alvo');
+      expect(rows[i].note).toContain(count(n));
     });
+    // Raio de fogo can hit the warrior too, but it counts its foes only: the soldier
+    expect(rows[1]).toMatchObject({ label: 'Raio de fogo', note: expect.stringContaining('1 alvo') });
   });
 
-  it('opens on the last action run while it is on, else on Escolher alvo', async () => {
+  it('opens on the last action run while it is on (its group for one in a group), else on Escolher alvo', async () => {
     const b = battle();
-    const h = host(b, { k: 'acts', index: actList(b).findIndex((r) => r.k === 'ability' && r.id === 'heal') });
-    await actPick(h, h.screen.k === 'acts' ? h.screen.index : 0); // the heal's targets
+    const magic = actList(b).findIndex((r) => r.k === 'group' && r.group === 'magic');
+    const h = host(b, { k: 'acts', index: magic });
+    await actPick(h, magic); // Magias opens its column
+    expect(h.screen).toMatchObject({ k: 'group', group: 'magic' });
+    await actPick(
+      h,
+      actGroup(b, 'magic').findIndex((r) => r.id === 'heal'),
+    ); // the heal's targets
     await actPick(h, 0); // the first target
     while (h.ran.length === 0) await actPick(h, h.screen.k === 'spot' || h.screen.k === 'aim' ? h.screen.index : 0);
     expect(h.last).toEqual({ k: 'ability', id: 'heal' });
     const fresh = battle();
-    expect(actStart(fresh, h.last)).toEqual({
-      k: 'acts',
-      index: actList(fresh).findIndex((r) => r.k === 'ability' && r.id === 'heal'),
-    });
+    expect(actStart(fresh, h.last)).toEqual({ k: 'acts', index: magic });
     fresh.state.turn.bonus = 'heal'; // its slot spent: the list opens on its first row
     fresh.state.turn.main = 'firebolt';
     expect(actStart(fresh, h.last)).toEqual({ k: 'acts', index: 0 });
     expect(actStart(fresh)).toEqual({ k: 'acts', index: 0 });
   });
 
-  it('Escolher alvo, then each ability by its own name, then the items; a spent slot greys its rows', () => {
+  // Fernando's grill, Nov 19: the basic attack straight to its targets, a group with no action left out (the mage has
+  // no Técnicas), each group in a third column where the second was, the second over the menu's place
+  it('Escolher alvo, the basic attack, then Magias and Itens in a column of their own; a spent slot greys its rows', async () => {
     const b = battle();
-    const rows = rowsOf(b);
-    expect(rows.map((r) => r.label)).toEqual([
-      'Escolher alvo',
-      'Raio de fogo',
-      'Explosão',
-      'Rajada',
-      'Cura',
-      'Poção de vida',
-    ]);
-    expect(rows.find((r) => r.label === 'Cura')!.note).toMatch(/^secundária/);
+    expect(rowsOf(b).map((r) => r.label)).toEqual(['Escolher alvo', 'Raio de fogo', 'Magias', 'Itens']);
+    const h = host(b, { k: 'acts', index: 2 });
+    await actPick(h, 2);
+    const view = menuView({ battle: b, screen: h.screen } as never, true)!;
+    expect(view).toMatchObject({ head: 'Agir', index: 2, depth: 2, subTitle: 'Magias' });
+    expect(view.rows.map((r) => r.label)).toEqual(['Escolher alvo', 'Raio de fogo', 'Magias', 'Itens']);
+    expect(view.sub!.map((r) => r.label)).toEqual(['Explosão', 'Rajada', 'Cura']);
+    expect(view.sub![2].note).toMatch(/^secundária/);
+    expect(cancelStep(b, h.screen as Screen)).toEqual({ k: 'acts', index: 2 });
     b.state.turn.main = 'firebolt'; // the main action is spent: only the secondary ones stay on
-    const after = rowsOf(b);
-    expect(after.find((r) => r.label === 'Raio de fogo')).toMatchObject({ off: true, below: true });
-    expect(after.find((r) => r.label === 'Cura')!.off).toBe(false);
+    expect(rowsOf(b).find((r) => r.label === 'Raio de fogo')).toMatchObject({ off: true, below: true });
+    expect(rowsOf(b).find((r) => r.label === 'Magias')!.off).toBe(false); // Cura is still on
   });
 
   it('an ability picked on the list lists only who it hits, goes straight to its tiles, and Cancel walks back', async () => {
@@ -121,8 +128,15 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
     await actPick(h, row);
     const only = { k: 'ability' as const, id: 'firebolt' };
     expect(h.screen).toEqual({ k: 'targets', index: 0, only });
-    const names = menuView({ battle: b, screen: h.screen } as never, true)!.sub!.map((r) => r.label);
-    expect(names).toEqual(['Soldado', 'Guerreiro']); // who Raio de fogo can hit this turn, foes first (an ally too: friendly fire)
+    const names = () => menuView({ battle: b, screen: h.screen } as never, true)!.sub!.map((r) => r.label);
+    // who Raio de fogo can hit this turn: its foes, then the row that swaps to the allies it would hit (friendly fire)
+    expect(names()).toEqual(['Soldado', 'Escolher aliados']);
+    await actPick(h, 1);
+    expect(h.screen).toEqual({ k: 'targets', index: 0, only, other: true });
+    expect(names()).toEqual(['Guerreiro', 'Escolher inimigos']);
+    expect(cancelStep(b, h.screen as Screen)).toEqual({ k: 'targets', index: 1, only }); // back on the swap row
+    await actPick(h, 1);
+    expect(names()).toEqual(['Soldado', 'Escolher aliados']);
     await actPick(h, 0);
     expect(h.screen).toMatchObject({ k: 'spot', only }); // no actions screen: the action is already chosen
     const back: string[] = [];

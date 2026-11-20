@@ -11,9 +11,11 @@ import {
   type ActTarget,
   actActions,
   actAims,
+  actGroup,
   actList,
   actTargets,
   bestSpot,
+  groupOf,
   runSpot,
   sameRef,
   spotAt,
@@ -52,7 +54,7 @@ export function actKey(h: ActHost, a: KeyAction): void {
   if (a.k === 'confirm') return void actPick(h, s.index);
   // the action sheet's pages: left and right turn them back and forth, Details (I, the pad's north button) goes on
   if (
-    (s.k === 'actions' || s.k === 'acts') &&
+    (s.k === 'actions' || s.k === 'acts' || s.k === 'group') &&
     (a.k === 'info' || (a.k === 'cursor' && (a.dir === 'left' || a.dir === 'right')))
   ) {
     actPage(h, a.k === 'cursor' && a.dir === 'left' ? -1 : 1);
@@ -70,7 +72,9 @@ export function actKey(h: ActHost, a: KeyAction): void {
   // on the target list left and right walk the listed units on the map as they are seen, up and down the list: the
   // list and the map are one choice (Fernando's grill, Nov 19: "the three at the same time")
   if (s.k === 'targets' && (a.dir === 'left' || a.dir === 'right')) {
-    const units = actTargets(h.battle, s.only).flatMap((r, i) => (r.k === 'unit' ? [{ i, ...h.at(r.pos) }] : []));
+    const units = actTargets(h.battle, s.only, s.other).flatMap((r, i) =>
+      r.k === 'unit' ? [{ i, ...h.at(r.pos) }] : [],
+    );
     const at = units.findIndex((u) => u.i === s.index);
     const next = neighbour(
       units.map((u) => ({ x: u.x, y: u.y, w: 0, h: 0 })),
@@ -85,28 +89,33 @@ export function actKey(h: ActHost, a: KeyAction): void {
   if (index !== s.index) select(h, moved(s, index));
 }
 
-// where the Agir list opens: on the unit's last action while it is on, else on "Escolher alvo" (Fernando's grill, Nov 19)
+// where the Agir list opens: on the unit's last action while it is on (its group's row for one in a group), else on
+// "Escolher alvo" (Fernando's grill, Nov 19)
 export function actStart(b: Battle, last?: ActRef): Screen {
-  const i = last ? actList(b).findIndex((r) => sameRef(last, r) && r.k !== 'pick' && r.enabled) : -1;
+  const group = last && groupOf(b, last);
+  const on = last && (group ? actGroup(b, group) : actList(b)).some((r) => sameRef(last, r) && r.enabled);
+  const i = on ? actList(b).findIndex((r) => (group ? r.k === 'group' && r.group === group : sameRef(last, r))) : -1;
   return { k: 'acts', index: Math.max(0, i) };
 }
 
 // the action sheet turns to its next or previous page
 export function actPage(h: ActHost, dir: 1 | -1): void {
   const s = h.screen;
-  if (s.k !== 'actions' && s.k !== 'acts') return;
+  if (s.k !== 'actions' && s.k !== 'acts' && s.k !== 'group') return;
   sfx('cursor');
   h.screen = { ...s, page: turnPage(s.page ?? 0, dir) };
   h.update();
 }
 
 // another row of the list is focused: an action opens its sheet on the first page
-const moved = (s: Extract<Screen, { k: 'acts' | 'targets' | 'actions' }>, index: number): Screen =>
+const moved = (s: Extract<Screen, { k: 'acts' | 'group' | 'targets' | 'actions' }>, index: number): Screen =>
   s.k === 'actions'
     ? { k: 'actions', target: s.target, index }
     : s.k === 'acts'
       ? { k: 'acts', index }
-      : { ...s, index };
+      : s.k === 'group'
+        ? { k: 'group', group: s.group, index }
+        : { ...s, index };
 
 // the mouse or Tab on a list row moves the focus there, as the arrows would
 export function actHover(h: ActHost, index: number): void {
@@ -121,7 +130,7 @@ export function actHover(h: ActHost, index: number): void {
 
 // the row a map tile stands for on this screen: a listed unit, an aim or a tile to act from; -1 for none
 function indexAt(b: Battle, s: Screen, p: Pos): number {
-  if (s.k === 'targets') return targetAt(actTargets(b, s.only), b, p);
+  if (s.k === 'targets') return targetAt(actTargets(b, s.only, s.other), b, p);
   if (s.k === 'spot' && !s.lock) return spotAt(screenAction(b, s)!, p, UNIT_DEFS[b.actor.def].size ?? 1);
   if (s.k === 'aim')
     return actAims(screenAction(b, s)!).findIndex((aim) => aimCells(b, aim).some((c) => samePos(c, p)));
@@ -143,7 +152,7 @@ export function actTap(h: ActHost, p: Pos): boolean {
 // the mouse over the map focuses the unit, aim or tile under it, as a first click would (the camera stays)
 export function actHoverMap(h: ActHost, p: Pos): void {
   const s = h.screen;
-  if (!actScreen(s) || s.k === 'actions') return;
+  if (!actScreen(s) || s.k === 'actions' || s.k === 'group') return;
   const i = indexAt(h.battle, s, p);
   if (i >= 0 && i !== s.index) select(h, { ...s, index: i }, false);
 }
@@ -153,20 +162,33 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
   const s = h.screen,
     b = h.battle;
   if (!actScreen(s)) return;
-  if (s.k === 'acts') {
-    const row = actList(b)[index];
+  if (s.k === 'acts' || s.k === 'group') {
+    const row = s.k === 'acts' ? actList(b)[index] : actGroup(b, s.group)[index];
     if (!row?.enabled) return sfx('cancel');
     sfx('confirm');
+    // a group opens its column on its first action that is on
+    if (row.k === 'group') {
+      h.screen = {
+        k: 'group',
+        group: row.group,
+        index: Math.max(
+          0,
+          actGroup(b, row.group).findIndex((r) => r.enabled),
+        ),
+      };
+      return h.update();
+    }
     // "Escolher alvo" lists everyone; an ability or an item lists only who it can hit this turn
-    const only = row.k === 'pick' ? undefined : { k: row.k, id: row.id };
-    h.screen = { k: 'targets', index: 0, only };
-    const first = actTargets(b, only)[0];
-    if (first?.k === 'unit') h.focus(first.pos);
-    return h.update();
+    return openTargets(h, row.k === 'pick' ? undefined : { k: row.k, id: row.id });
   }
   if (s.k === 'targets') {
-    const target = actTargets(b, s.only)[index];
+    const target = actTargets(b, s.only, s.other)[index];
     if (!target) return;
+    // the last row swaps the list to the other side
+    if (target.k === 'side') {
+      sfx('confirm');
+      return openTargets(h, s.only, !s.other);
+    }
     const acts = actActions(b, target);
     sfx('confirm');
     // from the Agir list's ability or item, the action is already chosen: straight to its aim or tile step
@@ -220,6 +242,14 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
   });
 }
 
+// the target list, its first row focused on the map
+function openTargets(h: ActHost, only?: ActRef, other = false) {
+  h.screen = { k: 'targets', index: 0, only, ...(other && { other }) };
+  const first = actTargets(h.battle, only, other)[0];
+  if (first?.k === 'unit') h.focus(first.pos);
+  h.update();
+}
+
 // the picked action's next step: where an area lands when it has several aims, else the tiles to act from
 function openAction(h: ActHost, target: ActTarget, action: number, only?: ActRef): void {
   const b = h.battle,
@@ -243,8 +273,15 @@ function mapPoints(b: Battle, s: Screen): Pos[] | null {
 
 // every row takes the cursor, an off one too: it shows its sheet and reach, and Confirm on it only says no (Fernando,
 // Nov 19: "the disabled skills must still let the cursor pass over them")
-function enabledRows(b: Battle, s: Extract<Screen, { k: 'acts' | 'targets' | 'actions' }>): boolean[] {
-  const rows = s.k === 'acts' ? actList(b) : s.k === 'targets' ? actTargets(b, s.only) : actActions(b, s.target);
+function enabledRows(b: Battle, s: Extract<Screen, { k: 'acts' | 'group' | 'targets' | 'actions' }>): boolean[] {
+  const rows =
+    s.k === 'acts'
+      ? actList(b)
+      : s.k === 'group'
+        ? actGroup(b, s.group)
+        : s.k === 'targets'
+          ? actTargets(b, s.only, s.other)
+          : actActions(b, s.target);
   return rows.map(() => true);
 }
 
@@ -254,7 +291,7 @@ function select(h: ActHost, s: Screen, follow = true) {
   h.screen = s;
   const b = h.battle;
   if (follow && s.k === 'targets') {
-    const t = actTargets(b, s.only)[s.index];
+    const t = actTargets(b, s.only, s.other)[s.index];
     if (t?.k === 'unit') h.focus(t.pos);
   } else if (follow && (s.k === 'aim' || s.k === 'spot')) {
     const p = mapPoints(b, s)?.[s.index];

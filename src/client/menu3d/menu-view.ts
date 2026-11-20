@@ -7,13 +7,17 @@ import { subOf } from '../../shared/battle/grid.ts';
 import type { Element } from '../../shared/battle/units.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import {
-  type ActAction,
+  type ActGroup,
+  type ActRef,
   type ActRow,
   type ActTarget,
   actActions,
+  actGroup,
   actList,
   actTargets,
   distanceTo,
+  groupOf,
+  sameRef,
 } from '../act-flow.ts';
 import { actScreen, screenAction } from '../act-marks.ts';
 import {
@@ -84,6 +88,9 @@ export interface MenuView {
   rows: MenuRow[]; // menuRows: Agir · Move · Undo move · Wait · Status, Move and Undo only when they apply
   commands: number[]; // each row's place in COMMANDS, what a click on it chooses
   index: number; // the focused row, or the picked one (Agir) while a list is open
+  // how deep the open list is: 0 the menu alone, 1 the Agir list beside it, 2 and on the list before it took the menu's
+  // place (Fernando's grill, Nov 19: the second column slides left over the first, the third opens where it was)
+  depth: number;
   sub: MenuRow[] | null; // the Agir primeiro lists (act-flow.ts) beside the menu, while one is open
   subTitle: string; // the list's head
   subIndex: number;
@@ -104,7 +111,7 @@ const lines = (facts: string[], i: number) =>
 // an off one to read it): an ability's three pages, or an item's one (what it does, itemDetail: an item has no reach,
 // effects and cost pages to fill)
 export function sheetView(b: Battle, a: ActRow | undefined, page = 0): SheetView | null {
-  if (!a || a.k === 'pick') return null;
+  if (!a || a.k === 'pick' || a.k === 'group') return null;
   const owner = unitName(b.actor.def);
   if (a.k === 'item')
     return {
@@ -155,50 +162,107 @@ export function menuView(v: HudView, open: boolean): MenuView | null {
   if (open && actScreen(s) && s.k !== 'aim' && (s.k !== 'spot' || s.lock)) return actView(v, s);
   if (!open || s.k !== 'menu') return null;
   const col = column(v.battle);
-  return { ...col, index: col.commands.indexOf(s.index), sub: null, subTitle: '', subIndex: -1, sheet: null };
+  return { ...col, index: col.commands.indexOf(s.index), depth: 0, sub: null, subTitle: '', subIndex: -1, sheet: null };
 }
+
+type ListScreen = Extract<HudView['screen'], { k: 'acts' | 'group' | 'targets' | 'actions' | 'spot' }>;
+const GROUP_NAME: Record<ActGroup, () => string> = {
+  skills: () => t('Técnicas', 'Skills'),
+  magic: () => t('Magias', 'Magic'),
+  items: () => t('Itens', 'Items'),
+};
+const GROUP_ICON: Record<ActGroup, IconKind> = { skills: 'axe', magic: 'flame', items: 'potion' };
+
+// The list a screen shows, its head and its focused row
+function list(b: Battle, s: ListScreen): { title: string; rows: MenuRow[]; index: number } {
+  if (s.k === 'spot')
+    return {
+      title: t(
+        `${abilityName(screenAction(b, s)?.id ?? '')}: travar onde?`,
+        `${abilityName(screenAction(b, s)?.id ?? '')}: lock on?`,
+      ),
+      rows: [
+        { label: t('No personagem', 'On the character'), note: '', off: false, kind: 'sword' },
+        { label: t('Na casa', 'On the tile'), note: '', off: false, kind: 'boot' },
+      ],
+      index: s.lock === 'tile' ? 1 : 0,
+    };
+  if (s.k === 'acts') return { title: t('Agir', 'Act'), rows: actList(b).map((a) => listRow(b, a)), index: s.index };
+  if (s.k === 'group')
+    return { title: GROUP_NAME[s.group](), rows: actGroup(b, s.group).map((a) => listRow(b, a)), index: s.index };
+  if (s.k === 'targets')
+    return {
+      title: t('Alvo', 'Target'),
+      rows: actTargets(b, s.only, s.other).map((r) => targetRow(b, r)),
+      index: s.index,
+    };
+  return { title: t('Ação', 'Action'), rows: actActions(b, s.target).map((a) => listRow(b, a)), index: s.index };
+}
+
+// The screen whose list stood beside this one's: it slides into the menu's place while this one opens where it was
+// (Fernando's grill, Nov 19). The Agir list's is the menu itself (null), as is the lock step's
+function parent(b: Battle, s: ListScreen): ListScreen | null {
+  const at = (rows: ActRow[], ref: ActRef) =>
+    Math.max(
+      0,
+      rows.findIndex((r) => sameRef(ref, r)),
+    );
+  if (s.k === 'group')
+    return {
+      k: 'acts',
+      index: Math.max(
+        0,
+        actList(b).findIndex((r) => r.k === 'group' && r.group === s.group),
+      ),
+    };
+  if (s.k === 'targets') {
+    if (!s.only) return { k: 'acts', index: 0 };
+    const group = groupOf(b, s.only);
+    return group
+      ? { k: 'group', group, index: at(actGroup(b, group), s.only) }
+      : { k: 'acts', index: at(actList(b), s.only) };
+  }
+  if (s.k === 'actions') {
+    const i = actTargets(b).findIndex((r) => JSON.stringify(r) === JSON.stringify(s.target));
+    return { k: 'targets', index: Math.max(0, i) };
+  }
+  return null;
+}
+const depthOf = (b: Battle, s: ListScreen | null): number => (s ? 1 + depthOf(b, parent(b, s)) : 0);
 
 // The Agir primeiro lists in the submenu's place, under the command menu with Act picked: the targets (who, with its life)
 // or the actions on the picked one (an off one says why in its note, Fernando's grill of Nov 19: always visible), or a
 // charge's lock step on the tile choice (the character, the tile)
-function actView(v: HudView, s: Extract<HudView['screen'], { k: 'acts' | 'targets' | 'actions' | 'spot' }>): MenuView {
+function actView(v: HudView, s: ListScreen): MenuView {
   const b = v.battle;
-  const charge = s.k === 'spot' ? screenAction(b, s)?.id : undefined;
-  const sub: MenuRow[] =
-    s.k === 'spot'
-      ? [
-          { label: t('No personagem', 'On the character'), note: '', off: false, kind: 'sword' },
-          { label: t('Na casa', 'On the tile'), note: '', off: false, kind: 'boot' },
-        ]
-      : s.k === 'acts'
-        ? actList(b).map((a) => listRow(b, a))
-        : s.k === 'targets'
-          ? actTargets(b, s.only).map((r) => targetRow(b, r))
-          : actActions(b, s.target).map((a) => listRow(b, a));
+  const here = list(b, s),
+    up = parent(b, s);
+  const menu = up ? list(b, up) : null;
   return {
     ...column(b),
-    index: menuRows(b).map(commandIndex).indexOf(commandIndex('act')),
-    sub,
-    subTitle:
-      s.k === 'spot'
-        ? t(`${abilityName(charge ?? '')}: travar onde?`, `${abilityName(charge ?? '')}: lock on?`)
-        : s.k === 'acts'
-          ? t('Agir', 'Act')
-          : s.k === 'targets'
-            ? t('Alvo', 'Target')
-            : t('Ação', 'Action'),
-    subIndex: s.k === 'spot' ? (s.lock === 'tile' ? 1 : 0) : s.index,
+    ...(menu && { head: menu.title, rows: menu.rows }),
+    index: menu ? menu.index : menuRows(b).map(commandIndex).indexOf(commandIndex('act')),
+    depth: depthOf(b, s),
+    sub: here.rows,
+    subTitle: here.title,
+    subIndex: here.index,
     sheet:
       s.k === 'actions'
         ? sheetView(b, actActions(b, s.target)[s.index], s.page)
         : s.k === 'acts'
           ? sheetView(b, actList(b)[s.index], s.page)
-          : null,
+          : s.k === 'group'
+            ? sheetView(b, actGroup(b, s.group)[s.index], s.page)
+            : null,
   };
 }
 
 // a row of the target list: who, its life and how far it is from the acting unit now (cells: half tiles, as Move shows)
 function targetRow(b: Battle, r: ActTarget): MenuRow {
+  if (r.k === 'side')
+    return r.side === 'ally'
+      ? { label: t('Escolher aliados', 'Pick allies'), note: '', off: false, kind: 'shield' }
+      : { label: t('Escolher inimigos', 'Pick enemies'), note: '', off: false, kind: 'sword' };
   if (r.k === 'direct')
     return { label: abilityName(r.ability), note: t('na área', 'on the area'), off: false, ...iconOf(r.ability) };
   const u = b.state.units.find((x) => x.id === r.unit)!;
@@ -223,6 +287,14 @@ function listRow(b: Battle, a: ActRow): MenuRow {
           below: true,
           kind: 'sword',
         };
+  if (a.k === 'group')
+    return {
+      label: GROUP_NAME[a.group](),
+      note: a.enabled ? reachText(a) : t('sem alvos', 'no targets'),
+      off: !a.enabled,
+      below: true,
+      kind: GROUP_ICON[a.group],
+    };
   const off = { off: !a.enabled, below: true };
   if (a.k === 'item')
     return {
@@ -241,13 +313,14 @@ function listRow(b: Battle, a: ActRow): MenuRow {
   };
 }
 // how many targets a row of the Agir list has this turn (only that list counts them)
-const reachText = (a: ActAction) =>
+const reachText = (a: { reach?: number }) =>
   a.reach ? t(`${a.reach} alvo${a.reach > 1 ? 's' : ''}`, `${a.reach} target${a.reach > 1 ? 's' : ''}`) : '';
 const iconOf = (id: string) => ({ kind: abilityIcon3d(ABILITIES[id]), element: ABILITIES[id].element });
 
 // What changed from the last draw, for the menu's animations: it comes in or leaves (a confirmed row flashes on its way
 // out), the list opens in a cascade or folds back (Esc), the focus moves, the page turns
-export type Change = 'enter' | 'leave' | 'cascade' | 'fold' | 'focus' | 'page';
+// `deeper`, `shallower`: a list opened from the one beside the menu, or closed back to it (the columns slide)
+export type Change = 'enter' | 'leave' | 'cascade' | 'fold' | 'focus' | 'page' | 'deeper' | 'shallower';
 export function changes(prev: MenuView | null, next: MenuView | null): Set<Change> {
   const out = new Set<Change>();
   if (!prev && !next) return out;
@@ -259,7 +332,9 @@ export function changes(prev: MenuView | null, next: MenuView | null): Set<Chang
   }
   if (!prev.sub && next.sub) out.add('cascade');
   if (prev.sub && !next.sub) out.add('fold');
-  const focus = (v: MenuView) => (v.sub ? `s${v.subIndex}` : `m${v.index}`);
+  if (prev.sub && next.sub && next.depth > prev.depth) out.add('deeper');
+  if (prev.sub && next.sub && next.depth < prev.depth) out.add('shallower');
+  const focus = (v: MenuView) => (v.sub ? `s${v.depth}.${v.subIndex}` : `m${v.index}`);
   if (focus(prev) !== focus(next)) out.add('focus');
   if (prev.sheet && next.sheet && prev.sheet.page !== next.sheet.page) out.add('page');
   return out;

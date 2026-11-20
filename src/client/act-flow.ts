@@ -7,14 +7,20 @@ import { type ActionKind, abilityKind } from '../shared/battle/action-slots.ts';
 import { type ItemOptions, type ItemReason, itemOptions } from '../shared/battle/bag.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
+import { basicOf } from '../shared/battle/counter.ts';
 import { dist, samePos } from '../shared/battle/grid.ts';
 import { type AbilityOptions, actionOptions, type OptionReason } from '../shared/battle/options.ts';
 import { footprint, gap, unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 
 // A row of the target list: a unit (also the user itself, for a heal or an item), or a direct action (an area aimed at the
-// ground or a self-centred one: decision 4, it picks its tile next)
-export type ActTarget = { k: 'unit'; unit: string; pos: Pos } | { k: 'direct'; ability: string };
+// ground or a self-centred one: decision 4, it picks its tile next), or the last row that swaps an action's list to the
+// other side (Fernando, Nov 19: "Escolher aliados" under a strike's foes, "Escolher inimigos" under a heal's allies)
+export type ActTarget =
+  | { k: 'unit'; unit: string; pos: Pos }
+  | { k: 'direct'; ability: string }
+  | { k: 'side'; side: Side };
+export type Side = 'foe' | 'ally';
 
 export type ActReason = OptionReason | ItemReason;
 // A tile the action may be taken from: the walk it costs and, for an ability, what it would do from there
@@ -60,10 +66,30 @@ export const actKind = (a: ActAction): ActionKind => (a.k === 'item' ? 'bonus' :
 
 // The rows of the first screen. A unit is listed when any ability or item reaches it; the user only through what aims at
 // itself (support, items)
-export function actTargets(b: Battle, only?: ActRef): ActTarget[] {
+export function actTargets(b: Battle, only?: ActRef, other = false): ActTarget[] {
   const all = allTargets(b);
+  if (!only) return all;
   // a row picked on the Agir list keeps the targets that action can hit this turn (the same test as its action screen)
-  return only ? all.filter((r) => actActions(b, r).some((a) => sameRef(only, a) && a.enabled)) : all;
+  const hit = all.filter((r) => actActions(b, r).some((a) => sameRef(only, a) && a.enabled));
+  const side = sideOf(only);
+  if (!side) return hit;
+  // a strike lists its foes, a heal or an item its allies; the last row swaps to the other side when it has anyone
+  // (Fernando, Nov 19); a direct action stays on its own side's list
+  const own = (r: ActTarget, s: Side) => (r.k === 'unit' ? unitSide(b, r.unit) === s : r.k === 'direct' && s === side);
+  // an action that hits no one on its own side (a fire bolt only an ally is in reach of) lists who it hits, no swap
+  if (!hit.some((r) => own(r, side))) return hit;
+  const want = other ? flip(side) : side;
+  const rows = hit.filter((r) => own(r, want));
+  return hit.some((r) => own(r, flip(want))) ? [...rows, { k: 'side', side: flip(want) }] : rows;
+}
+const flip = (s: Side): Side => (s === 'foe' ? 'ally' : 'foe');
+const unitSide = (b: Battle, unit: string): Side =>
+  b.state.units.find((u) => u.id === unit)?.team === b.actor.team ? 'ally' : 'foe';
+// the side an action is aimed at: what deals damage at foes, what heals (and every item) at allies, the rest at both
+export function sideOf(r: ActRef): Side | null {
+  if (r.k === 'item') return 'ally';
+  const a = ABILITIES[r.id];
+  return a.heal[1] > 0 || a.ally ? 'ally' : a.damage[1] > 0 ? 'foe' : null;
 }
 function allTargets(b: Battle): ActTarget[] {
   const id = b.actor.id;
@@ -91,6 +117,7 @@ export const distanceTo = (b: Battle, unit: string) =>
 // The actions of the second screen for a target: every ability of the unit in its own order, then the items in the bag.
 // One that cannot hit this target is off: its own reason when it works nowhere, else 'range'
 export function actActions(b: Battle, target: ActTarget): ActAction[] {
+  if (target.k === 'side') return [];
   const id = b.actor.id;
   const abilities = options(b)
     .abilities.filter((o) => target.k === 'unit' || o.ability === target.ability)
@@ -132,37 +159,70 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
   return [...abilities, ...items];
 }
 
-// The Agir list (Fernando, Nov 19: Agir is the first row of the turn menu; variant A of his grill): "Escolher alvo" (the
-// target list above), then every ability in the unit's order with the basic attack first, then the items. A row is on
-// when the action can hit someone reachable this turn (walk, then act) and its slot is free (options.ts: 'used'); else it
-// is off with the reason
-// "Escolher alvo" is off with no one to reach this turn (Fernando, Nov 19)
-export type ActRow = { k: 'pick'; enabled: boolean } | ActAction;
+// The Agir list (Fernando, Nov 19: Agir is the first row of the turn menu; variant A of his grill; the third column of
+// his later grill): "Escolher alvo" (the target list above), the basic attack straight to its targets, then Técnicas,
+// Magias and Itens, each opening its actions in a column of its own; an empty one is left out. An action is on when it
+// can hit someone reachable this turn (walk, then act) and its slot is free (options.ts: 'used'); else it is off with the
+// reason. "Escolher alvo" is off with no one to reach this turn, a group with none of its actions on
+export type ActGroup = 'skills' | 'magic' | 'items';
+export const GROUPS: ActGroup[] = ['skills', 'magic', 'items'];
+export type ActRow =
+  | { k: 'pick'; enabled: boolean }
+  | { k: 'group'; group: ActGroup; enabled: boolean; reach: number }
+  | ActAction;
 // an ability or an item picked straight on the Agir list: the target list then shows only who it can hit
 export interface ActRef {
   k: 'ability' | 'item';
   id: string;
 }
-export const sameRef = (a: ActRef, r: ActRow) => r.k !== 'pick' && r.k === a.k && r.id === a.id;
+export const sameRef = (a: ActRef, r: ActRow) => (r.k === 'ability' || r.k === 'item') && r.k === a.k && r.id === a.id;
+// the group an action is listed under: null for the basic attack (the unit's first ability), which has a row of its own
+export const groupOf = (b: Battle, r: ActRef): ActGroup | null =>
+  r.k === 'item' ? 'items' : r.id === basicOf(b.actor.def) ? null : ABILITIES[r.id].magic ? 'magic' : 'skills';
+
 export function actList(b: Battle): ActRow[] {
+  const rows = actRows(b);
+  const basic = rows.find((r) => groupOf(b, r) === null);
+  const groups = GROUPS.flatMap((group): ActRow[] => {
+    const own = rows.filter((r) => groupOf(b, r) === group);
+    if (!own.length) return [];
+    // the targets any of its actions hits on its own side, each once
+    const seen = new Set<string>();
+    for (const r of own)
+      if (r.enabled) for (const t of actTargets(b, r)) if (t.k !== 'side') seen.add(JSON.stringify(t));
+    return [{ k: 'group', group, enabled: own.some((r) => r.enabled), reach: seen.size }];
+  });
+  return [{ k: 'pick', enabled: allTargets(b).length > 0 }, ...(basic ? [basic] : []), ...groups];
+}
+// a group's column: its actions in the unit's order (the items in the bag's)
+export const actGroup = (b: Battle, g: ActGroup) => actRows(b).filter((r) => groupOf(b, r) === g);
+
+// every ability and item as a row of the Agir lists, with how many targets its list shows on its own side
+function actRows(b: Battle): ActAction[] {
   // each target's actions once, so a row's count is what its target list will show (Fernando's grill, Nov 19)
-  const hits = allTargets(b).map((t) => actActions(b, t));
-  const reach = (r: ActRef) => hits.filter((acts) => acts.some((a) => sameRef(r, a) && a.enabled)).length;
-  const abilities = options(b).abilities.map((o): ActRow => {
+  const hits = allTargets(b).map((t) => ({ t, acts: actActions(b, t) }));
+  const reach = (r: ActRef) => {
+    const side = sideOf(r);
+    return hits.filter(
+      ({ t, acts }) =>
+        acts.some((a) => sameRef(r, a) && a.enabled) && (!side || t.k !== 'unit' || unitSide(b, t.unit) === side),
+    ).length;
+  };
+  const abilities = options(b).abilities.map((o): ActAction => {
     const base = { k: 'ability' as const, id: o.ability, spots: [] };
     if (!o.enabled) return { ...base, enabled: false, reason: o.reason, missing: o.missing, pool: o.pool };
     return o.targets.length
       ? { ...base, enabled: true, reach: reach(base) }
       : { ...base, enabled: false, reason: 'range' };
   });
-  const items = options(b).items.map((o): ActRow => {
+  const items = options(b).items.map((o): ActAction => {
     const base = { k: 'item' as const, id: o.item, count: o.count, spots: [] };
     if (!o.enabled) return { ...base, enabled: false, reason: o.reason };
     return o.targets.length
       ? { ...base, enabled: true, reach: reach(base) }
       : { ...base, enabled: false, reason: 'no-target' };
   });
-  return [{ k: 'pick', enabled: hits.length > 0 }, ...abilities, ...items];
+  return [...abilities, ...items];
 }
 
 // The aim step (Fernando, Nov 19): an ability aimed at more than one place (an area that can be centred on the target or
@@ -213,7 +273,9 @@ export const targetIndex = (rows: ActTarget[], last: ActTarget | null) =>
   Math.max(
     0,
     rows.findIndex((r) =>
-      last?.k === 'unit' ? r.k === 'unit' && r.unit === last.unit : r.k === 'direct' && r.ability === last?.ability,
+      last?.k === 'unit'
+        ? r.k === 'unit' && r.unit === last.unit
+        : last?.k === 'direct' && r.k === 'direct' && r.ability === last.ability,
     ),
   );
 

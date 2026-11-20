@@ -10,12 +10,15 @@ import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import {
+  type ActGroup,
   type ActRef,
   type ActTarget,
   actActions,
   actAims,
+  actGroup,
   actList,
   actTargets,
+  groupOf,
   sameRef,
   targetIndex,
 } from './act-flow.ts';
@@ -36,11 +39,14 @@ export type Screen =
   | { k: 'facing' }
   // The Agir list (Fernando, Nov 19): "Escolher alvo" opens the targets, then the abilities and items (act-flow.ts actList)
   | { k: 'acts'; index: number; page?: number }
+  // Técnicas, Magias or Itens picked on the Agir list: its actions in a third column (Fernando's grill, Nov 19)
+  | { k: 'group'; group: ActGroup; index: number; page?: number }
   // Agir primeiro (Fernando's grill, Nov 19; the only way to act since "Apagar tudo"): the target list, the actions that hit
   // the picked target, the tiles to act from with the best one first; `lock`: a charge aimed at a unit asks where to lock it
   // `only`: the ability or item picked straight on the Agir list; the targets are who it can hit, and the screens after
   // keep it so Cancel walks back through them
-  | { k: 'targets'; index: number; only?: ActRef }
+  // `other`: the list swapped to the other side by its last row (act-flow.ts actTargets)
+  | { k: 'targets'; index: number; only?: ActRef; other?: boolean }
   // `page`: the action sheet's page (menu3d/), 0 to PAGES - 1; another action opens on the first
   | { k: 'actions'; target: ActTarget; index: number; page?: number }
   // an action with several aims (an area) picks where it lands first (`index` into actAims), then the tiles aiming there
@@ -104,16 +110,34 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
   if (s.k === 'map') return { k: 'menu', index: commandIndex('move') };
   if (s.k === 'facing') return { k: 'menu', index: commandIndex('wait') };
   if (s.k === 'acts') return { k: 'menu', index: commandIndex('act') };
+  if (s.k === 'group')
+    return {
+      k: 'acts',
+      index: Math.max(
+        0,
+        actList(b).findIndex((r) => r.k === 'group' && r.group === s.group),
+      ),
+    };
   if (s.k === 'targets') {
-    const row = s.only ? actList(b).findIndex((r) => sameRef(s.only!, r)) : 0;
-    return { k: 'acts', index: Math.max(0, row) };
+    // the other side's list goes back to the action's own, on the row that swapped it
+    if (s.other)
+      return {
+        k: 'targets',
+        index: Math.max(
+          0,
+          actTargets(b, s.only).findIndex((r) => r.k === 'side'),
+        ),
+        only: s.only,
+      };
+    return s.only ? backTo(b, s.only) : { k: 'acts', index: 0 };
   }
   if (s.k === 'actions') return { k: 'targets', index: targetIndex(actTargets(b), s.target) };
   const { only } = s;
-  // an action picked on the Agir list has no actions screen: it goes back to that list's targets
-  const out = only
-    ? ({ k: 'targets', index: targetIndex(actTargets(b, only), s.target), only } as const)
-    : ({ k: 'actions', target: s.target, index: s.action } as const);
+  // an action picked on the Agir list has no actions screen: it goes back to that list's targets, on the side it was on
+  const other = !!only && !actTargets(b, only).some((r) => JSON.stringify(r) === JSON.stringify(s.target));
+  const out: Screen = only
+    ? { k: 'targets', index: targetIndex(actTargets(b, only, other), s.target), only, ...(other && { other }) }
+    : { k: 'actions', target: s.target, index: s.action };
   const back = { target: s.target, action: s.action, only };
   if (s.k === 'aim') return out;
   if (s.lock) return { k: 'spot', ...back, index: s.index, aim: s.aim };
@@ -126,6 +150,27 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
     index: Math.max(
       0,
       aims.findIndex((p) => samePos(p, aim)),
+    ),
+  };
+}
+
+// where an action's target list goes back to: its row, on the Agir list (the basic attack) or in its group's column
+function backTo(b: Battle, only: ActRef): Screen {
+  const group = groupOf(b, only);
+  if (!group)
+    return {
+      k: 'acts',
+      index: Math.max(
+        0,
+        actList(b).findIndex((r) => sameRef(only, r)),
+      ),
+    };
+  return {
+    k: 'group',
+    group,
+    index: Math.max(
+      0,
+      actGroup(b, group).findIndex((r) => sameRef(only, r)),
     ),
   };
 }
