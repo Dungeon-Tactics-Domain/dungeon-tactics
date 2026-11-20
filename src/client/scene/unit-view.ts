@@ -66,6 +66,8 @@ export function makeView(
       mats.push(mat);
     });
     glowBack(mats, u.def);
+    // a skinned box is measured through its bones: their world matrices first (the snake's armature is scaled 100x)
+    body.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(body);
     // a lying body (the snake, own rig) is fitted to one tile long; a standing one to its height
     const own = gltf.animations.some((c) => c.name.includes('|'));
@@ -76,9 +78,10 @@ export function makeView(
     mixer = new THREE.AnimationMixer(body);
     // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
     const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
+    // the pack is KayKit's rig: a model with its own rig keeps only its own clips
     clips = [
       ...gltf.animations,
-      ...packClips.map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has))),
+      ...(own ? [] : packClips).map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has))),
     ];
   } else {
     // the Beacon has no model: a glowing crystal, to read from afar which is the target to protect
