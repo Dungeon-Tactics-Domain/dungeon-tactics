@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Team, UnitState } from '../../shared/battle/types.ts';
-import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { baseDef, UNIT_DEFS } from '../../shared/battle/units.ts';
 import { WEIGHT } from '../hit-weight.ts';
 import { barYOf, MARKER, unitHeight } from '../markers.ts';
 import { prepare } from '../three-util.ts';
@@ -16,6 +16,12 @@ const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
 // the turn-order number: its side's colour, gold for the one acting now (the turn list's own colours)
 const ORDER = { hero: '#7cc4ff', enemy: '#ff7fb6', now: '#ffd75e' };
 const TINT_GLOW = 0.45; // strength of the own glow (UnitDef.tint): visible on the dark unit without erasing the texture
+// near-black swarm models lit from within so they read on dark stone (Fernando, Nov 20: "rato e aranha mais visíveis");
+// drawing only, so here and not on the UnitDef, whose tint also recolours the portraits
+const LIFT: Record<string, { color: string; intensity: number }> = {
+  rat: { color: '#c9a37a', intensity: 0.35 },
+  spider: { color: '#a98ee0', intensity: 0.35 },
+};
 
 export interface UnitView {
   holder: THREE.Group;
@@ -315,11 +321,13 @@ export function walk(v: UnitView) {
 // they return to it at the end; without tint, to the material's factory glow (before it zeroed and put out the skeletons' eyes)
 export function glowBack(mats: THREE.MeshStandardMaterial[], def: string) {
   const tint = UNIT_DEFS[def]?.tint;
+  const lift = LIFT[baseDef(def)]; // battles run on the split map's half defs (rat~half)
   for (const m of mats) {
     const glow = m.userData.glow as { color: THREE.Color; intensity: number } | undefined;
     if (tint) m.emissive.set(tint);
+    else if (lift) m.emissive.set(lift.color);
     else if (glow) m.emissive.copy(glow.color);
-    m.emissiveIntensity = tint ? TINT_GLOW : (glow?.intensity ?? 0);
+    m.emissiveIntensity = tint ? TINT_GLOW : lift ? lift.intensity : (glow?.intensity ?? 0);
   }
 }
 
