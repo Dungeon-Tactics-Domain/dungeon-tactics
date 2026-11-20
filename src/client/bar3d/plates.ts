@@ -44,7 +44,7 @@ varying vec2 vUv;
 uniform vec2 uSize; uniform float uUnit; uniform float uAlpha; uniform float uTime; uniform float uTeam; uniform float uMirror;
 uniform vec4 uBand; uniform vec4 uStrip; uniform vec4 uPortrait; uniform vec4 uHpBar; uniform vec4 uPoolBar; uniform vec4 uCtBar;
 uniform vec4 uBox; uniform vec4 uBoxBar;
-uniform vec3 uHp; uniform vec3 uFill; uniform float uLine; uniform float uTag;
+uniform vec3 uHp; uniform float uSure; uniform vec3 uFill; uniform float uLine; uniform float uTag;
 uniform sampler2D uFace; uniform vec4 uFaceUv; uniform vec4 uTint; uniform float uHasFace;
 ${LIB}
 // a thin round bar: dark groove, fill up to f
@@ -84,7 +84,9 @@ void main() {
   float fx = along(u, uHpBar, 0.5);
   float fy = (u.y - uHpBar.y) / uHpBar.w;
   vec3 green = mix(${glsl('#9cc93a')}, ${glsl('#5c8213')}, fy);
-  vec3 part = mix(${glsl('#fc563e')}, ${glsl('#d9f29a')}, uHp.z) * (0.82 + 0.18 * sin(uTime * 6.0));
+  // the part it changes for certain (the least damage or heal) is solid; only the part it may change blinks (Nov 19)
+  float maybe = uHp.z > 0.5 ? step(uSure, fx) : step(fx, uSure);
+  vec3 part = mix(${glsl('#fc563e')}, ${glsl('#d9f29a')}, uHp.z) * (1.0 - maybe * (0.18 - 0.18 * sin(uTime * 6.0)));
   if (fx <= uHp.x) col = over(col, green, cov(dH));
   else if (fx <= uHp.y) col = over(col, part, cov(dH));
 
@@ -156,6 +158,7 @@ export function sheetMaterial(l: SheetLayout): ShaderMaterial {
       uBox: { value: v4(l.box) },
       uBoxBar: { value: v4(l.boxBar) },
       uHp: { value: new Vector3(1, 1, 0) }, // what stays, up to where it changes, 1 for a heal
+      uSure: { value: 1 }, // where the part it changes for certain meets the part it may change
       uFill: { value: new Vector3(-1, -1, -1) }, // first pool, second pool and CT, each 0 to 1 or under 0 for none
       uLine: { value: 0 }, // 1 when the strip has a text
       uTag: { value: 0 }, // 1 when the portrait carries the side's tag

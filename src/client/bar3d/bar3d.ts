@@ -110,7 +110,7 @@ class Sheet {
   view: SheetView | null = null;
   face: ReturnType<typeof battleFace>;
   private faceOf = ''; // the def whose face is loaded
-  private hp = [1, 1]; // the life bar's two ends, gliding
+  private hp = [1, 1, 1]; // the life bar's changed part (its two ends, and where its sure part meets the rest), gliding
   private fill = [0, 0, 0]; // first pool, second pool, CT
   constructor(mirror: boolean, region: Region) {
     this.l = sheetLayout(mirror);
@@ -156,9 +156,32 @@ class Sheet {
     const gain = ct ? { ...l.ctGain, align: 'r' as const, x: (inkLeft - gap) / layer.small.s } : l.ctGain;
     part.text(layer, 'ctGain', v.ctGain, gain, SOFT);
     part.text(layer, 'line', v.line, l.line, INK);
+    // the strike's two numbers on their parts of the life bar, each dropped when its part is too thin to hold it
+    // (Fernando, Nov 19: "what if that slice were very small?")
+    const { left, sure, upTo } = v.change;
+    const [certain, maybe] = v.change.gain
+      ? [
+          [left, sure],
+          [sure, upTo],
+        ]
+      : [
+          [sure, upTo],
+          [left, sure],
+        ];
+    for (const [id, str, [a, b]] of [
+      ['hpSure', v.sure, certain],
+      ['hpMaybe', v.maybe, maybe],
+    ] as const) {
+      const sp: Spot = { x: l.hpBar.x + ((a + b) / 2) * l.hpBar.w, y: l.hpBar.y + l.hpBar.h / 2, size: 16, align: 'c' };
+      const m = part.text(layer, id, str, sp, INK);
+      if (m && m.scale.x - 2 * TEXT_PAD > (b - a) * l.hpBar.w * layer.small.s) part.text(layer, id, '', sp, INK);
+    }
   }
   private targets(v: SheetView) {
-    return { hp: [v.change.left, v.change.upTo], fill: [frac(v.pools[0]), frac(v.pools[1]), frac(v.ct)] };
+    return {
+      hp: [v.change.left, v.change.upTo, v.change.sure],
+      fill: [frac(v.pools[0]), frac(v.pools[1]), frac(v.ct)],
+    };
   }
   private land() {
     if (!this.view) return;
@@ -215,6 +238,7 @@ class Sheet {
     this.fill = this.fill.map((x, i) => glide(x, to.fill[i]));
     un.uHp.value.x = this.hp[0];
     un.uHp.value.y = this.hp[1];
+    un.uSure.value = this.hp[2];
     un.uFill.value.set(this.fill[0], this.fill[1], this.fill[2]);
     un.uTime.value = t;
     if (this.face) {

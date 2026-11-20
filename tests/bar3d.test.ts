@@ -36,7 +36,7 @@ describe('3D combat bar: what it shows', () => {
     // the class is the name here: the strip leaves it out rather than say "Guerreiro" twice (Nov 18)
     expect(s).toMatchObject({ name: 'Guerreiro', enemy: false, tag: '', line: '' });
     expect(s.hp).toEqual({ label: 'Vida', value: 210, max: 210 });
-    expect(s.change).toEqual({ left: 1, upTo: 1, gain: false });
+    expect(s.change).toEqual({ left: 1, sure: 1, upTo: 1, gain: false });
     expect(s.pools).toEqual([{ label: 'ST', value: 50, max: 50 }]);
     expect(s.ct).toEqual({ label: 'CT', value: 0, max: 100 });
     // what the turn list says after each number (Nov 17): no life regen without a piece, the CT gained each tick
@@ -94,8 +94,10 @@ describe('3D combat bar: what it shows', () => {
       warn: false,
     });
     const max = 225;
-    expect(v.target?.change).toEqual({ left: f.after[0] / max, upTo: 1, gain: false });
-    expect(v.target?.line).toBe(`vida ${max} → ${f.after[0]}–${f.after[1]}`);
+    // Nov 19: the least damage is the solid part, the rest up to the most blinks; both numbers on the bar and in one label
+    expect(v.target?.change).toEqual({ left: f.after[0] / max, sure: f.after[1] / max, upTo: 1, gain: false });
+    expect(v.target).toMatchObject({ sure: `−${max - f.after[1]}`, maybe: `≈−${max - f.after[0]}` });
+    expect(v.target?.line).toBe(`−${max - f.after[1]} ≈ −${max - f.after[0]}`);
   });
 
   it('more targets are counted, a heal adds and a strike on an ally warns', () => {
@@ -115,7 +117,8 @@ describe('3D combat bar: what it shows', () => {
     const b = duel(100);
     const [f] = strike(b);
     const v = sheetView(b.state, unit(b, 'b'), { ...f, dmg: null, heal: [20, 50], after: [120, 150] }, 'heal');
-    expect(v.change).toEqual({ left: 100 / 225, upTo: 150 / 225, gain: true });
+    expect(v.change).toEqual({ left: 100 / 225, sure: 120 / 225, upTo: 150 / 225, gain: true });
+    expect(v).toMatchObject({ sure: '+20', maybe: '≈+50', line: '+20 ≈ +50' });
   });
 });
 

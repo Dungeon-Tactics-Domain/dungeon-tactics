@@ -1,13 +1,13 @@
 // Pure side of the 3D combat bar (bar3d.ts): what the acting unit's sheet, the strike preview plate and the target's
 // sheet show, from the same units and the same forecast as the HTML panels (hud-pieces.ts unitPanel and strikes). No DOM
 // or Three here; tested in tests/bar3d.test.ts.
-import { poolOf } from '../../shared/battle/combat.ts';
+import { COMBAT, poolOf } from '../../shared/battle/combat.ts';
 import { TURN_THRESHOLD } from '../../shared/battle/turn-queue.ts';
 import type { BattleState, UnitState } from '../../shared/battle/types.ts';
 import { RESOURCES, type Resource, UNIT_DEFS } from '../../shared/battle/units.ts';
 import { range } from '../battle-text.ts';
 import { classOf } from '../dev-roster.ts';
-import { type Forecast, strikeInfo } from '../forecast.ts';
+import type { Forecast } from '../forecast.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
 import { unitStats } from '../turn-list.ts';
 
@@ -22,8 +22,12 @@ export interface SheetView {
   name: string;
   tag: string; // over the portrait's foot: the side, for an enemy only (the reference's "Enemy")
   hp: Gauge;
-  // of the full life bar: what stays for sure and up to where an aimed strike (or a heal, `gain`) changes it
-  change: { left: number; upTo: number; gain: boolean };
+  // of the full life bar: what stays for sure and up to where an aimed strike (or a heal, `gain`) changes it; `sure`: where
+  // the part it changes for certain (the least damage or heal, solid) meets the part it may change (blinking; Nov 19)
+  change: { left: number; sure: number; upTo: number; gain: boolean };
+  // the labels on those two parts of the bar: "−70" and "≈−100" (bar3d.ts drops one its part is too thin for)
+  sure: string;
+  maybe: string;
   pools: Gauge[]; // mana and stamina, the ones its sheet has: the first beside the life, the second in the box under it
   ct: Gauge | null; // null for what never takes a turn
   // what the turn list's lines say after each number (turn-list.ts unitStats; Fernando, Nov 17): "+4", the life back at
@@ -66,6 +70,10 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
   const now = frac(u.hp, def.hp);
   const struck = f && !f.support && (f.heal || f.dmg);
   const st = unitStats(u);
+  // the least and the most life the strike (or heal) changes, push and all
+  const least = struck ? Math.abs(f.after[f.heal ? 0 : 1] - u.hp) : 0,
+    most = struck ? Math.abs(f.after[f.heal ? 1 : 0] - u.hp) : 0,
+    sign = f?.heal ? '+' : '−';
   return {
     hpRegen: st.hpRegen ? `+${st.hpRegen}` : '',
     ctGain: def.speed > 0 ? `+${st.ctGain}` : '',
@@ -75,16 +83,19 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
     tag: u.team === 'enemy' ? t('Inimigo', 'Enemy') : '',
     hp: { label: t('Vida', 'HP'), value: Math.max(0, u.hp), max: def.hp },
     change: !struck
-      ? { left: now, upTo: now, gain: false }
+      ? { left: now, sure: now, upTo: now, gain: false }
       : f.heal
-        ? { left: now, upTo: frac(f.after[1], def.hp), gain: true }
-        : { left: frac(f.after[0], def.hp), upTo: now, gain: false },
+        ? { left: now, sure: frac(f.after[0], def.hp), upTo: frac(f.after[1], def.hp), gain: true }
+        : { left: frac(f.after[0], def.hp), sure: frac(f.after[1], def.hp), upTo: now, gain: false },
+    sure: least ? `${sign}${least}` : '',
+    maybe: most > least ? `≈${sign}${most}` : '',
     pools: pools.slice(0, 2),
     ct: def.speed > 0 ? { label: 'CT', value: Math.min(u.ct, TURN_THRESHOLD), max: TURN_THRESHOLD } : null,
     line: [
       cls !== name && cls,
-      f && ability
-        ? strikeInfo(f, ability).slice(1).join(' · ')
+      // the strike's one label (Fernando, Nov 19 prototype: every option at once, he says which to drop)
+      struck && ability
+        ? `${sign}${least}${most > least ? ` ≈ ${sign}${most}` : ''}`
         : charge
           ? t(
               `Carregando ${abilityName(charge.ability)} (${charge.ticks} tiques)`,
@@ -98,17 +109,31 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
 }
 
 // `more`: how many targets the strike reaches besides this one
+// the hit bonus a strike from the side or behind gets (combat.ts), shown by the chance it explains (Fernando, Nov 19)
+const flank = (f: Forecast) =>
+  f.side === 'back' ? `↶+${COMBAT.BACK_BONUS}` : f.side === 'side' ? `⇥+${COMBAT.SIDE_BONUS}` : '';
+const flankLine = (f: Forecast) =>
+  f.side === 'back'
+    ? t(`↶ pelas costas +${COMBAT.BACK_BONUS}%`, `↶ from behind +${COMBAT.BACK_BONUS}%`)
+    : f.side === 'side'
+      ? t(`⇥ de lado +${COMBAT.SIDE_BONUS}%`, `⇥ from the side +${COMBAT.SIDE_BONUS}%`)
+      : '';
+
 export function plateView(f: Forecast, ability: string, more: number): PlateView {
   const amount = f.heal ? `+${range(f.heal)}` : f.dmg ? range(f.dmg) : '';
   const others = more ? ` · +${more} ${t(more === 1 ? 'alvo' : 'alvos', more === 1 ? 'target' : 'targets')}` : '';
+  const hits = amount && !f.heal;
   return {
-    chance: amount ? `⊕ ${f.chance}%` : '',
+    // the flank beside the chance and on a line of its own, push and ALLY by the label: every option of Fernando's
+    // Nov 19 grill at once, he says which to drop (the strip under the target's bars left)
+    chance: amount ? [`⊕ ${f.chance}%`, hits && flank(f)].filter(Boolean).join(' ') : '',
     amount: amount || abilityName(ability),
     big: !!amount,
     label:
       (f.heal ? t('Cura', 'Heal') : f.dmg ? t('Dano', 'Damage') : t('Apoio', 'Support')) +
+      (f.push && hits ? ` · ${t(`empurrão +${f.push}`, `push +${f.push}`)}${f.spikes ? '!' : ''}` : '') +
       (f.ally ? ` · ${t('ALIADO!', 'ALLY!')}` : ''),
-    name: (amount ? abilityName(ability) : '') + others,
+    name: [(amount ? abilityName(ability) : '') + others, hits && flankLine(f)].filter(Boolean).join(' · '),
     warn: f.ally,
   };
 }
