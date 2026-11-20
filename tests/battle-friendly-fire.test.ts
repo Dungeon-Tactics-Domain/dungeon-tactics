@@ -142,7 +142,7 @@ describe('friendly fire (Nov 15)', () => {
       .filter((d) => d.undead && !d.id.includes('½') && !d.id.startsWith('dev-'))
       .map((d) => d.id)
       .sort();
-    expect(undead).toEqual(['colossus', 'minion', 'skeleton_archer']);
+    expect(undead).toEqual(['colossus', 'mini_skeleton', 'minion', 'skeleton_archer']);
     expect(UNIT_DEFS[halfDef('minion')].undead).toBe(true);
     const sc = buildDevScenario({
       map: 'skirmish',

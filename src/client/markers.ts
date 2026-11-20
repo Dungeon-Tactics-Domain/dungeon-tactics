@@ -4,10 +4,11 @@ import { baseDef, HALF, UNIT_DEFS } from '../shared/battle/units.ts';
 // order (ground < unit < health bar < cursor arrow), which the scene only applies.
 export const UNIT_HEIGHT = { default: 0.85, brute: 1.05, colossus: 2 }; // the Brute is bigger so it reads from afar that it hits hard; the Colossus takes 2x2
 // by model, not by id: the developer-menu Brute has its own sheet (dev-e0...) and came out small
-// half tile (half.ts): the ½ sheet is twice the size of the original, because each tile became 2x2
+// half tile (half.ts): the ½ sheet is as many times the original's height as its square is (twice, as each tile became
+// 2x2; a mini skeleton's one cell, Nov 20, keeps the original's)
 export const unitHeight = (def: string): number =>
   def.endsWith(HALF)
-    ? 2 * unitHeight(baseDef(def))
+    ? (UNIT_DEFS[def]?.size ? UNIT_DEFS[def].size / (UNIT_DEFS[baseDef(def)]?.size ?? 1) : 2) * unitHeight(baseDef(def))
     : (UNIT_DEFS[def]?.size ?? 1) > 1
       ? UNIT_HEIGHT.colossus
       : modelOf(def) === MODEL.brute
@@ -46,6 +47,7 @@ const MODEL: Record<string, string> = {
   dark_mage: 'skeleton_mage',
   brute: 'barbarian',
   minion: 'skeleton_minion',
+  mini_skeleton: 'skeleton_minion',
   colossus: 'skeleton_warrior',
   lancer: 'lancer', // Lancer: the Knight without cape or shield, in teal-green steel, with a spear (scripts/assets/lancer.mjs)
   acolyte: 'mage',

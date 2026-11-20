@@ -15,7 +15,8 @@ import { startRange, verifyRoom } from './verify.ts';
 // crawl5 (Nov 16): a chest node on every floor, so the same seed gives another map;
 // crawl6 (Nov 16, the trajectory grill): the checks shoot with the realistic path, so some seeds keep another layout;
 // crawl7 (Nov 20): every unit has both pools, a stamina unit the Gust, so the checks see farther and some seeds re-roll
-export const CRAWL_VERSION = 'crawl7';
+// crawl8 (Nov 20): a depth-1 group of mini skeletons (1x1 on the split map) joins the draw
+export const CRAWL_VERSION = 'crawl8';
 export interface RoomGroup {
   name: [string, string];
   depth: number;

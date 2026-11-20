@@ -35,13 +35,13 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
   const moving = s.k === 'map';
   const landing = hl && moving && b.reach().has(posKey(cursor)); // the cursor is on a tile the move can end on
   const owed = landing && counterDamage(b, cursor);
-  // The cursor's square (Fernando, Nov 20: never one half tile): choosing where to move or where to act from, the acting
-  // unit's square; over a unit, that unit's whole body (a large one's too); elsewhere a whole tile's 2x2 half tiles from
-  // the cell under it, so it walks half a tile at a time. Only on a hero's turn (hl): a battle that ended on the actor's
+  // The cursor's square (Fernando, Nov 20: never one half tile, unless the target is that small): choosing where to move
+  // or where to act from, the acting unit's square; over a unit, exactly its body (a large one's 4x4, a mini skeleton's
+  // one cell); elsewhere a whole tile's 2x2 half tiles from the cell under it, so it walks half a tile at a time. Only on a hero's turn (hl): a battle that ended on the actor's
   // death leaves no actor to read
   const own = UNIT_DEFS[b.actor.def].size ?? 1,
     on = hl && !moving && s.k !== 'spot' ? unitAt(b.state, cursor) : undefined,
-    size = !hl ? 1 : moving || s.k === 'spot' ? own : Math.max(subOf(b.grid), on ? (UNIT_DEFS[on.def].size ?? 1) : 1),
+    size = !hl ? 1 : moving || s.k === 'spot' ? own : on ? (UNIT_DEFS[on.def].size ?? 1) : subOf(b.grid),
     // the square's corner: the body's own over a unit, else the cell kept inside the map
     corner = on ? on.pos : { x: Math.min(cursor.x, b.grid.width - size), y: Math.min(cursor.y, b.grid.height - size) };
   // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if

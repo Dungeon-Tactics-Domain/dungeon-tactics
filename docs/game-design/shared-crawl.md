@@ -14,7 +14,7 @@ Nov 15, Fernando: the dungeon loop, with procedural rooms. Code in `crawl/genera
 ## Room version
 
 - `CRAWL_VERSION` starts every room id: bump it whenever the same seed would give another room (`tests/crawl-room.test.ts` pins the first 25 test rooms and their tries by hash, so a change in pathing, half tiles, the checks or a unit's move or size breaks it too).
-- History: `crawl2` when the boss group became the Colossus and one minion (Nov 15, Fernando; the pinned hash moved, the tries did not); `crawl3` when the rooms were drawn on the painted terrain like Ash Wood (Nov 15); `crawl4` with life and damage x5 (Nov 15), so an expedition saved at the old scale is dropped, not carried; `crawl5` with a chest node on every floor (Nov 16), so the same seed gives another map (the pinned tries did not move); `crawl6` with the realistic shot path (Nov 16, the trajectory grill of Nov 15), so some seeds keep another layout. Today: `crawl6` (`generate.ts`).
+- History: `crawl2` when the boss group became the Colossus and one minion (Nov 15, Fernando; the pinned hash moved, the tries did not); `crawl3` when the rooms were drawn on the painted terrain like Ash Wood (Nov 15); `crawl4` with life and damage x5 (Nov 15), so an expedition saved at the old scale is dropped, not carried; `crawl5` with a chest node on every floor (Nov 16), so the same seed gives another map (the pinned tries did not move); `crawl6` with the realistic shot path (Nov 16, the trajectory grill of Nov 15), so some seeds keep another layout; `crawl7` with both pools on every unit (Nov 20); `crawl8` with the depth-1 group "Ninho de mini esqueletos" (two mini skeletons, 1x1 on the split map, and a minion; Nov 20). Today: `crawl8` (`generate.ts`).
 
 ## Expedition
 

@@ -142,6 +142,25 @@ export const UNIT_LIST: UnitDef[] = [
     resist: { light: -50, shadow: 50 },
     dodge: 10,
   },
+  // Mini skeleton (Nov 20, Fernando: "um monstro 1x1 ... ou então um mini esqueleto"): the minion shrunk to one half
+  // tile, so the 2x2 cursor and a strike's area meet a body smaller than a tile. Less life than the minion (100: two of
+  // them and a minion are the 320 a room needs at least, content.test.ts), a little faster; tune by playing
+  {
+    id: 'mini_skeleton',
+    name: 'Mini esqueleto',
+    en: 'Mini skeleton',
+    hp: 100,
+    speed: 12,
+    move: 5,
+    jump: 2,
+    halfSize: 1,
+    abilities: ['stab', 'trip', 'gust'],
+    vars: { stamina: 30, mana: 30 },
+    regen: { stamina: 5 },
+    undead: true,
+    resist: { light: -50, shadow: 50 },
+    dodge: 20,
+  },
   // Veil Acolyte (night of Nov 12, Act II): heals allies, so taking it down first is the choice the stage asks for (the
   // target-priority "puzzle"). Little life and a mage's attack; initial numbers, measured in the Frost Pass stage
   {

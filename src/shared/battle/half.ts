@@ -18,7 +18,7 @@ export const SUB = 2;
 // rebuilt: the developer and expedition sheets (dev-h0, dev-e0…) change from battle to battle under the same id
 export function halfDef(id: string): string {
   const d = UNIT_DEFS[id];
-  UNIT_DEFS[id + HALF] = { ...d, id: id + HALF, size: (d.size ?? 1) * SUB, move: d.move * SUB };
+  UNIT_DEFS[id + HALF] = { ...d, id: id + HALF, size: d.halfSize ?? (d.size ?? 1) * SUB, move: d.move * SUB };
   return id + HALF;
 }
 

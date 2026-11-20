@@ -129,6 +129,7 @@ describe('the cursor square on the split map', () => {
         { id: 'w', def: halfDef('warrior'), team: 'hero', x: 0, y: 0 },
         { id: 's', def: halfDef('soldier'), team: 'enemy', x: 4, y: 2 },
         { id: 'c', def: halfDef('colossus'), team: 'enemy', x: 8, y: 2 },
+        { id: 'm', def: halfDef('mini_skeleton'), team: 'enemy', x: 1, y: 6 },
       ]),
     );
   const targets: Screen = { k: 'targets', index: 0 };
@@ -143,11 +144,13 @@ describe('the cursor square on the split map', () => {
     expect(frame(b, targets, at(11, 7))).toEqual({ cursor: at(10, 6), size: 2 });
   });
 
-  it("over a unit it frames the unit's body, a large one's 4x4 too, from any of its cells", () => {
+  it("over a unit it frames exactly the unit's body, a large one's 4x4 or a mini skeleton's one cell", () => {
     const b = split();
     expect(frame(b, targets, at(5, 3))).toEqual({ cursor: at(4, 2), size: 2 });
     expect(frame(b, targets, at(10, 4))).toEqual({ cursor: at(8, 2), size: 4 });
     expect(frame(b, targets, at(7, 2))).toEqual({ cursor: at(7, 2), size: 2 }); // off it, back to 2x2
+    // a mini skeleton takes one half tile (halfSize): the square is its one cell
+    expect(frame(b, targets, at(1, 6))).toEqual({ cursor: at(1, 6), size: 1 });
   });
 
   it("choosing where to move it is the acting unit's square", () => {

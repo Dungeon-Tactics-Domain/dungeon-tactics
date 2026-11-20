@@ -26,6 +26,7 @@ The Beacon Ashes campaign that used these maps and units was removed on Nov 15; 
 ## Large unit
 
 - **Large unit** (night of Nov 12): `UnitDef.size` (2 = 2x2, `pos` is the top-left tile). Every "who is on the tile" question goes through `unitAt`/`footprint` (`pathing.ts`); range, sight, area and hit chance measure from the nearest tile (`nearestTile`, `closest`).
+- **A unit smaller than a tile** (Nov 20, Fernando: "um monstro 1x1"): `UnitDef.halfSize` is its square on the split map in half tiles, in place of `size` doubled (`halfDef` in `half.ts`). The mini skeleton (`mini_skeleton`, the minion's model) has `halfSize: 1`: one half tile, its model as tall as a whole-tile unit's (`unitHeight` follows the square), the cursor framing its one cell.
 - A large unit does not walk (move 0) and is not pushed. For units that occupy 1 tile nothing changes (measured: Hill identical).
 - Today only the Bone Colossus (`colossus`): outside the developer menu, it is the crawl's boss (with one minion).
 

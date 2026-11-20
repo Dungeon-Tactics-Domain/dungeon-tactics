@@ -13,6 +13,12 @@ export const CRAWL_PARTY = ['warrior', 'archer', 'mage', 'rogue'];
 export const CRAWL_GROUPS: RoomGroup[] = [
   { name: ['Patrulha de lacaios', 'Minion patrol'], depth: 1, enemies: ['minion', 'minion', 'minion'] },
   { name: ['Arqueiro e escolta', 'Archer and escort'], depth: 1, enemies: ['minion', 'minion', 'skeleton_archer'] },
+  // Nov 20: the 1x1 mini skeletons with a minion to lead them (Fernando's request for a monster smaller than a tile)
+  {
+    name: ['Ninho de mini esqueletos', 'Mini skeleton nest'],
+    depth: 1,
+    enemies: ['mini_skeleton', 'mini_skeleton', 'minion'],
+  },
   { name: ['Mago na retaguarda', 'Mage at the rear'], depth: 2, enemies: ['soldier', 'dark_mage'] },
   { name: ['Cavaleiro e arqueiro', 'Knight and archer'], depth: 2, enemies: ['veil_knight', 'skeleton_archer'] },
   { name: ['Bruto sozinho', 'Lone brute'], depth: 2, enemies: ['brute'] },

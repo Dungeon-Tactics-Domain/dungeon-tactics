@@ -144,9 +144,9 @@ describe('crawl rooms: 500 seeds', () => {
     const first = built.slice(0, 25);
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-    expect(CRAWL_VERSION).toBe('crawl7');
-    expect(first.map((b) => b.tries).join(' ')).toBe('1 4 3 3 6 3 1 2 5 1 3 2 1 10 2 3 10 1 2 1 2 3 1 1 2');
-    expect((h >>> 0).toString(16)).toBe('c5ffde7');
+    expect(CRAWL_VERSION).toBe('crawl8');
+    expect(first.map((b) => b.tries).join(' ')).toBe('1 4 3 3 3 3 1 2 5 1 3 2 1 10 2 3 10 1 2 1 2 3 1 1 2');
+    expect((h >>> 0).toString(16)).toBe('f8678002');
   });
 
   it('every tile, split into half tiles too, carries a look the smooth painted terrain draws', () => {
