@@ -87,6 +87,7 @@ export const ACTIONS = {
   slots: { keys: ['1'], pad: [] },
   recenter: { keys: ['F'], pad: [] },
   fps: { keys: ['F3'], pad: [] },
+  fold: { keys: ['L'], pad: [] }, // the turn list folded to its faces and back (hud-queue.ts)
 } as const satisfies Record<string, { keys: readonly string[]; pad: readonly PadGlyph[] }>;
 export type Act = keyof typeof ACTIONS;
 

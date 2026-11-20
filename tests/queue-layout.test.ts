@@ -95,8 +95,8 @@ const plain = (over: Partial<QueueSpec>): QueueSpec => ({
   stats: 0,
   ...over,
 });
-// Nov 20: a first card at scale 1 holds three 16 px lines and the life bar (62.8 px), past the old 52; a row's box is
-// whole px
+// Nov 20: a first card at scale 1 holds three 16 px lines and two rows of bars (66.8 px: life and mana, stamina and
+// CT), past the old 52; a row's box is whole px
 const H = lu(linesHeight(3, 1, true));
 
 describe('3D turn list: its layout with no DOM', () => {
@@ -175,9 +175,9 @@ describe('3D turn list: its layout with no DOM', () => {
   it('stacks from the bottom: row 1 ends a padding above the end, each next one a gap higher', () => {
     const l = queueLayout(plain({ rows: 3, at: { x: 12, y: 40, w: 200, h: 500 }, pageH: 720 }));
     expect(l.rows).toEqual([
-      { x: 56, y: 427, w: 44, h: 63 },
-      { x: 56, y: 356, w: 44, h: 63 },
-      { x: 56, y: 286, w: 44, h: 63 },
+      { x: 56, y: 423, w: 44, h: 67 },
+      { x: 56, y: 348, w: 44, h: 67 },
+      { x: 56, y: 274, w: 44, h: 67 },
     ]);
     expect(l.box).toEqual({ left: 12, top: 40, right: 132, bottom: 540 });
   });
@@ -185,9 +185,10 @@ describe('3D turn list: its layout with no DOM', () => {
   it('the acting row is a bigger card, unless the sheet stands for it', () => {
     // with no acting panel under it the list still ends 2 px above the end of the page
     const big = queueLayout(plain({ rows: 2, now: true }));
-    expect(big.rows[0]).toEqual({ x: 56, y: 598 - 10 - 64, w: 54, h: 64 });
-    expect(big.rows[1]).toEqual({ x: 56, y: Math.round(598 - 10 - 64 - 8 - H), w: 44, h: 63 });
-    expect(big.seat.first).toEqual({ w: 54, h: 64 });
+    // its 64 design px are under the lines' 66.8 now: both cards are as tall, the acting one wider
+    expect(big.rows[0]).toEqual({ x: 56, y: Math.round(598 - 10 - H), w: 54, h: 67 });
+    expect(big.rows[1]).toEqual({ x: 56, y: Math.round(598 - 10 - H - 8 - H), w: 44, h: 67 });
+    expect(big.seat.first).toEqual({ w: 54, h: H });
     expect(queueLayout(plain({ rows: 2 })).seat.first).toEqual({ w: 44, h: H });
   });
 
@@ -202,7 +203,7 @@ describe('3D turn list: its layout with no DOM', () => {
     }
     expect(queueLayout(plain({ s: 1.5, rows: 2, small: [false, true] })).seat.sizes[1]).toEqual({
       w: lu(66 * 0.6),
-      h: lu(78 * 0.6),
+      h: lu(lu(linesHeight(3, 1.5, true)) * 0.6), // the lines' 81.4 px, past the 78 design px
     });
     // a phone's card is about as small as a finger allows: its repeat stays the same size
     const phone = queueLayout(plain({ s: 0.6, rows: 2, small: [false, true] })).seat.sizes;
@@ -211,15 +212,15 @@ describe('3D turn list: its layout with no DOM', () => {
 
   it('a list that fits does not scroll; a row more than fits does, by what is past its box', () => {
     const fill = (rows: number) => queueLayout(plain({ rows, at: { x: 0, y: 0, w: 200, h: 300 }, pageH: 300 }));
-    // 8 + 22 of title + 10, and H + 8 a row with its gap (70.8): three rows are 252 px, four 323, in a box of 298
+    // 8 + 22 of title + 10, and H + 8 a row with its gap (74.8): three rows are 264 px, four 339, in a box of 298
     expect(fill(0).more).toBe(0);
     expect(fill(0).rows).toEqual([]);
     expect(fill(3).more).toBe(0);
-    // a fourth row does not fit: the list drops its top 45 px to the third row's (gap under the title), 25 + 45 to scroll
-    expect(fill(4).top).toBe(45);
-    expect(fill(4).more).toBe(70);
+    // a fourth row does not fit: the list drops its top 33 px to the third row's (gap under the title), 41 + 33 to scroll
+    expect(fill(4).top).toBe(33);
+    expect(fill(4).more).toBe(74);
     expect(fill(4).rows[3].y).toBeLessThan(0); // up the list, past its top
-    expect(fill(5).more).toBe(141);
+    expect(fill(5).more).toBe(149);
   });
 
   it('ends above the acting panel when that one is taller than the reference, 2 px clear', () => {
@@ -229,7 +230,7 @@ describe('3D turn list: its layout with no DOM', () => {
     expect(room(148).box.bottom).toBe(450); // the border: 148 + 2 is the region's own end
     expect(room(149).box.bottom).toBe(449);
     expect(room(200).box.bottom).toBe(398);
-    expect(room(200).rows[0].y).toBe(398 - 50 - 10 - 63);
+    expect(room(200).rows[0].y).toBe(Math.round(398 - 50 - 10 - H));
   });
 
   it('grows to the right by the room the life and CT lines take', () => {
@@ -240,9 +241,11 @@ describe('3D turn list: its layout with no DOM', () => {
 
   it('under the smallest full scale the rows keep a floor that shrinks with the pieces', () => {
     const row = (s: number) => queueLayout(plain({ s })).seat.row;
-    expect(row(1.5)).toEqual({ w: 66, h: 78 });
+    expect(row(1.5)).toEqual({ w: 66, h: lu(linesHeight(3, 1.5, true)) }); // the lines' 81.4 past the 78 design px
     expect(row(0.9)).toEqual({ w: 41, h: H }); // 52 x 0.9 is 46.8 and the 48 px floor: the three lines hold it up
-    expect(row(0.45).h).toBeCloseTo(30.4, 1); // half the lines' floor: 3 lines of 8.8, 2 gaps of 1 and a 2 px bar
+    expect(row(0.45).h).toBeCloseTo(32.4, 1); // half the lines' floor: 3 lines of 8.8, 2 gaps of 1 and two 2 px bars
+    // folded (faces and order only) a card holds no lines: back to its own 52 design px
+    expect(queueLayout(plain({ folded: true })).seat.row).toEqual({ w: 44, h: 52 });
   });
 
   it('lu cuts a length to the 1/64 px of the browser, toward zero', () => {

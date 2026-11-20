@@ -12,6 +12,7 @@ import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { battleFace, type Expression, frameOf } from '../battle-face.ts';
 import type { Forecast } from '../forecast.ts';
+import { turnsFolded } from '../hud-queue.ts';
 import { ATLAS_COLUMNS, atlasCell } from '../icons.ts';
 import { modelOf } from '../markers.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -69,7 +70,7 @@ export class Turn3d implements Ui3dScreen {
   private readonly scroll = spring(0);
   private geo: QueueBoxes = { rows: [], left: 0, top: 0, height: 0, head: 0, scroll: 0, more: 0 };
   private lay!: QueueLayout; // set by the layer's first resize, in the constructor
-  private shown = { rows: 0, now: false, head: false, room: undefined as number | undefined, stats: 0 };
+  private shown = { rows: 0, now: false, head: false, room: undefined as number | undefined, stats: 0, folded: false };
   private small: boolean[] = []; // per shown row: a repeat's smaller card (queue-view.ts repeats)
   private expression: (u: UnitState) => Expression = () => 'neutral';
 
@@ -103,14 +104,12 @@ export class Turn3d implements Ui3dScreen {
   private relay() {
     const { layer, shown } = this;
     this.lay = queueLayout({
-      rows: shown.rows,
-      now: shown.now,
+      ...shown, // the rows, the acting card, the lines' room and the fold
       s: this.shared.uS.value,
       at: place(REGIONS.turn, layer.stage),
       pageH: layer.h,
       margin: layer.inset.top,
       sheet: shown.room ?? layer.h - Math.round(sheetBox(layer.small, layer.h).y), // the 3D bar's sheet or an HTML one
-      stats: shown.stats,
       small: this.small,
     });
     seatQueue(this.host, this.lay, shown.head, layer, this.flat);
@@ -125,7 +124,7 @@ export class Turn3d implements Ui3dScreen {
     const head = this.headless && headOnSheet(q, sheet),
       rows = (q?.rows.length ?? 0) - (head ? 1 : 0),
       small = repeats(q?.rows ?? []).slice(head ? 1 : 0);
-    Object.assign(this.shown, { rows, now: rows > 0 && !head, head, room });
+    Object.assign(this.shown, { rows, now: rows > 0 && !head, head, room, folded: turnsFolded(this.layer.phone) });
     this.small = small;
     this.relay();
   }
@@ -226,7 +225,7 @@ export class Turn3d implements Ui3dScreen {
   // `sheet`: the unit the HUD's acting sheet shows
   update(b: Battle, q: Queue | null, fs: Forecast[], face: (u: UnitState) => Expression, sheet?: string) {
     this.expression = face;
-    const next = queueCards(b, q, fs, this.headless ? sheet : undefined);
+    const next = queueCards(b, q, fs, this.headless ? sheet : undefined, turnsFolded(this.layer.phone));
     const turn = q ? `${b.state.turnsPlayed}:${b.state.turn.actor}` : '';
     const passed = turn !== this.turn;
     this.turn = turn;
@@ -346,7 +345,8 @@ export class Turn3d implements Ui3dScreen {
       const lay = statsLayout(h, s, c.texts?.lines.length ?? 1),
         barW = c.texts ? this.statW - 2 * TEXT_PAD : 0,
         barX = w + lay.x;
-      un.uStat.value.set(barX, barW, lay.hpBar, 0);
+      un.uStat.value.set(barX, barW, lay.hpBar, lay.stBar);
+      un.uPools.value.set(...(c.d.stats?.bars ?? [-1, -1, 0]));
       un.uBarH.value = lay.bar;
       const qw = w + LEFT * s + Math.max(RIGHT * s, barX + barW + 24 * s),
         qh = h + 2 * PAD * s;

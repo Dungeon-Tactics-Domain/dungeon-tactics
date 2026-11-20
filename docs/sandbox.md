@@ -53,6 +53,7 @@ different picture.
 | `path` | any other page with no staged battle, e.g. `"/"` (the title) or `"/?home"` (the town) or `"/?home=expedition"` (the expedition map, when the page's saves hold one) | page load |
 | `seed` | battle dice (default 1) | page load |
 | `lang` | `"pt"` or `"en"` (the CLI defaults to `en`) | page load |
+| `turns` | `"folded"` or `"open"`: the turn list folded to its faces or open, as its title's tap leaves it (default: folded on a phone, open elsewhere) | page load |
 | `viewport` | `{ "width": 1600, "height": 900 }` (default) | CLI |
 | `touch` | `true`: a finger points, `(pointer: coarse)`, so a phone-sized `viewport` gets the phone layout | CLI |
 | `format` | `"png"` (default) or `"webp"` | CLI |

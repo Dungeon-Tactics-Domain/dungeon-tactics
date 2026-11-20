@@ -5,6 +5,7 @@ import type { UnitState } from '../shared/battle/types.ts';
 import { hint, queueEnd } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, el } from './icons.ts';
+import { store } from './store.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import type { Queue } from './turn3d/queue-view.ts';
 
@@ -12,9 +13,21 @@ import type { Queue } from './turn3d/queue-view.ts';
 // row stays in the list unseen while the 3D bar's sheet shows it (queue-seat.ts), so the place is the queue's own
 export const rowUnit = (q: Queue | null, i: number): string | null => q?.rows[i]?.unit ?? null;
 
-// a tap or click on a card (a drag scrolls the list instead and never clicks): the unit it stands for
-export function wireCards(list: HTMLElement, q: () => Queue | null, card: (unit: string) => void) {
+// The turn list folds to its faces and order numbers and opens again (Fernando, Nov 20: "turn order pode ser
+// colapsável"), remembered per browser; with no choice yet a phone opens it folded, where the lines took a third of the
+// page, and a PC or a tablet open
+const FOLD = 'dt:turnsFold';
+export const turnsFolded = (phone: boolean) => {
+  const v = store.get(FOLD);
+  return v === null ? phone : v === '1';
+};
+export const foldTurns = (phone: boolean) => store.set(FOLD, turnsFolded(phone) ? '0' : '1');
+
+// a tap or click on a card (a drag scrolls the list instead and never clicks): the unit it stands for; on the title, the
+// list folds or opens
+export function wireCards(list: HTMLElement, q: () => Queue | null, card: (unit: string) => void, fold: () => void) {
   list.addEventListener('click', (e) => {
+    if (e.target instanceof Element && e.target.closest('.queue-title')) return fold();
     const row = e.target instanceof Element ? e.target.closest('.queue-row') : null;
     const unit = row && rowUnit(q(), [...list.querySelectorAll('.queue-row')].indexOf(row));
     if (unit) card(unit);
@@ -33,6 +46,7 @@ export function queueItems(b: Battle, q: Queue | null, face: (u: UnitState) => N
       { class: 'queue-title', 'aria-hidden': left === null ? 'true' : undefined },
       left === null ? t('Turnos', 'Turns') : t(`Turnos · faltam ${left}`, `Turns · ${left} to dawn`),
       hint('turns'),
+      hint('fold'),
     ),
     ...rows.map(({ unit, charge, ticks, round }, i) => {
       const u = b.state.units.find((x) => x.id === unit)!;

@@ -7,7 +7,7 @@ import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
 import { cornerLayout, LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
-import { cardLines, queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
+import { cardBars, cardLines, queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import {
   LIST_MIN,
   linesHeight,
@@ -472,7 +472,21 @@ describe('3D turn list: the lines beside the cards', () => {
     expect(card.stats!.lines[1]).toMatch(/^HP 90\/\d+ · MP \d+\/\d+$/);
     expect(card.stats!.lines[2]).toMatch(/^ST \d+\/\d+ · CT 40\/100$/); // no "+8" a tick
     expect(again).toMatchObject({ small: true, stats: { lines: ['Soldado'] } });
+    expect(again.stats!.bars).toBeUndefined(); // a repeat draws no bars
+    // a bar for each pool it has (Fernando, Nov 20): mana and stamina full at the start, CT at 40 of 100
+    expect(card.stats!.bars).toEqual([1, 1, 0.4]);
+    // folded, no card has lines nor bars: faces and order only
+    expect(queueCards(b, queueRows(b, null), [], undefined, true).every((c) => c.stats === null)).toBe(true);
     expect(card.tip).toContain(statsText(unitStats(foe)).long);
+  });
+
+  it('a pool the unit lacks has no bar, as its line has no number; CT always has one', () => {
+    const b = new Battle(flat(4, 1), stateOf([{ id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 }]));
+    const u = b.state.units[0];
+    u.ct = 25;
+    expect(cardBars(u)).toEqual([1, 1, 0.25]);
+    expect(cardBars({ ...u, def: 'beacon' })[0]).toBeLessThan(0); // the Beacon has no pools
+    expect(cardLines({ ...u, def: 'beacon' })[1]).not.toContain('MP');
   });
 
   it("a charge's row has no lines: it is a spell going off, not a turn", () => {
@@ -501,6 +515,8 @@ describe('3D turn list: the lines beside the cards', () => {
       expect(l.lines[0]).toBeLessThan(l.lines[1]);
       expect(l.lines[1]).toBeLessThan(l.hpBar);
       expect(l.hpBar + l.bar).toBeLessThanOrEqual(l.lines[2] - l.size / 2);
+      expect(l.lines[2]).toBeLessThan(l.stBar); // stamina and CT's bars under their line, inside the card
+      expect(l.stBar + l.bar).toBeLessThanOrEqual(h + 1e-9);
       expect(l.lines[2] + l.size * 0.55).toBeLessThanOrEqual(h + 1e-9);
       expect(statsLayout(h * 0.6, s, 1)).toMatchObject({ fits: true, hpBar: -1 }); // a repeat: its name, no bar
     }

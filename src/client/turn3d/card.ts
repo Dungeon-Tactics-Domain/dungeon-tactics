@@ -27,7 +27,7 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 
-// One shader draws the whole row, back to front: target band and gold plate, the life and CT bars beside the card,
+// One shader draws the whole row, back to front: target band and gold plate, the four pools' bars beside the card,
 // shadow, halo, frame, picture, a foe's diamond, charge badge and number. Shapes are rounded-rectangle distances; the small painted texture (uPaint) wears the frame,
 // the plate and the picture's ground so the flat gradients read as painted pieces
 const FRAG = `
@@ -37,7 +37,7 @@ uniform vec2 uSize; uniform vec2 uOrigin; uniform vec2 uCard; uniform vec2 uClip
 uniform float uS; uniform float uTime; uniform float uAlpha; uniform float uTeam; uniform float uNow; uniform float uHover;
 uniform float uTarget; uniform float uPending; uniform float uGold; uniform float uNum; uniform float uShift;
 uniform float uLift; uniform float uHasFace; uniform float uSeed; uniform float uBarH;
-uniform vec4 uStat;
+uniform vec4 uStat; uniform vec3 uPools;
 uniform sampler2D uFace; uniform sampler2D uDigits; uniform sampler2D uPaint; uniform sampler2D uIcons;
 uniform vec4 uFaceUv; uniform vec4 uTint; uniform vec3 uIcon;
 
@@ -46,6 +46,19 @@ float cov(float d) { return 1.0 - smoothstep(-0.6, 0.6, d); }
 vec4 over(vec4 d, vec3 c, float a) {
   float o = a + d.a * (1.0 - a);
   return vec4(o > 0.0 ? (c * a + d.rgb * d.a * (1.0 - a)) / o : c, o);
+}
+// one bar of a card's lines, w px wide from x, its top at top: a dark groove, what is left (up to sure, 0 to 1) in its
+// tone, the part an aimed strike changes (to upTo) blinking, and the empty rest
+vec4 meter(vec4 col, vec2 sp, float x, float w, float top, float sure, float upTo, vec3 tone) {
+  vec2 bc = sp - vec2(x + w * 0.5, top + uBarH * 0.5);
+  float d = box(bc, vec2(w, uBarH) * 0.5, uBarH * 0.5);
+  col = over(col, ${glsl('#05080f')}, 0.9 * cov(d - 1.0));
+  float fx = bc.x / w + 0.5;
+  float shade = 1.12 - 0.3 * (bc.y / uBarH + 0.5);
+  vec3 c = ${glsl('#2a2420')};
+  if (fx <= sure) c = tone * shade;
+  else if (fx <= upTo) c = mix(tone, vec3(1.0), 0.45 + 0.35 * sin(uTime * 9.0));
+  return over(col, c, cov(d));
 }
 vec3 digit(vec2 uv, float n) {
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return vec3(0.0);
@@ -76,26 +89,28 @@ void main() {
     col = over(col, g, uTarget * 0.94 * cov(d));
   }
 
-  // The lines beside the card (queue-view.ts statsLayout): a dark ground under them and, on a unit's first card, the life
-  // bar under its life line: what is left, the part an aimed strike changes (blinking) and the empty rest. uStat: the
-  // bar's left and width, then its top in px from the card's top left (negative: no bar, a repeat's card); a width of 0
-  // for a row without lines (a charge going off)
-  vec3 lifeTone = mix(${glsl('#2f86b0')}, ${glsl('#d9527f')}, uTeam);
+  // The lines beside the card (queue-view.ts statsLayout): a dark ground under them and, on a unit's first card, a bar
+  // under each number in the sheet's colours (bar3d/plates.ts; Fernando, Nov 20): life and mana under the second line,
+  // stamina and CT under the third, sharing the width; a pool the unit lacks (uPools under 0) has no bar, as its line
+  // has no number. Life shows what is left, the part an aimed strike changes (blinking) and the empty rest. uStat: the
+  // bars' left and width, then each row's top in px from the card's top left (negative: no bars, a repeat's card); a
+  // width of 0 for a row without lines (a charge going off)
   if (uStat.y > 0.5) {
     vec2 sp = p - vec2(uShift, -uLift);
     float gx = uCard.x * 0.5, gw = uStat.x + uStat.y + 6.0 * s - gx;
     float dG = box(sp - vec2(gx + gw * 0.5, mid), vec2(gw * 0.5, mid), 4.0 * s);
     col = over(col, ${glsl('#0d1427')}, 0.8 * cov(dG));
     if (uStat.z >= 0.0) {
-      vec2 bc2 = sp - vec2(uStat.x + uStat.y * 0.5, uStat.z + uBarH * 0.5);
-      float dBar = box(bc2, vec2(uStat.y, uBarH) * 0.5, uBarH * 0.5);
-      col = over(col, ${glsl('#05080f')}, 0.9 * cov(dBar - 1.0));
-      float fx2 = bc2.x / uStat.y + 0.5;
-      float shade = 1.12 - 0.3 * (bc2.y / uBarH + 0.5);
-      vec3 tone = ${glsl('#2a2420')};
-      if (fx2 <= uHp.x) tone = lifeTone * shade;
-      else if (fx2 <= uHp.y) tone = mix(lifeTone, vec3(1.0), 0.45 + 0.35 * sin(uTime * 9.0));
-      col = over(col, tone, cov(dBar));
+      float gap = 4.0 * s, hw = (uStat.y - gap) * 0.5;
+      float mpOn = step(0.0, uPools.x), stOn = step(0.0, uPools.y);
+      vec3 mana = mix(${glsl('#b34d4b')}, ${glsl('#c99a62')}, 0.5);
+      col = meter(col, sp, uStat.x, mix(uStat.y, hw, mpOn), uStat.z, uHp.x, uHp.y, ${glsl('#9cc93a')});
+      if (mpOn > 0.5) col = meter(col, sp, uStat.x + hw + gap, hw, uStat.z, uPools.x, uPools.x, mana);
+      if (uStat.w >= 0.0) {
+        if (stOn > 0.5) col = meter(col, sp, uStat.x, hw, uStat.w, uPools.y, uPools.y, ${glsl('#c2785a')});
+        float cx = uStat.x + stOn * (hw + gap);
+        col = meter(col, sp, cx, mix(uStat.y, hw, stOn), uStat.w, uPools.z, uPools.z, ${glsl('#b89318')});
+      }
     }
   }
 
@@ -327,7 +342,8 @@ export const cardMaterial = (shared: ReturnType<typeof sharedUniforms>, seed: nu
       uOrigin: { value: new Vector2() },
       uCard: { value: new Vector2() },
       uHp: { value: new Vector2(1, 1) },
-      uStat: { value: new Vector4() }, // the life bar beside the card: left, width, top (px; negative for none)
+      uStat: { value: new Vector4() }, // the bars beside the card: left, width, each row's top (px; negative for none)
+      uPools: { value: new Vector3(-1, -1, 0) }, // mana, stamina and CT, 0 to 1; under 0 for a pool the unit lacks
       uBarH: { value: 4 }, // its thickness, px
       uAlpha: { value: 0 },
       uTeam: { value: 0 },

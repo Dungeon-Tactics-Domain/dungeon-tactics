@@ -19,7 +19,7 @@ import { forecast } from './forecast.ts';
 import { type Pieces3d, pieces3d } from './hud-3d-pieces.ts';
 import { helpText, renderBack, renderCommands, undoShown } from './hud-menus.ts';
 import { helpWidth, KEYS, sheetFace, shownRight, strikes, unitPanel } from './hud-pieces.ts';
-import { queueItems, wireCards } from './hud-queue.ts';
+import { foldTurns, queueItems, wireCards } from './hud-queue.ts';
 import type { HudSkin } from './hud-skin.ts';
 import { CornerButtons } from './hud-tools.ts';
 import { t } from './i18n.ts';
@@ -78,6 +78,12 @@ export class BattleHud {
     const row = this.queue.querySelector<HTMLElement>('.queue-row')?.offsetHeight ?? 0;
     this.queue.scrollBy({ top: dir * pageStep(this.queue.clientHeight, row) });
   }
+  // the title, L: the list folds to its faces or opens, drawn again from the last view
+  foldQueue() {
+    foldTurns(this.layer?.phone ?? false);
+    if (this.view) this.render(this.view);
+  }
+  private view?: HudView;
   // where the list was scrolled before the redraw, and the turn it showed: a new turn scrolls back to NOW on top
   private queueScroll = 0;
   private queueTurn = '';
@@ -126,7 +132,12 @@ export class BattleHud {
     );
     host.append(this.root);
     this.active.addEventListener('click', () => act.sheet()); // takes taps only while the menu is shut (style.css)
-    wireCards(this.queue, () => this.queued, act.card);
+    wireCards(
+      this.queue,
+      () => this.queued,
+      act.card,
+      () => this.foldQueue(),
+    );
     this.layer = skin.layer(this.root, () => this.drop3d());
     if (!this.layer) return;
     this.menu3d = skin.menu3d(this.layer, act);
@@ -148,6 +159,7 @@ export class BattleHud {
   }
 
   render(v: HudView) {
+    this.view = v;
     const b = v.battle;
     const heroTurn = !b.over && b.actor.team === 'hero';
     const open = heroTurn && !v.busy;

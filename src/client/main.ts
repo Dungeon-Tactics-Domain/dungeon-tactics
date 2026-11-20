@@ -128,6 +128,7 @@ export class Game implements TurnHost {
     if (a.k === 'help') return this.menu();
     if (a.k === 'status') return this.status();
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
+    if (a.k === 'fold') return this.hud.foldQueue();
     if (a.k === 'fps') return void this.toggleFps();
     if (this.busy || !this.heroTurn) return;
     this.turn.key(a);

@@ -38,6 +38,7 @@ export interface QueueSpec {
   stats: number; // the room the life and CT lines take past the cards' column
   small?: boolean[]; // per row: it repeats a unit listed above, a smaller card (queue-view.ts repeats)
   margin?: number; // the page's top margin (ui3d/layer.ts inset.top): the list starts under it
+  folded?: boolean; // faces and order only (hud-queue.ts turnsFolded): no lines, so no card grows to hold them
 }
 
 // The sizes are the reference's (1280x720) times the scale; a row is never shorter than its two 16 px lines and two
@@ -50,11 +51,11 @@ export function queueLayout(q: QueueSpec) {
   const f = listFloor(q.s),
     px = (v: number) => lu(v * q.s),
     gap = px(8),
-    // a first card holds its three lines and the life bar; a repeat is SMALL of it, never so small that it and its gap
+    // a first card holds its three lines and their two rows of bars; a repeat is SMALL of it, never so small that it and its gap
     // give a finger under TAP, nor bigger than a first card (a phone's cards are already about that small)
     size = (now: boolean, small = false) => {
       const w = Math.max((now ? 54 : 44) * q.s, (now ? 50 : 41) * f),
-        h = Math.max((now ? 64 : 52) * q.s, (now ? 59 : 48) * f, linesHeight(3, q.s, true)),
+        h = Math.max((now ? 64 : 52) * q.s, (now ? 59 : 48) * f, q.folded ? 0 : linesHeight(3, q.s, true)),
         k = small ? Math.min(1, Math.max(SMALL, (TAP - gap) / h)) : 1;
       return { w: lu(w * k), h: lu(h * k) };
     },

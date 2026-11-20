@@ -74,6 +74,7 @@ export interface SceneSpec {
   path?: string; // any other page (title, town) with no staged battle, e.g. "/?home"
   seed?: number; // battle dice; default 1
   lang?: 'pt' | 'en';
+  turns?: 'folded' | 'open'; // the turn list folded to its faces or open (hud-queue.ts), as the title's tap leaves it
   viewport?: { width: number; height: number }; // CLI only
   touch?: boolean; // CLI only: a finger points ((pointer: coarse)), the phone and tablet layout
   format?: 'png' | 'webp'; // CLI only
@@ -100,6 +101,7 @@ const KEYS = [
   'crawl',
   'seed',
   'lang',
+  'turns',
   'viewport',
   'touch',
   'format',
@@ -154,6 +156,7 @@ export function parseSpec(raw: unknown): { spec: SceneSpec; problems: string[] }
     p.push(`crawl must be { seed, depth?, boss?, theme? } with theme among ${Object.keys(CRAWL_THEMES).join(', ')}`);
   if (r.seed !== undefined && !isInt(r.seed, 0)) p.push('seed must be an integer ≥ 0');
   if (r.lang !== undefined && r.lang !== 'pt' && r.lang !== 'en') p.push('lang must be "pt" or "en"');
+  if (r.turns !== undefined && r.turns !== 'folded' && r.turns !== 'open') p.push('turns must be "folded" or "open"');
   if (r.viewport !== undefined && !(isObj(r.viewport) && isInt(r.viewport.width, 200) && isInt(r.viewport.height, 200)))
     p.push('viewport must be { width, height } of at least 200 px');
   if (r.format !== undefined && r.format !== 'png' && r.format !== 'webp') p.push('format must be "png" or "webp"');
@@ -284,10 +287,11 @@ export function specUrl(spec: SceneSpec): string {
   return `/?${q}`;
 }
 
-// Saves the page must find before it loads: the language (read once at import)
+// Saves the page must find before it loads: the language (read once at import) and the turn list's fold
 export function storageFor(spec: SceneSpec): Record<string, string> {
   const out: Record<string, string> = {};
   if (spec.lang) out['dt:lang'] = spec.lang;
+  if (spec.turns) out['dt:turnsFold'] = spec.turns === 'folded' ? '1' : '0';
   return out;
 }
 

@@ -5,7 +5,7 @@ import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import type { Forecast } from '../forecast.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
-import { cardLines, type queueRows, statsText, unitStats } from '../turn-list.ts';
+import { cardBars, cardLines, type queueRows, statsText, unitStats } from '../turn-list.ts';
 import { pageText } from '../ui3d/layout.ts';
 
 export type Queue = ReturnType<typeof queueRows>;
@@ -39,8 +39,10 @@ export interface QueueCard {
   pending: boolean; // where the aimed charge would fire
   small: boolean; // a unit already listed above: a smaller card with its name only (Fernando, Nov 20)
   // the lines beside the card: on a unit's first card its name, life and mana, stamina and CT (turn-list.ts cardLines),
-  // the life bar under the second; on a repeat the name only. Null on a charge's row, a spell going off, not a turn
-  stats: { lines: string[] } | null;
+  // with a bar under each number (`bars`: mana, stamina and CT filled 0 to 1, under 0 for a pool the unit lacks; the
+  // life bar reads `hp`); on a repeat the name only. Null on a charge's row, a spell going off, not a turn; folded, the
+  // list shows faces and order only (Fernando, Nov 20), so no card has lines
+  stats: { lines: string[]; bars?: [mp: number, st: number, ct: number] } | null;
   tip: string; // name, life and CT in full, shown beside the card under the mouse
 }
 
@@ -65,7 +67,7 @@ export function repeats(rows: Queue['rows']): boolean[] {
   });
 }
 
-export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: string): QueueCard[] {
+export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: string, folded = false): QueueCard[] {
   const rows = q?.rows ?? [];
   const again = repeats(rows);
   const struck = new Map(fs.map((f) => [f.unit.id, f]));
@@ -92,7 +94,12 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
       target: marked.has(i),
       pending: i === q?.at,
       small: again[i],
-      stats: r.charge ? null : { lines: again[i] ? [unitName(u.def)] : cardLines(u) },
+      stats:
+        r.charge || folded
+          ? null
+          : again[i]
+            ? { lines: [unitName(u.def)] }
+            : { lines: cardLines(u), bars: cardBars(u) },
       tip: r.charge
         ? `${abilityName(r.charge)} · ${unitName(u.def)} · ${t(`resolve em ${r.ticks}`, `resolves in ${r.ticks}`)}`
         : `${unitName(u.def)} · ${text.long}${marked.has(i) ? t(' · alvo', ' · target') : ''}`,
@@ -102,7 +109,8 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
 }
 
 // Where the lines sit beside a card `h` px tall, at the list's scale `s` (1 at 1280x720), in px from the card's top:
-// each line's middle and, with `bar` (a first card), the life bar's top right under the second line. The text never
+// each line's middle and, with `bar` (a first card), a row of bars right under each line after the name: life and
+// mana under the second, stamina and CT under the third (Fernando, Nov 20: all four pools, not only the life). The text never
 // goes under the game's 16 px, so a first card is never shorter than its lines (queue-layout.ts linesHeight).
 // Under LIST_MIN (a narrow page, where the whole interface shrinks: ui3d/layout.ts) those floors shrink with the list
 export const LIST_MIN = 0.9; // the list's scale at layout.ts MIN_SCALE (1.5 of it: turn3d.ts)
@@ -113,22 +121,23 @@ const lineSizes = (s: number) => {
     size = Math.max(16 * f, Math.round(12 * s));
   return { size, line: size * 1.1, bar: Math.max(4 * f, Math.round(4 * s)), gap: Math.max(2 * f, Math.round(3 * s)) };
 };
-// what `n` lines take, with the life bar under the second when `bar`
+// what `n` lines take, with a row of bars under each but the first when `bar`
 export function linesHeight(n: number, s: number, bar: boolean) {
   const z = lineSizes(s);
-  return n * z.line + (n - 1) * z.gap + (bar ? z.bar : 0);
+  return n * z.line + (n - 1) * z.gap + (bar ? (n - 1) * z.bar : 0);
 }
 export function statsLayout(h: number, s: number, n = 3, bar = n > 1) {
   const z = lineSizes(s),
     top = (h - linesHeight(n, s, bar)) / 2;
-  // each line's top: the ones under the bar move down by its thickness
-  const at = (i: number) => top + i * (z.line + z.gap) + (bar && i > 1 ? z.bar : 0);
+  // each line's top: each row of bars above it moves it down by its thickness
+  const at = (i: number) => top + i * (z.line + z.gap) + (bar ? Math.max(0, i - 1) * z.bar : 0);
   return {
     size: z.size,
     bar: z.bar,
     x: Math.max(6, 8 * s), // from the card's right edge
     fits: top >= 0,
     lines: Array.from({ length: n }, (_, i) => at(i) + z.line / 2),
-    hpBar: bar ? at(1) + z.line : -1, // under the life line; -1 for none
+    hpBar: bar ? at(1) + z.line : -1, // under the life and mana line; -1 for none
+    stBar: bar && n > 2 ? at(2) + z.line : -1, // under the stamina and CT line
   };
 }

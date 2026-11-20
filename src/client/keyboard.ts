@@ -21,6 +21,7 @@ export type KeyAction =
   | { k: 'info' }
   | { k: 'fps' }
   | { k: 'turns'; dir: 1 | -1 }
+  | { k: 'fold' }
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
@@ -53,6 +54,8 @@ const SIMPLE: Record<string, KeyAction> = {
   // the page keys scroll the turn list, which since Nov 15 holds every unit (Fernando's decision)
   pageup: { k: 'turns', dir: -1 },
   pagedown: { k: 'turns', dir: 1 },
+  // L folds the turn list to its faces and back (Fernando, Nov 20)
+  l: { k: 'fold' },
   // Q zooms out and E zooms in: same hand as WASD
   q: { k: 'zoom', factor: ZOOM_STEP },
   e: { k: 'zoom', factor: 1 / ZOOM_STEP },
@@ -178,6 +181,11 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       ['turns'],
       'PgUp · PgDn',
       t('rolar a lista de turnos ou a janela aberta', 'scroll the turn list or the open window'),
+    ],
+    [
+      ['fold'],
+      '',
+      t('recolhe a lista de turnos aos rostos e a abre de novo', 'folds the turn list to its faces and opens it again'),
     ],
     [
       ['info'],

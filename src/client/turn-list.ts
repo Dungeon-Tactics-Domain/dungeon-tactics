@@ -156,3 +156,12 @@ export function cardLines(u: UnitState): string[] {
     join(pool('stamina', 'ST'), `CT ${s.ct}/${s.ctMax}`),
   ];
 }
+
+// How full each pool of a first card is, 0 to 1, for its bars (Fernando, Nov 20): mana, stamina and CT; under 0 for a
+// pool the unit lacks, which then has no bar, as its line has no number
+export function cardBars(u: UnitState): [mp: number, st: number, ct: number] {
+  const s = unitStats(u),
+    pools = UNIT_DEFS[u.def].vars ?? {};
+  const fill = (k: string) => (k in pools && pools[k] > 0 ? Math.max(0, Math.min(1, poolOf(u, k) / pools[k])) : -1);
+  return [fill('mana'), fill('stamina'), s.ct / s.ctMax];
+}
