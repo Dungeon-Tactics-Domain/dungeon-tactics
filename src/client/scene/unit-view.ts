@@ -75,10 +75,18 @@ export function makeView(
     const own = gltf.animations.some((c) => c.name.includes('|'));
     const fit = own ? long / Math.max(b.max.x - b.min.x, b.max.z - b.min.z) : unitHeight(u.def) / (b.max.y - b.min.y);
     body.scale.setScalar(fit);
-    // its middle between the head's cell (the holder, `pos`) and the tail's behind it (pathing.ts bodyOf), on a group of
-    // its own: the dodge and the tremble set the body's own x and z
+    // its head bone over the head's cell (the holder, `pos`; Nov 20, Fernando: the coiled pose raised it over the tail's
+    // cell), the coil falling back over the tail's (pathing.ts bodyOf); without a Head bone, its middle between the two.
+    // On a group of its own: the dodge and the tremble set the body's own x and z
+    // the world position is read through the body, already scaled by fit
+    const head = body.getObjectByName('Head')?.getWorldPosition(new THREE.Vector3());
     const lay = new THREE.Group().add(body);
-    if (own) lay.position.set(((b.min.x + b.max.x) / -2) * fit, 0, ((b.min.z + b.max.z) / -2) * fit - (long - 1) / 2);
+    if (own)
+      lay.position.set(
+        ((b.min.x + b.max.x) / -2) * fit,
+        0,
+        head ? -head.z : ((b.min.z + b.max.z) / -2) * fit - (long - 1) / 2,
+      );
     sway.add(lay);
     mixer = new THREE.AnimationMixer(body);
     // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
