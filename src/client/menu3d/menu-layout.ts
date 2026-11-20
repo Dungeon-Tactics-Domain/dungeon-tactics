@@ -36,9 +36,9 @@ export interface MenuLayout {
   next: Box;
 }
 
-// `st`: where the interface is laid out and its scale (ui3d/layout.ts `stage`). Both columns share one height: the
-// longer list's, growing upwards from the region's foot (Fernando, Nov 18: no blank fifth row under four commands, as
-// the capture's five rows left). A page too narrow for the menu keeps the glove on screen and lets the submenu run off
+// `st`: where the interface is laid out and its scale (ui3d/layout.ts `stage`). Each column is as tall as its own list,
+// growing upwards from the region's foot (Fernando, Nov 18: no blank fifth row under four commands, as the capture's
+// five rows left; Nov 19: the menu must not grow with the submenu). A page too narrow for the menu keeps the glove on screen and lets the submenu run off
 // the right. On a short page the sheet reaches down past the columns' top: they step left, clear of it, but never over
 // the acting unit's sheet in the combat bar (at 844x390 the menu covered the end of its stamina, "50/5"); where the
 // two do not both fit, the submenu's cascade over the menu shortens
@@ -46,7 +46,10 @@ export function menuLayout(st: Stage, rows: number, subRows: number, touch = fal
   const s = st.s,
     cs = touch ? touchScale(st) : s;
   const at = place(REGIONS.menu, { ...st, s: cs });
-  const h = (REF.head + Math.max(rows, subRows) * REF.row + REF.foot) * cs;
+  // each column as tall as its own list, both standing on the region's foot: the menu kept the submenu's height and grew
+  // when Agir opened (Fernando, Nov 19: "it must not")
+  const tall = (n: number) => (REF.head + n * REF.row + REF.foot) * cs;
+  const h = tall(rows);
   const page = place(REGIONS.detail, st);
   const sheet = { ...page, y: Math.max(st.y + 72, page.y) }; // under the help line and the corner buttons
   const low = sheet.y + sheet.h > at.y,
@@ -62,7 +65,7 @@ export function menuLayout(st: Stage, rows: number, subRows: number, touch = fal
   return {
     cs,
     main,
-    sub: { ...main, x: main.x + lead },
+    sub: { ...main, x: main.x + lead, y: main.y + main.h - tall(subRows), h: tall(subRows) },
     sheet,
     prev: { x: sheet.x, ...foot },
     next: { x: sheet.x + sheet.w / 2, ...foot },

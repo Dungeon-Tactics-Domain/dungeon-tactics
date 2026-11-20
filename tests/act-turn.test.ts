@@ -41,6 +41,32 @@ const host = (b: Battle, screen: Screen) => {
 describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () => {
   const rowsOf = (b: Battle) => menuView({ battle: b, screen: { k: 'acts', index: 0 } } as never, true)!.sub!;
 
+  // Fernando, Nov 19: the cursor passes over an off row to read its sheet and see its reach; Confirm only says no
+  it('an off row takes the cursor, shows its sheet and reach, and Confirm on it stays put', async () => {
+    const b = battle();
+    b.state.turn.main = 'firebolt'; // the main action spent: Raio de fogo is off
+    const h = host(b, { k: 'acts', index: 0 });
+    actKey(h, { k: 'cursor', dir: 'down' });
+    expect(h.screen).toEqual({ k: 'acts', index: 1 });
+    const view = menuView({ battle: b, screen: h.screen } as never, true)!;
+    expect(view.sub![1].off).toBe(true);
+    expect(view.sheet?.name).toBe('Raio de fogo');
+    expect(actMarks(b, h.screen as never).tiles.some((t) => t.kind === 'range')).toBe(true);
+    await actPick(h, 1);
+    expect(h.screen).toEqual({ k: 'acts', index: 1 });
+  });
+
+  it('the Agir row shows the two actions as dots and why nothing can be done; it still opens', () => {
+    const b = battle();
+    const note = () => menuView({ battle: b, screen: { k: 'menu', index: 0 } } as never, true)!.rows[0].note;
+    expect(note()).toBe('⬤ ●');
+    b.state.turn.main = 'firebolt';
+    expect(note()).toBe('◯ ●');
+    b.state.turn.bonus = 'heal';
+    expect(note()).toBe('sem ações  ◯ ○');
+    expect(menuView({ battle: b, screen: { k: 'menu', index: 0 } } as never, true)!.rows[0].off).toBe(false);
+  });
+
   it('each row on says how many targets its target list will show', () => {
     const b = battle();
     const rows = rowsOf(b);

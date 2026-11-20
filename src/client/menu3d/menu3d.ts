@@ -128,7 +128,8 @@ export class Menu3d implements Ui3dScreen {
         hit(
           rowBox(col, i, at.cs),
           r.label,
-          r.off,
+          // an Agir row that is off still takes the click, which only says no (Nov 19); the menu's greyed command does not
+          list === 'menu' && r.off,
           () => pick(index),
           () => this.act.hover(list, index),
         );

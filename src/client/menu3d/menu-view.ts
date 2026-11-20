@@ -26,7 +26,7 @@ import {
   itemName,
   kindTag,
 } from '../battle-text.ts';
-import { type Command, commandEnabled, commandIndex, menuRows } from '../command.ts';
+import { type Command, canAct, commandEnabled, commandIndex, menuRows, swimming } from '../command.ts';
 import type { HudView } from '../hud.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
 
@@ -100,11 +100,11 @@ const PAGE_EMPTY = [
 const lines = (facts: string[], i: number) =>
   facts.length ? facts.map((f) => `${f[0].toUpperCase()}${f.slice(1)}.`).join('\n') : PAGE_EMPTY[i]();
 
-// The sheet of the focused row of the action list: an ability's three pages, or an item's one (what it does, itemDetail:
-// an item has no reach, effects and cost pages to fill)
-export function sheetView(b: Battle, s: Extract<HudView['screen'], { k: 'actions' }>): SheetView | null {
-  const a = actActions(b, s.target)[s.index];
-  if (!a) return null;
+// The sheet of the focused row of the action list or of the Agir list (on or off: Fernando, Nov 19, the cursor passes over
+// an off one to read it): an ability's three pages, or an item's one (what it does, itemDetail: an item has no reach,
+// effects and cost pages to fill)
+export function sheetView(b: Battle, a: ActRow | undefined, page = 0): SheetView | null {
+  if (!a || a.k === 'pick') return null;
   const owner = unitName(b.actor.def);
   if (a.k === 'item')
     return {
@@ -115,7 +115,7 @@ export function sheetView(b: Battle, s: Extract<HudView['screen'], { k: 'actions
       page: 0,
     };
   const pages = abilityPages(a.id).map((facts, i) => ({ title: PAGE_TITLE[i](), text: lines(facts, i) }));
-  return { owner, name: abilityName(a.id), ...iconOf(a.id), pages, page: (s.page ?? 0) % pages.length };
+  return { owner, name: abilityName(a.id), ...iconOf(a.id), pages, page: page % pages.length };
 }
 
 // The command menu's column: the acting unit's name on its head and the rows menuRows shows (Move and Undo move only when
@@ -124,9 +124,29 @@ function column(b: Battle) {
   const cmds = menuRows(b);
   return {
     head: unitName(b.actor.def),
-    rows: cmds.map((c) => ({ label: commandName(c), note: '', off: !commandEnabled(b, c), kind: COMMAND_ICON[c] })),
+    rows: cmds.map((c) => ({
+      label: commandName(c),
+      note: c === 'act' ? actNote(b) : '',
+      off: !commandEnabled(b, c),
+      kind: COMMAND_ICON[c],
+    })),
     commands: cmds.map(commandIndex),
   };
+}
+
+// The Agir row's note (Fernando, Nov 19): a big dot for the main action and a small one for the secondary, hollow once
+// spent, after why nothing can be done this turn when so (the row still opens, to look at the actions and their reach)
+function actNote(b: Battle) {
+  const { turn } = b.state;
+  const dots = `${turn.main ? '◯' : '⬤'} ${turn.bonus ? '○' : '●'}`;
+  const why = !canAct(b)
+    ? swimming(b)
+      ? t('na água', 'in water')
+      : t('sem ações', 'no actions')
+    : actList(b).some((r) => r.k !== 'pick' && r.enabled)
+      ? ''
+      : t('sem alvos', 'no targets');
+  return [why, dots].filter(Boolean).join('  ');
 }
 
 // The menu of a turn screen, or null while it is closed (`open`: a hero's turn with nothing playing)
@@ -168,7 +188,12 @@ function actView(v: HudView, s: Extract<HudView['screen'], { k: 'acts' | 'target
             ? t('Alvo', 'Target')
             : t('Ação', 'Action'),
     subIndex: s.k === 'spot' ? (s.lock === 'tile' ? 1 : 0) : s.index,
-    sheet: s.k === 'actions' ? sheetView(b, s) : null,
+    sheet:
+      s.k === 'actions'
+        ? sheetView(b, actActions(b, s.target)[s.index], s.page)
+        : s.k === 'acts'
+          ? sheetView(b, actList(b)[s.index], s.page)
+          : null,
   };
 }
 
@@ -188,7 +213,16 @@ function targetRow(b: Battle, r: ActTarget): MenuRow {
 // a row of the Agir list or of the actions screen: its note (an off one's reason, Fernando's grill of Nov 19) is a line
 // under the name, on or off: with the target count it grew long enough to squeeze the name out beside it (Nov 19 capture)
 function listRow(b: Battle, a: ActRow): MenuRow {
-  if (a.k === 'pick') return { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword' };
+  if (a.k === 'pick')
+    return a.enabled
+      ? { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword' }
+      : {
+          label: t('Escolher alvo', 'Pick a target'),
+          note: t('sem alvos', 'no targets'),
+          off: true,
+          below: true,
+          kind: 'sword',
+        };
   const off = { off: !a.enabled, below: true };
   if (a.k === 'item')
     return {

@@ -136,7 +136,8 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
 // target list above), then every ability in the unit's order with the basic attack first, then the items. A row is on
 // when the action can hit someone reachable this turn (walk, then act) and its slot is free (options.ts: 'used'); else it
 // is off with the reason
-export type ActRow = { k: 'pick' } | ActAction;
+// "Escolher alvo" is off with no one to reach this turn (Fernando, Nov 19)
+export type ActRow = { k: 'pick'; enabled: boolean } | ActAction;
 // an ability or an item picked straight on the Agir list: the target list then shows only who it can hit
 export interface ActRef {
   k: 'ability' | 'item';
@@ -161,7 +162,7 @@ export function actList(b: Battle): ActRow[] {
       ? { ...base, enabled: true, reach: reach(base) }
       : { ...base, enabled: false, reason: 'no-target' };
   });
-  return [{ k: 'pick' }, ...abilities, ...items];
+  return [{ k: 'pick', enabled: hits.length > 0 }, ...abilities, ...items];
 }
 
 // The aim step (Fernando, Nov 19): an ability aimed at more than one place (an area that can be centred on the target or

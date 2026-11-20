@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { migrate } from '../src/client/store.ts';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { migrate, store } from '../src/client/store.ts';
 
 const saves = (init: Record<string, string>) => {
   const m = new Map(Object.entries(init));
@@ -85,5 +85,29 @@ describe('life x5 (Nov 15)', () => {
     });
     migrate(s);
     expect([...s.m.keys()].sort()).toEqual(['dt:battles', 'dt:migrated', 'dt:party']);
+  });
+});
+
+// Nov 19 audit: a write a full storage refused read back the older stored value (an expedition's gold came back as the old
+// chest); this tab's memory must win until a write is kept again
+describe('store with a full browser storage', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('reads back what it was asked to write, and the stored value again once a write is kept', () => {
+    const s = saves({ 'dt:chest': 'old' });
+    let full = true;
+    vi.stubGlobal('localStorage', {
+      ...s,
+      setItem: (k: string, v: string) => {
+        if (full) throw new Error('QuotaExceededError');
+        s.setItem(k, v);
+      },
+    });
+    store.set('dt:chest', 'new');
+    expect(store.get('dt:chest')).toBe('new');
+    expect(store.saved('dt:chest')).toBe('old'); // the refusal still shows to the save slots (saves.ts)
+    full = false;
+    store.set('dt:chest', 'kept');
+    s.setItem('dt:chest', 'other tab'); // another tab writes after it
+    expect(store.get('dt:chest')).toBe('other tab');
   });
 });

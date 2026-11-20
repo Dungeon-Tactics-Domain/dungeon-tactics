@@ -4,10 +4,19 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { posKey, samePos, subOf } from '../shared/battle/grid.ts';
-import { cellsOf, footprint, pathTo, unitAt } from '../shared/battle/pathing.ts';
+import { cellsOf, closest, footprint, inAbilityRange, pathTo, unitAt } from '../shared/battle/pathing.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { type ActAction, type ActTarget, actActions, actAims, actTargets, bestSpot, withAim } from './act-flow.ts';
+import {
+  type ActAction,
+  type ActTarget,
+  actActions,
+  actAims,
+  actList,
+  actTargets,
+  bestSpot,
+  withAim,
+} from './act-flow.ts';
 import type { Screen } from './command.ts';
 import { attackMarks, type Highlights, type TileKind } from './interaction.ts';
 
@@ -40,7 +49,28 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
     for (const pos of cells) tiles.push({ pos, kind });
   };
   const size = UNIT_DEFS[b.actor.def].size ?? 1;
-  if (s.k === 'acts') return { tiles: [{ pos: b.actor.pos, kind: 'actor' }], path: null, preview: null };
+  if (s.k === 'acts') {
+    // the focused ability's reach around the unit where it stands, on or off (Fernando, Nov 19: "the range around the
+    // character" while the cursor passes over each ability); a self-centred one shows its area
+    const row = actList(b)[s.index];
+    if (row?.k === 'ability') {
+      const a = ABILITIES[row.id];
+      const own = footprint(b.actor);
+      if (a.range[1] === 0)
+        mark(
+          attackMarks(b, a, b.actor.pos).map((m) => m.pos),
+          'range',
+        );
+      else
+        for (let y = 0; y < b.grid.height; y++)
+          for (let x = 0; x < b.grid.width; x++) {
+            const p = { x, y };
+            if (!own.some((c) => samePos(c, p)) && inAbilityRange(b.grid, a, ...closest(own, [p]))) mark([p], 'range');
+          }
+    }
+    mark(footprint(b.actor), 'actor');
+    return { tiles, path: null, preview: null };
+  }
   if (s.k === 'targets') {
     const rows = actTargets(b, s.only);
     rows.forEach((r, i) => {

@@ -51,7 +51,10 @@ export function actKey(h: ActHost, a: KeyAction): void {
   }
   if (a.k === 'confirm') return void actPick(h, s.index);
   // the action sheet's pages: left and right turn them back and forth, Details (I, the pad's north button) goes on
-  if (s.k === 'actions' && (a.k === 'info' || (a.k === 'cursor' && (a.dir === 'left' || a.dir === 'right')))) {
+  if (
+    (s.k === 'actions' || s.k === 'acts') &&
+    (a.k === 'info' || (a.k === 'cursor' && (a.dir === 'left' || a.dir === 'right')))
+  ) {
     actPage(h, a.k === 'cursor' && a.dir === 'left' ? -1 : 1);
     return;
   }
@@ -91,7 +94,7 @@ export function actStart(b: Battle, last?: ActRef): Screen {
 // the action sheet turns to its next or previous page
 export function actPage(h: ActHost, dir: 1 | -1): void {
   const s = h.screen;
-  if (s.k !== 'actions') return;
+  if (s.k !== 'actions' && s.k !== 'acts') return;
   sfx('cursor');
   h.screen = { ...s, page: turnPage(s.page ?? 0, dir) };
   h.update();
@@ -99,7 +102,11 @@ export function actPage(h: ActHost, dir: 1 | -1): void {
 
 // another row of the list is focused: an action opens its sheet on the first page
 const moved = (s: Extract<Screen, { k: 'acts' | 'targets' | 'actions' }>, index: number): Screen =>
-  s.k === 'actions' ? { k: 'actions', target: s.target, index } : { ...s, index };
+  s.k === 'actions'
+    ? { k: 'actions', target: s.target, index }
+    : s.k === 'acts'
+      ? { k: 'acts', index }
+      : { ...s, index };
 
 // the mouse or Tab on a list row moves the focus there, as the arrows would
 export function actHover(h: ActHost, index: number): void {
@@ -148,7 +155,7 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
   if (!actScreen(s)) return;
   if (s.k === 'acts') {
     const row = actList(b)[index];
-    if (!row || (row.k !== 'pick' && !row.enabled)) return sfx('cancel');
+    if (!row?.enabled) return sfx('cancel');
     sfx('confirm');
     // "Escolher alvo" lists everyone; an ability or an item lists only who it can hit this turn
     const only = row.k === 'pick' ? undefined : { k: row.k, id: row.id };
@@ -234,9 +241,11 @@ function mapPoints(b: Battle, s: Screen): Pos[] | null {
   return s.k === 'aim' ? actAims(a) : a.spots.map((sp) => sp.pos);
 }
 
+// every row takes the cursor, an off one too: it shows its sheet and reach, and Confirm on it only says no (Fernando,
+// Nov 19: "the disabled skills must still let the cursor pass over them")
 function enabledRows(b: Battle, s: Extract<Screen, { k: 'acts' | 'targets' | 'actions' }>): boolean[] {
-  if (s.k === 'acts') return actList(b).map((r) => r.k === 'pick' || r.enabled);
-  return s.k === 'targets' ? actTargets(b, s.only).map(() => true) : actActions(b, s.target).map((a) => a.enabled);
+  const rows = s.k === 'acts' ? actList(b) : s.k === 'targets' ? actTargets(b, s.only) : actActions(b, s.target);
+  return rows.map(() => true);
 }
 
 // a new focus: the camera goes to the focused target or tile, unless the pointer picked it (`follow` false)

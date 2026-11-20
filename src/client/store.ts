@@ -85,19 +85,22 @@ try {
 }
 
 export const store = {
+  // a value the browser refused to keep (full or blocked storage) is read back from this tab's memory, never the older
+  // stored one: an expedition's gold written to a full storage came back as the old chest (Nov 19 audit)
   get(k: string): string | null {
+    if (memory.has(k)) return memory.get(k)!;
     try {
-      return localStorage.getItem(k) ?? memory.get(k) ?? null;
+      return localStorage.getItem(k);
     } catch {
-      return memory.get(k) ?? null;
+      return null;
     }
   },
   set(k: string, v: string) {
-    memory.set(k, v);
     try {
       localStorage.setItem(k, v);
+      memory.delete(k); // stored: the browser's copy is the one to read, so another tab's later write still shows
     } catch {
-      // memory only
+      memory.set(k, v); // memory only
     }
     // the save slot's last-played time (saves.ts), for the Continue list
     if (PROGRESS_KEYS.includes(k)) store.set(PLAYED_KEY, String(Date.now()));

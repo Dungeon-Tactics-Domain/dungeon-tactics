@@ -225,10 +225,13 @@ describe('3D menu: where it sits', () => {
     }
   });
 
-  it('both columns take the longer list and keep their foot', () => {
+  // Fernando, Nov 19: the menu grew when Agir opened its longer list; it must not
+  it('each column is as tall as its own list, both on the same foot', () => {
     const { main, sub } = menuLayout(at(1920, 1080), 4, 7);
-    expect(main.h).toBe(sub.h);
-    expect(main.h).toBe(REF.head + 7 * REF.row + REF.foot);
+    expect(main).toEqual(menuLayout(at(1920, 1080), 4, 0).main);
+    expect(main.h).toBe(REF.head + 4 * REF.row + REF.foot);
+    expect(sub.h).toBe(REF.head + 7 * REF.row + REF.foot);
+    expect(sub.y + sub.h).toBe(main.y + main.h);
     expect(main.y + main.h).toBe(688 + 327);
   });
 

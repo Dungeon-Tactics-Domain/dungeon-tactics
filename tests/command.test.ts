@@ -3,6 +3,7 @@ import { actTargets, targetIndex } from '../src/client/act-flow.ts';
 import { commandName } from '../src/client/battle-text.ts';
 import {
   COMMANDS,
+  canAct,
   cancelStep,
   canUndoMove,
   commandEnabled,
@@ -48,9 +49,9 @@ describe('command menu', () => {
     b.move({ x: 2, y: 2 });
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('act') });
     b.act('strike', { x: 2, y: 1 });
-    expect(commandEnabled(b, 'act')).toBe(true); // the secondary action is still free (Nov 19)
+    expect(canAct(b)).toBe(true); // the secondary action is still free (Nov 19)
     b.state.turn.bonus = 'ether'; // and now both are spent
-    expect(commandEnabled(b, 'act')).toBe(false);
+    expect(canAct(b)).toBe(false);
     // movement left (Nov 13, movement in parts): back to Move
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
   });
@@ -100,7 +101,7 @@ describe('command menu', () => {
     expect(b.reach().size).toBeGreaterThan(0);
     // Move is still Move (Nov 18); "Undo move" under it never takes the cursor
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
-    expect(menuRows(b)).toEqual(['move', 'undo', 'wait', 'status']); // both actions spent: Agir left
+    expect(menuRows(b)).toEqual(['act', 'move', 'undo', 'wait', 'status']);
   });
 
   it('up and down skip what is disabled and wrap around', () => {
@@ -128,7 +129,7 @@ describe('command list', () => {
     expect(COMMANDS.map((c) => commandEnabled(b, c))).toEqual([true, true, false, true, true]); // nothing to undo yet
     b.act('strike', { x: 2, y: 1 });
     b.state.turn.bonus = 'ether'; // both actions spent (the secondary alone keeps Abilities open, Nov 19)
-    expect(commandEnabled(b, 'act')).toBe(false);
+    expect(canAct(b)).toBe(false);
     expect(commandEnabled(b, 'wait') && commandEnabled(b, 'status')).toBe(true);
   });
 });
@@ -288,8 +289,9 @@ describe('menu rows in each state of the turn', () => {
     b.act('shot', { x: 5, y: 1 });
     expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']);
     b.state.turn.bonus = 'ether'; // both actions spent: Agir leaves the menu (Fernando's grill, Nov 19)
-    expect(commandEnabled(b, 'act')).toBe(false);
-    expect(menuRows(b)).toEqual(['move', 'wait', 'status']);
+    expect(canAct(b)).toBe(false);
+    expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']); // Agir stays: it opens to look (Nov 19)
+    expect(commandEnabled(b, 'act')).toBe(true);
   });
 
   it('no step to undo (the move drew a counter): only Move, never Undo move', () => {

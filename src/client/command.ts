@@ -35,7 +35,7 @@ export type Screen =
   | { k: 'map'; command: 'move' }
   | { k: 'facing' }
   // The Agir list (Fernando, Nov 19): "Escolher alvo" opens the targets, then the abilities and items (act-flow.ts actList)
-  | { k: 'acts'; index: number }
+  | { k: 'acts'; index: number; page?: number }
   // Agir primeiro (Fernando's grill, Nov 19; the only way to act since "Apagar tudo"): the target list, the actions that hit
   // the picked target, the tiles to act from with the best one first; `lock`: a charge aimed at a unit asks where to lock it
   // `only`: the ability or item picked straight on the Agir list; the targets are who it can hit, and the screens after
@@ -63,25 +63,22 @@ export const canUndoMove = (b: Battle) => b.state.turn.moved && b.lastFree && b.
 // in deep water you can only move or wait (Nov 13, Fernando's choice; the rule is in previewAbility)
 export const swimming = (b: Battle) => isDeep(tileAt(b.grid, b.actor.pos));
 
+// an action can still be taken this turn: a slot is free (a secondary fits whichever) and the unit is not swimming
+export const canAct = (b: Battle) => !!freeSlot(b.state.turn, 'bonus') && !swimming(b);
+
 export function commandEnabled(b: Battle, c: Command): boolean {
   if (c === 'move') return b.reach().size > 0;
   if (c === 'undo') return canUndoMove(b);
-  // while any slot can still take something (a bonus action fits whichever is free)
-  if (c === 'act') return !!freeSlot(b.state.turn, 'bonus') && !swimming(b);
   return true;
 }
 
 // The rows the menu shows, in COMMANDS order: Move leaves once the unit moved and has no movement left (at the turn's
-// start it stays, greyed when boxed in), "Undo move" only while there is a move to take back, Agir while an action is left. 4 rows at the start, 5
+// start it stays, greyed when boxed in), "Undo move" only while there is a move to take back. Agir always shows and opens, even with nothing left to
+// do, to look at every action and its reach (Fernando, Nov 19; its row says why, menu-view.ts). 4 rows at the start, 5
 // after a move with movement left
 export const menuRows = (b: Battle): Command[] =>
   COMMANDS.filter((c) =>
-    c === 'move'
-      ? !b.state.turn.moved || b.reach().size > 0
-      : c === 'undo'
-        ? canUndoMove(b)
-        : // Agir leaves once both actions are spent (Fernando's grill, Nov 19); in deep water it stays, greyed
-          c !== 'act' || !!freeSlot(b.state.turn, 'bonus'),
+    c === 'move' ? !b.state.turn.moved || b.reach().size > 0 : c === 'undo' ? canUndoMove(b) : true,
   );
 
 // range of the farthest-reaching ability (the dotted line around the player)
@@ -95,13 +92,7 @@ export function startScreen(b: Battle): Screen {
   return {
     k: 'menu',
     index: commandIndex(
-      b.reach().size && !b.state.turn.moved
-        ? 'move'
-        : commandEnabled(b, 'act')
-          ? 'act'
-          : b.reach().size
-            ? 'move'
-            : 'wait',
+      b.reach().size && !b.state.turn.moved ? 'move' : canAct(b) ? 'act' : b.reach().size ? 'move' : 'wait',
     ),
   };
 }
