@@ -45,15 +45,22 @@ export function bodyOf(def: string, pos: Pos, facing = 0): Pos[] {
   return out;
 }
 export const footprint = (u: UnitState): Pos[] => bodyOf(u.def, u.pos, u.facing);
-// a long body may stop or turn only where every cell is on the map, standable, free of others and of bodies
-// (a square body answers true: its own rules already hold it)
-export const bodyFits = (grid: Grid, state: BattleState, u: UnitState, pos: Pos, facing = 0) =>
+// a long body may stop or turn only where every cell is on the map, standable, a step it could climb from the head
+// (its jump, by the surface like the walk), free of others and of bodies; `passing`: a step on the way, where it passes
+// allies and bodies as the walk does (a square body answers true: its own rules already hold it)
+export const bodyFits = (grid: Grid, state: BattleState, u: UnitState, pos: Pos, facing = 0, passing = false) =>
   !UNIT_DEFS[u.def].halfLength ||
   bodyOf(u.def, pos, facing).every((c) => {
-    if (!inBounds(grid, c) || !canStand(tileAt(grid, c)) || noStopAt(grid, state, c)) return false;
+    if (!inBounds(grid, c) || !canStand(tileAt(grid, c))) return false;
+    if (Math.abs(tileAt(grid, c).h - tileAt(grid, pos).h) > jumpOf(state, u.def)) return false;
     const o = unitAt(state, c);
-    return !o || o.id === u.id;
+    if (passing) return !o || o.team === u.team;
+    return !noStopAt(grid, state, c) && (!o || o.id === u.id);
   });
+// where `u` at `pos` looks after turning toward `dir` (to act, to answer a counter): a long body keeps its facing when the
+// turn does not fit, the same refusal as Battle.face
+export const turnedTo = (grid: Grid, state: BattleState, u: UnitState, pos: Pos, dir: number) =>
+  bodyFits(grid, state, u, pos, dir) ? dir : u.facing;
 // standing height of a square with its corner on `p`: its highest cell (a token straddling a step stands on the upper side)
 export const squareH = (grid: Grid, p: Pos, size: number) =>
   Math.max(...cellsOf(p, size).map((c) => standH(tileAt(grid, c))));
@@ -286,6 +293,8 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
   const unit = state.units.find((u) => u.id === unitId)!;
   budget ??= moveOf(state, unit);
   const jump = jumpOf(state, unit.def);
+  const long = !!UNIT_DEFS[unit.def].halfLength;
+  const faced = (from: Pos, to: Pos) => (unit.facing === undefined ? 0 : facingTo(from, to)); // a map without facing keeps 0
   if ((UNIT_DEFS[unit.def].size ?? 1) > 1 && UNIT_DEFS[unit.def].move > 0)
     return reachableBig(grid, state, unit, budget, jump);
   const seen = new Map<string, Step>([[posKey(unit.pos), { pos: unit.pos, cost: 0, from: null }]]);
@@ -303,6 +312,8 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
       if (!canStand(to) || Math.abs(to.h - tileAt(grid, cur).h) > jump) continue;
       const other = unitAt(state, n);
       if (other && other.team !== unit.team) continue;
+      // a long body lies behind each step: its tail must fit along the way, not only at the stop
+      if (long && !bodyFits(grid, state, unit, n, faced(cur, n), true)) continue;
       seen.set(k, { pos: n, cost: next, from: posKey(cur) });
       queue.push(n);
     }
@@ -315,7 +326,8 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
         [n, ...over].some((p) => {
           const o = unitAt(state, p);
           return o && o.team !== unit.team;
-        })
+        }) ||
+        (long && !bodyFits(grid, state, unit, n, faced(cur, n), true)) // the tail lies on the last tile flown over
       )
         continue;
       seen.set(k, { pos: n, cost: next, from: posKey(cur) });
@@ -329,15 +341,35 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
     for (let s: Step | undefined = step; s?.from; s = seen.get(s.from)) path.unshift(s.pos);
     step.path = path;
   }
-  seen.delete(posKey(unit.pos));
-  for (const [k, step] of seen) if (unitAt(state, step.pos) || noStopAt(grid, state, step.pos)) seen.delete(k);
-  // the tail lands behind the last step (battle.ts move faces that way); shortcut: only the stop is checked, not the tail
-  // along the way, upgrade when a snake squeezes through a gap it should not
-  if (UNIT_DEFS[unit.def].halfLength)
-    for (const [k, step] of seen) {
-      const f = unit.facing === undefined ? 0 : facingTo(step.path!.at(-2) ?? unit.pos, step.pos);
-      if (!bodyFits(grid, state, unit, step.pos, f)) seen.delete(k);
+  // the tail rests behind the last step (Battle.move faces that way): when the kept path's last step does not fit, another
+  // step into the same tile within the budget may (only walking steps are tried for this)
+  if (long)
+    for (const step of seen.values()) {
+      if (!step.from || bodyFits(grid, state, unit, step.pos, faced(seen.get(step.from)!.pos, step.pos))) continue;
+      const alt = neighbors(grid, step.pos)
+        .map((m) => seen.get(posKey(m)))
+        .find(
+          (m) =>
+            m &&
+            m.cost + stepCost(tileAt(grid, step.pos)) <= budget &&
+            Math.abs(tileAt(grid, m.pos).h - tileAt(grid, step.pos).h) <= jump &&
+            bodyFits(grid, state, unit, step.pos, faced(m.pos, step.pos)),
+        );
+      if (alt)
+        Object.assign(step, {
+          cost: alt.cost + stepCost(tileAt(grid, step.pos)),
+          from: posKey(alt.pos),
+          path: [...alt.path!, step.pos],
+        });
     }
+  seen.delete(posKey(unit.pos));
+  for (const [k, step] of seen) {
+    const o = unitAt(state, step.pos); // a long body may stop on its own tail's cell
+    if ((o && o.id !== unit.id) || noStopAt(grid, state, step.pos)) seen.delete(k);
+  }
+  if (long)
+    for (const [k, step] of seen)
+      if (!bodyFits(grid, state, unit, step.pos, faced(step.path!.at(-2) ?? unit.pos, step.pos))) seen.delete(k);
   return seen;
 }
 

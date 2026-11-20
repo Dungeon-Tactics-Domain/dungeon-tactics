@@ -1,9 +1,9 @@
-// Who answers a strike with a counter and which counters a move owes; the rule that plays them is `counters` (combat.ts).
+// Who answers a strike with a counter, which counters a move owes, and `counters`, which plays them (from combat.ts, Nov 20).
 import { ABILITIES } from './abilities.ts';
-import { type Preview, previewAbility } from './combat.ts';
+import { COMBAT, type Preview, previewAbility, resolveAbility } from './combat.ts';
 import { dist, facingTo, type Grid } from './grid.ts';
-import { aimEnds, nearCells } from './pathing.ts';
-import type { BattleState, Pos, UnitState } from './types.ts';
+import { aimEnds, nearCells, turnedTo } from './pathing.ts';
+import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
 // the unit's basic attack (the 1st ability): it is the one that fires on the counter-attack; ranged if it reaches more than 1 tile
@@ -54,7 +54,7 @@ export function pendingCounters(grid: Grid, state: BattleState, actorId: string,
     if (!foe || !answersSingle(foe.def)) continue; // an area one owed by a save from before the single-target rule
     // the attacker at `pos`, facing the counter; charged: the counter-attack pays no MP or stock
     const at = (pos: Pos) => {
-      const facing = actor.facing === undefined ? undefined : facingTo(pos, foe.pos);
+      const facing = actor.facing === undefined ? undefined : turnedTo(grid, state, actor, pos, facingTo(pos, foe.pos));
       const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos, facing } : u)) };
       return previewAbility(grid, moved, foe.id, basicOf(foe.def), pos, true);
     };
@@ -64,4 +64,22 @@ export function pendingCounters(grid: Grid, state: BattleState, actorId: string,
     else if (there.ok && inContact(grid, state, foe, actor.pos)) out.push({ unit: foe.id, at: to, preview: there });
   }
   return out;
+}
+
+// Plays `owed` counters at the attacker where it stands: those on its start tile before it leaves, the shooters it left in
+// contact once it stands on the stop (`Battle.move`)
+export function counters(grid: Grid, state: BattleState, actorId: string, owed: PendingCounter[]): BattleEvent[] {
+  const events: BattleEvent[] = [];
+  for (const c of owed) {
+    const foe = state.units.find((u) => u.id === c.unit); // an earlier counter may have killed it (friendly fire)
+    const actor = state.units.find((u) => u.id === actorId);
+    if (!foe || !actor) continue;
+    if (actor.facing !== undefined)
+      actor.facing = turnedTo(grid, state, actor, actor.pos, facingTo(actor.pos, foe.pos));
+    events.push(...resolveAbility(grid, state, c.unit, basicOf(foe.def), actor.pos, true, COMBAT.COUNTER));
+    // one counter per foe per turn (Fernando, Nov 16): out, back in and out again no longer draws a second one
+    const left = state.turn.engaged?.filter((id) => id !== c.unit);
+    state.turn.engaged = left?.length ? left : undefined; // an empty list is not saved
+  }
+  return events;
 }

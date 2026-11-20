@@ -1,7 +1,7 @@
 // Where a push ends and what it costs: bump, fall and the events, without touching the state (the AI prices pushes with it).
 import { COMBAT } from './combat.ts';
 import { canStand, type Grid, inBounds, isDeep, samePos, standH, subOf, tileAt } from './grid.ts';
-import { cellsOf, MAX_JUMP, noStopAt, restsOn, unitAt } from './pathing.ts';
+import { bodyFits, bodyOf, MAX_JUMP, noStopAt, restsOn, unitAt } from './pathing.ts';
 import { rulesOf } from './rules.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
 import { baseDef, UNIT_DEFS } from './units.ts';
@@ -29,7 +29,8 @@ export function simulatePush(
   const result: PushResult = { to: unit.pos, dmg: 0, events: [] };
   const size = UNIT_DEFS[unit.def].size ?? 1;
   if ((UNIT_DEFS[baseDef(unit.def)].size ?? 1) > 1) return result; // a large unit does not move
-  const cells = (p: Pos) => cellsOf(p, size);
+  // a long body (the snake) is pushed whole, facing unchanged: every cell is checked on each step
+  const cells = (p: Pos) => bodyOf(unit.def, p, unit.facing);
   // twice the middle of the square, so it stays whole
   const mid = (p: Pos, n: number) => ({ x: 2 * p.x + n - 1, y: 2 * p.y + n - 1 });
   const sub = subOf(grid);
@@ -66,7 +67,7 @@ export function simulatePush(
       out.dmg += dmg;
     }
     // spikes hurt when the square reaches them, not again on each cell over the same patch
-    if (spiky(next) && (size === 1 || !spiky(cur))) {
+    if (spiky(next) && (cells(next).length === 1 || !spiky(cur))) {
       out.events.push({ k: 'spike', unit: unit.id, dmg: COMBAT.SPIKE_DAMAGE });
       out.dmg += COMBAT.SPIKE_DAMAGE;
     }
@@ -77,7 +78,11 @@ export function simulatePush(
     result.dmg += m.dmg;
     result.events.push(...m.events);
   };
-  const rests = (p: Pos) => restsOn(grid, p, size);
+  // a long body rests when each cell does and the body fits as it would for a stop (no step past its jump)
+  const rests = (p: Pos) =>
+    UNIT_DEFS[unit.def].halfLength
+      ? bodyFits(grid, state, unit, p, unit.facing) && cells(p).every((c) => restsOn(grid, c, size))
+      : restsOn(grid, p, size);
   // a body (the map's or a corpse) is passed over and counts in the distance, but no cell of the square ends on one (Nov 16)
   const onBody = (p: Pos) => cells(p).some((c) => noStopAt(grid, state, c));
   const stops = (p: Pos) => rests(p) && !onBody(p);

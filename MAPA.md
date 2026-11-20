@@ -15,9 +15,9 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/grid.ts` — tiles with terrain, height, water depth and ramps; parseGrid and withRamps build maps; standing, step cost, facing and sides.
 - `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, where nobody stops (noStopAt: map bodies and corpses), ranges in cells and areas.
 - `src/shared/battle/shot.ts` — the shot path (`traceShot`, `shotAt`): what stops a shot and the two ends it is measured between.
-- `src/shared/battle/combat.ts` — hit chance, damage range, preview, resolve (hit then damage), the counters it plays, spikes and the battle outcome.
+- `src/shared/battle/combat.ts` — hit chance, damage range, preview, resolve (hit then damage), spikes and the battle outcome.
 - `src/shared/battle/options.ts` — what a unit can do this turn before moving: per ability, the targets reachable by walking then acting and the tiles to act from, or why it is off (actionOptions).
-- `src/shared/battle/counter.ts` — who answers a strike with a counter and which counters a move owes.
+- `src/shared/battle/counter.ts` — who answers a strike with a counter, which counters a move owes, and playing them.
 - `src/shared/battle/push.ts` — where a push ends and what it costs (bump, fall), without touching the state.
 - `src/shared/battle/turn-queue.ts` — FFT CT queue: turn cost, the next turn, charges firing and previewOrder for the turn list.
 - `src/shared/battle/battle.ts` — Battle: owns the state, move/act/use item/end turn, limited undo (dice never roll back), save/load through parseBattleState.

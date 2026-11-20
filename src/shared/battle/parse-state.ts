@@ -5,6 +5,7 @@ import { abilityKind } from './action-slots.ts';
 import { CONSUMABLE_IDS, parseBag } from './bag.ts';
 import { parseEffects } from './effects.ts';
 import { canStand, FACING, faceNearest, inBounds, posKey, subOf, tileAt } from './grid.ts';
+import { bodyOf } from './pathing.ts';
 import { SCENARIOS } from './scenarios.ts';
 import type { BattleState, Charge, Pos, UnitState } from './types.ts';
 import { HALF, RESOURCES, UNIT_DEFS } from './units.ts';
@@ -36,10 +37,15 @@ export function parseBattleState(raw: unknown): BattleState | null {
     // all the unit's tiles (a large one occupies 2x2 from `pos`): inside the map, walkable and empty (Nov 13,
     // review: only the corner tile was checked, and a Colossus covered the Beacon or left the map)
     const size = UNIT_DEFS[u.def].size ?? 1;
-    const tiles = Array.from({ length: size * size }, (_, i) => ({
-      x: pos.x + (i % size),
-      y: pos.y + Math.floor(i / size),
-    }));
+    // a long body (the snake, Nov 20) lies along its facing, so it needs one: no save older than it lacks it
+    const long = !!UNIT_DEFS[u.def].halfLength;
+    if (long && (!isInt(u.facing) || !FACING[u.facing])) return null;
+    const tiles = long
+      ? bodyOf(u.def, pos, u.facing as number)
+      : Array.from({ length: size * size }, (_, i) => ({
+          x: pos.x + (i % size),
+          y: pos.y + Math.floor(i / size),
+        }));
     if (!tiles.every((p) => inBounds(grid, p) && canStand(tileAt(grid, p)) && !cells.has(`${p.x},${p.y}`))) return null;
     if (!isInt(u.hp) || u.hp < 1 || u.hp > UNIT_DEFS[u.def].hp || !isInt(u.ct) || Math.abs(u.ct) > 10000) return null;
     if (ids.has(u.id)) return null;

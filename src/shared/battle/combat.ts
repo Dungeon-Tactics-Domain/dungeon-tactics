@@ -1,10 +1,8 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
-import { basicOf, type PendingCounter } from './counter.ts';
 import { hitElement, powerBonus, resistBonus } from './effects.ts';
 import {
   dist,
   FACING,
-  facingTo,
   type Grid,
   inBounds,
   isDeep,
@@ -251,23 +249,6 @@ export function previewAbility(
     };
   });
   return { ok: true, center, targets, shot };
-}
-
-// Plays `owed` counters at the attacker where it stands: those on its start tile before it leaves, the shooters it left in
-// contact once it stands on the stop (`Battle.move`)
-export function counters(grid: Grid, state: BattleState, actorId: string, owed: PendingCounter[]): BattleEvent[] {
-  const events: BattleEvent[] = [];
-  for (const c of owed) {
-    const foe = state.units.find((u) => u.id === c.unit); // an earlier counter may have killed it (friendly fire)
-    const actor = state.units.find((u) => u.id === actorId);
-    if (!foe || !actor) continue;
-    if (actor.facing !== undefined) actor.facing = facingTo(actor.pos, foe.pos);
-    events.push(...resolveAbility(grid, state, c.unit, basicOf(foe.def), actor.pos, true, COMBAT.COUNTER));
-    // one counter per foe per turn (Fernando, Nov 16): out, back in and out again no longer draws a second one
-    const left = state.turn.engaged?.filter((id) => id !== c.unit);
-    state.turn.engaged = left?.length ? left : undefined; // an empty list is not saved
-  }
-  return events;
 }
 
 // Applies the ability to the state (changes units and rng) and returns the events for the client to animate.

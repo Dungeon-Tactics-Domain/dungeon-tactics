@@ -100,7 +100,7 @@ Redefined on Nov 15 after Fernando was struck by a unit he had not attacked that
 - `pendingCounters` is the one reading for the rule, the AI's retreat (`counterCost` in `chooseRetreat`, a death weighed like a kill) and the client.
 - Saves: `parseBattleState` reads the Nov 13 objects in the turn and the short-lived Nov 15 `BattleState.engaged` (only the actor's strike of this turn, `turns` 2, still counts), dropping repeats, the actor's own side and ids no longer in the battle; a unit that dies leaves `turn.engaged` at once (`hurt`), since a friendly counter can kill another owed one mid-move and the save then named a missing unit.
 - Known gaps (review of Nov 15, not fixed): a unit in deep water still counters, since the counter's preview passes `charged` and so skips the water check; the cursor damage reads every counter on the state before the move, so it can differ when an earlier counter of the same move kills a unit in a later shot's path.
-- Facing (`UnitState.facing`) is on every map since Nov 13 (units spawn facing the nearest enemy; an older save is filled in), and counter-attacks (`counters` in `combat.ts`) work everywhere; only the counters of `UnitState.vars` (from `UnitDef.vars`) exist for scenarios that ask for them.
+- Facing (`UnitState.facing`) is on every map since Nov 13 (units spawn facing the nearest enemy; an older save is filled in), and counter-attacks (`counters` in `counter.ts`) work everywhere; only the counters of `UnitState.vars` (from `UnitDef.vars`) exist for scenarios that ask for them.
 
 ## Jump by class
 

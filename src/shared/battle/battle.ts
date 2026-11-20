@@ -1,12 +1,12 @@
 import { ABILITIES, defaultLock } from './abilities.ts';
 import { type ActionKind, slotFor, slotScale } from './action-slots.ts';
 import { applyItem, itemEffect } from './bag.ts';
-import { checkOutcome, counters, type Preview, pay, previewAbility, resolveAbility, spikeAtTurnEnd } from './combat.ts';
-import { canCounter, pendingCounters } from './counter.ts';
+import { checkOutcome, type Preview, pay, previewAbility, resolveAbility, spikeAtTurnEnd } from './combat.ts';
+import { canCounter, counters, pendingCounters } from './counter.ts';
 import { moveOf } from './effects.ts';
 import { FACING, facingTo, type Grid, posKey, samePos } from './grid.ts';
 import { isInt, isObj, parseBattleState } from './parse-state.ts';
-import { bodyFits, pathTo, reachable, type Step, unitAt } from './pathing.ts';
+import { bodyFits, pathTo, reachable, type Step, turnedTo, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Lock, Pos, UnitState } from './types.ts';
@@ -129,7 +129,7 @@ export class Battle {
     // declaring a charge rolls no die: undo costs nothing (Nov 13, review; the roll comes when it fires)
     this.remember(ABILITIES[abilityId].charge === 0);
     if (this.actor.facing !== undefined && !samePos(target, this.actor.pos))
-      this.actor.facing = facingTo(this.actor.pos, target); // turns toward the target
+      this.actor.facing = turnedTo(this.grid, this.state, this.actor, this.actor.pos, facingTo(this.actor.pos, target)); // turns toward the target
     const ability = ABILITIES[abilityId];
     let events: BattleEvent[];
     if (ability.charge > 0) {
@@ -164,7 +164,7 @@ export class Battle {
     if (this.over || !itemEffect(this.grid, this.state, this.actor.id, item, target)) return [];
     this.remember(false);
     if (this.actor.facing !== undefined && !samePos(target, this.actor.pos))
-      this.actor.facing = facingTo(this.actor.pos, target);
+      this.actor.facing = turnedTo(this.grid, this.state, this.actor, this.actor.pos, facingTo(this.actor.pos, target));
     return applyItem(this.grid, this.state, this.actor.id, item, target);
   }
 
