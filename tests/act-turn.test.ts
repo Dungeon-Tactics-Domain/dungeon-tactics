@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { actActions, actAims, toward } from '../src/client/act-flow.ts';
+import { actActions, actAims } from '../src/client/act-flow.ts';
 import { actMarks } from '../src/client/act-marks.ts';
-import { type ActHost, actKey, actPick, actTap } from '../src/client/act-turn.ts';
+import { type ActHost, actHoverMap, actKey, actPick, actTap } from '../src/client/act-turn.ts';
 import { itemDetail } from '../src/client/battle-text.ts';
 import { cancelStep, type Screen } from '../src/client/command.ts';
 import { helpText } from '../src/client/hud-menus.ts';
-import { gridStep } from '../src/client/keyboard.ts';
 import { menuView } from '../src/client/menu3d/menu-view.ts';
 import { ABILITIES, defaultLock } from '../src/shared/battle/abilities.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -22,6 +21,8 @@ const battle = () => {
   s.scenario = 'ash_wood'; // no Beacon: walking keeps the battle on
   return new Battle(flat(14, 5), s);
 };
+// the default camera's diamond: grid x goes down-right on screen, grid y down-left
+const diamond = (p: { x: number; y: number }) => ({ x: (p.x - p.y) * 32, y: (p.x + p.y) * 16 });
 const host = (b: Battle, screen: Screen) => {
   const ran: BattleEvent[][] = [];
   const h: ActHost & { ran: BattleEvent[][] } = {
@@ -31,7 +32,7 @@ const host = (b: Battle, screen: Screen) => {
     update: () => {},
     focus: () => {},
     runAct: async (run) => void ran.push(run(b)),
-    step: (dir) => gridStep(dir, 0),
+    at: diamond,
   };
   return h;
 };
@@ -133,17 +134,43 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     expect(cancelStep(b, { k: 'aim', target, action: i, index: pick })).toEqual({ k: 'actions', target, index: i });
   });
 
-  it('an arrow on the map goes to the nearest point that way, straight before slanted, and stays at the edge', () => {
-    const pts = [
-      { x: 0, y: 0 },
-      { x: 2, y: 0 },
-      { x: 2, y: 2 },
-      { x: 4, y: 1 },
-    ];
-    expect(toward(pts, pts[0], { x: 1, y: 0 })).toBe(1);
-    expect(toward(pts, pts[1], { x: 0, y: 1 })).toBe(2);
-    expect(toward(pts, pts[1], { x: 1, y: 0 })).toBe(3);
-    expect(toward(pts, pts[0], { x: -1, y: 0 })).toBe(-1);
+  it('an arrow on the map goes to a point that way on screen, never on a slant, on the diamond view (Nov 19)', async () => {
+    const b = battle();
+    const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
+    const i = actActions(b, target).findIndex((a) => a.enabled && actAims(a).length > 1);
+    const aims = actAims(actActions(b, target)[i]);
+    const ways = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] } as const;
+    let moved = 0;
+    for (const [dir, [wx, wy]] of Object.entries(ways))
+      for (let from = 0; from < aims.length; from++) {
+        const h = host(b, { k: 'aim', target, action: i, index: from });
+        actKey(h, { k: 'cursor', dir: dir as keyof typeof ways });
+        const to = (h.screen as { index: number }).index;
+        if (to === from) continue;
+        moved++;
+        const a = diamond(aims[from]),
+          c = diamond(aims[to]);
+        const ahead = (c.x - a.x) * wx + (c.y - a.y) * wy,
+          aside = Math.abs((c.x - a.x) * wy - (c.y - a.y) * wx);
+        expect(ahead).toBeGreaterThan(0);
+        expect(aside).toBeLessThanOrEqual(ahead); // within 45° of the arrow on screen
+      }
+    expect(moved).toBeGreaterThan(0);
+  });
+
+  it('the pointer focuses an aim without sliding the camera, so a 2nd click on the same pixel goes on (Nov 19)', async () => {
+    const b = battle();
+    const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
+    const i = actActions(b, target).findIndex((a) => a.enabled && actAims(a).length > 1);
+    const aims = actAims(actActions(b, target)[i]);
+    const h = host(b, { k: 'aim', target, action: i, index: 0 });
+    let slid = 0;
+    h.focus = () => void slid++;
+    actHoverMap(h, aims[1]);
+    expect(h.screen).toMatchObject({ k: 'aim', index: 1 });
+    actTap(h, aims[2]);
+    expect(h.screen).toMatchObject({ k: 'aim', index: 2 });
+    expect(slid).toBe(0);
   });
 
   it('the help line says what to pick and what an item does', () => {

@@ -116,26 +116,6 @@ export const withAim = (a: ActAction, aim: Pos): ActAction => ({
   spots: a.spots.filter((s) => samePos(s.aim, aim)),
 });
 
-// An arrow on the map (Fernando, Nov 19: "the arrows don't go the right way"): from `from`, the nearest point that way on
-// screen. `step` is the arrow's grid step for the camera (keyboard.ts gridStep); straight ahead wins over a slant, and at
-// the edge it stays (-1)
-export function toward(points: Pos[], from: Pos, step: Pos): number {
-  let best = -1,
-    score = Infinity;
-  points.forEach((p, i) => {
-    const dx = p.x - from.x,
-      dy = p.y - from.y;
-    const along = dx * step.x + dy * step.y;
-    if (along <= 0) return;
-    const v = along + 2 * Math.abs(dx * step.y - dy * step.x);
-    if (v < score) {
-      score = v;
-      best = i;
-    }
-  });
-  return best;
-}
-
 // The spot picked first (decision 3): one that keeps allies out of the damage when there is one (Fernando, Nov 19: the
 // Explosion's first tile hit the Archer), then staying put when it works, else the best expected result, then the
 // shortest walk. Expected: chance x mean damage on foes and heal on allies, minus the same on the wrong side; an item's

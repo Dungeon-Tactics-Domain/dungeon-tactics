@@ -471,7 +471,7 @@ describe('3D interface: bench scenes and boundaries', () => {
   // import. The layout and the flags are the exception: small and pure, the Options and the HUD read them
   it('the rest of the client takes the 3D folders and the CSS menu by type or by dynamic import only', () => {
     const value =
-      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|result3d\/|town3d\/|flow3d\/|window3d\/)/m;
+      /^import (?!type )[^;]*from\s+['"][^'"]*\/(ui3d\/(?!layout\.ts|walk\.ts)|menu3d\/|turn3d\/|bar3d\/|hints3d\/|result3d\/|town3d\/|flow3d\/|window3d\/)/m;
     expect(value.test("import { Menu3d } from './menu3d/menu3d.ts';")).toBe(true);
     expect(value.test("import { Ui3dLayer } from './ui3d/layer.ts';")).toBe(true);
     expect(value.test("import { stage } from './ui3d/layout.ts';")).toBe(false);

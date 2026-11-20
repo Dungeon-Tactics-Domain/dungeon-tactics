@@ -6,7 +6,7 @@ import { footprint, nearestTile } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { actScreen } from './act-marks.ts';
-import { type ActHost, actHover, actKey, actPage, actPick, actTap } from './act-turn.ts';
+import { type ActHost, actHover, actHoverMap, actKey, actPage, actPick, actTap } from './act-turn.ts';
 import { COMMANDS, cancelStep, commandEnabled, commandIndex, type Screen, startScreen, stepIndex } from './command.ts';
 import { freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction } from './keyboard.ts';
@@ -78,6 +78,7 @@ export class HeroTurn {
     if (!pos || this.game.busy || !this.game.heroTurn || this.screen.k === 'facing' || samePos(pos, this.cursor))
       return;
     this.cursor = pos; // no blip on tiles: it piled up and stuttered when sweeping the mouse or the stick (Fernando, Nov 15)
+    if (actScreen(this.screen)) return actHoverMap(this.actHost, pos);
     this.game.update(this.screen.k === 'map' ? hoverTile(this.game.battle, this.ui, pos) : this.ui);
   }
 
@@ -252,7 +253,7 @@ export class HeroTurn {
         turn.scene.focusOn(p);
       },
       runAct: (run) => turn.game.runAct(run),
-      step: (dir) => gridStep(dir, turn.scene.heading),
+      at: (p) => turn.scene.screenAt(p, 1),
     };
   }
 
