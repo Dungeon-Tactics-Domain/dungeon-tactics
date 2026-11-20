@@ -3,12 +3,21 @@
 // row, and what changed between two draws. No DOM or Three here; tested in tests/ui3d.test.ts.
 import { ABILITIES, type AbilityDef } from '../../shared/battle/abilities.ts';
 import type { Battle } from '../../shared/battle/battle.ts';
-import { basicOf } from '../../shared/battle/counter.ts';
+import { subOf } from '../../shared/battle/grid.ts';
 import type { Element } from '../../shared/battle/units.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
-import { AGIR_LIST, actActions, actList, actTargets } from '../act-flow.ts';
+import { type ActRow, type ActTarget, actActions, actList, actTargets, distanceTo } from '../act-flow.ts';
 import { actScreen, screenAction } from '../act-marks.ts';
-import { abilityNote, abilityPages, actReason, commandName, itemDetail, itemName } from '../battle-text.ts';
+import {
+  abilityNote,
+  abilityPages,
+  actReason,
+  commandName,
+  distanceText,
+  itemDetail,
+  itemName,
+  kindTag,
+} from '../battle-text.ts';
 import { type Command, commandEnabled, commandIndex, menuRows } from '../command.ts';
 import type { HudView } from '../hud.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
@@ -64,9 +73,9 @@ export interface SheetView {
 }
 export interface MenuView {
   head: string; // the acting unit's name, on the command menu's head
-  rows: MenuRow[]; // menuRows: Move · Undo move · Abilities · Wait · Status, Move and Undo only when they apply
+  rows: MenuRow[]; // menuRows: Agir · Move · Undo move · Wait · Status, Move and Undo only when they apply
   commands: number[]; // each row's place in COMMANDS, what a click on it chooses
-  index: number; // the focused row, or the picked one (Abilities) while a list is open
+  index: number; // the focused row, or the picked one (Agir) while a list is open
   sub: MenuRow[] | null; // the Agir primeiro lists (act-flow.ts) beside the menu, while one is open
   subTitle: string; // the list's head
   subIndex: number;
@@ -134,62 +143,10 @@ function actView(v: HudView, s: Extract<HudView['screen'], { k: 'acts' | 'target
           { label: t('Na casa', 'On the tile'), note: '', off: false, kind: 'boot' },
         ]
       : s.k === 'acts'
-        ? actList(b).map((a): MenuRow => {
-            if (a.k === 'pick')
-              return { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword' };
-            const name = a.k === 'item' ? itemName(a.id) : abilityName(a.id);
-            const off = { off: !a.enabled, below: !a.enabled };
-            const note = a.enabled
-              ? a.k === 'item'
-                ? `×${a.count}`
-                : abilityNote(b.actor, ABILITIES[a.id], true)
-              : actReason(a);
-            if (a.k === 'item') return { label: name, note, kind: 'potion', ...off };
-            // variant b: the basic attack is a row named Ataque, its real name in the note
-            const basic = AGIR_LIST === 'b' && a.id === basicOf(b.actor.def);
-            return {
-              label: basic ? t('Ataque', 'Attack') : name,
-              note: basic && a.enabled ? [name, note].filter(Boolean).join(' · ') : note,
-              ...iconOf(a.id),
-              ...off,
-            };
-          })
+        ? actList(b).map((a) => listRow(b, a))
         : s.k === 'targets'
-          ? actTargets(b).map((r) => {
-              if (r.k === 'direct')
-                return {
-                  label: abilityName(r.ability),
-                  note: t('na área', 'on the area'),
-                  off: false,
-                  ...iconOf(r.ability),
-                };
-              const u = b.state.units.find((x) => x.id === r.unit)!;
-              const who =
-                u.id === b.actor.id
-                  ? t('você', 'you')
-                  : u.team === b.actor.team
-                    ? t('aliado', 'ally')
-                    : t('inimigo', 'enemy');
-              const kind: IconKind = u.team === b.actor.team ? 'shield' : 'sword';
-              return { label: unitName(u.def), note: `${who} · ${u.hp}/${UNIT_DEFS[u.def].hp}`, off: false, kind };
-            })
-          : actActions(b, s.target).map((a) =>
-              a.k === 'item'
-                ? {
-                    label: itemName(a.id),
-                    note: a.enabled ? `×${a.count}` : actReason(a),
-                    off: !a.enabled,
-                    below: !a.enabled,
-                    kind: 'potion',
-                  }
-                : {
-                    label: abilityName(a.id),
-                    note: a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a),
-                    off: !a.enabled,
-                    below: !a.enabled,
-                    ...iconOf(a.id),
-                  },
-            );
+          ? actTargets(b, s.only).map((r) => targetRow(b, r))
+          : actActions(b, s.target).map((a) => listRow(b, a));
   return {
     ...column(b),
     index: menuRows(b).map(commandIndex).indexOf(commandIndex('act')),
@@ -204,6 +161,40 @@ function actView(v: HudView, s: Extract<HudView['screen'], { k: 'acts' | 'target
             : t('Ação', 'Action'),
     subIndex: s.k === 'spot' ? (s.lock === 'tile' ? 1 : 0) : s.index,
     sheet: s.k === 'actions' ? sheetView(b, s) : null,
+  };
+}
+
+// a row of the target list: who, its life and how far it is from the acting unit now (cells: half tiles, as Move shows)
+function targetRow(b: Battle, r: ActTarget): MenuRow {
+  if (r.k === 'direct')
+    return { label: abilityName(r.ability), note: t('na área', 'on the area'), off: false, ...iconOf(r.ability) };
+  const u = b.state.units.find((x) => x.id === r.unit)!;
+  const mine = u.team === b.actor.team;
+  // the shield or sword icon says ally or enemy; the word went so the name keeps its size (Nov 19 capture)
+  const self = u.id === b.actor.id;
+  const far = self ? t('você', 'you') : distanceText(distanceTo(b, u.id), subOf(b.grid) > 1);
+  const note = [`${u.hp}/${UNIT_DEFS[u.def].hp}`, far].join(' · ');
+  return { label: unitName(u.def), note, off: false, kind: mine ? 'shield' : 'sword' };
+}
+
+// a row of the Agir list or of the actions screen: an off one says why below its name (Fernando's grill of Nov 19)
+function listRow(b: Battle, a: ActRow): MenuRow {
+  if (a.k === 'pick') return { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword' };
+  const off = { off: !a.enabled, below: !a.enabled };
+  if (a.k === 'item')
+    return {
+      label: itemName(a.id),
+      note: [kindTag(a), a.enabled ? `×${a.count}` : actReason(a)].filter(Boolean).join(' · '),
+      kind: 'potion',
+      ...off,
+    };
+  return {
+    label: abilityName(a.id),
+    note: [kindTag(a), a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a)]
+      .filter(Boolean)
+      .join(' · '),
+    ...iconOf(a.id),
+    ...off,
   };
 }
 const iconOf = (id: string) => ({ kind: abilityIcon3d(ABILITIES[id]), element: ABILITIES[id].element });

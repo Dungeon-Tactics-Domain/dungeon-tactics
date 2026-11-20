@@ -7,6 +7,8 @@ import { samePos } from '../shared/battle/grid.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import {
+  type ActRef,
+  type ActTarget,
   actActions,
   actAims,
   actList,
@@ -15,13 +17,13 @@ import {
   runSpot,
   spotAt,
   targetAt,
-  toward,
   withAim,
 } from './act-flow.ts';
 import { actScreen, aimCells, screenAction } from './act-marks.ts';
 import { needsLock, type Screen, stepIndex, turnPage } from './command.ts';
-import type { KeyAction, ScreenDir } from './keyboard.ts';
+import type { KeyAction } from './keyboard.ts';
 import { sfx } from './sound.ts';
+import { neighbour } from './ui3d/walk.ts';
 
 // what the Agir screens need of the hero's turn and the Game
 export interface ActHost {
@@ -30,7 +32,7 @@ export interface ActHost {
   update(): void;
   focus(p: Pos): void; // the camera and the cursor go there
   runAct(run: (b: Battle) => ReturnType<Battle['move']>): Promise<void>;
-  step(dir: ScreenDir): Pos; // an arrow's grid step for the camera's heading (keyboard.ts gridStep)
+  at(p: Pos): { x: number; y: number }; // where a tile is on screen, in pixels (the arrows walk what is seen)
 }
 
 // the lock step's rows, in order (menu-view.ts draws them)
@@ -52,11 +54,12 @@ export function actKey(h: ActHost, a: KeyAction): void {
     return;
   }
   if (a.k !== 'cursor') return;
-  // on the map the arrow goes to the nearest aim or tile that way on screen, as the Move cursor does (Nov 19)
+  // on the map the arrow goes to the nearest aim or tile that way on screen, as the 3D windows do (neighbour); a grid
+  // step was a slant on the diamond view and missed (Fernando, Nov 19: "the arrows don't go the right way")
   if (s.k === 'aim' || s.k === 'spot') {
-    const points = mapPoints(h.battle, s) ?? [];
-    const index = points[s.index] ? toward(points, points[s.index], h.step(a.dir)) : -1;
-    if (index >= 0) select(h, { ...s, index });
+    const boxes = (mapPoints(h.battle, s) ?? []).map((p) => ({ ...h.at(p), w: 0, h: 0 }));
+    const index = neighbour(boxes, s.index, a.dir);
+    if (index !== s.index) select(h, { ...s, index });
     return;
   }
   if (a.dir !== 'up' && a.dir !== 'down') return;
@@ -88,24 +91,33 @@ export function actHover(h: ActHost, index: number): void {
   select(h, moved(s, index));
 }
 
-// a tap on the map: on the target list a unit picks its row (twice: goes on), on the tile choice a tile does the same
+// the row a map tile stands for on this screen: a listed unit, an aim or a tile to act from; -1 for none
+function indexAt(b: Battle, s: Screen, p: Pos): number {
+  if (s.k === 'targets') return targetAt(actTargets(b, s.only), b, p);
+  if (s.k === 'spot' && !s.lock) return spotAt(screenAction(b, s)!, p, UNIT_DEFS[b.actor.def].size ?? 1);
+  if (s.k === 'aim')
+    return actAims(screenAction(b, s)!).findIndex((aim) => aimCells(b, aim).some((c) => samePos(c, p)));
+  return -1;
+}
+
+// a tap on the map: on the target list a unit picks its row (twice: goes on), on the tile choice a tile does the same.
+// The camera stays: sliding to the tile moved it from under the pointer, so a 2nd click on the same pixel missed it
 export function actTap(h: ActHost, p: Pos): boolean {
-  const s = h.screen,
-    b = h.battle;
+  const s = h.screen;
   if (!actScreen(s)) return false;
-  if (s.k === 'spot' && s.lock) return true; // the lock step is answered on its rows
-  const i =
-    s.k === 'targets'
-      ? targetAt(actTargets(b), b, p)
-      : s.k === 'spot'
-        ? spotAt(screenAction(b, s)!, p, UNIT_DEFS[b.actor.def].size ?? 1)
-        : s.k === 'aim'
-          ? actAims(screenAction(b, s)!).findIndex((aim) => aimCells(b, aim).some((c) => samePos(c, p)))
-          : -1;
-  if (i < 0) return true;
+  const i = indexAt(h.battle, s, p);
+  if (i < 0) return true; // also the lock step, answered on its rows
   if (i === s.index) void actPick(h, i);
-  else select(h, { ...s, index: i });
+  else select(h, { ...s, index: i }, false);
   return true;
+}
+
+// the mouse over the map focuses the unit, aim or tile under it, as a first click would (the camera stays)
+export function actHoverMap(h: ActHost, p: Pos): void {
+  const s = h.screen;
+  if (!actScreen(s) || s.k === 'actions') return;
+  const i = indexAt(h.battle, s, p);
+  if (i >= 0 && i !== s.index) select(h, { ...s, index: i }, false);
 }
 
 // Confirm (or a click on a row): the picked target opens its actions, an action on opens its tiles, a tile runs it
@@ -114,17 +126,29 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     b = h.battle;
   if (!actScreen(s)) return;
   if (s.k === 'acts') {
-    // prototype: only "Escolher alvo" works yet; the other rows do nothing
-    if (actList(b)[index]?.k !== 'pick') return sfx('cancel');
+    const row = actList(b)[index];
+    if (!row || (row.k !== 'pick' && !row.enabled)) return sfx('cancel');
     sfx('confirm');
-    h.screen = { k: 'targets', index: 0 };
+    // "Escolher alvo" lists everyone; an ability or an item lists only who it can hit this turn
+    const only = row.k === 'pick' ? undefined : { k: row.k, id: row.id };
+    h.screen = { k: 'targets', index: 0, only };
+    const first = actTargets(b, only)[0];
+    if (first?.k === 'unit') h.focus(first.pos);
     return h.update();
   }
   if (s.k === 'targets') {
-    const target = actTargets(b)[index];
+    const target = actTargets(b, s.only)[index];
     if (!target) return;
     const acts = actActions(b, target);
     sfx('confirm');
+    // from the Agir list's ability or item, the action is already chosen: straight to its aim or tile step
+    if (s.only)
+      return openAction(
+        h,
+        target,
+        acts.findIndex((a) => a.k === s.only!.k && a.id === s.only!.id),
+        s.only,
+      );
     h.screen = {
       k: 'actions',
       target,
@@ -139,17 +163,7 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     const a = actActions(b, s.target)[index];
     if (!a?.enabled) return sfx('cancel');
     sfx('confirm');
-    // several aims (an area): where it lands first, starting on the best tile's aim
-    const aims = actAims(a);
-    if (aims.length) {
-      const best = a.spots[bestSpot(a, b)].aim;
-      h.screen = { k: 'aim', target: s.target, action: index, index: aims.findIndex((p) => samePos(p, best)) };
-      h.focus(best);
-    } else {
-      h.screen = { k: 'spot', target: s.target, action: index, index: bestSpot(a, b) };
-      h.focus(a.spots[bestSpot(a, b)].pos);
-    }
-    return h.update();
+    return openAction(h, s.target, index);
   }
   if (s.k === 'aim') {
     const all = screenAction(b, s);
@@ -157,7 +171,7 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     if (!all || !aim) return sfx('cancel');
     sfx('confirm');
     const a = withAim(all, aim);
-    h.screen = { k: 'spot', target: s.target, action: s.action, index: bestSpot(a, b), aim };
+    h.screen = { k: 'spot', target: s.target, action: s.action, index: bestSpot(a, b), aim, only: s.only };
     h.focus(a.spots[bestSpot(a, b)].pos);
     return h.update();
   }
@@ -177,6 +191,19 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
   });
 }
 
+// the picked action's next step: where an area lands when it has several aims, else the tiles to act from
+function openAction(h: ActHost, target: ActTarget, action: number, only?: ActRef): void {
+  const b = h.battle,
+    a = actActions(b, target)[action];
+  // several aims (an area): where it lands first, starting on the best tile's aim
+  const aims = actAims(a);
+  const best = a.spots[bestSpot(a, b)];
+  if (aims.length) h.screen = { k: 'aim', target, action, index: aims.findIndex((p) => samePos(p, best.aim)), only };
+  else h.screen = { k: 'spot', target, action, index: bestSpot(a, b), only };
+  h.focus(aims.length ? best.aim : best.pos);
+  h.update();
+}
+
 // what the arrows walk on a map screen (the aims, or the tiles to act from); null on a list
 function mapPoints(b: Battle, s: Screen): Pos[] | null {
   if (s.k !== 'aim' && s.k !== 'spot') return null;
@@ -187,18 +214,18 @@ function mapPoints(b: Battle, s: Screen): Pos[] | null {
 
 function enabledRows(b: Battle, s: Extract<Screen, { k: 'acts' | 'targets' | 'actions' }>): boolean[] {
   if (s.k === 'acts') return actList(b).map((r) => r.k === 'pick' || r.enabled);
-  return s.k === 'targets' ? actTargets(b).map(() => true) : actActions(b, s.target).map((a) => a.enabled);
+  return s.k === 'targets' ? actTargets(b, s.only).map(() => true) : actActions(b, s.target).map((a) => a.enabled);
 }
 
-// a new focus: the camera goes to the focused target or tile
-function select(h: ActHost, s: Screen) {
+// a new focus: the camera goes to the focused target or tile, unless the pointer picked it (`follow` false)
+function select(h: ActHost, s: Screen, follow = true) {
   sfx('cursor');
   h.screen = s;
   const b = h.battle;
-  if (s.k === 'targets') {
-    const t = actTargets(b)[s.index];
+  if (follow && s.k === 'targets') {
+    const t = actTargets(b, s.only)[s.index];
     if (t?.k === 'unit') h.focus(t.pos);
-  } else if (s.k === 'aim' || s.k === 'spot') {
+  } else if (follow && (s.k === 'aim' || s.k === 'spot')) {
     const p = mapPoints(b, s)?.[s.index];
     if (p) h.focus(p);
   }

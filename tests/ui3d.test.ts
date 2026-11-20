@@ -100,7 +100,7 @@ describe('3D menu: what it shows', () => {
     const b = duel();
     const m = menuView(view(b, { k: 'menu', index: commandIndex('wait') }), true);
     expect(m?.rows.map((r) => [r.label, r.kind, r.off])).toEqual([
-      ['Habilidades', 'sword', false],
+      ['Agir', 'sword', false],
       ['Mover', 'boot', false],
       ['Esperar', 'hourglass', false],
       ['Status', 'scroll', false],
@@ -117,7 +117,7 @@ describe('3D menu: what it shows', () => {
     b.move({ x: 2, y: 2 });
     const m = menuView(view(b, { k: 'menu', index: commandIndex('act') }), true);
     expect(m?.rows.map((r) => [r.label, r.off])).toEqual([
-      ['Habilidades', false],
+      ['Agir', false],
       ['Mover', b.reach().size === 0],
       ['Desfazer movimento', false],
       ['Esperar', false],
@@ -138,7 +138,7 @@ describe('3D menu: what it shows', () => {
     expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Giro']);
     const actions = menuView(view(b, { k: 'actions', target: foe, index: 1 }), true);
     expect(actions?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
-    expect(actions?.sub?.[1].note).toBe('principal · 30 stamina');
+    expect(actions?.sub?.[1].note).toBe('30 stamina'); // a main action carries no tag
     expect(actions?.subIndex).toBe(1);
     expect(targets?.sheet).toBeNull(); // the sheet is the action list's only
   });

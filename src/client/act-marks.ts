@@ -42,7 +42,7 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
   const size = UNIT_DEFS[b.actor.def].size ?? 1;
   if (s.k === 'acts') return { tiles: [{ pos: b.actor.pos, kind: 'actor' }], path: null, preview: null };
   if (s.k === 'targets') {
-    const rows = actTargets(b);
+    const rows = actTargets(b, s.only);
     rows.forEach((r, i) => {
       mark(cellsOfTarget(b, r), i === s.index ? 'target' : 'range');
     });

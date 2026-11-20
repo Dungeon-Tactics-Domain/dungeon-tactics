@@ -61,7 +61,7 @@ export const regenLine = (def: UnitDef) =>
 const COMMAND_NAME: Record<Command, () => string> = {
   move: () => t('Mover', 'Move'),
   undo: () => t('Desfazer movimento', 'Undo move'),
-  act: () => t('Habilidades', 'Abilities'), // the reference's name for the row
+  act: () => t('Agir', 'Act'), // Fernando, Nov 19: it opens the target, the abilities and the items, not only abilities
   wait: () => t('Esperar', 'Wait'),
   status: () => 'Status',
 };
@@ -73,7 +73,8 @@ export const abilityNote = (u: UnitState, a: AbilityDef, on: boolean) =>
     : shortOf(u, a);
 
 // the tag on an Agir row (Nov 19): which of the turn's two actions it takes
-export const kindTag = (a: ActAction) => (actKind(a) === 'main' ? t('principal', 'main') : t('secundária', 'bonus'));
+// only the secondary ones are tagged: main is the usual, and a tag on every row squeezed the names (Nov 19 capture)
+export const kindTag = (a: ActAction) => (actKind(a) === 'bonus' ? t('secundária', 'bonus') : '');
 
 // an ability's facts on one line (the help line, the Party's Abilities page)
 export const abilityDetail = (id: string) => abilityPages(id).flat().join(' · ');
@@ -254,6 +255,8 @@ const tiles = (n: number, half: boolean) =>
   half
     ? t(`${n} ${n === 1 ? 'meia casa' : 'meias casas'}`, `${n} half ${n === 1 ? 'tile' : 'tiles'}`)
     : t(`${n} ${n === 1 ? 'casa' : 'casas'}`, `${n} ${n === 1 ? 'tile' : 'tiles'}`);
+// a distance in the same unit (target list): "4 meias casas" on the halved map
+export const distanceText = tiles;
 // Status window sheet (like FFT's): what the unit is now. [label, value] rows; pure for the test.
 export function unitStatus(state: BattleState, unitId: string): [string, string][] {
   const u = state.units.find((x) => x.id === unitId)!;

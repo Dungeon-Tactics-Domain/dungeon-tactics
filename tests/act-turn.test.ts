@@ -37,6 +37,57 @@ const host = (b: Battle, screen: Screen) => {
   return h;
 };
 
+describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () => {
+  const rowsOf = (b: Battle) => menuView({ battle: b, screen: { k: 'acts', index: 0 } } as never, true)!.sub!;
+
+  it('Escolher alvo, then each ability by its own name, then the items; a spent slot greys its rows', () => {
+    const b = battle();
+    const rows = rowsOf(b);
+    expect(rows.map((r) => r.label)).toEqual([
+      'Escolher alvo',
+      'Raio de fogo',
+      'Explosão',
+      'Rajada',
+      'Cura',
+      'Poção de vida',
+    ]);
+    expect(rows.find((r) => r.label === 'Cura')!.note).toMatch(/^secundária/);
+    b.state.turn.main = 'firebolt'; // the main action is spent: only the secondary ones stay on
+    const after = rowsOf(b);
+    expect(after.find((r) => r.label === 'Raio de fogo')).toMatchObject({ off: true, below: true });
+    expect(after.find((r) => r.label === 'Cura')!.off).toBe(false);
+  });
+
+  it('an ability picked on the list lists only who it hits, goes straight to its tiles, and Cancel walks back', async () => {
+    const b = battle();
+    const row = rowsOf(b).findIndex((r) => r.label === 'Raio de fogo');
+    const h = host(b, { k: 'acts', index: row });
+    await actPick(h, row);
+    const only = { k: 'ability' as const, id: 'firebolt' };
+    expect(h.screen).toEqual({ k: 'targets', index: 0, only });
+    const names = menuView({ battle: b, screen: h.screen } as never, true)!.sub!.map((r) => r.label);
+    expect(names).toEqual(['Soldado', 'Guerreiro']); // who Raio de fogo can hit this turn, foes first (an ally too: friendly fire)
+    await actPick(h, 0);
+    expect(h.screen).toMatchObject({ k: 'spot', only }); // no actions screen: the action is already chosen
+    const back: string[] = [];
+    let s: Screen | 'undo' | null = h.screen;
+    while (s && s !== 'undo') {
+      back.push(s.k);
+      s = cancelStep(b, s);
+    }
+    expect(back).toEqual(['spot', 'targets', 'acts', 'menu']);
+    expect(cancelStep(b, { k: 'targets', index: 0, only })).toEqual({ k: 'acts', index: row }); // back on its row
+  });
+
+  it('the target list says how far each unit is from the actor where it stands now', () => {
+    const notes = menuView({ battle: battle(), screen: { k: 'targets', index: 0 } } as never, true)!.sub!.map(
+      (r) => r.note,
+    );
+    expect(notes[0]).toMatch(/^\d+\/\d+ · \d+ casas?$/); // the icon says enemy or ally; the note stays short
+    expect(notes[2]).toMatch(/· você$/); // no distance to itself
+  });
+});
+
 describe('the action sheet pages (Fernando, Nov 19: "Ficha da habilidade no Agir")', () => {
   const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
   it('left and right turn the pages back and forth around the three; Details goes on; the list stays', () => {
@@ -201,9 +252,8 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     const b = battle();
     const v = menuView({ battle: b, screen: { k: 'targets', index: 0 } } as never, true)!;
     expect(v.subTitle).toBe('Alvo');
-    const notes = v.sub!.map((r) => r.note.split(' · ')[0]);
-    expect(notes.slice(0, 3)).toEqual(['inimigo', 'aliado', 'você']);
-    expect(notes.slice(3).every((n) => n === 'na área')).toBe(true); // the direct actions come last
+    expect(v.sub!.slice(0, 3).map((r) => r.kind)).toEqual(['sword', 'shield', 'shield']); // enemy, ally, you
+    expect(v.sub!.slice(3).every((r) => r.note === 'na área')).toBe(true); // the direct actions come last
     const acts = menuView(
       {
         battle: b,
@@ -212,7 +262,7 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
       true,
     )!;
     const potion = acts.sub!.at(-1)!;
-    expect(potion).toMatchObject({ label: 'Poção de vida', off: true, note: 'secundária · não atinge este alvo' });
+    expect(potion).toMatchObject({ label: 'Poção de vida', off: true, note: 'secundária · não atinge este alvo' }); // only the secondary ones carry a tag
   });
 
   it('the map marks the listed targets and, on the tile choice, the picked tile with its forecast', () => {

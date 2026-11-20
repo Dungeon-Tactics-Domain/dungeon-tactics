@@ -9,7 +9,7 @@ import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
 import { dist, samePos } from '../shared/battle/grid.ts';
 import { actionOptions, type OptionReason } from '../shared/battle/options.ts';
-import { unitAt } from '../shared/battle/pathing.ts';
+import { footprint, gap, unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 
 // A row of the target list: a unit (also the user itself, for a heal or an item), or a direct action (an area aimed at the
@@ -43,7 +43,12 @@ export const actKind = (a: ActAction): ActionKind => (a.k === 'item' ? 'bonus' :
 
 // The rows of the first screen. A unit is listed when any ability or item reaches it; the user only through what aims at
 // itself (support, items)
-export function actTargets(b: Battle): ActTarget[] {
+export function actTargets(b: Battle, only?: ActRef): ActTarget[] {
+  const all = allTargets(b);
+  // a row picked on the Agir list keeps the targets that action can hit this turn (the same test as its action screen)
+  return only ? all.filter((r) => actActions(b, r).some((a) => sameRef(only, a) && a.enabled)) : all;
+}
+function allTargets(b: Battle): ActTarget[] {
   const id = b.actor.id;
   const units = new Map<string, Pos>();
   const direct: ActTarget[] = [];
@@ -61,6 +66,10 @@ export function actTargets(b: Battle): ActTarget[] {
   rows.sort((x, y) => rank(x.unit) - rank(y.unit) || dist(b.actor.pos, x.pos) - dist(b.actor.pos, y.pos));
   return [...rows, ...direct];
 }
+
+// How far a unit is from the actor where it stands now, in cells (half tiles on the halved map: the unit Move is shown in)
+export const distanceTo = (b: Battle, unit: string) =>
+  gap(footprint(b.actor), footprint(b.state.units.find((u) => u.id === unit)!));
 
 // The actions of the second screen for a target: every ability of the unit in its own order, then the items in the bag.
 // One that cannot hit this target is off: its own reason when it works nowhere, else 'range'
@@ -106,13 +115,17 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
   return [...abilities, ...items];
 }
 
-// The Agir list (Fernando, Nov 19: Agir is the first row of the turn menu): "Escolher alvo" (the target list above), then
-// every ability in order with the basic attack first, then the items; an ability or item with no target reachable this
-// turn is off with its reason. Prototype: the variant (a: flat; b: the basic attack as a row named Ataque) only changes names
-// shortcut: prototype flag, remove when Fernando picks a variant
-export const AGIR_LIST: 'a' | 'b' =
-  typeof location !== 'undefined' && new URLSearchParams(location.search).get('agirlist') === 'b' ? 'b' : 'a';
+// The Agir list (Fernando, Nov 19: Agir is the first row of the turn menu; variant A of his grill): "Escolher alvo" (the
+// target list above), then every ability in the unit's order with the basic attack first, then the items. A row is on
+// when the action can hit someone reachable this turn (walk, then act) and its slot is free (options.ts: 'used'); else it
+// is off with the reason
 export type ActRow = { k: 'pick' } | ActAction;
+// an ability or an item picked straight on the Agir list: the target list then shows only who it can hit
+export interface ActRef {
+  k: 'ability' | 'item';
+  id: string;
+}
+export const sameRef = (a: ActRef, r: ActRow) => r.k !== 'pick' && r.k === a.k && r.id === a.id;
 export function actList(b: Battle): ActRow[] {
   const id = b.actor.id;
   const abilities = actionOptions(b.grid, b.state, id).map((o): ActRow => {

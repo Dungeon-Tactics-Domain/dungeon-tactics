@@ -9,7 +9,16 @@ import { isDeep, samePos, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { type ActTarget, actActions, actAims, actTargets, targetIndex } from './act-flow.ts';
+import {
+  type ActRef,
+  type ActTarget,
+  actActions,
+  actAims,
+  actList,
+  actTargets,
+  sameRef,
+  targetIndex,
+} from './act-flow.ts';
 
 export type Command = 'move' | 'undo' | 'act' | 'wait' | 'status';
 // The menu's index is a place in this list; menuRows says which of them show (Fernando, Nov 18: after a move, Move and
@@ -25,16 +34,18 @@ export type Screen =
   | { k: 'menu'; index: number }
   | { k: 'map'; command: 'move' }
   | { k: 'facing' }
-  // Agir list (Fernando, Nov 19; prototype): "Escolher alvo" opens the targets, then the abilities and items (act-flow.ts actList)
+  // The Agir list (Fernando, Nov 19): "Escolher alvo" opens the targets, then the abilities and items (act-flow.ts actList)
   | { k: 'acts'; index: number }
   // Agir primeiro (Fernando's grill, Nov 19; the only way to act since "Apagar tudo"): the target list, the actions that hit
   // the picked target, the tiles to act from with the best one first; `lock`: a charge aimed at a unit asks where to lock it
-  | { k: 'targets'; index: number }
+  // `only`: the ability or item picked straight on the Agir list; the targets are who it can hit, and the screens after
+  // keep it so Cancel walks back through them
+  | { k: 'targets'; index: number; only?: ActRef }
   // `page`: the action sheet's page (menu3d/), 0 to PAGES - 1; another action opens on the first
   | { k: 'actions'; target: ActTarget; index: number; page?: number }
   // an action with several aims (an area) picks where it lands first (`index` into actAims), then the tiles aiming there
-  | { k: 'aim'; target: ActTarget; action: number; index: number }
-  | { k: 'spot'; target: ActTarget; action: number; index: number; lock?: Lock; aim?: Pos };
+  | { k: 'aim'; target: ActTarget; action: number; index: number; only?: ActRef }
+  | { k: 'spot'; target: ActTarget; action: number; index: number; lock?: Lock; aim?: Pos; only?: ActRef };
 
 // A charge aimed at someone asks next where to lock it: the tile, or that character (Nov 15). On empty ground
 // there is only the tile
@@ -97,12 +108,20 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
   if (s.k === 'map') return { k: 'menu', index: commandIndex('move') };
   if (s.k === 'facing') return { k: 'menu', index: commandIndex('wait') };
   if (s.k === 'acts') return { k: 'menu', index: commandIndex('act') };
-  if (s.k === 'targets') return { k: 'acts', index: 0 };
+  if (s.k === 'targets') {
+    const row = s.only ? actList(b).findIndex((r) => sameRef(s.only!, r)) : 0;
+    return { k: 'acts', index: Math.max(0, row) };
+  }
   if (s.k === 'actions') return { k: 'targets', index: targetIndex(actTargets(b), s.target) };
-  const back = { target: s.target, action: s.action };
-  if (s.k === 'aim') return { k: 'actions', target: s.target, index: s.action };
+  const { only } = s;
+  // an action picked on the Agir list has no actions screen: it goes back to that list's targets
+  const out = only
+    ? ({ k: 'targets', index: targetIndex(actTargets(b, only), s.target), only } as const)
+    : ({ k: 'actions', target: s.target, index: s.action } as const);
+  const back = { target: s.target, action: s.action, only };
+  if (s.k === 'aim') return out;
   if (s.lock) return { k: 'spot', ...back, index: s.index, aim: s.aim };
-  if (!s.aim) return { k: 'actions', target: s.target, index: s.action };
+  if (!s.aim) return out;
   const aim = s.aim;
   const aims = actAims(actActions(b, s.target)[s.action]);
   return {
