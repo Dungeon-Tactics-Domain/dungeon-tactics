@@ -67,6 +67,7 @@ Nov 15, Fernando.
 Nov 15, Fernando's grill; the Mechanics lab's `equipamento.json`, formulas section.
 
 - **Hit chance** as before (the side and back bonus spells too), then x (1 - the target's dodge x `COMBAT.DODGE_BY_SIDE`: 100% from the front, 75% from the side, 50% from behind), rounded half up in whole numbers and never below 5% (`afterDodge`; Fernando's choice, where the lab clamps before the dodge), spells dodged too, heals never.
+- **Flank damage by class** (Fernando, Nov 20): `UnitDef.flankDamage` gives a % more or less damage by where the hit catches the target (`facingSide`, the same side the hit chance reads), on every ability of the unit, its counter too (`landed`). Only the Rogue has it: −25% from the front, the same from the side, +50% from behind. The side and back hit bonus stays everyone's.
 - **Damage** is the roll plus `physPower` on a martial ability or `magPower` on a spell, and a heal adds `magPower` too (Fernando, as the lab), then x (1 - physical or magic resistance) x (1 - the resistance to `AbilityDef.element`), the counter's half and the side share, rounded down, at least 1 (`landed` in `combat.ts`, whole numbers until the last division).
 - A charging target loses `CHARGING_PHYS` 50 physical and `CHARGING_MAG` 25 magic resistance (FFT's x1.5 on the Charging status before).
 - Resistances stay between -100 and 60 (`resistOf`), dodge at most 50 (`dodgeOf`). Heals and a heal on the undead ignore resistances.

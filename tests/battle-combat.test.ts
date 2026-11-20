@@ -334,6 +334,37 @@ describe('facing in the game (Nov 13)', () => {
     }
   });
 
+  // Fernando, Nov 20: the Rogue's damage is 25% less from the front, the same from the side and 50% more from behind,
+  // on every ability (its counter too, through the same landing); the hit bonus of the side stays everyone's
+  it("the Rogue's damage follows where it catches the target; others are the same from every side", () => {
+    const g = flat(5, 3);
+    const s = stateOf([
+      { id: 'a', def: 'rogue', team: 'hero', x: 0, y: 1 },
+      { id: 'f', def: 'test_plain', team: 'enemy', x: 1, y: 1 },
+    ]);
+    const hit = (facing: number) => {
+      s.units[1].facing = facing;
+      const t = previewAbility(g, s, 'a', 'stab', { x: 1, y: 1 }).targets[0];
+      return [t.side, t.dmgMin, t.dmgMax];
+    };
+    const flank = UNIT_DEFS.rogue.flankDamage;
+    expect(flank).toEqual({ front: -25, back: 50 });
+    const rows = [hit(3), hit(0), hit(1)];
+    delete UNIT_DEFS.rogue.flankDamage; // the same strike with no flank rule
+    const plain = [hit(3), hit(0), hit(1)];
+    UNIT_DEFS.rogue.flankDamage = flank;
+    expect(rows.map((r) => r[0])).toEqual(['front', 'side', 'back']);
+    const [lo, hi] = plain[1].slice(1) as number[];
+    expect(plain.map((r) => r.slice(1))).toEqual([
+      [lo, hi],
+      [lo, hi],
+      [lo, hi],
+    ]);
+    expect(rows[0].slice(1)).toEqual([Math.floor(lo * 0.75), Math.floor(hi * 0.75)]);
+    expect(rows[1].slice(1)).toEqual([lo, hi]);
+    expect(rows[2].slice(1)).toEqual([Math.floor(lo * 1.5), Math.floor(hi * 1.5)]);
+  });
+
   // moved here from the FFT study tests when it was removed (Nov 16): these rules are the game's since Nov 13
   it("reproduces the guide's 5x5 diagram (BMG 1.4), with the target in the center facing down", () => {
     // rows top to bottom, as in the guide; X = the target

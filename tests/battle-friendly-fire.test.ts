@@ -47,6 +47,7 @@ describe('friendly fire (Nov 15)', () => {
         ],
         HIT_SEED,
       );
+      s.units[1].facing = 0; // caught from the side, where the Rogue's flank damage (Nov 20) adds nothing
       const [lo, hi] = halfOnSoldier(ABILITIES.throwing_knife.damage);
       expect(previewAbility(flat(6, 1), s, 'a', 'throwing_knife', at(4)).targets, side).toMatchObject([
         { unit: 'ally', dmgMin: lo, dmgMax: hi },

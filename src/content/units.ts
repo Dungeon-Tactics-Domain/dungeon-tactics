@@ -57,6 +57,7 @@ export const UNIT_LIST: UnitDef[] = [
     vars: { stamina: 50, mana: 30 },
     regen: { stamina: 5 },
     dodge: 20,
+    flankDamage: { front: -25, back: 50 }, // Fernando, Nov 20: weaker head-on, normal from the side, strong from behind
   },
   {
     id: 'soldier',

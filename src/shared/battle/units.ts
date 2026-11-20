@@ -1,5 +1,6 @@
 // Unit types: the data lives in src/content/units.ts; this file keeps the type and the registry the rules read.
 import { UNIT_LIST } from '../../content/units.ts';
+import type { Side } from './grid.ts';
 
 export interface UnitDef {
   id: string;
@@ -31,6 +32,9 @@ export interface UnitDef {
   dodge?: number; // % of hits avoided from the front; read through dodgeOf
   physPower?: number; // added to both ends of a martial ability's damage (class and equipment)
   magPower?: number; // added to both ends of a spell's damage or heal (Fernando, Nov 15, as the lab)
+  // % more (or, negative, less) damage by where the hit catches the target, on every ability (combat.ts landed); the
+  // Rogue's since Nov 20. Without it, the same from every side
+  flankDamage?: Partial<Record<Side, number>>;
 }
 
 // a % of element on a class, piece or buff is always resistance (defence); an attack takes an element from its ability

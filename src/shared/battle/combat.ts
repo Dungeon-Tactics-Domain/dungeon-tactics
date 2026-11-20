@@ -154,11 +154,17 @@ const defence = (state: BattleState, actor: UnitState, a: AbilityDef, u: UnitSta
   const elemResist = element ? resistOf(d, element, resistBonus(state, u.id, element)) : 0;
   return (100 - resistOf(d, kind, resistBonus(state, u.id, kind) - drop)) * (100 - elemResist);
 };
-// Damage that lands: the roll (with power) x the defence, the counter's `scale` and the side share, rounded down, at least
-// 1. Whole numbers until the last division, so 70 at 30% is 49, not 48.99 rounded down
+// where a hit from `actor` catches `u`: its tile nearest to the attacker against its facing (front when it has none)
+export const facingSide = (actor: UnitState, u: UnitState): Side => {
+  const [from, at] = closest(footprint(actor), footprint(u));
+  return u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing], from);
+};
+// Damage that lands: the roll (with power) x the defence, the counter's `scale`, the side share and the attacker's flank
+// damage (UnitDef.flankDamage), rounded down, at least 1. Whole numbers until the last division, so 70 at 30% is 49
 function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, roll: number, scale = 1): number {
   const keep = defence(state, actor, a, u);
-  return Math.max(1, Math.floor((roll * keep * scale * sideShare(actor, u, false)) / 10000));
+  const flank = 100 + (UNIT_DEFS[actor.def].flankDamage?.[facingSide(actor, u)] ?? 0);
+  return Math.max(1, Math.floor((roll * keep * scale * sideShare(actor, u, false) * flank) / 1000000));
 }
 
 // Hit chance after the target's dodge (Nov 15 grill: x (1 - dodge x DODGE_BY_SIDE), spells dodged too), rounded half up
@@ -221,7 +227,7 @@ export function previewAbility(
   const targets = hit.map((u) => {
     // against a large unit, its tile nearest to the attacker (distance and height)
     const [from, at] = closest(footprint(actor), footprint(u));
-    const side: Side = u.facing === undefined ? 'front' : sideOf(at, FACING[u.facing!], from);
+    const side = facingSide(actor, u);
     const hurts = healHurts(ability, u);
     const [dmgMin, dmgMax] = damageRange(state, actor, ability, u);
     const heal = (h: number) => (hurts ? 0 : Math.floor(h * sideShare(actor, u, true)));
