@@ -5,7 +5,7 @@ import { itemDetail } from '../src/client/battle-text.ts';
 import { commandIndex, type Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
+import { cornerLayout, LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
 import { cardLines, queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import {
@@ -16,7 +16,7 @@ import {
   queueCards,
   statsLayout,
 } from '../src/client/turn3d/queue-view.ts';
-import { setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
+import { type Box, PHONE_SHRINK, place, REGIONS, setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
 import { wrapLines } from '../src/client/ui3d/text.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
@@ -280,6 +280,44 @@ describe('3D menu: where it sits', () => {
     // a page tall enough keeps the reference's corner
     const { main } = menuLayout(stage(1024, 768, 'edges'), 4, 4, true);
     expect(main.x + main.w).toBeCloseTo(1024 - 354 * 0.6);
+  });
+
+  // Fernando, Nov 20, option A: on a phone every piece holds its own corner, the menu bottom right, nothing over another
+  // (a phone held upright shows only the turn-the-phone notice, rotate-note.ts, so only the landscape pages)
+  it("on a phone the menu stands in the combat bar's bottom right corner, clear of every other piece", () => {
+    const apart = (a: Box, b: Box) => a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+    for (const [w, h, safe, tap] of [
+      [844, 390, { x: 0, y: 0 }, 44],
+      [667, 375, { x: 0, y: 0 }, 44],
+      [844, 390, { x: 47, y: 21 }, 44], // the notch and the home bar
+    ] as const) {
+      const st = stage(w, h, 'edges', safe),
+        small = { ...st, s: st.s * PHONE_SHRINK },
+        bar = place(REGIONS.bar, small),
+        acting = place(REGIONS.sheet, small),
+        height = place(REGIONS.height, st),
+        coords = { ...height, h: height.h + 56 * st.s }, // and the tile's coordinates line under it
+        foot = bar.y + bar.h;
+      for (const [rows, sub] of [
+        [4, 0],
+        [4, 6],
+        [5, 0],
+      ]) {
+        const m = menuLayout(st, rows, sub, true, foot),
+          say = `${w}x${h} ${rows} ${sub}`;
+        expect(m).toEqual(cornerLayout(st, rows, sub, foot));
+        expect(m.main.x + m.main.w, say).toBeCloseTo(st.x + st.w); // the right edge
+        expect(m.sub.x, say).toBe(m.main.x); // the submenu replaces the menu, no cascade off the page
+        expect(m.main.y + m.main.h, say).toBeCloseTo(foot); // the bottom right corner (the target's plate shows only
+        // on the tile screens, with the menu closed)
+        for (const col of [m.main, m.sub]) {
+          for (const other of [acting, coords, m.sheet]) expect(apart(col, other), say).toBe(true);
+          expect(col.y, say).toBeGreaterThanOrEqual(st.y);
+        }
+        if (rows === 4 && !sub) expect(rowBox(m.main, 0, m.cs).h, say).toBeGreaterThanOrEqual(tap);
+        expect(m.prev.h, say).toBeGreaterThanOrEqual(44);
+      }
+    }
   });
 
   // Fernando, Nov 18: at 844x390 the menu covered the end of the acting unit's stamina ("50/5")

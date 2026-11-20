@@ -39,6 +39,7 @@ export class Ui3dLayer {
   stage: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 }; // where the pieces are laid out (layout.ts), as the player picked
   // the stage of the turn list and the combat bar: the same, at PHONE_SHRINK of the scale on a phone (layout.ts)
   small: Stage = this.stage;
+  phone = false; // a finger on a page whose shorter side is under 600 px (layout.ts phonePage): the fixed corners
   // the whole reference fitted to the page, whatever the layout: a screen that is the whole 1920x1080 (the town's
   // windows, the expedition map) stays on the page on a short one too, where `edges` keeps the pieces wider
   whole: Stage = { x: 0, y: 0, w: 0, h: 0, s: 1 };
@@ -195,7 +196,8 @@ export class Ui3dLayer {
     Object.assign(this, { w, h, dpr, mode, stage: st, s: st.s, whole: stage(w, h, 'frame') });
     const coarse = matchMedia('(pointer: coarse)').matches;
     setPageFloor(w, h, coarse);
-    this.small = { ...st, s: st.s * (phonePage(w, h, coarse) ? PHONE_SHRINK : 1) };
+    this.phone = phonePage(w, h, coarse);
+    this.small = { ...st, s: st.s * (this.phone ? PHONE_SHRINK : 1) };
     const [fx, fy] = mode === 'frame' ? [st.x, st.y] : [0, 0];
     this.inset = {
       top: 12 + sides.top + fy,

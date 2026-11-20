@@ -42,7 +42,10 @@ export interface MenuLayout {
 // the right. On a short page the sheet reaches down past the columns' top: they step left, clear of it, but never over
 // the acting unit's sheet in the combat bar (at 844x390 the menu covered the end of its stamina, "50/5"); where the
 // two do not both fit, the submenu's cascade over the menu shortens
-export function menuLayout(st: Stage, rows: number, subRows: number, touch = false): MenuLayout {
+// `corner`: a phone's corner (Fernando, Nov 20, option A: "todos devem ficar presos", the action menu bottom right): the y
+// the columns stand on, the combat bar's foot (cornerLayout)
+export function menuLayout(st: Stage, rows: number, subRows: number, touch = false, corner?: number): MenuLayout {
+  if (corner !== undefined) return cornerLayout(st, rows, subRows, corner);
   const s = st.s,
     cs = touch ? touchScale(st) : s;
   const at = place(REGIONS.menu, { ...st, s: cs });
@@ -69,6 +72,34 @@ export function menuLayout(st: Stage, rows: number, subRows: number, touch = fal
     sheet,
     prev: { x: sheet.x, ...foot },
     next: { x: sheet.x + sheet.w / 2, ...foot },
+  };
+}
+
+// A phone's fixed corners: the menu stands in the combat bar's bottom right corner (the target's plate there shows only
+// on the tile screens, where the menu is closed), with 44 px rows (TAP) where the
+// page has the height for them and never over the Height panel above; the submenu replaces it in the same box (no
+// cascade off the page) and the action's sheet sits left of the columns, so no piece lies over another
+export function cornerLayout(st: Stage, rows: number, subRows: number, foot: number): MenuLayout {
+  const s = st.s,
+    top = place(REGIONS.height, st),
+    lines = (n: number) => REF.head + n * REF.row + REF.foot,
+    // the tile's coordinates line hangs about 56 reference px under the Height region (measured on the 844x390 shot)
+    room = foot - (top.y + top.h + (56 + 8) * s),
+    cs = Math.min(TAP / REF.row, room / lines(Math.max(rows, subRows))),
+    w = REGIONS.menu.w * cs,
+    x = st.x + st.w - w,
+    col = (n: number) => ({ x, y: foot - lines(n) * cs, w, h: lines(n) * cs });
+  const page = place(REGIONS.detail, st),
+    sheet = { ...page, x: x - 8 * s - page.w, y: Math.max(st.y + 72, page.y) };
+  const fh = Math.max(REF.sheetFoot * s, TAP),
+    end = { y: sheet.y + sheet.h - (REF.sheetFoot * s + fh) / 2, w: sheet.w / 2, h: fh };
+  return {
+    cs,
+    main: col(rows),
+    sub: col(subRows),
+    sheet,
+    prev: { x: sheet.x, ...end },
+    next: { x: sheet.x + sheet.w / 2, ...end },
   };
 }
 

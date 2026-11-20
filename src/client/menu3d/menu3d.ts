@@ -14,6 +14,7 @@ import { KEYS } from '../hud-pieces.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
+import { place, REGIONS } from '../ui3d/layout.ts';
 import { paintTexture } from '../ui3d/panel.ts';
 import { land, settled, spring } from '../ui3d/spring.ts';
 import { Column, clamp01, Icon, move } from './column.ts';
@@ -95,7 +96,10 @@ export class Menu3d implements Ui3dScreen {
   private show(m: MenuView) {
     const { layer, main, sub } = this,
       sheet = { layer, paint: this.paint };
-    const at = (this.at = menuLayout(layer.stage, m.rows.length, m.sub?.length ?? 0, !KEYS));
+    // a phone stands the menu in the combat bar's bottom right corner (menu-layout.ts cornerLayout)
+    const bar = place(REGIONS.bar, layer.small),
+      foot = layer.phone ? bar.y + bar.h : undefined;
+    const at = (this.at = menuLayout(layer.stage, m.rows.length, m.sub?.length ?? 0, !KEYS, foot));
     const ctx = { ...sheet, s: at.cs };
     [main.x, main.y] = [at.main.x, at.main.y];
     main.set({ title: m.head, w: at.main.w, h: at.main.h, rows: m.rows }, ctx);
