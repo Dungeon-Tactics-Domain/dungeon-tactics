@@ -5,7 +5,7 @@ import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import type { Forecast } from '../forecast.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
-import { type queueRows, statsText, unitStats } from '../turn-list.ts';
+import { cardLines, type queueRows, statsText, unitStats } from '../turn-list.ts';
 import { pageText } from '../ui3d/layout.ts';
 
 export type Queue = ReturnType<typeof queueRows>;
@@ -37,9 +37,10 @@ export interface QueueCard {
   now: boolean; // the one acting
   target: boolean; // struck by the aimed ability
   pending: boolean; // where the aimed charge would fire
-  // life and CT beside the card, each a short line over its bar (turn-list.ts unitStats); null on a charge's row, which
-  // is a spell going off, not a turn
-  stats: { hp: string; ct: string; ctFill: number } | null;
+  small: boolean; // a unit already listed above: a smaller card with its name only (Fernando, Nov 20)
+  // the lines beside the card: on a unit's first card its name, life and mana, stamina and CT (turn-list.ts cardLines),
+  // the life bar under the second; on a repeat the name only. Null on a charge's row, a spell going off, not a turn
+  stats: { lines: string[] } | null;
   tip: string; // name, life and CT in full, shown beside the card under the mouse
 }
 
@@ -52,8 +53,21 @@ export interface QueueCard {
 export const headOnSheet = (q: Queue | null, sheet?: string) =>
   !!sheet && !q?.rows[0]?.charge && q?.rows[0]?.unit === sheet;
 
+// which rows repeat a unit already listed (a charge's row is never one): the list's head counts, even when the 3D
+// bar's sheet stands for it, since that sheet shows the unit in full
+export function repeats(rows: Queue['rows']): boolean[] {
+  const seen = new Set<string>();
+  return rows.map((r) => {
+    if (r.charge) return false;
+    const again = seen.has(r.unit);
+    seen.add(r.unit);
+    return again;
+  });
+}
+
 export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: string): QueueCard[] {
   const rows = q?.rows ?? [];
+  const again = repeats(rows);
   const struck = new Map(fs.map((f) => [f.unit.id, f]));
   const marked = new Set<number>();
   for (const id of new Set([...struck.keys(), ...(q?.targets ?? [])])) {
@@ -77,7 +91,8 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
       now: i === 0,
       target: marked.has(i),
       pending: i === q?.at,
-      stats: r.charge ? null : { hp: text.hp, ct: text.ct, ctFill: st.ct / st.ctMax },
+      small: again[i],
+      stats: r.charge ? null : { lines: again[i] ? [unitName(u.def)] : cardLines(u) },
       tip: r.charge
         ? `${abilityName(r.charge)} · ${unitName(u.def)} · ${t(`resolve em ${r.ticks}`, `resolves in ${r.ticks}`)}`
         : `${unitName(u.def)} · ${text.long}${marked.has(i) ? t(' · alvo', ' · target') : ''}`,
@@ -86,27 +101,34 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
   return headOnSheet(q, sheet) ? cards.slice(1) : cards;
 }
 
-// Where the life and CT lines sit beside a card `h` px tall, at the list's scale `s` (1 at 1280x720), in px from the
-// card's top: each line's middle and, right under it, its bar's top. The text never goes under the game's 16 px, so the
-// rows never get shorter than what two lines and two bars take (style.css .hud.turn3d .queue-row)
+// Where the lines sit beside a card `h` px tall, at the list's scale `s` (1 at 1280x720), in px from the card's top:
+// each line's middle and, with `bar` (a first card), the life bar's top right under the second line. The text never
+// goes under the game's 16 px, so a first card is never shorter than its lines (queue-layout.ts linesHeight).
 // Under LIST_MIN (a narrow page, where the whole interface shrinks: ui3d/layout.ts) those floors shrink with the list
 export const LIST_MIN = 0.9; // the list's scale at layout.ts MIN_SCALE (1.5 of it: turn3d.ts)
 // a tablet's 14 px (layout.ts pageFloor) lifts the shrunk floors, the rows growing with their text
 export const listFloor = (s: number, page = pageText()) => Math.max(Math.min(1, s / LIST_MIN), page / 16);
-export function statsLayout(h: number, s: number) {
+const lineSizes = (s: number) => {
   const f = listFloor(s),
-    size = Math.max(16 * f, Math.round(12 * s)),
-    bar = Math.max(4 * f, Math.round(4 * s)),
-    line = size * 1.1,
-    gap = Math.max(2 * f, Math.round(3 * s)),
-    top = (h - 2 * (line + bar) - gap) / 2,
-    second = top + line + bar + gap;
+    size = Math.max(16 * f, Math.round(12 * s));
+  return { size, line: size * 1.1, bar: Math.max(4 * f, Math.round(4 * s)), gap: Math.max(2 * f, Math.round(3 * s)) };
+};
+// what `n` lines take, with the life bar under the second when `bar`
+export function linesHeight(n: number, s: number, bar: boolean) {
+  const z = lineSizes(s);
+  return n * z.line + (n - 1) * z.gap + (bar ? z.bar : 0);
+}
+export function statsLayout(h: number, s: number, n = 3, bar = n > 1) {
+  const z = lineSizes(s),
+    top = (h - linesHeight(n, s, bar)) / 2;
+  // each line's top: the ones under the bar move down by its thickness
+  const at = (i: number) => top + i * (z.line + z.gap) + (bar && i > 1 ? z.bar : 0);
   return {
-    size,
-    bar,
+    size: z.size,
+    bar: z.bar,
     x: Math.max(6, 8 * s), // from the card's right edge
     fits: top >= 0,
-    hp: { text: top + line / 2, bar: top + line },
-    ct: { text: second + line / 2, bar: second + line },
+    lines: Array.from({ length: n }, (_, i) => at(i) + z.line / 2),
+    hpBar: bar ? at(1) + z.line : -1, // under the life line; -1 for none
   };
 }

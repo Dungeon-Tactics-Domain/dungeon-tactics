@@ -321,12 +321,14 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   kept is the game's: contrast, text size, Reduce motion, keys and gamepad, and colour never alone (greyed rows say why).
   The turn list keeps the HUD's own list under it, unseen, as its layout, scroll and hover (a registered deviation).
   Beside each turn card (Fernando, Nov 17; a deliberate difference from the reference, whose timeline has no numbers)
-  sit the unit's life and CT: "Vida 53/120 +4" and "CT 40/100 +8" in the bar's light ink on a dark ground (`#0d1427`
-  at 0.8), each over its bar, life in its side's colour (blue `#2f86b0`, pink `#d9527f`; the thin bar under the portrait
-  left the card the same day, Fernando's decision: the life bar beside it is enough and carries the strike preview's
-  blink) and CT in gold (`#d2a91e`); the label in words, never colour alone. The text is
-  12 px at 1280x720 scale and never under 16 px, so a row never gets shorter than 48 px (`statsLayout` in
-  `queue-view.ts`): on a low screen the cards stop shrinking and the list scrolls. What each "+" counts (per turn, per
+  sit the unit's lines (Nov 20, Fernando: everything on its first card, the name alone after): on a unit's first card its
+  name, "HP 53/120 · MP 20/30" and "ST 30/30 · CT 40/100" (no gains) in the bar's light ink on a dark ground (`#0d1427`
+  at 0.8), the life bar under the life line in its side's colour (blue `#2f86b0`, pink `#d9527f`; the thin bar under the
+  portrait left the card on Nov 17, Fernando's decision: the life bar beside it is enough and carries the strike
+  preview's blink); the label in words, never colour alone. A later card of the same unit is 60% of a first one with its
+  name only, and it and its gap never give a finger under 44 px (`TAP`). The text is 12 px at 1280x720 scale and never
+  under 16 px, so a first card is never shorter than its three lines and bar (62.8 px at scale 1; `linesHeight`,
+  `statsLayout` in `queue-view.ts`): on a low screen the cards stop shrinking and the list scrolls. What each "+" counts (per turn, per
   tick) is in the tip beside the card under the mouse and in Options › Help › Controls
   (`game/options-help.ts`); a charge's row has no lines. The 3D bar's sheets say the life gain only (`bar-view.ts`
   `hpRegen`): "+4" after the "Vida" label; the CT bar runs up to a space before its number (Fernando, Nov 20: no CT gain

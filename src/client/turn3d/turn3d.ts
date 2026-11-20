@@ -23,7 +23,7 @@ import { cardMaterial, hex, INK, LEFT, PAD, RIGHT, sharedUniforms } from './card
 import { CardTip } from './card-tip.ts';
 import { type QueueBoxes, type QueueLayout, queueLayout } from './queue-layout.ts';
 import { dropName, seatQueue, wireQueue } from './queue-seat.ts';
-import { headOnSheet, matchRows, type Queue, type QueueCard, queueCards, statsLayout } from './queue-view.ts';
+import { headOnSheet, matchRows, type Queue, type QueueCard, queueCards, repeats, statsLayout } from './queue-view.ts';
 
 const INNER = 40.2 / 43; // the picture's width over its height inside the frame: how a face is cropped
 const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
@@ -43,8 +43,8 @@ interface Card {
   fade: number; // 1 showing, 0 leaving
   crop: (frame: number) => void; // moves the face to that frame of its sheet
   face: ReturnType<typeof battleFace>;
-  // the life and CT lines beside it (queue-view.ts `stats`): redrawn only when their text or size changes
-  texts: { key: string; hp: Mesh<typeof QUAD, ShaderMaterial>; ct: Mesh<typeof QUAD, ShaderMaterial> } | null;
+  // the lines beside it (queue-view.ts `stats`): redrawn only when their text or size changes
+  texts: { key: string; lines: Mesh<typeof QUAD, ShaderMaterial>[] } | null;
 }
 const SIDES = ['x', 'y', 'w', 'h'] as const;
 // GLSL's smoothstep, for the texts to fade at the list's ends as the cards do
@@ -70,6 +70,7 @@ export class Turn3d implements Ui3dScreen {
   private geo: QueueBoxes = { rows: [], left: 0, top: 0, height: 0, head: 0, scroll: 0, more: 0 };
   private lay!: QueueLayout; // set by the layer's first resize, in the constructor
   private shown = { rows: 0, now: false, head: false, room: undefined as number | undefined, stats: 0 };
+  private small: boolean[] = []; // per shown row: a repeat's smaller card (queue-view.ts repeats)
   private expression: (u: UnitState) => Expression = () => 'neutral';
 
   // `host`: the HUD's own list; hidden by CSS (the sandbox's `hide`), the layer hides the cards with it. `headless`: the
@@ -110,6 +111,7 @@ export class Turn3d implements Ui3dScreen {
       margin: layer.inset.top,
       sheet: shown.room ?? layer.h - Math.round(sheetBox(layer.small, layer.h).y), // the 3D bar's sheet or an HTML one
       stats: shown.stats,
+      small: this.small,
     });
     seatQueue(this.host, this.lay, shown.head, layer, this.flat);
     this.place();
@@ -121,8 +123,10 @@ export class Turn3d implements Ui3dScreen {
   // A redrawn list's rows, before the HUD anchors its scroll. `sheet`: the acting sheet's unit; `room`: an HTML panel's
   seat(q: Queue | null, sheet?: string, room?: number) {
     const head = this.headless && headOnSheet(q, sheet),
-      rows = (q?.rows.length ?? 0) - (head ? 1 : 0);
+      rows = (q?.rows.length ?? 0) - (head ? 1 : 0),
+      small = repeats(q?.rows ?? []).slice(head ? 1 : 0);
     Object.assign(this.shown, { rows, now: rows > 0 && !head, head, room });
+    this.small = small;
     this.relay();
   }
 
@@ -186,12 +190,12 @@ export class Turn3d implements Ui3dScreen {
     }
   }
 
-  // the card's two lines of text; an unchanged line keeps its texture (the CT of every row changes each turn, not each draw)
+  // the card's lines of text; unchanged lines keep their textures (the CT of every row changes each turn, not each draw)
   private setTexts(c: Card) {
     const { layer } = this,
       st = c.d.stats,
       size = statsLayout(0, this.shared.uS.value).size,
-      key = st ? JSON.stringify([st.hp, st.ct, size, layer.dpr]) : '';
+      key = st ? JSON.stringify([st.lines, size, layer.dpr]) : '';
     if (c.texts?.key === key) return;
     this.dropTexts(c);
     if (!st) return;
@@ -201,14 +205,11 @@ export class Turn3d implements Ui3dScreen {
       this.flat.add(m);
       return m;
     };
-    c.texts = { key, hp: make(st.hp), ct: make(st.ct) };
+    c.texts = { key, lines: st.lines.map(make) };
   }
   private retext() {
     for (const c of this.cards) this.setTexts(c);
-    this.statW = Math.max(
-      0,
-      ...this.cards.map((c) => (c.texts ? Math.max(c.texts.hp.scale.x, c.texts.ct.scale.x) : 0)),
-    );
+    this.statW = Math.max(0, ...this.cards.flatMap((c) => c.texts?.lines.map((m) => m.scale.x) ?? []));
     // the list grows by the room the lines take past its cards' column (20 design px are already there), so what
     // keeps clear of the list keeps clear of them too (queue-layout.ts `stats`)
     const s = this.shared.uS.value,
@@ -216,7 +217,7 @@ export class Turn3d implements Ui3dScreen {
     this.shown.stats = Math.max(0, Math.ceil(room));
   }
   private dropTexts(c: Card) {
-    if (c.texts) for (const m of [c.texts.hp, c.texts.ct]) dropText(m);
+    if (c.texts) for (const m of c.texts.lines) dropText(m);
     c.texts = null;
   }
 
@@ -257,7 +258,6 @@ export class Turn3d implements Ui3dScreen {
       un.uNum.value = d.num;
       const cell = d.id.charge ? atlasCell(d.id.charge) : null;
       un.uIcon.value.set(cell?.[0] ?? 0, cell?.[1] ?? 0, d.id.charge ? (cell ? 2 : 1) : 0);
-      un.uCt.value = d.stats?.ctFill ?? 0;
       return c;
     });
     this.retext();
@@ -342,11 +342,11 @@ export class Turn3d implements Ui3dScreen {
         h = Math.max(1, c.box.h.x * grow);
       const ox = g.left + c.box.x.x - (w - c.box.w.x) / 2,
         oy = g.top + c.box.y.x - this.scroll.x - (h - c.box.h.x) / 2;
-      // the life and CT lines right of the card, each over its bar; the quad's room on the right grows to hold them
-      const lay = statsLayout(h, s),
+      // the lines right of the card, the life bar under the life line; the quad's room on the right grows to hold them
+      const lay = statsLayout(h, s, c.texts?.lines.length ?? 1),
         barW = c.texts ? this.statW - 2 * TEXT_PAD : 0,
         barX = w + lay.x;
-      un.uStat.value.set(barX, barW, lay.hp.bar, lay.ct.bar);
+      un.uStat.value.set(barX, barW, lay.hpBar, 0);
       un.uBarH.value = lay.bar;
       const qw = w + LEFT * s + Math.max(RIGHT * s, barX + barW + 24 * s),
         qh = h + 2 * PAD * s;
@@ -360,11 +360,8 @@ export class Turn3d implements Ui3dScreen {
         // the same step aside, rise and fade at the list's ends as the card's own drawing (card.ts)
         const tx = ox + barX - TEXT_PAD + un.uShift.value,
           ty = oy - un.uLift.value;
-        for (const [m, at] of [
-          [c.texts.hp, lay.hp.text],
-          [c.texts.ct, lay.ct.text],
-        ] as const) {
-          const y = ty + at,
+        for (const [i, m] of c.texts.lines.entries()) {
+          const y = ty + lay.lines[i],
             clip = this.shared.uClip.value;
           m.position.set(this.layer.snap(tx + m.scale.x / 2), -this.layer.snap(y), 0);
           m.material.uniforms.uAlpha.value =

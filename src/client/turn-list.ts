@@ -2,11 +2,12 @@
 // battle, scrolling within its column when it is taller, instead of the next 4.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
+import { poolOf } from '../shared/battle/combat.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import { previewOrder, type QueueEntry, TURN_THRESHOLD } from '../shared/battle/turn-queue.ts';
 import type { Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
-import { t } from './i18n.ts';
+import { t, unitName } from './i18n.ts';
 
 // Rows up to the one that completes the round: every unit that plays and every queued charge shows at least once.
 // A unit that never shows in `rows` (speed 0, like the Beacon) does not stretch it
@@ -140,4 +141,18 @@ export function statsText(s: UnitStats) {
       ` · ${ct}` +
       t(` (+${s.ctGain} por tique)`, ` (+${s.ctGain} per tick)`),
   };
+}
+
+// A unit's first card in the 3D list (Fernando, Nov 20): its name, then life and mana, then stamina and CT, each as
+// now/max with no gain per turn or tick; a pool the unit lacks is left out
+export function cardLines(u: UnitState): string[] {
+  const s = unitStats(u),
+    pools = UNIT_DEFS[u.def].vars ?? {};
+  const pool = (k: string, label: string) => (k in pools ? `${label} ${poolOf(u, k)}/${pools[k]}` : '');
+  const join = (...parts: string[]) => parts.filter(Boolean).join(' · ');
+  return [
+    unitName(u.def),
+    join(`HP ${s.hp}/${s.hpMax}`, pool('mana', 'MP')),
+    join(pool('stamina', 'ST'), `CT ${s.ct}/${s.ctMax}`),
+  ];
 }

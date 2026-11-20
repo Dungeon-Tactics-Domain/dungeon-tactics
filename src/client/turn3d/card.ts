@@ -36,7 +36,7 @@ varying vec2 vUv; varying float vTop;
 uniform vec2 uSize; uniform vec2 uOrigin; uniform vec2 uCard; uniform vec2 uClip; uniform vec2 uHp; uniform vec2 uIconGrid;
 uniform float uS; uniform float uTime; uniform float uAlpha; uniform float uTeam; uniform float uNow; uniform float uHover;
 uniform float uTarget; uniform float uPending; uniform float uGold; uniform float uNum; uniform float uShift;
-uniform float uLift; uniform float uHasFace; uniform float uSeed; uniform float uCt; uniform float uBarH;
+uniform float uLift; uniform float uHasFace; uniform float uSeed; uniform float uBarH;
 uniform vec4 uStat;
 uniform sampler2D uFace; uniform sampler2D uDigits; uniform sampler2D uPaint; uniform sampler2D uIcons;
 uniform vec4 uFaceUv; uniform vec4 uTint; uniform vec3 uIcon;
@@ -76,26 +76,25 @@ void main() {
     col = over(col, g, uTarget * 0.94 * cov(d));
   }
 
-  // Life and CT beside the card (queue-view.ts statsLayout): a dark ground for the two short lines of text, and under
-  // each its bar. The life bar shows what is left, the part an aimed strike changes (blinking) and the empty rest. uStat: the bars' left and width, then the top of the life bar and of the CT bar, in px from the card's
-  // top left; a width of 0 for a row without them (a charge going off)
+  // The lines beside the card (queue-view.ts statsLayout): a dark ground under them and, on a unit's first card, the life
+  // bar under its life line: what is left, the part an aimed strike changes (blinking) and the empty rest. uStat: the
+  // bar's left and width, then its top in px from the card's top left (negative: no bar, a repeat's card); a width of 0
+  // for a row without lines (a charge going off)
   vec3 lifeTone = mix(${glsl('#2f86b0')}, ${glsl('#d9527f')}, uTeam);
   if (uStat.y > 0.5) {
     vec2 sp = p - vec2(uShift, -uLift);
     float gx = uCard.x * 0.5, gw = uStat.x + uStat.y + 6.0 * s - gx;
     float dG = box(sp - vec2(gx + gw * 0.5, mid), vec2(gw * 0.5, mid), 4.0 * s);
     col = over(col, ${glsl('#0d1427')}, 0.8 * cov(dG));
-    for (int i = 0; i < 2; i++) {
-      vec2 bc2 = sp - vec2(uStat.x + uStat.y * 0.5, (i == 0 ? uStat.z : uStat.w) + uBarH * 0.5);
+    if (uStat.z >= 0.0) {
+      vec2 bc2 = sp - vec2(uStat.x + uStat.y * 0.5, uStat.z + uBarH * 0.5);
       float dBar = box(bc2, vec2(uStat.y, uBarH) * 0.5, uBarH * 0.5);
       col = over(col, ${glsl('#05080f')}, 0.9 * cov(dBar - 1.0));
       float fx2 = bc2.x / uStat.y + 0.5;
       float shade = 1.12 - 0.3 * (bc2.y / uBarH + 0.5);
       vec3 tone = ${glsl('#2a2420')};
-      if (i == 0) {
-        if (fx2 <= uHp.x) tone = lifeTone * shade;
-        else if (fx2 <= uHp.y) tone = mix(lifeTone, vec3(1.0), 0.45 + 0.35 * sin(uTime * 9.0));
-      } else if (fx2 <= uCt) tone = ${glsl('#d2a91e')} * shade;
+      if (fx2 <= uHp.x) tone = lifeTone * shade;
+      else if (fx2 <= uHp.y) tone = mix(lifeTone, vec3(1.0), 0.45 + 0.35 * sin(uTime * 9.0));
       col = over(col, tone, cov(dBar));
     }
   }
@@ -328,9 +327,8 @@ export const cardMaterial = (shared: ReturnType<typeof sharedUniforms>, seed: nu
       uOrigin: { value: new Vector2() },
       uCard: { value: new Vector2() },
       uHp: { value: new Vector2(1, 1) },
-      uCt: { value: 0 }, // the CT bar's fill, 0 to 1
-      uStat: { value: new Vector4() }, // the bars beside the card: left, width, life bar's top, CT bar's top (px)
-      uBarH: { value: 4 }, // their thickness, px
+      uStat: { value: new Vector4() }, // the life bar beside the card: left, width, top (px; negative for none)
+      uBarH: { value: 4 }, // its thickness, px
       uAlpha: { value: 0 },
       uTeam: { value: 0 },
       uNow: { value: 0 },

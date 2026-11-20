@@ -1,7 +1,8 @@
 import type { Group } from 'three';
 import { describe, expect, it } from 'vitest';
-import { HEAD, type QueueSpec, queueLayout, TAP_MIN, tapGrow } from '../src/client/turn3d/queue-layout.ts';
+import { HEAD, type QueueSpec, queueLayout, TAP, TAP_MIN, tapGrow } from '../src/client/turn3d/queue-layout.ts';
 import { seatQueue } from '../src/client/turn3d/queue-seat.ts';
+import { linesHeight } from '../src/client/turn3d/queue-view.ts';
 import type { Ui3dLayer } from '../src/client/ui3d/layer.ts';
 import {
   type LayoutMode,
@@ -94,6 +95,9 @@ const plain = (over: Partial<QueueSpec>): QueueSpec => ({
   stats: 0,
   ...over,
 });
+// Nov 20: a first card at scale 1 holds three 16 px lines and the life bar (62.8 px), past the old 52; a row's box is
+// whole px
+const H = lu(linesHeight(3, 1, true));
 
 describe('3D turn list: its layout with no DOM', () => {
   for (const m of MEASURED)
@@ -120,9 +124,13 @@ describe('3D turn list: its layout with no DOM', () => {
       expect(l.box.right - l.box.left).toBeCloseTo(m.width, 2);
       expect(l.height).toBe(m.height - cut);
       expect(l.head).toBe(l.seat.pad.top + HEAD);
-      expect(l.more).toBe(m.more + cut);
-      expect(l.rows.slice(0, m.ys.length).map((r) => r.y + cut)).toEqual(m.ys);
-      for (const r of l.rows) expect(r).toMatchObject({ x: m.x, w: m.rw, h: m.rh });
+      // Nov 20: where the first card's three lines outgrow the measured card, it grows and the old rows no longer hold
+      if (l.seat.row.h > m.rh) expect(l.seat.row.h).toBe(lu(linesHeight(3, st.s * 1.5, true)));
+      else {
+        expect(l.more).toBe(m.more + cut);
+        expect(l.rows.slice(0, m.ys.length).map((r) => r.y + cut)).toEqual(m.ys);
+        for (const r of l.rows) expect(r).toMatchObject({ x: m.x, w: m.rw, h: m.rh });
+      }
       // no card at rest is cut by the title's line: each is wholly under it or over it (clipped), but for the rounding
       // of a row's box to whole px (under 2 px)
       for (const r of l.rows) expect(r.y >= l.head || r.y + r.h <= l.head + 2, String(r.y)).toBe(true);
@@ -161,15 +169,15 @@ describe('3D turn list: its layout with no DOM', () => {
 
   it('the name sits right over the top row of a list that fits, over the cards', () => {
     const l = queueLayout(plain({ rows: 3, at: { x: 12, y: 40, w: 200, h: 500 }, pageH: 720 }));
-    expect(l.title).toEqual({ x: 12 + 56 + (120 - 56 - 10) / 2, y: 40 + (318 - 8 - 22) + 10 });
+    expect(l.title).toEqual({ x: 12 + 56 + (120 - 56 - 10) / 2, y: 40 + (500 - 10 - 3 * H - 2 * 8 - 8 - 22) + 10 });
   });
 
   it('stacks from the bottom: row 1 ends a padding above the end, each next one a gap higher', () => {
     const l = queueLayout(plain({ rows: 3, at: { x: 12, y: 40, w: 200, h: 500 }, pageH: 720 }));
     expect(l.rows).toEqual([
-      { x: 56, y: 438, w: 44, h: 52 },
-      { x: 56, y: 378, w: 44, h: 52 },
-      { x: 56, y: 318, w: 44, h: 52 },
+      { x: 56, y: 427, w: 44, h: 63 },
+      { x: 56, y: 356, w: 44, h: 63 },
+      { x: 56, y: 286, w: 44, h: 63 },
     ]);
     expect(l.box).toEqual({ left: 12, top: 40, right: 132, bottom: 540 });
   });
@@ -178,22 +186,40 @@ describe('3D turn list: its layout with no DOM', () => {
     // with no acting panel under it the list still ends 2 px above the end of the page
     const big = queueLayout(plain({ rows: 2, now: true }));
     expect(big.rows[0]).toEqual({ x: 56, y: 598 - 10 - 64, w: 54, h: 64 });
-    expect(big.rows[1]).toEqual({ x: 56, y: 598 - 10 - 64 - 8 - 52, w: 44, h: 52 });
+    expect(big.rows[1]).toEqual({ x: 56, y: Math.round(598 - 10 - 64 - 8 - H), w: 44, h: 63 });
     expect(big.seat.first).toEqual({ w: 54, h: 64 });
-    expect(queueLayout(plain({ rows: 2 })).seat.first).toEqual({ w: 44, h: 52 });
+    expect(queueLayout(plain({ rows: 2 })).seat.first).toEqual({ w: 44, h: H });
+  });
+
+  // Fernando, Nov 20: a unit's repeat is a smaller card ("rosto menor"), and it and its gap still give a finger 44 px
+  it('a repeat is a card 60% of a first one, never under 44 px with its gap nor over a first card', () => {
+    for (const s of [1, 1.5, 2.25]) {
+      const l = queueLayout(plain({ s, rows: 2, small: [false, true] })),
+        [full, small] = l.seat.sizes;
+      expect(small.h + l.seat.gap).toBeGreaterThanOrEqual(TAP);
+      expect(small.h).toBeLessThan(full.h);
+      expect(small.h / full.h).toBeGreaterThanOrEqual(0.6 - 0.01);
+    }
+    expect(queueLayout(plain({ s: 1.5, rows: 2, small: [false, true] })).seat.sizes[1]).toEqual({
+      w: lu(66 * 0.6),
+      h: lu(78 * 0.6),
+    });
+    // a phone's card is about as small as a finger allows: its repeat stays the same size
+    const phone = queueLayout(plain({ s: 0.6, rows: 2, small: [false, true] })).seat.sizes;
+    expect(phone[1].h).toBeLessThanOrEqual(phone[0].h);
   });
 
   it('a list that fits does not scroll; a row more than fits does, by what is past its box', () => {
     const fill = (rows: number) => queueLayout(plain({ rows, at: { x: 0, y: 0, w: 200, h: 300 }, pageH: 300 }));
-    // 8 + 22 of title + 10, and 60 a row with its gap: four rows are 280 px, five 340, in a box of 298
+    // 8 + 22 of title + 10, and H + 8 a row with its gap (70.8): three rows are 252 px, four 323, in a box of 298
     expect(fill(0).more).toBe(0);
     expect(fill(0).rows).toEqual([]);
-    expect(fill(4).more).toBe(0);
-    // a fifth row does not fit: the list drops its top 18 px to the fourth row's (gap under the title), 42 + 18 to scroll
-    expect(fill(5).top).toBe(18);
-    expect(fill(5).more).toBe(60);
-    expect(fill(5).rows[4].y).toBeLessThan(0); // up the list, past its top
-    expect(fill(6).more).toBe(120);
+    expect(fill(3).more).toBe(0);
+    // a fourth row does not fit: the list drops its top 45 px to the third row's (gap under the title), 25 + 45 to scroll
+    expect(fill(4).top).toBe(45);
+    expect(fill(4).more).toBe(70);
+    expect(fill(4).rows[3].y).toBeLessThan(0); // up the list, past its top
+    expect(fill(5).more).toBe(141);
   });
 
   it('ends above the acting panel when that one is taller than the reference, 2 px clear', () => {
@@ -203,7 +229,7 @@ describe('3D turn list: its layout with no DOM', () => {
     expect(room(148).box.bottom).toBe(450); // the border: 148 + 2 is the region's own end
     expect(room(149).box.bottom).toBe(449);
     expect(room(200).box.bottom).toBe(398);
-    expect(room(200).rows[0].y).toBe(398 - 50 - 10 - 52);
+    expect(room(200).rows[0].y).toBe(398 - 50 - 10 - 63);
   });
 
   it('grows to the right by the room the life and CT lines take', () => {
@@ -215,8 +241,8 @@ describe('3D turn list: its layout with no DOM', () => {
   it('under the smallest full scale the rows keep a floor that shrinks with the pieces', () => {
     const row = (s: number) => queueLayout(plain({ s })).seat.row;
     expect(row(1.5)).toEqual({ w: 66, h: 78 });
-    expect(row(0.9)).toEqual({ w: 41, h: 48 }); // 52 x 0.9 is 46.8: the 48 px floor holds
-    expect(row(0.45).h).toBeCloseTo(24, 1); // half of it: the floor is 48 x 0.5
+    expect(row(0.9)).toEqual({ w: 41, h: H }); // 52 x 0.9 is 46.8 and the 48 px floor: the three lines hold it up
+    expect(row(0.45).h).toBeCloseTo(30.4, 1); // half the lines' floor: 3 lines of 8.8, 2 gaps of 1 and a 2 px bar
   });
 
   it('lu cuts a length to the 1/64 px of the browser, toward zero', () => {
@@ -243,8 +269,9 @@ describe('seatQueue', () => {
     }
   });
 
-  // Nov 19: a phone's unseen card row is 27 px tall (its drawn portrait about 23), under the 28 px of the touch rules
-  it('a card under 28 px gets a taller box with the same place: padding out, an equal margin back', () => {
+  // Nov 19: a phone's unseen card row was 27 px tall, under the 28 px of the touch rules; Nov 20: 34 with the three
+  // lines, under the 44 px a finger gets: the box takes half the gap each side
+  it('a card under 44 px gets a taller box with the same place: padding out, an equal margin back', () => {
     expect(TAP_MIN).toBe(28);
     expect(tapGrow(27)).toBe(1);
     expect(tapGrow(22)).toBe(3);
@@ -274,7 +301,7 @@ describe('seatQueue', () => {
     );
     for (const r of rows) {
       const grow = Number.parseFloat(r.style.paddingTop);
-      expect(l.seat.row.h).toBeLessThan(TAP_MIN); // the case the phone is in
+      expect(l.seat.row.h).toBeLessThan(TAP); // the case the phone is in
       expect(l.seat.row.h + 2 * grow).toBeGreaterThanOrEqual(TAP_MIN);
       expect(r.style.paddingBottom).toBe(r.style.paddingTop);
       expect(r.style.marginTop).toBe(`${-grow}px`);

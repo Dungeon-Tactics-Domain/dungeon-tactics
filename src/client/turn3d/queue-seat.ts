@@ -6,7 +6,7 @@ import type { Group, Mesh } from 'three';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
 import { INK } from './card.ts';
-import { HEAD, type QueueLayout, tapGrow } from './queue-layout.ts';
+import { HEAD, type QueueLayout, TAP, tapGrow } from './queue-layout.ts';
 
 let name: Mesh | undefined; // the list's name as drawn: one turn list at a time
 // the 3D list went: its name with it (the HTML title is written anew, seen, by the HUD's next redraw)
@@ -55,7 +55,7 @@ export function seatQueue(queue: HTMLElement, l: QueueLayout, headless: boolean,
     const head = headless && row.classList.contains('now');
     row.style.display = head ? 'none' : '';
     if (head) continue;
-    const z = shown++ ? seat.row : seat.first;
+    const z = seat.sizes[shown++] ?? seat.row;
     row.style.width = px(z.w);
     row.style.height = px(z.h);
     // the row reaches over the card's life and CT lines too: a finger dragging there scrolled the map, not the list
@@ -64,7 +64,8 @@ export function seatQueue(queue: HTMLElement, l: QueueLayout, headless: boolean,
     row.style.paddingRight = px(seat.stats);
     // a card under 28 px tall gets a taller box with the same place in the column: padding takes the extra height and an
     // equal negative margin gives it back, so the list's flow and the cards' rows stay as laid out (the gap holds it)
-    const grow = tapGrow(z.h);
+    // a small card's box also takes half the gap each side, so it and its gap give a finger TAP px
+    const grow = Math.max(tapGrow(z.h), z.h < TAP ? Math.floor(seat.gap / 2) : 0);
     row.style.paddingTop = row.style.paddingBottom = px(grow);
     row.style.marginTop = row.style.marginBottom = px(-grow);
   }

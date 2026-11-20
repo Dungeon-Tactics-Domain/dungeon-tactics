@@ -7,8 +7,15 @@ import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
 import { LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
-import { queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
-import { LIST_MIN, listFloor, matchRows, queueCards, statsLayout } from '../src/client/turn3d/queue-view.ts';
+import { cardLines, queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
+import {
+  LIST_MIN,
+  linesHeight,
+  listFloor,
+  matchRows,
+  queueCards,
+  statsLayout,
+} from '../src/client/turn3d/queue-view.ts';
 import { setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
 import { wrapLines } from '../src/client/ui3d/text.ts';
@@ -404,9 +411,10 @@ describe('3D turn list: which card each row keeps', () => {
   });
 });
 
-// Life and CT beside each card (Nov 17, Fernando)
-describe('3D turn list: life and CT lines', () => {
-  it("each turn card carries its unit's two lines and CT fill; the tip says them in full", () => {
+// The lines beside each card (Nov 17, Fernando; Nov 20: name, HP, MP, ST and CT on a unit's first card, the name alone on
+// its repeats, a smaller card)
+describe('3D turn list: the lines beside the cards', () => {
+  it("a unit's first card says its name, life, mana, stamina and CT with no gains; a repeat its name, smaller", () => {
     const b = new Battle(
       flat(6, 6),
       stateOf([
@@ -417,10 +425,15 @@ describe('3D turn list: life and CT lines', () => {
     const foe = b.state.units.find((u) => u.id === 'b')!;
     foe.hp = 90;
     foe.ct = 40;
-    const card = queueCards(b, queueRows(b, null), []).find((c) => c.id.unit === 'b')!;
-    expect(card.stats).toEqual({ hp: statsText(unitStats(foe)).hp, ct: statsText(unitStats(foe)).ct, ctFill: 0.4 });
-    expect(card.stats!.hp).toContain('90/');
-    expect(card.stats!.ct).toContain('40/100 +');
+    const cards = queueCards(b, queueRows(b, null), []).filter((c) => c.id.unit === 'b');
+    expect(cards.length).toBeGreaterThan(1); // two rounds: the soldier shows again
+    const [card, again] = cards;
+    expect(card.small).toBe(false);
+    expect(card.stats!.lines).toEqual(cardLines(foe));
+    expect(card.stats!.lines[0]).toBe('Soldado');
+    expect(card.stats!.lines[1]).toMatch(/^HP 90\/\d+ · MP \d+\/\d+$/);
+    expect(card.stats!.lines[2]).toMatch(/^ST \d+\/\d+ · CT 40\/100$/); // no "+8" a tick
+    expect(again).toMatchObject({ small: true, stats: { lines: ['Soldado'] } });
     expect(card.tip).toContain(statsText(unitStats(foe)).long);
   });
 
@@ -439,17 +452,19 @@ describe('3D turn list: life and CT lines', () => {
   });
 
   it('the lines never go under 16 px from the smallest full scale up, and fit the card at every scale', () => {
-    // the rows' sizes in style.css (.hud.turn3d .queue-row): 52 design px tall, never under 48 px times --t3f
+    // a first card's height (queue-layout.ts): 52 design px tall, never under 48 px times the floor nor its lines
     for (const s of [0.5, 0.585, 0.87, 0.9, 1, 1.5, 2, 3]) {
-      const h = Math.max(52 * s, 48 * listFloor(s));
+      const h = Math.max(52 * s, 48 * listFloor(s), linesHeight(3, s, true));
       const l = statsLayout(h, s);
       // a narrow page (under LIST_MIN) shrinks the floor with the pieces
       expect(l.size).toBeGreaterThanOrEqual(16 * Math.min(1, s / LIST_MIN));
       expect(l.fits).toBe(true);
-      // top to bottom: life text, its bar, CT text, its bar, all inside the card
-      expect(l.hp.text).toBeLessThan(l.hp.bar);
-      expect(l.hp.bar + l.bar).toBeLessThanOrEqual(l.ct.text);
-      expect(l.ct.bar + l.bar).toBeLessThanOrEqual(h);
+      // top to bottom: name, life, its bar, stamina and CT, all inside the card
+      expect(l.lines[0]).toBeLessThan(l.lines[1]);
+      expect(l.lines[1]).toBeLessThan(l.hpBar);
+      expect(l.hpBar + l.bar).toBeLessThanOrEqual(l.lines[2] - l.size / 2);
+      expect(l.lines[2] + l.size * 0.55).toBeLessThanOrEqual(h + 1e-9);
+      expect(statsLayout(h * 0.6, s, 1)).toMatchObject({ fits: true, hpBar: -1 }); // a repeat: its name, no bar
     }
     expect(statsLayout(40, 1).fits).toBe(false);
   });
@@ -457,7 +472,7 @@ describe('3D turn list: life and CT lines', () => {
   it("a tablet's 14 px floor lifts the turn list's lines and its rows with them (768x1024: list scale 0.6)", () => {
     setPageFloor(768, 1024);
     expect(listFloor(0.6)).toBeCloseTo(14 / 16, 5);
-    const h = Math.max(52 * 0.6, 48 * listFloor(0.6));
+    const h = Math.max(52 * 0.6, 48 * listFloor(0.6), linesHeight(3, 0.6, true));
     expect(statsLayout(h, 0.6)).toMatchObject({ size: 14, fits: true });
     setPageFloor(844, 390); // a phone on its side keeps its shrunk lines
     expect(statsLayout(h, 0.6).size).toBeCloseTo((16 * 0.6) / LIST_MIN, 5);

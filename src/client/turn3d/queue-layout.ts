@@ -3,7 +3,7 @@
 // seated from these same numbers (queue-seat.ts) and keeps only the scroll and the hover. Pure and tested
 // (tests/queue-layout.test.ts) against what the browser measured before the numbers moved here.
 import { type Box, lu } from '../ui3d/layout.ts';
-import { listFloor } from './queue-view.ts';
+import { linesHeight, listFloor } from './queue-view.ts';
 
 // The list as the cards need it: each row's box in the list's scroll space, the list's own place on the page, the
 // height of its pinned title, where it is scrolled and how much list there is past its box
@@ -24,6 +24,9 @@ export const TAP_MIN = 28;
 export const tapGrow = (h: number) => Math.max(0, Math.ceil((TAP_MIN - h) / 2));
 
 export const HEAD = 22; // the pinned title: one 16 px line and its 6 px of padding
+// a small card and the gap around it still give a finger 44 px (Fernando, Nov 20; design system section 8)
+export const TAP = 44;
+const SMALL = 0.6; // a repeat's card next to a first one (Fernando, Nov 20: "rosto menor")
 
 export interface QueueSpec {
   rows: number; // the rows shown
@@ -33,6 +36,7 @@ export interface QueueSpec {
   pageH: number;
   sheet: number; // the room the acting panel takes from the page's bottom
   stats: number; // the room the life and CT lines take past the cards' column
+  small?: boolean[]; // per row: it repeats a unit listed above, a smaller card (queue-view.ts repeats)
   margin?: number; // the page's top margin (ui3d/layer.ts inset.top): the list starts under it
 }
 
@@ -45,16 +49,20 @@ export interface QueueSpec {
 export function queueLayout(q: QueueSpec) {
   const f = listFloor(q.s),
     px = (v: number) => lu(v * q.s),
-    size = (now: boolean) => ({
-      w: lu(Math.max((now ? 54 : 44) * q.s, (now ? 50 : 41) * f)),
-      h: lu(Math.max((now ? 64 : 52) * q.s, (now ? 59 : 48) * f)),
-    }),
     gap = px(8),
+    // a first card holds its three lines and the life bar; a repeat is SMALL of it, never so small that it and its gap
+    // give a finger under TAP, nor bigger than a first card (a phone's cards are already about that small)
+    size = (now: boolean, small = false) => {
+      const w = Math.max((now ? 54 : 44) * q.s, (now ? 50 : 41) * f),
+        h = Math.max((now ? 64 : 52) * q.s, (now ? 59 : 48) * f, linesHeight(3, q.s, true)),
+        k = small ? Math.min(1, Math.max(SMALL, (TAP - gap) / h)) : 1;
+      return { w: lu(w * k), h: lu(h * k) };
+    },
     pad = { top: px(8), right: px(10), bottom: px(10), left: px(56) },
     left = lu(q.at.x),
     // it ends above the acting panel where that one is taller than the reference's
     bottom = q.pageH - lu(Math.max(q.pageH - q.at.y - q.at.h, q.sheet + 2)),
-    sizes = Array.from({ length: q.rows }, (_, i) => size(q.now && i === 0)),
+    sizes = Array.from({ length: q.rows }, (_, i) => size(q.now && i === 0, q.small?.[i])),
     head = pad.top + HEAD, // where the rows end under the title
     width = lu(120 * q.s + q.stats),
     rows: Box[] = [];
@@ -94,7 +102,7 @@ export function queueLayout(q: QueueSpec) {
     more: Math.max(0, Math.round(content) - Math.round(height)),
     // for the unseen list (queue-seat.ts) and for what keeps clear of the drawn one (hud.ts place, insets)
     box: { left, top, right: left + width, bottom: top + height },
-    seat: { width, height, gap, pad, stats: q.stats, row: size(false), first: size(q.now) },
+    seat: { width, height, gap, pad, stats: q.stats, row: size(false), first: size(q.now), sizes },
   };
 }
 export type QueueLayout = ReturnType<typeof queueLayout>;
