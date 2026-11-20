@@ -54,6 +54,7 @@ different picture.
 | `seed` | battle dice (default 1) | page load |
 | `lang` | `"pt"` or `"en"` (the CLI defaults to `en`) | page load |
 | `viewport` | `{ "width": 1600, "height": 900 }` (default) | CLI |
+| `touch` | `true`: a finger points, `(pointer: coarse)`, so a phone-sized `viewport` gets the phone layout | CLI |
 | `format` | `"png"` (default) or `"webp"` | CLI |
 | `units` | `{ "<unit id>": { "x", "y", "facing", "hp", "ct", "hpRegen", "remove": true } }`; on a split map `x.5` puts the token between tiles. `hpRegen` (life back each turn, which only equipment gives in the game) goes on the unit's sheet, so every unit of that sheet gets it | load; live (no `remove`, no `hpRegen`) |
 | `add` | `[{ "id", "def", "team": "hero" \| "enemy", "x", "y" }]` | page load |

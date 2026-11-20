@@ -82,6 +82,8 @@ try {
     const viewport = spec.viewport ?? (values.video ? VIDEO : VIEWPORT);
     const context = await browser.newContext({
       viewport,
+      // a phone or tablet: a finger points, (pointer: coarse), so the touch layout opens
+      ...(spec.touch && { hasTouch: true, isMobile: true }),
       ...(values.video && { recordVideo: { dir: tmpdir(), size: viewport } }),
     });
     const page = await context.newPage();

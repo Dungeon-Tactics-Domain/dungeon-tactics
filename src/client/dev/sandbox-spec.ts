@@ -75,6 +75,7 @@ export interface SceneSpec {
   seed?: number; // battle dice; default 1
   lang?: 'pt' | 'en';
   viewport?: { width: number; height: number }; // CLI only
+  touch?: boolean; // CLI only: a finger points ((pointer: coarse)), the phone and tablet layout
   format?: 'png' | 'webp'; // CLI only
   units?: Record<string, UnitPatch>;
   add?: NewUnit[]; // boot only: models load with the map
@@ -100,6 +101,7 @@ const KEYS = [
   'seed',
   'lang',
   'viewport',
+  'touch',
   'format',
   'units',
   'add',
