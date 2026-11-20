@@ -37,7 +37,10 @@ describe('3D combat bar: what it shows', () => {
     expect(s).toMatchObject({ name: 'Guerreiro', enemy: false, tag: '', line: '' });
     expect(s.hp).toEqual({ label: 'Vida', value: 210, max: 210 });
     expect(s.change).toEqual({ left: 1, sure: 1, upTo: 1, gain: false });
-    expect(s.pools).toEqual([{ label: 'ST', value: 50, max: 50 }]);
+    expect(s.pools).toEqual([
+      { label: 'MP', value: 30, max: 30 },
+      { label: 'ST', value: 50, max: 50 },
+    ]);
     expect(s.ct).toEqual({ label: 'CT', value: 0, max: 100 });
     // what the turn list says after each number (Nov 17): no life regen without a piece, the CT gained each tick
     expect(s.hpRegen).toBe('');

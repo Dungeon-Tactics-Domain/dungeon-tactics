@@ -60,7 +60,7 @@ describe('status window', () => {
       Esquiva: '5%',
     });
     expect(rows.Elementos).toBeUndefined(); // only when the unit has one
-    expect(rows.Habilidades).toBe('Golpe, Golpe pesado, Escudada, Giro');
+    expect(rows.Habilidades).toBe('Golpe, Golpe pesado, Escudada, Giro, Rajada');
     expect(rows.Brave).toBeUndefined();
   });
 

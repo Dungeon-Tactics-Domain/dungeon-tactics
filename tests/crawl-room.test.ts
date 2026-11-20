@@ -144,9 +144,9 @@ describe('crawl rooms: 500 seeds', () => {
     const first = built.slice(0, 25);
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-    expect(CRAWL_VERSION).toBe('crawl6');
-    expect(first.map((b) => b.tries).join(' ')).toBe('1 4 3 3 6 3 1 2 1 1 3 2 1 10 2 2 10 1 2 1 2 3 1 1 2');
-    expect((h >>> 0).toString(16)).toBe('afacdded');
+    expect(CRAWL_VERSION).toBe('crawl7');
+    expect(first.map((b) => b.tries).join(' ')).toBe('1 4 3 3 6 3 1 2 5 1 3 2 1 10 2 3 10 1 2 1 2 3 1 1 2');
+    expect((h >>> 0).toString(16)).toBe('c5ffde7');
   });
 
   it('every tile, split into half tiles too, carries a look the smooth painted terrain draws', () => {
@@ -293,8 +293,12 @@ describe('verifyRoom: a broken room for each rule', () => {
   };
   const minion: Spawn = { id: 'e0-minion', def: 'minion', team: 'enemy', x: 3, y: 1 };
 
-  it('a room with no cover fails only the cover rule', () => {
-    expect(verifyRoom(handmade([minion]))).toEqual(['0 tiles stop a shot between the sides (min 2)']);
+  // since Nov 20 the minion has the Gust (both pools for everyone): with no cover it also sees every hero from its start
+  it('a room with no cover fails the cover rule', () => {
+    expect(verifyRoom(handmade([minion]))).toEqual([
+      'e0-minion sees every hero from its start',
+      '0 tiles stop a shot between the sides (min 2)',
+    ]);
   });
 
   it('an archer that sees every hero fails only that rule', () => {

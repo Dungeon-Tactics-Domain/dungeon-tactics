@@ -14,7 +14,7 @@ describe('actionOptions (Agir primeiro, Nov 19)', () => {
       { id: 'e', def: 'soldier', team: 'enemy', x: 7, y: 2 },
     ]);
     const o = actionOptions(g, s, 'r');
-    expect(o.map((x) => x.ability)).toEqual(['stab', 'throwing_knife', 'trip', 'deathblow']);
+    expect(o.map((x) => x.ability)).toEqual(['stab', 'throwing_knife', 'trip', 'deathblow', 'gust']);
     expect(by(o, 'stab')).toMatchObject({ enabled: false, reason: 'range', targets: [] });
     const knife = by(o, 'throwing_knife');
     expect(knife.enabled).toBe(true);

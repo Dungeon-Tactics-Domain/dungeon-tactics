@@ -99,7 +99,7 @@ describe('party', () => {
     const r = recruit(defaultGroup(), { gold: 500, items: [] }, 'lancer')!;
     const g = toggleDeploy(toggleDeploy(r.group, 'archer')!, 'r1')!;
     const lancer = heroesFor(g).at(-1)!;
-    expect(lancer).toMatchObject({ base: 'lancer', jump: 3, abilities: ['lance', 'sweep', 'lance_jump'] });
+    expect(lancer).toMatchObject({ base: 'lancer', jump: 3, abilities: ['lance', 'sweep', 'lance_jump', 'gust'] });
     expect(parseGroup(JSON.parse(JSON.stringify(g))).members.at(-1)?.cls).toBe('lancer');
     const s = stateOf([
       { id: 'l', def: 'lancer', team: 'hero', x: 1, y: 1 },

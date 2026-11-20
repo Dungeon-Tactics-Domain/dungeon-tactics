@@ -30,7 +30,13 @@ describe('Agir primeiro flow (act-flow.ts, Nov 19)', () => {
   it('the actions on a target: abilities in order, the ones that cannot hit it say why, then the items', () => {
     const b = scene();
     const acts = actActions(b, { k: 'unit', unit: 'near', pos: { x: 5, y: 2 } });
-    expect(acts.filter((a) => a.k === 'ability').map((a) => a.id)).toEqual(['firebolt', 'blast', 'gust', 'heal']);
+    expect(acts.filter((a) => a.k === 'ability').map((a) => a.id)).toEqual([
+      'firebolt',
+      'blast',
+      'gust',
+      'heal',
+      'dagger',
+    ]);
     expect(acts.find((a) => a.id === 'firebolt')!.enabled).toBe(true);
     const potion = acts.find((a) => a.k === 'item')!;
     expect(potion).toMatchObject({ id: 'life_potion', enabled: false, reason: 'no-target', count: 1 });

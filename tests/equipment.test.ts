@@ -47,26 +47,28 @@ describe('equipment', () => {
 
   it('mana and stamina pieces raise the pool max, and the regens add to the class own', () => {
     const mage = withGear(UNIT_DEFS.mage, { off: 'worn_grimoire', body: 'warded_robe', acc1: 'sleepstone' });
-    expect(mage.vars).toEqual({ mana: 30 + 20 + 20 });
+    expect(mage.vars).toEqual({ mana: 30 + 20 + 20, stamina: 30 });
     expect(mage.regen).toEqual({ mana: 8 + 3 });
     expect(mage.hpRegen).toBe(10);
     expect(
       withGear(UNIT_DEFS.warrior, { body: 'colossus_plate', acc1: 'sleepstone', acc2: 'sleepstone' }).hpRegen,
     ).toBe(30);
-    // a pool the class lacks opens with the piece (the lab: "+20 mana or stamina max"), regen only where a piece gives it
+    // a piece adds to the pool (the lab: "+20 mana or stamina max"; the mage has 30 stamina since Nov 20), regen only where a
+    // piece gives it
     const archer = withGear(UNIT_DEFS.mage, { off: 'leather_quiver' });
-    expect(archer.vars).toEqual({ mana: 30, stamina: 20 });
+    expect(archer.vars).toEqual({ mana: 30, stamina: 30 + 20 });
     expect(archer.regen).toEqual({ mana: 8 });
     expect(withGear(UNIT_DEFS.warrior, { off: 'worn_grimoire' })).toMatchObject({
-      vars: { stamina: 50, mana: 20 },
+      vars: { stamina: 50, mana: 30 + 20 },
       regen: { stamina: 5, mana: 3 },
     });
     // a mana regen with no mana pool to fill gives nothing (it wrote an empty pool into the state every turn)
-    const helm = withGear(UNIT_DEFS.warrior, { head: 'dawn_circlet' });
+    // a sheet with no mana pool (every class has both since Nov 20, so a made-up one)
+    const helm = withGear({ ...UNIT_DEFS.warrior, vars: { stamina: 50 } }, { head: 'dawn_circlet' });
     expect([helm.vars, helm.regen]).toEqual([{ stamina: 50 }, { stamina: 5 }]);
     // the class sheet itself never changes
     expect([UNIT_DEFS.mage.vars, UNIT_DEFS.mage.regen, UNIT_DEFS.mage.hpRegen]).toEqual([
-      { mana: 30 },
+      { mana: 30, stamina: 30 },
       { mana: 8 },
       undefined,
     ]);
@@ -78,7 +80,7 @@ describe('equipment', () => {
     s.heroes[i] = { ...s.heroes[i], items: { off: 'worn_grimoire', acc1: 'sleepstone' } };
     const b = Battle.start(buildDevScenario(s), 1);
     const me = b.state.units.find((u) => u.id === `h${i}`)!;
-    expect(me.vars).toEqual({ mana: 50 });
+    expect(me.vars).toEqual({ mana: 50, stamina: 30 });
     expect(UNIT_DEFS[me.def]).toMatchObject({ regen: { mana: 11 }, hpRegen: 10 });
   });
 
@@ -142,8 +144,8 @@ describe('equipment', () => {
     expect(mage.Mana).toBe('50 (Mago 30 · Grimório gasto +20)');
     expect(mage['Regeneração de mana']).toBe('11 (Mago 8 · Grimório gasto +3)');
     expect(mage['Regeneração de vida']).toBe('10 (Mago 0 · Pedra-do-sono +10)');
-    // a pool or regen only when the class or a piece gives it
-    expect(rows.Mana).toBeUndefined();
+    // a pool or regen only when the class or a piece gives it (every class has both pools since Nov 20)
+    expect(rows.Mana).toBe('30');
     expect(rows['Regeneração de vida']).toBeUndefined();
     expect(rowsOf('warrior', {}).Stamina).toBe('50');
     // the Party screen's bar: full at the rule's cap, else against the best party class with nothing on, never past full

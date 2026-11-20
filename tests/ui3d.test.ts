@@ -135,9 +135,9 @@ describe('3D menu: what it shows', () => {
     const targets = menuView(view(b, { k: 'targets', index: 0 }), true);
     expect(targets?.index).toBe(0); // Act
     expect(targets?.subTitle).toBe('Alvo');
-    expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Giro']);
+    expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Farol', 'Giro']);
     const actions = menuView(view(b, { k: 'actions', target: foe, index: 1 }), true);
-    expect(actions?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
+    expect(actions?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro', 'Rajada']);
     expect(actions?.sub?.[1].note).toBe('30 stamina'); // a main action carries no tag
     expect(actions?.subIndex).toBe(1);
     expect(targets?.sheet).toBeNull(); // the sheet is the action list's only
@@ -149,7 +149,7 @@ describe('3D menu: what it shows', () => {
     expect(m?.subTitle).toBe('Agir');
     expect(m?.index).toBe(0);
     expect(m?.sub?.[0].label).toBe('Escolher alvo');
-    expect(m?.sub?.slice(1).map((r) => r.label)).toEqual(['Golpe', 'Técnicas']); // the basic attack, then its group
+    expect(m?.sub?.slice(1).map((r) => r.label)).toEqual(['Golpe', 'Técnicas', 'Magias']); // the basic attack, then its groups
   });
 
   it('the action list shows the sheet of the focused ability, on the page asked for', () => {

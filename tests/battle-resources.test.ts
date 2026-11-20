@@ -201,7 +201,7 @@ describe('the save of the pools', () => {
     const st = parseBattleState(raw)!;
     expect(st).not.toBeNull();
     const w = st.units.find((u) => u.def === 'warrior')!;
-    expect(w.vars).toEqual({ stamina: 50 });
+    expect(w.vars).toEqual({ stamina: 50, mana: 30 });
   });
   it('rejects a pool below 0 or above its max, and keeps one in between', () => {
     const raw = saved();
@@ -211,7 +211,7 @@ describe('the save of the pools', () => {
     raw.units[i].vars = { stamina: -1 };
     expect(parseBattleState(raw)).toBeNull();
     raw.units[i].vars = { stamina: 12 };
-    expect(parseBattleState(raw)!.units[i].vars).toEqual({ stamina: 12 });
+    expect(parseBattleState(raw)!.units[i].vars).toEqual({ stamina: 12, mana: 30 });
   });
 });
 
@@ -240,7 +240,7 @@ describe('battle sheets built from a class', () => {
       'res-test',
     );
     const [h, e] = sc.spawns.filter((s) => s.def.startsWith('res-test')).map((s) => UNIT_DEFS[s.def]);
-    expect([h.vars, h.regen]).toEqual([{ mana: 30 }, { mana: 8 }]);
-    expect([e.vars, e.regen]).toEqual([{ stamina: 50 }, { stamina: 5 }]);
+    expect([h.vars, h.regen]).toEqual([{ mana: 30, stamina: 30 }, { mana: 8 }]);
+    expect([e.vars, e.regen]).toEqual([{ stamina: 50, mana: 30 }, { stamina: 5 }]);
   });
 });
