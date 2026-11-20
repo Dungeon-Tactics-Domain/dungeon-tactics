@@ -47,7 +47,8 @@ export type PadGlyph =
   | 'dpadH' // its left and right arms
   | 'dpadV' // its up and down arms
   | 'lstick'
-  | 'rstick';
+  | 'rstick'
+  | 'r3'; // pressing the right stick
 
 // which button of gamepad.ts each glyph is (its index in the standard mapping; a stick has none)
 export const PAD_INDEX: Partial<Record<PadGlyph, number>> = {
@@ -61,6 +62,7 @@ export const PAD_INDEX: Partial<Record<PadGlyph, number>> = {
   rt: 7,
   select: 8,
   start: 9,
+  r3: 11,
 };
 
 // Everything the game shows a key for. `keys`: one cap each, as keyboard.ts reads them; `pad`: the buttons that do the
@@ -87,7 +89,8 @@ export const ACTIONS = {
   slots: { keys: ['1'], pad: [] },
   recenter: { keys: ['F'], pad: [] },
   fps: { keys: ['F3'], pad: [] },
-  fold: { keys: ['L'], pad: [] }, // the turn list folded to its faces and back (hud-queue.ts)
+  // the turn list folded to its faces and back (hud-queue.ts); on the pad, pressing the stick that scrolls it (Nov 20)
+  fold: { keys: ['L'], pad: ['r3'] },
 } as const satisfies Record<string, { keys: readonly string[]; pad: readonly PadGlyph[] }>;
 export type Act = keyof typeof ACTIONS;
 
@@ -141,6 +144,7 @@ export function padName(g: PadGlyph, family: Family): string {
   if (g === 'dpadV') return t('Direcional ↑ ↓', 'D-pad ↑ ↓');
   if (g === 'lstick') return t('Analógico esquerdo', 'Left stick');
   if (g === 'rstick') return t('Analógico direito', 'Right stick');
+  if (g === 'r3') return family === 'playstation' ? 'R3' : 'RS';
   return NAMES[family][g] ?? '';
 }
 

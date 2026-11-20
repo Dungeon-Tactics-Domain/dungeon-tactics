@@ -31,6 +31,7 @@ const PRESS: Record<number, KeyAction> = {
   7: { k: 'zoom', factor: 1 / 1.15 },
   8: { k: 'undo' },
   9: { k: 'help' },
+  11: { k: 'fold' }, // right stick pressed: the stick already scrolls the turn list, its press folds it (Nov 20)
 };
 const DPAD: Record<number, ScreenDir> = { 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
 
