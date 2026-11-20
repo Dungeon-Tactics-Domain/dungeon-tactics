@@ -3,7 +3,8 @@ import { PAINT } from '../src/client/terrain.ts';
 import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
 import { dist, FACING, inBounds, posKey, TERRAIN, type Tile, tileAt } from '../src/shared/battle/grid.ts';
 import { halve } from '../src/shared/battle/half.ts';
-import type { Scenario, Spawn } from '../src/shared/battle/scenarios.ts';
+import { bodyFits, footprint } from '../src/shared/battle/pathing.ts';
+import { initialState, type Scenario, type Spawn } from '../src/shared/battle/scenarios.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { buildRoom, CRAWL_VERSION, generateRoom, type RoomOptions, roomTheme } from '../src/shared/crawl/generate.ts';
@@ -144,9 +145,38 @@ describe('crawl rooms: 500 seeds', () => {
     const first = built.slice(0, 25);
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-    expect(CRAWL_VERSION).toBe('crawl8');
-    expect(first.map((b) => b.tries).join(' ')).toBe('1 4 3 3 3 3 1 2 5 1 3 2 1 10 2 3 10 1 2 1 2 3 1 1 2');
-    expect((h >>> 0).toString(16)).toBe('f8678002');
+    expect(CRAWL_VERSION).toBe('crawl9');
+    expect(first.map((b) => b.tries).join(' ')).toBe('1 4 3 3 3 3 1 2 5 1 3 2 5 10 2 3 2 1 2 1 2 3 1 1 10');
+    expect((h >>> 0).toString(16)).toBe('70489573');
+  });
+
+  it('a snake starts with its whole body on plain ground inside the border, clear of every other unit', () => {
+    // the generator places squares; the tail lies behind the head, opposite the facing initialState gives (the nearest
+    // hero), so a head on row 1 facing the heroes would put the tail on the border, a head beside a hero inside it
+    let snakes = 0;
+    for (const { room } of built.filter((b) => b.room.spawns.some((s) => UNIT_DEFS[s.def].halfLength))) {
+      const half = halve({ ...room, id: 'crawl-snake-test' });
+      const state = initialState(half, 1);
+      for (const u of state.units.filter((v) => UNIT_DEFS[v.def].halfLength)) {
+        snakes++;
+        const body = footprint(u);
+        expect(body.length, room.id).toBe(2);
+        expect(bodyFits(half.grid, state, u, u.pos, u.facing), `${room.id} ${u.id}`).toBe(true);
+        const head = tileAt(room.grid, { x: u.pos.x / 2, y: u.pos.y / 2 });
+        for (const c of body) {
+          const p = { x: c.x >> 1, y: c.y >> 1 },
+            t = tileAt(room.grid, p);
+          expect(
+            t.terrain === 'floor' && !t.depth && !t.spikes && !t.ramp && t.h === head.h,
+            `${room.id} ${u.id}`,
+          ).toBe(true);
+          expect(p.x > 0 && p.y > 0 && p.x < room.grid.width - 1 && p.y < room.grid.height - 1, u.id).toBe(true);
+          for (const o of room.spawns.filter((s) => s.id !== u.id))
+            expect(dist(p, o), `${room.id} ${u.id} near ${o.id}`).toBeGreaterThanOrEqual(2);
+        }
+      }
+    }
+    expect(snakes).toBeGreaterThan(10);
   });
 
   it('every tile, split into half tiles too, carries a look the smooth painted terrain draws', () => {

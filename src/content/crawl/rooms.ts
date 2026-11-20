@@ -19,6 +19,8 @@ export const CRAWL_GROUPS: RoomGroup[] = [
     depth: 1,
     enemies: ['mini_skeleton', 'mini_skeleton', 'minion'],
   },
+  // Nov 20: two 1x2 snakes with a minion, so Fernando meets the long body on the first floor
+  { name: ['Ninho de cobras', 'Snake nest'], depth: 1, enemies: ['snake', 'snake', 'minion'] },
   { name: ['Mago na retaguarda', 'Mage at the rear'], depth: 2, enemies: ['soldier', 'dark_mage'] },
   { name: ['Cavaleiro e arqueiro', 'Knight and archer'], depth: 2, enemies: ['veil_knight', 'skeleton_archer'] },
   { name: ['Bruto sozinho', 'Lone brute'], depth: 2, enemies: ['brute'] },

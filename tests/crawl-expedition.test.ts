@@ -172,7 +172,7 @@ describe('crawl expedition', () => {
   it('every room draws one of its floor compositions, and over many seeds each of them', () => {
     // the descent's salas list (lab descida.json): floor 1 teaches, floor 2 joins roles, floor 3 brings the healer
     const lab: Record<number, string[]> = {
-      1: ['Minion patrol', 'Archer and escort', 'Mini skeleton nest'],
+      1: ['Minion patrol', 'Archer and escort', 'Mini skeleton nest', 'Snake nest'],
       2: ['Mage at the rear', 'Knight and archer', 'Lone brute'],
       3: ['Healing acolyte', 'Veil troop'],
     };

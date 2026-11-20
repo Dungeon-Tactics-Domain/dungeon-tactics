@@ -3,7 +3,8 @@
 // obstacles between them. The client splits it like any battle (half.ts). Pure and deterministic: the same seed and
 // options always give the same room, drawn only through rng.ts.
 import { CRAWL_BOSS, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../../content/crawl/rooms.ts';
-import { dist, FACING, type Tile } from '../battle/grid.ts';
+import { dist, FACING, faceNearest, type Tile } from '../battle/grid.ts';
+import { SUB } from '../battle/half.ts';
 import { rollInt } from '../battle/rng.ts';
 import type { Scenario, Spawn } from '../battle/scenarios.ts';
 import type { Pos } from '../battle/types.ts';
@@ -16,7 +17,8 @@ import { startRange, verifyRoom } from './verify.ts';
 // crawl6 (Nov 16, the trajectory grill): the checks shoot with the realistic path, so some seeds keep another layout;
 // crawl7 (Nov 20): every unit has both pools, a stamina unit the Gust, so the checks see farther and some seeds re-roll
 // crawl8 (Nov 20): a depth-1 group of mini skeletons (1x1 on the split map) joins the draw
-export const CRAWL_VERSION = 'crawl8';
+// crawl9 (Nov 20): a depth-1 snake nest joins the draw, and a snake's tail tile must be free and plain too
+export const CRAWL_VERSION = 'crawl9';
 export interface RoomGroup {
   name: [string, string];
   depth: number;
@@ -170,6 +172,18 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
   const gapTo = (tiles: Pos[]) => Math.min(...tiles.flatMap((p) => heroes.map((q) => dist(p, q))));
   const square = (p: Pos, size: number) =>
     Array.from({ length: size * size }, (_, k) => ({ x: p.x + (k % size), y: p.y + Math.floor(k / size) }));
+  const inside = (p: Pos) => p.x > 0 && p.y > 0 && p.x < N - 1 && p.y < N - 1;
+  // a long body (the snake, UnitDef.halfLength) also lies on the tiles its tail reaches behind the head, facing the
+  // nearest hero as initialState will turn it, so the whole body starts on plain ground away from everyone
+  const body = (p: Pos, def: string) => {
+    const own = square(p, UNIT_DEFS[def].size ?? 1);
+    const f = FACING[faceNearest(p, heroes)];
+    for (let k = 1; k < (UNIT_DEFS[def].halfLength ?? 1); k++) {
+      const q = { x: (p.x * SUB - f.x * k) >> 1, y: (p.y * SUB - f.y * k) >> 1 };
+      if (own.every((o) => dist(o, q))) own.push(q);
+    }
+    return own;
+  };
   for (const [i, def] of enemies.entries()) {
     const size = UNIT_DEFS[def].size ?? 1;
     const [lo, hi] = startRange(def);
@@ -179,16 +193,19 @@ function layout(int: (lo: number, hi: number) => number, N: number, enemies: str
       size > 1
         ? band(1, 1, foe).filter((p) => p.x < N - 2 && square(p, 2).every((q) => plain(q, foe)))
         : band(1, N - 6, foe);
+    // the starting distance from the head's square, as verifyRoom measures it; the tail only has to fit
     const p = pick(from, (q) => {
-      const own = square(q, size);
-      const d = gapTo(own);
-      return d >= lo && d <= hi && own.every((o) => taken.every((t) => dist(o, t) >= 2));
+      const d = gapTo(square(q, size));
+      return (
+        d >= lo &&
+        d <= hi &&
+        body(q, def).every((o) => inside(o) && plain(o, foe) && taken.every((t) => dist(o, t) >= 2))
+      );
     });
     if (!p) return null;
-    const own = square(p, size);
-    if (size > 1) for (const q of own) at(q).h = Math.min(3, foe + 1);
+    if (size > 1) for (const q of square(p, size)) at(q).h = Math.min(3, foe + 1);
     spawns.push({ id: `e${i}-${def}`, def, team: 'enemy', ...p });
-    taken.push(...own);
+    taken.push(...body(p, def));
   }
 
   // ramps on half the steps of 1 between two plain tiles (drawing; the rules read only the height), never under a unit
