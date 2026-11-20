@@ -3,7 +3,6 @@
 // debug grid. It only draws what the scene passes in.
 import * as THREE from 'three';
 import { inBounds, posKey } from '../../shared/battle/grid.ts';
-import { cellsOf } from '../../shared/battle/pathing.ts';
 import type { Pos, Shot } from '../../shared/battle/types.ts';
 import type { Highlights } from '../interaction.ts';
 import { MARKER } from '../markers.ts';
@@ -23,7 +22,7 @@ import {
 } from './mark-kit.ts';
 import { DANGER, MARK, type MarkPattern, markTexture } from './mark-looks.ts';
 import { rangeRing } from './range-ring.ts';
-import type { TileSpace } from './space.ts';
+import { rectOf, sides, type TileSpace } from './space.ts';
 import { type Aim, animateAim, disposeAim, trajectory } from './trajectory.ts';
 
 const CURSOR = { frame: '#ffffff', arrow: '#ffcf4a' }; // the cursor's colors when the square fits
@@ -234,10 +233,11 @@ export class Marks {
     return this.cursor.visible ? this.cursor.position : null;
   }
 
-  // `size`: the frame goes around the square a unit of that many cells per side would stand on, with its corner on `p` (Move).
+  // `size`: the frame goes around the square a unit of that many cells per side would stand on, with its corner on `p` (Move);
+  // {x, y} cells for a long body (the snake's 1x2).
   // `fits` false turns frame and arrow red: the arrow draws over everything, so a square hidden behind a barrel or a tree still
   // reads as not fitting
-  setCursor(p: Pos | null, size = 1, fits = true) {
+  setCursor(p: Pos | null, size: number | Pos = 1, fits = true) {
     // appears in place right away; then slides from tile to tile (frame), instead of jumping
     if (p && !this.cursor.visible) this.cursor.position.copy(this.space.squareTop(p, size));
     this.cursor.visible = !!p;
@@ -252,14 +252,14 @@ export class Marks {
         else (o.material as THREE.MeshBasicMaterial).color.set(fits ? color : MARK.nogo[0]);
       // over a step or a ramp the flat frame floated off the lower cells' marks (stills at angles 0 and 2 on stage 0): there
       // the square's 4 marks and the arrow show it
-      const ys = cellsOf(p, size)
+      const ys = rectOf(p, size)
         .filter((c) => inBounds(this.space.grid, c))
         .map((c) => this.space.world(c).y);
       frame.visible = Math.max(...ys) - Math.min(...ys) < 0.01;
       // a square flat at its standing height, like the token on it (a big unit does not tilt on a ramp)
-      if (size > 1) {
+      if (size !== 1) {
         frame.rotation.set(0, 0, 0);
-        frame.scale.set(size, 1, size);
+        frame.scale.set(sides(size).x, 1, sides(size).y);
       } else this.space.lay(frame, p);
     }
   }

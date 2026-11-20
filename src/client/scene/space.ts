@@ -2,7 +2,6 @@
 // scene (board, markers, units, camera) places things through here, so a ramp or deep water is measured the same everywhere.
 import * as THREE from 'three';
 import { FACING, type Grid, inBounds, posKey, tileAt } from '../../shared/battle/grid.ts';
-import { cellsOf } from '../../shared/battle/pathing.ts';
 import type { Point, Pos } from '../../shared/battle/types.ts';
 import { DEEP_DROP, raisedDeep, SWIM, WADE, type WaterLevel, waterLevels } from '../water-levels.ts';
 
@@ -26,6 +25,14 @@ export function squareUnder(grid: Grid, cell: Pos, dx: number, dz: number, size:
   const keep = (v: number, w: number) => Math.min(Math.max(0, v), Math.max(0, w - size));
   return { x: keep(cell.x + shift(dx), grid.width), y: keep(cell.y + shift(dz), grid.height) };
 }
+
+// a frame's sides in cells: a square's `size`, or a long body's {x, y}
+export const sides = (size: number | Pos): Pos => (typeof size === 'number' ? { x: size, y: size } : size);
+// the cells of that frame with its corner on `p`
+export const rectOf = (p: Pos, size: number | Pos): Pos[] => {
+  const s = sides(size);
+  return Array.from({ length: s.x * s.y }, (_, i) => ({ x: p.x + (i % s.x), y: p.y + Math.floor(i / s.x) }));
+};
 
 export class TileSpace {
   readonly step: number; // height of one level on this map
@@ -54,15 +61,17 @@ export class TileSpace {
     return new THREE.Vector3(p.x - this.grid.width / 2, (p.h + 1) * this.step, p.y - this.grid.height / 2);
   }
 
-  // middle of the square of `size` cells with its corner on `p`, on its highest cell's ground (where a token stands); cells
-  // off the map do not count, so a square the cursor pushes past the edge stays where the cursor is
-  squareTop(p: Pos, size: number): THREE.Vector3 {
+  // middle of the square of `size` cells (or {x, y} cells: the snake's 1x2) with its corner on `p`, on its highest cell's
+  // ground (where a token stands); cells off the map do not count, so a square the cursor pushes past the edge stays where
+  // the cursor is
+  squareTop(p: Pos, size: number | Pos): THREE.Vector3 {
     if (size === 1) return this.world(p);
-    const ys = cellsOf(p, size)
+    const s = sides(size);
+    const ys = rectOf(p, size)
       .filter((c) => inBounds(this.grid, c))
       .map((c) => this.world(c).y);
     const w = this.world(p);
-    return w.set(w.x + (size - 1) / 2, Math.max(...ys), w.z + (size - 1) / 2);
+    return w.set(w.x + (s.x - 1) / 2, Math.max(...ys), w.z + (s.y - 1) / 2);
   }
 
   // where the unit stands: the tile, lower in shallow water and swimming in deep (markers and cursor follow in world(), on the surface)

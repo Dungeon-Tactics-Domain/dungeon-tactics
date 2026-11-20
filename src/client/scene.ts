@@ -152,7 +152,7 @@ export class BattleScene {
     this.chargeLines.setCounters(c);
   }
 
-  setCursor(p: Pos | null, size = 1, fits = true) {
+  setCursor(p: Pos | null, size: number | Pos = 1, fits = true) {
     this.marks.setCursor(p, size, fits);
   }
 

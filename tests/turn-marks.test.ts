@@ -153,6 +153,16 @@ describe('the cursor square on the split map', () => {
     expect(frame(b, targets, at(1, 6))).toEqual({ cursor: at(1, 6), size: 1 });
   });
 
+  // Nov 20: the snake's body is its head's cell and the one behind its facing; the frame covers both, from either cell
+  it('over a long body it frames both its cells, along its facing', () => {
+    const b = split();
+    b.state.units.push({ ...b.state.units[3], id: 'n', def: halfDef('snake'), pos: at(6, 6), facing: 1 });
+    expect(frame(b, targets, at(6, 6))).toEqual({ cursor: at(5, 6), size: { x: 2, y: 1 } });
+    expect(frame(b, targets, at(5, 6))).toEqual({ cursor: at(5, 6), size: { x: 2, y: 1 } });
+    b.state.units.at(-1)!.facing = 0;
+    expect(frame(b, targets, at(6, 5))).toEqual({ cursor: at(6, 5), size: { x: 1, y: 2 } });
+  });
+
   it("choosing where to move it is the acting unit's square", () => {
     const b = split();
     const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'move' }), at(2, 0));

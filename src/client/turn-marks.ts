@@ -12,6 +12,16 @@ import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-
 import { longestRange, type Screen } from './command.ts';
 import { facingHighlights, type Highlights, highlights, rangeMarks, type Ui } from './interaction.ts';
 
+// The box round a body's cells: a square's side, or {x, y} cells for a long one (the snake's 1x2 along its facing)
+export function bodyBox(cells: Pos[]): { corner: Pos; size: number | Pos } {
+  const xs = cells.map((c) => c.x),
+    ys = cells.map((c) => c.y);
+  const corner = { x: Math.min(...xs), y: Math.min(...ys) },
+    w = Math.max(...xs) - corner.x + 1,
+    h = Math.max(...ys) - corner.y + 1;
+  return { corner, size: w === h ? w : { x: w, y: h } };
+}
+
 // `live`: a hero is choosing (its turn, nothing playing); otherwise nothing is marked. `range`: another unit whose
 // range its mini menu painted (unit-peek.ts), in place of the screen's marks until the next tap or key
 export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boolean, range: string | null = null) {
@@ -41,9 +51,13 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
   // death leaves no actor to read
   const own = UNIT_DEFS[b.actor.def].size ?? 1,
     on = hl && !moving && s.k !== 'spot' ? unitAt(b.state, cursor) : undefined,
-    size = !hl ? 1 : moving || s.k === 'spot' ? own : on ? (UNIT_DEFS[on.def].size ?? 1) : subOf(b.grid),
-    // the square's corner: the body's own over a unit, else the cell kept inside the map
-    corner = on ? on.pos : { x: Math.min(cursor.x, b.grid.width - size), y: Math.min(cursor.y, b.grid.height - size) };
+    square = !hl ? 1 : moving || s.k === 'spot' ? own : subOf(b.grid),
+    body = on ? bodyBox(footprint(on)) : null,
+    size = body ? body.size : square,
+    // the frame's corner: the body's own over a unit, else the cell kept inside the map
+    corner = body
+      ? body.corner
+      : { x: Math.min(cursor.x, b.grid.width - square), y: Math.min(cursor.y, b.grid.height - square) };
   // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
   // it can be reached), to see where the strike reaches before moving
   const ringAt =
