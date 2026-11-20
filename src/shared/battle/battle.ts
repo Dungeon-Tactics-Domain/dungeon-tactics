@@ -1,5 +1,5 @@
 import { ABILITIES, defaultLock } from './abilities.ts';
-import { abilityKind, freeSlot } from './action-slots.ts';
+import { type ActionKind, slotFor, slotScale } from './action-slots.ts';
 import { applyItem, itemEffect } from './bag.ts';
 import { checkOutcome, counters, type Preview, pay, previewAbility, resolveAbility, spikeAtTurnEnd } from './combat.ts';
 import { canCounter, pendingCounters } from './counter.ts';
@@ -121,9 +121,10 @@ export class Battle {
     return [...hit, walk, ...shot];
   }
 
-  // `lock`: where a charge stays aimed, picked by the player after the aim (Nov 15); without it, the ability's default
-  act(abilityId: string, target: Pos, lock?: Lock): BattleEvent[] {
-    const slot = freeSlot(this.state.turn, abilityKind(ABILITIES[abilityId]));
+  // `lock`: where a charge stays aimed, picked by the player after the aim (Nov 15); without it, the ability's default.
+  // `as`: the slot the player picked for a dual action (Nov 20, slotFor); without it, the main while free
+  act(abilityId: string, target: Pos, lock?: Lock, as?: ActionKind): BattleEvent[] {
+    const slot = ABILITIES[abilityId] && slotFor(this.state.turn, ABILITIES[abilityId], as);
     if (this.over || !slot || !this.preview(abilityId, target).ok) return [];
     // declaring a charge rolls no die: undo costs nothing (Nov 13, review; the roll comes when it fires)
     this.remember(ABILITIES[abilityId].charge === 0);
@@ -144,7 +145,7 @@ export class Battle {
       ];
       events = [{ k: 'charge', unit: this.actor.id, ability: abilityId, target }];
     } else {
-      events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target);
+      events = resolveAbility(this.grid, this.state, this.actor.id, abilityId, target, false, slotScale(ability, slot));
       // whoever took the hit and can retaliate keeps watch for the rest of this turn: if the actor walks out of its reach,
       // it counter-attacks (counters)
       const owed = new Set(this.state.turn.engaged);

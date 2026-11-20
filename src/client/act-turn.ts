@@ -2,6 +2,7 @@
 // stays a dispatcher. Up and down walk a list (never onto an off row), any arrow walks the tiles on the tile choice,
 // Confirm goes one screen on, and Cancel is cancelStep's, as on the other screens
 import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
+import type { ActionKind } from '../shared/battle/action-slots.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { samePos } from '../shared/battle/grid.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
@@ -16,6 +17,7 @@ import {
   actTargets,
   bestSpot,
   groupOf,
+  needsSlot,
   runSpot,
   sameRef,
   spotAt,
@@ -41,13 +43,20 @@ export interface ActHost {
 
 // the lock step's rows, in order (menu-view.ts draws them)
 export const LOCKS: Lock[] = ['unit', 'tile'];
+// the slot step's rows, in order: the main action above the secondary
+export const SLOTS: ActionKind[] = ['main', 'bonus'];
+
+// the two-row step on the tile choice (a charge's lock or a dual action's slot): its rows and the one focused
+const stepOf = (s: Screen) =>
+  s.k !== 'spot' ? null : s.lock ? { rows: LOCKS, at: s.lock } : s.slot ? { rows: SLOTS, at: s.slot } : null;
 
 export function actKey(h: ActHost, a: KeyAction): void {
   const s = h.screen;
   if (!actScreen(s)) return;
-  // the lock step's two rows, the character above the tile
-  if (s.k === 'spot' && s.lock) {
-    if (a.k === 'confirm') return void actPick(h, LOCKS.indexOf(s.lock));
+  // the step's two rows (the character above the tile; the main action above the secondary)
+  const step = stepOf(s);
+  if (step) {
+    if (a.k === 'confirm') return void actPick(h, (step.rows as string[]).indexOf(step.at));
     if (a.k === 'cursor' && (a.dir === 'up' || a.dir === 'down')) actHover(h, a.dir === 'up' ? 0 : 1);
     return;
   }
@@ -124,6 +133,10 @@ export function actHover(h: ActHost, index: number): void {
     if (LOCKS[index] && LOCKS[index] !== s.lock) select(h, { ...s, lock: LOCKS[index] });
     return;
   }
+  if (s.k === 'spot' && s.slot) {
+    if (SLOTS[index] && SLOTS[index] !== s.slot) select(h, { ...s, slot: SLOTS[index] });
+    return;
+  }
   if (!actScreen(s) || s.k === 'spot' || s.k === 'aim' || s.index === index || !enabledRows(h.battle, s)[index]) return;
   select(h, moved(s, index));
 }
@@ -131,7 +144,7 @@ export function actHover(h: ActHost, index: number): void {
 // the row a map tile stands for on this screen: a listed unit, an aim or a tile to act from; -1 for none
 function indexAt(b: Battle, s: Screen, p: Pos): number {
   if (s.k === 'targets') return targetAt(actTargets(b, s.only, s.other), b, p);
-  if (s.k === 'spot' && !s.lock) return spotAt(screenAction(b, s)!, p, UNIT_DEFS[b.actor.def].size ?? 1);
+  if (s.k === 'spot' && !stepOf(s)) return spotAt(screenAction(b, s)!, p, UNIT_DEFS[b.actor.def].size ?? 1);
   if (s.k === 'aim')
     return actAims(screenAction(b, s)!).findIndex((aim) => aimCells(b, aim).some((c) => samePos(c, p)));
   return -1;
@@ -143,7 +156,7 @@ export function actTap(h: ActHost, p: Pos): boolean {
   const s = h.screen;
   if (!actScreen(s)) return false;
   const i = indexAt(h.battle, s, p);
-  if (i < 0) return true; // also the lock step, answered on its rows
+  if (i < 0) return true; // also the lock and slot steps, answered on their rows
   if (i === s.index) void actPick(h, i);
   else select(h, { ...s, index: i }, false);
   return true;
@@ -226,7 +239,7 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     return h.update();
   }
   const a = screenAction(b, s);
-  const spot = a?.spots[s.lock ? s.index : index];
+  const spot = a?.spots[stepOf(s) ? s.index : index];
   if (!a || !spot) return sfx('cancel');
   sfx('confirm');
   // a charge aimed at someone asks first where to lock it (Nov 15), starting on the ability's usual lock
@@ -234,10 +247,16 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     h.screen = { ...s, index, lock: defaultLock(ABILITIES[a.id]) };
     return h.update();
   }
+  // a dual action with both slots free asks which one last (Nov 20), starting on the main
+  if (!s.slot && needsSlot(b, a)) {
+    h.screen = { ...s, index, slot: 'main' };
+    return h.update();
+  }
   const lock = s.lock && LOCKS[index];
+  const as = s.slot && SLOTS[index];
   h.remember({ k: a.k, id: a.id });
   await h.runAct((battle) => {
-    const { walk, act } = runSpot(battle, a, spot, lock || undefined);
+    const { walk, act } = runSpot(battle, a, spot, lock || undefined, as || undefined);
     return [...walk, ...(act ?? [])];
   });
 }

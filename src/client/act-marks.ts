@@ -16,6 +16,7 @@ import {
   actList,
   actTargets,
   bestSpot,
+  spotPreview,
   withAim,
 } from './act-flow.ts';
 import type { Screen } from './command.ts';
@@ -112,7 +113,8 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
   // an area also lights the whole tiles it covers at its aim, as before a strike
   if (a?.k === 'ability' && ABILITIES[a.id].radius > 0) tiles.push(...attackMarks(b, ABILITIES[a.id], picked.aim));
   const walk = samePos(picked.pos, b.actor.pos) ? null : pathTo(b.reach(), picked.pos);
-  return { tiles, path: walk, preview: picked.preview ?? null, size };
+  const preview = a && spotPreview(b, a, picked, s.k === 'spot' ? s.slot : undefined);
+  return { tiles, path: walk, preview: preview ?? null, size };
 }
 
 // On the tile choice, the ability and where it is aimed from the picked tile, for the HUD's forecast strips and turn list

@@ -37,6 +37,8 @@ export interface AbilityDef {
   cost?: [counter: string, amount: number];
   // main or bonus action (Nov 19); absent: no damage = bonus, else main (action-slots.ts abilityKind)
   action?: 'main' | 'bonus';
+  // a dual action (Nov 20): main at full damage or secondary at this % of it (action-slots.ts slotFor); never a charge
+  bonusShare?: number;
   pushChance?: number; // % of times the push happens; without the field, always (no game ability sets it today)
 }
 

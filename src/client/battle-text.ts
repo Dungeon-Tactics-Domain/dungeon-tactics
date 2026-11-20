@@ -74,7 +74,12 @@ export const abilityNote = (u: UnitState, a: AbilityDef, on: boolean) =>
 
 // the tag on an Agir row (Nov 19): which of the turn's two actions it takes
 // only the secondary ones are tagged: main is the usual, and a tag on every row squeezed the names (Nov 19 capture)
-export const kindTag = (a: ActAction) => (actKind(a) === 'bonus' ? t('secundária', 'bonus') : '');
+export const kindTag = (a: ActAction) =>
+  a.k === 'ability' && ABILITIES[a.id].bonusShare !== undefined
+    ? t('principal ou secundária', 'main or bonus')
+    : actKind(a) === 'bonus'
+      ? t('secundária', 'bonus')
+      : '';
 
 // an ability's facts on one line (the help line, the Party's Abilities page)
 export const abilityDetail = (id: string) => abilityPages(id).flat().join(' · ');

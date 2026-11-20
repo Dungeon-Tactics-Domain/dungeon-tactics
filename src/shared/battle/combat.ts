@@ -174,17 +174,17 @@ export const afterDodge = (chance: number, dodge: number, side: Side) =>
   Math.max(COMBAT.MIN_CHANCE, Math.floor((chance * (10000 - dodge * COMBAT.DODGE_BY_SIDE[side]) + 5000) / 10000));
 
 // the range `actor` would deal `u` with `a` before the hit roll, wherever they stand: the preview and the AI's threat read it
-export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState): [number, number] {
+export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, scale = 1) {
   const [lo, hi] = withPower(state, actor, a);
-  const dmg = (d: number) => (d > 0 ? landed(state, actor, a, u, d) : 0);
-  return [dmg(lo), dmg(hi)];
+  const dmg = (d: number) => (d > 0 ? landed(state, actor, a, u, d, scale) : 0);
+  return [dmg(lo), dmg(hi)] as [number, number];
 }
 
 // What the ability would do if confirmed, without touching the state: the interface shows this before Confirm (pillar "readable luck").
-
 // `charged`: it is the charge firing now; the cost (MP, stock) was already paid when it started.
 // `origin`: where the actor would stand to act (Agir primeiro, options.ts); without it, where it stands now. A copy of the
-// state with the actor moved, so range, sight, area, push and counters all read the same cell
+// state with the actor moved, so range, sight, area, push and counters all read the same cell. `scale`: the
+// damage share (a dual action in the secondary slot, action-slots.ts slotScale)
 export function previewAbility(
   grid: Grid,
   state: BattleState,
@@ -193,11 +193,12 @@ export function previewAbility(
   target: Pos,
   charged = false,
   origin?: Pos,
+  scale = 1,
 ): Preview {
   const actor = state.units.find((u) => u.id === actorId);
   if (actor && origin && posKey(origin) !== posKey(actor.pos)) {
     const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: origin } : u)) };
-    return previewAbility(grid, moved, actorId, abilityId, target, charged);
+    return previewAbility(grid, moved, actorId, abilityId, target, charged, undefined, scale);
   }
   const ability = ABILITIES[abilityId];
   let center = ability && ability.range[1] === 0 && actor ? actor.pos : target;
@@ -229,7 +230,7 @@ export function previewAbility(
     const [from, at] = closest(footprint(actor), footprint(u));
     const side = facingSide(actor, u);
     const hurts = healHurts(ability, u);
-    const [dmgMin, dmgMax] = damageRange(state, actor, ability, u);
+    const [dmgMin, dmgMax] = damageRange(state, actor, ability, u, scale);
     const heal = (h: number) => (hurts ? 0 : Math.floor(h * sideShare(actor, u, true)));
     const [healLo, healHi] = healRange(actor, ability);
     return {

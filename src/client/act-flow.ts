@@ -3,10 +3,10 @@
 // the picked target (the ones that cannot say why), then the tiles to stand on with the best one picked first. Pure: the
 // screens draw it, act-turn.ts runs it. The only way to act since Fernando's "Apagar tudo" (Nov 19)
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { type ActionKind, abilityKind } from '../shared/battle/action-slots.ts';
+import { type ActionKind, abilityKind, slotFor, slotScale } from '../shared/battle/action-slots.ts';
 import { type ItemOptions, type ItemReason, itemOptions } from '../shared/battle/bag.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import type { Preview } from '../shared/battle/combat.ts';
+import { type Preview, previewAbility } from '../shared/battle/combat.ts';
 import { basicOf } from '../shared/battle/counter.ts';
 import { dist, samePos } from '../shared/battle/grid.ts';
 import { type AbilityOptions, actionOptions, type OptionReason } from '../shared/battle/options.ts';
@@ -292,10 +292,25 @@ export const spotAt = (a: ActAction, p: Pos, size: number) =>
 // Runs the picked action: walk to the spot (when it is not where the unit stands), then act or use the item. Returns the
 // events in order for the scene; `act` null when the walk was cut short (a counter-attack downed it or ended the battle).
 // `lock`: where a charge stays aimed (the tile choice's lock step); without it, the ability's default
-export function runSpot(b: Battle, a: ActAction, s: ActSpot, lock?: Lock) {
+// `as`: the slot the slot step picked for a dual action (slotFor)
+export function runSpot(b: Battle, a: ActAction, s: ActSpot, lock?: Lock, as?: ActionKind) {
   const id = b.actor.id;
   const walk = samePos(s.pos, b.actor.pos) ? [] : b.move(s.pos);
   const me = b.state.units.find((u) => u.id === id);
   if (b.over || !me || b.state.turn.actor !== id || !samePos(me.pos, s.pos)) return { walk, act: null };
-  return { walk, act: a.k === 'item' ? b.useItem(a.id, s.aim) : b.act(a.id, s.aim, lock) };
+  return { walk, act: a.k === 'item' ? b.useItem(a.id, s.aim) : b.act(a.id, s.aim, lock, as) };
+}
+
+// The slot step (Fernando, Nov 20, "Escolha no fim"): a dual action (bonusShare) asks main or secondary on the tile
+// choice only while both slots are free; with one free it takes that one
+export const needsSlot = (b: Battle, a: ActAction) =>
+  a.k === 'ability' && ABILITIES[a.id].bonusShare !== undefined && !b.state.turn.main && !b.state.turn.bonus;
+
+// what acting from `s` would do with the action in `as` (else the slot it takes by itself): a dual action in the
+// secondary slot at its share of the damage, so the map and the strips show the half
+export function spotPreview(b: Battle, a: ActAction, s: ActSpot, as?: ActionKind): Preview | undefined {
+  if (a.k !== 'ability' || !s.preview) return s.preview;
+  const ability = ABILITIES[a.id];
+  const scale = slotScale(ability, slotFor(b.state.turn, ability, as));
+  return scale === 1 ? s.preview : previewAbility(b.grid, b.state, b.actor.id, a.id, s.aim, false, s.pos, scale);
 }

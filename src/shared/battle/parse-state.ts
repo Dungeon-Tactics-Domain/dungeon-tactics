@@ -84,13 +84,15 @@ export function parseBattleState(raw: unknown): BattleState | null {
   const actor = units.find((u) => u.id === t.actor);
   if (!actor) return null;
   // each slot holds the actor's own ability or an item (bag.ts); an old save kept the one action in `usedAbility` (before Nov 19's
-  // main and bonus slots): it was the main action. A damage ability never sits in the bonus slot
+  // main and bonus slots): it was the main action. A damage ability never sits in the bonus slot, unless it is dual (Nov 20)
   const slot = (v: unknown, bonus: boolean): string | null | undefined => {
     if (v === undefined) return undefined;
     if (v === null) return null;
     const own = typeof v === 'string' && Object.hasOwn(ABILITIES, v) && UNIT_DEFS[actor.def].abilities.includes(v);
     const ok =
-      typeof v === 'string' && ((own && (!bonus || abilityKind(ABILITIES[v]) === 'bonus')) || CONSUMABLE_IDS.has(v));
+      typeof v === 'string' &&
+      ((own && (!bonus || abilityKind(ABILITIES[v]) === 'bonus' || ABILITIES[v].bonusShare !== undefined)) ||
+        CONSUMABLE_IDS.has(v));
     return ok ? (v as string) : undefined;
   };
   const old = t.main === undefined && t.bonus === undefined;

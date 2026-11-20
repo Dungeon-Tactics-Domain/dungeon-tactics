@@ -3,7 +3,7 @@
 // Abilities (the `act` command) opens the Agir primeiro lists (act-flow.ts). Pure (no DOM, no pixel): what each turn screen
 // shows and what follows each key. The Game executes; the HUD only draws.
 import { ABILITIES } from '../shared/battle/abilities.ts';
-import { freeSlot } from '../shared/battle/action-slots.ts';
+import { type ActionKind, freeSlot } from '../shared/battle/action-slots.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { isDeep, samePos, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
@@ -51,7 +51,16 @@ export type Screen =
   | { k: 'actions'; target: ActTarget; index: number; page?: number }
   // an action with several aims (an area) picks where it lands first (`index` into actAims), then the tiles aiming there
   | { k: 'aim'; target: ActTarget; action: number; index: number; only?: ActRef }
-  | { k: 'spot'; target: ActTarget; action: number; index: number; lock?: Lock; aim?: Pos; only?: ActRef };
+  | {
+      k: 'spot';
+      target: ActTarget;
+      action: number;
+      index: number;
+      lock?: Lock;
+      slot?: ActionKind; // the slot step of a dual action (act-flow.ts needsSlot), like the lock step of a charge
+      aim?: Pos;
+      only?: ActRef;
+    };
 
 // A charge aimed at someone asks next where to lock it: the tile, or that character (Nov 15). On empty ground
 // there is only the tile
@@ -140,7 +149,7 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
     : { k: 'actions', target: s.target, index: s.action };
   const back = { target: s.target, action: s.action, only };
   if (s.k === 'aim') return out;
-  if (s.lock) return { k: 'spot', ...back, index: s.index, aim: s.aim };
+  if (s.lock || s.slot) return { k: 'spot', ...back, index: s.index, aim: s.aim };
   if (!s.aim) return out;
   const aim = s.aim;
   const aims = actAims(actActions(b, s.target)[s.action]);

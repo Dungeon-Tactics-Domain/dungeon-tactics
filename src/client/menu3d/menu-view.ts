@@ -159,7 +159,7 @@ function actNote(b: Battle) {
 // The menu of a turn screen, or null while it is closed (`open`: a hero's turn with nothing playing)
 export function menuView(v: HudView, open: boolean): MenuView | null {
   const s = v.screen;
-  if (open && actScreen(s) && s.k !== 'aim' && (s.k !== 'spot' || s.lock)) return actView(v, s);
+  if (open && actScreen(s) && s.k !== 'aim' && (s.k !== 'spot' || s.lock || s.slot)) return actView(v, s);
   if (!open || s.k !== 'menu') return null;
   const col = column(v.battle);
   return { ...col, index: col.commands.indexOf(s.index), depth: 0, sub: null, subTitle: '', subIndex: -1, sheet: null };
@@ -175,6 +175,18 @@ const GROUP_ICON: Record<ActGroup, IconKind> = { skills: 'axe', magic: 'flame', 
 
 // The list a screen shows, its head and its focused row
 function list(b: Battle, s: ListScreen): { title: string; rows: MenuRow[]; index: number } {
+  if (s.k === 'spot' && s.slot) {
+    const id = screenAction(b, s)?.id ?? '';
+    const share = ABILITIES[id]?.bonusShare ?? 100;
+    return {
+      title: t(`${abilityName(id)}: qual ação?`, `${abilityName(id)}: which action?`),
+      rows: [
+        { label: t('Ação principal · 100%', 'Main action · 100%'), note: '', off: false, kind: 'sword' },
+        { label: t(`Secundária · ${share}%`, `Bonus · ${share}%`), note: '', off: false, kind: 'boot' },
+      ],
+      index: s.slot === 'bonus' ? 1 : 0,
+    };
+  }
   if (s.k === 'spot')
     return {
       title: t(

@@ -96,6 +96,7 @@ function actHelp(b: Battle, s: Extract<Screen, { k: 'targets' | 'actions' | 'spo
         ? t(`${name}: toque de novo para seguir.`, `${name}: tap again to go on.`)
         : t(`${name}: confirme para seguir.`, `${name}: confirm to go on.`);
   if (s.lock) return t(`${name}: travar onde?`, `${name}: lock on?`);
+  if (s.slot) return t(`${name}: qual ação?`, `${name}: which action?`);
   const spot = a.spots[s.index];
   if (a.k === 'item' && spot) {
     const got = [spot.heal ? t(`cura ${spot.heal}`, `heals ${spot.heal}`) : '', spot.mana ? `+${spot.mana} mana` : ''];

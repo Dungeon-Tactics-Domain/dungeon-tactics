@@ -160,6 +160,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     damage: [46, 65],
     accuracy: 85,
     cost: ['stamina', 10],
+    bonusShare: 50, // Fernando, Nov 20: full damage as the main action, half as the secondary
   }),
   A({
     id: 'trip',

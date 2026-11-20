@@ -2,7 +2,7 @@
 // reach by walking and then acting inside the turn's movement budget, and for each target the tiles it may act from. Pure
 // reading of the state: nothing here changes it, and the AI does not use it (it keeps chooseTurn).
 import { ABILITIES } from './abilities.ts';
-import { abilityKind, freeSlot } from './action-slots.ts';
+import { slotFor } from './action-slots.ts';
 import { canPay, inDeep, type Preview, type PreviewReason, poolOf, previewAbility } from './combat.ts';
 import { moveOf } from './effects.ts';
 import { dist, type Grid, inBounds, posKey, standH, subOf } from './grid.ts';
@@ -66,7 +66,7 @@ export function actionOptions(grid: Grid, state: BattleState, id: string): Abili
   const others = state.units.filter((u) => u !== actor);
   return def.abilities.map((abilityId) => {
     const a = ABILITIES[abilityId];
-    if (state.turn.actor === id && !freeSlot(state.turn, abilityKind(a)))
+    if (state.turn.actor === id && !slotFor(state.turn, a))
       return { ability: abilityId, enabled: false, reason: 'used', targets: [] };
     if (!canPay(actor, a)) {
       const [pool, amount] = a.cost!;
