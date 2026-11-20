@@ -27,7 +27,7 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/rng.ts` — seeded mulberry32 whose state lives in BattleState (nextRng, rollInt).
 - `src/shared/battle/rules.ts` — calculations a scenario may swap (survival, crawl rooms, the developer battle) and rulesOf.
 - `src/shared/battle/half.ts` — half tiles: halve splits a map into 2x2 cells and units into 2x2 tokens (halfDef, SUB, the ?scenario=half test map).
-- `src/shared/battle/ai.ts` — greedy one-turn AI with fixed weights: walkMap, chooseTurn, chooseRetreat, playAiTurn.
+- `src/shared/battle/ai.ts` — greedy one-turn AI with fixed weights: walkMap, chooseTurn, chooseRetreat, playAiTurn; a swarm unit's bonus beside its kin (kinNear).
 - `src/shared/battle/simulate.ts` — AI against AI until the end or a turn cap, for the simulator and tests.
 
 ## src/shared/crawl — dungeon crawl rules

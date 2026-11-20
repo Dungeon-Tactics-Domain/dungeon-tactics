@@ -34,6 +34,9 @@ const W = {
   // per expected life point a queued charge would take on the tile (Nov 15, Fernando: the enemies leave the line of fire or
   // hide behind cover and allies); initial weight, unmeasured
   LINE: 1,
+  // per swarm ally touching the stop, for a swarm unit (Nov 20, Fernando: "Enxame chega junto"); about one and a half tiles of
+  // approach, and chooseTurn never lets it turn an attack into a wait
+  KIN: 0.5 * LIFE,
 };
 // How far the AI hero leaves the target to protect to go meet the enemy. Measured on Nov 11 on the 20x20
 // (1,000 seeds): with 10 the heroes hold the middle hill and win 53.3%; with 7 they stay in the open (29%) and with no
@@ -220,13 +223,26 @@ function inLine(grid: Grid, state: BattleState, actor: UnitState): number {
   return lost;
 }
 
+// Swarm allies touching `me` where it stands (8 neighbours, by every cell of both bodies); 0 for a unit that is not swarm
+function kinNear(state: BattleState, me: UnitState): number {
+  if (!UNIT_DEFS[me.def].swarm) return 0;
+  const mine = footprint(me);
+  return state.units.filter(
+    (o) =>
+      o.id !== me.id &&
+      o.team === me.team &&
+      UNIT_DEFS[o.def].swarm &&
+      footprint(o).some((c) => mine.some((m) => Math.max(Math.abs(c.x - m.x), Math.abs(c.y - m.y)) <= 1)),
+  ).length;
+}
+
 // Best move of the turn: tests each reachable tile (and staying put) with each ability and each target, and picks the one with the
 // highest expected value (expected damage and kills, hurting an ally and delay count against, plus position). It only reads the state.
 export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan {
   const actor = state.units.find((u) => u.id === unitId)!;
   const spots = [actor.pos, ...[...reachable(grid, state, unitId).values()].map((s) => s.pos)];
   const walk = walkMap(grid, state, actor);
-  let best: Plan = { moveTo: null, ability: null, score: -Infinity };
+  const plans: { plan: Plan; kin: number }[] = [];
   for (const spot of spots) {
     const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: spot } : u)) };
     const me = moved.units.find((u) => u.id === unitId)!;
@@ -242,9 +258,17 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
       }
     }
     const score = attackBest + positionScore(grid, moved, me, spot, !!attack, walk);
-    if (score > best.score) best = { moveTo: spot === actor.pos ? null : spot, ability: attack, score };
+    plans.push({
+      plan: { moveTo: spot === actor.pos ? null : spot, ability: attack, score },
+      kin: W.KIN * kinNear(moved, me),
+    });
   }
-  return best;
+  // the kin bonus picks only among stops of the same kind (attacking or not) as the best without it, so a swarm unit never
+  // waits beside its kin instead of striking; first in order wins ties, so a unit with no kin plays as before
+  const top = plans.reduce((a, b) => (b.plan.score > a.plan.score ? b : a));
+  return plans
+    .filter((p) => !!p.plan.ability === !!top.plan.ability)
+    .reduce((a, b) => (b.plan.score + b.kin > a.plan.score + a.kin ? b : a)).plan;
 }
 
 // Life the counters a move to `to` would cost `me`, by the rule's own reading (pendingCounters, at half), and a death weighed
@@ -271,6 +295,7 @@ export function chooseRetreat(grid: Grid, state: BattleState, unitId: string, re
     const at = moved.units.find((u) => u.id === unitId)!;
     let s = positionScore(grid, moved, at, spot, true, walk);
     if (own) s += attackScore(grid, moved, at, own.ability, chargeAim(moved, own), true, own.follow === null);
+    s += W.KIN * kinNear(moved, at);
     return spot === me.pos ? s : s - counterCost(grid, state, me, spot);
   };
   let best: Pos | null = null,
