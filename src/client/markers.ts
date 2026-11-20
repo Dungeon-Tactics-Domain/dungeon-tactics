@@ -53,5 +53,8 @@ const MODEL: Record<string, string> = {
   acolyte: 'mage',
   veil_knight: 'knight', // Acolyte and Veil Knight: units with their own glow (UnitDef.tint)
   snake: 'snake', // Quaternius snake (CC0): its own rig and clips, played through standIn in unit-view.ts
+  rat: 'rat', // the swarm creatures (Quaternius, CC0): own rigs like the snake, each with a Death clip
+  spider: 'spider',
+  bat: 'bat',
 };
 export const modelOf = (def: string): string => MODEL[baseDef(def)] ?? UNIT_DEFS[def].model ?? ''; // '' = no model (the Beacon)

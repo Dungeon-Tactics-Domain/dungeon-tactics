@@ -13,12 +13,11 @@ export const CRAWL_PARTY = ['warrior', 'archer', 'mage', 'rogue'];
 export const CRAWL_GROUPS: RoomGroup[] = [
   { name: ['Patrulha de lacaios', 'Minion patrol'], depth: 1, enemies: ['minion', 'minion', 'minion'] },
   { name: ['Arqueiro e escolta', 'Archer and escort'], depth: 1, enemies: ['minion', 'minion', 'skeleton_archer'] },
-  // Nov 20: the 1x1 mini skeletons with a minion to lead them (Fernando's request for a monster smaller than a tile)
-  {
-    name: ['Ninho de mini esqueletos', 'Mini skeleton nest'],
-    depth: 1,
-    enemies: ['mini_skeleton', 'mini_skeleton', 'minion'],
-  },
+  // Nov 20: swarms in place of the mini skeleton nest (Fernando: a swarm that areas are good against): four half-tile
+  // creatures and a minion, the 320 life a room needs at least; more bodies than the lab's 3, so they stay small
+  { name: ['Ninho de ratos', 'Rat nest'], depth: 1, enemies: ['rat', 'rat', 'rat', 'rat', 'minion'] },
+  { name: ['Covil de aranhas', 'Spider den'], depth: 1, enemies: ['spider', 'spider', 'spider', 'spider', 'minion'] },
+  { name: ['Revoada de morcegos', 'Bat flock'], depth: 1, enemies: ['bat', 'bat', 'bat', 'bat', 'minion'] },
   // Nov 20: two 1x2 snakes with a minion, so Fernando meets the long body on the first floor
   { name: ['Ninho de cobras', 'Snake nest'], depth: 1, enemies: ['snake', 'snake', 'minion'] },
   { name: ['Mago na retaguarda', 'Mage at the rear'], depth: 2, enemies: ['soldier', 'dark_mage'] },

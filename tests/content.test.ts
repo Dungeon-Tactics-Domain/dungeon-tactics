@@ -133,13 +133,13 @@ describe('equipment', () => {
 
 describe('crawl rooms', () => {
   // the Mechanics lab's descent proposal (Nov 15): 1 to 3 enemies worth 64 to 102 life (320 to 510 since the x5 of life),
-  // depths 1 to 3, the boss 2x2
+  // depths 1 to 3, the boss 2x2; a swarm room (Nov 20) brings up to 5 smaller bodies for the same life
   it('groups and the party use existing classes, within the lab numbers', () => {
     for (const id of CRAWL_PARTY) expect(UNIT_DEFS[id]?.speed, id).toBeGreaterThan(0);
     for (const g of CRAWL_GROUPS) {
       const life = g.enemies.reduce((sum, e) => sum + UNIT_DEFS[e].hp, 0);
       expect(g.enemies.length, g.name[1]).toBeGreaterThanOrEqual(1);
-      expect(g.enemies.length, g.name[1]).toBeLessThanOrEqual(3);
+      expect(g.enemies.length, g.name[1]).toBeLessThanOrEqual(g.enemies.some((e) => UNIT_DEFS[e].swarm) ? 5 : 3);
       expect(life, g.name[1]).toBeGreaterThanOrEqual(320);
       expect(life, g.name[1]).toBeLessThanOrEqual(510);
     }

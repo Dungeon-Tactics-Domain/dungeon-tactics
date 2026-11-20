@@ -264,18 +264,24 @@ export function sideOrder(bar: THREE.Object3D, camera: THREE.Camera, cover: numb
   tag.position.x = left < cover ? x : -x;
 }
 
-// A model with its own rig (the Quaternius snake: Blender's `Armature|Action` clip names) has none of the KayKit
-// gestures: each one plays its closest own clip; Death_A has none (unit-events lays the body on its side)
-const STAND_IN: [RegExp, string][] = [
-  [/^Death/, ''],
-  [/^Walking|^Running/, 'Walk'],
-  [/^Hit|^Jump/, 'Jump'],
-  [/^Idle|^Cheer/, 'Idle'],
-  [/./, 'Attack'], // every other gesture is acting
+// A model with its own rig (the Quaternius snake and swarm creatures: Blender's `Armature|Action` clip names) has none
+// of the KayKit gestures: each one plays the first of its own clips it has (the bat flies in place of idle and walk);
+// without a Death clip (the snake) unit-events lays the body on its side
+const STAND_IN: [RegExp, string[]][] = [
+  [/^Death/, ['Death']],
+  [/^Walking|^Running/, ['Walk', 'Flying']],
+  [/^Hit/, ['Hit', 'Jump']],
+  [/^Jump/, ['Jump', 'Flying']],
+  [/^Idle|^Cheer/, ['Idle', 'Flying']],
+  [/./, ['Attack']], // every other gesture is acting
 ];
 export const standIn = (v: UnitView, name: string): THREE.AnimationClip | undefined => {
-  const own = STAND_IN.find(([re]) => re.test(name))![1];
-  return own ? v.clips.find((c) => c.name.includes('|') && c.name.endsWith(`_${own}`)) : undefined;
+  const own = v.clips.filter((c) => c.name.includes('|'));
+  for (const k of STAND_IN.find(([re]) => re.test(name))![1]) {
+    const clip = own.find((c) => c.name.endsWith(`_${k}`));
+    if (clip) return clip;
+  }
+  return undefined;
 };
 
 export function playClip(v: UnitView, name: string, once = false, rate = 1) {

@@ -20,6 +20,10 @@ models/lancer.glb and chars/lancer.webp (the Lancer, since Nov 13, 2026)
 models/snake.glb (the snake, since Nov 20, 2026)
   "Snake" by Quaternius, Public Domain (CC0) - https://poly.pizza/m/x9x0viZs8V
   Copied unchanged, with its own rig and its 4 clips (Snake_Attack, Snake_Idle, Snake_Jump, Snake_Walk).
+models/rat.glb, models/spider.glb and models/bat.glb (the swarm creatures, since Nov 20, 2026)
+  "Rat", "Spider" and "Bat" by Quaternius, Public Domain (CC0) - https://poly.pizza/m/iltq5bVNaV,
+  https://poly.pizza/m/yRYJiAJyiM and https://poly.pizza/m/hNO9XvjlKa
+  Copied unchanged, each with its own rig and clips (the bat's Bat_Flying stands in for idle and walk).
 chars/*.webp (the other 9 portraits)
   Rendered from the characters themselves by scripts/portraits.mjs.
 chars/px/*.webp (faces in the dialogue box, since Nov 15, 2026)

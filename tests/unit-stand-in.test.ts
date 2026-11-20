@@ -20,6 +20,20 @@ describe('stand-in clips for a model with its own rig', () => {
     expect(standIn(snake, 'Melee_1H_Attack_Chop')?.name).toBe('SnakeArmature|Snake_Attack');
     expect(standIn(snake, 'Ranged_Magic_Shoot')?.name).toBe('SnakeArmature|Snake_Attack');
   });
+  // Nov 20: the swarm creatures have their own fall; the bat flies in place of idle and walk and has its own hit
+  it('plays a Death clip when the rig has one, and the bat flies to stand and walk', () => {
+    const bat = view([
+      'BatArmature|Bat_Flying',
+      'BatArmature|Bat_Attack',
+      'BatArmature|Bat_Hit',
+      'BatArmature|Bat_Death',
+    ]);
+    expect(standIn(bat, 'Idle')?.name).toBe('BatArmature|Bat_Flying');
+    expect(standIn(bat, 'Walking_A')?.name).toBe('BatArmature|Bat_Flying');
+    expect(standIn(bat, 'Hit_A')?.name).toBe('BatArmature|Bat_Hit');
+    expect(standIn(bat, 'Melee_1H_Attack_Chop')?.name).toBe('BatArmature|Bat_Attack');
+    expect(standIn(bat, 'Death_A')?.name).toBe('BatArmature|Bat_Death');
+  });
   it('has no fall, and a KayKit model never borrows a clip', () => {
     expect(standIn(snake, 'Death_A')).toBeUndefined();
     expect(standIn(view(['Jump_Idle', 'Idle']), 'Cheer')).toBeUndefined();

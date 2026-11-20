@@ -11,7 +11,7 @@ import { t } from '../i18n.ts';
 import { TIMING } from '../timing.ts';
 import { type Sequence, takeDamage } from './unit-hits.ts';
 import { push, walkPath } from './unit-moves.ts';
-import { flash, playClip, setBar } from './unit-view.ts';
+import { flash, playClip, setBar, standIn } from './unit-view.ts';
 import type { Units } from './units.ts';
 
 // `before` runs before each event (the game uses it for the banner with the ability name and the enemy's destination)
@@ -89,7 +89,7 @@ export async function playEvents(
       // sync removes the bar and the ring and darkens the body (fallen)
       playClip(v, 'Death_A', true);
       // a model without a fall (the snake) rolls onto its side; the rotation outlasts the sync, so the body stays down
-      const body = v.clips.some((c) => c.name === 'Death_A') ? null : v.body;
+      const body = v.clips.some((c) => c.name === 'Death_A') || standIn(v, 'Death_A') ? null : v.body;
       if (body) await u.time.animate(TIMING.die, (k) => (body.rotation.z = (k * Math.PI) / 2));
       else await u.time.wait(TIMING.die);
       await u.cam.closeUp(null, WEIGHT.zoom, TIMING.closeUpBack); // back from the death close-up, if there was one
