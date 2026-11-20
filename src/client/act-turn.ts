@@ -62,6 +62,19 @@ export function actKey(h: ActHost, a: KeyAction): void {
     if (index !== s.index) select(h, { ...s, index });
     return;
   }
+  // on the target list left and right walk the listed units on the map as they are seen, up and down the list: the
+  // list and the map are one choice (Fernando's grill, Nov 19: "the three at the same time")
+  if (s.k === 'targets' && (a.dir === 'left' || a.dir === 'right')) {
+    const units = actTargets(h.battle, s.only).flatMap((r, i) => (r.k === 'unit' ? [{ i, ...h.at(r.pos) }] : []));
+    const at = units.findIndex((u) => u.i === s.index);
+    const next = neighbour(
+      units.map((u) => ({ x: u.x, y: u.y, w: 0, h: 0 })),
+      at,
+      a.dir,
+    );
+    if (at >= 0 && next !== at) select(h, { ...s, index: units[next].i });
+    return;
+  }
   if (a.dir !== 'up' && a.dir !== 'down') return;
   const index = stepIndex(s.index, a.dir === 'up' ? -1 : 1, enabledRows(h.battle, s));
   if (index !== s.index) select(h, moved(s, index));

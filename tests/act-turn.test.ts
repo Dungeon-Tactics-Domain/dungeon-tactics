@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actActions, actAims } from '../src/client/act-flow.ts';
+import { actActions, actAims, actTargets } from '../src/client/act-flow.ts';
 import { actMarks } from '../src/client/act-marks.ts';
 import { type ActHost, actHoverMap, actKey, actPick, actTap } from '../src/client/act-turn.ts';
 import { itemDetail } from '../src/client/battle-text.ts';
@@ -77,6 +77,18 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
     }
     expect(back).toEqual(['spot', 'targets', 'acts', 'menu']);
     expect(cancelStep(b, { k: 'targets', index: 0, only })).toEqual({ k: 'acts', index: row }); // back on its row
+  });
+
+  it('on the target list left and right walk the units on the map as seen; up and down stay the list', () => {
+    const b = battle(); // targets: the soldier (5,2), the warrior (2,3), the mage itself (1,2)
+    const h = host(b, { k: 'targets', index: 0 });
+    actKey(h, { k: 'cursor', dir: 'left' }); // on the diamond the warrior (2,3) is left of the soldier (5,2)
+    const left = (h.screen as { index: number }).index;
+    expect(left).not.toBe(0);
+    const t = actTargets(b)[left] as { pos: { x: number; y: number } };
+    expect(diamond(t.pos).x).toBeLessThan(diamond({ x: 5, y: 2 }).x);
+    actKey(h, { k: 'cursor', dir: 'down' });
+    expect((h.screen as { index: number }).index).toBe(left + 1); // the list order
   });
 
   it('the target list says how far each unit is from the actor where it stands now', () => {
