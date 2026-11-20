@@ -162,6 +162,23 @@ export const UNIT_LIST: UnitDef[] = [
     resist: { light: -50, shadow: 50 },
     dodge: 20,
   },
+  // Snake (Nov 20, Fernando: "a 1x1 monster and a 1x2 that would be a snake"): half a tile wide, one tile long along its
+  // facing (halfLength, pathing.ts bodyOf). The mini skeleton's numbers, a step faster; tune by playing
+  {
+    id: 'snake',
+    name: 'Cobra',
+    en: 'Snake',
+    hp: 100,
+    speed: 13,
+    move: 5,
+    jump: 1,
+    halfSize: 1,
+    halfLength: 2,
+    abilities: ['stab', 'trip'],
+    vars: { stamina: 30, mana: 30 },
+    regen: { stamina: 5, mana: 3 },
+    dodge: 20,
+  },
   // Veil Acolyte (night of Nov 12, Act II): heals allies, so taking it down first is the choice the stage asks for (the
   // target-priority "puzzle"). Little life and a mage's attack; initial numbers, measured in the Frost Pass stage
   {

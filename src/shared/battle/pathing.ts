@@ -4,6 +4,7 @@ import {
   canStand,
   dist,
   FACING,
+  facingTo,
   type Grid,
   inBounds,
   isDeep,
@@ -34,7 +35,25 @@ export function cellsOf(p: Pos, size: number): Pos[] {
   for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: p.x + dx, y: p.y + dy });
   return out;
 }
-export const footprint = (u: UnitState): Pos[] => cellsOf(u.pos, UNIT_DEFS[u.def].size ?? 1);
+// a long body (UnitDef.halfLength, the snake) adds the squares behind the head, opposite its facing
+export function bodyOf(def: string, pos: Pos, facing = 0): Pos[] {
+  const d = UNIT_DEFS[def];
+  const size = d.size ?? 1;
+  const f = FACING[facing];
+  const out: Pos[] = [];
+  for (let k = 0; k < (d.halfLength ?? 1); k++) out.push(...cellsOf({ x: pos.x - f.x * k, y: pos.y - f.y * k }, size));
+  return out;
+}
+export const footprint = (u: UnitState): Pos[] => bodyOf(u.def, u.pos, u.facing);
+// a long body may stop or turn only where every cell is on the map, standable, free of others and of bodies
+// (a square body answers true: its own rules already hold it)
+export const bodyFits = (grid: Grid, state: BattleState, u: UnitState, pos: Pos, facing = 0) =>
+  !UNIT_DEFS[u.def].halfLength ||
+  bodyOf(u.def, pos, facing).every((c) => {
+    if (!inBounds(grid, c) || !canStand(tileAt(grid, c)) || noStopAt(grid, state, c)) return false;
+    const o = unitAt(state, c);
+    return !o || o.id === u.id;
+  });
 // standing height of a square with its corner on `p`: its highest cell (a token straddling a step stands on the upper side)
 export const squareH = (grid: Grid, p: Pos, size: number) =>
   Math.max(...cellsOf(p, size).map((c) => standH(tileAt(grid, c))));
@@ -92,6 +111,7 @@ export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[]) =>
 
 export const unitAt = (state: BattleState, p: Pos): UnitState | undefined =>
   state.units.find((u) => {
+    if (UNIT_DEFS[u.def].halfLength) return footprint(u).some((c) => samePos(c, p));
     const dx = p.x - u.pos.x;
     const dy = p.y - u.pos.y;
     return dx >= 0 && dy >= 0 && Math.max(dx, dy) < (UNIT_DEFS[u.def].size ?? 1);
@@ -311,6 +331,13 @@ export function reachable(grid: Grid, state: BattleState, unitId: string, budget
   }
   seen.delete(posKey(unit.pos));
   for (const [k, step] of seen) if (unitAt(state, step.pos) || noStopAt(grid, state, step.pos)) seen.delete(k);
+  // the tail lands behind the last step (battle.ts move faces that way); shortcut: only the stop is checked, not the tail
+  // along the way, upgrade when a snake squeezes through a gap it should not
+  if (UNIT_DEFS[unit.def].halfLength)
+    for (const [k, step] of seen) {
+      const f = unit.facing === undefined ? 0 : facingTo(step.path!.at(-2) ?? unit.pos, step.pos);
+      if (!bodyFits(grid, state, unit, step.pos, f)) seen.delete(k);
+    }
   return seen;
 }
 

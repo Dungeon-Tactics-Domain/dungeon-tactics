@@ -27,6 +27,8 @@ export interface UnitDef {
   size?: number;
   // the square on the split map, in half tiles (Nov 20, Fernando: a 1x1 monster); without it, `size` doubled (half.ts)
   halfSize?: number;
+  // cells the body runs along its facing on the split map, head on `pos` (Nov 20, Fernando: "a 1x2 that would be a snake")
+  halfLength?: number;
   hit?: number; // extra hit points (equipment); without it, 0 // side of the occupied square (2 = 2x2, pathing.ts footprint); without it, 1 tile. A large unit does not walk nor get pushed
   // Attributes of the Nov 15 grill (no XP: every number comes from class, pieces and buffs; the Mechanics lab's
   // equipamento.json), read by the damage and hit formulas in combat.ts. Without them, 0

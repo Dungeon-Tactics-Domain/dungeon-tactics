@@ -6,7 +6,7 @@ import { canCounter, pendingCounters } from './counter.ts';
 import { moveOf } from './effects.ts';
 import { FACING, facingTo, type Grid, posKey, samePos } from './grid.ts';
 import { isInt, isObj, parseBattleState } from './parse-state.ts';
-import { pathTo, reachable, type Step, unitAt } from './pathing.ts';
+import { bodyFits, pathTo, reachable, type Step, unitAt } from './pathing.ts';
 import { initialState, SCENARIOS, type Scenario } from './scenarios.ts';
 import { finishTurn, startNextTurn } from './turn-queue.ts';
 import type { BattleEvent, BattleState, Lock, Pos, UnitState } from './types.ts';
@@ -170,7 +170,9 @@ export class Battle {
 
   // Chooses where the current unit looks (only in a scenario with direction). Free and without undo: it reveals nothing.
   face(dir: number): void {
-    if (!this.over && this.actor.facing !== undefined && FACING[dir]) this.actor.facing = dir;
+    const a = this.actor;
+    if (!this.over && a.facing !== undefined && FACING[dir] && bodyFits(this.grid, this.state, a, a.pos, dir))
+      a.facing = dir;
   }
 
   // returns the events of the charges that fired before the next turn
