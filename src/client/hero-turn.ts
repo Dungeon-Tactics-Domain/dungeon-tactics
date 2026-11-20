@@ -1,7 +1,7 @@
 // The hero's turn screens in the FFT style (command.ts): menu -> Move's map, or Act's Agir primeiro screens; Wait -> direction.
 // Owns the screen, the Ui and the cursor, and turns keys, clicks and taps into the next screen; the Game runs what is confirmed.
 import type { Battle } from '../shared/battle/battle.ts';
-import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
+import { facingTo, inBounds, samePos, subOf } from '../shared/battle/grid.ts';
 import { footprint, nearestTile } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -133,9 +133,11 @@ export class HeroTurn {
       } else if (a.k === 'confirm') void this.game.endTurn();
       return;
     }
-    // Move's map: choose the tile
+    // Move's map: choose the tile, a whole tile a step (Fernando, Nov 20; the mouse still picks any half tile)
     if (a.k === 'cursor') {
-      const step = gridStep(a.dir, this.scene.heading);
+      const k = subOf(b.grid),
+        st = gridStep(a.dir, this.scene.heading),
+        step = { x: st.x * k, y: st.y * k };
       // choosing where a token stops, its whole square stays on the map, as with the mouse (squareUnder): clamped, not
       // refused, so a cursor left nearer the edge (the cycle key on a smaller unit's corner) can still step back
       const size = this.pickSize;

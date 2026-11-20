@@ -2,8 +2,8 @@
 // and range ring. Pure; the Game applies it to the scene.
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { posKey, samePos } from '../shared/battle/grid.ts';
-import { cellsOf, farCells, footprint } from '../shared/battle/pathing.ts';
+import { posKey, samePos, subOf } from '../shared/battle/grid.ts';
+import { cellsOf, farCells, footprint, unitAt } from '../shared/battle/pathing.ts';
 import { traceShot } from '../shared/battle/shot.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -35,9 +35,15 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
   const moving = s.k === 'map';
   const landing = hl && moving && b.reach().has(posKey(cursor)); // the cursor is on a tile the move can end on
   const owed = landing && counterDamage(b, cursor);
-  // choosing where to move, or resting on the acting unit (menu, facing), the cursor frames the unit's whole square
-  // only on a hero's turn (hl): a battle that ended on the actor's death leaves no actor to read
-  const size = hl && (moving || samePos(cursor, b.actor.pos)) ? (UNIT_DEFS[b.actor.def].size ?? 1) : 1;
+  // The cursor's square (Fernando, Nov 20: never one half tile): choosing where to move or where to act from, the acting
+  // unit's square; over a unit, that unit's whole body (a large one's too); elsewhere a whole tile's 2x2 half tiles from
+  // the cell under it, so it walks half a tile at a time. Only on a hero's turn (hl): a battle that ended on the actor's
+  // death leaves no actor to read
+  const own = UNIT_DEFS[b.actor.def].size ?? 1,
+    on = hl && !moving && s.k !== 'spot' ? unitAt(b.state, cursor) : undefined,
+    size = !hl ? 1 : moving || s.k === 'spot' ? own : Math.max(subOf(b.grid), on ? (UNIT_DEFS[on.def].size ?? 1) : 1),
+    // the square's corner: the body's own over a unit, else the cell kept inside the map
+    corner = on ? on.pos : { x: Math.min(cursor.x, b.grid.width - size), y: Math.min(cursor.y, b.grid.height - size) };
   // dotted outline of the longest range: on the menu around the acting unit; when aiming the move, around the tile under the cursor (if
   // it can be reached), to see where the strike reaches before moving
   const ringAt =
@@ -61,7 +67,7 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
           ? countersFrom(b, cursor)
           : null,
     note: owed ? `−${owed[0] === owed[1] ? owed[0] : `${owed[0]}–${owed[1]}`}` : null,
-    cursor: hl ? cursor : null,
+    cursor: hl ? corner : null,
     size,
     fits: !hl?.tiles.some((m) => m.kind === 'nogo'),
     ring: ringAt

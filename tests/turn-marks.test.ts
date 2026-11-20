@@ -4,6 +4,8 @@ import type { Screen } from '../src/client/command.ts';
 import { freshUi, hoverTile, selectMode } from '../src/client/interaction.ts';
 import { turnMarks } from '../src/client/turn-marks.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import { halfDef, halve } from '../src/shared/battle/half.ts';
+
 import { flat, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
@@ -113,6 +115,47 @@ describe('turn marks', () => {
       const b = scene();
       const m = turnMarks(b, { k: 'menu', index: 0 }, freshUi(b), at(0, 1), true);
       expect(m.trajectory).toBeNull();
+    });
+  });
+});
+
+// Fernando, Nov 20: the cursor is never one half tile: a whole tile's 2x2 that walks half a tile at a time, a unit's
+// whole body over it (growing over a large one), the acting unit's square when moving
+describe('the cursor square on the split map', () => {
+  const split = () =>
+    new Battle(
+      halve({ id: 't-cursor', name: 't', en: 't', grid: flat(6, 4), spawns: [] }).grid,
+      stateOf([
+        { id: 'w', def: halfDef('warrior'), team: 'hero', x: 0, y: 0 },
+        { id: 's', def: halfDef('soldier'), team: 'enemy', x: 4, y: 2 },
+        { id: 'c', def: halfDef('colossus'), team: 'enemy', x: 8, y: 2 },
+      ]),
+    );
+  const targets: Screen = { k: 'targets', index: 0 };
+  const frame = (b: Battle, s: Screen, p: { x: number; y: number }) => {
+    const m = turnMarks(b, s, freshUi(b), p, true);
+    return { cursor: m.cursor, size: m.size };
+  };
+
+  it('on empty ground it is 2x2 from the cell under it, kept inside the map', () => {
+    const b = split();
+    expect(frame(b, targets, at(7, 6))).toEqual({ cursor: at(7, 6), size: 2 });
+    expect(frame(b, targets, at(11, 7))).toEqual({ cursor: at(10, 6), size: 2 });
+  });
+
+  it("over a unit it frames the unit's body, a large one's 4x4 too, from any of its cells", () => {
+    const b = split();
+    expect(frame(b, targets, at(5, 3))).toEqual({ cursor: at(4, 2), size: 2 });
+    expect(frame(b, targets, at(10, 4))).toEqual({ cursor: at(8, 2), size: 4 });
+    expect(frame(b, targets, at(7, 2))).toEqual({ cursor: at(7, 2), size: 2 }); // off it, back to 2x2
+  });
+
+  it("choosing where to move it is the acting unit's square", () => {
+    const b = split();
+    const ui = hoverTile(b, selectMode(b, freshUi(b), { k: 'move' }), at(2, 0));
+    expect(turnMarks(b, { k: 'map', command: 'move' }, ui, at(2, 0), true)).toMatchObject({
+      cursor: at(2, 0),
+      size: 2,
     });
   });
 });
