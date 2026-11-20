@@ -41,7 +41,6 @@ describe('3D combat bar: what it shows', () => {
     expect(s.ct).toEqual({ label: 'CT', value: 0, max: 100 });
     // what the turn list says after each number (Nov 17): no life regen without a piece, the CT gained each tick
     expect(s.hpRegen).toBe('');
-    expect(s.ctGain).toBe(`+${UNIT_DEFS[b.actor.def].speed}`);
     const bare = UNIT_DEFS[b.actor.def];
     UNIT_DEFS[b.actor.def] = { ...bare, hpRegen: 12 };
     try {
@@ -55,7 +54,6 @@ describe('3D combat bar: what it shows', () => {
     const b = duel();
     expect(sheetView(b.state, unit(b, 'b'))).toMatchObject({ name: 'Soldado', enemy: true, tag: 'Inimigo' });
     expect(sheetView(b.state, unit(b, 'beacon')).ct).toBeNull();
-    expect(sheetView(b.state, unit(b, 'beacon')).ctGain).toBe('');
   });
 
   it('a unit charging says so on its strip', () => {
@@ -94,9 +92,9 @@ describe('3D combat bar: what it shows', () => {
       warn: false,
     });
     const max = 225;
-    // Nov 19: the least damage is the solid part, the rest up to the most blinks; both numbers on the bar and in one label
+    // Nov 19: the least damage is the solid part, the rest up to the most blinks; Nov 20: no number under it, the plate says it
     expect(v.target?.change).toEqual({ left: f.after[0] / max, sure: f.after[1] / max, upTo: 1, gain: false });
-    expect(v.target?.line).toBe(`−${max - f.after[1]} ≈ −${max - f.after[0]}`);
+    expect(v.target?.line).not.toContain('≈');
   });
 
   it('more targets are counted, a heal adds and a strike on an ally warns', () => {
@@ -115,9 +113,8 @@ describe('3D combat bar: what it shows', () => {
   it('a heal fills the bar from the life it has', () => {
     const b = duel(100);
     const [f] = strike(b);
-    const v = sheetView(b.state, unit(b, 'b'), { ...f, dmg: null, heal: [20, 50], after: [120, 150] }, 'heal');
+    const v = sheetView(b.state, unit(b, 'b'), { ...f, dmg: null, heal: [20, 50], after: [120, 150] });
     expect(v.change).toEqual({ left: 100 / 225, sure: 120 / 225, upTo: 150 / 225, gain: true });
-    expect(v.line).toBe('+20 ≈ +50');
   });
 });
 
@@ -138,7 +135,7 @@ describe('3D combat bar: where it sits', () => {
   it('every part lies inside its region', () => {
     for (const l of [sheetLayout(false), sheetLayout(true)]) {
       expect(boxes(l).length).toBe(8);
-      expect(spots(l).length).toBe(13);
+      expect(spots(l).length).toBe(12);
       for (const [id, b] of boxes(l))
         expect(b.x >= 0 && b.y >= 0 && b.x + b.w <= l.w && b.y + b.h <= l.h, `${id} ${l.mirror}`).toBe(true);
       for (const [id, s] of spots(l))

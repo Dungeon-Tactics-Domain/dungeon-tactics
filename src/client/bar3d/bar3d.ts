@@ -149,12 +149,7 @@ class Sheet {
     part.text(layer, 'boxLabel', second?.label ?? '', l.boxLabel, SOFT);
     part.text(layer, 'boxValue', second ? value(second) : '', l.boxValue, INK);
     part.text(layer, 'ctLabel', v.ct?.label ?? '', l.ctLabel, SOFT);
-    const ct = part.text(layer, 'ctValue', v.ct ? String(v.ct.value) : '', l.ctValue, INK);
-    // the gain ends a fixed gap before the value's ink, as drawn: on a small page the 16 px floor widens "100" past its
-    // reference room and "+12" ran into it ("+12100", Nov 18 review)
-    const inkLeft = ct ? ct.position.x - ct.scale.x / 2 + TEXT_PAD : 0;
-    const gain = ct ? { ...l.ctGain, align: 'r' as const, x: (inkLeft - gap) / layer.small.s } : l.ctGain;
-    part.text(layer, 'ctGain', v.ctGain, gain, SOFT);
+    part.text(layer, 'ctValue', v.ct ? String(v.ct.value) : '', l.ctValue, INK);
     part.text(layer, 'line', v.line, l.line, INK);
   }
   private targets(v: SheetView) {

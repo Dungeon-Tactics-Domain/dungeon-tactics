@@ -328,9 +328,9 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   12 px at 1280x720 scale and never under 16 px, so a row never gets shorter than 48 px (`statsLayout` in
   `queue-view.ts`): on a low screen the cards stop shrinking and the list scrolls. What each "+" counts (per turn, per
   tick) is in the tip beside the card under the mouse and in Options › Help › Controls
-  (`game/options-help.ts`); a charge's row has no lines. The 3D bar's sheets say the same two gains (`bar-view.ts`
-  `hpRegen`, `ctGain`): "+4" after the "Vida" label and "+8" between the CT bar, 100 px instead of the reference's 130,
-  and its number.
+  (`game/options-help.ts`); a charge's row has no lines. The 3D bar's sheets say the life gain only (`bar-view.ts`
+  `hpRegen`): "+4" after the "Vida" label; the CT bar runs up to a space before its number (Fernando, Nov 20: no CT gain
+  there).
 - **Place:** on the reference's regions (Interface layout, above), not beside the unit: the command menu bottom right
   (five rows tall like the capture, the paper blank under a shorter list), the sheet top right, the turn list on the
   left, stacked from the bottom and ending above the HTML acting panel where that one is taller than the reference's
