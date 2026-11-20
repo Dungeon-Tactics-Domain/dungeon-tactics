@@ -9,7 +9,7 @@ import { WEIGHT } from '../hit-weight.ts';
 import { barYOf, MARKER, unitHeight } from '../markers.ts';
 import { prepare } from '../three-util.ts';
 import type { Board } from './board.ts';
-import { circle, litPaint, litStyle, piece } from './mark-kit.ts';
+import { circle, litPaint, litStyle, piece, square } from './mark-kit.ts';
 import type { Timeline } from './timeline.ts';
 
 const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
@@ -54,6 +54,7 @@ export function makeView(
   let clips: THREE.AnimationClip[] = [];
   let body: THREE.Object3D | null = null;
   const mats: THREE.MeshStandardMaterial[] = [];
+  const long = UNIT_DEFS[u.def].halfLength ?? 1;
   if (gltf) {
     body = prepare(cloneSkinned(gltf.scene));
     body.traverse((m) => {
@@ -69,12 +70,16 @@ export function makeView(
     // a skinned box is measured through its bones: their world matrices first (the snake's armature is scaled 100x)
     body.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(body);
-    // a lying body (the snake, own rig) is fitted to one tile long; a standing one to its height
+    // a lying body (the snake, own rig) is fitted to its length in cells (halfLength: 2 half tiles, one whole tile);
+    // a standing one to its height
     const own = gltf.animations.some((c) => c.name.includes('|'));
-    body.scale.setScalar(
-      own ? 1 / Math.max(b.max.x - b.min.x, b.max.z - b.min.z) : unitHeight(u.def) / (b.max.y - b.min.y),
-    );
-    sway.add(body);
+    const fit = own ? long / Math.max(b.max.x - b.min.x, b.max.z - b.min.z) : unitHeight(u.def) / (b.max.y - b.min.y);
+    body.scale.setScalar(fit);
+    // its middle between the head's cell (the holder, `pos`) and the tail's behind it (pathing.ts bodyOf), on a group of
+    // its own: the dodge and the tremble set the body's own x and z
+    const lay = new THREE.Group().add(body);
+    if (own) lay.position.set(((b.min.x + b.max.x) / -2) * fit, 0, ((b.min.z + b.max.z) / -2) * fit - (long - 1) / 2);
+    sway.add(lay);
     mixer = new THREE.AnimationMixer(body);
     // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
     const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
@@ -149,23 +154,31 @@ function groundMarks(team: Team, def: string, facing: boolean): THREE.Object3D[]
   }
   // team-colored ring on the ground: the side reads even when the model looks alike. Lit, the shape tells the side too
   // (colour is never the only signal): the heroes' ring is whole, the enemies' is broken in four
+  // a long body (the snake, Nov 20) gets a rectangle over all its cells, from the head's cell back over the tail
+  const long = UNIT_DEFS[def].halfLength ?? 1,
+    rect = square(0.39).map((p) => p.setZ(p.z > 0 ? 0.39 : -0.39 - (long - 1)));
   const ring = style
     ? piece(
         style,
         team === 'hero'
-          ? [{ pts: circle(0.39, 32), closed: true }]
+          ? [{ pts: long > 1 ? rect : circle(0.39, 32), closed: true }]
           : [0, 1, 2, 3].map((k) => ({
-              pts: circle(0.39, 8, (k * Math.PI) / 2 + 0.17, ((k + 1) * Math.PI) / 2 - 0.17),
+              pts:
+                long > 1
+                  ? [0.2, 0.8].map((f) => rect[k].clone().lerp(rect[(k + 1) % 4], f))
+                  : circle(0.39, 8, (k * Math.PI) / 2 + 0.17, ((k + 1) * Math.PI) / 2 - 0.17),
               closed: false,
             })),
         0.05,
         TEAM_COLOR[team],
       )
     : new THREE.Mesh(
-        new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2),
+        long > 1
+          ? new THREE.RingGeometry(0.48, 0.62, 4, 1, Math.PI / 4).rotateX(-Math.PI / 2).scale(1, 1, long)
+          : new THREE.RingGeometry(0.34, 0.44, 24).rotateX(-Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: TEAM_COLOR[team], depthWrite: false, transparent: true, opacity: 0.9 }),
       );
-  ring.position.y = 0.04;
+  ring.position.set(0, 0.04, long > 1 && !style ? -(long - 1) / 2 : 0);
   ring.scale.setScalar(UNIT_DEFS[def].size ?? 1); // big unit: the ring surrounds the whole square
   out.push(ring);
   return out;
