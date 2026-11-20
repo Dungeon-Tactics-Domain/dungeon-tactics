@@ -67,7 +67,11 @@ export function makeView(
     });
     glowBack(mats, u.def);
     const b = new THREE.Box3().setFromObject(body);
-    body.scale.setScalar(unitHeight(u.def) / (b.max.y - b.min.y));
+    // a lying body (the snake, own rig) is fitted to one tile long; a standing one to its height
+    const own = gltf.animations.some((c) => c.name.includes('|'));
+    body.scale.setScalar(
+      own ? 1 / Math.max(b.max.x - b.min.x, b.max.z - b.min.z) : unitHeight(u.def) / (b.max.y - b.min.y),
+    );
     sway.add(body);
     mixer = new THREE.AnimationMixer(body);
     // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
@@ -244,8 +248,22 @@ export function sideOrder(bar: THREE.Object3D, camera: THREE.Camera, cover: numb
   tag.position.x = left < cover ? x : -x;
 }
 
+// A model with its own rig (the Quaternius snake: Blender's `Armature|Action` clip names) has none of the KayKit
+// gestures: each one plays its closest own clip; Death_A has none (unit-events lays the body on its side)
+const STAND_IN: [RegExp, string][] = [
+  [/^Death/, ''],
+  [/^Walking|^Running/, 'Walk'],
+  [/^Hit|^Jump/, 'Jump'],
+  [/^Idle|^Cheer/, 'Idle'],
+  [/./, 'Attack'], // every other gesture is acting
+];
+export const standIn = (v: UnitView, name: string): THREE.AnimationClip | undefined => {
+  const own = STAND_IN.find(([re]) => re.test(name))![1];
+  return own ? v.clips.find((c) => c.name.includes('|') && c.name.endsWith(`_${own}`)) : undefined;
+};
+
 export function playClip(v: UnitView, name: string, once = false, rate = 1) {
-  const clip = v.clips.find((c) => c.name === name);
+  const clip = v.clips.find((c) => c.name === name) ?? standIn(v, name);
   if (!v.mixer || !clip) return;
   const action = v.mixer.clipAction(clip);
   action.reset();

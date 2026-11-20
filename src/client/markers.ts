@@ -52,5 +52,6 @@ const MODEL: Record<string, string> = {
   lancer: 'lancer', // Lancer: the Knight without cape or shield, in teal-green steel, with a spear (scripts/assets/lancer.mjs)
   acolyte: 'mage',
   veil_knight: 'knight', // Acolyte and Veil Knight: units with their own glow (UnitDef.tint)
+  snake: 'snake', // Quaternius snake (CC0): its own rig and clips, played through standIn in unit-view.ts
 };
 export const modelOf = (def: string): string => MODEL[baseDef(def)] ?? UNIT_DEFS[def].model ?? ''; // '' = no model (the Beacon)

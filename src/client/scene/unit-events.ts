@@ -88,7 +88,10 @@ export async function playEvents(
       // falls and stays down (Nov 13, Fernando's request: "the enemies' bodies must stay on the ground and not vanish"); the
       // sync removes the bar and the ring and darkens the body (fallen)
       playClip(v, 'Death_A', true);
-      await u.time.wait(TIMING.die);
+      // a model without a fall (the snake) rolls onto its side; the rotation outlasts the sync, so the body stays down
+      const body = v.clips.some((c) => c.name === 'Death_A') ? null : v.body;
+      if (body) await u.time.animate(TIMING.die, (k) => (body.rotation.z = (k * Math.PI) / 2));
+      else await u.time.wait(TIMING.die);
       await u.cam.closeUp(null, WEIGHT.zoom, TIMING.closeUpBack); // back from the death close-up, if there was one
     }
   }
