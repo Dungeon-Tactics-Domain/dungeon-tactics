@@ -35,6 +35,7 @@ export interface ActAction {
   missing?: number; // 'spent': how much of `pool` is lacking
   pool?: string;
   count?: number; // an item's count in the bag
+  reach?: number; // on the Agir list: how many rows its target list shows
   spots: ActSpot[];
 }
 
@@ -128,15 +129,22 @@ export interface ActRef {
 export const sameRef = (a: ActRef, r: ActRow) => r.k !== 'pick' && r.k === a.k && r.id === a.id;
 export function actList(b: Battle): ActRow[] {
   const id = b.actor.id;
+  // each target's actions once, so a row's count is what its target list will show (Fernando's grill, Nov 19)
+  const hits = allTargets(b).map((t) => actActions(b, t));
+  const reach = (r: ActRef) => hits.filter((acts) => acts.some((a) => sameRef(r, a) && a.enabled)).length;
   const abilities = actionOptions(b.grid, b.state, id).map((o): ActRow => {
     const base = { k: 'ability' as const, id: o.ability, spots: [] };
     if (!o.enabled) return { ...base, enabled: false, reason: o.reason, missing: o.missing, pool: o.pool };
-    return o.targets.length ? { ...base, enabled: true } : { ...base, enabled: false, reason: 'range' };
+    return o.targets.length
+      ? { ...base, enabled: true, reach: reach(base) }
+      : { ...base, enabled: false, reason: 'range' };
   });
   const items = itemOptions(b.grid, b.state, id).map((o): ActRow => {
     const base = { k: 'item' as const, id: o.item, count: o.count, spots: [] };
     if (!o.enabled) return { ...base, enabled: false, reason: o.reason };
-    return o.targets.length ? { ...base, enabled: true } : { ...base, enabled: false, reason: 'no-target' };
+    return o.targets.length
+      ? { ...base, enabled: true, reach: reach(base) }
+      : { ...base, enabled: false, reason: 'no-target' };
   });
   return [{ k: 'pick' }, ...abilities, ...items];
 }

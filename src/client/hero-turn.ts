@@ -5,8 +5,9 @@ import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
 import { footprint, nearestTile } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
+import type { ActRef } from './act-flow.ts';
 import { actScreen } from './act-marks.ts';
-import { type ActHost, actHover, actHoverMap, actKey, actPage, actPick, actTap } from './act-turn.ts';
+import { type ActHost, actHover, actHoverMap, actKey, actPage, actPick, actStart, actTap } from './act-turn.ts';
 import { COMMANDS, cancelStep, commandEnabled, commandIndex, type Screen, startScreen, stepIndex } from './command.ts';
 import { freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction } from './keyboard.ts';
@@ -37,6 +38,7 @@ export class HeroTurn {
   closed = false;
   range: string | null = null; // the unit whose walk and strike range the map paints (its mini menu's Show range)
   private now!: Screen;
+  private lastAct = new Map<string, ActRef>(); // each unit's last action, where its Agir list opens (actStart)
   get screen() {
     return this.now;
   }
@@ -196,7 +198,7 @@ export class HeroTurn {
     if (c === 'status') return this.game.status();
     if (c === 'wait') return void this.game.endTurn();
     if (c === 'act') {
-      this.screen = { k: 'acts', index: 0 };
+      this.screen = actStart(b, this.lastAct.get(b.actor.id));
       return this.game.update(this.ui);
     }
     this.screen = { k: 'map', command: 'move' };
@@ -254,6 +256,7 @@ export class HeroTurn {
       },
       runAct: (run) => turn.game.runAct(run),
       at: (p) => turn.scene.screenAt(p, 1),
+      remember: (r) => turn.lastAct.set(turn.game.battle.actor.id, r),
     };
   }
 

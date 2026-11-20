@@ -15,6 +15,7 @@ import {
   actTargets,
   bestSpot,
   runSpot,
+  sameRef,
   spotAt,
   targetAt,
   withAim,
@@ -33,6 +34,7 @@ export interface ActHost {
   focus(p: Pos): void; // the camera and the cursor go there
   runAct(run: (b: Battle) => ReturnType<Battle['move']>): Promise<void>;
   at(p: Pos): { x: number; y: number }; // where a tile is on screen, in pixels (the arrows walk what is seen)
+  remember(r: ActRef): void; // the action about to run: Agir opens on it next time (actStart)
 }
 
 // the lock step's rows, in order (menu-view.ts draws them)
@@ -78,6 +80,12 @@ export function actKey(h: ActHost, a: KeyAction): void {
   if (a.dir !== 'up' && a.dir !== 'down') return;
   const index = stepIndex(s.index, a.dir === 'up' ? -1 : 1, enabledRows(h.battle, s));
   if (index !== s.index) select(h, moved(s, index));
+}
+
+// where the Agir list opens: on the unit's last action while it is on, else on "Escolher alvo" (Fernando's grill, Nov 19)
+export function actStart(b: Battle, last?: ActRef): Screen {
+  const i = last ? actList(b).findIndex((r) => sameRef(last, r) && r.k !== 'pick' && r.enabled) : -1;
+  return { k: 'acts', index: Math.max(0, i) };
 }
 
 // the action sheet turns to its next or previous page
@@ -198,6 +206,7 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     return h.update();
   }
   const lock = s.lock && LOCKS[index];
+  h.remember({ k: a.k, id: a.id });
   await h.runAct((battle) => {
     const { walk, act } = runSpot(battle, a, spot, lock || undefined);
     return [...walk, ...(act ?? [])];

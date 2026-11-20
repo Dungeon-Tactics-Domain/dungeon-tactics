@@ -100,7 +100,7 @@ describe('command menu', () => {
     expect(b.reach().size).toBeGreaterThan(0);
     // Move is still Move (Nov 18); "Undo move" under it never takes the cursor
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
-    expect(menuRows(b)).toEqual(['act', 'move', 'undo', 'wait', 'status']);
+    expect(menuRows(b)).toEqual(['move', 'undo', 'wait', 'status']); // both actions spent: Agir left
   });
 
   it('up and down skip what is disabled and wrap around', () => {
@@ -287,8 +287,9 @@ describe('menu rows in each state of the turn', () => {
     const b = range();
     b.act('shot', { x: 5, y: 1 });
     expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']);
-    b.state.turn.bonus = 'ether'; // both actions spent
+    b.state.turn.bonus = 'ether'; // both actions spent: Agir leaves the menu (Fernando's grill, Nov 19)
     expect(commandEnabled(b, 'act')).toBe(false);
+    expect(menuRows(b)).toEqual(['move', 'wait', 'status']);
   });
 
   it('no step to undo (the move drew a counter): only Move, never Undo move', () => {

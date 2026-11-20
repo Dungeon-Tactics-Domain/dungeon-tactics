@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { actActions, actAims, actTargets } from '../src/client/act-flow.ts';
+import { type ActRef, actActions, actAims, actList, actTargets } from '../src/client/act-flow.ts';
 import { actMarks } from '../src/client/act-marks.ts';
-import { type ActHost, actHoverMap, actKey, actPick, actTap } from '../src/client/act-turn.ts';
+import { type ActHost, actHoverMap, actKey, actPick, actStart, actTap } from '../src/client/act-turn.ts';
 import { itemDetail } from '../src/client/battle-text.ts';
 import { cancelStep, type Screen } from '../src/client/command.ts';
 import { helpText } from '../src/client/hud-menus.ts';
@@ -25,10 +25,11 @@ const battle = () => {
 const diamond = (p: { x: number; y: number }) => ({ x: (p.x - p.y) * 32, y: (p.x + p.y) * 16 });
 const host = (b: Battle, screen: Screen) => {
   const ran: BattleEvent[][] = [];
-  const h: ActHost & { ran: BattleEvent[][] } = {
+  const h: ActHost & { ran: BattleEvent[][]; last?: ActRef } = {
     battle: b,
     screen,
     ran,
+    remember: (r) => void (h.last = r),
     update: () => {},
     focus: () => {},
     runAct: async (run) => void ran.push(run(b)),
@@ -39,6 +40,35 @@ const host = (b: Battle, screen: Screen) => {
 
 describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () => {
   const rowsOf = (b: Battle) => menuView({ battle: b, screen: { k: 'acts', index: 0 } } as never, true)!.sub!;
+
+  it('each row on says how many targets its target list will show', () => {
+    const b = battle();
+    const rows = rowsOf(b);
+    actList(b).forEach((r, i) => {
+      if (r.k === 'pick' || !r.enabled) return expect(rows[i].note).not.toMatch(/alvo/);
+      const n = actTargets(b, r).length;
+      expect(n).toBeGreaterThan(0);
+      expect(rows[i].note).toContain(n > 1 ? `${n} alvos` : '1 alvo');
+    });
+  });
+
+  it('opens on the last action run while it is on, else on Escolher alvo', async () => {
+    const b = battle();
+    const h = host(b, { k: 'acts', index: actList(b).findIndex((r) => r.k === 'ability' && r.id === 'heal') });
+    await actPick(h, h.screen.k === 'acts' ? h.screen.index : 0); // the heal's targets
+    await actPick(h, 0); // the first target
+    while (h.ran.length === 0) await actPick(h, h.screen.k === 'spot' || h.screen.k === 'aim' ? h.screen.index : 0);
+    expect(h.last).toEqual({ k: 'ability', id: 'heal' });
+    const fresh = battle();
+    expect(actStart(fresh, h.last)).toEqual({
+      k: 'acts',
+      index: actList(fresh).findIndex((r) => r.k === 'ability' && r.id === 'heal'),
+    });
+    fresh.state.turn.bonus = 'heal'; // its slot spent: the list opens on its first row
+    fresh.state.turn.main = 'firebolt';
+    expect(actStart(fresh, h.last)).toEqual({ k: 'acts', index: 0 });
+    expect(actStart(fresh)).toEqual({ k: 'acts', index: 0 });
+  });
 
   it('Escolher alvo, then each ability by its own name, then the items; a spent slot greys its rows', () => {
     const b = battle();

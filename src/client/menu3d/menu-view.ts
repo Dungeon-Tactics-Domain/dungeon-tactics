@@ -6,7 +6,15 @@ import type { Battle } from '../../shared/battle/battle.ts';
 import { subOf } from '../../shared/battle/grid.ts';
 import type { Element } from '../../shared/battle/units.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
-import { type ActRow, type ActTarget, actActions, actList, actTargets, distanceTo } from '../act-flow.ts';
+import {
+  type ActAction,
+  type ActRow,
+  type ActTarget,
+  actActions,
+  actList,
+  actTargets,
+  distanceTo,
+} from '../act-flow.ts';
 import { actScreen, screenAction } from '../act-marks.ts';
 import {
   abilityNote,
@@ -177,26 +185,30 @@ function targetRow(b: Battle, r: ActTarget): MenuRow {
   return { label: unitName(u.def), note, off: false, kind: mine ? 'shield' : 'sword' };
 }
 
-// a row of the Agir list or of the actions screen: an off one says why below its name (Fernando's grill of Nov 19)
+// a row of the Agir list or of the actions screen: its note (an off one's reason, Fernando's grill of Nov 19) is a line
+// under the name, on or off: with the target count it grew long enough to squeeze the name out beside it (Nov 19 capture)
 function listRow(b: Battle, a: ActRow): MenuRow {
   if (a.k === 'pick') return { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword' };
-  const off = { off: !a.enabled, below: !a.enabled };
+  const off = { off: !a.enabled, below: true };
   if (a.k === 'item')
     return {
       label: itemName(a.id),
-      note: [kindTag(a), a.enabled ? `×${a.count}` : actReason(a)].filter(Boolean).join(' · '),
+      note: [kindTag(a), a.enabled ? `×${a.count}` : actReason(a), reachText(a)].filter(Boolean).join(' · '),
       kind: 'potion',
       ...off,
     };
   return {
     label: abilityName(a.id),
-    note: [kindTag(a), a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a)]
+    note: [kindTag(a), a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a), reachText(a)]
       .filter(Boolean)
       .join(' · '),
     ...iconOf(a.id),
     ...off,
   };
 }
+// how many targets a row of the Agir list has this turn (only that list counts them)
+const reachText = (a: ActAction) =>
+  a.reach ? t(`${a.reach} alvo${a.reach > 1 ? 's' : ''}`, `${a.reach} target${a.reach > 1 ? 's' : ''}`) : '';
 const iconOf = (id: string) => ({ kind: abilityIcon3d(ABILITIES[id]), element: ABILITIES[id].element });
 
 // What changed from the last draw, for the menu's animations: it comes in or leaves (a confirmed row flashes on its way

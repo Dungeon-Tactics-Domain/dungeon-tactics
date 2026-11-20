@@ -72,11 +72,16 @@ export function commandEnabled(b: Battle, c: Command): boolean {
 }
 
 // The rows the menu shows, in COMMANDS order: Move leaves once the unit moved and has no movement left (at the turn's
-// start it stays, greyed when boxed in), "Undo move" only while there is a move to take back. 4 rows at the start, 5
+// start it stays, greyed when boxed in), "Undo move" only while there is a move to take back, Agir while an action is left. 4 rows at the start, 5
 // after a move with movement left
 export const menuRows = (b: Battle): Command[] =>
   COMMANDS.filter((c) =>
-    c === 'move' ? !b.state.turn.moved || b.reach().size > 0 : c === 'undo' ? canUndoMove(b) : true,
+    c === 'move'
+      ? !b.state.turn.moved || b.reach().size > 0
+      : c === 'undo'
+        ? canUndoMove(b)
+        : // Agir leaves once both actions are spent (Fernando's grill, Nov 19); in deep water it stays, greyed
+          c !== 'act' || !!freeSlot(b.state.turn, 'bonus'),
   );
 
 // range of the farthest-reaching ability (the dotted line around the player)
