@@ -97,6 +97,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/wrap-lines.ts` — wrapLines: a text broken into the lines that fit a width, given a measurer; pure, shared by the 3D text and the HUD's sizes.
 - `src/client/battle-face.ts` — which face sheet and expression a battle event shows, and for how long.
 - `src/client/motion.ts` — the Reduce motion option (dt:motion: System, Yes, No): `reducedMotion()` for the code and `data-motion` on <html> for the CSS.
+- `src/client/tap-slack.ts` — tap with slack: the nearest unit body centre on screen within 22 px of a tap that hit no body.
 - `src/client/hit-weight.ts` — weight of a blow: its distances, the number's size and colour, the killing-blow lookahead and the death slow motion option (dt:death-slowmo).
 - `src/client/tally.ts` — damage and takedowns per unit from the played events and the heroes' cards (endHeroes), for the result board.
 - `src/client/expedition-places.ts` — the expedition map as a chart (pure): each place's spot and state, the ways between them, the floors' rows and a place's gold range.

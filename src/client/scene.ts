@@ -237,7 +237,7 @@ export class BattleScene {
       new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1),
       this.camera,
     );
-    const unit = this.units.pick(ray);
+    const unit = this.units.pick(ray, { x: clientX - r.left, y: clientY - r.top });
     if (unit) return unit;
     const hit = ray.intersectObjects(this.board.tileTops, false)[0];
     if (!hit) return null;

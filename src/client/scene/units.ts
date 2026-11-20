@@ -12,6 +12,7 @@ import { corpseSquares } from '../corpse-squares.ts';
 import { chargeAura, lookOf } from '../fx.ts';
 import { WEIGHT } from '../hit-weight.ts';
 import { modelOf, unitHeight } from '../markers.ts';
+import { nearestTap } from '../tap-slack.ts';
 import { TIMING } from '../timing.ts';
 import type { Board } from './board.ts';
 import { layBody } from './board-extras.ts';
@@ -120,8 +121,9 @@ export class Units {
     }
   }
 
-  // the unit whose drawn body the ray hits first, as its tile
-  pick(ray: THREE.Raycaster): Pos | null {
+  // the unit whose drawn body the ray hits first, as its tile; with no body hit, the unit whose body centre on screen
+  // is nearest the tap `at` (canvas px) within the touch slack (tap-slack.ts)
+  pick(ray: THREE.Raycaster, at?: { x: number; y: number }): Pos | null {
     const holders = [...this.views.values()];
     for (const hit of ray.intersectObjects(
       holders.map((v) => v.holder),
@@ -132,7 +134,12 @@ export class Units {
         if (unit) return this.posOf(unit);
       }
     }
-    return null;
+    if (!at) return null;
+    const near = nearestTap(
+      at,
+      [...this.views].filter(([, v]) => v.holder.visible).map(([id, v]) => ({ id: v, ...this.screenOf(id)! })),
+    );
+    return near && this.posOf(near);
   }
 
   // Middle of the unit's body on screen (canvas px, which fills the whole host) and its half width in px: the HUD puts the command
