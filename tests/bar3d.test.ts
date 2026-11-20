@@ -87,7 +87,7 @@ describe('3D combat bar: what it shows', () => {
     const v = barView(b.state, b.actor, undefined, fs, 'strike');
     expect(v.plate).toEqual({
       chance: `⊕ ${f.chance}%`,
-      amount: `${f.dmg![0]}–${f.dmg![1]}`,
+      amount: `${f.dmg![0]} ≈ ${f.dmg![1]}`,
       big: true,
       label: 'Dano',
       name: 'Golpe',
@@ -96,7 +96,6 @@ describe('3D combat bar: what it shows', () => {
     const max = 225;
     // Nov 19: the least damage is the solid part, the rest up to the most blinks; both numbers on the bar and in one label
     expect(v.target?.change).toEqual({ left: f.after[0] / max, sure: f.after[1] / max, upTo: 1, gain: false });
-    expect(v.target).toMatchObject({ sure: `−${max - f.after[1]}`, maybe: `≈−${max - f.after[0]}` });
     expect(v.target?.line).toBe(`−${max - f.after[1]} ≈ −${max - f.after[0]}`);
   });
 
@@ -106,7 +105,7 @@ describe('3D combat bar: what it shows', () => {
     expect(plateView(f, 'strike', 2).name).toBe('Golpe · +2 alvos');
     expect(plateView(f, 'strike', 1).name).toBe('Golpe · +1 alvo');
     const heal = plateView({ ...f, dmg: null, heal: [7, 10], chance: 100 }, 'heal', 0);
-    expect(heal).toMatchObject({ amount: '+7–10', label: 'Cura', chance: '⊕ 100%' });
+    expect(heal).toMatchObject({ amount: '+7 ≈ 10', label: 'Cura', chance: '⊕ 100%' });
     expect(plateView({ ...f, ally: true }, 'strike', 0)).toMatchObject({ label: 'Dano · ALIADO!', warn: true });
     // a support has no number: the ability's name takes its place
     const support = plateView({ ...f, dmg: null, support: true }, 'strike', 0);
@@ -118,7 +117,7 @@ describe('3D combat bar: what it shows', () => {
     const [f] = strike(b);
     const v = sheetView(b.state, unit(b, 'b'), { ...f, dmg: null, heal: [20, 50], after: [120, 150] }, 'heal');
     expect(v.change).toEqual({ left: 100 / 225, sure: 120 / 225, upTo: 150 / 225, gain: true });
-    expect(v).toMatchObject({ sure: '+20', maybe: '≈+50', line: '+20 ≈ +50' });
+    expect(v.line).toBe('+20 ≈ +50');
   });
 });
 

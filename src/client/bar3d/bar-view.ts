@@ -25,9 +25,6 @@ export interface SheetView {
   // of the full life bar: what stays for sure and up to where an aimed strike (or a heal, `gain`) changes it; `sure`: where
   // the part it changes for certain (the least damage or heal, solid) meets the part it may change (blinking; Nov 19)
   change: { left: number; sure: number; upTo: number; gain: boolean };
-  // the labels on those two parts of the bar: "−70" and "≈−100" (bar3d.ts drops one its part is too thin for)
-  sure: string;
-  maybe: string;
   pools: Gauge[]; // mana and stamina, the ones its sheet has: the first beside the life, the second in the box under it
   ct: Gauge | null; // null for what never takes a turn
   // what the turn list's lines say after each number (turn-list.ts unitStats; Fernando, Nov 17): "+4", the life back at
@@ -38,7 +35,7 @@ export interface SheetView {
 }
 export interface PlateView {
   chance: string; // "⊕ 85%"; empty for a support with no number
-  amount: string; // the big number: "36", "9–12", "+7–10", or the ability's name for a support
+  amount: string; // the big number: "36", "9 ≈ 12", "+7 ≈ 10", or the ability's name for a support
   big: boolean; // `amount` is a number
   label: string; // what the number is
   name: string; // the ability, and how many more targets it reaches
@@ -87,8 +84,6 @@ export function sheetView(state: BattleState, u: UnitState, f?: Forecast, abilit
       : f.heal
         ? { left: now, sure: frac(f.after[0], def.hp), upTo: frac(f.after[1], def.hp), gain: true }
         : { left: frac(f.after[0], def.hp), sure: frac(f.after[1], def.hp), upTo: now, gain: false },
-    sure: least ? `${sign}${least}` : '',
-    maybe: most > least ? `≈${sign}${most}` : '',
     pools: pools.slice(0, 2),
     ct: def.speed > 0 ? { label: 'CT', value: Math.min(u.ct, TURN_THRESHOLD), max: TURN_THRESHOLD } : null,
     line: [
@@ -120,7 +115,9 @@ const flankLine = (f: Forecast) =>
       : '';
 
 export function plateView(f: Forecast, ability: string, more: number): PlateView {
-  const amount = f.heal ? `+${range(f.heal)}` : f.dmg ? range(f.dmg) : '';
+  // "25 ≈ 40": somewhere between the two, not a fixed span (Fernando, Nov 20: the approximately sign for the dash)
+  const about = (r: [number, number]) => range(r).replace('–', ' ≈ ');
+  const amount = f.heal ? `+${about(f.heal)}` : f.dmg ? about(f.dmg) : '';
   const others = more ? ` · +${more} ${t(more === 1 ? 'alvo' : 'alvos', more === 1 ? 'target' : 'targets')}` : '';
   const hits = amount && !f.heal;
   return {

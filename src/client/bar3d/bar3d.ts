@@ -156,26 +156,6 @@ class Sheet {
     const gain = ct ? { ...l.ctGain, align: 'r' as const, x: (inkLeft - gap) / layer.small.s } : l.ctGain;
     part.text(layer, 'ctGain', v.ctGain, gain, SOFT);
     part.text(layer, 'line', v.line, l.line, INK);
-    // the strike's two numbers on their parts of the life bar, each dropped when its part is too thin to hold it
-    // (Fernando, Nov 19: "what if that slice were very small?")
-    const { left, sure, upTo } = v.change;
-    const [certain, maybe] = v.change.gain
-      ? [
-          [left, sure],
-          [sure, upTo],
-        ]
-      : [
-          [sure, upTo],
-          [left, sure],
-        ];
-    for (const [id, str, [a, b]] of [
-      ['hpSure', v.sure, certain],
-      ['hpMaybe', v.maybe, maybe],
-    ] as const) {
-      const sp: Spot = { x: l.hpBar.x + ((a + b) / 2) * l.hpBar.w, y: l.hpBar.y + l.hpBar.h / 2, size: 16, align: 'c' };
-      const m = part.text(layer, id, str, sp, INK);
-      if (m && m.scale.x - 2 * TEXT_PAD > (b - a) * l.hpBar.w * layer.small.s) part.text(layer, id, '', sp, INK);
-    }
   }
   private targets(v: SheetView) {
     return {
