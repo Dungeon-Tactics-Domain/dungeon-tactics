@@ -4,11 +4,11 @@
 // screens draw it, act-turn.ts runs it. The only way to act since Fernando's "Apagar tudo" (Nov 19)
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { type ActionKind, abilityKind } from '../shared/battle/action-slots.ts';
-import { type ItemReason, itemOptions } from '../shared/battle/bag.ts';
+import { type ItemOptions, type ItemReason, itemOptions } from '../shared/battle/bag.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
 import { dist, samePos } from '../shared/battle/grid.ts';
-import { actionOptions, type OptionReason } from '../shared/battle/options.ts';
+import { type AbilityOptions, actionOptions, type OptionReason } from '../shared/battle/options.ts';
 import { footprint, gap, unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 
@@ -39,6 +39,22 @@ export interface ActAction {
   spots: ActSpot[];
 }
 
+// The engine's options for the acting unit, worked out once per battle state: the Agir screens ask for them several times a
+// key and once per target, which cost ~100 ms an Agir list on a PC (Nov 19 audit). Any move, act or edit of the state is
+// a new key; the grid never changes inside a battle
+let memo: { b: Battle; key: string; abilities: AbilityOptions[]; items: ItemOptions[] } | null = null;
+function options(b: Battle) {
+  const key = JSON.stringify(b.state);
+  if (memo?.b !== b || memo.key !== key)
+    memo = {
+      b,
+      key,
+      abilities: actionOptions(b.grid, b.state, b.actor.id),
+      items: itemOptions(b.grid, b.state, b.actor.id),
+    };
+  return memo;
+}
+
 // Main or secondary (Nov 19): an item is always secondary
 export const actKind = (a: ActAction): ActionKind => (a.k === 'item' ? 'bonus' : abilityKind(ABILITIES[a.id]));
 
@@ -53,14 +69,14 @@ function allTargets(b: Battle): ActTarget[] {
   const id = b.actor.id;
   const units = new Map<string, Pos>();
   const direct: ActTarget[] = [];
-  for (const o of actionOptions(b.grid, b.state, id))
+  for (const o of options(b).abilities)
     for (const t of o.targets) {
       if (t.kind === 'unit' && t.unit) units.set(t.unit, t.pos);
       else if (t.kind === 'self' && ABILITIES[o.ability].range[1] > 0) units.set(id, t.pos);
       else if (!direct.some((d) => d.k === 'direct' && d.ability === o.ability))
         direct.push({ k: 'direct', ability: o.ability });
     }
-  for (const o of itemOptions(b.grid, b.state, id)) for (const t of o.targets) units.set(t.unit, t.pos);
+  for (const o of options(b).items) for (const t of o.targets) units.set(t.unit, t.pos);
   const team = (u: string) => b.state.units.find((x) => x.id === u)!.team;
   const rank = (u: string) => (u === id ? 2 : team(u) === b.actor.team ? 1 : 0);
   const rows = [...units].map(([unit, pos]) => ({ k: 'unit' as const, unit, pos }));
@@ -76,8 +92,8 @@ export const distanceTo = (b: Battle, unit: string) =>
 // One that cannot hit this target is off: its own reason when it works nowhere, else 'range'
 export function actActions(b: Battle, target: ActTarget): ActAction[] {
   const id = b.actor.id;
-  const abilities = actionOptions(b.grid, b.state, id)
-    .filter((o) => target.k === 'unit' || o.ability === target.ability)
+  const abilities = options(b)
+    .abilities.filter((o) => target.k === 'unit' || o.ability === target.ability)
     .map((o): ActAction => {
       const base = { k: 'ability' as const, id: o.ability };
       if (!o.enabled) return { ...base, enabled: false, reason: o.reason, missing: o.missing, pool: o.pool, spots: [] };
@@ -99,7 +115,7 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
       return spots.length ? { ...base, enabled: true, spots } : { ...base, enabled: false, reason: 'range', spots: [] };
     });
   if (target.k === 'direct') return abilities;
-  const items = itemOptions(b.grid, b.state, id).map((o): ActAction => {
+  const items = options(b).items.map((o): ActAction => {
     const base = { k: 'item' as const, id: o.item, count: o.count };
     if (!o.enabled) return { ...base, enabled: false, reason: o.reason, spots: [] };
     const t = o.targets.find((x) => x.unit === target.unit);
@@ -128,18 +144,17 @@ export interface ActRef {
 }
 export const sameRef = (a: ActRef, r: ActRow) => r.k !== 'pick' && r.k === a.k && r.id === a.id;
 export function actList(b: Battle): ActRow[] {
-  const id = b.actor.id;
   // each target's actions once, so a row's count is what its target list will show (Fernando's grill, Nov 19)
   const hits = allTargets(b).map((t) => actActions(b, t));
   const reach = (r: ActRef) => hits.filter((acts) => acts.some((a) => sameRef(r, a) && a.enabled)).length;
-  const abilities = actionOptions(b.grid, b.state, id).map((o): ActRow => {
+  const abilities = options(b).abilities.map((o): ActRow => {
     const base = { k: 'ability' as const, id: o.ability, spots: [] };
     if (!o.enabled) return { ...base, enabled: false, reason: o.reason, missing: o.missing, pool: o.pool };
     return o.targets.length
       ? { ...base, enabled: true, reach: reach(base) }
       : { ...base, enabled: false, reason: 'range' };
   });
-  const items = itemOptions(b.grid, b.state, id).map((o): ActRow => {
+  const items = options(b).items.map((o): ActRow => {
     const base = { k: 'item' as const, id: o.item, count: o.count, spots: [] };
     if (!o.enabled) return { ...base, enabled: false, reason: o.reason };
     return o.targets.length
