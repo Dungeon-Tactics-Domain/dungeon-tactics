@@ -1,4 +1,5 @@
 import { ABILITIES, type AbilityDef, defaultLock } from './abilities.ts';
+import { type ActionKind, abilityKind, freeSlot } from './action-slots.ts';
 import type { Battle } from './battle.ts';
 import { COMBAT, canPay, damageRange, previewAbility, regen } from './combat.ts';
 import { pendingCounters } from './counter.ts';
@@ -284,12 +285,37 @@ export function chooseRetreat(grid: Grid, state: BattleState, unitId: string, re
   return best;
 }
 
+// The best action of `kind` worth taking from where the unit stands now, if its slot is free (the same two slots as the
+// player's, Nov 19): only a positive balance counts, ties go to the first in the unit's own order, so it stays deterministic
+function extraAction(battle: Battle, kind: ActionKind): Plan['ability'] {
+  const me = battle.actor;
+  let best: Plan['ability'] = null;
+  let bestScore = 0;
+  for (const id of UNIT_DEFS[me.def].abilities) {
+    if (abilityKind(ABILITIES[id]) !== kind || !freeSlot(battle.state.turn, kind)) continue;
+    for (const target of candidateTargets(battle.grid, battle.state, me, ABILITIES[id])) {
+      const s = attackScore(battle.grid, battle.state, me, id, target);
+      if (s > bestScore) {
+        bestScore = s;
+        best = { id, target };
+      }
+    }
+  }
+  return best;
+}
+
 // Plays the whole turn of the current unit (walk, act and pass the turn) and returns the events for the client to animate.
 export function playAiTurn(battle: Battle): BattleEvent[] {
   const plan = chooseTurn(battle.grid, battle.state, battle.actor.id);
   const events: BattleEvent[] = [];
   if (plan.moveTo) events.push(...battle.move(plan.moveTo));
   if (plan.ability) events.push(...battle.act(plan.ability.id, plan.ability.target));
+  // the other slot too (Nov 19): a main attack after a heal it chose first, then a bonus (the heal) after the attack; a free slot
+  // with nothing worth doing stays empty
+  for (const kind of ['main', 'bonus'] as const) {
+    const extra = plan.ability && !battle.over ? extraAction(battle, kind) : null;
+    if (extra) events.push(...battle.act(extra.id, extra.target));
+  }
   // with movement left after acting (Nov 13, movement in parts), it retreats if the new tile is worth more than the counter-attack
   if (!battle.over && plan.ability) {
     const to = chooseRetreat(battle.grid, battle.state, battle.actor.id, battle.reach());

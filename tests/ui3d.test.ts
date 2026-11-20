@@ -138,7 +138,7 @@ describe('3D menu: what it shows', () => {
     expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Giro']);
     const actions = menuView(view(b, { k: 'actions', target: foe, index: 1 }), true);
     expect(actions?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
-    expect(actions?.sub?.[1].note).toBe('30 stamina');
+    expect(actions?.sub?.[1].note).toBe('principal · 30 stamina');
     expect(actions?.subIndex).toBe(1);
     expect(targets?.sheet).toBeNull(); // the sheet is the action list's only
   });

@@ -75,7 +75,7 @@ describe('AI and charges (Nov 15)', () => {
       { id: 'h', def: 'soldier', team: 'hero', x: 5, y: 3 },
       { id: 'f', def: 'beacon', team: 'hero', x: 9, y: 3 },
     ]);
-    state.turn.usedAbility = 'dagger'; // it stabbed the soldier: walking out of its reach draws a counter that kills it
+    state.turn.main = 'dagger'; // it stabbed the soldier: walking out of its reach draws a counter that kills it
     const struck = { ...state, turn: { ...state.turn, engaged: ['h'] } };
     const counter = (to: Pos | null) => !!to && pendingCounters(grid, struck, 'e', to).length > 0;
     expect(counter(chooseRetreat(grid, state, 'e', reachable(grid, state, 'e')))).toBe(true); // owed nothing: it walks off

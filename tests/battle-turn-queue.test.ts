@@ -11,8 +11,8 @@ function play(s: BattleState, n: number, ability: (actor: string) => string | nu
   for (let i = 0; i < n; i++) {
     startNextTurn(G, s);
     order.push(s.turn.actor);
-    s.turn.usedAbility = ability(s.turn.actor);
-    s.turn.moved = s.turn.usedAbility !== null; // moves and acts: the cost the queue preview assumes
+    s.turn.main = ability(s.turn.actor);
+    s.turn.moved = s.turn.main !== null; // moves and acts: the cost the queue preview assumes
     finishTurn(s);
   }
   return order;
@@ -40,7 +40,7 @@ describe('turn queue', () => {
     const cost = (moved: boolean, acted: boolean) => {
       const s = stateOf([{ id: 'x', def: 'warrior', team: 'hero', x: 0, y: 0 }]);
       s.units[0].ct = 120;
-      s.turn = { actor: 'x', moved, usedAbility: acted ? 'strike' : null };
+      s.turn = { actor: 'x', moved, main: acted ? 'strike' : null, bonus: null };
       finishTurn(s);
       return s.units[0].ct;
     };
@@ -90,7 +90,7 @@ describe('turn queue', () => {
     const preview = previewOrder(s, 12).map((e) => e.unit);
     expect(s).toEqual(before);
     expect(preview[0]).toBe(s.turn.actor); // the first is whoever is playing
-    s.turn.usedAbility = 'strike';
+    s.turn.main = 'strike';
     s.turn.moved = true;
     finishTurn(s);
     const real = [preview[0], ...play(s, 11)];

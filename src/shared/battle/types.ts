@@ -19,11 +19,13 @@ export interface UnitState {
   vars?: Record<string, number>;
 }
 
-// what the acting unit has already done: walks (as many times as it wants, up to its movement) and acts once, in any order
+// what the acting unit has already done: walks (as many times as it wants, up to its movement) and acts in its two slots, in any order
 export interface TurnState {
   actor: string;
   moved: boolean;
-  usedAbility: string | null; // the ability or the item (bag.ts) used: the turn's one action
+  // what filled the turn's two slots (action-slots.ts): the ability or item (bag.ts) id; a second bonus action sits in `main`
+  main: string | null;
+  bonus: string | null;
   // Movement in parts (Nov 13, Fernando's request: "walk, attack and then walk again with the remaining movement"): points
   // already spent in the turn (absent = 0, the old save stays valid)
   spent?: number;

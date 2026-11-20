@@ -212,7 +212,7 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
       true,
     )!;
     const potion = acts.sub!.at(-1)!;
-    expect(potion).toMatchObject({ label: 'Poção de vida', off: true, note: 'não atinge este alvo' });
+    expect(potion).toMatchObject({ label: 'Poção de vida', off: true, note: 'secundária · não atinge este alvo' });
   });
 
   it('the map marks the listed targets and, on the tile choice, the picked tile with its forecast', () => {

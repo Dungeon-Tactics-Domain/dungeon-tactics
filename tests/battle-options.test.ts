@@ -62,7 +62,7 @@ describe('actionOptions (Agir primeiro, Nov 19)', () => {
       { id: 'w', def: 'warrior', team: 'hero', x: 0, y: 2 },
       { id: 'e', def: 'soldier', team: 'enemy', x: 1, y: 2 },
     ]);
-    s.turn.usedAbility = 'strike';
+    s.turn.main = 'strike';
     expect(actionOptions(g, s, 'w').every((x) => !x.enabled && x.reason === 'used')).toBe(true);
   });
 

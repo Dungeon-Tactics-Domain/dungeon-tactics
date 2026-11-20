@@ -66,7 +66,7 @@ function realQueue(b: Battle, n: number, first: { moved: boolean; ability: strin
   for (let turn = 0; rows.length < n; turn++) {
     rows.push({ unit: b.actor.id });
     if (turn === 0 && first.target) b.act(first.ability!, first.target);
-    else b.state.turn.usedAbility = turn === 0 ? first.ability : 'strike';
+    else b.state.turn.main = turn === 0 ? first.ability : 'strike';
     b.state.turn.moved = turn === 0 ? first.moved : true;
     const charges = b.state.charges;
     b.endTurn();

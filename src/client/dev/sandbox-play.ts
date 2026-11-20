@@ -1,3 +1,5 @@
+import { ABILITIES } from '../../shared/battle/abilities.ts';
+import { abilityKind, freeSlot } from '../../shared/battle/action-slots.ts';
 import { Battle } from '../../shared/battle/battle.ts';
 import type { PreviewReason } from '../../shared/battle/combat.ts';
 import { canStand, type Grid, inBounds, posKey, subOf, tileAt } from '../../shared/battle/grid.ts';
@@ -120,7 +122,7 @@ export function giveTurn(b: Battle, id: string, heroes = false): string | null {
   const u = b.state.units.find((x) => x.id === id);
   if (!u || UNIT_DEFS[u.def].speed <= 0 || (heroes && u.team !== 'hero'))
     return `"${id}" is not a ${heroes ? 'hero' : 'unit'} that plays on this map`;
-  b.state.turn = { actor: u.id, moved: false, usedAbility: null };
+  b.state.turn = { actor: u.id, moved: false, main: null, bonus: null };
   return null;
 }
 
@@ -156,7 +158,7 @@ export function playStep(b: Battle, step: Step): { events: BattleEvent[]; proble
   }
   if ('act' in step) {
     const { ability, target } = step.act;
-    if (b.state.turn.usedAbility) return fail(`${s.unit} already acted this turn`);
+    if (!freeSlot(b.state.turn, abilityKind(ABILITIES[ability]))) return fail(`${s.unit} already acted this turn`);
     const { ok, reason = 'unknown' } = b.preview(ability, cell(target));
     if (!ok) return fail(`${s.unit} cannot use ${ability} on ${target.x},${target.y}: ${WHY[reason]}`);
     return { events: b.act(ability, cell(target)), problem: null };

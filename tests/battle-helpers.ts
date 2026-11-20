@@ -32,7 +32,7 @@ export function stateOf(units: Spec[], rng = 1): BattleState {
       ct: 0,
     })),
     rng,
-    turn: { actor: units[0].id, moved: false, usedAbility: null },
+    turn: { actor: units[0].id, moved: false, main: null, bonus: null },
     charges: [],
     outcome: 'ongoing',
     turnsPlayed: 0,

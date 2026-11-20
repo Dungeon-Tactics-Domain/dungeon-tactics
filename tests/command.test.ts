@@ -48,6 +48,8 @@ describe('command menu', () => {
     b.move({ x: 2, y: 2 });
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('act') });
     b.act('strike', { x: 2, y: 1 });
+    expect(commandEnabled(b, 'act')).toBe(true); // the secondary action is still free (Nov 19)
+    b.state.turn.bonus = 'ether'; // and now both are spent
     expect(commandEnabled(b, 'act')).toBe(false);
     // movement left (Nov 13, movement in parts): back to Move
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
@@ -92,6 +94,7 @@ describe('command menu', () => {
       ]),
     );
     b.act('shot', { x: 5, y: 1 });
+    b.state.turn.bonus = 'ether'; // both actions spent: the cursor then falls back to Move
     b.move({ x: 1, y: 2 });
     expect(canUndoMove(b)).toBe(true); // a soldier cannot answer a shot, so the move took no counter
     expect(b.reach().size).toBeGreaterThan(0);
@@ -124,6 +127,7 @@ describe('command list', () => {
     const b = duel();
     expect(COMMANDS.map((c) => commandEnabled(b, c))).toEqual([true, false, true, true, true]); // nothing to undo yet
     b.act('strike', { x: 2, y: 1 });
+    b.state.turn.bonus = 'ether'; // both actions spent (the secondary alone keeps Abilities open, Nov 19)
     expect(commandEnabled(b, 'act')).toBe(false);
     expect(commandEnabled(b, 'wait') && commandEnabled(b, 'status')).toBe(true);
   });
@@ -282,6 +286,7 @@ describe('menu rows in each state of the turn', () => {
     const b = range();
     b.act('shot', { x: 5, y: 1 });
     expect(menuRows(b)).toEqual(['move', 'act', 'wait', 'status']);
+    b.state.turn.bonus = 'ether'; // both actions spent
     expect(commandEnabled(b, 'act')).toBe(false);
   });
 

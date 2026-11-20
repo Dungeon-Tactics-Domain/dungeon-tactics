@@ -292,7 +292,7 @@ describe('specs on a split map', () => {
           expect(battle.state.units.find((x) => x.id === id)?.pos).toEqual({ x: 2 * u.x, y: 2 * u.y! });
       const aim = cells.screen;
       if (typeof aim === 'object') {
-        battle.state.turn = { actor: spec.actor!, moved: false, usedAbility: null };
+        battle.state.turn = { actor: spec.actor!, moved: false, main: null, bonus: null };
         expect(battle.preview(aim.aim, aim.target).ok).toBe(true);
       }
     });

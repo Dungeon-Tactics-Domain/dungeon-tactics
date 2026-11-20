@@ -1,6 +1,7 @@
 // Save trust boundary for the battle state (moved out of battle.ts, Nov 19, to keep it under 400 lines): every field read
 // back from the browser is rebuilt and checked here; any doubt returns null.
 import { ABILITIES } from './abilities.ts';
+import { abilityKind } from './action-slots.ts';
 import { CONSUMABLE_IDS, parseBag } from './bag.ts';
 import { parseEffects } from './effects.ts';
 import { canStand, FACING, faceNearest, inBounds, posKey, subOf, tileAt } from './grid.ts';
@@ -82,16 +83,20 @@ export function parseBattleState(raw: unknown): BattleState | null {
   if (!isObj(t) || typeof t.actor !== 'string' || typeof t.moved !== 'boolean') return null;
   const actor = units.find((u) => u.id === t.actor);
   if (!actor) return null;
-  let usedAbility: string | null = null;
-  if (t.usedAbility !== null) {
-    // the actor's own ability or an item (bag.ts: the Item command spends the action too)
-    const known =
-      typeof t.usedAbility === 'string' &&
-      ((Object.hasOwn(ABILITIES, t.usedAbility) && UNIT_DEFS[actor.def].abilities.includes(t.usedAbility)) ||
-        CONSUMABLE_IDS.has(t.usedAbility));
-    if (!known) return null;
-    usedAbility = t.usedAbility as string;
-  }
+  // each slot holds the actor's own ability or an item (bag.ts); an old save kept the one action in `usedAbility` (before Nov 19's
+  // main and bonus slots): it was the main action. A damage ability never sits in the bonus slot
+  const slot = (v: unknown, bonus: boolean): string | null | undefined => {
+    if (v === undefined) return undefined;
+    if (v === null) return null;
+    const own = typeof v === 'string' && Object.hasOwn(ABILITIES, v) && UNIT_DEFS[actor.def].abilities.includes(v);
+    const ok =
+      typeof v === 'string' && ((own && (!bonus || abilityKind(ABILITIES[v]) === 'bonus')) || CONSUMABLE_IDS.has(v));
+    return ok ? (v as string) : undefined;
+  };
+  const old = t.main === undefined && t.bonus === undefined;
+  const main = slot(old ? t.usedAbility : t.main, false);
+  const bonus = old ? null : slot(t.bonus, true);
+  if (main === undefined || bonus === undefined) return null;
   if (!Array.isArray(raw.charges) || raw.charges.length > MAX_UNITS) return null;
   const charges: Charge[] = [];
   for (const c of raw.charges) {
@@ -143,7 +148,8 @@ export function parseBattleState(raw: unknown): BattleState | null {
   const turn = {
     actor: actor.id,
     moved: t.moved,
-    usedAbility,
+    main,
+    bonus,
     ...(t.spent !== undefined && { spent: t.spent as number }),
     ...(engaged.length > 0 && { engaged }),
   };

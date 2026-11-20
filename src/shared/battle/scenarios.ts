@@ -57,7 +57,7 @@ export function initialState(scenario: Scenario, seed: number): BattleState {
       ...(UNIT_DEFS[s.def].vars && { vars: { ...UNIT_DEFS[s.def].vars } }),
     })),
     rng: seed | 0,
-    turn: { actor: '', moved: false, usedAbility: null },
+    turn: { actor: '', moved: false, main: null, bonus: null },
     charges: [],
     outcome: 'ongoing',
     turnsPlayed: 0,

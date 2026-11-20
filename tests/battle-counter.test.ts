@@ -224,7 +224,7 @@ describe('counters (Nov 15)', () => {
       { id: 's2', def: 'dark_mage', team: 'enemy', x: 1, y: 2, hp: 1 },
       { id: 'f', def: 'beacon', team: 'hero', x: 9, y: 4 },
     ]);
-    s.turn.usedAbility = 'spin';
+    s.turn.main = 'spin';
     s.turn.engaged = ['s1', 's2'];
     const grid = flat(10, 5);
     SCENARIOS['t-dead'] = { id: 't-dead', name: 't', en: 't', grid, spawns: [] }; // a save names a known map
@@ -242,7 +242,7 @@ describe('counters (Nov 15)', () => {
       { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
     ]);
     s.rng = HIT_SEED;
-    s.turn.usedAbility = 'strike';
+    s.turn.main = 'strike';
     s.turn.engaged = ['b'];
     const b = new Battle(flat(8, 4), s);
     expect(b.move({ x: 0, y: 2 })).toContainEqual({ k: 'die', unit: 'a' });

@@ -54,7 +54,7 @@ export function startNextTurn(grid: Grid, state: BattleState): BattleEvent[] {
     const slots = slotsOf(state);
     const ready = slots.find((s) => s.ct >= TURN_THRESHOLD);
     if (ready) {
-      state.turn = { actor: ready.id, moved: false, usedAbility: null };
+      state.turn = { actor: ready.id, moved: false, main: null, bonus: null };
       // after the charges that fired on the way: the turn starts once they land
       events.push(...regen(state.units.find((u) => u.id === ready.id)!));
       return events;
@@ -105,7 +105,7 @@ export function chargeAim(state: BattleState, c: Charge): Pos {
 // Charges the actor's turn cost for what it did (BMG 1.1)
 export function finishTurn(state: BattleState): void {
   const actor = state.units.find((u) => u.id === state.turn.actor);
-  if (actor) actor.ct = turnCt(actor.ct, state.turn.moved, !!state.turn.usedAbility);
+  if (actor) actor.ct = turnCt(actor.ct, state.turn.moved, !!(state.turn.main || state.turn.bonus));
   tickEffects(state, state.turn.actor);
   state.turnsPlayed++;
 }

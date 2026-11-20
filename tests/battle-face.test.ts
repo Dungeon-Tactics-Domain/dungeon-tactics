@@ -78,7 +78,7 @@ describe('faceCues: what each event does to the faces', () => {
       { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
       { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 0 },
     ]);
-    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    s.turn = { actor: 'a', moved: false, main: null, bonus: null };
     s.rng = HIT_SEED;
     const b = new Battle(flat(6, 3), s);
     const strike = b.act('strike', at(2, 1));
@@ -104,7 +104,7 @@ describe('faceCues: what each event does to the faces', () => {
       { id: 'b', def: `soldier${HALF}`, team: 'enemy', x: 4, y: 2 },
       { id: 'f', def: `beacon${HALF}`, team: 'hero', x: 0, y: 0 },
     ]);
-    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    s.turn = { actor: 'a', moved: false, main: null, bonus: null };
     s.rng = HIT_SEED;
     const b = new Battle(grid, s);
     const strike = b.act('strike', at(4, 2));

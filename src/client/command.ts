@@ -3,6 +3,7 @@
 // Abilities (the `act` command) opens the Agir primeiro lists (act-flow.ts). Pure (no DOM, no pixel): what each turn screen
 // shows and what follows each key. The Game executes; the HUD only draws.
 import { ABILITIES } from '../shared/battle/abilities.ts';
+import { freeSlot } from '../shared/battle/action-slots.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { isDeep, samePos, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
@@ -52,7 +53,8 @@ export const swimming = (b: Battle) => isDeep(tileAt(b.grid, b.actor.pos));
 export function commandEnabled(b: Battle, c: Command): boolean {
   if (c === 'move') return b.reach().size > 0;
   if (c === 'undo') return canUndoMove(b);
-  if (c === 'act') return !b.state.turn.usedAbility && !swimming(b);
+  // while any slot can still take something (a bonus action fits whichever is free)
+  if (c === 'act') return !!freeSlot(b.state.turn, 'bonus') && !swimming(b);
   return true;
 }
 

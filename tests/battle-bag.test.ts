@@ -37,8 +37,9 @@ describe('items in battle (bag.ts, Nov 19)', () => {
     expect(ev.map((e) => e.k)).toEqual(['item', 'heal']);
     expect(b.state.units[1].hp).toBe(Math.min(UNIT_DEFS.warrior.hp, 110));
     expect(b.state.bag).toEqual({ life_potion: 1, ether: 1 });
-    expect(b.state.turn.usedAbility).toBe('life_potion');
-    expect(b.useItem('ether', { x: 0, y: 2 })).toEqual([]); // one action per turn
+    expect(b.state.turn.bonus).toBe('life_potion');
+    expect(b.useItem('ether', { x: 0, y: 2 }).length).toBe(2); // a second item takes the main action
+    expect(b.useItem('life_potion', { x: 3, y: 2 })).toEqual([]); // both are spent
   });
 
   it('an ether gives mana back to the user; the last one leaves the bag', () => {
@@ -77,9 +78,10 @@ describe('items in battle (bag.ts, Nov 19)', () => {
     expect(potion.targets.find((t) => t.unit === 'w')!.spots[0]).toMatchObject({ cost: 0, effect: { heal: 100 } });
   });
 
-  it('itemOptions turns off once the action is used', () => {
+  it('itemOptions turns off once both actions are used', () => {
     const s = party();
-    s.turn.usedAbility = 'fire';
+    s.turn.main = 'fire';
+    s.turn.bonus = 'ether';
     expect(itemOptions(g, s, 'm').every((x) => !x.enabled && x.reason === 'used')).toBe(true);
   });
 
@@ -97,7 +99,7 @@ describe('items in battle (bag.ts, Nov 19)', () => {
       ],
     });
     const s = initialState(sc, 1);
-    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    s.turn = { actor: 'a', moved: false, main: null, bonus: null };
     s.bag = { life_potion: 1 };
     const at = (id: string) => s.units.find((u) => u.id === id)!.pos;
     expect(itemEffect(sc.grid, s, 'a', 'life_potion', at('b'))).not.toBeNull(); // 3 whole tiles apart
@@ -114,8 +116,8 @@ describe('items in battle (bag.ts, Nov 19)', () => {
     const raw = JSON.parse(Battle.start(SCENARIOS.skirmish, 1).save()).state;
     expect(parseBattleState({ ...raw, bag: { ether: 2 } })?.bag).toEqual({ ether: 2 });
     expect(parseBattleState({ ...raw, bag: { evil: 1 } })).toBeNull();
-    expect(parseBattleState({ ...raw, turn: { ...raw.turn, usedAbility: 'ether' } })?.turn.usedAbility).toBe('ether');
-    expect(parseBattleState({ ...raw, turn: { ...raw.turn, usedAbility: 'evil' } })).toBeNull();
+    expect(parseBattleState({ ...raw, turn: { ...raw.turn, bonus: 'ether' } })?.turn.bonus).toBe('ether');
+    expect(parseBattleState({ ...raw, turn: { ...raw.turn, bonus: 'evil' } })).toBeNull();
   });
 });
 

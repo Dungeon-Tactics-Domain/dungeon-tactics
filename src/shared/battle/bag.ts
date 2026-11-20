@@ -2,6 +2,7 @@
 // the turn's action like an ability, and every item reaches the user or an ally up to ITEM_RANGE whole tiles away. No die:
 // an item always lands, so undoing it is free. The AI does not use items (decision of Nov 19)
 import { CONSUMABLES, type Consumable, ITEM_RANGE } from '../../content/items.ts';
+import { freeSlot } from './action-slots.ts';
 import { poolOf } from './combat.ts';
 import { addEffect } from './effects.ts';
 import { dist, type Grid } from './grid.ts';
@@ -56,7 +57,7 @@ export function itemEffect(
   const actor = state.units.find((u) => u.id === id);
   const c = CONSUMABLE[item];
   if (!actor || !c || state.outcome !== 'ongoing' || bagCount(state, item) < 1) return null;
-  if (state.turn.actor === id && state.turn.usedAbility) return null;
+  if (state.turn.actor === id && !freeSlot(state.turn, 'bonus')) return null;
   const u = unitAt(state, target);
   if (!u || u.team !== actor.team) return null;
   // measured between the two squares (a 2x2 token on the split map), in cells: 3 whole tiles = farCells. The user itself
@@ -89,7 +90,7 @@ export function applyItem(grid: Grid, state: BattleState, id: string, item: stri
   state.bag = bag;
   u.hp += fx.heal;
   if (fx.mana) u.vars = { ...u.vars, mana: poolOf(u, 'mana') + fx.mana };
-  state.turn.usedAbility = item;
+  state.turn[freeSlot(state.turn, 'bonus')!] = item;
   const events: BattleEvent[] = [{ k: 'item', unit: id, item, target }];
   if (fx.heal) events.push({ k: 'heal', unit: u.id, amount: fx.heal });
   if (fx.mana) events.push({ k: 'mana', unit: u.id, amount: fx.mana });
@@ -105,7 +106,7 @@ export function applyItem(grid: Grid, state: BattleState, id: string, item: stri
 export function itemOptions(grid: Grid, state: BattleState, id: string): ItemOptions[] {
   const actor = state.units.find((u) => u.id === id);
   if (!actor || state.outcome !== 'ongoing') return [];
-  const used = state.turn.actor === id && !!state.turn.usedAbility;
+  const used = state.turn.actor === id && !freeSlot(state.turn, 'bonus');
   const origins = used ? [] : originsOf(grid, state, actor);
   const allies = state.units.filter((u) => u.team === actor.team && UNIT_DEFS[u.def].speed > 0);
   return CONSUMABLES.filter((c) => bagCount(state, c.id) > 0).map((c) => {

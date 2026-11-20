@@ -52,7 +52,7 @@ describe('player turn', () => {
     b.endTurn();
     expect(b.state.turn.actor).not.toBe(first);
     expect(b.state.turn.moved).toBe(false);
-    expect(b.state.turn.usedAbility).toBeNull();
+    expect(b.state.turn.main).toBeNull();
   });
 
   it('winning ends the battle and blocks new actions', () => {
@@ -75,7 +75,7 @@ describe('undo', () => {
     expect(rngAfterAct).not.toBe(rngBefore);
     expect(b.undo()).toBe(true);
     expect(b.state.units[2].hp).toBe(UNIT_DEFS.soldier.hp);
-    expect(b.state.turn.usedAbility).toBeNull();
+    expect(b.state.turn.main).toBeNull();
     expect(b.state.rng).toBe(rngAfterAct); // the roll moves on
     // attacking again uses the next rolls, not the same ones
     b.move(at(1, 2));
@@ -93,7 +93,7 @@ describe('undo', () => {
     b.undosLeft = 0;
     b.act('strike', at(1, 1));
     expect(b.undo()).toBe(false); // with no undo left the attack stays
-    expect(b.state.turn.usedAbility).toBe('strike');
+    expect(b.state.turn.main).toBe('strike');
   });
 
   it('spends one undo per undone attack', () => {
@@ -175,7 +175,7 @@ describe('a broken save does not crash the game', () => {
     expect(mutate((s) => (s.rng = 'x'))).toBeNull();
     expect(mutate((s) => (s.units[1].id = s.units[2].id))).toBeNull();
     expect(mutate((s) => (s.units[1].pos = { ...s.units[2].pos }))).toBeNull();
-    expect(mutate((s) => (s.turn.usedAbility = 'fogo_infinito'))).toBeNull();
+    expect(mutate((s) => (s.turn.main = 'fogo_infinito'))).toBeNull();
   });
 
   it('a turn clock, spent movement or charge out of its limits is rejected', () => {
@@ -249,7 +249,7 @@ describe('a broken save does not crash the game', () => {
         ct: 0,
         facing: 0,
       })),
-      turn: { actor: 'u0', moved: false, usedAbility: null },
+      turn: { actor: 'u0', moved: false, main: null, bonus: null },
       charges: [],
     });
     expect(free.length).toBeGreaterThan(64);
@@ -285,7 +285,7 @@ describe('save with a big unit (Nov 13 review)', () => {
         { id: 'b', def: 'beacon', team: 'hero' as const, pos: { x: 3, y: 7 }, hp: 50, ct: 0 },
         { id: 'c', def: 'colossus', team: 'enemy' as const, pos: { x: 0, y: 0 }, hp: 160, ct: 0, facing: 0 },
       ],
-      turn: { actor: 'h', moved: false, usedAbility: null },
+      turn: { actor: 'h', moved: false, main: null, bonus: null },
       charges: [],
     };
     const copy = () => JSON.parse(JSON.stringify(st));
@@ -308,7 +308,7 @@ describe('counterattack', () => {
       { id: 'b', def: 'soldier', team: 'enemy', x: 2, y: 1 },
       { id: 'f', def: 'beacon', team: 'hero', x: 0, y: 0 },
     ]); // the Beacon: without it the battle ends on the hit
-    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    s.turn = { actor: 'a', moved: false, main: null, bonus: null };
     s.rng = HIT_SEED;
     const b = new Battle(g, s);
     b.act('strike', at(2, 1));
@@ -340,7 +340,7 @@ describe('counterattack', () => {
       { id: 'b', def: 'skeleton_archer', team: 'enemy', x: 3, y: 1 },
       { id: 'f', def: 'beacon', team: 'hero', x: 5, y: 2 },
     ]);
-    s.turn = { actor: 'a', moved: false, usedAbility: null };
+    s.turn = { actor: 'a', moved: false, main: null, bonus: null };
     const b = new Battle(g, s);
     b.act(UNIT_DEFS.archer.abilities[0], at(3, 1));
     expect(b.state.turn.engaged).toEqual(['b']);

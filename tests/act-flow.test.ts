@@ -96,7 +96,7 @@ describe('Agir primeiro flow (act-flow.ts, Nov 19)', () => {
     const { walk, act } = runSpot(b, blast, spot);
     expect(walk.some((e) => e.k === 'move')).toBe(true);
     expect(act?.[0]).toMatchObject({ k: 'charge', ability: 'blast' }); // Blast charges
-    expect(b.state.turn.usedAbility).toBe('blast');
+    expect(b.state.turn.main).toBe('blast');
     expect(b.actor.pos).toEqual(spot.pos);
   });
 });

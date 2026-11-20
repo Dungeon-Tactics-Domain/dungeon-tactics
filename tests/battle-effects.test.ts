@@ -46,7 +46,7 @@ describe('timed item effects (effects.ts, Nov 19)', () => {
   it('on the user it lasts its 3 next turns, past the turn it was used in', () => {
     const s = duel();
     new Battle(g, s).useItem('fire_oil', { x: 2, y: 2 }); // the warrior on itself
-    s.turn.usedAbility = null;
+    s.turn.main = null;
     s.turn.actor = 'w';
     finishTurn(s); // the turn it used it in
     for (let i = 0; i < 3; i++) {
@@ -61,7 +61,7 @@ describe('timed item effects (effects.ts, Nov 19)', () => {
     const s = duel();
     const b = new Battle(g, s);
     b.useItem('fire_oil', { x: 0, y: 2 }); // on the mage
-    b.state.turn.usedAbility = null;
+    b.state.turn.main = null;
     b.useItem('fire_oil', { x: 0, y: 2 });
     expect(b.state.effects).toEqual([{ unit: 'm', item: 'fire_oil', turns: 3 }]);
   });

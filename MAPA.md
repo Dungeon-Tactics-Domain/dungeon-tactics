@@ -8,6 +8,7 @@ reasons behind them in `docs/decisions.md`.
 
 - `src/shared/battle/types.ts` — battle state types (BattleState, UnitState, TurnState, Charge, BattleEvent), plain JSON data.
 - `src/shared/battle/units.ts` — UnitDef type, elements, resistances and dodge, the UNIT_DEFS registry built from content, baseDef and isObjective.
+- `src/shared/battle/action-slots.ts` — the turn's main and bonus action slots: abilityKind (field or default by damage) and freeSlot.
 - `src/shared/battle/abilities.ts` — AbilityDef type, the ABILITIES registry built from content and a charge's defaultLock.
 - `src/shared/battle/equipment.ts` — ItemDef type, slots, the ITEMS registry and bonusOf (a loadout's stats summed on a sheet).
 - `src/shared/battle/scenarios.ts` — Scenario (map plus spawns), the MAPS and SCENARIOS registries, FIRST_BATTLE and initialState.
@@ -22,7 +23,7 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/battle.ts` — Battle: owns the state, move/act/use item/end turn, limited undo (dice never roll back), save/load through parseBattleState.
 - `src/shared/battle/parse-state.ts` — parseBattleState: the save trust boundary that rebuilds the battle state field by field.
 - `src/shared/battle/effects.ts` — timed item effects on units (Fire oil, Stone potion): power, element, resistance and movement bonuses, ticked at the end of the unit's turn, and parseEffects.
-- `src/shared/battle/bag.ts` — items in battle: the heroes' shared bag, the Item command (spends the action, range 3 tiles on self or ally), itemOptions for the Agir list and parseBag.
+- `src/shared/battle/bag.ts` — items in battle: the heroes' shared bag, the Item command (a bonus action, range 3 tiles on self or ally), itemOptions for the Agir list and parseBag.
 - `src/shared/battle/rng.ts` — seeded mulberry32 whose state lives in BattleState (nextRng, rollInt).
 - `src/shared/battle/rules.ts` — calculations a scenario may swap (survival, crawl rooms, the developer battle) and rulesOf.
 - `src/shared/battle/half.ts` — half tiles: halve splits a map into 2x2 cells and units into 2x2 tokens (halfDef, SUB, the ?scenario=half test map).

@@ -3,6 +3,7 @@
 // the picked target (the ones that cannot say why), then the tiles to stand on with the best one picked first. Pure: the
 // screens draw it, act-turn.ts runs it. The only way to act since Fernando's "Apagar tudo" (Nov 19)
 import { ABILITIES } from '../shared/battle/abilities.ts';
+import { type ActionKind, abilityKind } from '../shared/battle/action-slots.ts';
 import { type ItemReason, itemOptions } from '../shared/battle/bag.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import type { Preview } from '../shared/battle/combat.ts';
@@ -36,6 +37,9 @@ export interface ActAction {
   count?: number; // an item's count in the bag
   spots: ActSpot[];
 }
+
+// Main or secondary (Nov 19): an item is always secondary
+export const actKind = (a: ActAction): ActionKind => (a.k === 'item' ? 'bonus' : abilityKind(ABILITIES[a.id]));
 
 // The rows of the first screen. A unit is listed when any ability or item reaches it; the user only through what aims at
 // itself (support, items)

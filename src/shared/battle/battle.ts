@@ -1,4 +1,5 @@
 import { ABILITIES, defaultLock } from './abilities.ts';
+import { abilityKind, freeSlot } from './action-slots.ts';
 import { applyItem, itemEffect } from './bag.ts';
 import { checkOutcome, counters, type Preview, pay, previewAbility, resolveAbility, spikeAtTurnEnd } from './combat.ts';
 import { canCounter, pendingCounters } from './counter.ts';
@@ -57,7 +58,12 @@ export class Battle {
   // charge is free too but is no walk: after "move, charge", Move must stay Move (Nov 15)
   get lastFree(): boolean {
     const last = this.history.at(-1);
-    return !!last && !last.paid && last.before.turn.usedAbility === this.state.turn.usedAbility;
+    return (
+      !!last &&
+      !last.paid &&
+      last.before.turn.main === this.state.turn.main &&
+      last.before.turn.bonus === this.state.turn.bonus
+    );
   }
   get canUndo(): boolean {
     const last = this.history.at(-1);
@@ -117,7 +123,8 @@ export class Battle {
 
   // `lock`: where a charge stays aimed, picked by the player after the aim (Nov 15); without it, the ability's default
   act(abilityId: string, target: Pos, lock?: Lock): BattleEvent[] {
-    if (this.over || this.state.turn.usedAbility || !this.preview(abilityId, target).ok) return [];
+    const slot = freeSlot(this.state.turn, abilityKind(ABILITIES[abilityId]));
+    if (this.over || !slot || !this.preview(abilityId, target).ok) return [];
     // declaring a charge rolls no die: undo costs nothing (Nov 13, review; the roll comes when it fires)
     this.remember(ABILITIES[abilityId].charge === 0);
     if (this.actor.facing !== undefined && !samePos(target, this.actor.pos))
@@ -147,7 +154,7 @@ export class Battle {
       }
       if (owed.size) this.state.turn.engaged = [...owed];
     }
-    this.state.turn.usedAbility = abilityId;
+    this.state.turn[slot] = abilityId;
     return events;
   }
 

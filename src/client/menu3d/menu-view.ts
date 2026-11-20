@@ -7,7 +7,7 @@ import type { Element } from '../../shared/battle/units.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { actActions, actTargets } from '../act-flow.ts';
 import { actScreen, screenAction } from '../act-marks.ts';
-import { abilityNote, abilityPages, actReason, commandName, itemDetail, itemName } from '../battle-text.ts';
+import { abilityNote, abilityPages, actReason, commandName, itemDetail, itemName, kindTag } from '../battle-text.ts';
 import { type Command, commandEnabled, commandIndex, menuRows } from '../command.ts';
 import type { HudView } from '../hud.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
@@ -155,14 +155,16 @@ function actView(v: HudView, s: Extract<HudView['screen'], { k: 'targets' | 'act
             a.k === 'item'
               ? {
                   label: itemName(a.id),
-                  note: a.enabled ? `×${a.count}` : actReason(a),
+                  note: [kindTag(a), a.enabled ? `×${a.count}` : actReason(a)].join(' · '),
                   off: !a.enabled,
                   below: !a.enabled,
                   kind: 'potion',
                 }
               : {
                   label: abilityName(a.id),
-                  note: a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a),
+                  note: [kindTag(a), a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a)]
+                    .filter(Boolean)
+                    .join(' · '),
                   off: !a.enabled,
                   below: !a.enabled,
                   ...iconOf(a.id),

@@ -18,7 +18,7 @@ import {
   UNIT_DEFS,
   type UnitDef,
 } from '../shared/battle/units.ts';
-import type { ActAction } from './act-flow.ts';
+import { type ActAction, actKind } from './act-flow.ts';
 import type { Command } from './command.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 
@@ -71,6 +71,9 @@ export const abilityNote = (u: UnitState, a: AbilityDef, on: boolean) =>
   on
     ? [costText(a), a.charge ? t(`${a.charge} tiq.`, `${a.charge} tk`) : ''].filter(Boolean).join(' · ')
     : shortOf(u, a);
+
+// the tag on an Agir row (Nov 19): which of the turn's two actions it takes
+export const kindTag = (a: ActAction) => (actKind(a) === 'main' ? t('principal', 'main') : t('secundária', 'bonus'));
 
 // an ability's facts on one line (the help line, the Party's Abilities page)
 export const abilityDetail = (id: string) => abilityPages(id).flat().join(' · ');
@@ -208,7 +211,7 @@ export function actReason(a: ActAction): string {
   if (a.reason === 'spent' && a.pool)
     return t(`faltam ${a.missing} de ${poolName(a.pool)}`, `${a.missing} ${poolName(a.pool)} short`);
   const words: Record<string, () => string> = {
-    used: () => t('já agiu neste turno', 'already acted this turn'),
+    used: () => t('ação já usada neste turno', 'action already used this turn'),
     range: () => t('fora de alcance, mesmo andando', 'out of reach, even walking'),
     sight: () => t('sem linha de visão', 'no line of sight'),
     'no-target': () => t('não atinge este alvo', 'cannot reach this target'),

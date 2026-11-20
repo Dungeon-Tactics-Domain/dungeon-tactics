@@ -30,7 +30,7 @@ export function townState(sc: Scenario): BattleState {
     scenario: sc.id,
     units: sc.spawns.map((s) => ({ id: s.id, def: s.def, team: s.team, pos: { x: s.x, y: s.y }, hp: 1, ct: 0 })),
     rng: 0,
-    turn: { actor: ME, moved: false, usedAbility: null },
+    turn: { actor: ME, moved: false, main: null, bonus: null },
     charges: [],
     outcome: 'ongoing',
     turnsPlayed: 0,

@@ -61,7 +61,7 @@ describe('battle save: unknown or prototype ids are rejected', () => {
 
   it.each(protoKeys)('scenario %s', (k) => expect(edited((s) => (s.scenario = k))).toBeNull());
   it.each(protoKeys)('unit def %s', (k) => expect(edited((s) => (s.units[0].def = k))).toBeNull());
-  it.each(protoKeys)('used ability %s', (k) => expect(edited((s) => (s.turn.usedAbility = k))).toBeNull());
+  it.each(protoKeys)('used ability %s', (k) => expect(edited((s) => (s.turn.main = k))).toBeNull());
   it.each(protoKeys)('charged ability %s', (k) =>
     expect(
       edited((s) => (s.charges = [{ unit: s.turn.actor, ability: k, target: { x: 0, y: 0 }, follow: null, ticks: 2 }])),
@@ -73,7 +73,7 @@ describe('battle save: unknown or prototype ids are rejected', () => {
     const own = UNIT_DEFS[b.actor.def].abilities;
     const foreign = Object.keys(ABILITIES).find((id) => !own.includes(id));
     expect(foreign).toBeDefined();
-    expect(edited((s) => (s.turn.usedAbility = foreign))).toBeNull();
+    expect(edited((s) => (s.turn.main = foreign))).toBeNull();
   });
 
   it('a prototype key in the JSON adds nothing and pollutes nothing', () => {
