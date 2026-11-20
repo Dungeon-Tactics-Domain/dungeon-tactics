@@ -117,12 +117,12 @@ describe('mana and stamina (Nov 15 grill)', () => {
     s.units[0].ct = 100;
     startNextTurn(flat(6, 1), s);
     expect(s.turn.actor).toBe('m');
-    expect(s.units[0].vars).toEqual({ mana: 18 });
+    expect(s.units[0].vars).toEqual({ mana: 18, stamina: 30 }); // its stamina was full: the +3 stops at the max
     expect(s.units[1].vars).toEqual({ stamina: 48 }); // not its turn
     s.units[0].ct = 0;
     s.units[1].ct = 100;
     startNextTurn(flat(6, 1), s);
-    expect(s.units[1].vars).toEqual({ stamina: 50 }); // +5 capped at 50
+    expect(s.units[1].vars).toEqual({ stamina: 50, mana: 30 }); // +5 capped at 50, the full mana's +3 too
   });
 
   it('a new battle starts every pool full (stamina refills in every room)', () => {
@@ -240,7 +240,13 @@ describe('battle sheets built from a class', () => {
       'res-test',
     );
     const [h, e] = sc.spawns.filter((s) => s.def.startsWith('res-test')).map((s) => UNIT_DEFS[s.def]);
-    expect([h.vars, h.regen]).toEqual([{ mana: 30, stamina: 30 }, { mana: 8 }]);
-    expect([e.vars, e.regen]).toEqual([{ stamina: 50, mana: 30 }, { stamina: 5 }]);
+    expect([h.vars, h.regen]).toEqual([
+      { mana: 30, stamina: 30 },
+      { mana: 8, stamina: 3 },
+    ]);
+    expect([e.vars, e.regen]).toEqual([
+      { stamina: 50, mana: 30 },
+      { stamina: 5, mana: 3 },
+    ]);
   });
 });

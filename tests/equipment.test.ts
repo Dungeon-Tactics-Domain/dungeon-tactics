@@ -48,7 +48,7 @@ describe('equipment', () => {
   it('mana and stamina pieces raise the pool max, and the regens add to the class own', () => {
     const mage = withGear(UNIT_DEFS.mage, { off: 'worn_grimoire', body: 'warded_robe', acc1: 'sleepstone' });
     expect(mage.vars).toEqual({ mana: 30 + 20 + 20, stamina: 30 });
-    expect(mage.regen).toEqual({ mana: 8 + 3 });
+    expect(mage.regen).toEqual({ mana: 8 + 3, stamina: 3 });
     expect(mage.hpRegen).toBe(10);
     expect(
       withGear(UNIT_DEFS.warrior, { body: 'colossus_plate', acc1: 'sleepstone', acc2: 'sleepstone' }).hpRegen,
@@ -57,19 +57,22 @@ describe('equipment', () => {
     // piece gives it
     const archer = withGear(UNIT_DEFS.mage, { off: 'leather_quiver' });
     expect(archer.vars).toEqual({ mana: 30, stamina: 30 + 20 });
-    expect(archer.regen).toEqual({ mana: 8 });
+    expect(archer.regen).toEqual({ mana: 8, stamina: 3 });
     expect(withGear(UNIT_DEFS.warrior, { off: 'worn_grimoire' })).toMatchObject({
       vars: { stamina: 50, mana: 30 + 20 },
-      regen: { stamina: 5, mana: 3 },
+      regen: { stamina: 5, mana: 3 + 3 }, // the class's own 3 (Nov 20) and the grimoire's
     });
     // a mana regen with no mana pool to fill gives nothing (it wrote an empty pool into the state every turn)
     // a sheet with no mana pool (every class has both since Nov 20, so a made-up one)
-    const helm = withGear({ ...UNIT_DEFS.warrior, vars: { stamina: 50 } }, { head: 'dawn_circlet' });
+    const helm = withGear(
+      { ...UNIT_DEFS.warrior, vars: { stamina: 50 }, regen: { stamina: 5 } },
+      { head: 'dawn_circlet' },
+    );
     expect([helm.vars, helm.regen]).toEqual([{ stamina: 50 }, { stamina: 5 }]);
     // the class sheet itself never changes
     expect([UNIT_DEFS.mage.vars, UNIT_DEFS.mage.regen, UNIT_DEFS.mage.hpRegen]).toEqual([
       { mana: 30, stamina: 30 },
-      { mana: 8 },
+      { mana: 8, stamina: 3 },
       undefined,
     ]);
   });

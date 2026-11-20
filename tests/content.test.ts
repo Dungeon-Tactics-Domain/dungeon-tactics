@@ -42,6 +42,13 @@ describe('mana and stamina (Nov 16, the Mechanics lab equipamento.json)', () => 
       for (const k of Object.keys(u.regen ?? {})) expect(u.vars?.[k], `${u.id} regen ${k}`).toBeGreaterThan(0);
     }
   });
+  // Fernando, Nov 20: every unit has both pools; the second one comes back too, slower (3 a turn), so its one ability is
+  // not a single use
+  it('every pool a unit has comes back each turn, the second at 3', () => {
+    for (const u of UNIT_LIST.filter((x) => x.vars))
+      for (const k of (['mana', 'stamina'] as const).filter((k) => u.vars![k] !== undefined))
+        expect(u.regen?.[k] ?? 0, `${u.id} regen ${k}`).toBeGreaterThanOrEqual(3);
+  });
 });
 
 describe('classes and abilities', () => {

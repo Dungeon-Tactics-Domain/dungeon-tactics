@@ -4,7 +4,8 @@
 // lab's equipamento.json of Nov 15, a starting point Fernando tunes by playing; the hit and damage formulas (combat.ts) read them.
 // The mana or stamina pool (`vars`, start and max) and its regen per turn come from the same sheet (Nov 16)
 // Every unit has both pools since Nov 20 (Fernando: "quero ver como o jogo fica com todos tendo todas as barras"): a
-// mana unit got the Dagger (stamina 30), a stamina unit the Gust (mana 30); a test to tune by playing
+// mana unit got the Dagger (stamina 30), a stamina unit the Gust (mana 30); a test to tune by playing. That second pool
+// comes back 3 a turn (Nov 20, Fernando's pick "Regenerar as barras novas"): a Gust every 5 turns, a Dagger every 2
 import type { UnitDef } from '../shared/battle/units.ts';
 
 export const UNIT_LIST: UnitDef[] = [
@@ -17,7 +18,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 4,
     abilities: ['strike', 'heavy_strike', 'shield_bash', 'spin', 'gust'],
     vars: { stamina: 50, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     resist: { phys: 10 },
     dodge: 5,
   },
@@ -30,7 +31,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 4,
     abilities: ['shot', 'aimed_shot', 'knock_shot', 'dagger', 'gust'],
     vars: { stamina: 40, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     dodge: 10,
   },
   {
@@ -42,7 +43,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 3,
     abilities: ['firebolt', 'blast', 'gust', 'heal', 'dagger'],
     vars: { mana: 30, stamina: 30 }, // was 60: a spell is a choice, not free (Fernando, Nov 16),
-    regen: { mana: 8 },
+    regen: { mana: 8, stamina: 3 },
     resist: { phys: -10, mag: 20 },
   },
   {
@@ -55,7 +56,7 @@ export const UNIT_LIST: UnitDef[] = [
     jump: 2,
     abilities: ['stab', 'throwing_knife', 'trip', 'deathblow', 'gust'],
     vars: { stamina: 50, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     dodge: 20,
     flankDamage: { front: -25, back: 50 }, // Fernando, Nov 20: weaker head-on, normal from the side, strong from behind
   },
@@ -68,7 +69,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 4,
     abilities: ['strike', 'shield_bash', 'gust'],
     vars: { stamina: 40, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     resist: { phys: 25 },
     dodge: 5,
   },
@@ -81,7 +82,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 4,
     abilities: ['shot', 'dagger', 'gust'],
     vars: { stamina: 40, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     undead: true,
     resist: { light: -50, shadow: 50 },
     dodge: 5,
@@ -95,7 +96,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 3,
     abilities: ['firebolt', 'blast', 'dagger'],
     vars: { mana: 60, stamina: 30 },
-    regen: { mana: 8 },
+    regen: { mana: 8, stamina: 3 },
     resist: { phys: -10, mag: 30, shadow: 50, light: -25 },
   },
   // Lancer (Nov 13, new class to recruit and swap; outside the campaign's fixed cast): jumps 3 levels and reaches 2 tiles
@@ -109,7 +110,7 @@ export const UNIT_LIST: UnitDef[] = [
     jump: 3,
     abilities: ['lance', 'sweep', 'lance_jump', 'gust'],
     vars: { stamina: 50, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     resist: { phys: 10 },
     dodge: 5,
   },
@@ -122,7 +123,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 3,
     abilities: ['cleave', 'slam', 'gust'],
     vars: { stamina: 50, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     resist: { phys: 20, mag: -10 },
   },
   // Minion (Nov 12, campaign): little life and lots of speed, comes in a swarm and falls in one hit; initial numbers, measured in the
@@ -137,7 +138,7 @@ export const UNIT_LIST: UnitDef[] = [
     jump: 2,
     abilities: ['stab', 'trip', 'gust'],
     vars: { stamina: 30, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     undead: true,
     resist: { light: -50, shadow: 50 },
     dodge: 10,
@@ -156,7 +157,7 @@ export const UNIT_LIST: UnitDef[] = [
     halfSize: 1,
     abilities: ['stab', 'trip', 'gust'],
     vars: { stamina: 30, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     undead: true,
     resist: { light: -50, shadow: 50 },
     dodge: 20,
@@ -172,7 +173,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 3,
     abilities: ['firebolt', 'heal', 'dagger'],
     vars: { mana: 60, stamina: 30 },
-    regen: { mana: 8 },
+    regen: { mana: 8, stamina: 3 },
     tint: '#8a5cff',
     resist: { mag: 20, shadow: 50, light: -25 },
   },
@@ -188,7 +189,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 4,
     abilities: ['strike', 'heavy_strike', 'gust'],
     vars: { stamina: 50, mana: 30 },
-    regen: { stamina: 5 },
+    regen: { stamina: 5, mana: 3 },
     tint: '#ff4a2a',
     resist: { phys: 30, shadow: 25, light: -25 },
   },
@@ -203,7 +204,7 @@ export const UNIT_LIST: UnitDef[] = [
     move: 0,
     abilities: ['shadow_wave', 'blast', 'dagger'],
     vars: { mana: 50, stamina: 30 }, // two Blasts, then the free Shadow wave (was 120; Fernando, Nov 16)
-    regen: { mana: 10 },
+    regen: { mana: 10, stamina: 3 },
     size: 2,
     undead: true,
     // the lab's sheet gives shadow +75, above its own 60 cap (RESIST_RANGE): written at the cap until Fernando decides
