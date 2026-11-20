@@ -14,7 +14,7 @@ import { type ActTarget, actActions, actAims, actTargets, targetIndex } from './
 export type Command = 'move' | 'undo' | 'act' | 'wait' | 'status';
 // The menu's index is a place in this list; menuRows says which of them show (Fernando, Nov 18: after a move, Move and
 // "Undo move" both show, up to five rows)
-export const COMMANDS: Command[] = ['move', 'undo', 'act', 'wait', 'status'];
+export const COMMANDS: Command[] = ['act', 'move', 'undo', 'wait', 'status'];
 
 // The reference's fifth row, Auto-battle, is left out: the game has no auto play for the player
 export const commandIndex = (c: Command) => COMMANDS.indexOf(c);
@@ -25,6 +25,8 @@ export type Screen =
   | { k: 'menu'; index: number }
   | { k: 'map'; command: 'move' }
   | { k: 'facing' }
+  // Agir list (Fernando, Nov 19; prototype): "Escolher alvo" opens the targets, then the abilities and items (act-flow.ts actList)
+  | { k: 'acts'; index: number }
   // Agir primeiro (Fernando's grill, Nov 19; the only way to act since "Apagar tudo"): the target list, the actions that hit
   // the picked target, the tiles to act from with the best one first; `lock`: a charge aimed at a unit asks where to lock it
   | { k: 'targets'; index: number }
@@ -94,7 +96,8 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
   if (s.k === 'menu') return canUndoMove(b) ? 'undo' : null;
   if (s.k === 'map') return { k: 'menu', index: commandIndex('move') };
   if (s.k === 'facing') return { k: 'menu', index: commandIndex('wait') };
-  if (s.k === 'targets') return { k: 'menu', index: commandIndex('act') };
+  if (s.k === 'acts') return { k: 'menu', index: commandIndex('act') };
+  if (s.k === 'targets') return { k: 'acts', index: 0 };
   if (s.k === 'actions') return { k: 'targets', index: targetIndex(actTargets(b), s.target) };
   const back = { target: s.target, action: s.action };
   if (s.k === 'aim') return { k: 'actions', target: s.target, index: s.action };

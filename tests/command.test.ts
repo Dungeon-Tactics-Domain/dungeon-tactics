@@ -48,8 +48,6 @@ describe('command menu', () => {
     b.move({ x: 2, y: 2 });
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('act') });
     b.act('strike', { x: 2, y: 1 });
-    expect(commandEnabled(b, 'act')).toBe(true); // the secondary action is still free (Nov 19)
-    b.state.turn.bonus = 'ether'; // and now both are spent
     expect(commandEnabled(b, 'act')).toBe(false);
     // movement left (Nov 13, movement in parts): back to Move
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
@@ -94,13 +92,12 @@ describe('command menu', () => {
       ]),
     );
     b.act('shot', { x: 5, y: 1 });
-    b.state.turn.bonus = 'ether'; // both actions spent: the cursor then falls back to Move
     b.move({ x: 1, y: 2 });
     expect(canUndoMove(b)).toBe(true); // a soldier cannot answer a shot, so the move took no counter
     expect(b.reach().size).toBeGreaterThan(0);
     // Move is still Move (Nov 18); "Undo move" under it never takes the cursor
     expect(startScreen(b)).toEqual({ k: 'menu', index: commandIndex('move') });
-    expect(menuRows(b)).toEqual(['move', 'undo', 'act', 'wait', 'status']);
+    expect(menuRows(b)).toEqual(['act', 'move', 'undo', 'wait', 'status']);
   });
 
   it('up and down skip what is disabled and wrap around', () => {
@@ -112,12 +109,12 @@ describe('command menu', () => {
 
 // Nov 16: the names, order and steps of FFT: The Ivalice Chronicles
 describe('command list', () => {
-  it('Move, Undo move, Abilities, Wait, Status, in the order of the reference', () => {
-    expect(COMMANDS).toEqual(['move', 'undo', 'act', 'wait', 'status']);
+  it('Abilities, Move, Undo move, Wait, Status', () => {
+    expect(COMMANDS).toEqual(['act', 'move', 'undo', 'wait', 'status']);
     expect(COMMANDS.map((c) => commandName(c))).toEqual([
+      'Habilidades', // first since Nov 19 (Fernando: Agir above Mover)
       'Mover',
       'Desfazer movimento', // the reference's Reset
-      'Habilidades',
       'Esperar',
       'Status',
     ]);
@@ -125,9 +122,8 @@ describe('command list', () => {
 
   it('Status always opens; Abilities closes after acting and in deep water it never opened', () => {
     const b = duel();
-    expect(COMMANDS.map((c) => commandEnabled(b, c))).toEqual([true, false, true, true, true]); // nothing to undo yet
+    expect(COMMANDS.map((c) => commandEnabled(b, c))).toEqual([true, true, false, true, true]); // nothing to undo yet
     b.act('strike', { x: 2, y: 1 });
-    b.state.turn.bonus = 'ether'; // both actions spent (the secondary alone keeps Abilities open, Nov 19)
     expect(commandEnabled(b, 'act')).toBe(false);
     expect(commandEnabled(b, 'wait') && commandEnabled(b, 'status')).toBe(true);
   });
@@ -139,7 +135,8 @@ describe('Cancel goes back one step', () => {
 
   it('the target list to the menu on Abilities; Move map to the menu on Move; facing to the menu on Wait', () => {
     const b = duel();
-    expect(cancelStep(b, { k: 'targets', index: 0 })).toEqual({ k: 'menu', index: commandIndex('act') });
+    expect(cancelStep(b, { k: 'acts', index: 0 })).toEqual({ k: 'menu', index: commandIndex('act') });
+    expect(cancelStep(b, { k: 'targets', index: 0 })).toEqual({ k: 'acts', index: 0 });
     expect(cancelStep(b, { k: 'map', command: 'move' })).toEqual({ k: 'menu', index: commandIndex('move') });
     expect(cancelStep(b, { k: 'facing' })).toEqual({ k: 'menu', index: commandIndex('wait') });
   });
@@ -184,7 +181,7 @@ describe('Cancel goes back one step', () => {
       seen.push(s.k === 'spot' ? 'spot' : s.k);
       s = cancelStep(b, s);
     }
-    expect(seen).toEqual(['spot', 'actions', 'targets', 'menu']);
+    expect(seen).toEqual(['spot', 'actions', 'targets', 'acts', 'menu']);
     expect(s).toBeNull();
   });
 });
@@ -249,7 +246,7 @@ describe('menu rows in each state of the turn', () => {
   };
 
   it('the turn starts with 4 rows: Move, Abilities, Wait, Status', () => {
-    expect(menuRows(range())).toEqual(['move', 'act', 'wait', 'status']);
+    expect(menuRows(range())).toEqual(['act', 'move', 'wait', 'status']);
   });
 
   it('boxed in at the turn start: still 4 rows, Move greyed', () => {
@@ -263,7 +260,7 @@ describe('menu rows in each state of the turn', () => {
       ]),
     );
     expect(b.reach().size).toBe(0);
-    expect(menuRows(b)).toEqual(['move', 'act', 'wait', 'status']);
+    expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']);
     expect(commandEnabled(b, 'move')).toBe(false);
   });
 
@@ -271,7 +268,7 @@ describe('menu rows in each state of the turn', () => {
     const b = range();
     b.move({ x: 1, y: 2 });
     expect(b.reach().size).toBeGreaterThan(0);
-    expect(menuRows(b)).toEqual(['move', 'undo', 'act', 'wait', 'status']);
+    expect(menuRows(b)).toEqual(['act', 'move', 'undo', 'wait', 'status']);
   });
 
   it('moved with no movement left: Move leaves, Undo move stays', () => {
@@ -279,14 +276,13 @@ describe('menu rows in each state of the turn', () => {
     walkAll(b);
     expect(b.reach().size).toBe(0);
     expect(canUndoMove(b)).toBe(true);
-    expect(menuRows(b)).toEqual(['undo', 'act', 'wait', 'status']);
+    expect(menuRows(b)).toEqual(['act', 'undo', 'wait', 'status']);
   });
 
   it('after attacking: Move for the movement left, no Undo move with nothing to take back', () => {
     const b = range();
     b.act('shot', { x: 5, y: 1 });
-    expect(menuRows(b)).toEqual(['move', 'act', 'wait', 'status']);
-    b.state.turn.bonus = 'ether'; // both actions spent
+    expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']);
     expect(commandEnabled(b, 'act')).toBe(false);
   });
 
@@ -295,6 +291,6 @@ describe('menu rows in each state of the turn', () => {
     b.move({ x: 2, y: 2 });
     b.act('strike', { x: 2, y: 1 });
     expect(canUndoMove(b)).toBe(false);
-    expect(menuRows(b)).toEqual([...(b.reach().size ? ['move'] : []), 'act', 'wait', 'status']);
+    expect(menuRows(b)).toEqual(['act', ...(b.reach().size ? ['move'] : []), 'wait', 'status']);
   });
 });

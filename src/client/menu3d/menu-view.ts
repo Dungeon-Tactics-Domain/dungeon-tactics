@@ -3,11 +3,12 @@
 // row, and what changed between two draws. No DOM or Three here; tested in tests/ui3d.test.ts.
 import { ABILITIES, type AbilityDef } from '../../shared/battle/abilities.ts';
 import type { Battle } from '../../shared/battle/battle.ts';
+import { basicOf } from '../../shared/battle/counter.ts';
 import type { Element } from '../../shared/battle/units.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
-import { actActions, actTargets } from '../act-flow.ts';
+import { AGIR_LIST, actActions, actList, actTargets } from '../act-flow.ts';
 import { actScreen, screenAction } from '../act-marks.ts';
-import { abilityNote, abilityPages, actReason, commandName, itemDetail, itemName, kindTag } from '../battle-text.ts';
+import { abilityNote, abilityPages, actReason, commandName, itemDetail, itemName } from '../battle-text.ts';
 import { type Command, commandEnabled, commandIndex, menuRows } from '../command.ts';
 import type { HudView } from '../hud.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
@@ -123,7 +124,7 @@ export function menuView(v: HudView, open: boolean): MenuView | null {
 // The Agir primeiro lists in the submenu's place, under the command menu with Act picked: the targets (who, with its life)
 // or the actions on the picked one (an off one says why in its note, Fernando's grill of Nov 19: always visible), or a
 // charge's lock step on the tile choice (the character, the tile)
-function actView(v: HudView, s: Extract<HudView['screen'], { k: 'targets' | 'actions' | 'spot' }>): MenuView {
+function actView(v: HudView, s: Extract<HudView['screen'], { k: 'acts' | 'targets' | 'actions' | 'spot' }>): MenuView {
   const b = v.battle;
   const charge = s.k === 'spot' ? screenAction(b, s)?.id : undefined;
   const sub: MenuRow[] =
@@ -132,44 +133,63 @@ function actView(v: HudView, s: Extract<HudView['screen'], { k: 'targets' | 'act
           { label: t('No personagem', 'On the character'), note: '', off: false, kind: 'sword' },
           { label: t('Na casa', 'On the tile'), note: '', off: false, kind: 'boot' },
         ]
-      : s.k === 'targets'
-        ? actTargets(b).map((r) => {
-            if (r.k === 'direct')
-              return {
-                label: abilityName(r.ability),
-                note: t('na área', 'on the area'),
-                off: false,
-                ...iconOf(r.ability),
-              };
-            const u = b.state.units.find((x) => x.id === r.unit)!;
-            const who =
-              u.id === b.actor.id
-                ? t('você', 'you')
-                : u.team === b.actor.team
-                  ? t('aliado', 'ally')
-                  : t('inimigo', 'enemy');
-            const kind: IconKind = u.team === b.actor.team ? 'shield' : 'sword';
-            return { label: unitName(u.def), note: `${who} · ${u.hp}/${UNIT_DEFS[u.def].hp}`, off: false, kind };
+      : s.k === 'acts'
+        ? actList(b).map((a): MenuRow => {
+            if (a.k === 'pick')
+              return { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword' };
+            const name = a.k === 'item' ? itemName(a.id) : abilityName(a.id);
+            const off = { off: !a.enabled, below: !a.enabled };
+            const note = a.enabled
+              ? a.k === 'item'
+                ? `×${a.count}`
+                : abilityNote(b.actor, ABILITIES[a.id], true)
+              : actReason(a);
+            if (a.k === 'item') return { label: name, note, kind: 'potion', ...off };
+            // variant b: the basic attack is a row named Ataque, its real name in the note
+            const basic = AGIR_LIST === 'b' && a.id === basicOf(b.actor.def);
+            return {
+              label: basic ? t('Ataque', 'Attack') : name,
+              note: basic && a.enabled ? [name, note].filter(Boolean).join(' · ') : note,
+              ...iconOf(a.id),
+              ...off,
+            };
           })
-        : actActions(b, s.target).map((a) =>
-            a.k === 'item'
-              ? {
-                  label: itemName(a.id),
-                  note: [kindTag(a), a.enabled ? `×${a.count}` : actReason(a)].join(' · '),
-                  off: !a.enabled,
-                  below: !a.enabled,
-                  kind: 'potion',
-                }
-              : {
-                  label: abilityName(a.id),
-                  note: [kindTag(a), a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a)]
-                    .filter(Boolean)
-                    .join(' · '),
-                  off: !a.enabled,
-                  below: !a.enabled,
-                  ...iconOf(a.id),
-                },
-          );
+        : s.k === 'targets'
+          ? actTargets(b).map((r) => {
+              if (r.k === 'direct')
+                return {
+                  label: abilityName(r.ability),
+                  note: t('na área', 'on the area'),
+                  off: false,
+                  ...iconOf(r.ability),
+                };
+              const u = b.state.units.find((x) => x.id === r.unit)!;
+              const who =
+                u.id === b.actor.id
+                  ? t('você', 'you')
+                  : u.team === b.actor.team
+                    ? t('aliado', 'ally')
+                    : t('inimigo', 'enemy');
+              const kind: IconKind = u.team === b.actor.team ? 'shield' : 'sword';
+              return { label: unitName(u.def), note: `${who} · ${u.hp}/${UNIT_DEFS[u.def].hp}`, off: false, kind };
+            })
+          : actActions(b, s.target).map((a) =>
+              a.k === 'item'
+                ? {
+                    label: itemName(a.id),
+                    note: a.enabled ? `×${a.count}` : actReason(a),
+                    off: !a.enabled,
+                    below: !a.enabled,
+                    kind: 'potion',
+                  }
+                : {
+                    label: abilityName(a.id),
+                    note: a.enabled ? abilityNote(b.actor, ABILITIES[a.id], true) : actReason(a),
+                    off: !a.enabled,
+                    below: !a.enabled,
+                    ...iconOf(a.id),
+                  },
+            );
   return {
     ...column(b),
     index: menuRows(b).map(commandIndex).indexOf(commandIndex('act')),
@@ -177,9 +197,11 @@ function actView(v: HudView, s: Extract<HudView['screen'], { k: 'targets' | 'act
     subTitle:
       s.k === 'spot'
         ? t(`${abilityName(charge ?? '')}: travar onde?`, `${abilityName(charge ?? '')}: lock on?`)
-        : s.k === 'targets'
-          ? t('Alvo', 'Target')
-          : t('Ação', 'Action'),
+        : s.k === 'acts'
+          ? t('Agir', 'Act')
+          : s.k === 'targets'
+            ? t('Alvo', 'Target')
+            : t('Ação', 'Action'),
     subIndex: s.k === 'spot' ? (s.lock === 'tile' ? 1 : 0) : s.index,
     sheet: s.k === 'actions' ? sheetView(b, s) : null,
   };

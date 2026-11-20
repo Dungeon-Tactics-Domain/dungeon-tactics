@@ -106,6 +106,28 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
   return [...abilities, ...items];
 }
 
+// The Agir list (Fernando, Nov 19: Agir is the first row of the turn menu): "Escolher alvo" (the target list above), then
+// every ability in order with the basic attack first, then the items; an ability or item with no target reachable this
+// turn is off with its reason. Prototype: the variant (a: flat; b: the basic attack as a row named Ataque) only changes names
+// shortcut: prototype flag, remove when Fernando picks a variant
+export const AGIR_LIST: 'a' | 'b' =
+  typeof location !== 'undefined' && new URLSearchParams(location.search).get('agirlist') === 'b' ? 'b' : 'a';
+export type ActRow = { k: 'pick' } | ActAction;
+export function actList(b: Battle): ActRow[] {
+  const id = b.actor.id;
+  const abilities = actionOptions(b.grid, b.state, id).map((o): ActRow => {
+    const base = { k: 'ability' as const, id: o.ability, spots: [] };
+    if (!o.enabled) return { ...base, enabled: false, reason: o.reason, missing: o.missing, pool: o.pool };
+    return o.targets.length ? { ...base, enabled: true } : { ...base, enabled: false, reason: 'range' };
+  });
+  const items = itemOptions(b.grid, b.state, id).map((o): ActRow => {
+    const base = { k: 'item' as const, id: o.item, count: o.count, spots: [] };
+    if (!o.enabled) return { ...base, enabled: false, reason: o.reason };
+    return o.targets.length ? { ...base, enabled: true } : { ...base, enabled: false, reason: 'no-target' };
+  });
+  return [{ k: 'pick' }, ...abilities, ...items];
+}
+
 // The aim step (Fernando, Nov 19): an ability aimed at more than one place (an area that can be centred on the target or
 // next to it) first picks where it lands, then the tiles that can aim there. Its aims, in the order the engine ranks them
 export function actAims(a: ActAction): Pos[] {

@@ -86,7 +86,8 @@ describe('Agir primeiro flow (act-flow.ts, Nov 19)', () => {
       index: 2,
     });
     expect(cancelStep(b, { k: 'actions', target: far, index: 0 })).toEqual({ k: 'targets', index: 1 });
-    expect(cancelStep(b, { k: 'targets', index: 0 })).toEqual({ k: 'menu', index: commandIndex('act') });
+    expect(cancelStep(b, { k: 'targets', index: 0 })).toEqual({ k: 'acts', index: 0 });
+    expect(cancelStep(b, { k: 'acts', index: 0 })).toEqual({ k: 'menu', index: commandIndex('act') });
   });
 
   it('runSpot walks to the spot and then acts, spending the action', () => {

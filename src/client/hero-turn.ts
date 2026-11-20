@@ -196,7 +196,7 @@ export class HeroTurn {
     if (c === 'status') return this.game.status();
     if (c === 'wait') return void this.game.endTurn();
     if (c === 'act') {
-      this.screen = { k: 'targets', index: 0 };
+      this.screen = { k: 'acts', index: 0 };
       return this.game.update(this.ui);
     }
     this.screen = { k: 'map', command: 'move' };

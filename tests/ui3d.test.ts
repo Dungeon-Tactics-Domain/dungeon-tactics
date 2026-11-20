@@ -100,13 +100,13 @@ describe('3D menu: what it shows', () => {
     const b = duel();
     const m = menuView(view(b, { k: 'menu', index: commandIndex('wait') }), true);
     expect(m?.rows.map((r) => [r.label, r.kind, r.off])).toEqual([
-      ['Mover', 'boot', false],
       ['Habilidades', 'sword', false],
+      ['Mover', 'boot', false],
       ['Esperar', 'hourglass', false],
       ['Status', 'scroll', false],
     ]);
     expect(m).toMatchObject({ head: 'Guerreiro', index: 2, sub: null, sheet: null });
-    expect(m?.commands).toEqual(['move', 'act', 'wait', 'status'].map((c) => commandIndex(c as 'move')));
+    expect(m?.commands).toEqual(['act', 'move', 'wait', 'status'].map((c) => commandIndex(c as 'move')));
     expect(menuView(view(b, { k: 'menu', index: 0 }), false)).toBeNull();
     expect(menuView(view(b, { k: 'map', command: 'move' }), true)).toBeNull();
   });
@@ -117,23 +117,23 @@ describe('3D menu: what it shows', () => {
     b.move({ x: 2, y: 2 });
     const m = menuView(view(b, { k: 'menu', index: commandIndex('act') }), true);
     expect(m?.rows.map((r) => [r.label, r.off])).toEqual([
+      ['Habilidades', false],
       ['Mover', b.reach().size === 0],
       ['Desfazer movimento', false],
-      ['Habilidades', false],
       ['Esperar', false],
       ['Status', false],
     ]);
     expect(m?.commands).toEqual([0, 1, 2, 3, 4]);
-    expect(m?.index).toBe(2); // the cursor on Abilities, never on Undo move
+    expect(m?.index).toBe(0); // the cursor on Abilities, never on Undo move
     // an Agir list open: Abilities stays picked on its row
-    expect(menuView(view(b, { k: 'targets', index: 0 }), true)?.index).toBe(2);
+    expect(menuView(view(b, { k: 'targets', index: 0 }), true)?.index).toBe(0);
   });
 
   it('the target list keeps Act picked and the action list names each ability with its cost', () => {
     const b = duel();
     const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
     const targets = menuView(view(b, { k: 'targets', index: 0 }), true);
-    expect(targets?.index).toBe(1); // Act
+    expect(targets?.index).toBe(0); // Act
     expect(targets?.subTitle).toBe('Alvo');
     expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Giro']);
     const actions = menuView(view(b, { k: 'actions', target: foe, index: 1 }), true);
@@ -141,6 +141,15 @@ describe('3D menu: what it shows', () => {
     expect(actions?.sub?.[1].note).toBe('principal · 30 stamina');
     expect(actions?.subIndex).toBe(1);
     expect(targets?.sheet).toBeNull(); // the sheet is the action list's only
+  });
+
+  it('the Agir list starts with Escolher alvo, then each ability with its reason when off (prototype)', () => {
+    const b = duel();
+    const m = menuView(view(b, { k: 'acts', index: 0 }), true);
+    expect(m?.subTitle).toBe('Agir');
+    expect(m?.index).toBe(0);
+    expect(m?.sub?.[0].label).toBe('Escolher alvo');
+    expect(m?.sub?.slice(1, 5).map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro']);
   });
 
   it('the action list shows the sheet of the focused ability, on the page asked for', () => {

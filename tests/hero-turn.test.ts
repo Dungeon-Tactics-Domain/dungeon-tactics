@@ -46,8 +46,12 @@ describe('turn screens, key by key', () => {
   it('Abilities opens the target list; Cancel there goes back to the menu on Abilities', () => {
     const { t, press } = turn();
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('move') });
-    press({ k: 'cursor', dir: 'down' }, ok);
+    press({ k: 'cursor', dir: 'up' }, ok);
+    expect(t.screen).toEqual({ k: 'acts', index: 0 });
+    press(ok); // "Escolher alvo"
     expect(t.screen).toEqual({ k: 'targets', index: 0 });
+    press(esc);
+    expect(t.screen).toEqual({ k: 'acts', index: 0 });
     press(esc);
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('act') });
   });
@@ -65,10 +69,10 @@ describe('turn screens, key by key', () => {
     battle.move({ x: 1, y: 2 });
     expect(battle.reach().size).toBeGreaterThan(0);
     t.screen = { k: 'menu', index: commandIndex('act') };
-    press({ k: 'cursor', dir: 'up' });
-    expect(t.screen).toEqual({ k: 'menu', index: commandIndex('undo') });
-    press({ k: 'cursor', dir: 'up' });
+    press({ k: 'cursor', dir: 'down' });
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('move') });
+    press({ k: 'cursor', dir: 'down' });
+    expect(t.screen).toEqual({ k: 'menu', index: commandIndex('undo') });
     t.chooseCommand(commandIndex('undo'));
     expect(calls).toEqual(['undo']);
     t.chooseCommand(commandIndex('move'));

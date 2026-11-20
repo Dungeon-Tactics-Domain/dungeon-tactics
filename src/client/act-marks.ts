@@ -11,9 +11,9 @@ import { type ActAction, type ActTarget, actActions, actAims, actTargets, bestSp
 import type { Screen } from './command.ts';
 import { attackMarks, type Highlights, type TileKind } from './interaction.ts';
 
-type ActScreen = Extract<Screen, { k: 'targets' | 'actions' | 'aim' | 'spot' }>;
+type ActScreen = Extract<Screen, { k: 'acts' | 'targets' | 'actions' | 'aim' | 'spot' }>;
 export const actScreen = (s: Screen): s is ActScreen =>
-  s.k === 'targets' || s.k === 'actions' || s.k === 'aim' || s.k === 'spot';
+  s.k === 'acts' || s.k === 'targets' || s.k === 'actions' || s.k === 'aim' || s.k === 'spot';
 
 const cellsOfTarget = (b: Battle, t: ActTarget): Pos[] => {
   const u = t.k === 'unit' && b.state.units.find((x) => x.id === t.unit);
@@ -28,7 +28,7 @@ export const aimCells = (b: Battle, aim: Pos): Pos[] => {
 // the action the screen is on: the focused row of the action list, or the one picked for the aim and the tile choice (on
 // the tile choice after an aim, only the tiles aiming there)
 export function screenAction(b: Battle, s: ActScreen): ActAction | null {
-  if (s.k === 'targets') return null;
+  if (s.k === 'acts' || s.k === 'targets') return null;
   const a = actActions(b, s.target)[s.k === 'actions' ? s.index : s.action];
   if (!a) return null;
   return s.k === 'spot' && s.aim ? withAim(a, s.aim) : a;
@@ -40,6 +40,7 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
     for (const pos of cells) tiles.push({ pos, kind });
   };
   const size = UNIT_DEFS[b.actor.def].size ?? 1;
+  if (s.k === 'acts') return { tiles: [{ pos: b.actor.pos, kind: 'actor' }], path: null, preview: null };
   if (s.k === 'targets') {
     const rows = actTargets(b);
     rows.forEach((r, i) => {
