@@ -150,6 +150,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/turn3d/queue-layout.ts` — queueLayout: where the 3D turn list puts its head and each row on the page, and how far it scrolls and where its name goes, with no DOM; pure.
 - `src/client/turn3d/queue-seat.ts` — seats the unseen HTML turn list on the layout's numbers and draws the list's name in 3D (seatQueue), and passes its scroll and hover to the 3D list (wireQueue).
 - `src/client/turn3d/queue-view.ts` — what each card of the 3D turn list shows and which card a redrawn row keeps (matchRows); pure.
+- `src/client/turn3d/texture-cache.ts` — TextureCache: the 3D turn list's faces and icon atlas, each loaded once by URL.
 - `src/client/turn3d/card.ts` — the 3D turn card's shader, its painted detail and digits.
 - `src/client/bar3d/bar3d.ts` — Bar3d: the combat bar in 3D: the acting unit's sheet, the strike preview plate and the target's sheet on their regions, over the HUD's unseen panels.
 - `src/client/bar3d/bar-view.ts` — what the 3D combat bar shows (sheet numbers, the bar's changing part, the plate's forecast texts); pure.

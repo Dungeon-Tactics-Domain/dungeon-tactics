@@ -6,7 +6,7 @@
 //   sizes were measured at 1280x720. The HTML list (hud.ts renderQueue) stays under the drawing, unseen and seated
 //   from the same numbers (queue-seat.ts): it is the scroll and the hover, and only its scroll is read back. Each card
 //   springs to its row's box.
-import { Group, Mesh, type ShaderMaterial, Texture, TextureLoader, type Vector2 } from 'three';
+import { Group, Mesh, type ShaderMaterial, type Vector2 } from 'three';
 import type { Battle } from '../../shared/battle/battle.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
@@ -24,14 +24,24 @@ import { cardMaterial, hex, INK, LEFT, PAD, RIGHT, sharedUniforms } from './card
 import { CardTip } from './card-tip.ts';
 import { type QueueBoxes, type QueueLayout, queueLayout } from './queue-layout.ts';
 import { dropName, seatQueue, wireQueue } from './queue-seat.ts';
-import { headOnSheet, matchRows, type Queue, type QueueCard, queueCards, repeats, statsLayout } from './queue-view.ts';
+import {
+  headOnSheet,
+  matchRows,
+  type Queue,
+  type QueueCard,
+  queueCards,
+  repeats,
+  statsLayout,
+  statWidth,
+} from './queue-view.ts';
+import { TextureCache } from './texture-cache.ts';
 
 const INNER = 40.2 / 43; // the picture's width over its height inside the frame: how a face is cropped
 const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
 // stiffness and damping of the cards: a ratio of 0.69, so a card overshoots its slot a little and settles in about a
 // third of a second
-const K = 170;
-const C = 18;
+const K = 170,
+  C = 18;
 const TEXT_PAD = 3; // the empty margin a label carries on each side (ui3d/text.ts)
 
 type Box = QueueBoxes['rows'][number];
@@ -45,7 +55,7 @@ interface Card {
   crop: (frame: number) => void; // moves the face to that frame of its sheet
   face: ReturnType<typeof battleFace>;
   // the lines beside it (queue-view.ts `stats`): redrawn only when their text or size changes
-  texts: { key: string; lines: Mesh<typeof QUAD, ShaderMaterial>[] } | null;
+  texts: { key: string; lines: Mesh<typeof QUAD, ShaderMaterial>[][] } | null; // each line's parts, split at ' · '
 }
 const SIDES = ['x', 'y', 'w', 'h'] as const;
 // GLSL's smoothstep, for the texts to fade at the list's ends as the cards do
@@ -57,9 +67,8 @@ const ramp = (a: number, b: number, v: number) => {
 export class Turn3d implements Ui3dScreen {
   readonly flat = new Group();
   private readonly tip: CardTip; // name and life of the card under the mouse
-  private readonly loader = new TextureLoader();
   // one load per image; `waiting` holds what to run when it arrives (null once it has)
-  private readonly textures = new Map<string, { tex: Texture; waiting: ((img: HTMLImageElement) => void)[] | null }>();
+  private readonly textures = new TextureCache(() => this.layer.wake());
   private readonly shared = sharedUniforms();
   private cards: Card[] = [];
   private leaving: Card[] = [];
@@ -85,7 +94,7 @@ export class Turn3d implements Ui3dScreen {
     this.tip = new CardTip(layer);
     this.flat.add(this.tip.group);
     this.shared.uIconGrid.value.set(ATLAS_COLUMNS, 1);
-    this.shared.uIcons.value = this.texture('/ui/fft/atlas-32.png', (img) =>
+    this.shared.uIcons.value = this.textures.get('/ui/fft/atlas-32.png', (img) =>
       this.shared.uIconGrid.value.set(img.width / ATLAS_CELL, img.height / ATLAS_CELL),
     );
     layer.add(this, 'turn');
@@ -129,23 +138,6 @@ export class Turn3d implements Ui3dScreen {
     this.relay();
   }
 
-  private texture(url: string, loaded: (img: HTMLImageElement) => void) {
-    let entry = this.textures.get(url);
-    if (!entry) {
-      const made = { tex: new Texture(), waiting: [] as ((img: HTMLImageElement) => void)[] | null };
-      made.tex = this.loader.load(url, (tex) => {
-        for (const run of made.waiting ?? []) run(tex.image as HTMLImageElement);
-        made.waiting = null;
-        this.layer.wake();
-      });
-      made.tex.flipY = false;
-      this.textures.set(url, (entry = made));
-    }
-    if (entry.waiting) entry.waiting.push(loaded);
-    else loaded(entry.tex.image as HTMLImageElement);
-    return entry.tex;
-  }
-
   private card(d: QueueCard): Card {
     // each card takes its own patch of the paint, the same on every load (a screenshot repeats)
     const key = `${d.id.unit}/${d.id.charge ?? ''}`;
@@ -180,9 +172,9 @@ export class Turn3d implements Ui3dScreen {
       const n = c.face.frames;
       c.crop = (frame) => uv.set((frame + (1 - INNER) / 2) / n, 0, INNER / n, 1);
       c.crop(frameOf(c.face, this.expression(u)));
-      un.uFace.value = this.texture(`/chars/${c.face.sheet}`, () => (un.uHasFace.value = 1));
+      un.uFace.value = this.textures.get(`/chars/${c.face.sheet}`, () => (un.uHasFace.value = 1));
     } else if (model) {
-      un.uFace.value = this.texture(`/chars/${model}.webp`, (img) => {
+      un.uFace.value = this.textures.get(`/chars/${model}.webp`, (img) => {
         uv.set(0, 0, 1, Math.min(1, img.width / INNER / img.height));
         un.uHasFace.value = 1;
       });
@@ -204,11 +196,12 @@ export class Turn3d implements Ui3dScreen {
       this.flat.add(m);
       return m;
     };
-    c.texts = { key, lines: st.lines.map(make) };
+    c.texts = { key, lines: st.lines.map((l) => l.split(' · ').map(make)) };
   }
   private retext() {
     for (const c of this.cards) this.setTexts(c);
-    this.statW = Math.max(0, ...this.cards.flatMap((c) => c.texts?.lines.map((m) => m.scale.x) ?? []));
+    const widths = this.cards.flatMap((c) => c.texts?.lines.map((l) => l.map((m) => m.scale.x)) ?? []);
+    this.statW = statWidth(widths, this.shared.uS.value, TEXT_PAD);
     // the list grows by the room the lines take past its cards' column (20 design px are already there), so what
     // keeps clear of the list keeps clear of them too (queue-layout.ts `stats`)
     const s = this.shared.uS.value,
@@ -216,7 +209,7 @@ export class Turn3d implements Ui3dScreen {
     this.shown.stats = Math.max(0, Math.ceil(room));
   }
   private dropTexts(c: Card) {
-    if (c.texts) for (const m of c.texts.lines) dropText(m);
+    if (c.texts) for (const m of c.texts.lines.flat()) dropText(m);
     c.texts = null;
   }
 
@@ -360,10 +353,11 @@ export class Turn3d implements Ui3dScreen {
         // the same step aside, rise and fade at the list's ends as the card's own drawing (card.ts)
         const tx = ox + barX - TEXT_PAD + un.uShift.value,
           ty = oy - un.uLift.value;
-        for (const [i, m] of c.texts.lines.entries()) {
+        for (const [i, [j, m]] of c.texts.lines.flatMap((l, i) => l.map((m, j) => [i, [j, m]] as const))) {
           const y = ty + lay.lines[i],
-            clip = this.shared.uClip.value;
-          m.position.set(this.layer.snap(tx + m.scale.x / 2), -this.layer.snap(y), 0);
+            clip = this.shared.uClip.value,
+            x = tx + j * (barW / 2 + 2 * s); // the second bar's left, as card.ts draws it: half the width past its 4 px gap
+          m.position.set(this.layer.snap(x + m.scale.x / 2), -this.layer.snap(y), 0);
           m.material.uniforms.uAlpha.value =
             c.alpha * ramp(clip.x, clip.x + 16 * s, y) * (1 - ramp(clip.y - 16 * s, clip.y, y));
         }
@@ -387,7 +381,7 @@ export class Turn3d implements Ui3dScreen {
       c.mesh.material.dispose();
       this.dropTexts(c);
     }
-    for (const tex of [...this.textures.values()].map((e) => e.tex)) tex.dispose();
+    this.textures.dispose();
     this.shared.uPaint.value.dispose();
     this.shared.uDigits.value.dispose();
     dropName();

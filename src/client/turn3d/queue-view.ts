@@ -141,3 +141,12 @@ export function statsLayout(h: number, s: number, n = 3, bar = n > 1) {
     stBar: bar && n > 2 ? at(2) + z.line : -1, // under the stamina and CT line
   };
 }
+
+// The width of the lines beside the cards, from each line's parts' widths (px, each with `pad` of margin a side). A pair's
+// second part starts on its second bar (Fernando, Nov 21: MP and CT over the start of their bars), so the bars take two
+// columns as wide as the widest part, 4 px apart as card.ts draws them; a line of one part keeps its own width
+export function statWidth(lines: number[][], s: number, pad: number): number {
+  const wide = (ls: number[][]) => Math.max(0, ...ls.flat()),
+    col = wide(lines.filter((l) => l.length > 1));
+  return Math.max(wide(lines.filter((l) => l.length < 2)), col && 2 * col - 2 * pad + 4 * s);
+}

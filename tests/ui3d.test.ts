@@ -15,6 +15,7 @@ import {
   matchRows,
   queueCards,
   statsLayout,
+  statWidth,
 } from '../src/client/turn3d/queue-view.ts';
 import { type Box, PHONE_SHRINK, place, REGIONS, setPageFloor, sheetBox, stage } from '../src/client/ui3d/layout.ts';
 import { ease, land, pageStep, settled, spring, stepSpring } from '../src/client/ui3d/spring.ts';
@@ -521,6 +522,16 @@ describe('3D turn list: the lines beside the cards', () => {
       expect(statsLayout(h * 0.6, s, 1)).toMatchObject({ fits: true, hpBar: -1 }); // a repeat: its name, no bar
     }
     expect(statsLayout(40, 1).fits).toBe(false);
+  });
+
+  it('a pair of parts takes two columns as wide as its widest part, so MP and CT start on their bars (Nov 21)', () => {
+    // name 90 px; "HP 120/120" 80, "MP 15/30" 60; "ST 30/30" 60, "CT 20/100" 70; 3 px margin a side, scale 1
+    const w = statWidth([[90], [80, 60], [60, 70]], 1, 3);
+    expect(w).toBe(2 * 80 - 6 + 4);
+    const half = (w - 6 - 4) / 2; // each bar's width (card.ts): the column's ink fits on it
+    expect(half).toBeGreaterThanOrEqual(80 - 6);
+    expect(statWidth([[200], [80, 60]], 1, 3)).toBe(200); // a long name keeps its own width
+    expect(statWidth([], 1, 3)).toBe(0);
   });
 
   it("a tablet's 14 px floor lifts the turn list's lines and its rows with them (768x1024: list scale 0.6)", () => {
