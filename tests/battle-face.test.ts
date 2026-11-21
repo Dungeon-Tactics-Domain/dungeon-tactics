@@ -82,7 +82,7 @@ describe('faceCues: what each event does to the faces', () => {
     s.rng = HIT_SEED;
     const b = new Battle(flat(6, 3), s);
     const strike = b.act('strike', at(2, 1));
-    const walk = b.move(at(3, 2));
+    const walk = b.move(at(4, 2)); // off the diagonal too (Nov 21)
     expect(walk.at(-1)?.k).toBe('move');
     const cues = exprs([...strike, ...walk]).filter(([, m]) => m.expr === 'shout' || m.expr === 'angry');
     expect(cues.map(([id, m]) => [id, m.expr])).toContainEqual(['a', 'shout']);
@@ -109,7 +109,7 @@ describe('faceCues: what each event does to the faces', () => {
     const b = new Battle(grid, s);
     const strike = b.act('strike', at(4, 2));
     expect(strike.length).toBeGreaterThan(0);
-    const walk = b.move(at(6, 4));
+    const walk = b.move(at(0, 4)); // off the diagonal too (Nov 21)
     const events = [...strike, ...walk];
     const i = events.findIndex((e) => e.k === 'attack' && e.unit === 'b');
     expect(i).toBeGreaterThan(0);

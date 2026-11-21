@@ -52,7 +52,10 @@ describe('actionOptions (Agir primeiro, Nov 19)', () => {
       { id: 'e', def: 'soldier', team: 'enemy', x: 4, y: 2 },
     ]);
     const t = by(actionOptions(g, s, 'w'), 'strike').targets[0];
-    expect(t.spots.every((p) => p.cost >= 3 && dist(p.pos, t.pos) === 1)).toBe(true);
+    // beside it, diagonals included (Nov 21)
+    const beside = (p: { x: number; y: number }) => Math.max(Math.abs(p.x - t.pos.x), Math.abs(p.y - t.pos.y)) === 1;
+    expect(t.spots.every((p) => p.cost >= 3 && beside(p.pos))).toBe(true);
+    expect(t.spots.some((p) => dist(p.pos, t.pos) === 2)).toBe(true);
     s.turn.spent = 2;
     expect(by(actionOptions(g, s, 'w'), 'strike')).toMatchObject({ enabled: false, reason: 'range' });
   });

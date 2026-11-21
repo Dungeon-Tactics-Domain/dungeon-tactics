@@ -321,7 +321,7 @@ describe('counterattack', () => {
     const [, struck] = resolveAbility(full.grid, full.state, 'b', 'strike', at(2, 2));
     const hp = b.state.units[0].hp;
     b.state.rng = HIT_SEED;
-    const ev = b.move(at(3, 2));
+    const ev = b.move(at(4, 2)); // off the diagonal too (Nov 21: a diagonal neighbour is still in reach)
     expect(ev.some((e) => e.k === 'attack' && e.unit === 'b')).toBe(true);
     const hit = ev.find((e) => e.k === 'hit' && e.unit === 'a');
     expect(struck.k).toBe('hit');
@@ -331,7 +331,7 @@ describe('counterattack', () => {
     // it took the counter: the move cannot be undone, or the hit would be taken back
     expect(b.canUndo).toBe(false);
     expect(b.undo()).toBe(false);
-    expect(b.state.units[0].pos).toEqual(at(3, 2));
+    expect(b.state.units[0].pos).toEqual(at(4, 2));
   });
 
   it('an archer who shoots another archer takes its counter on walking out of its range', () => {

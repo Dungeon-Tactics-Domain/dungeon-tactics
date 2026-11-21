@@ -81,7 +81,7 @@ describe('command menu', () => {
     expect(commandEnabled(moved, 'move')).toBe(moved.reach().size > 0); // only moves again if movement is left
     const acted = duel();
     acted.act('strike', { x: 2, y: 1 });
-    acted.move({ x: 1, y: 2 });
+    acted.move({ x: 0, y: 2 }); // off the diagonal too (Nov 21)
     expect(canUndoMove(acted)).toBe(false);
   });
 

@@ -189,3 +189,4 @@ Product and process decisions by Fernando. A new decision goes here (date, decis
 | 21/11 | Move never leaves the turn menu: spent or boxed in, it stays greyed with its bar at zero; the cursor and the mouse still land on it and choosing it plays the cancel sound | Fernando, Nov 21: the row vanishing and the cursor skipping it confused |
 | 21/11 | On the turn menu a blue dotted outline shows where the hero can still walk, beside the gold outline of its longest ability | Fernando, Nov 21: "a blue preview of the movement too" |
 | 21/11 | Turn cards: MP and CT start on their own bars; the lines beside the card widen to two equal columns | Fernando, Nov 21: the second numbers sat off their bars |
+| 21/11 | Melee (no flight, reach up to one tile) reaches the 8 tiles around, diagonals included; the Spin hits them too, and leaving a foe's diagonal draws its counter. Ranged and spell areas keep their cross | Fernando, Nov 21 |

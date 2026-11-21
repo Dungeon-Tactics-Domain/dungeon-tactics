@@ -13,7 +13,19 @@ import {
   TERRAIN,
   tileAt,
 } from './grid.ts';
-import { aimEnds, aimTile, areaOf, closest, footprint, inAbilityRange, inArea, unitAt, wholeTiles } from './pathing.ts';
+import {
+  aimEnds,
+  aimTile,
+  areaOf,
+  closest,
+  footprint,
+  inAbilityRange,
+  inArea,
+  isMelee,
+  reachDist,
+  unitAt,
+  wholeTiles,
+} from './pathing.ts';
 import { simulatePush } from './push.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
@@ -115,7 +127,7 @@ export const inDeep = (grid: Grid, u: UnitState) => footprint(u).every((c) => is
 // `side`: where the hit catches the target (sideOf); spells too since Nov 15 (Fernando's grill)
 export function hitChance(grid: Grid, ability: AbilityDef, from: Pos, to: Pos, side: Side = 'front'): number {
   if (isHeal(ability)) return 100;
-  const d = wholeTiles(grid, dist(from, to)); // on the split map, the whole tiles the cells stand for
+  const d = wholeTiles(grid, reachDist(ability, from, to)); // on the split map, the whole tiles the cells stand for
   const dh = standH(tileAt(grid, from)) - standH(tileAt(grid, to));
   // cover only counts against ranged attackers: melee sees the whole target
   const cover = d > 1 && TERRAIN[tileAt(grid, to).terrain].cover ? COMBAT.COVER_PENALTY : 0;
@@ -128,7 +140,9 @@ function affected(grid: Grid, state: BattleState, actor: UnitState, ability: Abi
   // an area hits everyone, allies included
   if (ability.radius > 0) {
     const area = areaOf(grid, state, center);
-    return state.units.filter((u) => u.id !== actor.id && inArea(grid, area, ability.radius, footprint(u)));
+    return state.units.filter(
+      (u) => u.id !== actor.id && inArea(grid, area, ability.radius, footprint(u), isMelee(ability)),
+    );
   }
   const u = unitAt(state, center);
   // the user is only a target of a support ability whose range starts at 0. Hits and heals land on either side (Nov 15,

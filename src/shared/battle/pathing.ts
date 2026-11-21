@@ -113,8 +113,15 @@ export const aimEnds = (grid: Grid, state: BattleState, actor: UnitState, center
   subOf(grid) === 1
     ? [nearestTile(actor, center), center]
     : closest(footprint(actor), areaOf(grid, state, aimTile(grid, state, center)));
-export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[]) =>
-  gap(area, cells) <= farCells(grid, radius);
+// `square`: a melee area (the Spin) counts the diagonal neighbours too (Nov 21)
+export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[], square = false) =>
+  (square ? Math.min(...area.flatMap((p) => cells.map((q) => king(p, q)))) : gap(area, cells)) <=
+  farCells(grid, radius);
+// A melee ability (no flight, reach up to one tile) counts the 8 tiles around (Fernando, Nov 21): its distance is the
+// king's, the longer axis, so a diagonal neighbour is as near as a straight one
+export const isMelee = (a: AbilityDef) => !a.needsSight && a.range[1] <= 1;
+const king = (p: Pos, q: Pos) => Math.max(Math.abs(p.x - q.x), Math.abs(p.y - q.y));
+export const reachDist = (a: AbilityDef, p: Pos, q: Pos) => (isMelee(a) ? king(p, q) : dist(p, q));
 
 export const unitAt = (state: BattleState, p: Pos): UnitState | undefined =>
   state.units.find((u) => {
@@ -385,6 +392,6 @@ export function maxRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): n
 }
 
 export function inAbilityRange(grid: Grid, ability: AbilityDef, from: Pos, to: Pos): boolean {
-  const d = dist(from, to);
+  const d = reachDist(ability, from, to);
   return d >= nearCells(grid, ability.range[0]) && d <= maxRange(grid, ability, from, to);
 }

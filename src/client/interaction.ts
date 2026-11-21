@@ -12,6 +12,7 @@ import {
   closest,
   footprint,
   inAbilityRange,
+  isMelee,
   inArea,
   pathTo,
   reachable,
@@ -177,13 +178,13 @@ export function facingHighlights(b: Battle): Highlights {
 
 // Every cell of the whole tiles an area touches: the rule hits any token whose 2x2 touches it, so painting by cell left tiles
 // half lit (Nov 19)
-export function areaCells(grid: Grid, area: Pos[], radius: number): Pos[] {
+export function areaCells(grid: Grid, area: Pos[], radius: number, square = false): Pos[] {
   const k = subOf(grid);
   const out: Pos[] = [];
   for (let y = 0; y < grid.height; y += k)
     for (let x = 0; x < grid.width; x += k) {
       const tile = cellsOf({ x, y }, k);
-      if (inArea(grid, area, radius, tile)) out.push(...tile);
+      if (inArea(grid, area, radius, tile, square)) out.push(...tile);
     }
   return out;
 }
@@ -191,7 +192,9 @@ export function areaCells(grid: Grid, area: Pos[], radius: number): Pos[] {
 // What the banner before an attack marks: the aimed cell as the target and the ability's area around it
 export function attackMarks(b: Battle, a: AbilityDef, target: Pos): { pos: Pos; kind: TileKind }[] {
   const area =
-    a.radius > 0 ? areaCells(b.grid, areaOf(b.grid, b.state, aimTile(b.grid, b.state, target)), a.radius) : [];
+    a.radius > 0
+      ? areaCells(b.grid, areaOf(b.grid, b.state, aimTile(b.grid, b.state, target)), a.radius, isMelee(a))
+      : [];
   return [target, ...area.filter((p) => !samePos(p, target))].map((pos, i) => ({ pos, kind: i ? 'area' : 'target' }));
 }
 
@@ -210,7 +213,7 @@ export function chargeDanger(grid: Grid, state: BattleState): Map<string, string
     // a charge aimed at a cell lands on its whole tile, as when it fires (previewAbility)
     const r = ABILITIES[c.ability].radius,
       area = areaOf(grid, state, aimTile(grid, state, center));
-    for (const p of areaCells(grid, area, r)) out.set(posKey(p), c.ability);
+    for (const p of areaCells(grid, area, r, isMelee(ABILITIES[c.ability]))) out.set(posKey(p), c.ability);
   }
   return out;
 }

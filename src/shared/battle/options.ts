@@ -6,7 +6,7 @@ import { slotFor } from './action-slots.ts';
 import { canPay, inDeep, type Preview, type PreviewReason, poolOf, previewAbility } from './combat.ts';
 import { moveOf } from './effects.ts';
 import { dist, type Grid, inBounds, posKey, standH, subOf } from './grid.ts';
-import { aimTile, farCells, reachable, unitAt } from './pathing.ts';
+import { aimTile, farCells, isMelee, reachable, unitAt } from './pathing.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
@@ -80,7 +80,8 @@ export function actionOptions(grid: Grid, state: BattleState, id: string): Abili
       };
     }
     if (!origins.length) return { ability: abilityId, enabled: false, reason: 'water', targets: [] };
-    const far = farCells(grid, a.range[1] + (a.heightRange ? span : 0)) + slack;
+    // a melee reach is measured by the longer axis (pathing.ts isMelee): its diagonal is twice that in steps
+    const far = (farCells(grid, a.range[1] + (a.heightRange ? span : 0)) + slack) * (isMelee(a) ? 2 : 1);
     const found = new Map<string, ActionTarget>();
     let blocked = false;
     let unwanted = false;
