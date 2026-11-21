@@ -3,7 +3,7 @@ import { chooseTurn, playAiTurn } from '../src/shared/battle/ai.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT, resolveAbility } from '../src/shared/battle/combat.ts';
 import { samePos } from '../src/shared/battle/grid.ts';
-import { halve, registerHalf } from '../src/shared/battle/half.ts';
+import { halfDef, halve, registerHalf } from '../src/shared/battle/half.ts';
 import { footprint, reachable } from '../src/shared/battle/pathing.ts';
 import { simulatePush } from '../src/shared/battle/push.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
@@ -66,6 +66,32 @@ describe('corpses: the state', () => {
       { x: 2, y: 1 },
       { x: 3, y: 1 },
     ]);
+  });
+
+  // Fernando, Nov 21: only bodies of a whole tile (2x2 half tiles) and up stay; a rat or a bat leaves its ground free
+  it('a half-tile creature leaves no corpse, on the whole map', () => {
+    const b = killer(row, { def: 'rat', x: 1, y: 0 });
+    b.act('strike', { x: 1, y: 0 });
+    expect(b.state.units.map((u) => u.id)).not.toContain('b');
+    expect(b.state.corpses).toBeUndefined();
+  });
+
+  it('a half-tile creature leaves no corpse on the split map', () => {
+    const g = halve({ id: 't-rat', name: 't-rat', en: 't-rat', grid: flat(6, 2), spawns: [] }).grid;
+    const b = new Battle(
+      g,
+      stateOf(
+        [
+          { id: 'a', def: `warrior${HALF}`, team: 'hero', x: 0, y: 0 },
+          { id: 'b', def: halfDef('rat'), team: 'enemy', x: 2, y: 0, hp: 1 },
+          { id: 'c', def: `soldier${HALF}`, team: 'enemy', x: 8, y: 0 },
+        ],
+        HIT_SEED,
+      ),
+    );
+    b.act('strike', { x: 2, y: 0 });
+    expect(b.state.units.map((u) => u.id)).not.toContain('b');
+    expect(b.state.corpses).toBeUndefined();
   });
 
   it('a battle without deaths has no field (the save does not change)', () => {

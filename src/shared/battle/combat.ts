@@ -20,7 +20,7 @@ import { rulesOf } from './rules.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { traceShot } from './shot.ts';
 import type { BattleEvent, BattleState, Outcome, Pos, Shot, UnitState } from './types.ts';
-import { dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
+import { baseDef, dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
 
 // Initial numbers from Oct 25; they can be measured in the simulation (scripts/battle-sim.ts), which is optional.
 export const COMBAT = {
@@ -325,9 +325,15 @@ function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEv
   unit.hp -= dmg;
   if (unit.hp > 0) return true;
   state.units = state.units.filter((u) => u !== unit);
-  // a new array: the AI's state copies share the old one
-  state.corpses = [...(state.corpses ?? []), ...footprint(unit)];
-  state.corpseDefs = { ...state.corpseDefs, ...Object.fromEntries(footprint(unit).map((c) => [posKey(c), unit.def])) };
+  // only bodies of a whole tile and up stay (Fernando, Nov 21): a half-tile creature (a rat, a bat) leaves its ground
+  // free. A new array: the AI's state copies share the old one
+  if ((UNIT_DEFS[baseDef(unit.def)].halfSize ?? 2) >= 2) {
+    state.corpses = [...(state.corpses ?? []), ...footprint(unit)];
+    state.corpseDefs = {
+      ...state.corpseDefs,
+      ...Object.fromEntries(footprint(unit).map((c) => [posKey(c), unit.def])),
+    };
+  }
   // nor does it owe a counter (a friendly shot may kill it mid-move), and a save naming it would not load
   state.turn.engaged = state.turn.engaged?.filter((id) => id !== unit.id);
   // the charge of whoever dies no longer fires; the one that followed the dead unit now aims at the tile where it was
