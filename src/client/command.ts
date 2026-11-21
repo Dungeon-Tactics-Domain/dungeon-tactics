@@ -5,7 +5,7 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import { type ActionKind, freeSlot } from '../shared/battle/action-slots.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { isDeep, samePos, tileAt } from '../shared/battle/grid.ts';
+import { isDeep, tileAt } from '../shared/battle/grid.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
@@ -13,8 +13,6 @@ import {
   type ActGroup,
   type ActRef,
   type ActTarget,
-  actActions,
-  actAims,
   actGroup,
   actList,
   actTargets,
@@ -49,8 +47,9 @@ export type Screen =
   | { k: 'targets'; index: number; only?: ActRef; other?: boolean }
   // `page`: the action sheet's page (menu3d/), 0 to PAGES - 1; another action opens on the first
   | { k: 'actions'; target: ActTarget; index: number; page?: number }
-  // an action with several aims (an area) picks where it lands first (`index` into actAims), then the tiles aiming there
-  | { k: 'aim'; target: ActTarget; action: number; index: number; only?: ActRef }
+  // an action with several aims (an area) picks where it lands first, then the tiles aiming there
+  // `at`: the free cursor (Nov 21), starting on the picked target's aim, then one tile per arrow anywhere on the map
+  | { k: 'aim'; target: ActTarget; action: number; at: Pos; only?: ActRef }
   | {
       k: 'spot';
       target: ActTarget;
@@ -149,16 +148,7 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
   if (s.k === 'aim') return out;
   if (s.lock || s.slot) return { k: 'spot', ...back, index: s.index, aim: s.aim };
   if (!s.aim) return out;
-  const aim = s.aim;
-  const aims = actAims(actActions(b, s.target)[s.action]);
-  return {
-    k: 'aim',
-    ...back,
-    index: Math.max(
-      0,
-      aims.findIndex((p) => samePos(p, aim)),
-    ),
-  };
+  return { k: 'aim', ...back, at: s.aim };
 }
 
 // where an action's target list goes back to: its row, on the Agir list (the basic attack) or in its group's column

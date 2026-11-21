@@ -93,7 +93,7 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
       actGroup(b, 'magic').findIndex((r) => r.id === 'heal'),
     ); // the heal's targets
     await actPick(h, 0); // the first target
-    while (h.ran.length === 0) await actPick(h, h.screen.k === 'spot' || h.screen.k === 'aim' ? h.screen.index : 0);
+    while (h.ran.length === 0) await actPick(h, h.screen.k === 'spot' ? h.screen.index : 0);
     expect(h.last).toEqual({ k: 'ability', id: 'heal' });
     const fresh = battle();
     expect(actStart(fresh, h.last)).toEqual({ k: 'acts', index: magic });
@@ -220,8 +220,10 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     const h = host(b, { k: 'actions', target, index: i });
     actKey(h, { k: 'confirm' });
     // an area charge picks its aim first: on the target itself, so it can lock on the character
-    const onTarget = actAims(actActions(b, target)[i]).findIndex((p) => p.x === 5 && p.y === 2);
-    if (h.screen.k === 'aim') await actPick(h, onTarget);
+    if (h.screen.k === 'aim') {
+      h.screen = { ...h.screen, at: target.pos };
+      await actPick(h, 0);
+    }
     const aim = (h.screen as { aim?: { x: number; y: number } }).aim;
     const spot = (h.screen as { index: number }).index;
     await actPick(h, spot);
@@ -254,55 +256,56 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
       'Área: escolha onde mirar e confirme.',
     );
     expect(menuView({ battle: b, screen: h.screen } as never, true)).toBeNull(); // the map is the choice
-    const pick = aims.findIndex((p) => p.x !== target.pos.x || p.y !== target.pos.y);
-    await actPick(h, pick);
-    expect(h.screen).toMatchObject({ k: 'spot', aim: aims[pick] });
-    const marks = actMarks(b, h.screen as Extract<Screen, { k: 'spot' }>);
+    expect(h.screen).toMatchObject({ k: 'aim', at: target.pos }); // snapped on the picked target first (Nov 21)
+    const pick = aims.find((p) => p.x !== target.pos.x || p.y !== target.pos.y)!;
+    h.screen = { ...(h.screen as Extract<Screen, { k: 'aim' }>), at: pick };
+    await actPick(h, 0);
+    expect(h.screen).toMatchObject({ k: 'spot', aim: pick });
+    const marks = actMarks(b, h.screen as Screen as Extract<Screen, { k: 'spot' }>);
     expect(marks.preview?.targets.some((x) => x.unit === 'near')).toBe(true); // that aim still hits the target
     expect(marks.tiles.some((m) => m.kind === 'area')).toBe(true); // and its area is lit
-    const onAim = actMarks(b, { k: 'aim', target, action: i, index: pick });
+    const onAim = actMarks(b, { k: 'aim', target, action: i, at: pick });
     expect(onAim.tiles.some((m) => m.kind === 'area')).toBe(true);
-    expect(cancelStep(b, h.screen)).toEqual({ k: 'aim', target, action: i, index: pick });
-    expect(cancelStep(b, { k: 'aim', target, action: i, index: pick })).toEqual({ k: 'actions', target, index: i });
+    expect(cancelStep(b, h.screen)).toEqual({ k: 'aim', target, action: i, at: pick });
+    expect(cancelStep(b, { k: 'aim', target, action: i, at: pick })).toEqual({ k: 'actions', target, index: i });
   });
 
-  it('an arrow on the map goes to a point that way on screen, never on a slant, on the diamond view (Nov 19)', async () => {
+  // Fernando, Nov 21: "snap on the chosen target first, then free on the grid": one tile per arrow, anywhere
+  it('the aim cursor walks one tile at a time that way on screen, also where the area cannot land', () => {
     const b = battle();
     const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
     const i = actActions(b, target).findIndex((a) => a.enabled && actAims(a).length > 1);
-    const aims = actAims(actActions(b, target)[i]);
     const ways = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] } as const;
-    let moved = 0;
-    for (const [dir, [wx, wy]] of Object.entries(ways))
-      for (let from = 0; from < aims.length; from++) {
-        const h = host(b, { k: 'aim', target, action: i, index: from });
-        actKey(h, { k: 'cursor', dir: dir as keyof typeof ways });
-        const to = (h.screen as { index: number }).index;
-        if (to === from) continue;
-        moved++;
-        const a = diamond(aims[from]),
-          c = diamond(aims[to]);
-        const ahead = (c.x - a.x) * wx + (c.y - a.y) * wy,
-          aside = Math.abs((c.x - a.x) * wy - (c.y - a.y) * wx);
-        expect(ahead).toBeGreaterThan(0);
-        expect(aside).toBeLessThanOrEqual(ahead); // within 45° of the arrow on screen
-      }
-    expect(moved).toBeGreaterThan(0);
+    for (const [dir, [wx, wy]] of Object.entries(ways)) {
+      const h = host(b, { k: 'aim', target, action: i, at: { x: 7, y: 2 } });
+      actKey(h, { k: 'cursor', dir: dir as keyof typeof ways });
+      const to = (h.screen as { at: { x: number; y: number } }).at;
+      expect(Math.max(Math.abs(to.x - 7), Math.abs(to.y - 2))).toBe(1); // one tile, a neighbour
+      const a = diamond({ x: 7, y: 2 }),
+        c = diamond(to);
+      const ahead = (c.x - a.x) * wx + (c.y - a.y) * wy,
+        aside = Math.abs((c.x - a.x) * wy - (c.y - a.y) * wx);
+      expect(ahead).toBeGreaterThan(0);
+      expect(aside).toBeLessThanOrEqual(ahead); // within 45° of the arrow on screen
+    }
+    // far off, where nothing is in reach: the cursor goes there, Confirm says no and stays
+    const h = host(b, { k: 'aim', target, action: i, at: { x: 13, y: 4 } });
+    void actPick(h, 0);
+    expect(h.screen).toMatchObject({ k: 'aim', at: { x: 13, y: 4 } });
   });
 
-  it('the pointer focuses an aim without sliding the camera, so a 2nd click on the same pixel goes on (Nov 19)', async () => {
+  it('the pointer moves the aim without sliding the camera, so a 2nd click on the same pixel goes on (Nov 19)', async () => {
     const b = battle();
     const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
     const i = actActions(b, target).findIndex((a) => a.enabled && actAims(a).length > 1);
-    const aims = actAims(actActions(b, target)[i]);
-    const h = host(b, { k: 'aim', target, action: i, index: 0 });
+    const h = host(b, { k: 'aim', target, action: i, at: target.pos });
     let slid = 0;
     h.focus = () => void slid++;
-    actHoverMap(h, aims[1]);
-    expect(h.screen).toMatchObject({ k: 'aim', index: 1 });
-    actTap(h, aims[2]);
-    expect(h.screen).toMatchObject({ k: 'aim', index: 2 });
+    actHoverMap(h, { x: 6, y: 2 });
+    expect(h.screen).toMatchObject({ k: 'aim', at: { x: 6, y: 2 } });
     expect(slid).toBe(0);
+    actTap(h, { x: 6, y: 2 }); // the same tile again goes on to the tiles aiming there
+    expect(h.screen.k).toBe('spot');
   });
 
   it('the help line says what to pick and what an item does', () => {

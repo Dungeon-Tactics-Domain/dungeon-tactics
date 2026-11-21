@@ -4,7 +4,7 @@
 import { ABILITIES } from '../shared/battle/abilities.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { posKey, samePos, subOf } from '../shared/battle/grid.ts';
-import { cellsOf, closest, footprint, inAbilityRange, pathTo, unitAt } from '../shared/battle/pathing.ts';
+import { aimTile, cellsOf, closest, footprint, inAbilityRange, pathTo, unitAt } from '../shared/battle/pathing.ts';
 import type { Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import {
@@ -16,6 +16,7 @@ import {
   actList,
   actTargets,
   bestSpot,
+  freeArea,
   spotPreview,
   withAim,
 } from './act-flow.ts';
@@ -42,7 +43,15 @@ export function screenAction(b: Battle, s: ActScreen): ActAction | null {
   if (s.k === 'acts' || s.k === 'group' || s.k === 'targets') return null;
   const a = actActions(b, s.target)[s.k === 'actions' ? s.index : s.action];
   if (!a) return null;
-  return s.k === 'spot' && s.aim ? withAim(a, s.aim) : a;
+  // past the aim step the area may land anywhere it reaches, not only on the picked target (freeArea)
+  if (s.k === 'aim') return freeArea(b, a);
+  return s.k === 'spot' && s.aim ? withAim(freeArea(b, a), s.aim) : a;
+}
+
+// the aim under the free cursor of the aim step, or null where the area cannot land this turn
+export function aimAt(b: Battle, s: Extract<Screen, { k: 'aim' }>): Pos | null {
+  const a = screenAction(b, s);
+  return (a && actAims(a).find((aim) => aimCells(b, aim).some((c) => samePos(c, s.at)))) || null;
 }
 
 export function actMarks(b: Battle, s: ActScreen): Highlights {
@@ -83,15 +92,13 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
   }
   const a = screenAction(b, s);
   if (s.k === 'aim' && a) {
-    // the aims, the focused one with the area it would cover (its best tile's preview)
-    const aims = actAims(a);
-    aims.forEach((p, i) => {
-      if (i !== s.index) mark(aimCells(b, p), 'range');
-    });
-    const here = aims[s.index] ? withAim(a, aims[s.index]) : null;
+    // where it can land, and the area under the free cursor (with its best tile's preview when it can land there)
+    const on = aimAt(b, s);
+    for (const p of actAims(a)) if (!on || !samePos(p, on)) mark(aimCells(b, p), 'range');
+    const here = on ? withAim(a, on) : null;
     mark(cellsOfTarget(b, s.target), 'target');
     mark(footprint(b.actor), 'actor');
-    if (aims[s.index]) tiles.push(...attackMarks(b, ABILITIES[a.id], aims[s.index]));
+    tiles.push(...attackMarks(b, ABILITIES[a.id], on ?? aimTile(b.grid, b.state, s.at)));
     return { tiles, path: null, preview: here?.spots[bestSpot(here, b)]?.preview ?? null };
   }
   const spots = a?.spots ?? [];

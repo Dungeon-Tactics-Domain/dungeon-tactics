@@ -233,6 +233,15 @@ export function actAims(a: ActAction): Pos[] {
   for (const s of a.spots) if (!out.some((p) => samePos(p, s.aim))) out.push(s.aim);
   return out.length > 1 ? out : [];
 }
+// An area on the free aim (Fernando, Nov 21: "snap on the chosen target first, then free on the grid"): every place it
+// can land this turn, whoever it hits, not only where it hits the picked target
+export function freeArea(b: Battle, a: ActAction): ActAction {
+  if (a.k !== 'ability' || ABILITIES[a.id].radius === 0) return a;
+  const spots = (options(b).abilities.find((o) => o.ability === a.id)?.targets ?? []).flatMap((t) =>
+    t.spots.map((s) => ({ pos: s.pos, cost: s.cost, aim: t.kind === 'self' ? s.pos : t.pos, preview: s.preview })),
+  );
+  return spots.length ? { ...a, spots } : a;
+}
 // the action with only the tiles aiming at `aim`
 export const withAim = (a: ActAction, aim: Pos): ActAction => ({
   ...a,

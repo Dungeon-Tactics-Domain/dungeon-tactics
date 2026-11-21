@@ -4,7 +4,8 @@
 import { ABILITIES, defaultLock } from '../shared/battle/abilities.ts';
 import type { ActionKind } from '../shared/battle/action-slots.ts';
 import type { Battle } from '../shared/battle/battle.ts';
-import { samePos } from '../shared/battle/grid.ts';
+import { inBounds, samePos, subOf } from '../shared/battle/grid.ts';
+import { aimTile } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import {
@@ -16,6 +17,7 @@ import {
   actList,
   actTargets,
   bestSpot,
+  freeArea,
   groupOf,
   needsSlot,
   runSpot,
@@ -24,7 +26,7 @@ import {
   targetAt,
   withAim,
 } from './act-flow.ts';
-import { actScreen, aimCells, screenAction } from './act-marks.ts';
+import { actScreen, aimAt, screenAction } from './act-marks.ts';
 import { needsLock, type Screen, stepIndex, turnPage } from './command.ts';
 import type { KeyAction } from './keyboard.ts';
 import { sfx } from './sound.ts';
@@ -60,7 +62,7 @@ export function actKey(h: ActHost, a: KeyAction): void {
     if (a.k === 'cursor' && (a.dir === 'up' || a.dir === 'down')) actHover(h, a.dir === 'up' ? 0 : 1);
     return;
   }
-  if (a.k === 'confirm') return void actPick(h, s.index);
+  if (a.k === 'confirm') return void actPick(h, s.k === 'aim' ? 0 : s.index);
   // the action sheet's pages: left and right turn them back and forth, Details (I, the pad's north button) goes on
   if (
     (s.k === 'actions' || s.k === 'acts' || s.k === 'group') &&
@@ -72,7 +74,12 @@ export function actKey(h: ActHost, a: KeyAction): void {
   if (a.k !== 'cursor') return;
   // on the map the arrow goes to the nearest aim or tile that way on screen, as the 3D windows do (neighbour); a grid
   // step was a slant on the diamond view and missed (Fernando, Nov 19: "the arrows don't go the right way")
-  if (s.k === 'aim' || s.k === 'spot') {
+  if (s.k === 'aim') {
+    const at = stepAim(h, s.at, a.dir);
+    if (at) select(h, { ...s, at });
+    return;
+  }
+  if (s.k === 'spot') {
     const boxes = (mapPoints(h.battle, s) ?? []).map((p) => ({ ...h.at(p), w: 0, h: 0 }));
     const index = neighbour(boxes, s.index, a.dir);
     if (index !== s.index) select(h, { ...s, index });
@@ -145,16 +152,38 @@ export function actHover(h: ActHost, index: number): void {
 function indexAt(b: Battle, s: Screen, p: Pos): number {
   if (s.k === 'targets') return targetAt(actTargets(b, s.only, s.other), b, p);
   if (s.k === 'spot' && !stepOf(s)) return spotAt(screenAction(b, s)!, p, UNIT_DEFS[b.actor.def].size ?? 1);
-  if (s.k === 'aim')
-    return actAims(screenAction(b, s)!).findIndex((aim) => aimCells(b, aim).some((c) => samePos(c, p)));
   return -1;
 }
+
+// the aim step's free cursor: the whole tile next to `at` that the arrow points to on screen, anywhere on the map (Nov 21:
+// it used to jump between the target's aims only)
+function stepAim(h: ActHost, at: Pos, dir: 'up' | 'down' | 'left' | 'right'): Pos | null {
+  const k = subOf(h.battle.grid);
+  const near = [at];
+  for (let dy = -1; dy <= 1; dy++)
+    for (let dx = -1; dx <= 1; dx++) {
+      const p = { x: at.x + dx * k, y: at.y + dy * k };
+      if ((dx || dy) && inBounds(h.battle.grid, p)) near.push(p);
+    }
+  const i = neighbour(
+    near.map((p) => ({ ...h.at(p), w: 0, h: 0 })),
+    0,
+    dir,
+  );
+  return i ? near[i] : null;
+}
+const sameAim = (b: Battle, p: Pos, q: Pos) => samePos(aimTile(b.grid, b.state, p), aimTile(b.grid, b.state, q));
 
 // a tap on the map: on the target list a unit picks its row (twice: goes on), on the tile choice a tile does the same.
 // The camera stays: sliding to the tile moved it from under the pointer, so a 2nd click on the same pixel missed it
 export function actTap(h: ActHost, p: Pos): boolean {
   const s = h.screen;
   if (!actScreen(s)) return false;
+  if (s.k === 'aim') {
+    if (sameAim(h.battle, p, s.at)) void actPick(h, 0);
+    else select(h, { ...s, at: p }, false);
+    return true;
+  }
   const i = indexAt(h.battle, s, p);
   if (i < 0) return true; // also the lock and slot steps, answered on their rows
   if (i === s.index) void actPick(h, i);
@@ -166,6 +195,10 @@ export function actTap(h: ActHost, p: Pos): boolean {
 export function actHoverMap(h: ActHost, p: Pos): void {
   const s = h.screen;
   if (!actScreen(s) || s.k === 'actions' || s.k === 'group') return;
+  if (s.k === 'aim') {
+    if (!sameAim(h.battle, p, s.at)) select(h, { ...s, at: p }, false);
+    return;
+  }
   const i = indexAt(h.battle, s, p);
   if (i >= 0 && i !== s.index) select(h, { ...s, index: i }, false);
 }
@@ -230,7 +263,7 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
   }
   if (s.k === 'aim') {
     const all = screenAction(b, s);
-    const aim = all && actAims(all)[index];
+    const aim = aimAt(b, s); // the free cursor may stand where the area cannot land: it says no
     if (!all || !aim) return sfx('cancel');
     sfx('confirm');
     const a = withAim(all, aim);
@@ -273,21 +306,19 @@ function openTargets(h: ActHost, only?: ActRef, other = false) {
 function openAction(h: ActHost, target: ActTarget, action: number, only?: ActRef): void {
   const b = h.battle,
     a = actActions(b, target)[action];
-  // several aims (an area): where it lands first, starting on the best tile's aim
-  const aims = actAims(a);
+  // several aims (an area): where it lands first, the free cursor starting on the best aim at the picked target
+  const area = actAims(freeArea(b, a)).length > 0;
   const best = a.spots[bestSpot(a, b)];
-  if (aims.length) h.screen = { k: 'aim', target, action, index: aims.findIndex((p) => samePos(p, best.aim)), only };
+  if (area) h.screen = { k: 'aim', target, action, at: best.aim, only };
   else h.screen = { k: 'spot', target, action, index: bestSpot(a, b), only };
-  h.focus(aims.length ? best.aim : best.pos);
+  h.focus(area ? best.aim : best.pos);
   h.update();
 }
 
-// what the arrows walk on a map screen (the aims, or the tiles to act from); null on a list
+// what the arrows walk on the tile choice (the tiles to act from); null elsewhere
 function mapPoints(b: Battle, s: Screen): Pos[] | null {
-  if (s.k !== 'aim' && s.k !== 'spot') return null;
-  const a = screenAction(b, s);
-  if (!a) return [];
-  return s.k === 'aim' ? actAims(a) : a.spots.map((sp) => sp.pos);
+  if (s.k !== 'spot') return null;
+  return screenAction(b, s)?.spots.map((sp) => sp.pos) ?? [];
 }
 
 // every row takes the cursor, an off one too: it shows its sheet and reach, and Confirm on it only says no (Fernando,
@@ -312,7 +343,8 @@ function select(h: ActHost, s: Screen, follow = true) {
   if (follow && s.k === 'targets') {
     const t = actTargets(b, s.only, s.other)[s.index];
     if (t?.k === 'unit') h.focus(t.pos);
-  } else if (follow && (s.k === 'aim' || s.k === 'spot')) {
+  } else if (follow && s.k === 'aim') h.focus(s.at);
+  else if (follow && s.k === 'spot') {
     const p = mapPoints(b, s)?.[s.index];
     if (p) h.focus(p);
   }

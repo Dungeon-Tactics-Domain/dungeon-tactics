@@ -36,7 +36,7 @@ const host = (b: Battle) => {
 const toStep = async (h: ReturnType<typeof host>) => {
   await actPick(h, 0);
   while (!h.ran.length && !(h.screen.k === 'spot' && h.screen.slot))
-    await actPick(h, h.screen.k === 'spot' || h.screen.k === 'aim' ? h.screen.index : 0);
+    await actPick(h, h.screen.k === 'spot' ? h.screen.index : 0);
 };
 
 describe('the slot step of a dual action (Nov 20)', () => {
