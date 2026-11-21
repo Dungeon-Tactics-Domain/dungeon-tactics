@@ -25,6 +25,9 @@
   "estocada-longa",
   "salto",
   "mover",
-  "esperar"
+  "esperar",
+  "empurrar",
+  "jogar-areia",
+  "focar"
  ]
 }

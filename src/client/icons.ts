@@ -67,7 +67,7 @@ export const UI_ICON = {
   soon: 'pocket-watch', // comes later
 };
 
-// Ability icons (Nov 15, Fernando approved the 32 px set): one 6x4 atlas of 32 px cells, in the order of its .json (abilities,
+// Ability icons (Nov 15, Fernando approved the 32 px set): one 6x5 atlas of 32 px cells, in the order of its .json (abilities,
 // then the Move and Wait commands): /ui/fft/atlas-32.png, drawn by the 3D turn list (turn3d.ts).
 const ATLAS = [
   'strike',
@@ -94,6 +94,10 @@ const ATLAS = [
   'lance_jump',
   'move',
   'wait',
+  // Nov 21: a row of our own, drawn from the cells above (scripts/assets/ability-icons-nov21.py)
+  'shove',
+  'sand',
+  'focus',
 ];
 export const ATLAS_COLUMNS = 6;
 // cell of an ability or command in the atlas; null when it has none (a new ability)
