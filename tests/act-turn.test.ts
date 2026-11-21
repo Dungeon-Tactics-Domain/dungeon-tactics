@@ -56,7 +56,7 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
     expect(h.screen).toEqual({ k: 'acts', index: 1 });
   });
 
-  it('the Agir row shows the two actions as dots and why nothing can be done; it still opens', () => {
+  it('the Agir row shows the two actions as dots and why nothing can be done; greyed with none left (Nov 21)', () => {
     const b = battle();
     const note = () => menuView({ battle: b, screen: { k: 'menu', index: 0 } } as never, true)!.rows[0].note;
     expect(note()).toBe('⬤ ●');
@@ -64,7 +64,7 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
     expect(note()).toBe('◯ ●');
     b.state.turn.bonus = 'heal';
     expect(note()).toBe('sem ações  ◯ ○');
-    expect(menuView({ battle: b, screen: { k: 'menu', index: 0 } } as never, true)!.rows[0].off).toBe(false);
+    expect(menuView({ battle: b, screen: { k: 'menu', index: 0 } } as never, true)!.rows[0].off).toBe(true);
   });
 
   it('each row on says how many targets of its own side its target list will show', () => {

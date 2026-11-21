@@ -84,13 +84,14 @@ export const canAct = (b: Battle) => !!freeSlot(b.state.turn, 'bonus') && !swimm
 export function commandEnabled(b: Battle, c: Command): boolean {
   if (c === 'move') return b.reach().size > 0;
   if (c === 'undo') return canUndoMove(b);
+  // greyed like Move once no action is left, and choosing it says no (Fernando, Nov 21; it used to open to look)
+  if (c === 'act') return canAct(b);
   return true;
 }
 
 // The rows the menu shows, in COMMANDS order: Move always stays, greyed with its bar at zero once the movement is spent or
-// boxed in (Fernando, Nov 21: it used to leave), "Undo move" only while there is a move to take back. Agir always shows and
-// opens, even with nothing left to do, to look at every action and its reach (Fernando, Nov 19; its row says why,
-// menu-view.ts). 4 rows at the start, 5 after a move
+// boxed in (Fernando, Nov 21: it used to leave), "Undo move" only while there is a move to take back. Agir always shows,
+// greyed with nothing left to do (Nov 21; its row says why, menu-view.ts). 4 rows at the start, 5 after a move
 export const menuRows = (b: Battle): Command[] => COMMANDS.filter((c) => c !== 'undo' || canUndoMove(b));
 
 // range of the farthest-reaching ability (the dotted line around the player)

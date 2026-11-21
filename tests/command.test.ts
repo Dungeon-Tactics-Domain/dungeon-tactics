@@ -291,8 +291,8 @@ describe('menu rows in each state of the turn', () => {
     expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']);
     b.state.turn.bonus = 'ether'; // both actions spent: Agir leaves the menu (Fernando's grill, Nov 19)
     expect(canAct(b)).toBe(false);
-    expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']); // Agir stays: it opens to look (Nov 19)
-    expect(commandEnabled(b, 'act')).toBe(true);
+    expect(menuRows(b)).toEqual(['act', 'move', 'wait', 'status']); // Agir stays, greyed like Move (Nov 21)
+    expect(commandEnabled(b, 'act')).toBe(false);
   });
 
   it('no step to undo (the move drew a counter): only Move, never Undo move', () => {
