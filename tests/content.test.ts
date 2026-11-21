@@ -65,7 +65,9 @@ describe('classes and abilities', () => {
 
   it('an ability deals damage or heals, never both, and has a coherent range', () => {
     for (const a of Object.values(ABILITIES)) {
-      expect(a.damage[1] > 0 !== a.heal[1] > 0, a.id).toBe(true);
+      // or neither, for a pure effect: a push or a timed effect (the Shove, the sand, Focus; Nov 21)
+      if (a.damage[1] === 0 && a.heal[1] === 0) expect(a.push > 0 || !!a.buff, a.id).toBe(true);
+      else expect(a.damage[1] > 0 !== a.heal[1] > 0, a.id).toBe(true);
       expect(a.range[0], a.id).toBeLessThanOrEqual(a.range[1]);
       expect(a.damage[0], a.id).toBeLessThanOrEqual(a.damage[1]);
       expect(a.accuracy, a.id).toBeGreaterThan(0);

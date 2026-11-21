@@ -1,18 +1,15 @@
 import { ABILITIES, type AbilityDef } from './abilities.ts';
-import { hitElement, powerBonus, resistBonus } from './effects.ts';
 import {
-  dist,
-  FACING,
-  type Grid,
-  inBounds,
-  isDeep,
-  posKey,
-  type Side,
-  sideOf,
-  standH,
-  TERRAIN,
-  tileAt,
-} from './grid.ts';
+  addEffect,
+  damageShare,
+  hitElement,
+  hitShare,
+  powerBonus,
+  resistBonus,
+  spendOnce,
+  stunned,
+} from './effects.ts';
+import { FACING, type Grid, inBounds, isDeep, posKey, type Side, sideOf, standH, TERRAIN, tileAt } from './grid.ts';
 import {
   aimEnds,
   aimTile,
@@ -29,10 +26,9 @@ import {
 import { simulatePush } from './push.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
-import { SCENARIOS } from './scenarios.ts';
 import { traceShot } from './shot.ts';
-import type { BattleEvent, BattleState, Outcome, Pos, Shot, UnitState } from './types.ts';
-import { baseDef, dodgeOf, isObjective, resistOf, UNIT_DEFS } from './units.ts';
+import type { BattleEvent, BattleState, Pos, Shot, UnitState } from './types.ts';
+import { baseDef, dodgeOf, resistOf, UNIT_DEFS } from './units.ts';
 
 // Initial numbers from Oct 25; they can be measured in the simulation (scripts/battle-sim.ts), which is optional.
 export const COMBAT = {
@@ -74,7 +70,7 @@ export interface TargetPreview {
   healMax: number;
 }
 
-export type PreviewReason = 'unknown' | 'range' | 'sight' | 'no-target' | 'spent' | 'water';
+export type PreviewReason = 'unknown' | 'range' | 'sight' | 'no-target' | 'spent' | 'water' | 'stunned';
 export interface Preview {
   ok: boolean;
   reason?: PreviewReason;
@@ -83,25 +79,13 @@ export interface Preview {
   shot?: Shot; // a flying ability's path (traceShot): the scene's preview and flight draw this one
 }
 
-// What a unit has left of a counter (mana, stamina; the study's MP and stock): a key absent reads as the sheet's start value,
-// so a save or a state from before the pools opens full
-export const poolOf = (u: UnitState, k: string) => u.vars?.[k] ?? UNIT_DEFS[u.def].vars?.[k] ?? 0;
-// the one reading of the cost: the preview, the AI, the menu and the payment go through these two
-export const canPay = (u: UnitState, a: AbilityDef) => !a.cost || poolOf(u, a.cost[0]) >= a.cost[1];
-export function pay(u: UnitState, a: AbilityDef): void {
-  if (a.cost) u.vars = { ...u.vars, [a.cost[0]]: poolOf(u, a.cost[0]) - a.cost[1] };
-}
-// Mana, stamina and life back at the start of each of the unit's turns (the lab's regen by class, pieces), never above
-// the sheet's max. Life regen is not a heal: no magic power, no friendly-fire share, the undead gain it too. No roll
-export function regen(u: UnitState): BattleEvent[] {
-  const d = UNIT_DEFS[u.def];
-  for (const [k, n] of Object.entries(d.regen ?? {}))
-    u.vars = { ...u.vars, [k]: Math.min(d.vars?.[k] ?? 0, poolOf(u, k) + (n ?? 0)) };
-  const amount = Math.min(d.hpRegen ?? 0, d.hp - u.hp);
-  if (amount <= 0) return []; // at full life it says nothing, or every turn would flash
-  u.hp += amount;
-  return [{ k: 'regen', unit: u.id, amount }];
-}
+// the pools moved to pools.ts (Nov 21, combat.ts at its 400 lines); their old importers still find them here
+export { checkOutcome } from './outcome.ts';
+export { canPay, pay, poolOf, regen } from './pools.ts';
+
+import { checkOutcome } from './outcome.ts';
+
+import { canPay, pay } from './pools.ts';
 
 // damage range with the user's power (class, equipment and, for martial hits, item effects): magic on a spell, physical otherwise
 const withPower = (state: BattleState, actor: UnitState, a: AbilityDef): [number, number] => {
@@ -173,10 +157,12 @@ export const facingSide = (actor: UnitState, u: UnitState): Side => {
 };
 // Damage that lands: the roll (with power) x the defence, the counter's `scale`, the side share and the attacker's flank
 // damage (UnitDef.flankDamage), rounded down, at least 1. Whole numbers until the last division, so 70 at 30% is 49
+// (a blow with no damage, as the Shove or the sand, lands none); the attacker's effects' damage share applies (Focus, Nov 21)
 function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, roll: number, scale = 1): number {
-  const keep = defence(state, actor, a, u);
+  if (a.damage[1] === 0) return 0;
+  const keep = defence(state, actor, a, u) * damageShare(state, actor.id);
   const flank = 100 + (UNIT_DEFS[actor.def].flankDamage?.[facingSide(actor, u)] ?? 0);
-  return Math.max(1, Math.floor((roll * keep * scale * sideShare(actor, u, false) * flank) / 1000000));
+  return Math.max(1, Math.floor((roll * keep * scale * sideShare(actor, u, false) * flank) / 100000000));
 }
 
 // Hit chance after the target's dodge (Nov 15 grill: x (1 - dodge x DODGE_BY_SIDE), spells dodged too), rounded half up
@@ -185,6 +171,9 @@ function landed(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitStat
 export const afterDodge = (chance: number, dodge: number, side: Side) =>
   Math.max(COMBAT.MIN_CHANCE, Math.floor((chance * (10000 - dodge * COMBAT.DODGE_BY_SIDE[side]) + 5000) / 10000));
 
+// the attacker's effects' share of the hit chance (sand 75%, Focus 125%; Nov 21), rounded down inside the bounds
+const aimed = (share: number, chance: number) =>
+  share === 100 ? chance : Math.max(COMBAT.MIN_CHANCE, Math.min(COMBAT.MAX_CHANCE, Math.floor((chance * share) / 100)));
 // the range `actor` would deal `u` with `a` before the hit roll, wherever they stand: the preview and the AI's threat read it
 export function damageRange(state: BattleState, actor: UnitState, a: AbilityDef, u: UnitState, scale = 1) {
   const [lo, hi] = withPower(state, actor, a);
@@ -223,6 +212,7 @@ export function previewAbility(
   // in deep water you can only walk or wait (Nov 13, Fernando's choice; grid.ts isDeep). A charge that fires does not pass here:
   // it was started on firm ground and goes off from wherever its caster walked to (Nov 15)
   if (!charged && inDeep(grid, actor)) return fail('water');
+  if (stunned(state, actor.id)) return fail('stunned'); // no actions, counters and charges included (Nov 21)
   // a large unit measures range and sight from its tile nearest to the target (for whoever occupies 1 tile it is the same)
   const [from, to] = aimEnds(grid, state, actor, center);
   if (!inAbilityRange(grid, ability, from, to)) return fail('range');
@@ -251,10 +241,13 @@ export function previewAbility(
       chance: isHeal(ability)
         ? 100
         : (rulesOf(state).hitChance?.(grid, state, actor, ability, u) ??
-          afterDodge(
-            Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
-            dodgeOf(UNIT_DEFS[u.def]),
-            side,
+          aimed(
+            hitShare(state, actor.id),
+            afterDodge(
+              Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
+              dodgeOf(UNIT_DEFS[u.def]),
+              side,
+            ),
           )),
       dmgMin: hurts ? Math.floor(healLo * COMBAT.UNDEAD_HEAL) : dmgMin,
       dmgMax: hurts ? Math.floor(healHi * COMBAT.UNDEAD_HEAL) : dmgMax,
@@ -291,6 +284,7 @@ export function resolveAbility(
     if (isHeal(ability)) {
       if (ability.heal[1] === 0) {
         after?.(state, actor, ability, unit, events);
+        addEffect(state, unit.id, abilityId);
         continue;
       } // support without healing: only the effect
       let amount: number;
@@ -319,9 +313,11 @@ export function resolveAbility(
       rulesOf(state).rollDamage?.(state, actor, ability, state.rng) ??
       rollInt(state.rng, ...withPower(state, actor, ability));
     dmg = landed(state, actor, ability, unit, dmg, scale);
-    events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
+    // a blow with no damage (the Shove, the sand) shows no −0 (Nov 21)
+    if (ability.damage[1] > 0) events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
     after?.(state, actor, ability, unit, events);
+    addEffect(state, unit.id, abilityId); // its timed effect, if it leaves one (stun, sand)
     if (ability.push === 0) continue;
     // a push with a chance rolls after the damage; without `pushChance` there is no roll (the game's roll order does not change)
     if (ability.pushChance !== undefined) {
@@ -330,6 +326,7 @@ export function resolveAbility(
     }
     push(grid, state, unit, preview.center, actor.pos, ability.push, events);
   }
+  if (ability.damage[1] > 0) spendOnce(state, actor.id); // the attack Focus was waiting for
   state.outcome = checkOutcome(state);
   return events;
 }
@@ -380,18 +377,4 @@ function push(
   unit.pos = r.to;
   events.push(...r.events);
   if (r.dmg > 0) hurt(state, unit, r.dmg, events);
-}
-
-// Victory: no enemies. Defeat: the target to protect fell or all heroes died.
-export function checkOutcome(state: BattleState): Outcome {
-  const custom = rulesOf(state).outcome;
-  if (custom) return custom(state);
-  const heroes = state.units.filter((u) => u.team === 'hero' && !isObjective(u.def));
-  // only a map that was born with a Beacon loses by it (Nov 13, review: Wood and Pass in the standalone Battle lost on the 1st turn);
-  // a test state outside the list counts as a map with a Beacon
-  const hadObjective = SCENARIOS[state.scenario]?.spawns.some((s) => isObjective(s.def)) ?? true;
-  const objective = state.units.some((u) => isObjective(u.def));
-  if ((hadObjective && !objective) || heroes.length === 0) return 'defeat';
-  if (!state.units.some((u) => u.team === 'enemy')) return 'victory';
-  return 'ongoing';
 }

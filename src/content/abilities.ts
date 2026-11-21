@@ -40,10 +40,22 @@ export const ABILITY_LIST: AbilityDef[] = [
     name: 'Escudada',
     en: 'Shield bash',
     range: [1, 1],
-    damage: [20, 25],
+    damage: [20, 25], // under any weapon blow (Fernando, Nov 21)
     accuracy: 95,
-    push: 2,
+    // stuns (Fernando, Nov 21): no actions on the target's next turn and half its movement; the push went to the Shove
+    buff: { turns: 1, stun: true, moveShare: -50 },
     cost: ['stamina', 10],
+  }),
+  // the Warrior's secondary (Fernando, Nov 21): shoves a foe 2 half tiles away, no damage
+  A({
+    id: 'shove',
+    name: 'Empurrar',
+    en: 'Shove',
+    range: [1, 1],
+    damage: [0, 0],
+    accuracy: 95,
+    push: 1,
+    cost: ['stamina', 5],
   }),
   A({
     id: 'spin',
@@ -93,6 +105,29 @@ export const ABILITY_LIST: AbilityDef[] = [
     accuracy: 85,
     push: 1,
     cost: ['stamina', 15],
+  }),
+  // the Archer's secondaries (Fernando, Nov 21): sand in the eyes of a foe beside it takes 25% of its aim and movement for
+  // its next turn; Focus gives its next attack 25% more damage and aim, kept until it attacks
+  A({
+    id: 'sand',
+    name: 'Jogar areia',
+    en: 'Throw sand',
+    range: [1, 1],
+    damage: [0, 0],
+    accuracy: 90,
+    buff: { turns: 1, accuracy: -25, moveShare: -25 },
+    cost: ['stamina', 5],
+  }),
+  A({
+    id: 'focus',
+    name: 'Focar',
+    en: 'Focus',
+    range: [0, 0],
+    damage: [0, 0],
+    accuracy: 100,
+    ally: true,
+    buff: { turns: 99, damage: 25, accuracy: 25, once: true }, // 99: it waits for the next attack, which spends it
+    cost: ['stamina', 5],
   }),
   A({ id: 'dagger', name: 'Adaga', en: 'Dagger', range: [1, 1], damage: [25, 35], accuracy: 90, cost: ['stamina', 5] }),
   // Mage

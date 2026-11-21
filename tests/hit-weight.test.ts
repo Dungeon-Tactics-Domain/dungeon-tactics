@@ -34,7 +34,7 @@ describe('numberKind: the colour by kind', () => {
 
 describe('fatal: the damage that downs its unit', () => {
   const ev: BattleEvent[] = [
-    { k: 'attack', unit: 'h', ability: 'shield_bash', target: { x: 0, y: 0 } },
+    { k: 'attack', unit: 'h', ability: 'shove', target: { x: 0, y: 0 } },
     { k: 'hit', unit: 'e', dmg: 30, chance: 90 },
     { k: 'push', unit: 'e', to: { x: 1, y: 0 } },
     { k: 'hit', unit: 'f', dmg: 99, chance: 90 },
@@ -49,7 +49,7 @@ describe('fatal: the damage that downs its unit', () => {
 
 describe('shoved: a strike whose push moves the body, so it gets no recoil', () => {
   const ev: BattleEvent[] = [
-    { k: 'attack', unit: 'h', ability: 'shield_bash', target: { x: 0, y: 0 } },
+    { k: 'attack', unit: 'h', ability: 'shove', target: { x: 0, y: 0 } },
     { k: 'hit', unit: 'e', dmg: 15, chance: 90 },
     { k: 'hit', unit: 'f', dmg: 15, chance: 90 },
     { k: 'bump', unit: 'f', dmg: 25 },

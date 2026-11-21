@@ -63,7 +63,7 @@ export function abilityIcon3d(a: AbilityDef): IconKind {
   if (a.magic) return 'flame';
   if (a.needsSight && a.range[1] > 1) return a.range[1] > 4 || a.push ? 'bow' : 'dagger';
   if (a.radius) return 'axe';
-  if (a.push) return 'shield';
+  if (a.push || a.buff?.stun) return 'shield'; // the Shield bash stuns since Nov 21
   if (a.range[1] > 1) return 'dagger';
   return 'sword';
 }

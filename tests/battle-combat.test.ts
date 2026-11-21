@@ -9,7 +9,7 @@ import { simulatePush } from '../src/shared/battle/push.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import type { BattleState } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { flat, gridOf, HIT_SEED, MISS_SEED, stateOf } from './battle-helpers.ts';
+import { BASH, BASHER, flat, gridOf, HIT_SEED, MISS_SEED, stateOf } from './battle-helpers.ts';
 
 const at = (x: number, y = 0) => ({ x, y });
 const chanceOf = (g: Grid, s: BattleState, ability: string, target: { x: number; y: number }) =>
@@ -162,23 +162,23 @@ describe('resolving the ability', () => {
 });
 
 describe('push', () => {
-  const bash = (g: Grid, s: BattleState) => resolveAbility(g, s, 'a', 'shield_bash', at(1));
+  const bash = (g: Grid, s: BattleState) => resolveAbility(g, s, 'a', BASH, at(1));
 
   it('moves 2 tiles away from the pusher', () => {
-    const s = duel('warrior', 1, 'soldier', HIT_SEED);
+    const s = duel(BASHER, 1, 'soldier', HIT_SEED);
     bash(flat(6, 1), s);
     expect(s.units[1].pos).toEqual(at(3));
   });
 
   it('wall, another unit and the edge stop the push; wall and unit deal impact damage', () => {
-    const wall = duel('warrior', 1, 'soldier', HIT_SEED);
+    const wall = duel(BASHER, 1, 'soldier', HIT_SEED);
     const ev = bash(gridOf(['..#.']), wall);
     expect(wall.units[1].pos).toEqual(at(1));
     expect(ev.find((e) => e.k === 'bump')).toMatchObject({ unit: 'f', dmg: COMBAT.BUMP_DAMAGE });
 
     const crowd = stateOf(
       [
-        { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+        { id: 'a', def: BASHER, team: 'hero', x: 0, y: 0 },
         { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0 },
         { id: 'g', def: 'soldier', team: 'enemy', x: 2, y: 0 },
       ],
@@ -187,22 +187,22 @@ describe('push', () => {
     bash(flat(5, 1), crowd);
     expect(crowd.units[1].pos).toEqual(at(1));
 
-    const edge = duel('warrior', 1, 'soldier', HIT_SEED);
+    const edge = duel(BASHER, 1, 'soldier', HIT_SEED);
     bash(flat(2, 1), edge);
     expect(edge.units[1].pos).toEqual(at(1));
   });
 
   it('a fall of 2 levels or more deals damage; a step of 1 does not', () => {
-    const drop = duel('warrior', 1, 'soldier', HIT_SEED);
+    const drop = duel(BASHER, 1, 'soldier', HIT_SEED);
     const ev = bash(gridOf(['....'], ['3300']), drop);
     expect(drop.units[1].pos).toEqual(at(3));
     expect(ev.find((e) => e.k === 'fall')).toMatchObject({ levels: 3, dmg: 2 * COMBAT.FALL_DAMAGE });
-    const step = duel('warrior', 1, 'soldier', HIT_SEED);
+    const step = duel(BASHER, 1, 'soldier', HIT_SEED);
     expect(bash(gridOf(['....'], ['0110']), step).some((e) => e.k === 'fall')).toBe(false);
   });
 
   it('does not push up a step greater than the jump', () => {
-    const s = duel('warrior', 1, 'soldier', HIT_SEED);
+    const s = duel(BASHER, 1, 'soldier', HIT_SEED);
     const ev = bash(gridOf(['....'], ['0003']), s);
     expect(s.units[1].pos).toEqual(at(2));
     expect(ev.some((e) => e.k === 'bump')).toBe(true);
@@ -211,7 +211,7 @@ describe('push', () => {
   it('whoever dies in the fall leaves the battle', () => {
     const s = stateOf(
       [
-        { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+        { id: 'a', def: BASHER, team: 'hero', x: 0, y: 0 },
         { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 0, hp: 5 },
       ],
       HIT_SEED,
@@ -261,9 +261,9 @@ describe('rules on the edges of a hit', () => {
 
   it('only the unit whose turn it is can owe itself counters', () => {
     const s = stateOf([
-      { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 1 },
+      { id: 'a', def: BASHER, team: 'hero', x: 0, y: 1 },
       { id: 'f', def: 'soldier', team: 'enemy', x: 1, y: 1 },
-      { id: 'b', def: 'warrior', team: 'hero', x: 1, y: 2 },
+      { id: 'b', def: BASHER, team: 'hero', x: 1, y: 2 },
     ]);
     s.turn.engaged = ['f'];
     const g = flat(5, 5);
@@ -276,7 +276,7 @@ describe('rules on the edges of a hit', () => {
 describe('battle end', () => {
   it('wins when no enemy remains; loses when the target falls or all heroes die', () => {
     const base = [
-      { id: 'h', def: 'warrior', team: 'hero' as const, x: 0, y: 0 },
+      { id: 'h', def: BASHER, team: 'hero' as const, x: 0, y: 0 },
       { id: 'b', def: 'beacon', team: 'hero' as const, x: 1, y: 1 },
       { id: 'e', def: 'soldier', team: 'enemy' as const, x: 3, y: 3 },
     ];
@@ -292,7 +292,7 @@ describe('push with chance', () => {
   it('pushChance 0 never pushes and 100 always pushes; without the field, it always pushes', () => {
     const grid = flat(6, 1);
     const pushed = (pushChance?: number) => {
-      ABILITIES.test_push = { ...ABILITIES.shield_bash, id: 'test_push', pushChance };
+      ABILITIES.test_push = { ...ABILITIES[BASH], id: 'test_push', pushChance };
       UNIT_DEFS.test_pusher = { ...UNIT_DEFS.warrior, id: 'test_pusher', abilities: ['test_push'] };
       const state = stateOf(
         [

@@ -1,8 +1,16 @@
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { type Grid, parseGrid } from '../src/shared/battle/grid.ts';
 import { nextRng } from '../src/shared/battle/rng.ts';
 import { traceShot } from '../src/shared/battle/shot.ts';
 import type { BattleState, Pos, Team } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+
+// The Shield bash before Nov 21 (20-25 damage, a push of 2 tiles, no stun), for the push tests, on a warrior that has it
+export const BASH = 'test_bash';
+export const BASHER = 'test_basher';
+ABILITIES[BASH] = { ...ABILITIES.shove, id: BASH, name: 'Escudada', en: 'Shield bash', damage: [20, 25], push: 2 };
+ABILITIES[BASH].cost = ['stamina', 10];
+UNIT_DEFS[BASHER] = { ...UNIT_DEFS.warrior, id: BASHER, abilities: [...UNIT_DEFS.warrior.abilities, BASH] };
 
 // flat WxH ground grid, or built from ASCII lines (terrain and height)
 export const flat = (w: number, h: number): Grid =>

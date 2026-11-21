@@ -222,6 +222,7 @@ export function actReason(a: ActAction): string {
     sight: () => t('sem linha de visão', 'no line of sight'),
     'no-target': () => t('não atinge este alvo', 'cannot reach this target'),
     water: () => t('nadando: só anda ou espera', 'swimming: only walk or wait'),
+    stunned: () => t('atordoado: só anda ou espera', 'stunned: only walk or wait'),
     none: () => t('acabou', 'none left'),
   };
   return words[a.reason ?? '']?.() ?? '';

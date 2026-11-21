@@ -28,7 +28,7 @@
     {
       "act": {
         "unit": "h-warrior",
-        "ability": "shield_bash",
+        "ability": "shove",
         "target": {
           "x": 11,
           "y": 1

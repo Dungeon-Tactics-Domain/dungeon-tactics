@@ -8,7 +8,7 @@ import { footprint, reachable } from '../src/shared/battle/pathing.ts';
 import { simulatePush } from '../src/shared/battle/push.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { HALF } from '../src/shared/battle/units.ts';
-import { flat, gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
+import { BASH, BASHER, flat, gridOf, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // A dead unit leaves a corpse (Fernando, Nov 16): its cells stay in BattleState.corpses for the rest of the battle; nobody
 // may end a move or a push there, but anyone may walk or jump over them, like a map body (Tile.noStop)
@@ -341,14 +341,14 @@ describe('corpses: a push passes over one', () => {
     const bash = () => {
       const s = stateOf(
         [
-          { id: 'a', def: 'warrior', team: 'hero', x: 0, y: 0 },
+          { id: 'a', def: BASHER, team: 'hero', x: 0, y: 0 },
           { id: 'b', def: 'soldier', team: 'enemy', x: 1, y: 0 },
         ],
         HIT_SEED,
       );
       s.corpses = [{ x: 2, y: 0 }];
       const said = simulatePush(row, s, s.units[1], { x: 1, y: 0 }, { x: 0, y: 0 }, 2);
-      const events = resolveAbility(row, s, 'a', 'shield_bash', { x: 1, y: 0 });
+      const events = resolveAbility(row, s, 'a', BASH, { x: 1, y: 0 });
       return { said, events, to: s.units[1].pos };
     };
     const one = bash();

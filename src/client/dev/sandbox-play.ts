@@ -134,6 +134,7 @@ const WHY: Record<PreviewReason, string> = {
   'no-target': 'nobody to hit there',
   spent: 'cannot pay its cost',
   water: 'it stands in deep water',
+  stunned: 'it is stunned',
 };
 
 // One step through the same Battle calls the turn screen makes (interaction.ts `confirm` for move and act; `face` and

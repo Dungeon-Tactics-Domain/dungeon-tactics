@@ -5,7 +5,7 @@ import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT } from '../src/shared/battle/combat.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
+import { BASH, BASHER, flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Strike preview when aiming (Nov 13, Fernando's request, as in FFT and Tactics Ogre): the same calculation as the "Executar?" (Execute?) prompt
 const HP = UNIT_DEFS.soldier.hp; // the soldier's full life
@@ -33,19 +33,19 @@ describe('strike preview', () => {
     const b = new Battle(
       flat(3, 1),
       stateOf([
-        { id: 'w', def: 'warrior', team: 'hero', x: 0, y: 0 },
+        { id: 'w', def: BASHER, team: 'hero', x: 0, y: 0 },
         { id: 's', def: 'soldier', team: 'enemy', x: 1, y: 0 },
       ]),
     );
-    const [f] = fc(b, 'shield_bash', { x: 1, y: 0 });
-    expect(ABILITIES.shield_bash).toMatchObject({ damage: [20, 25], accuracy: 95 });
+    const [f] = fc(b, BASH, { x: 1, y: 0 });
+    expect(ABILITIES[BASH]).toMatchObject({ damage: [20, 25], accuracy: 95 });
     const [lo, hi] = [15, 18], // x 0.75, rounded down; the bump is not resisted
       bump = COMBAT.BUMP_DAMAGE;
     expect(f.push).toBe(bump);
     expect(f.after).toEqual([HP - hi - bump, HP - lo - bump]); // damage plus the bump at the edge
     expect(forecastText(f)).toBe(`acerto 90% · dano ${lo}–${hi} · empurrão +${bump}`); // 95 x 0.95
     // small line of the preview strip (Tactics Ogre style): who, knockback and resulting health
-    expect(strikeInfo(f, 'shield_bash')).toEqual([
+    expect(strikeInfo(f, BASH)).toEqual([
       'Soldado',
       `empurrão +${bump}`,
       `vida ${HP} → ${HP - hi - bump}–${HP - lo - bump}`,
@@ -57,14 +57,14 @@ describe('strike preview', () => {
       flat(3, 1),
       stateOf(
         [
-          { id: 'w', def: 'warrior', team: 'hero', x: 0, y: 0 },
+          { id: 'w', def: BASHER, team: 'hero', x: 0, y: 0 },
           { id: 's', def: 'soldier', team: 'enemy', x: 1, y: 0 },
         ],
         HIT_SEED,
       ),
     );
-    const [f] = fc(b, 'shield_bash', { x: 1, y: 0 });
-    b.act('shield_bash', { x: 1, y: 0 });
+    const [f] = fc(b, BASH, { x: 1, y: 0 });
+    b.act(BASH, { x: 1, y: 0 });
     const hp = b.state.units.find((u) => u.id === 's')!.hp;
     expect(hp).toBeGreaterThanOrEqual(f.after[0]);
     expect(hp).toBeLessThanOrEqual(f.after[1]);

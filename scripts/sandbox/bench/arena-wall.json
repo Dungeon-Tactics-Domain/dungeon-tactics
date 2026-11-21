@@ -28,7 +28,7 @@
     {
       "act": {
         "unit": "a-hero",
-        "ability": "shield_bash",
+        "ability": "shove",
         "target": {
           "x": 10,
           "y": 4

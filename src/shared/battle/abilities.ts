@@ -1,6 +1,7 @@
 // Abilities are data with general stats (range, damage, push, delay, area); none has its own rule against another
 // (decision of Oct 21 inherited from Warlock). The data lives in src/content/abilities.ts.
 import { ABILITY_LIST } from '../../content/abilities.ts';
+import type { Buff } from '../../content/items.ts';
 import type { Lock } from './types.ts';
 import type { Element } from './units.ts';
 
@@ -40,6 +41,8 @@ export interface AbilityDef {
   // a dual action (Nov 20): main at full damage or secondary at this % of it (action-slots.ts slotFor); never a charge
   bonusShare?: number;
   pushChance?: number; // % of times the push happens; without the field, always (no game ability sets it today)
+  // a timed effect it leaves on each unit it lands on, as an item's (effects.ts; Nov 21: stun, sand, focus)
+  buff?: Buff;
 }
 
 export const ABILITIES: Record<string, AbilityDef> = Object.fromEntries(ABILITY_LIST.map((a) => [a.id, a]));

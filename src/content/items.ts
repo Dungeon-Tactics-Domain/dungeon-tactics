@@ -260,6 +260,13 @@ export interface Buff {
   element?: Element; // a martial hit takes this element (the target's resistance to it applies)
   resist?: Partial<Record<Resist, number>>;
   move?: number;
+  // from abilities (Nov 21): % added to the hit chance, the damage and the movement (negative takes), no actions at all,
+  // and an effect that ends with the unit's next attack (Focus)
+  accuracy?: number;
+  damage?: number;
+  moveShare?: number;
+  stun?: true;
+  once?: true;
 }
 export const CONSUMABLES: Consumable[] = [
   { id: 'life_potion', name: 'Poção de vida', en: 'Life potion', price: 40, use: ['cura 100', 'heals 100'], heal: 100 },

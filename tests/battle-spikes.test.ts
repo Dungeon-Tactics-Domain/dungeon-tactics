@@ -3,7 +3,7 @@ import { Battle } from '../src/shared/battle/battle.ts';
 import { COMBAT } from '../src/shared/battle/combat.ts';
 import { type Grid, tileAt } from '../src/shared/battle/grid.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { flat, HIT_SEED, stateOf } from './battle-helpers.ts';
+import { BASH, BASHER, flat, HIT_SEED, stateOf } from './battle-helpers.ts';
 
 // Spikes (night of Nov 12): being pushed onto the tile or ending the turn on it hurts; walking over does not.
 const spiky = (...at: [number, number][]): Grid => {
@@ -14,7 +14,7 @@ const spiky = (...at: [number, number][]): Grid => {
 const units = (ax = 3, ay = 3) =>
   stateOf(
     [
-      { id: 'a', def: 'warrior', team: 'hero', x: ax, y: ay },
+      { id: 'a', def: BASHER, team: 'hero', x: ax, y: ay },
       { id: 'b', def: 'soldier', team: 'enemy', x: 4, y: 3 },
       { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 7 },
     ],
@@ -25,7 +25,7 @@ describe('spikes', () => {
   it('pushed onto spikes takes their damage, added to the hit', () => {
     const b = new Battle(spiky([5, 3]), units());
     const hp = b.state.units[1].hp;
-    const events = b.act('shield_bash', { x: 4, y: 3 });
+    const events = b.act(BASH, { x: 4, y: 3 });
     const spike = events.find((e) => e.k === 'spike');
     expect(spike).toMatchObject({ unit: 'b', dmg: COMBAT.SPIKE_DAMAGE });
     const hit = events.find((e) => e.k === 'hit');

@@ -22,7 +22,13 @@ const whole = (foe: { x: number; y: number }) =>
     ),
   );
 const split = () => {
-  const spawns = ['warrior', 'soldier', 'beacon'].map((def, i) => ({ id: def, def, team: 'hero' as const, x: i, y: 0 }));
+  const spawns = ['warrior', 'soldier', 'beacon'].map((def, i) => ({
+    id: def,
+    def,
+    team: 'hero' as const,
+    x: i,
+    y: 0,
+  }));
   const g = halve({ id: 't-diag', name: 't-diag', en: 't-diag', grid: flat(6, 6), spawns }).grid; // registers the sheets
   return new Battle(
     g,

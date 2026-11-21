@@ -66,6 +66,7 @@ describe('actionOptions (Agir primeiro, Nov 19)', () => {
       { id: 'e', def: 'soldier', team: 'enemy', x: 1, y: 2 },
     ]);
     s.turn.main = 'strike';
+    s.turn.bonus = 'shove'; // both slots: the Shove is a secondary (Nov 21)
     expect(actionOptions(g, s, 'w').every((x) => !x.enabled && x.reason === 'used')).toBe(true);
   });
 

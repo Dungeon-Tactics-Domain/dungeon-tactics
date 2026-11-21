@@ -3,7 +3,7 @@ import { checkOutcome, previewAbility, resolveAbility } from '../src/shared/batt
 import { reachable } from '../src/shared/battle/pathing.ts';
 import { SCENARIOS } from '../src/shared/battle/scenarios.ts';
 import { resistOf, UNIT_DEFS } from '../src/shared/battle/units.ts';
-import { flat, gridOf, stateOf } from './battle-helpers.ts';
+import { BASH, BASHER, flat, gridOf, stateOf } from './battle-helpers.ts';
 
 // Per-scenario rules (Nov 11): a scenario swaps hit chance, jump, fall, damage roll and battle end without touching the
 // game rules. A scenario without `rules` (all game ones) works as before; the other tests already cover that.
@@ -40,7 +40,7 @@ describe('scenario rules', () => {
   it('fall: the rule says the damage of being pushed off', () => {
     const cliff = gridOf(['....'], ['5500']);
     const pair = [
-      { id: 'a', def: 'warrior', team: 'hero' as const, x: 0, y: 0 },
+      { id: 'a', def: BASHER, team: 'hero' as const, x: 0, y: 0 },
       { id: 'b', def: 'soldier', team: 'enemy' as const, x: 1, y: 0 },
     ];
     SCENARIOS.test_rules = {
@@ -51,7 +51,7 @@ describe('scenario rules', () => {
       spawns: [],
       rules: { hitChance: () => 100, fallDamage: (levels: number) => levels * 2 },
     };
-    const fall = resolveAbility(cliff, { ...stateOf(pair), scenario: 'test_rules' }, 'a', 'shield_bash', {
+    const fall = resolveAbility(cliff, { ...stateOf(pair), scenario: 'test_rules' }, 'a', BASH, {
       x: 1,
       y: 0,
     }).find((e) => e.k === 'fall');

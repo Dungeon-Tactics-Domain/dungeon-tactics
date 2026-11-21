@@ -145,7 +145,14 @@ describe('3D menu: what it shows', () => {
     expect(targets?.subTitle).toBe('Alvo');
     expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Farol', 'Giro']);
     const actions = menuView(view(b, { k: 'actions', target: foe, index: 1 }), true);
-    expect(actions?.sub?.map((r) => r.label)).toEqual(['Golpe', 'Golpe pesado', 'Escudada', 'Giro', 'Rajada']);
+    expect(actions?.sub?.map((r) => r.label)).toEqual([
+      'Golpe',
+      'Golpe pesado',
+      'Escudada',
+      'Giro',
+      'Empurrar',
+      'Rajada',
+    ]);
     expect(actions?.sub?.[1].note).toBe('30 stamina'); // a main action carries no tag
     expect(actions?.subIndex).toBe(1);
     expect(targets?.sheet).toBeNull(); // the sheet is the action list's only

@@ -16,6 +16,8 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, where nobody stops (noStopAt: map bodies and corpses), ranges in cells and areas.
 - `src/shared/battle/shot.ts` — the shot path (`traceShot`, `shotAt`): what stops a shot and the two ends it is measured between.
 - `src/shared/battle/combat.ts` — hit chance, damage range, preview, resolve (hit then damage), spikes and the battle outcome.
+- `src/shared/battle/outcome.ts` — checkOutcome: victory, defeat or ongoing after each action.
+- `src/shared/battle/pools.ts` — a unit's mana and stamina: what is left (poolOf), paying a cost (canPay, pay) and the regen at its turn's start.
 - `src/shared/battle/options.ts` — what a unit can do this turn before moving: per ability, the targets reachable by walking then acting and the tiles to act from, or why it is off (actionOptions).
 - `src/shared/battle/counter.ts` — who answers a strike with a counter, which counters a move owes, and playing them.
 - `src/shared/battle/push.ts` — where a push ends and what it costs (bump, fall), without touching the state.

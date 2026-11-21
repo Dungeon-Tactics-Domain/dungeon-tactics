@@ -4,12 +4,12 @@
   "seed": 1,
   "units": {
     "a-hero": {
-      "x": 0,
+      "x": 1,
       "y": 4,
       "facing": 1
     },
     "a-foe": {
-      "x": 1,
+      "x": 2,
       "y": 4,
       "facing": 3
     }
@@ -28,9 +28,9 @@
     {
       "act": {
         "unit": "a-hero",
-        "ability": "shield_bash",
+        "ability": "shove",
         "target": {
-          "x": 1,
+          "x": 2,
           "y": 4
         }
       }

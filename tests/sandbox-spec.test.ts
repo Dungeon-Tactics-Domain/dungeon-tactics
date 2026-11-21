@@ -505,18 +505,15 @@ const CLIPS = {
   'archer-shot': [['attack h-archer shot', 'hit e-soldier 33'], archerShot],
   'shield-bash-fall': [
     [
-      'attack h-warrior shield_bash',
-      'hit e-soldier 15',
+      'attack h-warrior shove', // the Shove since Nov 21: one whole tile, no damage
       'push e-soldier 11,1.5',
       'push e-soldier 11,2',
       'fall e-soldier 2 45',
-      'push e-soldier 11,2.5',
-      'push e-soldier 11,3',
     ],
     shieldBashFall,
   ],
   death: [['attack h-archer shot', 'hit e-soldier 33', 'die e-soldier'], death],
-  'wall-bump': [['attack a-hero shield_bash', 'hit a-foe 15', 'bump a-foe'], wallBump],
+  'wall-bump': [['attack a-hero shove', 'bump a-foe'], wallBump],
   firebolt: [['attack h-mage firebolt', 'hit e-soldier 50'], firebolt],
   // the charge on the act, the blast on the wait, before anyone else's turn
   'blast-charge': [
@@ -668,13 +665,10 @@ const BENCH = {
   'archer-shot': [['attack h-archer shot', 'hit e-archer 45'], benchArcher],
   'shield-bash-fall': [
     [
-      'attack h-warrior shield_bash',
-      'hit e-soldier 15',
+      'attack h-warrior shove', // the Shove since Nov 21: one whole tile, no damage
       'push e-soldier 11,1.5',
       'push e-soldier 11,2',
       'fall e-soldier 2 45',
-      'push e-soldier 11,2.5',
-      'push e-soldier 11,3',
     ],
     benchBash,
   ],
@@ -694,19 +688,8 @@ const BENCH = {
     benchStairs,
   ],
   'arena-gap': [['move rogue 4,2 h0 > 6,2 h0'], benchGap],
-  'arena-wall': [['attack a-hero shield_bash', 'hit a-foe 15', 'bump a-foe'], benchWall],
-  'arena-spikes': [
-    [
-      'attack a-hero shield_bash',
-      'hit a-foe 15',
-      'push a-foe 1.5,4',
-      'push a-foe 2,4',
-      'push a-foe 2.5,4',
-      'spike a-foe',
-      'push a-foe 3,4',
-    ],
-    benchSpikes,
-  ],
+  'arena-wall': [['attack a-hero shove', 'bump a-foe'], benchWall],
+  'arena-spikes': [['attack a-hero shove', 'push a-foe 2.5,4', 'spike a-foe', 'push a-foe 3,4'], benchSpikes],
 } as const;
 
 describe('bench specs', () => {

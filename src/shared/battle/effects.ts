@@ -1,18 +1,20 @@
 // Timed effects from items (Nov 19, Agir primeiro step 2, second slice): Fire oil and Stone potion change a unit's sheet for
-// a few of its own turns. The state keeps only who, which item and the turns left; what each gives is the item's `buff`
-// (src/content/items.ts), read here so combat, movement and the save agree on one reading
+// a few of its own turns; since Nov 21 abilities leave them too (stun, sand, focus). The state keeps only who, which item
+// or ability and the turns left; what each gives is its `buff` (src/content), read here so combat, movement and the save
+// agree on one reading
+import { ABILITY_LIST } from '../../content/abilities.ts';
 import { type Buff, CONSUMABLES } from '../../content/items.ts';
 import type { BattleState, UnitState } from './types.ts';
 import { type Element, HALF, type Resist, UNIT_DEFS } from './units.ts';
 
 export interface Effect {
   unit: string;
-  item: string;
+  item: string; // the item or ability that left it
   turns: number; // the unit's own turns left; each ends one (tickEffects)
 }
 
 export const BUFFS: Record<string, Buff> = Object.fromEntries(
-  CONSUMABLES.flatMap((c) => (c.buff ? [[c.id, c.buff]] : [])),
+  [...CONSUMABLES, ...ABILITY_LIST].flatMap((c) => (c.buff ? [[c.id, c.buff]] : [])),
 );
 
 const buffsOf = (state: BattleState, id: string): Buff[] =>
@@ -26,11 +28,28 @@ export const resistBonus = (state: BattleState, id: string, k: Resist) =>
 export const hitElement = (state: BattleState, id: string): Element | undefined =>
   buffsOf(state, id).reduce<Element | undefined>((el, b) => b.element ?? el, undefined);
 
-// The movement points a unit has this turn: its sheet's, plus its effects' (whole tiles, x2 on the split map), never below 0
+// the % an effect field adds up to, from 100: 75 under sand, 125 focused
+const share = (state: BattleState, id: string, k: 'accuracy' | 'damage' | 'moveShare') =>
+  100 + buffsOf(state, id).reduce((s, b) => s + (b[k] ?? 0), 0);
+export const hitShare = (state: BattleState, id: string) => share(state, id, 'accuracy');
+export const damageShare = (state: BattleState, id: string) => share(state, id, 'damage');
+// stunned: no actions this turn, only walking or waiting
+export const stunned = (state: BattleState, id: string) => buffsOf(state, id).some((b) => b.stun);
+
+// The movement points a unit has this turn: its sheet's, plus its effects' (whole tiles, x2 on the split map), then their
+// share (half when stunned, 75% under sand), never below 0
 export function moveOf(state: BattleState, u: UnitState): number {
   const d = UNIT_DEFS[u.def];
   const scale = d.id.endsWith(HALF) ? 2 : 1;
-  return Math.max(0, d.move + scale * buffsOf(state, u.id).reduce((s, b) => s + (b.move ?? 0), 0));
+  const base = Math.max(0, d.move + scale * buffsOf(state, u.id).reduce((s, b) => s + (b.move ?? 0), 0));
+  return Math.floor((base * Math.max(0, share(state, u.id, 'moveShare'))) / 100);
+}
+
+// An attack spends the effects that last until it (Focus)
+export function spendOnce(state: BattleState, id: string): void {
+  const left = (state.effects ?? []).filter((e) => e.unit !== id || !BUFFS[e.item]?.once);
+  if (left.length) state.effects = left;
+  else delete state.effects;
 }
 
 // Puts an item's effect on a unit; the same item again starts its turns over (it never stacks with itself). On the user
