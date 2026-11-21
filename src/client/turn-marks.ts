@@ -85,7 +85,11 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
     size,
     fits: !hl?.tiles.some((m) => m.kind === 'nogo'),
     ring: ringAt
-      ? { from: cellsOf(ringAt, UNIT_DEFS[b.actor.def].size ?? 1), range: farCells(b.grid, longestRange(b)) }
+      ? {
+          from: cellsOf(ringAt, UNIT_DEFS[b.actor.def].size ?? 1),
+          range: farCells(b.grid, longestRange(b)),
+          walk: s.k === 'menu' ? walkCells(b) : undefined,
+        }
       : null,
     trajectory:
       a && caster && spot && (a.needsSight ? !onSelf : a.magic && a.range[1] > 0)
@@ -95,4 +99,15 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
           }
         : null,
   };
+}
+
+// The cells the acting unit's body would cover from every spot it can still end its move on, its own included: the blue
+// outline on the menu (Fernando, Nov 21). None once it cannot walk
+export function walkCells(b: Battle): string[] {
+  const spots = [...b.reach().values()];
+  if (!spots.length) return [];
+  const size = UNIT_DEFS[b.actor.def].size ?? 1;
+  const cells = new Set(footprint(b.actor).map(posKey));
+  for (const r of spots) for (const c of cellsOf(r.pos, size)) cells.add(posKey(c));
+  return [...cells];
 }

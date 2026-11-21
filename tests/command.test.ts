@@ -276,12 +276,13 @@ describe('menu rows in each state of the turn', () => {
     expect(menuRows(b)).toEqual(['act', 'move', 'undo', 'wait', 'status']);
   });
 
-  it('moved with no movement left: Move leaves, Undo move stays', () => {
+  it('moved with no movement left: Move stays greyed (Nov 21), Undo move stays', () => {
     const b = range();
     walkAll(b);
     expect(b.reach().size).toBe(0);
     expect(canUndoMove(b)).toBe(true);
-    expect(menuRows(b)).toEqual(['act', 'undo', 'wait', 'status']);
+    expect(menuRows(b)).toEqual(['act', 'move', 'undo', 'wait', 'status']);
+    expect(commandEnabled(b, 'move')).toBe(false);
   });
 
   it('after attacking: Move for the movement left, no Undo move with nothing to take back', () => {

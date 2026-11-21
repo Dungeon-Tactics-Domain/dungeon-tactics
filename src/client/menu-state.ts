@@ -4,7 +4,7 @@
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
 import type { Pos } from '../shared/battle/types.ts';
-import { cancelStep, type Screen } from './command.ts';
+import type { Screen } from './command.ts';
 import type { KeyAction } from './keyboard.ts';
 
 // 'open': the menu shows again; 'close': it hides and the cursor goes to the tile; 'peek': the unit's mini menu
@@ -32,9 +32,9 @@ export const cardTap = (b: Battle, unit: string): MenuTap =>
   unit === b.actor.id ? { k: 'open' } : { k: 'peek', unit };
 
 // A key or pad action on the menu's screens. Closed: Confirm and Cancel open it again (the keyboard has no sheet to
-// tap). Open: Cancel closes it only where it has nothing else to do; after a free move it still undoes it (Nov 13)
-export function menuKey(b: Battle, s: Screen, closed: boolean, a: KeyAction): 'open' | 'close' | null {
+// tap). Open, Cancel never shuts it: after a free move it undoes the move (Nov 13), on the bare menu it opens Options
+// (Fernando, Nov 21; a tap on an empty tile still shuts the menu)
+export function menuKey(_b: Battle, s: Screen, closed: boolean, a: KeyAction): 'open' | null {
   if (!menuScreen(s)) return null;
-  if (closed) return a.k === 'confirm' || a.k === 'cancel' ? 'open' : null;
-  return a.k === 'cancel' && s.k === 'menu' && cancelStep(b, s) === null ? 'close' : null;
+  return closed && (a.k === 'confirm' || a.k === 'cancel') ? 'open' : null;
 }

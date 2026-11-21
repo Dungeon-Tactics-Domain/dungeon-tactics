@@ -3,6 +3,7 @@
 // row, and what changed between two draws. No DOM or Three here; tested in tests/ui3d.test.ts.
 import { ABILITIES, type AbilityDef } from '../../shared/battle/abilities.ts';
 import type { Battle } from '../../shared/battle/battle.ts';
+import { moveOf } from '../../shared/battle/effects.ts';
 import { subOf } from '../../shared/battle/grid.ts';
 import type { Element } from '../../shared/battle/units.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
@@ -74,6 +75,7 @@ export interface MenuRow {
   kind: IconKind;
   element?: Element;
   below?: boolean; // the note goes on a line under the name (column.ts)
+  gauge?: number; // Move: the half tiles left of the turn's movement, 0 to 1, as a bar under the row (column.ts)
 }
 export interface SheetView {
   owner: string; // who has the action, on the sheet's head
@@ -85,7 +87,7 @@ export interface SheetView {
 }
 export interface MenuView {
   head: string; // the acting unit's name, on the command menu's head
-  rows: MenuRow[]; // menuRows: Agir · Move · Undo move · Wait · Status, Move and Undo only when they apply
+  rows: MenuRow[]; // menuRows: Agir · Move · Undo move · Wait · Status, Undo only when it applies
   commands: number[]; // each row's place in COMMANDS, what a click on it chooses
   index: number; // the focused row, or the picked one (Agir) while a list is open
   // how deep the open list is: 0 the menu alone, 1 the Agir list beside it, 2 and on the list before it took the menu's
@@ -125,21 +127,29 @@ export function sheetView(b: Battle, a: ActRow | undefined, page = 0): SheetView
   return { owner, name: abilityName(a.id), ...iconOf(a.id), pages, page: page % pages.length };
 }
 
-// The command menu's column: the acting unit's name on its head and the rows menuRows shows (Move and Undo move only when
-// they apply), each standing for its place in COMMANDS
+// The command menu's column: the acting unit's name on its head and the rows menuRows shows (Undo move only when it
+// applies), each standing for its place in COMMANDS
 function column(b: Battle) {
   const cmds = menuRows(b);
   return {
     head: unitName(b.actor.def),
     rows: cmds.map((c) => ({
       label: commandName(c),
-      note: c === 'act' ? actNote(b) : '',
+      note: c === 'act' ? actNote(b) : c === 'move' ? moveNote(b) : '',
       off: !commandEnabled(b, c),
       kind: COMMAND_ICON[c],
+      ...(c === 'move' ? { gauge: moveLeft(b).left / Math.max(1, moveLeft(b).most) } : {}),
     })),
     commands: cmds.map(commandIndex),
   };
 }
+
+// The Move row (Fernando, Nov 21): the half tiles still walkable this turn against the turn's whole movement
+function moveLeft(b: Battle) {
+  const most = moveOf(b.state, b.actor);
+  return { left: Math.max(0, most - (b.state.turn.spent ?? 0)), most };
+}
+const moveNote = (b: Battle) => `${moveLeft(b).left}/${moveLeft(b).most}`;
 
 // The Agir row's note (Fernando, Nov 19): a big dot for the main action and a small one for the secondary, hollow once
 // spent, after why nothing can be done this turn when so (the row still opens, to look at the actions and their reach)

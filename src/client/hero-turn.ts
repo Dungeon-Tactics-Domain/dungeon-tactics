@@ -1,14 +1,23 @@
 // The hero's turn screens in the FFT style (command.ts): menu -> Move's map, or Act's Agir primeiro screens; Wait -> direction.
 // Owns the screen, the Ui and the cursor, and turns keys, clicks and taps into the next screen; the Game runs what is confirmed.
 import type { Battle } from '../shared/battle/battle.ts';
-import { facingTo, inBounds, samePos, subOf } from '../shared/battle/grid.ts';
+import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
 import { footprint, nearestTile } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import type { ActRef } from './act-flow.ts';
 import { actScreen } from './act-marks.ts';
 import { type ActHost, actHover, actHoverMap, actKey, actPage, actPick, actStart, actTap } from './act-turn.ts';
-import { COMMANDS, cancelStep, commandEnabled, commandIndex, type Screen, startScreen, stepIndex } from './command.ts';
+import {
+  COMMANDS,
+  cancelStep,
+  commandEnabled,
+  commandIndex,
+  menuRows,
+  type Screen,
+  startScreen,
+  stepIndex,
+} from './command.ts';
 import { freshUi, hoverTile, selectMode, tapTile, type Ui } from './interaction.ts';
 import { cycleUnit, gridStep, type KeyAction } from './keyboard.ts';
 import { cardTap, type MenuTap, menuKey, menuScreen, menuTap } from './menu-state.ts';
@@ -28,6 +37,7 @@ export interface TurnHost {
   undo(): void;
   status(): void;
   save(): void;
+  options(): void; // the Options window (the gear)
 }
 
 export class HeroTurn {
@@ -95,7 +105,7 @@ export class HeroTurn {
     // shut, Confirm on another unit opens its mini menu, as a tap would: the keys reach it too
     const peek = shown === 'open' && a.k === 'confirm' ? menuTap(b, s, this.cursor) : null;
     if (peek?.k === 'peek') return this.menu(peek);
-    if (shown) return this.menu(shown === 'open' ? { k: 'open' } : { k: 'close', at: this.cursor });
+    if (shown) return this.menu({ k: 'open' });
     if (this.closed && a.k === 'cursor') {
       // closed, the arrows look around the map: the cursor walks the tiles, the camera following
       const st = gridStep(a.dir, this.scene.heading),
@@ -112,10 +122,12 @@ export class HeroTurn {
     if (s.k === 'menu') {
       if (a.k === 'cursor' && (a.dir === 'up' || a.dir === 'down')) {
         sfx('cursor');
+        // every row the menu shows takes the cursor, a greyed Move included (Fernando, Nov 21: it must not be skipped)
+        const shown = menuRows(b);
         const index = stepIndex(
           s.index,
           a.dir === 'up' ? -1 : 1,
-          COMMANDS.map((c) => commandEnabled(b, c)),
+          COMMANDS.map((c) => shown.includes(c)),
         );
         this.screen = { ...s, index };
         return this.game.update(this.ui);
@@ -133,11 +145,9 @@ export class HeroTurn {
       } else if (a.k === 'confirm') void this.game.endTurn();
       return;
     }
-    // Move's map: choose the tile, a whole tile a step (Fernando, Nov 20; the mouse still picks any half tile)
+    // Move's map: one half tile a step, the selector keeping the unit's square (Fernando, Nov 21; a whole tile since Nov 20)
     if (a.k === 'cursor') {
-      const k = subOf(b.grid),
-        st = gridStep(a.dir, this.scene.heading),
-        step = { x: st.x * k, y: st.y * k };
+      const step = gridStep(a.dir, this.scene.heading);
       // choosing where a token stops, its whole square stays on the map, as with the mouse (squareUnder): clamped, not
       // refused, so a cursor left nearer the edge (the cycle key on a smaller unit's corner) can still step back
       const size = this.pickSize;
@@ -177,7 +187,8 @@ export class HeroTurn {
   // Cancel (Esc, B, right button, the Back button): one step back (cancelStep)
   private cancel() {
     const to = cancelStep(this.game.battle, this.screen);
-    if (!to) return;
+    // nothing left to go back to: Esc on the bare menu opens Options (Fernando, Nov 21)
+    if (!to) return this.screen.k === 'menu' ? this.game.options() : undefined;
     // on the menu after moving (without having acted): undoes the move, like Tactics Ogre
     if (to === 'undo') return this.game.undo();
     this.back(to);
@@ -194,7 +205,8 @@ export class HeroTurn {
   chooseCommand(index: number) {
     const b = this.game.battle;
     const c = COMMANDS[index];
-    if (this.game.busy || !this.game.heroTurn || !c || !commandEnabled(b, c)) return;
+    if (this.game.busy || !this.game.heroTurn || !c) return;
+    if (!commandEnabled(b, c)) return sfx('cancel'); // a greyed row says no (Fernando, Nov 21)
     if (c === 'undo') return this.game.undo(); // the "Undo move" row
     sfx('confirm');
     if (c === 'status') return this.game.status();
@@ -208,14 +220,14 @@ export class HeroTurn {
     this.game.update(hoverTile(b, selectMode(b, this.ui, { k: 'move' }), this.cursor));
   }
 
-  // the mouse (or Tab) on a 3D menu row moves the focus there, as the arrows would (never onto a greyed row); 'abilities' is
+  // the mouse (or Tab) on a 3D menu row moves the focus there, as the arrows would (a greyed row too); 'abilities' is
   // the column beside the menu, which holds the Agir primeiro lists
   hoverRow(list: 'menu' | 'abilities', index: number) {
     const b = this.game.battle,
       s = this.screen;
     if (list === 'abilities') return actScreen(s) && !this.game.busy && actHover(this.actHost, index);
     if (this.game.busy || !this.game.heroTurn || s.k !== 'menu' || s.index === index) return;
-    if (!commandEnabled(b, COMMANDS[index])) return;
+    if (!menuRows(b).includes(COMMANDS[index])) return;
     sfx('cursor');
     this.screen = { k: 'menu', index };
     this.game.update(this.ui);

@@ -361,6 +361,10 @@ export class Game implements TurnHost {
     });
   }
 
+  options() {
+    this.menu();
+  }
+
   // the Options window (game/options.ts), with what it shows and changes of this battle
   private menu() {
     optionsMenu({

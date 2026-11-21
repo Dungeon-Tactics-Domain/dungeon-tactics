@@ -31,6 +31,7 @@ function turn() {
     undo: () => void calls.push('undo'),
     status: () => void calls.push('status'),
     save: () => {},
+    options: () => void calls.push('options'),
   };
   // heading 0: the camera straight, so "right" is +x on the grid
   const scene = { heading: 0, focusOn: () => {}, sync: () => {}, pick: () => null } as unknown as ConstructorParameters<
@@ -54,6 +55,16 @@ describe('turn screens, key by key', () => {
     expect(t.screen).toEqual({ k: 'acts', index: 0 });
     press(esc);
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('act') });
+  });
+
+  // Fernando, Nov 21: Esc backs out step by step, then on the bare menu opens Options; after a free move it still undoes
+  it('Esc on the bare menu opens Options; after a free move it undoes the move first', () => {
+    const { calls, battle, press } = turn();
+    press(esc);
+    expect(calls).toEqual(['options']);
+    battle.move({ x: 1, y: 2 });
+    press(esc);
+    expect(calls).toEqual(['options', 'undo']);
   });
 
   it('Status and Wait run their own commands', () => {
@@ -89,7 +100,7 @@ describe('turn screens, key by key', () => {
     expect(calls).toEqual(['endTurn']);
   });
 
-  it('Move map: Cancel goes back to the menu on Move, and Cancel there does nothing', () => {
+  it('Move map: Cancel goes back to the menu on Move, and Cancel there opens Options (Nov 21)', () => {
     const { t, calls, press } = turn();
     press(ok);
     expect(t.screen).toEqual({ k: 'map', command: 'move' });
@@ -97,7 +108,17 @@ describe('turn screens, key by key', () => {
     expect(t.screen).toEqual({ k: 'menu', index: commandIndex('move') });
     press(esc);
     expect(t.screen.k).toBe('menu');
-    expect(calls).toEqual([]);
+    expect(calls).toEqual(['options']);
+  });
+
+  it('a spent Move stays in the cursor path, greyed: choosing it does nothing (Nov 21)', () => {
+    const { t, battle, press } = turn();
+    battle.state.turn.spent = 99;
+    t.screen = { k: 'menu', index: commandIndex('act') };
+    press({ k: 'cursor', dir: 'down' });
+    expect(t.screen).toEqual({ k: 'menu', index: commandIndex('move') });
+    press(ok);
+    expect(t.screen).toEqual({ k: 'menu', index: commandIndex('move') });
   });
 
   it('the number 1 picks Move', () => {

@@ -87,14 +87,11 @@ export function commandEnabled(b: Battle, c: Command): boolean {
   return true;
 }
 
-// The rows the menu shows, in COMMANDS order: Move leaves once the unit moved and has no movement left (at the turn's
-// start it stays, greyed when boxed in), "Undo move" only while there is a move to take back. Agir always shows and opens, even with nothing left to
-// do, to look at every action and its reach (Fernando, Nov 19; its row says why, menu-view.ts). 4 rows at the start, 5
-// after a move with movement left
-export const menuRows = (b: Battle): Command[] =>
-  COMMANDS.filter((c) =>
-    c === 'move' ? !b.state.turn.moved || b.reach().size > 0 : c === 'undo' ? canUndoMove(b) : true,
-  );
+// The rows the menu shows, in COMMANDS order: Move always stays, greyed with its bar at zero once the movement is spent or
+// boxed in (Fernando, Nov 21: it used to leave), "Undo move" only while there is a move to take back. Agir always shows and
+// opens, even with nothing left to do, to look at every action and its reach (Fernando, Nov 19; its row says why,
+// menu-view.ts). 4 rows at the start, 5 after a move
+export const menuRows = (b: Battle): Command[] => COMMANDS.filter((c) => c !== 'undo' || canUndoMove(b));
 
 // range of the farthest-reaching ability (the dotted line around the player)
 export const longestRange = (b: Battle) =>

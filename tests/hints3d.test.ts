@@ -39,9 +39,9 @@ const row = (b: Battle, s: Screen, open = true, device: Device = 'keyboard') =>
   hintsFor(b, s, open, device).right.map((h) => `${device === 'touch' ? '' : keysText(h.act, device)}=${h.text}`);
 
 describe('button hints: what each screen shows', () => {
-  it('the menu offers Select and the camera; Cancel only once there is a move to undo', () => {
+  it('the menu offers Select and the camera; Cancel opens Options, then undoes a move', () => {
     const b = battle();
-    expect(row(b, menu)).toEqual(['Enter=Escolher', 'Q E R=Câmera']);
+    expect(row(b, menu)).toEqual(['Enter=Escolher', 'Esc=Opções', 'Q E R=Câmera']);
     b.move({ x: 2, y: 2 });
     expect(canUndoMove(b)).toBe(true);
     expect(row(b, menu)).toEqual(['Enter=Escolher', 'Esc=Desfazer', 'Q E R=Câmera']);

@@ -7,7 +7,7 @@ import type { Element } from '../../shared/battle/units.ts';
 import { iconMaterial } from '../ui3d/icons.ts';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
 import { textPx } from '../ui3d/layout.ts';
-import { paperMaterial, quad } from '../ui3d/panel.ts';
+import { bandMaterial, paperMaterial, quad, type Rgb } from '../ui3d/panel.ts';
 import { land, type Spring, settled, spring, stepSpring } from '../ui3d/spring.ts';
 import { dropText, textMesh } from '../ui3d/text.ts';
 import { REF } from './menu-layout.ts';
@@ -21,6 +21,7 @@ export interface Ctx {
   paint: Texture; // the panels' painted detail (ui3d/panel.ts)
 }
 export const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const MOVE_BLUE: Rgb = [0.29, 0.56, 0.89];
 export const alpha = (m: Mesh, a: number) => ((m.material as ShaderMaterial).uniforms.uAlpha.value = a);
 // reduced motion: the spring is already where it is going
 export function move(sp: Spring, dt: number, still: boolean, k?: number, c?: number) {
@@ -174,6 +175,18 @@ export class Column {
       const room = width - (note && !below ? note.scale.x + 10 * s : 0);
       name.scale.multiplyScalar(Math.min(1, room / name.scale.x));
       const text = put(name, left, below ? mid - 9 * s : mid);
+      if (r.gauge !== undefined) {
+        // Move's bar along the row's foot: the track in the panel's shade, the half tiles left in the walk marks' blue
+        const y = mid + 17 * s,
+          h = 5 * s;
+        const bar = (w: number, c: Rgb, o: number) => {
+          const m = quad(bandMaterial(w, h, s, c), left, y, w, h, o);
+          this.texts.push(m);
+          this.ui.add(m);
+        };
+        bar(width, layer.theme.shade, this.order + 1);
+        if (r.gauge > 0) bar(width * clamp01(r.gauge), MOVE_BLUE, this.order + 2);
+      }
       const icon = new Icon(this.plate, r.kind, r.element);
       icon.group.position.set(layer.snap((REF.iconW * s) / 2), -layer.snap(mid), 0);
       this.icons.add(icon.group);

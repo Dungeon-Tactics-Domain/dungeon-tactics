@@ -65,7 +65,7 @@ describe('menu state (pure)', () => {
     expect(menuKey(b, menu, true, ok)).toBe('open');
     expect(menuKey(b, menu, true, esc)).toBe('open');
     expect(menuKey(b, menu, true, { k: 'cursor', dir: 'up' })).toBeNull();
-    expect(menuKey(b, menu, false, esc)).toBe('close');
+    expect(menuKey(b, menu, false, esc)).toBeNull(); // Esc on the bare menu opens Options (hero-turn.ts, Nov 21)
     expect(menuKey(b, menu, false, ok)).toBeNull();
     b.move({ x: 1, y: 2 });
     expect(menuKey(b, menu, false, esc)).toBeNull(); // Esc still undoes the move (Nov 13)
@@ -122,6 +122,7 @@ function turn() {
     undo: () => {},
     status: () => {},
     save: () => {},
+    options: () => {},
   };
   const at: { p: Pos | null } = { p: null };
   const scene = { heading: 0, focusOn: () => {}, sync: () => {}, pick: () => at.p } as unknown as ConstructorParameters<

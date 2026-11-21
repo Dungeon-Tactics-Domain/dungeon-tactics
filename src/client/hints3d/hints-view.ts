@@ -48,6 +48,7 @@ export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device): H
   const right = [hint('confirm', confirmText(s))];
   if (back === 'undo') right.push(hint('cancel', t('Desfazer', 'Undo')));
   else if (back) right.push(hint('cancel', t('Cancelar', 'Cancel')));
+  else if (s.k === 'menu') right.push(hint('cancel', t('Opções', 'Options')));
   // the action list's third hint is the sheet's pages; everywhere else the camera, as in the reference
   return { left, right: [...right, ...(s.k === 'actions' ? [hint('info', t('Detalhes', 'Details'))] : camera)] };
 }

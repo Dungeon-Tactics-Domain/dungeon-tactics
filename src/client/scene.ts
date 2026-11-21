@@ -116,7 +116,7 @@ export class BattleScene {
     return s;
   }
 
-  setRangeRing(r: { from: Pos[]; range: number } | null) {
+  setRangeRing(r: { from: Pos[]; range: number; walk?: string[] } | null) {
     this.marks.setRangeRing(r);
   }
 

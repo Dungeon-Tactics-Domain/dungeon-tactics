@@ -14,16 +14,28 @@ const tileOf = (grid: Grid, p: Pos): Pos => ({ x: p.x - (p.x % subOf(grid)), y: 
 
 // Outline of the tiles within `range` cells of the unit's cells `from` (the same distance as the rule), at each tile's
 // ground height
-export function rangeRing(
+export const rangeRing = (
   space: TileSpace,
   r: { from: Pos[]; range: number },
   style: Lit | null = null,
+  ground?: Ground,
+) => outline(space, (p) => inRing(space.grid, r, p), '#ffd27a', style, ground);
+
+// The same dotted outline in blue around the cells the unit can still walk over (Fernando, Nov 21: "a blue preview of
+// the movement too")
+export const walkRing = (space: TileSpace, cells: Set<string>, style: Lit | null = null, ground?: Ground) =>
+  outline(space, (p) => cells.has(posKey(p)), '#6ab0ff', style, ground);
+
+function outline(
+  space: TileSpace,
+  inside: (p: Pos) => boolean,
+  color: string,
+  style: Lit | null,
   ground?: Ground,
 ): THREE.Mesh {
   const { width: W, height: H } = space.grid,
     pos: number[] = [],
     strips: Path[] = [];
-  const inside = (p: Pos) => inRing(space.grid, r, p);
   const yAt = (p: Pos, x: number, z: number) =>
     (space.levels.get(posKey(p))?.surface ?? space.surfaceY(p, x, z)) + 0.05;
   // flat little dash lying on the ground (WebGL's 1 px line barely showed): 2 triangles from `a` to `b`, 0.07 wide
@@ -65,7 +77,7 @@ export function rangeRing(
       }
     }
   if (style) {
-    const lit = piece(style, strips, 0.04, '#ffd27a');
+    const lit = piece(style, strips, 0.04, color);
     lit.renderOrder = 11;
     return lit;
   }
@@ -74,7 +86,7 @@ export function rangeRing(
   const mesh = new THREE.Mesh(
     g,
     new THREE.MeshBasicMaterial({
-      color: '#ffd27a',
+      color,
       transparent: true,
       opacity: 0.9,
       depthWrite: false,

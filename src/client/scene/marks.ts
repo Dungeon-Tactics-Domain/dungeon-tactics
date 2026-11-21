@@ -21,7 +21,7 @@ import {
   tint,
 } from './mark-kit.ts';
 import { DANGER, MARK, type MarkPattern, markTexture } from './mark-looks.ts';
-import { rangeRing } from './range-ring.ts';
+import { rangeRing, walkRing } from './range-ring.ts';
 import { rectOf, sides, type TileSpace } from './space.ts';
 import { type Aim, animateAim, disposeAim, trajectory } from './trajectory.ts';
 
@@ -196,21 +196,25 @@ export class Marks {
 
   // Dotted line of the longest range (Nov 13, Fernando's request: "around the character the range of
   // their longest-hitting skill should show as dotted, and while they see the movement preview too"). Only rebuilds when it changes
-  private ring: { key: string; mesh: THREE.Mesh } | null = null;
+  // and, on the menu, the blue outline of where the unit can still walk (`walk`, cell keys; Nov 21)
+  private ring: { key: string; mesh: THREE.Group } | null = null;
   // `from`: the cells of the unit (a token occupies 2x2); `range` in cells
-  setRangeRing(r: { from: Pos[]; range: number } | null) {
-    const key = r ? `${posKey(r.from[0])}:${r.range}` : '';
+  setRangeRing(r: { from: Pos[]; range: number; walk?: string[] } | null) {
+    const key = r ? `${posKey(r.from[0])}:${r.range}:${r.walk?.join(',') ?? ''}` : '';
     if (this.ring?.key === key) return;
     if (this.ring) {
       this.root.remove(this.ring.mesh);
       this.ring.mesh.traverse((o) => {
-        (o as THREE.Mesh).geometry.dispose();
-        ((o as THREE.Mesh).material as THREE.Material).dispose();
+        if (!(o instanceof THREE.Mesh)) return;
+        o.geometry.dispose();
+        (o.material as THREE.Material).dispose();
       });
       this.ring = null;
     }
-    if (!r || r.range < 1) return;
-    const mesh = rangeRing(this.space, r, this.style, this.ground);
+    if (!r) return;
+    const mesh = new THREE.Group();
+    if (r.range >= 1) mesh.add(rangeRing(this.space, r, this.style, this.ground));
+    if (r.walk?.length) mesh.add(walkRing(this.space, new Set(r.walk), this.style, this.ground));
     this.root.add(mesh);
     this.ring = { key, mesh };
   }
