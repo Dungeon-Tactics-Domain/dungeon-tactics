@@ -5,16 +5,18 @@ import { DEFAULT_SOUND, parseSound, wake } from '../src/client/sound.ts';
 // Since Nov 13 it is a volume in % in steps of 5; the old save (0, 1, 2) becomes the equivalent volume.
 describe('sound preference', () => {
   it('accepts volume from 0 to 100 in steps of 5', () => {
-    expect(parseSound({ music: 0, sfx: 100 })).toEqual({ music: 0, sfx: 100 });
-    expect(parseSound({ music: 35, sfx: 5 })).toEqual({ music: 35, sfx: 5 });
+    expect(parseSound({ music: 0, ui: 100, world: 5, voice: 0 })).toEqual({ music: 0, ui: 100, world: 5, voice: 0 });
+    // a save from before the split (Nov 21): its one effects bar fills the three
+    expect(parseSound({ music: 35, sfx: 5 })).toEqual({ music: 35, ui: 5, world: 5, voice: 5 });
+    expect(parseSound({ music: 35, sfx: 5, voice: 80 })).toEqual({ music: 35, ui: 5, world: 5, voice: 80 });
   });
   it('converts the old save (off, low, high)', () => {
-    expect(parseSound({ music: 1, sfx: 2 })).toEqual({ music: 45, sfx: 100 });
-    expect(parseSound({ music: 0, sfx: 1 })).toEqual({ music: 0, sfx: 45 });
+    expect(parseSound({ music: 1, sfx: 2 })).toEqual({ music: 45, ui: 100, world: 100, voice: 100 });
+    expect(parseSound({ music: 0, sfx: 1 })).toEqual({ music: 0, ui: 45, world: 45, voice: 45 });
   });
   it('starts with the music on at 25% and the effects at 50% (Nov 18)', () => {
-    expect(DEFAULT_SOUND).toEqual({ music: 25, sfx: 50 });
-    expect(parseSound(undefined)).toEqual({ music: 25, sfx: 50 });
+    expect(DEFAULT_SOUND).toEqual({ music: 25, ui: 50, world: 50, voice: 50 });
+    expect(parseSound(undefined)).toEqual(DEFAULT_SOUND);
   });
   it('odd value falls back to the default', () => {
     expect(parseSound({ music: 7, sfx: 'alto' })).toEqual(DEFAULT_SOUND);
@@ -86,7 +88,7 @@ describe('audio wake', () => {
     );
     vi.resetModules();
     const { setSound } = await import('../src/client/sound.ts');
-    setSound({ music: 45, sfx: 100 }); // set the song's volume for the test
+    setSound({ music: 45, ui: 100, world: 100, voice: 100 }); // set the song's volume for the test
     expect([...heard.keys()]).toEqual(['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']);
     for (const h of heard.values()) expect(h.opts?.once).toBeFalsy();
     heard.get('pointerdown')!.run(); // makes the context and starts the song, which the browser refuses (still paused)

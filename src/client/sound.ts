@@ -6,13 +6,17 @@ import { param, store } from './store.ts';
 
 export const SOUND_KEY = 'dt:sound';
 // volume in % from 0 to 100, in steps of 5 (Nov 13, Fernando's request: "sound and effects should be a bar in 5% steps")
+// Since Nov 21 (Fernando: "split the effects into interface and world, and the dialogue too") four bars: the music, the
+// menus' clicks, the world's blows, steps and fanfares, and the dialogue's speech beeps
 export interface SoundSettings {
   music: number;
-  sfx: number;
+  ui: number;
+  world: number;
+  voice: number;
 }
 // music on at 25% and effects at 50% by default (Nov 18, Fernando's request; before, music was off since Nov 17): the
 // browser still starts the sound only after the first click or key. A saved volume of someone who set it wins
-export const DEFAULT_SOUND: SoundSettings = { music: 25, sfx: 50 };
+export const DEFAULT_SOUND: SoundSettings = { music: 25, ui: 50, world: 50, voice: 50 };
 // 100% = the old "loud" (0.8): the levels measured in dB in the comments below still hold at maximum
 const volume = (p: number) => (p / 100) * 0.8;
 
@@ -22,8 +26,15 @@ const LEGACY: Record<number, number> = { 1: 45, 2: 100 };
 const pct = (v: unknown, fallback: number) =>
   typeof v !== 'number' ? fallback : (LEGACY[v] ?? (v >= 0 && v <= 100 && v % 5 === 0 ? v : fallback));
 export function parseSound(raw: unknown): SoundSettings {
-  const r = (raw ?? {}) as Partial<Record<keyof SoundSettings, unknown>>;
-  return { music: pct(r.music, DEFAULT_SOUND.music), sfx: pct(r.sfx, DEFAULT_SOUND.sfx) };
+  const r = (raw ?? {}) as Partial<Record<keyof SoundSettings | 'sfx', unknown>>;
+  // a save from before the split holds one `sfx` bar: the three effect bars start at it
+  const sfx = pct(r.sfx, DEFAULT_SOUND.world);
+  return {
+    music: pct(r.music, DEFAULT_SOUND.music),
+    ui: pct(r.ui, sfx),
+    world: pct(r.world, sfx),
+    voice: pct(r.voice, sfx),
+  };
 }
 
 export type Sfx =
@@ -40,6 +51,8 @@ export type Sfx =
   | 'spell'
   | 'fire'
   | 'die';
+// the menus' sounds; every other effect is the world's (Nov 21)
+const INTERFACE: ReadonlySet<Sfx> = new Set(['cursor', 'confirm', 'cancel']);
 const FILE: Record<Sfx, string> = {
   cursor: 'click',
   confirm: 'confirm',
@@ -155,13 +168,14 @@ const load = (name: string) => {
 };
 
 export function sfx(name: Sfx) {
-  if (!ctx || !settings.sfx) return;
+  const level = INTERFACE.has(name) ? settings.ui : settings.world;
+  if (!ctx || !level) return;
   const c = ctx;
   void load(FILE[name]).then((buf) => {
     if (!buf) return;
     const src = c.createBufferSource();
     const gain = c.createGain();
-    gain.gain.value = volume(settings.sfx);
+    gain.gain.value = volume(level);
     src.buffer = buf;
     src.connect(gain).connect(c.destination);
     src.start();
@@ -170,7 +184,7 @@ export function sfx(name: Sfx) {
 
 // Short fanfare made of notes (ours, no file): rises in C major on victory, falls in A minor on defeat
 export function jingle(win: boolean) {
-  if (!ctx || !settings.sfx) return;
+  if (!ctx || !settings.world) return;
   const notes = win ? [523.25, 659.25, 783.99, 1046.5] : [440, 349.23, 293.66];
   const step = win ? 0.14 : 0.32;
   notes.forEach((f, i) => {
@@ -181,7 +195,7 @@ export function jingle(win: boolean) {
     osc.type = win ? 'square' : 'triangle';
     osc.frequency.value = f;
     // 0.4 (was 0.25, measured Nov 13): the fanfare sat at -24 to -27 dB, quieter than a click; now close to the effects
-    gain.gain.setValueAtTime(volume(settings.sfx) * 0.4, t0);
+    gain.gain.setValueAtTime(volume(settings.world) * 0.4, t0);
     gain.gain.exponentialRampToValueAtTime(0.001, t0 + (last ? 0.9 : step * 0.95));
     osc.connect(gain).connect(ctx!.destination);
     osc.start(t0);
@@ -192,7 +206,7 @@ export function jingle(win: boolean) {
 // Speech beep (dialogue box, talk.ts): a short soft (triangle, low-passed) note per spoken letter, at the speaker's pitch, varying a little
 // so it doesn't sound like an alarm. Synthesized, no file.
 export function blip(pitch: number) {
-  if (!ctx || !settings.sfx) return;
+  if (!ctx || !settings.voice) return;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   const t0 = ctx.currentTime;
@@ -205,7 +219,7 @@ export function blip(pitch: number) {
   soften.frequency.value = 1200;
   // 0.2 square (was 0.08, measured Nov 13): the beep sat at -33 dB, below the music (-31 dB), and the voice vanished in
   // conversations; -26 dB, above the music and below the file effects (-14 to -21 dB)
-  gain.gain.setValueAtTime(volume(settings.sfx) * 0.3, t0);
+  gain.gain.setValueAtTime(volume(settings.voice) * 0.3, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
   osc.connect(soften).connect(gain).connect(ctx.destination);
   osc.start(t0);

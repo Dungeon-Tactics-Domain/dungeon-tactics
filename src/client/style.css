@@ -1105,6 +1105,7 @@ body:has(.talk-overlay) .fps {
   flex: 1;
   height: 12px;
   border: 1px solid transparent;
+  touch-action: none; /* a finger drags the bar instead of scrolling the list (option-row.ts) */
 }
 .opt-bar i {
   display: block;

@@ -78,6 +78,19 @@ export function optionRow(o: Option, describe: (help: string) => void): HTMLButt
     o.step(dir);
     draw();
   };
+  // the bar's value at a pointer's x, clamped to the track: a drag past either end holds 0 or 100%
+  const setAt = (x: number) => {
+    const track = bar!.getBoundingClientRect();
+    o.bar!.set(Math.min(1, Math.max(0, (x - track.left) / track.width)) * 100);
+    draw();
+  };
+  // dragging the bar's knob (Fernando, Nov 21: "drag the volume balls with the mouse"): pressed on the track, the row
+  // captures the pointer and follows it until release
+  let dragged = false; // the click a drag ends with lands wherever it was let go: it must not step the value
+  const onTrack = (x: number) => {
+    const r = bar?.getBoundingClientRect();
+    return !!r && x >= r.left && x <= r.right;
+  };
   const row = button(
     'opt-row',
     [el('span', { class: 'opt-label' }, o.label), value],
@@ -86,17 +99,26 @@ export function optionRow(o: Option, describe: (help: string) => void): HTMLButt
       row.focus({ preventScroll: true }); // Safari does not focus a tapped button: the description must still follow the tap
       // Enter, Space and the gamepad's A click with no pointer: they go to the next value
       if (detail === 0) return step(1);
-      const track = bar?.getBoundingClientRect();
+      if (dragged) return void (dragged = false);
       if (x < value.getBoundingClientRect().left) return; // a tap on the name only puts the cursor on the row
       if (x <= prev.getBoundingClientRect().right) step(-1);
-      else if (track && x >= track.left && x <= track.right) {
-        o.bar?.set(((x - track.left) / track.width) * 100);
-        draw();
-      } else step(1);
+      else if (onTrack(x)) setAt(x);
+      else step(1);
     },
     {
       onfocus: () => describe(o.help),
-      onpointermove: hoverFocus,
+      onpointerdown: (e: PointerEvent) => {
+        if (!onTrack(e.clientX)) return;
+        dragged = false;
+        row.setPointerCapture(e.pointerId);
+        setAt(e.clientX);
+      },
+      onpointermove: (e: PointerEvent) => {
+        hoverFocus(e);
+        if (!row.hasPointerCapture(e.pointerId)) return;
+        dragged = true;
+        setAt(e.clientX);
+      },
       onkeydown: (e: KeyboardEvent) => {
         if (e.code !== 'ArrowLeft' && e.code !== 'ArrowRight') return;
         e.preventDefault();

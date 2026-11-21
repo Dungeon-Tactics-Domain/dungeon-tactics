@@ -176,7 +176,10 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
   },
   {
     title: t('Som', 'Sound'),
-    help: t('O volume da música e dos efeitos.', 'The volume of the music and of the effects.'),
+    help: t(
+      'O volume da música, da interface, do mundo e do diálogo.',
+      'The volume of the music, the interface, the world and the dialogue.',
+    ),
     rows: [
       percent(
         t('Música', 'Music'),
@@ -185,10 +188,25 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         (music) => setSound({ ...soundSettings(), music }),
       ),
       percent(
-        t('Efeitos', 'Effects'),
-        t('Volume dos golpes, passos e menus, em passos de 5%.', 'Volume of blows, steps and menus, in steps of 5%.'),
-        () => soundSettings().sfx,
-        (sfx) => setSound({ ...soundSettings(), sfx }),
+        t('Interface', 'Interface'),
+        t('Volume dos cliques dos menus, em passos de 5%.', 'Volume of the menu clicks, in steps of 5%.'),
+        () => soundSettings().ui,
+        (ui) => setSound({ ...soundSettings(), ui }),
+      ),
+      percent(
+        t('Mundo', 'World'),
+        t(
+          'Volume dos golpes, magias, passos e fanfarras, em passos de 5%.',
+          'Volume of blows, spells, steps and fanfares, in steps of 5%.',
+        ),
+        () => soundSettings().world,
+        (world) => setSound({ ...soundSettings(), world }),
+      ),
+      percent(
+        t('Diálogo', 'Dialogue'),
+        t('Volume das vozes das conversas, em passos de 5%.', 'Volume of the voices in conversations, in steps of 5%.'),
+        () => soundSettings().voice,
+        (voice) => setSound({ ...soundSettings(), voice }),
       ),
     ],
   },
