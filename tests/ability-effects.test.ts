@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { eventLog } from '../src/client/battle-text.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { abilityKind } from '../src/shared/battle/action-slots.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
@@ -44,6 +45,13 @@ describe('Shield bash and Shove (Warrior, Nov 21)', () => {
     until(b, 'b');
     expect(previewAbility(b.grid, b.state, 'b', 'strike', { x: 3, y: 3 }).ok).toBe(true);
     expect(moveOf(b.state, unit(b, 'b'))).toBe(full);
+  });
+
+  it('the stun is said: an effect event, a line in the log', () => {
+    const b = duel('warrior');
+    const ev = b.act('shield_bash', { x: 4, y: 3 });
+    expect(ev).toContainEqual({ k: 'effect', unit: 'b', item: 'shield_bash', turns: 1 });
+    expect(eventLog(ev, b.state)).toContain('Soldado atordoado: sem ações, −50% de movimento');
   });
 
   it('the bash hits for less than a weapon blow', () => {

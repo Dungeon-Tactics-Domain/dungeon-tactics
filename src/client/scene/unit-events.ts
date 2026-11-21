@@ -5,6 +5,7 @@ import { samePos } from '../../shared/battle/grid.ts';
 import { shotAt } from '../../shared/battle/shot.ts';
 import type { BattleEvent, BattleState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { effectWord } from '../battle-text.ts';
 import { lookOf, playFx } from '../fx.ts';
 import { numberPx, WEIGHT } from '../hit-weight.ts';
 import { t } from '../i18n.ts';
@@ -73,6 +74,9 @@ export async function playEvents(
       flash(v, u.time, '#5dff8a', 0.8, TIMING.hit);
       setBar(v, u.time, TIMING.hpDrain);
       u.float(e.unit, `+${e.amount}`, 'heal', numberPx(e.amount, UNIT_DEFS[v.def].hp, false));
+      await u.time.wait(TIMING.hit);
+    } else if (e.k === 'effect' && ABILITIES[e.item]) {
+      u.float(e.unit, effectWord(e.item), 'miss'); // the word, as a miss says Miss (Nov 21: stunned, blinded, focused)
       await u.time.wait(TIMING.hit);
     } else if (e.k === 'push') s.pushed.set(e.unit, await push(u, v, e.to));
     else if (e.k === 'charge') {

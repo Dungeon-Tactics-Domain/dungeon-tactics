@@ -284,7 +284,8 @@ export function resolveAbility(
     if (isHeal(ability)) {
       if (ability.heal[1] === 0) {
         after?.(state, actor, ability, unit, events);
-        addEffect(state, unit.id, abilityId);
+        if (addEffect(state, unit.id, abilityId))
+          events.push({ k: 'effect', unit: unit.id, item: abilityId, turns: ABILITIES[abilityId].buff!.turns });
         continue;
       } // support without healing: only the effect
       let amount: number;
@@ -317,7 +318,9 @@ export function resolveAbility(
     if (ability.damage[1] > 0) events.push({ k: 'hit', unit: unit.id, dmg, chance: t.chance });
     if (!hurt(state, unit, dmg, events)) continue;
     after?.(state, actor, ability, unit, events);
-    addEffect(state, unit.id, abilityId); // its timed effect, if it leaves one (stun, sand)
+    // its timed effect, if it leaves one (stun, sand), said in the log and over the unit
+    if (addEffect(state, unit.id, abilityId))
+      events.push({ k: 'effect', unit: unit.id, item: abilityId, turns: ABILITIES[abilityId].buff!.turns });
     if (ability.push === 0) continue;
     // a push with a chance rolls after the damage; without `pushChance` there is no roll (the game's roll order does not change)
     if (ability.pushChance !== undefined) {

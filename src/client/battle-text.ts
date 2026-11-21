@@ -147,6 +147,8 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
       head = `${name(e.unit)}: ${itemName(e.item)} → `;
     } else if (e.k === 'mana')
       parts.push(t(`${name(e.unit)} +${e.amount} de mana`, `${name(e.unit)} +${e.amount} mana`));
+    else if (e.k === 'effect' && ABILITIES[e.item]?.buff)
+      parts.push(`${name(e.unit)} ${effectWord(e.item).toLowerCase()}: ${effectText(e.item)}`);
     else if (e.k === 'effect')
       parts.push(t(`${name(e.unit)} por ${e.turns} turnos`, `${name(e.unit)} for ${e.turns} turns`));
     else if (e.k === 'charge') {
@@ -179,6 +181,27 @@ export function eventLog(events: BattleEvent[], state: BattleState): string {
   }
   flush();
   return out.join(' | ');
+}
+
+// A timed effect an ability leaves (Nov 21): the word over the unit, and what it does for the log
+export function effectWord(source: string): string {
+  const f = ABILITIES[source]?.buff;
+  if (f?.stun) return t('Atordoado', 'Stunned');
+  if ((f?.damage ?? 0) > 0) return t('Focado', 'Focused');
+  if ((f?.accuracy ?? 0) < 0) return t('Ofuscado', 'Blinded');
+  return abilityName(source);
+}
+export function effectText(source: string): string {
+  const f = ABILITIES[source]?.buff;
+  if (!f) return '';
+  const pct = (v: number | undefined, pt: string, en: string) =>
+    v ? t(`${signed(v)} de ${pt}`, `${signed(v)} ${en}`) : '';
+  const parts = [
+    f.stun ? t('sem ações', 'no actions') : '',
+    pct(f.accuracy, 'acerto', 'aim'),
+    pct(f.damage, 'dano', 'damage'),
+  ];
+  return [...parts, pct(f.moveShare, 'movimento', 'move')].filter(Boolean).join(', ');
 }
 
 // an item's name from the bag (src/content/items.ts), in the player's language

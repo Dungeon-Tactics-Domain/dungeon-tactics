@@ -100,7 +100,7 @@ export type BattleEvent =
   | { k: 'regen'; unit: string; amount: number } // life regen at the start of its turn: not a heal (no power, no undead harm)
   | { k: 'item'; unit: string; item: string; target: Pos } // used an item from the bag on the unit at `target`
   | { k: 'mana'; unit: string; amount: number } // mana given back (an Ether)
-  | { k: 'effect'; unit: string; item: string; turns: number } // an item's timed effect on the unit (effects.ts)
+  | { k: 'effect'; unit: string; item: string; turns: number } // an item's or, since Nov 21, an ability's timed effect on the unit (effects.ts)
   | { k: 'push'; unit: string; to: Pos }
   | { k: 'bump'; unit: string; dmg: number }
   | { k: 'fall'; unit: string; levels: number; dmg: number }

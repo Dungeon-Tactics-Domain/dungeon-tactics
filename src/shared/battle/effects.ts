@@ -54,11 +54,12 @@ export function spendOnce(state: BattleState, id: string): void {
 
 // Puts an item's effect on a unit; the same item again starts its turns over (it never stacks with itself). On the user
 // itself one more, as the turn it is used in ends at once: it still gets its `turns` of play
-export function addEffect(state: BattleState, unit: string, item: string): void {
+export function addEffect(state: BattleState, unit: string, item: string): boolean {
   const buff = BUFFS[item];
-  if (!buff) return;
+  if (!buff) return false;
   const rest = (state.effects ?? []).filter((e) => !(e.unit === unit && e.item === item));
   state.effects = [...rest, { unit, item, turns: buff.turns + (unit === state.turn.actor ? 1 : 0) }];
+  return true;
 }
 
 // At the end of a unit's turn its effects lose one turn; spent ones and those of the dead leave
