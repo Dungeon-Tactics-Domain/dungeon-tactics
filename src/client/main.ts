@@ -79,6 +79,8 @@ export class Game implements TurnHost {
       cancel: () => this.runKey({ k: 'cancel' }),
       sheet: () => this.turn.menu({ k: 'open' }),
       card: (unit) => this.turn.card(unit),
+      charge: (c) => this.turn.peekCharge(c),
+      screenOf: (id) => scene.screenOf(id),
     };
     this.hud = new BattleHud(host, act, skin);
     this.readPad = battleInput(host.querySelector('canvas')!, scene, {
@@ -216,7 +218,9 @@ export class Game implements TurnHost {
     const { bottom, left } = this.hud.insets(); // `left`: the turn list's right edge, which would cover a number
     const now = rows[0] && !rows[0].charge ? rows[0].unit : null;
     this.scene.setTurnOrder(turnOrder(rows), now, (left / innerWidth) * 2 - 1);
-    this.scene.setInsets(0, bottom);
+    // the map centers right of the turn list, so the unit in focus never sits under it (Nov 22); whole px: the folding
+    // list's spring would otherwise resize the frame on every sub-pixel step
+    this.scene.setInsets(0, bottom, Math.round(left));
     this.placeMenu(); // already in place on open: waiting for the next frame showed the menu in the corner for 1 frame
   }
 

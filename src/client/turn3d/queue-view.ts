@@ -3,6 +3,7 @@
 import type { Battle } from '../../shared/battle/battle.ts';
 import type { UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { chargeCard } from '../charge-lines.ts';
 import type { Forecast } from '../forecast.ts';
 import { abilityName, t, unitName } from '../i18n.ts';
 import { cardBars, cardLines, type queueRows, statsText, unitStats } from '../turn-list.ts';
@@ -40,9 +41,10 @@ export interface QueueCard {
   small: boolean; // a unit already listed above: a smaller card with its name only (Fernando, Nov 20)
   // the lines beside the card: on a unit's first card its name, life and mana, stamina and CT (turn-list.ts cardLines),
   // with a bar under each number (`bars`: mana, stamina and CT filled 0 to 1, under 0 for a pool the unit lacks; the
-  // life bar reads `hp`); on a repeat the name only. Null on a charge's row, a spell going off, not a turn; folded, the
-  // list shows faces and order only (Fernando, Nov 20), so no card has lines
-  stats: { lines: string[]; bars?: [mp: number, st: number, ct: number] } | null;
+  // life bar reads `hp`); on a repeat the name only. On a charge's row the spell and its count, then whom it would hit
+  // now, with their faces (`faces`, defs; charge-lines.ts chargeCard; Nov 22); folded, the list shows faces and order
+  // only (Fernando, Nov 20), so no card has lines
+  stats: { lines: string[]; bars?: [mp: number, st: number, ct: number]; faces?: string[] } | null;
   tip: string; // name, life and CT in full, shown beside the card under the mouse
 }
 
@@ -65,6 +67,14 @@ export function repeats(rows: Queue['rows']): boolean[] {
     seen.add(r.unit);
     return again;
   });
+}
+
+// a charge's lines and the faces of the first three it would hit: more would not fit beside the names
+function chargeStats(b: Battle, q: Queue | null, unit: string, ability: string): QueueCard['stats'] {
+  const c = q?.charges.find((x) => x.unit === unit && x.ability === ability);
+  if (!c) return null;
+  const { lines, hit } = chargeCard(b.grid, b.state, c);
+  return { lines, faces: hit.slice(0, 3).map((u) => u.def) };
 }
 
 export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: string, folded = false): QueueCard[] {
@@ -94,9 +104,10 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
       target: marked.has(i),
       pending: i === q?.at,
       small: again[i],
-      stats:
-        r.charge || folded
-          ? null
+      stats: folded
+        ? null
+        : r.charge
+          ? chargeStats(b, q, r.unit, r.charge)
           : again[i]
             ? { lines: [unitName(u.def)] }
             : { lines: cardLines(u), bars: cardBars(u) },

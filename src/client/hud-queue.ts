@@ -1,10 +1,11 @@
 // The HTML turn list the HUD keeps under the 3D one (hud.ts): its title and one row per turn of the queue projection
 // (turn-list.ts queueRows). The 3D list draws over it; this list keeps the scroll, the hover and what a screen reader hears.
 import type { Battle } from '../shared/battle/battle.ts';
-import type { UnitState } from '../shared/battle/types.ts';
+import type { Charge, UnitState } from '../shared/battle/types.ts';
 import { hint, queueEnd } from './hud-pieces.ts';
 import { abilityName, t, unitName } from './i18n.ts';
 import { abilityIcon, el } from './icons.ts';
+import { touchDevice } from './screen-buttons.ts';
 import { store } from './store.ts';
 import { isSurvival, turnsLeft } from './survival.ts';
 import type { Queue } from './turn3d/queue-view.ts';
@@ -15,23 +16,49 @@ export const rowUnit = (q: Queue | null, i: number): string | null => q?.rows[i]
 
 // The turn list folds to its faces and order numbers and opens again (Fernando, Nov 20: "turn order pode ser
 // colapsável"), remembered per browser; with no choice yet a phone opens it folded, where the lines took a third of the
-// page, and a PC or a tablet open
+// page, and since Nov 22 a tablet too (Fernando: "Lista dobrada no tablet"; a finger points, `touch`); a PC opens it
 const FOLD = 'dt:turnsFold';
-export const turnsFolded = (phone: boolean) => {
+export const turnsFolded = (phone: boolean, touch = touchDevice()) => {
   const v = store.get(FOLD);
-  return v === null ? phone : v === '1';
+  return v === null ? phone || touch : v === '1';
 };
 export const foldTurns = (phone: boolean) => store.set(FOLD, turnsFolded(phone) ? '0' : '1');
 
 // a tap or click on a card (a drag scrolls the list instead and never clicks): the unit it stands for; on the title, the
-// list folds or opens
-export function wireCards(list: HTMLElement, q: () => Queue | null, card: (unit: string) => void, fold: () => void) {
+// list folds or opens. A charge's card under the mouse, or tapped where no mouse hovers, lights its area and targets on
+// the map instead (`peek`, Fernando, Nov 22); null when the mouse leaves it
+export function wireCards(
+  list: HTMLElement,
+  q: () => Queue | null,
+  card: (unit: string) => void,
+  fold: () => void,
+  peek: (c: Charge | null) => void,
+) {
+  const at = (e: Event) => {
+    const row = e.target instanceof Element ? e.target.closest('.queue-row') : null;
+    return row ? [...list.querySelectorAll('.queue-row')].indexOf(row) : -1;
+  };
+  let peeked: Charge | null = null;
+  const show = (c: Charge | null) => {
+    // the list is drawn anew on each update, its charges with it: the same charge is its caster and spell
+    if (c?.unit !== peeked?.unit || c?.ability !== peeked?.ability) peek(c);
+    peeked = c;
+  };
   list.addEventListener('click', (e) => {
     if (e.target instanceof Element && e.target.closest('.queue-title')) return fold();
-    const row = e.target instanceof Element ? e.target.closest('.queue-row') : null;
-    const unit = row && rowUnit(q(), [...list.querySelectorAll('.queue-row')].indexOf(row));
+    const c = rowCharge(q(), at(e));
+    if (c) return peek((peeked = c));
+    const unit = rowUnit(q(), at(e));
     if (unit) card(unit);
   });
+  list.addEventListener('pointermove', (e) => show(e.pointerType === 'mouse' ? rowCharge(q(), at(e)) : peeked));
+  list.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && show(null));
+}
+
+// the charge a row of the list stands for (the aimed one too), or null for a unit's turn
+export function rowCharge(q: Queue | null, i: number): Charge | null {
+  const r = q?.rows[i];
+  return (r?.charge && q?.charges.find((c) => c.unit === r.unit && c.ability === r.charge)) || null;
 }
 
 // the list's items: its title, then a row per entry of `q`, in the queue's order (a charge row: the caster's face, the

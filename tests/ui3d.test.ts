@@ -497,7 +497,7 @@ describe('3D turn list: the lines beside the cards', () => {
     expect(cardLines({ ...u, def: 'beacon' })[1]).not.toContain('MP');
   });
 
-  it("a charge's row has no lines: it is a spell going off, not a turn", () => {
+  it("a charge's row says the spell and its target, with no bars: a spell going off, not a turn (Nov 22)", () => {
     const b = new Battle(
       flat(8, 1),
       stateOf([
@@ -507,7 +507,7 @@ describe('3D turn list: the lines beside the cards', () => {
     );
     const cards = queueCards(b, queueRows(b, { ability: 'aimed_shot', target: { x: 4, y: 0 } }), []);
     const charge = cards.find((c) => c.id.charge)!;
-    expect(charge.stats).toBeNull();
+    expect(charge.stats).toEqual({ lines: ['Tiro mirado · 1 alvo', 'Ladino'], faces: ['rogue'] });
     expect(cards.filter((c) => !c.id.charge).every((c) => c.stats)).toBe(true);
   });
 

@@ -5,12 +5,12 @@ import type { Battle } from '../shared/battle/battle.ts';
 import { posKey, samePos, subOf } from '../shared/battle/grid.ts';
 import { cellsOf, farCells, footprint, unitAt } from '../shared/battle/pathing.ts';
 import { traceShot } from '../shared/battle/shot.ts';
-import type { Pos } from '../shared/battle/types.ts';
+import type { Charge, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { actMarks, actScreen, spotAim } from './act-marks.ts';
-import { chargeFrom, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
+import { chargeFrom, chargeNow, counterDamage, countersFrom, countersOwed } from './charge-lines.ts';
 import { longestRange, type Screen } from './command.ts';
-import { facingHighlights, type Highlights, highlights, rangeMarks, type Ui } from './interaction.ts';
+import { attackMarks, facingHighlights, type Highlights, highlights, rangeMarks, type Ui } from './interaction.ts';
 
 // The box round a body's cells: a square's side, or {x, y} cells for a long one (the snake's 1x2 along its facing)
 export function bodyBox(cells: Pos[]): { corner: Pos; size: number | Pos } {
@@ -110,4 +110,16 @@ export function walkCells(b: Battle): string[] {
   const cells = new Set(footprint(b.actor).map(posKey));
   for (const r of spots) for (const c of cellsOf(r.pos, size)) cells.add(posKey(c));
   return [...cells];
+}
+
+// A queued charge's card under the mouse or tapped (Fernando, Nov 22): its area where it would land now and whom it would
+// hit there, with the strike preview, as the aim step marks them
+export function chargeMarks(b: Battle, c: Charge): Highlights {
+  const { aim, p } = chargeNow(b.grid, b.state, c);
+  const hit = p.ok ? p.targets.flatMap((x) => footprint(b.state.units.find((u) => u.id === x.unit)!)) : [];
+  return {
+    tiles: [...attackMarks(b, ABILITIES[c.ability], aim), ...hit.map((pos) => ({ pos, kind: 'target' as const }))],
+    path: null,
+    preview: p,
+  };
 }

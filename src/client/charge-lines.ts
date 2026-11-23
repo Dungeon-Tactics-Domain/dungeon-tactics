@@ -43,11 +43,38 @@ function lineOf(grid: Grid, state: BattleState, casterId: string, p: Preview, to
   };
 }
 
+// where a charge would land if it fired now (a unit lock follows the unit, a tile lock stays) and what it would do there
+export function chargeNow(grid: Grid, state: BattleState, c: Charge) {
+  const aim = aimTile(grid, state, chargeAim(state, c));
+  return { aim, p: previewAbility(grid, state, c.unit, c.ability, aim, true) };
+}
+
 export function chargeLine(grid: Grid, state: BattleState, c: Charge): ChargeLine {
   const followed = c.follow ? state.units.find((u) => u.id === c.follow) : undefined;
-  const aim = aimTile(grid, state, chargeAim(state, c));
-  const p = previewAbility(grid, state, c.unit, c.ability, aim, true);
+  const { aim, p } = chargeNow(grid, state, c);
   return lineOf(grid, state, c.unit, p, followed ? square(followed) : { pos: aim, size: subOf(grid) });
+}
+
+// What a queued charge's card in the turn list says (Fernando, Nov 22: "nessa turn order deve dizer q magia ela vai usar
+// e em quais alvos"): the spell and how many it would hit now, then who (two names, else the first and how many more)
+// or, with nobody in the area, its tile as the Height corner writes it (tile-info.ts). `hit`: the units, in that order
+export function chargeCard(grid: Grid, state: BattleState, c: Charge): { lines: [string, string]; hit: UnitState[] } {
+  const { aim, p } = chargeNow(grid, state, c);
+  // out of range from where the caster stands it fizzles: nobody is hit
+  const hit = p.ok ? p.targets.map((x) => state.units.find((u) => u.id === x.unit)!) : [];
+  const n = hit.length,
+    names = hit.map((u) => unitName(u.def));
+  const count = !n
+    ? t('nenhum alvo', 'no target')
+    : n === 1
+      ? t('1 alvo', '1 target')
+      : t(`${n} alvos`, `${n} targets`);
+  const who = !n
+    ? t(`na casa X ${aim.x} · Y ${aim.y}`, `on tile X ${aim.x} · Y ${aim.y}`)
+    : n > 2
+      ? `${names[0]} +${n - 1}`
+      : names.join(', ');
+  return { lines: [`${abilityName(c.ability)} · ${count}`, who], hit };
 }
 
 // Counters on screen (Nov 15, Fernando): a ranged one is the shot's line from whoever strikes back to the attacker, a melee

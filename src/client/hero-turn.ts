@@ -3,7 +3,7 @@
 import type { Battle } from '../shared/battle/battle.ts';
 import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
 import { footprint, nearestTile } from '../shared/battle/pathing.ts';
-import type { BattleEvent, Pos } from '../shared/battle/types.ts';
+import type { BattleEvent, Charge, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import type { ActRef } from './act-flow.ts';
 import { actScreen } from './act-marks.ts';
@@ -23,6 +23,7 @@ import { cycleUnit, gridStep, type KeyAction } from './keyboard.ts';
 import { cardTap, type MenuTap, menuKey, menuScreen, menuTap } from './menu-state.ts';
 import type { BattleScene } from './scene.ts';
 import { sfx } from './sound.ts';
+import { chargeMarks } from './turn-marks.ts';
 import { peekMenu } from './unit-peek.ts';
 
 // What the turn screens read from and ask of the Game. `battle` changes on Restart, so it is read on every use.
@@ -77,6 +78,8 @@ export class HeroTurn {
     if (m?.k === 'peek') return void setTimeout(() => this.menu(m));
     if (m) return this.menu(m);
     if (!pos) return;
+    // the Height corner follows a tap on the Agir screens as it follows the mouse (Fernando, Nov 22)
+    if (actScreen(this.screen)) this.cursor = pos;
     if (actTap(this.actHost, pos)) return;
     if (this.screen.k === 'facing') return this.faceTo(pos);
     // on the map the tile is already chosen by mouse hover (or the 1st tap): clicking it confirms
@@ -177,6 +180,13 @@ export class HeroTurn {
   // a card of the turn list (hud-queue.ts): the hero acting now, or another unit
   card(unit: string) {
     this.menu(cardTap(this.game.battle, unit));
+  }
+  // a charge's card of the turn list under the mouse or tapped (hud-queue.ts): its area and targets on the map until
+  // the mouse leaves it (null) or the next redraw puts the turn's own marks back
+  peekCharge(c: Charge | null) {
+    if (this.game.busy) return;
+    if (c) this.scene.setHighlights(chargeMarks(this.game.battle, c));
+    else this.game.update(this.ui);
   }
   private paintRange(unit: string | null) {
     this.range = unit;

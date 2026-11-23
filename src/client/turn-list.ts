@@ -101,7 +101,8 @@ export function queueRows(b: Battle, aim: { ability: string; target: Pos } | nul
   const at = preview ? all.findIndex((r) => r.unit === me && r.charge === preview.ability) : -1;
   const p = preview ? b.preview(preview.ability, preview.target) : null;
   const targets = new Set(p?.ok ? p.targets.map((tg) => tg.unit) : []);
-  return { rows: twoRounds(all), targets, at };
+  // `charges`: the ones the rows stand for, the aimed one included (it is not in the state yet): their cards read them
+  return { rows: twoRounds(all), targets, at, charges };
 }
 
 // What a row of the turn list tells about its unit besides the face and the order (Fernando, Nov 17): life with what

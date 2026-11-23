@@ -107,3 +107,13 @@ export function queueLayout(q: QueueSpec) {
   };
 }
 export type QueueLayout = ReturnType<typeof queueLayout>;
+
+// The part of the list's box its cards fill, scrolled to `scroll`: a short list leaves the top of its column empty
+export function cardsBox(l: QueueLayout, scroll: number): QueueLayout['box'] {
+  const tops = l.rows.map((r) => l.top + r.y - scroll);
+  return { ...l.box, top: Math.max(l.box.top, Math.min(l.box.bottom, ...tops)) };
+}
+// A unit stands under the list: its body's middle on screen (scene.screenOf) inside that box. The open list then goes
+// see-through so the unit shows (Fernando, Nov 22: "Lista transparente por cima")
+export const coversUnit = (box: QueueLayout['box'], at: ({ x: number; y: number } | null)[]) =>
+  at.some((p) => !!p && p.x >= box.left && p.x <= box.right && p.y >= box.top && p.y <= box.bottom);

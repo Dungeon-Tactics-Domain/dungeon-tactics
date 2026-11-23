@@ -4,11 +4,12 @@ import { HeroTurn, type TurnHost } from '../src/client/hero-turn.ts';
 import type { Ui } from '../src/client/interaction.ts';
 import type { KeyAction } from '../src/client/keyboard.ts';
 import { Battle } from '../src/shared/battle/battle.ts';
+import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, stateOf } from './battle-helpers.ts';
 
 // The turn screens key by key, in the steps of FFT: The Ivalice Chronicles (Nov 16): menu, Abilities (the Agir primeiro
 // lists, act-turn.test.ts) and Cancel one step back. The Game and the scene are stand-ins: only what the screens ask of them
-function turn() {
+function turn(picked: Pos | null = null) {
   const battle = new Battle(
     flat(6, 6),
     stateOf([
@@ -34,9 +35,12 @@ function turn() {
     options: () => void calls.push('options'),
   };
   // heading 0: the camera straight, so "right" is +x on the grid
-  const scene = { heading: 0, focusOn: () => {}, sync: () => {}, pick: () => null } as unknown as ConstructorParameters<
-    typeof HeroTurn
-  >[1];
+  const scene = {
+    heading: 0,
+    focusOn: () => {},
+    sync: () => {},
+    pick: () => picked,
+  } as unknown as ConstructorParameters<typeof HeroTurn>[1];
   const t = new HeroTurn(host, scene);
   const press = (...keys: KeyAction[]) => keys.forEach((k) => t.key(k));
   return { t, battle, calls, press };
@@ -65,6 +69,15 @@ describe('turn screens, key by key', () => {
     battle.move({ x: 1, y: 2 });
     press(esc);
     expect(calls).toEqual(['options', 'undo']);
+  });
+
+  // Fernando, Nov 22: on the tablet the Height corner kept the old tile while a tap moved the area; the mouse moved it
+  it('a tap on an Agir screen moves the cursor (the Height corner) as the mouse hover does', () => {
+    const { t, press } = turn({ x: 4, y: 4 });
+    press({ k: 'cursor', dir: 'up' }, ok, ok); // Abilities, then "Escolher alvo"
+    expect(t.screen.k).toBe('targets');
+    t.tap(0, 0);
+    expect(t.cursor).toEqual({ x: 4, y: 4 });
   });
 
   it('Status and Wait run their own commands', () => {

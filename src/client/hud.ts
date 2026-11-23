@@ -11,7 +11,7 @@
 // Redraws everything on each change (it is little DOM); the menu position changes only via left/top.
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
-import type { Pos, UnitState } from '../shared/battle/types.ts';
+import type { Charge, Pos, UnitState } from '../shared/battle/types.ts';
 import { spotAim } from './act-marks.ts';
 import { type Expression, frameOf } from './battle-face.ts';
 import type { Screen } from './command.ts';
@@ -52,6 +52,8 @@ export interface HudActions {
   cancel(): void; // the Back button, the same as Esc, B and the right button (a finger has none of them)
   sheet(): void; // a tap on the acting unit's sheet: the closed menu shows again (menu-state.ts)
   card(unit: string): void; // a tap on a turn card: that unit's mini menu, or the menu for the hero acting now
+  charge(c: Charge | null): void; // a charge's card under the mouse or tapped: its area and targets on the map; null: off
+  screenOf(unit: string): { x: number; y: number } | null; // the unit's middle on screen (the list fades over one)
 }
 export interface HudView {
   battle: Battle;
@@ -137,6 +139,7 @@ export class BattleHud {
       () => this.queued,
       act.card,
       () => this.foldQueue(),
+      act.charge,
     );
     this.layer = skin.layer(this.root, () => this.drop3d());
     if (!this.layer) return;
@@ -235,6 +238,8 @@ export class BattleHud {
     return s.node;
   }
   showFaces(now: number) {
+    const units = this.view?.battle.state.units ?? [];
+    this.turn3d?.under(units.map((u) => this.act.screenOf(u.id)));
     this.layer?.frame(now); // the 3D screens run on the battle clock, like the faces' moods
     for (const face of this.faces) {
       const n = frameOf(face.f, this.expression(face.u));
