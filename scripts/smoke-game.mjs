@@ -104,6 +104,46 @@ const PAGES = [
       [...document.querySelectorAll('canvas')].some((c) => c.getContext('webgl2') || c.getContext('webgl')),
   },
   {
+    // the free area aim (Nov 21): the Mage's Explosion (blast, radius 1) by keyboard, as a player would. The sandbox
+    // (localhost only, its own chunk) stages the Mage's turn with one Soldier; the tile line (.tile-info, "X · Y · Z")
+    // follows the cursor, so it says where the aim stands. Agir, the Soldier, Explosion (second row), then on the aim
+    // step an arrow must move it one whole tile and Confirm must reach the tile choice ("Casa:")
+    name: 'free area aim',
+    path: `/?scenario=ash_wood&sandbox=${encodeURIComponent(
+      JSON.stringify({
+        seed: 1,
+        lang: 'pt',
+        actor: 'h-mage',
+        units: { 'h-mage': { x: 5, y: 7 }, 'e-soldier': { x: 5, y: 3, facing: 0 } },
+        screen: 'menu',
+        hide: ['fps'],
+      }),
+    )}`,
+    ready: '.panel.commands[role=menu] button',
+    attached: true,
+    check: async () => {
+      if (!window.__sandbox) return false;
+      await window.__sandbox.idle();
+      const help = () => document.querySelector('.panel.help')?.textContent ?? '';
+      const at = () => (document.querySelector('.panel.tile-info')?.textContent ?? '').match(/X (\d+) · Y (\d+)/);
+      const press = async (key) => {
+        dispatchEvent(new KeyboardEvent('keydown', { key }));
+        await new Promise((r) => setTimeout(r, 150));
+      };
+      const k = Number(at()?.[1]) / 5; // the Mage stands on tile 5: sub-cells per tile (half tiles since Nov 14)
+      for (const key of ['ArrowUp', 'Enter', 'Enter', 'Enter', 'ArrowDown', 'Enter']) await press(key);
+      if (!help().startsWith('Área:')) return false;
+      const [, x0, y0] = at() ?? [];
+      await press('ArrowDown');
+      const [, x1, y1] = at() ?? [];
+      const dx = Math.abs(x1 - x0),
+        dy = Math.abs(y1 - y0);
+      if (!k || dx + dy === 0 || ![0, k].includes(dx) || ![0, k].includes(dy)) return false;
+      await press('Enter');
+      return help().startsWith('Casa:');
+    },
+  },
+  {
     // a generated dungeon crawl room with the 2x2 boss (src/shared/crawl)
     name: 'crawl',
     path: '/?crawl=1&boss=1',
@@ -129,7 +169,8 @@ try {
     if (p.seed)
       await page.addInitScript((s) => Object.entries(s).forEach(([k, v]) => localStorage.setItem(k, v)), p.seed);
     try {
-      await page.goto(`http://localhost:${PORT}${p.path}`);
+      // every page opens silent (?mute=1, Nov 22: all volume bars at 0)
+      await page.goto(`http://localhost:${PORT}${p.path}${p.path.includes('?') ? '&' : '?'}mute=1`);
       await page.waitForSelector(p.ready, { state: p.attached ? 'attached' : 'visible', timeout: TIMEOUT });
       // the screen is built under the loading cover (src/client/loading.ts), which holds the keys until it leaves
       await page.waitForSelector('.loading-cover', { state: 'detached', timeout: TIMEOUT });
@@ -146,7 +187,7 @@ try {
     } catch (e) {
       errors.push(e.message.split('\n')[0]);
     }
-    console.log(`${errors.length ? 'FAIL' : 'ok  '} ${p.name} ${p.path}`);
+    console.log(`${errors.length ? 'FAIL' : 'ok  '} ${p.name} ${p.path.split('&sandbox=')[0]}`);
     for (const e of errors) console.log(`     ${e}`);
     failures.push(...errors);
     await page.close();

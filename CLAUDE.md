@@ -19,7 +19,7 @@ npm run typecheck                 # client, tests and scripts
 npx vitest run                    # tests
 npm run coverage                  # tests with a coverage summary; lcov report in coverage/
 npx vite build                    # production build in dist/
-npm run smoke                     # headless Chrome opens the built title, the town, the expedition map and a room, and battles
+npm run smoke                     # headless Chrome opens the built title, the town, the expedition map, a room and battles, and aims the Mage's Blast with the free area aim (all with ?mute=1)
 npx wrangler deploy               # publish dist/ to https://dungeon-tactics.fernandorffdev.com
 npm run sim -- beacon_hill 1000   # optional: AI vs AI win rate per seed
 npm run sandbox -- scripts/sandbox --sheet   # screenshots from scene specs: map, units, camera, hidden HUD (docs/sandbox.md)
