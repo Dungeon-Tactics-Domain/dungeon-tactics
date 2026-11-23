@@ -39,7 +39,7 @@ node scripts/crawl-sheet.ts <out>   # screenshots of 12 crawl rooms with the ver
 - **Process skills:** `superpowers:systematic-debugging` before fixing a bug and `superpowers:verification-before-completion` before calling work done. Brainstorming, written plans and TDD only for large tasks.
 - **Balance is decided by playing.** The simulator is an optional tool, not a gate.
 - **PC first; phone and tablet are also a priority** (Fernando, Nov 16: his wife could not play on the tablet). New and changed interface follows the touch rules in the [design system](docs/game-design/design-system.md) section 8 (44 px targets, 14 px text, nothing only on hover).
-- **Browser automation** launches Chrome with `--mute-audio`; on localhost the game starts with music at 0 and never plays it under automation unless the URL has `?music=1`.
+- **Browser automation** launches Chrome with `--mute-audio`; on localhost the game starts with music at 0 and never plays it under automation unless the URL has `?music=1`; `?mute=1` opens every volume bar at 0 (the app's built-in browser is not seen as automation).
 
 ## Code rules
 

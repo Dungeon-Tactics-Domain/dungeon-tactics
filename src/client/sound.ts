@@ -69,7 +69,9 @@ const FILE: Record<Sfx, string> = {
   die: 'die',
 };
 
-let settings = parseSound(store.json(SOUND_KEY));
+// `?mute=1` opens every bar at 0 without touching the saved volume (Nov 22, Fernando: "always open the tab muted"): the
+// app's built-in browser has no `navigator.webdriver`, so AUTOMATED below misses it
+let settings = param('mute') === null ? parseSound(store.json(SOUND_KEY)) : { music: 0, ui: 0, world: 0, voice: 0 };
 let ctx: AudioContext | null = null;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 
