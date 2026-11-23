@@ -297,8 +297,8 @@ export class BattleScene {
     this.resize();
   }
 
-  setInsets(top: number, bottom: number) {
-    if (this.cam.setInsets(top, bottom)) this.resize();
+  setInsets(top: number, bottom: number, left = 0, right = 0) {
+    if (this.cam.setInsets(top, bottom, left, right)) this.resize();
   }
 
   // 8 angles, every 45° (Nov 13, Fernando's request: "the camera must have 8 angles"); gridStep finds the closest axis

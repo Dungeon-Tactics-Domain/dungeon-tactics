@@ -49,6 +49,23 @@ const PC_START = 10;
 // instead of 20; the pinch and the whole-map button still show more
 const SHORT_START = 6;
 
+export interface Insets {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+// Orthographic frame of `viewH` world units on a w x h px page, shifted so the focus sits in the middle of the free space
+// the HUD leaves (top and bottom panels; the turn list on the left, Nov 22: it covered the Mage at the map's edge on the tablet)
+export function frameBounds(w: number, h: number, viewH: number, insets: Insets) {
+  const px = viewH / h; // world units per pixel, the same both ways
+  const x = ((insets.left - insets.right) / 2) * px,
+    y = ((insets.bottom - insets.top) / 2) * px;
+  const halfW = (viewH * w) / h / 2;
+  return { left: -halfW - x, right: halfW - x, top: viewH / 2 - y, bottom: -viewH / 2 - y };
+}
+
 export class CameraRig {
   readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
   private readonly focus = new THREE.Vector3();
@@ -57,7 +74,7 @@ export class CameraRig {
   private readonly fitView: number; // zoom at which the whole map fits the width
   // world units per whole tile: 2 on the split map (half.ts), where every distance in this file is twice as long
   private readonly k: number;
-  private insets = { top: 0, bottom: 0 }; // px covered by the HUD at the top and bottom
+  private insets: Insets = { top: 0, bottom: 0, left: 0, right: 0 }; // px covered by the HUD on each side
   private yaw = Math.PI / 4;
   private pitch = PITCH; // only the action camera changes it (ACTION_CAMS)
   private pitchTarget = PITCH;
@@ -214,9 +231,10 @@ export class CameraRig {
   }
 
   // false when nothing changed (the scene skips the resize)
-  setInsets(top: number, bottom: number): boolean {
-    if (top === this.insets.top && bottom === this.insets.bottom) return false;
-    this.insets = { top, bottom };
+  setInsets(top: number, bottom: number, left = 0, right = 0): boolean {
+    const i = this.insets;
+    if (top === i.top && bottom === i.bottom && left === i.left && right === i.right) return false;
+    this.insets = { top, bottom, left, right };
     return true;
   }
 
@@ -242,14 +260,7 @@ export class CameraRig {
     const a = w / h;
     // portrait phone: opens the frame until the width shows the whole map (pinch to adjust)
     const viewH = a < 1 ? (this.viewH * 1.15) / a : this.viewH;
-    // centers the map in the free space between the top HUD and the bottom one, not in the middle of the screen
-    const off = ((this.insets.bottom - this.insets.top) / 2) * (viewH / h);
-    Object.assign(this.camera, {
-      left: (-viewH * a) / 2,
-      right: (viewH * a) / 2,
-      top: viewH / 2 - off,
-      bottom: -viewH / 2 - off,
-    });
+    Object.assign(this.camera, frameBounds(w, h, viewH, this.insets));
     this.camera.updateProjectionMatrix();
   }
 

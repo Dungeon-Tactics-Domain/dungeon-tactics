@@ -179,7 +179,7 @@ export function install(game: Game, scene: BattleScene) {
   };
   // and frames the focus in the middle of the page, not of the space the (hidden) HUD leaves
   const insets = scene.setInsets.bind(scene);
-  scene.setInsets = (top, bottom) => insets(fixed ? 0 : top, fixed ? 0 : bottom);
+  scene.setInsets = (top, bottom, left, right) => (fixed ? insets(0, 0) : insets(top, bottom, left, right));
   if (arena) scene.bare();
   const style = document.head.appendChild(document.createElement('style'));
 
