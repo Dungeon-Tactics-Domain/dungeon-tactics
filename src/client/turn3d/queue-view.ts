@@ -29,6 +29,13 @@ export function matchRows(prev: RowId[], next: RowId[], passed: boolean): number
   });
 }
 
+export interface CardStats {
+  lines: string[];
+  bars?: [mp: number, st: number, ct: number];
+  faces?: string[];
+  shorter?: CardStats[];
+}
+
 export interface QueueCard {
   id: RowId;
   unit: UnitState;
@@ -42,9 +49,10 @@ export interface QueueCard {
   // the lines beside the card: on a unit's first card its name, life and mana, stamina and CT (turn-list.ts cardLines),
   // with a bar under each number (`bars`: mana, stamina and CT filled 0 to 1, under 0 for a pool the unit lacks; the
   // life bar reads `hp`); on a repeat the name only. On a charge's row the spell and its count, then whom it would hit
-  // now, with their faces (`faces`, defs; charge-lines.ts chargeCard; Nov 22); folded, the list shows faces and order
-  // only (Fernando, Nov 20), so no card has lines
-  stats: { lines: string[]; bars?: [mp: number, st: number, ct: number]; faces?: string[] } | null;
+  // now, with their faces (`faces`, defs; charge-lines.ts chargeCard; Nov 22), and `shorter` forms for when that
+  // would widen the list (fitStats); folded, the list shows faces and order only (Fernando, Nov 20), so no card has
+  // lines but a charge's, its spell and count (Nov 22: on a tablet the list opens folded and hid the spell)
+  stats: CardStats | null;
   tip: string; // name, life and CT in full, shown beside the card under the mouse
 }
 
@@ -69,12 +77,30 @@ export function repeats(rows: Queue['rows']): boolean[] {
   });
 }
 
-// a charge's lines and the faces of the first three it would hit: more would not fit beside the names
-function chargeStats(b: Battle, q: Queue | null, unit: string, ability: string): QueueCard['stats'] {
+// a charge's lines and the faces of the first three it would hit (more would not fit beside the names); folded, its
+// spell and count alone. Shorter, in order: the first name and how many more, then no faces, then the brief count
+function chargeStats(b: Battle, q: Queue | null, unit: string, ability: string, folded: boolean): CardStats | null {
   const c = q?.charges.find((x) => x.unit === unit && x.ability === ability);
   if (!c) return null;
-  const { lines, hit } = chargeCard(b.grid, b.state, c);
-  return { lines, faces: hit.slice(0, 3).map((u) => u.def) };
+  const { lines, hit, brief, few } = chargeCard(b.grid, b.state, c);
+  if (folded) return { lines: [brief] };
+  const faces = hit.slice(0, 3).map((u) => u.def);
+  return {
+    lines,
+    faces,
+    shorter: [{ lines: [lines[0], few], faces }, { lines: [lines[0], few] }, { lines: [brief, few] }],
+  };
+}
+
+// A charge's lines that fit `cap` px (the width the other cards' lines take, so a charge never widens the column;
+// Fernando, Nov 22): the first of its forms whose widest line, the faces counted on the last, fits; the shortest when
+// none does, and the whole when no other card has lines (cap 0). `measure`: a line's width as drawn, `face`: a face's
+export function fitStats(st: CardStats, cap: number, measure: (line: string) => number, face: number): CardStats {
+  if (!cap || !st.shorter) return st;
+  const width = (f: CardStats) =>
+    Math.max(...f.lines.map((l, i) => measure(l) + (i === f.lines.length - 1 ? (f.faces?.length ?? 0) * face : 0)));
+  const all = [st, ...st.shorter];
+  return all.find((f) => width(f) <= cap) ?? all[all.length - 1];
 }
 
 export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: string, folded = false): QueueCard[] {
@@ -104,10 +130,10 @@ export function queueCards(b: Battle, q: Queue | null, fs: Forecast[], sheet?: s
       target: marked.has(i),
       pending: i === q?.at,
       small: again[i],
-      stats: folded
-        ? null
-        : r.charge
-          ? chargeStats(b, q, r.unit, r.charge)
+      stats: r.charge
+        ? chargeStats(b, q, r.unit, r.charge, folded)
+        : folded
+          ? null
           : again[i]
             ? { lines: [unitName(u.def)] }
             : { lines: cardLines(u), bars: cardBars(u) },

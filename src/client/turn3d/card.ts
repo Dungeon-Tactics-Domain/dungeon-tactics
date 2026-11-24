@@ -6,6 +6,13 @@ import { DataTexture, LinearFilter, RepeatWrapping, ShaderMaterial, Texture, Vec
 // room around a row's box inside its quad, in design px: the number and the gold plate on the left, the target band on
 // the right, the glow and the shadow above and below
 export const INK = '#f1ebd2'; // the light ink of the 3D bar's numbers (bar3d.ts), on the same dark ground
+// the dark ground under a card's lines and how opaque it is (FRAG); with INK, the pair the contrast test reads
+export const LINES_GROUND = '#0d1427';
+export const LINES_GROUND_A = 0.8;
+// how much of a card fades while a unit stands under the open list (Fernando, Nov 22: "Lista transparente por cima");
+// the lines' text stays whole, so SEE is the most that keeps INK at 4.5:1 on the faded ground over the lightest lit snow
+// measured on Frost Pass, #d0cab4 (design-system.md section 9; tests/queue-charge.test.ts): cards at 66%, not 45%
+export const SEE = 0.34;
 export const LEFT = 46;
 export const RIGHT = 176;
 export const PAD = 14;
@@ -99,7 +106,7 @@ void main() {
     vec2 sp = p - vec2(uShift, -uLift);
     float gx = uCard.x * 0.5, gw = uStat.x + uStat.y + 6.0 * s - gx;
     float dG = box(sp - vec2(gx + gw * 0.5, mid), vec2(gw * 0.5, mid), 4.0 * s);
-    col = over(col, ${glsl('#0d1427')}, 0.8 * cov(dG));
+    col = over(col, ${glsl(LINES_GROUND)}, ${LINES_GROUND_A.toFixed(3)} * cov(dG));
     if (uStat.z >= 0.0) {
       float gap = 4.0 * s, hw = (uStat.y - gap) * 0.5;
       float mpOn = step(0.0, uPools.x), stOn = step(0.0, uPools.y);

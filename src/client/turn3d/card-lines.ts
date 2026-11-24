@@ -4,9 +4,9 @@ import type { Group, Mesh, ShaderMaterial } from 'three';
 import { type Faces, faceMesh } from '../ui3d/face.ts';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
 import type { QUAD } from '../ui3d/panel.ts';
-import { dropText, textMesh } from '../ui3d/text.ts';
+import { dropText, textMesh, textWidth } from '../ui3d/text.ts';
 import { INK } from './card.ts';
-import type { QueueCard } from './queue-view.ts';
+import { fitStats, type QueueCard } from './queue-view.ts';
 
 type Quad = Mesh<typeof QUAD, ShaderMaterial>;
 // each line's parts (a unit's pair of numbers, split at ' · ' over its two bars) and the faces after the last line
@@ -18,15 +18,21 @@ export interface CardLines {
 export const TEXT_PAD = 3; // the empty margin a label carries on each side (ui3d/text.ts)
 const FACE_GAP = 3; // px between the names and the first face, and between faces, at scale 1
 
-// The card's lines; unchanged lines keep their textures (the CT of every row changes each turn, not each draw)
+// The card's lines; unchanged lines keep their textures (the CT of every row changes each turn, not each draw). A
+// charge's take the form that fits `cap` px at the list's scale `s` (queue-view.ts fitStats), measured as drawn
 export function setLines(
   prev: CardLines | null,
-  st: QueueCard['stats'],
+  full: QueueCard['stats'],
   size: number,
   layer: Ui3dLayer,
   flat: Group,
   faces: Faces,
+  cap = 0,
+  s = 1,
 ): CardLines | null {
+  const font = layer.theme.font,
+    f = Math.round(size * 1.4); // a face at the text's size read as a dot; this still keeps clear of the line above
+  const st = full && fitStats(full, cap, (l) => textWidth(l, size, font) + 2 * TEXT_PAD, f + FACE_GAP * s);
   const key = st ? JSON.stringify([st.lines, st.faces, size, layer.dpr]) : '';
   if (prev?.key === key) return prev;
   dropLines(prev);
@@ -36,8 +42,7 @@ export function setLines(
     flat.add(m);
     return m;
   };
-  const make = (str: string) => add(textMesh(str, { size, color: INK, font: layer.theme.font }, layer.dpr));
-  const f = Math.round(size * 1.4); // a face at the text's size read as a dot; this still keeps clear of the line above
+  const make = (str: string) => add(textMesh(str, { size, color: INK, font }, layer.dpr));
   const face = (def: string) =>
     add(faceMesh(faces, def, 'neutral', { x: 0, y: 0, w: f, h: f }, () => layer.wake()) as Quad);
   // a charge's lines have no bars under them, so they stay whole ("Explosão · 2 alvos")

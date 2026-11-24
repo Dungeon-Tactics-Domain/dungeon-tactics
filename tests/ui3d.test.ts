@@ -507,7 +507,7 @@ describe('3D turn list: the lines beside the cards', () => {
     );
     const cards = queueCards(b, queueRows(b, { ability: 'aimed_shot', target: { x: 4, y: 0 } }), []);
     const charge = cards.find((c) => c.id.charge)!;
-    expect(charge.stats).toEqual({ lines: ['Tiro mirado · 1 alvo', 'Ladino'], faces: ['rogue'] });
+    expect(charge.stats).toMatchObject({ lines: ['Tiro mirado · 1 alvo', 'Ladino'], faces: ['rogue'] });
     expect(cards.filter((c) => !c.id.charge).every((c) => c.stats)).toBe(true);
   });
 

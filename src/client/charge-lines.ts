@@ -57,8 +57,14 @@ export function chargeLine(grid: Grid, state: BattleState, c: Charge): ChargeLin
 
 // What a queued charge's card in the turn list says (Fernando, Nov 22: "nessa turn order deve dizer q magia ela vai usar
 // e em quais alvos"): the spell and how many it would hit now, then who (two names, else the first and how many more)
-// or, with nobody in the area, its tile as the Height corner writes it (tile-info.ts). `hit`: the units, in that order
-export function chargeCard(grid: Grid, state: BattleState, c: Charge): { lines: [string, string]; hit: UnitState[] } {
+// or, with nobody in the area, its tile as the Height corner writes it (tile-info.ts). `hit`: the units, in that order.
+// Shorter forms for a narrow list (Fernando, Nov 22): `brief` the spell and the count alone ("Explosão · 2"), the folded
+// card's line; `few` the first name and how many more ("Soldado +1"), when the names would widen the list
+export function chargeCard(
+  grid: Grid,
+  state: BattleState,
+  c: Charge,
+): { lines: [string, string]; hit: UnitState[]; brief: string; few: string } {
   const { aim, p } = chargeNow(grid, state, c);
   // out of range from where the caster stands it fizzles: nobody is hit
   const hit = p.ok ? p.targets.map((x) => state.units.find((u) => u.id === x.unit)!) : [];
@@ -74,7 +80,8 @@ export function chargeCard(grid: Grid, state: BattleState, c: Charge): { lines: 
     : n > 2
       ? `${names[0]} +${n - 1}`
       : names.join(', ');
-  return { lines: [`${abilityName(c.ability)} · ${count}`, who], hit };
+  const few = n > 1 ? `${names[0]} +${n - 1}` : who;
+  return { lines: [`${abilityName(c.ability)} · ${count}`, who], hit, brief: `${abilityName(c.ability)} · ${n}`, few };
 }
 
 // Counters on screen (Nov 15, Fernando): a ranged one is the shot's line from whoever strikes back to the attacker, a melee

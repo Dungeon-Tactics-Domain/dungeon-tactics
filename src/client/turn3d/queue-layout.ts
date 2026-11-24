@@ -38,7 +38,7 @@ export interface QueueSpec {
   stats: number; // the room the life and CT lines take past the cards' column
   small?: boolean[]; // per row: it repeats a unit listed above, a smaller card (queue-view.ts repeats)
   margin?: number; // the page's top margin (ui3d/layer.ts inset.top): the list starts under it
-  folded?: boolean; // faces and order only (hud-queue.ts turnsFolded): no lines, so no card grows to hold them
+  folded?: boolean; // faces and order only (hud-queue.ts turnsFolded), a charge's one short line at most: no card grows
 }
 
 // The sizes are the reference's (1280x720) times the scale; a row is never shorter than its two 16 px lines and two

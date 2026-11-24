@@ -20,7 +20,7 @@ import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { place, REGIONS, sheetBox } from '../ui3d/layout.ts';
 import { QUAD } from '../ui3d/panel.ts';
 import { ease, land, type Spring, spring, stepSpring } from '../ui3d/spring.ts';
-import { cardMaterial, hex, LEFT, PAD, RIGHT, sharedUniforms } from './card.ts';
+import { cardMaterial, hex, LEFT, PAD, RIGHT, SEE, sharedUniforms } from './card.ts';
 import { type CardLines, dropLines, lineWidths, placeLines, setLines, TEXT_PAD } from './card-lines.ts';
 import { CardTip } from './card-tip.ts';
 import { cardsBox, coversUnit, type QueueBoxes, type QueueLayout, queueLayout } from './queue-layout.ts';
@@ -43,9 +43,6 @@ const ATLAS_CELL = 32; // px of an ability icon in /ui/fft/atlas-32.png
 // third of a second
 const K = 170,
   C = 18;
-// how much of a card fades while a unit stands under the open list (Fernando, Nov 22: "Lista transparente por cima"):
-// to 45%, enough to see the unit; the lines' text stays whole, its ink on a lighter ground (design-system.md, contrast)
-const SEE = 0.55;
 
 type Box = QueueBoxes['rows'][number];
 interface Card {
@@ -185,18 +182,26 @@ export class Turn3d implements Ui3dScreen {
     }
   }
 
-  private setTexts(c: Card) {
-    const size = statsLayout(0, this.shared.uS.value).size;
-    c.texts = setLines(c.texts, c.d.stats, size, this.layer, this.flat, this.faces);
+  private setTexts(c: Card, cap = 0) {
+    const s = this.shared.uS.value;
+    c.texts = setLines(c.texts, c.d.stats, statsLayout(0, s).size, this.layer, this.flat, this.faces, cap, s);
   }
   private retext() {
-    for (const c of this.cards) this.setTexts(c);
-    const widths = this.cards.flatMap((c) => lineWidths(c.texts, this.shared.uS.value));
-    this.statW = statWidth(widths, this.shared.uS.value, TEXT_PAD);
+    // a charge's lines fit the width the others' take, so a charge never widens the column (Fernando, Nov 22)
+    const s = this.shared.uS.value,
+      width = (cs: Card[]) =>
+        statWidth(
+          cs.flatMap((c) => lineWidths(c.texts, s)),
+          s,
+          TEXT_PAD,
+        ),
+      others = this.cards.filter((c) => !c.d.stats?.shorter);
+    for (const c of others) this.setTexts(c);
+    for (const c of this.cards) if (c.d.stats?.shorter) this.setTexts(c, width(others));
+    this.statW = width(this.cards);
     // the list grows by the room the lines take past its cards' column (20 design px are already there), so what
     // keeps clear of the list keeps clear of them too (queue-layout.ts `stats`)
-    const s = this.shared.uS.value,
-      room = this.statW ? statsLayout(0, s).x + this.statW + (6 - 20) * s : 0;
+    const room = this.statW ? statsLayout(0, s).x + this.statW + (6 - 20) * s : 0;
     this.shown.stats = Math.max(0, Math.ceil(room));
   }
   private dropTexts(c: Card) {
