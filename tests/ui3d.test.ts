@@ -229,10 +229,10 @@ describe('3D menu: where it sits', () => {
 
   it('on the reference places at the reference size, in both layouts', () => {
     for (const mode of ['edges', 'frame'] as const) {
-      const { main, sub, sheet, prev, next } = menuLayout(at(1920, 1080, mode), 4, 0);
-      // as tall as its rows (Nov 18: no blank fifth row), on the region's foot
-      expect(main).toEqual({ x: 1152, y: 745, w: 414, h: REF.head + 4 * REF.row + REF.foot });
-      expect(sub.x).toBe(1284);
+      const { main, sheet, prev, next } = menuLayout(at(1920, 1080, mode), 4, 0);
+      // as tall as its rows (Nov 18: no blank fifth row), on the region's foot, against the right edge at the sheet's
+      // margin (Nov 24: 1850 = 1920 - 70)
+      expect(main).toEqual({ x: 1850 - 414, y: 745, w: 414, h: REF.head + 4 * REF.row + REF.foot });
       expect(sheet).toEqual({ x: 1450, y: 100, w: 400, h: 564 });
       expect(prev.x + prev.w).toBe(next.x);
       expect(next.x + next.w).toBe(sheet.x + sheet.w);
@@ -240,10 +240,18 @@ describe('3D menu: where it sits', () => {
     }
   });
 
+  // Fernando, Nov 24: with Agir open the list takes the right edge and the menu steps left of it by the cascade's lead
+  it('Agir open: the list on the right edge, the menu one lead to its left', () => {
+    const shut = menuLayout(at(1920, 1080), 4, 0).main,
+      { main, sub } = menuLayout(at(1920, 1080), 4, 7);
+    expect(sub.x).toBe(shut.x);
+    expect(sub.x - main.x).toBe(LEAD);
+  });
+
   // Fernando, Nov 19: the menu grew when Agir opened its longer list; it must not
   it('each column is as tall as its own list, both on the same foot', () => {
     const { main, sub } = menuLayout(at(1920, 1080), 4, 7);
-    expect(main).toEqual(menuLayout(at(1920, 1080), 4, 0).main);
+    expect({ ...main, x: 0 }).toEqual({ ...menuLayout(at(1920, 1080), 4, 0).main, x: 0 });
     expect(main.h).toBe(REF.head + 4 * REF.row + REF.foot);
     expect(sub.h).toBe(REF.head + 7 * REF.row + REF.foot);
     expect(sub.y + sub.h).toBe(main.y + main.h);
@@ -253,10 +261,12 @@ describe('3D menu: where it sits', () => {
   it('scales with the page, stays pinned to the corner and keeps the glove on a narrow page', () => {
     const s = 720 / 1080;
     const { main } = menuLayout(at(1280, 720), 4, 0);
-    expect(main.x + main.w).toBeCloseTo(1280 - 354 * s);
+    expect(main.x + main.w).toBeCloseTo(1280 - 70 * s);
     expect(main.y + main.h).toBeCloseTo(720 - 65 * s);
-    expect(menuLayout(at(2560, 1080), 4, 0).main.x).toBe(2560 - 354 - 414);
-    expect(menuLayout(at(250, 700), 4, 0).main.x).toBeCloseTo(REF.hand / 3); // under the narrow floor's page
+    expect(menuLayout(at(2560, 1080), 4, 0).main.x).toBe(2560 - 70 - 414);
+    const narrow = menuLayout(at(250, 700), 4, 0);
+    expect(narrow.main.x).toBeGreaterThanOrEqual(REF.hand / 3); // the glove stays on the narrow page
+    expect(narrow.main.x + narrow.main.w).toBeCloseTo(narrow.sheet.x + narrow.sheet.w);
   });
 
   // Fernando, Nov 18: phone and tablet; the pieces shrink with a narrow page, a finger's rows as little as it lets them
@@ -285,9 +295,10 @@ describe('3D menu: where it sits', () => {
       expect(sub.x + sub.w, String(touch)).toBeLessThan(sheet.x);
       expect(main.x, String(touch)).toBeGreaterThan(47);
     }
-    // a page tall enough keeps the reference's corner
-    const { main } = menuLayout(stage(1024, 768, 'edges'), 4, 4, true);
-    expect(main.x + main.w).toBeCloseTo(1024 - 354 * 0.6);
+    // a page tall enough keeps the right edge: the list on it, the menu a lead to its left
+    const { main, sub, sheet } = menuLayout(stage(1024, 768, 'edges'), 4, 4, true);
+    expect(sub.x + sub.w).toBeCloseTo(sheet.x + sheet.w);
+    expect(sub.x - main.x).toBeCloseTo(LEAD * 0.6);
   });
 
   // Fernando, Nov 20, option A: on a phone every piece holds its own corner, the menu bottom right, nothing over another
@@ -373,7 +384,7 @@ describe('3D menu: where it sits', () => {
 
   it('in the frame an ultrawide page keeps the menu where the reference has it', () => {
     const { main, sheet } = menuLayout(at(3440, 1440, 'frame'), 4, 0);
-    expect(main.x).toBeCloseTo(440 + (1152 * 4) / 3);
+    expect(main.x).toBeCloseTo(440 + ((1850 - 414) * 4) / 3);
     expect(main.y).toBeCloseTo((745 * 4) / 3);
     expect(sheet.x).toBeCloseTo(440 + (1450 * 4) / 3);
   });

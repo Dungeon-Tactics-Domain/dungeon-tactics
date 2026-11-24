@@ -101,6 +101,8 @@ export class Menu3d implements Ui3dScreen {
       foot = layer.phone ? bar.y + bar.h : undefined;
     const at = (this.at = menuLayout(layer.stage, m.rows.length, m.sub?.length ?? 0, !KEYS, foot));
     const ctx = { ...sheet, s: at.cs };
+    // the menu slides to its new place (Agir opening pushes it left, closing brings it back; Fernando, Nov 24)
+    if (main.want && !layer.still) main.shift.x += main.x - at.main.x;
     [main.x, main.y] = [at.main.x, at.main.y];
     main.set({ title: m.head, w: at.main.w, h: at.main.h, rows: m.rows }, ctx);
     main.focus = m.index;

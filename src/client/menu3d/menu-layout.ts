@@ -38,8 +38,8 @@ export interface MenuLayout {
 
 // `st`: where the interface is laid out and its scale (ui3d/layout.ts `stage`). Each column is as tall as its own list,
 // growing upwards from the region's foot (Fernando, Nov 18: no blank fifth row under four commands, as the capture's
-// five rows left; Nov 19: the menu must not grow with the submenu). A page too narrow for the menu keeps the glove on screen and lets the submenu run off
-// the right. On a short page the sheet reaches down past the columns' top: they step left, clear of it, but never over
+// five rows left; Nov 19: the menu must not grow with the submenu), against the right edge under the sheet (Nov 24). A
+// page too narrow for the menu keeps the glove on screen and lets the submenu run off the right. On a short page the sheet reaches down past the columns' top: they step left, clear of it, but never over
 // the acting unit's sheet in the combat bar (at 844x390 the menu covered the end of its stamina, "50/5"); where the
 // two do not both fit, the submenu's cascade over the menu shortens
 // `corner`: a phone's corner (Fernando, Nov 20, option A: "todos devem ficar presos", the action menu bottom right): the y
@@ -55,13 +55,18 @@ export function menuLayout(st: Stage, rows: number, subRows: number, touch = fal
   const h = tall(rows);
   const page = place(REGIONS.detail, st);
   const sheet = { ...page, y: Math.max(st.y + 72, page.y) }; // under the help line and the corner buttons
+  // the columns stand against the page's right edge, at the sheet's margin (Fernando, Nov 24: "alinhado à direita da
+  // tela"); with Agir open the list takes that edge and the menu steps left of it by the cascade's lead
   const low = sheet.y + sheet.h > at.y,
-    x = low ? Math.min(at.x, sheet.x - 8 * s - LEAD * cs - at.w) : at.x;
+    right = low ? sheet.x - 8 * s : sheet.x + sheet.w,
+    edge = right - at.w;
   // the acting sheet's right end and a gap; a page too narrow for both lets the menu stay on it
   const end = st.x + (REGIONS.sheet.x + REGIONS.sheet.w + 8) * s,
     bar = end + at.w <= st.x + st.w ? end : 0;
-  const main = { x: Math.max(st.x + REF.hand * cs, bar, x), y: at.y + at.h - h, w: at.w, h };
-  const lead = low ? Math.max(0, Math.min(LEAD * cs, sheet.x - 8 * s - at.w - main.x)) : LEAD * cs;
+  const floor = Math.max(st.x + REF.hand * cs, bar),
+    main = { x: Math.max(floor, subRows ? edge - LEAD * cs : edge), y: at.y + at.h - h, w: at.w, h };
+  // where the menu cannot step back the whole lead, the cascade shortens
+  const lead = Math.max(0, edge - main.x);
   // the page arrows: each half of the foot; a finger's box is 44 px tall about the foot's middle (nothing sits under it)
   const fh = Math.max(REF.sheetFoot * s, touch ? TAP : 0);
   const foot = { y: sheet.y + sheet.h - (REF.sheetFoot * s + fh) / 2, w: sheet.w / 2, h: fh };
