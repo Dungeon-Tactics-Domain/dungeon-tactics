@@ -175,7 +175,10 @@ describe('half tiles: aiming at a big unit', () => {
             const w = say(previewAbility(whole, s, 'a', id, T));
             for (const p of cellsOf(cell(T), 2)) {
               const h = say(previewAbility(half, hs, 'a', id, p));
-              if (w !== h) diff.push(`${id} ${posKey(A)} -> ${posKey(p)} whole ${w} half ${h}`);
+              // an area on half tiles also takes the diagonal half tiles (Nov 24): it hits at least what the whole map does
+              const more =
+                ABILITIES[id].radius > 0 && w !== 'out' && w.split(',').every((x) => h.split(',').includes(x));
+              if (w !== h && !more) diff.push(`${id} ${posKey(A)} -> ${posKey(p)} whole ${w} half ${h}`);
             }
           }
       }

@@ -90,16 +90,22 @@ describe('other-unit threat on half tiles', () => {
 describe('area marks on half tiles', () => {
   const aimed = { x: 10, y: 10 };
   const shooter = { x: 6, y: 6 }; // within blast's range of the aimed tile
-  it('chargeDanger paints whole tiles too', () => {
+  it('chargeDanger paints whole tiles too, and the half tile at each diagonal corner (Nov 24)', () => {
     const b = battle(shooter);
     b.act('blast', aimed);
-    expect([...chargeDanger(grid, b.state).keys()].sort()).toEqual(keys(cross(aimed)));
+    const corners = [
+      [-1, -1],
+      [2, -1],
+      [-1, 2],
+      [2, 2],
+    ].map(([dx, dy]) => ({ x: aimed.x + dx, y: aimed.y + dy }));
+    expect([...chargeDanger(grid, b.state).keys()].sort()).toEqual(keys([...cross(aimed), ...corners]));
   });
 
-  it('the enemy attack strip paints whole tiles (shadow wave: 13 tiles)', () => {
+  it('the enemy attack strip paints whole tiles (shadow wave: 13 tiles and 8 diagonal half tiles, Nov 24)', () => {
     const b = battle(shooter);
     const marks = attackMarks(b, ABILITIES.shadow_wave, aimed);
-    expect(marks.length).toBe(13 * 4);
+    expect(marks.length).toBe(13 * 4 + 8);
     expect(marks.filter((m) => m.kind === 'target').map((m) => posKey(m.pos))).toEqual([posKey(aimed)]);
   });
 });

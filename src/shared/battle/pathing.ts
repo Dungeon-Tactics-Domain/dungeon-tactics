@@ -113,10 +113,13 @@ export const aimEnds = (grid: Grid, state: BattleState, actor: UnitState, center
   subOf(grid) === 1
     ? [nearestTile(actor, center), center]
     : closest(footprint(actor), areaOf(grid, state, aimTile(grid, state, center)));
-// `square`: a melee area (the Spin) counts the diagonal neighbours too (Nov 21)
-export const inArea = (grid: Grid, area: Pos[], radius: number, cells: Pos[], square = false) =>
-  (square ? Math.min(...area.flatMap((p) => cells.map((q) => king(p, q)))) : gap(area, cells)) <=
-  farCells(grid, radius);
+// `square`: a melee area (the Spin) counts the diagonal neighbours too (Nov 21). Any other area on half tiles reaches a step
+// further on a diagonal (Nov 24: "os halftiles das diagonais pra n ficar em formato de cruz"); whole maps keep the cross
+export function inArea(grid: Grid, area: Pos[], radius: number, cells: Pos[], square = false) {
+  const f = farCells(grid, radius),
+    step = square || subOf(grid) === 1 ? 0 : 1; // the diagonal's extra cell, half tiles only
+  return area.some((p) => cells.some((q) => king(p, q) <= f && (square || dist(p, q) <= f + step)));
+}
 // A melee ability (no flight, reach up to one tile) counts the 8 tiles around (Fernando, Nov 21): its distance is the
 // king's, the longer axis, so a diagonal neighbour is as near as a straight one
 export const isMelee = (a: AbilityDef) => !a.needsSight && a.range[1] <= 1;

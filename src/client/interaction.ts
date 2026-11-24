@@ -10,7 +10,9 @@ import {
   areaOf,
   cellsOf,
   closest,
+  farCells,
   footprint,
+  gap,
   inAbilityRange,
   inArea,
   isMelee,
@@ -177,14 +179,17 @@ export function facingHighlights(b: Battle): Highlights {
 }
 
 // Every cell of the whole tiles an area touches: the rule hits any token whose 2x2 touches it, so painting by cell left tiles
-// half lit (Nov 19)
+// half lit (Nov 19); the diagonal half tiles an area adds on half tiles (pathing.ts inArea, Nov 24: "Cantos em meio-tile")
+// stay half tiles, so radius 1 reads as a rounded cross and not a 3x3 square
 export function areaCells(grid: Grid, area: Pos[], radius: number, square = false): Pos[] {
-  const k = subOf(grid);
+  const k = subOf(grid),
+    f = farCells(grid, radius);
   const out: Pos[] = [];
   for (let y = 0; y < grid.height; y += k)
     for (let x = 0; x < grid.width; x += k) {
       const tile = cellsOf({ x, y }, k);
-      if (inArea(grid, area, radius, tile, square)) out.push(...tile);
+      if (square ? inArea(grid, area, radius, tile, true) : gap(area, tile) <= f) out.push(...tile);
+      else if (!square) out.push(...tile.filter((c) => inArea(grid, area, radius, [c])));
     }
   return out;
 }
