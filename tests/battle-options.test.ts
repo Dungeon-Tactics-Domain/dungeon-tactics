@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { previewAbility } from '../src/shared/battle/combat.ts';
 import { dist } from '../src/shared/battle/grid.ts';
-import { actionOptions } from '../src/shared/battle/options.ts';
+import { actionOptions, groundAims } from '../src/shared/battle/options.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
 const g = flat(14, 5);
@@ -148,5 +148,32 @@ describe('actionOptions (Agir primeiro, Nov 19)', () => {
     console.log(`actionOptions, mage on 40x40 with 12 units: ${ms.toFixed(1)} ms`);
     expect(o.some((x) => x.enabled)).toBe(true);
     expect(ms).toBeLessThan(250);
+  });
+});
+
+// Fernando, Nov 24: "toda magia em area ... a selecao deve ser livre": an area may land on any empty tile it reaches this
+// turn, hitting nobody (he picked "Pode lançar no vazio")
+describe('groundAims: every empty tile an area reaches', () => {
+  const s = () =>
+    stateOf([
+      { id: 'm', def: 'mage', team: 'hero', x: 1, y: 2 },
+      { id: 'e', def: 'soldier', team: 'enemy', x: 12, y: 2 },
+    ]);
+  const keys = (ts: ReturnType<typeof groundAims>) => ts.map((t) => `${t.pos.x},${t.pos.y}`);
+  it('an empty tile with nobody in the area is an aim, its preview hits no one', () => {
+    const aims = groundAims(g, s(), 'm', 'blast');
+    const far = aims.find((t) => t.pos.x === 5 && t.pos.y === 0)!;
+    expect(far.kind).toBe('tile');
+    expect(far.spots.length).toBeGreaterThan(0);
+    expect(far.spots.every((sp) => sp.preview.ok && sp.preview.targets.length === 0)).toBe(true);
+  });
+  it('no tile under a unit, none out of reach, none closer than the minimum range from every spot', () => {
+    const aims = keys(groundAims(g, s(), 'm', 'blast'));
+    expect(aims).not.toContain('1,2'); // the mage's own tile
+    expect(aims).not.toContain('12,2'); // the soldier's: a unit target
+    expect(aims).not.toContain('13,4'); // past move + range 5
+  });
+  it('single-target and self-centred abilities have none', () => {
+    expect(groundAims(g, s(), 'm', 'firebolt')).toEqual([]);
   });
 });

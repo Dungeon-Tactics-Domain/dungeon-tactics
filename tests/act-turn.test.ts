@@ -294,6 +294,21 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     expect(h.screen).toMatchObject({ k: 'aim', at: { x: 13, y: 4 } });
   });
 
+  // Fernando, Nov 24: "toda magia em area msm se vc escolha um target a selecao deve ser livre"; he picked "Pode lançar no
+  // vazio": an empty tile in reach takes the aim, and the charge is queued on it hitting no one
+  it('the aim lands on an empty tile in reach, nobody in the area', async () => {
+    const b = battle();
+    const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
+    const i = actActions(b, target).findIndex((a) => a.enabled && actAims(a).length > 1);
+    const empty = { x: 7, y: 4 };
+    const h = host(b, { k: 'aim', target, action: i, at: empty });
+    await actPick(h, 0);
+    expect(h.screen).toMatchObject({ k: 'spot', aim: empty });
+    expect(actMarks(b, h.screen as Screen as Extract<Screen, { k: 'spot' }>).preview?.targets).toEqual([]);
+    await actPick(h, (h.screen as Extract<Screen, { k: 'spot' }>).index);
+    expect(b.state.charges.at(-1)).toMatchObject({ unit: 'm', target: empty });
+  });
+
   it('the pointer moves the aim without sliding the camera, so a 2nd click on the same pixel goes on (Nov 19)', async () => {
     const b = battle();
     const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };

@@ -6,7 +6,7 @@ import { slotFor } from './action-slots.ts';
 import { canPay, inDeep, type Preview, type PreviewReason, poolOf, previewAbility } from './combat.ts';
 import { moveOf } from './effects.ts';
 import { dist, type Grid, inBounds, posKey, standH, subOf } from './grid.ts';
-import { aimTile, farCells, isMelee, reachable, unitAt } from './pathing.ts';
+import { aimTile, cellsOf, farCells, isMelee, reachable, unitAt } from './pathing.ts';
 import type { BattleState, Pos, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
@@ -142,3 +142,32 @@ export function actionOptions(grid: Grid, state: BattleState, id: string): Abili
 // enemies before allies
 const rank = (state: BattleState, actor: UnitState, t: ActionTarget) =>
   t.kind !== 'unit' ? 0 : state.units.find((u) => u.id === t.unit)!.team === actor.team ? 1 : 0;
+
+// The free area aim (Fernando, Nov 24: "toda magia em area ... a selecao deve ser livre"; "Pode lançar no vazio"): every
+// empty whole tile an area can be aimed at this turn, from each tile the unit may act from, whoever it hits, nobody
+// included. Tiles under a unit are its 'unit' target. Asked for one ability when its aim step opens, not for the list
+export function groundAims(grid: Grid, state: BattleState, id: string, abilityId: string): ActionTarget[] {
+  const actor = state.units.find((u) => u.id === id),
+    a = ABILITIES[abilityId];
+  if (!actor || a.radius === 0 || a.range[1] === 0) return [];
+  const k = subOf(grid),
+    origins = originsOf(grid, state, actor);
+  const heights = grid.tiles.map(standH),
+    span = a.heightRange ? Math.max(...heights) - Math.min(...heights) : 0;
+  // past this many cells no preview is asked (it would say 'range'), as in actionOptions
+  const far = farCells(grid, a.range[1] + span) + 2 * ((UNIT_DEFS[actor.def].size ?? 1) - 1) + 2 * (k - 1);
+  const out: ActionTarget[] = [];
+  for (let y = 0; y < grid.height; y += k)
+    for (let x = 0; x < grid.width; x += k) {
+      const pos = { x, y };
+      if (cellsOf(pos, k).some((c) => unitAt(state, c))) continue;
+      const spots: Spot[] = [];
+      for (const o of origins) {
+        if (dist(o.pos, pos) > far) continue;
+        const preview = previewAbility(grid, state, id, abilityId, pos, false, o.pos);
+        if (preview.ok) spots.push({ pos: o.pos, cost: o.cost, preview });
+      }
+      if (spots.length) out.push({ kind: 'tile', pos, spots });
+    }
+  return out;
+}

@@ -9,7 +9,13 @@ import type { Battle } from '../shared/battle/battle.ts';
 import { type Preview, previewAbility } from '../shared/battle/combat.ts';
 import { basicOf } from '../shared/battle/counter.ts';
 import { dist, samePos } from '../shared/battle/grid.ts';
-import { type AbilityOptions, actionOptions, type OptionReason } from '../shared/battle/options.ts';
+import {
+  type AbilityOptions,
+  type ActionTarget,
+  actionOptions,
+  groundAims,
+  type OptionReason,
+} from '../shared/battle/options.ts';
 import { footprint, gap, unitAt } from '../shared/battle/pathing.ts';
 import type { Lock, Pos } from '../shared/battle/types.ts';
 
@@ -48,7 +54,13 @@ export interface ActAction {
 // The engine's options for the acting unit, worked out once per battle state: the Agir screens ask for them several times a
 // key and once per target, which cost ~100 ms an Agir list on a PC (Nov 19 audit). Any move, act or edit of the state is
 // a new key; the grid never changes inside a battle
-let memo: { b: Battle; key: string; abilities: AbilityOptions[]; items: ItemOptions[] } | null = null;
+let memo: {
+  b: Battle;
+  key: string;
+  abilities: AbilityOptions[];
+  items: ItemOptions[];
+  ground: Map<string, ActionTarget[]>;
+} | null = null;
 function options(b: Battle) {
   const key = JSON.stringify(b.state);
   if (memo?.b !== b || memo.key !== key)
@@ -57,8 +69,15 @@ function options(b: Battle) {
       key,
       abilities: actionOptions(b.grid, b.state, b.actor.id),
       items: itemOptions(b.grid, b.state, b.actor.id),
+      ground: new Map(),
     };
   return memo;
+}
+// an area's empty tiles in reach (options.ts groundAims), worked out once per state and ability: the aim step asks each draw
+function ground(b: Battle, id: string) {
+  const m = options(b);
+  if (!m.ground.has(id)) m.ground.set(id, groundAims(b.grid, b.state, b.actor.id, id));
+  return m.ground.get(id)!;
 }
 
 // Main or secondary (Nov 19): an item is always secondary
@@ -234,10 +253,11 @@ export function actAims(a: ActAction): Pos[] {
   return out.length > 1 ? out : [];
 }
 // An area on the free aim (Fernando, Nov 21: "snap on the chosen target first, then free on the grid"): every place it
-// can land this turn, whoever it hits, not only where it hits the picked target
+// can land this turn, whoever it hits, not only where it hits the picked target; an empty tile too, hitting nobody (Nov 24)
 export function freeArea(b: Battle, a: ActAction): ActAction {
   if (a.k !== 'ability' || ABILITIES[a.id].radius === 0) return a;
-  const spots = (options(b).abilities.find((o) => o.ability === a.id)?.targets ?? []).flatMap((t) =>
+  const units = (options(b).abilities.find((o) => o.ability === a.id)?.targets ?? []).filter((t) => t.kind !== 'tile');
+  const spots = [...units, ...ground(b, a.id)].flatMap((t) =>
     t.spots.map((s) => ({ pos: s.pos, cost: s.cost, aim: t.kind === 'self' ? s.pos : t.pos, preview: s.preview })),
   );
   return spots.length ? { ...a, spots } : a;
