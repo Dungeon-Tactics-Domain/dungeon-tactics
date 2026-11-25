@@ -18,3 +18,17 @@ export function checkOutcome(state: BattleState): Outcome {
   if (!state.units.some((u) => u.team === 'enemy')) return 'victory';
   return 'ongoing';
 }
+
+// the heroes still standing, the Beacon aside (it neither plays nor wins)
+const heroesUp = (state: BattleState) => state.units.some((u) => u.team === 'hero' && !isObjective(u.def));
+const enemiesUp = (state: BattleState) => state.units.some((u) => u.team === 'enemy');
+
+// Defeat all (a map without a Beacon, the battle builder's choice): no enemies wins, no heroes loses
+export const lastStanding = (state: BattleState): Outcome =>
+  !heroesUp(state) ? 'defeat' : !enemiesUp(state) ? 'victory' : 'ongoing';
+
+// Survive, as Until Dawn (client survival.ts): hold `turns` turns of everyone, or down every enemy before
+export const surviveFor =
+  (turns: number) =>
+  (state: BattleState): Outcome =>
+    !heroesUp(state) ? 'defeat' : !enemiesUp(state) || state.turnsPlayed >= turns ? 'victory' : 'ongoing';

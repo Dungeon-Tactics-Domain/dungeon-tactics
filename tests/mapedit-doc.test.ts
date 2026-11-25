@@ -132,12 +132,15 @@ describe('playing a battle document', () => {
     expect(initialState(halve(scenario), 1).units[0].facing).toBe(2);
   });
 
-  it('returns the life overrides by spawn id; reading the battle back does not carry them', () => {
+  it('gives a unit with its own life a sheet of its own; read back by its class, the life stays', () => {
     const b = battleFromScenario(ASH_WOOD);
     const withLife = { ...b, units: b.units.map((u, i) => (i === 1 ? { ...u, hp: 33 } : u)) };
-    const { scenario, life } = battleToScenario(withLife);
-    expect(life).toEqual({ [b.units[1].id]: 33 });
-    expect(battleFromScenario(halve(scenario))).toEqual(b);
+    const { scenario, classes } = battleToScenario(withLife);
+    const sheet = scenario.spawns[1].def;
+    expect(classes).toEqual({ [sheet]: b.units[1].def });
+    expect(UNIT_DEFS[sheet].hp).toBe(33);
+    expect(scenario.spawns[0].def).toBe(b.units[0].def); // no own field, no own sheet
+    expect(battleFromScenario(halve(scenario), (d) => classes[d])).toEqual(withLife);
   });
 });
 

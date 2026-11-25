@@ -1,16 +1,20 @@
 // Units of a battle document (battle.ts), for the future battle builder: place, remove, turn (Q / E) and their own
 // life. A big unit stands on the square of its class's size from its anchor, as in the battle (pathing.ts footprint).
+
+import { UNIT_LIST } from '../../content/units.ts';
 import { canStand, faceNearest } from '../battle/grid.ts';
 import type { Pos, Team } from '../battle/types.ts';
-import { HALF, UNIT_DEFS } from '../battle/units.ts';
+import { isObjective } from '../battle/units.ts';
 import { type BattleDoc, LIFE, type MapUnit, sizeOf } from './battle.ts';
 import { index, inside } from './doc.ts';
+import { parseSheet, type Sheet } from './sheet.ts';
 
 export const square = (u: { x: number; y: number }, size: number): Pos[] =>
   Array.from({ length: size * size }, (_, k) => ({ x: u.x + (k % size), y: u.y + Math.floor(k / size) }));
 const covers = (u: MapUnit, p: Pos) => square(u, sizeOf(u.def)).some((q) => q.x === p.x && q.y === p.y);
-// a class the battle knows by its own id (not a half-tile token nor a prototype name)
-export const knownClass = (def: string) => Object.hasOwn(UNIT_DEFS, def) && !def.endsWith(HALF);
+// a class of the game's content: not a half-tile token, a runtime sheet (dev-h0, a battle's own sheet) nor a prototype name
+const CLASSES = new Set(UNIT_LIST.map((u) => u.id));
+export const knownClass = (def: string) => CLASSES.has(def);
 
 export const unitOn = (doc: BattleDoc, p: Pos) => doc.units.find((u) => covers(u, p));
 
@@ -53,9 +57,19 @@ function change(doc: BattleDoc, p: Pos, edit: (u: MapUnit) => MapUnit): BattleDo
 export const turnUnit = (doc: BattleDoc, p: Pos, step: number) =>
   step % 4 ? change(doc, p, (u) => ({ ...u, facing: (((u.facing + step) % 4) + 4) % 4 })) : doc;
 
-// own life, or undefined for the class's; outside 1..999 changes nothing
+// own life, or undefined for the class's; outside 1..999 or on the Beacon changes nothing
 export function setLife(doc: BattleDoc, p: Pos, hp: number | undefined): BattleDoc {
   if (hp !== undefined && !(Number.isInteger(hp) && hp >= LIFE[0] && hp <= LIFE[1])) return doc;
-  if (unitOn(doc, p)?.hp === hp) return doc;
-  return change(doc, p, ({ hp: _, ...u }) => (hp === undefined ? u : { ...u, hp }));
+  const u = unitOn(doc, p);
+  if (!u || u.hp === hp || isObjective(u.def)) return doc;
+  return change(doc, p, ({ hp: _, ...o }) => (hp === undefined ? o : { ...o, hp }));
+}
+
+// The unit's whole own sheet and starting CT, in place of the ones it had (an absent field = the class's); a sheet the
+// save would refuse (parseSheet) changes nothing
+export function setSheet(doc: BattleDoc, p: Pos, sheet: Sheet): BattleDoc {
+  const u = unitOn(doc, p);
+  const ok = u && parseSheet(sheet as Record<string, unknown>, u.def);
+  if (!ok) return doc;
+  return change(doc, p, ({ id, def, team, x, y, facing }) => ({ id, def, team, x, y, facing, ...ok }));
 }

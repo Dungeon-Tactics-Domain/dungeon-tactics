@@ -1,5 +1,6 @@
-// Items in battle (Agir primeiro, step 2, Nov 19 grill): the heroes' shared bag lives in the state, the Item command spends
-// the turn's action like an ability, and every item reaches the user or an ally up to ITEM_RANGE whole tiles away. No die:
+// Items in battle (Agir primeiro, step 2, Nov 19 grill): the heroes' shared bag lives in the state (since Nov 25 the
+// enemies' own too, for the battle builder), the Item command spends the turn's action like an ability, and every
+// item reaches the user or an ally up to ITEM_RANGE whole tiles away. No die:
 // an item always lands, so undoing it is free. The AI does not use items (decision of Nov 19)
 import { CONSUMABLES, type Consumable, ITEM_RANGE } from '../../content/items.ts';
 import { freeSlot } from './action-slots.ts';
@@ -8,7 +9,7 @@ import { addEffect } from './effects.ts';
 import { dist, type Grid } from './grid.ts';
 import { originsOf } from './options.ts';
 import { closest, farCells, footprint, unitAt } from './pathing.ts';
-import type { BattleEvent, BattleState, Pos, UnitState } from './types.ts';
+import type { BattleEvent, BattleState, Pos, Team, UnitState } from './types.ts';
 import { UNIT_DEFS } from './units.ts';
 
 export const CONSUMABLE: Record<string, Consumable> = Object.fromEntries(CONSUMABLES.map((c) => [c.id, c]));
@@ -42,7 +43,9 @@ export interface ItemOptions {
   targets: ItemTarget[]; // the user first, then allies near to far
 }
 
-export const bagCount = (state: BattleState, item: string) => state.bag?.[item] ?? 0;
+// each side spends its own bag (battle builder, Nov 25); the heroes' stays `bag`, which the expedition carries
+const bagKey = (team: Team) => (team === 'hero' ? 'bag' : 'enemyBag');
+export const bagCount = (state: BattleState, item: string, team: Team = 'hero') => state[bagKey(team)]?.[item] ?? 0;
 
 // What using `item` on the unit at `target` does when used from `origin` (default: where the actor stands); null when it
 // cannot: no such item, none left, the action spent, nobody of the actor's side there, or out of reach
@@ -56,7 +59,7 @@ export function itemEffect(
 ): ItemEffect | null {
   const actor = state.units.find((u) => u.id === id);
   const c = CONSUMABLE[item];
-  if (!actor || !c || state.outcome !== 'ongoing' || bagCount(state, item) < 1) return null;
+  if (!actor || !c || state.outcome !== 'ongoing' || bagCount(state, item, actor.team) < 1) return null;
   if (state.turn.actor === id && !freeSlot(state.turn, 'bonus')) return null;
   const u = unitAt(state, target);
   if (!u || u.team !== actor.team) return null;
@@ -84,10 +87,11 @@ export function applyItem(grid: Grid, state: BattleState, id: string, item: stri
   const fx = itemEffect(grid, state, id, item, target);
   if (!fx) return [];
   const u = state.units.find((x) => x.id === fx.unit)!;
-  const left = bagCount(state, item) - 1;
-  const bag = { ...state.bag, [item]: left };
+  const team = state.units.find((x) => x.id === id)!.team;
+  const left = bagCount(state, item, team) - 1;
+  const bag = { ...state[bagKey(team)], [item]: left };
   if (left <= 0) delete bag[item];
-  state.bag = bag;
+  state[bagKey(team)] = bag;
   u.hp += fx.heal;
   if (fx.mana) u.vars = { ...u.vars, mana: poolOf(u, 'mana') + fx.mana };
   state.turn[freeSlot(state.turn, 'bonus')!] = item;
@@ -109,8 +113,8 @@ export function itemOptions(grid: Grid, state: BattleState, id: string): ItemOpt
   const used = state.turn.actor === id && !freeSlot(state.turn, 'bonus');
   const origins = used ? [] : originsOf(grid, state, actor);
   const allies = state.units.filter((u) => u.team === actor.team && UNIT_DEFS[u.def].speed > 0);
-  return CONSUMABLES.filter((c) => bagCount(state, c.id) > 0).map((c) => {
-    const count = bagCount(state, c.id);
+  return CONSUMABLES.filter((c) => bagCount(state, c.id, actor.team) > 0).map((c) => {
+    const count = bagCount(state, c.id, actor.team);
     if (used) return { item: c.id, count, enabled: false, reason: 'used', targets: [] };
     if (!origins.length) return { item: c.id, count, enabled: false, reason: 'water', targets: [] };
     const targets: ItemTarget[] = [];

@@ -1,9 +1,14 @@
 // Trust boundary of the builders: a map or battle document read from a browser save or pasted JSON is rebuilt field
 // by field; any doubt gives null (root CLAUDE.md, like parseExpedition).
+
+import { parseBag } from '../battle/bag.ts';
 import { TERRAIN, type TerrainKind, type Tile } from '../battle/grid.ts';
+import type { Control } from '../battle/scenarios.ts';
 import type { Team } from '../battle/types.ts';
-import { type BattleDoc, LIFE, type MapUnit, sizeOf } from './battle.ts';
+import { isObjective } from '../battle/units.ts';
+import { type BattleDoc, LIMITS, type MapUnit, type Objective, sizeOf } from './battle.ts';
 import { MAX_H, type MapDoc, SIZE } from './doc.ts';
+import { parseSheet } from './sheet.ts';
 import { knownClass, square } from './units.ts';
 
 const MAX_UNITS = 64;
@@ -52,16 +57,42 @@ function parseUnit(v: unknown, width: number, height: number): MapUnit | null {
   if (typeof v.def !== 'string' || !knownClass(v.def) || (v.team !== 'hero' && v.team !== 'enemy')) return null;
   const s = sizeOf(v.def);
   if (!isInt(v.x, 0, width - s) || !isInt(v.y, 0, height - s) || !isInt(v.facing, 0, 3)) return null;
-  if (v.hp !== undefined && !isInt(v.hp, ...LIFE)) return null;
-  return {
-    id: v.id,
-    def: v.def,
-    team: v.team as Team,
-    x: v.x,
-    y: v.y,
-    facing: v.facing,
-    ...(v.hp !== undefined && { hp: v.hp }),
-  };
+  const sheet = parseSheet(v, v.def);
+  if (!sheet) return null;
+  return { id: v.id, def: v.def, team: v.team as Team, x: v.x, y: v.y, facing: v.facing, ...sheet };
+}
+
+function parseObjective(v: unknown, units: MapUnit[]): Objective | null {
+  if (!isObj(v)) return null;
+  if (v.kind === 'defeat_all') return { kind: 'defeat_all' };
+  // protecting the Beacon needs one on the heroes' side, else the engine's rule loses on the first turn
+  if (v.kind === 'beacon')
+    return units.some((u) => u.team === 'hero' && isObjective(u.def)) ? { kind: 'beacon' } : null;
+  if (v.kind === 'survive' && isInt(v.turns, ...LIMITS.turns)) return { kind: 'survive', turns: v.turns };
+  return null;
+}
+
+function parseControl(v: unknown): Partial<Record<Team, Control>> | null {
+  if (!isObj(v)) return null;
+  const out: Partial<Record<Team, Control>> = {};
+  for (const team of ['hero', 'enemy'] as const) {
+    const c = v[team];
+    if (c === undefined) continue;
+    if (c !== 'player' && c !== 'ai') return null;
+    out[team] = c;
+  }
+  return out;
+}
+
+function parseBags(v: unknown): Partial<Record<Team, Record<string, number>>> | null {
+  if (!isObj(v)) return null;
+  const out: Partial<Record<Team, Record<string, number>>> = {};
+  for (const team of ['hero', 'enemy'] as const) {
+    const bag = parseBag(v[team]);
+    if (!bag) return null;
+    if (Object.keys(bag).length) out[team] = bag;
+  }
+  return out;
 }
 
 export function parseBattleDoc(v: unknown): BattleDoc | null {
@@ -75,5 +106,15 @@ export function parseBattleDoc(v: unknown): BattleDoc | null {
   // two squares on one tile: placeUnit never leaves that, so the save was not the builder's
   const taken = ok.flatMap((u) => square(u, sizeOf(u.def)).map((p) => `${p.x},${p.y}`));
   if (new Set(taken).size !== taken.length) return null;
-  return { map, units: ok };
+  const objective = v.objective === undefined ? undefined : parseObjective(v.objective, ok);
+  const control = v.control === undefined ? {} : parseControl(v.control);
+  const bags = v.bags === undefined ? {} : parseBags(v.bags);
+  if (objective === null || !control || !bags) return null;
+  return {
+    map,
+    units: ok,
+    ...(Object.keys(bags).length > 0 && { bags }),
+    ...(objective && { objective }),
+    ...(Object.keys(control).length > 0 && { control }),
+  };
 }

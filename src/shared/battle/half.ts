@@ -23,7 +23,7 @@ export function halfDef(id: string): string {
 }
 
 // each tile becomes 2x2 half-tiles; the ramp stays only on the half-tile next to the upper tile (the other is flat)
-function split(g: Grid): Grid {
+export function split(g: Grid): Grid {
   const W = g.width * 2,
     H = g.height * 2,
     tiles: Tile[] = [];

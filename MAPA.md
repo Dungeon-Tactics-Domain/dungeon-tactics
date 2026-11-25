@@ -11,13 +11,13 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/action-slots.ts` — the turn's main and bonus action slots: abilityKind (field or default by damage) and freeSlot.
 - `src/shared/battle/abilities.ts` — AbilityDef type, the ABILITIES registry built from content and a charge's defaultLock.
 - `src/shared/battle/equipment.ts` — ItemDef type, slots, the ITEMS registry and bonusOf (a loadout's stats summed on a sheet).
-- `src/shared/battle/scenarios.ts` — Scenario (map plus spawns), the MAPS and SCENARIOS registries, FIRST_BATTLE and initialState.
+- `src/shared/battle/scenarios.ts` — Scenario (map plus spawns with an optional starting CT, each side's starting bag and who plays it), controlOf, the MAPS and SCENARIOS registries, FIRST_BATTLE and initialState.
 - `src/shared/battle/grid.ts` — tiles with terrain, height, water depth and ramps; parseGrid and withRamps build maps; standing, step cost, facing and sides.
 - `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, where nobody stops (noStopAt: map bodies and corpses), ranges in cells and areas.
 - `src/shared/battle/shot.ts` — the shot path (`traceShot`, `shotAt`): the launch and aim heights it tries, what stops a shot and the share of the target it sees.
 - `src/shared/battle/shot-rules.ts` — the shot rules' switches and numbers (launch, body parts, cover, form ranges, cover weight), set from the debug menu.
 - `src/shared/battle/combat.ts` — hit chance, damage range, preview, resolve (hit then damage), spikes and the battle outcome.
-- `src/shared/battle/outcome.ts` — checkOutcome: victory, defeat or ongoing after each action.
+- `src/shared/battle/outcome.ts` — checkOutcome: victory, defeat or ongoing after each action; lastStanding (defeat all) and surviveFor (hold N turns) as rules a scenario can carry.
 - `src/shared/battle/pools.ts` — a unit's mana and stamina: what is left (poolOf), paying a cost (canPay, pay) and the regen at its turn's start.
 - `src/shared/battle/options.ts` — what a unit can do this turn before moving: per ability, the targets reachable by walking then acting and the tiles to act from, or why it is off (actionOptions).
 - `src/shared/battle/counter.ts` — who answers a strike with a counter, which counters a move owes, and playing them.
@@ -27,10 +27,10 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/battle.ts` — Battle: owns the state, move/act/use item/end turn, limited undo (dice never roll back), save/load through parseBattleState.
 - `src/shared/battle/parse-state.ts` — parseBattleState: the save trust boundary that rebuilds the battle state field by field.
 - `src/shared/battle/effects.ts` — timed item effects on units (Fire oil, Stone potion): power, element, resistance and movement bonuses, ticked at the end of the unit's turn, and parseEffects.
-- `src/shared/battle/bag.ts` — items in battle: the heroes' shared bag, the Item command (a bonus action, range 3 tiles on self or ally), itemOptions for the Agir list and parseBag.
+- `src/shared/battle/bag.ts` — items in battle: the heroes' shared bag and the enemies' own, the Item command (a bonus action, range 3 tiles on self or ally), itemOptions for the Agir list and parseBag.
 - `src/shared/battle/rng.ts` — seeded mulberry32 whose state lives in BattleState (nextRng, rollInt).
 - `src/shared/battle/rules.ts` — calculations a scenario may swap (survival, crawl rooms, the developer battle) and rulesOf.
-- `src/shared/battle/half.ts` — half tiles: halve splits a map into 2x2 cells and units into 2x2 tokens (halfDef, SUB, the ?scenario=half test map).
+- `src/shared/battle/half.ts` — half tiles: halve splits a map into 2x2 cells (split) and units into 2x2 tokens (halfDef, SUB, the ?scenario=half test map).
 - `src/shared/battle/ai.ts` — greedy one-turn AI with fixed weights: walkMap, chooseTurn, chooseRetreat, playAiTurn; a swarm unit's bonus beside its kin (kinNear).
 - `src/shared/battle/simulate.ts` — AI against AI until the end or a turn cap, for the simulator and tests.
 
@@ -43,14 +43,17 @@ reasons behind them in `docs/decisions.md`.
 ## src/shared/mapedit — map builder core (no DOM, no Three.js)
 
 - `src/shared/mapedit/doc.ts` — the map builder's whole-tile map, terrain only (MapDoc: Portuguese and English names, tiles with ramps), blankDoc, docFromScenario and wholeSource from a live half-tile battle, unsplit and kindKey.
-- `src/shared/mapedit/battle.ts` — a battle on a ready map for the future battle builder (BattleDoc, MapUnit with facing and own life), battleFromScenario and spawnsOf.
+- `src/shared/mapedit/battle.ts` — a battle on a ready map for the battle builder (BattleDoc with each side's bag, the objective and who plays each side; MapUnit with facing, own sheet and starting CT; LIMITS), battleFromScenario and spawnsOf.
+- `src/shared/mapedit/sheet.ts` — a unit's own sheet (name, life, speed, move, jump, equipment, abilities): ownSheet, sheetOf (the battle sheet on top of the class), parseLoadout and parseSheet.
+- `src/shared/mapedit/live.ts` — the map edited mid-battle: canEditLive (a player turn with nothing moving) and editLive (the new split grid, stranded units moved to the nearest free tile, the scenario re-registered).
+- `src/shared/mapedit/migrate.ts` — battleFromDevCast: the Developer menu's saved cast as a battle document on the map's seats, only the edited fields kept.
 - `src/shared/mapedit/edit.ts` — paint, height (raise, setHeight), the ramp tool (cycleRamp), autoRamps and fixRamps; each returns the same document when nothing changed.
-- `src/shared/mapedit/units.ts` — place, remove and turn units and their own life on a battle document (placeUnit, unitOn, setLife).
+- `src/shared/mapedit/units.ts` — place, remove and turn units, their own life and their whole sheet on a battle document (placeUnit, unitOn, setLife, setSheet).
 - `src/shared/mapedit/size.ts` — resize and growEdge (add or cut a row or column on any edge).
 - `src/shared/mapedit/history.ts` — undo and redo of whole documents (map or battle), 50 steps, one stroke = one step.
 - `src/shared/mapedit/export.ts` — toJson, toTs (a .ts map file shaped like ash-wood.ts with empty spawns, two-letter codes past 52 kinds, a RISE table for ramps above 1) and battleToTs (the same with spawns and the units' own life).
-- `src/shared/mapedit/parse.ts` — parseMapDoc and parseBattleDoc: rebuild a saved or pasted document field by field, null on any doubt.
-- `src/shared/mapedit/play.ts` — docToScenario (a map as a playable scenario with the spawns the client passes, to halve) and battleToScenario (plus each unit's own life).
+- `src/shared/mapedit/parse.ts` — parseMapDoc and parseBattleDoc (sheets, objective, sides and bags included): rebuild a saved or pasted document field by field, null on any doubt.
+- `src/shared/mapedit/play.ts` — docToScenario (a map as a playable scenario with the spawns the client passes, to halve), objectiveRules and battleToScenario (own sheets registered, starting CT, bags, sides and the objective's rule, plus each own sheet's class).
 
 ## src/client/mapedit — the map builder's screen (?mapedit)
 

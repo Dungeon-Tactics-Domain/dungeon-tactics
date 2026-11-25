@@ -67,6 +67,8 @@ export interface BattleState {
   // the heroes' shared bag of consumables, item id to count (Nov 19, bag.ts); absent = empty (a save from before, a battle
   // outside an expedition)
   bag?: Record<string, number>;
+  // the enemies' own bag (battle builder, Nov 25: an item bag per side, for when the player plays their turns); absent = empty
+  enemyBag?: Record<string, number>;
   // timed effects of items on units (effects.ts); absent = none
   effects?: { unit: string; item: string; turns: number }[];
 }

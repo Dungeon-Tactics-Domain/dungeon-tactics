@@ -183,8 +183,9 @@ export function parseBattleState(raw: unknown): BattleState | null {
       ) as Record<string, string>;
   }
   const bag = parseBag(raw.bag);
+  const enemyBag = parseBag(raw.enemyBag);
   const effects = parseEffects(raw.effects, units);
-  if (!bag || !effects) return null;
+  if (!bag || !enemyBag || !effects) return null;
   return {
     scenario: raw.scenario,
     units,
@@ -196,6 +197,7 @@ export function parseBattleState(raw: unknown): BattleState | null {
     ...(corpses?.length && { corpses }),
     ...(corpseDefs && Object.keys(corpseDefs).length > 0 && { corpseDefs }),
     ...(Object.keys(bag).length > 0 && { bag }),
+    ...(Object.keys(enemyBag).length > 0 && { enemyBag }),
     ...(effects.length > 0 && { effects }),
   };
 }
