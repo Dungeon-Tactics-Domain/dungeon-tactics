@@ -322,7 +322,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/board.ts` — Board: block columns, painted terrain, water, bridges, walls, trees and details built from the map, and again in place on the map builder's edit (rebuild; the terrain and the border kept where unchanged).
 - `src/client/scene/board-looks.ts` — what each tile look draws (LOOK pieces, side colors, details) and the pieces a map downloads.
 - `src/client/scene/board-extras.ts` — board dressing outside the rules: edge sides, caravan bodies, dotted border, crypt stairs, rocks and tufts.
-- `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees and the crown cutout over units, cursor and marks.
+- `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees, their crowns cut by see-through.ts.
 - `src/client/scene/units.ts` — Units: keeps each unit's drawing where the state says, the shake, hit-stop and slow-motion clocks, picking and the town walk.
 - `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, own-rig creatures seated by their posed body, ring, facing arrow, health bar with the turn-order number, clips, flash and glow.
 - `src/client/scene/body-shape.ts` — shapeWoman: the woman's body (hips, waist, bust, slimmer arms) written on one unit's own copy of its model at rest, bones untouched.
@@ -342,6 +342,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/action-cams.ts` — the action cameras the strike can play (ACTION_CAMS) and the one ?camera= picks.
 - `src/client/scene/tile-shot.ts` — shootTiles: tiny maps built as Boards in scenes of their own and drawn by the battle's renderer into small canvases (the map builder's tile pictures).
 - `src/client/scene/top-view.ts` — TopView: on, off, toggle and isTop over the camera's top view, and the height shade and numbers seen only from above.
+- `src/client/scene/see-through.ts` — SeeThrough: the hole crowns, ground and walls open in front of units, cursor and marks.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.
 - `src/client/scene/timeline.ts` — Timeline: the battle clock behind every animate and wait (no setTimeout).
 - `src/client/scene/load.ts` — what a battle downloads before it draws: models, painted pieces, animation pack and surroundings.

@@ -93,7 +93,7 @@ export class BattleScene {
     this.scene.background = new THREE.Color('#1b1626');
     this.scene.matrixAutoUpdate = false; // it never moves: a moving root works out every tile mark's matrix each frame
     this.board = new Board(this.scene, this.space, models, pieces, lookPieces, packClips, terrainTex);
-    this.marks = new Marks(this.scene, this.space, this.camera, this.board.hasTrees);
+    this.marks = new Marks(this.scene, this.space, this.camera);
     this.chargeLines = new ChargeLines(this.scene, this.space, this.camera);
     this.units = new Units(
       this.scene,
@@ -182,8 +182,8 @@ export class BattleScene {
     this.space.setGrid(grid);
     this.board.rebuild();
     const same = grid.width === was.width && grid.height === was.height;
-    if (same) this.marks.reground(this.board.hasTrees);
-    else this.marks = this.marks.again(this.board.hasTrees);
+    if (same) this.marks.reground();
+    else this.marks = this.marks.again();
     this.chargeLines = this.chargeLines.again();
     this.top = this.top.again();
     this.cam.refit(was);
@@ -365,11 +365,10 @@ export class BattleScene {
     this.top.update();
     // the note follows the sliding cursor and the camera every frame, like the menu beside the unit
     this.note.follow();
-    if (this.board.hasTrees)
-      this.board.updateCuts(this.camera.matrixWorldInverse, (add) => {
-        this.units.protect(add);
-        this.marks.protect(add);
-      });
+    this.board.see.update(this.camera.matrixWorldInverse, (add) => {
+      this.units.protect(add);
+      this.marks.protect(add);
+    });
     this.units.update(dt, fast);
     this.board.update(this.time.t, this.units.all());
     this.ambience?.update(this.time.t, this.camera);

@@ -16,19 +16,14 @@ const TREE_SIZE: Record<number, { h: number; w: number }> = {
   2: { h: 2.8, w: 2.3 },
   4: { h: 3.4, w: 2.9 },
 };
-// Crown cutout (same request: the crown must not hide a unit, the cursor or a marked tile): each one opens a hole in the
-// tree in front of it. Cap of points per frame (9 units, the cursor and the marked tiles)
-const CUT_MAX = 64;
-const TMP = new THREE.Vector3(); // per-frame math without creating objects
 
 export class TreeCrowns {
-  has = false; // the map has trees (Board.hasTrees)
-
   constructor(private readonly board: Board) {}
 
   // Forest-tile trees, bigger than the tile (TREE_SIZE). Neighboring tree tiles at the same height become a single
   // tree (2x2 first, then 2x1): drawing only, each tile is still a tree in the rules. The group uses the widest model
-  // among its tiles'; rotation and size vary by position. The crown gets the cutout (cutMaterial).
+  // among its tiles'; rotation and size vary by position. The crown gets the cutout (see-through.ts: Nov 13, the crown
+  // must not hide a unit, the cursor or a marked tile).
   build(legacy: THREE.Object3D) {
     const g = this.board.grid,
       taken = new Set<string>();
@@ -120,56 +115,8 @@ export class TreeCrowns {
     }
     for (const [name, at] of batches) {
       for (const inst of this.board.instanced(prepare(pieceOf(name).clone()), at)) {
-        inst.material = this.cutMaterial(inst.material as THREE.MeshStandardMaterial);
-        this.has = true;
+        inst.material = this.board.see.cut((inst.material as THREE.Material).clone(), false);
       }
     }
-  }
-
-  // Crown cutout: discards the piece of the tree that is in front (closer to the camera) of a protected point and
-  // within `w` of it on screen; the hole's edge comes out checkered, in the 16-bit way. Points in camera coordinates,
-  // updated every frame (updateCuts).
-  private readonly cuts = {
-    points: { value: Array.from({ length: CUT_MAX }, () => new THREE.Vector4()) },
-    count: { value: 0 },
-  };
-  private cutMaterial(src: THREE.MeshStandardMaterial) {
-    const m = src.clone();
-    m.allowOverride = false;
-    m.customProgramCacheKey = () => `copa${CUT_MAX}`;
-    m.onBeforeCompile = (s) => {
-      Object.assign(s.uniforms, {
-        cutPoints: this.cuts.points,
-        cutCount: this.cuts.count,
-      });
-      s.fragmentShader = s.fragmentShader
-        .replace('void main() {', `uniform vec4 cutPoints[${CUT_MAX}];\nuniform int cutCount;\nvoid main() {`)
-        .replace(
-          '#include <clipping_planes_fragment>',
-          `#include <clipping_planes_fragment>
-          vec3 viewPos = -vViewPosition;
-          for (int i = 0; i < ${CUT_MAX}; i++) {
-            if (i >= cutCount) break;
-            vec4 c = cutPoints[i];
-            float d = distance(viewPos.xy, c.xy);
-            if (viewPos.z > c.z + 0.3 && d < c.w && (d < c.w * 0.7 || mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0)) discard;
-          }`,
-        );
-    };
-    return m;
-  }
-
-  // Points the crowns open a hole for, given by the scene every frame (each unit's body, the cursor and the marked tiles),
-  // in camera coordinates
-  updateCuts(view: THREE.Matrix4, protect: (add: (x: number, y: number, z: number, r: number) => void) => void) {
-    const pts = this.cuts.points.value;
-    let n = 0;
-    const add = (x: number, y: number, z: number, r: number) => {
-      if (n >= CUT_MAX) return;
-      TMP.set(x, y, z).applyMatrix4(view);
-      pts[n++].set(TMP.x, TMP.y, TMP.z, r);
-    };
-    protect(add);
-    this.cuts.count.value = n;
   }
 }

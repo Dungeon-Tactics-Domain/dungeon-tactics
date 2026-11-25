@@ -26,6 +26,7 @@ import type { WaterLevel } from '../water-levels.ts';
 import { buildBorder, buildCorpses, buildDetails, buildStairs, buildWalls, buried } from './board-extras.ts';
 import { LOOK, MOUND, NEIGHBORS, UNDER, WALL_COLOR } from './board-looks.ts';
 import { smoothMap } from './load.ts';
+import { SeeThrough } from './see-through.ts';
 import type { TileSpace } from './space.ts';
 import { TreeCrowns } from './tree-crowns.ts';
 
@@ -36,6 +37,7 @@ export class Board {
   private water: Water | null = null; // only on maps with water
   private stream: { meshes: THREE.Mesh[]; time: { value: number } } | null = null;
   private crowns!: TreeCrowns;
+  readonly see: SeeThrough; // the hole in front of units (see-through.ts), kept from build to build like the terrain
   scene = new THREE.Group(); // what one build draws, under the parent: a rebuild takes it away whole
   private stale: THREE.Object3D | null = null; // the build before, freed once the new one has drawn
   private terrain: THREE.Mesh | null = null; // the smooth ground, kept from build to build (buildTerrain's `last`)
@@ -63,6 +65,7 @@ export class Board {
     readonly packClips: THREE.AnimationClip[],
     readonly tex: TerrainTextures | null,
   ) {
+    this.see = new SeeThrough(space);
     this.rebuild();
   }
 
@@ -92,16 +95,6 @@ export class Board {
     this.free();
     this.water?.dispose();
   }
-  // the map has trees, so the crowns need the cutout points every frame
-  get hasTrees(): boolean {
-    return this.crowns.has;
-  }
-
-  // Points the crowns open a hole for, given by the scene every frame (tree-crowns.ts)
-  updateCuts(view: THREE.Matrix4, protect: (add: (x: number, y: number, z: number, r: number) => void) => void) {
-    this.crowns.updateCuts(view, protect);
-  }
-
   // water waves and the outside river current, on the battle clock
   // the map's dotted border again, in the mark style of now (BattleScene.restyle)
   restyle() {
@@ -166,10 +159,13 @@ export class Board {
       if (!tile.look && edge(p))
         walls.push({ x: w.x, z: w.z, top: tile.h * this.space.step, color: WALL_COLOR[tile.terrain] });
     }
-    this.instanced(top, batch.top.at, batch.top.tiles);
-    this.instanced(stone, batch.stoneTop.at, batch.stoneTop.tiles);
-    this.instanced(side, batch.side.at);
-    this.instanced(stone, batch.stone.at);
+    for (const i of [
+      ...this.instanced(top, batch.top.at, batch.top.tiles),
+      ...this.instanced(stone, batch.stoneTop.at, batch.stoneTop.tiles),
+      ...this.instanced(side, batch.side.at),
+      ...this.instanced(stone, batch.stone.at),
+    ])
+      i.material = this.see.ground(i.material as THREE.Material);
     looks.build();
     if (smooth) {
       const inner = (p: Pos, x: number, z: number) => {
@@ -196,6 +192,7 @@ export class Board {
         },
         this.terrain,
       );
+      this.see.cut(this.terrain.material as THREE.Material, true);
       this.scene.add(this.terrain);
       const picks = this.grid.tiles.flatMap((t, i) => {
         const p = { x: i % this.grid.width, y: Math.floor(i / this.grid.width) };
@@ -246,7 +243,7 @@ export class Board {
       );
       return prepare(new THREE.Group().add(o));
     };
-    const batches = new Map<string, { piece: THREE.Object3D; at: THREE.Matrix4[]; tiles?: Pos[] }>();
+    const batches = new Map<string, { piece: THREE.Object3D; at: THREE.Matrix4[]; tiles?: Pos[]; ground: boolean }>();
     const put = (name: string, height: number, m: THREE.Matrix4, tile?: Pos) => {
       const key = `${name}@${height}${tile ? '#' : ''}`;
       let b = batches.get(key);
@@ -258,6 +255,7 @@ export class Board {
             piece: height ? norm(name, height) : prepare(this.lookPieces.get(name)!.clone()),
             at: [],
             tiles: tile && [],
+            ground: height > 0, // a look's top and column cut like the blocks; an object (height 0) does not
           }),
         );
       b.at.push(m);
@@ -343,7 +341,9 @@ export class Board {
         put(variant(this.lookPieces, DEBRIS, hash(p.x, p.y, 6)), 0, new THREE.Matrix4().makeTranslation(w.x, top, w.z));
     };
     const build = () => {
-      for (const b of batches.values()) this.instanced(b.piece, b.at, b.tiles);
+      for (const b of batches.values())
+        for (const i of this.instanced(b.piece, b.at, b.tiles))
+          if (b.ground) i.material = this.see.ground(i.material as THREE.Material);
     };
     return { add, build };
   }

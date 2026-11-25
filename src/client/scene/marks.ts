@@ -23,6 +23,7 @@ import {
 import { DANGER, MARK, type MarkPattern, markTexture } from './mark-looks.ts';
 import { sharp } from './pixel-pass.ts';
 import { rangeRing, walkRing } from './range-ring.ts';
+import type { CutAdd } from './see-through.ts';
 import { rectOf, sides, type TileSpace } from './space.ts';
 import { type Aim, animateAim, disposeAim, trajectory } from './trajectory.ts';
 
@@ -40,7 +41,7 @@ export class Marks {
   // keyboard cursor: frame at the tile height and arrow floating above, to read the level even behind a unit
   private readonly cursor = new THREE.Group();
   private readonly cursorGoal = new THREE.Vector3();
-  private marked: THREE.Vector3[] = []; // marked tiles the tree crowns open a hole for (only on maps with trees)
+  private marked: THREE.Vector3[] = []; // marked tiles the crowns and the taller ground open a hole for
   private readonly markGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
   private readonly root = new THREE.Group(); // everything this draws, so a change of style takes it all away (dispose)
   // The lit styles (mark-style.ts; null draws the flat marks of before): a tile's mark is one geometry bent over its
@@ -50,12 +51,10 @@ export class Marks {
   private readonly tileGeo = new Map<string, THREE.BufferGeometry>();
   private readonly tileMats = new Map<string, THREE.Material[]>();
 
-  // `trees`: the map has crowns with a cutout, so the marked tiles must stay visible through them
   constructor(
     private readonly scene: THREE.Scene,
     private readonly space: TileSpace,
     private readonly camera: THREE.Camera,
-    private trees: boolean,
   ) {
     const grid = space.grid;
     const markGeo = this.markGeo;
@@ -156,8 +155,7 @@ export class Marks {
 
   // The map builder's edit on a map of the same size (BattleScene.setGrid): every mark on its tile's new ground with the
   // same meshes and materials (building them again took a third of a 24x24 redraw and compiled their shaders again)
-  reground(trees: boolean) {
-    this.trees = trees;
+  reground() {
     this.ground = groundOf(this.scene, this.space);
     for (const g of this.tileGeo.values()) g.dispose();
     this.tileGeo.clear();
@@ -179,11 +177,10 @@ export class Marks {
     return g;
   }
 
-  // a change of style (BattleScene.restyle) or of map (setGrid, with its `trees`): this one leaves and a new one is
-  // built in the style of now
-  again(trees = this.trees): Marks {
+  // a change of style (BattleScene.restyle) or of map (setGrid): this one leaves and a new one is built in the style of now
+  again(): Marks {
     this.dispose();
-    return new Marks(this.scene, this.space, this.camera, trees);
+    return new Marks(this.scene, this.space, this.camera);
   }
   private dispose() {
     this.scene.remove(this.root);
@@ -204,10 +201,11 @@ export class Marks {
     }
   }
 
-  // cutout points the tree crowns must not cover: the cursor and the marked tiles
-  protect(add: (x: number, y: number, z: number, r: number) => void) {
-    if (this.cursor.visible) add(this.cursor.position.x, this.cursor.position.y + 0.3, this.cursor.position.z, 0.8);
-    for (const w of this.marked) add(w.x, w.y + 0.05, w.z, 0.55);
+  // cutout points the crowns and the taller ground must not cover: the cursor and the marked tiles (see-through.ts)
+  protect(add: CutAdd) {
+    const c = this.cursor.position;
+    if (this.cursor.visible) add(c.x, c.y + 0.3, c.z, 0.8, c.y);
+    for (const w of this.marked) add(w.x, w.y + 0.05, w.z, 0.55, w.y);
   }
 
   update(dt: number) {
@@ -345,7 +343,7 @@ export class Marks {
   setHighlights(h: Highlights | null) {
     for (const m of this.marks.values()) m.visible = false;
     for (const d of this.pathDots.values()) d.visible = false;
-    this.marked = h && this.trees ? h.tiles.map(({ pos }) => this.space.world(pos)) : [];
+    this.marked = h ? h.tiles.map(({ pos }) => this.space.world(pos)) : [];
     if (!h) return;
     for (const { pos, kind } of h.tiles) {
       const m = this.marks.get(posKey(pos))!;

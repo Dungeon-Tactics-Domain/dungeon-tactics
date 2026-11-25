@@ -20,6 +20,7 @@ import type { Board } from './board.ts';
 import { layBody } from './board-extras.ts';
 import type { CameraRig } from './camera.ts';
 import { FloatNumbers, onScreen } from './float-numbers.ts';
+import type { CutAdd } from './see-through.ts';
 import type { TileSpace } from './space.ts';
 import type { Timeline } from './timeline.ts';
 import { playEvents } from './unit-events.ts';
@@ -115,11 +116,11 @@ export class Units {
   }
 
   // cutout points the tree crowns must not cover: each visible unit's body
-  protect(add: (x: number, y: number, z: number, r: number) => void) {
+  protect(add: CutAdd) {
     for (const v of this.views.values()) {
       const h = unitHeight(v.def),
         p = v.holder.position;
-      if (v.holder.visible) add(p.x, p.y + h * 0.6, p.z, Math.max(0.75, h * 0.75));
+      if (v.holder.visible) add(p.x, p.y + h * 0.6, p.z, Math.max(0.75, h * 0.75), p.y);
     }
   }
 

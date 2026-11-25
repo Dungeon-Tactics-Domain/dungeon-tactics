@@ -37,7 +37,11 @@ export function buildWalls(board: Board, walls: { x: number; z: number; top: num
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     return g;
   });
-  const mesh = new THREE.Mesh(mergeGeometries(parts), new THREE.MeshBasicMaterial({ vertexColors: true }));
+  // a tall wall at the edge opens the hole too, like the ground (see-through.ts)
+  const mesh = new THREE.Mesh(
+    mergeGeometries(parts),
+    board.see.cut(new THREE.MeshBasicMaterial({ vertexColors: true }), true),
+  );
   for (const g of parts) g.dispose();
   board.scene.add(mesh);
 }

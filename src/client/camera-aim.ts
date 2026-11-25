@@ -106,3 +106,9 @@ export function revealYaw(yaw: number, step: number, hidden: (yaw: number) => bo
   for (let n = 1; n <= turns; n++) for (const y of [yaw + n * step, yaw - n * step]) if (!hidden(y)) return y;
   return yaw;
 }
+
+// The yaw and pitch hiddenAt takes, read from a camera's view matrix (column-major `elements`): its third row is the way
+// from the target to the camera in the world
+export function viewAngles(e: ArrayLike<number>): { yaw: number; pitch: number } {
+  return { yaw: Math.atan2(e[2], e[10]), pitch: Math.atan2(e[6], Math.hypot(e[2], e[10])) };
+}

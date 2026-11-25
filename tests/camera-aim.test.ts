@@ -1,5 +1,6 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { bodyOf, drawnTop, fitBoth, frameBounds, hiddenAt, revealYaw } from '../src/client/camera-aim.ts';
+import { bodyOf, drawnTop, fitBoth, frameBounds, hiddenAt, revealYaw, viewAngles } from '../src/client/camera-aim.ts';
 import { parseGrid } from '../src/shared/battle/grid.ts';
 
 const none = { top: 0, bottom: 0, left: 0, right: 0 };
@@ -62,5 +63,42 @@ describe('hiddenAt and revealYaw: turn to see a unit behind a wall (Nov 25)', ()
 describe('bodyOf', () => {
   it('a bare tile is one cell with no height', () => {
     expect(bodyOf({ x: 3, y: 4 })).toEqual({ p: { x: 3, y: 4 }, size: 1, h: 0 });
+  });
+});
+
+const CAM_PITCH = THREE.MathUtils.degToRad(32); // the battle camera's
+
+// a camera 20 away at the battle's pitch, on the side `yaw` points to (0 = +z, as hiddenAt measures it)
+function view(yaw: number) {
+  const cam = new THREE.OrthographicCamera();
+  cam.position
+    .set(Math.sin(yaw) * Math.cos(CAM_PITCH), Math.sin(CAM_PITCH), Math.cos(yaw) * Math.cos(CAM_PITCH))
+    .multiplyScalar(20);
+  cam.lookAt(0, 0, 0);
+  cam.updateMatrixWorld();
+  return cam.matrixWorldInverse.elements;
+}
+
+describe('viewAngles: the see-through hole asks hiddenAt from the camera it draws with (Nov 25)', () => {
+  it('reads back the yaw and pitch the camera was placed at', () => {
+    for (const yaw of [0, Math.PI / 4, Math.PI / 2, -Math.PI * 0.75]) {
+      const a = viewAngles(view(yaw));
+      expect(a.yaw).toBeCloseTo(yaw);
+      expect(a.pitch).toBeCloseTo(CAM_PITCH);
+    }
+  });
+  it('the wall on the camera side hides the unit; from the far side it does not', () => {
+    const near = viewAngles(view(0)),
+      far = viewAngles(view(Math.PI));
+    expect(hiddenAt(grid, 0.5, centre, near.yaw, near.pitch)).toBe(true);
+    expect(hiddenAt(grid, 0.5, centre, far.yaw, far.pitch)).toBe(false);
+  });
+  it('from straight above nothing is hidden, so the top view cuts no ground', () => {
+    const cam = new THREE.OrthographicCamera();
+    cam.position.set(0, 20, 0.001);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const a = viewAngles(cam.matrixWorldInverse.elements);
+    expect(hiddenAt(grid, 0.5, centre, a.yaw, a.pitch)).toBe(false);
   });
 });
