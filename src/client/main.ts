@@ -12,6 +12,7 @@ import { beforeEvent } from './before-event.ts';
 import { type Screen, startScreen } from './command.ts';
 import { fpsCounter } from './fps.ts';
 import { type BattleSelection, newBattle } from './game/boot.ts';
+import { toggleDebug } from './game/debug-menu.ts';
 import { battleEndScreen, confetti } from './game/end-screens.ts';
 import { optionsMenu } from './game/options.ts';
 import { finishRoom } from './game/room-end.ts';
@@ -41,22 +42,22 @@ const AUTO = LOCAL && new URLSearchParams(location.search).has('auto');
 const FAST_KEY = 'dt:fast'; // fast-forward button on stays on in the next battle
 
 export class Game implements TurnHost {
-  private readonly turn: HeroTurn; // the hero's turn screens: screen, Ui and cursor (hero-turn.ts)
+  readonly turn: HeroTurn; // the hero's turn screens: screen, Ui and cursor (hero-turn.ts)
   busy = false;
   private behindTitle = false; // the title is open over this battle (pollPad)
   private log = '';
   private acting: string | null = null;
   private readonly hud: BattleHud;
   private readonly readPad: () => void;
-  private readonly toggleFps: () => boolean;
+  readonly toggleFps: () => boolean;
   // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)
   private tally = emptyTally();
-  private roster: Roster = {};
+  roster: Roster = {};
   private readonly gone = screenSignal(); // aborted when this battle's screen leaves (nav.ts)
 
   constructor(
     public battle: Battle,
-    private readonly scene: BattleScene,
+    readonly scene: BattleScene,
     host: HTMLElement,
     private readonly sel: BattleSelection,
     skin: HudSkin, // the 3D pieces (hud-skin.ts)
@@ -132,6 +133,7 @@ export class Game implements TurnHost {
     if (a.k === 'turns') return this.hud.scrollQueue(a.dir);
     if (a.k === 'fold') return this.hud.foldQueue();
     if (a.k === 'fps') return void this.toggleFps();
+    if (a.k === 'debug') return toggleDebug(this);
     if (this.busy || !this.heroTurn) return;
     this.turn.key(a);
   }
@@ -284,7 +286,7 @@ export class Game implements TurnHost {
     await this.runEnemies();
   }
 
-  private async runEnemies() {
+  async runEnemies() {
     while (!this.battle.over && !this.heroTurn) {
       this.busy = true;
       this.acting = this.battle.actor.def;
@@ -342,7 +344,7 @@ export class Game implements TurnHost {
     void this.runEnemies();
   }
 
-  private async finish() {
+  async finish() {
     const { scenario } = this.sel;
     const won = this.battle.state.outcome === 'victory';
     jingle(won);
@@ -382,7 +384,7 @@ export class Game implements TurnHost {
           pace.toggle = on;
           store.set(FAST_KEY, on ? '1' : '');
         },
-        fps: () => void this.toggleFps(),
+        debug: () => toggleDebug(this),
       },
     });
   }

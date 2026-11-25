@@ -48,7 +48,8 @@ export type PadGlyph =
   | 'dpadV' // its up and down arms
   | 'lstick'
   | 'rstick'
-  | 'r3'; // pressing the right stick
+  | 'r3' // pressing the right stick
+  | 'l3'; // pressing the left stick
 
 // which button of gamepad.ts each glyph is (its index in the standard mapping; a stick has none)
 export const PAD_INDEX: Partial<Record<PadGlyph, number>> = {
@@ -62,6 +63,7 @@ export const PAD_INDEX: Partial<Record<PadGlyph, number>> = {
   rt: 7,
   select: 8,
   start: 9,
+  l3: 10,
   r3: 11,
 };
 
@@ -91,6 +93,9 @@ export const ACTIONS = {
   fps: { keys: ['F3'], pad: [] },
   // the turn list folded to its faces and back (hud-queue.ts); on the pad, pressing the stick that scrolls it (Nov 20)
   fold: { keys: ['L'], pad: ['r3'] },
+  // the debug panel (game/debug-menu.ts; Fernando, Nov 25: a menu of its own, apart from Esc); the left stick's press
+  // is free in battle, since that stick only moves the cursor
+  debug: { keys: ['F2'], pad: ['l3'] },
 } as const satisfies Record<string, { keys: readonly string[]; pad: readonly PadGlyph[] }>;
 export type Act = keyof typeof ACTIONS;
 
@@ -145,6 +150,7 @@ export function padName(g: PadGlyph, family: Family): string {
   if (g === 'lstick') return t('Analógico esquerdo', 'Left stick');
   if (g === 'rstick') return t('Analógico direito', 'Right stick');
   if (g === 'r3') return family === 'playstation' ? 'R3' : 'RS';
+  if (g === 'l3') return family === 'playstation' ? 'L3' : 'LS';
   return NAMES[family][g] ?? '';
 }
 

@@ -174,6 +174,9 @@ export class BattleScene {
     return this.cam.heading;
   }
 
+  // the debug panel's new unit, before the sync that draws it (Units.addModel)
+  addModel = (def: string) => this.units.addModel(def);
+
   // Puts each unit where the state says (creates whoever is missing, removes whoever died). Called on open, after each animation and on undo.
   sync(state: BattleState) {
     const hot = chargeDanger(this.grid, state);

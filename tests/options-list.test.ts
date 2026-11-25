@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { type OptionsGroup, settings } from '../src/client/game/options-list.ts';
+import { pixelGroup } from '../src/client/game/options-pixel.ts';
 import type { Option } from '../src/client/option-row.ts';
 import { pixelFx } from '../src/client/pixel-fx.ts';
 
@@ -8,7 +9,7 @@ let touch = false; // (pointer: coarse): a finger points
 vi.stubGlobal('matchMedia', () => ({ matches: touch }));
 
 // Fernando, Nov 18 night: no ☰ menu, so its rows moved into Options; the battle's own rows only show in a battle
-const battle = { room: false, busy: false, restart() {}, fast: () => false, setFast() {}, fps() {} };
+const battle = { room: false, busy: false, restart() {}, fast: () => false, setFast() {}, debug() {} };
 const names = (g: OptionsGroup) => g.rows.map((r) => ('run' in r ? r.link : r.label));
 const group = (o: Parameters<typeof settings>[0], title: string) => settings(o).find((g) => g.title === title)!;
 
@@ -17,13 +18,20 @@ describe('Options rows', () => {
     expect(names(group({ relayout() {}, battle }, 'Imagem'))[0]).toBe('Marcações');
     expect(names(group({ relayout() {}, battle }, 'Jogo')).at(-1)).toBe('Voltar ao título');
   });
-  it('Fast battle and the fps counter only in a battle; Screen buttons everywhere', () => {
+  // Nov 25, Fernando: "as opcoes do menu de opcoes do esc devem ser opcoes normais de jogo"; the debug panel holds them
+  it('holds no debug rows: no fps counter, no pixel effect, no debug link without ?debug=1', () => {
+    const all = settings({ relayout() {}, battle });
+    expect(all.map((g) => g.title)).toEqual(['Jogo', 'Som', 'Imagem']);
+    const rows = all.flatMap(names);
+    for (const row of ['Contador de fps', 'Efeito de pixel', 'Depuração']) expect(rows).not.toContain(row);
+  });
+  it('Fast battle only in a battle; Screen buttons everywhere', () => {
     const inBattle = [
       ...names(group({ relayout() {}, battle }, 'Jogo')),
       ...names(group({ relayout() {}, battle }, 'Imagem')),
     ];
     const inTown = [...names(group({ relayout() {} }, 'Jogo')), ...names(group({ relayout() {} }, 'Imagem'))];
-    for (const row of ['Batalha rápida (3×)', 'Contador de fps']) {
+    for (const row of ['Batalha rápida (3×)']) {
       expect(inBattle).toContain(row);
       expect(inTown).not.toContain(row);
     }
@@ -39,7 +47,7 @@ describe('Options rows', () => {
   });
   // Nov 24, Fernando: the pixel effect in its own category, with the reference author's numbers as a preset
   it('Pixel effect: a preset writes its values, a value changed by hand shows Your own', () => {
-    const rows = group({ relayout() {} }, 'Efeito de pixel').rows as Option[];
+    const rows = pixelGroup().rows as Option[];
     const row = (label: string) => rows.find((r) => r.label === label)!;
     expect(row('Efeito de pixel').text()).toBe('Desligado');
     expect(row('Predefinição').text()).toBe('Nosso');

@@ -20,6 +20,7 @@ export type KeyAction =
   | { k: 'status' }
   | { k: 'info' }
   | { k: 'fps' }
+  | { k: 'debug' }
   | { k: 'turns'; dir: 1 | -1 }
   | { k: 'fold' }
   | { k: 'help' };
@@ -47,6 +48,7 @@ const SIMPLE: Record<string, KeyAction> = {
   c: { k: 'status' },
   i: { k: 'info' },
   f3: { k: 'fps' },
+  f2: { k: 'debug' },
   p: { k: 'wait' },
   f: { k: 'recenter' },
   h: { k: 'help' },
@@ -196,6 +198,7 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       ),
     ],
     [['fps'], '', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
+    [['debug'], '', t('abre e fecha o painel de depuração', 'opens and closes the debug panel')],
     [['help'], 'H · ?', t('as Opções e esta ajuda', 'Options and this help')],
   ];
   const menu = pad ? `${k('cancel')} · ${k('help')}` : 'Esc · H';

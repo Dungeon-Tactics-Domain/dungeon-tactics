@@ -38,8 +38,13 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
   // Keyboard (Fernando's request, Oct 25): every action has a key. The key -> action translation is pure (keyboard.ts).
   // With a dialog open, the keys belong to it (Esc closes, Tab moves between buttons, up and down walk its list: dialog.ts).
   const onKey = (e: KeyboardEvent) => {
-    if (document.querySelector('.overlay')) return;
     const a = keyAction(e);
+    // F2 opens and closes the debug panel over any window, its own included (game/debug-menu.ts)
+    if (a?.k === 'debug') {
+      e.preventDefault();
+      return act.key(a);
+    }
+    if (document.querySelector('.overlay')) return;
     if (!a) return;
     // confirm only on press: holding Enter to speed up the enemy must not pick the hero's 1st command by accident
     if (e.repeat && a.k === 'confirm') return void e.preventDefault();
@@ -76,6 +81,6 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     );
     // 1st frame with a pad: only records what was already pressed (the A that entered the stage does not pick the 1st command)
     if (!primed) return void (primed = true);
-    for (const a of actions) if (!padDialog(a)) act.key(a);
+    for (const a of actions) if (a.k === 'debug' || !padDialog(a)) act.key(a); // L3 as F2 above
   };
 }

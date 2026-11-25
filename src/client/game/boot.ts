@@ -2,14 +2,16 @@
 // the standalone battle behind the title (and the town).
 import { Battle } from '../../shared/battle/battle.ts';
 import { regen } from '../../shared/battle/combat.ts';
+import { spawnClasses } from '../../shared/battle/debug.ts';
 import { subOf } from '../../shared/battle/grid.ts';
-import { HALF, HALF_ID, halve, registerHalf } from '../../shared/battle/half.ts';
+import { HALF, HALF_ID, halfDef, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
 import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
 import { t } from '../i18n.ts';
+import { applySavedShotRules } from '../shot-debug.ts';
 import { param, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
 import { type CrawlRoom, castRoom, goHome, goHomeNoRoom, heldRoom, ROOM_KEY, savedExpedition } from './crawl.ts';
@@ -54,6 +56,9 @@ function crawlRoom(seed: number, opts: RoomOptions): Scenario | null {
 
 // null when the address went home instead (a room that is not open, or a crawl room that could not be built)
 export async function selectBattle(): Promise<BattleSelection | null> {
+  applySavedShotRules(); // the debug panel's shot rules (shot-debug.ts), before any shot is read
+  // every class's half-tile token, so a save holding a unit the debug panel created (debug-menu.ts) reads back
+  for (const id of spawnClasses()) halfDef(id);
   // the battle the game opens and where it is saved; the address may swap both
   let scenario = FIRST_BATTLE;
   let saveKey = 'dt:battle';

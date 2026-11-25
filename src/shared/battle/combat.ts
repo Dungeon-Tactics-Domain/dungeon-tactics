@@ -348,7 +348,7 @@ export function resolveAbility(
 }
 
 // removes life; returns false if the unit died (and leaves the list)
-function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEvent[]): boolean {
+export function hurt(state: BattleState, unit: UnitState, dmg: number, events: BattleEvent[]): boolean {
   unit.hp -= dmg;
   if (unit.hp > 0) return true;
   state.units = state.units.filter((u) => u !== unit);

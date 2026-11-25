@@ -82,6 +82,7 @@ describe('the table: action, key, pad button', () => {
     recenter: [{ k: 'recenter' }],
     fps: [{ k: 'fps' }],
     fold: [{ k: 'fold' }],
+    debug: [{ k: 'debug' }],
     turns: [
       { k: 'turns', dir: -1 },
       { k: 'turns', dir: 1 },
@@ -168,6 +169,7 @@ describe('the screens read the table', () => {
       'Analógico direito',
       'RS',
       'Y',
+      'LS',
       'Menu',
       'Na cidade',
     ]);

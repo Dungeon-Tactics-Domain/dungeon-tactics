@@ -63,6 +63,8 @@ let memo: {
   ground: Map<string, ActionTarget[]>;
   blocked: Map<string, ActSpot[]>;
 } | null = null;
+// a debug panel's shot rule changed (game/debug-menu.ts): the state is the same, the answers are not
+export const forgetOptions = () => void (memo = null);
 function options(b: Battle) {
   const key = JSON.stringify(b.state);
   if (memo?.b !== b || memo.key !== key)

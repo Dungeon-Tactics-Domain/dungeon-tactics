@@ -1,5 +1,5 @@
-// Options › Pixel effect (Fernando, Nov 24: the pixel demo's look, editable and saved per player, with the reference
-// author's numbers as a preset): its own category, so the Display list stays as long as it was. Settings in pixel-fx.ts.
+// Debug › Pixel effect (Fernando, Nov 24: the pixel demo's look, editable and saved per player, with the reference
+// author's numbers as a preset): a category of the debug panel since Nov 25 (debug-menu.ts; it was Options'). Settings in pixel-fx.ts.
 import { t } from '../i18n.ts';
 import { type Option, percent, pick } from '../option-row.ts';
 import {

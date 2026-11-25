@@ -201,7 +201,7 @@ function drawPad(g: G, cap: { pad: PadGlyph; family: Family }, w: number, h: num
       } else for (const x of [-0.9, 0, 0.9]) line(x * 0.4, 0.6, x, -0.7); // Share: three rays
       g.stroke();
     });
-  } else if (at === 'lstick' || at === 'rstick' || at === 'r3') {
+  } else if (at === 'lstick' || at === 'rstick' || at === 'r3' || at === 'l3') {
     piece(g, h, i, h - i, circle(h / 2 - i));
     const r = ART.stick.cap * h;
     g.fillStyle = grad(g, cy - r, cy + r, ART.gold);
@@ -211,7 +211,7 @@ function drawPad(g: G, cap: { pad: PadGlyph; family: Family }, w: number, h: num
     circle(r)(ART.rim * h * 0.6);
     g.fill();
     lit(g, h, ART.pale, () =>
-      word(g, at === 'lstick' ? 'L' : at === 'r3' ? 'R3' : 'R', cx, cy, ART.stick.text * h, font),
+      word(g, at === 'lstick' ? 'L' : at === 'r3' ? 'R3' : at === 'l3' ? 'L3' : 'R', cx, cy, ART.stick.text * h, font),
     );
   } else {
     // the d-pad: a cross, with a lit tip on each arm the hint is about

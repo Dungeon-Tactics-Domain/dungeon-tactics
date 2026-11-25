@@ -21,6 +21,7 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/pools.ts` — a unit's mana and stamina: what is left (poolOf), paying a cost (canPay, pay) and the regen at its turn's start.
 - `src/shared/battle/options.ts` — what a unit can do this turn before moving: per ability, the targets reachable by walking then acting and the tiles to act from, or why it is off (actionOptions).
 - `src/shared/battle/counter.ts` — who answers a strike with a counter, which counters a move owes, and playing them.
+- `src/shared/battle/debug.ts` — the debug panel's changes to a live battle: the classes it may create, spawnUnit (nearest spot the body fits), healAll, killAt and forgetUndo.
 - `src/shared/battle/push.ts` — where a push ends and what it costs (bump, fall), without touching the state.
 - `src/shared/battle/turn-queue.ts` — FFT CT queue: turn cost, the next turn, charges firing and previewOrder for the turn list.
 - `src/shared/battle/battle.ts` — Battle: owns the state, move/act/use item/end turn, limited undo (dice never roll back), save/load through parseBattleState.
@@ -213,6 +214,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-pieces.ts` — HUD pieces: key hints, gauge() bar, unitPanel(), strike strips and the painted faces (stillFace).
 - `src/client/hud-tools.ts` — gearButtons and CornerButtons: the gear (Options), ↺ ↻ and Undo on the screen, battle and town (no ☰ menu since Nov 18 night).
 - `src/client/screen-buttons.ts` — touchDevice(), the one "is a finger pointing" test (also the town's walk line and pad), and the Undo and camera buttons switch: on for a finger, off on a PC, kept by Options (dt:screen-buttons).
+- `src/client/shot-debug.ts` — the shot rules' saved settings (dt:shot-rules): parseShotRules, setShotRules and applySavedShotRules at boot.
 - `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet), drawn by the 3D look (window3d/status3d.ts); unitSheet fills it.
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
@@ -264,15 +266,17 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/town-folk.ts` — the townsfolk: who strolls, who is being talked to, the rumour each tells next.
 - `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
 - `src/client/game/crawl.ts` — the town menu and quest gate (drawn by town3d/street.ts), the quest's commands, the expedition save and its gold, and the way home.
+- `src/client/game/debug-menu.ts` — the debug panel (F2, the pad's L3): the Options screen with its own board of Spawn, Units, Shot rules, Pixel effect and Tools, and settling the battle after a change.
+- `src/client/game/debug-shot.ts` — Debug › Shot rules: its category and rows (launch range, visible parts, chance by cover, cover weight, humanoid and quadruped launch ranges).
 - `src/client/game/expedition-map.ts` — the expedition map: the descent as a chart of places, the picked place's box, the travel commands, the party's state, Information and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
 - `src/client/game/sheets.ts` — the title's and Options' windows as data (rows or text blocks), over an unseen window, drawn by the 3D sheet (showSheet, blocksHtml).
 - `src/client/game/options.ts` — Options, drawn by flow3d/options3d.ts: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid switch.
-- `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display, Pixel effect), and the town grid's name.
+- `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display), and the town grid's name.
 - `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
 - `src/client/game/options-marks.ts` — the Options row that picks the mark style (Simple, Light, Stone, Neon), in its own file so options.ts takes one line.
-- `src/client/game/options-pixel.ts` — Options › Pixel effect: its category and rows (on, preset, pixel size, brightness levels, palette, dither, dither strength).
+- `src/client/game/options-pixel.ts` — Debug › Pixel effect (Options' until Nov 25): its category and rows (on, preset, pixel size, brightness levels, palette, dither, dither strength).
 - `src/client/game/end-screens.ts` — the end of a battle's board (drawn by result3d/) and the victory confetti (the 3D effects).
 
 ## src/client/scene — the parts BattleScene composes

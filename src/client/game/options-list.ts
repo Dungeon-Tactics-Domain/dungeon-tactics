@@ -1,8 +1,7 @@
-// The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Pixel effect
-// since Nov 24, from options-pixel.ts; Help is options.ts's own, since its rows open windows). Out of options.ts so that
-// file stays under the 400 lines.
+// The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Help is
+// options.ts's own, since its rows open windows). Only the game's own settings: the pixel effect and the fps counter
+// moved to the debug panel on Nov 25 (debug-menu.ts). Out of options.ts so that file stays under the 400 lines.
 import { secondTap } from '../dialog.ts';
-import { fpsOn } from '../fps.ts';
 import { fullscreenLabel, fullscreenOn, toggleFullscreen } from '../fullscreen.ts';
 import { parseSlowmo, SLOWMO_KEY } from '../hit-weight.ts';
 import { LANG, type Lang, setLang, t } from '../i18n.ts';
@@ -12,7 +11,7 @@ import { type Motion, motion, setMotion } from '../motion.ts';
 import { type Go, type Option, percent, pick } from '../option-row.ts';
 import { screenButtons, setScreenButtons, touchDevice } from '../screen-buttons.ts';
 import { setSound, soundSettings } from '../sound.ts';
-import { store } from '../store.ts';
+import { param, store } from '../store.ts';
 import { TEXT_KEY, type TextSpeed, textSpeed } from '../talk.ts';
 import { GRID_KEY, parseTownGrid } from '../town-map.ts';
 import { type PadSide, padSide, setPadSide } from '../town-pad.ts';
@@ -20,7 +19,6 @@ import type { LayoutMode } from '../ui3d/layout.ts';
 import { toTitle } from './crawl.ts';
 import type { OptionsContext } from './options.ts';
 import { marksOption } from './options-marks.ts';
-import { pixelGroup } from './options-pixel.ts';
 
 // Fullscreen (Nov 18, Fernando: a phone showed the game under Chrome's bar), the switch of fullscreen.ts; only where
 // the API exists (an iPhone has none)
@@ -86,8 +84,8 @@ export interface OptionsGroup {
   help: string;
   rows: (Option | Go)[];
 }
-// Fernando, Nov 18 night: no ☰ menu anywhere, so what it held moved here: Fast battle and Back to title in Game, the
-// screen buttons switch and the fps counter in Display; the battle's own rows only show in a battle
+// Fernando, Nov 18 night: no ☰ menu anywhere, so what it held moved here: Fast battle and Back to title in Game and the
+// screen buttons switch in Display; the battle's own rows only show in a battle
 export const settings = (o: OptionsContext): OptionsGroup[] => [
   {
     title: t('Jogo', 'Game'),
@@ -161,6 +159,17 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         ...flag(GRID_KEY, parseTownGrid),
         true,
       ),
+      // the debug panel for a finger, which has no F2 or L3: only with ?debug=1 in the address, so Options stays the
+      // game's own for a player (Fernando, Nov 25)
+      ...(o.battle && param('debug') !== null
+        ? [
+            {
+              link: t('Depuração', 'Debug'),
+              help: t('Abre o painel de depuração (F2).', 'Opens the debug panel (F2).'),
+              run: o.battle.debug,
+            },
+          ]
+        : []),
       {
         link: t('Voltar ao título', 'Back to title'),
         help: o.battle?.room
@@ -272,20 +281,6 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         ...flag(SLOWMO_KEY, parseSlowmo),
         true,
       ),
-      ...(o.battle
-        ? [
-            onOff(
-              t('Contador de fps', 'FPS counter'),
-              t(
-                'Mostra no canto quadros por segundo, desenhos e memória da cena. No teclado, F3.',
-                'Shows frames per second, draw calls and the scene’s memory in the corner. On a keyboard, F3.',
-              ),
-              fpsOn,
-              o.battle.fps,
-            ),
-          ]
-        : []),
     ],
   },
-  pixelGroup(), // the pixel effect (Nov 24, Fernando; options-pixel.ts)
 ];

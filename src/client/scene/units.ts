@@ -2,7 +2,8 @@
 // death slow motion clocks, picking and the town's walk. The battle events play in unit-events.ts.
 // Bodies of the fallen stay on the ground until the end of the battle; a resumed battle lays its saved corpses.
 import * as THREE from 'three';
-import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ABILITIES } from '../../shared/battle/abilities.ts';
 import { posKey, subOf } from '../../shared/battle/grid.ts';
 import { cellsOf } from '../../shared/battle/pathing.ts';
@@ -178,6 +179,13 @@ export class Units {
   face(v: UnitView, to: Pos) {
     const d = this.space.world(to).sub(v.holder.position);
     if (d.lengthSq() > 0.001) v.holder.rotation.y = Math.atan2(d.x, d.z);
+  }
+
+  // a unit the debug panel creates mid-battle may wear a model the battle never downloaded (load.ts loads the cast's only)
+  async addModel(def: string) {
+    const m = modelOf(def);
+    if (!m || this.models.has(m)) return;
+    this.models.set(m, await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`/models/${m}.glb`));
   }
 
   // Puts each unit where the state says (creates whoever is missing, removes whoever died)
