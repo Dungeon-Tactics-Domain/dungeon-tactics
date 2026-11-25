@@ -188,8 +188,10 @@ export function areaCells(grid: Grid, area: Pos[], radius: number, square = fals
   for (let y = 0; y < grid.height; y += k)
     for (let x = 0; x < grid.width; x += k) {
       const tile = cellsOf({ x, y }, k);
-      if (square ? inArea(grid, area, radius, tile, true) : gap(area, tile) <= f) out.push(...tile);
-      else if (!square) out.push(...tile.filter((c) => inArea(grid, area, radius, [c])));
+      // a square (melee) area is painted cell by cell: the Spin's ring is one half tile, not the 8 whole tiles around it
+      // (Fernando, Nov 24: "num range de 1 halftile nao 2 halftiles")
+      if (!square && gap(area, tile) <= f) out.push(...tile);
+      else out.push(...tile.filter((c) => inArea(grid, area, radius, [c], square)));
     }
   return out;
 }

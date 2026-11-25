@@ -15,10 +15,10 @@ export type MarkPattern = 'frame' | 'solid' | 'hatch' | 'cross';
 export const MARK: Record<TileKind | 'path', [color: string, opacity: number, pattern?: MarkPattern]> = {
   actor: ['#ffd479', 0.95, 'solid'],
   move: ['#6fc0ff', 0.95, 'frame'],
-  range: ['#ff7a3c', 0.95, 'hatch'],
+  range: ['#ff7a3c', 0.45, 'hatch'], // 0.95 until Nov 24: "mta poluicao visual" (Fernando)
   blocked: ['#b07ae0', 0.95, 'cross'],
   threat: ['#ff2d55', 0.6, 'hatch'],
-  area: ['#ffb020', 1, 'solid'],
+  area: ['#ffb020', 0.6, 'solid'], // 1 until Nov 24, with the range mark
   target: ['#fff2a0', 1, 'solid'],
   nogo: ['#ff4040', 1, 'cross'], // the unit's square does not fit where the cursor is (Move)
   counter: ['#ff3b3b', 1, 'frame'], // a stop that draws the counter of a unit struck this turn (Move)
