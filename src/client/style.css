@@ -1405,6 +1405,7 @@ body:has(.talk-overlay) .fps {
 }
 .menu3d-hits button {
   pointer-events: auto;
+  touch-action: none; /* a finger's drag scrolls the list (menu3d.ts), not the page */
 }
 .town3d-hits {
   position: absolute;

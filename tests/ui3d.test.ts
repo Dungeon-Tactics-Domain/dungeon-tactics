@@ -5,7 +5,16 @@ import { itemDetail } from '../src/client/battle-text.ts';
 import { commandIndex, type Screen } from '../src/client/command.ts';
 import { parseSpec } from '../src/client/dev/sandbox-spec.ts';
 import type { HudView } from '../src/client/hud.ts';
-import { cornerLayout, LEAD, menuLayout, REF, rowBox, touchScale } from '../src/client/menu3d/menu-layout.ts';
+import {
+  cornerLayout,
+  LEAD,
+  menuLayout,
+  REF,
+  rowBox,
+  SHOWN,
+  touchScale,
+  windowTop,
+} from '../src/client/menu3d/menu-layout.ts';
 import { abilityIcon3d, changes, type MenuView, menuView } from '../src/client/menu3d/menu-view.ts';
 import { cardBars, cardLines, queueRows, statsText, unitStats } from '../src/client/turn-list.ts';
 import {
@@ -658,5 +667,24 @@ describe('3D interface: bench scenes and boundaries', () => {
       if (n) found[path.replace('../src/client/', '').replace('.ts', '')] = n;
     }
     expect(found).toEqual(Object.fromEntries(Object.entries(ALLOWED).map(([file, [n]]) => [file, n])));
+  });
+});
+
+// Fernando, Nov 25: a column shows at most 5 rows, the rest scrolls with the focus
+describe('the 3D menu scroll window', () => {
+  it('a list of 5 or fewer never scrolls', () => {
+    for (let f = 0; f < 5; f++) expect(windowTop(5, f, 3)).toBe(0);
+  });
+  it('the window moves only as far as the focus needs', () => {
+    expect(SHOWN).toBe(5);
+    expect(windowTop(7, 4, 0)).toBe(0); // still in view
+    expect(windowTop(7, 5, 0)).toBe(1); // one past the foot: one row down
+    expect(windowTop(7, 6, 1)).toBe(2);
+    expect(windowTop(7, 3, 2)).toBe(2); // walking back up inside the window keeps it
+    expect(windowTop(7, 1, 2)).toBe(1); // above it: the focus is the first row
+  });
+  it('a shorter list or no focus clamps the window inside the list', () => {
+    expect(windowTop(6, 5, 4)).toBe(1);
+    expect(windowTop(9, -1, 7)).toBe(4);
   });
 });

@@ -115,3 +115,12 @@ export const rowBox = (col: Box, i: number, s: number): Box => ({
   w: col.w,
   h: REF.row * s,
 });
+
+// A column shows at most SHOWN rows and scrolls the rest (Fernando, Nov 25: "esse menu deve ter um max de 5 opcoes e o
+// resto eh scrollado"; he picked every column, by the focus, the wheel and a finger's drag)
+export const SHOWN = 5;
+// the first row shown of `n`: the last `top` moved only as far as the focus needs to stay in view
+export function windowTop(n: number, focus: number, top: number) {
+  if (focus >= 0) top = Math.max(Math.min(top, focus), focus - SHOWN + 1);
+  return Math.max(0, Math.min(top, n - SHOWN));
+}

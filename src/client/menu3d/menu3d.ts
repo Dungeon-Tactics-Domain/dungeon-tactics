@@ -18,9 +18,14 @@ import { place, REGIONS } from '../ui3d/layout.ts';
 import { paintTexture } from '../ui3d/panel.ts';
 import { land, settled, spring } from '../ui3d/spring.ts';
 import { Column, clamp01, Icon, move } from './column.ts';
-import { type Box, LEAD, type MenuLayout, menuLayout, REF, rowBox } from './menu-layout.ts';
+import { type Box, LEAD, type MenuLayout, menuLayout, REF, rowBox, SHOWN, windowTop } from './menu-layout.ts';
 import { changes, type MenuRow, type MenuView, menuView } from './menu-view.ts';
 import { Sheet } from './sheet.ts';
+
+// the rows a column shows from `top`, and its head marking the rows hidden above and below
+const page = (rows: MenuRow[], top: number) => rows.slice(top, top + SHOWN);
+const title = (head: string, n: number, top: number) =>
+  `${head}${top > 0 || n > top + SHOWN ? `  ${top > 0 ? '▲' : ''}${n > top + SHOWN ? '▼' : ''}` : ''}`;
 
 export class Menu3d implements Ui3dScreen {
   readonly flat = new Group();
@@ -37,6 +42,10 @@ export class Menu3d implements Ui3dScreen {
   private view: MenuView | null = null;
   private at?: MenuLayout;
   private hitKey = '';
+  // each column's first row shown (menu-layout.ts SHOWN)
+  private mainTop = 0;
+  private subTop = 0;
+  private drag: { y: number; moved: boolean } | null = null;
 
   constructor(
     private readonly layer: Ui3dLayer,
@@ -48,6 +57,44 @@ export class Menu3d implements Ui3dScreen {
     layer.root.classList.add('menu3d');
     layer.root.append(this.host);
     layer.add(this, 'menu');
+    this.scrolling();
+  }
+
+  // The wheel and a finger's drag over the list in play walk its focus a row at a time; the window follows the focus
+  private scrolling() {
+    const h = this.host;
+    h.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        if (e.deltaY) this.step(Math.sign(e.deltaY));
+      },
+      { passive: false },
+    );
+    h.addEventListener('pointerdown', (e) => void (this.drag = { y: e.clientY, moved: false }));
+    h.addEventListener('pointermove', (e) => {
+      const d = this.drag,
+        row = REF.row * (this.at?.cs ?? this.layer.s);
+      if (!d || e.pointerType === 'mouse') return;
+      // the finger's drag pulls the list: up shows the rows below
+      const n = Math.trunc((d.y - e.clientY) / row);
+      if (!n) return;
+      d.y -= n * row;
+      d.moved = true;
+      this.step(n);
+    });
+    for (const ev of ['pointerup', 'pointercancel']) h.addEventListener(ev, () => setTimeout(() => (this.drag = null)));
+    // a drag ends on a row without picking it
+    h.addEventListener('click', (e) => this.drag?.moved && e.stopPropagation(), true);
+  }
+
+  private step(by: number) {
+    const m = this.view;
+    if (!m) return;
+    const n = (m.sub ?? m.rows).length,
+      i = Math.max(0, Math.min(n - 1, (m.sub ? m.subIndex : m.index) + by));
+    if (m.sub) this.act.hover('abilities', i);
+    else this.act.hover('menu', m.commands[i]);
   }
 
   // Called by the HUD with each turn screen; `open`: a hero's turn with nothing playing
@@ -62,6 +109,9 @@ export class Menu3d implements Ui3dScreen {
     // a third list: the second slides from its place over the menu's and flashes the picked row, the new one opens where
     // it was; closing it runs backwards (Fernando's grill, Nov 19)
     const lead = LEAD * (this.at?.cs ?? this.layer.s);
+    // the list sliding into the menu's place keeps the rows it showed; the one coming back starts where the menu was
+    if (ch.has('deeper')) [this.mainTop, this.subTop] = [this.subTop, 0];
+    if (ch.has('shallower')) [this.subTop, this.mainTop] = [this.mainTop, 0];
     if (ch.has('deeper') && !this.layer.still) {
       main.shift.x = lead;
       main.flash = 1;
@@ -99,17 +149,36 @@ export class Menu3d implements Ui3dScreen {
     // a phone stands the menu in the combat bar's bottom right corner (menu-layout.ts cornerLayout)
     const bar = place(REGIONS.bar, layer.small),
       foot = layer.phone ? bar.y + bar.h : undefined;
-    const at = (this.at = menuLayout(layer.stage, m.rows.length, m.sub?.length ?? 0, !KEYS, foot));
+    this.mainTop = windowTop(m.rows.length, m.index, this.mainTop);
+    this.subTop = m.sub ? windowTop(m.sub.length, m.subIndex, this.subTop) : 0;
+    const shown = (n: number) => Math.min(n, SHOWN);
+    const at = (this.at = menuLayout(layer.stage, shown(m.rows.length), shown(m.sub?.length ?? 0), !KEYS, foot));
     const ctx = { ...sheet, s: at.cs };
     // the menu slides to its new place (Agir opening pushes it left, closing brings it back; Fernando, Nov 24)
     if (main.want && !layer.still) main.shift.x += main.x - at.main.x;
     [main.x, main.y] = [at.main.x, at.main.y];
-    main.set({ title: m.head, w: at.main.w, h: at.main.h, rows: m.rows }, ctx);
-    main.focus = m.index;
+    main.set(
+      {
+        title: title(m.head, m.rows.length, this.mainTop),
+        w: at.main.w,
+        h: at.main.h,
+        rows: page(m.rows, this.mainTop),
+      },
+      ctx,
+    );
+    main.focus = m.index - this.mainTop;
     if (m.sub) {
       [sub.x, sub.y] = [at.sub.x, at.sub.y];
-      sub.set({ title: m.subTitle, w: at.sub.w, h: at.sub.h, rows: m.sub }, ctx);
-      sub.focus = m.subIndex;
+      sub.set(
+        {
+          title: title(m.subTitle, m.sub.length, this.subTop),
+          w: at.sub.w,
+          h: at.sub.h,
+          rows: page(m.sub, this.subTop),
+        },
+        ctx,
+      );
+      sub.focus = m.subIndex - this.subTop;
     }
     if (m.sheet) this.sheet.set(m.sheet, sheet);
   }
@@ -119,9 +188,20 @@ export class Menu3d implements Ui3dScreen {
   private hits() {
     const m = this.view,
       at = this.at;
-    // the commands too: two menus of as many rows and greyed states may hold other commands (after Undo move)
+    // the commands and the names too: two lists of as many rows may hold other rows (after Undo move; the target list
+    // opening where the Agir list was kept its buttons named after the abilities)
     const key =
-      m && at ? JSON.stringify([at, (m.sub ?? m.rows).map((r) => r.off), !!m.sub, !!m.sheet, m.commands]) : '';
+      m && at
+        ? JSON.stringify([
+            at,
+            (m.sub ?? m.rows).map((r) => [r.label, r.off]),
+            !!m.sub,
+            !!m.sheet,
+            m.commands,
+            this.mainTop,
+            this.subTop,
+          ])
+        : '';
     if (key === this.hitKey) return;
     this.hitKey = key;
     this.host.replaceChildren();
@@ -137,9 +217,9 @@ export class Menu3d implements Ui3dScreen {
       this.host.append(e);
     };
     // a menu row stands for its place in COMMANDS (menuRows leaves Undo move out), an ability for its own
-    const rows = (list: 'menu' | 'abilities', col: Box, rs: MenuRow[], pick: (i: number) => void) =>
-      rs.forEach((r, i) => {
-        const index = list === 'menu' ? m.commands[i] : i;
+    const rows = (list: 'menu' | 'abilities', col: Box, rs: MenuRow[], top: number, pick: (i: number) => void) =>
+      page(rs, top).forEach((r, i) => {
+        const index = list === 'menu' ? m.commands[top + i] : top + i;
         hit(
           rowBox(col, i, at.cs),
           r.label,
@@ -150,12 +230,12 @@ export class Menu3d implements Ui3dScreen {
         );
       });
     if (m.sub) {
-      rows('abilities', at.sub, m.sub, this.act.pick);
+      rows('abilities', at.sub, m.sub, this.subTop, this.act.pick);
       if (m.sheet) {
         hit(at.prev, t('Página anterior', 'Previous page'), false, () => this.act.page(-1));
         hit(at.next, t('Próxima página', 'Next page'), false, () => this.act.page(1));
       }
-    } else rows('menu', at.main, m.rows, this.act.command);
+    } else rows('menu', at.main, m.rows, this.mainTop, this.act.command);
   }
 
   frame(dt: number, time: number) {
