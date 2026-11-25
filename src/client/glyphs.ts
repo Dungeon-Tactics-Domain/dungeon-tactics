@@ -92,8 +92,9 @@ export const ACTIONS = {
   slots: { keys: ['1'], pad: [] },
   recenter: { keys: ['F'], pad: [] },
   fps: { keys: ['F3'], pad: [] },
-  // the turn list folded to its faces and back (hud-queue.ts); the pad's R3 went to the top view on Nov 25
-  fold: { keys: ['L'], pad: [] },
+  // the turn list folded to its faces and back (hud-queue.ts); on the pad the right stick sideways since R3 went to the
+  // top view (Nov 25)
+  fold: { keys: ['L'], pad: ['rstick'] },
   // the camera straight down and back (Fernando, Nov 25: as Tactics Ogre's tactical view; scene/top-view.ts)
   top: { keys: ['T'], pad: ['r3'] },
   // the debug panel (game/debug-menu.ts; Fernando, Nov 25: a menu of its own, apart from Esc); the left stick's press

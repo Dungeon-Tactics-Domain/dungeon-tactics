@@ -32,7 +32,7 @@ const PRESS: Record<number, KeyAction> = {
   8: { k: 'undo' },
   9: { k: 'help' },
   10: { k: 'debug' }, // left stick pressed: the debug panel, open and closed (Fernando, Nov 25)
-  11: { k: 'top' }, // right stick pressed: the top view (Fernando, Nov 25); folding the turn list (Nov 20) kept only L
+  11: { k: 'top' }, // right stick pressed: the top view (Fernando, Nov 25); folding the turn list moved to the right stick sideways
 };
 const DPAD: Record<number, ScreenDir> = { 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
 
@@ -41,7 +41,7 @@ export function padActions(pad: PadState, mem: PadMemory, now: number): KeyActio
   const out: KeyAction[] = [];
   const dirs: ScreenDir[] = [];
   for (const [i, dir] of Object.entries(DPAD)) if (pad.buttons[Number(i)]) dirs.push(dir);
-  const [x = 0, y = 0, , ry = 0] = pad.axes;
+  const [x = 0, y = 0, rx = 0, ry = 0] = pad.axes;
   if (Math.abs(x) > DEAD || Math.abs(y) > DEAD)
     dirs.push(Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : y > 0 ? 'down' : 'up');
   // right stick up and down scroll the turn list (Nov 15): the bumpers and triggers already turn and zoom the camera
@@ -53,6 +53,12 @@ export function padActions(pad: PadState, mem: PadMemory, now: number): KeyActio
     if (!pad.buttons[Number(i)]) continue;
     active.add(key);
     if (mem.held[key] === undefined) out.push(action);
+  }
+  // right stick sideways folds the turn list, one fold per push (Fernando, Nov 25: its up and down already scroll it, and
+  // R3 went to the top view)
+  if (Math.abs(rx) > DEAD) {
+    active.add('rx');
+    if (mem.held.rx === undefined) out.push({ k: 'fold' });
   }
   for (const [key, action] of repeating) {
     active.add(key);

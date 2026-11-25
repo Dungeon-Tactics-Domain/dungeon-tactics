@@ -202,7 +202,10 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
     [
       ['fold'],
       '',
-      t('recolhe a lista de turnos aos rostos e a abre de novo', 'folds the turn list to its faces and opens it again'),
+      t(
+        'recolhe a lista de turnos aos rostos e a abre de novo (no controle, o analógico direito para o lado)',
+        'folds the turn list to its faces and opens it again (on a pad, the right stick sideways)',
+      ),
     ],
     [
       ['info'],
