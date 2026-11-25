@@ -169,6 +169,7 @@ export const UNIT_LIST: UnitDef[] = [
   {
     id: 'snake',
     tall: 0.3,
+    form: 'serpent',
     name: 'Cobra',
     en: 'Snake',
     hp: 100,
@@ -182,14 +183,14 @@ export const UNIT_LIST: UnitDef[] = [
     regen: { stamina: 5, mana: 3 },
     dodge: 20,
   },
-  // `tall` (Nov 25): the body's height in metres for shots, read off the drawn models (a person 1.7 m, the Brute drawn
-  // 1.05/0.85 bigger); the creatures' are estimates, tune by playing
+  // `tall` (Nov 25): the body's height in metres for shots, measured on the drawn models in their idle pose (a person 1.7 m, the Brute 2.1 m, the rat 0.34 m, the spider 0.33 m, the flying bat 0.97 m); the snake's 0.3 m is an estimate (its rig's box did not measure)
   // Swarm creatures (Nov 20, Fernando: "um inseto ou rato ... que ataque em swarms e ataques em área sejam efetivos"):
   // half a tile each, little life so one area strike over the pack hurts several and two or three kill it (4 of them
   // and a minion are the 320 a room needs at least, content.test.ts); `swarm` keeps them together (the AI); tune by playing
   {
     id: 'rat',
-    tall: 0.35,
+    tall: 0.34,
+    form: 'quadruped',
     name: 'Rato',
     en: 'Rat',
     hp: 50,
@@ -206,7 +207,8 @@ export const UNIT_LIST: UnitDef[] = [
   // the spider: a little more life and a higher climb than the rat, a step slower
   {
     id: 'spider',
-    tall: 0.4,
+    tall: 0.33,
+    form: 'quadruped',
     name: 'Aranha',
     en: 'Spider',
     hp: 60,
@@ -223,7 +225,8 @@ export const UNIT_LIST: UnitDef[] = [
   // the bat: the fastest of the three, and it flies over heights (jump 4), as frail as the rat
   {
     id: 'bat',
-    tall: 0.5,
+    tall: 0.97, // flying, its wings reach about this high
+    form: 'flying',
     name: 'Morcego',
     en: 'Bat',
     hp: 50,

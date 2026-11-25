@@ -27,6 +27,7 @@ import { simulatePush } from './push.ts';
 import { nextRng, rollInt } from './rng.ts';
 import { rulesOf } from './rules.ts';
 import { traceShot } from './shot.ts';
+import { SHOT_RULES } from './shot-rules.ts';
 import type { BattleEvent, BattleState, Pos, Shot, UnitState } from './types.ts';
 import { baseDef, dodgeOf, resistOf, UNIT_DEFS } from './units.ts';
 
@@ -220,12 +221,18 @@ export function previewAbility(
   // the attack and the guy loses the attack"; the realistic path of the trajectory grill of Nov 15, bolt spells included); the
   // area, if any, explodes there. And attacking empty ground is allowed (Nov 13): the hit fires without a target. The AI only
   // picks attacks with a target (attackScore adds zero without a target)
-  const shot = ability.needsSight ? traceShot(grid, state, actor, center, !!ability.arc) : undefined;
+  const shot = ability.needsSight ? traceShot(grid, state, actor, center, !!ability.arc, ability.launch) : undefined;
   const stop = shot?.stop;
   if (stop) center = stop.pos;
   // a single-target shot stopped short hits only what stopped it: a unit, whichever side it is on, or the ground (not the
   // unit standing on the ledge it struck)
   const blocker = stop?.unit ? state.units.find((u) => u.id === stop.unit) : undefined;
+  // a clear shot at a half-hidden body lands less often, by the hidden share times the debug weight (Nov 25, Fernando:
+  // "menos visível, menos chance"); only the aimed unit, not others an area catches
+  const cover = (u: UnitState, chance: number) =>
+    shot && !stop && shot.seen < 1 && unitAt(state, center)?.id === u.id
+      ? Math.floor(chance * (1 - SHOT_RULES.coverWeight * (1 - shot.seen)))
+      : chance;
   const hit = stop && ability.radius === 0 ? (blocker ? [blocker] : []) : affected(grid, state, actor, ability, center);
   const targets = hit.map((u) => {
     // against a large unit, its tile nearest to the attacker (distance and height)
@@ -240,15 +247,21 @@ export function previewAbility(
       side,
       chance: isHeal(ability)
         ? 100
-        : (rulesOf(state).hitChance?.(grid, state, actor, ability, u) ??
-          aimed(
-            hitShare(state, actor.id),
-            afterDodge(
-              Math.min(COMBAT.MAX_CHANCE, hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0)),
-              dodgeOf(UNIT_DEFS[u.def]),
-              side,
-            ),
-          )),
+        : cover(
+            u,
+            rulesOf(state).hitChance?.(grid, state, actor, ability, u) ??
+              aimed(
+                hitShare(state, actor.id),
+                afterDodge(
+                  Math.min(
+                    COMBAT.MAX_CHANCE,
+                    hitChance(grid, ability, from, at, side) + (UNIT_DEFS[actor.def].hit ?? 0),
+                  ),
+                  dodgeOf(UNIT_DEFS[u.def]),
+                  side,
+                ),
+              ),
+          ),
       dmgMin: hurts ? Math.floor(healLo * COMBAT.UNDEAD_HEAL) : dmgMin,
       dmgMax: hurts ? Math.floor(healHi * COMBAT.UNDEAD_HEAL) : dmgMax,
       healMin: heal(healLo),

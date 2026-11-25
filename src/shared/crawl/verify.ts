@@ -7,6 +7,7 @@ import { halve, SUB } from '../battle/half.ts';
 import { cellsOf, footprint, gap, reachable, restsOn } from '../battle/pathing.ts';
 import { initialState, type Scenario, type Spawn } from '../battle/scenarios.ts';
 import { traceShot } from '../battle/shot.ts';
+import { SHOT_DEFAULTS } from '../battle/shot-rules.ts';
 import type { Pos, UnitState } from '../battle/types.ts';
 import { UNIT_DEFS } from '../battle/units.ts';
 
@@ -118,13 +119,14 @@ export function verifyRoom(room: Scenario): string[] {
     out.push(`no high point (level ${HIGH}+) that both sides reach with jump 1`);
 
   // line of fire: tiles that stop a shot between the sides, and no shooting enemy sees every hero from its start. Each
-  // enemy's own path (a bow's curve, else straight) with only the two of them on the map: the cover is the terrain's
+  // enemy's own path (a bow's curve, else straight) with only the two of them on the map: the cover is the terrain's.
+  // The default shot rules, not the debug switches: a room is rebuilt from its seed, so it must not move with them
   const blocks = new Set<string>();
   for (const e of es) {
     const shot = UNIT_DEFS[e.def].abilities.map((a) => ABILITIES[a]).find((a) => a.needsSight && a.range[1] > 1);
     let hidden = false;
     for (const h of hs) {
-      const stop = traceShot(g, { ...state, units: [e, h] }, e, h.pos, !!shot?.arc).stop;
+      const stop = traceShot(g, { ...state, units: [e, h] }, e, h.pos, !!shot?.arc, shot?.launch, SHOT_DEFAULTS).stop;
       if (stop) blocks.add(posKey(stop.pos));
       hidden ||= !!stop;
     }

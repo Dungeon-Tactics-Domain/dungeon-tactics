@@ -5,6 +5,7 @@ import { dist, FACING, inBounds, posKey, TERRAIN, type Tile, tileAt } from '../s
 import { halve } from '../src/shared/battle/half.ts';
 import { bodyFits, footprint } from '../src/shared/battle/pathing.ts';
 import { initialState, type Scenario, type Spawn } from '../src/shared/battle/scenarios.ts';
+import { SHOT_DEFAULTS, SHOT_RULES } from '../src/shared/battle/shot-rules.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { buildRoom, CRAWL_VERSION, generateRoom, type RoomOptions, roomTheme } from '../src/shared/crawl/generate.ts';
@@ -145,9 +146,9 @@ describe('crawl rooms: 500 seeds', () => {
     const first = built.slice(0, 25);
     let h = 0x811c9dc5;
     for (const ch of JSON.stringify(first)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
-    expect(CRAWL_VERSION).toBe('crawl11');
-    expect(first.map((b) => b.tries).join(' ')).toBe('1 1 3 3 3 3 1 2 1 1 3 2 2 5 2 2 1 1 1 1 2 3 1 1 7');
-    expect((h >>> 0).toString(16)).toBe('20f6d1c6');
+    expect(CRAWL_VERSION).toBe('crawl12');
+    expect(first.map((b) => b.tries).join(' ')).toBe('4 4 3 3 3 3 1 2 5 1 3 2 5 10 2 3 1 1 2 1 2 3 1 1 10');
+    expect((h >>> 0).toString(16)).toBe('782c12fd');
   });
 
   it('a snake starts with its whole body on plain ground inside the border, clear of every other unit', () => {
@@ -193,6 +194,16 @@ describe('crawl rooms: 500 seeds', () => {
 });
 
 describe('crawl rooms: seeds and options', () => {
+  // a room is rebuilt from its seed when an expedition goes on, so the debug menu's shot switches must not move it
+  it('the shot switches of the debug menu give the same room', () => {
+    const room = generateRoom(0, optionsOf(0));
+    Object.assign(SHOT_RULES, { launch: false, parts: false, cover: false });
+    try {
+      expect(generateRoom(0, optionsOf(0))).toEqual(room);
+    } finally {
+      Object.assign(SHOT_RULES, structuredClone(SHOT_DEFAULTS));
+    }
+  });
   it('the same seed and options give the same room; another seed, another room', () => {
     expect(generateRoom(7, { depth: 2 })).toEqual(generateRoom(7, { depth: 2 }));
     expect(generateRoom(7, { depth: 2 }).grid).not.toEqual(generateRoom(8, { depth: 2 }).grid);

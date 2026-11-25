@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { previewAbility } from '../src/shared/battle/combat.ts';
 import type { Grid } from '../src/shared/battle/grid.ts';
 import { halfDef, halve } from '../src/shared/battle/half.ts';
 import { shotAt, traceShot } from '../src/shared/battle/shot.ts';
+import { SHOT_DEFAULTS, SHOT_RULES } from '../src/shared/battle/shot-rules.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
 import { flat, gridOf, stateOf } from './battle-helpers.ts';
 
@@ -17,6 +18,11 @@ const LAB = gridOf(
     ).join(''),
   ),
 );
+// the lab's heights are the middle-to-middle path, so this file runs with every switch of shot-rules.ts off (Nov 25);
+// the adapting launch and the body's parts are in shot-launch.test.ts
+beforeAll(() => Object.assign(SHOT_RULES, { launch: false, parts: false, cover: false }));
+afterAll(() => Object.assign(SHOT_RULES, structuredClone(SHOT_DEFAULTS)));
+
 const SHOOTER = { x: 1, y: 4 },
   TARGET = { x: 8, y: 4 };
 

@@ -17,6 +17,9 @@ export interface AbilityDef {
   // the path is a curve, as a bow's or a thrown axe's (the trajectory grill of Nov 15: the weapon gives it); without it a
   // flying ability goes straight, as a crossbow, a thrown dagger or a bolt spell
   arc?: true;
+  // where in the body's launch range (units.ts FORM_LAUNCH) a shot leaves, as fractions of that range (Nov 25, Fernando:
+  // "depende do ataque": a bow at the shoulder, a knife overhead); without it, the whole range
+  launch?: [lo: number, hi: number];
   radius: number; // 0 = only the target tile; 1 = the tile and its 4 neighbors (the area never hits the user)
   damage: [min: number, max: number]; // [0, 0] = deals no damage
   heal: [min: number, max: number]; // [0, 0] = does not heal; healing targets an ally and never misses

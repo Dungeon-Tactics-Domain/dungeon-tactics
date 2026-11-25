@@ -180,6 +180,7 @@ export function buildDevScenario(
           ...(UNIT_DEFS[u.base].halfLength && { halfLength: UNIT_DEFS[u.base].halfLength }),
           ...(UNIT_DEFS[u.base].swarm && { swarm: true }),
           ...(UNIT_DEFS[u.base].tall && { tall: UNIT_DEFS[u.base].tall }),
+          ...(UNIT_DEFS[u.base].form && { form: UNIT_DEFS[u.base].form }),
           jump: u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP,
           ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }),
           ...(UNIT_DEFS[u.base].undead && { undead: true as const }), // heals hurt the class's skeletons in every cast too

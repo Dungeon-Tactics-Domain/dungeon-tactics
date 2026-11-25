@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildDevScenario, defaultSetup, unitFrom } from '../src/client/dev-roster.ts';
 import { halve } from '../src/shared/battle/half.ts';
 import { footprint } from '../src/shared/battle/pathing.ts';
 import { initialState } from '../src/shared/battle/scenarios.ts';
 import { traceShot } from '../src/shared/battle/shot.ts';
+import { SHOT_DEFAULTS, SHOT_RULES } from '../src/shared/battle/shot-rules.ts';
 import type { Pos } from '../src/shared/battle/types.ts';
-import { bodyMetres, PERSON_M } from '../src/shared/battle/units.ts';
+import { baseDef, bodyMetres, PERSON_M, UNIT_DEFS } from '../src/shared/battle/units.ts';
 import { gridOf, stateOf } from './battle-helpers.ts';
 
 // Fernando, Nov 25: a shot aims at the middle of the target's model, not at a fixed 1.5 m, so a small creature on a
@@ -21,7 +22,11 @@ const shoot = (heights: string, target: string, at: Pos, others: { def: string; 
   return traceShot(g, s, s.units[0], at, false);
 };
 
-describe('shots aim at the middle of the body (Nov 25)', () => {
+// with every switch of shot-rules.ts off, the rule of that commit; the adapting launch and the body's parts are in
+// shot-launch.test.ts
+describe('shots aim at the middle of the body (Nov 25, every shot switch off)', () => {
+  beforeAll(() => Object.assign(SHOT_RULES, { launch: false, parts: false, cover: false }));
+  afterAll(() => Object.assign(SHOT_RULES, structuredClone(SHOT_DEFAULTS)));
   it('the heights: a person 1.7 m, a rat far less, a big unit more', () => {
     expect(bodyMetres('soldier')).toBe(PERSON_M);
     expect(bodyMetres('rat')).toBeLessThan(0.5);
@@ -59,5 +64,8 @@ describe("an expedition room keeps the class's body", () => {
     const of = (id: string) => footprint(units.find((u) => u.id === id)!).length;
     expect(of('e0')).toBe(1);
     expect(of('e1')).toBe(2);
+    // and its form, which picks the heights a shot leaves from (Nov 25)
+    const form = (id: string) => UNIT_DEFS[baseDef(units.find((u) => u.id === id)!.def)].form;
+    expect([form('e0'), form('e1')]).toEqual(['quadruped', 'serpent']);
   });
 });

@@ -75,6 +75,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 7],
     heightRange: true,
     needsSight: true,
+    launch: [0.4, 1], // drawn at the shoulder: the upper part of the body's range
     arc: true,
     damage: [45, 70],
     accuracy: 85,
@@ -86,6 +87,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 7],
     heightRange: true,
     needsSight: true,
+    launch: [0.4, 1], // drawn at the shoulder: the upper part of the body's range
     arc: true,
     damage: [80, 105],
     accuracy: 90,
@@ -100,6 +102,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 5],
     heightRange: true,
     needsSight: true,
+    launch: [0.4, 1], // drawn at the shoulder: the upper part of the body's range
     arc: true,
     damage: [25, 35],
     accuracy: 85,
@@ -192,6 +195,7 @@ export const ABILITY_LIST: AbilityDef[] = [
     range: [2, 4],
     heightRange: true,
     needsSight: true,
+    launch: [0.5, 1], // an overhead throw: the upper half of the body's range
     damage: [46, 65],
     accuracy: 85,
     cost: ['stamina', 10],

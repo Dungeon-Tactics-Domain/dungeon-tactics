@@ -14,7 +14,8 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/battle/scenarios.ts` — Scenario (map plus spawns), the MAPS and SCENARIOS registries, FIRST_BATTLE and initialState.
 - `src/shared/battle/grid.ts` — tiles with terrain, height, water depth and ramps; parseGrid and withRamps build maps; standing, step cost, facing and sides.
 - `src/shared/battle/pathing.ts` — per-class jump, footprints of 2x2 tokens, leaps, reachable and pathTo, where nobody stops (noStopAt: map bodies and corpses), ranges in cells and areas.
-- `src/shared/battle/shot.ts` — the shot path (`traceShot`, `shotAt`): what stops a shot and the two ends it is measured between.
+- `src/shared/battle/shot.ts` — the shot path (`traceShot`, `shotAt`): the launch and aim heights it tries, what stops a shot and the share of the target it sees.
+- `src/shared/battle/shot-rules.ts` — the shot rules' switches and numbers (launch, body parts, cover, form ranges, cover weight), set from the debug menu.
 - `src/shared/battle/combat.ts` — hit chance, damage range, preview, resolve (hit then damage), spikes and the battle outcome.
 - `src/shared/battle/outcome.ts` — checkOutcome: victory, defeat or ongoing after each action.
 - `src/shared/battle/pools.ts` — a unit's mana and stamina: what is left (poolOf), paying a cost (canPay, pay) and the regen at its turn's start.

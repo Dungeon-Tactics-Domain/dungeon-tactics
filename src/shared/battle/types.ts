@@ -85,7 +85,8 @@ export interface Shot {
   to: Point;
   rise: number;
   fall: number;
-  lift: number; // how far `to` stands over the aimed ground (half the target's height), for the landing ring
+  lift: number; // how far `to` stands over the aimed ground (the aimed point of the target's body), for the landing ring
+  seen: number; // share of the target's body points the shot's origin sees, which scales the hit chance (combat.ts); else 1
   stop: { k: number; pos: Pos; unit: string | null } | null;
 }
 

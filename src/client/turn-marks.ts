@@ -98,7 +98,7 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
     trajectory:
       a && caster && spot && (a.needsSight ? !onSelf : a.magic && a.range[1] > 0)
         ? {
-            shot: traceShot(b.grid, b.state, caster, spot.target, !!a.arc),
+            shot: traceShot(b.grid, b.state, caster, spot.target, !!a.arc, a.launch),
             cast: a.needsSight ? null : { radius: a.radius, heal: a.heal[1] > 0 },
           }
         : null,
