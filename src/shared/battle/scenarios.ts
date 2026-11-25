@@ -15,6 +15,7 @@ export interface Spawn {
   team: Team;
   x: number;
   y: number;
+  facing?: number; // where it looks at the start (map builder, Nov 25); without it, toward the nearest foe
 }
 
 // Scenario = map + who spawns where. It is plain data; the BattleState keeps only the id so the map does not go in the save.
@@ -49,10 +50,12 @@ export function initialState(scenario: Scenario, seed: number): BattleState {
       // the mechanics around it"): spawns facing the nearest enemy. Counters, only on
       // the sheet that asks for them (the Beacon, which does not play, has no front or back)
       ...(UNIT_DEFS[s.def].speed > 0 && {
-        facing: faceNearest(
-          s,
-          scenario.spawns.filter((o) => o.team !== s.team),
-        ),
+        facing:
+          s.facing ??
+          faceNearest(
+            s,
+            scenario.spawns.filter((o) => o.team !== s.team),
+          ),
       }),
       ...(UNIT_DEFS[s.def].vars && { vars: { ...UNIT_DEFS[s.def].vars } }),
     })),

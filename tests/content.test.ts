@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ABILITY_LIST } from '../src/content/abilities.ts';
 import { CRAWL_BOSS, CRAWL_GOLD, CRAWL_GROUPS, CRAWL_PARTY, CRAWL_THEMES } from '../src/content/crawl/rooms.ts';
 import { CONSUMABLES, ITEM_LIST } from '../src/content/items.ts';
+import { PALETTE, PLAIN_GROUND } from '../src/content/map-palette.ts';
 import { RECRUIT_NAMES, STARTING_WEAPON, STORY } from '../src/content/party.ts';
 import { UNIT_LIST } from '../src/content/units.ts';
 import { ABILITIES } from '../src/shared/battle/abilities.ts';
@@ -9,6 +10,7 @@ import { ITEMS } from '../src/shared/battle/equipment.ts';
 import { TERRAIN } from '../src/shared/battle/grid.ts';
 import { MAPS } from '../src/shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
+import { kindKey } from '../src/shared/mapedit/doc.ts';
 
 // Content in src/content refers to itself by id (a map names unit classes, a crawl group its enemies). A typo only shows
 // up mid-game, so it shows up here. Covered elsewhere, not repeated: full grid and free spawns and ramps (scenario-maps).
@@ -160,5 +162,31 @@ describe('crawl rooms', () => {
     for (const [name, th] of Object.entries(CRAWL_THEMES))
       for (const p of [...th.props, ...th.border, ...(th.hazard ? [th.hazard] : [])])
         expect(p.terrain && TERRAIN[p.terrain], `${name} → ${p.look}`).toBeDefined();
+  });
+});
+
+// the map builder paints with these: every tile kind a game map or a crawl theme already draws must be one of them
+describe('map builder palette', () => {
+  it('has unique ids, known terrains and the plain ground', () => {
+    expect(unique(PALETTE.map((e) => e.id))).toEqual([]);
+    expect(PALETTE.every((e) => TERRAIN[e.terrain])).toBe(true);
+    expect(PALETTE.some((e) => e.id === PLAIN_GROUND)).toBe(true);
+  });
+
+  it('holds every tile kind of the game maps and the crawl themes, once', () => {
+    const palette = PALETTE.map(({ id, name, ...kind }) => kindKey({ ...kind, h: 0 }));
+    expect(unique(palette)).toEqual([]);
+    const themed = Object.values(CRAWL_THEMES).flatMap((th) => [
+      ...th.floors.map((look) => ({ terrain: 'floor' as const, look })),
+      ...th.props,
+      ...th.border,
+      ...(th.hazard ? [th.hazard] : []),
+      ...(th.road ? [{ terrain: 'floor' as const, look: th.road }] : []),
+    ]);
+    const used = [
+      ...MAPS.flatMap((m) => m.grid.tiles),
+      ...themed.map((k) => ({ terrain: 'floor' as const, ...k, h: 0 })),
+    ];
+    expect([...new Set(used.map(kindKey))].filter((k) => !palette.includes(k))).toEqual([]);
   });
 });

@@ -40,6 +40,18 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/crawl/verify.ts` — checks a room on the halved map with the real reachable and sight; returns its problems in words.
 - `src/shared/crawl/expedition.ts` — floors of rooms from a seed, the life carried between rooms (winRoom) and parseExpedition for dt:crawl.
 
+## src/shared/mapedit — map builder core (no DOM, no Three.js)
+
+- `src/shared/mapedit/doc.ts` — the map builder's whole-tile map, terrain only (MapDoc: Portuguese and English names, tiles with ramps), blankDoc, docFromScenario and wholeSource from a live half-tile battle, unsplit and kindKey.
+- `src/shared/mapedit/battle.ts` — a battle on a ready map for the future battle builder (BattleDoc, MapUnit with facing and own life), battleFromScenario and spawnsOf.
+- `src/shared/mapedit/edit.ts` — paint, height (raise, setHeight), the ramp tool (cycleRamp), autoRamps and fixRamps; each returns the same document when nothing changed.
+- `src/shared/mapedit/units.ts` — place, remove and turn units and their own life on a battle document (placeUnit, unitOn, setLife).
+- `src/shared/mapedit/size.ts` — resize and growEdge (add or cut a row or column on any edge).
+- `src/shared/mapedit/history.ts` — undo and redo of whole documents (map or battle), 50 steps, one stroke = one step.
+- `src/shared/mapedit/export.ts` — toJson, toTs (a .ts map file shaped like ash-wood.ts with empty spawns, two-letter codes past 52 kinds, a RISE table for ramps above 1) and battleToTs (the same with spawns and the units' own life).
+- `src/shared/mapedit/parse.ts` — parseMapDoc and parseBattleDoc: rebuild a saved or pasted document field by field, null on any doubt.
+- `src/shared/mapedit/play.ts` — docToScenario (a map as a playable scenario with the spawns the client passes, to halve) and battleToScenario (plus each unit's own life).
+
 ## src/content — game content as typed data
 
 Each map in `maps/` is a Scenario registered in MAPS and SCENARIOS (src/shared/battle/scenarios.ts), its tiles built by
@@ -48,6 +60,7 @@ parseGrid and withRamps (grid.ts).
 - `src/content/units.ts` — classes and enemies (UNIT_LIST); type and registry in src/shared/battle/units.ts.
 - `src/content/abilities.ts` — abilities (ABILITY_LIST) and the A() builder with the defaults; type and registry in src/shared/battle/abilities.ts.
 - `src/content/items.ts` — equipment (ITEM_LIST); type, registry and bonusOf in src/shared/battle/equipment.ts.
+- `src/content/map-palette.ts` — the map builder's palette (PALETTE, PLAIN_GROUND): every tile kind the maps and crawl themes use, with its terrain.
 - `src/content/party.ts` — party classes (JOBS), the 4 story members and the recruit names in order; rules in src/client/group.ts.
 - `src/content/faces.json` — painted face sheets for the dialogue box and the battle HUD.
 - `src/content/crawl/rooms.ts` — crawl party, enemy groups by depth, the boss group, room themes, the expedition numbers (CRAWL_RUN) and the gold drops (CRAWL_GOLD); read by generateRoom (src/shared/crawl/generate.ts) and expeditionMap and winRoom (expedition.ts).
