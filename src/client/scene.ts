@@ -40,7 +40,7 @@ const contextLost = (e: Event) => (e.target as Element).isConnected && no3d();
 export class BattleScene {
   private readonly renderer = new THREE.WebGLRenderer({ antialias: false });
   private readonly scene = new THREE.Scene();
-  private readonly cam: CameraRig;
+  readonly cam: CameraRig; // the turn and aim framing (main.ts, hero-turn.ts) call it straight
   readonly top: TopView; // straight down, T or R3 (scene/top-view.ts); the map builder reuses it
   private readonly camera: THREE.OrthographicCamera;
   private readonly composer = new EffectComposer(this.renderer);

@@ -38,6 +38,7 @@ function turn(picked: Pos | null = null) {
   const scene = {
     heading: 0,
     focusOn: () => {},
+    cam: { aim: () => {}, endAim: () => {} },
     sync: () => {},
     pick: () => picked,
   } as unknown as ConstructorParameters<typeof HeroTurn>[1];

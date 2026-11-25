@@ -61,6 +61,8 @@ export function makeView(
   let mixer: THREE.AnimationMixer | null = null;
   let clips: THREE.AnimationClip[] = [];
   let body: THREE.Object3D | null = null;
+  let lay: THREE.Group | null = null,
+    own = false;
   const mats: THREE.MeshStandardMaterial[] = [];
   const long = UNIT_DEFS[u.def].halfLength ?? 1;
   if (gltf) {
@@ -80,21 +82,12 @@ export function makeView(
     const b = new THREE.Box3().setFromObject(body);
     // a lying body (the snake, own rig) is fitted to its length in cells (halfLength: 2 half tiles, one whole tile);
     // a standing one to its height
-    const own = gltf.animations.some((c) => c.name.includes('|'));
+    own = gltf.animations.some((c) => c.name.includes('|'));
     const fit = own ? long / Math.max(b.max.x - b.min.x, b.max.z - b.min.z) : unitHeight(u.def) / (b.max.y - b.min.y);
     body.scale.setScalar(fit);
-    // its head bone over the head's cell (the holder, `pos`; Nov 20, Fernando: the coiled pose raised it over the tail's
-    // cell), the coil falling back over the tail's (pathing.ts bodyOf); without a Head bone, its middle between the two.
-    // On a group of its own: the dodge and the tremble set the body's own x and z
-    // the world position is read through the body, already scaled by fit
-    const head = body.getObjectByName('Head')?.getWorldPosition(new THREE.Vector3());
-    const lay = new THREE.Group().add(body);
-    if (own)
-      lay.position.set(
-        ((b.min.x + b.max.x) / -2) * fit,
-        0,
-        head ? -head.z : ((b.min.z + b.max.z) / -2) * fit - (long - 1) / 2,
-      );
+    // on a group of its own: the dodge and the tremble set the body's own x and z; an own-rig creature is seated on it
+    // by its posed body once Idle plays (seat)
+    lay = new THREE.Group().add(body);
     sway.add(lay);
     mixer = new THREE.AnimationMixer(body);
     // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
@@ -157,7 +150,27 @@ export function makeView(
     facing: u.facing !== undefined,
   };
   playClip(view, 'Idle');
+  if (own && lay) seat(view, lay, long);
   return view;
+}
+
+// An own-rig creature (rat, snake, spider, bat) sits by its posed body, not its file origin or its head bone (Fernando,
+// Nov 25: "rato deve ficar no meio do tile dele"; the coiled snake stood 2.3 tall, 2.1 wide on its 1-wide cells and
+// centred on its head's cell): Idle's first frame is measured, shrunk until it fits its cells and centred on them, the
+// tail's cells behind the head's (pathing.ts bodyOf). KayKit units keep their origin: their weapons and cloaks put a
+// box's middle up to 0.34 of a cell forward (measured Nov 25), so centring them would slide them off their feet
+function seat(v: UnitView, lay: THREE.Group, long: number) {
+  const posed = () => {
+    v.mixer!.update(0);
+    v.holder.updateMatrixWorld(true);
+    v.body!.traverse((m) => (m as THREE.SkinnedMesh).isSkinnedMesh && (m as THREE.SkinnedMesh).computeBoundingBox());
+    return new THREE.Box3().setFromObject(v.body!).applyMatrix4(v.sway.matrixWorld.clone().invert());
+  };
+  const s = posed().getSize(new THREE.Vector3());
+  // and no taller than a little over its sheet's height: the coiled snake reared to 2.2, above the 1.7 heroes
+  v.body!.scale.multiplyScalar(Math.min(1, 0.95 / s.x, (0.95 * long) / s.z, (1.2 * unitHeight(v.def)) / s.y));
+  const c = posed().getCenter(new THREE.Vector3());
+  lay.position.set(-c.x, 0, -c.z - (long - 1) / 2);
 }
 
 // What lies on the ground under a unit: the front arrow and the team ring, flat or in a lit mark style (mark-kit.ts)

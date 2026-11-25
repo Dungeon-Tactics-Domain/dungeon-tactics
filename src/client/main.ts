@@ -9,6 +9,7 @@ import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
 import { battleInput } from './battle-input.ts';
 import { beforeEvent } from './before-event.ts';
+import { bodyOf } from './camera-aim.ts';
 import { type Screen, startScreen } from './command.ts';
 import { fpsCounter } from './fps.ts';
 import { type BattleSelection, newBattle } from './game/boot.ts';
@@ -184,8 +185,12 @@ export class Game implements TurnHost {
     if (fell) return this.runEnemies();
     this.turn.screen = startScreen(this.battle);
     this.turn.cursorToActor();
+    this.frameTurn(); // the strike's camera left the focus between the two: back on whoever still has the turn
     this.update(freshUi(this.battle));
   }
+
+  // every turn's screen opens on its unit, the one place the turn's camera is set (CameraRig.turnFocus, Nov 25)
+  private frameTurn = () => this.scene.cam.turnFocus(bodyOf(this.battle.actor.pos, this.battle.actor.def));
 
   get heroTurn() {
     return !AUTO && !this.battle.over && this.battle.actor.team === 'hero';
@@ -292,7 +297,7 @@ export class Game implements TurnHost {
     while (!this.battle.over && !this.heroTurn) {
       this.busy = true;
       this.acting = this.battle.actor.def;
-      this.scene.focusOn(this.battle.actor.pos);
+      this.frameTurn();
       this.scene.pop(this.battle.actor.id);
       this.update(this.turn.ui);
       await this.scene.wait(TIMING.enemyStart);
@@ -311,7 +316,7 @@ export class Game implements TurnHost {
     this.turn.screen = startScreen(this.battle);
     if (this.heroTurn) {
       this.turn.cursorToActor();
-      this.scene.focusOn(this.battle.actor.pos);
+      this.frameTurn();
       this.scene.pop(this.battle.actor.id);
     }
     this.update(freshUi(this.battle));
@@ -325,7 +330,7 @@ export class Game implements TurnHost {
     this.scene.sync(this.battle.state);
     this.save();
     this.turn.cursorToActor();
-    this.scene.focusOn(this.battle.actor.pos); // the camera had followed the cursor to the destination: goes back to the acting unit
+    this.frameTurn(); // the camera had followed the cursor to the destination: goes back to the acting unit
     this.update(freshUi(this.battle));
   }
 

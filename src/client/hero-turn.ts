@@ -2,12 +2,13 @@
 // Owns the screen, the Ui and the cursor, and turns keys, clicks and taps into the next screen; the Game runs what is confirmed.
 import type { Battle } from '../shared/battle/battle.ts';
 import { facingTo, inBounds, samePos } from '../shared/battle/grid.ts';
-import { footprint, nearestTile } from '../shared/battle/pathing.ts';
+import { footprint, nearestTile, unitAt } from '../shared/battle/pathing.ts';
 import type { BattleEvent, Charge, Pos } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import type { ActRef } from './act-flow.ts';
 import { actScreen } from './act-marks.ts';
 import { type ActHost, actHover, actHoverMap, actKey, actPage, actPick, actStart, actTap } from './act-turn.ts';
+import { bodyOf } from './camera-aim.ts';
 import {
   COMMANDS,
   cancelStep,
@@ -206,6 +207,7 @@ export class HeroTurn {
 
   private back(screen: Screen) {
     sfx('cancel');
+    if (!actScreen(screen)) this.scene.cam.endAim(); // out of the Agir screens: the zoom from before the aim
     this.screen = screen;
     this.cursorToActor();
     this.game.update(freshUi(this.game.battle));
@@ -274,9 +276,12 @@ export class HeroTurn {
         turn.screen = s;
       },
       update: () => turn.game.update(turn.ui),
-      focus: (p) => {
+      // the camera frames the actor and what it aims at together (Fernando, Nov 25), the cursor on the target
+      focus: (p, at) => {
+        const b = turn.game.battle,
+          on = unitAt(b.state, at ?? p);
         turn.cursor = p;
-        turn.scene.focusOn(p);
+        turn.scene.cam.aim(bodyOf(at ? p : b.actor.pos, b.actor.def), on ? bodyOf(on.pos, on.def) : bodyOf(at ?? p));
       },
       runAct: (run) => turn.game.runAct(run),
       at: (p) => turn.scene.screenAt(p, 1),

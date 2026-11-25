@@ -63,6 +63,11 @@ export async function beforeEvent(e: BattleEvent, enemy: boolean, battle: Battle
   // the enemy's steps play after the cursor shows the destination, along with the walk
   // the strike sound comes out with the gesture, after the name banner (Nov 13, review: it played ~0.9 s earlier)
   if (!(e.k === 'move' && enemy) && e.k !== 'attack') sound(e, battle, scene);
+  // an item or a charge being declared shows the one acting and its target together, as a strike does (Nov 25)
+  if (e.k === 'item' || e.k === 'charge') {
+    const me = battle.state.units.find((u) => u.id === e.unit);
+    if (me) scene.focusOn(me.pos, e.target);
+  }
   const show = async (hl: Highlights, ms: number) => {
     scene.setHighlights(hl);
     await scene.wait(ms);

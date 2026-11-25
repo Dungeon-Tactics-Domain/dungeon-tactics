@@ -37,7 +37,9 @@ export interface ActHost {
   readonly battle: Battle;
   screen: Screen;
   update(): void;
-  focus(p: Pos): void; // the camera and the cursor go there
+  // the cursor goes to `p`, the camera between the actor and `p`; with `at` (a tile to act from), between `p`, where
+  // the actor will stand, and `at`, what it strikes
+  focus(p: Pos, at?: Pos): void;
   runAct(run: (b: Battle) => ReturnType<Battle['move']>): Promise<void>;
   at(p: Pos): { x: number; y: number }; // where a tile is on screen, in pixels (the arrows walk what is seen)
   flat?(p: Pos): { x: number; y: number }; // the same at ground level 0: the grid's own axes, unbent by slopes
@@ -294,7 +296,8 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
     sfx('confirm');
     const a = withAim(all, aim);
     h.screen = { k: 'spot', target: s.target, action: s.action, index: bestSpot(a, b), aim, only: s.only };
-    h.focus(a.spots[bestSpot(a, b)].pos);
+    const best = a.spots[bestSpot(a, b)];
+    h.focus(best.pos, best.aim);
     return h.update();
   }
   const a = screenAction(b, s);
@@ -337,7 +340,8 @@ function openAction(h: ActHost, target: ActTarget, action: number, only?: ActRef
   const best = a.spots[bestSpot(a, b)];
   if (area) h.screen = { k: 'aim', target, action, at: best.aim, only };
   else h.screen = { k: 'spot', target, action, index: bestSpot(a, b), only };
-  h.focus(area ? best.aim : best.pos);
+  if (area) h.focus(best.aim);
+  else h.focus(best.pos, best.aim);
   h.update();
 }
 
@@ -371,8 +375,8 @@ function select(h: ActHost, s: Screen, follow = true) {
     if (t?.k === 'unit') h.focus(t.pos);
   } else if (follow && s.k === 'aim') h.focus(s.at);
   else if (follow && s.k === 'spot') {
-    const p = mapPoints(b, s)?.[s.index];
-    if (p) h.focus(p);
+    const sp = screenAction(b, s)?.spots[s.index];
+    if (sp) h.focus(sp.pos, sp.aim);
   }
   h.update();
 }

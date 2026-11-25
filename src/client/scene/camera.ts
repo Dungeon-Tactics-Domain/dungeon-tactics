@@ -4,39 +4,16 @@
 import * as THREE from 'three';
 import { posKey, subOf } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
+import { type Body, fitBoth, frameBounds, hiddenAt, type Insets, revealYaw } from '../camera-aim.ts';
 import { reducedMotion } from '../motion.ts';
-import { param } from '../store.ts';
 import { snapQuarter, TOP_MS, TOP_PITCH, topFit, turnStep } from '../top-view.ts';
+import { ACTION_CAMS, CAM_NAME } from './action-cams.ts';
 import { STEP, type TileSpace } from './space.ts';
 
+export { frameBounds, type Insets }; // their tests and top-view.ts read them here
+
 const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
-// Action cameras to compare (Nov 13, Fernando's request: "test several action cam options like over the shoulder,
-// from behind the enemy, etc"): `?camera=<name>` picks one; without the parameter `hero` applies (his pick on Nov 13,
-// after seeing the prints of all of them), which alternates `shoulder` and `behind` to stay always on the heroes' side.
-// turn: rotation around the target from the strike line (0 = behind the attacker, π = behind the target); pitch: tilt
-// in degrees (32 = the game's; low = camera near the ground); zoom: view height, base + per tile of distance; aim: where
-// the camera aims between the attacker (0) and the target (1); lift: how much the focus rises off the ground, so the unit is not at the edge;
-// clip: with the camera low, whatever sits between it and the units (outside forest, ravine, tree) would cover the strike, so everything
-// more than `clip` tiles in front of the focus stops being drawn (the camera's clipping plane) while it lasts
-interface ActionCam {
-  turn: number;
-  pitch: number;
-  zoom: [base: number, perTile: number];
-  aim: number;
-  lift: number;
-  clip?: number;
-}
-const ACTION_CAMS: Record<string, ActionCam | null> = {
-  xcom: { turn: 0.35, pitch: 32, zoom: [4, 0.9], aim: 0.5, lift: 0 },
-  shoulder: { turn: 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.6, lift: 0.45, clip: 3.2 }, // over the shoulder of the attacker
-  behind: { turn: Math.PI - 0.45, pitch: 20, zoom: [2.6, 0.7], aim: 0.4, lift: 0.45, clip: 3.2 }, // from behind the enemy
-  side: { turn: Math.PI / 2, pitch: 16, zoom: [2.6, 0.95], aim: 0.5, lift: 0.4, clip: 3 }, // the two in profile
-  top: { turn: 0.35, pitch: 60, zoom: [4.2, 0.9], aim: 0.5, lift: 0 }, // from above, tactical
-  none: null, // no action camera
-}; // and `hero`, which alternates between `shoulder` and `behind` (actionCam)
 const CAM_DIST = 30; // camera distance to the focus (orthographic: it only decides what sits in front of the clipping plane)
-const camAsked = param('camera');
-const CAM_NAME = camAsked !== null && camAsked in ACTION_CAMS ? camAsked : 'hero';
 const ZOOM = { min: 4, max: 16 };
 const CLOSE_UP = 2; // the death close-up's tightest view height, in whole tiles: the body about half the screen
 const ZOOM_START = 1.5;
@@ -50,28 +27,12 @@ const PC_START = 10;
 // instead of 20; the pinch and the whole-map button still show more
 const SHORT_START = 6;
 
-export interface Insets {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-}
-
-// Orthographic frame of `viewH` world units on a w x h px page, shifted so the focus sits in the middle of the free space
-// the HUD leaves (top and bottom panels; the turn list on the left, Nov 22: it covered the Mage at the map's edge on the tablet)
-export function frameBounds(w: number, h: number, viewH: number, insets: Insets) {
-  const px = viewH / h; // world units per pixel, the same both ways
-  const x = ((insets.left - insets.right) / 2) * px,
-    y = ((insets.bottom - insets.top) / 2) * px;
-  const halfW = (viewH * w) / h / 2;
-  return { left: -halfW - x, right: halfW - x, top: viewH / 2 - y, bottom: -viewH / 2 - y };
-}
-
 export class CameraRig {
   readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
   private readonly focus = new THREE.Vector3();
   private focusGoal: THREE.Vector3 | null = null; // where the camera slides to (hero of the turn, recenter)
   private viewH: number;
+  private viewGoal: number | null = null; // where the aim's zoom eases to (aim, endAim)
   private readonly fitView: number; // zoom at which the whole map fits the width
   // world units per whole tile: 2 on the split map (half.ts), where every distance in this file is twice as long
   private readonly k: number;
@@ -144,6 +105,52 @@ export class CameraRig {
     this.focusGoal = new THREE.Vector3(w.x, this.held ? w.y + 0.5 * this.k : STEP, w.z);
   }
 
+  // Turn start (main.ts; Fernando, Nov 25: "em cada turno deve selecionar o protagonista do turno"): the aim's zoom
+  // given back, turned to the nearest angle that shows the unit when taller ground hides it, and the unit in the middle
+  turnFocus(u: Body) {
+    if (this.held) return; // the bench's fixed camera stays where its spec put it
+    this.endAim();
+    this.reveal([u]);
+    this.centre([u]);
+  }
+
+  // Aiming at a target (act-turn.ts; Fernando, Nov 25): the middle between the actor and the target, turned so both are
+  // seen, and zoomed out just enough that both fit (never in); the zoom from before comes back on endAim or after the strike
+  private aimSaved: number | null = null;
+  aim(from: Body, to: Body) {
+    if (this.held) return;
+    this.reveal([from, to]);
+    this.centre([from, to]);
+    if (this.wholeTop) return;
+    this.aimSaved ??= this.viewH;
+    const [a, b] = [from, to].map((u) => this.space.squareTop(u.p, u.size)),
+      page = { w: this.host.clientWidth, h: this.host.clientHeight },
+      need = fitBoth(a, b, this.yawTarget, PITCH, page, this.insets, this.k, Math.max(from.h, to.h));
+    this.viewGoal = Math.min(Math.max(this.aimSaved, need), this.maxView);
+  }
+  endAim() {
+    if (this.aimSaved === null) return;
+    this.viewGoal = this.aimSaved;
+    this.aimSaved = null;
+  }
+
+  // the middle of the bodies at their middle height: a unit on a high tile sat above the middle with the focus on the
+  // lowest ground (Nov 25)
+  private centre(bs: Body[]) {
+    if (this.wholeTop && !this.camSaved) return;
+    const w = bs.map((u) => this.space.squareTop(u.p, u.size)).reduce((a, b) => a.lerp(b, 0.5));
+    this.focusGoal = new THREE.Vector3(w.x, w.y + Math.max(...bs.map((u) => u.h)) / 2, w.z);
+  }
+
+  // the nearest of the 8 angles that shows every body when taller ground or a wall hides one from here
+  // (camera-aim.ts); never from above, under the strike camera or behind the title
+  private reveal(bs: Body[]) {
+    if (this.top || this.camSaved || this.spinning) return;
+    const pts = bs.map((u) => this.space.squareTop(u.p, u.size).addScaledVector(THREE.Object3D.DEFAULT_UP, u.h * 0.6));
+    const hidden = (yaw: number) => pts.some((p) => hiddenAt(this.space.grid, this.space.step, p, yaw, PITCH));
+    this.yawTarget = revealYaw(this.yawTarget, turnStep(false), hidden);
+  }
+
   // the same slide to a point between tiles (the town's fluid walk); the lerp in update is its smoothing
   focusAt(w: THREE.Vector3) {
     this.focusGoal = new THREE.Vector3(w.x, STEP, w.z);
@@ -159,11 +166,13 @@ export class CameraRig {
     const cam = ACTION_CAMS[CAM_NAME === 'hero' ? (enemy ? 'behind' : 'shoulder') : CAM_NAME];
     // reduced motion: no swing and zoom around the strike (Nov 16 audit); the strike plays from the usual view
     if (!cam || this.held || reducedMotion()) return;
+    // the strike gives back the zoom from before the aim, not the aim's zoomed-out one
     this.camSaved = {
-      viewH: this.camSaved?.viewH ?? this.viewH,
+      viewH: this.camSaved?.viewH ?? this.aimSaved ?? this.viewH,
       yaw: this.camSaved?.yaw ?? this.yawTarget,
       pair: `${posKey(from)}>${posKey(to)}`,
     };
+    this.aimSaved = this.viewGoal = null;
     const a = this.space.world(from),
       b = this.space.world(to);
     // the camera turns around the strike by the option's `turn`, always a little to the side, so the close unit does not cover the other
@@ -237,6 +246,7 @@ export class CameraRig {
 
   // back to the whole-map framing
   resetView() {
+    this.aimSaved = this.viewGoal = null; // the player's own framing wins over the aim's
     this.viewH = this.top ? this.topH : this.fitView;
     this.focusGoal = new THREE.Vector3(0, STEP, 0);
   }
@@ -254,12 +264,12 @@ export class CameraRig {
   }
 
   zoom(factor: number) {
+    this.aimSaved = this.viewGoal = null; // the wheel or the pinch takes over from the aim's zoom
     // the cap follows the map: on the 20x20 the whole map asks for more than the 8x8's 16
-    this.viewH = THREE.MathUtils.clamp(
-      this.viewH * factor,
-      ZOOM.min * this.k,
-      Math.max(ZOOM.max * this.k, this.fitView, this.topH),
-    );
+    this.viewH = THREE.MathUtils.clamp(this.viewH * factor, ZOOM.min * this.k, this.maxView);
+  }
+  private get maxView() {
+    return Math.max(ZOOM.max * this.k, this.fitView, this.topH);
   }
 
   // false when nothing changed (the scene skips the resize)
@@ -293,12 +303,14 @@ export class CameraRig {
   async setTop(on: boolean) {
     if (on === this.top || this.held || this.topEasing) return;
     this.top = on;
+    const preAim = this.aimSaved; // what the aim's zoom-out would go back to
+    this.aimSaved = this.viewGoal = null;
     const s = this.camSaved,
       now = s?.yaw ?? this.yawTarget,
       back = this.topBack,
       yaw = on ? snapQuarter(now) : (back.yaw ?? now);
     if (on) {
-      Object.assign(back, { viewH: s?.viewH ?? this.viewH, yaw: now });
+      Object.assign(back, { viewH: s?.viewH ?? preAim ?? this.viewH, yaw: now });
       back.focus.copy(this.focusGoal ?? this.focus);
       this.topH = this.fitTop(yaw);
     }
@@ -351,6 +363,10 @@ export class CameraRig {
     this.yaw += (this.yawTarget - this.yaw) * Math.min(1, dt * 10);
     this.pitch += (this.pitchTarget - this.pitch) * Math.min(1, dt * 10);
     if (this.focusGoal) this.focus.lerp(this.focusGoal, Math.min(1, dt * 6));
+    if (this.viewGoal === null) return;
+    this.viewH += (this.viewGoal - this.viewH) * Math.min(1, dt * 6);
+    if (Math.abs(this.viewGoal - this.viewH) < 0.01) [this.viewH, this.viewGoal] = [this.viewGoal, null];
+    this.frameView();
   }
 
   // `shake` (0 = none) and `t` (battle clock, ms) come from the scene's strong-strike shake

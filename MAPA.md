@@ -150,6 +150,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/away.ts` — the game left in the background is paused: the first frame back drops the time away (awayFactor).
 - `src/client/timing.ts` — turn-flow timings in one place and the speed-up.
 - `src/client/top-view.ts` — the top view's pure math: quarter-turn snap, R's step from above and the whole-map framing (topFit).
+- `src/client/camera-aim.ts` — the camera's pure frame and aim math: frameBounds, the zoom that fits actor and target (fitBoth), whether a wall hides a unit (hiddenAt) and the nearest angle that shows it (revealYaw).
 - `src/client/i18n.ts` — game language, t('pt', 'en'), unitName and abilityName.
 
 ## src/client — DOM interface
@@ -318,7 +319,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/board-extras.ts` — board dressing outside the rules: edge sides, caravan bodies, dotted border, crypt stairs, rocks and tufts.
 - `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees and the crown cutout over units, cursor and marks.
 - `src/client/scene/units.ts` — Units: keeps each unit's drawing where the state says, the shake, hit-stop and slow-motion clocks, picking and the town walk.
-- `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, ring, facing arrow, health bar with the turn-order number, clips, flash and glow.
+- `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, own-rig creatures seated by their posed body, ring, facing arrow, health bar with the turn-order number, clips, flash and glow.
 - `src/client/scene/head-scale.ts` — the debug panel's head size sample (4-heads restyle): scales every KayKit `head` bone, saved per player, and drops the clips' head.scale track.
 - `src/client/scene/unit-events.ts` — playEvents: plays the battle events on the units in sequence (strike, a shot flying its traceShot path, miss, heal, charge, death).
 - `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
@@ -332,7 +333,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/trajectory.ts` — the shot preview on the Agir tile screen: dots along the rule's path (red past where it stops, with an X) or a spell's area and a still line.
 - `src/client/scene/range-ring.ts` — rangeRing: the dotted outline of the tiles within the longest range, laid on the ground.
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
-- `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin, action camera and the straight-down top view.
+- `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin, action camera, the turn and aim framing with auto-rotation, and the straight-down top view.
+- `src/client/scene/action-cams.ts` — the action cameras the strike can play (ACTION_CAMS) and the one ?camera= picks.
 - `src/client/scene/top-view.ts` — TopView: on, off, toggle and isTop over the camera's top view, and the height shade and numbers seen only from above.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.
 - `src/client/scene/timeline.ts` — Timeline: the battle clock behind every animate and wait (no setTimeout).
