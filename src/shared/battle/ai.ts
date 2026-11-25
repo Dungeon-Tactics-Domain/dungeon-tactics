@@ -182,6 +182,8 @@ function positionScore(
     }
     nearest = Math.min(nearest, tiles(dist(at, o.pos)) - (isObjective(o.def) ? W.OBJECTIVE_PULL : 0));
     const def = UNIT_DEFS[o.def];
+    // only when attacking: counted on every stop (tried Nov 25), a unit with no hit hid out of reach and a 20x20 battle
+    // hung at 300 turns (battle-sim.test.ts), as measured on Nov 11
     if (!attacking || def.speed === 0 || !def.abilities.length) continue;
     const reach = tiles(def.move) + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
     // only what it can pay for on its next turn, after that turn's regen (regen replaces vars and sets life on the copy, so `o` stays intact)
@@ -247,28 +249,30 @@ export function chooseTurn(grid: Grid, state: BattleState, unitId: string): Plan
     const moved = { ...state, units: state.units.map((u) => (u === actor ? { ...u, pos: spot } : u)) };
     const me = moved.units.find((u) => u.id === unitId)!;
     let attack: Plan['ability'] = null;
-    let attackBest = 0; // attacking is only worth it if the balance is positive
+    let attackBest = -Infinity;
     for (const id of UNIT_DEFS[actor.def].abilities) {
       for (const target of candidateTargets(grid, moved, me, ABILITIES[id])) {
         const s = attackScore(grid, moved, me, id, target);
-        if (s > attackBest) {
+        // worth it when it does more good than harm before the charge's wait (Nov 25: a 34% Gust with 4 ticks of charge
+        // came out negative and the bat only walked; Fernando wants every available attack taken)
+        if (s + W.CHARGE * ABILITIES[id].charge > 0 && s > attackBest) {
           attackBest = s;
           attack = { id, target };
         }
       }
     }
-    const score = attackBest + positionScore(grid, moved, me, spot, !!attack, walk);
+    const score = (attack ? attackBest : 0) + positionScore(grid, moved, me, spot, !!attack, walk);
     plans.push({
       plan: { moveTo: spot === actor.pos ? null : spot, ability: attack, score },
       kin: W.KIN * kinNear(moved, me),
     });
   }
-  // the kin bonus picks only among stops of the same kind (attacking or not) as the best without it, so a swarm unit never
-  // waits beside its kin instead of striking; first in order wins ties, so a unit with no kin plays as before
-  const top = plans.reduce((a, b) => (b.plan.score > a.plan.score ? b : a));
-  return plans
-    .filter((p) => !!p.plan.ability === !!top.plan.ability)
-    .reduce((a, b) => (b.plan.score + b.kin > a.plan.score + a.kin ? b : a)).plan;
+  // a stop that attacks always beats one that does not (Nov 25, Fernando: "devem atacar sempre q disponivel"; in 56 of 75
+  // enemy turns of six rooms a hero was in reach and the enemy only walked); the kin bonus then picks among those stops,
+  // first in order winning ties, so a unit with no kin plays the best of them
+  const attacks = plans.filter((p) => p.plan.ability);
+  return (attacks.length ? attacks : plans).reduce((a, b) => (b.plan.score + b.kin > a.plan.score + a.kin ? b : a))
+    .plan;
 }
 
 // Life the counters a move to `to` would cost `me`, by the rule's own reading (pendingCounters, at half), and a death weighed
@@ -311,16 +315,17 @@ export function chooseRetreat(grid: Grid, state: BattleState, unitId: string, re
 }
 
 // The best action of `kind` worth taking from where the unit stands now, if its slot is free (the same two slots as the
-// player's, Nov 19): only a positive balance counts, ties go to the first in the unit's own order, so it stays deterministic
+// player's, Nov 19): only a positive balance before the charge's wait counts (as chooseTurn, Nov 25), ties go to the
+// first in the unit's own order, so it stays deterministic
 function extraAction(battle: Battle, kind: ActionKind): Plan['ability'] {
   const me = battle.actor;
   let best: Plan['ability'] = null;
-  let bestScore = 0;
+  let bestScore = -Infinity;
   for (const id of UNIT_DEFS[me.def].abilities) {
     if (abilityKind(ABILITIES[id]) !== kind || !freeSlot(battle.state.turn, kind)) continue;
     for (const target of candidateTargets(battle.grid, battle.state, me, ABILITIES[id])) {
       const s = attackScore(battle.grid, battle.state, me, id, target);
-      if (s > bestScore) {
+      if (s + W.CHARGE * ABILITIES[id].charge > 0 && s > bestScore) {
         bestScore = s;
         best = { id, target };
       }

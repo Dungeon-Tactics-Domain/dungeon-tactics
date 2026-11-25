@@ -53,6 +53,8 @@ describe('AI and charges (Nov 15)', () => {
 
   it('a unit an enemy charge is locked on hides from its line of fire', () => {
     const state = stateOf([start, archer]);
+    // no mana for the Gust that reaches the archer: since Nov 25 an attack in reach always wins over hiding
+    state.units[0].vars = { ...state.units[0].vars, mana: 0 };
     const free = chooseTurn(grid, state, 'e');
     expect(lands(state, free.moveTo ?? start)).toBe(true); // with no charge it walks into the line
     state.charges = [{ unit: 'h', ability: 'aimed_shot', target: start, follow: 'e', ticks: 2 }];
