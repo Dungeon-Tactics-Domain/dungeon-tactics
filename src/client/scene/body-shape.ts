@@ -4,7 +4,8 @@
 import * as THREE from 'three';
 
 // the lab's numbers, picked by eye on the 3 to 5 heads figures (widths as factors of the man's, the bust in heights)
-const WOMAN = { hips: 1.15, waist: 0.8, chest: 0.88, bust: 0.06, arms: 0.85, thighs: 1.05, shins: 0.92 };
+// Nov 25: stronger than the lab's (hips 1.15, waist 0.8, bust 0.06): at the battle camera the woman barely showed
+const WOMAN = { hips: 1.32, waist: 0.72, chest: 0.9, bust: 0.1, arms: 0.8, thighs: 1.1, shins: 0.9 };
 
 type Attr = THREE.BufferAttribute | THREE.InterleavedBufferAttribute;
 type Warp = (p: THREE.Vector3) => THREE.Vector3;
