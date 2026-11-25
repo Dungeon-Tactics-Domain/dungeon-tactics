@@ -15,7 +15,8 @@ import { el } from '../icons.ts';
 import { freshUi } from '../interaction.ts';
 import { looks3d } from '../looks3d.ts';
 import type { Game } from '../main.ts';
-import { type Go, type Option, pick } from '../option-row.ts';
+import { type Go, type Option, percent, pick } from '../option-row.ts';
+import { HEAD_MIN, headScale, setHeadScale } from '../scene/head-scale.ts';
 import { shotGroup } from './debug-shot.ts';
 import { type OptionsBoard, sectionOf, valueNote } from './options.ts';
 import type { OptionsGroup } from './options-list.ts';
@@ -189,6 +190,25 @@ function groups(g: Game): OptionsGroup[] {
     },
     shotGroup(),
     pixelGroup(),
+    {
+      title: t('Modelos', 'Models'),
+      help: t(
+        'Amostra do estilo de 4 cabeças: a cabeça dos bonecos KayKit menor, no meio da luta.',
+        'A sample of the 4-heads style: a smaller head on the KayKit figures, mid-fight.',
+      ),
+      rows: [
+        percent(
+          t('Tamanho da cabeça', 'Head size'),
+          t(
+            '100%: a cabeça do modelo. 55%: perto de 4 cabeças de altura. Só a cabeça muda; a altura do corpo fica.',
+            '100%: the model’s own head. 55%: near 4 heads tall. Only the head changes; the body keeps its height.',
+          ),
+          () => Math.round(headScale() * 100),
+          (v) => setHeadScale(v / 100),
+          HEAD_MIN * 100,
+        ),
+      ],
+    },
     {
       title: t('Ferramentas', 'Tools'),
       help: t('O contador de desempenho e o menu de desenvolvedor.', 'The performance counter and the developer menu.'),

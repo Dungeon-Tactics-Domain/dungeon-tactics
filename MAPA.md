@@ -287,6 +287,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees and the crown cutout over units, cursor and marks.
 - `src/client/scene/units.ts` — Units: keeps each unit's drawing where the state says, the shake, hit-stop and slow-motion clocks, picking and the town walk.
 - `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, ring, facing arrow, health bar with the turn-order number, clips, flash and glow.
+- `src/client/scene/head-scale.ts` — the debug panel's head size sample (4-heads restyle): scales every KayKit `head` bone, saved per player, and drops the clips' head.scale track.
 - `src/client/scene/unit-events.ts` — playEvents: plays the battle events on the units in sequence (strike, a shot flying its traceShot path, miss, heal, charge, death).
 - `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
 - `src/client/scene/unit-hits.ts` — how damage lands: hit-stop, flash, recoil, slide into rock, camera shake and the death slow motion.

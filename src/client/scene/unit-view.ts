@@ -9,6 +9,7 @@ import { WEIGHT } from '../hit-weight.ts';
 import { barYOf, MARKER, unitHeight } from '../markers.ts';
 import { prepare } from '../three-util.ts';
 import type { Board } from './board.ts';
+import { keepsHeadScale, trackHead } from './head-scale.ts';
 import { circle, litPaint, litStyle, piece, square } from './mark-kit.ts';
 import { SHARP_LAYER } from './pixel-pass.ts';
 import type { Timeline } from './timeline.ts';
@@ -99,10 +100,15 @@ export function makeView(
     // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
     const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
     // the pack is KayKit's rig: a model with its own rig keeps only its own clips
-    clips = [
-      ...gltf.animations,
-      ...(own ? [] : packClips).map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has))),
-    ];
+    // without head.scale, so the debug panel's head size sticks (head-scale.ts)
+    const kept = (c: THREE.AnimationClip, keep = (_t: THREE.KeyframeTrack) => true) =>
+      new THREE.AnimationClip(
+        c.name,
+        c.duration,
+        c.tracks.filter((t) => keep(t) && keepsHeadScale(t)),
+      );
+    clips = [...gltf.animations.map((c) => kept(c)), ...(own ? [] : packClips).map((c) => kept(c, has))];
+    trackHead(body);
   } else {
     // the Beacon has no model: a glowing crystal, to read from afar which is the target to protect
     const crystal = new THREE.Mesh(
