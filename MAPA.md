@@ -249,6 +249,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/hud-tools.ts` — gearButtons and CornerButtons: the gear (Options), ↺ ↻ and Undo on the screen, battle and town (no ☰ menu since Nov 18 night).
 - `src/client/screen-buttons.ts` — touchDevice(), the one "is a finger pointing" test (also the town's walk line and pad), and the Undo and camera buttons switch: on for a finger, off on a PC, kept by Options (dt:screen-buttons).
 - `src/client/shot-debug.ts` — the shot rules' saved settings (dt:shot-rules): parseShotRules, setShotRules and applySavedShotRules at boot.
+- `src/client/bodies.ts` — Debug › Models' saved settings (dt:bodies): height in heads, man or woman per unit id (parseBodies), the file a model draws from (modelFile) and each class's default sex.
 - `src/client/status-window.ts` — statusWindow(): the battle's Status window (a unit's sheet), drawn by the 3D look (window3d/status3d.ts); unitSheet fills it.
 - `src/client/portrait.ts` — the rendered KayKit portrait of a unit, for units without a painted face.
 - `src/client/dialog.ts` — dialog(), choice(), slider() and the window rows; focus, Esc and inert background.
@@ -303,6 +304,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/crawl.ts` — the town menu and quest gate (drawn by town3d/street.ts), the quest's commands, the expedition save and its gold, and the way home.
 - `src/client/game/debug-menu.ts` — the debug panel (F2, the pad's L3): the Options screen with its own board of Spawn, Units, Shot rules, Pixel effect and Tools, and settling the battle after a change.
 - `src/client/game/debug-builder.ts` — Debug › Map builder: open the builder on this battle's map or a blank 8, 12 or 16 square one, and back to the builder from a battle its Play opened.
+- `src/client/game/debug-bodies.ts` — Debug › Models: height (2 to 5 heads) and man or woman per living humanoid of the battle; a change saves and reloads the battle where it stands.
 - `src/client/game/debug-shot.ts` — Debug › Shot rules: its category and rows (launch range, visible parts, chance by cover, cover weight, humanoid and quadruped launch ranges).
 - `src/client/game/expedition-map.ts` — the expedition map: the descent as a chart of places, the picked place's box, the travel commands, the party's state, Information and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.
@@ -323,7 +325,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees and the crown cutout over units, cursor and marks.
 - `src/client/scene/units.ts` — Units: keeps each unit's drawing where the state says, the shake, hit-stop and slow-motion clocks, picking and the town walk.
 - `src/client/scene/unit-view.ts` — one unit's drawing: model with its own materials, own-rig creatures seated by their posed body, ring, facing arrow, health bar with the turn-order number, clips, flash and glow.
-- `src/client/scene/head-scale.ts` — the debug panel's head size sample (4-heads restyle): scales every KayKit `head` bone, saved per player, and drops the clips' head.scale track.
+- `src/client/scene/body-shape.ts` — shapeWoman: the woman's body (hips, waist, bust, slimmer arms) written on one unit's own copy of its model at rest, bones untouched.
 - `src/client/scene/unit-events.ts` — playEvents: plays the battle events on the units in sequence (strike, a shot flying its traceShot path, miss, heal, charge, death).
 - `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
 - `src/client/scene/unit-hits.ts` — how damage lands: hit-stop, flash, recoil, slide into rock, camera shake and the death slow motion.
@@ -356,7 +358,7 @@ parseGrid and withRamps (grid.ts).
 
 ## Other folders
 
-- `scripts/` — battle-sim.ts (optional AI vs AI simulator), crawl-sheet.ts (crawl room screenshots), smoke.mjs and smoke-game.mjs (headless checks), sandbox.mjs and sandbox/ (scene specs and clips), portraits.mjs, slim-character.mjs, lib/ (browser launcher), assets/ (icon, texture, face and model generators), music/ (track generators).
+- `scripts/` — battle-sim.ts (optional AI vs AI simulator), crawl-sheet.ts (crawl room screenshots), smoke.mjs and smoke-game.mjs (headless checks), sandbox.mjs and sandbox/ (scene specs and clips), portraits.mjs, slim-character.mjs, lib/ (browser launcher), assets/ (icon, texture, face and model generators; four-heads.mjs builds the 3, 4 and 5 heads models), music/ (track generators).
 - `tests/` — Vitest: one `<area>-<topic>.test.ts` per rule or pure client module, battle-helpers.ts for shared setup, setup.ts for the environment; architecture.test.ts and map.test.ts check the source tree itself.
 - `docs/` — game-design/README.md (index and what each lab touches), design spec, pillars, party and towns design, FFT/Tactics Ogre references, design system, decisions log, assets index.
 - `assets/` — source packs (KayKit, sounds); not shipped.

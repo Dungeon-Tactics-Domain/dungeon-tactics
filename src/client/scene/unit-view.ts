@@ -5,11 +5,12 @@ import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Team, UnitState } from '../../shared/battle/types.ts';
 import { baseDef, UNIT_DEFS } from '../../shared/battle/units.ts';
+import { bodies, sexOf } from '../bodies.ts';
 import { WEIGHT } from '../hit-weight.ts';
 import { barYOf, MARKER, unitHeight } from '../markers.ts';
 import { prepare } from '../three-util.ts';
 import type { Board } from './board.ts';
-import { keepsHeadScale, trackHead } from './head-scale.ts';
+import { shapeWoman } from './body-shape.ts';
 import { circle, litPaint, litStyle, piece, square } from './mark-kit.ts';
 import { SHARP_LAYER } from './pixel-pass.ts';
 import type { Timeline } from './timeline.ts';
@@ -67,6 +68,7 @@ export function makeView(
   const long = UNIT_DEFS[u.def].halfLength ?? 1;
   if (gltf) {
     body = prepare(cloneSkinned(gltf.scene));
+    if (sexOf(bodies(), u.id, u.def) === 'f') shapeWoman(body); // Debug › Models (bodies.ts), at rest before any clip
     body.traverse((m) => {
       const mesh = m as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -93,15 +95,10 @@ export function makeView(
     // the pack's clips only with the bone tracks this unit has (without it Three warns every frame)
     const has = (track: THREE.KeyframeTrack) => !!body!.getObjectByName(track.name.split('.')[0]);
     // the pack is KayKit's rig: a model with its own rig keeps only its own clips
-    // without head.scale, so the debug panel's head size sticks (head-scale.ts)
-    const kept = (c: THREE.AnimationClip, keep = (_t: THREE.KeyframeTrack) => true) =>
-      new THREE.AnimationClip(
-        c.name,
-        c.duration,
-        c.tracks.filter((t) => keep(t) && keepsHeadScale(t)),
-      );
-    clips = [...gltf.animations.map((c) => kept(c)), ...(own ? [] : packClips).map((c) => kept(c, has))];
-    trackHead(body);
+    clips = [
+      ...gltf.animations,
+      ...(own ? [] : packClips).map((c) => new THREE.AnimationClip(c.name, c.duration, c.tracks.filter(has))),
+    ];
   } else {
     // the Beacon has no model: a glowing crystal, to read from afar which is the target to protect
     const crystal = new THREE.Mesh(

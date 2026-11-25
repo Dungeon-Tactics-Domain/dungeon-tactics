@@ -23,7 +23,7 @@ describe('save migration', () => {
       'dt:party': '{"deployed":[]}',
       'dt:chest': '{"gold":150}',
       'dt:lang': 'en',
-      'dt:migrated': '5',
+      'dt:migrated': '6',
       // the progress kept becomes save slot 1 (saves.ts)
       'dt:saves': JSON.stringify({
         active: 1,
@@ -69,7 +69,7 @@ describe('campaign saves', () => {
     });
     migrate(s);
     expect([...s.m.keys()].sort()).toEqual(['dt:migrated', 'dt:party', 'dt:saves']);
-    expect(s.m.get('dt:migrated')).toBe('5');
+    expect(s.m.get('dt:migrated')).toBe('6');
   });
 });
 

@@ -67,6 +67,8 @@ const MIGRATIONS: ((s: Saves) => void)[] = [
     }
     for (const k of dead) s.removeItem(k);
   },
+  // Nov 25: Debug › Models' head size sample gave way to the 3, 4 and 5 heads models (bodies.ts, dt:bodies)
+  (s) => s.removeItem('dt:head-scale'),
 ];
 export function migrate(s: Saves) {
   // only a missing count (a browser from before the migrations) reruns them; a negative or garbage count reads as all

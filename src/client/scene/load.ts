@@ -7,6 +7,7 @@ import type { Grid } from '../../shared/battle/grid.ts';
 import type { BattleState } from '../../shared/battle/types.ts';
 import { type Ambience, loadAmbience } from '../ambience.ts';
 import { kindOf } from '../ambience-moods.ts';
+import { modelFile } from '../bodies.ts';
 import { modelOf } from '../markers.ts';
 import { loadPaint } from '../painted.ts';
 import { isPainted, swapProps } from '../props.ts';
@@ -35,7 +36,7 @@ export async function loadBattleAssets(grid: Grid, state: BattleState, all: stri
   const [top, side, stone, tree, ...loaded] = await Promise.all([
     ...['dirt_with_grass', 'dirt', 'stone'].map((n) => loader.loadAsync(`/models/poc/square/${n}.gltf`)),
     loader.loadAsync('/models/poc/hex/tree_single_A.gltf'), // the tree in the block pack is a cube of leaves
-    ...defs.map((d) => loader.loadAsync(`/models/${d}.glb`)),
+    ...defs.map((d) => loader.loadAsync(`/models/${modelFile(d)}.glb`)), // the height Debug › Models picked (bodies.ts)
   ]);
   const models = new Map(defs.map((d, i) => [d, loaded[i]]));
   // only the map that brings a per-tile look downloads these pieces (~630 KB with the textures)

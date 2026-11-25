@@ -17,6 +17,9 @@ models/lancer.glb and chars/lancer.webp (the Lancer, since Nov 13, 2026)
   KayKit Adventurers (the Knight, without sword, shield and cape, armour tinted teal steel), the "spear_A" spear from
   KayKit Fantasy Weapons Bits 1.0 and the "Melee_2H_Idle" gesture in place of Idle (KayKit Character Animations 1.1,
   Rig_Medium_CombatMelee), assembled by scripts/assets/lancer.mjs. All CC0.
+models/<id>_3h.glb, _4h.glb and _5h.glb for knight, ranger, mage, rogue_hooded, lancer, barbarian and the four skeleton_*
+  (the figures at 3, 4 and 5 heads tall, since Nov 25, 2026): the models above and KayKit Character Animations 1.1
+  (the clips of models/animations.glb), reshaped by scripts/assets/four-heads.mjs. All CC0.
 models/snake.glb (the snake, since Nov 20, 2026)
   "Snake" by Quaternius, Public Domain (CC0) - https://poly.pizza/m/x9x0viZs8V
   Copied unchanged, with its own rig and its 4 clips (Snake_Attack, Snake_Idle, Snake_Jump, Snake_Walk).

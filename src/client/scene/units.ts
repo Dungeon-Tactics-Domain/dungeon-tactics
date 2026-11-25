@@ -9,6 +9,7 @@ import { posKey, subOf } from '../../shared/battle/grid.ts';
 import { cellsOf } from '../../shared/battle/pathing.ts';
 import type { BattleEvent, BattleState, Pos, UnitState } from '../../shared/battle/types.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
+import { modelFile } from '../bodies.ts';
 import { corpseSquares } from '../corpse-squares.ts';
 import { chargeAura, lookOf } from '../fx.ts';
 import { WEIGHT } from '../hit-weight.ts';
@@ -185,7 +186,10 @@ export class Units {
   async addModel(def: string) {
     const m = modelOf(def);
     if (!m || this.models.has(m)) return;
-    this.models.set(m, await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`/models/${m}.glb`));
+    this.models.set(
+      m,
+      await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`/models/${modelFile(m)}.glb`),
+    );
   }
 
   // Puts each unit where the state says (creates whoever is missing, removes whoever died)
