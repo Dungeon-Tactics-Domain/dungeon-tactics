@@ -107,3 +107,50 @@ describe('whole tiles keep their cross', () => {
     expect(previewAbility(b.grid, b.state, 'a', 'blast', { x: 4, y: 5 }).targets.map((t) => t.unit)).toEqual(['e']);
   });
 });
+
+// Fernando, Nov 24: "o morcego ai q era pra ser 1x1 tile esta 2x2"; he picked "Mira no rato = célula dele": an area aimed
+// at a body smaller than a tile starts from that body, not from a 2x2 snapped around it
+describe('an area aimed at a one-cell body', () => {
+  const at = { x: 11, y: 11 }; // an odd cell: a 2x2 snapped from it straddled four tiles
+  const rat = () =>
+    new Battle(
+      grid,
+      stateOf(
+        [
+          { id: 'a', def: HERO, team: 'hero', ...shooter },
+          { id: 'r', def: halfDef('rat'), team: 'enemy', ...at },
+          { id: 'e', def: SOLDIER, team: 'enemy', x: 13, y: 11 },
+          { id: 'beacon', def: 'beacon', team: 'hero', x: 0, y: 22 },
+        ],
+        HIT_SEED,
+      ),
+    );
+  it('the area is the 3x3 cells around the rat (its cross and the diagonal cells)', () => {
+    const marks = attackMarks(rat(), ABILITIES.blast, at);
+    const want: Pos[] = [];
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) want.push({ x: at.x + dx, y: at.y + dy });
+    // whole tiles touched by the cross are painted whole (Nov 19), so check the hit, and that nothing 2 cells off is lit
+    expect(keys(marks.map((m) => m.pos))).toEqual(expect.arrayContaining(keys(want)));
+    expect(marks.some((m) => m.pos.x === at.x + 3 || m.pos.y === at.y + 3)).toBe(false);
+  });
+  it('a soldier two cells off the rat is not hit by a blast on it', () => {
+    expect(
+      previewAbility(rat().grid, rat().state, 'a', 'blast', at)
+        .targets.map((t) => t.unit)
+        .sort(),
+    ).toEqual(['r']);
+  });
+});
+
+// Fernando, Nov 24: "o giro do guerreiro ... deve pegar apenas os ... blocos ao redor dele num range de 1 haalftile nao 2";
+// he picked "Anel de 1 meio-tile, 12": the mark shows the 12 cells around the 2x2 body (the hit was already that ring)
+describe("the Spin's ring", () => {
+  it('paints the body and the one-cell ring around it, nothing two cells out', () => {
+    const b = split({ x: 20, y: 20 });
+    const me = b.state.units.find((u) => u.id === 'a')!;
+    const cells = attackMarks(b, ABILITIES.spin, me.pos).map((m) => m.pos);
+    const want: Pos[] = [];
+    for (let dy = -1; dy <= 2; dy++) for (let dx = -1; dx <= 2; dx++) want.push({ x: me.pos.x + dx, y: me.pos.y + dy });
+    expect(keys(cells)).toEqual(keys(want)); // 4x4: the 2x2 body and its 12-cell ring
+  });
+});

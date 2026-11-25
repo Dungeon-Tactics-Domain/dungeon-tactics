@@ -89,13 +89,13 @@ export const nearCells = (g: Grid, r: number) => Math.max(r, subOf(g) * (r - 1))
 // whole tiles that `d` cells stand for (the inverse of farCells): the distance the hit chance counts
 export const wholeTiles = (g: Grid, d: number) => Math.ceil((d + subOf(g) - 1) / subOf(g));
 
-// Area of an ability aimed at `center`: on the split map, the aimed whole tile of the unit standing there (a 2x2 token's own
-// square; one of the Colossus' four, Nov 14 review: its whole 4x4 square made the area and the range bigger than on whole
-// tiles) or, on empty ground, the 2x2 from the cell: the aimed tile's corner from `aimTile`, or the square where a shot
-// stopped, which is not snapped so an off-grid shooter's blocked shot stays where it hit. On a whole map, the tile itself
+// Area aimed at `center` on half tiles: the unit's aimed whole tile, a body under a tile itself (a rat; Nov 24, "era pra ser
+// 1x1"), or the 2x2 from an empty cell (`aimTile`'s corner, or a blocked shot's stop, unsnapped). Whole map: the tile
 export const areaOf = (grid: Grid, state: BattleState, center: Pos): Pos[] => {
-  if (subOf(grid) === 1) return [center];
-  return cellsOf(unitAt(state, center) ? aimTile(grid, state, center) : center, subOf(grid));
+  const k = subOf(grid),
+    u = unitAt(state, center);
+  if (k === 1) return [center];
+  return u && footprint(u).length < k * k ? footprint(u) : cellsOf(u ? aimTile(grid, state, center) : center, k);
 };
 // The whole tile an aim at `p` stands for on the split map, as the corner cell of its square: the tile of the token's own
 // square that holds `p`, or the map's tile under the cell on empty ground (Nov 14 review: an empty aim was measured from
