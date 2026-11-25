@@ -31,32 +31,33 @@ function shoot(g: Grid, a: Pos, b: Pos, arc: boolean, others: Pos[] = []) {
 }
 
 describe('trajectory: the lab cases', () => {
-  it('a straight shot (crossbow, thrown knife) passes the 1 m wall at 1.5 m and stops on the 2 m wall', () => {
-    expect(shoot(LAB, SHOOTER, { x: 5, y: 4 }, false).stop).toBeNull();
-    const s = shoot(LAB, SHOOTER, TARGET, false);
+  // since Nov 25 a shot leaves and aims at the middle of a person, 0.85 m up (1.5 m before): the 1 m wall stops it too
+  it('a straight shot (crossbow, thrown knife) at 0.85 m stops on the 1 m wall, and past it on the 2 m wall', () => {
+    expect(shoot(LAB, SHOOTER, { x: 5, y: 4 }, false).stop).toMatchObject({ pos: { x: 2, y: 4 }, unit: null });
+    const s = shoot(LAB, { x: 3, y: 4 }, TARGET, false);
     expect(s.stop).toMatchObject({ pos: { x: 6, y: 4 }, unit: null });
-    expect(shotAt(s, s.stop!.k).h).toBe(1.5);
+    expect(shotAt(s, s.stop!.k).h).toBeCloseTo(0.85);
   });
 
-  it("a bow's curve clears the 2 m wall with the target 7 tiles away: top 2 m over the 1.5 m points, lowest over the wall ~2.85 m", () => {
+  it("a bow's curve clears the 2 m wall with the target 7 tiles away: top 2 m over the 0.85 m points", () => {
     const s = shoot(LAB, SHOOTER, TARGET, true);
     expect(s.stop).toBeNull();
-    expect(shotAt(s, 0.5).h).toBeCloseTo(3.5); // 7 tiles: floor(7 / 3) = 2 levels above 1.5 m
-    // the wall's far edge, where the descending curve is lowest over it (the lab samples it at 2.9 m)
-    expect(shotAt(s, 5.5 / 7).h).toBeCloseTo(2.847, 3);
+    expect(shotAt(s, 0.5).h).toBeCloseTo(2.85); // 7 tiles: floor(7 / 3) = 2 levels above 0.85 m
+    expect(shotAt(s, 5.5 / 7).h).toBeCloseTo(2.197, 3); // the wall's far edge, where the curve is lowest over it
   });
 
-  it('a 5 m pillar beside the shooter stops even the highest curve (3 levels, 4.5 m)', () => {
+  it('a 5 m pillar beside the shooter stops even the highest curve (3 levels, 3.85 m)', () => {
     expect(shoot(LAB, SHOOTER, { x: 1, y: 0 }, true).stop?.pos).toEqual({ x: 1, y: 3 });
     const row = gridOf(['............'], ['050000000000']);
     const s = shoot(row, { x: 0, y: 0 }, { x: 11, y: 0 }, true);
-    expect(shotAt(s, 0.5).h).toBeCloseTo(4.5); // 11 tiles: the top is capped at 3 levels
+    expect(shotAt(s, 0.5).h).toBeCloseTo(3.85); // 11 tiles: the top is capped at 3 levels
     expect(s.stop?.pos).toEqual({ x: 1, y: 0 });
   });
 
   it('the top rises 1 level per 3 tiles between the ends, at least 1 and at most 3', () => {
-    const top = (d: number) => shotAt(shoot(flat(13, 1), { x: 0, y: 0 }, { x: d, y: 0 }, true), 0.5).h - 1.5;
-    expect([2, 3, 5, 6, 9, 12].map(top)).toEqual([1, 1, 1, 2, 3, 3]);
+    const top = (d: number) => shotAt(shoot(flat(13, 1), { x: 0, y: 0 }, { x: d, y: 0 }, true), 0.5).h - 0.85;
+    // rounded: 0.85 m ends leave float dust (2.9999...)
+    expect([2, 3, 5, 6, 9, 12].map((d) => Math.round(top(d) * 1e6) / 1e6)).toEqual([1, 1, 1, 2, 3, 3]);
   });
 });
 

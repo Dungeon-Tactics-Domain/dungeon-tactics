@@ -2,7 +2,7 @@
 import { blocksOf, dist, type Grid, inBounds, isDeep, standH, subOf, tileAt } from './grid.ts';
 import { aimEnds, aimTile, cellsOf, footprint, nearestTile, unitAt, wholeTiles } from './pathing.ts';
 import type { BattleState, Point, Pos, Shot, UnitState } from './types.ts';
-import { UNIT_DEFS } from './units.ts';
+import { bodyMetres, PERSON_M, UNIT_DEFS } from './units.ts';
 
 // whoever swims in deep water aims and is aimed at from the surface (Nov 13 review): with the bottom height, the line passed under the
 // neighboring ground and whoever was in the water became invisible at 3 tiles or more; the hit chance is still worse because of height (standH)
@@ -37,12 +37,12 @@ export const sightEnds = (grid: Grid, state: BattleState, actor: UnitState, cent
 
 // Shots, the realistic rule of the trajectory grill of Nov 15 (the Mechanics lab's trajetorias.json and its prototype, whose
 // path this ports): a half tile is 1 m and a level 1 m, so the rule counts cells across and levels up (a whole map's tile is
-// 2 m). The shot leaves the middle of the shooter's whole tile SHOT_H above its floor and aims at the same point of the aimed
-// tile. Whatever the path crosses stops it: terrain, a wall, the body of another unit (BODY_H tall over its whole square),
-// with no exception for a tile beside either end; only the shooter's and the target's bodies are ignored, and on their own
-// tiles only the ground. The rule, the preview and the flight all read this one path
-export const SHOT_H = 1.5;
-export const BODY_H = 1.8;
+// 2 m). The shot leaves the middle of the shooter's body and aims at the middle of the target's (Nov 25, Fernando: "no
+// centro do modelo 3d do target": a rat on a ledge hides behind its edge), or a person's middle over an empty aimed tile;
+// until Nov 25 every end stood 1.5 m up and every body 1.8 m tall. Whatever the path crosses stops it: terrain, a wall,
+// the body of another unit (as tall as it is, bodyMetres), with no exception for a tile beside either end; only the
+// shooter's and the target's bodies are ignored, and on their own tiles only the ground. The rule, the preview and the
+// flight all read this one path
 
 export const shotAt = (s: Shot, k: number): Point => ({
   x: s.from.x + (s.to.x - s.from.x) * k,
@@ -55,9 +55,21 @@ export const shotAt = (s: Shot, k: number): Point => ({
 export function traceShot(grid: Grid, state: BattleState, shooter: UnitState, center: Pos, arc: boolean): Shot {
   const n = subOf(grid);
   const [a, b] = sightEnds(grid, state, shooter, center);
-  const end = (p: Pos): Point => ({ x: p.x + n / 2, y: p.y + n / 2, h: sightH(grid, cellsOf(p, n)) + SHOT_H });
-  const from = end(a),
-    to = end(b);
+  // a body no wider than the end's tile is aimed at its own middle (a rat's cell); a bigger one at that tile's middle
+  const end = (p: Pos, u: UnitState | undefined): Point => {
+    const cells = u ? footprint(u) : [];
+    if (!u || cells.length > n * n)
+      return {
+        x: p.x + n / 2,
+        y: p.y + n / 2,
+        h: sightH(grid, cellsOf(p, n)) + (u ? bodyMetres(u.def) : PERSON_M) / 2,
+      };
+    const mid = (k: 'x' | 'y') => (Math.min(...cells.map((c) => c[k])) + Math.max(...cells.map((c) => c[k])) + 1) / 2;
+    return { x: mid('x'), y: mid('y'), h: sightH(grid, cells) + bodyMetres(u.def) / 2 };
+  };
+  const aimed = unitAt(state, b);
+  const from = end(a, shooter),
+    to = end(b, aimed);
   let rise = to.h - from.h,
     fall = 0;
   if (arc) {
@@ -69,11 +81,12 @@ export function traceShot(grid: Grid, state: BattleState, shooter: UnitState, ce
     rise = 2 * (d + Math.sqrt(d * e));
     fall = (rise * rise) / (4 * d);
   }
-  const shot: Shot = { from, to, rise, fall, stop: null };
-  const target = unitAt(state, b)?.id;
+  const lift = (aimed ? bodyMetres(aimed.def) : PERSON_M) / 2;
+  const shot: Shot = { from, to, rise, fall, lift, stop: null };
+  const target = aimed?.id;
   const bodies = state.units
     .filter((u) => u.id !== shooter.id && u.id !== target)
-    .map((u) => ({ u, size: UNIT_DEFS[u.def].size ?? 1, top: sightH(grid, footprint(u)) + BODY_H }));
+    .map((u) => ({ u, size: UNIT_DEFS[u.def].size ?? 1, top: sightH(grid, footprint(u)) + bodyMetres(u.def) }));
   const h = (k: number) => from.h + rise * k - fall * k * k;
   // the first k of [k0, k1] where the path runs under `top`: straight or arched, its lowest point in a stretch is an end
   const under = (top: number, k0: number, k1: number): number | null => {

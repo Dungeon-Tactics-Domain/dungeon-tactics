@@ -174,6 +174,12 @@ export function buildDevScenario(
           ...(physPower && { physPower }),
           ...(magPower && { magPower }),
           ...(UNIT_DEFS[u.base].size && { size: UNIT_DEFS[u.base].size }),
+          // the body's shape and height on the split map: without them an expedition's rat stood on 2x2 half tiles
+          // like a person (Fernando, Nov 25: "rato tá ocupando 4")
+          ...(UNIT_DEFS[u.base].halfSize && { halfSize: UNIT_DEFS[u.base].halfSize }),
+          ...(UNIT_DEFS[u.base].halfLength && { halfLength: UNIT_DEFS[u.base].halfLength }),
+          ...(UNIT_DEFS[u.base].swarm && { swarm: true }),
+          ...(UNIT_DEFS[u.base].tall && { tall: UNIT_DEFS[u.base].tall }),
           jump: u.jump ?? UNIT_DEFS[u.base].jump ?? MAX_JUMP,
           ...(UNIT_DEFS[u.base].tint && { tint: UNIT_DEFS[u.base].tint }),
           ...(UNIT_DEFS[u.base].undead && { undead: true as const }), // heals hurt the class's skeletons in every cast too

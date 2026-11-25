@@ -85,6 +85,7 @@ export interface Shot {
   to: Point;
   rise: number;
   fall: number;
+  lift: number; // how far `to` stands over the aimed ground (half the target's height), for the landing ring
   stop: { k: number; pos: Pos; unit: string | null } | null;
 }
 

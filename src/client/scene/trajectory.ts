@@ -5,7 +5,7 @@
 // caster instead: no dots and no X, so it never reads as a projectile.
 import * as THREE from 'three';
 import { subOf } from '../../shared/battle/grid.ts';
-import { SHOT_H, shotAt } from '../../shared/battle/shot.ts';
+import { shotAt } from '../../shared/battle/shot.ts';
 import type { Shot } from '../../shared/battle/types.ts';
 import { circle, type Lit, litPaint, piece, rod } from './mark-kit.ts';
 import type { TileSpace } from './space.ts';
@@ -48,7 +48,7 @@ export function trajectory(
   };
   const aim: Aim = { group, shot, dots: [], paint: [paint(AIM.path), paint(AIM.past)], x: null, circle: null };
   // the aimed tile's ground, under the aim point
-  const floor = space.point({ ...shot.to, h: shot.to.h - SHOT_H });
+  const floor = space.point({ ...shot.to, h: shot.to.h - shot.lift });
   floor.y += 0.03;
   if (t.cast) {
     const color = t.cast.heal ? AIM.heal : AIM.past;

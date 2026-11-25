@@ -19,7 +19,8 @@ import { startRange, verifyRoom } from './verify.ts';
 // crawl8 (Nov 20): a depth-1 group of mini skeletons (1x1 on the split map) joins the draw
 // crawl9 (Nov 20): a depth-1 snake nest joins the draw, and a snake's tail tile must be free and plain too
 // crawl10 (Nov 20): the rat, spider and bat swarms (five enemies) take the mini skeleton nest's place in the draw
-export const CRAWL_VERSION = 'crawl10';
+// crawl11 (Nov 25): shots leave and aim at the middle of each body, so the checks see other lines and some seeds re-roll
+export const CRAWL_VERSION = 'crawl11';
 export interface RoomGroup {
   name: [string, string];
   depth: number;

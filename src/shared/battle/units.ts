@@ -31,6 +31,9 @@ export interface UnitDef {
   halfLength?: number;
   // a swarm creature (Nov 20, Fernando: rats, spiders, bats): the AI keeps it beside its kin, so areas catch several
   swarm?: boolean;
+  // the body's height in metres for shots (Nov 25, Fernando: aim at the middle of the model, so a small creature on a
+  // ledge hides behind its edge); without it, a person's 1.7 m, or 4 m for a big unit (bodyMetres)
+  tall?: number;
   hit?: number; // extra hit points (equipment); without it, 0 // side of the occupied square (2 = 2x2, pathing.ts footprint); without it, 1 tile. A large unit does not walk nor get pushed
   // Attributes of the Nov 15 grill (no XP: every number comes from class, pieces and buffs; the Mechanics lab's
   // equipamento.json), read by the damage and hit formulas in combat.ts. Without them, 0
@@ -70,3 +73,10 @@ export const OBJECTIVE_DEF = 'beacon';
 export const HALF = '½';
 export const baseDef = (def: string) => (def.endsWith(HALF) ? def.slice(0, -HALF.length) : def);
 export const isObjective = (def: string) => baseDef(def) === OBJECTIVE_DEF;
+// how tall a body stands for shots, in metres (shot.ts): a shot leaves and aims at its middle, and it stops a shot below
+// its top. The models are drawn about this tall (client markers.ts: 0.85 of a 2 m tile for a person)
+export const PERSON_M = 1.7;
+export function bodyMetres(def: string): number {
+  const d = UNIT_DEFS[baseDef(def)];
+  return d?.tall ?? ((d?.size ?? 1) > 1 ? 4 : PERSON_M);
+}

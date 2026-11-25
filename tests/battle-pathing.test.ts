@@ -100,9 +100,10 @@ describe('line of sight', () => {
     expect(clearShot(gridOf(['..#..']), { x: 0, y: 0 }, { x: 4, y: 0 })).toBe(false);
   });
 
-  it('forest (2 m) blocks on the same level, but a shot from 2 levels above passes over it', () => {
+  // from 2 levels until Nov 25, when the ends came down from 1.5 m to a person's middle (0.85 m)
+  it('forest (2 m) blocks on the same level, but a shot from 3 levels above passes over it', () => {
     expect(clearShot(gridOf(['.T..']), { x: 0, y: 0 }, { x: 3, y: 0 })).toBe(false);
-    expect(clearShot(gridOf(['.T..'], ['2000']), { x: 0, y: 0 }, { x: 3, y: 0 })).toBe(true);
+    expect(clearShot(gridOf(['.T..'], ['3000']), { x: 0, y: 0 }, { x: 3, y: 0 })).toBe(true);
   });
 
   it('a hill between two units on the ground blocks sight', () => {
