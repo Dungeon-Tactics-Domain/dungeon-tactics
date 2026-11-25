@@ -253,7 +253,8 @@ export async function actPick(h: ActHost, index: number): Promise<void> {
       return h.update();
     }
     // "Escolher alvo" lists everyone; an ability or an item lists only who it can hit this turn
-    return openTargets(h, row.k === 'pick' ? undefined : { k: row.k, id: row.id });
+    if (row.k === 'pick') return openTargets(h, undefined, !!row.allies);
+    return openTargets(h, { k: row.k, id: row.id });
   }
   if (s.k === 'targets') {
     const target = actTargets(b, s.only, s.other)[index];

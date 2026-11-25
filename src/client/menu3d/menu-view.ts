@@ -300,6 +300,16 @@ function targetRow(b: Battle, r: ActTarget): MenuRow {
 // a row of the Agir list or of the actions screen: its note (an off one's reason, Fernando's grill of Nov 19) is a line
 // under the name, on or off: with the target count it grew long enough to squeeze the name out beside it (Nov 19 capture)
 function listRow(b: Battle, a: ActRow): MenuRow {
+  if (a.k === 'pick' && a.allies)
+    return a.enabled
+      ? { label: t('Escolher aliados', 'Pick allies'), note: '', off: false, kind: 'shield', plate: 'ally' }
+      : {
+          label: t('Escolher aliados', 'Pick allies'),
+          note: t('sem alvos', 'no targets'),
+          off: true,
+          below: true,
+          kind: 'shield',
+        };
   if (a.k === 'pick')
     return a.enabled
       ? { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword', plate: 'foe' }

@@ -221,7 +221,7 @@ export function actActions(b: Battle, target: ActTarget): ActAction[] {
 export type ActGroup = 'skills' | 'magic' | 'items';
 export const GROUPS: ActGroup[] = ['skills', 'magic', 'items'];
 export type ActRow =
-  | { k: 'pick'; enabled: boolean }
+  | { k: 'pick'; enabled: boolean; allies?: boolean }
   | { k: 'group'; group: ActGroup; enabled: boolean; reach: number }
   | ActAction;
 // an ability or an item picked straight on the Agir list: the target list then shows only who it can hit
@@ -246,7 +246,14 @@ export function actList(b: Battle): ActRow[] {
       if (r.enabled) for (const t of actTargets(b, r)) if (t.k !== 'side') seen.add(JSON.stringify(t));
     return [{ k: 'group', group, enabled: own.some((r) => r.enabled), reach: seen.size }];
   });
-  return [{ k: 'pick', enabled: allTargets(b).length > 0 }, ...(basic ? [basic] : []), ...groups];
+  // Pick a target and Pick allies (Fernando, Nov 25: "no pick a target tbm deve ter a opcao de target allies")
+  const all = allTargets(b),
+    ally = (r: ActTarget) => r.k === 'unit' && unitSide(b, r.unit) === 'ally';
+  const picks: ActRow[] = [
+    { k: 'pick', enabled: all.some((r) => !ally(r)) },
+    { k: 'pick', allies: true, enabled: all.some(ally) },
+  ];
+  return [...picks, ...(basic ? [basic] : []), ...groups];
 }
 // a group's column: its actions in the unit's order (the items in the bag's)
 export const actGroup = (b: Battle, g: ActGroup) => actRows(b).filter((r) => groupOf(b, r) === g);

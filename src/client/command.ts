@@ -137,7 +137,11 @@ export function cancelStep(b: Battle, s: Screen): Screen | 'undo' | null {
       };
     return s.only ? backTo(b, s.only) : { k: 'acts', index: 0 };
   }
-  if (s.k === 'actions') return { k: 'targets', index: targetIndex(actTargets(b), s.target) };
+  if (s.k === 'actions') {
+    // back on the side the target is listed on (Nov 25: the plain list splits by side)
+    const other = !actTargets(b).some((r) => JSON.stringify(r) === JSON.stringify(s.target));
+    return { k: 'targets', index: targetIndex(actTargets(b, undefined, other), s.target), ...(other && { other }) };
+  }
   const { only } = s;
   // an action picked on the Agir list has no actions screen: it goes back to that list's targets, on the side it was on
   const other = !!only && !actTargets(b, only).some((r) => JSON.stringify(r) === JSON.stringify(s.target));

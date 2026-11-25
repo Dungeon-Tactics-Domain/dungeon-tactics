@@ -45,15 +45,15 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
   it('an off row takes the cursor, shows its sheet and reach, and Confirm on it stays put', async () => {
     const b = battle();
     b.state.turn.main = 'firebolt'; // the main action spent: Raio de fogo is off
-    const h = host(b, { k: 'acts', index: 0 });
+    const h = host(b, { k: 'acts', index: 1 }); // Pick allies; the next row is Raio de fogo
     actKey(h, { k: 'cursor', dir: 'down' });
-    expect(h.screen).toEqual({ k: 'acts', index: 1 });
+    expect(h.screen).toEqual({ k: 'acts', index: 2 });
     const view = menuView({ battle: b, screen: h.screen } as never, true)!;
-    expect(view.sub![1].off).toBe(true);
+    expect(view.sub![2].off).toBe(true);
     expect(view.sheet?.name).toBe('Raio de fogo');
     expect(actMarks(b, h.screen as never).tiles.some((t) => t.kind === 'range')).toBe(true);
-    await actPick(h, 1);
-    expect(h.screen).toEqual({ k: 'acts', index: 1 });
+    await actPick(h, 2);
+    expect(h.screen).toEqual({ k: 'acts', index: 2 });
   });
 
   it('the Agir row shows the two actions as dots and why nothing can be done; greyed with none left (Nov 21)', () => {
@@ -79,7 +79,7 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
       expect(rows[i].note).toContain(count(n));
     });
     // Raio de fogo can hit the warrior too, but it counts its foes only: the soldier
-    expect(rows[1]).toMatchObject({ label: 'Raio de fogo', note: expect.stringContaining('1 alvo') });
+    expect(rows[2]).toMatchObject({ label: 'Raio de fogo', note: expect.stringContaining('1 alvo') });
   });
 
   it('opens on the last action run while it is on (its group for one in a group), else on Escolher alvo', async () => {
@@ -106,15 +106,16 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
   // Fernando's grill, Nov 19: the basic attack straight to its targets, a group with no action left out, each group in a third column where the second was, the second over the menu's place
   it('Escolher alvo, the basic attack, then Magias and Itens in a column of their own; a spent slot greys its rows', async () => {
     const b = battle();
-    expect(rowsOf(b).map((r) => r.label)).toEqual(['Escolher alvo', 'Raio de fogo', 'Técnicas', 'Magias', 'Itens']);
-    const h = host(b, { k: 'acts', index: 3 });
-    await actPick(h, 3);
+    const labels = ['Escolher alvo', 'Escolher aliados', 'Raio de fogo', 'Técnicas', 'Magias', 'Itens'];
+    expect(rowsOf(b).map((r) => r.label)).toEqual(labels);
+    const h = host(b, { k: 'acts', index: 4 });
+    await actPick(h, 4);
     const view = menuView({ battle: b, screen: h.screen } as never, true)!;
-    expect(view).toMatchObject({ head: 'Agir', index: 3, depth: 2, subTitle: 'Magias' });
-    expect(view.rows.map((r) => r.label)).toEqual(['Escolher alvo', 'Raio de fogo', 'Técnicas', 'Magias', 'Itens']);
+    expect(view).toMatchObject({ head: 'Agir', index: 4, depth: 2, subTitle: 'Magias' });
+    expect(view.rows.map((r) => r.label)).toEqual(labels);
     expect(view.sub!.map((r) => r.label)).toEqual(['Explosão', 'Rajada', 'Cura']);
     expect(view.sub![2].note).toMatch(/^secundária/);
-    expect(cancelStep(b, h.screen as Screen)).toEqual({ k: 'acts', index: 3 });
+    expect(cancelStep(b, h.screen as Screen)).toEqual({ k: 'acts', index: 4 });
     b.state.turn.main = 'firebolt'; // the main action is spent: only the secondary ones stay on
     expect(rowsOf(b).find((r) => r.label === 'Raio de fogo')).toMatchObject({ off: true, below: true });
     expect(rowsOf(b).find((r) => r.label === 'Magias')!.off).toBe(false); // Cura is still on
@@ -417,5 +418,25 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
     const s = actMarks(b, { k: 'spot', target, action: 0, index: 0 });
     expect(s.preview?.ok).toBe(true);
+  });
+});
+
+// Nov 25, Fernando: "no pick a target tbm deve ter a opcao de target allies"
+describe('Pick allies on the Agir list', () => {
+  it('opens the allies list, and Cancel from an ally target comes back to that side', async () => {
+    const b = battle();
+    const h = host(b, { k: 'acts', index: 1 });
+    await actPick(h, 1);
+    expect(h.screen).toEqual({ k: 'targets', index: 0, other: true });
+    expect(menuView({ battle: b, screen: h.screen } as never, true)!.sub!.map((r) => r.label)).toEqual([
+      'Guerreiro',
+      'Mago',
+      'Escolher inimigos',
+    ]);
+    const ally = actTargets(b, undefined, true)[0];
+    expect(cancelStep(b, { k: 'actions', target: ally, index: 0 })).toEqual({ k: 'targets', index: 0, other: true });
+    // the allies' list goes back to the enemies' on the row that swaps sides, as one action's lists do
+    const swap = actTargets(b).findIndex((r) => r.k === 'side');
+    expect(cancelStep(b, { k: 'targets', index: 0, other: true })).toEqual({ k: 'targets', index: swap });
   });
 });
