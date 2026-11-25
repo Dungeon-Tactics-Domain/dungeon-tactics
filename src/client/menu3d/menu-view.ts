@@ -75,6 +75,7 @@ export interface MenuRow {
   kind: IconKind;
   element?: Element;
   below?: boolean; // the note goes on a line under the name (column.ts)
+  plate?: 'ally' | 'foe'; // a target row's side, drawn as a blue or red plate under its icon
   gauge?: number; // Move: the half tiles left of the turn's movement, 0 to 1, as a bar under the row (column.ts)
 }
 export interface SheetView {
@@ -283,8 +284,8 @@ function actView(v: HudView, s: ListScreen): MenuView {
 function targetRow(b: Battle, r: ActTarget): MenuRow {
   if (r.k === 'side')
     return r.side === 'ally'
-      ? { label: t('Escolher aliados', 'Pick allies'), note: '', off: false, kind: 'shield' }
-      : { label: t('Escolher inimigos', 'Pick enemies'), note: '', off: false, kind: 'sword' };
+      ? { label: t('Escolher aliados', 'Pick allies'), note: '', off: false, kind: 'shield', plate: 'ally' }
+      : { label: t('Escolher inimigos', 'Pick enemies'), note: '', off: false, kind: 'sword', plate: 'foe' };
   if (r.k === 'direct')
     return { label: abilityName(r.ability), note: t('na área', 'on the area'), off: false, ...iconOf(r.ability) };
   const u = b.state.units.find((x) => x.id === r.unit)!;
@@ -293,7 +294,7 @@ function targetRow(b: Battle, r: ActTarget): MenuRow {
   const self = u.id === b.actor.id;
   const far = self ? t('você', 'you') : distanceText(distanceTo(b, u.id), subOf(b.grid) > 1);
   const note = [`${u.hp}/${UNIT_DEFS[u.def].hp}`, far].join(' · ');
-  return { label: unitName(u.def), note, off: false, kind: mine ? 'shield' : 'sword' };
+  return { label: unitName(u.def), note, off: false, kind: mine ? 'shield' : 'sword', plate: mine ? 'ally' : 'foe' };
 }
 
 // a row of the Agir list or of the actions screen: its note (an off one's reason, Fernando's grill of Nov 19) is a line
@@ -301,7 +302,7 @@ function targetRow(b: Battle, r: ActTarget): MenuRow {
 function listRow(b: Battle, a: ActRow): MenuRow {
   if (a.k === 'pick')
     return a.enabled
-      ? { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword' }
+      ? { label: t('Escolher alvo', 'Pick a target'), note: '', off: false, kind: 'sword', plate: 'foe' }
       : {
           label: t('Escolher alvo', 'Pick a target'),
           note: t('sem alvos', 'no targets'),

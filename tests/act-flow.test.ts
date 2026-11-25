@@ -19,12 +19,17 @@ const scene = () => {
 };
 
 describe('Agir primeiro flow (act-flow.ts, Nov 19)', () => {
-  it('lists enemies first near to far, then allies, then the user, then direct actions', () => {
+  // Nov 25 (Fernando: "no pick a target tbm deve ter a opcao de target allies"): the plain list splits by side too
+  it('lists enemies near to far, then direct actions, then a row to the allies, whose list holds the user', () => {
     const rows = actTargets(scene());
     const units = rows.flatMap((r) => (r.k === 'unit' ? [r.unit] : []));
-    expect(units).toEqual(['near', 'far', 'w', 'm']);
+    expect(units).toEqual(['near', 'far']);
     const direct = rows.filter((r) => r.k === 'direct');
-    expect(rows.slice(-direct.length)).toEqual(direct); // after every unit
+    expect(rows.slice(-1 - direct.length, -1)).toEqual(direct); // after every unit
+    expect(rows.at(-1)).toEqual({ k: 'side', side: 'ally' });
+    const allies = actTargets(scene(), undefined, true);
+    expect(allies.flatMap((r) => (r.k === 'unit' ? [r.unit] : []))).toEqual(['w', 'm']);
+    expect(allies.at(-1)).toEqual({ k: 'side', side: 'foe' });
   });
 
   it('the actions on a target: abilities in order, the ones that cannot hit it say why, then the items', () => {

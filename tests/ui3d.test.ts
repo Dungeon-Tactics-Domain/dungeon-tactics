@@ -152,7 +152,7 @@ describe('3D menu: what it shows', () => {
     const targets = menuView(view(b, { k: 'targets', index: 0 }), true);
     expect(targets?.index).toBe(0); // Act
     expect(targets?.subTitle).toBe('Alvo');
-    expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Farol', 'Giro']);
+    expect(targets?.sub?.map((r) => r.label)).toEqual(['Soldado', 'Giro', 'Escolher aliados']); // Nov 25 split
     const actions = menuView(view(b, { k: 'actions', target: foe, index: 1 }), true);
     expect(actions?.sub?.map((r) => r.label)).toEqual([
       'Golpe',

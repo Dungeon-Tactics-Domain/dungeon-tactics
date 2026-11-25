@@ -18,6 +18,7 @@ const STEEL = 0xdfe6ee,
   WHITE_LOW = 0xdcdacd,
   RED = 0xb3262e;
 const HALF = Math.PI / 2;
+export type Plate = 'disc' | 'tile' | 'ally' | 'foe';
 
 // outer flame and bright core of a spell, by its element
 const FLAME: Record<Element | 'none', [number, number]> = {
@@ -39,7 +40,7 @@ const blade = (w: number, len: number, guard: number, grip: number) => [
   part(gem(0.085), guard, [0, -0.5, 0]),
 ];
 
-const MODELS: Record<IconKind | 'disc' | 'tile' | 'gem' | 'glove', (element?: Element) => BufferGeometry> = {
+const MODELS: Record<IconKind | Plate | 'gem' | 'glove', (element?: Element) => BufferGeometry> = {
   sword: () => build(blade(0.15, 0.62, GOLD, WOOD)).rotateZ(-0.62),
   dagger: () =>
     build(blade(0.17, 0.4, IRON, RED))
@@ -128,6 +129,17 @@ const MODELS: Record<IconKind | 'disc' | 'tile' | 'gem' | 'glove', (element?: El
     build([
       part(cyl(0.5, 0.1, 14), 0x4d4838, [0, 0, 0], [HALF, 0, 0]),
       part(cyl(0.43, 0.04, 14), 0x6a634f, [0, 0, 0.06], [HALF, 0, 0]),
+    ]),
+  // a target row's side (Fernando, Nov 25: "em pick allies o fundo do icone deve ser azul ... qnd eh inimigos ... vermelho")
+  ally: () =>
+    build([
+      part(cyl(0.5, 0.1, 14), 0x1f4f8f, [0, 0, 0], [HALF, 0, 0]),
+      part(cyl(0.43, 0.04, 14), 0x3a78c4, [0, 0, 0.06], [HALF, 0, 0]),
+    ]),
+  foe: () =>
+    build([
+      part(cyl(0.5, 0.1, 14), 0x7a1c22, [0, 0, 0], [HALF, 0, 0]),
+      part(cyl(0.43, 0.04, 14), 0xb3262e, [0, 0, 0.06], [HALF, 0, 0]),
     ]),
   tile: () =>
     build([

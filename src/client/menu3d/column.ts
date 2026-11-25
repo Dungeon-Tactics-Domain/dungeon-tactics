@@ -12,7 +12,7 @@ import { land, type Spring, settled, spring, stepSpring } from '../ui3d/spring.t
 import { dropText, textMesh } from '../ui3d/text.ts';
 import { REF } from './menu-layout.ts';
 import type { MenuRow } from './menu-view.ts';
-import { dropModel, type ModelKind, takeModel } from './models.ts';
+import { dropModel, type ModelKind, type Plate, takeModel } from './models.ts';
 
 // what the columns draw with
 export interface Ctx {
@@ -54,7 +54,7 @@ export class Icon {
   readonly model: Mesh;
   private readonly mats: ShaderMaterial[] = [];
   constructor(
-    private readonly plate: 'disc' | 'tile' | null,
+    private readonly plate: Plate | null,
     private readonly kind: ModelKind,
     private readonly element?: Element,
     outline = 0,
@@ -187,7 +187,7 @@ export class Column {
         bar(width, layer.theme.shade, this.order + 1);
         if (r.gauge > 0) bar(width * clamp01(r.gauge), MOVE_BLUE, this.order + 2);
       }
-      const icon = new Icon(this.plate, r.kind, r.element);
+      const icon = new Icon(r.plate ?? this.plate, r.kind, r.element);
       icon.group.position.set(layer.snap((REF.iconW * s) / 2), -layer.snap(mid), 0);
       this.icons.add(icon.group);
       this.rows.push({ label: text, x: text.position.x, icon });

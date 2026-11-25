@@ -149,11 +149,20 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
   });
 
   it('on the target list left and right walk the units on the map as seen; up and down stay the list', () => {
-    const b = battle(); // targets: the soldier (5,2), the warrior (2,3), the mage itself (1,2)
-    const h = host(b, { k: 'targets', index: 0 });
-    actKey(h, { k: 'cursor', dir: 'left' }); // on the diamond the warrior (2,3) is left of the soldier (5,2)
+    // two enemies: the soldier (5,2) and a second one at (2,4), left of it on the diamond (allies list apart since Nov 25)
+    const b = new Battle(
+      flat(14, 5),
+      stateOf([
+        { id: 'm', def: 'mage', team: 'hero', x: 1, y: 2 },
+        { id: 'near', def: 'soldier', team: 'enemy', x: 5, y: 2 },
+        { id: 'e2', def: 'soldier', team: 'enemy', x: 2, y: 4 },
+      ]),
+    );
+    const at = actTargets(b).findIndex((r) => r.k === 'unit' && r.unit === 'near');
+    const h = host(b, { k: 'targets', index: at });
+    actKey(h, { k: 'cursor', dir: 'left' });
     const left = (h.screen as { index: number }).index;
-    expect(left).not.toBe(0);
+    expect(left).not.toBe(at);
     const t = actTargets(b)[left] as { pos: { x: number; y: number } };
     expect(diamond(t.pos).x).toBeLessThan(diamond({ x: 5, y: 2 }).x);
     actKey(h, { k: 'cursor', dir: 'down' });
@@ -165,7 +174,8 @@ describe('the Agir list (Fernando, Nov 19 grill: variant A, Agir on top)', () =>
       (r) => r.note,
     );
     expect(notes[0]).toMatch(/^\d+\/\d+ · \d+ casas?$/); // the icon says enemy or ally; the note stays short
-    expect(notes[2]).toMatch(/· você$/); // no distance to itself
+    const allies = menuView({ battle: battle(), screen: { k: 'targets', index: 0, other: true } } as never, true)!.sub!;
+    expect(allies[1].note).toMatch(/· você$/); // no distance to itself
   });
 });
 
@@ -374,8 +384,8 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
   it('up and down skip the off actions; a tap on a unit picks its row', () => {
     const b = battle();
     const h = host(b, { k: 'targets', index: 0 });
-    expect(actTap(h, { x: 2, y: 3 })).toBe(true); // the warrior's row
-    expect(h.screen).toMatchObject({ k: 'targets', index: 1 });
+    expect(actTap(h, { x: 2, y: 3 })).toBe(true); // the warrior's row: the list swaps to the allies (Nov 25)
+    expect(h.screen).toMatchObject({ k: 'targets', index: 0, other: true });
     h.screen = { k: 'actions', target: { k: 'unit', unit: 'near', pos: { x: 5, y: 2 } }, index: 0 };
     for (let i = 0; i < 6; i++) actKey(h, { k: 'cursor', dir: 'down' });
     const view = menuView({ battle: b, screen: h.screen } as never, true)!;
@@ -386,8 +396,9 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
     const b = battle();
     const v = menuView({ battle: b, screen: { k: 'targets', index: 0 } } as never, true)!;
     expect(v.subTitle).toBe('Alvo');
-    expect(v.sub!.slice(0, 3).map((r) => r.kind)).toEqual(['sword', 'shield', 'shield']); // enemy, ally, you
-    expect(v.sub!.slice(3).every((r) => r.note === 'na área')).toBe(true); // the direct actions come last
+    expect(v.sub![0]).toMatchObject({ kind: 'sword', plate: 'foe' }); // the enemy on a red plate
+    expect(v.sub!.slice(1, -1).every((r) => r.note === 'na área')).toBe(true); // the direct actions after the units
+    expect(v.sub!.at(-1)).toMatchObject({ label: 'Escolher aliados', plate: 'ally' }); // the allies behind a blue row
     const acts = menuView(
       {
         battle: b,

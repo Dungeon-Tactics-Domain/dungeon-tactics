@@ -114,7 +114,15 @@ export const actKind = (a: ActAction): ActionKind => (a.k === 'item' ? 'bonus' :
 // itself (support, items)
 export function actTargets(b: Battle, only?: ActRef, other = false): ActTarget[] {
   const all = allTargets(b);
-  if (!only) return all;
+  // the plain list splits the same way (Fernando, Nov 25: "no pick a target tbm deve ter a opcao de target allies"): the
+  // foes and the area aims first, the allies behind a last row, when both sides have someone
+  if (!only) {
+    const ally = (r: ActTarget) => r.k === 'unit' && unitSide(b, r.unit) === 'ally';
+    const foes = all.filter((r) => !ally(r)),
+      allies = all.filter(ally);
+    if (!foes.length || !allies.length) return all;
+    return other ? [...allies, { k: 'side', side: 'foe' }] : [...foes, { k: 'side', side: 'ally' }];
+  }
   // a row picked on the Agir list keeps the targets that action can hit this turn (the same test as its action screen)
   const hit = all.filter((r) => actActions(b, r).some((a) => sameRef(only, a) && a.enabled));
   const side = sideOf(only);

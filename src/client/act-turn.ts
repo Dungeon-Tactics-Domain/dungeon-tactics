@@ -204,6 +204,13 @@ export function actTap(h: ActHost, p: Pos): boolean {
     return true;
   }
   const i = indexAt(h.battle, s, p);
+  // a unit of the side the list is not showing (Nov 25 split): the list swaps to that side, on its row
+  if (i < 0 && s.k === 'targets') {
+    const other = { ...s, other: !s.other },
+      j = indexAt(h.battle, other, p);
+    if (j >= 0) select(h, { ...other, index: j }, false);
+    return true;
+  }
   if (i < 0) return true; // also the lock and slot steps, answered on their rows
   if (i === s.index) void actPick(h, i);
   else select(h, { ...s, index: i }, false);
