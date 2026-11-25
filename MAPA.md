@@ -324,6 +324,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/unit-moves.ts` — the battle walk with its jumps, and the push with its gravity fall off a drop.
 - `src/client/scene/unit-hits.ts` — how damage lands: hit-stop, flash, recoil, slide into rock, camera shake and the death slow motion.
 - `src/client/scene/float-numbers.ts` — FloatNumbers: the damage and heal numbers popping from a chest and following it on screen.
+- `src/client/scene/lights.ts` — the battle's sky and sun and the Until Dawn light ramp (SceneLights), split out of scene.ts.
 - `src/client/scene/marks.ts` — Marks: tile marks, charge danger, path dots, cursor, range ring and the town's debug grid.
 - `src/client/scene/mark-kit.ts` — the lit mark styles' pieces: strips swept along a path, bent over the drawn ground, their lit materials and code-drawn relief.
 - `src/client/scene/mark-textures.ts` — the lit mark styles' textures drawn by code: grain, stone, the reflected sky and each tile drawing as colour and relief.

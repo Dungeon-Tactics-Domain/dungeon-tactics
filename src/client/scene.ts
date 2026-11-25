@@ -20,6 +20,7 @@ import { Board } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
 import { ChargeLines } from './scene/charge-lines.ts';
 import { CursorNote } from './scene/float-numbers.ts';
+import { SceneLights } from './scene/lights.ts';
 import { loadBattleAssets } from './scene/load.ts';
 import { Marks } from './scene/marks.ts';
 import { PerfCounter } from './scene/perf.ts';
@@ -56,8 +57,7 @@ export class BattleScene {
   private readonly time = new Timeline();
   private readonly onResize = () => this.resize();
   private readonly space: TileSpace;
-  private readonly sky = new THREE.HemisphereLight('#fff1d6', '#3a3050', 1.15);
-  private readonly sun = new THREE.DirectionalLight('#ffffff', 1.6);
+  private readonly lights = new SceneLights(this.scene);
   private ambience: Ambience | null = null; // surroundings, fog, light rays and particles (ambience.ts)
 
   private constructor(
@@ -90,13 +90,6 @@ export class BattleScene {
     this.renderer.setPixelRatio(ratio);
     this.composer.setPixelRatio(ratio);
     this.scene.background = new THREE.Color('#1b1626');
-    this.scene.add(this.sky);
-    const sun = this.sun;
-    sun.position.set(-6, 12, 4);
-    sun.castShadow = true;
-    Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10 });
-    sun.shadow.mapSize.set(1024, 1024);
-    this.scene.add(sun);
     this.board = new Board(this.scene, this.space, models, pieces, lookPieces, packClips, terrainTex);
     this.marks = new Marks(this.scene, this.space, this.camera, this.board.hasTrees);
     this.chargeLines = new ChargeLines(this.scene, this.space, this.camera);
@@ -325,17 +318,9 @@ export class BattleScene {
     this.cam.rotate(dir);
   }
 
-  // Light of the Until Dawn mode (survival.ts): k = 0 is moonlit night (blue and weak), k = 1 is the rising sun (warm, at
-  // normal strength). The player sees the end coming without reading the number; the other maps never call it and stay on the usual light.
+  // the Until Dawn light ramp (scene/lights.ts)
   setDaylight(k: number) {
-    const mix = (night: string, day: string) => new THREE.Color(night).lerp(new THREE.Color(day), k);
-    this.sky.color.copy(mix('#7d8fd8', '#ffe2c0'));
-    this.sky.groundColor.copy(mix('#141226', '#3a3050'));
-    this.sky.intensity = 0.55 + 0.6 * k;
-    this.sun.color.copy(mix('#a9bcff', '#ffcf9a'));
-    this.sun.intensity = 0.45 + 1.15 * k;
-    (this.scene.background as THREE.Color).copy(mix('#0a0c1c', '#3b2638'));
-    this.ambience?.setDaylight(k); // last: the surroundings fog rules the background color
+    this.lights.setDaylight(k, this.ambience);
   }
 
   // title screen background: the camera slowly rotates around the map
