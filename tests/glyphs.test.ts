@@ -83,6 +83,7 @@ describe('the table: action, key, pad button', () => {
     fps: [{ k: 'fps' }],
     fold: [{ k: 'fold' }],
     debug: [{ k: 'debug' }],
+    top: [{ k: 'top' }],
     turns: [
       { k: 'turns', dir: -1 },
       { k: 'turns', dir: 1 },
@@ -111,8 +112,8 @@ describe('the table: action, key, pad button', () => {
     expect(padActions({ buttons: [], axes: [0, 0, 0, 1] }, emptyMemory(), 0)).toEqual([{ k: 'turns', dir: 1 }]);
     expect(pressPad(12)).toEqual([{ k: 'cursor', dir: 'up' }]);
     expect(ACTIONS.turns.pad).toEqual(['rstick']);
-    // pressing that stick folds the list (Nov 20)
-    expect(pressPad(11)).toEqual([{ k: 'fold' }]);
+    // pressing the right stick is the top view (Nov 25; it folded the list since Nov 20, which kept L)
+    expect(pressPad(11)).toEqual([{ k: 'top' }]);
     expect(padName('r3', 'playstation')).toBe('R3');
     expect(ACTIONS.move.pad).toEqual(['dpad']);
   });
@@ -124,7 +125,7 @@ describe('the table: action, key, pad button', () => {
   });
 
   it('the actions the pad has no button for hide with its icons', () => {
-    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'fps']);
+    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'fps', 'fold']);
     for (const a of PADLESS) {
       expect(capsOf(a, 'xbox'), a).toBeNull();
       expect(capsOf(a, 'keyboard')?.length, a).toBeGreaterThan(0);
@@ -165,9 +166,9 @@ describe('the screens read the table', () => {
       'X',
       'View',
       'LB · RB',
+      'RS',
       'LT RT',
       'Analógico direito',
-      'RS',
       'Y',
       'LS',
       'Menu',

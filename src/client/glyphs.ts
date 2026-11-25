@@ -79,20 +79,23 @@ export const ACTIONS = {
   rotateLeft: { keys: ['⇧R'], pad: ['lb'] },
   rotateRight: { keys: ['R'], pad: ['rb'] },
   zoom: { keys: ['Q', 'E'], pad: ['lt', 'rt'] },
-  camera: { keys: ['Q', 'E', 'R'], pad: ['lt', 'rt', 'lb', 'rb'] }, // zoom and rotate under one hint
+  // zoom, rotate and (keys only: the pad row was 439 of 440 px at 1280, Nov 16) the top view under one hint
+  camera: { keys: ['Q', 'E', 'R', 'T'], pad: ['lt', 'rt', 'lb', 'rb'] },
   turns: { keys: ['PgUp', 'PgDn'], pad: ['rstick'] }, // scroll the turn list, or the open window (dialog.ts scrollWindow)
   move: { keys: ['↑', '↓', '←', '→'], pad: ['dpad'] }, // the cursor, a menu's focus
   sides: { keys: ['←', '→'], pad: ['dpadH'] }, // a value, a page
   tabs: { keys: ['Q', 'E'], pad: ['lb', 'rb'] }, // the category before and after, in Options (flow3d/options3d.ts)
   walk: { keys: ['W', 'A', 'S', 'D'], pad: ['lstick'] }, // the town
   wait: { keys: ['P'], pad: [] },
-  face: { keys: ['T'], pad: [] },
+  face: { keys: ['V'], pad: [] },
   cycle: { keys: ['Tab'], pad: [] },
   slots: { keys: ['1'], pad: [] },
   recenter: { keys: ['F'], pad: [] },
   fps: { keys: ['F3'], pad: [] },
-  // the turn list folded to its faces and back (hud-queue.ts); on the pad, pressing the stick that scrolls it (Nov 20)
-  fold: { keys: ['L'], pad: ['r3'] },
+  // the turn list folded to its faces and back (hud-queue.ts); the pad's R3 went to the top view on Nov 25
+  fold: { keys: ['L'], pad: [] },
+  // the camera straight down and back (Fernando, Nov 25: as Tactics Ogre's tactical view; scene/top-view.ts)
+  top: { keys: ['T'], pad: ['r3'] },
   // the debug panel (game/debug-menu.ts; Fernando, Nov 25: a menu of its own, apart from Esc); the left stick's press
   // is free in battle, since that stick only moves the cursor
   debug: { keys: ['F2'], pad: ['l3'] },

@@ -26,6 +26,7 @@ import { PerfCounter } from './scene/perf.ts';
 import { PixelPass, SHARP_LAYER } from './scene/pixel-pass.ts';
 import { squareUnder, TileSpace } from './scene/space.ts';
 import { Timeline } from './scene/timeline.ts';
+import { TopView } from './scene/top-view.ts';
 import { Units } from './scene/units.ts';
 import type { TerrainTextures } from './terrain.ts';
 import { letGo } from './three-util.ts';
@@ -39,6 +40,7 @@ export class BattleScene {
   private readonly renderer = new THREE.WebGLRenderer({ antialias: false });
   private readonly scene = new THREE.Scene();
   private readonly cam: CameraRig;
+  readonly top: TopView; // straight down, T or R3 (scene/top-view.ts); the map builder reuses it
   private readonly camera: THREE.OrthographicCamera;
   private readonly composer = new EffectComposer(this.renderer);
   private readonly pixel = new PixelPass(); // drawn instead of the composer while Options › Pixel effect is on
@@ -79,6 +81,7 @@ export class BattleScene {
     host.append(this.floats);
     this.cam = new CameraRig(host, this.renderer.domElement, this.space, (ms, step) => this.time.animate(ms, step));
     this.camera = this.cam.camera;
+    this.top = new TopView(this.cam, this.scene, this.space);
     this.camera.layers.enable(SHARP_LAYER); // the bars over the units (pixel-pass.ts)
     this.note = new CursorNote(this.camera, this.renderer.domElement, () => this.marks.cursorAt());
     for (const pass of [new RenderPass(this.scene, this.camera), new OutputPass()]) this.composer.addPass(pass);
@@ -362,6 +365,7 @@ export class BattleScene {
     this.cam.update(dt);
     this.marks.update(dt);
     this.cam.place(this.units.shake(this.time.t), this.time.t);
+    this.top.update();
     // the note follows the sliding cursor and the camera every frame, like the menu beside the unit
     this.note.follow();
     if (this.board.hasTrees)

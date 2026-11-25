@@ -75,6 +75,7 @@ export class Game implements TurnHost {
       page: (dir) => this.turn.turnPage(dir),
       hover: (list, i) => this.turn.hoverRow(list, i),
       rotate: (dir) => scene.rotate(dir),
+      top: () => void scene.top.toggle(),
       menu: () => this.menu(),
       undo: () => this.runKey({ k: 'undo' }),
       cancel: () => this.runKey({ k: 'cancel' }),
@@ -126,6 +127,7 @@ export class Game implements TurnHost {
   private runKey(a: KeyAction) {
     // camera, help, status and counter always work, including on the enemy turn
     if (a.k === 'rotate') return this.scene.rotate(a.dir);
+    if (a.k === 'top') return void this.scene.top.toggle();
     if (a.k === 'zoom') return this.scene.zoom(a.factor);
     if (a.k === 'recenter') return this.scene.resetView();
     if (a.k === 'help') return this.menu();

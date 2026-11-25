@@ -1,5 +1,5 @@
 // Where the corner buttons sit (tools3d.ts), with no DOM: the gear on the page's top right corner with Back and Undo to
-// its left, and the two camera buttons (↺ ↻) on the top left, right after the turn list's column, where nothing else
+// its left, and the camera buttons (↺ ↻, and the battle's top view ⊞) on the top left, right after the turn list's column, where nothing else
 // lives at that height on any page (Fernando, Nov 18 night: the ☰ list gave way to these). The town has no list: its
 // pair sits beside the gear. The unseen HTML buttons under the drawing are seated from these same numbers. Pure and
 // tested (tests/tools-layout.test.ts).
@@ -8,7 +8,7 @@ import { type Box, lu, place, REGIONS, type Stage } from '../ui3d/layout.ts';
 const TAP = 44; // a finger's target (design system, section 8): no button is ever smaller
 const GAP = 8; // between the buttons
 
-export type Tool = 'back' | 'undo' | 'left' | 'right' | 'gear';
+export type Tool = 'back' | 'undo' | 'left' | 'right' | 'top' | 'gear';
 
 // Which buttons show: the gear always; Undo and the camera pair while the screen buttons are on (screen-buttons.ts: a
 // finger's default, an Options switch on a PC); Back only for a finger while there is a screen to go back to (Esc and
@@ -29,6 +29,7 @@ export interface ToolsSpec {
   // button is never narrower than it is tall
   row: number[];
   pair: 'list' | 'row' | 'none'; // the camera pair after the turn list, at the row's left end, or not shown
+  turns?: number; // how many camera buttons after the list: 2, or 3 with the top view (Nov 25)
 }
 
 export function toolsLayout(q: ToolsSpec) {
@@ -44,10 +45,16 @@ export function toolsLayout(q: ToolsSpec) {
     x -= GAP;
   }
   const list = place(REGIONS.turn, q.stage),
-    at = list.x + list.w + GAP;
+    at = list.x + list.w + GAP,
+    banner = place(REGIONS.banner, q.stage);
+  // the third (the top view) goes under the first where the row would reach the instruction banner (a phone)
+  const camBox = (i: number): Box => {
+    const b = { x: at + i * (size + GAP), y: top, w: size, h: size };
+    return i < 2 || b.x + b.w <= banner.x ? b : { x: at, y: top + size + GAP, w: size, h: size };
+  };
   const pair =
     q.pair === 'list'
-      ? [0, 1].map((i): Box => ({ x: at + i * (size + GAP), y: top, w: size, h: size }))
+      ? Array.from({ length: q.turns ?? 2 }, (_, i) => camBox(i))
       : q.pair === 'row'
         ? row.splice(0, 2)
         : [];

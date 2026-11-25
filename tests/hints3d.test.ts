@@ -41,16 +41,16 @@ const row = (b: Battle, s: Screen, open = true, device: Device = 'keyboard') =>
 describe('button hints: what each screen shows', () => {
   it('the menu offers Select and the camera; Cancel opens Options, then undoes a move', () => {
     const b = battle();
-    expect(row(b, menu)).toEqual(['Enter=Escolher', 'Esc=Opções', 'Q E R=Câmera']);
+    expect(row(b, menu)).toEqual(['Enter=Escolher', 'Esc=Opções', 'Q E R T=Câmera']);
     b.move({ x: 2, y: 2 });
     expect(canUndoMove(b)).toBe(true);
-    expect(row(b, menu)).toEqual(['Enter=Escolher', 'Esc=Desfazer', 'Q E R=Câmera']);
+    expect(row(b, menu)).toEqual(['Enter=Escolher', 'Esc=Desfazer', 'Q E R T=Câmera']);
   });
 
   it('each step names its Confirm, and Cancel wherever Cancel goes back a step', () => {
     const b = battle();
     const foe = { k: 'unit' as const, unit: 'b', pos: { x: 2, y: 1 } };
-    expect(row(b, { k: 'targets', index: 0 })).toEqual(['Enter=Confirmar', 'Esc=Cancelar', 'Q E R=Câmera']);
+    expect(row(b, { k: 'targets', index: 0 })).toEqual(['Enter=Confirmar', 'Esc=Cancelar', 'Q E R T=Câmera']);
     expect(row(b, { k: 'spot', target: foe, action: 0, index: 0 }).slice(0, 2)).toEqual([
       'Enter=Confirmar',
       'Esc=Cancelar',
@@ -80,7 +80,7 @@ describe('button hints: what each screen shows', () => {
   });
 
   it('while the battle plays, Confirm is held to speed it up', () => {
-    expect(row(battle(), menu, false)).toEqual(['Enter=Segure: acelerar', 'Q E R=Câmera']);
+    expect(row(battle(), menu, false)).toEqual(['Enter=Segure: acelerar', 'Q E R T=Câmera']);
   });
 
   // Fernando, Nov 16: the right row stays inside its region (660 x 28 on the reference) at 1920x1080 and 1280x720. Widths

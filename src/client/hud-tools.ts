@@ -31,6 +31,8 @@ export class CornerButtons {
   // Undo on the screen, left of the gear: always there while the switch is on, faded with no step to take back
   // (Fernando, Nov 18; setUndo)
   readonly undo: HTMLElement;
+  // the top view beside ↺ ↻ (Fernando, Nov 25: T, R3, and a button for a finger); the battle's only, the town has none
+  readonly top: HTMLElement;
   readonly root: HTMLElement;
 
   constructor(act: HudActions) {
@@ -45,10 +47,12 @@ export class CornerButtons {
       { class: 'icon undo', 'aria-disabled': 'true' },
     );
     root.prepend(this.undo);
+    this.top = iconButton('⊞', t('Ver de cima', 'View from above'), () => act.top(), { class: 'icon top-view' });
+    root.querySelector('.turn-right')?.after(this.top);
     this.root = root;
     const both = (on: boolean) => {
       show(on);
-      this.undo.hidden = !on;
+      this.undo.hidden = this.top.hidden = !on;
     };
     both(screenButtons());
     onScreenButtons(both);

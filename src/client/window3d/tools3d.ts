@@ -23,6 +23,7 @@ const WORD: Record<Tool, () => string> = {
   undo: () => t('↶ Desfazer', '↶ Undo'),
   left: () => '↺',
   right: () => '↻',
+  top: () => '⊞',
   gear: () => '',
 };
 const CLASS: [Tool, string][] = [
@@ -30,9 +31,10 @@ const CLASS: [Tool, string][] = [
   ['undo', '.undo'],
   ['left', '.turn-left'],
   ['right', '.turn-right'],
+  ['top', '.top-view'],
   ['gear', '.gear'],
 ];
-const pair = (k: Tool) => k === 'left' || k === 'right';
+const pair = (k: Tool) => k === 'left' || k === 'right' || k === 'top';
 const px = (v: number) => `${v}px`;
 const faded = (c: Rgba, off: boolean): Rgba => [c[0], c[1], c[2], off ? c[3] * OFF : c[3]];
 
@@ -91,6 +93,7 @@ export class Tools3d implements Ui3dScreen {
         inset: layer.inset,
         row: row.map(([k]) => (k === 'gear' ? 0 : textWidth(WORD[k](), size, layer.theme.font) + 24)),
         pair: turn.length ? this.at : 'none',
+        turns: turn.length,
       }),
       placed: [Tool, HTMLElement, Box][] = [
         ...turn.map(([k, e], i): [Tool, HTMLElement, Box] => [k, e, lay.pair[i]]),

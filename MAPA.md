@@ -120,6 +120,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/water-levels.ts` — water surface and wading heights for drawing.
 - `src/client/away.ts` — the game left in the background is paused: the first frame back drops the time away (awayFactor).
 - `src/client/timing.ts` — turn-flow timings in one place and the speed-up.
+- `src/client/top-view.ts` — the top view's pure math: quarter-turn snap, R's step from above and the whole-map framing (topFit).
 - `src/client/i18n.ts` — game language, t('pt', 'en'), unitName and abilityName.
 
 ## src/client — DOM interface
@@ -299,7 +300,8 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/trajectory.ts` — the shot preview on the Agir tile screen: dots along the rule's path (red past where it stops, with an X) or a spell's area and a still line.
 - `src/client/scene/range-ring.ts` — rangeRing: the dotted outline of the tiles within the longest range, laid on the ground.
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
-- `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin and action camera.
+- `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin, action camera and the straight-down top view.
+- `src/client/scene/top-view.ts` — TopView: on, off, toggle and isTop over the camera's top view, and the height shade and numbers seen only from above.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.
 - `src/client/scene/timeline.ts` — Timeline: the battle clock behind every animate and wait (no setTimeout).
 - `src/client/scene/load.ts` — what a battle downloads before it draws: models, painted pieces, animation pack and surroundings.

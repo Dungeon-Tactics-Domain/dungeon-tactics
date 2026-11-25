@@ -30,7 +30,7 @@ describe('game keys', () => {
     expect(key('p')).toEqual({ k: 'wait' });
     expect(key('r')).toEqual({ k: 'rotate', dir: 1 });
     expect(key('R', { shiftKey: true })).toEqual({ k: 'rotate', dir: -1 });
-    expect(key('v')).toBeNull(); // the pixel art key left with it (Nov 18)
+    expect(key('v')).toEqual({ k: 'face' }); // the pixel art key left on Nov 18; facing took it on Nov 25 (T is the top view)
     expect(key('q')).toEqual({ k: 'zoom', factor: 1.15 });
     expect(key('e')).toEqual({ k: 'zoom', factor: 1 / 1.15 });
     expect(key('f')).toEqual({ k: 'recenter' });

@@ -6,6 +6,7 @@ import { posKey, subOf } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { reducedMotion } from '../motion.ts';
 import { param } from '../store.ts';
+import { snapQuarter, TOP_MS, TOP_PITCH, topFit, turnStep } from '../top-view.ts';
 import { STEP, type TileSpace } from './space.ts';
 
 const PITCH = THREE.MathUtils.degToRad(32); // FFT's angle
@@ -79,6 +80,12 @@ export class CameraRig {
   private pitch = PITCH; // only the action camera changes it (ACTION_CAMS)
   private pitchTarget = PITCH;
   private yawTarget = Math.PI / 4;
+  // top view (top-view.ts): on, its whole-map view height, and the view height to go back to
+  private top = false;
+  private topH = 0;
+  private topEasing = false; // a toggle mid-ease would save a half-way zoom as the one to go back to
+  // what leaving the top view goes back to; yaw null once R turned the map from above (the new side stays)
+  private topBack = { viewH: 0, yaw: null as number | null, focus: new THREE.Vector3() };
 
   // `animate` runs on the scene's battle clock, so the action camera speeds up with the rest of the battle
   constructor(
@@ -107,6 +114,8 @@ export class CameraRig {
 
   // slides the camera to the tile (the hero of the turn), without changing the zoom
   focusOn(p: Pos, also?: Pos) {
+    // from above with the whole map in view, the turn's hero is already seen: the map stays centred
+    if (this.wholeTop && !this.camSaved) return;
     // with `also`, centers between the two (attacker and target): the strike never happens off-screen or behind the HUD
     const w = also ? this.space.world(p).lerp(this.space.world(also), 0.5) : this.space.world(p);
     // held (bench): at the body's height on that ground, since a low camera shows height almost as it is
@@ -165,9 +174,10 @@ export class CameraRig {
     if (!s) return;
     this.camSaved = null;
     this.yawTarget = s.yaw;
-    this.pitchTarget = PITCH;
+    this.pitchTarget = this.basePitch;
     this.camera.near = 0.1;
     if (this.focusGoal) this.focusGoal.y = STEP;
+    if (this.top && s.viewH >= this.topH * 0.99) this.focusGoal = new THREE.Vector3(0, STEP, 0);
     const h0 = this.viewH;
     await this.animate(380, (k) => {
       this.viewH = h0 + (s.viewH - h0) * k * k * (3 - 2 * k);
@@ -198,14 +208,14 @@ export class CameraRig {
   private held = false;
   hold(pitch: number | null, clip?: number) {
     this.held = pitch !== null;
-    this.pitchTarget = pitch === null ? PITCH : THREE.MathUtils.degToRad(pitch);
+    this.pitchTarget = pitch === null ? this.basePitch : THREE.MathUtils.degToRad(pitch);
     this.camera.near = clip ? CAM_DIST - clip * this.k : 0.1;
     this.frameView();
   }
 
   // back to the whole-map framing
   resetView() {
-    this.viewH = this.fitView;
+    this.viewH = this.top ? this.topH : this.fitView;
     this.focusGoal = new THREE.Vector3(0, STEP, 0);
   }
 
@@ -226,7 +236,7 @@ export class CameraRig {
     this.viewH = THREE.MathUtils.clamp(
       this.viewH * factor,
       ZOOM.min * this.k,
-      Math.max(ZOOM.max * this.k, this.fitView),
+      Math.max(ZOOM.max * this.k, this.fitView, this.topH),
     );
   }
 
@@ -241,7 +251,56 @@ export class CameraRig {
   // 8 angles, every 45° (Nov 13, Fernando's request: "the camera must have 8 angles"); gridStep finds the closest axis
   // to each key at any rotation, so the arrows keep walking on the grid
   rotate(dir: 1 | -1) {
-    this.yawTarget += (dir * Math.PI) / 4;
+    const whole = this.wholeTop;
+    this.yawTarget += dir * turnStep(this.top);
+    if (this.top) this.topBack.yaw = null;
+    // a long map swaps its sides on screen: refit it if it was whole
+    if (whole) this.viewH = this.topH = this.fitTop(this.yawTarget);
+    this.frameView();
+  }
+
+  // Top view (top-view.ts): eases to straight down at the nearest straight angle, framing the whole map, and back to
+  // the tilt and zoom from before. During the strike camera it only changes what that camera returns to
+  get isTop() {
+    return this.top;
+  }
+  // what scene/top-view.ts draws the heights for: from above, and not while the strike camera turns away
+  get topShown() {
+    return this.top && !this.camSaved && this.pitch > THREE.MathUtils.degToRad(80);
+  }
+  async setTop(on: boolean) {
+    if (on === this.top || this.held || this.topEasing) return;
+    this.top = on;
+    const s = this.camSaved,
+      now = s?.yaw ?? this.yawTarget,
+      back = this.topBack,
+      yaw = on ? snapQuarter(now) : (back.yaw ?? now);
+    if (on) {
+      Object.assign(back, { viewH: s?.viewH ?? this.viewH, yaw: now });
+      back.focus.copy(this.focusGoal ?? this.focus);
+      this.topH = this.fitTop(yaw);
+    }
+    const h1 = on ? this.topH : back.viewH;
+    if (s) return void Object.assign(s, { yaw, viewH: h1 });
+    this.yawTarget = yaw;
+    this.pitchTarget = this.basePitch;
+    this.focusGoal = on ? new THREE.Vector3(0, STEP, 0) : back.focus.clone();
+    const h0 = this.viewH;
+    this.topEasing = true;
+    await this.animate(reducedMotion() ? 1 : TOP_MS, (k) => {
+      this.viewH = h0 + (h1 - h0) * k * k * (3 - 2 * k);
+      this.frameView();
+    });
+    this.topEasing = false;
+  }
+  private get basePitch() {
+    return this.top ? THREE.MathUtils.degToRad(TOP_PITCH) : PITCH;
+  }
+  private get wholeTop() {
+    return this.top && this.viewH >= this.topH * 0.99;
+  }
+  private fitTop(yaw: number) {
+    return topFit(this.space.grid, yaw, this.host.clientWidth, this.host.clientHeight, this.insets);
   }
 
   // Title screen background: the camera slowly rotates around the map. On stopping, it goes back to the nearest eighth of a turn
@@ -288,6 +347,8 @@ export class CameraRig {
       Math.cos(this.yaw) * Math.cos(this.pitch),
     ).multiplyScalar(CAM_DIST);
     this.camera.position.copy(this.focus).add(off);
+    // up is the ground's forward, not the sky: straight down the sky is the view's own axis and lookAt loses the turn
+    this.camera.up.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     this.camera.lookAt(this.focus);
     this.camera.updateMatrixWorld();
   }

@@ -21,6 +21,7 @@ export type KeyAction =
   | { k: 'info' }
   | { k: 'fps' }
   | { k: 'debug' }
+  | { k: 'top' }
   | { k: 'turns'; dir: 1 | -1 }
   | { k: 'fold' }
   | { k: 'help' };
@@ -44,7 +45,9 @@ const SIMPLE: Record<string, KeyAction> = {
   escape: { k: 'cancel' },
   backspace: { k: 'cancel' },
   z: { k: 'undo' },
-  t: { k: 'face' },
+  // T is the top view (Fernando, Nov 25: as Tactics Ogre); facing moved to V, "virar"
+  t: { k: 'top' },
+  v: { k: 'face' },
   c: { k: 'status' },
   i: { k: 'info' },
   f3: { k: 'fps' },
@@ -176,7 +179,19 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
         `Wait: pick the facing; ${k('wait')} again or ${k('confirm')} ends the turn; doing less brings the next turn sooner`,
       ),
     ],
-    [['rotateLeft', 'rotateRight'], 'R · Shift+R', t('girar a câmera 45°', 'rotate the camera 45°')],
+    [
+      ['rotateLeft', 'rotateRight'],
+      'R · Shift+R',
+      t('girar a câmera 45° (de cima, 90°)', 'rotate the camera 45° (from above, 90°)'),
+    ],
+    [
+      ['top'],
+      '',
+      t(
+        'ver o mapa de cima, com a altura de cada casa, e voltar',
+        'view the map from above, with the height of each tile, and back',
+      ),
+    ],
     [['zoom'], 'Q · E', t('afastar · aproximar', 'zoom out · zoom in')],
     [['recenter'], '', t('ver o mapa inteiro', 'show the whole map')],
     [

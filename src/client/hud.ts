@@ -47,6 +47,7 @@ export interface HudActions {
   page(dir: 1 | -1): void; // the action sheet's arrows (menu3d/)
   hover(list: 'menu' | 'abilities', index: number): void; // the mouse (or Tab) over a 3D menu row moves the focus there
   rotate(dir: 1 | -1): void; // the camera pair on the screen (R and Shift+R)
+  top(): void; // the top view button beside the pair (T, R3)
   undo(): void; // undoes the last step (same as the Z key): whoever plays with a mouse only had no way to
   menu(): void; // the gear: Options
   cancel(): void; // the Back button, the same as Esc, B and the right button (a finger has none of them)

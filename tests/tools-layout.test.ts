@@ -52,6 +52,21 @@ describe('corner buttons: their layout with no DOM', () => {
     expect(l.row[0].x + l.row[0].w).toBe(844 - 12);
   });
 
+  for (const [name, w, h, mode, notch] of PAGES)
+    it(`the battle's top view is a third camera button, clear of Back, Undo and the banner (Nov 25): ${name}`, () => {
+      const q = spec(w, h, mode, { turns: 3, row: [80, 100, 0] }, notch),
+        l = toolsLayout(q);
+      expect(l.pair).toHaveLength(3);
+      const [first, second, third] = l.pair;
+      // beside the pair, or under its first button where the row would reach the banner (a phone)
+      if (third.y === first.y) expect(third.x - (second.x + second.w)).toBe(8);
+      else expect([third.x, third.y]).toEqual([first.x, first.y + first.h + 8]);
+      expect(third.w).toBeGreaterThanOrEqual(44);
+      expect(third.x + third.w).toBeLessThan(l.row[0].x);
+      for (const b of l.pair) expect(overlap(b, place(REGIONS.banner, q.stage)), name).toBe(false);
+      for (const b of l.pair) expect(overlap(b, place(REGIONS.turn, q.stage)), name).toBe(false);
+    });
+
   it('no pair when the switch hides it', () => {
     expect(toolsLayout(spec(1920, 1080, 'edges', { pair: 'none' })).pair).toEqual([]);
   });
