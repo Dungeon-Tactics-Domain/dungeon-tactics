@@ -57,7 +57,7 @@ reasons behind them in `docs/decisions.md`.
 
 ## src/client/mapedit — the map builder's screen (?mapedit)
 
-- `src/client/mapedit/builder.ts` — bootBuilder and Builder: the builder's page, the map document and its history, the scene drawn again after each edit with the camera carried over, the tiles lit in the tool's colour, the layout of the bar and the panel.
+- `src/client/mapedit/builder.ts` — bootBuilder and Builder: the builder's page, the map document and its history, the board redrawn in place after each edit (BattleScene.setGrid, with every palette piece loaded up front), the tiles lit in the tool's colour, the layout of the bar and the panel.
 - `src/client/mapedit/builder-input.ts` — the builder's mouse, touch, keys and pad: a drag is one stroke, the right button paints grass, the middle one and two fingers move the map, the pad's Menu walks the panel.
 - `src/client/mapedit/builder-actions.ts` — what each control does: tabs, tools, palette pages, auto-ramps, size and edges, slots, JSON and .ts export (download, clipboard, paste box), import, Play, leave, brush, undo, redo, camera.
 - `src/client/mapedit/builder-ui.ts` — BuilderUi: the unseen buttons, name fields and paste box, kept by id and seated on their boxes, and the view the 3D screen draws.
@@ -66,6 +66,8 @@ reasons behind them in `docs/decisions.md`.
 - `src/client/mapedit/keys.ts` — pure: the builder's keys (1 to 9, B, Ctrl+Z, Ctrl+Y, Del) and pad buttons as actions, over the battle's cursor, Enter, camera and top view.
 - `src/client/mapedit/layout.ts` — pure: layout A's boxes (bar, key hints, panel tabs, content rows, help line, foot) and the rows placed in the content.
 - `src/client/mapedit/panel.ts` — pure: the panel's tabs and rows per category (Paint pages, Relief, Map, File), the bar's and the foot's buttons.
+- `src/client/mapedit/pics.ts` — pure: which tile picture each bar tool and palette entry shows (picOf, PIC_SIGN), the tiny half-tile map each is rendered from (picGrid) and the palette map whose pieces the builder loads up front.
+- `src/client/mapedit/pic-shots.ts` — tilePictures: the builder's tile pictures rendered once per page on the scene's pieces (BattleScene.shoot) and kept.
 - `src/client/mapedit/slots.ts` — pure: the builder's save keys, the named slots read back by parseMapDoc (one per name, 20 at most) and a map id from its name.
 
 ## src/content — game content as typed data
@@ -269,7 +271,8 @@ parseGrid and withRamps (grid.ts).
 
 - `src/client/scene.ts` — BattleScene: renderer (smooth 3D), lights, frame loop and the scene's public API.
 - `src/client/three-util.ts` — small shared Three helpers: seeded draws, noise, grid triangles and KayKit palette textures without mipmaps, and `letGo` (what a renderer drew is disposed before the renderer goes, so nothing kept between screens holds it).
-- `src/client/terrain.ts` — smooth painted terrain mesh with its paint per look and textures, and the invisible tiles the pointer picks.
+- `src/client/terrain.ts` — smooth painted terrain mesh with its paint per look and textures (on a same-size redraw only the changed vertices are worked out and uploaded), and the invisible tiles the pointer picks.
+- `src/client/terrain-grid.ts` — the terrain's vertex grid: vertices and normals for a box of it, the box two builds differ on, the grid's triangles kept per size.
 - `src/client/terrain-outer.ts` — heights of the extension ring around the map and the river that continues off it, with its mesh.
 - `src/client/water.ts` — Water: builds the water of a map and makes the units disturb it (pokes, splash drops, foam collars).
 - `src/client/water-field.ts` — WaveField: the pure wave-equation height field the water runs on.
@@ -314,7 +317,7 @@ parseGrid and withRamps (grid.ts).
 
 ## src/client/scene — the parts BattleScene composes
 
-- `src/client/scene/board.ts` — Board: block columns, painted terrain, water, bridges, walls, trees and details built once from the map.
+- `src/client/scene/board.ts` — Board: block columns, painted terrain, water, bridges, walls, trees and details built from the map, and again in place on the map builder's edit (rebuild; the terrain and the border kept where unchanged).
 - `src/client/scene/board-looks.ts` — what each tile look draws (LOOK pieces, side colors, details) and the pieces a map downloads.
 - `src/client/scene/board-extras.ts` — board dressing outside the rules: edge sides, caravan bodies, dotted border, crypt stairs, rocks and tufts.
 - `src/client/scene/tree-crowns.ts` — TreeCrowns: forest-tile trees and the crown cutout over units, cursor and marks.
@@ -335,6 +338,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/charge-lines.ts` — ChargeLines: draws the charge and counter lines on top of everything.
 - `src/client/scene/camera.ts` — CameraRig: orthographic camera, zoom, 45° rotation, follow, pan, title spin, action camera, the turn and aim framing with auto-rotation, and the straight-down top view.
 - `src/client/scene/action-cams.ts` — the action cameras the strike can play (ACTION_CAMS) and the one ?camera= picks.
+- `src/client/scene/tile-shot.ts` — shootTiles: tiny maps built as Boards in scenes of their own and drawn by the battle's renderer into small canvases (the map builder's tile pictures).
 - `src/client/scene/top-view.ts` — TopView: on, off, toggle and isTop over the camera's top view, and the height shade and numbers seen only from above.
 - `src/client/scene/space.ts` — TileSpace: tile to world coordinates on slopes and water, ramps and squareUnder.
 - `src/client/scene/timeline.ts` — Timeline: the battle clock behind every animate and wait (no setTimeout).

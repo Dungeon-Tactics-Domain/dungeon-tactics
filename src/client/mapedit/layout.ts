@@ -21,6 +21,7 @@ export interface Cell {
   on?: boolean; // the tool, tab or brush in use
   off?: boolean; // nothing to do now; its text says why
   grow?: number; // its share of the row's width (1)
+  pic?: string; // the tile picture it shows (pics.ts), a palette entry's or a tool's
 }
 export interface Row {
   cells: Cell[];
@@ -46,7 +47,8 @@ export function builderLayout(p: Page) {
   // the bar: 9 tools centred on the map's width, at the page's foot
   const left = p.inset.left,
     room = panel.x - GAP - left,
-    bh = Math.max(56, row + 12),
+    // a plate holds its tile picture over its name (Fernando, Nov 25)
+    bh = Math.max(56, row + 12) + Math.max(36, Math.round(48 * p.s)),
     bw = Math.max(TAP, Math.min(130, Math.floor((room - 8 * GAP) / 9))),
     span = 9 * bw + 8 * GAP,
     x0 = left + Math.max(0, (room - span) / 2),

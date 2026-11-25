@@ -53,7 +53,7 @@ export class Water {
   private readonly m = new THREE.Matrix4();
 
   constructor(
-    scene: THREE.Scene,
+    scene: THREE.Object3D,
     private readonly grid: Grid,
     private readonly levels: Map<string, WaterLevel>,
     step: number,
@@ -116,6 +116,12 @@ export class Water {
     this.drops.count = 0;
     this.drops.frustumCulled = false; // the drops move: the culling sphere computed once would go stale
     scene.add(this.drops);
+  }
+
+  // the wave field's texture, which the shaders reach through onBeforeCompile, out of reach of a scene traversal
+  // (the map builder's redraw, Board.rebuild)
+  dispose() {
+    this.tex.dispose();
   }
 
   private uniforms() {

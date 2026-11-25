@@ -35,13 +35,22 @@ export const rectOf = (p: Pos, size: number | Pos): Pos[] => {
 };
 
 export class TileSpace {
-  readonly step: number; // height of one level on this map
-  readonly levels: Map<string, WaterLevel>; // water bed and surface of each water tile
+  grid!: Grid;
+  step!: number; // height of one level on this map
+  levels!: Map<string, WaterLevel>; // water bed and surface of each water tile
   private raised?: Set<string>; // deep stretches at the shallow height (water-levels.ts raisedDeep)
 
-  constructor(readonly grid: Grid) {
+  constructor(grid: Grid) {
+    this.setGrid(grid);
+  }
+
+  // the map builder's edit (BattleScene.setGrid): every part of the scene holds this space, so all of them measure
+  // the new map from here on
+  setGrid(grid: Grid) {
+    this.grid = grid;
     this.step = grid.levelHeight ?? STEP;
     this.levels = waterLevels(grid, this.step);
+    this.raised = undefined;
   }
 
   // battle tile (x, y) → world: x on the X axis, y on the Z axis, map centered at the origin

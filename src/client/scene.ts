@@ -26,6 +26,7 @@ import { Marks } from './scene/marks.ts';
 import { PerfCounter } from './scene/perf.ts';
 import { PixelPass, SHARP_LAYER } from './scene/pixel-pass.ts';
 import { squareUnder, TileSpace } from './scene/space.ts';
+import { shootTiles } from './scene/tile-shot.ts';
 import { Timeline } from './scene/timeline.ts';
 import { TopView } from './scene/top-view.ts';
 import { Units } from './scene/units.ts';
@@ -41,7 +42,7 @@ export class BattleScene {
   private readonly renderer = new THREE.WebGLRenderer({ antialias: false });
   private readonly scene = new THREE.Scene();
   readonly cam: CameraRig; // the turn and aim framing (main.ts, hero-turn.ts) call it straight
-  readonly top: TopView; // straight down, T or R3 (scene/top-view.ts); the map builder reuses it
+  top: TopView; // straight down, T or R3 (scene/top-view.ts); the map builder reuses it
   private readonly camera: THREE.OrthographicCamera;
   private readonly composer = new EffectComposer(this.renderer);
   private readonly pixel = new PixelPass(); // drawn instead of the composer while Options › Pixel effect is on
@@ -62,7 +63,7 @@ export class BattleScene {
 
   private constructor(
     private readonly host: HTMLElement,
-    private readonly grid: Grid,
+    grid: Grid,
     models: Map<string, GLTF>,
     pieces: Record<'top' | 'side' | 'stone' | 'tree', THREE.Object3D>,
     lookPieces: Map<string, THREE.Object3D>,
@@ -90,6 +91,7 @@ export class BattleScene {
     this.renderer.setPixelRatio(ratio);
     this.composer.setPixelRatio(ratio);
     this.scene.background = new THREE.Color('#1b1626');
+    this.scene.matrixAutoUpdate = false; // it never moves: a moving root works out every tile mark's matrix each frame
     this.board = new Board(this.scene, this.space, models, pieces, lookPieces, packClips, terrainTex);
     this.marks = new Marks(this.scene, this.space, this.camera, this.board.hasTrees);
     this.chargeLines = new ChargeLines(this.scene, this.space, this.camera);
@@ -111,9 +113,9 @@ export class BattleScene {
   }
 
   // `all`: sheets for the whole scenario, not just the ones alive in the save (Nov 13, review): without this, reopening a save where a model
-  // had already died and pressing "Play again" brought the unit back as the Beacon crystal
-  static async create(host: HTMLElement, grid: Grid, state: BattleState, all: string[] = []): Promise<BattleScene> {
-    const a = await loadBattleAssets(grid, state, all);
+  // had already died and pressing "Play again" brought the unit back as the Beacon crystal. `also`: a later map's pieces (setGrid)
+  static async create(host: HTMLElement, grid: Grid, state: BattleState, all: string[] = [], also?: Grid) {
+    const a = await loadBattleAssets(grid, state, all, also);
     const s = new BattleScene(host, grid, a.models, a.pieces, a.looks, a.pack, a.terrainTex);
     s.ambience = a.ambience.mount(s.scene);
     s.sync(state);
@@ -172,13 +174,30 @@ export class BattleScene {
 
   // the debug panel's new unit, before the sync that draws it (Units.addModel)
   addModel = (def: string) => this.units.addModel(def);
-  carryView = (from: BattleScene) => this.cam.carry(from.cam); // the map builder's redrawn scene (CameraRig.carry)
+  // The map builder's edit (Nov 25): the board, marks and top view drawn again on `grid` in place, with the same
+  // renderer, camera and surroundings (a map of another size gets its surroundings again). Its pieces must be loaded
+  // (`also`). Units stay where they stood: a caller with units (the battle builder's live edit) calls sync after it
+  setGrid(grid: Grid) {
+    const was = this.space.grid;
+    this.space.setGrid(grid);
+    this.board.rebuild();
+    const same = grid.width === was.width && grid.height === was.height;
+    if (same) this.marks.reground(this.board.hasTrees);
+    else this.marks = this.marks.again(this.board.hasTrees);
+    this.chargeLines = this.chargeLines.again();
+    this.top = this.top.again();
+    this.cam.refit(was);
+    if (this.ambience && !same) this.lights.remount((this.ambience = this.ambience.again(grid)));
+  }
+
+  // pictures of tiny maps on this map's pieces (scene/tile-shot.ts: the map builder's tile pictures)
+  shoot = (grids: Map<string, Grid>, px: number) => shootTiles(this.renderer, this.board, grids, px);
 
   // Puts each unit where the state says (creates whoever is missing, removes whoever died). Called on open, after each animation and on undo.
   sync(state: BattleState) {
-    const hot = chargeDanger(this.grid, state);
+    const hot = chargeDanger(this.space.grid, state);
     this.marks.showDanger(hot);
-    this.setChargeLines(chargeLines(this.grid, state));
+    this.setChargeLines(chargeLines(this.space.grid, state));
     this.units.sync(state);
   }
 
@@ -187,13 +206,9 @@ export class BattleScene {
   }
 
   // the walkable town's debug grid (Marks.setDebugGrid)
-  setDebugGrid(g: { dots: Pos[]; squares: Pos[]; size: number } | null) {
-    this.marks.setDebugGrid(g);
-  }
+  setDebugGrid = (g: { dots: Pos[]; squares: Pos[]; size: number } | null) => this.marks.setDebugGrid(g);
 
-  pop(unitId: string) {
-    this.units.pop(unitId);
-  }
+  pop = (unitId: string) => this.units.pop(unitId);
 
   wait(ms: number): Promise<void> {
     return this.time.wait(ms);
@@ -228,12 +243,8 @@ export class BattleScene {
     const w = this.units.slide(unitId, p, dir);
     if (w) this.cam.focusAt(w);
   }
-  rest(unitId: string, at?: Pos) {
-    this.units.rest(unitId, at);
-  }
-  drop(unitId: string) {
-    this.units.drop(unitId);
-  }
+  rest = (unitId: string, at?: Pos) => this.units.rest(unitId, at);
+  drop = (unitId: string) => this.units.drop(unitId);
 
   // Tile under the finger. The unit's body counts before the ground: the drawn unit covers the tile behind, and whoever touches it
   // wants the unit (mobile audit of Oct 25: tapping the enemy picked the tile behind it). `size`: on the ground, the corner
@@ -252,7 +263,7 @@ export class BattleScene {
     if (!hit) return null;
     const p = (hit.object.userData.tiles as Pos[])[hit.instanceId!];
     const w = this.space.world(p);
-    return squareUnder(this.grid, p, hit.point.x - w.x, hit.point.z - w.z, size);
+    return squareUnder(this.space.grid, p, hit.point.x - w.x, hit.point.z - w.z, size);
   }
 
   // where the unit is on screen, for the HUD's command menu beside it
@@ -370,6 +381,7 @@ export class BattleScene {
   dispose() {
     this.renderer.setAnimationLoop(null);
     removeEventListener('resize', this.onResize);
+    this.board.dispose();
     letGo(this.renderer, this.scene);
     this.ambience?.dispose();
     this.composer.dispose();

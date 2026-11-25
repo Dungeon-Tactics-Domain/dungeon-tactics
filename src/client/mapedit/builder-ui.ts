@@ -83,7 +83,7 @@ export class BuilderUi {
       } else if (!(e instanceof HTMLTextAreaElement)) e.textContent = cell.text;
       const focus = document.activeElement === e && (this.padFocus || e.matches(':focus-visible, input, textarea'));
       const text = e instanceof HTMLInputElement || e instanceof HTMLTextAreaElement ? e.value : cell.text;
-      return { box, text, kind: cell.kind, on: cell.on, off: cell.off, focus };
+      return { box, text, kind: cell.kind, on: cell.on, off: cell.off, focus, pic: cell.pic };
     });
     return { panel, items, note, hints };
   }

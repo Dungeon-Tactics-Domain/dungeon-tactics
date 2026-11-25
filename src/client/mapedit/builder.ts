@@ -1,8 +1,7 @@
 // The map builder's screen (Nov 25, docs/game-design/map-builder.md): a page of its own (?mapedit, entry.ts) that shows
 // the map being edited on the battle's scene, with the tool bar and the side panel over it (layout A). It holds the
-// document and its history; each finished edit draws the scene again on the new map (the board is built once per
-// scene) and carries the camera over, so the view does not jump. Input is builder-input.ts, the panel's buttons
-// builder-actions.ts.
+// document and its history; each finished edit redraws the board in place on the new map (BattleScene.setGrid), so the
+// view does not move and the edit shows in a frame. Input is builder-input.ts, the panel's buttons builder-actions.ts.
 import { halve } from '../../shared/battle/half.ts';
 import { initialState } from '../../shared/battle/scenarios.ts';
 import type { Pos } from '../../shared/battle/types.ts';
@@ -25,6 +24,8 @@ import { wireInput } from './builder-input.ts';
 import { BuilderUi, type Placed } from './builder-ui.ts';
 import { builderLayout, placeRows, rowsFit } from './layout.ts';
 import { barCells, footCells, type PanelState, panelRows, type Tab, tabCells } from './panel.ts';
+import { tilePictures } from './pic-shots.ts';
+import { paletteGrid } from './pics.ts';
 import { readDraft, writeDraft } from './play-map.ts';
 import { idOf, parseSlots, SLOTS_KEY } from './slots.ts';
 import { BAR, type Brush, footprint, halfCells, heroCorner, strokeStep, type Tool, toolMark } from './tools.ts';
@@ -32,9 +33,11 @@ import { BAR, type Brush, footprint, halfCells, heroCorner, strokeStep, type Too
 type Look = NonNullable<ReturnType<Awaited<ReturnType<typeof loadBuilderSkin>>>>;
 
 // the map drawn as the battle draws it: halved (every battle is, game/boot.ts), with nobody on it
+const gridOf = (doc: MapDoc) => halve(docToScenario(doc)).grid;
+// with every palette entry's pieces loaded, so no edit waits for a download
 function sceneOf(host: HTMLElement, doc: MapDoc) {
   const sc = halve(docToScenario(doc));
-  return BattleScene.create(host, sc.grid, initialState(sc, 0));
+  return BattleScene.create(host, sc.grid, initialState(sc, 0), [], paletteGrid());
 }
 
 export async function bootBuilder(host: HTMLElement, cover: Cover, stale: () => boolean) {
@@ -63,14 +66,13 @@ export class Builder {
   readonly ui: BuilderUi;
   private readonly look: Look | undefined;
   private walk: Placed[] = [];
-  private building = false;
-  private again = false;
+  private redraws = 0; // the host's data-redraws, read by the timing script (docs/game-design/map-builder.md)
   private readonly gone = screenSignal();
 
   constructor(
     readonly host: HTMLElement,
     doc: MapDoc,
-    public scene: BattleScene,
+    readonly scene: BattleScene,
     skin: Awaited<ReturnType<typeof loadBuilderSkin>>,
   ) {
     this.hist = startHistory(doc);
@@ -91,6 +93,7 @@ export class Builder {
       return;
     }
     const { layer } = this.look;
+    this.look.screen.pics = tilePictures(scene);
     const sized = new ResizeObserver(() => {
       layer.fit();
       this.render();
@@ -142,7 +145,7 @@ export class Builder {
     const d = this.doc;
     this.cursor = { x: clamp(this.cursor.x, 0, d.width - 1), y: clamp(this.cursor.y, 0, d.height - 1) };
     writeDraft(d);
-    void this.redraw();
+    this.redraw();
     this.render();
   }
 
@@ -157,34 +160,18 @@ export class Builder {
     this.mark();
   }
 
-  // A new scene on the edited map, then the old one goes; edits that land meanwhile are drawn by one more pass
-  private async redraw() {
-    if (this.building) {
-      this.again = true;
-      return;
-    }
-    this.building = true;
+  // The board drawn again on the edited map, in place; the marks are built again with it
+  private redraw() {
     try {
-      do {
-        this.again = false;
-        const next = await sceneOf(this.host, this.doc);
-        if (this.gone.aborted) return next.dispose();
-        next.carryView(this.scene);
-        this.scene.dispose();
-        this.scene = next;
-        this.render();
-        this.mark();
-      } while (this.again);
+      this.scene.setGrid(gridOf(this.doc));
+      this.mark();
+      this.host.dataset.redraws = String(++this.redraws);
     } catch (err) {
       console.error(err);
       this.note = t(
         'Este mapa não pôde ser desenhado: desfaça a última mudança.',
         'This map could not be drawn: undo the last change.',
       );
-      this.render();
-    } finally {
-      // a build that failed (a look that would not load) must not stop every later edit from being drawn
-      this.building = false;
     }
   }
 

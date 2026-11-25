@@ -7,8 +7,18 @@
 import * as THREE from 'three';
 import { type Grid, type Tile, tileAt } from '../shared/battle/grid.ts';
 import type { Pos } from '../shared/battle/types.ts';
+import {
+  type Box,
+  type Cells,
+  changed,
+  fillNormals,
+  fillVertices,
+  gridIndex,
+  grow,
+  newVerts,
+  type Verts,
+} from './terrain-grid.ts';
 import { EXT_RING, extTone, outerTop, type River, ringOf, streamAt } from './terrain-outer.ts';
-import { quads } from './three-util.ts';
 import type { WaterLevel } from './water-levels.ts';
 
 // the board and the surroundings still import these from here
@@ -114,7 +124,9 @@ export interface TerrainOptions {
   tex: TerrainTextures;
 }
 
-export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
+// `last`: the terrain of the build before (the map builder's edit, Board.rebuild): on a map of the same size it is kept
+// and only the vertices of the sub-tiles that changed are worked out and uploaded again
+export function buildTerrain(grid: Grid, o: TerrainOptions, last?: THREE.Mesh | null): THREE.Mesh {
   const W = grid.width,
     H = grid.height,
     R = o.extend ? EXT_RING : 0;
@@ -123,70 +135,70 @@ export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
   const raw = new Float32Array(NX * NZ),
     paint = new Float32Array(NX * NZ * 5),
     tone = new Float32Array(NX * NZ);
+  // Per tile first, the same for its SUB x SUB sub-tiles: the outside water, the look, the tone and the height, NaN where
+  // it changes inside the tile (a ramp). The outside height scans a square round its tile (extH): run per sub-tile it
+  // was most of a 24x24 map's redraw (Nov 25, the map builder redraws on every edit)
+  const TW = W + 2 * R,
+    TH = H + 2 * R,
+    wets: (WaterLevel | undefined)[] = [],
+    looks: Paint[] = [],
+    tones = new Float32Array(TW * TH),
+    tops = new Float32Array(TW * TH);
+  for (let j = -R; j < H + R; j++)
+    for (let i = -R; i < W + R; i++) {
+      const ti = (j + R) * TW + i + R,
+        inside = i >= 0 && j >= 0 && i < W && j < H;
+      const edge: Tile = tileAt(grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
+      const wet = (wets[ti] = o.outside.get(`${i},${j}`));
+      looks[ti] = wet ? PAINT.water : (PAINT[edge.look ?? 'grass'] ?? PAINT.grass);
+      // darkens from 1 down to 0.12 over the first EXT_FADE rings and goes to full black over the next EXT_DARK
+      tones[ti] = extTone(inside ? 0 : ringOf(grid, i, j));
+      tops[ti] = !inside
+        ? outerTop(grid, o.step, o.river, i, j)
+        : edge.ramp
+          ? Number.NaN
+          : o.inner({ x: i, y: j }, i + 0.5 - W / 2, j + 0.5 - H / 2);
+    }
   for (let b = 0; b < NZ; b++)
     for (let a = 0; a < NX; a++) {
       const u = (a + 0.5) / SUB - R,
         v = (b + 0.5) / SUB - R; // in tiles, 0 = board corner
       const i = Math.floor(u),
         j = Math.floor(v),
-        c = b * NX + a;
-      const x = u - W / 2,
-        z = v - H / 2;
-      const inside = i >= 0 && j >= 0 && i < W && j < H;
-      const edge: Tile = tileAt(grid, { x: THREE.MathUtils.clamp(i, 0, W - 1), y: THREE.MathUtils.clamp(j, 0, H - 1) });
-      const wet = o.outside.get(`${i},${j}`);
+        c = b * NX + a,
+        ti = (j + R) * TW + i + R;
+      const wet = wets[ti];
       const flowing = wet ? streamAt(grid, o.step, o.levels, o.river, u, j) : null;
-      raw[c] = inside
-        ? o.inner({ x: i, y: j }, x, z)
+      raw[c] = Number.isNaN(tops[ti])
+        ? o.inner({ x: i, y: j }, u - W / 2, v - H / 2)
         : wet && flowing !== null
           ? flowing - (wet.surface - wet.bed)
-          : outerTop(grid, o.step, o.river, i, j);
-      const ring = inside ? 0 : ringOf(grid, i, j);
-      // darkens from 1 down to 0.12 over the first EXT_FADE rings and goes to full black over the next EXT_DARK
-      tone[c] = extTone(ring);
-      paint.set(wet ? PAINT.water : (PAINT[edge.look ?? 'grass'] ?? PAINT.grass), c * 5);
+          : tops[ti];
+      tone[c] = tones[ti];
+      const look = looks[ti];
+      for (let n = 0; n < 5; n++) paint[c * 5 + n] = look[n];
     }
-  // vertex = average of up to 4 surrounding sub-tiles: the edge between two heights becomes a slope, the middle of the tile stays flat
-  const VX = NX + 1,
-    VZ = NZ + 1;
-  const pos = new Float32Array(VX * VZ * 3),
-    col = new Float32Array(VX * VZ * 3),
-    w4 = new Float32Array(VX * VZ * 4),
-    st = new Float32Array(VX * VZ);
-  for (let b = 0; b < VZ; b++)
-    for (let a = 0; a < VX; a++) {
-      let y = 0,
-        k = 0,
-        t = 0;
-      const p = [0, 0, 0, 0, 0];
-      for (const [da, db] of [
-        [-1, -1],
-        [0, -1],
-        [-1, 0],
-        [0, 0],
-      ]) {
-        const ca = a + da,
-          cb = b + db;
-        if (ca < 0 || cb < 0 || ca >= NX || cb >= NZ) continue;
-        const c = cb * NX + ca;
-        y += raw[c];
-        t += tone[c];
-        k++;
-        for (let n = 0; n < 5; n++) p[n] += paint[c * 5 + n];
-      }
-      const v = b * VX + a;
-      pos.set([a / SUB - R - W / 2, y / k, b / SUB - R - H / 2], v * 3);
-      col.set([t / k, t / k, t / k], v * 3);
-      w4.set([p[0] / k, p[1] / k, p[2] / k, p[3] / k], v * 4);
-      st[v] = p[4] / k;
-    }
+  const cells: Cells = { raw, tone, paint, NX, NZ },
+    x0 = -R - W / 2,
+    z0 = -R - H / 2,
+    was = last?.userData.cells as Cells | undefined;
+  if (last && was?.NX === NX && was.NZ === NZ) {
+    last.userData.cells = cells;
+    const box = changed(was, cells);
+    if (box) redrawPart(last.geometry, cells, box, x0, z0);
+    return last;
+  }
+  const v = newVerts(NX, NZ),
+    all = { a0: 0, a1: NX, b0: 0, b1: NZ };
+  fillVertices(cells, v, all, x0, z0, SUB);
+  fillNormals(v.pos, v.normal, NX, NZ, all);
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  g.setAttribute('aW', new THREE.BufferAttribute(w4, 4));
-  g.setAttribute('aStone', new THREE.BufferAttribute(st, 1));
-  g.setIndex(quads([], 0, NX, NZ));
-  g.computeVertexNormals();
+  g.setAttribute('position', new THREE.BufferAttribute(v.pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(v.normal, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(v.col, 3));
+  g.setAttribute('aW', new THREE.BufferAttribute(v.w4, 4));
+  g.setAttribute('aStone', new THREE.BufferAttribute(v.st, 1));
+  g.setIndex(new THREE.BufferAttribute(gridIndex(NX, NZ), 1));
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, {
@@ -207,7 +219,26 @@ export function buildTerrain(grid: Grid, o: TerrainOptions): THREE.Mesh {
   const mesh = new THREE.Mesh(g, mat);
   mesh.receiveShadow = mesh.castShadow = true;
   mesh.name = 'terrain';
+  mesh.userData.cells = cells;
   return mesh;
+}
+
+// The vertices in `box` worked out again in the geometry's own arrays, their normals and their neighbours', and only
+// those rows uploaded (the ranges add up until the next frame uploads them: two edits before a frame both reach it)
+function redrawPart(g: THREE.BufferGeometry, c: Cells, box: Box, x0: number, z0: number) {
+  const at = (n: string) => g.getAttribute(n) as THREE.BufferAttribute,
+    arr = (n: string) => at(n).array as Float32Array,
+    v: Verts = { pos: arr('position'), col: arr('color'), w4: arr('aW'), st: arr('aStone'), normal: arr('normal') },
+    wide = grow(box, c.NX, c.NZ),
+    VX = c.NX + 1;
+  fillVertices(c, v, box, x0, z0, SUB);
+  fillNormals(v.pos, v.normal, c.NX, c.NZ, wide);
+  for (const n of ['position', 'normal', 'color', 'aW', 'aStone']) {
+    const a = at(n);
+    a.addUpdateRange(wide.b0 * VX * a.itemSize, (wide.b1 - wide.b0 + 1) * VX * a.itemSize);
+    a.needsUpdate = true;
+  }
+  g.computeBoundingSphere();
 }
 
 // board tiles for touch and mouse (the ray hits the tile, not the slope): an invisible square in the middle of each

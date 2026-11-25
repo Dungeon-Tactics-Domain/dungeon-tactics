@@ -146,7 +146,7 @@ export type Ground = (p: Pos, x: number, z: number) => number;
 // On the smooth terrain (terrain.ts) the ground slopes for a third of a tile round every change of level, so a mark's
 // rim reads the terrain's own vertices (a regular grid); a tile the terrain does not draw at its own height (water,
 // bridge, block maps) keeps the tile's plane, like the flat marks
-export function groundOf(scene: THREE.Scene, space: TileSpace): Ground {
+export function groundOf(scene: THREE.Object3D, space: TileSpace): Ground {
   const flat: Ground = (p, x, z) => space.surfaceY(p, x, z) + LIFT;
   const pos = (scene.getObjectByName('terrain') as THREE.Mesh | undefined)?.geometry.getAttribute('position');
   if (!pos) return flat;

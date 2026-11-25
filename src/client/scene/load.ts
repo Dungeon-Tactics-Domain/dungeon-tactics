@@ -14,14 +14,18 @@ import { loadTerrainTextures, type TerrainTextures } from '../terrain.ts';
 import { swapTrees } from '../trees.ts';
 import { CORPSE_MODELS, lookPieceNames } from './board-looks.ts';
 
-export async function loadBattleAssets(grid: Grid, state: BattleState, all: string[]) {
+// smooth terrain on open maps (terrain.ts); crypts stay block-based
+export const smoothMap = (grid: Grid) => grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt';
+
+// `also`: a map whose pieces load too though it is not drawn yet (the map builder's palette, so an edit never waits)
+export async function loadBattleAssets(grid: Grid, state: BattleState, all: string[], also?: Grid) {
   const ambience = loadAmbience(grid); // downloads along with the map pieces
-  // smooth terrain on open maps (terrain.ts); crypts stay block-based
-  const terrainTex = grid.tiles.some((t) => t.look) && kindOf(grid) !== 'crypt' ? loadTerrainTextures() : null;
+  const terrainTex = smoothMap(grid) || (also && smoothMap(also)) ? loadTerrainTextures() : null;
   // units compressed with meshopt (Nov 13, Fernando's request: the game downloaded 11 MB to open); Three's decoder
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   // the map's bodies and a resumed battle's corpses (Units.restoreCorpses) wear these models
-  const corpses = grid.tiles.some((t) => t.look === 'corpse') || state.corpses?.length ? CORPSE_MODELS : [];
+  const corpses =
+    [grid, also].some((g) => g?.tiles.some((t) => t.look === 'corpse')) || state.corpses?.length ? CORPSE_MODELS : [];
   const dead = Object.values(state.corpseDefs ?? {}); // the saved corpses wear their own unit's model
   const defs = [
     ...new Set(
@@ -35,7 +39,7 @@ export async function loadBattleAssets(grid: Grid, state: BattleState, all: stri
   ]);
   const models = new Map(defs.map((d, i) => [d, loaded[i]]));
   // only the map that brings a per-tile look downloads these pieces (~630 KB with the textures)
-  const names = lookPieceNames(grid);
+  const names = [...new Set([...lookPieceNames(grid), ...(also ? lookPieceNames(also) : [])])];
   // open maps swap trees and props for painted ones below: those get an empty stand-in, not a download
   const looks = new Map(
     await Promise.all(

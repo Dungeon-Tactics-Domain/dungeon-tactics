@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { FACING, inBounds, posKey, tileAt } from '../../shared/battle/grid.ts';
+import { FACING, inBounds, posKey, type Tile, tileAt } from '../../shared/battle/grid.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { corpseModel } from '../corpse-squares.ts';
 import { unitHeight } from '../markers.ts';
@@ -12,7 +12,7 @@ import { LITTER } from '../props.ts';
 import { hash, prepare } from '../three-util.ts';
 import type { WaterLevel } from '../water-levels.ts';
 import type { Board } from './board.ts';
-import { DETAIL, LOOK, STAIRS } from './board-looks.ts';
+import { DETAIL, LOOK, NEIGHBORS, STAIRS } from './board-looks.ts';
 import { groundOf, litStyle, onGround, type Path, piece } from './mark-kit.ts';
 
 // Map base as a block (Fernando's requests, Nov 12, looking at FFT's board): all columns end on the same
@@ -108,7 +108,8 @@ export function layBody(board: Board, p: Pos, span: number, def?: string): THREE
 // Discreet dotted line on the edge of the battlefield (Nov 13, Fernando's request): follows the ground height of each
 // edge tile (on water, the surface), with a step where the height changes. In a lit mark style (mark-kit.ts) each dash is
 // a short bevelled strip bent over the ground. Built again on a change of style: the old one leaves
-export function buildBorder(board: Board, levels: Map<string, WaterLevel>) {
+// `last`: the border of the build before (Board.rebuild), taken again when it lies on the same ground
+export function buildBorder(board: Board, levels: Map<string, WaterLevel>, last?: THREE.Object3D | null) {
   const old = board.scene.getObjectByName('border');
   old?.traverse((o) => {
     (o as THREE.Mesh).geometry?.dispose();
@@ -149,12 +150,22 @@ export function buildBorder(board: Board, levels: Map<string, WaterLevel>) {
   side(row(H - 1), (p, k) => [X(p.x + k), Z(H) - 0.01]);
   side(col(0), (p, k) => [X(0) + 0.01, Z(p.y + k)]);
   side(col(W - 1), (p, k) => [X(W) - 0.01, Z(p.y + k)]);
+  // an edit away from the edge leaves it as it was: building the lit dashes again was a fifth of a 24x24 redraw
+  const key = [style ?? 'flat', ...pts, ...strips.flatMap((s) => s.pts)]
+    .map((v) => (v instanceof THREE.Vector3 ? v.toArray() : v))
+    .join();
+  if (last?.userData.key === key) {
+    board.scene.add(last);
+    return last;
+  }
   if (style) {
     const lit = piece(style, strips, 0.022, '#f4ecd8', { opacity: 0.8 });
     lit.name = 'border';
     lit.renderOrder = 2;
     lit.castShadow = false; // too thin for the sun's shadow map: it only flickered
-    return void board.scene.add(lit);
+    lit.userData.key = key;
+    board.scene.add(lit);
+    return lit;
   }
   const g = new THREE.BufferGeometry().setFromPoints(pts);
   const line = new THREE.LineSegments(
@@ -171,7 +182,9 @@ export function buildBorder(board: Board, levels: Map<string, WaterLevel>) {
   line.computeLineDistances();
   line.name = 'border';
   line.renderOrder = 2;
+  line.userData.key = key;
   board.scene.add(line);
+  return line;
 }
 
 // Crypt stairs: on a ramp tile with a dungeon floor (LOOK.stairs) the stairs leave the flat top and climb the whole
@@ -258,4 +271,18 @@ export function buildDetails(board: Board) {
   }
   for (const kind of Object.keys(at) as (keyof typeof DETAIL)[])
     board.instanced(prepare(board.lookPieces.get(DETAIL[kind])!.clone()), at[kind]);
+}
+
+// Column cube that never shows: the 4 neighbors are solid ground (no water, bridge or tree crown) reaching up to
+// its top, and so is the tile. They were most of the triangles on maps with a per-tile look (1.2 million on Beacon Hill);
+// cutting them pays for the bigger trees and the details (Nov 13). Water is left out: the other front may make it transparent
+export function buried(board: Board, p: Pos, y: number) {
+  const solid = (t: Tile) => !t.depth && !!t.look && t.look !== 'water' && t.look !== 'bridge' && !LOOK[t.look].canopy;
+  if (!solid(tileAt(board.grid, p))) return false;
+  return NEIGHBORS.every(([dx, dy]) => {
+    const q = { x: p.x + dx, y: p.y + dy };
+    if (!inBounds(board.grid, q)) return false;
+    const t = tileAt(board.grid, q);
+    return solid(t) && (t.h + 1 + (t.terrain === 'wall' && !LOOK[t.look!].prop ? 2 : 0)) * board.space.step >= y - 1e-6;
+  });
 }

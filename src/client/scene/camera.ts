@@ -27,13 +27,16 @@ const PC_START = 10;
 // instead of 20; the pinch and the whole-map button still show more
 const SHORT_START = 6;
 
+// the map diagonal (it shows as a diamond) plus half a tile on each side fits the portrait phone width
+const fitOf = (g: { width: number; height: number }) => ((g.width + g.height) / Math.SQRT2 + 1) / 1.15;
+
 export class CameraRig {
   readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
   private readonly focus = new THREE.Vector3();
   private focusGoal: THREE.Vector3 | null = null; // where the camera slides to (hero of the turn, recenter)
   private viewH: number;
   private viewGoal: number | null = null; // where the aim's zoom eases to (aim, endAim)
-  private readonly fitView: number; // zoom at which the whole map fits the width
+  private fitView: number; // zoom at which the whole map fits the width
   // world units per whole tile: 2 on the split map (half.ts), where every distance in this file is twice as long
   private readonly k: number;
   private insets: Insets = { top: 0, bottom: 0, left: 0, right: 0 }; // px covered by the HUD on each side
@@ -60,7 +63,7 @@ export class CameraRig {
     // fitView: the map diagonal (it shows as a diamond) plus half a tile on each side fits the portrait phone width.
     // Starts 1.5x closer: with the whole map the tile was ~45x24 px, small for a finger (mobile audit of Oct 25);
     // the camera goes to the hero of the turn, and the recenter button goes back to the whole map
-    this.fitView = ((grid.width + grid.height) / Math.SQRT2 + 1) / 1.15;
+    this.fitView = fitOf(grid);
     this.viewH =
       innerWidth < innerHeight
         ? Math.min(this.fitView / ZOOM_START, PORTRAIT_START * this.k)
@@ -73,25 +76,13 @@ export class CameraRig {
     return this.yawTarget;
   }
 
-  // The map builder draws a new scene after each edit (mapedit/builder.ts): the view goes on from the last one's.
-  // A map of another size is framed again from above, where the whole map is what the view shows
-  carry(from: CameraRig) {
-    const { focus, focusGoal, viewH, yaw, yawTarget, pitch, pitchTarget, top, topH, topBack } = from;
-    Object.assign(this, {
-      viewH,
-      yaw,
-      yawTarget,
-      pitch,
-      pitchTarget,
-      top,
-      topH,
-      focusGoal: focusGoal?.clone() ?? null,
-    });
-    this.focus.copy(focus);
-    this.topBack = { ...topBack, focus: topBack.focus.clone() };
-    const g = this.space.grid,
-      was = from.space.grid;
-    if (top && (g.width !== was.width || g.height !== was.height)) this.viewH = this.topH = this.fitTop(yawTarget);
+  // The map builder redraws the board in place (BattleScene.setGrid): the view goes on, and a map of another size
+  // gets its whole-map zoom again, framed again from above, where the whole map is what the view shows
+  refit(was: { width: number; height: number }) {
+    const g = this.space.grid;
+    this.fitView = fitOf(g);
+    if (this.top && (g.width !== was.width || g.height !== was.height))
+      this.viewH = this.topH = this.fitTop(this.yawTarget);
     this.frameView();
   }
 

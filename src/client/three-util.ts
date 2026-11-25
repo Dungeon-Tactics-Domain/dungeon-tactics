@@ -86,3 +86,26 @@ export function letGo(renderer: THREE.WebGLRenderer, root: THREE.Object3D) {
     }
   });
 }
+
+// The map builder's redraw (Board.rebuild): the geometries, instances and textures `old` drew with and `now` does not
+// are freed; the materials stay, so the shaders the next build shares are not compiled again (an unused material only
+// holds a cached program, the same one each build asks for)
+export function letGoOf(old: THREE.Object3D, now: THREE.Object3D) {
+  const parts = (root: THREE.Object3D) => {
+    const out = new Set<{ dispose(): void }>();
+    root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.geometry) out.add(m.geometry);
+      if ((m as unknown as THREE.InstancedMesh).isInstancedMesh) out.add(m as unknown as THREE.InstancedMesh);
+      for (const mat of [m.material].flat()) {
+        if (!mat) continue;
+        const uniforms = (mat as THREE.ShaderMaterial).uniforms ?? {};
+        for (const v of [...Object.values(mat), ...Object.values(uniforms).map((u) => u?.value)])
+          if ((v as THREE.Texture | null)?.isTexture) out.add(v as THREE.Texture);
+      }
+    });
+    return out;
+  };
+  const kept = parts(now);
+  for (const p of parts(old)) if (!kept.has(p)) p.dispose();
+}

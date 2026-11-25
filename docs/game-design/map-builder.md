@@ -101,11 +101,22 @@ The client: `src/client/mapedit/` (controller and pure parts), `window3d/builder
   Height rows.
 - **Tool bar, keys 1 to 9:** ground (grass), tree, shallow water, wall (brick), height +, height −, ramp, palette (the
   entry picked in Paint, sand at first) and rubble (low cover, what the builder tests aim on). The pad's X walks them.
-- **Drawing on the battle's scene:** the map is halved as every battle and drawn by `BattleScene`; the board is built
-  once per scene, so each finished edit builds a new scene and the camera (heading, zoom, focus, top view) carries
-  over (`CameraRig.carry`). Measured on the 12x12 blank only, in headless Chrome: 250 to 280 ms from Undo to the new
-  scene; 120 redraws in one session (60 edits, 60 undos) lost no WebGL context. A scene that fails to build says so in
-  the help line and the next edit draws again.
+- **Tile pictures (Nov 25):** every bar plate and every Paint entry shows a picture of what it paints over or beside
+  its name: a tiny map per picture (`mapedit/pics.ts`, pure) built on the battle's own pieces and drawn once per page
+  by the scene's renderer into a canvas (`scene/tile-shot.ts`, `mapedit/pic-shots.ts`), cropped to the tile. Height +,
+  Height − and Ramp show the ground they make with a +, − or ↗ sign; the Palette plate shows the entry picked.
+- **Drawing on the battle's scene:** the map is halved as every battle and drawn by `BattleScene`. Each finished edit
+  redraws in place (`BattleScene.setGrid`, Nov 25): the scene's `TileSpace` takes the new map and the board is built
+  again in the same scene (`Board.rebuild`), with the same renderer, camera, units and surroundings; the terrain keeps
+  its mesh and works out and uploads only the vertices of the sub-tiles that changed, the dotted border stays while it
+  lies the same, the tile marks move to their new ground, and the top view's shade and numbers are made again. A map
+  of another size (Map tab) also gets its marks, its surroundings and the camera's whole-map zoom again. The scene
+  loads every palette entry's pieces when it opens (`paletteGrid`), so no edit waits for a download. The host's
+  `data-redraws` counts the redraws for timing scripts. Measured in headless Chrome (software WebGL) on a map with
+  trees and hills, from the key to two frames after the redraw: 12x12 280 to 390 ms before, 37 to 52 ms after (first
+  edit 82 to 102); 24x24 456 to 809 ms before, 62 to 108 ms after, except the first edit after opening, 119 to 138
+  (the code still compiling). 100 undo and redo steps in one session kept the same two canvases (the scene's and the
+  3D layer's), and the renderer's geometries, textures and programs stayed at the same count. A redraw that fails says so in the help line.
   During a drag the tiles of the stroke and the brush light up in the tool's mark; the stroke lands on release, as one
   undo step, each tile once (height and ramp are not idempotent).
 - **Input:** left button or a finger paints, right button paints grass (height kept), the middle button or two fingers

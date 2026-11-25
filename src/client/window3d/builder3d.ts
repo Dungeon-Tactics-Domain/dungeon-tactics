@@ -6,12 +6,14 @@
 //   hands this screen what to draw (`set`); nothing here decides or measures the page.
 import { Group } from 'three';
 import { type Colors, colors, label, put, rgba } from '../flow3d/draw.ts';
-import { Part, type Rgba } from '../hints3d/hints3d.ts';
+import { Part, type Quad, type Rgba } from '../hints3d/hints3d.ts';
 import type { Cell } from '../mapedit/layout.ts';
+import { PIC_SIGN } from '../mapedit/pics.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
 import { type Box, textPx } from '../ui3d/layout.ts';
+import { imageMesh } from '../ui3d/text.ts';
 
-export interface BuilderItem extends Pick<Cell, 'text' | 'kind' | 'on' | 'off'> {
+export interface BuilderItem extends Pick<Cell, 'text' | 'kind' | 'on' | 'off' | 'pic'> {
   box: Box;
   focus?: boolean; // Tab or the pad's walk reached it
 }
@@ -30,6 +32,8 @@ export class Builder3d implements Ui3dScreen {
   private readonly part = new Part();
   private readonly color: Colors;
   private view: BuilderView | null = null;
+  // the tile pictures by key (mapedit/pic-shots.ts), rendered on the scene's pieces before the builder first draws
+  pics = new Map<string, HTMLCanvasElement>();
 
   constructor(
     private readonly layer: Ui3dLayer,
@@ -102,6 +106,8 @@ export class Builder3d implements Ui3dScreen {
       faded(rgba(it.focus ? c.title : c.line, it.focus ? 1 : 0.8), it.off),
     );
     const ink = it.off ? c.soft : lit && !field ? c.title : c.text;
+    const pic = it.pic ? this.pics.get(it.pic) : undefined;
+    if (pic) return this.pictured(it, pic, ink);
     if (it.kind === 'area') {
       // the box shows the text's start, as many characters as its lines hold (about 0.55 em each), never spilled
       const px = textPx(TEXT - 6, s),
@@ -117,6 +123,30 @@ export class Builder3d implements Ui3dScreen {
       return;
     }
     this.centred(it.text, ink, b);
+  }
+
+  // A tool or a palette entry: its picture, and its name under it on a bar plate or beside it on a panel row
+  private pictured(it: BuilderItem, pic: HTMLCanvasElement, ink: string) {
+    const { layer, part } = this,
+      b = it.box,
+      stacked = b.w < b.h * 2.2,
+      size = stacked ? Math.min(b.w - 8, b.h * 0.58) : b.h - 8,
+      x = stacked ? b.x + (b.w - size) / 2 : b.x + 4,
+      y = b.y + 4;
+    const m = imageMesh(`pic:${it.pic}`, () => pic, layer.dpr) as Quad;
+    m.scale.set(size, size, 1);
+    part.text(m, x + size / 2, y + size / 2);
+    const sign = PIC_SIGN[it.pic ?? ''];
+    if (sign) {
+      const r = Math.max(20, size * 0.45),
+        at = { x: x + size - r * 0.7, y: y - 2, w: r, h: r };
+      part.box(at.x, at.y, r, r, r / 2, rgba(this.color.plate, 0.95), rgba(this.color.title, 0.9));
+      this.centred(sign, this.color.title, at);
+    }
+    const name = stacked
+      ? { x: b.x, y: y + size, w: b.w, h: b.y + b.h - y - size }
+      : { x: x + size + 2, y: b.y, w: b.x + b.w - x - size - 2, h: b.h };
+    this.centred(it.text, ink, name);
   }
 
   // a name too long for its plate wraps to a second line before it shrinks, and never under 14 px (design system,

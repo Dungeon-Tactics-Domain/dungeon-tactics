@@ -275,7 +275,10 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   use and the control Tab or the pad reached are lit (`--ui3d-result-line` fill, `--ui3d-result-title` text); a control
   with nothing to do now is faded to 45% and says why in its text (Play). Name fields and the paste box are darker
   (`--ui3d-result-veil`). Every control is 44 px at least; where each sits is `mapedit/layout.ts` (pure, tested), and
-  the real buttons, fields and paste box stay unseen under the drawing (`mapedit/builder-ui.ts`).
+  the real buttons, fields and paste box stay unseen under the drawing (`mapedit/builder-ui.ts`). A tool or palette
+  entry carries its tile picture (Nov 25): on a bar plate the picture sits over the name (the plate grows by 48
+  reference px, never under 36), on a panel row it sits at the left with the name beside it; Height +, Height − and
+  Ramp add a round `--ui3d-result-title` sign (+, −, ↗) on the picture's corner. The name keeps 14 px at least.
 - **Corner buttons** (`window3d/tools3d.ts`; Fernando, Nov 18 night: no ☰ menu and no blue): the gear (Options),
   "↶ Desfazer", Back (↩, a finger's) and the camera pair ↺ ↻ (in battle with the top view ⊞ after them, Nov 25; on a
   phone, where a third would reach the instruction banner, under ↺) as plates of the end of battle, `--ui3d-result-plate` at

@@ -22,15 +22,15 @@ interface Label {
 }
 
 export class TopView {
-  private readonly shade: THREE.Mesh;
-  private readonly numbers: THREE.Mesh;
+  private readonly shade: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  private readonly numbers: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   private readonly labels: Label[] = [];
   private quarter = Number.NaN; // the quarter turn the numbers were laid for
   private readonly max: number; // the highest tile: the atlas holds 1 to max
 
   constructor(
     private readonly cam: CameraRig,
-    scene: THREE.Scene,
+    private readonly scene: THREE.Scene,
     private readonly space: TileSpace,
   ) {
     const grid = space.grid,
@@ -74,6 +74,17 @@ export class TopView {
     this.shade.visible = this.numbers.visible = false;
     this.numbers.renderOrder = 1; // over the shade
     scene.add(this.shade, this.numbers);
+  }
+
+  // the map builder's edit (BattleScene.setGrid): shade and numbers again on the space's new map
+  again(): TopView {
+    this.scene.remove(this.shade, this.numbers);
+    // the materials stay: disposed, their shaders would be compiled again for the next ones (the scene frees them)
+    for (const m of [this.shade, this.numbers]) {
+      m.geometry.dispose();
+      m.material.map?.dispose();
+    }
+    return new TopView(this.cam, this.scene, this.space);
   }
 
   get isTop() {

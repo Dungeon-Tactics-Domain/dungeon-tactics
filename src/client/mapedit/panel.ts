@@ -6,6 +6,7 @@ import { type MapDoc, SIZE } from '../../shared/mapedit/doc.ts';
 import { ACTIONS, type Shown } from '../glyphs.ts';
 import { t } from '../i18n.ts';
 import type { Cell, Row } from './layout.ts';
+import { picOf } from './pics.ts';
 import { BAR, type Brush, sameTool, type Tool } from './tools.ts';
 
 export const TABS = ['paint', 'relief', 'map', 'file'] as const;
@@ -49,6 +50,7 @@ export function barCells(s: PanelState): Cell[] {
   return BAR.map((slot, i) =>
     button(`bar:${i}`, withKey(t(...slot.name), ACTIONS.tools.keys[i], s), {
       on: sameTool(slot.tool(s.picked), s.tool),
+      pic: picOf(`bar:${i}`, s.picked) ?? undefined,
     }),
   );
 }
@@ -84,7 +86,9 @@ function paintRows(s: PanelState): Row[] {
     rows.push({
       cells: shown
         .slice(i, i + 2)
-        .map((e) => button(`pal:${e.id}`, t(...e.name), { on: s.tool.k === 'paint' && s.tool.entry === e.id })),
+        .map((e) =>
+          button(`pal:${e.id}`, t(...e.name), { on: s.tool.k === 'paint' && s.tool.entry === e.id, pic: e.id }),
+        ),
     });
   rows.push({
     cells: [
@@ -97,7 +101,11 @@ function paintRows(s: PanelState): Row[] {
 }
 
 function reliefRows(s: PanelState): Row[] {
-  const tool = (i: number) => button(`bar:${i}`, t(...BAR[i].name), { on: sameTool(BAR[i].tool(s.picked), s.tool) });
+  const tool = (i: number) =>
+    button(`bar:${i}`, t(...BAR[i].name), {
+      on: sameTool(BAR[i].tool(s.picked), s.tool),
+      pic: picOf(`bar:${i}`, s.picked) ?? undefined,
+    });
   return [
     { cells: [tool(4), tool(5)] },
     { cells: [tool(6)] },

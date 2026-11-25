@@ -61,7 +61,7 @@ export class Ambience {
   constructor(
     private readonly grid: Grid,
     private readonly mood: Mood,
-    models: Map<string, THREE.Object3D>,
+    private readonly models: Map<string, THREE.Object3D>,
   ) {
     this.hw = grid.width / 2;
     this.hh = grid.height / 2;
@@ -305,6 +305,12 @@ export class Ambience {
 
   update(ms: number, camera: THREE.Camera) {
     this.air.update(ms, camera);
+  }
+
+  // the same surroundings round a map of another size (BattleScene.setGrid), from the models already loaded
+  again(grid: Grid): Ambience {
+    this.dispose();
+    return new Ambience(grid, this.mood, this.models);
   }
 
   dispose() {

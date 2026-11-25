@@ -2,7 +2,7 @@
 // path dots, the keyboard cursor, the dotted range ring (range-ring.ts), the shot trajectory (trajectory.ts) and the town's
 // debug grid. It only draws what the scene passes in.
 import * as THREE from 'three';
-import { inBounds, posKey } from '../../shared/battle/grid.ts';
+import { inBounds, posKey, tileAt } from '../../shared/battle/grid.ts';
 import type { Pos, Shot } from '../../shared/battle/types.ts';
 import type { Highlights } from '../interaction.ts';
 import { MARKER } from '../markers.ts';
@@ -46,7 +46,7 @@ export class Marks {
   // The lit styles (mark-style.ts; null draws the flat marks of before): a tile's mark is one geometry bent over its
   // ground, built the first time the tile is marked, and the tiles of a kind share their materials, which breathe together
   private readonly style = litStyle();
-  private readonly ground: Ground;
+  private ground: Ground;
   private readonly tileGeo = new Map<string, THREE.BufferGeometry>();
   private readonly tileMats = new Map<string, THREE.Material[]>();
 
@@ -55,27 +55,26 @@ export class Marks {
     private readonly scene: THREE.Scene,
     private readonly space: TileSpace,
     private readonly camera: THREE.Camera,
-    private readonly trees: boolean,
+    private trees: boolean,
   ) {
     const grid = space.grid;
     const markGeo = this.markGeo;
     const style = this.style;
     this.ground = groundOf(scene, space);
     scene.add(this.root);
+    this.root.matrixAutoUpdate = false; // it never moves: a moving parent would work out every tile mark's matrix again
     // lit: a small bevelled stud instead of the flat square
     const dotGeo = style
       ? new THREE.CylinderGeometry(0.1, 0.15, 0.06, 10).translate(0, 0.03, 0)
       : new THREE.PlaneGeometry(0.3, 0.3).rotateX(-Math.PI / 2);
-    for (const [i, tile] of grid.tiles.entries()) {
+    for (const i of grid.tiles.keys()) {
       const p = { x: i % grid.width, y: Math.floor(i / grid.width) };
-      const w = this.space.world(p);
       const mark = style
         ? dressTile(new THREE.Mesh(NONE, []))
         : new THREE.Mesh(
             markGeo,
             new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: markTexture('frame') }),
           );
-      mark.position.set(w.x, w.y + (style ? 0 : 0.02), w.z);
       mark.visible = false;
       this.root.add(mark);
       this.marks.set(posKey(p), mark);
@@ -86,7 +85,6 @@ export class Marks {
             markGeo,
             new THREE.MeshBasicMaterial({ color: DANGER[0], transparent: true, opacity: DANGER[1], depthWrite: false }),
           );
-      danger.position.set(w.x, w.y + (style ? -0.004 : 0.015), w.z);
       danger.visible = false;
       this.root.add(danger);
       this.danger.set(posKey(p), danger);
@@ -102,12 +100,10 @@ export class Marks {
             }),
       );
       if (style) dressTile(dot);
-      dot.position.set(w.x, w.y + 0.03, w.z);
       dot.visible = false;
       this.root.add(dot);
       this.pathDots.set(posKey(p), dot);
-      // tile markers lying on the ramp: flat, the top half was buried on the climb (a lit mark is bent over its ground)
-      if (tile.ramp) for (const m of style ? [dot] : [mark, danger, dot]) this.space.lay(m, p);
+      this.seat(p);
     }
     // transparent only to enter the transparent queue, after the water (renderOrder -1): without it the water tinted the frame
     const frame = style
@@ -136,6 +132,39 @@ export class Marks {
     this.root.add(this.cursor);
   }
 
+  // a tile's marks on its ground; on a ramp lying flat on the climb, where the top half was buried (a lit mark is bent
+  // over its ground instead)
+  private seat(p: Pos) {
+    const k = posKey(p),
+      w = this.space.world(p),
+      ramp = !!tileAt(this.space.grid, p).ramp,
+      lit = !!this.style;
+    const put = (m: THREE.Mesh, lift: number, lay: boolean) => {
+      m.position.set(w.x, w.y + lift, w.z);
+      m.rotation.set(0, 0, 0);
+      m.scale.set(1, 1, 1);
+      if (ramp && lay) this.space.lay(m, p);
+      // still between seatings: thousands of tile marks no longer have their matrices worked out every frame
+      m.matrixAutoUpdate = false;
+      m.updateMatrix();
+      if (m.visible && lit && m !== this.pathDots.get(k)) m.geometry = this.bent(k, p);
+    };
+    put(this.marks.get(k)!, lit ? 0 : 0.02, !lit);
+    put(this.danger.get(k)!, lit ? -0.004 : 0.015, !lit);
+    put(this.pathDots.get(k)!, 0.03, true);
+  }
+
+  // The map builder's edit on a map of the same size (BattleScene.setGrid): every mark on its tile's new ground with the
+  // same meshes and materials (building them again took a third of a 24x24 redraw and compiled their shaders again)
+  reground(trees: boolean) {
+    this.trees = trees;
+    this.ground = groundOf(this.scene, this.space);
+    for (const g of this.tileGeo.values()) g.dispose();
+    this.tileGeo.clear();
+    for (const i of this.space.grid.tiles.keys())
+      this.seat({ x: i % this.space.grid.width, y: Math.floor(i / this.space.grid.width) });
+  }
+
   // the shared materials of a kind of lit tile mark: rim, glass and neon's halo
   private matsOf(kind: string, color: string, pattern: MarkPattern, opacity: number): THREE.Material[] {
     const key = `${kind}|${pattern}`;
@@ -150,10 +179,11 @@ export class Marks {
     return g;
   }
 
-  // a change of style (BattleScene.restyle): this one leaves and a new one is built in the style of now
-  again(): Marks {
+  // a change of style (BattleScene.restyle) or of map (setGrid, with its `trees`): this one leaves and a new one is
+  // built in the style of now
+  again(trees = this.trees): Marks {
     this.dispose();
-    return new Marks(this.scene, this.space, this.camera, this.trees);
+    return new Marks(this.scene, this.space, this.camera, trees);
   }
   private dispose() {
     this.scene.remove(this.root);
@@ -344,6 +374,7 @@ export class Marks {
         dot.rotation.set(0, 0, 0);
         dot.scale.set(1, 1, 1);
       } else this.space.lay(dot, p);
+      dot.updateMatrix();
       dot.visible = true;
     }
   }
