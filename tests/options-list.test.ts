@@ -51,6 +51,6 @@ describe('Options rows', () => {
     expect(row('Predefinição').text()).toBe('Seu');
     row('Predefinição').step(1);
     expect(row('Predefinição').text()).toBe('Nosso');
-    expect(row('Tamanho do pixel').text()).toBe('4');
+    expect(row('Tamanho do pixel').text()).toBe('3');
   });
 });

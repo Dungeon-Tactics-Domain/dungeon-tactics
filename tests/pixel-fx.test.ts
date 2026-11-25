@@ -22,8 +22,9 @@ describe('pixel effect settings', () => {
   });
 
   it('Reference holds the author numbers of the Nov 24 brief: pixel from the screen, 5 levels, dither 0.5', () => {
-    expect(PIXEL_PRESETS.reference).toMatchObject({ size: 0, levels: 5, dither: true, strength: 50 });
-    expect(PIXEL_PRESETS.ours).toMatchObject({ size: 4, levels: 5, palette: 'warm', dither: true, strength: 50 });
+    expect(PIXEL_PRESETS.reference).toMatchObject({ size: 0, levels: 5, palette: 'ember', dither: true, strength: 50 });
+    // Nov 24: the two presets must differ on a 1080p screen, where the automatic size is 4
+    expect(PIXEL_PRESETS.ours).toMatchObject({ size: 3, levels: 5, palette: 'cold', dither: true, strength: 50 });
   });
 
   it('the preset is read from the values; one changed by hand is nobody’s', () => {

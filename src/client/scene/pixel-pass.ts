@@ -7,6 +7,17 @@ import { lowRes, type PixelFx, type PixelPalette, pixelSize } from '../pixel-fx.
 
 // our own ramps, dark to light (sRGB); the pass picks the family whose hue is closest, then the step by brightness
 const RAMPS: Record<Exclude<PixelPalette, 'original'>, string[][]> = {
+  // Ember (Nov 24, the Reference preset's own): our colours, cool violet shadows rising to hot lit tops, high contrast
+  ember: [
+    ['#120f1a', '#3a3346', '#7a6c72', '#d8c3a5'],
+    ['#1a0f14', '#5c2c26', '#b5653a', '#ffd08a'],
+    ['#1c0a16', '#6e1c2c', '#d9452e', '#ffa25e'],
+    ['#0c0d22', '#2b3270', '#4f78c4', '#b8e2ff'],
+    ['#0b1418', '#1f4a3c', '#5a9a4e', '#d2ec86'],
+    ['#1d1008', '#80521a', '#e8a32c', '#fff6b8'],
+    ['#170c26', '#4f2a78', '#9d5cbf', '#f0bff0'],
+    ['#1a1820', '#5e5866', '#bdb3ad', '#fff7e6'],
+  ],
   warm: [
     ['#17141c', '#3b3540', '#6d6470', '#b3a99c'], // stone
     ['#24130f', '#653620', '#ad6d38', '#f1c47c'], // wood, skin
@@ -31,6 +42,12 @@ const RAMPS: Record<Exclude<PixelPalette, 'original'>, string[][]> = {
 const RAMP_W = 64; // lookup texture width: x = brightness, y = family
 // the life bars and turn numbers over the units: drawn sharp after the pass, or 4 px pixels swallow their digits
 export const SHARP_LAYER = 1;
+// puts a piece and its children on the sharp layer: charge lines, the range ring and the cursor arrow too (Fernando,
+// Nov 24: "Marcas nítidas no efeito"), so the tactical reading survives the big pixels
+export const sharp = <T extends THREE.Object3D>(o: T): T => {
+  o.traverse((c) => c.layers.set(SHARP_LAYER));
+  return o;
+};
 
 const FRAGMENT = /* glsl */ `
   precision highp float;

@@ -80,12 +80,13 @@ export const pixelGroup = (): OptionsGroup => ({
     pick(
       t('Paleta', 'Palette'),
       t(
-        'Quente e Fria trocam cada cor pela família de cor mais próxima. Original mantém as cores, só reduz o brilho.',
-        'Warm and Cold swap each colour for the closest colour family. Original keeps the colours and only steps the brightness.',
+        'Quente, Fria e Brasa trocam cada cor pela família de cor mais próxima. Original mantém as cores, só reduz o brilho.',
+        'Warm, Cold and Ember swap each colour for the closest colour family. Original keeps the colours and only steps the brightness.',
       ),
       [
         ['warm', t('Quente', 'Warm')],
         ['cold', t('Fria', 'Cold')],
+        ['ember', t('Brasa', 'Ember')],
         ['original', t('Original', 'Original')],
       ] as [PixelPalette, string][],
       ...field('palette'),

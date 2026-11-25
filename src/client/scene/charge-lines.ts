@@ -7,6 +7,7 @@ import { shotAt } from '../../shared/battle/shot.ts';
 import type { ChargeLine, Counters, Square } from '../charge-lines.ts';
 import { unitHeight } from '../markers.ts';
 import { type Lit, litPaint, litStyle, rod } from './mark-kit.ts';
+import { sharp } from './pixel-pass.ts';
 import type { TileSpace } from './space.ts';
 
 // counter: a violet apart from both sides and the charge preview (Nov 15, the counter indicator)
@@ -75,7 +76,7 @@ export class ChargeLines {
       head.position.copy(tip);
       head.lookAt(b);
       shaft.renderOrder = head.renderOrder = 13;
-      this.counter.add(shaft, head);
+      this.counter.add(sharp(shaft), sharp(head));
     }
   }
 
@@ -124,7 +125,7 @@ export class ChargeLines {
         g.add(bar);
       }
     }
-    this.scene.add(g);
+    this.scene.add(sharp(g));
     return g;
   }
 }

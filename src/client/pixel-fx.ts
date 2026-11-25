@@ -5,7 +5,7 @@
 import { store } from './store.ts';
 
 export const PIXEL_KEY = 'dt:pixel-fx';
-export const PIXEL_PALETTES = ['warm', 'cold', 'original'] as const;
+export const PIXEL_PALETTES = ['warm', 'cold', 'ember', 'original'] as const;
 export type PixelPalette = (typeof PIXEL_PALETTES)[number];
 export const PIXEL_SIZES = [0, 2, 3, 4, 5, 6, 7, 8] as const; // screen px per low-res px; 0 = from the screen (pixelSize)
 export const PIXEL_LEVELS = [2, 3, 4, 5, 6, 7, 8] as const;
@@ -22,11 +22,12 @@ export type PixelLook = Omit<PixelFx, 'on'>;
 export type PixelPreset = 'ours' | 'reference';
 
 export const PIXEL_PRESETS: Record<PixelPreset, PixelLook> = {
-  // the demo's defaults (08-pixel-splat, c0f3030): scale 4, 5 levels, Masmorra quente, half-amplitude dither
-  ours: { size: 4, levels: 5, palette: 'warm', dither: true, strength: 50 },
+  // ours: finer than the reference and cold, so the two presets differ at a glance (Fernando, Nov 24: "Nosso vira fria,
+  // pixel 3"); the demo's own defaults were pixel 4 and the warm palette
+  ours: { size: 3, levels: 5, palette: 'cold', dither: true, strength: 50 },
   // the reference author's numbers (brief of Nov 24): pixel from the screen (/270), 5 levels, dither spread 0.5; his
-  // palette colours are not ours to take, so it keeps our warm one
-  reference: { size: 0, levels: 5, palette: 'warm', dither: true, strength: 50 },
+  // palette colours are not ours to take, so it has a palette of its own, Ember (Nov 24: "Paleta própria no do autor")
+  reference: { size: 0, levels: 5, palette: 'ember', dither: true, strength: 50 },
 };
 // off by default (Fernando, Nov 24): the game stays smooth 3D until the player turns it on
 export const PIXEL_DEFAULT: PixelFx = { on: false, ...PIXEL_PRESETS.ours };

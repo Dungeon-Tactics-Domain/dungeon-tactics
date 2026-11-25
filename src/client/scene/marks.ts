@@ -21,6 +21,7 @@ import {
   tint,
 } from './mark-kit.ts';
 import { DANGER, MARK, type MarkPattern, markTexture } from './mark-looks.ts';
+import { sharp } from './pixel-pass.ts';
 import { rangeRing, walkRing } from './range-ring.ts';
 import { rectOf, sides, type TileSpace } from './space.ts';
 import { type Aim, animateAim, disposeAim, trajectory } from './trajectory.ts';
@@ -130,7 +131,7 @@ export class Marks {
     );
     arrow.name = 'arrow';
     arrow.renderOrder = 11; // the arrow stays above everything (even behind a wall it shows where the cursor is); the frame does not
-    this.cursor.add(frame, arrow);
+    this.cursor.add(frame, sharp(arrow));
     this.cursor.visible = false;
     this.root.add(this.cursor);
   }
@@ -215,7 +216,7 @@ export class Marks {
     const mesh = new THREE.Group();
     if (r.range >= 1) mesh.add(rangeRing(this.space, r, this.style, this.ground));
     if (r.walk?.length) mesh.add(walkRing(this.space, new Set(r.walk), this.style, this.ground));
-    this.root.add(mesh);
+    this.root.add(sharp(mesh));
     this.ring = { key, mesh };
   }
 
