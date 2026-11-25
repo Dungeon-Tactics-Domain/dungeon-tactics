@@ -1,5 +1,6 @@
-// The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Help is
-// options.ts's own, since its rows open windows). Out of options.ts so that file stays under the 400 lines.
+// The settings of the Options window, grouped in its categories (Fernando, Nov 18: Game, Sound and Display; Pixel effect
+// since Nov 24, from options-pixel.ts; Help is options.ts's own, since its rows open windows). Out of options.ts so that
+// file stays under the 400 lines.
 import { secondTap } from '../dialog.ts';
 import { fpsOn } from '../fps.ts';
 import { fullscreenLabel, fullscreenOn, toggleFullscreen } from '../fullscreen.ts';
@@ -19,6 +20,7 @@ import type { LayoutMode } from '../ui3d/layout.ts';
 import { toTitle } from './crawl.ts';
 import type { OptionsContext } from './options.ts';
 import { marksOption } from './options-marks.ts';
+import { pixelGroup } from './options-pixel.ts';
 
 // Fullscreen (Nov 18, Fernando: a phone showed the game under Chrome's bar), the switch of fullscreen.ts; only where
 // the API exists (an iPhone has none)
@@ -285,4 +287,5 @@ export const settings = (o: OptionsContext): OptionsGroup[] => [
         : []),
     ],
   },
+  pixelGroup(), // the pixel effect (Nov 24, Fernando; options-pixel.ts)
 ];

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { type OptionsGroup, settings } from '../src/client/game/options-list.ts';
+import type { Option } from '../src/client/option-row.ts';
+import { pixelFx } from '../src/client/pixel-fx.ts';
 
 vi.stubGlobal('document', { fullscreenEnabled: false }); // the rows are read with no page: no Fullscreen API
 let touch = false; // (pointer: coarse): a finger points
@@ -34,5 +36,21 @@ describe('Options rows', () => {
     touch = true;
     expect(names(group({ relayout() {} }, 'Jogo'))).toContain('Joystick e botão');
     touch = false;
+  });
+  // Nov 24, Fernando: the pixel effect in its own category, with the reference author's numbers as a preset
+  it('Pixel effect: a preset writes its values, a value changed by hand shows Your own', () => {
+    const rows = group({ relayout() {} }, 'Efeito de pixel').rows as Option[];
+    const row = (label: string) => rows.find((r) => r.label === label)!;
+    expect(row('Efeito de pixel').text()).toBe('Desligado');
+    expect(row('Predefinição').text()).toBe('Nosso');
+    row('Predefinição').step(1);
+    expect(row('Predefinição').text()).toBe('Referência');
+    expect(row('Tamanho do pixel').text()).toBe('Automático');
+    expect(pixelFx().on).toBe(false); // a preset never turns the effect on
+    row('Tons de brilho').step(1);
+    expect(row('Predefinição').text()).toBe('Seu');
+    row('Predefinição').step(1);
+    expect(row('Predefinição').text()).toBe('Nosso');
+    expect(row('Tamanho do pixel').text()).toBe('4');
   });
 });

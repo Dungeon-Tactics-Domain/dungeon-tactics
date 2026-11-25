@@ -65,7 +65,7 @@ export interface OptionsBoard {
 
 // Options (Nov 16, Fernando: the interface on its Final Fantasy Tactics counterpart): the current value at the right of
 // each row, left and right change it and the description says what the focused row does. Four categories since Nov 18
-// (Game, Sound, Display, Help); what is not a setting (tile marks, controls) opens from Help's rows
+// (Game, Sound, Display, Help), five with Pixel effect since Nov 24; what is not a setting (tile marks, controls) opens from Help's rows
 export function optionsMenu(o: OptionsContext) {
   const help = el('p', { class: 'opt-help', 'aria-live': 'polite' });
   const describe = (text: string) => (help.textContent = text);

@@ -10,6 +10,7 @@ import { barYOf, MARKER, unitHeight } from '../markers.ts';
 import { prepare } from '../three-util.ts';
 import type { Board } from './board.ts';
 import { circle, litPaint, litStyle, piece, square } from './mark-kit.ts';
+import { SHARP_LAYER } from './pixel-pass.ts';
 import type { Timeline } from './timeline.ts';
 
 const TEAM_COLOR = { hero: '#3d9bff', enemy: '#ff4d4d' };
@@ -128,6 +129,7 @@ export function makeView(
   barHolder.position.y = barYOf(u.def);
   barHolder.name = 'bar';
   barBg.renderOrder = bar.renderOrder = 10;
+  for (const m of [barBg, bar]) m.layers.set(SHARP_LAYER);
   ground.visible = barHolder.visible = markers;
   holder.add(ground, barHolder);
   scene.add(holder);
@@ -256,6 +258,7 @@ export function setOrder(v: UnitView, n: number | undefined, now: boolean) {
     );
     tag.name = 'order';
     tag.renderOrder = 10;
+    tag.layers.set(SHARP_LAYER);
     bar.add(tag);
   }
   const tex = orderTexture(n, now ? 'now' : v.team);

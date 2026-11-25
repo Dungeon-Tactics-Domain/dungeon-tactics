@@ -106,7 +106,11 @@ export function optionRow(o: Option, describe: (help: string) => void): HTMLButt
       else step(1);
     },
     {
-      onfocus: () => describe(o.help),
+      // redrawn on focus: a row another row changes (the pixel effect's Preset) must not read its old value
+      onfocus: () => {
+        draw();
+        describe(o.help);
+      },
       onpointerdown: (e: PointerEvent) => {
         if (!onTrack(e.clientX)) return;
         dragged = false;

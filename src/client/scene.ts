@@ -1,4 +1,5 @@
-// Three.js battle scene: the renderer (smooth 3D; the pixel art pass left on Nov 18), the lights, the frame loop and
+// Three.js battle scene: the renderer (smooth 3D; the pixel art pass left on Nov 18, the optional pixel effect of
+// Nov 24 is scene/pixel-pass.ts), the lights, the frame loop and
 // the public API the game and the HUD use. It only draws: it knows no rules, it receives state, highlights and events.
 // The parts live in scene/: board (terrain and pieces), marks (tile marks and cursor), units (characters and events),
 // camera (orbit and action camera), space (tile to world) and timeline (the battle clock).
@@ -14,6 +15,7 @@ import { type ChargeLine, type Counters, chargeLines } from './charge-lines.ts';
 import { el } from './icons.ts';
 import { chargeDanger, type Highlights } from './interaction.ts';
 import { no3d } from './no3d.ts';
+import { onPixelFx, pixelFx } from './pixel-fx.ts';
 import { Board } from './scene/board.ts';
 import { CameraRig } from './scene/camera.ts';
 import { ChargeLines } from './scene/charge-lines.ts';
@@ -21,6 +23,7 @@ import { CursorNote } from './scene/float-numbers.ts';
 import { loadBattleAssets } from './scene/load.ts';
 import { Marks } from './scene/marks.ts';
 import { PerfCounter } from './scene/perf.ts';
+import { PixelPass, SHARP_LAYER } from './scene/pixel-pass.ts';
 import { squareUnder, TileSpace } from './scene/space.ts';
 import { Timeline } from './scene/timeline.ts';
 import { Units } from './scene/units.ts';
@@ -38,6 +41,8 @@ export class BattleScene {
   private readonly cam: CameraRig;
   private readonly camera: THREE.OrthographicCamera;
   private readonly composer = new EffectComposer(this.renderer);
+  private readonly pixel = new PixelPass(); // drawn instead of the composer while Options › Pixel effect is on
+  private readonly unhear: () => void;
   private readonly board: Board;
   private marks: Marks; // rebuilt on a change of mark style (restyle)
   private chargeLines: ChargeLines;
@@ -74,6 +79,7 @@ export class BattleScene {
     host.append(this.floats);
     this.cam = new CameraRig(host, this.renderer.domElement, this.space, (ms, step) => this.time.animate(ms, step));
     this.camera = this.cam.camera;
+    this.camera.layers.enable(SHARP_LAYER); // the bars over the units (pixel-pass.ts)
     this.note = new CursorNote(this.camera, this.renderer.domElement, () => this.marks.cursorAt());
     for (const pass of [new RenderPass(this.scene, this.camera), new OutputPass()]) this.composer.addPass(pass);
     // screen sharpness up to 2x: a 3x phone draws at 2x, where the difference does not show and the phone is grateful
@@ -101,6 +107,8 @@ export class BattleScene {
       packClips,
       this.renderer.domElement,
     );
+    this.pixel.set(pixelFx());
+    this.unhear = onPixelFx(() => this.pixel.set(pixelFx()));
     addEventListener('resize', this.onResize);
     this.resize();
     this.renderer.setAnimationLoop(() => this.frame());
@@ -233,6 +241,7 @@ export class BattleScene {
   pick(clientX: number, clientY: number, size = 1): Pos | null {
     const r = this.renderer.domElement.getBoundingClientRect();
     const ray = new THREE.Raycaster();
+    ray.layers.enable(SHARP_LAYER); // a tap on a unit's bar still picks the unit
     ray.setFromCamera(
       new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1),
       this.camera,
@@ -332,6 +341,7 @@ export class BattleScene {
       h = this.host.clientHeight;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
+    this.pixel.resize(w, h);
     this.cam.frameView();
   }
 
@@ -360,7 +370,8 @@ export class BattleScene {
     this.board.update(this.time.t, this.units.all());
     this.ambience?.update(this.time.t, this.camera);
     this.renderer.shadowMap.needsUpdate = true;
-    this.composer.render();
+    if (pixelFx().on) this.pixel.render(this.renderer, this.scene, this.camera);
+    else this.composer.render();
   }
 
   dispose() {
@@ -369,6 +380,8 @@ export class BattleScene {
     letGo(this.renderer, this.scene);
     this.ambience?.dispose();
     this.composer.dispose();
+    this.unhear();
+    this.pixel.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
     // a browser keeps few WebGL contexts (16 in Chrome, fewer on a phone) and frees a let-go one only when it likes:

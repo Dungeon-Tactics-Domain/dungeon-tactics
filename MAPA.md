@@ -99,6 +99,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/wrap-lines.ts` — wrapLines: a text broken into the lines that fit a width, given a measurer; pure, shared by the 3D text and the HUD's sizes.
 - `src/client/battle-face.ts` — which face sheet and expression a battle event shows, and for how long.
 - `src/client/motion.ts` — the Reduce motion option (dt:motion: System, Yes, No): `reducedMotion()` for the code and `data-motion` on <html> for the CSS.
+- `src/client/pixel-fx.ts` — the pixel effect's settings (dt:pixel-fx: on, pixel size or automatic, levels, palette, dither and its strength), the Ours and Reference presets, parsePixelFx, pixelSize and lowRes; pure apart from the cached value.
 - `src/client/tap-slack.ts` — tap with slack: the nearest unit body centre on screen within 22 px of a tap that hit no body.
 - `src/client/hit-weight.ts` — weight of a blow: its distances, the number's size and colour, the killing-blow lookahead and the death slow motion option (dt:death-slowmo).
 - `src/client/tally.ts` — damage and takedowns per unit from the played events and the heroes' cards (endHeroes), for the result board.
@@ -267,9 +268,10 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/saves-ui.ts` — Continue's numbered list of save slots (load, delete) and starting a new game.
 - `src/client/game/sheets.ts` — the title's and Options' windows as data (rows or text blocks), over an unseen window, drawn by the 3D sheet (showSheet, blocksHtml).
 - `src/client/game/options.ts` — Options, drawn by flow3d/options3d.ts: one list of settings (game, sound, video) with a description box; restart, home, developer; and the town grid switch.
-- `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display), and the town grid's name.
+- `src/client/game/options-list.ts` — the settings of the Options window in their categories (Game, Sound, Display, Pixel effect), and the town grid's name.
 - `src/client/game/options-help.ts` — what Options explains in a window over it: the tile marks' legend and the controls.
 - `src/client/game/options-marks.ts` — the Options row that picks the mark style (Simple, Light, Stone, Neon), in its own file so options.ts takes one line.
+- `src/client/game/options-pixel.ts` — Options › Pixel effect: its category and rows (on, preset, pixel size, brightness levels, palette, dither, dither strength).
 - `src/client/game/end-screens.ts` — the end of a battle's board (drawn by result3d/) and the victory confetti (the 3D effects).
 
 ## src/client/scene — the parts BattleScene composes
@@ -296,6 +298,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/scene/timeline.ts` — Timeline: the battle clock behind every animate and wait (no setTimeout).
 - `src/client/scene/load.ts` — what a battle downloads before it draws: models, painted pieces, animation pack and surroundings.
 - `src/client/scene/perf.ts` — PerfCounter: frames and average time between two readings of the performance counter.
+- `src/client/scene/pixel-pass.ts` — PixelPass: the pixel effect's final pass (low-res target, brightness levels, palette by colour family, Bayer 4x4 dither, nearest upscale) and our palettes.
 
 ## src/client/dev — localhost only
 
