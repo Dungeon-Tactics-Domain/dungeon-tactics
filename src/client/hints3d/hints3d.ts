@@ -9,9 +9,11 @@
 // Each sits on its region of ui3d/layout.ts. The HTML it replaces stays in the HUD, unseen (style.css .hud.banner3d,
 // .height3d, .hints3d). It takes no input. Colours are the reference's, as constants here, until the look is styled.
 import { Group, Mesh, ShaderMaterial, Vector2, Vector4 } from 'three';
+import { isBuilt } from '../battleedit/play.ts';
 import type { HudView } from '../hud.ts';
 import { t } from '../i18n.ts';
 import { hintsMode, onHelp, tutorialOn } from '../key-hints.ts';
+import { isPlayed } from '../mapedit/play-map.ts';
 import { pieceHidden } from '../ui-pieces.ts';
 import { capMeshes } from '../ui3d/caps.ts';
 import type { Ui3dLayer, Ui3dScreen } from '../ui3d/layer.ts';
@@ -256,7 +258,7 @@ export class Hints3d implements Ui3dScreen {
     }
 
     if (parts.hints) {
-      const lists = hintsFor(b, v.screen, last.open, this.device);
+      const lists = hintsFor(b, v.screen, last.open, this.device, isBuilt() && isPlayed(b.state.scenario));
       const part = this.hints,
         key = JSON.stringify([lists, this.device]) + at;
       part.want = lists.left.length + lists.right.length ? 1 : 0;

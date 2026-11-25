@@ -9,6 +9,15 @@ import type { BattleScene } from './scene.ts';
 import { pace } from './timing.ts';
 import { TouchInput } from './touch-input.ts';
 
+// The battle builder's live map edit (battleedit/live-mode.ts) takes the map's pointer, the keys and the pad while it is
+// on, through the map builder's own input; `pad` reads the pad for it on the battle's frames (`held`: a window is open,
+// so its buttons are only recorded, and the one that closes it does not paint)
+export const liveInput: { on: boolean; pad?: (now: number, held: boolean) => void } = { on: false };
+const off =
+  <A extends unknown[]>(f: (...a: A) => void) =>
+  (...a: A) =>
+    void (liveInput.on || f(...a));
+
 export interface InputActions {
   key(a: KeyAction): void;
   tap(x: number, y: number): void;
@@ -20,11 +29,11 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
   const signal = screenSignal(); // the window's listeners leave with the battle's screen (nav.ts)
   // TouchInput attaches its listeners to the canvas in the constructor; nothing else needs a reference
   const touch = new TouchInput(canvas, {
-    tap: (x, y) => act.tap(x, y),
-    hover: (x, y) => act.hover(x, y),
-    pan: (dx, dy) => scene.pan(dx, dy),
-    zoom: (f) => scene.zoom(f),
-    rotate: (dir) => scene.rotate(dir),
+    tap: off((x, y) => act.tap(x, y)),
+    hover: off((x, y) => act.hover(x, y)),
+    pan: off((dx, dy) => scene.pan(dx, dy)),
+    zoom: off((f) => scene.zoom(f)),
+    rotate: off((dir) => scene.rotate(dir)),
   });
   // right button cancels, like FFT's "back"
   // the canvas outlives the screen a while (its renderer may be held by a texture kept between screens): what
@@ -32,7 +41,7 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
   onLeave(() => touch.dispose());
   const back = (e: Event) => {
     e.preventDefault();
-    act.key({ k: 'cancel' });
+    if (!liveInput.on) act.key({ k: 'cancel' }); // the live edit's right button paints grass
   };
   canvas.addEventListener('contextmenu', back, { signal });
   // Keyboard (Fernando's request, Oct 25): every action has a key. The key -> action translation is pure (keyboard.ts).
@@ -45,7 +54,8 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
       return act.key(a);
     }
     if (document.querySelector('.overlay')) return;
-    if (!a) return;
+    // M belongs to the live edit (live-mode.ts); while it is on, Options and the counter still open, the rest is its own
+    if (!a || a.k === 'live' || (liveInput.on && a.k !== 'help' && a.k !== 'fps')) return;
     // confirm only on press: holding Enter to speed up the enemy must not pick the hero's 1st command by accident
     if (e.repeat && a.k === 'confirm') return void e.preventDefault();
     // the 3D menu's buttons, when it is open (menu3d.ts hits)
@@ -81,6 +91,12 @@ export function battleInput(canvas: HTMLCanvasElement, scene: BattleScene, act: 
     );
     // 1st frame with a pad: only records what was already pressed (the A that entered the stage does not pick the 1st command)
     if (!primed) return void (primed = true);
+    const open = !!document.querySelector('.overlay');
+    if (liveInput.on) liveInput.pad?.(performance.now(), open);
+    if (liveInput.on && !open) {
+      for (const a of actions) if (a.k === 'debug') act.key(a);
+      return;
+    }
     for (const a of actions) if (a.k === 'debug' || !padDialog(a)) act.key(a); // L3 as F2 above
   };
 }

@@ -19,7 +19,6 @@ export const PIECE_NAMES = [
   'townpad', // the town's joystick and action button, on a touch device
   'talk', // the speech box of the town and the battle
   'map', // the expedition map
-  'dev', // the developer menu
   'note', // a notice window
   'effects', // numbers, cursor note, objective banner, confetti, F3
   'loading', // the loading cover

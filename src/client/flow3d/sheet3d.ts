@@ -8,7 +8,6 @@
 //   a tap, the wheel and a screen reader work as before. This screen only takes each window as it opens.
 //   What it draws comes from the window's data (a list's rows, a text's blocks), never from its DOM, except what a
 //   button says while armed (Delete's 2nd tap) and which control holds the focus.
-//   The developer menu, a form, has its own screen (dev3d.ts).
 import { Group, type Mesh } from 'three';
 import type { Sheet } from '../game/sheets.ts';
 import { NONE, Part } from '../hints3d/hints3d.ts';

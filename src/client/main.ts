@@ -49,7 +49,7 @@ export class Game implements TurnHost {
   private behindTitle = false; // the title is open over this battle (pollPad)
   private log = '';
   private acting: string | null = null;
-  private readonly hud: BattleHud;
+  readonly hud: BattleHud;
   private readonly readPad: () => void;
   readonly toggleFps: () => boolean;
   // battle tally (tally.ts) for the end-of-battle highlight; side and sheet of each unit stored at the start (dead units leave the state)

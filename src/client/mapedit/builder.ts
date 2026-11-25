@@ -5,7 +5,7 @@
 import { halve } from '../../shared/battle/half.ts';
 import { initialState } from '../../shared/battle/scenarios.ts';
 import type { Pos } from '../../shared/battle/types.ts';
-import { blankDoc, clamp, inside, type MapDoc } from '../../shared/mapedit/doc.ts';
+import { blankDoc, clamp, type MapDoc } from '../../shared/mapedit/doc.ts';
 import { type History, record, startHistory } from '../../shared/mapedit/history.ts';
 import { docToScenario } from '../../shared/mapedit/play.ts';
 import { hintLine } from '../glyphs.ts';
@@ -28,7 +28,7 @@ import { tilePictures } from './pic-shots.ts';
 import { paletteGrid } from './pics.ts';
 import { readDraft, writeDraft } from './play-map.ts';
 import { idOf, parseSlots, SLOTS_KEY } from './slots.ts';
-import { BAR, type Brush, footprint, halfCells, heroCorner, strokeStep, type Tool, toolMark } from './tools.ts';
+import { BAR, type Brush, footprint, heroCorner, type Stroke, strokeMarks, strokeStep, type Tool } from './tools.ts';
 
 type Look = NonNullable<ReturnType<Awaited<ReturnType<typeof loadBuilderSkin>>>>;
 
@@ -59,7 +59,7 @@ export class Builder {
   perPage = 2;
   cursor: Pos;
   hover: Pos | null = null; // the mouse's tile
-  stroke: { tool: Tool; cells: Pos[] } | null = null; // a drag: applied once, at its end (one undo step)
+  stroke: Stroke | null = null; // a drag: applied once, at its end (one undo step)
   note = ''; // the help line's message after an action; empty shows the controls
   slots: MapDoc[];
   panelWalk = false; // the pad walks the panel's controls instead of the map's cursor
@@ -177,24 +177,9 @@ export class Builder {
 
   // the tiles about to change, lit in the tool's colour (spec), and the cursor over the brush
   mark() {
-    const at = this.hover ?? this.cursor,
-      foot = footprint(this.doc, at, this.brush),
-      tool = this.stroke?.tool ?? this.tool,
-      seen = new Set<string>(),
-      cells = [...(this.stroke?.cells ?? []), ...foot].filter((p) => {
-        const k = `${p.x},${p.y}`;
-        return !seen.has(k) && inside(this.doc, p) && seen.add(k);
-      });
-    const kind = toolMark(tool);
-    this.scene.setHighlights({
-      tiles: cells.flatMap(halfCells).map((pos) => ({ pos, kind })),
-      path: null,
-      preview: null,
-    });
-    const x = Math.min(...foot.map((p) => p.x)),
-      y = Math.min(...foot.map((p) => p.y)),
-      side = Math.max(...foot.map((p) => Math.max(p.x - x, p.y - y))) + 1;
-    this.scene.setCursor(halfCells({ x, y })[0], side * 2);
+    const m = strokeMarks(this.doc, this.hover ?? this.cursor, this.brush, this.stroke, this.tool);
+    this.scene.setHighlights(m.hl);
+    this.scene.setCursor(m.cursor, m.size);
   }
 
   private panelState(): PanelState {

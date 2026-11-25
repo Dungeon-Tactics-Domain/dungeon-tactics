@@ -35,8 +35,9 @@ function confirmText(s: Screen): string {
 
 // The hints at the foot of the screen: on the right what Confirm and Cancel do now (Cancel only when cancelStep has
 // somewhere to go) and the camera, on the left the way to Options (H, or the pad's Start). `open`: a hero's turn with nothing playing; while
-// the battle plays, holding Confirm speeds it up. A finger has no buttons: the banner says what a tap does
-export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device): Hints {
+// the battle plays, holding Confirm speeds it up. A finger has no buttons: the banner says what a tap does. `live`: a
+// battle the battle builder opened, whose turn shows the live map edit's key (battleedit/live-mode.ts)
+export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device, live = false): Hints {
   if (device === 'touch' || b.over) return { left: [], right: [] };
   // Zoom and rotate share one hint, "Camera" (Fernando, Nov 16: the row must fit its region at 1280x720, where the 16 px
   // text floor makes it wider than the reference's)
@@ -44,6 +45,7 @@ export function hintsFor(b: Battle, s: Screen, open: boolean, device: Device): H
   const left = [hint('help', t('Opções', 'Options'))];
   const camera = [hint('camera', t('Câmera', 'Camera'))];
   if (!open) return { left, right: [hint('confirm', t('Segure: acelerar', 'Hold: Speed Up')), ...camera] };
+  if (live) left.push(hint('live', t('Editar mapa', 'Edit Map')));
   const back = cancelStep(b, s);
   const right = [hint('confirm', confirmText(s))];
   if (back === 'undo') right.push(hint('cancel', t('Desfazer', 'Undo')));

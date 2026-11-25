@@ -19,8 +19,8 @@ export interface HudSkin {
   bar3d: (layer: Ui3dLayer, active: HTMLElement) => Bar3d;
   hints3d: (layer: Ui3dLayer) => Hints3d;
   tools3d: (layer: Ui3dLayer, tools: HTMLElement) => Tools3d; // the corner menu (window3d/)
-  // the screens that take their window by themselves: the end of battle, Options, the title, its sheets, the
-  // developer menu, Status, the effects over the battle, the speech box and the notices
+  // the screens that take their window by themselves: the end of battle, Options, the title, its sheets, Status,
+  // the effects over the battle, the speech box and the notices
   screens: ((layer: Ui3dLayer) => unknown)[];
 }
 
@@ -37,7 +37,6 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     { Options3d },
     { Title3d },
     { Sheet3d },
-    { Dev3d },
     { Tools3d },
     { Status3d },
     { Effects3d },
@@ -53,7 +52,6 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     import('./flow3d/options3d.ts'),
     import('./flow3d/title3d.ts'),
     import('./flow3d/sheet3d.ts'),
-    import('./flow3d/dev3d.ts'),
     import('./window3d/tools3d.ts'),
     import('./window3d/status3d.ts'),
     import('./hints3d/effects3d.ts'),
@@ -79,7 +77,7 @@ export async function loadSkin(from: object = {}): Promise<HudSkin> {
     bar3d: (layer, active) => new Bar3d(layer, active),
     hints3d: (layer) => new Hints3d(layer, { banner: true, height: true, hints: true }),
     tools3d: (layer, tools) => new Tools3d(layer, tools),
-    screens: [Result3d, Options3d, Title3d, Sheet3d, Dev3d, Status3d, Effects3d, Talk3d, Note3d].map(
+    screens: [Result3d, Options3d, Title3d, Sheet3d, Status3d, Effects3d, Talk3d, Note3d].map(
       (Screen) => (layer: Ui3dLayer) => new Screen(layer),
     ),
   };

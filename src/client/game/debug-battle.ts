@@ -1,29 +1,25 @@
 // The debug panel's Battle builder group (grill, Nov 25: "opened from the debug panel"): open the battle builder on
-// this battle's map and starting units; from a battle the builder's Play opened, go back to it, and edit the map in
-// the middle of the battle (battleedit/live.ts) with one of the map builder's tools at the map cursor.
+// this battle's map and starting units; from a battle the builder's Play opened, go back to it, and turn the live map
+// edit on and off (battleedit/live-mode.ts).
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import { battleFromScenario } from '../../shared/mapedit/battle.ts';
 import { sound } from '../../shared/mapedit/setup.ts';
-import { liveEdit, liveWhy } from '../battleedit/live.ts';
+import { liveInput } from '../battle-input.ts';
+import { liveWhy } from '../battleedit/live.ts';
 import { isBuilt, openBattleBuilder } from '../battleedit/play.ts';
 import { classOf } from '../dev-roster.ts';
 import { t } from '../i18n.ts';
 import { looks3d } from '../looks3d.ts';
 import type { Game } from '../main.ts';
-import { BAR, type Brush } from '../mapedit/tools.ts';
-import { type Go, pick } from '../option-row.ts';
+import type { Go } from '../option-row.ts';
 import { param } from '../store.ts';
 import type { OptionsGroup } from './options-list.ts';
-
-// the live edit's tool and brush, kept between openings like Spawn's class
-let tool = 3;
-let brush: Brush = 1;
 
 export function battleGroup(g: Game, close: () => void): OptionsGroup {
   const id = g.battle.state.scenario,
     room = param('room') !== null,
     why = liveWhy(g);
-  const built: (Go | ReturnType<typeof pick>)[] = isBuilt()
+  const built: Go[] = isBuilt()
     ? [
         {
           link: t('Voltar ao construtor de batalhas', 'Back to the battle builder'),
@@ -33,38 +29,20 @@ export function battleGroup(g: Game, close: () => void): OptionsGroup {
             openBattleBuilder();
           },
         },
-        pick(
-          t('Ferramenta do mapa', 'Map tool'),
-          t(
-            'O que Editar no cursor faz no mapa, como no construtor de mapas.',
-            'What Edit at the cursor does to the map, as in the map builder.',
-          ),
-          BAR.map((s, i): [number, string] => [i, t(...s.name)]),
-          () => tool,
-          (v) => (tool = v),
-        ),
-        pick(
-          t('Pincel', 'Brush'),
-          t('Uma casa ou as 3x3 em volta do cursor.', 'One tile or the 3x3 around the cursor.'),
-          [
-            [1, '1x1'],
-            [3, '3x3'],
-          ] as [Brush, string][],
-          () => brush,
-          (v) => (brush = v),
-        ),
         {
-          link: why
-            ? t(`Editar no cursor: ${why}`, `Edit at the cursor: ${why}`)
-            : t('Editar no cursor', 'Edit at the cursor'),
+          link: liveInput.on
+            ? t('Sair da edição do mapa ao vivo', 'Leave the live map edit')
+            : why
+              ? t(`Editar o mapa ao vivo: ${why}`, `Edit the map live: ${why}`)
+              : t('Editar o mapa ao vivo', 'Edit the map live'),
           help: t(
-            'Muda o mapa na casa do cursor e a batalha segue do mesmo turno; quem ficar num muro vai para a casa livre mais perto. O Desfazer recomeça.',
-            'Changes the map on the cursor’s tile and the battle goes on from the same turn; whoever stands in a wall goes to the nearest free tile. Undo starts over.',
+            'Mostra a barra do construtor de mapas sobre a batalha: arraste para pintar; ao soltar o mapa muda e a batalha segue do mesmo turno; quem ficar num muro vai para a casa livre mais perto. O Desfazer recomeça.',
+            'Shows the map builder’s bar over the battle: drag to paint; on release the map changes and the battle goes on from the same turn; whoever stands in a wall goes to the nearest free tile. Undo starts over.',
           ),
           run: () => {
-            if (why) return;
+            if (why && !liveInput.on) return;
             close();
-            liveEdit(g, tool, brush);
+            void import('../battleedit/live-mode.ts').then((m) => m.toggleLive(g));
           },
         },
       ]

@@ -108,6 +108,9 @@ export const ACTIONS = {
   redo: { keys: ['Ctrl+Y'], pad: [] },
   erase: { keys: ['Del'], pad: ['east'] },
   panel: { keys: ['Tab'], pad: ['start'] },
+  // the battle builder's live map edit, on and off (battleedit/live-mode.ts): every pad button already has a battle
+  // action, so the pad opens it from the debug panel's row and leaves it with Menu (the map builder's panel button)
+  live: { keys: ['M'], pad: [] },
 } as const satisfies Record<string, { keys: readonly string[]; pad: readonly PadGlyph[] }>;
 export type Act = keyof typeof ACTIONS;
 

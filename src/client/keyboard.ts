@@ -24,6 +24,7 @@ export type KeyAction =
   | { k: 'top' }
   | { k: 'turns'; dir: 1 | -1 }
   | { k: 'fold' }
+  | { k: 'live' }
   | { k: 'help' };
 
 const ZOOM_STEP = 1.15;
@@ -61,6 +62,8 @@ const SIMPLE: Record<string, KeyAction> = {
   pagedown: { k: 'turns', dir: 1 },
   // L folds the turn list to its faces and back (Fernando, Nov 20)
   l: { k: 'fold' },
+  // M edits the map live in a battle the battle builder opened (battleedit/live-mode.ts; Fernando, Nov 25)
+  m: { k: 'live' },
   // Q zooms out and E zooms in: same hand as WASD
   q: { k: 'zoom', factor: ZOOM_STEP },
   e: { k: 'zoom', factor: 1 / ZOOM_STEP },
@@ -217,6 +220,14 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
     ],
     [['fps'], '', t('liga e desliga o contador de fps e recursos', 'toggles the fps and resources counter')],
     [['debug'], '', t('abre e fecha o painel de depuração', 'opens and closes the debug panel')],
+    [
+      ['live'],
+      '',
+      t(
+        'numa batalha do construtor de batalhas, liga e desliga a edição do mapa ao vivo',
+        'in a battle the battle builder opened, turns the live map edit on and off',
+      ),
+    ],
     [['help'], 'H · ?', t('as Opções e esta ajuda', 'Options and this help')],
   ];
   const menu = pad ? `${k('cancel')} · ${k('help')}` : 'Esc · H';

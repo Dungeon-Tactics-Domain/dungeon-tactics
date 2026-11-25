@@ -1,9 +1,10 @@
 // Editing the map mid-battle (grill, Nov 25; Fernando: "so pode enquanto nao tiver movimento sendo feito... enquanto
-// tiver no turno do jogador"): the map builder's tool on the tiles under the battle's cursor, then the board drawn again
+// tiver no turno do jogador"): one stroke of the map builder's tool (live-mode.ts), then the board drawn again
 // in place (BattleScene.setGrid, then sync for the units) and the battle going on from the same turn. Whoever stood
 // where nobody may stop now goes to the nearest free tile (shared editLive); the battle's Undo starts over.
 import { Battle } from '../../shared/battle/battle.ts';
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
+import type { Pos } from '../../shared/battle/types.ts';
 import { docFromScenario } from '../../shared/mapedit/doc.ts';
 import { canEditLive, editLive } from '../../shared/mapedit/live.ts';
 import { startScreen } from '../command.ts';
@@ -11,24 +12,26 @@ import { t, unitName } from '../i18n.ts';
 import { freshUi } from '../interaction.ts';
 import { looks3d } from '../looks3d.ts';
 import type { Game } from '../main.ts';
-import { BAR, type Brush, footprint, strokeStep, wholeOf } from '../mapedit/tools.ts';
+import { isPlayed } from '../mapedit/play-map.ts';
+import { strokeStep, type Tool } from '../mapedit/tools.ts';
 import { readDraft, writeDraft } from './play.ts';
 
 // why the map cannot be edited now; null when it can
 export function liveWhy(g: Game): string | null {
   const s = g.battle.state;
+  // the default battle stands in for a missing draft: its scene never loaded the palette's pieces (game/boot.ts)
+  if (!isPlayed(s.scenario)) return t('só numa batalha do construtor', 'only in a battle from the builder');
   return canEditLive(s, SCENARIOS[s.scenario], g.busy) ? null : t('espere a sua vez', 'wait for your turn');
 }
 
-// The tool (the map builder's bar, by index) on the brush's tiles around the cursor; what happened, as a line of text
-export function liveEdit(g: Game, tool: number, brush: Brush): string {
+// The tool on a stroke's whole tiles, each once; what happened, as a line of text
+export function liveStroke(g: Game, tool: Tool, cells: Pos[]): string {
   const why = liveWhy(g);
   if (why) return why;
   const state = g.battle.state,
     sc = SCENARIOS[state.scenario], // the very scenario the battle was built from (Restart reads it too)
     map = docFromScenario(sc),
-    at = wholeOf(g.turn.cursor),
-    next = strokeStep(map, BAR[tool].tool('sand'), footprint(map, at, brush), new Set());
+    next = strokeStep(map, tool, cells, new Set());
   if (JSON.stringify(next) === JSON.stringify(map)) return t('Nada mudou nessa casa.', 'Nothing changed on that tile.');
   const res = editLive(state, sc, next);
   if (!res)

@@ -59,13 +59,13 @@ reasons behind them in `docs/decisions.md`.
 ## src/client/mapedit — the map builder's screen (?mapedit)
 
 - `src/client/mapedit/builder.ts` — bootBuilder and Builder: the builder's page, the map document and its history, the board redrawn in place after each edit (BattleScene.setGrid, with every palette piece loaded up front), the tiles lit in the tool's colour, the layout of the bar and the panel.
-- `src/client/mapedit/builder-input.ts` — the builder's mouse, touch, keys and pad: a drag is one stroke, the right button paints grass, the middle one and two fingers move the map, the pad's Menu walks the panel.
+- `src/client/mapedit/builder-input.ts` — the builder's mouse, touch, keys and pad: a drag is one stroke, the right button paints grass, the middle one and two fingers move the map, the pad's Menu walks the panel (Painter: the map builder or the battle builder's live edit).
 - `src/client/mapedit/builder-actions.ts` — what each control does: tabs, tools, palette pages, auto-ramps, size and edges, slots, JSON and .ts export (download, clipboard, paste box), import, Play, leave, brush, undo, redo, camera.
 - `src/client/mapedit/builder-ui.ts` — BuilderUi: the unseen buttons, name fields and paste box, kept by id and seated on their boxes, and the view the 3D screen draws.
 - `src/client/mapedit/play-map.ts` — the way in and out: the draft save, openBuilder, Play (the draft as a battle with one default hero, ended only when the heroes fall) and isPlayed.
-- `src/client/mapedit/tools.ts` — pure: the bar's 9 tools, the brush footprint, one stroke's edits (each tile once), the tool's mark colour, whole tile and half cells, the default hero's corner.
+- `src/client/mapedit/tools.ts` — pure: the bar's 9 tools, the brush footprint, one stroke's edits (each tile once), the tool's mark colour, the tiles a stroke lights (strokeMarks), whole tile and half cells, the default hero's corner.
 - `src/client/mapedit/keys.ts` — pure: the builder's keys (1 to 9, B, Ctrl+Z, Ctrl+Y, Del) and pad buttons as actions, over the battle's cursor, Enter, camera and top view.
-- `src/client/mapedit/layout.ts` — pure: layout A's boxes (bar, key hints, panel tabs, content rows, help line, foot) and the rows placed in the content.
+- `src/client/mapedit/layout.ts` — pure: layout A's boxes (bar, key hints, panel tabs, content rows, help line, foot), the rows placed in the content, and the live edit's bar over the battle (liveLayout).
 - `src/client/mapedit/panel.ts` — pure: the panel's tabs and rows per category (Paint pages, Relief, Map, File), the bar's and the foot's buttons.
 - `src/client/mapedit/pics.ts` — pure: which tile picture each bar tool and palette entry shows (picOf, PIC_SIGN), the tiny half-tile map each is rendered from (picGrid) and the palette map whose pieces the builder loads up front.
 - `src/client/mapedit/pic-shots.ts` — tilePictures: the builder's tile pictures rendered once per page on the scene's pieces (BattleScene.shoot) and kept.
@@ -82,7 +82,8 @@ reasons behind them in `docs/decisions.md`.
 - `src/client/battleedit/sources.ts` — pure: where a battle's map comes from (the game's maps, the map builder's saved ones) and an expedition room as a whole battle by seed and depth.
 - `src/client/battleedit/slots.ts` — pure: the builder's save keys, named slots read back by parseBattleDoc, and the Developer menu's saved cast as the first slot.
 - `src/client/battleedit/play.ts` — the way in and out: the draft save, the slots (seeded once), openBattleBuilder, battleOnMap (from the map builder), Play and the scenario it opens with each own sheet's class and model.
-- `src/client/battleedit/live.ts` — the map edited mid-battle from the debug panel: the map builder's tool at the cursor, the board redrawn in place (setGrid, sync), the battle going on from the same turn with Undo started over.
+- `src/client/battleedit/live.ts` — the map edited mid-battle: one stroke of a map builder tool (liveStroke), the board redrawn in place (setGrid, sync), the battle going on from the same turn with Undo started over; liveWhy.
+- `src/client/battleedit/live-mode.ts` — the live map edit as a mode (M, Debug › Battle builder): the map builder's bar on the HUD's 3D layer, its input painting by drag, Enter or A, each stroke one edit; leaving gives the battle its input back.
 
 ## src/content — game content as typed data
 
@@ -181,8 +182,6 @@ parseGrid and withRamps (grid.ts).
 - `src/client/ui3d/guides.ts` — drawing guides for the labs (?guides=1, localhost only), a screen of the 3D layer: lines for the 16:9 area, thirds and centre, and a named box for every region of layout.ts as placed.
 - `src/client/ui3d/layout.ts` — the battle interface's regions measured on FFT The Ivalice Chronicles (REGIONS) and where each sits on a page in the two layouts (stage, place); pure.
 - `src/client/ui3d/walk.ts` — where the cursor goes on a 3D screen: from the box in focus, an arrow or the d-pad takes the nearest box seen that way, and stays with none there (neighbour); pure.
-- `src/client/ui3d/field.ts` — 3D kit: form fields (number, pick, check, text, area, button, head, note), their column layout (flowFields, fieldParts), the cursor's walk (fieldWalk) and number limits (clampNumber); pure.
-- `src/client/ui3d/field-dom.ts` — 3D kit: the real unseen control under each drawn field (fieldEls, syncField, placeField; field.css), the mouse's cursor (hoverCursor) and a form's file out and in (saveFile, openFile).
 - `src/client/ui3d/face.ts` — a painted face (a frame of the face sheet, or the portrait's top) as a quad on the 3D layer, grey for the fallen (faceMesh).
 - `src/client/hud-skin.ts` — loadSkin() and loadTownSkin(): fetch the 3D pieces of the battle and of the town, each its own chunk, behind the loading cover.
 - `src/client/ui3d/layer.ts` — Ui3dLayer: the one transparent WebGL canvas over the HUD every 3D screen draws on (Ui3dScreen), on the battle clock, with the F3 cost.
@@ -243,9 +242,6 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/sheet-draw.ts` — what a 3D sheet draws piece by piece: a list's row (number, face, two lines, second button), a text's line, the head and the foot plates.
 - `src/client/flow3d/sheet-layout.ts` — where a 3D sheet sits (head, parchment, rows and each one's second button, foot plates), the scroll fade and mark, and a text's blocks as lines (flow); pure.
 - `src/client/flow3d/draw.ts` — what the flow screens in 3D draw with: the dark tokens, text, and the glove that points at the control in focus (Hand).
-- `src/client/flow3d/dev3d.ts` — Dev3d: the developer menu in 3D: the cast's form on a parchment sheet, over one real unseen control per field; any page size.
-- `src/client/flow3d/dev-view.ts` — the cast as the 3D developer menu's fields (devFields), what an edit makes of it (devEdit, readSetup) and where the page's parts sit (devLayout); pure.
-- `src/client/flow3d/field-draw.ts` — what a 3D form draws field by field (FieldArt): wells pressed into the sheet, raised plates for arrows and buttons, the typed text with its selection and caret.
 - `src/client/window3d/builder3d.ts` — Builder3d: the map builder's tool bar, side panel, help line and key hints in 3D, on dark plates with a gold edge, over the unseen controls.
 - `src/client/window3d/tools3d.ts` — Tools3d: the corner buttons in 3D (gear, Back, Undo, ↺ ↻) on dark plates with a gold edge, drawn over the unseen HTML buttons, which it seats; battle and town.
 - `src/client/window3d/tools-layout.ts` — toolsLayout: where the gear row and the ↺ ↻ pair sit, and which buttons show, with no DOM; pure.
@@ -317,7 +313,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
 - `src/client/game/crawl.ts` — the town menu and quest gate (drawn by town3d/street.ts), the quest's commands, the expedition save and its gold, and the way home.
 - `src/client/game/debug-menu.ts` — the debug panel (F2, the pad's L3): the Options screen with its own board of Spawn, Units, Shot rules, Pixel effect and Tools, and settling the battle after a change.
-- `src/client/game/debug-battle.ts` — Debug › Battle builder: open it with this battle's map and starting units, and from a battle its Play opened, back to it and the map edited at the cursor (tool, brush, Edit at the cursor).
+- `src/client/game/debug-battle.ts` — Debug › Battle builder: open it with this battle's map and starting units, and from a battle its Play opened, back to it and the live map edit on and off.
 - `src/client/game/debug-builder.ts` — Debug › Map builder: open the builder on this battle's map or a blank 8, 12 or 16 square one, and back to the builder from a battle its Play opened.
 - `src/client/game/debug-bodies.ts` — Debug › Models: height (2 to 5 heads) and man or woman per living humanoid of the battle; a change saves and reloads the battle where it stands.
 - `src/client/game/debug-shot.ts` — Debug › Shot rules: its category and rows (launch range, visible parts, chance by cover, cover weight, humanoid and quadruped launch ranges).

@@ -15,12 +15,13 @@ import { el } from '../icons.ts';
 import { navigate } from '../nav.ts';
 import { store } from '../store.ts';
 import type { Builder } from './builder.ts';
+import type { Painter } from './builder-input.ts';
 import { pages, type Tab } from './panel.ts';
 import { play } from './play-map.ts';
 import { SLOTS_KEY, withSlot } from './slots.ts';
 import { BAR, unknownLook } from './tools.ts';
 
-export function pickTool(b: Builder, i: number) {
+export function pickTool(b: Pick<Painter, 'tool' | 'picked' | 'note'>, i: number) {
   const slot = BAR[(i + BAR.length) % BAR.length];
   b.tool = slot.tool(b.picked);
   b.note = t(`Ferramenta: ${t(...slot.name)}.`, `Tool: ${t(...slot.name)}.`);

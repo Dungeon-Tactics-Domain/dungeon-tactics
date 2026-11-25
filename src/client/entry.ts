@@ -2,6 +2,7 @@
 // behind the loading cover until everything landed (ready-gate.ts). The whole game is this one page (nav.ts): a change
 // of screen lets the screen in view go and runs the same path on the new address, with no reload.
 import { Battle } from '../shared/battle/battle.ts';
+import { isBuilt } from './battleedit/play.ts';
 import { syncInert } from './dialog.ts';
 import { keepFullscreen } from './fullscreen.ts';
 import { newBattle, selectBattle } from './game/boot.ts';
@@ -82,6 +83,8 @@ async function boot(search?: string) {
       if (stale()) return scene.dispose();
       onLeave(() => scene.dispose());
       const game = new Game(battle, scene, host, run, skin);
+      // the live map edit (M) of a battle the battle builder opened: its own chunk, like the builders
+      if (isBuilt()) void import('./battleedit/live-mode.ts').then((m) => m.wireLive(game, host));
       sandbox?.install(game, scene);
       if (sel.title) titleScreen();
     },

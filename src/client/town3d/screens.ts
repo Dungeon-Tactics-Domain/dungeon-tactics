@@ -6,7 +6,6 @@
 // the warning (no3d.ts).
 import type { Slot } from '../../shared/battle/equipment.ts';
 import { buy, CHEST_KEY, EQUIP_KEY, equip, sell } from '../chest.ts';
-import { Dev3d } from '../flow3d/dev3d.ts';
 import { Options3d } from '../flow3d/options3d.ts';
 import { Sheet3d } from '../flow3d/sheet3d.ts';
 import { changeClass, dismiss, type Job, recruit, toggleDeploy } from '../group.ts';
@@ -279,11 +278,11 @@ export function mountTown3d(root: HTMLElement) {
     fill('soon', street.soon),
   );
   new TownHud3d(layer, root);
-  // the gear and ↺ ↻, as in battle, and what the gear opens: Options, its Help sheets and the developer's window
+  // the gear and ↺ ↻, as in battle, and what the gear opens: Options and its Help sheets
   new Tools3d(layer, root.querySelector<HTMLElement>('.tools')!, 'row');
   const pad = root.querySelector<HTMLElement>('.town-pad'); // a touch device's joystick and button
   if (pad) new Pad3d(layer, pad);
-  for (const Screen of [Options3d, Sheet3d, Dev3d]) new Screen(layer);
+  for (const Screen of [Options3d, Sheet3d]) new Screen(layer);
   new Talk3d(layer); // at any size: it draws over the HTML box's own boxes
   new Note3d(layer); // takes each notice window by itself (note.ts)
   new Effects3d(layer); // the effects over the page (looks3d.ts `effects`), as in a battle

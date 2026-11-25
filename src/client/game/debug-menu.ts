@@ -195,7 +195,10 @@ function groups(g: Game): OptionsGroup[] {
     bodyGroup(g),
     {
       title: t('Ferramentas', 'Tools'),
-      help: t('O contador de desempenho e o menu de desenvolvedor.', 'The performance counter and the developer menu.'),
+      help: t(
+        'O contador de desempenho e o construtor de batalhas.',
+        'The performance counter and the battle builder.',
+      ),
       rows: [
         {
           ...pick(

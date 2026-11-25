@@ -37,7 +37,7 @@ export interface PanelState {
 const button = (id: string, text: string, more: Partial<Cell> = {}): Cell => ({ id, text, kind: 'button', ...more });
 const label = (id: string, text: string, grow = 1): Cell => ({ id, text, kind: 'label', grow });
 // "Altura + · 5": a tool's name with its key while the keys show
-const withKey = (text: string, key: string, s: PanelState) =>
+const withKey = (text: string, key: string, s: Pick<PanelState, 'shown' | 'finger'>) =>
   s.shown === 'keyboard' && !s.finger ? `${text} · ${key}` : text;
 
 export const pages = (perPage: number) => Math.max(1, Math.ceil(PALETTE.length / Math.max(2, perPage)));
@@ -46,7 +46,7 @@ export function tabCells(tab: Tab): Cell[] {
   return TABS.map((k) => button(`tab:${k}`, TAB_NAMES[k](), { on: k === tab }));
 }
 
-export function barCells(s: PanelState): Cell[] {
+export function barCells(s: Pick<PanelState, 'tool' | 'picked' | 'shown' | 'finger'>): Cell[] {
   return BAR.map((slot, i) =>
     button(`bar:${i}`, withKey(t(...slot.name), ACTIONS.tools.keys[i], s), {
       on: sameTool(slot.tool(s.picked), s.tool),

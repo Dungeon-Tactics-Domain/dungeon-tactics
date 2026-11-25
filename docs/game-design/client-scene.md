@@ -8,7 +8,7 @@ Nov 14, Fernando's request; rules in `src/shared/battle/half.ts`.
 
 - `selectBattle` (`game/boot.ts`) halves every battle it opens, under the id `<scenario>½`; the `?scenario=half` test map comes split already. Since Nov 15 (Fernando: no whole-tile battle left) the developer battle is halved too, so no option, URL or branch opens a battle on whole tiles; a save of another id (the whole-tile ones from before) starts the battle over.
 - Drawing: a whole tile's object once over its 4 cells (`Tile.span` in `scene/board.ts`); the camera zoom and the walk time per cell scale by `Grid.sub` (`scene/camera.ts`; `stepMs` takes whole tiles); the mood comes from the whole map (`kindOf`); the range marks and ring measure from the token's cells to the aimed whole tile's square (`aimEnds`, `areaOf` in `interaction.ts`; `inRing` in `scene/range-ring.ts`), and an area paints every whole tile it touches (`areaCells`); the HUD shows the class of the original sheet (`baseDef`).
-- Every screen shows Move and Jump in half tiles, the points the game spends (Nov 15, Fernando): the Status window, the party list and sheet, item stats, the developer menu (its inputs step by `SUB` and store whole-tile values) and How to play (`statsLine` and `jumpHelp` in `town-ui.ts`, tested in `tests/half-numbers.test.ts`).
+- Every screen shows Move and Jump in half tiles, the points the game spends (Nov 15, Fernando): the Status window, the party list and sheet, item stats, the battle builder's Sheet and How to play (`statsLine` and `jumpHelp` in `town-ui.ts`, tested in `tests/half-numbers.test.ts`).
 
 ## Living water
 

@@ -7,7 +7,7 @@ import { SUB } from '../../shared/battle/half.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { index, inside, type MapDoc } from '../../shared/mapedit/doc.ts';
 import { cycleRamp, paint, raise } from '../../shared/mapedit/edit.ts';
-import type { TileKind } from '../interaction.ts';
+import type { Highlights, TileKind } from '../interaction.ts';
 
 export type Tool = { k: 'paint'; entry: string } | { k: 'height'; delta: 1 | -1 } | { k: 'ramp' };
 export type Brush = 1 | 3;
@@ -78,6 +78,24 @@ export function toolMark(tool: Tool): TileKind {
 export const halfCells = (p: Pos): Pos[] =>
   Array.from({ length: SUB * SUB }, (_, k) => ({ x: p.x * SUB + (k % SUB), y: p.y * SUB + Math.floor(k / SUB) }));
 export const wholeOf = (p: Pos): Pos => ({ x: Math.floor(p.x / SUB), y: Math.floor(p.y / SUB) });
+
+export type Stroke = { tool: Tool; cells: Pos[] };
+// What the scene lights (spec): the stroke's tiles so far and the brush at `at`, each once, in the tool's colour; and
+// the cursor over the brush, as the halved scene draws it (its corner half cell and its side in half cells)
+export function strokeMarks(doc: MapDoc, at: Pos, brush: Brush, stroke: Stroke | null, tool: Tool) {
+  const foot = footprint(doc, at, brush),
+    seen = new Set<string>(),
+    cells = [...(stroke?.cells ?? []), ...foot].filter((p) => {
+      const k = `${p.x},${p.y}`;
+      return !seen.has(k) && inside(doc, p) && seen.add(k);
+    });
+  const kind = toolMark(stroke?.tool ?? tool),
+    hl: Highlights = { tiles: cells.flatMap(halfCells).map((pos) => ({ pos, kind })), path: null, preview: null };
+  const x = Math.min(...foot.map((p) => p.x)),
+    y = Math.min(...foot.map((p) => p.y)),
+    side = Math.max(...foot.map((p) => Math.max(p.x - x, p.y - y))) + 1;
+  return { hl, cursor: halfCells({ x, y })[0], size: side * 2 };
+}
 
 const standable = (doc: MapDoc, p: Pos) => {
   const t = doc.tiles[index(doc, p)];

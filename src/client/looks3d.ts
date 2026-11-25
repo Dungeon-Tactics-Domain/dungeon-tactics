@@ -1,7 +1,6 @@
 // The 3D screens the rest of the client hands its windows to (Fernando, Nov 18: the interface is only 3D). Each screen
 // fills its place as it is built (hud-skin.ts, town3d/screens.ts; both before anything opens, ready-gate.ts) and empties
 // it on dispose while it is still its own. Only types from the 3D side, so the game online never fetches it unasked.
-import type { DevSetup } from './dev-roster.ts';
 import type { Board } from './game/end-screens.ts';
 import type { MapView } from './game/expedition-map.ts';
 import type { OptionsBoard } from './game/options.ts';
@@ -31,7 +30,6 @@ export interface Looks3d {
   options: (b: OptionsBoard) => { close(): void }; // flow3d/options3d.ts
   title: (overlay: HTMLElement) => void; // over the title's window (flow3d/title3d.ts)
   sheet: (overlay: HTMLElement, sheet: Sheet) => void; // over a sheet's window (flow3d/sheet3d.ts)
-  dev: (start: (setup: DevSetup) => void, onBack?: () => void) => void; // flow3d/dev3d.ts
   status: (s: StatusSheet) => void; // window3d/status3d.ts
   talk: (overlay: HTMLElement) => void; // over the speech box (window3d/talk3d.ts)
   note: (n: Note) => void; // window3d/note3d.ts

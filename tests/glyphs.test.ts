@@ -83,6 +83,7 @@ describe('the table: action, key, pad button', () => {
     fps: [{ k: 'fps' }],
     fold: [{ k: 'fold' }],
     debug: [{ k: 'debug' }],
+    live: [{ k: 'live' }],
     top: [{ k: 'top' }],
     turns: [
       { k: 'turns', dir: -1 },
@@ -132,7 +133,7 @@ describe('the table: action, key, pad button', () => {
   });
 
   it('the actions the pad has no button for hide with its icons', () => {
-    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'fps', 'redo']);
+    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'fps', 'redo', 'live']);
     for (const a of PADLESS) {
       expect(capsOf(a, 'xbox'), a).toBeNull();
       expect(capsOf(a, 'keyboard')?.length, a).toBeGreaterThan(0);

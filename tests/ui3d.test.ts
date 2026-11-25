@@ -627,8 +627,6 @@ describe('3D interface: bench scenes and boundaries', () => {
       'flow3d/sheet-layout',
       'ui3d/walk',
       'window3d/status-view',
-      'ui3d/field',
-      'flow3d/dev-view',
     ];
     // and the two the main chunk takes by value bring no other file along
     for (const name of ['ui3d/layout'])
@@ -654,7 +652,6 @@ describe('3D interface: bench scenes and boundaries', () => {
       'ui3d/safe-area': [1, 'notch: the padding of the env() probe'],
       'flow3d/draw': [1, 'colour'],
       'flow3d/sheet-draw': [1, 'colour: a mark of the how-to-play sheet'],
-      'flow3d/dev3d': [1, 'colour'],
       'flow3d/sheet3d': [7, 'scroll: the sheet scroller range and its page step for PageUp, PageDown, Home, End'],
       'hints3d/effects3d': [1, 'colour: the floating numbers and the counter'],
       'result3d/result3d': [1, 'colour'],

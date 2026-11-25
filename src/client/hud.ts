@@ -154,6 +154,10 @@ export class BattleHud {
     this.layer = this.menu3d = this.turn3d = undefined;
     this.p3d = {};
   }
+  // the battle builder's live map edit draws its tool bar on this layer (battleedit/live-mode.ts)
+  get layer3d() {
+    return this.layer;
+  }
   // the layout picked in Options changed (layout-mode.ts): the CSS already follows, the 3D layer fits again
   relayout() {
     this.layer?.fit();

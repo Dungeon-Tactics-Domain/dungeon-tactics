@@ -44,9 +44,17 @@ export function builderLayout(p: Page) {
     note: Box = { x: inner.x, y: footY - GAP - noteH, w: inner.w, h: noteH },
     top = tabs[0].y + row + GAP,
     content: Box = { x: inner.x, y: top, w: inner.w, h: Math.max(0, note.y - GAP - top) };
-  // the bar: 9 tools centred on the map's width, at the page's foot
-  const left = p.inset.left,
-    room = panel.x - GAP - left,
+  // the bar centred on the map's width, between the page's left and the panel
+  const { bar, hints } = toolBar(p, p.inset.left, panel.x - GAP - p.inset.left);
+  // what the camera keeps clear of: the panel on the right and the bar at the foot (scene.ts setInsets)
+  const insets = { top: 0, bottom: p.h - hints.y, left: 0, right: p.w - panel.x };
+  return { row, panel, tabs, content, note, foot, bar, hints, insets };
+}
+export type BuilderLayout = ReturnType<typeof builderLayout>;
+
+// The bar: 9 tools centred on `room` px from `left`, at the page's foot, and the key hints over it
+function toolBar(p: Page, left: number, room: number) {
+  const row = Math.max(TAP, Math.round(52 * p.s)),
     // a plate holds its tile picture over its name (Fernando, Nov 25)
     bh = Math.max(56, row + 12) + Math.max(36, Math.round(48 * p.s)),
     bw = Math.max(TAP, Math.min(130, Math.floor((room - 8 * GAP) / 9))),
@@ -57,11 +65,17 @@ export function builderLayout(p: Page) {
     // the key hints over the bar, two lines across the map's width (the panel's help line holds the messages)
     hintH = Math.max(52, Math.round(60 * p.s)),
     hints: Box = { x: x0, y: by - GAP - hintH, w: span, h: hintH };
-  // what the camera keeps clear of: the panel on the right and the bar at the foot (scene.ts setInsets)
-  const insets = { top: 0, bottom: p.h - hints.y, left: 0, right: p.w - panel.x };
-  return { row, panel, tabs, content, note, foot, bar, hints, insets };
+  return { row, bar, hints };
 }
-export type BuilderLayout = ReturnType<typeof builderLayout>;
+
+// The battle builder's live map edit (battleedit/live-mode.ts): the same bar over the battle, right of the turn list
+// (`left`, its right edge), with a help line over the key hints in place of the side panel
+export function liveLayout(p: Page, left: number) {
+  const x = Math.max(p.inset.left, left + GAP),
+    { row, bar, hints } = toolBar(p, x, p.w - p.inset.right - x),
+    note: Box = { x: hints.x, y: hints.y - GAP - Math.round(row * 1.5), w: hints.w, h: Math.round(row * 1.5) };
+  return { bar, hints, note, bottom: p.h - note.y };
+}
 
 // how many rows of one height fit in the content
 export const rowsFit = (l: BuilderLayout) => Math.max(0, Math.floor((l.content.h + GAP) / (l.row + GAP)));
