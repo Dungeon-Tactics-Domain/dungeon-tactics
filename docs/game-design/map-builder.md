@@ -135,3 +135,46 @@ The client: `src/client/mapedit/` (controller and pure parts), `window3d/builder
   the builder" reopens the draft.
 - **Left for later:** the battle builder (units, `battle.ts`), a numeric height field, a slot list longer than the
   panel, deleting a slot.
+
+## Battle builder as built (Nov 25)
+
+The client: `src/client/battleedit/` (controller, pure panel, sheet steps, map sources, saves, live edit) and
+`game/debug-battle.ts`; the shared battle-wide edits in `src/shared/mapedit/setup.ts`.
+
+- **A page of its own:** `?battleedit` (entry.ts), drawn with the map builder's layout, unseen controls and 3D screen
+  (`mapedit/layout.ts`, `builder-ui.ts`, `window3d/builder3d.ts`). The battle on screen is the draft `dt:battleedit`
+  (a slot: name and battle), written on every edit and read back through `parseBattleDoc`; an edit a reload could not
+  read back is refused with a word why. Named slots are `dt:battleedit:slots` (20 newest, one per name). The first
+  opening seeds them with the Developer menu's saved cast (`dt:dev`) as the slot "Desenvolvedor" and writes them, so
+  that runs once per browser. Neither key is a progress key.
+- **Opening:** the title's row in Developer's place, Debug › Tools › Battle builder, Debug › Battle builder › Open with
+  this battle (its map and starting units; not inside an expedition room), and the map builder's File › Build a battle
+  (the draft's units stay where they fit on that map).
+- **Bar, keys 1 to 9:** Pick, Hero, Enemy (place the class picked, as the debug Spawn), Remove, Turn ↺, Turn ↻,
+  previous and next class, Play. A tap or Enter uses the tool at the tile; the right button or Del removes; B or the pad's
+  Y the next class; the pad's X walks the four tools; Menu walks the panel.
+- **Units:** the classes two a row, paged, the Beacon last, and how many stand on each side.
+- **Sheet:** with no unit picked, every unit as a button (keys and pad reach each one); then the unit with ◀ ▶ to the
+  next, and three pages: Numbers (name, life by 10, speed, Move and Jump in half tiles, starting CT by 10 where empty is
+  the usual order, facing, back to the class's sheet; a field set on the unit has a dot), Equipment (each of the 7 slots
+  round its pieces and none), Abilities (each a button that takes it away, never the last; one to add, at most 8). The
+  Beacon has no sheet.
+- **Battle:** Map (the game's maps and the map builder's saved ones; Use this map keeps the units that fit; an
+  expedition room by seed (New draws one) and depth, with its party and monsters, won by defeating all), Rules
+  (objective: the map's, defeat all, protect the Beacon only with one on the heroes' side, survive 1 to 99 turns; Player
+  or AI for each side, AI against AI allowed) and Bags (each side's items, 0 to 99). Another map opens the page again so
+  the scene loads its pieces; the undo steps start over.
+- **Play:** `?scenario=battleedit` builds the draft with `battleToScenario`; each own sheet wears its class's model,
+  face and HUD class (`dev-roster.ts` `setClass`). Its save `dt:battle:battleedit` is cleared on every Play. Play is
+  off, and says why, with no hero or no enemy that plays. The turn loop and the HUD give a turn to the player or the AI by
+  `controlOf`.
+- **Live edit:** Debug › Battle builder in a battle Play opened: Map tool (the map builder's nine), Brush 1x1 or 3x3 and
+  Edit at the cursor, only on a player-controlled turn with nothing moving (the row says to wait otherwise). The board is
+  drawn again in place, the units synced, whoever stood where nobody may stop goes to the nearest free tile, the battle
+  goes on from the same turn with a new Undo history, Restart and the draft take the edited map, and a banner says what
+  happened.
+- **Export:** the battle's .ts carries the spawns with their starting CT, `bags`, `control`, the objective as `rules`
+  and a `<MAP>_SHEETS` table of the units' own sheets. Import takes the pasted JSON.
+- **Left for later:** painting the map with the pointer mid-battle (today the debug panel's tool at the cursor); importing
+  a .ts; deleting a slot; a slot list longer than the panel; the camera opens close on a big map (zoom out with − or the
+  wheel); the old Developer screen's code (`flow3d/dev3d.ts`, `dev-view.ts`) can leave once the builder is confirmed.

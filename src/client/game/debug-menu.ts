@@ -7,6 +7,7 @@ import { forgetUndo, healAll, killAt, spawnClasses, spawnUnit } from '../../shar
 import { checkOutcome } from '../../shared/battle/outcome.ts';
 import { unitAt } from '../../shared/battle/pathing.ts';
 import type { Team } from '../../shared/battle/types.ts';
+import { openBattleBuilder } from '../battleedit/play.ts';
 import { startScreen } from '../command.ts';
 import { giveTurn } from '../dev/sandbox-play.ts';
 import { fpsOn } from '../fps.ts';
@@ -16,13 +17,13 @@ import { freshUi } from '../interaction.ts';
 import { looks3d } from '../looks3d.ts';
 import type { Game } from '../main.ts';
 import { type Go, type Option, pick } from '../option-row.ts';
+import { battleGroup } from './debug-battle.ts';
 import { bodyGroup } from './debug-bodies.ts';
 import { builderGroup } from './debug-builder.ts';
 import { shotGroup } from './debug-shot.ts';
 import { type OptionsBoard, sectionOf, valueNote } from './options.ts';
 import type { OptionsGroup } from './options-list.ts';
 import { pixelGroup } from './options-pixel.ts';
-import { devMenu } from './title.ts';
 
 let shown: Element | undefined; // the panel's window while it is open
 let close = () => {};
@@ -213,18 +214,19 @@ function groups(g: Game): OptionsGroup[] {
           on: fpsOn,
         } satisfies Option,
         {
-          link: t('Desenvolvedor', 'Developer'),
+          link: t('Construtor de batalhas', 'Battle builder'),
           help: t(
-            'Monta uma batalha: mapa, heróis e inimigos, com vida, velocidade, movimento e habilidades.',
-            'Builds a battle: map, heroes and enemies, with life, speed, movement and abilities.',
+            'Monta uma batalha: mapa, heróis e inimigos, com vida, velocidade, movimento, equipamento e habilidades.',
+            'Builds a battle: map, heroes and enemies, with life, speed, movement, equipment and abilities.',
           ),
           run: () => {
             close();
-            devMenu();
+            openBattleBuilder();
           },
         },
       ],
     },
     builderGroup(g, () => close()),
+    battleGroup(g, () => close()),
   ];
 }

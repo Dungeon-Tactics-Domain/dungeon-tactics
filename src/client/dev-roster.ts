@@ -144,6 +144,8 @@ const lastStanding: Rules = {
 // origin class of each sheet assembled here (dev-h0 → warrior): the HUD shows "Bran · Guerreiro"
 const BASE: Record<string, string> = {};
 export const classOf = (def: string): string | undefined => BASE[baseDef(def)]; // the half-tile token too (half.ts)
+// a sheet built elsewhere (the battle builder's own sheets, battleedit/play.ts) told its class the same way
+export const setClass = (id: string, base: string) => void (BASE[id] = base);
 
 // The expedition rooms (game/crawl.ts castRoom) use the same path with their own id and name.
 export function buildDevScenario(

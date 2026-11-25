@@ -194,12 +194,17 @@ export class Units {
   }
 
   // Puts each unit where the state says (creates whoever is missing, removes whoever died)
-  sync(state: BattleState) {
+  // `bury` false: whoever left the state leaves the scene, no body (the battle builder takes units away)
+  sync(state: BattleState, bury = true) {
     const alive = new Set(state.units.map((u) => u.id));
     // whoever died becomes a body on the ground: no bar, no ring, darker; the undo that brings the unit back removes the body
     for (const [id, v] of this.views) {
       if (alive.has(id)) continue;
       this.views.delete(id);
+      if (!bury) {
+        this.scene.remove(v.holder);
+        continue;
+      }
       v.mixer?.update(10); // closes the death animation on the last frame
       v.sway.position.set(0, 0, 0); // a recoil cut short by the end of the sequence leaves no body off its tile
       v.holder.getObjectByName('bar')?.removeFromParent();

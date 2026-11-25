@@ -9,6 +9,7 @@ import { toJson, toTs } from '../../shared/mapedit/export.ts';
 import { redo, undo } from '../../shared/mapedit/history.ts';
 import { parseMapDoc } from '../../shared/mapedit/parse.ts';
 import { type Edge, growEdge, resize } from '../../shared/mapedit/size.ts';
+import { battleOnMap } from '../battleedit/play.ts';
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import { navigate } from '../nav.ts';
@@ -59,6 +60,7 @@ export function press(b: Builder, id: string) {
   } else if (k === 'json' || k === 'ts') exportMap(b, k);
   else if (k === 'import') importMap(b);
   else if (k === 'play') play(d);
+  else if (k === 'battle') battleOnMap(d);
   else if (k === 'leave') navigate('');
   else foot(b, k);
 }

@@ -158,6 +158,8 @@ function fileRows(s: PanelState): Row[] {
         button('play', s.playWhy ? t(`Jogar: ${s.playWhy}`, `Play: ${s.playWhy}`) : t('Jogar', 'Play'), {
           off: !!s.playWhy,
         }),
+        // the battle builder on this map (grill, Nov 25: "build a battle on this map")
+        button('battle', t('Montar batalha', 'Build a battle')),
         button('leave', t('Sair', 'Leave')),
       ],
     },

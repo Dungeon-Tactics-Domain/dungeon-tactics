@@ -279,7 +279,7 @@ describe('layout A: the bar at the foot, the panel on the right', () => {
     const rows = panelRows(state({ tab: 'file', slots: ['A', 'B', 'C', 'D', 'E'] }));
     const placed = placeRows(l, rows);
     const play = rows.findIndex((r) => r.cells.some((c) => c.id === 'play'));
-    expect(placed[play]).toHaveLength(2);
+    expect(placed[play]).toHaveLength(3); // Play, Build a battle, Leave
     expect(rows.findIndex((r) => r.cells.some((c) => c.id.startsWith('slot:')))).toBeGreaterThan(play);
     expect(rows.find((r) => r.cells[0].id.startsWith('slot:'))?.cells[0].id).toBe('slot:E'); // newest first
   });

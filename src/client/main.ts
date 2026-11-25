@@ -4,6 +4,7 @@
 import { playAiTurn } from '../shared/battle/ai.ts';
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
+import { controlOf } from '../shared/battle/scenarios.ts';
 import type { BattleEvent, Pos, UnitState } from '../shared/battle/types.ts';
 import { UNIT_DEFS } from '../shared/battle/units.ts';
 import { battleFace, expressionAt, faceCues, type Mood } from './battle-face.ts';
@@ -193,7 +194,8 @@ export class Game implements TurnHost {
   private frameTurn = () => this.scene.cam.turnFocus(bodyOf(this.battle.actor.pos, this.battle.actor.def));
 
   get heroTurn() {
-    return !AUTO && !this.battle.over && this.battle.actor.team === 'hero';
+    // the battle builder may give either side to the player or the AI (scenarios.ts controlOf)
+    return !AUTO && !this.battle.over && controlOf(this.sel.scenario, this.battle.actor.team) === 'player';
   }
 
   update(ui: Ui) {

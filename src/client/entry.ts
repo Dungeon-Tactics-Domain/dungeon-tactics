@@ -50,6 +50,9 @@ async function boot(search?: string) {
   syncInert();
   // ?mapedit: the map builder (Nov 25, mapedit/builder.ts), a chunk of its own: a tool, not the game
   if (param('mapedit') !== null) return (await import('./mapedit/builder.ts')).bootBuilder(host, cover, stale);
+  // ?battleedit: the battle builder (Nov 25, battleedit/builder.ts), its own chunk too
+  if (param('battleedit') !== null)
+    return (await import('./battleedit/builder.ts')).bootBattleBuilder(host, cover, stale);
   // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
   if (param('home') !== null) return bootTown(host, cover, stale);
   const sel = await selectBattle();
@@ -74,7 +77,7 @@ async function boot(search?: string) {
   const models = scenario.spawns.map((s) => s.def);
   await whenReady(
     cover,
-    [BattleScene.create(host, battle.grid, battle.state, models), loadSkin(staged?.spec)],
+    [BattleScene.create(host, battle.grid, battle.state, models, sel.also), loadSkin(staged?.spec)],
     ([scene, skin]) => {
       if (stale()) return scene.dispose();
       onLeave(() => scene.dispose());

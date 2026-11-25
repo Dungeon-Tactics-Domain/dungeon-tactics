@@ -3,7 +3,7 @@
 // map behind it is just scenery).
 import { CRAWL_RUN } from '../../content/crawl/rooms.ts';
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
-import { DEV_SCENARIO } from '../dev-roster.ts';
+import { openBattleBuilder } from '../battleedit/play.ts';
 import { dialog } from '../dialog.ts';
 import { FULLSCREEN_CTA, fullscreenEnv, fullscreenLabel, fullscreenOffer, toggleFullscreen } from '../fullscreen.ts';
 import { hintLine } from '../glyphs.ts';
@@ -21,15 +21,6 @@ import { jumpHelp } from '../town-ui.ts';
 import { installHelp } from './install-sheet.ts';
 import { openSaves, savedCount, savedGames, startNewGame } from './saves-ui.ts';
 import { type Block, blocksHtml, showSheet } from './sheets.ts';
-
-// Developer menu (Nov 12). Starting saves the roster, erases the previous developer battle and reopens the game on it
-// (boot builds the scenario). Drawn by flow3d/dev3d.ts.
-export function devMenu(onBack?: () => void) {
-  looks3d.dev?.(() => {
-    store.set(`dt:battle:${DEV_SCENARIO}`, '');
-    navigate(`?scenario=${DEV_SCENARIO}`);
-  }, onBack);
-}
 
 // Standalone battle: the maps with a Beacon. Every choice opens by URL, each with its own
 // save: the Hill behind the title is just scenery since the fixed title screen (Nov 13), it is not played through it
@@ -298,8 +289,9 @@ export function titleScreen() {
         // the tool, not the game: last, under a rule (flow3d/title3d.ts draws it on `dev-row`; Nov 18 review)
         button(
           'secondary dev-row',
-          t('Desenvolvedor: montar heróis e mapa', 'Developer: build heroes and map'),
-          go(() => devMenu(titleScreen)),
+          // the battle builder took the Developer menu's place (grill, Nov 25) and its saved cast as the first slot
+          t('Construtor de batalhas: unidades, mapa e regras', 'Battle builder: units, map and rules'),
+          go(() => openBattleBuilder()),
         ),
       ),
       el(

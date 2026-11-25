@@ -11,9 +11,9 @@ import type { BattleEvent, BattleState, Pos, Team, UnitState } from './types.ts'
 import { HALF, isObjective, UNIT_DEFS } from './units.ts';
 
 // every class a battle may hold: the sheets as written, not their half-tile tokens, the developer's and the expedition's
-// runtime copies (dev-h0, dev-e0…) or the Beacon, which is an objective and never plays
+// runtime copies (dev-h0, dev-e0…, a built battle's mapedit_<map>-h0: every runtime sheet has a dash) or the Beacon, which is an objective and never plays
 export const spawnClasses = () =>
-  Object.keys(UNIT_DEFS).filter((id) => !id.endsWith(HALF) && !id.startsWith('dev-') && !isObjective(id));
+  Object.keys(UNIT_DEFS).filter((id) => !id.endsWith(HALF) && !id.includes('-') && !isObjective(id));
 
 // The unit `base` of `team` standing on `at`, or on the nearest spot its whole body fits (every cell on the map,
 // standable, not a pass-through tile or a body, nobody on it, and on a split map even ground, as a walk leaves it); null

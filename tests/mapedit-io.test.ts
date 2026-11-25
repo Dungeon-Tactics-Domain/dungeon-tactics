@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ASH_WOOD } from '../src/content/maps/ash-wood.ts';
 import { CRYPT_HEART } from '../src/content/maps/crypt-heart.ts';
 import * as grid from '../src/shared/battle/grid.ts';
+import { lastStanding, surviveFor } from '../src/shared/battle/outcome.ts';
 import type { Scenario } from '../src/shared/battle/scenarios.ts';
 import { generateRoom } from '../src/shared/crawl/generate.ts';
 import { battleFromScenario, blankBattle } from '../src/shared/mapedit/battle.ts';
@@ -10,7 +11,16 @@ import { blankDoc, docFromScenario, type MapDoc } from '../src/shared/mapedit/do
 import { cycleRamp, setHeight } from '../src/shared/mapedit/edit.ts';
 import { battleToTs, toJson, toTs } from '../src/shared/mapedit/export.ts';
 import { parseBattleDoc, parseMapDoc } from '../src/shared/mapedit/parse.ts';
-import { placeUnit, setLife } from '../src/shared/mapedit/units.ts';
+import { placeUnit, setLife, setSheet } from '../src/shared/mapedit/units.ts';
+
+// a battle state both sides still stand in, for an exported objective's rule
+const stateOfOutcome = () => ({
+  units: [
+    { team: 'hero', def: 'warrior' },
+    { team: 'enemy', def: 'rat' },
+  ],
+  turnsPlayed: 0,
+});
 
 // Runs an exported .ts the way a map file loads: types stripped, the grid helpers handed in for its import
 function loadTs(src: string): Record<string, unknown> {
@@ -18,7 +28,12 @@ function loadTs(src: string): Record<string, unknown> {
   const js = stripTypeScriptTypes(src)
     .replace(/^import .*$/gm, '')
     .replace(/^export const /gm, 'const ');
-  return Function('withRamps', `${js}\nreturn { ${names.join(', ')} };`)(grid.withRamps);
+  return Function(
+    'withRamps',
+    'surviveFor',
+    'lastStanding',
+    `${js}\nreturn { ${names.join(', ')} };`,
+  )(grid.withRamps, surviveFor, lastStanding);
 }
 const scenarioOf = (src: string) => Object.values(loadTs(src)).find((v) => (v as Scenario).grid) as Scenario;
 // `kinds` distinct kinds: the first tiles a look of their own, the rest plain grass
@@ -91,10 +106,33 @@ describe('battle export', () => {
     }
   });
 
-  it('the .ts exports the life overrides beside the scenario', () => {
+  it('the .ts exports the own sheets beside the scenario', () => {
     let b = placeUnit(blankBattle(blankDoc(4, 4)), { x: 1, y: 1 }, 'warrior', 'hero');
     b = setLife(b, { x: 1, y: 1 }, 77);
-    expect(Object.values(loadTs(battleToTs(b)))).toContainEqual({ [b.units[0].id]: 77 });
+    expect(Object.values(loadTs(battleToTs(b)))).toContainEqual({ [b.units[0].id]: { hp: 77 } });
+  });
+
+  it('the .ts carries the whole battle: sheets, starting CT, bags, sides and the objective', () => {
+    let b = placeUnit(blankBattle(blankDoc(6, 6)), { x: 1, y: 1 }, 'warrior', 'hero');
+    b = placeUnit(b, { x: 4, y: 4 }, 'rat', 'enemy');
+    b = setSheet(b, { x: 1, y: 1 }, { name: 'Bran', speed: 9, items: { head: 'hood' }, abilities: ['strike'], ct: 40 });
+    b = {
+      ...b,
+      bags: { hero: { life_potion: 2 } },
+      control: { enemy: 'player' },
+      objective: { kind: 'survive', turns: 5 },
+    };
+    const src = battleToTs(b);
+    expect(src).toContain("import { surviveFor } from '../../shared/battle/outcome.ts';");
+    const back = scenarioOf(src);
+    expect(back.spawns[0].ct).toBe(40);
+    expect(back.bags).toEqual({ hero: { life_potion: 2 } });
+    expect(back.control).toEqual({ enemy: 'player' });
+    expect(back.rules?.outcome?.({ ...stateOfOutcome(), turnsPlayed: 5 } as never)).toBe('victory');
+    expect(Object.values(loadTs(src))).toContainEqual({
+      h0: { name: 'Bran', speed: 9, items: { head: 'hood' }, abilities: ['strike'] },
+    });
+    expect(battleToTs({ ...b, objective: { kind: 'defeat_all' } })).toContain('rules: { outcome: lastStanding }');
   });
 
   it('the JSON reads back through parseBattleDoc identical', () => {

@@ -193,12 +193,12 @@ export class BattleScene {
   // pictures of tiny maps on this map's pieces (scene/tile-shot.ts: the map builder's tile pictures)
   shoot = (grids: Map<string, Grid>, px: number) => shootTiles(this.renderer, this.board, grids, px);
 
-  // Puts each unit where the state says (creates whoever is missing, removes whoever died). Called on open, after each animation and on undo.
-  sync(state: BattleState) {
+  // Puts each unit where the state says (creates whoever is missing, lays whoever died as a body, or with `bury` false takes it away: the battle builder). Called on open, after each animation and on undo.
+  sync(state: BattleState, bury = true) {
     const hot = chargeDanger(this.space.grid, state);
     this.marks.showDanger(hot);
     this.setChargeLines(chargeLines(this.space.grid, state));
-    this.units.sync(state);
+    this.units.sync(state, bury);
   }
 
   setHighlights(h: Highlights | null) {

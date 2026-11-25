@@ -11,6 +11,7 @@
 // Redraws everything on each change (it is little DOM); the menu position changes only via left/top.
 import type { Battle } from '../shared/battle/battle.ts';
 import { unitAt } from '../shared/battle/pathing.ts';
+import { controlOf, SCENARIOS } from '../shared/battle/scenarios.ts';
 import type { Charge, Pos, UnitState } from '../shared/battle/types.ts';
 import { spotAim } from './act-marks.ts';
 import { type Expression, frameOf } from './battle-face.ts';
@@ -165,7 +166,7 @@ export class BattleHud {
   render(v: HudView) {
     this.view = v;
     const b = v.battle;
-    const heroTurn = !b.over && b.actor.team === 'hero';
+    const heroTurn = !b.over && controlOf(SCENARIOS[b.state.scenario], b.actor.team) === 'player';
     const open = heroTurn && !v.busy;
     const menu = menuUp(open, v); // the menu and its Back wait while the map is looked at
     this.root.classList.toggle('menu-shut', open && !menu);
@@ -182,8 +183,12 @@ export class BattleHud {
     this.tools.setUndo(undoShown(b, open));
     renderCommands(this.commands, v, menu, this.act);
     this.menu3d?.update(v, menu);
-    // acting unit: the enemy that is playing (the state may have already passed the turn during the animation)
-    const actingUnit = v.acting ? b.state.units.find((u) => u.def === v.acting && u.team === 'enemy') : undefined;
+    // acting unit: the one the AI is playing (the state may have already passed the turn during the animation); the
+    // battle builder may give either side to the AI
+    const sc = SCENARIOS[b.state.scenario];
+    const actingUnit = v.acting
+      ? b.state.units.find((u) => u.def === v.acting && controlOf(sc, u.team) === 'ai')
+      : undefined;
     const me = b.over ? undefined : (actingUnit ?? b.actor);
     this.active.replaceChildren(...(me ? [unitPanel(b.state, me, this.face(me))] : []));
     const head = this.queued?.rows[0]; // the sheet shows the list's head (the 3D bar takes its card: queue-view.ts)

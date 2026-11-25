@@ -3,6 +3,7 @@
 // back to the builder with its map.
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import { blankDoc, docFromScenario } from '../../shared/mapedit/doc.ts';
+import { isBuilt } from '../battleedit/play.ts';
 import { t } from '../i18n.ts';
 import type { Game } from '../main.ts';
 import { isPlayed, openBuilder } from '../mapedit/play-map.ts';
@@ -16,21 +17,23 @@ let start: Start = 'map'; // kept between openings, like Spawn's class
 export function builderGroup(g: Game, close: () => void): OptionsGroup {
   const id = g.battle.state.scenario,
     room = param('room') !== null;
-  const back: Go[] = isPlayed(id)
-    ? [
-        {
-          link: t('Voltar ao construtor', 'Back to the builder'),
-          help: t(
-            'Volta ao construtor de mapas com o mapa desta batalha.',
-            'Back to the map builder with this battle’s map.',
-          ),
-          run: () => {
-            close();
-            openBuilder();
+  // a battle the battle builder opened shares the id prefix: its way back is Debug › Battle builder
+  const back: Go[] =
+    isPlayed(id) && !isBuilt()
+      ? [
+          {
+            link: t('Voltar ao construtor', 'Back to the builder'),
+            help: t(
+              'Volta ao construtor de mapas com o mapa desta batalha.',
+              'Back to the map builder with this battle’s map.',
+            ),
+            run: () => {
+              close();
+              openBuilder();
+            },
           },
-        },
-      ]
-    : [];
+        ]
+      : [];
   return {
     title: t('Construtor de mapas', 'Map builder'),
     help: t(

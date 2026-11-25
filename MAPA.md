@@ -51,8 +51,9 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/mapedit/units.ts` — place, remove and turn units, their own life and their whole sheet on a battle document (placeUnit, unitOn, setLife, setSheet).
 - `src/shared/mapedit/size.ts` — resize and growEdge (add or cut a row or column on any edge).
 - `src/shared/mapedit/history.ts` — undo and redo of whole documents (map or battle), 50 steps, one stroke = one step.
-- `src/shared/mapedit/export.ts` — toJson, toTs (a .ts map file shaped like ash-wood.ts with empty spawns, two-letter codes past 52 kinds, a RISE table for ramps above 1) and battleToTs (the same with spawns and the units' own life).
+- `src/shared/mapedit/export.ts` — toJson, toTs (a .ts map file shaped like ash-wood.ts with empty spawns, two-letter codes past 52 kinds, a RISE table for ramps above 1) and battleToTs (the same with spawns and their starting CT, the bags, who plays each side, the objective's rule and a table of the units' own sheets).
 - `src/shared/mapedit/parse.ts` — parseMapDoc and parseBattleDoc (sheets, objective, sides and bags included): rebuild a saved or pasted document field by field, null on any doubt.
+- `src/shared/mapedit/setup.ts` — the battle builder's battle-wide edits, each still readable by parseBattleDoc (sound): withMap (units kept where they fit), afterUnits (the Beacon objective leaves with the Beacon), setObjective, setControl and bagStep.
 - `src/shared/mapedit/play.ts` — docToScenario (a map as a playable scenario with the spawns the client passes, to halve), objectiveRules and battleToScenario (own sheets registered, starting CT, bags, sides and the objective's rule, plus each own sheet's class).
 
 ## src/client/mapedit — the map builder's screen (?mapedit)
@@ -69,6 +70,19 @@ reasons behind them in `docs/decisions.md`.
 - `src/client/mapedit/pics.ts` — pure: which tile picture each bar tool and palette entry shows (picOf, PIC_SIGN), the tiny half-tile map each is rendered from (picGrid) and the palette map whose pieces the builder loads up front.
 - `src/client/mapedit/pic-shots.ts` — tilePictures: the builder's tile pictures rendered once per page on the scene's pieces (BattleScene.shoot) and kept.
 - `src/client/mapedit/slots.ts` — pure: the builder's save keys, the named slots read back by parseMapDoc (one per name, 20 at most) and a map id from its name.
+
+## src/client/battleedit — the battle builder's screen (?battleedit)
+
+- `src/client/battleedit/builder.ts` — bootBattleBuilder and BattleBuilder: the builder's page on the battle's scene with the map builder's bar, panel and 3D look, the battle document and its history, the units drawn again in place (another map opens the page again).
+- `src/client/battleedit/actions.ts` — what each control does: tools on a tile (pick, place a hero or an enemy, remove), turning, the class, the sheet's steps, the map, an expedition room, objective, sides, bags, slots, JSON and .ts export, import, Play, leave, undo, redo, camera.
+- `src/client/battleedit/input.ts` — the builder's mouse, touch, keys and pad (the map builder's keys.ts): a tap uses the tool, the right button removes, two fingers or the middle button move the map, the pad's Menu walks the panel.
+- `src/client/battleedit/panel.ts` — pure: the tabs (Units, Sheet, Battle, File), the bar's nine plates, the foot, the Units and File rows.
+- `src/client/battleedit/panel-pages.ts` — pure: the Sheet's pages (numbers with Move and Jump in half tiles, equipment, abilities) and the Battle's (map and expedition room, objective and sides, bags).
+- `src/client/battleedit/sheet-edit.ts` — pure: a unit's sheet one step at a time (numbers within limits, starting CT, name, equipment, abilities), a field back at the class's value leaving the sheet.
+- `src/client/battleedit/sources.ts` — pure: where a battle's map comes from (the game's maps, the map builder's saved ones) and an expedition room as a whole battle by seed and depth.
+- `src/client/battleedit/slots.ts` — pure: the builder's save keys, named slots read back by parseBattleDoc, and the Developer menu's saved cast as the first slot.
+- `src/client/battleedit/play.ts` — the way in and out: the draft save, the slots (seeded once), openBattleBuilder, battleOnMap (from the map builder), Play and the scenario it opens with each own sheet's class and model.
+- `src/client/battleedit/live.ts` — the map edited mid-battle from the debug panel: the map builder's tool at the cursor, the board redrawn in place (setGrid, sync), the battle going on from the same turn with Undo started over.
 
 ## src/content — game content as typed data
 
@@ -303,6 +317,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
 - `src/client/game/crawl.ts` — the town menu and quest gate (drawn by town3d/street.ts), the quest's commands, the expedition save and its gold, and the way home.
 - `src/client/game/debug-menu.ts` — the debug panel (F2, the pad's L3): the Options screen with its own board of Spawn, Units, Shot rules, Pixel effect and Tools, and settling the battle after a change.
+- `src/client/game/debug-battle.ts` — Debug › Battle builder: open it with this battle's map and starting units, and from a battle its Play opened, back to it and the map edited at the cursor (tool, brush, Edit at the cursor).
 - `src/client/game/debug-builder.ts` — Debug › Map builder: open the builder on this battle's map or a blank 8, 12 or 16 square one, and back to the builder from a battle its Play opened.
 - `src/client/game/debug-bodies.ts` — Debug › Models: height (2 to 5 heads) and man or woman per living humanoid of the battle; a change saves and reloads the battle where it stands.
 - `src/client/game/debug-shot.ts` — Debug › Shot rules: its category and rows (launch range, visible parts, chance by cover, cover weight, humanoid and quadruped launch ranges).

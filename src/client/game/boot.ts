@@ -3,14 +3,17 @@
 import { Battle } from '../../shared/battle/battle.ts';
 import { regen } from '../../shared/battle/combat.ts';
 import { spawnClasses } from '../../shared/battle/debug.ts';
-import { subOf } from '../../shared/battle/grid.ts';
+import { type Grid, subOf } from '../../shared/battle/grid.ts';
 import { HALF, HALF_ID, halfDef, halve, registerHalf } from '../../shared/battle/half.ts';
 import { FIRST_BATTLE, SCENARIOS, type Scenario } from '../../shared/battle/scenarios.ts';
 import { UNIT_DEFS } from '../../shared/battle/units.ts';
 import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
 import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
+import { PLAY as BUILT, playedScenario } from '../battleedit/play.ts';
+import { PLAY_KEY as BUILT_KEY } from '../battleedit/slots.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
 import { t } from '../i18n.ts';
+import { paletteGrid } from '../mapedit/pics.ts';
 import { PLAY, playScenario } from '../mapedit/play-map.ts';
 import { PLAY_KEY } from '../mapedit/slots.ts';
 import { applySavedShotRules } from '../shot-debug.ts';
@@ -24,6 +27,7 @@ export interface BattleSelection {
   saveKey: string;
   title: boolean; // no battle parameter: the title (or, with ?home, the town) opens over the standalone battle
   room: CrawlRoom | null; // expedition room in play (crawl.ts): who stands on each hero spawn and their life
+  also?: Grid; // pieces the scene loads beyond the map's: the battle builder's live edit paints any palette entry
 }
 
 // a new battle, with the expedition party's life and mana carried in (stamina starts full in every room); Options ->
@@ -68,6 +72,7 @@ export async function selectBattle(): Promise<BattleSelection | null> {
   const crawl = param('crawl');
   const roomAt = param('room');
   let room: CrawlRoom | null = null;
+  let also: Grid | undefined;
   if (roomAt !== null) {
     // an expedition room (crawl.ts): only one the party may enter now, so a reload or a typed address cannot replay a
     // cleared room for its heal; anything else (a chest too: it has no battle) goes back home (the town)
@@ -114,6 +119,14 @@ export async function selectBattle(): Promise<BattleSelection | null> {
       scenario = played;
       saveKey = PLAY_KEY;
     }
+  } else if (study === BUILT) {
+    // the battle builder's Play (battleedit/play.ts): its draft, rebuilt on a reload too; none left, the default battle
+    const built = playedScenario();
+    if (built) {
+      scenario = built;
+      saveKey = BUILT_KEY;
+      also = paletteGrid();
+    }
   } else if (study === 'half') {
     // half tile (Nov 13, test version: 2x2 characters walking 1 at a time, trees of 3 to 5; half.ts)
     scenario = registerHalf();
@@ -130,5 +143,5 @@ export async function selectBattle(): Promise<BattleSelection | null> {
   // every battle is played in half tiles (Nov 14; Nov 15, Fernando: no whole-tile battle left);
   // the test map comes split already
   if (subOf(scenario.grid) === 1) scenario = halve(scenario);
-  return { scenario, saveKey, title: !study && crawl === null && !room, room };
+  return { scenario, saveKey, title: !study && crawl === null && !room, room, ...(also && { also }) };
 }

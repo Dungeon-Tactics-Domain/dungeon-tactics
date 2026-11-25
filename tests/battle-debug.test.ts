@@ -47,6 +47,14 @@ describe('creating a unit mid-battle', () => {
     expect(list).toContain('warrior');
     expect(list.some((id) => id.endsWith(HALF) || id.startsWith('dev-') || id === 'beacon')).toBe(false);
   });
+  it('leaves out a built battle’s own sheets (mapedit_<map>-h0)', () => {
+    UNIT_DEFS['mapedit_test-h0'] = { ...UNIT_DEFS.warrior, id: 'mapedit_test-h0' };
+    try {
+      expect(spawnClasses()).not.toContain('mapedit_test-h0');
+    } finally {
+      delete UNIT_DEFS['mapedit_test-h0'];
+    }
+  });
 });
 
 describe('heal, kill and the undo', () => {
