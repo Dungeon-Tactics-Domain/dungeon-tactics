@@ -42,6 +42,10 @@ export const tileMarks = (): Block[] =>
       ['range', t('Laranja, listras: alcance da habilidade', 'Orange, stripes: ability range')],
       ['blocked', t('Roxo, xis: no alcance, mas sem visão', 'Purple, cross: in range, but no sight')],
       [
+        'far',
+        t('Cinza: dá para andar, mas a ação não alcança', 'Grey: the unit can walk there, the action does not reach'),
+      ],
+      [
         'threat',
         t('Vermelho, listras: o que a unidade tocada alcança', 'Red, stripes: what the tapped unit can reach'),
       ],

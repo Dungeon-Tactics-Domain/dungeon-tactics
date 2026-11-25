@@ -8,7 +8,7 @@ import { type ItemOptions, type ItemReason, itemOptions } from '../shared/battle
 import type { Battle } from '../shared/battle/battle.ts';
 import { type Preview, previewAbility } from '../shared/battle/combat.ts';
 import { basicOf } from '../shared/battle/counter.ts';
-import { dist, samePos } from '../shared/battle/grid.ts';
+import { dist, posKey, samePos } from '../shared/battle/grid.ts';
 import {
   type AbilityOptions,
   type ActionTarget,
@@ -37,6 +37,7 @@ export interface ActSpot {
   preview?: Preview;
   heal?: number; // an item's numbers
   mana?: number;
+  blocked?: boolean; // a shot from here stops on something before the target (withBlocked)
 }
 // A row of the action list: an ability or an item, on when it can hit the target, else with the reason
 export interface ActAction {
@@ -60,6 +61,7 @@ let memo: {
   abilities: AbilityOptions[];
   items: ItemOptions[];
   ground: Map<string, ActionTarget[]>;
+  blocked: Map<string, ActSpot[]>;
 } | null = null;
 function options(b: Battle) {
   const key = JSON.stringify(b.state);
@@ -70,6 +72,7 @@ function options(b: Battle) {
       abilities: actionOptions(b.grid, b.state, b.actor.id),
       items: itemOptions(b.grid, b.state, b.actor.id),
       ground: new Map(),
+      blocked: new Map(),
     };
   return memo;
 }
@@ -78,6 +81,28 @@ function ground(b: Battle, id: string) {
   const m = options(b);
   if (!m.ground.has(id)) m.ground.set(id, groundAims(b.grid, b.state, b.actor.id, id));
   return m.ground.get(id)!;
+}
+
+// The tiles a shot at the target can be fired from although something stands in its way (Fernando, Nov 25: purple, the
+// target line shows the obstacle, "mas ele pode executar daquele ponto se ele quiser"), after the tiles that hit it, so
+// the first pick and the indices of those stay as they were. Worked out once per state, ability and target
+export function withBlocked(b: Battle, a: ActAction, target: ActTarget): ActAction {
+  if (a.k !== 'ability' || !a.enabled || target.k !== 'unit' || !ABILITIES[a.id].needsSight) return a;
+  const m = options(b),
+    key = `${a.id}>${target.unit}`;
+  if (!m.blocked.has(key)) {
+    const taken = new Set(a.spots.map((s) => posKey(s.pos)));
+    const out: ActSpot[] = [];
+    for (const o of [{ pos: b.actor.pos, cost: 0 }, ...b.reach().values()]) {
+      if (taken.has(posKey(o.pos))) continue;
+      const p = previewAbility(b.grid, b.state, b.actor.id, a.id, target.pos, false, o.pos);
+      // in range and allowed, yet the target is not among those hit: the shot stops on the way (as options.ts reads it)
+      if (p.ok && !p.targets.some((t) => t.unit === target.unit))
+        out.push({ pos: o.pos, cost: o.cost, aim: target.pos, preview: p, blocked: true });
+    }
+    m.blocked.set(key, out);
+  }
+  return { ...a, spots: [...a.spots, ...m.blocked.get(key)!] };
 }
 
 // Main or secondary (Nov 19): an item is always secondary

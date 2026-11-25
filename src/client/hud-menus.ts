@@ -103,6 +103,12 @@ function actHelp(b: Battle, s: Extract<Screen, { k: 'targets' | 'actions' | 'spo
     const what = got.filter(Boolean).join(', ') || itemDetail(a.id);
     return `${name}: ${what}`;
   }
+  // a purple tile: the target line shows what stands in the way, and acting from there is still allowed (Nov 25)
+  if (spot?.blocked)
+    return t(
+      'Casa: algo bloqueia o tiro; confirme para agir mesmo assim.',
+      'Tile: something blocks the shot; confirm to act anyway.',
+    );
   return touch
     ? t('Casa: toque de novo para agir.', 'Tile: tap it again to act.')
     : t('Casa: escolha de onde e confirme.', 'Tile: pick where from and confirm.');

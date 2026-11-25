@@ -84,13 +84,17 @@ export function turnMarks(b: Battle, s: Screen, ui: Ui, cursor: Pos, live: boole
     cursor: hl ? corner : null,
     size,
     fits: !hl?.tiles.some((m) => m.kind === 'nogo'),
-    ring: ringAt
-      ? {
-          from: cellsOf(ringAt, UNIT_DEFS[b.actor.def].size ?? 1),
-          range: farCells(b.grid, longestRange(b)),
-          walk: s.k === 'menu' ? walkCells(b) : undefined,
-        }
-      : null,
+    // on the tile screen, the ability's reach around the picked tile (Fernando, Nov 25: "mostrar a previa do range da skill")
+    ring:
+      a && spot && a.range[1] > 0
+        ? { from: cellsOf(spot.from, UNIT_DEFS[b.actor.def].size ?? 1), range: farCells(b.grid, a.range[1]) }
+        : ringAt
+          ? {
+              from: cellsOf(ringAt, UNIT_DEFS[b.actor.def].size ?? 1),
+              range: farCells(b.grid, longestRange(b)),
+              walk: s.k === 'menu' ? walkCells(b) : undefined,
+            }
+          : null,
     trajectory:
       a && caster && spot && (a.needsSight ? !onSelf : a.magic && a.range[1] > 0)
         ? {

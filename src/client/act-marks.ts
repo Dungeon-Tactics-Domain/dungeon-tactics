@@ -19,6 +19,7 @@ import {
   freeArea,
   spotPreview,
   withAim,
+  withBlocked,
 } from './act-flow.ts';
 import type { Screen } from './command.ts';
 import { attackMarks, type Highlights, type TileKind } from './interaction.ts';
@@ -45,7 +46,7 @@ export function screenAction(b: Battle, s: ActScreen): ActAction | null {
   if (!a) return null;
   // past the aim step the area may land anywhere it reaches, not only on the picked target (freeArea)
   if (s.k === 'aim') return freeArea(b, a);
-  return s.k === 'spot' && s.aim ? withAim(freeArea(b, a), s.aim) : a;
+  return s.k === 'spot' && s.aim ? withAim(freeArea(b, a), s.aim) : withBlocked(b, a, s.target);
 }
 
 // the aim under the free cursor of the aim step, or null where the area cannot land this turn
@@ -103,12 +104,18 @@ export function actMarks(b: Battle, s: ActScreen): Highlights {
   }
   const spots = a?.spots ?? [];
   const seen = new Set<string>();
-  for (const sp of spots)
-    for (const c of cellsOf(sp.pos, size))
+  const paint = (pos: Pos, kind: TileKind) => {
+    for (const c of cellsOf(pos, size))
       if (!seen.has(posKey(c))) {
         seen.add(posKey(c));
-        tiles.push({ pos: c, kind: 'move' });
+        tiles.push({ pos: c, kind });
       }
+  };
+  // blue where it hits, purple where the shot stops on the way, grey where the unit can walk but the action does not
+  // reach (Fernando, Nov 25): the tiles that hit win where two squares overlap
+  for (const sp of spots) if (!sp.blocked) paint(sp.pos, 'move');
+  for (const sp of spots) if (sp.blocked) paint(sp.pos, 'blocked');
+  if (a) for (const r of b.reach().values()) paint(r.pos, 'far');
   mark(cellsOfTarget(b, s.target), 'target');
   const picked = s.k === 'spot' ? spots[s.index] : undefined;
   if (!picked) {

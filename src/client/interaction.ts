@@ -31,7 +31,17 @@ export interface Ui {
   inspect: string | null; // unit tapped to see HP and threat
   invalid: boolean; // the last tap landed on a tile that doesn't work: the card warns instead of staying silent
 }
-export type TileKind = 'actor' | 'move' | 'range' | 'blocked' | 'threat' | 'area' | 'target' | 'nogo' | 'counter';
+export type TileKind =
+  | 'actor'
+  | 'move'
+  | 'range'
+  | 'blocked'
+  | 'far'
+  | 'threat'
+  | 'area'
+  | 'target'
+  | 'nogo'
+  | 'counter';
 export interface Highlights {
   tiles: { pos: Pos; kind: TileKind }[];
   path: Pos[] | null;

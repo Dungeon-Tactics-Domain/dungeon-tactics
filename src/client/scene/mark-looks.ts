@@ -17,6 +17,7 @@ export const MARK: Record<TileKind | 'path', [color: string, opacity: number, pa
   move: ['#6fc0ff', 0.95, 'frame'],
   range: ['#ff7a3c', 0.45, 'hatch'], // 0.95 until Nov 24: "mta poluicao visual" (Fernando)
   blocked: ['#b07ae0', 0.95, 'cross'],
+  far: ['#9aa0a6', 0.5, 'frame'], // a tile the unit can walk to that the action does not reach from (Nov 25)
   threat: ['#ff2d55', 0.6, 'hatch'],
   area: ['#ffb020', 0.6, 'solid'], // 1 until Nov 24, with the range mark
   target: ['#fff2a0', 1, 'solid'],
