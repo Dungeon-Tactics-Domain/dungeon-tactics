@@ -286,12 +286,47 @@ describe('Agir primeiro screens on the turn (act-turn.ts, Nov 19)', () => {
       const ahead = (c.x - a.x) * wx + (c.y - a.y) * wy,
         aside = Math.abs((c.x - a.x) * wy - (c.y - a.y) * wx);
       expect(ahead).toBeGreaterThan(0);
-      expect(aside).toBeLessThanOrEqual(ahead); // within 45° of the arrow on screen
+      // along a grid axis (Nov 24): on the 2:1 diamond an axis is 27° off left and right, 63° off up and down
+      expect(aside).toBeLessThanOrEqual(2 * ahead);
     }
     // far off, where nothing is in reach: the cursor goes there, Confirm says no and stays
     const h = host(b, { k: 'aim', target, action: i, at: { x: 13, y: 4 } });
     void actPick(h, 0);
     expect(h.screen).toMatchObject({ k: 'aim', at: { x: 13, y: 4 } });
+  });
+
+  // Fernando, Nov 24: "na mira livre o movimento esta bugando com o direcional": on the diamond view the arrow sat between
+  // two grid axes and the cursor zigzagged; now each arrow keeps one axis, so five presses run a straight line
+  it('on the diamond view each arrow keeps one grid axis, five presses in a straight line', () => {
+    const b = battle();
+    const target = { k: 'unit' as const, unit: 'near', pos: { x: 5, y: 2 } };
+    const i = actActions(b, target).findIndex((a) => a.enabled && actAims(a).length > 1);
+    const axes = new Set<string>();
+    for (const dir of ['left', 'up', 'right', 'down'] as const) {
+      const h = host(b, { k: 'aim', target, action: i, at: { x: 7, y: 2 } });
+      const seen: { x: number; y: number }[] = [];
+      for (let n = 0; n < 5; n++) {
+        actKey(h, { k: 'cursor', dir });
+        seen.push((h.screen as { at: { x: number; y: number } }).at);
+      }
+      const steps = seen.map((p, n) => {
+        const q = n ? seen[n - 1] : { x: 7, y: 2 };
+        return `${p.x - q.x},${p.y - q.y}`;
+      });
+      const moved = steps.filter((d) => d !== '0,0');
+      expect(new Set(moved).size, dir).toBe(1); // one direction only, no zigzag
+      expect(moved[0].split(',').filter((v) => v !== '0')).toHaveLength(1); // a grid axis, not a diagonal
+      axes.add(moved[0]);
+    }
+    expect(axes.size).toBe(4); // the four arrows, the four ways
+    // on the map's corner the arrows still answer; the scene has no tile to measure off the map (it threw there)
+    const h = host(b, { k: 'aim', target, action: i, at: { x: 0, y: 0 } });
+    h.at = (p) => {
+      if (p.x < 0 || p.y < 0 || p.x >= 14 || p.y >= 5) throw new Error(`no tile at ${p.x},${p.y}`);
+      return diamond(p);
+    };
+    for (const dir of ['left', 'up', 'right', 'down'] as const) actKey(h, { k: 'cursor', dir });
+    expect((h.screen as { at: { x: number; y: number } }).at).toEqual({ x: 1, y: 1 });
   });
 
   // Fernando, Nov 24: "toda magia em area msm se vc escolha um target a selecao deve ser livre"; he picked "Pode lançar no

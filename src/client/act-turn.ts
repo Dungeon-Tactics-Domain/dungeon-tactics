@@ -40,6 +40,7 @@ export interface ActHost {
   focus(p: Pos): void; // the camera and the cursor go there
   runAct(run: (b: Battle) => ReturnType<Battle['move']>): Promise<void>;
   at(p: Pos): { x: number; y: number }; // where a tile is on screen, in pixels (the arrows walk what is seen)
+  flat?(p: Pos): { x: number; y: number }; // the same at ground level 0: the grid's own axes, unbent by slopes
   remember(r: ActRef): void; // the action about to run: Agir opens on it next time (actStart)
 }
 
@@ -155,22 +156,40 @@ function indexAt(b: Battle, s: Screen, p: Pos): number {
   return -1;
 }
 
-// the aim step's free cursor: the whole tile next to `at` that the arrow points to on screen, anywhere on the map (Nov 21:
-// it used to jump between the target's aims only)
+// the aim step's free cursor: the whole tile next to `at` along the grid axis the arrow stands for, anywhere on the map
+// (Nov 21). Picking the nearest neighbour on screen zigzagged on the diamond view and two arrows could share an axis
+// (Fernando, Nov 24: "o movimento esta bugando com o direcional"): the 4 axes, in their order around the screen, go to
+// the 4 arrows with the turn that fits best, a near tie kept on the first turn, so each arrow keeps one axis
+const AXES: Pos[] = [
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: -1, y: 0 },
+  { x: 0, y: -1 },
+];
+const ARROW = { right: 0, down: 1, left: 2, up: 3 }; // clockwise from the right on screen (y down)
+const TIE = 0.15; // radians of error a later turn must save to win: the perspective's slant is under it
 function stepAim(h: ActHost, at: Pos, dir: 'up' | 'down' | 'left' | 'right'): Pos | null {
-  const k = subOf(h.battle.grid);
-  const near = [at];
-  for (let dy = -1; dy <= 1; dy++)
-    for (let dx = -1; dx <= 1; dx++) {
-      const p = { x: at.x + dx * k, y: at.y + dy * k };
-      if ((dx || dy) && inBounds(h.battle.grid, p)) near.push(p);
-    }
-  const i = neighbour(
-    near.map((p) => ({ ...h.at(p), w: 0, h: 0 })),
-    0,
-    dir,
-  );
-  return i ? near[i] : null;
+  const k = subOf(h.battle.grid),
+    seen = h.flat ?? h.at, // ground level: a raised tile bent the axis (Nov 24)
+    o = seen(at);
+  const turn = (a: number) => (a + 2 * Math.PI) % (2 * Math.PI);
+  // off the map there is no tile to measure (it threw on a corner): the opposite neighbour, turned half round, is the axis
+  const axes = AXES.map((d) => {
+    const p = { x: at.x + d.x * k, y: at.y + d.y * k },
+      out = !inBounds(h.battle.grid, p),
+      c = seen(out ? { x: at.x - d.x * k, y: at.y - d.y * k } : p);
+    return { d, a: turn(Math.atan2(c.y - o.y, c.x - o.x) + (out ? Math.PI : 0)) };
+  }).sort((p, q) => p.a - q.a);
+  const off = (a: number, b: number) => Math.min(turn(a - b), turn(b - a));
+  let best = 0,
+    least = Infinity;
+  for (let r = 0; r < 4; r++) {
+    const err = axes.reduce((sum, _, i) => sum + off(axes[(i + r) % 4].a, (i * Math.PI) / 2), 0);
+    if (err < least - TIE) [best, least] = [r, err];
+  }
+  const d = axes[(ARROW[dir] + best) % 4].d,
+    p = { x: at.x + d.x * k, y: at.y + d.y * k };
+  return inBounds(h.battle.grid, p) ? p : null; // at the map's edge it stops
 }
 const sameAim = (b: Battle, p: Pos, q: Pos) => samePos(aimTile(b.grid, b.state, p), aimTile(b.grid, b.state, q));
 

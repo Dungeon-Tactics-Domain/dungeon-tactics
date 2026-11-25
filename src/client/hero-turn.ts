@@ -280,6 +280,7 @@ export class HeroTurn {
       },
       runAct: (run) => turn.game.runAct(run),
       at: (p) => turn.scene.screenAt(p, 1),
+      flat: (p) => turn.scene.screenAt(p, 1, true),
       remember: (r) => turn.lastAct.set(turn.game.battle.actor.id, r),
     };
   }

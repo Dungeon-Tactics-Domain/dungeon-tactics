@@ -252,9 +252,11 @@ export class BattleScene {
   }
 
   // where the middle of a square of `size` cells is on the ground on screen, in canvas pixels like screenOf, with no body
-  // (r 0): the town's balloon on a building
-  screenAt(p: Pos, size: number): { x: number; y: number; r: number } {
-    const v = this.space.squareTop(p, size).project(this.camera);
+  // (r 0): the town's balloon on a building. `flat`: at height 0, the grid's own directions (the aim's arrows, act-turn.ts)
+  screenAt(p: Pos, size: number, flat = false): { x: number; y: number; r: number } {
+    const top = this.space.squareTop(p, size);
+    if (flat) top.y = 0;
+    const v = top.project(this.camera);
     const c = this.renderer.domElement;
     return { x: ((v.x + 1) / 2) * c.clientWidth, y: ((1 - v.y) / 2) * c.clientHeight, r: 0 };
   }
