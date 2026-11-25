@@ -267,6 +267,15 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   other commands secondary); elsewhere (a mouse, an installed game, already in fullscreen) a quiet shortcut "Tela
   cheia" / "Sair da tela cheia" right over the language button, in its look. Neither where the browser has no
   Fullscreen API (an iPhone). The title opens again once fullscreen settles, so the main button leaves by itself.
+- **Map builder** (`window3d/builder3d.ts`, piece `builder`; Nov 25, layout A of the map builder grill): the tool bar of 9
+  plates along the map's foot (keys 1 to 9 written beside the name for a keyboard, not for a finger or a pad), the key
+  hints over it on a dark plate, and the side panel on the right (`--ui3d-result-plate` at 90% with a
+  `--ui3d-result-line` edge): 4 tabs, the category's rows, a help line in `--ui3d-result-soft` and at its foot the
+  brush, undo and redo and the camera (↺ ↻ ⊞ − +). The same plates as the corner buttons; the tool, tab and brush in
+  use and the control Tab or the pad reached are lit (`--ui3d-result-line` fill, `--ui3d-result-title` text); a control
+  with nothing to do now is faded to 45% and says why in its text (Play). Name fields and the paste box are darker
+  (`--ui3d-result-veil`). Every control is 44 px at least; where each sits is `mapedit/layout.ts` (pure, tested), and
+  the real buttons, fields and paste box stay unseen under the drawing (`mapedit/builder-ui.ts`).
 - **Corner buttons** (`window3d/tools3d.ts`; Fernando, Nov 18 night: no ☰ menu and no blue): the gear (Options),
   "↶ Desfazer", Back (↩, a finger's) and the camera pair ↺ ↻ (in battle with the top view ⊞ after them, Nov 25; on a
   phone, where a third would reach the instruction banner, under ↺) as plates of the end of battle, `--ui3d-result-plate` at

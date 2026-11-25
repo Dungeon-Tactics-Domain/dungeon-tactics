@@ -1,7 +1,7 @@
 // Keyboard in the style of Final Fantasy Tactics (Fernando's request, Oct 25): play everything without a mouse. Only translates key into
 // action and screen direction into a grid step; the Game (main.ts) executes. Pure and tested.
 import type { BattleState, Pos } from '../shared/battle/types.ts';
-import { type Act, keysText, type Shown } from './glyphs.ts';
+import { type Act, hintLine, keysText, type Shown } from './glyphs.ts';
 import { t } from './i18n.ts';
 
 export type ScreenDir = 'up' | 'down' | 'left' | 'right';
@@ -228,6 +228,23 @@ export function keyHelp(shown: Shown = 'keyboard'): [string, string][] {
       t(
         `${k('walk')} anda enquanto segura; ${k('confirm')} fala com quem está à frente ou entra pela porta (o balão mostra o quê); o clique só anda até lá; ${menu} abre o menu da cidade`,
         `${k('walk')} walk while held; ${k('confirm')} talks to whoever is in front or goes in at the door (the balloon shows what); a click only walks there; ${menu} opens the town menu`,
+      ),
+    ],
+    // the map builder (mapedit/keys.ts) reads the battle's cursor, camera and top view, and these of its own
+    [
+      t('No construtor de mapas', 'In the map builder'),
+      hintLine(
+        shown,
+        [
+          ['tools', t('ferramentas da barra', 'the bar’s tools')],
+          ['brush', t('pincel 1x1 ou 3x3', 'brush 1x1 or 3x3')],
+          ['confirm', t('pinta no cursor', 'paints at the cursor')],
+          ['erase', t('grama no cursor', 'grass at the cursor')],
+          ['editUndo', t('desfazer', 'undo')],
+          ['redo', t('refazer', 'redo')],
+          ['panel', t('o painel', 'the panel')],
+        ],
+        '; ',
       ),
     ],
   ];

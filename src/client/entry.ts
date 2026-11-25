@@ -48,6 +48,8 @@ async function boot(search?: string) {
   for (const o of document.querySelectorAll('.overlay, .talk-overlay')) o.remove();
   host.replaceChildren();
   syncInert();
+  // ?mapedit: the map builder (Nov 25, mapedit/builder.ts), a chunk of its own: a tool, not the game
+  if (param('mapedit') !== null) return (await import('./mapedit/builder.ts')).bootBuilder(host, cover, stale);
   // ?home: the walkable town (or, with ?home=expedition, the expedition map over it) instead of a battle
   if (param('home') !== null) return bootTown(host, cover, stale);
   const sel = await selectBattle();

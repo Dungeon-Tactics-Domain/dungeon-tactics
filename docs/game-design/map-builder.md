@@ -50,10 +50,11 @@ Fernando: "coloque a camera de cima para ser uma opcao a ser ativada durane a lu
 
 ## Screen (Nov 25, layout A chosen)
 
-- Categories: Paint (full palette), Relief (height + and -, ramp tool, auto-ramps), Units, Map (size, edges, clear),
-  File (save slots, export JSON and .ts, import, Play).
+- Categories: Paint (full palette), Relief (height + and -, ramp tool, auto-ramps), Map (size, edges, clear), File (save
+  slots, export JSON and .ts, import, Play). Units left in round 4 (below).
 - Layout A (recommended): a tool bar at the bottom with keys 1 to 9 (ground, tree, water, wall, height +, height -,
-  ramp, unit) and a 3D side panel on the right for the rest; the map stays visible while painting.
+  ramp, and since round 4 palette and rubble in place of unit) and a 3D side panel on the right for the rest; the map
+  stays visible while painting.
 - Layout B: the side panel only.
 
 ## Round 4 (Nov 25)
@@ -66,3 +67,60 @@ Fernando: "coloque a camera de cima para ser uma opcao a ser ativada durane a lu
 - Core split (his tie-break): the map document is terrain only (size, tiles, ramps, pt and en names); units, their own
   life and facing go to a separate battle document for the battle builder.
 - Play in the map builder opens the map with one default hero in a corner; the debug panel creates the rest.
+
+## Battle builder (grill, Nov 25)
+
+- Replaces the title's Developer menu and inherits all of it (life, speed, move, jump, equipment, abilities per unit);
+  the Developer cast saved today migrates to the new format.
+- Maps: the game's maps, the ones saved in the map builder, and an expedition room by seed and depth.
+- Opens from the debug panel, from the map builder ("build a battle on this map") and from the title in place of
+  Developer.
+- Fernando: "o battle builder pode abrir de dentro do map builder para ja testar um mapa enquanto edita em uma batalha
+  ... seria possivel editar o mapa durante a batalha do map builder?" Open question: editing terrain mid-battle.
+- Live edit: pause, edit the map, rebuild the board and go on from the same turn. Only when nothing is moving, on a
+  turn the player controls (Fernando: "so pode enquanto nao tiver movimento sendo feito... enquanto tiver no turno do
+  jogador"). A unit on a tile that became a wall goes to the nearest free tile; the battle's Undo resets.
+- Who plays each side: the player can also play the enemies' turns ("no battle builder deve ser possivel o jogador
+  jogar os turnos do inimigos tbm"), or either side can be left to the AI (AI against AI included).
+- Objective chosen in the builder, from what the engine already knows (defeat all, protect the Beacon, survive).
+- Turn order: a starting CT (0 to 100) on each unit's sheet; empty means the usual order by speed.
+- Saves: named browser slots and export (JSON and .ts) of the whole battle, like the map builder; the Developer's saved
+  cast becomes the first slot.
+- Bag: an editable item bag per side, reusing the expeditions' bag.
+- The battle builder starts after the map builder is published.
+## Screen as built (Nov 25)
+
+The client: `src/client/mapedit/` (controller and pure parts), `window3d/builder3d.ts` (the drawing), `game/debug-builder.ts`.
+
+- **A page of its own:** `?mapedit` (entry.ts). The map being edited is the draft save `dt:mapedit`, written on every
+  edit; a reload, Play and the way back read it through `parseMapDoc`. Named slots are `dt:mapedit:slots` (one per
+  Portuguese name, the 20 newest; `parseSlots`). Neither is a progress key, so they do not travel with a game slot.
+- **Opening:** Debug (F2 / L3) › Map builder: "Start with" this battle's map (`docFromScenario`, units left out) or a
+  blank 8x8, 12x12 or 16x16 of grass, then "Open the map builder". Inside an expedition room the row says to finish the
+  room first (leaving it loses the expedition). Blank of another size: Map › Clear at the size set by the Width and
+  Height rows.
+- **Tool bar, keys 1 to 9:** ground (grass), tree, shallow water, wall (brick), height +, height −, ramp, palette (the
+  entry picked in Paint, sand at first) and rubble (low cover, what the builder tests aim on). The pad's X walks them.
+- **Drawing on the battle's scene:** the map is halved as every battle and drawn by `BattleScene`; the board is built
+  once per scene, so each finished edit builds a new scene and the camera (heading, zoom, focus, top view) carries
+  over (`CameraRig.carry`). Measured on the 12x12 blank only, in headless Chrome: 250 to 280 ms from Undo to the new
+  scene; 120 redraws in one session (60 edits, 60 undos) lost no WebGL context. A scene that fails to build says so in
+  the help line and the next edit draws again.
+  During a drag the tiles of the stroke and the brush light up in the tool's mark; the stroke lands on release, as one
+  undo step, each tile once (height and ramp are not idempotent).
+- **Input:** left button or a finger paints, right button paints grass (height kept), the middle button or two fingers
+  move the map, wheel or pinch zoom. Keys: the battle's arrows and Enter (paint at the cursor; a click moves the
+  cursor too), Del grass at the cursor, B brush, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, T top view, R and Q E camera, Tab the
+  panel's buttons. Pad: d-pad cursor, A paint, B grass, X next tool, Y brush, View undo, Menu into the panel and back
+  (there the d-pad walks the controls by place and A presses). Redo has no pad button: the panel's Redo does it.
+- **File:** Portuguese and English names (typing a Portuguese name renames the id), Save, Export JSON and Export .ts
+  (a download, the clipboard, and the text in the paste box), Import pasted JSON (one undo step; a map with a look no
+  palette entry draws is refused, since the scene could not build it), Play, Leave (to the
+  title), then the saved slots newest first (the ones past the panel's foot are cut; a tablet shows two).
+- **Play:** `?scenario=mapedit` builds the draft with one Warrior (`h0`) on the first standable corner (bottom left,
+  top left, bottom right, top right), else the standable tile nearest a corner; a map with none disables Play and
+  says why. The battle ends only when the heroes fall (no enemies is not a victory here); the debug panel creates the
+  rest and wins or loses it; killing every spawned enemy does not end it. Its save `dt:battle:mapedit` is cleared on every Play. Debug › Map builder › "Back to
+  the builder" reopens the draft.
+- **Left for later:** the battle builder (units, `battle.ts`), a numeric height field, a slot list longer than the
+  panel, deleting a slot.

@@ -1,7 +1,7 @@
 // The debug panel (Fernando, Nov 25: "o menu debug deve ser um menu separado do esc ... com varios comandos tipo spawnar
 // mosntro novo no mapa, mudar a formula de balanceamento e cover ... no meio da luta"): F2 or the pad's L3 open and close
 // it in a battle; with ?debug=1, a row of Options opens it for a finger. It is the Options screen (flow3d/options3d.ts)
-// with a board of its own, so keys, pad and touch work as there: Spawn, Units, Shot rules, Pixel effect, Tools. The
+// with a board of its own, so keys, pad and touch work as there: Spawn, Units, Shot rules, Pixel effect, Tools, Map builder. The
 // battle changes are shared/battle/debug.ts; each closes the panel and leaves the battle as an Undo does (settle)
 import { forgetUndo, healAll, killAt, spawnClasses, spawnUnit } from '../../shared/battle/debug.ts';
 import { checkOutcome } from '../../shared/battle/outcome.ts';
@@ -17,6 +17,7 @@ import { looks3d } from '../looks3d.ts';
 import type { Game } from '../main.ts';
 import { type Go, type Option, percent, pick } from '../option-row.ts';
 import { HEAD_MIN, headScale, setHeadScale } from '../scene/head-scale.ts';
+import { builderGroup } from './debug-builder.ts';
 import { shotGroup } from './debug-shot.ts';
 import { type OptionsBoard, sectionOf, valueNote } from './options.ts';
 import type { OptionsGroup } from './options-list.ts';
@@ -242,5 +243,6 @@ function groups(g: Game): OptionsGroup[] {
         },
       ],
     },
+    builderGroup(g, () => close()),
   ];
 }

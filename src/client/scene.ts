@@ -179,6 +179,7 @@ export class BattleScene {
 
   // the debug panel's new unit, before the sync that draws it (Units.addModel)
   addModel = (def: string) => this.units.addModel(def);
+  carryView = (from: BattleScene) => this.cam.carry(from.cam); // the map builder's redrawn scene (CameraRig.carry)
 
   // Puts each unit where the state says (creates whoever is missing, removes whoever died). Called on open, after each animation and on undo.
   sync(state: BattleState) {

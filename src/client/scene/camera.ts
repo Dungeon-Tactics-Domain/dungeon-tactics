@@ -112,6 +112,28 @@ export class CameraRig {
     return this.yawTarget;
   }
 
+  // The map builder draws a new scene after each edit (mapedit/builder.ts): the view goes on from the last one's.
+  // A map of another size is framed again from above, where the whole map is what the view shows
+  carry(from: CameraRig) {
+    const { focus, focusGoal, viewH, yaw, yawTarget, pitch, pitchTarget, top, topH, topBack } = from;
+    Object.assign(this, {
+      viewH,
+      yaw,
+      yawTarget,
+      pitch,
+      pitchTarget,
+      top,
+      topH,
+      focusGoal: focusGoal?.clone() ?? null,
+    });
+    this.focus.copy(focus);
+    this.topBack = { ...topBack, focus: topBack.focus.clone() };
+    const g = this.space.grid,
+      was = from.space.grid;
+    if (top && (g.width !== was.width || g.height !== was.height)) this.viewH = this.topH = this.fitTop(yawTarget);
+    this.frameView();
+  }
+
   // slides the camera to the tile (the hero of the turn), without changing the zoom
   focusOn(p: Pos, also?: Pos) {
     // from above with the whole map in view, the turn's hero is already seen: the map stays centred

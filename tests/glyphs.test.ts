@@ -125,7 +125,7 @@ describe('the table: action, key, pad button', () => {
   });
 
   it('the actions the pad has no button for hide with its icons', () => {
-    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'fps', 'fold']);
+    expect(PADLESS).toEqual(['wait', 'face', 'cycle', 'slots', 'recenter', 'fps', 'fold', 'redo']);
     for (const a of PADLESS) {
       expect(capsOf(a, 'xbox'), a).toBeNull();
       expect(capsOf(a, 'keyboard')?.length, a).toBeGreaterThan(0);
@@ -173,8 +173,9 @@ describe('the screens read the table', () => {
       'LS',
       'Menu',
       'Na cidade',
+      'No construtor de mapas',
     ]);
     expect(pad.find(([k]) => k === 'A')?.[1]).toContain('nas listas de Agir');
-    expect(pad.at(-1)?.[1]).toContain('B · Menu abre o menu da cidade');
+    expect(pad.at(-2)?.[1]).toContain('B · Menu abre o menu da cidade');
   });
 });

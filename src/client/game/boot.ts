@@ -11,6 +11,8 @@ import { expeditionMap, openNodes } from '../../shared/crawl/expedition.ts';
 import { generateRoom, type RoomOptions } from '../../shared/crawl/generate.ts';
 import { buildDevScenario, DEV_KEY, DEV_SCENARIO, parseSetup, problems } from '../dev-roster.ts';
 import { t } from '../i18n.ts';
+import { PLAY, playScenario } from '../mapedit/play-map.ts';
+import { PLAY_KEY } from '../mapedit/slots.ts';
 import { applySavedShotRules } from '../shot-debug.ts';
 import { param, store } from '../store.ts';
 import { SURVIVAL_ID, survivalScenario } from '../survival.ts';
@@ -104,6 +106,13 @@ export async function selectBattle(): Promise<BattleSelection | null> {
     if (setup && !problems(setup, t).length) {
       scenario = buildDevScenario(setup);
       saveKey = `dt:battle:${DEV_SCENARIO}`;
+    }
+  } else if (study === PLAY) {
+    // the map builder's Play (mapedit/play-map.ts): its draft, rebuilt on a reload too; none left, the default battle
+    const played = playScenario();
+    if (played) {
+      scenario = played;
+      saveKey = PLAY_KEY;
     }
   } else if (study === 'half') {
     // half tile (Nov 13, test version: 2x2 characters walking 1 at a time, trees of 3 to 5; half.ts)

@@ -52,6 +52,19 @@ reasons behind them in `docs/decisions.md`.
 - `src/shared/mapedit/parse.ts` — parseMapDoc and parseBattleDoc: rebuild a saved or pasted document field by field, null on any doubt.
 - `src/shared/mapedit/play.ts` — docToScenario (a map as a playable scenario with the spawns the client passes, to halve) and battleToScenario (plus each unit's own life).
 
+## src/client/mapedit — the map builder's screen (?mapedit)
+
+- `src/client/mapedit/builder.ts` — bootBuilder and Builder: the builder's page, the map document and its history, the scene drawn again after each edit with the camera carried over, the tiles lit in the tool's colour, the layout of the bar and the panel.
+- `src/client/mapedit/builder-input.ts` — the builder's mouse, touch, keys and pad: a drag is one stroke, the right button paints grass, the middle one and two fingers move the map, the pad's Menu walks the panel.
+- `src/client/mapedit/builder-actions.ts` — what each control does: tabs, tools, palette pages, auto-ramps, size and edges, slots, JSON and .ts export (download, clipboard, paste box), import, Play, leave, brush, undo, redo, camera.
+- `src/client/mapedit/builder-ui.ts` — BuilderUi: the unseen buttons, name fields and paste box, kept by id and seated on their boxes, and the view the 3D screen draws.
+- `src/client/mapedit/play-map.ts` — the way in and out: the draft save, openBuilder, Play (the draft as a battle with one default hero, ended only when the heroes fall) and isPlayed.
+- `src/client/mapedit/tools.ts` — pure: the bar's 9 tools, the brush footprint, one stroke's edits (each tile once), the tool's mark colour, whole tile and half cells, the default hero's corner.
+- `src/client/mapedit/keys.ts` — pure: the builder's keys (1 to 9, B, Ctrl+Z, Ctrl+Y, Del) and pad buttons as actions, over the battle's cursor, Enter, camera and top view.
+- `src/client/mapedit/layout.ts` — pure: layout A's boxes (bar, key hints, panel tabs, content rows, help line, foot) and the rows placed in the content.
+- `src/client/mapedit/panel.ts` — pure: the panel's tabs and rows per category (Paint pages, Relief, Map, File), the bar's and the foot's buttons.
+- `src/client/mapedit/slots.ts` — pure: the builder's save keys, the named slots read back by parseMapDoc (one per name, 20 at most) and a map id from its name.
+
 ## src/content — game content as typed data
 
 Each map in `maps/` is a Scenario registered in MAPS and SCENARIOS (src/shared/battle/scenarios.ts), its tiles built by
@@ -213,6 +226,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/flow3d/dev3d.ts` — Dev3d: the developer menu in 3D: the cast's form on a parchment sheet, over one real unseen control per field; any page size.
 - `src/client/flow3d/dev-view.ts` — the cast as the 3D developer menu's fields (devFields), what an edit makes of it (devEdit, readSetup) and where the page's parts sit (devLayout); pure.
 - `src/client/flow3d/field-draw.ts` — what a 3D form draws field by field (FieldArt): wells pressed into the sheet, raised plates for arrows and buttons, the typed text with its selection and caret.
+- `src/client/window3d/builder3d.ts` — Builder3d: the map builder's tool bar, side panel, help line and key hints in 3D, on dark plates with a gold edge, over the unseen controls.
 - `src/client/window3d/tools3d.ts` — Tools3d: the corner buttons in 3D (gear, Back, Undo, ↺ ↻) on dark plates with a gold edge, drawn over the unseen HTML buttons, which it seats; battle and town.
 - `src/client/window3d/tools-layout.ts` — toolsLayout: where the gear row and the ↺ ↻ pair sit, and which buttons show, with no DOM; pure.
 - `src/client/window3d/status3d.ts` — Status3d: the Status window in 3D: a unit's sheet in two columns or an ability's paragraph on a parchment sheet, over an unseen window of dialog.ts.
@@ -281,6 +295,7 @@ parseGrid and withRamps (grid.ts).
 - `src/client/game/town-hud.ts` — the town's HUD and the window of a place.
 - `src/client/game/crawl.ts` — the town menu and quest gate (drawn by town3d/street.ts), the quest's commands, the expedition save and its gold, and the way home.
 - `src/client/game/debug-menu.ts` — the debug panel (F2, the pad's L3): the Options screen with its own board of Spawn, Units, Shot rules, Pixel effect and Tools, and settling the battle after a change.
+- `src/client/game/debug-builder.ts` — Debug › Map builder: open the builder on this battle's map or a blank 8, 12 or 16 square one, and back to the builder from a battle its Play opened.
 - `src/client/game/debug-shot.ts` — Debug › Shot rules: its category and rows (launch range, visible parts, chance by cover, cover weight, humanoid and quadruped launch ranges).
 - `src/client/game/expedition-map.ts` — the expedition map: the descent as a chart of places, the picked place's box, the travel commands, the party's state, Information and the chest window.
 - `src/client/game/room-end.ts` — what follows an expedition room: settling the save, then the result board.

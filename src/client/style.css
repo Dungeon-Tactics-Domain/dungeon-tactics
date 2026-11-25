@@ -1895,3 +1895,25 @@ body:has(.overlay.sheet3d) .hud > .ui3d-layer {
   opacity: 0;
   transition: opacity 300ms ease-out; /* loading.ts FADE_MS; no class with Reduce motion: it leaves at once */
 }
+
+/* the map builder (mapedit/builder-ui.ts): its buttons, name fields and paste box stay unseen under the plates drawn
+   by window3d/builder3d.ts, seated on them; the HUD itself lets the map take the clicks, and a finger on the map paints */
+.hud.mapedit {
+  z-index: 2;
+}
+.hud.mapedit > :not(.ui3d-layer) {
+  position: absolute;
+  opacity: 0;
+  pointer-events: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 16px;
+  resize: none;
+}
+.hud.mapedit > span {
+  pointer-events: none;
+}
+#app:has(.mapedit) .board {
+  touch-action: none;
+}

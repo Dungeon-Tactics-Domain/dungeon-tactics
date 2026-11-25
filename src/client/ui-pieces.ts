@@ -25,6 +25,7 @@ export const PIECE_NAMES = [
   'loading', // the loading cover
   'guides', // the labs' drawing guides (?guides=1)
   'rotate', // the turn-the-phone notice, on every layer
+  'builder', // the map builder's tool bar and side panel (window3d/builder3d.ts)
 ] as const;
 export type PieceName = (typeof PIECE_NAMES)[number];
 

@@ -99,6 +99,14 @@ export const ACTIONS = {
   // the debug panel (game/debug-menu.ts; Fernando, Nov 25: a menu of its own, apart from Esc); the left stick's press
   // is free in battle, since that stick only moves the cursor
   debug: { keys: ['F2'], pad: ['l3'] },
+  // the map builder (mapedit/keys.ts; Nov 25): the bar's tools, the brush, undo and redo of an edit, plain ground at
+  // the cursor, and the pad's way into the side panel. The pad's X walks the tools one by one
+  tools: { keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9'], pad: ['west'] },
+  brush: { keys: ['B'], pad: ['north'] },
+  editUndo: { keys: ['Ctrl+Z'], pad: ['select'] },
+  redo: { keys: ['Ctrl+Y'], pad: [] },
+  erase: { keys: ['Del'], pad: ['east'] },
+  panel: { keys: ['Tab'], pad: ['start'] },
 } as const satisfies Record<string, { keys: readonly string[]; pad: readonly PadGlyph[] }>;
 export type Act = keyof typeof ACTIONS;
 

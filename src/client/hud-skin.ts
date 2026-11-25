@@ -93,6 +93,23 @@ export async function loadTownSkin(): Promise<(root: HTMLElement) => (() => void
   return mountTown3d;
 }
 
+// The map builder's look (mapedit/builder.ts; Nov 25): its layer over the builder's controls and the screen that draws
+// the tool bar and the side panel. undefined with no WebGL; `lost`: its context went away
+export async function loadBuilderSkin() {
+  const [{ Ui3dLayer }, { Builder3d }] = await Promise.all([
+    import('./ui3d/layer.ts'),
+    import('./window3d/builder3d.ts'),
+  ]);
+  return (root: HTMLElement, lost: () => void) => {
+    try {
+      const layer = new Ui3dLayer(root, lost);
+      return { layer, screen: new Builder3d(layer, root) };
+    } catch {
+      return undefined;
+    }
+  };
+}
+
 // The loading screen in 3D (flow3d/loading3d.ts) on a layer of its own over the loading cover (loading.ts);
 // undefined with no WebGL. `lost`: its context went away
 export async function loadLoading3d(root: HTMLElement, lost: () => void) {
