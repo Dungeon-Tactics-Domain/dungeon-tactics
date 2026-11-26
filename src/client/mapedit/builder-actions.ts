@@ -27,22 +27,26 @@ export function pickTool(b: Pick<Painter, 'tool' | 'picked' | 'note'>, i: number
   b.note = t(`Ferramenta: ${t(...slot.name)}.`, `Tool: ${t(...slot.name)}.`);
 }
 
+// a palette entry (the Paint panel's row, the live edit's list): the Palette tool paints it from now on
+export function pickEntry(b: Pick<Painter, 'tool' | 'picked' | 'note'>, id: string) {
+  b.picked = id;
+  b.tool = { k: 'paint', entry: id };
+  const e = PALETTE.find((p) => p.id === id);
+  if (e)
+    b.note = t(
+      `Pinta: ${t(...e.name)} (a Paleta da barra volta a ela).`,
+      `Paints: ${t(...e.name)} (the bar’s Palette brings it back).`,
+    );
+}
+
 export function press(b: Builder, id: string) {
   const [k, a = '', c = ''] = id.split(':'),
     d = b.doc;
   b.note = '';
   if (k === 'tab') b.tab = a as Tab;
   else if (k === 'bar') pickTool(b, Number(a));
-  else if (k === 'pal') {
-    b.picked = a;
-    b.tool = { k: 'paint', entry: a };
-    const e = PALETTE.find((p) => p.id === a);
-    if (e)
-      b.note = t(
-        `Pinta: ${t(...e.name)} (a Paleta da barra volta a ela).`,
-        `Paints: ${t(...e.name)} (the bar’s Palette brings it back).`,
-      );
-  } else if (k === 'page') b.page = Math.max(0, Math.min(pages(b.perPage) - 1, b.page + Number(a)));
+  else if (k === 'pal') pickEntry(b, a);
+  else if (k === 'page') b.page = Math.max(0, Math.min(pages(b.perPage) - 1, b.page + Number(a)));
   else if (k === 'auto')
     b.note = b.commit(autoRamps(d))
       ? t(

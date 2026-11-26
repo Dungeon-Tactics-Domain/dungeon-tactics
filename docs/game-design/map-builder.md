@@ -178,12 +178,18 @@ The client: `src/client/battleedit/` (controller, pure panel, sheet steps, map s
   Enter or the pad's A paints at the cursor, Del or B grass, B (key) or Y the brush, X the next tool. Each finished
   stroke is one edit: the board is drawn again in place, the units synced, whoever stood where nobody may stop goes to
   the nearest free tile, the battle goes on from the same turn with a new Undo history, Restart and the draft take the
-  edited map, and the help line and a banner say what happened. M, Esc or the pad's Menu leave and give the battle its
-  input back (F2 and H still open the debug panel and Options). Only in a battle built from a draft (`isPlayed`): the
+  edited map, and the help line and a banner say what happened. M, Esc, the pad's Menu or the bar's Leave plate (a
+  tenth plate right of the tools, with its key while keys show; Fernando, Nov 25: "Botão de sair na tela", so a finger
+  leaves without the gear or the debug panel) leave and give the battle its input back (F2 and H still open the debug
+  panel and Options). The Palette (a tap, 8, or the pad's X landing on it) opens a list of the palette's entries with
+  their pictures over the help line, as wide as the bar and as many columns as it holds (paged on a phone; Fernando,
+  Nov 25: "Escolher a cor da Paleta ao vivo"); arrows or the d-pad walk it by place down to the bar and Leave, Enter, A
+  or a tap picks (the Palette plate then shows that entry), Esc, B, the pad's Menu, another tool or the Palette again
+  close it. The list is the Paint panel's rows with more columns (`panel.ts` `paintRows`, `layout.ts` `pickLayout`). Only in a battle built from a draft (`isPlayed`): the
   default battle standing in for a missing draft has no palette pieces to draw a new look with.
 - **Export:** the battle's .ts carries the spawns with their starting CT, `bags`, `control`, the objective as `rules`
   and a `<MAP>_SHEETS` table of the units' own sheets. Import takes the pasted JSON.
 - **Left for later:** the pad has no button of its own for the live edit (every one has a battle action; it opens from
-  the debug panel's row on L3); the live edit's Palette tool paints sand (no Paint panel to pick another); importing
+  the debug panel's row on L3); importing
   a .ts; deleting a slot; a slot list longer than the panel; the camera opens close on a big map (zoom out with − or the
   wheel). The old Developer screen's code left on Nov 25.

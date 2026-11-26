@@ -77,15 +77,16 @@ export function panelRows(s: PanelState): Row[] {
   return fileRows(s);
 }
 
-function paintRows(s: PanelState): Row[] {
-  const per = Math.max(2, s.perPage - (s.perPage % 2)),
+// the palette's entries `cols` a row (the Paint panel's 2; the live edit's list as many as its width holds), paged
+export function paintRows(s: Pick<PanelState, 'tool' | 'page' | 'perPage'>, cols = 2): Row[] {
+  const per = Math.max(cols, s.perPage - (s.perPage % cols)),
     page = Math.min(s.page, pages(per) - 1),
     shown = PALETTE.slice(page * per, page * per + per),
     rows: Row[] = [];
-  for (let i = 0; i < shown.length; i += 2)
+  for (let i = 0; i < shown.length; i += cols)
     rows.push({
       cells: shown
-        .slice(i, i + 2)
+        .slice(i, i + cols)
         .map((e) =>
           button(`pal:${e.id}`, t(...e.name), { on: s.tool.k === 'paint' && s.tool.entry === e.id, pic: e.id }),
         ),

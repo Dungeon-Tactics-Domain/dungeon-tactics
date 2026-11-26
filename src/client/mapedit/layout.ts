@@ -52,16 +52,17 @@ export function builderLayout(p: Page) {
 }
 export type BuilderLayout = ReturnType<typeof builderLayout>;
 
-// The bar: 9 tools centred on `room` px from `left`, at the page's foot, and the key hints over it
-function toolBar(p: Page, left: number, room: number) {
+// The bar: `n` plates (the 9 tools, and the live edit's Leave) centred on `room` px from `left`, at the page's foot,
+// and the key hints over it
+function toolBar(p: Page, left: number, room: number, n = 9) {
   const row = Math.max(TAP, Math.round(52 * p.s)),
     // a plate holds its tile picture over its name (Fernando, Nov 25)
     bh = Math.max(56, row + 12) + Math.max(36, Math.round(48 * p.s)),
-    bw = Math.max(TAP, Math.min(130, Math.floor((room - 8 * GAP) / 9))),
-    span = 9 * bw + 8 * GAP,
+    bw = Math.max(TAP, Math.min(130, Math.floor((room - (n - 1) * GAP) / n))),
+    span = n * bw + (n - 1) * GAP,
     x0 = left + Math.max(0, (room - span) / 2),
     by = p.h - p.inset.bottom - bh,
-    bar = Array.from({ length: 9 }, (_, i): Box => ({ x: x0 + i * (bw + GAP), y: by, w: bw, h: bh })),
+    bar = Array.from({ length: n }, (_, i): Box => ({ x: x0 + i * (bw + GAP), y: by, w: bw, h: bh })),
     // the key hints over the bar, two lines across the map's width (the panel's help line holds the messages)
     hintH = Math.max(52, Math.round(60 * p.s)),
     hints: Box = { x: x0, y: by - GAP - hintH, w: span, h: hintH };
@@ -69,19 +70,37 @@ function toolBar(p: Page, left: number, room: number) {
 }
 
 // The battle builder's live map edit (battleedit/live-mode.ts): the same bar over the battle, right of the turn list
-// (`left`, its right edge), with a help line over the key hints in place of the side panel
+// (`left`, its right edge), with Leave as a tenth plate (Fernando, Nov 25: "Botão de sair na tela") and a help line
+// over the key hints in place of the side panel
 export function liveLayout(p: Page, left: number) {
   const x = Math.max(p.inset.left, left + GAP),
-    { row, bar, hints } = toolBar(p, x, p.w - p.inset.right - x),
+    { row, bar, hints } = toolBar(p, x, p.w - p.inset.right - x, 10),
+    leave = bar.pop() as Box,
     note: Box = { x: hints.x, y: hints.y - GAP - Math.round(row * 1.5), w: hints.w, h: Math.round(row * 1.5) };
-  return { bar, hints, note, bottom: p.h - note.y };
+  return { row, bar, leave, hints, note, bottom: p.h - note.y };
+}
+export type LiveLayout = ReturnType<typeof liveLayout>;
+
+// The live edit's Palette list (Fernando, Nov 25: "Escolher a cor da Paleta ao vivo"): a plate over the help line, as
+// wide as the bar, with as many columns of entries (picture beside the name) as that width holds and as many rows as
+// `n` entries and the page's row need, up to the page's top (never under two rows: on a phone it pages)
+export function pickLayout(p: Page, l: LiveLayout, n: number) {
+  const { row } = l,
+    cols = Math.max(2, Math.floor((l.note.w - 2 * PAD + GAP) / (Math.max(150, Math.round(200 * p.s)) + GAP))),
+    need = (Math.ceil(n / cols) + 1) * (row + GAP) - GAP,
+    room = l.note.y - GAP - p.inset.top - 2 * PAD,
+    h = Math.max(2 * row + GAP, Math.min(need, room)),
+    content: Box = { x: l.note.x + PAD, y: l.note.y - GAP - h, w: l.note.w - 2 * PAD, h },
+    panel: Box = { x: l.note.x, y: content.y - PAD, w: l.note.w, h: l.note.y + l.note.h - content.y + PAD };
+  return { row, cols, content, panel };
 }
 
 // how many rows of one height fit in the content
-export const rowsFit = (l: BuilderLayout) => Math.max(0, Math.floor((l.content.h + GAP) / (l.row + GAP)));
+export const rowsFit = (l: Pick<BuilderLayout, 'content' | 'row'>) =>
+  Math.max(0, Math.floor((l.content.h + GAP) / (l.row + GAP)));
 
 // Each cell's box, row by row from the content's top; a row that does not fit gets no boxes (its cells stay unseen)
-export function placeRows(l: BuilderLayout, rows: Row[]): Box[][] {
+export function placeRows(l: Pick<BuilderLayout, 'content' | 'row'>, rows: Row[]): Box[][] {
   const { content: c } = l;
   let y = c.y;
   return rows.map((r) => {

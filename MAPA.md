@@ -83,7 +83,7 @@ reasons behind them in `docs/decisions.md`.
 - `src/client/battleedit/slots.ts` — pure: the builder's save keys, named slots read back by parseBattleDoc, and the Developer menu's saved cast as the first slot.
 - `src/client/battleedit/play.ts` — the way in and out: the draft save, the slots (seeded once), openBattleBuilder, battleOnMap (from the map builder), Play and the scenario it opens with each own sheet's class and model.
 - `src/client/battleedit/live.ts` — the map edited mid-battle: one stroke of a map builder tool (liveStroke), the board redrawn in place (setGrid, sync), the battle going on from the same turn with Undo started over; liveWhy.
-- `src/client/battleedit/live-mode.ts` — the live map edit as a mode (M, Debug › Battle builder): the map builder's bar on the HUD's 3D layer, its input painting by drag, Enter or A, each stroke one edit; leaving gives the battle its input back.
+- `src/client/battleedit/live-mode.ts` — the live map edit as a mode (M, Debug › Battle builder): the map builder's bar on the HUD's 3D layer, its input painting by drag, Enter or A, each stroke one edit; a Leave plate and the Palette's list of entries (walked by place); leaving gives the battle its input back.
 
 ## src/content — game content as typed data
 

@@ -3,8 +3,24 @@ import { emptyMemory, padActions } from '../src/client/gamepad.ts';
 import { ACTIONS, PAD_INDEX, type PadGlyph } from '../src/client/glyphs.ts';
 import { keyHelp } from '../src/client/keyboard.ts';
 import { editKey, editPad } from '../src/client/mapedit/keys.ts';
-import { builderLayout, type Cell, placeRows, rowsFit, TAP } from '../src/client/mapedit/layout.ts';
-import { barCells, footCells, type PanelState, pages, panelRows, tabCells } from '../src/client/mapedit/panel.ts';
+import {
+  builderLayout,
+  type Cell,
+  liveLayout,
+  pickLayout,
+  placeRows,
+  rowsFit,
+  TAP,
+} from '../src/client/mapedit/layout.ts';
+import {
+  barCells,
+  footCells,
+  type PanelState,
+  pages,
+  paintRows,
+  panelRows,
+  tabCells,
+} from '../src/client/mapedit/panel.ts';
 import { idOf, MAX_SLOTS, parseSlots, withSlot } from '../src/client/mapedit/slots.ts';
 import {
   BAR,
@@ -18,6 +34,7 @@ import {
   wholeOf,
 } from '../src/client/mapedit/tools.ts';
 import type { Box } from '../src/client/ui3d/layout.ts';
+import { neighbour } from '../src/client/ui3d/walk.ts';
 import { PALETTE } from '../src/content/map-palette.ts';
 import { MAPS } from '../src/shared/battle/scenarios.ts';
 import { generateRoom } from '../src/shared/crawl/generate.ts';
@@ -348,5 +365,95 @@ describe('what the panel holds', () => {
       ['redo', true],
     ]);
     expect(cam.map((c) => c.id)).toEqual(['rotL', 'rotR', 'top', 'zoomOut', 'zoomIn']);
+  });
+});
+
+// The battle builder's live map edit (battleedit/live-mode.ts; Fernando, Nov 25): Leave as a tenth plate of the bar,
+// and the Palette's list over the help line, its entries walked by place
+describe('the live edit: Leave and the Palette list', () => {
+  const LEFT = 300; // the turn list's right edge
+  for (const [name, page] of [
+    ['PC 1600x900', PC],
+    ['tablet 1024x768', TABLET],
+    ['phone 844x390', { w: 844, h: 390, s: 390 / 1080, inset: { top: 0, right: 0, bottom: 0, left: 0 } }],
+  ] as const)
+    it(`Leave and every entry are a finger's target on the page, clear of the bar and the hints (${name})`, () => {
+      const l = liveLayout(page, LEFT),
+        p = pickLayout(page, l, PALETTE.length),
+        pageBox = { x: 0, y: 0, w: page.w, h: page.h };
+      expect(l.bar).toHaveLength(9);
+      expect(l.leave.x).toBeGreaterThan(l.bar[8].x + l.bar[8].w);
+      expect(l.leave.y).toBe(l.bar[8].y);
+      expect(l.bar[0].x).toBeGreaterThan(LEFT);
+      for (const b of [...l.bar, l.leave]) {
+        expect(Math.min(b.w, b.h)).toBeGreaterThanOrEqual(TAP);
+        expect(inside(b, pageBox)).toBe(true);
+      }
+      const rows = paintRows({ tool: BAR[7].tool('sand'), page: 0, perPage: (rowsFit(p) - 1) * p.cols }, p.cols),
+        boxes = placeRows(p, rows).flat();
+      expect(boxes.length).toBeGreaterThan(p.cols); // at least a row of entries and the page row
+      for (const b of boxes) {
+        expect(b.h).toBeGreaterThanOrEqual(TAP);
+        expect(inside(b, p.content)).toBe(true);
+        expect(inside(b, p.panel)).toBe(true);
+        for (const o of [...l.bar, l.leave, l.hints, l.note]) expect(overlap(b, o)).toBe(false);
+      }
+      expect(inside(l.note, p.panel)).toBe(true);
+      expect(overlap(p.panel, l.hints)).toBe(false);
+    });
+
+  it('on a PC every entry fits on one page, in rows of several', () => {
+    const l = liveLayout(PC, LEFT),
+      p = pickLayout(PC, l, PALETTE.length),
+      per = (rowsFit(p) - 1) * p.cols;
+    expect(p.cols).toBeGreaterThanOrEqual(4);
+    expect(pages(per)).toBe(1);
+    const ids = paintRows({ tool: BAR[0].tool('sand'), page: 0, perPage: per }, p.cols).flatMap((r) =>
+      r.cells.filter((c) => c.id.startsWith('pal:')).map((c) => c.id.slice(4)),
+    );
+    expect(ids).toEqual(PALETTE.map((e) => e.id));
+  });
+
+  it('the arrows walk the list by place and stay put at its edges', () => {
+    const l = liveLayout(PC, LEFT),
+      p = pickLayout(PC, l, PALETTE.length),
+      rows = paintRows({ tool: BAR[0].tool('sand'), page: 0, perPage: (rowsFit(p) - 1) * p.cols }, p.cols),
+      boxes = placeRows(p, rows),
+      cells = rows.flatMap((r, i) => r.cells.map((c, j) => ({ id: c.id, kind: c.kind, box: boxes[i][j] }))),
+      // what the arrows walk: the entries, the page arrows, the bar's plates and Leave (live-mode.ts walkPanel)
+      walk = [
+        ...cells.filter((c) => c.kind !== 'label'),
+        ...l.bar.map((box, i) => ({ id: `bar:${i}`, kind: 'button', box })),
+        { id: 'leave', kind: 'button', box: l.leave },
+      ],
+      go = (id: string, way: 'up' | 'down' | 'left' | 'right') =>
+        walk[
+          neighbour(
+            walk.map((c) => c.box),
+            walk.findIndex((c) => c.id === id),
+            way,
+          )
+        ].id,
+      first = `pal:${PALETTE[0].id}`,
+      second = `pal:${PALETTE[1].id}`,
+      below = `pal:${PALETTE[p.cols].id}`,
+      lastOfRow = `pal:${PALETTE[p.cols - 1].id}`;
+    expect(go(first, 'right')).toBe(second);
+    expect(go(second, 'left')).toBe(first);
+    expect(go(first, 'down')).toBe(below);
+    expect(go(below, 'up')).toBe(first);
+    expect(go(first, 'left')).toBe(first); // the list's left edge
+    expect(go(first, 'up')).toBe(first); // its top
+    expect(go(lastOfRow, 'right')).toBe(lastOfRow); // its right edge
+    // under the page row come the bar's plates and Leave
+    expect(go('page:-1', 'down')).toMatch(/^bar:|^leave$/);
+    expect(go('leave', 'left')).toBe('bar:8');
+    expect(go('leave', 'right')).toBe('leave');
+  });
+
+  it("the map builder's Paint panel keeps two entries a row", () => {
+    const rows = panelRows(state({ perPage: 6 }));
+    expect(rows.slice(0, -1).map((r) => r.cells.length)).toEqual([2, 2, 2]);
+    expect(paintRows(state({ perPage: 6 }))).toEqual(rows);
   });
 });

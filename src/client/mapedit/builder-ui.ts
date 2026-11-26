@@ -4,6 +4,7 @@
 import { t } from '../i18n.ts';
 import { el } from '../icons.ts';
 import type { Box } from '../ui3d/layout.ts';
+import { neighbour, type Way } from '../ui3d/walk.ts';
 import type { BuilderItem, BuilderView } from '../window3d/builder3d.ts';
 import type { Cell } from './layout.ts';
 
@@ -91,6 +92,21 @@ export class BuilderUi {
   get(id: string) {
     return this.controls.get(id);
   }
+  // the pad (or the live edit's arrows) over `placed`: from the control in focus to the nearest one that way
+  // (ui3d/walk.ts); with none of them in focus, the first
+  walk(placed: Placed[], way: Way | null) {
+    const at = placed.findIndex((p) => this.get(p.cell.id) === document.activeElement);
+    const next =
+      way && at >= 0
+        ? neighbour(
+            placed.map((p) => p.box),
+            at,
+            way,
+          )
+        : Math.max(0, at);
+    this.get(placed[next]?.cell.id ?? '')?.focus();
+  }
+
   // the controls a pad walks, in the order shown, with their boxes
   walkable(): HTMLElement[] {
     return [...this.controls.values()].filter((e) => e.dataset.kind !== 'label');

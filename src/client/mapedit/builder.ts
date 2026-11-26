@@ -18,7 +18,7 @@ import { type Cover, whenReady } from '../ready-gate.ts';
 import { BattleScene } from '../scene.ts';
 import { setTrack } from '../sound.ts';
 import { store } from '../store.ts';
-import { neighbour, type Way } from '../ui3d/walk.ts';
+import type { Way } from '../ui3d/walk.ts';
 import { press } from './builder-actions.ts';
 import { wireInput } from './builder-input.ts';
 import { BuilderUi, type Placed } from './builder-ui.ts';
@@ -259,16 +259,7 @@ export class Builder {
 
   // the pad in the panel: from the control in focus to the nearest one that way (ui3d/walk.ts)
   walkPanel(way: Way | null) {
-    const at = this.walk.findIndex((p) => this.ui.get(p.cell.id) === document.activeElement);
-    const next =
-      way && at >= 0
-        ? neighbour(
-            this.walk.map((p) => p.box),
-            at,
-            way,
-          )
-        : Math.max(0, at);
-    this.ui.get(this.walk[next]?.cell.id ?? '')?.focus();
+    this.ui.walk(this.walk, way);
     this.render();
   }
 

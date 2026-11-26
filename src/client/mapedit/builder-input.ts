@@ -14,7 +14,6 @@ import { gridStep, keyAction } from '../keyboard.ts';
 import { screenSignal } from '../nav.ts';
 import type { BattleScene } from '../scene.ts';
 import type { Way } from '../ui3d/walk.ts';
-import { pickTool } from './builder-actions.ts';
 import type { BuilderUi } from './builder-ui.ts';
 import { type EditAction, editKey, editPad } from './keys.ts';
 import { BAR, type Brush, footprint, type Stroke, sameTool, type Tool, wholeOf } from './tools.ts';
@@ -144,7 +143,8 @@ export function wireInput(b: Painter, signal = screenSignal()) {
       const k = keyAction(e)?.k;
       if (b.leave && (k === 'live' || k === 'cancel')) {
         e.preventDefault();
-        return b.leave();
+        // Esc closes the live edit's Palette list first
+        return b.panelWalk && k === 'cancel' ? panel(b, false) : b.leave();
       }
       const a = editKey(e, typing);
       // Enter and Space on a button Tab reached press that button, as on any page
@@ -176,7 +176,8 @@ export function wireInput(b: Painter, signal = screenSignal()) {
 
 function act(b: Painter, a: EditAction, pad = false) {
   const s = b.scene;
-  if (b.panelWalk && pad) {
+  // the live edit's Palette list (b.leave: no Tab-walked panel) takes the arrows and Enter too
+  if (b.panelWalk && (pad || b.leave)) {
     if (a.k === 'cursor') return b.walkPanel?.(a.dir);
     if (a.k === 'confirm') return (document.activeElement as HTMLElement | null)?.click();
     if (a.k === 'panel' || a.k === 'erase') return panel(b, false);
@@ -190,8 +191,10 @@ function act(b: Painter, a: EditAction, pad = false) {
     b.hover = null;
   } else if (a.k === 'confirm') b.applyAt(b.cursor);
   else if (a.k === 'erase') b.applyAt(b.cursor, ERASE);
-  else if (a.k === 'tool') pickTool(b, a.index);
-  else if (a.k === 'nextTool') pickTool(b, BAR.findIndex((slot) => sameTool(slot.tool(b.picked), b.tool)) + 1);
+  // a tool as its bar plate: the live edit's Palette opens its list
+  else if (a.k === 'tool') return b.press(`bar:${a.index}`);
+  else if (a.k === 'nextTool')
+    return b.press(`bar:${(BAR.findIndex((slot) => sameTool(slot.tool(b.picked), b.tool)) + 1) % BAR.length}`);
   else if (a.k === 'panel') return b.leave ? b.leave() : panel(b, true);
   else if (a.k === 'rotate') s.rotate(a.dir);
   else if (a.k === 'zoom') s.zoom(a.factor);
@@ -202,8 +205,8 @@ function act(b: Painter, a: EditAction, pad = false) {
   b.mark();
 }
 
-// the pad's way into the side panel and back to the map's cursor
-function panel(b: Painter, on: boolean) {
+// the pad's way into the side panel (the live edit's Palette list) and back to the map's cursor
+export function panel(b: Painter, on: boolean) {
   b.panelWalk = on;
   b.ui.padFocus = on;
   if (on) b.walkPanel?.(null);

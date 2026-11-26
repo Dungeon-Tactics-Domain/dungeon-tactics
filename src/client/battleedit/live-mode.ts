@@ -2,28 +2,31 @@
 // builder turns it on in a battle Play opened, on a player's turn with nothing moving. The map builder's tool bar shows
 // over the battle on the HUD's own 3D layer, and the map builder's own input paints (mapedit/builder-input.ts): a drag
 // is one stroke, lit as it grows and applied on release as one edit (live.ts liveStroke); Enter or the pad's A paints at
-// the cursor. The command menu, the combat bar, the banner and the hints hide meanwhile; leaving (M, Esc, the pad's Menu
-// or the debug row) gives the battle its input back.
+// the cursor. The command menu, the combat bar, the banner and the hints hide meanwhile; leaving (M, Esc, the pad's Menu,
+// the bar's Leave plate or the debug row) gives the battle its input back. The Palette plate opens a list of the
+// palette's entries over the help line (Fernando, Nov 25: "Escolher a cor da Paleta ao vivo"), walked by place.
+import { PALETTE } from '../../content/map-palette.ts';
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
 import type { Pos } from '../../shared/battle/types.ts';
 import { docFromScenario } from '../../shared/mapedit/doc.ts';
 import { liveInput } from '../battle-input.ts';
-import { type Act, hintLine } from '../glyphs.ts';
+import { type Act, hintLine, keysText } from '../glyphs.ts';
 import { t } from '../i18n.ts';
 import { keysShown, onShown } from '../key-hints.ts';
 import { keyAction } from '../keyboard.ts';
 import { looks3d } from '../looks3d.ts';
 import type { Game } from '../main.ts';
-import { pickTool } from '../mapedit/builder-actions.ts';
-import { type Painter, wireInput } from '../mapedit/builder-input.ts';
-import { BuilderUi } from '../mapedit/builder-ui.ts';
-import { liveLayout } from '../mapedit/layout.ts';
-import { barCells } from '../mapedit/panel.ts';
+import { pickEntry, pickTool } from '../mapedit/builder-actions.ts';
+import { type Painter, panel, wireInput } from '../mapedit/builder-input.ts';
+import { BuilderUi, type Placed } from '../mapedit/builder-ui.ts';
+import { type Cell, liveLayout, pickLayout, placeRows, rowsFit } from '../mapedit/layout.ts';
+import { barCells, pages, paintRows } from '../mapedit/panel.ts';
 import { tilePictures } from '../mapedit/pic-shots.ts';
 import { BAR, type Brush, footprint, type Stroke, strokeMarks, type Tool, wholeOf } from '../mapedit/tools.ts';
 import { screenSignal } from '../nav.ts';
 import { hidePieces, PIECE_NAMES, type PieceName, pieceHidden } from '../ui-pieces.ts';
 import type { Ui3dLayer } from '../ui3d/layer.ts';
+import type { Way } from '../ui3d/walk.ts';
 import type { Builder3d } from '../window3d/builder3d.ts';
 import { liveStroke, liveWhy } from './live.ts';
 
@@ -33,6 +36,7 @@ const look = () => import('../window3d/builder3d.ts');
 const HIDE: PieceName[] = ['menu', 'bar', 'banner', 'hints'];
 // the tool, the brush and the Palette's entry, kept between openings (the wall first: what a live edit tries first)
 const kept = { tool: BAR[3].tool('sand'), brush: 1 as Brush, picked: 'sand' };
+const PALETTE_SLOT = BAR.findIndex((slot) => slot.id === 'palette');
 let mode: LiveMode | null = null;
 let home: HTMLElement | null = null; // the battle's host, where the bar's unseen buttons go
 
@@ -71,6 +75,10 @@ class LiveMode implements Painter {
   cursor: Pos;
   hover: Pos | null = null;
   stroke: Stroke | null = null;
+  panelWalk = false; // the Palette's list is open: arrows, the d-pad, Enter and A walk and pick in it
+  private page = 0; // the list's page (a phone's height pages it)
+  private perPage = 2;
+  private walk: Placed[] = [];
   readPad?: (now: number, held?: boolean) => void; // builder-input.ts
   readonly ui = new BuilderUi(
     (id) => this.press(id),
@@ -109,6 +117,8 @@ class LiveMode implements Painter {
     signal.addEventListener('abort', () => sized.disconnect(), { once: true });
     const again = () => queueMicrotask(() => this.render());
     for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, again, { signal, capture: true });
+    // Tab reaching Leave or a plate: its edge lit once the focus has moved
+    for (const ev of ['focusin', 'focusout']) this.ui.root.addEventListener(ev, again, { signal });
     const unhear = onShown(again);
     signal.addEventListener('abort', unhear, { once: true });
     this.note = t('Edição do mapa ligada.', 'Map edit on.');
@@ -144,11 +154,23 @@ class LiveMode implements Painter {
     this.scene.setCursor(m.cursor, m.size);
   }
 
-  // the bar's plates, and the foot's brush; undo has no step here (each edit starts the battle's Undo over)
+  // the bar's plates, Leave, the Palette list's entries and pages, and the brush; undo has no step here (each edit
+  // starts the battle's Undo over)
   press(id: string) {
+    if (this.ui.get(id)?.getAttribute('aria-disabled') === 'true') return;
     const [k, i] = id.split(':');
     this.note = '';
-    if (k === 'bar') pickTool(this, Number(i));
+    if (k === 'leave') return this.leave();
+    if (k === 'bar') {
+      // the Palette plate (8, or the pad's X landing on it) opens the list and closes it again; another tool closes it
+      const open = Number(i) % BAR.length === PALETTE_SLOT && !this.panelWalk;
+      pickTool(this, Number(i));
+      if (open) return this.openList();
+      if (this.panelWalk) return panel(this, false);
+    } else if (k === 'pal') {
+      pickEntry(this, i);
+      return panel(this, false);
+    } else if (k === 'page') this.page = Math.max(0, Math.min(pages(this.perPage) - 1, this.page + Number(i)));
     else if (k === 'brush') this.brush = this.brush === 1 ? 3 : 1;
     else if (k === 'undo' || k === 'redo')
       this.note = t('Cada edição recomeça o Desfazer da batalha.', 'Each edit starts the battle’s Undo over.');
@@ -156,17 +178,55 @@ class LiveMode implements Painter {
     this.mark();
   }
 
+  // the list opens on the page of the entry picked, with the focus on it
+  private openList() {
+    this.panelWalk = true;
+    this.note = ''; // the help line says what the list wants
+
+    this.render();
+    const at = PALETTE.findIndex((e) => e.id === this.picked);
+    this.page = Math.max(0, Math.floor(at / Math.max(1, this.perPage)));
+    panel(this, true);
+  }
+  // the d-pad and the arrows in the list: by place over the entries, the page arrows, the bar's plates and Leave
+  // (ui3d/walk.ts); opening puts the focus on the entry picked
+  walkPanel(way: Way | null) {
+    this.render();
+    const inside = this.walk.some((p) => this.ui.get(p.cell.id) === document.activeElement);
+    if (way && inside) this.ui.walk(this.walk, way);
+    else this.ui.get(`pal:${this.picked}`)?.focus();
+    this.render();
+  }
+
   render() {
     if (mode !== this) return;
     const { layer } = this,
+      page = { w: layer.w, h: layer.h, s: layer.s, inset: layer.inset },
       left = Math.round(this.g.hud.insets().left),
-      l = liveLayout({ w: layer.w, h: layer.h, s: layer.s, inset: layer.inset }, left),
-      cells = barCells({ tool: this.tool, picked: this.picked, shown: keysShown(), finger: layer.finger });
+      l = liveLayout(page, left),
+      shown = keysShown(),
+      cells = barCells({ tool: this.tool, picked: this.picked, shown, finger: layer.finger }),
+      // the key that leaves, on its plate (the pad's Menu closes the list first while it is open)
+      key = layer.finger || this.panelWalk ? null : keysText(shown === 'keyboard' ? 'live' : 'panel', shown),
+      out: Cell = { id: 'leave', text: key ? `${t('Sair', 'Leave')} · ${key}` : t('Sair', 'Leave'), kind: 'button' },
+      placed: Placed[] = [...cells.map((cell, i) => ({ cell, box: l.bar[i] })), { cell: out, box: l.leave }];
+    let plate = l.note;
+    if (this.panelWalk) {
+      const pick = pickLayout(page, l, PALETTE.length);
+      this.perPage = (rowsFit(pick) - 1) * pick.cols;
+      const rows = paintRows({ tool: this.tool, page: this.page, perPage: this.perPage }, pick.cols),
+        boxes = placeRows(pick, rows);
+      placed.unshift(
+        ...rows.flatMap((r, i) => r.cells.flatMap((cell, j) => (boxes[i][j] ? [{ cell, box: boxes[i][j] }] : []))),
+      );
+      plate = pick.panel;
+    }
+    this.walk = placed.filter((p) => p.cell.kind !== 'label');
     this.scene.setInsets(0, l.bottom, left);
     this.screen.set(
       this.ui.show(
-        cells.map((cell, i) => ({ cell, box: l.bar[i] })),
-        l.note,
+        placed,
+        plate,
         { box: l.note, text: this.note || this.help() },
         { box: l.hints, text: layer.finger ? '' : this.hints() },
       ),
@@ -174,6 +234,13 @@ class LiveMode implements Painter {
   }
 
   private help() {
+    if (this.panelWalk)
+      return this.layer.finger
+        ? t(
+            'Toque num piso para a Paleta; toque na Paleta para fechar.',
+            'Tap a floor for the Palette; tap the Palette to close.',
+          )
+        : t('Escolha o piso que a Paleta pinta.', 'Pick the floor the Palette paints.');
     const brush = this.brush === 3 ? t(' Pincel 3x3.', ' Brush 3x3.') : '';
     return this.layer.finger
       ? t(`Toque ou arraste para pintar.${brush}`, `Tap or drag to paint.${brush}`)
@@ -186,6 +253,15 @@ class LiveMode implements Painter {
   private hints() {
     const shown = keysShown(),
       out = t('sair', 'leave');
+    if (this.panelWalk)
+      return hintLine(
+        shown,
+        [
+          ['confirm', t('escolher', 'pick')],
+          ['cancel', t('fechar a lista', 'close the list')],
+        ],
+        ' · ',
+      );
     return hintLine(
       shown,
       [
