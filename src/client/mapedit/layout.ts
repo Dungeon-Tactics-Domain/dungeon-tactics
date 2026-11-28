@@ -71,12 +71,15 @@ function toolBar(p: Page, left: number, room: number, n = 9) {
 
 // The battle builder's live map edit (battleedit/live-mode.ts): the same bar over the battle, right of the turn list
 // (`left`, its right edge), with Leave as a tenth plate (Fernando, Nov 25: "Botão de sair na tela") and a help line
-// over the key hints in place of the side panel
-export function liveLayout(p: Page, left: number) {
+// over the key hints in place of the side panel. A `finger` gets no hints (Nov 28): the help line, one row tall, sits
+// on the bar, and the room goes to the Palette's list
+export function liveLayout(p: Page, left: number, finger = false) {
   const x = Math.max(p.inset.left, left + GAP),
-    { row, bar, hints } = toolBar(p, x, p.w - p.inset.right - x, 10),
+    { row, bar, hints: keys } = toolBar(p, x, p.w - p.inset.right - x, 10),
     leave = bar.pop() as Box,
-    note: Box = { x: hints.x, y: hints.y - GAP - Math.round(row * 1.5), w: hints.w, h: Math.round(row * 1.5) };
+    hints: Box = finger ? { ...keys, y: leave.y, h: 0 } : keys,
+    noteH = finger ? row : Math.round(row * 1.5),
+    note: Box = { x: hints.x, y: hints.y - GAP - noteH, w: hints.w, h: noteH };
   return { row, bar, leave, hints, note, bottom: p.h - note.y };
 }
 export type LiveLayout = ReturnType<typeof liveLayout>;

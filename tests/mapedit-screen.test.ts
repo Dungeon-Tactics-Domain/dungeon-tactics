@@ -410,6 +410,24 @@ describe('the live edit: Leave and the Palette list', () => {
       expect(overlap(p.panel, l.hints)).toBe(false);
     });
 
+  // Nov 28: a phone showed 4 entries a page, 9 pages, with the hints' room empty under them
+  it('a finger gets no hint box, and the list its room: 12 entries a page on a phone', () => {
+    const phone = { w: 844, h: 390, s: 390 / 1080, inset: { top: 12, right: 12, bottom: 12, left: 12 } },
+      l = liveLayout(phone, 70, true),
+      p = pickLayout(phone, l, PALETTE.length),
+      per = (rowsFit(p) - 1) * p.cols;
+    expect(per).toBeGreaterThanOrEqual(12);
+    expect(l.hints.h).toBe(0);
+    expect(l.note.h).toBeGreaterThanOrEqual(TAP);
+    expect(l.note.y + l.note.h).toBeLessThanOrEqual(l.bar[0].y);
+    for (const b of placeRows(p, paintRows({ tool: BAR[7].tool('sand'), page: 0, perPage: per }, p.cols)).flat()) {
+      expect(b.h).toBeGreaterThanOrEqual(TAP);
+      expect(b.y).toBeGreaterThanOrEqual(phone.inset.top);
+      expect(b.y + b.h).toBeLessThanOrEqual(l.note.y);
+    }
+    expect(liveLayout(phone, 70).hints.h).toBeGreaterThan(0); // keys keep theirs
+  });
+
   it('on a PC every entry fits on one page, in rows of several', () => {
     const l = liveLayout(PC, LEFT),
       p = pickLayout(PC, l, PALETTE.length),

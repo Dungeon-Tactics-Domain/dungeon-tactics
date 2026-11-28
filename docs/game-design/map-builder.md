@@ -186,7 +186,8 @@ The client: `src/client/battleedit/` (controller, pure panel, sheet steps, map s
   their pictures over the help line, as wide as the bar and as many columns as it holds (paged on a phone; Fernando,
   Nov 25: "Escolher a cor da Paleta ao vivo"); arrows or the d-pad walk it by place down to the bar and Leave, Enter, A
   or a tap picks (the Palette plate then shows that entry), Esc, B, the pad's Menu, another tool or the Palette again
-  close it. The list is the Paint panel's rows with more columns (`panel.ts` `paintRows`, `layout.ts` `pickLayout`). Only in a battle built from a draft (`isPlayed`): the
+  close it. On a phone the screen buttons and the tile line hide while it is open, and for a finger, which gets no key
+  hints, the help line is one row on the bar and the list takes the room (Nov 28). The list is the Paint panel's rows with more columns (`panel.ts` `paintRows`, `layout.ts` `pickLayout`). Only in a battle built from a draft (`isPlayed`): the
   default battle standing in for a missing draft has no palette pieces to draw a new look with.
 - **Export:** the battle's .ts carries the spawns with their starting CT, `bags`, `control`, the objective as `rules`
   and a `<MAP>_SHEETS` table of the units' own sheets. Import takes the pasted JSON.

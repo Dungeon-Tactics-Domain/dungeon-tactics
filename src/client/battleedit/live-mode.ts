@@ -204,7 +204,7 @@ class LiveMode implements Painter {
     const { layer } = this,
       page = { w: layer.w, h: layer.h, s: layer.s, inset: layer.inset },
       left = Math.round(this.g.hud.insets().left),
-      l = liveLayout(page, left),
+      l = liveLayout(page, left, layer.finger),
       shown = keysShown(),
       cells = barCells({ tool: this.tool, picked: this.picked, shown, finger: layer.finger }),
       // the key that leaves, on its plate (the pad's Menu closes the list first while it is open)
@@ -223,8 +223,10 @@ class LiveMode implements Painter {
       plate = pick.panel;
     }
     this.walk = placed.filter((p) => p.cell.kind !== 'label');
-    // the open list reaches the tile line on a tablet (1024x768), which wrote over it
-    hidePieces([...this.was, ...HIDE, ...(this.panelWalk ? (['height'] as const) : [])]);
+    // the open list reaches the tile line on a tablet (1024x768), and on a phone the screen buttons too: both wrote
+    // over it
+    const under: PieceName[] = !this.panelWalk ? [] : layer.phone ? ['height', 'tools'] : ['height'];
+    hidePieces([...this.was, ...HIDE, ...under]);
     this.scene.setInsets(0, l.bottom, left);
     this.screen.set(
       this.ui.show(

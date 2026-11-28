@@ -80,7 +80,8 @@ export function seatQueue(queue: HTMLElement, l: QueueLayout, headless: boolean,
     // a card under 28 px tall gets a taller box with the same place in the column: padding takes the extra height and an
     // equal negative margin gives it back, so the list's flow and the cards' rows stay as laid out (the gap holds it)
     // a small card's box also takes half the gap each side, so it and its gap give a finger TAP px
-    const grow = Math.max(tapGrow(z.h), z.h < TAP ? Math.floor(seat.gap / 2) : 0);
+    // half of an odd gap too: rounded down, a tablet's cards took 43 px (Nov 28)
+    const grow = Math.max(tapGrow(z.h), z.h < TAP ? seat.gap / 2 : 0);
     row.style.paddingTop = row.style.paddingBottom = px(grow);
     row.style.marginTop = row.style.marginBottom = px(-grow);
   }
