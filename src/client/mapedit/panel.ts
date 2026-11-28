@@ -47,9 +47,12 @@ export function tabCells(tab: Tab): Cell[] {
 }
 
 export function barCells(s: Pick<PanelState, 'tool' | 'picked' | 'shown' | 'finger'>): Cell[] {
+  const paints = BAR.map((slot) => sameTool(slot.tool(s.picked), s.tool));
+  // one plate lit: a fixed one wins over the Palette's when both paint the same entry
+  const fixed = BAR.some((slot, i) => paints[i] && slot.id !== 'palette');
   return BAR.map((slot, i) =>
     button(`bar:${i}`, withKey(t(...slot.name), ACTIONS.tools.keys[i], s), {
-      on: sameTool(slot.tool(s.picked), s.tool),
+      on: paints[i] && !(fixed && slot.id === 'palette'),
       pic: picOf(`bar:${i}`, s.picked) ?? undefined,
     }),
   );

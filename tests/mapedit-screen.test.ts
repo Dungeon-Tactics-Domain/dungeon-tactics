@@ -357,6 +357,14 @@ describe('what the panel holds', () => {
       false,
     ]);
   });
+  // Nov 28: Palette on shallow water lit the Water plate and the Palette's together
+  it('lights one plate: the fixed one over the Palette on the same entry', () => {
+    const lit = (s: PanelState) => barCells(s).flatMap((c, i) => (c.on ? [BAR[i].id] : []));
+    const paints = (entry: string) => state({ picked: entry, tool: { k: 'paint', entry } });
+    expect(lit(paints('water_shallow'))).toEqual(['water']);
+    expect(lit(paints('rubble'))).toEqual(['rubble']);
+    expect(lit(paints('sand'))).toEqual(['palette']);
+  });
   it('the foot: brush, undo and redo faded with nothing to do, and the camera', () => {
     const [row, cam] = footCells(state({ canUndo: true }));
     expect(row.map((c) => [c.id, !!c.off])).toEqual([

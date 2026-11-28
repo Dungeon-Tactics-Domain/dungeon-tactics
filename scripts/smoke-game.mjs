@@ -2,6 +2,9 @@
 // Opens the title, the town, an expedition and battles in headless Chrome and fails on a missing screen, a console error or a
 // failed request.
 import { preview } from 'vite';
+import { blankBattle } from '../src/shared/mapedit/battle.ts';
+import { blankDoc } from '../src/shared/mapedit/doc.ts';
+import { placeUnit } from '../src/shared/mapedit/units.ts';
 import { openChrome } from './lib/browser.mjs';
 
 const PORT = 4173;
@@ -16,6 +19,12 @@ const WORN = {
     path: [],
     party: ['warrior', 'archer', 'mage', 'rogue'].map((id) => ({ id, max: 50, hp: 9 })),
   }),
+};
+
+// the battle builder's draft (battleedit/slots.ts): a Warrior a side, the hero playing first
+const hero = placeUnit(blankBattle(blankDoc(8, 8, 'smoke', 'Smoke')), { x: 2, y: 2 }, 'warrior', 'hero');
+const BUILT = {
+  'dt:battleedit': JSON.stringify({ name: 'smoke', doc: placeUnit(hero, { x: 5, y: 2 }, 'warrior', 'enemy') }),
 };
 
 const PAGES = [
@@ -141,6 +150,34 @@ const PAGES = [
       if (!k || dx + dy === 0 || ![0, k].includes(dx) || ![0, k].includes(dy)) return false;
       await press('Enter');
       return help().startsWith('Casa:');
+    },
+  },
+  {
+    // the battle builder's live map paint (Nov 28): M turns it on in a battle Play opened, the Palette plate opens its
+    // list, Leave gives the battle back
+    name: 'live map paint',
+    path: '/?scenario=battleedit',
+    seed: BUILT,
+    ready: '.panel.commands[role=menu] button',
+    attached: true,
+    check: async () => {
+      const find = (id) => document.querySelector(`[data-id="${id}"]`);
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      // M waits for the player's turn with nothing moving; pressed again only while the mode is still shut
+      for (let i = 0; i < 20 && !find('leave'); i++) {
+        dispatchEvent(new KeyboardEvent('keydown', { key: 'm' }));
+        await wait(2000);
+      }
+      if (!find('leave')) return false;
+      find('bar:7').click();
+      await wait(500);
+      if (!find('pal:sand')) return false;
+      find('pal:sand').click();
+      await wait(500);
+      if (find('pal:sand')) return false;
+      find('leave').click();
+      await wait(500);
+      return !find('leave') && !find('bar:7');
     },
   },
   {
