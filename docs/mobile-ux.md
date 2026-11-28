@@ -38,7 +38,7 @@ do not rearrange the layout only to reach that number.*
   768×1024), and the turn list scrolls with a fade but no arrow, as on a phone.
 - **The hit area is as generous as the room allows, without covering a neighbour.** The battle menu's rows use
   `touchScale()` (`menu3d/menu-layout.ts`): on touch they are drawn larger than the rest of the stage when the page is
-  tall enough. The ability sheet's page arrows get a hit box 44 px tall on touch. HTML controls keep `--tap` (44 px).
+  tall enough, and from 500 px of stage height (every tablet) a row is 44 px (Nov 28; it was 34). The ability sheet's page arrows get a hit box 44 px tall on touch. HTML controls keep `--tap` (44 px).
 - **A small target is a measure, not an automatic failure.** The audit reports the smallest size per screen and says if
   the tap is still workable. Under about 28 px of height, or closer than 8 px to another target, it needs a decision.
 

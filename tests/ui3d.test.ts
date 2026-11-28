@@ -280,10 +280,10 @@ describe('3D menu: where it sits', () => {
   });
 
   // Fernando, Nov 18: phone and tablet; the pieces shrink with a narrow page, a finger's rows as little as it lets them
-  it('on touch the columns keep the smallest full scale where the page is tall enough, and half of it on a phone', () => {
+  it('on touch the columns give 44 px rows where the page is tall enough, and half the full scale on a phone', () => {
     const phone = stage(844, 390, 'edges', { x: 47, y: 21 }); // s 0.39
     expect(touchScale(phone)).toBeCloseTo(348 / 700);
-    expect(touchScale(stage(768, 1024, 'edges'))).toBe(0.6);
+    expect(touchScale(stage(768, 1024, 'edges'))).toBe(44 / REF.row);
     expect(touchScale(stage(1920, 1080, 'edges'))).toBe(1); // never under the stage's
     const mouse = menuLayout(phone, 4, 4),
       finger = menuLayout(phone, 4, 4, true);
@@ -298,6 +298,31 @@ describe('3D menu: where it sits', () => {
     expect(finger.prev.y + 22).toBeCloseTo(mouse.prev.y + mouse.prev.h / 2);
   });
 
+  // Nov 28: a tablet's command rows measured 34 px (Fernando picked "Menu de comandos maior")
+  it('on a tablet a command row gives a finger 44 px, the columns on the page and clear of the sheet', () => {
+    for (const [w, h, mode] of [
+      [1024, 768, 'edges'],
+      [1024, 768, 'frame'],
+      [1180, 820, 'edges'],
+      [768, 1024, 'edges'],
+    ] as const) {
+      const st = stage(w, h, mode),
+        m = menuLayout(st, 5, 5, true),
+        name = `${w}x${h} ${mode}`;
+      expect(rowBox(m.main, 0, m.cs).h, name).toBeGreaterThanOrEqual(44);
+      for (const col of [m.main, m.sub]) {
+        expect(col.x, name).toBeGreaterThanOrEqual(0);
+        expect(col.y, name).toBeGreaterThanOrEqual(0);
+        expect(col.x + col.w, name).toBeLessThanOrEqual(w);
+        expect(col.y + col.h, name).toBeLessThanOrEqual(h);
+      }
+      // the list over the action's sheet would hide what the action does
+      const apart =
+        m.sub.x + m.sub.w <= m.sheet.x || m.sheet.y + m.sheet.h <= m.sub.y || m.sheet.x + m.sheet.w <= m.sub.x;
+      expect(apart, name).toBe(true);
+    }
+  });
+
   it('on a short page the columns step left of the sheet they would sit under', () => {
     for (const touch of [false, true]) {
       const { main, sub, sheet } = menuLayout(stage(844, 390, 'edges', { x: 47, y: 21 }), 4, 4, touch);
@@ -308,7 +333,7 @@ describe('3D menu: where it sits', () => {
     // a page tall enough keeps the right edge: the list on it, the menu a lead to its left
     const { main, sub, sheet } = menuLayout(stage(1024, 768, 'edges'), 4, 4, true);
     expect(sub.x + sub.w).toBeCloseTo(sheet.x + sheet.w);
-    expect(sub.x - main.x).toBeCloseTo(LEAD * 0.6);
+    expect(sub.x - main.x).toBeCloseTo((LEAD * 44) / REF.row);
   });
 
   // Fernando, Nov 20, option A: on a phone every piece holds its own corner, the menu bottom right, nothing over another

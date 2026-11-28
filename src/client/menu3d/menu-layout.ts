@@ -25,7 +25,10 @@ export const LEAD = REGIONS.submenu.x - REGIONS.menu.x;
 // it on a 350 px phone on its side, instead of following the width down to a third
 const TAP = 44; // style.css --tap
 const TOUCH_ROOM = 700; // page px of height per unit of the columns' scale
-export const touchScale = (st: Stage) => Math.max(st.s, Math.min(MIN_SCALE, st.h / TOUCH_ROOM));
+// a page this tall holds five 44 px rows under the sheet: every tablet, no phone on its side (Nov 28: rows of 34 px)
+const TABLET_TALL = 500;
+export const touchScale = (st: Stage) =>
+  Math.max(st.s, Math.min(MIN_SCALE, st.h / TOUCH_ROOM), st.h >= TABLET_TALL ? TAP / REF.row : 0);
 
 export interface MenuLayout {
   cs: number; // the two columns' own scale: the stage's, or a finger's
