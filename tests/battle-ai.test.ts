@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { ABILITIES } from '../src/shared/battle/abilities.ts';
 import { chooseRetreat, chooseTurn, GUARD_RADIUS } from '../src/shared/battle/ai.ts';
 import { previewAbility } from '../src/shared/battle/combat.ts';
 import { pendingCounters } from '../src/shared/battle/counter.ts';
-import { dist } from '../src/shared/battle/grid.ts';
+import { dist, tileAt } from '../src/shared/battle/grid.ts';
 import { reachable } from '../src/shared/battle/pathing.ts';
 import type { BattleState, Pos } from '../src/shared/battle/types.ts';
 import { UNIT_DEFS } from '../src/shared/battle/units.ts';
@@ -20,6 +21,24 @@ describe('AI with no target in range', () => {
     expect(plan.ability).toBeNull();
     expect(dist(plan.moveTo!, beacon)).toBeLessThan(dist(soldier, beacon));
     expect(dist(plan.moveTo!, soldier)).toBe(4); // moves as far as it can
+  });
+
+  // Nov 28: the threat also counts with no hit, but only to choose among stops about as close
+  it('among stops as close to the target, it takes one out of reach', () => {
+    // the archer on a pillar threatens but cannot be walked to, so only the beacon pulls
+    const yard = flat(20, 20);
+    const archer = { id: 'h', def: 'archer', team: 'hero' as const, x: 13, y: 0 };
+    tileAt(yard, archer).h = 9;
+    const goal = { ...beacon, x: 10, y: 18 };
+    const soldier = { id: 'e', def: 'soldier', team: 'enemy' as const, x: 8, y: 4 };
+    const reach = UNIT_DEFS.archer.move + Math.max(...UNIT_DEFS.archer.abilities.map((a) => ABILITIES[a].range[1]));
+    const state = stateOf([soldier, goal, archer]);
+    state.units[0].vars = { ...state.units[0].vars, mana: 0 }; // no Gust: it has nothing to hit
+    const alone = chooseTurn(yard, stateOf([soldier, goal]), 'e').moveTo!;
+    const at = chooseTurn(yard, state, 'e').moveTo!;
+    expect(dist(alone, archer)).toBeLessThanOrEqual(reach); // with no archer it would end inside that reach
+    expect(dist(at, archer)).toBeGreaterThan(reach);
+    expect(dist(at, goal)).toBe(dist(alone, goal));
   });
 
   it('the hero goes to meet the enemy, but does not leave the beacon', () => {

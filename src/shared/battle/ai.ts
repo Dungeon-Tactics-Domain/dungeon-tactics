@@ -175,6 +175,7 @@ function positionScore(
   const cover = cells.every((t) => TERRAIN[t.terrain].cover);
   let score = (cover ? W.COVER : 0) + W.HEIGHT * squareH(grid, at, size) - spike;
   let nearest = Infinity;
+  let threat = 0;
   for (const o of state.units) {
     if (o.team === actor.team) {
       if (!attacking && isObjective(o.def)) score -= W.GUARD * Math.max(0, tiles(dist(at, o.pos)) - GUARD_RADIUS);
@@ -182,16 +183,14 @@ function positionScore(
     }
     nearest = Math.min(nearest, tiles(dist(at, o.pos)) - (isObjective(o.def) ? W.OBJECTIVE_PULL : 0));
     const def = UNIT_DEFS[o.def];
-    // only when attacking: counted on every stop (tried Nov 25), a unit with no hit hid out of reach and a 20x20 battle
-    // hung at 300 turns (battle-sim.test.ts), as measured on Nov 11
-    if (!attacking || def.speed === 0 || !def.abilities.length) continue;
+    if (def.speed === 0 || !def.abilities.length) continue;
     const reach = tiles(def.move) + Math.max(...def.abilities.map((a) => ABILITIES[a].range[1]));
     // only what it can pay for on its next turn, after that turn's regen (regen replaces vars and sets life on the copy, so `o` stays intact)
     const ready = { ...o };
     regen(ready);
     if (tiles(dist(at, o.pos)) <= reach)
       // what it would deal this unit, by the rule's own numbers (power, resistances: Nov 15)
-      score -=
+      threat +=
         W.THREAT *
         Math.max(
           0,
@@ -203,8 +202,12 @@ function positionScore(
   // on foot when there is a path; in a straight line only if no enemy is reachable by walking
   const walked = walk.get(posKey(at));
   if (walked !== undefined) nearest = tiles(walked);
+  // with no hit, the threat stays under what one movement point closer is worth: it picks the safer of the stops about as
+  // close and never keeps the unit away (counted in full, Nov 25 and Nov 11, units hid and 20x20 battles hung at 300 turns)
+  const closer = W.ADVANCE / subOf(grid);
   return (
     score -
+    (attacking || !threat ? threat : (closer * threat) / (threat + closer)) -
     (attacking ? W.APPROACH : W.ADVANCE) * (Number.isFinite(nearest) ? nearest : 0) -
     W.LINE * inLine(grid, state, actor)
   );
