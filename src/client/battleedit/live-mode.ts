@@ -3,7 +3,7 @@
 // over the battle on the HUD's own 3D layer, and the map builder's own input paints (mapedit/builder-input.ts): a drag
 // is one stroke, lit as it grows and applied on release as one edit (live.ts liveStroke); Enter or the pad's A paints at
 // the cursor. The command menu, the combat bar, the banner and the hints hide meanwhile; leaving (M, Esc, the pad's Menu,
-// the bar's Leave plate or the debug row) gives the battle its input back. The Palette plate opens a list of the
+// the bar's Leave plate, the ✎ screen button or the debug row) gives the battle its input back. The Palette plate opens a list of the
 // palette's entries over the help line (Fernando, Nov 25: "Escolher a cor da Paleta ao vivo"), walked by place.
 import { PALETTE } from '../../content/map-palette.ts';
 import { SCENARIOS } from '../../shared/battle/scenarios.ts';
@@ -44,6 +44,7 @@ let home: HTMLElement | null = null; // the battle's host, where the bar's unsee
 export function wireLive(g: Game, host: HTMLElement) {
   home = host;
   void look();
+  g.hud.setEdit(() => void toggleLive(g));
   addEventListener(
     'keydown',
     (e) => {
@@ -222,6 +223,8 @@ class LiveMode implements Painter {
       plate = pick.panel;
     }
     this.walk = placed.filter((p) => p.cell.kind !== 'label');
+    // the open list reaches the tile line on a tablet (1024x768), which wrote over it
+    hidePieces([...this.was, ...HIDE, ...(this.panelWalk ? (['height'] as const) : [])]);
     this.scene.setInsets(0, l.bottom, left);
     this.screen.set(
       this.ui.show(

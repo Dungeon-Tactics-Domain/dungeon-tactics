@@ -20,6 +20,7 @@ const SIZE = 28; // the text, px of the reference; never under 16 on the page
 // Undo carries its word beside the arrow (Fernando, Nov 18: ↶ and ↩ looked the same); the rest are a glyph alone
 const WORD: Record<Tool, () => string> = {
   back: () => '↩',
+  edit: () => '✎',
   undo: () => t('↶ Desfazer', '↶ Undo'),
   left: () => '↺',
   right: () => '↻',
@@ -32,9 +33,11 @@ const CLASS: [Tool, string][] = [
   ['left', '.turn-left'],
   ['right', '.turn-right'],
   ['top', '.top-view'],
+  ['edit', '.edit-map'],
   ['gear', '.gear'],
 ];
-const pair = (k: Tool) => k === 'left' || k === 'right' || k === 'top';
+// the buttons after the turn list
+const pair = (k: Tool) => k === 'left' || k === 'right' || k === 'top' || k === 'edit';
 const px = (v: number) => `${v}px`;
 const faded = (c: Rgba, off: boolean): Rgba => [c[0], c[1], c[2], off ? c[3] * OFF : c[3]];
 

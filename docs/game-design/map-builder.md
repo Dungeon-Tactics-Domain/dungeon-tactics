@@ -169,7 +169,8 @@ The client: `src/client/battleedit/` (controller, pure panel, sheet steps, map s
   off, and says why, with no hero or no enemy that plays. The turn loop and the HUD give a turn to the player or the AI by
   `controlOf`.
 - **Live edit (a mode since Nov 25, Fernando: "Pintar com o mouse ao vivo"):** in a battle Play opened, M or Debug ›
-  Battle builder › Edit the map live turns it on, only on a player-controlled turn with nothing moving (the row and a
+  Battle builder › Edit the map live or, with the screen buttons on, the ✎ button after the camera ones (Nov 28: a tablet had no
+  M and the Debug row needs ?debug=1) turns it on, only on a player-controlled turn with nothing moving (the row and a
   banner say why not; the hint "M Edit Map" sits beside Options on that turn). The map builder's tool bar (keys 1 to 9,
   the same tools and pictures) shows at the battle's foot right of the turn list, drawn on the HUD's own 3D layer, with
   a help line and the keys over it; the command menu, the combat bar, the banner and the hints hide meanwhile. The map

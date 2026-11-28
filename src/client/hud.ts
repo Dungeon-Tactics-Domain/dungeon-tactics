@@ -154,6 +154,10 @@ export class BattleHud {
     this.layer = this.menu3d = this.turn3d = undefined;
     this.p3d = {};
   }
+  // the ✎ screen button that turns the live map edit on and off (battleedit/live-mode.ts)
+  setEdit(run: () => void) {
+    this.tools.setEdit(run);
+  }
   // the battle builder's live map edit draws its tool bar on this layer (battleedit/live-mode.ts)
   get layer3d() {
     return this.layer;

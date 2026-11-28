@@ -86,6 +86,19 @@ describe('corner buttons: their layout with no DOM', () => {
     expect(undo.x - (back.x + back.w)).toBe(8);
   });
 
+  // Nov 28: the live map edit's button follows the top view in a battle the battle builder opened
+  for (const [name, w, h, mode, notch] of PAGES)
+    it(`the Map button, a fourth beside the camera, covers no button, the banner or the list: ${name}`, () => {
+      const q = spec(w, h, mode, { turns: 4, row: [80, 100, 0] }, notch),
+        l = toolsLayout(q),
+        all = [...l.pair, ...l.row];
+      expect(l.pair).toHaveLength(4);
+      for (const [i, x] of all.entries()) for (const y of all.slice(i + 1)) expect(overlap(x, y), name).toBe(false);
+      for (const x of l.pair)
+        for (const region of ['banner', 'turn'] as const)
+          expect(overlap(x, place(REGIONS[region], q.stage)), name).toBe(false);
+    });
+
   it('the Height corner keeps under the row of buttons', () => {
     expect(toolsFoot(0.39, 12)).toBe(12 + 44 + 8);
     expect(toolsFoot(1, 12)).toBe(12 + 56 + 8);
@@ -100,7 +113,7 @@ describe('which corner buttons show', () => {
       for (const hidden of [true, false])
         for (const on of [true, false]) {
           expect(toolShown('gear', keys, hidden, on)).toBe(true);
-          for (const k of ['undo', 'left', 'right'] as const) expect(toolShown(k, keys, hidden, on)).toBe(on);
+          for (const k of ['undo', 'left', 'right', 'edit'] as const) expect(toolShown(k, keys, hidden, on)).toBe(on);
           expect(toolShown('back', keys, hidden, on)).toBe(!keys && !hidden);
         }
   });

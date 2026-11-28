@@ -279,7 +279,8 @@ flag the game is the one of always, checked by the hash of the bench shots. Fern
   Ramp add a round `--ui3d-result-title` sign (+, −, ↗) on the picture's corner. The name keeps 14 px at least.
 - **Corner buttons** (`window3d/tools3d.ts`; Fernando, Nov 18 night: no ☰ menu and no blue): the gear (Options),
   "↶ Desfazer", Back (↩, a finger's) and the camera pair ↺ ↻ (in battle with the top view ⊞ after them, Nov 25; on a
-  phone, where a third would reach the instruction banner, under ↺) as plates of the end of battle, `--ui3d-result-plate` at
+  phone, where a third would reach the instruction banner, under ↺), then ✎ in a battle the battle builder opened
+  (Nov 28: it turns the live map edit on and off, so a finger needs no M and no debug panel), as plates of the end of battle, `--ui3d-result-plate` at
   95% with a `--ui3d-result-line` edge, lit as Options' commands when Tab reaches one; a button with nothing to do now
   is faded to 45%. The gear is drawn: four bars 45° apart, a gold disc and its hole. Where each sits is
   `tools-layout.ts` (pure, tested); which show is the HTML buttons' `hidden` (the screen buttons switch,

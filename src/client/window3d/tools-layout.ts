@@ -8,9 +8,9 @@ import { type Box, lu, place, REGIONS, type Stage } from '../ui3d/layout.ts';
 const TAP = 44; // a finger's target (design system, section 8): no button is ever smaller
 const GAP = 8; // between the buttons
 
-export type Tool = 'back' | 'undo' | 'left' | 'right' | 'top' | 'gear';
+export type Tool = 'back' | 'edit' | 'undo' | 'left' | 'right' | 'top' | 'gear';
 
-// Which buttons show: the gear always; Undo and the camera pair while the screen buttons are on (screen-buttons.ts: a
+// Which buttons show: the gear always; Undo, the camera pair and the live map edit's (a battle the builder opened) while the screen buttons are on (screen-buttons.ts: a
 // finger's default, an Options switch on a PC); Back only for a finger while there is a screen to go back to (Esc and
 // the right button go back on a PC). style.css .kbd .tools .back hides the same one, so no unseen button takes a click
 export const toolShown = (tool: Tool, keys: boolean, hidden: boolean, buttons: boolean) =>
@@ -29,7 +29,7 @@ export interface ToolsSpec {
   // button is never narrower than it is tall
   row: number[];
   pair: 'list' | 'row' | 'none'; // the camera pair after the turn list, at the row's left end, or not shown
-  turns?: number; // how many camera buttons after the list: 2, or 3 with the top view (Nov 25)
+  turns?: number; // how many buttons after the list: 2 cameras, 3 with the top view (Nov 25), 4 with the Map one (Nov 28)
 }
 
 export function toolsLayout(q: ToolsSpec) {
@@ -47,10 +47,11 @@ export function toolsLayout(q: ToolsSpec) {
   const list = place(REGIONS.turn, q.stage),
     at = list.x + list.w + GAP,
     banner = place(REGIONS.banner, q.stage);
-  // the third (the top view) goes under the first where the row would reach the instruction banner (a phone)
+  // past the second, a button that would reach the instruction banner goes to a second line from the first (a phone)
+  let under = 0;
   const camBox = (i: number): Box => {
     const b = { x: at + i * (size + GAP), y: top, w: size, h: size };
-    return i < 2 || b.x + b.w <= banner.x ? b : { x: at, y: top + size + GAP, w: size, h: size };
+    return i < 2 || b.x + b.w <= banner.x ? b : { ...b, x: at + under++ * (size + GAP), y: top + size + GAP };
   };
   const pair =
     q.pair === 'list'

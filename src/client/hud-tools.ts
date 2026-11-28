@@ -34,6 +34,19 @@ export class CornerButtons {
   // the top view beside ↺ ↻ (Fernando, Nov 25: T, R3, and a button for a finger); the battle's only, the town has none
   readonly top: HTMLElement;
   readonly root: HTMLElement;
+  // the live map edit, for a finger (Nov 28: a tablet has no M and the Debug row needs ?debug=1); only a battle the
+  // battle builder opened gives it something to do (setEdit, battleedit/live-mode.ts)
+  private readonly edit = iconButton('✎', t('Editar o mapa', 'Edit the map'), () => this.run?.(), {
+    class: 'icon edit-map',
+    hidden: true,
+  });
+  private run?: () => void;
+  private on = false;
+
+  setEdit(run: () => void) {
+    this.run = run;
+    this.edit.hidden = !this.on;
+  }
 
   constructor(act: HudActions) {
     const { root, show } = gearButtons(
@@ -48,11 +61,13 @@ export class CornerButtons {
     );
     root.prepend(this.undo);
     this.top = iconButton('⊞', t('Ver de cima', 'View from above'), () => act.top(), { class: 'icon top-view' });
-    root.querySelector('.turn-right')?.after(this.top);
+    root.querySelector('.turn-right')?.after(this.top, this.edit);
     this.root = root;
     const both = (on: boolean) => {
       show(on);
+      this.on = on;
       this.undo.hidden = this.top.hidden = !on;
+      this.edit.hidden = !on || !this.run;
     };
     both(screenButtons());
     onScreenButtons(both);
